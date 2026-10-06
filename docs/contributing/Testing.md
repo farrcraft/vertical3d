@@ -84,7 +84,8 @@ target_link_libraries(v3dtest_image PRIVATE v3dlib_image)
 - Passes `--detect_memory_leaks=0`. Without it, Boost.Test reports a false leak in every suite
   that builds a `Logger`, because spdlog's registry is destroyed after the report.
 
-You link the library under test yourself. Each suite's `TestMain` defines `BOOST_TEST_MODULE` and
+You link the library under test yourself, and every other library whose header the suite
+includes, rather than reaching it through the library under test. Each suite's `TestMain` defines `BOOST_TEST_MODULE` and
 nothing else. The exception is `render_device`, whose `main` checks for a device first.
 
 A suite with fixture files copies its `tests/data/` directory beside the executable in a

@@ -52,7 +52,9 @@ clears the component selection.
 **One button, three tools.** `Controller::drag()` routes the left button in this order:
 
 1. The ui is offered the press first. If it takes it, the matching release goes to the ui too.
-2. If a camera modifier (Alt, Ctrl or Shift) is held, the drag drives the camera.
+2. If a camera modifier (Alt, Ctrl or Shift) is held, the drag drives the camera. A release
+   with a modifier held still goes to `TransformTool` as well, so a handle drag that a modifier
+   pressed mid-way ends and is recorded.
 3. Otherwise, if the cursor is on a manipulator handle, `TransformTool` takes the press.
 4. Otherwise `SelectTool` picks.
 

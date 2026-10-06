@@ -96,7 +96,9 @@ bool Reader::counts(Lexer * lexer, std::vector<unsigned int> * out) {
         if (token.kind() == Kind::ARRAY_END) {
             return true;
         }
-        if (token.kind() != Kind::NUMBER || token.value() < 0.0f) {
+        // the largest float below 2^32, so the conversion to unsigned is defined
+        const bool count = token.kind() == Kind::NUMBER && token.value() >= 0.0f && token.value() <= 4294967040.0f;
+        if (!count) {
             return fail("expected a count", token);
         }
         out->push_back(static_cast<unsigned int>(token.value()));
@@ -258,15 +260,15 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c)) {
             return Result::Failed;
         }
-        // a size below one pixel or above 65536, or an aspect that is not a number, is
-        // skipped: converting it to unsigned is undefined. A fraction is truncated. An aspect
-        // of zero or less asks for the device's own, which is square pixels.
+        // a size below one pixel or above 65536 is skipped, because converting it to
+        // unsigned is undefined. A fraction is truncated. An aspect that is not a positive
+        // finite number asks for the device's own, which is square pixels.
         const bool size = a >= 1.0f && a <= 65536.0f && b >= 1.0f && b <= 65536.0f;
-        if (!size || !std::isfinite(c)) {
+        if (!size) {
             logger_->get()->warn("RIB Format {} {} {} is not a picture size and was skipped", a, b, c);
             return Result::Handled;
         }
-        handler->format(static_cast<unsigned int>(a), static_cast<unsigned int>(b), c > 0.0f ? c : 1.0f);
+        handler->format(static_cast<unsigned int>(a), static_cast<unsigned int>(b), c > 0.0f && std::isfinite(c) ? c : 1.0f);
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -625,6 +627,10 @@ bool Reader::handle(Lexer * lexer, std::string * value) {
     const Token token = lexer->peek();
     if (token.kind() == Kind::NUMBER) {
         lexer->next();
+        // a handle within a 32 bit integer either way, so the conversion is defined
+        if (!(std::fabs(token.value()) <= 2.0e9f)) {
+            return fail("expected a light handle", token);
+        }
         *value = std::to_string(static_cast<std::int64_t>(token.value()));
         return true;
     }

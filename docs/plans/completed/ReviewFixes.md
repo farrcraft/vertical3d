@@ -755,3 +755,20 @@ A fourth review found smaller gaps, one of them in the third round's fixes. All 
   drag is recorded;
 - two build comments name `api/asset/media` for cgltf, and the documents name the NaN rules for
   the framebuffer and textures.
+
+### After a fifth review
+
+A fifth review found one data-loss bug and smaller gaps. All are fixed:
+
+- the file chooser's replace question is cleared when another directory is listed, so a replace
+  agreed to in one directory never overwrites the same name in another;
+- a RIB count above the largest float below 2^32, or a numeric light handle beyond two billion,
+  stops the read rather than being converted; any `Format` aspect that is not a positive finite
+  number means square pixels;
+- a shader whose defaults fail is reported once per machine rather than on every run;
+- the editor's test suite links `v3dlib_dag`, and `scripts\test.cmd` stops on a tree that is not
+  configured;
+- the bmp writer's comments, four comments that used figures of speech, the build-resolver and
+  cpp-reviewer prompts, `.clang-tidy`, the starter's and imagetool's CMake comments, Build.md's
+  pong data paragraph, Keyboard.md on a disabled focus, the editor's drag routing, and
+  Testing.md's suite linking rule now state the code as it is.

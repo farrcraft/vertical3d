@@ -152,10 +152,8 @@ The two data helpers add a build rule whose inputs are the files in the source d
 - An app that calls both helpers gets both directories copied into the same `data/`, shared
   data first.
 
-These apps call `v3d_add_app_data`: tetris, voxel, odyssey, moya and vertical3d. **pong calls
-only `v3d_add_shared_data`.** `pong/data` is not copied by the build, so an edit to
-`pong/data/*.json` has no effect on `out/build/<config>/pong/` until you copy the file across by
-hand.
+These apps call `v3d_add_app_data`: pong, tetris, voxel, odyssey, moya and vertical3d. pong
+also calls `v3d_add_shared_data`.
 
 ## Shaders
 

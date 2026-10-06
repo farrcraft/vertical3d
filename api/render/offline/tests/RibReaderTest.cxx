@@ -775,4 +775,23 @@ BOOST_AUTO_TEST_CASE(ribreader_default_pixel_aspect_test) {
     BOOST_CHECK_EQUAL(handler.width_, 640u);
     BOOST_CHECK_EQUAL(handler.height_, 480u);
     BOOST_CHECK_EQUAL(handler.pixelAspect_, 1.0f);
+
+    BOOST_REQUIRE(read("Format 320 240 1e39\n", &handler, &reader));
+    BOOST_CHECK_EQUAL(handler.width_, 320u);
+    BOOST_CHECK_EQUAL(handler.pixelAspect_, 1.0f);
+}
+
+/**
+ * A count or a light handle too large for an integer is an error, rather than a conversion
+ * that is undefined.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_counts_and_handles_out_of_range_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    BOOST_CHECK(!read("PointsPolygons [1e39] [0 1 2] \"P\" [0 0 0 1 0 0 0 1 0]\n", &handler, &reader));
+    BOOST_CHECK(reader.error().contains("expected a count"));
+
+    v3d::render::offline::rib::Reader second(boost::make_shared<v3d::log::Logger>());
+    BOOST_CHECK(!read("Illuminate 1e39 1\n", &handler, &second));
+    BOOST_CHECK(second.error().contains("expected a light handle"));
 }

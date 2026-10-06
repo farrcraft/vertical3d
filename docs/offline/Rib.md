@@ -33,10 +33,12 @@ accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"s
   which it is. A UTF-8 byte order mark at the start is skipped, and a stream is read from where
   it stands rather than from its beginning.
 - **A size that is not a size is skipped with a warning.** A `Format` whose resolution is not
-  between 1 and 65536 or whose aspect is not a number, a `FrameBegin` that is not a finite
+  between 1 and 65536, a `FrameBegin` that is not a finite
   frame number, and a `PixelFilter` whose width is not positive are skipped, and the rest of
-  the file reads. A `Format` aspect of zero or less asks for the device's own, which is square
-  pixels.
+  the file reads. A `Format` aspect that is not a positive finite number asks for the device's
+  own, which is square pixels.
+- **A count or a light handle that is too large is an error.** A count above 4294967040 or a
+  numeric light handle beyond two billion stops the read, as any other malformed request does.
 - **An unrecognised request is reported once per name, and its arguments are skipped.**
   `Reader::unrecognised()` lists them. `Reader::unsupported()` lists what was read but not
   built, such as a deforming primitive.

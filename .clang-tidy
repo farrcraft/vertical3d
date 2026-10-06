@@ -29,10 +29,10 @@
 #    the check is right about the physics and wrong about the meaning.
 #  - readability-non-const-parameter reports the RI entry points in moya's RenderMan.cxx.
 #    RtToken is char*, and the signature is the standard's rather than this tree's to choose.
-#  - readability-container-contains cannot be satisfied for the three command line tools.
+#  - readability-container-contains cannot be satisfied for the two command line tools.
 #    boost::program_options::variables_map inherits contains() from std::map, but the built
 #    boost does not export that instantiation - the call compiles and then fails to link
-#    with an unresolved __declspec(dllimport). count() is what those three keep.
+#    with an unresolved __declspec(dllimport). count() is what those two keep.
 #
 # Every other subtraction is open work. The way to remove one is to fix what it reports, not to
 # widen the exclusion.

@@ -33,7 +33,8 @@ rather than suppressing it.
 
 ## How this project builds
 
-There is no wrapper script. The build needs an MSVC Developer environment, then Ninja:
+`scripts\build.cmd` and `scripts\test.cmd` enter the MSVC Developer environment and run the
+two commands below. By hand, the build needs that environment, then Ninja:
 
 ```
 vcvars64.bat                              # or run from a Developer Command Prompt
@@ -79,7 +80,7 @@ single target you broke.
 | Code | What it usually is here | Fix |
 |---|---|---|
 | `LNK2019` unresolved external | A `.cpp`/`.cxx` not added to its `CMakeLists.txt`, or a missing library on the link line | Add the file to the target's hand-written source list, or add the library |
-| `LNK2019` on `vk*` symbols | The executable links `v3dlib_render` but not `${Vulkan_LIBRARIES}` | Add it to that target's `target_link_libraries` |
+| `LNK2019` on `vk*` symbols | A library calls Vulkan without linking `Vulkan::Vulkan` | Link it on that library; `v3dlib_render` links it PUBLIC, so an app never names it |
 | `C1083` cannot open include | A header that does not exist, or a wrong relative path | Check it exists before assuming a path problem; includes are named from the repository root |
 | `C2039` no member | Member dropped from the header while a use remained | Correct the use or restore the member; do not add a member to make a call site compile without understanding why it went |
 | `C2065` undeclared | Missing include, or drift behind an api change | Include the header, or update the call site |
@@ -100,8 +101,8 @@ temporary.
 The renderer targets Vulkan 1.3 per ADR-0002, and device selection rejects anything lower.
 A device-selection failure that says so is the code working, not a bug.
 
-Validation layers are **not** enabled yet. If you enable them to diagnose something, say so
-and do not leave them on without a decision.
+The instance enables `VK_LAYER_KHRONOS_validation` whenever it is installed. A message from it
+is a defect to fix, not noise.
 
 Every `VkResult` is checked and reported through `vulkan::resultString`. A new call whose
 result is dropped is a defect even if it builds.

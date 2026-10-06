@@ -14,4 +14,11 @@ if not exist "%V3D_VCVARS%" (
 
 call "%V3D_VCVARS%" >nul || exit /b 1
 
-ctest --test-dir "%~dp0..\out\build\x64-Debug" --output-on-failure %*
+rem ctest finds no tests in a tree that is not configured, and reports that as a success
+set "V3D_BUILD=%~dp0..\out\build\x64-Debug"
+if not exist "%V3D_BUILD%\build.ninja" (
+    echo %V3D_BUILD% is not configured. docs/contributing/Build.md has the cmake line.
+    exit /b 1
+)
+
+ctest --test-dir "%V3D_BUILD%" --output-on-failure %*

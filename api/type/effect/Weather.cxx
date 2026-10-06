@@ -34,10 +34,10 @@ float wrapping(float value, float low, float high) {
 
 void fall(const Emitter& emitter, Weather* weather, State* state, const glm::vec3& minimum,
     const glm::vec3& maximum, float seconds) {
-    // an ease below nothing moves nothing, and the target is held between 0 and 1, so the
+    // a negative ease is treated as zero, and the target is held between 0 and 1, so the
     // intensity only ever eases towards a value in that range
     const float easing = std::max(0.0f, weather->ease * seconds);
-    // a target that is not finite is no target, and the intensity stays where it is
+    // a target that is not finite is ignored, and the intensity stays where it is
     const float target = std::isfinite(weather->target) ? std::clamp(weather->target, 0.0f, 1.0f) : weather->intensity;
     weather->intensity += std::clamp(target - weather->intensity, -easing, easing);
 

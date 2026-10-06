@@ -17,8 +17,8 @@ project("v3dstarter" CXX)
 
 # What a consumer sets for itself, and all of it. The language standard and /permissive- are
 # deliberately not in the api's interface properties; everything else a v3d:: target needs -
-# its include root, /EHsc, /utf-8, the boost winapi version workaround, and every third party
-# dependency its headers name - arrives through the target.
+# its include root, /EHsc, /utf-8, and every third party dependency its headers name - arrives
+# through the target.
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options("/permissive-")
@@ -31,7 +31,7 @@ set(V3D_BUILD_TESTS OFF)
 # The three libraries this app links. V3D_LIBRARIES selects which api libraries are built: the
 # named ones and everything they depend on, and only their packages are looked for. Naming them
 # rather than leaving V3D_LIBRARIES at "all" makes CI check that closure: an api library that
-# does not declare something it links fails this configure and no other.
+# does not declare something it links fails this configure.
 set(V3D_LIBRARIES engine log render)
 get_filename_component(V3D_TREE "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 add_subdirectory("${V3D_TREE}" v3d)

@@ -44,6 +44,7 @@ v3d_add_test(vertical3d
 target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_asset
 	v3dlib_brep
+	v3dlib_dag
 	v3dlib_event
 	v3dlib_font
 	v3dlib_log

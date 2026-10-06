@@ -117,6 +117,8 @@ bool FileChooser::list(const boost::filesystem::path& directory) {
     entries_.insert(entries_.end(), directories.begin(), directories.end());
     entries_.insert(entries_.end(), files.begin(), files.end());
     directory_ = where;
+    // a replace agreed to in one directory is not agreed to for the same name in another
+    confirming_.clear();
     // a new listing has nothing chosen in it. The row chosen in the last one would name
     // whatever now sits at that index
     const boost::shared_ptr<Container> shown = container();

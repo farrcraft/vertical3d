@@ -87,8 +87,8 @@ environment fault is not, and `docs/contributing/Build.md` lists the ones that r
 ### Boundaries
 
 - **The offline renderer must not acquire a realtime dependency.** `moya` is offline and
-  consumes only the non-realtime libraries — `type`, `brep`, `dag`, `image`,
-  `log`, `asset`. A change that pulls `render`, `gl`, `ui`, `input` or Vulkan into that set,
+  consumes only the non-realtime libraries — `render_offline`, `image`, `log`
+  and `type`. A change that pulls `render`, `gl`, `ui`, `input` or Vulkan into that set,
   or into that app, is a design finding even if it links.
 - **App logic does not belong in `api/`, and api concerns do not belong in an app.** The
   test is whether a second app would want it.
@@ -157,8 +157,9 @@ Building needs an MSVC Developer environment first. The tree is clean at that li
 so every finding is a real one.
 
 There is a test suite — one binary per api library and per app with logic worth covering —
-so a change with a testable cpu half that brings no cases is a finding. CI still renders
-nothing, so do not ask for render evidence beyond a run whose validation log is silent. If
+so a change with a testable cpu half that brings no cases is a finding. CI renders the
+`render_device` suite on lavapipe against committed reference pictures, so a rendering change
+can be asked for a case there as well as a run whose validation log is silent. If
 you run a check, quote what it said; if you do not, do not imply that you did.
 
 ## Output

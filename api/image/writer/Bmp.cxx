@@ -56,8 +56,8 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     iheader.height_ = img->height();
     iheader.bits_ = img->bpp();
     iheader.compression_ = 0;
-    // a reader sizes the table from the bit depth rather than from these, but a file that
-    // says how many of its colours it uses is the one a reader outside this tree expects
+    // a reader takes the table's length from the count of colours used, so the count is
+    // the whole ramp the table below holds
     iheader.used_ = shades;
     iheader.important_ = shades;
 
@@ -83,8 +83,7 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     file.write(reinterpret_cast<char*>(&fheader), sizeof(bmp_file_header));
     file.write(reinterpret_cast<char*>(&iheader), sizeof(bmp_info_header));
 
-    // the whole ramp, because a reader takes the table's length from the bit depth and
-    // reads 1 << bits entries whatever this file says it uses
+    // the whole ramp, as many entries as the header says the file uses
     for (uint32_t shade = 0; shade < shades; ++shade) {
         bmp_rgb_quad entry;
         entry.blue_ = entry.green_ = entry.red_ = static_cast<unsigned char>(shade);

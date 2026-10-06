@@ -210,6 +210,28 @@ BOOST_AUTO_TEST_CASE(saving_over_a_file_asks_first) {
 }
 
 /**
+ * The question is asked again in another directory. A replace agreed to for a name in one
+ * directory does not replace the file of that name in the next.
+ **/
+BOOST_AUTO_TEST_CASE(a_new_listing_asks_again) {
+    const Sandbox sandbox("replace_elsewhere");
+    sandbox.touch("art/a.json");
+    int calls = 0;
+    v3d::ui::shell::FileChooser chooser(nullptr);
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Save, sandbox.path(), ".json",
+        [&calls](const boost::filesystem::path&) { calls++; });
+
+    chooser.name("a");
+    BOOST_CHECK(!chooser.accept());
+    BOOST_CHECK(chooser.confirming());
+
+    BOOST_REQUIRE(chooser.list(sandbox.path() / "art"));
+    BOOST_CHECK(!chooser.confirming());
+    BOOST_CHECK(!chooser.accept());
+    BOOST_CHECK_EQUAL(calls, 0);
+}
+
+/**
  * A directory opened from the list shows its own listing with no row chosen, so a pick that
  * follows does not open whatever now sits at the row chosen before.
  **/

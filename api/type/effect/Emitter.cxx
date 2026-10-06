@@ -74,7 +74,7 @@ void travel(const Emitter& emitter, State* state, float seconds, const glm::vec3
 }
 
 uint32_t owing(State* state, float rate, float seconds) {
-    // a rate below nothing earns nothing, and so does one that is not a finite number, rather
+    // a negative rate emits nothing, and so does one that is not a finite number, rather
     // than a count that wraps round or is undefined when it is made unsigned. What is owed is
     // capped at the largest count a step can return
     const float earned = rate * seconds;

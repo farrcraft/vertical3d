@@ -94,6 +94,11 @@ class Machine final {
     void logger(const boost::shared_ptr<v3d::log::Logger> & logger);
 
     /**
+     * Keeps a message for reports(), and logs it, once however often it is made.
+     **/
+    void report(const std::string & message);
+
+    /**
      * What a `printf` in the shader wrote, in the order it wrote it, cleared at the start
      * of every run. A renderer drains it into its log, and a test reads it.
      *
@@ -156,7 +161,6 @@ class Machine final {
     bool anyLive() const;
     /** Whether an instruction writing this value should write this point of it. **/
     bool writable(const Value & target, unsigned int point) const;
-    void report(const std::string & message);
 
     void move(const Instruction & instruction);  // NOLINT(build/include_what_you_use) - the name, not std::move
     void component(const Instruction & instruction);

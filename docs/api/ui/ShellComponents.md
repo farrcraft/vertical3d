@@ -77,5 +77,5 @@ chooser_->open(FileChooser::Mode::Save, directory, ".json", [this](const boost::
 - `accept()` refuses an empty name or one containing a separator. In `Open` mode it refuses a
   file that does not exist.
 - In `Save` mode a bare name is given the extension. Saving over an existing file asks first:
-  `accept()` returns false and `confirming()` is true, and accepting the same name again
-  replaces the file.
+  `accept()` returns false and `confirming()` is true. Listing another directory clears the
+  question. Accepting the same name again in the same directory replaces the file.
