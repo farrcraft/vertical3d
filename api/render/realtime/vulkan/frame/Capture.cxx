@@ -76,6 +76,13 @@ void Capture::record(VkCommandBuffer commands, const Source& source) {
 /**
  **/
 void Capture::record(VkCommandBuffer commands, const Swapchain& swapchain, uint32_t image) {
+    if (!swapchain.copyable()) {
+        throw std::runtime_error("The swapchain images were created without TRANSFER_SRC usage and cannot be captured");
+    }
+    if (image >= swapchain.images().size()) {
+        throw std::runtime_error("A swapchain capture names image " + std::to_string(image) + " of a chain of " +
+            std::to_string(swapchain.images().size()));
+    }
     Source source;
     source.image = swapchain.images()[image];
     source.extent = swapchain.extent();

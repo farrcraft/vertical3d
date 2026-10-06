@@ -811,3 +811,28 @@ A seventh review found older defects in code the branch moved or rewrote. All ar
   whose name, camera or split is not a string is refused rather than thrown;
 - FreeType and boost filesystem are linked PRIVATE where only sources include them, libmoya
   names glm, and stale build comments, agent prompts and doc sentences state the tree as it is.
+
+### After an eighth review
+
+The eighth review read every file the branch changed in each area. All of these are fixed:
+
+- moya builds its screen transform again at `WorldBegin`, so a `Format`, `ScreenWindow` or
+  `Clipping` named after `Projection` takes effect; the shadow reference was rendered while
+  those were ignored, and is rendered again with an exact 4/3 window;
+- a traced hit refuses `"object"` space as a grid does; noise reads 0.5 for a point that is not
+  finite and repeats every 256 cells at any distance; `Declaration` lists every enumerator;
+- a config load files nothing unless every entry loads, which its test now shows with a good
+  entry before the bad one; camera profiles refuse a name or adaptive setting that is not a
+  string, and a vector holding something other than numbers keeps its default;
+- a render target whose recreate fails keeps its old images; `Buffer::grow` starts from one byte
+  after a failed grow; a device whose allocator fails is destroyed; the swapchain asks for
+  transfer use where it can and a capture from one without it throws; the sampled depth is read
+  with nearest filtering; a shadow fit has a smallest radius;
+- pong draws the ball at the size it collides; the starter's lifecycle overrides are protected;
+  the docs on `TextRenderer`'s tests, the manifest, CI comments, the camera option order and
+  stale comments state the tree as it is.
+
+Left as it is, on purpose:
+
+- pong maps Escape to its own `pong::showGameMenu` rather than to the api's `ui::showGameMenu`.
+  Games.md documents it, and moving pong onto the api's command changes its bindings document.

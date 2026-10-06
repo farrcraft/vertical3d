@@ -133,9 +133,9 @@ unsigned int Declaration::floats() const {
             return 16;
         case Type::FLOAT:
         case Type::INTEGER:
-        default:
             return 1;
     }
+    return 1;
 }
 
 unsigned int Declaration::elements(unsigned int vertices) const {
@@ -145,9 +145,9 @@ unsigned int Declaration::elements(unsigned int vertices) const {
             return vertices;
         case Storage::CONSTANT:
         case Storage::UNIFORM:
-        default:
             return 1;
     }
+    return 1;
 }
 
 };  // namespace v3d::render::offline::rib

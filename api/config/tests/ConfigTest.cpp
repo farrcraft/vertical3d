@@ -120,8 +120,8 @@ BOOST_AUTO_TEST_CASE(config_unloadable_extension_test) {
 }
 
 /**
- * A failed load files nothing: an entry read before the one that failed is not worth keeping,
- * since the caller is going to abandon the whole config.
+ * A failed load files nothing: the window entry loads before the binding entry fails, and is not
+ * kept, since the caller is going to abandon the whole config.
  **/
 BOOST_AUTO_TEST_CASE(config_rejection_files_nothing_test) {
     v3d::config::Config config(boost::make_shared<v3d::log::Logger>());

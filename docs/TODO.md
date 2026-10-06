@@ -292,9 +292,9 @@ position.
 recorder in `api/render` except the pipeline cache. A test for it would count what was compiled,
 not compare a picture.
 
-[] **Three things need a window or a sound device to test:** `Feature::Window`,
-`ui::TextRenderer` and `audio::Engine::initialize()`. A software Vulkan driver does not help
-with any of them.
+[] **Two things need a window or a sound device to test:** `Feature::Window` and
+`audio::Engine::initialize()`. A software Vulkan driver does not help with either.
+`ui::TextRenderer`'s atlas upload needs a device, which the `render_device` suite could give it.
 
 [] **Some rendering cannot be checked against a reference picture.** A reference image may hold
 only what the Vulkan specification determines exactly. So blending, filtered sampling,

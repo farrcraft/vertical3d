@@ -42,6 +42,8 @@ the wait, or a frame abandoned because recording threw, leaves nothing waiting o
   otherwise the first offered. A missed preference logs a warning. The function needs no device
   and has a unit test.
 - The present mode is mailbox where offered, otherwise FIFO.
+- The images have `COLOR_ATTACHMENT` usage, plus `TRANSFER_SRC` where the surface's
+  `supportedUsageFlags` include it. `copyable()` reports which.
 - `recreate()` waits for the device to go idle, then rebuilds with the same requested format.
 - A window with no area gets no chain. `create` leaves it empty and `valid()` is false.
   `Presenter::acquire()` then returns `Skip`.
@@ -178,7 +180,8 @@ in [api/rendering/FramesAndTargets.md](../../api/rendering/FramesAndTargets.md#r
 - `record()` takes a `Capture::Source` (image, extent, format, layout, depth flag), so one code
   path reads a swapchain image or a target. The swapchain overload fills one in from an acquired
   image in `PRESENT_SRC_KHR`. That is the only point a chain image may be read: after recording,
-  before present, while acquired.
+  before present, while acquired. It throws when the chain is not `copyable()` or the index is
+  outside the chain.
 - The image goes to `TRANSFER_SRC` and back to the layout it arrived in. **The barrier back
   differs by destination.** Returning a chain image to `PRESENT_SRC_KHR` needs nothing made
   visible, because the semaphore presentation waits on orders it. Returning a target to a layout

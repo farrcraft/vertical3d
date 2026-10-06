@@ -77,7 +77,8 @@ Rules:
 of their positions, and the farthest of them plus `margin`. The margin has to cover a caster's
 size and the length of its shadow. Things that cast nothing, such as the ground, stay out of the
 fit. `alsoCover` adds points that must be inside the map, such as where a character is walking
-to. `fit` returns nothing when no entity casts.
+to. `fit` returns nothing when no entity casts. The radius is never below
+`shadow::minimumRadius` (0.01), so one caster with no margin still gives a usable matrix.
 
 `shadow::light(towards, centre, radius)` builds the matrix the shadow pass draws through: an
 orthographic box around the sphere, seen from the light.

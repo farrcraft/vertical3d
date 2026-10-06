@@ -8,7 +8,7 @@ PixelSamples 1 1
 PixelFilter "box" 1 1
 Projection "orthographic"
 # an ortho zoom of one and a pixel aspect of 4:3, as the scene ReferenceTest builds in code has
-ScreenWindow -1.333333 1.333333 -1 1
+ScreenWindow -1.33333337 1.33333337 -1 1
 Clipping 0.001 100
 # what a ray that hits nothing is worth, said with a request rather than with geometry
 Imager "background" "background" [0.05 0.06 0.1]

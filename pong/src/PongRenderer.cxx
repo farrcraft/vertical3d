@@ -135,7 +135,8 @@ void PongRenderer::drawScores() {
 /**
  **/
 void PongRenderer::drawBall(float alpha) {
-    court_.circle(scene_->ball().drawn(alpha), scene_->ball().size(), ballSides, ballColour);
+    // size is the side of the box the scene collides, so it is the circle's diameter
+    court_.circle(scene_->ball().drawn(alpha), scene_->ball().size() / 2.0f, ballSides, ballColour);
 }
 
 /**

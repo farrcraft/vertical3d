@@ -32,8 +32,8 @@ Engine::~Engine() {
 void Engine::shutdown() {
     // no sound event reaches an engine that has let its device go
     sound_.release();
-    // the tracks go before the mixer that handed them out, and the clips before the tracks
-    // that were playing them
+    // the tracks go before the mixer that handed them out, and before the clips they were
+    // playing
     for (const std::pair<const Voice, Playing>& playing : voices_) {
         MIX_DestroyTrack(playing.second.track);
     }

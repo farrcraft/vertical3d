@@ -107,6 +107,8 @@ sampledDepth = false, images = 1)`.
 
 - **Size and format are yours.** A target does not follow the window. An app that wants one the
   window's size calls `recreate(width, height)` when `beginFrame()` reports a new size.
+  `recreate()` throws on a zero dimension or a failed allocation, and the target then keeps its
+  old images and size.
 - **`VK_FORMAT_UNDEFINED` for colour means no colour image.** Such a target must have sampled
   depth, or the constructor throws; a target with nothing to read is useless.
 - **`sampledDepth` can change the depth format.** Not every depth format can be both drawn into
@@ -174,7 +176,9 @@ capture.write("frame.png");
 ```
 
 - A swapchain image can be captured with `record(commands, swapchain, imageIndex)` after the
-  frame is recorded and before it is presented.
+  frame is recorded and before it is presented. **This needs `swapchain.copyable()`.** The chain
+  is built with `TRANSFER_SRC` usage only where the surface supports it, and otherwise the call
+  throws `std::runtime_error`.
 - The image is returned to the layout it arrived in, so a captured frame presents normally.
 - **A capture recorded and never written costs a copy and is thrown away silently.**
 - A source with `depth` set copies depth instead of colour, and `capture.depth()` returns one

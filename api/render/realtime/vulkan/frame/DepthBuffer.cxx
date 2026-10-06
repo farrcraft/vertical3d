@@ -94,9 +94,12 @@ void DepthBuffer::create(uint32_t width, uint32_t height) {
 
     if (sampled_) {
         pipeline::Sampler::Spec sampler;
-        // linear, so that a shadow comparison across a texel boundary softens rather than
-        // stepping. Nothing here enables the compare mode: a caller that needs a hardware PCF
+        // nearest, so a read returns one stored depth. A shader compares each read against a
+        // fragment's depth and softens the edge by averaging several comparisons. Nearest
+        // also needs no FILTER_LINEAR support, which a device need not offer for a depth
+        // format. Nothing here enables the compare mode: a caller that needs a hardware PCF
         // sampler creates its own, and this one serves a plain read
+        sampler.filter = VK_FILTER_NEAREST;
         sampler.mipmap = VK_SAMPLER_MIPMAP_MODE_NEAREST;
         // outside what was rendered is lit, not shadowed, so the border is the far plane
         sampler.address = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;

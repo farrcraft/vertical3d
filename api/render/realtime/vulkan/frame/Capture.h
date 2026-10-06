@@ -86,7 +86,10 @@ class Capture final {
      *
      * @param commands the buffer the frame was recorded into, still recording
      * @param image which of the chain's images was acquired
-     * @pre the image is in PRESENT_SRC, which is where Recorder::record leaves it
+     * @pre the image is in PRESENT_SRC. Recorder::record leaves it there.
+     * @throw std::runtime_error when the chain's images lack TRANSFER_SRC usage, because the
+     *        surface does not support it (Swapchain::copyable() is false), or when image is
+     *        not an index into the chain
      **/
     void record(VkCommandBuffer commands, const Swapchain& swapchain, uint32_t image);
 

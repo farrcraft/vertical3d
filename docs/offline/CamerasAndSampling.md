@@ -69,6 +69,9 @@ Background: [ADR-0076](../adr/0076-offline-seeded-samples-resolved-by-one-shared
   the scene names either. A scene can set `FrameAspectRatio` or `ScreenWindow` without the other
   reverting it. The default screen window for an image wider than tall is `[-a, a]` by
   `[-1, 1]`, where `a` is the frame aspect.
+- **The camera options take effect at `WorldBegin`, in any order.** A `Format`,
+  `FrameAspectRatio`, `ScreenWindow` or `Clipping` named after `Projection` still shapes the
+  screen transform, which `prepareWorld()` builds again from the options as they stand.
 - **The world to camera transformation applies as it stands.** `RenderContext::prepareWorld()`
   saves the current transformation as the `"camera"` coordinate system. By the RI standard,
   that transformation is the world to camera one. A transpose or an inverse of it is correct

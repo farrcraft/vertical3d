@@ -36,7 +36,7 @@ namespace v3d::render::realtime::vulkan::pipeline {
  *
  * The shader modules belong to the builder and are destroyed with it, since a module is
  * only needed while the pipeline is being compiled. The pipeline and its layout do not -
- * they are handed back for the caller to register with Resources, which is what destroys
+ * they are handed back for the caller to register with Resources, and Resources destroys
  * them.
  *
  * A builder describes one pipeline. Building twice from one builder is allowed and gives
@@ -127,8 +127,8 @@ class Builder final {
     /**
      * How a blending pipeline combines what it draws with what is already there.
      *
-     * The defaults are straight alpha over an opaque destination, which is what blend(true)
-     * means and what every pipeline presenting in this tree uses. A pipeline compositing
+     * The defaults are straight alpha over an opaque destination. blend(true) means these
+     * defaults, and every pipeline presenting in this tree uses them. A pipeline compositing
      * into something that is itself composited later needs a different destination alpha:
      * a factor of ZERO keeps the source's, where ONE_MINUS_SRC_ALPHA erodes it.
      *

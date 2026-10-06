@@ -46,9 +46,10 @@ class Frame {
     std::vector<boost::shared_ptr<Pass>> ordered() const;
 
     /**
-     * @return whether a pass drawing into the swapchain image tests depth, which is what the
-     *         context's depth buffer is for - a pass with a target of its own attaches that
-     *         target's
+     * The context's depth buffer serves only passes drawing into the swapchain image. A pass
+     * with a target of its own attaches that target's depth.
+     *
+     * @return whether a pass drawing into the swapchain image tests depth
      **/
     bool swapchainDepth() const noexcept;
 

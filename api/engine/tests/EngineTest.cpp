@@ -415,7 +415,6 @@ BOOST_AUTO_TEST_CASE(engine_rebind_without_bindings_test) {
     BOOST_CHECK(!engine.rebind("pong::leftPaddleUp", "arrow_up"));
 }
 
-// Only run() calls shutdown(), so an app's handlers end the loop with quit().
 /**
  * "ui::quit" means the same in every app, so the engine handles it as it handles a closed
  * window, and no app writes the handler.

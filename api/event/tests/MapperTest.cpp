@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(mapper_parameter_test) {
  **/
 BOOST_AUTO_TEST_CASE(mapper_sources_test) {
     boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
-    boost::shared_ptr<v3d::event::Context> game = boost::make_shared<v3d::event::Context>("cozy");
+    boost::shared_ptr<v3d::event::Context> game = boost::make_shared<v3d::event::Context>("game");
 
     v3d::event::Mapper mapper("global");
     v3d::event::Event north = destination(game, "walkNorth");
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(mapper_sources_test) {
     mapper.map(source(keyboard, "arrow_up", v3d::event::State::Pressed), destination(game, "walkNorth"));
     mapper.map(source(keyboard, "s", v3d::event::State::Any), destination(game, "walkSouth"));
 
-    std::vector<v3d::event::Event> found = mapper.sources("cozy::walkNorth");
+    std::vector<v3d::event::Event> found = mapper.sources("game::walkNorth");
     BOOST_REQUIRE_EQUAL(found.size(), 2u);
     std::vector<std::string> names;
     names.reserve(found.size());
@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(mapper_sources_test) {
     BOOST_CHECK_EQUAL(names[0], "arrow_up");
     BOOST_CHECK_EQUAL(names[1], "w");
 
-    BOOST_CHECK(mapper.sources("cozy::walkEast").empty());
+    BOOST_CHECK(mapper.sources("game::walkEast").empty());
     // a name alone is not a command: the context is part of it
     BOOST_CHECK(mapper.sources("walkNorth").empty());
 }

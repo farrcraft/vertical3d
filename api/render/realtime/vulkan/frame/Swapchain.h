@@ -91,6 +91,15 @@ class Swapchain final {
     const std::vector<VkImageView>& views() const noexcept;
 
     /**
+     * Whether the images can be copied out of, which frame::Capture requires. The chain asks
+     * for TRANSFER_SRC usage where the surface supports it, and is built without it where
+     * the surface does not.
+     *
+     * @return whether the images were created with TRANSFER_SRC usage
+     **/
+    bool copyable() const noexcept;
+
+    /**
      * @return how many images the chain holds
      **/
     std::size_t length() const noexcept;
@@ -151,6 +160,7 @@ class Swapchain final {
     VkFormat preferred_;
     VkFormat format_;
     VkExtent2D extent_;
+    bool copyable_;
     std::vector<VkImage> images_;
     std::vector<VkImageView> views_;
 };

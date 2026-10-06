@@ -25,7 +25,8 @@ Swapchain::Swapchain(const boost::shared_ptr<v3d::log::Logger>& logger, const bo
     swapchain_(VK_NULL_HANDLE),
     preferred_(preferred),
     format_(VK_FORMAT_UNDEFINED),
-    extent_{0, 0} {
+    extent_(),
+    copyable_(false) {
     try {
         create(width, height);
         createViews();
@@ -87,6 +88,12 @@ const std::vector<VkImage>& Swapchain::images() const noexcept {
  **/
 const std::vector<VkImageView>& Swapchain::views() const noexcept {
     return views_;
+}
+
+/**
+ **/
+bool Swapchain::copyable() const noexcept {
+    return copyable_;
 }
 
 /**
@@ -196,6 +203,7 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     if (extent.width == 0 || extent.height == 0) {
         format_ = surfaceFormat.format;
         extent_ = extent;
+        copyable_ = false;
         logger_->get()->info("Window has no area, leaving the vulkan swapchain empty");
         return;
     }
@@ -214,7 +222,13 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
+    // TRANSFER_SRC lets frame::Capture copy an image out. A surface need not support it, and
+    // the chain is built without it rather than not at all
+    const bool copyable = (support.capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (copyable) {
+        createInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    }
 
     // where one queue family draws and another presents, both of them need to reach the images
     const device::Device::QueueFamilies& families = device_->families();
@@ -241,6 +255,7 @@ void Swapchain::create(uint32_t width, uint32_t height) {
 
     format_ = surfaceFormat.format;
     extent_ = extent;
+    copyable_ = copyable;
 
     uint32_t count = 0;
     result = vkGetSwapchainImagesKHR(device_->handle(), swapchain_, &count, nullptr);
@@ -303,6 +318,7 @@ void Swapchain::destroy() {
         vkDestroySwapchainKHR(device_->handle(), swapchain_, nullptr);
         swapchain_ = VK_NULL_HANDLE;
     }
+    copyable_ = false;
 }
 
 };  // namespace v3d::render::realtime::vulkan::frame

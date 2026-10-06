@@ -66,13 +66,20 @@ float gradient(int hash, float x, float y, float z) {
 };  // namespace
 
 float noise(const glm::vec3 & point) {
+    // a point that is not finite has no cell, and reads the value every lattice point has
+    const bool finite = std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z);
+    if (!finite) {
+        return 0.5f;
+    }
     const std::array<int, 512> & p = permutation();
     const float fx = std::floor(point.x);
     const float fy = std::floor(point.y);
     const float fz = std::floor(point.z);
-    const int cx = static_cast<int>(fx) & 255;
-    const int cy = static_cast<int>(fy) & 255;
-    const int cz = static_cast<int>(fz) & 255;
+    // the lattice repeats every 256 cells, so a cell is reduced by that period before it
+    // becomes an int, which a coordinate past the range of an int could not
+    const int cx = static_cast<int>(std::fmod(fx, 256.0f)) & 255;
+    const int cy = static_cast<int>(std::fmod(fy, 256.0f)) & 255;
+    const int cz = static_cast<int>(std::fmod(fz, 256.0f)) & 255;
     const float x = point.x - fx;
     const float y = point.y - fy;
     const float z = point.z - fz;

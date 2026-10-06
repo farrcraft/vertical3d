@@ -119,12 +119,13 @@ unsigned int RenderContext::samplesTaken(unsigned int column, unsigned int row) 
     the framebuffer will be allocated here
 */
 void RenderContext::prepareWorld() {
-    // a scene that named no projection gets the default, and one that named a projection
-    // has already had its screen transform built and its transform reset - projecting
-    // again here would compose the projection twice and would save that reset as the
-    // camera transform
+    // a scene that named no projection gets the default. One that named a projection has
+    // had its transform reset already, so only its screen transform is built again, from
+    // the screen window, format and clipping as they stand now
     if (!projectionNamed_) {
         projection("");
+    } else {
+        screenTransform();
     }
 
     // establish the world coordinate system
@@ -197,6 +198,29 @@ void RenderContext::projection(std::string name, float fov) {
     fov_ = fov;
     projectionNamed_ = true;
 
+    // the transformation in force here is what the projection is appended to. It is kept so
+    // that WorldBegin can build the screen transform again from the camera options as they
+    // stand then, since RI lets a screen window, format or clipping follow the projection
+    projectionBase_ = transform_;
+    screenTransform();
+
+    // reinitialize current transformation to indentity matrix
+    transform_.replace(glm::mat4x4(1.0f));
+    // current transformation matrix is now the camera coordinate system
+}
+
+void RenderContext::screenTransform() {
+    // append the projection to the transformation in force at RiProjection. RI states the
+    // composition in row vectors, where the projection is on the right; a matrix applies to
+    // what is on its right here, so it goes on the left
+    const v3d::render::offline::MovingTransform current = transform_;
+    transform_ = projectionBase_.before(projectionMatrix());
+    // save as screen coordinate system
+    saveCoordinateSystem("screen");
+    transform_ = current;
+}
+
+glm::mat4x4 RenderContext::projectionMatrix() const {
     const float left = screen_[0];
     const float right = screen_[1];
     const float bottom = screen_[2];
@@ -206,7 +230,7 @@ void RenderContext::projection(std::string name, float fov) {
     // something composable rather than as whatever the stack held
     glm::mat4x4 projection(1.0f);
     // build the projection matrix
-    if (name == "perspective") {
+    if (projection_ == "perspective") {
         /*
             RI states fov as the full angle between screen space (-1, 0) and (1, 0), so a
             point at eye depth z reaches screen x = 1 at x = z * tan(fov / 2). The screen
@@ -216,7 +240,7 @@ void RenderContext::projection(std::string name, float fov) {
             system would write, and depth runs [-1, 1] to match the orthographic branch,
             which is the depth range the cull below names to its Frustum.
         */
-        const float tangent = std::tan(glm::radians(fov) / 2.0f);
+        const float tangent = std::tan(glm::radians(fov_) / 2.0f);
         projection = glm::mat4x4(0.0f);
         projection[0][0] = 2.0f / ((right - left) * tangent);
         projection[1][1] = 2.0f / ((top - bottom) * tangent);
@@ -225,7 +249,7 @@ void RenderContext::projection(std::string name, float fov) {
         projection[2][2] = (far_ + near_) / (far_ - near_);
         projection[2][3] = 1.0f;
         projection[3][2] = -2.0f * far_ * near_ / (far_ - near_);
-    } else if (name == "orthographic") {
+    } else if (projection_ == "orthographic") {
         /*
             [2 / (right-left)	0					0				-tx	]
             [0					2 / (bottom-top)	0				-ty	]
@@ -282,16 +306,7 @@ void RenderContext::projection(std::string name, float fov) {
         // unsupported projections default to orthographic
     }
 
-    // append the projection to the current transformation. RI states the composition in
-    // row vectors, where the projection is on the right; a matrix applies to what is on
-    // its right here, so it goes on the left
-    transform_ = transform_.before(projection);
-    // save as screen coordinate system
-    saveCoordinateSystem("screen");
-
-    // reinitialize current transformation to indentity matrix
-    transform_.replace(glm::mat4x4(1.0f));
-    // current transformation matrix is now the camera coordinate system
+    return projection;
 }
 
 void RenderContext::hider(const std::string & name) {

@@ -191,8 +191,9 @@ Terms are grouped by subject. Each entry links to the document that covers it.
   [Assets.md](Assets.md#texture-atlas).
 - **Sprite sheet** — an image plus a table of named pixel rectangles in it, read by
   `config::SpriteSheets`. See [engine/Config.md](engine/Config.md#sprite-sheets).
-- **Manifest and closure** — the `V3D_LIBRARIES` CMake variable names the api libraries a
-  project links (the manifest). CMake builds those plus everything they depend on (the
+- **Manifest and closure** — the manifest is the table in `cmake/v3dApiLibraries.cmake` of
+  what each api library depends on. The `V3D_LIBRARIES` CMake variable names the api libraries
+  a project links. CMake builds those plus everything the manifest says they depend on (the
   closure), and looks only for the packages the closure needs. See
   [UsingTheApi.md](UsingTheApi.md).
 

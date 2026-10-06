@@ -81,7 +81,7 @@ std::optional<Bounds> fit(const entt::registry& registry, std::span<const glm::v
     for (const glm::vec3& point : points) {
         spread = std::max(spread, glm::length(point - bounds.centre));
     }
-    bounds.radius = spread + margin;
+    bounds.radius = std::max(spread + margin, minimumRadius);
     return bounds;
 }
 

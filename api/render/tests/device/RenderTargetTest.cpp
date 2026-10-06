@@ -160,6 +160,36 @@ BOOST_AUTO_TEST_CASE(a_target_holds_one_image_or_one_per_frame) {
 }
 
 /**
+ * A recreate at a zero size throws before releasing anything, so the target keeps its images
+ * and size and can still be recreated at a valid size.
+ **/
+BOOST_AUTO_TEST_CASE(a_failed_recreate_leaves_the_target_as_it_was) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        width, height, colourFormat, true);
+    VkImage image = target->image();
+    VkImageView view = target->view();
+    VkImage depth = target->depthImage();
+
+    BOOST_CHECK_THROW(target->recreate(0, height), std::runtime_error);
+    BOOST_CHECK_THROW(target->recreate(width, 0), std::runtime_error);
+
+    BOOST_CHECK_EQUAL(target->extent().width, width);
+    BOOST_CHECK_EQUAL(target->extent().height, height);
+    BOOST_CHECK(target->image() == image);
+    BOOST_CHECK(target->view() == view);
+    BOOST_CHECK(target->depthImage() == depth);
+    BOOST_CHECK(target->sampler() != VK_NULL_HANDLE);
+
+    target->recreate(width * 2, height * 2);
+    BOOST_CHECK_EQUAL(target->extent().width, width * 2);
+    BOOST_CHECK_EQUAL(target->extent().height, height * 2);
+    BOOST_CHECK(target->image() != VK_NULL_HANDLE);
+    BOOST_CHECK(target->depthImage() != VK_NULL_HANDLE);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
  * A pipeline built for one colour format, drawn into a target of another, is reported by the
  * recorder, naming the pass that drew it.
  **/

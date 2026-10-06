@@ -101,7 +101,6 @@ RenderTarget::~RenderTarget() {
 /**
  **/
 void RenderTarget::recreate(uint32_t width, uint32_t height) {
-    destroy();
     create(width, height);
 }
 
@@ -118,8 +117,10 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
         throw std::runtime_error("A vulkan render target with no colour image needs a sampled depth image");
     }
 
-    slots_.resize(images_);
-    for (Slot& slot : slots_) {
+    // the new images are built in full before the old ones are let go, so a create that throws
+    // leaves the target holding what it held before
+    std::vector<Slot> slots(images_);
+    for (Slot& slot : slots) {
         if (format_ != VK_FORMAT_UNDEFINED) {
             slot.image = createColour(width, height);
         }
@@ -129,19 +130,26 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
         }
     }
 
+    boost::shared_ptr<pipeline::Sampler> sampler;
     if (format_ != VK_FORMAT_UNDEFINED) {
         // the default: linear, because a target is read at whatever size the pass reading it
         // draws, and clamped, because sampling past its edge is reaching outside what was
         // rendered. One serves every slot, since they differ only in what was drawn
-        sampler_ = boost::make_shared<pipeline::Sampler>(device_, pipeline::Sampler::Spec());
+        sampler = boost::make_shared<pipeline::Sampler>(device_, pipeline::Sampler::Spec());
     }
 
-    extent_.width = width;
-    extent_.height = height;
+    VkExtent2D extent{};
+    extent.width = width;
+    extent.height = height;
 
     if (images_ > 1) {
-        ready();
+        ready(slots, extent);
     }
+
+    destroy();
+    slots_ = std::move(slots);
+    sampler_ = std::move(sampler);
+    extent_ = extent;
 }
 
 /**
@@ -160,15 +168,15 @@ boost::shared_ptr<memory::Image> RenderTarget::createColour(uint32_t width, uint
 
 /**
  **/
-void RenderTarget::ready() const {
+void RenderTarget::ready(const std::vector<Slot>& slots, const VkExtent2D& extent) const {
     // a clear by rendering rather than by transfer, because attachment usage is what every
     // target's images already have
     memory::Uploader uploader(device_);
-    uploader.oneShot([this](VkCommandBuffer commands) {
-        for (const Slot& slot : slots_) {
+    uploader.oneShot([&slots, &extent](VkCommandBuffer commands) {
+        for (const Slot& slot : slots) {
             const bool depth = slot.depth && slot.depth->sampled();
             readied(commands, slot.image ? slot.image->handle() : VK_NULL_HANDLE, slot.image ? slot.image->view() : VK_NULL_HANDLE,
-                depth ? slot.depth->image() : VK_NULL_HANDLE, depth ? slot.depth->view() : VK_NULL_HANDLE, extent_);
+                depth ? slot.depth->image() : VK_NULL_HANDLE, depth ? slot.depth->view() : VK_NULL_HANDLE, extent);
         }
     });
 }
@@ -211,6 +219,11 @@ uint32_t RenderTarget::previous() const noexcept {
 /**
  **/
 const RenderTarget::Slot& RenderTarget::slot() const noexcept {
+    // every accessor then answers null rather than reading past the end
+    static const Slot none;
+    if (slots_.empty()) {
+        return none;
+    }
     return slots_[current()];
 }
 

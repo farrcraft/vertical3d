@@ -316,6 +316,10 @@ class RenderContext {
         void initialize();
 
  private:
+        /** Save as "screen" the projection appended to the transformation RiProjection saw. **/
+        void screenTransform();
+        /** The projection the named projection, field of view, screen window and clipping make. **/
+        glm::mat4x4 projectionMatrix() const;
         /**
             *	Add a primitive the scene gave to the traced scene, as triangles placed by
             *	the current transformation and shaded as the hider will shade it.
@@ -417,6 +421,8 @@ class RenderContext {
         // world to camera transformation matrix / current transformation matrix, which a
         // motion block makes move
         v3d::render::offline::MovingTransform transform_;
+        // the transformation in force at RiProjection, which the projection is appended to
+        v3d::render::offline::MovingTransform projectionBase_;
         float near_ = 1.0e-10f;  // near clipping plane
         float far_ = 1.0e38f;  // far clipping plane
         v3d::render::offline::Sampling sampling_;

@@ -55,18 +55,16 @@ class Renderer {
     Renderer& operator=(const Renderer&) = delete;
 
     /**
-     * Draw the frame
-     */
-    /**
-     * @param statistics what the loop measured about its own pacing, which the debug
-     *        window reads. The app passes it in because api/ui cannot depend on api/engine
-     * @param tools what the cursor did, for the immediate layer - Controller::tools()
-     **/
-    /**
      * @return how long the device spent on each pass, by its name
      **/
     const std::vector<v3d::render::realtime::vulkan::frame::Timings::Timing>& timings() const;
 
+    /**
+     * Draw the frame.
+     * @param statistics what the loop measured about its own pacing, which the debug
+     *        window reads. The app passes it in because api/ui cannot depend on api/engine
+     * @param tools what the cursor did, for the immediate layer - Controller::tools()
+     **/
     void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
         const v3d::ui::Immediate::Input& tools);
     /**

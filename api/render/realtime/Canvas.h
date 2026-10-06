@@ -86,7 +86,7 @@ class Canvas final {
     void clear();
 
     /**
-     * The size of the area being drawn into, which is what projection() maps from.
+     * Set the size of the area being drawn into. projection() maps from this size.
      **/
     void resize(uint32_t width, uint32_t height);
 

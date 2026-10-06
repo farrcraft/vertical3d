@@ -6,6 +6,8 @@
 #include "Config.h"
 
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 #include <boost/make_shared.hpp>
 
@@ -37,7 +39,8 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
         logger_->get()->error("Missing configs in config");
         return false;
     }
-    // for each context
+    // filed here and kept only once every entry has loaded, so a failed load files nothing
+    std::unordered_map<std::string, boost::shared_ptr<v3d::asset::kind::Json> > read;
     auto const items = configs.as_array();
     const auto* it = items.begin();
     for (; it != items.end(); ++it) {
@@ -68,8 +71,9 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
             logger_->get()->error("Config file could not be loaded: {}", fileName);
             return false;
         }
-        configs_[typeName] = asset;
+        read[typeName] = asset;
     }
+    configs_ = std::move(read);
     return true;
 }
 

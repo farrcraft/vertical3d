@@ -103,4 +103,17 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_rejects_test) {
     BOOST_CHECK(!profiles.load(config("{\"cameras\": {}}")));
     // a profile with no name could never be looked up by a layout
     BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"orthographic\": true}]}")));
+    // a name or an adaptive setting that is not a string is refused rather than thrown
+    BOOST_CHECK_NO_THROW(BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": 5}]}"))));
+    BOOST_CHECK_NO_THROW(BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"adaptive\": 3}]}"))));
+}
+
+/**
+ * A vector holding something other than numbers is the wrong shape, and the default is kept.
+ **/
+BOOST_AUTO_TEST_CASE(cameraprofiles_vector_of_strings_test) {
+    v3d::config::CameraProfiles profiles(logger());
+
+    BOOST_CHECK_NO_THROW(BOOST_REQUIRE(profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"eye\": [\"x\", 1, 2]}]}"))));
+    BOOST_CHECK(profiles.has("a"));
 }

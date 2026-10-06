@@ -1,1 +1,1 @@
-{ "configs": [ { "type": "window", "file": "absent.json" } ] }
+{ "configs": [ { "type": "window", "file": "window.json" }, { "type": "binding", "file": "absent.json" } ] }

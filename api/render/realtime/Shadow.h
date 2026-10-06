@@ -15,6 +15,12 @@
 namespace v3d::render::realtime::shadow {
 
 /**
+ * The smallest radius fit() returns, in world units. light() divides by the radius, so a fit
+ * never returns zero or less.
+ **/
+inline constexpr float minimumRadius = 0.01f;
+
+/**
  * A sphere a directional light's shadow map is fitted to.
  **/
 struct Bounds final {
@@ -44,7 +50,8 @@ glm::mat4 light(const glm::vec3& towards, const glm::vec3& centre, float radius)
  * component::Mesh that casts a shadow, and the extra points given.
  *
  * The centre is the mean of the positions and the radius the farthest of them from it, plus
- * the margin. A position is an origin rather than an extent, so the margin is what covers a
+ * the margin. The radius is at least minimumRadius, which one caster with no margin, or a
+ * negative margin, would otherwise take to zero or below. A position is an origin rather than an extent, so the margin is what covers a
  * caster's size and the length of the shadow it throws. What casts nothing is left out,
  * because a ground plane reaches past anything that shadows it and would spread the map's
  * texels over ground no shadow falls on.

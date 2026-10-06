@@ -71,7 +71,14 @@ Device::Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::s
     timestampPeriod_(0.0f) {
     selectPhysical();
     createLogical();
-    allocator_ = boost::make_shared<memory::Allocator>(device_, physical_, instance_->handle(), allocations);
+    try {
+        allocator_ = boost::make_shared<memory::Allocator>(device_, physical_, instance_->handle(), allocations);
+    } catch (...) {
+        // nothing runs the destructor of an object whose constructor threw
+        vkDestroyDevice(device_, nullptr);
+        device_ = VK_NULL_HANDLE;
+        throw;
+    }
 }
 
 /**

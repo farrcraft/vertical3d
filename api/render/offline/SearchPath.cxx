@@ -17,7 +17,7 @@ std::vector<std::string> split(const std::string & path) {
     std::vector<std::string> found;
     std::string current;
     for (std::size_t i = 0; i < path.size(); i++) {
-        const bool drive = path[i] == ':' && current.size() == 1 && std::isalpha(current[0]) != 0;
+        const bool drive = path[i] == ':' && current.size() == 1 && std::isalpha(static_cast<unsigned char>(current[0])) != 0;
         if (path[i] != ':' || drive) {
             current += path[i];
             continue;

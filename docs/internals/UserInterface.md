@@ -408,4 +408,5 @@ Background: [ADR-0047](../adr/0047-code-exhaustive-enum-switches.md)
 - **A button in the tree has a hover state, but no other tree component does.**
 - **`Immediate` stores one `Retained` per id**, so ids built from changing text churn the
   map until `retention` ages them out.
-- **`TextRenderer` has no test**, because its constructor uploads an atlas.
+- **`TextRenderer`'s upload has no test.** Its measuring and drawing are tested with a
+  stand-in upload, and the upload itself needs a device.

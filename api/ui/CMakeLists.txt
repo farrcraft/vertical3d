@@ -58,8 +58,8 @@ v3d_add_api_library(ui
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_render: ComponentRenderer draws onto a realtime::Canvas. The dependency is one way -
 # nothing in the renderer knows about a ui component - and Canvas carries no vulkan of its own.
-# TextRenderer.h keeps that true by forward declaring the QuadRenderer it uploads an atlas
-# through, rather than including it.
+# TextRenderer.h keeps that true by taking the atlas upload as a callback rather than naming
+# a renderer.
 # v3dlib_font: TextRenderer.h holds a TextureFontCache and a TextureTextBuffer::Markup.
 # v3dlib_image: TextRenderer.h holds the image::Image its atlas is uploaded from.
 # Boost::json: Engine.h names a boost::json::object for the theme it is handed.

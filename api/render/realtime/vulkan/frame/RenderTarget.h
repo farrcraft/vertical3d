@@ -91,7 +91,10 @@ class RenderTarget final {
      * from the old images keeps them alive and goes on naming them, so it has to be
      * released and the target registered again.
      *
-     * @throw std::runtime_error if the new allocation fails
+     * The new images are built before the old ones are released. When this throws, the target
+     * keeps its old images, size and views, and stays usable.
+     *
+     * @throw std::runtime_error if either dimension is zero or the new allocation fails
      **/
     void recreate(uint32_t width, uint32_t height);
 
@@ -153,8 +156,9 @@ class RenderTarget final {
     VkFormat depthFormat() const noexcept;
 
     /**
-     * @return whether the depth image can be read as well as written, which is what
-     *         decides whether the recorder leaves it in a readable layout
+     * The recorder leaves a sampled depth image in a readable layout after its last pass.
+     *
+     * @return whether the depth image can be read as well as written
      **/
     bool sampledDepth() const noexcept;
 
@@ -193,6 +197,8 @@ class RenderTarget final {
     };
 
     /**
+     * Build a full set of images at the given size and replace the current set with it. The
+     * current set is only released once every new image exists.
      **/
     void create(uint32_t width, uint32_t height);
 
@@ -206,14 +212,15 @@ class RenderTarget final {
      * drawn into it, so that a frame reading previous() before anything has reads a defined
      * image rather than one in an undefined layout.
      **/
-    void ready() const;
+    void ready(const std::vector<Slot>& slots, const VkExtent2D& extent) const;
 
     /**
      **/
     void destroy();
 
     /**
-     * @return the current slot, which every target has at least one of once created
+     * @return the current slot, or a slot with no images when the target holds none. A
+     *         constructed target always holds at least one.
      **/
     const Slot& slot() const noexcept;
 

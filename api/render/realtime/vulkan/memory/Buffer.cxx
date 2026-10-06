@@ -94,7 +94,8 @@ bool Buffer::grow(VkDeviceSize bytes) {
         return false;
     }
 
-    VkDeviceSize target = size_;
+    // size_ is zero after a grow whose create threw, and doubling zero never reaches bytes
+    VkDeviceSize target = size_ > 0 ? size_ : 1;
     while (target < bytes) {
         target *= 2;
     }

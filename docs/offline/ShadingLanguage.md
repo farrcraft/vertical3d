@@ -91,9 +91,10 @@ named. The language is in `api/render/offline/sl`.
   hit, because a single point has no neighbour to difference.
 - **A grid and a traced hit have different current spaces.** A grid is shaded in camera space
   and a traced hit in world space. The space table is therefore a callback each renderer
-  implements (`sl::runtime::Renderer::space`), not a constant in the library. A grid has no
-  answer for `"object"`, because that is the transformation at the primitive, and a primitive
-  does not carry it.
+  implements (`sl::runtime::Renderer::space`), not a constant in the library. Neither a grid
+  nor a traced hit has an answer for `"object"`, because that is the transformation at the
+  primitive, and neither kind of primitive carries it. The machine reports the space as
+  unknown and leaves the value where it was.
 
 ### Built-in shaders
 
@@ -178,7 +179,8 @@ files on disk.
 - **`noise()` is Perlin's improved noise in SL's range**: `[0, 1]`, and `0.5` on every lattice
   point. Its permutation is shuffled by a `type::Random` with a fixed seed, so a pattern is the
   same on every machine. Its float, pair and point forms read a line, a plane and a volume of
-  it.
+  it. The lattice repeats every 256 cells, at any distance from the origin. A point that is
+  not finite reads `0.5`.
 
 Background: [ADR-0026](../adr/0026-offline-shaders-run-over-batches-of-points.md)
 

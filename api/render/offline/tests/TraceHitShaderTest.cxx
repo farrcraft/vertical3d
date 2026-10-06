@@ -9,6 +9,7 @@
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/trace/Hit.h>
+#include <api/render/offline/trace/HitShader.h>
 #include <api/render/offline/trace/Tracer.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Triangle.h>
@@ -434,4 +435,24 @@ BOOST_AUTO_TEST_CASE(trace_a_failed_shader_keeps_its_opacity_test) {
     v3d::render::offline::trace::Tracer shader(&scene);
     const glm::vec3 colour = shader.shade(at(scene, 0.0f, 0.0f));
     BOOST_CHECK_CLOSE(colour.r, 0.5f, 0.1f);
+}
+
+/**
+ * A hit has no "object" space, because a traced primitive does not carry the transformation
+ * that was in force where the scene created it. The hit refuses the space, which the machine
+ * reports, rather than answering with world space. "world" and "current" are the identity.
+ **/
+BOOST_AUTO_TEST_CASE(trace_a_hit_refuses_object_space_test) {
+    v3d::render::offline::trace::Scene scene;
+    scene.add(facing(2.0f, glm::vec3(1.0f)));
+    v3d::render::offline::trace::Tracer tracer(&scene);
+    const v3d::render::offline::trace::Hit hit = at(scene, 0.0f, 0.0f);
+    v3d::render::offline::trace::HitShader shader(&tracer, hit);
+
+    glm::mat4x4 matrix(1.0f);
+    BOOST_CHECK(!shader.space("object", &matrix));
+    BOOST_CHECK(shader.space("world", &matrix));
+    BOOST_CHECK((matrix == glm::mat4x4(1.0f)));
+    BOOST_CHECK(shader.space("current", &matrix));
+    BOOST_CHECK((matrix == glm::mat4x4(1.0f)));
 }

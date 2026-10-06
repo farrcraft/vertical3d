@@ -520,6 +520,31 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
 }
 
 /**
+ * RI freezes the camera options at WorldBegin, so a screen window named after the projection
+ * still frames the picture. A window from 0 to 2 puts a quad spanning -1 to 1 in the left half.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_after_projection_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Format 64 64 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Projection \"orthographic\"\n"
+        "ScreenWindow 0 2 -1 1\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Surface \"constant\"\n"
+        "Polygon \"P\" [-1 -1 5  1 -1 5  1 1 5  -1 1 5]\n"
+        "WorldEnd\n", &handler));
+
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 16, 32), 0.5f);
+    BOOST_CHECK_LT(planes->value(v3d::moya::FrameBuffer::RED, 48, 32), 0.5f);
+}
+
+/**
  * A polygon whose first two vertices coincide still splits. Its cutting plane comes from the
  * first edge with a length, and a polygon too large to dice is drawn rather than lost.
  **/

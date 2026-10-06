@@ -6,6 +6,7 @@
 #include <api/render/offline/Noise.h>
 
 #include <cmath>
+#include <limits>
 
 #include <boost/test/unit_test.hpp>
 
@@ -57,4 +58,26 @@ BOOST_AUTO_TEST_CASE(noise_deterministic_test) {
     BOOST_CHECK_NE(first, 0.5f);
     // the lattice repeats every 256 cells, as Perlin's does
     BOOST_CHECK_CLOSE(v3d::render::offline::noise(at + glm::vec3(256.0f, 0.0f, 0.0f)), first, 0.01f);
+}
+
+/**
+ * A point that is not finite reads 0.5, the value of every lattice point. A coordinate past
+ * the range of an int is still on the lattice, which repeats every 256 cells, so it reads the
+ * same as the coordinate a whole number of periods nearer the origin.
+ **/
+BOOST_AUTO_TEST_CASE(noise_far_and_not_finite_test) {
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float infinity = std::numeric_limits<float>::infinity();
+    BOOST_CHECK_EQUAL(v3d::render::offline::noise(glm::vec3(nan, 1.5f, 2.5f)), 0.5f);
+    BOOST_CHECK_EQUAL(v3d::render::offline::noise(glm::vec3(1.5f, infinity, 2.5f)), 0.5f);
+    BOOST_CHECK_EQUAL(v3d::render::offline::noise(glm::vec3(1.5f, 2.5f, -infinity)), 0.5f);
+
+    // every float this large is a whole number of periods, so the point is a lattice point
+    const float distant = 1099511627776.0f;
+    BOOST_CHECK_EQUAL(v3d::render::offline::noise(glm::vec3(distant, -distant, 3.0e38f)), 0.5f);
+
+    // 2^31 + 768 is three periods past 2^31, and reads as 768 does
+    const glm::vec3 period(768.0f, 1.25f, 2.75f);
+    const glm::vec3 beyond(2147484416.0f, 1.25f, 2.75f);
+    BOOST_CHECK_EQUAL(v3d::render::offline::noise(beyond), v3d::render::offline::noise(period));
 }

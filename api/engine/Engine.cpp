@@ -263,8 +263,6 @@ bool Engine::onEvent(const SDL_Event& event) {
 
 /**
  **/
-/**
- **/
 void Engine::handleEvent(const SDL_Event& event) {
     switch (event.type) {
     case SDL_EVENT_QUIT:

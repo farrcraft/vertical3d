@@ -16,14 +16,15 @@ namespace {
 
 /**
  * Read a three element array as a vector.
- * @return the value read, or the fallback if the entry is missing or the wrong shape
+ * @return the value read, or the fallback if the entry is missing, the wrong length, or holds
+ *         something other than numbers
  **/
 glm::vec3 vector(const boost::json::object& entry, const char* key, const glm::vec3& fallback) {
     if (!entry.contains(key) || !entry.at(key).is_array()) {
         return fallback;
     }
     const boost::json::array& values = entry.at(key).as_array();
-    if (values.size() != 3) {
+    if (values.size() != 3 || !values[0].is_number() || !values[1].is_number() || !values[2].is_number()) {
         return fallback;
     }
     return glm::vec3(
@@ -74,8 +75,12 @@ bool CameraProfiles::load(const boost::json::object& doc) {
             return false;
         }
         auto const entry = value.as_object();
-        if (!entry.contains("name")) {
+        if (!entry.contains("name") || !entry.at("name").is_string()) {
             logger_->get()->error("A camera profile needs a name");
+            return false;
+        }
+        if (entry.contains("adaptive") && !entry.at("adaptive").is_string()) {
+            logger_->get()->error("A camera profile's adaptive is none, projection, position or both");
             return false;
         }
         std::string name = boost::json::value_to<std::string>(entry.at("name"));

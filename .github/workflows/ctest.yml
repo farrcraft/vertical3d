@@ -106,9 +106,8 @@ jobs:
           path: ${{ env.VULKAN_SDK_ROOT }}
           key: vulkan-sdk-${{ runner.os }}-${{ steps.sdk.outputs.version }}
 
-      # The root CMakeLists calls find_package(Vulkan) and looks for glslc with a
-      # FATAL_ERROR, so every configure needs the SDK - including one that only builds the
-      # suites that never touch a device.
+      # This job builds every library, render among them, and render needs the SDK for
+      # Vulkan and for glslc - including for the suites that never touch a device.
       - name: Install the Vulkan SDK
         if: steps.vulkan-cache.outputs.cache-hit != 'true'
         shell: pwsh

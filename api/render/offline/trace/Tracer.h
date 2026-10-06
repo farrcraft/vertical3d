@@ -62,7 +62,7 @@ class Tracer final {
      * The colour of one hit: the surface shader's Ci.
      *
      * A primitive with no shader is drawn in its own flat colour.
-     */
+     **/
     glm::vec3 shade(const Hit & hit);
     /**
      * The Oi of one hit. A shader that never writes Oi is as opaque as its primitive, and so is
@@ -97,7 +97,7 @@ class Tracer final {
      * There is one per program per trace depth. A surface tracing into another with the
      * same shader is still running its machine when the other starts, and sharing one
      * would overwrite the registers the first is part way through.
-     */
+     **/
     class Run final {
      public:
         v3d::render::offline::sl::runtime::Machine machine;
@@ -119,7 +119,7 @@ class Tracer final {
      *
      * A ray a shader traced may hit a surface whose shader traces again, and nothing in
      * the language stops that recursing for ever; the scene's trace depth limits it.
-     */
+     **/
     unsigned int depth_ = 0;
     std::map<std::pair<unsigned int, const v3d::render::offline::sl::runtime::Program*>, Run> runs_;
 };

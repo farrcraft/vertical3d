@@ -24,7 +24,7 @@ HitShader::HitShader(Tracer* tracer, const Hit & hit) :
 
 bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
     // a hit's current space is world space, because that is where the scene is
-    if (name == "current" || name == "world" || name == "object") {
+    if (name == "current" || name == "world") {
         *matrix = glm::mat4x4(1.0f);
         return true;
     }
@@ -37,7 +37,8 @@ bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
         return true;
     }
     // a ray tracer has no screen or raster space: it does not project, but requests a ray
-    // through a pixel from the camera, and that matrix belongs to the camera
+    // through a pixel from the camera, and that matrix belongs to the camera. "object" is the
+    // transformation in force at the primitive, and a traced primitive does not carry it
     return false;
 }
 

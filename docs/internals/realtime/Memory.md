@@ -26,6 +26,8 @@ change the format. A sampled buffer:
 - adds `SAMPLED` and `TRANSFER_SRC` usage (the second so it can be captured),
 - has a sampler clamped to a **white border**, so a shadow lookup outside the light's frustum
   reads as lit,
+- filters with `NEAREST`, so each read is one stored depth. The cel shader averages a 3x3 set
+  of comparisons itself, and a device need not support linear filtering of a depth format,
 - is left in `DEPTH_READ_ONLY_OPTIMAL` by the recorder after its last writer. That layout allows
   the depth aspect to be sampled and depth-tested at the same time.
 

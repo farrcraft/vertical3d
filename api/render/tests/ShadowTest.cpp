@@ -162,6 +162,31 @@ BOOST_AUTO_TEST_CASE(the_fit_covers_the_casters_and_not_the_ground) {
 }
 
 /**
+ * One caster with no margin has no spread. The radius is held at the minimum rather than zero,
+ * so the light matrix built from it is finite.
+ **/
+BOOST_AUTO_TEST_CASE(one_caster_with_no_margin_fits_a_finite_light) {
+    entt::registry registry;
+    caster(&registry, glm::vec3(1.0f, 2.0f, 3.0f), true);
+
+    const std::optional<shadow::Bounds> fitted = shadow::fit(registry, {}, 0.0f);
+    const std::optional<shadow::Bounds> shrunk = shadow::fit(registry, {}, -1.0f);
+    if (!fitted || !shrunk) {
+        BOOST_ERROR("one caster gave no fit");
+        return;
+    }
+    BOOST_CHECK_EQUAL(fitted->radius, shadow::minimumRadius);
+    BOOST_CHECK_EQUAL(shrunk->radius, shadow::minimumRadius);
+
+    const glm::mat4 light = shadow::light(glm::vec3(-0.45f, 0.62f, 0.64f), fitted->centre, fitted->radius);
+    for (int column = 0; column < 4; column++) {
+        for (int row = 0; row < 4; row++) {
+            BOOST_CHECK(std::isfinite(light[column][row]));
+        }
+    }
+}
+
+/**
  * With nothing casting there is nothing to fit, and the caller keeps the bounds it had rather
  * than being handed a sphere of radius zero.
  **/
