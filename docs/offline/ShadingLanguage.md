@@ -159,8 +159,8 @@ files on disk.
   looking on `Option "searchpath" "texture"` and then at the name as given. A name that fails
   to read is remembered as missing. The machine returns black for it and logs it once.
   `offline::Texture` samples bilinearly between texel centres and wraps periodically, RI's
-  defaults, with `t` running down the image. A grey image fills all three channels and an alpha
-  channel is dropped. Called with only a name, `texture()` reads at the shader's `s` and `t`.
+  defaults, with `t` running down the image. A coordinate that is not finite reads black. A grey
+  image fills all three channels and an alpha channel is dropped. Called with only a name, `texture()` reads at the shader's `s` and `t`.
 - **`noise()` is Perlin's improved noise in SL's range**: `[0, 1]`, and `0.5` on every lattice
   point. Its permutation is shuffled by a `type::Random` with a fixed seed, so a pattern is the
   same on every machine. Its float, pair and point forms read a line, a plane and a volume of

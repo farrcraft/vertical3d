@@ -13,7 +13,8 @@ that sampling makes possible: depth of field, motion blur and adaptive sampling.
 - **Coverage is the filtered fraction of a pixel's samples that hit something.** An imager
   reads it as `alpha`. It separates a pixel nothing was drawn into from a black one. It is
   exactly zero or one only at one sample per pixel under a one-pixel box filter.
-- **A value outside [0, 1] saturates** when the planes become an image.
+- **A value outside [0, 1] saturates** when the planes become an image. A value that is not a
+  number becomes 0.
 - **Raster y runs downward from the upper left.** This is RI's convention and `image::Image`'s
   row order.
 - **Raster space is `raster * screen` applied to a camera space point**: the projection first,

@@ -288,7 +288,7 @@ Animation data and arithmetic are in `v3d::type::animation`
 |---|---|
 | `Channel` | One joint's translation, rotation or scale keyed in time, as glTF stores it. Interpolation is step, linear or cubic spline. |
 | `Clip` | A named set of channels and a duration. |
-| `sample(clip, time, &pose)` | Writes the joints a clip animates into a pose at a time. Joints the clip does not animate are left as they were. Times before the first key hold the first key; times after the last hold the last. |
+| `sample(clip, time, &pose)` | Writes the joints a clip animates into a pose at a time. Joints the clip does not animate are left as they were. Times before the first key hold the first key; times after the last hold the last. A time that is not finite reads as the first key. |
 | `Pose` | Every joint's local translation, rotation and scale, in skeleton order. |
 | `rest(skeleton)` | The skeleton's rest pose. Sample a clip over this. |
 | `blend(from, to, weight)` | Mixes two poses: lerps translations and scales, slerps rotations. Weight 0 is `from`, 1 is `to`. |
@@ -320,10 +320,11 @@ the clock's functions.
   sheet when the sheet loads, and build it again when the sheet reloads. `frame(time)` returns
   the frame showing at an unwrapped time. Construction throws for no frames or a frame with no
   duration.
-- `Track<T>` takes keys in rising time. A time that is not finite reads as the first key. Without a period it holds the first key before it and
-  the last after it. With a period it wraps, and the last key blends into the first, so a day
-  cycle needs no repeated key at midnight. `T` is anything `glm::mix` accepts. Construction
-  throws for no keys, keys out of order, or a key outside the period.
+- `Track<T>` takes keys in rising time. A time that is not finite reads as the first key.
+  Without a period it holds the first key before it and the last after it. With a period it
+  wraps, and the last key blends into the first, so a day cycle needs no repeated key at
+  midnight. `T` is anything `glm::mix` accepts. Construction throws for no keys, keys out of
+  order, or a key outside the period.
 
 Background: [ADR-0070](../adr/0070-animation-cpu-sampling-playback-on-the-fixed-step.md)
 

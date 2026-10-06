@@ -737,6 +737,21 @@ Left as they are, on purpose:
   correct, and a ui holds tens of components, not thousands.
 - `FrameBuffer::image()` truncates a channel to a byte rather than rounding. Rounding would move
   every committed reference picture by one step.
-- The audio suite reaches the asset library through `v3dlib_audio`, as the media and ui suites
-  reach theirs.
 - `api/grid/TileGrid.h` keeps its `///<` comments, which predate this branch.
+
+### After a fourth review
+
+A fourth review found smaller gaps, one of them in the third round's fixes. All are fixed:
+
+- libmoya links `v3dlib_image` PRIVATE again, as Step 27 records; the third round had removed it;
+- the api suites that include a library name it, rather than reaching it through another;
+- the timestamp pools made before a failed one are destroyed when the `Timings` constructor
+  throws;
+- a `Format` aspect of zero or less means square pixels and keeps the size, and the reader test
+  checks that a bad `FrameBegin` is skipped;
+- an animation clip sampled at a time that is not finite reads the first key rather than past
+  the last;
+- the editor's transform tool gets the mouse release even when a camera modifier is held, so the
+  drag is recorded;
+- two build comments name `api/asset/media` for cgltf, and the documents name the NaN rules for
+  the framebuffer and textures.

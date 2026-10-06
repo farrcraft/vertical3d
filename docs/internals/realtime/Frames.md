@@ -17,9 +17,9 @@ Three classes split the work.
 writing a per-frame resource before recording calls it. `begin()` waits on the fence, begins the
 command buffer, reads the slot's timings, and collects retired objects. It does not reset the
 fence: `submitting()` does that, immediately before the submit. A slot begun and abandoned before
-its submit is begun again without being counted as a new frame. `advance()`
-moves to the next slot after the submit. Every renderer and `FrameUniforms` is built on the ring,
-not on the presenter, because pacing is not presenting.
+its submit is begun again without being counted as a new frame. `advance()` moves to the next
+slot after the submit. Every renderer and `FrameUniforms` is built on the ring, not on the
+presenter, because pacing is not presenting.
 
 **`vulkan::frame::Presenter`** adds what needs the swapchain:
 

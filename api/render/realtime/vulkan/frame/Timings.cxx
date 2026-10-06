@@ -32,6 +32,16 @@ Timings::Timings(const boost::shared_ptr<device::Device>& device, uint32_t frame
         info.queryType = VK_QUERY_TYPE_TIMESTAMP;
         info.queryCount = capacity * 2;
         const VkResult result = vkCreateQueryPool(device_->handle(), &info, nullptr, &slot.pool);
+        if (result != VK_SUCCESS) {
+            // the destructor does not run for a constructor that throws, so the pools
+            // already made are destroyed here
+            for (Slot& made : slots_) {
+                if (made.pool != VK_NULL_HANDLE) {
+                    vkDestroyQueryPool(device_->handle(), made.pool, nullptr);
+                }
+            }
+            slots_.clear();
+        }
         device::check(result, "Unable to create a vulkan timestamp pool");
     }
 }

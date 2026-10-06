@@ -24,6 +24,6 @@ add_library("v3dlib_moya"
 target_compile_options("v3dlib_moya" PRIVATE /wd4100 /EHsc /utf-8)
 
 # PUBLIC: the framebuffer is part of the render context's interface, and the render context's
-# header includes the log's. The image library its source writes through comes with
-# v3dlib_render_offline, whose own headers include it.
+# header includes the log's. PRIVATE: only the render context's source writes images.
 target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_render_offline v3dlib_type)
+target_link_libraries("v3dlib_moya" PRIVATE v3dlib_image)

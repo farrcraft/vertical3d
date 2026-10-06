@@ -755,8 +755,24 @@ BOOST_AUTO_TEST_CASE(ribreader_sizes_that_are_not_sizes_are_skipped_test) {
         "FrameEnd\n", &handler, &reader));
     BOOST_CHECK_EQUAL(handler.width_, 0u);
     BOOST_CHECK_EQUAL(handler.filterWidth_.x, 0.0f);
+    BOOST_CHECK_EQUAL(handler.count("FrameBegin"), 0u);
+    BOOST_CHECK_EQUAL(handler.count("FrameEnd"), 1u);
 
     BOOST_REQUIRE(read("Format 64 48 1\nPixelFilter \"box\" 2 2\n", &handler, &reader));
     BOOST_CHECK_EQUAL(handler.width_, 64u);
     BOOST_CHECK_EQUAL(handler.filterWidth_.x, 2.0f);
+}
+
+/**
+ * A pixel aspect of zero or less asks for the device's own. The size still arrives, with
+ * square pixels.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_default_pixel_aspect_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read("Format 640 480 -1\n", &handler, &reader));
+    BOOST_CHECK_EQUAL(handler.width_, 640u);
+    BOOST_CHECK_EQUAL(handler.height_, 480u);
+    BOOST_CHECK_EQUAL(handler.pixelAspect_, 1.0f);
 }

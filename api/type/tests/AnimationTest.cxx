@@ -159,6 +159,20 @@ BOOST_AUTO_TEST_CASE(animation_sampling_a_step_test) {
 }
 
 /**
+ * A time that is not finite reads as the first key, rather than reading past the last.
+ **/
+BOOST_AUTO_TEST_CASE(animation_sampling_a_time_that_is_not_finite_test) {
+    const Skeleton skeleton = strip();
+    const Clip clip = bend(Channel::Interpolation::Linear);
+
+    Pose pose = v3d::type::animation::rest(skeleton);
+    v3d::type::animation::sample(clip, std::nanf(""), &pose);
+    BOOST_CHECK_SMALL(angleAboutZ(pose.joints[1].rotation), 1e-6f);
+    v3d::type::animation::sample(clip, INFINITY, &pose);
+    BOOST_CHECK_SMALL(angleAboutZ(pose.joints[1].rotation), 1e-6f);
+}
+
+/**
  * A cubic spline gives each key's value at the key, and between them the Hermite blend of the
  * values and tangents. The top joint rises from 1 to 2 with an out tangent of +x and an in
  * tangent of -x, which at a half puts it a quarter along x: 0.125 of each tangent, the second

@@ -464,6 +464,11 @@ void Controller::drag(bool pressed) {
     // Otherwise a handle of the selection under the cursor takes the press, and a press no
     // handle took picks
     if (cameraTool_->mode() != CameraControlTool::CAMERA_MODE_NONE) {
+        // a modifier pressed during a handle drag does not keep the release from the
+        // transform tool, which records the drag when it ends
+        if (!pressed) {
+            transformTool_->button(1, false, cursor_);
+        }
         return;
     }
     transformTool_->button(1, pressed, cursor_);

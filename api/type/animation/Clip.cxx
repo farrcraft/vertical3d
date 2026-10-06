@@ -6,6 +6,7 @@
 #include "Clip.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <iterator>
 #include <vector>
@@ -72,7 +73,8 @@ bool wellFormed(const Channel& channel) {
 
 void sampleChannel(const Channel& channel, float time, Pose::Joint* joint) {
     const std::vector<float>& times = channel.times;
-    if (time <= times.front()) {
+    // a time that is not finite would find no key around it, so it reads as the first key
+    if (!std::isfinite(time) || time <= times.front()) {
         apply(channel, valueAt(channel, 0), joint);
         return;
     }

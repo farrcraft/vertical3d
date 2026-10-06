@@ -35,8 +35,8 @@ macro(v3d_find_packages)
 	foreach(v3d_package IN ITEMS ${ARGN})
 		if(v3d_package STREQUAL "cgltf")
 			# a single header with no CMake config of its own, so there is no target to link
-			# and the header has to be found by hand. api/asset puts this on its own include
-			# path, because the vcpkg include directory is not on a global include path.
+			# and the header has to be found by hand. api/asset/media puts this on its own
+			# include path, because the vcpkg include directory is not on a global include path.
 			find_path(V3D_CGLTF_INCLUDE_DIR NAMES "cgltf.h" REQUIRED)
 		elseif(v3d_package STREQUAL "JPEG")
 			find_package(JPEG REQUIRED)

@@ -258,15 +258,15 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c)) {
             return Result::Failed;
         }
-        // a size that is not a whole count of at least one pixel, or an aspect that is not a
-        // positive number, is skipped: converting it to unsigned is undefined
+        // a size below one pixel or above 65536, or an aspect that is not a number, is
+        // skipped: converting it to unsigned is undefined. A fraction is truncated. An aspect
+        // of zero or less asks for the device's own, which is square pixels.
         const bool size = a >= 1.0f && a <= 65536.0f && b >= 1.0f && b <= 65536.0f;
-        const bool aspect = c > 0.0f && std::isfinite(c);
-        if (!size || !aspect) {
+        if (!size || !std::isfinite(c)) {
             logger_->get()->warn("RIB Format {} {} {} is not a picture size and was skipped", a, b, c);
             return Result::Handled;
         }
-        handler->format(static_cast<unsigned int>(a), static_cast<unsigned int>(b), c);
+        handler->format(static_cast<unsigned int>(a), static_cast<unsigned int>(b), c > 0.0f ? c : 1.0f);
         return Result::Handled;
     }
     return Result::Unhandled;
