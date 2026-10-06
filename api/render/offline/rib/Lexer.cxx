@@ -14,14 +14,25 @@
 namespace v3d::render::offline::rib {
 
 Lexer::Lexer(std::istream & stream) : in_(stream) {
-    char header[2] = { 0, 0 };
-    stream.read(header, 2);
+    // the stream is read from where it stands, which is not always its beginning
+    std::streampos start = stream.tellg();
+    if (start == std::streampos(-1)) {
+        start = 0;
+    }
+    char header[3] = { 0, 0, 0 };
+    stream.read(header, 3);
     const std::streamsize count = stream.gcount();
     stream.clear();
-    stream.seekg(0);
 
     const unsigned char first = static_cast<unsigned char>(header[0]);
     const unsigned char second = static_cast<unsigned char>(header[1]);
+    const unsigned char third = static_cast<unsigned char>(header[2]);
+    // a UTF-8 byte order mark is text, not an encoded request, and is skipped
+    const bool marked = count >= 3 && first == 0xef && second == 0xbb && third == 0xbf;
+    stream.seekg(marked ? start + std::streamoff(3) : start);
+    if (marked) {
+        return;
+    }
     if (count >= 2 && first == 0x1f && second == 0x8b) {
         error_ = "gzipped RIB is not supported - the stream opens with a gzip header";
     } else if (count >= 1 && first >= 0x80) {

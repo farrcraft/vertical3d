@@ -5,6 +5,7 @@
 
 #include "RIBHandler.h"
 
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -13,6 +14,14 @@
 namespace v3d::moya {
 
 namespace {
+
+/**
+ * Whether a number from a scene can be a count of pixels or micropolygons: at least one, and
+ * small enough to be one. Converting anything else to unsigned is undefined.
+ **/
+bool count(float value) {
+    return std::isfinite(value) && value >= 1.0f && value <= 65536.0f;
+}
 
 typedef v3d::render::offline::rib::ParameterList ParameterList;
 
@@ -83,10 +92,19 @@ void RIBHandler::option(const std::string & name, const ParameterList & paramete
     }
     const std::vector<float> & bucket = parameters.floats("bucketsize");
     if (bucket.size() >= 2) {
-        context().bucketSize(static_cast<unsigned int>(bucket[0]), static_cast<unsigned int>(bucket[1]));
+        if (count(bucket[0]) && count(bucket[1])) {
+            context().bucketSize(static_cast<unsigned int>(bucket[0]), static_cast<unsigned int>(bucket[1]));
+        } else {
+            context().logger()->get()->warn("a bucket size of {} by {} is not a size, and is not used", bucket[0], bucket[1]);
+        }
     }
     if (parameters.has("gridsize")) {
-        context().gridSize(static_cast<unsigned int>(parameters.number("gridsize", 256.0f)));
+        const float grid = parameters.number("gridsize", 256.0f);
+        if (count(grid)) {
+            context().gridSize(static_cast<unsigned int>(grid));
+        } else {
+            context().logger()->get()->warn("a grid size of {} is not a size, and is not used", grid);
+        }
     }
 }
 

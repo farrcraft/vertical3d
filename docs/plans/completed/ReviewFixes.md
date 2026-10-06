@@ -706,3 +706,37 @@ round's own fixes. All are fixed, each with a test where the fix is code:
 
 A fully transparent 32 bit bmp reads back opaque. That is the stated trade for writers that
 leave alpha at zero, and it stays.
+
+### After a third review
+
+A third review found two of the second round's fixes wrong, and smaller gaps. All are fixed:
+
+- a flat motion end is found by its determinant against its basis lengths, not by an empty
+  column, so a turn applied after the flattening scale is caught too, and a small uniform scale
+  is not flat. Either flat end blends the two ends as matrices;
+- a `release()` that throws again leaves the window and SDL to `~Engine`, after the app's own
+  members, as before the second round; `run<T>` catches any exception, not only a
+  `std::exception`;
+- a sphere under a motion flat at both ends is left out and logged, as a polygon is;
+- a slot begun again after an abandoned frame is not counted a second time, and its unsubmitted
+  timings are not read;
+- the editor's press commands ignore key repeats, and pong reads its paddle keys held each step;
+- `--grid`, `--bucket`, `Option "limits"`, `Format`, `FrameBegin` and `PixelFilter` refuse values
+  that are not sizes; the RIB lexer skips a UTF-8 byte order mark and reads from where the
+  stream stands;
+- a NaN framebuffer value, a texture coordinate that is not finite or is large, and a track time
+  that is not finite are handled;
+- tests cover 16 bit and 32 bit bmps with alpha, wider rows, the emitter cap exactly, and both
+  flat-motion cases; the moya suite names the libraries it includes, and `tone.wav`, which
+  nothing read, is gone;
+- the documents and comments the review named state the rules as they are.
+
+Left as they are, on purpose:
+
+- `Engine::reachable()` builds the tab order on every key while something is focused. It is
+  correct, and a ui holds tens of components, not thousands.
+- `FrameBuffer::image()` truncates a channel to a byte rather than rounding. Rounding would move
+  every committed reference picture by one step.
+- The audio suite reaches the asset library through `v3dlib_audio`, as the media and ui suites
+  reach theirs.
+- `api/grid/TileGrid.h` keeps its `///<` comments, which predate this branch.

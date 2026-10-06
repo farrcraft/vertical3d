@@ -320,7 +320,7 @@ the clock's functions.
   sheet when the sheet loads, and build it again when the sheet reloads. `frame(time)` returns
   the frame showing at an unwrapped time. Construction throws for no frames or a frame with no
   duration.
-- `Track<T>` takes keys in rising time. Without a period it holds the first key before it and
+- `Track<T>` takes keys in rising time. A time that is not finite reads as the first key. Without a period it holds the first key before it and
   the last after it. With a period it wraps, and the last key blends into the first, so a day
   cycle needs no repeated key at midnight. `T` is anything `glm::mix` accepts. Construction
   throws for no keys, keys out of order, or a key outside the period.
@@ -381,8 +381,9 @@ particles an emitter has made and its own `Random`.
 `fall(emitter, &weather, &state, minimum, maximum, seconds)` steps it:
 
 - `intensity` eases towards `target` at `ease` per second. The game sets `target` and `wind`.
-  The target is held between 0 and 1, a target that is not a number is ignored, and an ease
-  below zero moves nothing.
+  The target is held between 0 and 1, a target that is not finite is ignored, and an ease
+  below zero moves nothing. An intensity set outside 0 to 1 by the game is not clamped; it
+  eases towards the target from wherever it is.
 - `density` is particles per second per square unit of ground at full intensity. Particles are
   born across the region's top face (the `maximum` height). `+y` is up.
 - A particle that falls below `minimum` is removed. One that leaves across a side re-enters at

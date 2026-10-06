@@ -443,3 +443,34 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_sphere_with_no_size_is_skipped_test) {
 
     BOOST_CHECK_EQUAL(handler.context().traced().all<v3d::render::offline::trace::Sphere>().size(), 1u);
 }
+
+/**
+ * A primitive whose motion is flat at both ends has no pose to be moved from. A polygon under
+ * such a motion is left out of the frame and a sphere out of the traced scene, and neither
+ * throws or leaves a pose that is not a number.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_motion_flat_at_both_ends_test) {
+    const std::string flat =
+        "Format 16 16 1\n"
+        "Shutter 0 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "MotionBegin [0 1]\n"
+        "Scale 0 1 1\n"
+        "Scale 1 0 1\n"
+        "MotionEnd\n";
+    {
+        v3d::moya::Renderer renderer;
+        v3d::moya::RIBHandler handler(&renderer);
+        BOOST_REQUIRE(read(flat + "Polygon \"P\" [-0.5 -0.5 2  0.5 -0.5 2  0.5 0.5 2  -0.5 0.5 2]\nWorldEnd\n",
+            &handler));
+        BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 0u);
+    }
+    {
+        v3d::moya::Renderer renderer;
+        v3d::moya::RIBHandler handler(&renderer);
+        BOOST_REQUIRE(read("Hider \"raytrace\"\n" + flat + "Sphere 1 -1 1 360\nWorldEnd\n", &handler));
+        BOOST_CHECK(handler.context().traced().all<v3d::render::offline::trace::Sphere>().empty());
+    }
+}

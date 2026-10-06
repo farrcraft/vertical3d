@@ -58,8 +58,11 @@ class Timings final {
     /**
      * Read what a slot recorded the last time it was used, then reset its queries in the
      * command buffer it is beginning. Called by the ring once the slot's fence has signalled.
+     *
+     * @param submitted false when the slot's last use was abandoned before its submit, so it
+     *        recorded nothing that can be read
      **/
-    void begin(VkCommandBuffer commands, uint32_t slot);
+    void begin(VkCommandBuffer commands, uint32_t slot, bool submitted = true);
 
     /**
      * Write a timestamp before a span and after it. Spans do not nest.

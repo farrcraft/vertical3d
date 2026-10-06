@@ -12,7 +12,7 @@ rem a cold tree, which this does not do - it builds one that is already configur
 
 setlocal
 
-set "V3D_VCVARS=%ProgramFiles%\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
+if not defined V3D_VCVARS set "V3D_VCVARS=%ProgramFiles%\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
 if not exist "%V3D_VCVARS%" set "V3D_VCVARS=%ProgramFiles%\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
 if not exist "%V3D_VCVARS%" (
     echo Could not find vcvars64.bat. Set V3D_VCVARS to it, or see docs/contributing/Build.md.

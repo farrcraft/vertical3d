@@ -738,3 +738,25 @@ BOOST_AUTO_TEST_CASE(ribreader_capable_handler_test) {
     BOOST_CHECK((handler.later_.vertices_ == std::vector<unsigned int>{ 4u }));
     BOOST_CHECK(reader.unsupported().empty());
 }
+
+/**
+ * A Format, a FrameBegin or a PixelFilter width that is not a size is skipped with a warning,
+ * rather than converted to an unsigned count, which is undefined for a negative number. The
+ * file still reads, and the requests that are sizes still arrive.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_sizes_that_are_not_sizes_are_skipped_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read(
+        "Format -1 480 1\n"
+        "PixelFilter \"box\" 0 1\n"
+        "FrameBegin 1e30\n"
+        "FrameEnd\n", &handler, &reader));
+    BOOST_CHECK_EQUAL(handler.width_, 0u);
+    BOOST_CHECK_EQUAL(handler.filterWidth_.x, 0.0f);
+
+    BOOST_REQUIRE(read("Format 64 48 1\nPixelFilter \"box\" 2 2\n", &handler, &reader));
+    BOOST_CHECK_EQUAL(handler.width_, 64u);
+    BOOST_CHECK_EQUAL(handler.filterWidth_.x, 2.0f);
+}

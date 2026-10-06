@@ -20,14 +20,16 @@ The ray hider casts every primary ray into it. Under either hider, a shader's `t
   polygon as planar and convex. The reyes hider reads the scene for `trace()` and
   `transmission()`. The ray hider reads it for everything.
 - **A traced primitive carries its colour, opacity, surface shader and lights** from the moment
-  it was made. A triangle made from a polygon with a varying `"Cs"` carries a colour at each
+  it was made. A primitive with no surface shader, or whose shader fails to run, is drawn in its
+  own colour at its own opacity. A triangle made from a polygon with a varying `"Cs"` carries a colour at each
   corner, and a hit's `Cs` blends them by the hit's barycentric weights. So a gradient draws the
   same under both hiders, and a shader's `trace()` sees it too.
 - **A traced primitive carries the lights that were on when it was made**, as one set shared by
   every primitive made until the lights change (`trace::Lights`). A primitive given no lights,
   as in a scene built in code, is lit by the scene's own list, `Scene::lights()`.
 - **A sphere is intersected where it is defined**, cut to its slab of heights and its sweep,
-  with RI's outward normal and its `u` and `v`. Its silhouette is exact at any size.
+  with RI's outward normal and its `u` and `v`. Its silhouette is exact at any size. A sphere
+  whose radius is not positive is logged and not drawn.
   `Orientation` is not read, so a sphere cannot be turned inside out.
 - **A moving primitive is stored where its motion's reference end put it**, which is the open
   end unless that end has no inverse ([CamerasAndSampling.md](CamerasAndSampling.md#motion-blur)). `Scene::nearest()` takes

@@ -128,8 +128,13 @@ class Ring final {
      * Wait for the current frame's last submission and begin its command buffer.
      *
      * The fence stays signalled until submitting(), so a caller that gives up at any point
-     * before the submit leaves the ring able to begin the frame again. Once the frame is
-     * begun, whatever was retired framesInFlight frames ago is destroyed.
+     * before the submit leaves the ring able to begin the frame again. A frame begun again
+     * this way is not counted a second time. Once a new frame is begun, whatever was retired
+     * framesInFlight frames ago is destroyed.
+     *
+     * Only the ring recovers this way. A swapchain image already acquired for the abandoned
+     * frame, and the semaphore its acquire signalled, are not given back, so a presenting app
+     * that catches a recording failure cannot keep drawing.
      *
      * @return the buffer to record into
      * @throw std::runtime_error if the fence or the buffer cannot be made ready
@@ -158,6 +163,7 @@ class Ring final {
     uint32_t frame_;
     uint64_t begun_;
     uint64_t skipped_ = 0;
+    bool pending_ = false;  /**< whether the current slot was begun and not yet submitted **/
     Retirement retired_;
     boost::shared_ptr<Timings> timings_;
 };

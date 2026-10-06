@@ -83,6 +83,11 @@ Escape is never captured; it leaves the menu.
 
 **What pong is the reference for:**
 
+- **Movement from held keys.** `PongEngine::simulate` asks `held()` for each paddle command every
+  step and passes the answer to `PongScene::steer`. A key held through the menu or a change of
+  mode moves its paddle as soon as play resumes, and one let go while the menu was up stops it.
+  Outside co-op the computer steers the right paddle, and its keys do nothing.
+
 - **Settings and rebinding.** `PongEngine::rebindPaddleKey` calls `Engine::rebind()` with the
   key a menu item captured. It then stores the key in an `engine::Settings` document and saves
   it at once. `applyStoredBindings()` reapplies stored keys at startup; a key the player never
@@ -170,8 +175,9 @@ says how to build it.
   `Controller::handleMotion` turns `MouseMotion::motion()`, the distance moved, into heading and
   pitch. When the menu opens, the game leaves relative mode so the pointer shows; it returns to
   relative mode when the menu closes.
-- **Movement from held keys.** The movement bindings name no state, so each key sends a command
-  on press and on release. `Player::move` toggles that direction on each one.
+- **Movement from held keys.** `Controller::simulate` asks `held()` for each movement command
+  every step and passes the answer to `Player::move`, which starts or stops that direction. A key
+  let go while the menu was up therefore stops the player once the menu closes.
 - **An app's own pipeline.** The terrain is drawn with voxel's own shaders in a pass that depth
   tests and sorts items front to back. The text and menu are drawn in a second pass of quads,
   with no depth test, over the terrain.

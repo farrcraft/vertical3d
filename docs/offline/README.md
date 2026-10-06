@@ -100,7 +100,7 @@ the shading language and the ray tracer. They differ in these ways:
 | Default | Yes | No |
 | Spheres | Not drawn. The first in a scene is logged | Intersected exactly |
 | A shader's `Oi` | Ignored: every sample is opaque | Composited front to back |
-| A varying `"Cs"` | Interpolated across the grid | Ignored: the primitive's colour is used |
+| A varying `"Cs"` | Interpolated across the grid | Blended across each triangle by the hit's weights |
 | `PixelVariance` | Ignored | Adds samples where a pixel is noisy |
 | Time of shadow and traced rays | Shutter open | Each sample's own time |
 | Storage of a primitive | Twice: in a bucket and in the traced scene | Once, in the traced scene |

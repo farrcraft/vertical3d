@@ -20,7 +20,7 @@ namespace v3d::grid {
  * A grid read from a picture, or why it could not be.
  **/
 struct Picture final {
-    std::optional<TileGrid> grid;  ///< empty when the picture was refused, with the reason in error
+    std::optional<TileGrid> grid;  /**< empty when the picture was refused, with the reason in error **/
 
     /**
      * Every glyph the legend does not name, in the order each first appears. Its tiles are

@@ -580,7 +580,8 @@ v3d::type::Model::Material readMaterial(const cgltf_material& source, const cglt
 }
 
 /**
- * Which reader decodes an embedded image, from the mime type the file gave it.
+ * Which reader decodes an embedded image, from the mime type the file gave it or, when it gave
+ * none, from the type a data uri states.
  *
  * glTF allows only png and jpeg for an embedded image, so an empty answer is a file
  * outside the specification rather than a format worth guessing at from the bytes.

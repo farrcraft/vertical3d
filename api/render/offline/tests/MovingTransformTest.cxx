@@ -150,3 +150,39 @@ BOOST_AUTO_TEST_CASE(moving_transform_flat_at_both_ends_test) {
     flat.end();
     BOOST_CHECK(!flat.placeable());
 }
+
+/**
+ * A flat end is found whatever order its scale and its turns were applied in. Here the turn
+ * comes after the flattening scale, so no column of the open end is empty, yet the end is flat
+ * and the motion between the ends is the straight blend of the two.
+ **/
+BOOST_AUTO_TEST_CASE(moving_transform_a_turn_after_a_flat_scale_test) {
+    const glm::mat4x4 turn = glm::rotate(glm::mat4x4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    v3d::render::offline::MovingTransform growing;
+    growing.begin({ 0.0f, 1.0f });
+    growing.concat(glm::scale(glm::mat4x4(1.0f), glm::vec3(0.0f, 1.0f, 1.0f)));
+    growing.concat(glm::mat4x4(1.0f));
+    growing.end();
+    growing.concat(turn);
+
+    const glm::mat4x4 expected = growing.open() * 0.75f + growing.close() * 0.25f;
+    const glm::vec3 x = apply(growing.at(0.25f), glm::vec3(1.0f, 0.0f, 0.0f));
+    const glm::vec3 wanted = apply(expected, glm::vec3(1.0f, 0.0f, 0.0f));
+    BOOST_CHECK_SMALL(glm::length(x - wanted), 1.0e-4f);
+    BOOST_CHECK(growing.reference() == growing.close());
+}
+
+/**
+ * A small uniform scale is not flat: the test is the determinant against the lengths of the
+ * basis, so a primitive scaled to a ten thousandth on every axis is still stored at its open
+ * end and placeable.
+ **/
+BOOST_AUTO_TEST_CASE(moving_transform_a_small_scale_is_not_flat_test) {
+    v3d::render::offline::MovingTransform tiny;
+    tiny.begin({ 0.0f, 1.0f });
+    tiny.concat(glm::scale(glm::mat4x4(1.0f), glm::vec3(1.0e-4f)));
+    tiny.concat(glm::scale(glm::mat4x4(1.0f), glm::vec3(2.0e-4f)));
+    tiny.end();
+    BOOST_CHECK(tiny.placeable());
+    BOOST_CHECK(tiny.reference() == tiny.open());
+}

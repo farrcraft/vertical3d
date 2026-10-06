@@ -184,3 +184,26 @@ BOOST_AUTO_TEST_CASE(riblexer_peek_test) {
     BOOST_CHECK_EQUAL(lexer.next().value(), 640.0f);
     BOOST_CHECK(lexer.next().kind() == Token::Kind::END);
 }
+
+/**
+ * A file saved with a UTF-8 byte order mark is text, and lexes as the requests after the mark
+ * rather than being refused as binary.
+ **/
+BOOST_AUTO_TEST_CASE(riblexer_byte_order_mark_is_skipped_test) {
+    std::string error;
+    std::vector<Token> tokens = lex("\xEF\xBB\xBF" "Format 640 480 1", &error);
+    BOOST_CHECK(error.empty());
+    BOOST_REQUIRE_EQUAL(tokens.size(), 4u);
+    BOOST_CHECK_EQUAL(tokens[0].text(), "Format");
+}
+
+/**
+ * A stream that has been read from before is lexed from where it stands, not from its start.
+ **/
+BOOST_AUTO_TEST_CASE(riblexer_reads_from_where_the_stream_stands_test) {
+    std::istringstream stream("Skipped Format 640");
+    std::string skipped;
+    stream >> skipped;
+    v3d::render::offline::rib::Lexer lexer(stream);
+    BOOST_CHECK_EQUAL(lexer.next().text(), "Format");
+}

@@ -312,6 +312,18 @@ The title-bar drag uses `dragThreshold` (3 pixels) in
 [Immediate.cpp](../../api/ui/Immediate.cpp). The offset is clamped every frame against the
 current window size, so a window that grows near an edge moves under the cursor.
 
+## Parents and held items
+
+`Component::parent()` is what `usable()` walks to find a disabled ancestor. `add()` sets it for a
+child in `children()`. A component that holds items outside `children()`, such as a toolbar's
+buttons, a menu's items, a menu bar's menus or a submenu item's submenu, calls `adopt()` on each
+so the item inherits from it.
+
+The parent is a raw pointer. An app may keep an item after its holder is destroyed, so every
+holder calls `disown()` on each adopted item from its own destructor, and `~Component` does the
+same for `children()`. A holder that replaces an item, as `MenuItem::submenu()` does, disowns the
+one it replaces. A new holder type does all three.
+
 ## Adding a component type
 
 Every `switch` over `component::Type` lists every enumerator and has no `default:` label.

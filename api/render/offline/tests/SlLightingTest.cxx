@@ -235,6 +235,19 @@ BOOST_AUTO_TEST_CASE(sllighting_solar_angle_is_reported_test) {
 BOOST_AUTO_TEST_CASE(sllighting_a_report_reaches_the_log_test) {
     const std::string path = "sl_reports_test.log";
     std::remove(path.c_str());
+    // the log is pointed back at its default however the case ends, so a failed check here
+    // does not leave every later case writing to this file
+    struct Restore final {
+        ~Restore() {
+            // a destructor may not throw, and a log that cannot be reopened only costs the
+            // later cases their log lines
+            try {
+                v3d::log::Logger::open("v3d.log");
+            } catch (...) {
+                return;
+            }
+        }
+    } restore;
     BOOST_REQUIRE(v3d::log::Logger::open(path));
     {
         std::string error;

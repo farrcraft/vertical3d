@@ -183,7 +183,7 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
     // the edge is carried as the event's state, not as its data - data is the binding's
     // parameter, and the two would otherwise overwrite each other.
     v3d::event::Source source(name, context_, pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
-    // only a key event can be a repeat; anything else reaching here is not one
+    // only a press can repeat, so a release is never marked as one
     source.repeat(pressed && event.key.repeat);
     v3d::event::publish(*dispatcher_, source);
 

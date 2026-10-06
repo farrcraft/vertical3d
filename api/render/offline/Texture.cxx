@@ -50,9 +50,14 @@ const glm::vec3 & Texture::texel(int column, int row) const {
 }
 
 glm::vec3 Texture::sample(float s, float t) const {
-    if (texels_.empty()) {
+    // a coordinate that is not finite names no texel
+    if (texels_.empty() || !std::isfinite(s) || !std::isfinite(t)) {
         return glm::vec3(0.0f);
     }
+    // the texture repeats, so a coordinate is taken into one repeat first: a large one would
+    // otherwise overflow the integer texel index
+    s -= std::floor(s);
+    t -= std::floor(t);
     // texel centres are at half a texel in, so a position is measured from the first one
     const float x = s * static_cast<float>(width_) - 0.5f;
     const float y = t * static_cast<float>(height_) - 0.5f;

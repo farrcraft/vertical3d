@@ -76,9 +76,9 @@ Ray Ray::transformed(const glm::mat4& transform) const {
 bool Ray::intersects(const AABBox& box, float* distance) const {
     const glm::vec3 min = box.min();
     const glm::vec3 max = box.max();
-    // a ray that is not a number anywhere meets nothing. The slab test below would let it
-    // through, because a comparison with NaN is false and std::max and std::min then keep
-    // their first argument
+    // a ray whose origin or direction is not finite meets nothing. The slab test below would
+    // let a NaN through, because a comparison with NaN is false and std::max and std::min then
+    // keep their first argument
     if (!std::isfinite(origin_.x) || !std::isfinite(origin_.y) || !std::isfinite(origin_.z) ||
         !std::isfinite(direction_.x) || !std::isfinite(direction_.y) || !std::isfinite(direction_.z)) {
         return false;

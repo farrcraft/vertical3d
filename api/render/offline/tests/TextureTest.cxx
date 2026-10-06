@@ -9,6 +9,7 @@
 #include <api/render/offline/Texture.h>
 #include <api/render/offline/Textures.h>
 
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -74,6 +75,11 @@ BOOST_AUTO_TEST_CASE(texture_periodic_wrap_test) {
     same(texture.sample(1.25f, 0.25f), texture.sample(0.25f, 0.25f));
     same(texture.sample(-0.75f, 1.75f), texture.sample(0.25f, 0.75f));
     same(texture.sample(0.0f, 0.25f), glm::vec3(0.5f, 0.5f, 0.0f));
+    // a coordinate far from the first repeat is taken into it rather than overflowing an index
+    same(texture.sample(1.0e6f + 0.25f, 0.25f), texture.sample(0.25f, 0.25f));
+    same(texture.sample(1.0e9f, 0.25f), texture.sample(0.0f, 0.25f));
+    // and one that is not finite names no texel
+    same(texture.sample(std::nanf(""), 0.25f), glm::vec3(0.0f));
 }
 
 /**

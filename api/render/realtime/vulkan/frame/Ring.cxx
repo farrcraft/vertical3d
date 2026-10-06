@@ -119,6 +119,7 @@ void Ring::retire(std::function<void()> destroy) {
 /**
  **/
 VkFence Ring::submitting() {
+    pending_ = false;
     VkFence fence = inFlight_[frame_];
     const VkResult result = vkResetFences(device_->handle(), 1, &fence);
     device::check(result, "Unable to reset a vulkan frame fence");
@@ -141,13 +142,21 @@ VkCommandBuffer Ring::begin() {
     result = vkBeginCommandBuffer(commands, &beginInfo);
     device::check(result, "Unable to begin a vulkan command buffer");
 
-    // what this slot timed the last time it was used is readable now its fence has signalled
-    timings_->begin(commands, frame_);
+    // a slot begun and never submitted, because recording threw, is begun again rather than
+    // counted again: its frame never reached the device, so counting it twice would collect
+    // something retired while the frame before it may still be reading it
+    const bool again = pending_;
+
+    // what this slot timed the last time it was submitted is readable now its fence has signalled
+    timings_->begin(commands, frame_, !again);
 
     // counted only once nothing can throw, because a begin that failed waited on a slot without
     // moving past it, and counting it would collect a frame early
-    begun_++;
-    retired_.collect(begun_);
+    if (!again) {
+        begun_++;
+        retired_.collect(begun_);
+    }
+    pending_ = true;
 
     return commands;
 }

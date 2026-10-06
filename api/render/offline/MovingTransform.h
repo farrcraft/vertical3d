@@ -25,7 +25,8 @@ namespace v3d::render::offline {
  *
  * The motion between the ends is translation and scale interpolated linearly and rotation by a
  * quaternion, which is exact for a rigid motion and a uniform scale. A shear, or a non-uniform
- * scale under a rotation, is interpolated approximately.
+ * scale under a rotation, is interpolated approximately. An end that flattens the primitive has
+ * no rotation to take apart, and the two ends are then blended as matrices.
  **/
 class MovingTransform final {
  public:
@@ -89,6 +90,8 @@ class MovingTransform final {
     glm::mat4x4 close_;
     glm::vec2 times_ { 0.0f, 0.0f };
     bool moving_ { false };
+    /** Whether an end has no inverse, so at() blends the two matrices rather than their parts. **/
+    bool linear_ { false };
 
     glm::vec3 openTranslation_ { 0.0f };
     glm::vec3 closeTranslation_ { 0.0f };

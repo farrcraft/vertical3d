@@ -30,7 +30,12 @@ accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"s
 ### Rules
 
 - **Only ASCII RIB is read.** A binary or gzipped stream is rejected with a message naming
-  which it is.
+  which it is. A UTF-8 byte order mark at the start is skipped, and a stream is read from where
+  it stands rather than from its beginning.
+- **A size that is not a size is skipped with a warning.** A `Format` whose resolution is not
+  between 1 and 65536 or whose aspect is not positive, a `FrameBegin` that is not a finite
+  frame number, and a `PixelFilter` whose width is not positive are skipped, and the rest of
+  the file reads.
 - **An unrecognised request is reported once per name, and its arguments are skipped.**
   `Reader::unrecognised()` lists them. `Reader::unsupported()` lists what was read but not
   built, such as a deforming primitive.

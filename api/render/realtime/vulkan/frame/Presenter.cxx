@@ -110,8 +110,8 @@ Presenter::Status Presenter::acquire(Acquisition* acquisition) {
     // the wait belongs here rather than being left to begin(): the semaphore the acquire
     // signals is one per frame, and this slot's may still be pending from its last turn until
     // that submission completes. begin() waits again, which costs nothing on a fence that is
-    // already signalled, and the fence is unsignalled only by the submit - so a chain found out of date below
-    // leaves the ring exactly as it was found
+    // already signalled, and the fence is unsignalled only by the submit, so a chain found out
+    // of date below leaves the ring exactly as it was found
     ring_->waitFrame();
 
     uint32_t image = 0;

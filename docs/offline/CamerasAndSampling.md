@@ -108,7 +108,9 @@ Background: [ADR-0076](../adr/0076-offline-seeded-samples-resolved-by-one-shared
   request applies to both ends, so what follows a block moves with it.
 - **Between the ends, translation and scale are interpolated linearly and rotation by a
   quaternion.** That is exact for a rigid motion with uniform scale. A shear, or a non-uniform
-  scale under a rotation, is approximate.
+  scale under a rotation, is approximate. When an end flattens the primitive, as a motion that
+  grows it from nothing does, the two ends are blended as matrices instead, which grows it in a
+  straight line out of its flat end.
 - **A sample's time** lies between the `Shutter` open and close times. The default shutter is
   `0 0`, which means no blur.
 - **The ray hider carries each ray into the pose at its sample's time.** Its shadow and traced

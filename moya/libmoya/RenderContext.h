@@ -369,6 +369,13 @@ class RenderContext {
         v3d::render::offline::rib::Declarations declarations_;
         boost::shared_ptr<v3d::log::Logger> logger_;
         bool flatMotionReported_ = false;
+
+        /**
+            *	Whether the current transformation moves and is flat at both ends, so a
+            *	primitive under it has no pose to be moved from and is left out. The first one
+            *	is logged.
+            */
+        bool flatMotion();
         boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
         boost::shared_ptr<v3d::render::offline::Textures> textures_;
         boost::shared_ptr<GridShader> shader_;

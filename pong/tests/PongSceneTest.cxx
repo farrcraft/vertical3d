@@ -566,3 +566,15 @@ BOOST_AUTO_TEST_CASE(pong_scene_reset_keeps_the_pause_test) {
     fixture.scene_.reset();
     BOOST_TEST(fixture.scene_.state().paused());
 }
+
+/**
+ * Outside coop the computer steers the right paddle, so the right paddle's keys, read every
+ * step whether held or not, do not stop it.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_keys_leave_the_computer_paddle_alone_test) {
+    Fixture fixture;
+    fixture.scene_.coop(false);
+    fixture.scene_.right().up(true);
+    BOOST_TEST(fixture.scene_.steer("rightPaddleUp", false));
+    BOOST_TEST(fixture.scene_.right().up());
+}

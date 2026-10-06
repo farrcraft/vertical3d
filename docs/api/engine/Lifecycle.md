@@ -43,8 +43,10 @@ in order:
    the log as `"<name> failed: <message>"`. A windowed app has no console, so the log is the
    only place an error is readable.
 5. Calls `shutdown()` after the `try` block, so it runs whether the loop ended normally or by
-   throwing. A throw from `release()`, such as a lost device, still has the window destroyed
-   and SDL shut down after it, and is then caught and logged the same way.
+   throwing. A throw from `release()`, such as a lost device, is caught and logged the same
+   way. The window and SDL are then left to the engine's destructor, which runs after the app's
+   own members are destroyed, so whatever presents to the window is still released first.
+   Either catch also takes an exception that is not a `std::exception`.
 
 It returns `EXIT_FAILURE` if startup, the loop or shutdown failed, and `EXIT_SUCCESS`
 otherwise.

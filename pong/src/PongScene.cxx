@@ -70,7 +70,11 @@ bool PongScene::steer(std::string_view command, bool held) {
     if (!left && !right) {
         return false;
     }
-    if (held && (gameState_.paused() || (right && !gameState_.coop()))) {
+    // outside coop the computer steers the right paddle, and no key, held or not, moves it
+    if (right && !gameState_.coop()) {
+        return true;
+    }
+    if (held && gameState_.paused()) {
         return true;
     }
     Paddle & paddle = left ? left_ : right_;

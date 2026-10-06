@@ -48,7 +48,8 @@ returns.
 `Controller::registerCommands()` registers every handler at startup:
 
 - `addPress(name, handler)` registers a handler that runs on the press only. A release of the
-  same binding is still accepted, and does nothing.
+  same binding is still accepted, and does nothing, and so is a held key's repeat, so holding a
+  key runs its action once.
 - `add(name, handler)` registers a handler that receives the whole event, so it can tell a
   press from a release. The camera modifiers use it, because a camera mode lasts while its key
   is held.

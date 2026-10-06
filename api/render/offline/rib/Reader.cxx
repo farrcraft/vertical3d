@@ -5,6 +5,7 @@
 
 #include "Reader.h"
 
+#include <cmath>
 #include <cstdint>
 #include <fstream>
 #include <istream>
@@ -257,6 +258,14 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c)) {
             return Result::Failed;
         }
+        // a size that is not a whole count of at least one pixel, or an aspect that is not a
+        // positive number, is skipped: converting it to unsigned is undefined
+        const bool size = a >= 1.0f && a <= 65536.0f && b >= 1.0f && b <= 65536.0f;
+        const bool aspect = c > 0.0f && std::isfinite(c);
+        if (!size || !aspect) {
+            logger_->get()->warn("RIB Format {} {} {} is not a picture size and was skipped", a, b, c);
+            return Result::Handled;
+        }
         handler->format(static_cast<unsigned int>(a), static_cast<unsigned int>(b), c);
         return Result::Handled;
     }
@@ -327,6 +336,10 @@ Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, H
         if (!number(lexer, &a)) {
             return Result::Failed;
         }
+        if (!std::isfinite(a) || std::fabs(a) > 2.0e9f) {
+            logger_->get()->warn("RIB FrameBegin {} is not a frame number and was skipped", a);
+            return Result::Handled;
+        }
         handler->frameBegin(static_cast<int>(a));
         return Result::Handled;
     }
@@ -393,6 +406,14 @@ Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Ha
             if (reported_.insert("filter " + first).second) {
                 logger_->get()->warn("RIB PixelFilter '{}' is not a filter and was skipped", first);
             }
+            return Result::Handled;
+        }
+        // a filter with no width takes in no samples, and one of a width that is not a number
+        // weighs every sample as one
+        const bool wide = a > 0.0f && std::isfinite(a);
+        const bool tall = b > 0.0f && std::isfinite(b);
+        if (!wide || !tall) {
+            logger_->get()->warn("RIB PixelFilter width {} {} is not a width and was skipped", a, b);
             return Result::Handled;
         }
         handler->pixelFilter(filter, a, b);

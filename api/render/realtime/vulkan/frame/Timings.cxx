@@ -54,13 +54,16 @@ bool Timings::enabled() const noexcept {
 
 /**
  **/
-void Timings::begin(VkCommandBuffer commands, uint32_t slot) {
+void Timings::begin(VkCommandBuffer commands, uint32_t slot, bool submitted) {
     if (!enabled()) {
         return;
     }
     current_ = slot % static_cast<uint32_t>(slots_.size());
     Slot& active = slots_[current_];
-    read(&active);
+    // what an abandoned frame recorded was never submitted, so there is nothing to read
+    if (submitted) {
+        read(&active);
+    }
     active.names.clear();
     active.open = false;
     // reset in the command buffer rather than on the host, which needs a feature the device

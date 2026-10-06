@@ -21,34 +21,17 @@ namespace {
 
 /**
  * A matrix as a translation, a rotation and a scale along each axis, with any shear folded
- * into the rotation's columns before they are normalised.
- *
- * An axis scaled to nothing leaves its column empty. With one such axis the other two still
- * fix the rotation, and the empty column is rebuilt as their cross product. With two or more,
- * the matrix says nothing about rotation, and turned is false.
+ * into the rotation's columns before they are normalised. Only an invertible matrix is taken
+ * apart this way.
  **/
 class Parts {
  public:
     explicit Parts(const glm::mat4x4 & m) {
         translation = glm::vec3(m[3]);
         glm::mat3 basis(m);
-        int flat = 0;
-        int empty = 0;
         for (int axis = 0; axis < 3; axis++) {
             scale[axis] = glm::length(basis[axis]);
-            if (scale[axis] > 0.0f) {
-                basis[axis] /= scale[axis];
-            } else {
-                flat++;
-                empty = axis;
-            }
-        }
-        if (flat > 1) {
-            turned = false;
-            return;
-        }
-        if (flat == 1) {
-            basis[empty] = glm::cross(basis[(empty + 1) % 3], basis[(empty + 2) % 3]);
+            basis[axis] /= scale[axis];
         }
         // a reflection is a negative scale, kept on x so the rest is a rotation
         if (glm::determinant(basis) < 0.0f) {
@@ -60,10 +43,19 @@ class Parts {
 
     glm::vec3 translation;
     glm::vec3 scale;
-    glm::quat rotation{ 1.0f, 0.0f, 0.0f, 0.0f };
-    /** Whether the matrix fixes a rotation at all. **/
-    bool turned = true;
+    glm::quat rotation;
 };
+
+/**
+ * Whether a transformation has an inverse. The determinant is measured against the lengths of
+ * the basis columns, so a small uniform scale is invertible and only a flattened one is not.
+ * Written so that a NaN has no inverse.
+ **/
+bool invertible(const glm::mat4x4 & matrix) {
+    const glm::mat3 basis(matrix);
+    const float lengths = glm::length(basis[0]) * glm::length(basis[1]) * glm::length(basis[2]);
+    return lengths > 0.0f && std::fabs(glm::determinant(basis)) > 1.0e-6f * lengths;
+}
 
 };  // namespace
 
@@ -85,15 +77,6 @@ const glm::mat4x4 & MovingTransform::open() const {
 const glm::mat4x4 & MovingTransform::close() const {
     return close_;
 }
-
-namespace {
-
-/** Whether a transformation has an inverse. Written so that a NaN determinant has none. **/
-bool invertible(const glm::mat4x4 & matrix) {
-    return std::fabs(glm::determinant(glm::mat3(matrix))) > 1.0e-12f;
-}
-
-};  // namespace
 
 const glm::mat4x4 & MovingTransform::reference() const {
     return invertible(open_) ? open_ : close_;
@@ -118,6 +101,9 @@ glm::mat4x4 MovingTransform::at(float time) const {
     if (u >= 1.0f) {
         return close_;
     }
+    if (linear_) {
+        return open_ * (1.0f - u) + close_ * u;
+    }
     glm::mat4x4 result = glm::translate(glm::mat4x4(1.0f), glm::mix(openTranslation_, closeTranslation_, u));
     result = result * glm::mat4_cast(glm::slerp(openRotation_, closeRotation_, u));
     return glm::scale(result, glm::mix(openScale_, closeScale_, u));
@@ -127,16 +113,21 @@ void MovingTransform::settle() {
     if (!moving_) {
         return;
     }
+    // an end that flattens the primitive has no rotation to take apart, whatever order its
+    // scale and its turns were applied in, so the ends are blended as matrices instead. That
+    // grows the primitive out of its flat end in a straight line
+    linear_ = !invertible(open_) || !invertible(close_);
+    if (linear_) {
+        return;
+    }
     const Parts from(open_);
     const Parts to(close_);
     openTranslation_ = from.translation;
     openScale_ = from.scale;
-    // an end flattened on two axes or more has no rotation of its own, so it turns as the
-    // other end does
-    openRotation_ = from.turned ? from.rotation : to.rotation;
+    openRotation_ = from.rotation;
     closeTranslation_ = to.translation;
     closeScale_ = to.scale;
-    closeRotation_ = to.turned ? to.rotation : from.rotation;
+    closeRotation_ = to.rotation;
 }
 
 MovingTransform MovingTransform::after(const glm::mat4x4 & matrix) const {

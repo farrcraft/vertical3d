@@ -18,6 +18,47 @@
 
 namespace {
 
+/**
+ * The picture, grid and bucket sizes the command line names, each checked before it is used.
+ * A size outside 1 to 65536 is reported, and the scene's own size or the default is kept.
+ **/
+void sizes(const boost::program_options::variables_map& var_map, v3d::moya::RIBHandler* handler) {
+    const bool width = var_map.count("width") > 0;
+    const bool height = var_map.count("height") > 0;
+    // a size larger than this on a side is refused as a mistake. A picture within it can still
+    // be larger than memory holds, and main reports the allocation that fails
+    const int largest = 65536;
+    if (width && height) {
+        const int x = var_map["width"].as<int>();
+        const int y = var_map["height"].as<int>();
+        if (x < 1 || y < 1 || x > largest || y > largest) {
+            std::cout << "--width and --height have to be between 1 and " << largest << ", so the scene's Format is used" << "\n";
+        } else {
+            handler->resolution(static_cast<unsigned int>(x), static_cast<unsigned int>(y));
+        }
+    } else if (width || height) {
+        std::cout << "--width and --height have to be given together, so the scene's Format is used" << "\n";
+    }
+    // the command line sets the grid and bucket sizes before the scene is read, so a scene
+    // that names its own with Option "limits" replaces them
+    if (var_map.count("grid")) {
+        const int grid = var_map["grid"].as<int>();
+        if (grid < 1 || grid > largest) {
+            std::cout << "--grid has to be between 1 and " << largest << ", so the default is used" << "\n";
+        } else {
+            handler->context().gridSize(static_cast<unsigned int>(grid));
+        }
+    }
+    if (var_map.count("bucket")) {
+        const int bucket = var_map["bucket"].as<int>();
+        if (bucket < 1 || bucket > largest) {
+            std::cout << "--bucket has to be between 1 and " << largest << ", so the default is used" << "\n";
+        } else {
+            handler->context().bucketSize(static_cast<unsigned int>(bucket), static_cast<unsigned int>(bucket));
+        }
+    }
+}
+
 int run(int argc, char *argv[]) {
     // setup option parser
     boost::program_options::options_description opts_desc("Allowed options");
@@ -78,30 +119,7 @@ int run(int argc, char *argv[]) {
     if (!outfile.empty()) {
         handler.output(outfile);
     }
-    const bool width = var_map.count("width") > 0;
-    const bool height = var_map.count("height") > 0;
-    // a picture larger than this on a side is far more than a frame buffer can be allocated for
-    const int largest = 65536;
-    if (width && height) {
-        const int x = var_map["width"].as<int>();
-        const int y = var_map["height"].as<int>();
-        if (x < 1 || y < 1 || x > largest || y > largest) {
-            std::cout << "--width and --height have to be between 1 and " << largest << ", so the scene's Format is used" << "\n";
-        } else {
-            handler.resolution(static_cast<unsigned int>(x), static_cast<unsigned int>(y));
-        }
-    } else if (width || height) {
-        std::cout << "--width and --height have to be given together, so the scene's Format is used" << "\n";
-    }
-    // the command line sets the grid and bucket sizes before the scene is read, so a scene
-    // that names its own with Option "limits" replaces them
-    if (var_map.count("grid")) {
-        handler.context().gridSize(static_cast<unsigned int>(var_map["grid"].as<int>()));
-    }
-    if (var_map.count("bucket")) {
-        const unsigned int size = static_cast<unsigned int>(var_map["bucket"].as<int>());
-        handler.context().bucketSize(size, size);
-    }
+    sizes(var_map, &handler);
 
     // flushed rather than left to the buffer: the render that follows takes the rest of the
     // run, and the progress line has to appear before it starts

@@ -5,6 +5,8 @@
 
 #include <api/render/offline/FrameBuffer.h>
 
+#include <cmath>
+
 #include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(framebuffer_plane_test) {
@@ -49,6 +51,10 @@ BOOST_AUTO_TEST_CASE(framebuffer_image_test) {
     BOOST_CHECK_EQUAL((*image)[5], 255);
     BOOST_CHECK_EQUAL((*image)[10], 255);
     BOOST_CHECK_EQUAL((*image)[15], 255);
+
+    // a value that is not a number is black, rather than an undefined conversion to a byte
+    buffer.value(0, 0, 0, std::nanf(""));
+    BOOST_CHECK_EQUAL((*buffer.image(4))[0], 0);
 }
 
 BOOST_AUTO_TEST_CASE(framebuffer_row_order_test) {

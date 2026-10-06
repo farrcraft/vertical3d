@@ -255,8 +255,9 @@ BOOST_AUTO_TEST_CASE(effect_a_rate_out_of_range_owes_a_count_test) {
     State infinite(1);
     BOOST_CHECK_EQUAL(owing(&infinite, std::numeric_limits<float>::infinity(), 1.0f), 0u);
     BOOST_CHECK_EQUAL(owing(&infinite, std::nanf(""), 1.0f), 0u);
+    // the largest count a float can hold below 2^32
     State huge(1);
-    BOOST_CHECK_GT(owing(&huge, 1.0e30f, 1.0f), 0u);
+    BOOST_CHECK_EQUAL(owing(&huge, 1.0e30f, 1.0f), 4294967040u);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

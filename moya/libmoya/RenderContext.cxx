@@ -457,11 +457,21 @@ void RenderContext::shadingRate(float size) {
 }
 
 void RenderContext::bucketSize(unsigned int width, unsigned int height) {
+    // a bucket of no pixels covers nothing and the frame would never be finished
+    if (width == 0 || height == 0) {
+        logger_->get()->warn("a bucket of {} by {} pixels is not used", width, height);
+        return;
+    }
     bucketWidth_ = width;
     bucketHeight_ = height;
 }
 
 void RenderContext::gridSize(unsigned int size) {
+    // a grid of no micropolygons would split every primitive without end
+    if (size == 0) {
+        logger_->get()->warn("a grid size of 0 is not used");
+        return;
+    }
     gridSize_ = size;
 }
 
@@ -713,6 +723,9 @@ bool RenderContext::addSphere(float radius, float zmin, float zmax, float thetam
         logger_->get()->warn("a sphere of radius {} is not drawn", radius);
         return true;
     }
+    if (flatMotion()) {
+        return true;
+    }
     // placed by the reference end of its motion, as a polygon's points are
     v3d::render::offline::trace::Sphere sphere(radius, zmin, zmax, thetamax, transform_.reference(), color_);
     shade(&sphere, shading());
@@ -720,13 +733,20 @@ bool RenderContext::addSphere(float radius, float zmin, float zmax, float thetam
     return true;
 }
 
+bool RenderContext::flatMotion() {
+    if (!transform_.moving() || transform_.placeable()) {
+        return false;
+    }
+    // both ends of its motion flatten it, so there is no pose to move it from
+    if (!flatMotionReported_) {
+        flatMotionReported_ = true;
+        logger_->get()->warn("a primitive whose motion is flat at both ends is not drawn");
+    }
+    return true;
+}
+
 void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
-    if (transform_.moving() && !transform_.placeable()) {
-        // both ends of its motion flatten it, so there is no pose to move it from
-        if (!flatMotionReported_) {
-            flatMotionReported_ = true;
-            logger_->get()->warn("a primitive whose motion is flat at both ends is not drawn");
-        }
+    if (flatMotion()) {
         return;
     }
     // if an output stream exists

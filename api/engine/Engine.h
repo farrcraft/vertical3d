@@ -157,8 +157,8 @@ class Engine {
      * one before.
      *
      * Read the edges in tick() or render(), which run once a frame. A frame runs as many
-     * simulate() steps as time has passed for, which can be none or several, so an edge read in simulate()
-     * can be missed or seen twice. Read held() there instead.
+     * simulate() steps as time has passed for, which can be none or several, so an edge read
+     * in simulate() can be missed or seen twice. Read held() there instead.
      *
      * @return nullptr when the app did not ask for Feature::KeyboardInput
      **/

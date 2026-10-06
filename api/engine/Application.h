@@ -48,8 +48,9 @@ std::string userPath(const std::string& org, const std::string& app);
  * Build an engine, run it to completion and shut it down. This is all of an app's main().
  *
  * shutdown() runs outside the loop and after its catch, so it runs whether the loop ended
- * normally or by throwing. A throw from shutdown() is caught and logged too. An event handler calls quit() instead: tearing the window down
- * inside a handler would leave the next frame drawing to a destroyed window.
+ * normally or by throwing. A throw from shutdown() is caught and logged too. An event handler
+ * calls quit() instead: tearing the window down inside a handler would leave the next frame
+ * drawing to a destroyed window.
  *
  * @param T the engine to run: the app's subclass of v3d::engine::Engine, with its own
  *          features(), start() and release(). This function is the only caller of
@@ -81,10 +82,15 @@ int run(const char* executable, const std::string& name, Args&&... args) {
         v3d::log::Logger logger;
         logger.get()->error("{} failed: {}", name, error.what());
         exitStatus = EXIT_FAILURE;
+    } catch (...) {
+        v3d::log::Logger logger;
+        logger.get()->error("{} failed with something that is not a std::exception", name);
+        exitStatus = EXIT_FAILURE;
     }
 
     // a throw from release(), such as a lost device found while waiting for it to go idle,
-    // is caught and logged in the same way
+    // is caught and logged in the same way. The window is then destroyed by ~Engine, after the
+    // app's own members
     try {
         if (!engine.shutdown()) {
             exitStatus = EXIT_FAILURE;
@@ -92,6 +98,10 @@ int run(const char* executable, const std::string& name, Args&&... args) {
     } catch (const std::exception& error) {
         v3d::log::Logger logger;
         logger.get()->error("{} failed to shut down: {}", name, error.what());
+        exitStatus = EXIT_FAILURE;
+    } catch (...) {
+        v3d::log::Logger logger;
+        logger.get()->error("{} failed to shut down with something that is not a std::exception", name);
         exitStatus = EXIT_FAILURE;
     }
 

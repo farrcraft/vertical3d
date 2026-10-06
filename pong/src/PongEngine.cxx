@@ -120,6 +120,11 @@ bool PongEngine::simulate(float step) {
     // interpolate between the two steps
     v3d::ecs::snapshot<v3d::ecs::component::Position2D>(registry_);
     v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry_);
+    // the paddles follow the keys held now rather than the presses and releases that arrived,
+    // so a key held through the menu or a change of mode moves its paddle as soon as it can
+    for (const std::string_view command : PongScene::paddleCommands) {
+        scene_->steer(command, held("pong::" + std::string(command)));
+    }
     scene_->tick(step);
     return true;
 }
@@ -144,9 +149,11 @@ bool PongEngine::release() {
 }
 
 void PongEngine::handlePlayEvent(const v3d::event::Event& event) {
-    // the paddle moves while its key is held, so a paddle command follows the event's edge
-    if (scene_->steer(event.name(), event.state() == v3d::event::State::Pressed)) {
-        return;
+    // a paddle command is read held in simulate() rather than taken as an event
+    for (const std::string_view command : PongScene::paddleCommands) {
+        if (event.name() == command) {
+            return;
+        }
     }
     if (event.repeat()) {
         // the rest toggle, and a held key would flick them on and off at the repeat rate

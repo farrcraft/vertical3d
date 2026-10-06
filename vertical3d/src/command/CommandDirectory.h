@@ -54,7 +54,8 @@ class CommandDirectory final {
 
     /**
      * Register a handler that runs on the press only. A release of the same binding is
-     * still handled - it just does nothing - so the command does not report as unknown.
+     * still handled - it just does nothing - so the command does not report as unknown. So is
+     * a held key's repeat, so holding the key runs the action once.
      * @param name the command's "context::name"
      * @param handler what to run
      * @return false when the name is already registered, leaving the first handler in place

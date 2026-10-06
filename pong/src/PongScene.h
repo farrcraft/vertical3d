@@ -37,10 +37,17 @@ class PongScene {
     void reset();
 
     /**
-     * Apply a paddle command: one of leftPaddleUp, leftPaddleDown, rightPaddleUp and
-     * rightPaddleDown, with whether its key is now held. A press is ignored while the game is
-     * paused, and the right paddle takes presses only in coop mode. A release is always
-     * applied, so a key let go while the menu is up does not leave its paddle moving.
+     * The four paddle commands, which the engine reads held each step and passes to steer().
+     **/
+    static constexpr std::string_view paddleCommands[] = {
+        "leftPaddleUp", "leftPaddleDown", "rightPaddleUp", "rightPaddleDown"
+    };
+
+    /**
+     * Apply a paddle command: one of paddleCommands, with whether its key is held now. A held
+     * key is ignored while the game is paused, and a key that is not held stops its paddle, so
+     * a key let go while the menu is up does not leave its paddle moving. Outside coop mode the
+     * computer steers the right paddle, and its commands do nothing.
      *
      * @return whether the name was a paddle command
      **/

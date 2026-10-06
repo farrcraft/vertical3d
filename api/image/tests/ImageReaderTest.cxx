@@ -7,6 +7,7 @@
 #include <api/image/Factory.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -308,6 +309,130 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_orientation) {
                 BOOST_CHECK_EQUAL((*image)[3], 0);
                 BOOST_CHECK_EQUAL((*image)[4], 0xFF);
             }
+        }
+    }
+}
+
+namespace {
+
+/**
+ * A bmp built byte by byte: one row per entry of rows, top row first, stored bottom up as a
+ * positive height says. Each row is padded to a dword boundary here. Masks, when given, follow
+ * the 40 byte header and the compression is BI_BITFIELDS.
+ **/
+std::vector<unsigned char> bitmap(int width, int bits, const std::vector<uint32_t> & masks,
+    const std::vector<std::vector<unsigned char>> & rows) {
+    std::vector<unsigned char> out;
+    const auto put16 = [&out](uint32_t value) {
+        out.push_back(static_cast<unsigned char>(value));
+        out.push_back(static_cast<unsigned char>(value >> 8));
+    };
+    const auto put32 = [&put16](uint32_t value) {
+        put16(value);
+        put16(value >> 16);
+    };
+    const uint32_t pad = (static_cast<uint32_t>(width * bits / 8) + 3) / 4 * 4;
+    const uint32_t offset = 14 + 40 + static_cast<uint32_t>(masks.size()) * 4;
+    put16(19778);
+    put32(offset + pad * static_cast<uint32_t>(rows.size()));
+    put32(0);
+    put32(offset);
+    put32(40);
+    put32(static_cast<uint32_t>(width));
+    put32(static_cast<uint32_t>(rows.size()));
+    put16(1);
+    put16(static_cast<uint32_t>(bits));
+    put32(masks.empty() ? 0 : 3);
+    for (int field = 0; field < 5; ++field) {
+        put32(0);
+    }
+    for (const uint32_t mask : masks) {
+        put32(mask);
+    }
+    for (auto row = rows.rbegin(); row != rows.rend(); ++row) {
+        std::vector<unsigned char> padded = *row;
+        padded.resize(pad, 0);
+        out.insert(out.end(), padded.begin(), padded.end());
+    }
+    return out;
+}
+
+};  // namespace
+
+/**
+ * 16 bits uncompressed is five bits a channel, and widens so that a full channel is 255. With
+ * BI_BITFIELDS the masks the file gives are used instead, here five, six and five bits.
+ **/
+BOOST_AUTO_TEST_CASE(imagereader_bmp_reads_16_bits) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    // red, green and blue at full, little endian, in one row of three
+    const std::vector<unsigned char> plain = bitmap(3, 16, {}, { { 0x00, 0x7C, 0xE0, 0x03, 0x1F, 0x00 } });
+    const boost::shared_ptr<v3d::image::Image> image = factory.read(plain.data(), plain.size(), "bmp");
+    BOOST_REQUIRE(image);
+    const unsigned char expected[9] = { 255, 0, 0, 0, 255, 0, 0, 0, 255 };
+    for (unsigned int index = 0; index < 9; ++index) {
+        BOOST_CHECK_EQUAL((*image)[index], expected[index]);
+    }
+
+    // a green of six bits at full, and a red of five bits at half
+    const std::vector<unsigned char> masked =
+        bitmap(2, 16, { 0xF800u, 0x07E0u, 0x001Fu }, { { 0xE0, 0x07, 0x00, 0x80 } });
+    const boost::shared_ptr<v3d::image::Image> packed = factory.read(masked.data(), masked.size(), "bmp");
+    BOOST_REQUIRE(packed);
+    BOOST_CHECK_EQUAL((*packed)[0], 0);
+    BOOST_CHECK_EQUAL((*packed)[1], 255);
+    BOOST_CHECK_EQUAL((*packed)[2], 0);
+    BOOST_CHECK_EQUAL((*packed)[3], 132);
+}
+
+/**
+ * A 32 bit file keeps its alpha when any pixel uses it, so a pixel of alpha zero beside one of
+ * alpha 0x80 stays transparent rather than being made opaque.
+ **/
+BOOST_AUTO_TEST_CASE(imagereader_bmp_keeps_a_used_alpha) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    // blue, green, red and alpha on disk
+    const std::vector<unsigned char> bytes = bitmap(2, 32, {}, { { 0, 0, 255, 0x80, 255, 0, 0, 0 } });
+    const boost::shared_ptr<v3d::image::Image> image = factory.read(bytes.data(), bytes.size(), "bmp");
+    BOOST_REQUIRE(image);
+    BOOST_CHECK_EQUAL(image->bpp(), 32u);
+    BOOST_CHECK_EQUAL((*image)[0], 255);
+    BOOST_CHECK_EQUAL((*image)[3], 0x80);
+    BOOST_CHECK_EQUAL((*image)[6], 255);
+    BOOST_CHECK_EQUAL((*image)[7], 0);
+}
+
+/**
+ * Rows wider than one pixel are padded on disk and not in the image, and every channel of
+ * every pixel comes back where it was: two rows of three at 24 bits, each pixel a different
+ * colour.
+ **/
+BOOST_AUTO_TEST_CASE(imagereader_bmp_rows_wider_than_a_pixel) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    // blue, green, red on disk; each pixel's three bytes are its index times ten, plus 1, 2, 3
+    std::vector<std::vector<unsigned char>> rows(2);
+    for (unsigned int row = 0; row < 2; ++row) {
+        for (unsigned int column = 0; column < 3; ++column) {
+            const unsigned char base = static_cast<unsigned char>((row * 3 + column) * 10);
+            rows[row].push_back(static_cast<unsigned char>(base + 3));
+            rows[row].push_back(static_cast<unsigned char>(base + 2));
+            rows[row].push_back(static_cast<unsigned char>(base + 1));
+        }
+    }
+    const std::vector<unsigned char> bytes = bitmap(3, 24, {}, rows);
+    const boost::shared_ptr<v3d::image::Image> image = factory.read(bytes.data(), bytes.size(), "bmp");
+    BOOST_REQUIRE(image);
+    for (unsigned int pixel = 0; pixel < 6; ++pixel) {
+        BOOST_TEST_CONTEXT("pixel " << pixel) {
+            BOOST_CHECK_EQUAL((*image)[pixel * 3], pixel * 10 + 1);
+            BOOST_CHECK_EQUAL((*image)[pixel * 3 + 1], pixel * 10 + 2);
+            BOOST_CHECK_EQUAL((*image)[pixel * 3 + 2], pixel * 10 + 3);
         }
     }
 }

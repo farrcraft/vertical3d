@@ -5,6 +5,8 @@
 
 #include <api/type/animation/Track.h>
 
+#include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -56,6 +58,19 @@ BOOST_AUTO_TEST_CASE(track_a_wrapping_track_test) {
     BOOST_CHECK_EQUAL(day.sample(3.0f), 0.75f);
     BOOST_CHECK_EQUAL(day.sample(36.0f), 0.5f);
     BOOST_CHECK_EQUAL(day.sample(-3.0f), 0.25f);
+}
+
+/**
+ * A time that is not finite reads as the first key, wrapping or not, rather than searching
+ * past the last key.
+ **/
+BOOST_AUTO_TEST_CASE(track_a_time_that_is_not_finite_test) {
+    const Track<float> once({{1.0f, 2.0f}, {2.0f, 4.0f}});
+    const Track<float> day({{6.0f, 1.0f}, {18.0f, 0.0f}}, 24.0f);
+    for (const float time : {std::nanf(""), std::numeric_limits<float>::infinity()}) {
+        BOOST_CHECK_EQUAL(once.sample(time), 2.0f);
+        BOOST_CHECK_EQUAL(day.sample(time), 1.0f);
+    }
 }
 
 /**

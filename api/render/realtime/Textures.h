@@ -71,10 +71,9 @@ class Textures final {
      * What is registered shares the target's images. Registering the same image again gives
      * back the handle it already has, so calling this every frame costs nothing. The handle is
      * shared by everything that registered that image, and releasing it releases it for all
-     * of them. A target that
-     * is resized allocates new images, and the handle this returned goes on naming the old
-     * ones, which it keeps alive: after a recreate(), release the old handle and register the
-     * target again.
+     * of them. A target that is resized allocates new images, and the handle this returned
+     * goes on naming the old ones, which it keeps alive: after a recreate(), release the old
+     * handle and register the target again.
      *
      * A target with no colour image has nothing to register, and comes back as the white
      * texture for the same reason depthTexture() gives one for a target with no depth to read.

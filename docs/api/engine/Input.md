@@ -131,9 +131,9 @@ Keys and buttons are named, using the same names as the binding document.
 
 The loop clears the edges after `render()`, so `tick()` and `render()` see the current frame's
 edges. Read edges there and not in `simulate()`. A frame runs as many simulation steps as time
-has passed for, which can be none or several, so an edge read in `simulate()` can be missed or seen twice.
-A key pressed and released within one frame answers both `pressed()` and `released()`, and is
-never `held()`. Polling SDL directly cannot tell you that.
+has passed for, which can be none or several, so an edge read in `simulate()` can be missed or
+seen twice. A key pressed and released within one frame answers both `pressed()` and
+`released()`, and is never `held()`. Polling SDL directly cannot tell you that.
 
 `Engine::held("context::name")` is true while any key bound to that command is down. Use it for
 movement or a camera pan read on the fixed step. It reads the keyboard state rather than

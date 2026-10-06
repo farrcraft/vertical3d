@@ -310,10 +310,18 @@ BOOST_AUTO_TEST_CASE(an_abandoned_frame_can_be_begun_again) {
     VkCommandBuffer abandoned = headless.context->ring()->begin();
     BOOST_REQUIRE(abandoned != VK_NULL_HANDLE);
 
+    const uint64_t begun = headless.context->ring()->begun();
     VkCommandBuffer commands = headless.context->ring()->begin();
     BOOST_REQUIRE(commands == abandoned);
+    // the frame begun again is the same frame, so it is not counted twice, and nothing retired
+    // is collected a frame early
+    BOOST_CHECK_EQUAL(headless.context->ring()->begun(), begun);
     headless.submitAndWait(commands);
     BOOST_CHECK(headless.silent());
+
+    // and once that frame is submitted, the next begin is a new frame
+    headless.submitAndWait(headless.context->ring()->begin());
+    BOOST_CHECK_EQUAL(headless.context->ring()->begun(), begun + 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

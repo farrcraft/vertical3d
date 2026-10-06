@@ -124,7 +124,8 @@ BOOST_AUTO_TEST_CASE(commanddirectory_passes_the_state_through) {
 
 /**
  * A press handler runs on the press and on a binding that names no edge, but not on the
- * release - which is still handled, so the command does not report as unknown.
+ * release or on a held key's repeat - which are still handled, so the command does not
+ * report as unknown.
  **/
 BOOST_AUTO_TEST_CASE(commanddirectory_ignores_a_release_of_a_press_command) {
     v3d::editor::CommandDirectory directory;
@@ -139,6 +140,12 @@ BOOST_AUTO_TEST_CASE(commanddirectory_ignores_a_release_of_a_press_command) {
     BOOST_CHECK_EQUAL(ran, 1);
 
     BOOST_CHECK(directory.invoke(command("create", "poly::cube", v3d::event::State::Any)));
+    BOOST_CHECK_EQUAL(ran, 2);
+
+    // a held key's repeat is handled and runs nothing
+    v3d::event::Event repeated = command("create", "poly::cube", v3d::event::State::Pressed);
+    repeated.repeat(true);
+    BOOST_CHECK(directory.invoke(repeated));
     BOOST_CHECK_EQUAL(ran, 2);
 }
 

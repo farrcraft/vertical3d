@@ -28,7 +28,8 @@ bool CommandDirectory::addPress(const std::string& name, const PressHandler& han
         return false;
     }
     return add(name, [handler](const v3d::event::Event& event) {
-        if (event.state() != v3d::event::State::Released) {
+        // a held key's repeats would run the action again at the repeat rate
+        if (event.state() != v3d::event::State::Released && !event.repeat()) {
             handler();
         }
     });
