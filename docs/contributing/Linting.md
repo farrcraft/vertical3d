@@ -16,6 +16,7 @@ It runs in CI with the link rule and boundary gates. [Review.md](Review.md) list
 - [clang-tidy](#clang-tidy)
 - [Prose](#prose)
 - [CI](#ci)
+- [The review gates' environment](#the-review-gates-environment)
 
 ## cpplint
 
@@ -186,16 +187,6 @@ Vulkan SDK, a vcpkg install and the libnoise submodule.
 
 Neither `/analyze` nor clang-tidy runs in CI, because of their cost. They are run locally.
 
-### The review gates' environment
-
-The review gates in `scripts/` support one environment. A fault that needs another one is not a
-defect in them, and goes on the known-debt list if it is worth recording.
-
-- Node 24 or later. A gate started on an earlier Node stops with exit 2 and says so.
-- A checkout of this repository with its full history, so a gate can find a merge base.
-- The repository root as the working directory, as CI and these documents run them.
-- For `scripts/failsfirst.ts` only, the Windows developer environment `scripts\build.cmd` uses.
-
 [.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs three of the
 review gates on an Ubuntu runner with Node: the link rule (`scripts/linkrule.ts`), prose
 (`scripts/prose.ts`) and boundary input (`scripts/boundary.ts`). It runs on each pull request
@@ -214,3 +205,15 @@ from the repository root.
 
 The fails-first gate, `scripts/failsfirst.ts`, does not run in CI. It builds the tree twice and
 the device suite needs a GPU, so it runs locally before review.
+
+## The review gates' environment
+
+The review gates in `scripts/` support one environment:
+
+- Node 24 or later. An earlier Node that can run TypeScript stops a gate with exit 2 and a
+  message. A Node too old to run TypeScript fails to load the gate at all.
+- A checkout of this repository with its full history, so a gate can find a merge base.
+- The repository root as the working directory, as CI and these documents run them.
+- For `scripts/failsfirst.ts` only, the Windows developer environment `scripts\build.cmd` uses.
+
+[Review.md](Review.md) grades a fault in the gates by whether it arises in this environment.

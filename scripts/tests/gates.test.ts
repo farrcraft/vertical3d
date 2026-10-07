@@ -157,8 +157,8 @@ test('linkrule.ts runs when Node is started with it', () => {
     assert.match(run.stderr, /usage/);
 });
 
-// Node resolves a module's own path through a link, and leaves the path it was started with as
-// given. A gate started through a junction or a symbolic link still has to see that it runs.
+// Node resolves a module's own path through a link, and does not resolve the path it was
+// started with through links. A gate started through a junction or a symbolic link still has to see that it runs.
 test('a gate started through a linked directory runs', () => {
     const scratch = mkdtempSync(join(tmpdir(), 'v3d-gates-'));
     const linked = join(scratch, 'scripts');
@@ -178,4 +178,12 @@ test('the gates support Node 24 and later', () => {
     assert.equal(supportedNode('23.11.0'), false);
     assert.equal(supportedNode('22.18.0'), false);
     assert.equal(supportedNode('not a version'), false);
+});
+
+// The version is replaced before the gate loads, so an earlier Node is not needed to run this.
+test('a gate started on an earlier Node stops with exit 2 and says so', () => {
+    const older = "data:text/javascript,Object.defineProperty(process,'versions',{value:{...process.versions,node:'22.0.0'}})";
+    const run = spawnSync(process.execPath, ['--import', older, join(ROOT, 'scripts', 'linkrule.ts')], { cwd: ROOT, encoding: 'utf8' });
+    assert.equal(run.status, 2, run.stderr);
+    assert.match(run.stderr, /Node 24 or later/);
 });

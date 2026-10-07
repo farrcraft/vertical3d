@@ -1,9 +1,10 @@
 // Decides whether a gate runs its command line.
 //
 // A gate runs only when it is the file Node was started with, so a test can import its functions
-// without running it. Node resolves a module's own path through symbolic links and junctions,
-// and leaves the path it was started with as given, so both are resolved to the real file before
-// they are compared. import.meta.main is not used, because it does not exist before Node 24.2.
+// without running it. Node resolves a module's own path through symbolic links and junctions.
+// It does not resolve the path it was started with through links, so both are resolved to the
+// real file before they are compared. import.meta.main is not used, because it does not exist
+// before Node 24.2.
 //
 // The gates support Node 24 and later. A gate started on an earlier Node stops with exit 2 and a
 // message, rather than running on a Node it was not written for. A Node too old to strip types

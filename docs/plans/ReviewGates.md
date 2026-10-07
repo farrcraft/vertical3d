@@ -111,7 +111,7 @@ each gate's entry points. The tests, the link rule, prose and boundary gates run
 `review-gates.yml`, and the fails-first gate runs locally. A line the boundary gate reports and
 that is defined carries a `// checked:` comment naming why.
 
-Step 8 is under way. The branch passes the gates: 317 prose lines were rewritten, and the
+Step 8's review is closed. The branch passes the gates: 317 prose lines were rewritten, and the
 boundary gate's reports were fixed or given a reason. Fixing them found three more defects: a NaN
 filter width in `Film::add`, a bound that is not a number in moya's buckets, and a GPU time that
 wraps in voxel.
@@ -127,5 +127,6 @@ review of its fix found one more: a gate started through a symbolic link ran not
 fixed with tests that start each gate as a process.
 
 Each review of the gates found one more fault in a less common setup. The gates now support one
-environment, which Linting.md states, and a fault reachable only outside it is Minor. One review
-of the last two commits under that rule closes step 8.
+environment, which Linting.md states, and a fault reachable only outside it is Minor. The review
+of the last two commits under that rule found no Major and 5 Minor findings, in the documents,
+two comments and one test. They are fixed. What remains of step 8 is the merge.
