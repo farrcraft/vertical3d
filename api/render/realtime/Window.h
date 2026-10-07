@@ -18,11 +18,11 @@
 
 namespace v3d::render::realtime {
 /**
- * The window everything is drawn into, and the vulkan instance and surface that reach it.
+ * The window everything is drawn into, and the Vulkan instance and surface that present to it.
  *
- * Every window is a vulkan window: an app presents through a swapchain whether it draws
- * in two dimensions or three, per ADR-0001. What separates a 2D app from a 3D one is what
- * its passes ask for - an orthographic camera and no depth - not the window under them.
+ * Every window is a Vulkan window: an app presents through a swapchain whether it draws in two
+ * dimensions or three. A 2D app differs from a 3D one in what its passes request - an
+ * orthographic camera and no depth - not in the window.
  **/
 class Window final {
  public:
@@ -65,18 +65,18 @@ class Window final {
     /**
      * Record a size the window has already been given.
      *
-     * This is the answer rather than the request: the loop calls it when SDL reports a
-     * resize that has happened, so it updates what width() and height() report and does
-     * not touch the window. Asking for a size is the other verb.
+     * The loop calls this when SDL reports a resize that has already happened. It updates
+     * what width() and height() report and does not change the window. To ask for a new
+     * size, call request().
      **/
     void resize(int width, int height) noexcept;
 
     /**
-     * Ask the window to become a size, which is what restoring a remembered one needs.
+     * Ask the window to become a size, for example to restore a remembered one.
      *
-     * The recorded size is not written here. SDL answers with a resize event and the loop
+     * The recorded size is not written here. SDL responds with a resize event and the loop
      * calls resize() with it, so a size the window manager refused or adjusted is never
-     * reported as one the window has - which it would be if this wrote both.
+     * reported as the window's size.
      **/
     void request(int width, int height);
 
@@ -91,35 +91,34 @@ class Window final {
     /**
      * Set the window caption.
      * @param cap the new window caption
-     */
+     **/
     void caption(const std::string_view& cap);
 
     /**
      * Whether the window has keyboard focus.
      *
-     * An app that steers with the pointer has to know: mouselook warps the cursor back to
-     * the centre after every move, which would drag it out of whatever the player alt
-     * tabbed to.
+     * An app that steers with the pointer checks this, so that a move made over whatever
+     * the player alt tabbed to does not turn the view.
      *
      * @return false when the window is not the one being typed into, and while there is
      *         no window at all
-     */
+     **/
     bool focused() const;
 
     /**
-     * Start or stop the platform composing text, which is what decides whether
-     * SDL_EVENT_TEXT_INPUT arrives at all.
+     * Start or stop the platform composing text. SDL_EVENT_TEXT_INPUT arrives only while
+     * it is on.
      *
-     * SDL3 sends none until it is asked to, so a ui text box would otherwise hear the keys
-     * and never the characters - ADR-0040. It is off when the window is created, and is
-     * turned on only while something that takes typing is focused. Starting it raises an
-     * on screen keyboard where the platform has one, and stopping it lowers it again.
+     * SDL3 sends no text events until text input is started, so a ui text box would
+     * otherwise receive the keys and never the characters. It is off when the window is
+     * created, and is turned on only while something that takes typing is focused. Starting
+     * it raises an on screen keyboard where the platform has one, and stopping it lowers it.
      *
-     * ui::shell::Keyboard is what follows the focus and calls this, so an app that routes
-     * its keyboard through that seam does not call it itself.
+     * ui::shell::Keyboard tracks the focus and calls this, so an app that routes its
+     * keyboard through it does not call this itself.
      *
      * @param on whether to compose
-     * @return whether the platform agreed, which a window that has not been created is not
+     * @return whether the platform accepted the change; false for a window not yet created
      **/
     bool textInput(bool on);
 
@@ -129,14 +128,33 @@ class Window final {
     bool textInput() const;
 
     /**
+     * Put the mouse in relative mode, or take it out.
+     *
+     * In relative mode the cursor is hidden and held in the window, and a motion event's
+     * motion() is how far the mouse moved however near an edge it is, which mouselook
+     * reads. The platform releases the mouse while the window is not focused and captures
+     * it again on focus. An app therefore turns the mode off only for its own reasons, such
+     * as a menu that needs a pointer.
+     *
+     * @param on whether to enter relative mode
+     * @return whether the platform accepted the change; false for a window not yet created
+     **/
+    bool relativeMouse(bool on);
+
+    /**
+     * @return whether the mouse is in relative mode for this window
+     **/
+    bool relativeMouse() const;
+
+    /**
      * Toggle mouse cursor visibility
      * @param state whether to enable or disable
-     */
+     **/
     static void cursor(bool state);
 
     /**
      * Move the mouse cursor to a new position in the window
-     */
+     **/
     void warpCursor(int x, int y);
 
  private:

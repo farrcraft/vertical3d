@@ -78,7 +78,7 @@ api/asset/loader/TextureFont.cpp:12:  #include "../../font/TextureFont.h"
 ```
 
 Three different types with one name, told apart by a `../` count.
-[`Font2D.cpp`](../../../api/asset/loader/Font2D.cpp) beside it does the same.
+`Font2D.cpp` beside it does the same.
 
 **The convention the tree is documented as having is the one it does not use.** ADR-0027
 installs nothing and consumes as source; the include root is how. A new consumer copies
@@ -86,7 +86,7 @@ installs nothing and consumes as source; the include root is how. A new consumer
 way.
 
 **And this was weighed once already, and declined.**
-[ADR-0027](../../adr/0027-the-api-is-consumed-as-source.md)'s fourth Negative bullet is exactly this
+[ADR-0027](../../adr/0027-build-consume-the-api-as-source.md)'s fourth Negative bullet is exactly this
 question: *"The same header has two spellings… Rewriting every in-tree include to the second form
 is a whole-file diff across the tree for no build gain, so the asymmetry is kept and a reader has
 to learn it."*
@@ -109,10 +109,10 @@ Thirty-two files in `v3d::render::offline`, and the prefixes are doing the work 
 should:
 
 - **`RIB*` — six files.** A lexer, a declarations table, a parameter list and a reader that
-  dispatches [ADR-0025](../../adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md)'s
+  dispatches [ADR-0025](../../adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md)'s
   request interface.
 - **`SL*` — twenty-four files.** A complete language per
-  [ADR-0026](../../adr/0026-shading-is-a-language-over-a-batch.md): lexer, syntax, parser, type
+  [ADR-0026](../../adr/0026-offline-shaders-run-over-batches-of-points.md): lexer, syntax, parser, type
   checker, built-ins, compiler and emitter, plus a bytecode runtime of value, program and
   machine. `SLCompiler.cxx` is 989 lines and
   `SLParser.cxx` is 664.
@@ -129,12 +129,12 @@ different jobs:
 
 - the shape of the library — `Engine`, `Loader`, `Component`, `Container`, `Layout`, `Arranger`
 - paint — `ComponentRenderer`, `Painter`, `TextRenderer`, `Text`, `Dressing`
-- input — `Cursor` ([ADR-0038](../../adr/0038-a-cursor-is-routed-by-the-library-that-drew-it.md)),
-  `Keys` ([ADR-0040](../../adr/0040-a-key-goes-to-a-focused-component.md)), `Command`
+- input — `Cursor` ([ADR-0038](../../adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md)),
+  `Keys` ([ADR-0040](../../adr/0040-ui-keyboard-focus-and-text-input.md)), `Command`
 - the immediate layer — `Immediate`, alone, at 909 lines of `.cpp` and 554 of `.h`
-  ([ADR-0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md))
+  ([ADR-0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md))
 - the shell pieces — `GameMenu`, `StatisticsOverlay`, which are
-  [ADR-0028](../../adr/0028-an-apps-shell-belongs-to-the-api.md) rather than components
+  [ADR-0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md) rather than components
 
 And one file is in the wrong place outright. `api/ui/Style.h` declares
 `v3d::ui::Style`, whose `property()` returns a `boost::shared_ptr<style::Property>` and which
@@ -152,7 +152,7 @@ library is 1,332 lines across 32 files, which is the signature of a directory ho
 ### `api/asset` mixes the framework with the payloads
 
 `Asset`, `Cache`, `Manager`, `Loader`, `Writer` and `Type` are the framework of
-[ADR-0030](../../adr/0030-a-model-is-an-interleaved-array-that-names-its-texture.md)'s asset path.
+[ADR-0030](../../adr/0030-models-one-interleaved-array.md)'s asset path.
 `Font2D`, `Image`, `Json`, `JsonFile`, `Model`, `Sound`, `Text` and `TextureFont` are the things
 it holds. They sit interleaved, alphabetically, and the result is that
 [`api/asset/Loader.h`](../../../api/asset/Loader.h) sits directly above `api/asset/loader/` — which
@@ -162,7 +162,7 @@ reads as a mistake rather than as a design, and is the first thing anyone asks a
 
 The nineteen files are four cameras (`Camera`, `CameraProfile`, `IsometricCamera`, `ArcBall`),
 three geometry types (`AABBox`, `Bound2D`, `Ray`), `Model` — the
-[ADR-0024](../../adr/0024-api-type-serves-both-renderers.md) seam both renderers read — and two
+ADR-0024 (removed) seam both renderers read — and two
 others:
 
 - **`String.{h,cxx}`** is one function, `string_to_vec2`. It has **no
@@ -171,7 +171,7 @@ others:
   namespace** and defines `RANDOM_FLOAT` as a macro calling `rand_r`, which MSVC does not have,
   so the macro would not compile if anything used it. Nothing does. `floor_log2` is called only
   by its own test. `npot` has exactly one caller,
-  [`api/font/Font2D.cxx:147`](../../../api/font/Font2D.cxx#L147). Two moya files include the header
+  `api/font/Font2D.cxx:147`. Two moya files include the header
   and use none of it.
 
 It is the oldest surviving file in `api/` and the only one that puts a name in the global
@@ -181,13 +181,13 @@ namespace, which is a rule the rest of the tree keeps without being told.
 
 One record, and it is step 1. The seven moves after it are not ADR material: a directory split is
 reversible with a `git mv`, constrains nothing later, and the reasoning belongs beside the
-convention in [Conventions.md](../../Conventions.md) rather than in a decision record.
+convention in [Conventions.md](../../contributing/Conventions.md) rather than in a decision record.
 
 | ADR | Decision |
 |---|---|
-| [0048](../../adr/0048-an-api-header-is-named-from-the-repository-root.md) (step 1) | An api header is named by its path from the repository root, inside the tree as well as outside |
-| [0027](../../adr/0027-the-api-is-consumed-as-source.md) | The api is taken as source through a nesting root — it created the include root step 1 starts using, and declined to use it |
-| [0033](../../adr/0033-a-consumer-selects-the-api-libraries-it-wants.md) | A consumer names the libraries it wants — the library boundaries this plan does **not** move |
+| [0048](../../adr/0048-includes-name-headers-from-the-repository-root.md) (step 1) | An api header is named by its path from the repository root, inside the tree as well as outside |
+| [0027](../../adr/0027-build-consume-the-api-as-source.md) | The api is taken as source through a nesting root — it created the include root step 1 starts using, and declined to use it |
+| [0033](../../adr/0033-build-select-api-libraries-through-a-manifest.md) | A consumer names the libraries it wants — the library boundaries this plan does **not** move |
 
 Note what step 1 does *not* do to ADR-0027. It does not supersede it: that record's decision — the
 api is consumed as source through a nesting root — is untouched, and the include root it created
@@ -255,14 +255,14 @@ What it has to settle:
 - **What it costs.** cpplint classifies an angle-bracket include as a system header, so
   `<api/…>` sorts into the group with `<boost/…>` and `<glm/…>` rather than with the quoted
   project headers. Every converted file's include block gets reordered, and
-  [Linting.md](../../Linting.md) is explicit that there is no `--filter` — so this is a real
+  [Linting.md](../../contributing/Linting.md) is explicit that there is no `--filter` — so this is a real
   constraint on the conversion, not a warning to suppress.
 - **Whether tests follow.** They should, and the plan assumes it: a test that includes its
   subject differently from the way every consumer does is a test written against a private view
   of the library.
 
 **Landed as `proposed` on 2026-09-08.**
-[ADR-0048](../../adr/0048-an-api-header-is-named-from-the-repository-root.md) is written and in the
+[ADR-0048](../../adr/0048-includes-name-headers-from-the-repository-root.md) is written and in the
 index. Steps 2 and 3 do not start until it is accepted, and the note on ADR-0027's fourth Negative
 bullet is held until then — a pointer to a proposed record is a claim that may not survive.
 
@@ -283,7 +283,7 @@ left alone — 159 of them across 24 files, 134 in `api/`. Nothing failed, becau
 form compiles and lints exactly as well; the completeness grep asked whether `../` was gone,
 which is what the script did rather than what the record says. It surfaced only when step 5
 went to add an api include to `ComponentRenderer.cpp` and found no api block to add it to.
-The check in [Conventions.md](../../Conventions.md) is now the one that would have caught it.
+The check in [Conventions.md](../../contributing/Conventions.md) is now the one that would have caught it.
 
 **Where `<api/…>` goes was not a choice.** cpplint reads an angle-bracket include ending in `.h`
 as a *C* system header, so it must precede every C++ system header; leaving the converted lines
@@ -325,7 +325,7 @@ over the whole tree. No relative parent include survives anywhere in the reposit
 own other directories — `vertical3d/src/view` including `../scene/WireframeVisitor.h`. Those are
 converted too, so `<vertical3d/src/scene/WireframeVisitor.h>` is how an app names its own header
 and no `../` survives. The alternative was to convert only the api ones and leave an app file
-holding both spellings, which is the problem [ADR-0048](../../adr/0048-an-api-header-is-named-from-the-repository-root.md)
+holding both spellings, which is the problem [ADR-0048](../../adr/0048-includes-name-headers-from-the-repository-root.md)
 exists to remove, in miniature. It also makes the editor's own directories movable, which is what
 the open question below was waiting on.
 
@@ -449,7 +449,7 @@ ui/component/  unchanged
 stutter is a symptom rather than the objection: `Immediate` is not a *concern* of this library
 the way paint and input are, it is one of its two entry points — the immediate counterpart to
 `Engine` for the retained side, per
-[ADR-0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md). It belongs in the
+[ADR-0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md). It belongs in the
 top-level list with `Engine` and `Loader`. The same reasoning settles the open question below
 about `Layout` and `Arranger`, which stay for the same reason.
 
@@ -469,7 +469,7 @@ name alone is not safe here, and the compiler is what settles each one.
 `layout/` versus `widget/` split there would be arbitrary — a `Panel` is both.
 
 `ui/shell/` is the one grouping that is a claim rather than a tidy-up:
-[ADR-0028](../../adr/0028-an-apps-shell-belongs-to-the-api.md) says what every app repeats belongs to
+[ADR-0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md) says what every app repeats belongs to
 the api, and `GameMenu` and `StatisticsOverlay` are that rather than components. Putting them
 under a name says which of the two things in this library they are.
 
@@ -522,9 +522,9 @@ shape again:
   include-based tooling because avoiding an include is the whole point of them.
 
 `renderer/` earns the split on its own. Those three are the primitives of
-[ADR-0005](../../adr/0005-one-batched-quad-primitive.md),
-[ADR-0011](../../adr/0011-lines-are-the-second-primitive.md) and
-[ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md) — the files an app-facing rendering
+[ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md),
+[ADR-0011](../../adr/0011-rendering-lines-as-a-world-space-primitive.md) and
+[ADR-0042](../../adr/0042-rendering-world-space-sprites.md) — the files an app-facing rendering
 change reaches — and they are currently filed between `Recorder` and `Resources`.
 
 `frame/` is the largest of the five and the one whose membership is arguable: it is everything
@@ -626,7 +626,7 @@ If a config parser wants it back later it is four lines, and it belongs to which
 parsing rather than to `type`.
 
 **`3dtypes.h` is retired.** `npot` has one caller,
-[`api/font/Font2D.cxx`](../../../api/font/Font2D.cxx) — it moves there, into `v3d::font`, as a static
+`api/font/Font2D.cxx` — it moves there, into `v3d::font`, as a static
 free function. `floor_log2` has no caller but its own test; it goes with `npot` if the same file
 wants it and is deleted otherwise. `RANDOM_FLOAT` is deleted outright: it is a macro naming
 `rand_r`, which does not exist on this toolchain, so it has never been compiled and cannot be.
@@ -643,29 +643,29 @@ That is the last name `api/` puts in the global namespace.
 
 **Landed 2026-09-08**, for every step except 4, which has not been done.
 
-**The ADRs are deliberately not updated.** [ADR-0011](../../adr/0011-lines-are-the-second-primitive.md)
-names `vulkan::LineRenderer` and [ADR-0012](../../adr/0012-camera-builds-vulkan-clip-space.md) names
+**The ADRs are deliberately not updated.** [ADR-0011](../../adr/0011-rendering-lines-as-a-world-space-primitive.md)
+names `vulkan::LineRenderer` and [ADR-0012](../../adr/0012-camera-projection-targets-vulkan-clip-space.md) names
 `v3d::type::Camera` in its title. A record says what was decided when it was decided, and
 rewriting the names inside one to match a later move falsifies it. The rename is recorded here
 and in the commits, which is where a reader following a stale name should end up.
 
-- **[Conventions.md](../../Conventions.md)** took the include rule with step 3 rather than waiting
+- **[Conventions.md](../../contributing/Conventions.md)** took the include rule with step 3 rather than waiting
   for this step: it binds every file in the tree from the moment step 2 landed, and nothing in
   the build or the linter enforces it, so a week of it being undocumented is a week in which a
   new `../` is nobody's fault. What it still needs from this step is the rule for when a
   directory splits — when its files stop sharing a reader, not when it passes a file count, with
   `api/dag` as the worked counter-example.
-- **[Architecture.md](../../Architecture.md)** describes the shape of `api/`, so the six changed
+- **[api/README.md](../../api/README.md)** describes the shape of `api/`, so the six changed
   libraries change in it.
 - **[v3dHelpers.cmake](../../../cmake/v3dHelpers.cmake)**'s include-root comment currently states
   the reason step 1 removes. Corrected, not deleted — the root is still the repository, for a
   reason that survives.
-- **[RenderingPipeline.md](../../RenderingPipeline.md)** for step 7,
-  **[UserInterface.md](../../UserInterface.md)** for steps 5 and 6,
-  **[OfflineRenderers.md](../../OfflineRenderers.md)** for step 4. Each of these names files by
+- **[RenderingPipeline.md](../../api/rendering/README.md)** for step 7,
+  **[UserInterface.md](../../api/ui/README.md)** for steps 5 and 6,
+  **[OfflineRenderers.md](../../offline/README.md)** for step 4. Each of these names files by
   path.
-- **[ADR-0027](../../adr/0027-the-api-is-consumed-as-source.md)**'s fourth Negative bullet gets a
-  note saying [0048](../../adr/0048-an-api-header-is-named-from-the-repository-root.md) reversed it.
+- **[ADR-0027](../../adr/0027-build-consume-the-api-as-source.md)**'s fourth Negative bullet gets a
+  note saying [0048](../../adr/0048-includes-name-headers-from-the-repository-root.md) reversed it.
   Held until 0048 is accepted, and earlier than step 11 if that happens first.
 - **[README.md](../README.md)** and **[sdlc.md](../../sdlc.md)** get this plan's entry, and lose it
   again when it closes.
@@ -685,7 +685,7 @@ sufficient:
   look.
 - **Lint.** cpplint over the tree, and `/W4 /WX` through the build. Steps 2 and 3 are the ones to
   watch: converting to angle brackets moves those includes into cpplint's system-header group,
-  and [Linting.md](../../Linting.md) allows no filter.
+  and [Linting.md](../../contributing/Linting.md) allows no filter.
 - **Run.** Once, at the end, rather than per step: the editor and one game, with the validation
   layer on and silent. Nothing here changes a draw, so this is a check that the tree still links
   and starts rather than a rendering verification.
@@ -702,13 +702,13 @@ Two things worth adding that the gates do not cover:
 ## What this plan does not do
 
 **It does not move a library boundary.** Sixteen `v3dlib_*` targets in, sixteen out. Every split
-here is inside a library, and [ADR-0033](../../adr/0033-a-consumer-selects-the-api-libraries-it-wants.md)'s
+here is inside a library, and [ADR-0033](../../adr/0033-build-select-api-libraries-through-a-manifest.md)'s
 manifest is untouched. A directory is not a target.
 
 **It does not split `api/ui/component`.** 34 files, and they are one concept repeated. The five
 places that must be edited together to add a widget are recorded in
 [UiConsolidation](UiConsolidation.md) step 8 and partly closed by
-[ADR-0047](../../adr/0047-a-component-type-is-checked-by-the-compiler.md); a directory split does
+[ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md); a directory split does
 nothing for that and adds a level to seventeen paths.
 
 **It does not split `api/dag`, `api/brep`, `api/font`, `api/image`, `api/input`, `api/grid`,
@@ -745,3 +745,33 @@ subdirectories would hide exactly the dependency information the split exists to
   them is out of scope here — this plan is about `api/` — but step 3 converted their internal
   includes along with the api ones, so an editor directory is now as movable as an api one and
   the question can be asked whenever someone wants to.
+
+## Outcome
+
+Drafted and closed on 2026-09-08, from a survey of `api/`. None of its eleven steps changed
+behaviour: three changed how a header is named, seven moved files, and one updated the
+documents.
+
+The ordering was the point. The first three steps were a hard prerequisite. The tree had 763
+relative includes across 337 files, and nothing used the include root that
+[ADR-0027](../../adr/0027-build-consume-the-api-as-source.md) had created. Any move made before
+the conversion would have rewritten `../` counts in libraries and apps that had nothing to do
+with it. After the conversion, a move was a `git mv`, a `CMakeLists.txt` edit and a namespace
+line.
+
+Four things came out differently from the plan:
+
+- Step 4 was drafted to wait for [OfflineRenderingPhase3](OfflineRenderingPhase3.md), and did
+  not need to. Both were sequential commits on one branch, not concurrent work.
+- `ui/immediate/` was not created. `Immediate` is one of the library's two entry points, not a
+  concern inside it. The same test kept `Layout` and `Arranger` at the top level.
+- Steps 7 and 10 became moves *and* renames. Adding a group segment to an already deep namespace
+  gave names like `vulkan::pipeline::PipelineBuilder`.
+- Two of step 9's three stated reasons were wrong. `Loader.h` above `loader/` is a base class
+  above its implementations, the same shape `api/image` uses. The step was still justified, for
+  a reason the plan had not predicted: it separated four pairs of same-named types that had been
+  told apart only by scope.
+
+The steps above also record what the renames cost, which is worth reading before attempting
+the same kind of change: three substring collisions, one of which rewrote Vulkan's own
+`VkPipelineCache`, and a forward declaration in the wrong namespace at nearly every step.

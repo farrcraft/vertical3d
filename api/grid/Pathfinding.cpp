@@ -5,6 +5,8 @@
 
 #include "Pathfinding.h"
 
+#include "DistanceField.h"
+
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -23,9 +25,8 @@ namespace {
 constexpr int UNREACHED = std::numeric_limits<int>::max();
 
 /**
- * Neighbour offsets, orthogonals first. The order is what breaks ties between routes of
- * equal cost, so it is fixed rather than incidental: the same query returns the same path on
- * every run, which is what lets a result be reproduced.
+ * Neighbour offsets, orthogonals first. The order breaks ties between routes of equal cost,
+ * so it is fixed: the same query returns the same path on every run.
  **/
 constexpr std::array<TileCoord, 8> STEPS{
     TileCoord{ 1, 0 }, TileCoord{ -1, 0 }, TileCoord{ 0, 1 }, TileCoord{ 0, -1 },
@@ -66,8 +67,7 @@ class Walk {
     }
 
     std::size_t index(TileCoord tile) const {
-        return static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(grid_.width()) +
-            static_cast<std::size_t>(tile.x);
+        return grid_.index(tile);
     }
 
     TileCoord coord(std::size_t index) const {
@@ -88,7 +88,7 @@ class Walk {
      *
      * A diagonal additionally requires one of the two tiles it passes between to be open,
      * so a wall laid corner to corner cannot be squeezed through. One blocked corner still
-     * admits the step: rounding the end of a wall passes through nothing.
+     * allows the step, so a mover can round the end of a wall.
      **/
     bool allowed(TileCoord from, TileCoord step) const {
         if (!open(TileCoord{ from.x + step.x, from.y + step.y })) {
@@ -104,6 +104,55 @@ class Walk {
     const TileGrid& grid_;
     const TileFilter& enterable_;
 };
+
+/**
+ * Every tile a walk reaches from a seed and what reaching it cost: Dijkstra, which is the A* of
+ * findPath() with the heuristic left at zero. A step that would cost more than the budget is
+ * not taken.
+ *
+ * @param settled told of each tile once, when its cost is final, cheapest first - or empty
+ * @return each tile's cost by index, UNREACHED where the flood did not get
+ **/
+std::vector<int> flood(const Walk& walk, TileCoord seed, int budget, const std::function<void(TileCoord, int)>& settled) {
+    std::vector<int> best(walk.count(), UNREACHED);
+    const std::size_t seedIndex = walk.index(seed);
+    best[seedIndex] = 0;
+
+    Queue frontier;
+    frontier.push(Frontier{ 0, seedIndex });
+
+    while (!frontier.empty()) {
+        const Frontier current = frontier.top();
+        frontier.pop();
+
+        // stale: this tile was queued again more cheaply after this entry was pushed
+        if (current.estimate > best[current.index]) {
+            continue;
+        }
+
+        const TileCoord tile = walk.coord(current.index);
+        if (settled) {
+            settled(tile, current.estimate);
+        }
+
+        for (const TileCoord step : STEPS) {
+            if (!walk.allowed(tile, step)) {
+                continue;
+            }
+            const int cost = current.estimate + stepCost(step);
+            if (cost > budget) {
+                continue;
+            }
+            const std::size_t nextIndex = walk.index(TileCoord{ tile.x + step.x, tile.y + step.y });
+            if (cost >= best[nextIndex]) {
+                continue;
+            }
+            best[nextIndex] = cost;
+            frontier.push(Frontier{ cost, nextIndex });
+        }
+    }
+    return best;
+}
 
 };  // namespace
 
@@ -182,46 +231,9 @@ std::vector<ReachableTile> reachableTiles(const TileGrid& grid, TileCoord start,
         return {};
     }
 
-    const Walk walk(grid, enterable);
-
-    std::vector<int> best(walk.count(), UNREACHED);
-
-    const std::size_t startIndex = walk.index(start);
-    best[startIndex] = 0;
-
-    Queue frontier;
-    frontier.push(Frontier{ 0, startIndex });
-
     std::vector<ReachableTile> reached;
-
-    while (!frontier.empty()) {
-        const Frontier current = frontier.top();
-        frontier.pop();
-
-        if (current.estimate > best[current.index]) {
-            continue;
-        }
-
-        const TileCoord tile = walk.coord(current.index);
-        reached.push_back(ReachableTile{ tile, current.estimate });
-
-        for (const TileCoord step : STEPS) {
-            if (!walk.allowed(tile, step)) {
-                continue;
-            }
-            const int cost = current.estimate + stepCost(step);
-            if (cost > budget) {
-                continue;
-            }
-            const std::size_t nextIndex = walk.index(TileCoord{ tile.x + step.x, tile.y + step.y });
-            if (cost >= best[nextIndex]) {
-                continue;
-            }
-            best[nextIndex] = cost;
-            frontier.push(Frontier{ cost, nextIndex });
-        }
-    }
-
+    flood(Walk(grid, enterable), start, budget,
+        [&reached](TileCoord tile, int cost) { reached.push_back(ReachableTile{ tile, cost }); });
     return reached;
 }
 
@@ -230,43 +242,12 @@ DistanceField::DistanceField(const TileGrid& grid, TileCoord goal, const TileFil
         return;
     }
 
-    const Walk walk(grid, enterable);
-
     width_ = grid.width();
-    costs_.assign(walk.count(), UNREACHABLE);
-
-    const std::size_t goalIndex = walk.index(goal);
-    costs_[goalIndex] = 0;
-
-    Queue frontier;
-    frontier.push(Frontier{ 0, goalIndex });
-
-    while (!frontier.empty()) {
-        const Frontier current = frontier.top();
-        frontier.pop();
-
-        if (current.estimate > costs_[current.index]) {
-            continue;
-        }
-
-        // the step is recorded on the tile it leads *to*, and walked outward from the goal.
-        // it reads as the cost of coming back the other way because both halves of the rule
-        // are symmetric: a diagonal costs the same either way, and the two corners it
-        // squeezes between are the same two tiles from both ends.
-        const TileCoord tile = walk.coord(current.index);
-        for (const TileCoord step : STEPS) {
-            if (!walk.allowed(tile, step)) {
-                continue;
-            }
-            const std::size_t nextIndex = walk.index(TileCoord{ tile.x + step.x, tile.y + step.y });
-            const int cost = current.estimate + stepCost(step);
-            if (cost >= costs_[nextIndex]) {
-                continue;
-            }
-            costs_[nextIndex] = cost;
-            frontier.push(Frontier{ cost, nextIndex });
-        }
-    }
+    // the flood goes outward from the goal and records each step on the tile it leads *to*.
+    // it reads as the cost of coming back the other way because both halves of the rule are
+    // symmetric. A diagonal costs the same either way. The two corners it squeezes between
+    // are the same two tiles from both ends. UNREACHED and UNREACHABLE are one value
+    costs_ = flood(Walk(grid, enterable), goal, UNREACHED, {});
 }
 
 int DistanceField::cost(TileCoord tile) const {

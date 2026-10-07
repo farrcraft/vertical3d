@@ -18,7 +18,7 @@ namespace v3d::editor {
  *
  * A square of evenly spaced lines, with every nth one emphasised and the two through
  * the origin emphasised again. The emphasis is colour rather than width, because lines
- * are one pixel wide - ADR-0011.
+ * are drawn one pixel wide.
  *
  * The plane the grid lies in follows the camera. An orthographic view is looking along
  * one axis, so the grid lies in the plane of the other two and the view reads as a
@@ -64,7 +64,7 @@ class ConstructionPlane final {
     unsigned int lines() const noexcept;
 
     /**
-     * Append the grid to a canvas, in the plane the camera makes sense of.
+     * Append the grid to a canvas, in the plane chosen for the camera.
      *
      * @param camera the view the grid is being drawn for, which decides its plane
      * @param canvas where the segments are appended - nothing is cleared

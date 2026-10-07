@@ -19,9 +19,8 @@ namespace v3d::editor {
 /**
  * What the editor is editing: the meshes of one document.
  *
- * It holds no cameras. The views own theirs and config::CameraProfiles owns the table they are
- * built from, so a scene that also kept profiles would be a second place to look for
- * the same thing.
+ * It holds no cameras. The views own theirs, and config::CameraProfiles owns the table
+ * they are built from.
  *
  * Meshes are found by the id their dag::Node base carries rather than by position, so a
  * selection outlives an insertion or a removal.
@@ -29,7 +28,7 @@ namespace v3d::editor {
 class Scene final {
  public:
     /**
-     * @return the id of the mesh, which is what a selection names
+     * @return the id of the mesh. A selection names a mesh by this id.
      **/
     unsigned int add(const boost::shared_ptr<v3d::brep::BRep>& mesh);
 
@@ -57,7 +56,7 @@ class Scene final {
     std::size_t count() const noexcept;
 
     /**
-     * Drop everything, which is what closing a document does.
+     * Drop everything, as closing a document does.
      **/
     void clear() noexcept;
 

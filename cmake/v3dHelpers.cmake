@@ -2,59 +2,53 @@
 # so a consumer can include these without re-running the package resolution.
 #
 # Paths into this repository go through V3D_ROOT rather than CMAKE_SOURCE_DIR, which names
-# the consumer's root once another project adds this one - see ADR-0027.
+# the consumer's root once another project adds this one with add_subdirectory.
 
 # Every library under api/ is declared with this, which gives it the three things a target
 # has to carry to be linkable from outside this tree:
 #
-#  - an include root, so every file writes #include <api/image/Image.h> - a consumer's and
-#    this repository's alike, per ADR-0048. The root is the repository rather than api/ so
-#    that the prefix says which repository a header came from, and because sixteen per-library
-#    roots would put names like <type/Camera.h> on every consumer's search path. There is no
-#    INSTALL_INTERFACE half: ADR-0027 installs nothing, and a half-written export is worse
-#    than none.
-#  - a v3d:: alias, which is the name a consumer links and the one that would survive a
-#    later move to an installed package.
-#  - /EHsc and /utf-8 in the interface. Both are carried by the directory's own flags for
-#    this tree's compilation and reach nothing beyond it; a consumer that compiles Logger.h
-#    without /utf-8 hits the static_assert in spdlog's bundled fmt.
+#  - an include root, so every file, in a consumer or in this repository, names a header
+#    from the repository root, as in #include <api/image/Image.h>. The root is the
+#    repository rather than api/ so that the prefix shows which repository a header came
+#    from, and so that names like <type/Camera.h> stay off every consumer's search path.
+#    There is no INSTALL_INTERFACE half, because the api is consumed as source and nothing
+#    is installed.
+#  - a v3d:: alias, which is the name a consumer links. It would stay the same if the api
+#    were later shipped as an installed package.
+#  - /EHsc and /utf-8 in the interface. The directory's own flags apply them only to this
+#    tree's compilation. A consumer that compiles Logger.h without /utf-8 hits the
+#    static_assert in spdlog's bundled fmt.
 function(v3d_add_api_library name)
 	set(target "v3dlib_${name}")
 	add_library(${target} ${ARGN})
 	add_library(v3d::${name} ALIAS ${target})
 	target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${V3D_ROOT}>)
 	target_compile_options(${target} INTERFACE /EHsc /utf-8)
-	# Every library names boost in a header, if only for shared_ptr.
+	# Most libraries name boost in a header, if only for shared_ptr, so every one is given
+	# the headers.
 	target_link_libraries(${target} PUBLIC Boost::headers)
 endfunction()
 
 # Copy a directory of assets beside a target's executable, as a build rule that the assets
 # themselves are the inputs to.
 #
-# **Not a POST_BUILD step on the target**, which is what this was until it was found to do
-# the opposite of what its own comment claimed. POST_BUILD runs only when the target itself
-# relinks, so editing a document and rebuilding left the previous copy in place and the app
-# went on reading it - the silent drift between source tree and build tree that copying is
-# supposed to prevent. Ninja reports "no work to do" while the running app disagrees with
-# the file on disk, and the wrong conclusion to draw from that is that the edit had no
-# effect.
+# **Not a POST_BUILD step on the target.** POST_BUILD runs only when the target itself
+# relinks, so an edited asset would not be copied until the next relink. Until then the app
+# would keep reading the old copy while Ninja reports "no work to do".
 #
-# A stamp file is the rule's output because a directory is not a dependency a generator can
-# compare timestamps on. CONFIGURE_DEPENDS re-globs when the build runs rather than only at
-# configure time, so a document that is added rather than edited is picked up as well - the
-# case that is easiest to miss, because it looks exactly like the edit case from outside.
+# A stamp file is the rule's output because a generator cannot compare timestamps on a
+# directory. CONFIGURE_DEPENDS re-globs when the build runs rather than only at configure
+# time, so an asset that is added, not just edited, is copied as well.
 #
 # The stamp is per configuration. A multi-config generator gives each configuration its own
 # TARGET_FILE_DIR, and one shared stamp would leave the second configuration's data
 # directory unwritten.
 #
 # **A deleted asset is still left behind**, because copy_directory merges rather than
-# mirrors. Clearing the destination first is not available here: an app takes the shared
-# data and its own into the same directory, so whichever copy ran second would clear what
-# the first had just written, and re-running only the copy whose own glob changed would not
-# put the other back. The failure is a file nothing reads rather than an app reading the
-# wrong one, which is the difference between this and the case above - a stale data
-# directory is cleared by deleting it, and the next build fills it.
+# mirrors. The destination cannot be cleared first: an app copies the shared data and its
+# own into the same directory, so the second copy would clear what the first had written.
+# A leftover file is harmless because nothing reads it. To clear a stale data directory,
+# delete it and the next build fills it again.
 #
 # @param target the executable the data is copied beside
 # @param name what this set of data is, which separates one call's stamp from another's
@@ -72,8 +66,8 @@ function(v3d_copy_data target name source)
 	add_custom_target(${copier} DEPENDS "${stamp}")
 	add_dependencies(${target} ${copier})
 	# An app that takes both the shared data and its own copies two directories into one
-	# destination, and nothing orders those against each other - so they are chained in the
-	# order they were asked for rather than left to run at the same time.
+	# destination, and nothing orders those copies against each other. They are chained in
+	# the order they were requested rather than left to run at the same time.
 	get_target_property(previous ${target} V3D_LAST_DATA_TARGET)
 	if(previous)
 		add_dependencies(${copier} ${previous})
@@ -106,10 +100,9 @@ function(v3d_add_test lib)
 	set(target "v3dtest_${lib}")
 	add_executable(${target} ${ARGN})
 	target_link_libraries(${target} PRIVATE Boost::unit_test_framework)
-	# A suite names its subject from the repository root, per ADR-0048. Most get the root
-	# from the api library they cover, whose include directory is PUBLIC; a suite that links
-	# no api library - voxel's meshing tests link only boost and libnoise - has no other
-	# source for it, and every one of its includes fails to resolve without this.
+	# A suite includes headers by their path from the repository root. An api library gives
+	# the root PUBLIC. An app suite also compiles the app's own sources, which include each
+	# other by that path, so the root is named here rather than left to a link.
 	target_include_directories(${target} PRIVATE ${V3D_ROOT})
 	target_compile_options(${target} PRIVATE /EHsc /utf-8)
 	# Boost.Test's CRT leak check reports at exit, before spdlog's global registry is torn
@@ -124,7 +117,12 @@ endfunction()
 #
 # The tool is looked for here rather than at configure time, so that a build compiling no
 # shader is not stopped by its absence.
+#
+# OUTPUT names the module something other than the source's file name, and DEFINES are passed
+# to the preprocessor, so that one source compiled twice is two shaders rather than two copies
+# of a source.
 function(v3d_add_shader target source)
+	cmake_parse_arguments(PARSE_ARGV 2 shader "" "OUTPUT" "DEFINES")
 	if(NOT Vulkan_GLSLC_EXECUTABLE)
 		find_program(Vulkan_GLSLC_EXECUTABLE NAMES glslc HINTS "$ENV{VULKAN_SDK}/Bin" "$ENV{VULKAN_SDK}/bin")
 	endif()
@@ -132,13 +130,24 @@ function(v3d_add_shader target source)
 		message(FATAL_ERROR "glslc was not found - it ships with the Vulkan SDK, which VULKAN_SDK should point at")
 	endif()
 	get_filename_component(name ${source} NAME)
+	if(shader_OUTPUT)
+		set(name ${shader_OUTPUT})
+	endif()
 	set(output "${CMAKE_CURRENT_BINARY_DIR}/shaders/${name}.inc")
+	set(defines "")
+	foreach(define IN LISTS shader_DEFINES)
+		list(APPEND defines "-D${define}")
+	endforeach()
+	# glslc writes what the shader #included into a depfile, so an edit to a block several
+	# shaders share rebuilds every one of them rather than only the file that was named here
 	add_custom_command(
 		OUTPUT ${output}
 		COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/shaders"
-		COMMAND ${Vulkan_GLSLC_EXECUTABLE} --target-env=vulkan1.3 -O -mfmt=c "${CMAKE_CURRENT_SOURCE_DIR}/${source}" -o ${output}
+		COMMAND ${Vulkan_GLSLC_EXECUTABLE} --target-env=vulkan1.3 -O -mfmt=c ${defines} -MD -MF "${output}.d" -MT ${output}
+			"${CMAKE_CURRENT_SOURCE_DIR}/${source}" -o ${output}
 		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${source}"
-		COMMENT "Compiling ${source} to SPIR-V"
+		DEPFILE "${output}.d"
+		COMMENT "Compiling ${source} to SPIR-V as ${name}"
 		VERBATIM)
 	set_source_files_properties(${output} PROPERTIES HEADER_FILE_ONLY TRUE GENERATED TRUE)
 	target_sources(${target} PRIVATE ${output})

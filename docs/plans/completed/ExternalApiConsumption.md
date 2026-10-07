@@ -1,7 +1,7 @@
 # External API Consumption — The api Builds Inside Another Repository's Tree
 
 Drafted 2026-09-05, **closed 2026-09-05**. Made the `api/` libraries usable by an application in a
-different repository, by the route [ADR-0027](../../adr/0027-the-api-is-consumed-as-source.md)
+different repository, by the route [ADR-0027](../../adr/0027-build-consume-the-api-as-source.md)
 settles: the consumer takes this repository as a submodule or through `FetchContent` and builds it
 with its own compiler. Nothing is installed, exported or packaged.
 
@@ -31,8 +31,8 @@ Recorded in [docs/adr/](../../adr/), not here.
 
 | ADR | Decision |
 |---|---|
-| [0027](../../adr/0027-the-api-is-consumed-as-source.md) | The api is taken as source through a nestable root, not as an installed package — **step 1 wrote it** |
-| [0022](../../adr/0022-offline-rendering-shares-an-api-library.md) | `api/render` builds two libraries, and the offline one names neither Vulkan nor SDL |
+| [0027](../../adr/0027-build-consume-the-api-as-source.md) | The api is taken as source through a nestable root, not as an installed package — **step 1 wrote it** |
+| [0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) | `api/render` builds two libraries, and the offline one names neither Vulkan nor SDL |
 
 ## What blocks what
 
@@ -172,7 +172,7 @@ spdlog's bundled fmt.
 - **The `BOOST_USE_WINAPI_VERSION` trio was already `PUBLIC`** where it appeared. It is the model
   the other two follow, and it is now on all sixteen rather than nine.
 - **`/std:c++latest` and `/permissive-` stay the consumer's to set**, stated in the contract in
-  [docs/Dependencies.md](../../Dependencies.md) rather than forced through an interface property.
+  [docs/Dependencies.md](../../contributing/Dependencies.md) rather than forced through an interface property.
 
 **Not as planned — the standard could not stay a raw flag.** `target_compile_features(INTERFACE
 cxx_std_23)` was the plan's way of stating a floor, and it is unnecessary: glm and EnTT already
@@ -212,9 +212,9 @@ five describe a build that worked once.
   incomplete; an example that names one leaf library tests almost nothing.
 - **It is a project in its own right, not a subdirectory of this one.** Its root is its own, which
   is what makes `CMAKE_SOURCE_DIR` differ from `V3D_ROOT`, and what would have caught step 6's bug.
-- **The walkthrough is written down** in [docs/NewProject.md](../../NewProject.md): the submodule
+- **The walkthrough is written down** in [docs/NewProject.md](../../api/UsingTheApi.md): the submodule
   layout, the manifest a consumer needs, the CMakeLists with the five things in it worth knowing, the
-  app, the config, and how to tell a first run worked. [docs/Dependencies.md](../../Dependencies.md)
+  app, the config, and how to tell a first run worked. [docs/Dependencies.md](../../contributing/Dependencies.md)
   keeps the vcpkg half and points at it.
 
 **Not as planned — it is a step in `ctest.yml`, not a workflow of its own.** The plan argued for a
@@ -269,3 +269,13 @@ Two are settled, two are carried to [TODO.md](../../TODO.md).
 - **Whether the example is enough. It is, for now**, having been made an app rather than a link
   check. It cannot drift, because it lives here; it also cannot catch what only a real app needs, and
   that is the thing to revisit when the second repository exists.
+
+## Outcome
+
+Drafted and closed on 2026-09-05. It made the `api/` libraries buildable inside another
+repository's tree, as source through an include root that nests, rather than as an installed
+package ([ADR-0027](../../adr/0027-build-consume-the-api-as-source.md)).
+
+Most of the work was a correction the tree needed anyway. Each library now states its own
+include root and propagates its own dependencies. Before, both came from global settings in the
+root `CMakeLists.txt`.

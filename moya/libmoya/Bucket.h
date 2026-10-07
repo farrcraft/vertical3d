@@ -29,7 +29,7 @@ class Bucket final {
     void addPrimitive(const boost::shared_ptr<ReyesPrimitive>& primitive);
     /**
      * Render every primitive in the bucket: dice it into micropolygon grids, shade
-     * them and sample them into the framebuffer's planes. A primitive too large to
+     * them and hide them into the frame's samples. A primitive too large to
      * dice is split instead, and its pieces go back through the first pass, which may
      * add them to this bucket or another one.
      * @return whether anything was split, and so whether the sweep has to come round

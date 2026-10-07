@@ -3,9 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <moya/libmoya/RenderMan.h>
+#include <api/render/offline/FrameBuffer.h>
+#include <moya/libmoya/FrameBuffer.h>
 #include <moya/libmoya/RenderContext.h>
+#include <moya/libmoya/RenderMan.h>
 
+#include <cmath>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -13,8 +16,8 @@
 namespace {
 
 /**
- * The context the C entry points are landing in. RiGetContext is RI's own way to ask, and
- * the handle it answers with is the context.
+ * The context the C entry points are landing in. RiGetContext is RI's own query for it, and
+ * the handle it returns is the context.
  **/
 v3d::moya::RenderContext & context() {
     return *static_cast<v3d::moya::RenderContext*>(RiGetContext());
@@ -27,9 +30,9 @@ v3d::moya::RenderContext & context() {
  * goes through the other: a va_list cannot be built at runtime, so a reader holding a
  * parsed parameter list could not call these.
  *
- * That is exactly why the shader requests are worth a case on this path too. A parameter
- * a C caller passes is typed by what RiDeclare said, the same table a file's Declare
- * fills, and it reaches the same graphics state.
+ * The shader requests therefore need a case on this path too. A parameter a C caller passes
+ * is typed by what RiDeclare said, the same table a file's Declare fills, and it reaches the
+ * same graphics state.
  **/
 BOOST_AUTO_TEST_CASE(renderman_surface_and_lights_test) {
     RiBegin(RI_NULL);
@@ -61,8 +64,8 @@ BOOST_AUTO_TEST_CASE(renderman_surface_and_lights_test) {
 }
 
 /**
- * A parameter the scene declared itself is typed by that declaration, which is what makes
- * a shader parameter the standard has never heard of bindable at all.
+ * A parameter the scene declared itself is typed by that declaration, so a shader parameter
+ * the standard does not define can still be bound.
  **/
 BOOST_AUTO_TEST_CASE(renderman_declare_test) {
     RiBegin(RI_NULL);
@@ -75,5 +78,82 @@ BOOST_AUTO_TEST_CASE(renderman_declare_test) {
     v3d::moya::Shading shading = context().shading();
     BOOST_REQUIRE(shading.surface);
     BOOST_CHECK_EQUAL(shading.surface->name(), "matte");
+    RiEnd();
+}
+
+/**
+ * The sampling requests reach the same context from C. A filter is named by its function
+ * there, and one the interface does not declare leaves the filter the context had.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_sampling_test) {
+    RiBegin(RI_NULL);
+    RiPixelSamples(4.0f, 4.0f);
+    RiPixelFilter(RiCatmullRomFilter, 3.0f, 3.0f);
+    RiDepthOfField(8.0f, 0.1f, 3.0f);
+    RiShutter(0.0f, 0.5f);
+
+    const v3d::render::offline::Sampling & sampling = context().sampling();
+    BOOST_CHECK_EQUAL(sampling.samples.x, 4u);
+    BOOST_CHECK_EQUAL(sampling.samples.y, 4u);
+    BOOST_CHECK(sampling.filter == v3d::render::offline::Filter::CatmullRom);
+    BOOST_CHECK_EQUAL(sampling.width.x, 3.0f);
+    BOOST_CHECK_EQUAL(sampling.fstop, 8.0f);
+    BOOST_CHECK_EQUAL(sampling.focalLength, 0.1f);
+    BOOST_CHECK_EQUAL(sampling.focalDistance, 3.0f);
+    BOOST_CHECK_EQUAL(sampling.shutter.x, 0.0f);
+    BOOST_CHECK_EQUAL(sampling.shutter.y, 0.5f);
+
+    RiPixelFilter(nullptr, 1.0f, 1.0f);
+    BOOST_CHECK(context().sampling().filter == v3d::render::offline::Filter::CatmullRom);
+    BOOST_CHECK_EQUAL(context().sampling().width.x, 3.0f);
+    RiEnd();
+}
+
+/**
+ * A width or a resolution the RIB reader refuses is refused through the C interface too, and
+ * the context keeps what it had. A width that is not a number would otherwise reach the film
+ * and place a sample at an undefined pixel index. A side above largestResolution is refused,
+ * and an aspect that is not a number is square pixels.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_refuses_what_the_reader_refuses_test) {
+    RiBegin(RI_NULL);
+    RiPixelFilter(RiBoxFilter, 2.0f, 2.0f);
+    RiPixelFilter(RiGaussianFilter, std::nanf(""), 1.0f);
+    RiPixelFilter(RiGaussianFilter, 0.0f, 1.0f);
+    RiPixelFilter(RiGaussianFilter, 1.0f, -1.0f);
+    BOOST_CHECK(context().sampling().filter == v3d::render::offline::Filter::Box);
+    BOOST_CHECK_EQUAL(context().sampling().width.x, 2.0f);
+    BOOST_CHECK_EQUAL(context().sampling().width.y, 2.0f);
+
+    RiFormat(32, 16, 2.0f);
+    RiFormat(70000, 16, 1.0f);
+    RiFormat(32, 65537, 1.0f);
+    BOOST_CHECK_EQUAL(context().imageWidth(), 32u);
+    BOOST_CHECK_EQUAL(context().imageHeight(), 16u);
+    BOOST_CHECK_EQUAL(context().pixelAspect(), 2.0f);
+    RiFormat(32, 16, std::nanf(""));
+    BOOST_CHECK_EQUAL(context().pixelAspect(), 1.0f);
+    RiWorldBegin();
+    RiWorldEnd();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().framebuffer()->planes();
+    BOOST_REQUIRE(planes);
+    BOOST_CHECK_EQUAL(planes->width(), 32u);
+    BOOST_CHECK_EQUAL(planes->height(), 16u);
+    RiEnd();
+}
+
+/**
+ * RI reads a side of zero or less as the device's default for that side, which for moya is
+ * 320 by 240. The other side keeps the size the call named.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_format_nonpositive_side_is_the_default_test) {
+    RiBegin(RI_NULL);
+    RiFormat(-1, 16, 1.0f);
+    BOOST_CHECK_EQUAL(context().imageWidth(), 320u);
+    BOOST_CHECK_EQUAL(context().imageHeight(), 16u);
+
+    RiFormat(32, 0, 1.0f);
+    BOOST_CHECK_EQUAL(context().imageWidth(), 32u);
+    BOOST_CHECK_EQUAL(context().imageHeight(), 240u);
     RiEnd();
 }

@@ -5,6 +5,7 @@
 
 #include <api/event/Mapper.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -12,8 +13,7 @@
 #include <boost/make_shared.hpp>
 
 /**
- * The replacement for the command layer's Bind: a Mapper holds the source-to-destination
- * bindings and answers what a source event maps to.
+ * A Mapper holds the source-to-destination bindings and returns what a source event maps to.
  **/
 namespace {
 v3d::event::Event source(const boost::shared_ptr<v3d::event::Context>& context,
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(mapper_edge_test) {
     BOOST_CHECK_EQUAL(mapper.destinations(source(keyboard, "escape", v3d::event::State::Pressed)).size(), 1u);
     BOOST_CHECK_EQUAL(mapper.destinations(source(keyboard, "escape", v3d::event::State::Released)).size(), 0u);
 
-    // a binding with no edge answers for both, which is what a held key needs
+    // a binding with no edge matches both, as a held key needs
     mapper.map(source(keyboard, "w", v3d::event::State::Any), destination(ui, "up"));
     BOOST_CHECK_EQUAL(mapper.destinations(source(keyboard, "w", v3d::event::State::Pressed)).size(), 1u);
     BOOST_CHECK_EQUAL(mapper.destinations(source(keyboard, "w", v3d::event::State::Released)).size(), 1u);
@@ -123,4 +123,35 @@ BOOST_AUTO_TEST_CASE(mapper_parameter_test) {
     BOOST_REQUIRE_EQUAL(second.size(), 1u);
     BOOST_REQUIRE(second[0].data());
     BOOST_CHECK_EQUAL(std::get<int>(second[0].data().get()), 2);
+}
+
+/**
+ * A destination's sources are every binding that drives it, on any edge and under any
+ * parameter, and nothing for a destination nothing drives.
+ **/
+BOOST_AUTO_TEST_CASE(mapper_sources_test) {
+    boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
+    boost::shared_ptr<v3d::event::Context> game = boost::make_shared<v3d::event::Context>("game");
+
+    v3d::event::Mapper mapper("global");
+    v3d::event::Event north = destination(game, "walkNorth");
+    north.data(1);
+    mapper.map(source(keyboard, "w", v3d::event::State::Any), north);
+    mapper.map(source(keyboard, "arrow_up", v3d::event::State::Pressed), destination(game, "walkNorth"));
+    mapper.map(source(keyboard, "s", v3d::event::State::Any), destination(game, "walkSouth"));
+
+    std::vector<v3d::event::Event> found = mapper.sources("game::walkNorth");
+    BOOST_REQUIRE_EQUAL(found.size(), 2u);
+    std::vector<std::string> names;
+    names.reserve(found.size());
+    for (const v3d::event::Event& each : found) {
+        names.emplace_back(each.name());
+    }
+    std::ranges::sort(names);
+    BOOST_CHECK_EQUAL(names[0], "arrow_up");
+    BOOST_CHECK_EQUAL(names[1], "w");
+
+    BOOST_CHECK(mapper.sources("game::walkEast").empty());
+    // a name alone is not a command: the context is part of it
+    BOOST_CHECK(mapper.sources("walkNorth").empty());
 }

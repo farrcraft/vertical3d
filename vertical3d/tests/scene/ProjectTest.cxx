@@ -186,16 +186,16 @@ BOOST_AUTO_TEST_CASE(project_written_form_test) {
     BOOST_CHECK(text.contains('\n'));
     BOOST_CHECK(text.contains("\"version\": 1"));
     BOOST_CHECK(text.contains("\"name\": \"form\""));
-    // a vector stays on one line - a mesh broken a number to a line is unreadable
+    // a vector stays on one line, so a mesh is not broken into one number per line
     BOOST_CHECK(text.contains("\"normal\": [0, 1, 0]"));
 
     boost::filesystem::remove(path);
 }
 
 /**
- * The project already on disk survives a save that does not complete, per ADR-0041. The write
- * is made to fail by leaving a directory where the document should go, which nothing will
- * rename onto.
+ * The project already on disk survives a save that does not complete. The write is made to
+ * fail by leaving a directory where the document should go, since a file cannot be renamed
+ * onto a directory.
  **/
 BOOST_AUTO_TEST_CASE(project_failed_write_keeps_the_previous_project_test) {
     const std::string path = scratch("v3d_kept.json");
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(project_failed_write_keeps_the_previous_project_test) {
     BOOST_CHECK(boost::filesystem::is_directory(blocked));
     BOOST_CHECK(!boost::filesystem::exists(blocked + ".tmp"));
 
-    // and the one that did land is byte for byte what it was
+    // the file already on disk is unchanged, byte for byte
     BOOST_CHECK_EQUAL(get(path), before);
 
     boost::filesystem::remove_all(blocked);
@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE(project_rejects_dangling_reference_test) {
     v3d::editor::Project project(logger());
 
     // one vertex and an edge naming a second that is not there. The wireframe and the picker
-    // would walk off the end of the mesh, so the read refuses it
+    // would index past the end of the mesh, so the read refuses it
     put(path,
         "{\"version\": 1, \"meshes\": [{"
         "\"vertices\": [[0, 0, 0]],"
@@ -289,8 +289,8 @@ BOOST_AUTO_TEST_CASE(project_rejects_dangling_reference_test) {
         "\"faces\": [{\"normal\": [0, 0, 1], \"edge\": 3}]}]}");
     BOOST_CHECK_EQUAL(project.read(path, scene), false);
 
-    // the same mesh with the references it should have, which is what makes both of the
-    // above a test of the check rather than of the parse
+    // the same mesh with valid references is read, so the two failures above come from the
+    // reference check rather than from the parse
     put(path,
         "{\"version\": 1, \"meshes\": [{"
         "\"vertices\": [[0, 0, 0]],"
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE(project_default_transform_test) {
 
     same(boost::make_shared<v3d::brep::BRep>(), meshes(scene).front());
 
-    // and the name a file does not carry is the untitled one
+    // a file that carries no name reads as untitled
     BOOST_CHECK_EQUAL(project.name(), "untitled");
 
     boost::filesystem::remove(path);

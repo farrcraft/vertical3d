@@ -7,6 +7,7 @@
 
 #include <api/image/Compare.h>
 #include <api/image/TextureAtlas.h>
+#include <api/log/Logger.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
@@ -58,9 +59,9 @@ BOOST_AUTO_TEST_CASE(crop_of_the_whole_image_is_the_image) {
 }
 
 /**
- * A rectangle that is not wholly inside the source is refused rather than clamped: reading
- * past the end of a row returns the start of the next one, which is a picture rather than
- * an error, and clamping would hand back an image of a size nobody asked for.
+ * A rectangle that is not wholly inside the source is refused rather than clamped. Reading
+ * past the end of a row returns the start of the next one, so it produces wrong pixels
+ * rather than an error. Clamping would return an image of a size nobody requested.
  **/
 BOOST_AUTO_TEST_CASE(crop_refuses_what_it_cannot_cut) {
     const boost::shared_ptr<v3d::image::Image> source = painted(4, 4, 0);
@@ -77,9 +78,8 @@ BOOST_AUTO_TEST_CASE(crop_refuses_what_it_cannot_cut) {
 }
 
 /**
- * The whole point: a sprite blitted into an atlas comes back out of it unchanged, so a sheet
- * packed by the tree can be unpacked by the tree. This is the case an app migrating a
- * hand-packed sheet to a packer depends on.
+ * A sprite blitted into an atlas comes back out of it unchanged, so a sheet packed with
+ * TextureAtlas can be unpacked with crop().
  **/
 BOOST_AUTO_TEST_CASE(crop_is_the_inverse_of_an_atlas_blit) {
     v3d::image::TextureAtlas atlas(64, 64, 3, logger());

@@ -24,7 +24,6 @@ void arguments(const Declarations & declarations, int count,
         Declaration declaration;
         if (!declarations.resolve(tokens[i], &name, &declaration)) {
             // without a declaration there is no length, so this parameter cannot be read
-            // and neither can anything be said about what the caller meant by it
             if (unresolved != nullptr) {
                 unresolved->push_back(name);
             }
@@ -38,8 +37,7 @@ void arguments(const Declarations & declarations, int count,
         std::vector<float> floats;
         std::vector<std::string> strings;
         if (declaration.type() == Declaration::Type::STRING) {
-            // a string parameter's array is an array of pointers to characters, which is
-            // what RtString is
+            // a string parameter's array is an array of pointers to characters, as RtString is
             const char* const* text = static_cast<const char* const*>(values[i]);
             for (unsigned int element = 0; element < elements; element++) {
                 strings.push_back(text[element] == nullptr ? std::string() : text[element]);

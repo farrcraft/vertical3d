@@ -5,28 +5,90 @@
 
 #include "RenderTarget.h"
 
-#include <api/render/realtime/vulkan/device/Result.h>
-#include <api/render/realtime/vulkan/memory/Memory.h>
+#include <api/render/realtime/vulkan/memory/Barriers.h>
+#include <api/render/realtime/vulkan/memory/Uploader.h>
 
-#include <sstream>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 
 namespace v3d::render::realtime::vulkan::frame {
 
+namespace {
+
+/**
+ * Clear what is attached to transparent black and the far plane, with no draws.
+ **/
+void clear(VkCommandBuffer commands, VkImageView colour, VkImageView depth, const VkExtent2D& extent) {
+    VkRenderingAttachmentInfo colourAttachment{};
+    colourAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    colourAttachment.imageView = colour;
+    colourAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colourAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colourAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+    VkRenderingAttachmentInfo depthAttachment{};
+    depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    depthAttachment.imageView = depth;
+    depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    // the far plane, so a shadow map read before anything was drawn reports no shadow
+    depthAttachment.clearValue.depthStencil.depth = 1.0f;
+
+    VkRenderingInfo rendering{};
+    rendering.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+    rendering.renderArea.extent = extent;
+    rendering.layerCount = 1;
+    rendering.colorAttachmentCount = colour != VK_NULL_HANDLE ? 1 : 0;
+    rendering.pColorAttachments = colour != VK_NULL_HANDLE ? &colourAttachment : nullptr;
+    rendering.pDepthAttachment = depth != VK_NULL_HANDLE ? &depthAttachment : nullptr;
+    vkCmdBeginRendering(commands, &rendering);
+    vkCmdEndRendering(commands);
+}
+
+/**
+ * Clear a slot's images. Each goes from undefined into the layout a pass draws in, and then
+ * into the layout the recorder leaves a target in after its last pass. A slot no pass has
+ * drawn into then looks like one a pass has. A null image is one the slot does not have.
+ **/
+void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, VkImage depth, VkImageView depthView,
+    const VkExtent2D& extent) {
+    if (colour != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::colourForDrawing(colour)});
+    }
+    if (depth != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::depthForDrawing(depth)});
+    }
+    clear(commands, colourView, depthView, extent);
+    if (colour != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::colourAfterDrawing(colour, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
+    }
+    if (depth != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::depthForSampling(depth)});
+    }
+}
+
+};  // namespace
+
 /**
  **/
-RenderTarget::RenderTarget(const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
-    VkFormat colour, bool depth, bool sampledDepth) :
+RenderTarget::RenderTarget(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring,
+    uint32_t width, uint32_t height, VkFormat colour, bool depth, bool sampledDepth, uint32_t images) :
     device_(device),
+    ring_(ring),
     format_(colour),
-    image_(VK_NULL_HANDLE),
-    view_(VK_NULL_HANDLE),
-    sampler_(VK_NULL_HANDLE),
+    images_(images),
     extent_(),
     wantsDepth_(depth),
     sampledDepth_(sampledDepth) {
+    // a slot is chosen by the ring's frame, so any other count would make previous() a frame
+    // that is not the one before
+    if (images_ != 1 && images_ != ring_->framesInFlight()) {
+        throw std::runtime_error("A vulkan render target holds one image or one per frame in flight");
+    }
     create(width, height);
 }
 
@@ -39,143 +101,148 @@ RenderTarget::~RenderTarget() {
 /**
  **/
 void RenderTarget::recreate(uint32_t width, uint32_t height) {
-    destroy();
     create(width, height);
 }
 
 /**
  **/
 void RenderTarget::create(uint32_t width, uint32_t height) {
-    // unlike a swapchain image, a target is asked for at a size the caller chose, so a
+    // unlike a swapchain image, a target is created at a size the caller chose, so a
     // dimension of zero is a mistake rather than a minimized window
     if (width == 0 || height == 0) {
         throw std::runtime_error("A vulkan render target cannot have a zero dimension");
     }
 
-    VkImageCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    info.imageType = VK_IMAGE_TYPE_2D;
-    info.format = format_;
-    info.extent.width = width;
-    info.extent.height = height;
-    info.extent.depth = 1;
-    info.mipLevels = 1;
-    info.arrayLayers = 1;
-    info.samples = VK_SAMPLE_COUNT_1_BIT;
-    info.tiling = VK_IMAGE_TILING_OPTIMAL;
-    // both halves of what a target is for: a pass draws into it and a later pass reads it.
-    // TRANSFER_SRC is what lets frame::Capture copy one out, and is granted rather than asked
-    // for on the same terms SAMPLED is - a colour image that cannot be read is the narrower
-    // thing to be, and the only cost here is whichever compression a desktop driver declines
-    info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-    VkResult result = vkCreateImage(device_->handle(), &info, nullptr, &image_);
-    if (result != VK_SUCCESS) {
-        image_ = VK_NULL_HANDLE;
-        std::stringstream msg;
-        msg << "Unable to create a vulkan render target image - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+    if (format_ == VK_FORMAT_UNDEFINED && !(wantsDepth_ && sampledDepth_)) {
+        throw std::runtime_error("A vulkan render target with no colour image needs a sampled depth image");
     }
 
-    result = device_->allocator().bind(image_, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memory_);
-    if (result != VK_SUCCESS) {
-        destroy();
-        std::stringstream msg;
-        msg << "Unable to allocate memory for a vulkan render target - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+    // the new images are built in full before the old ones are let go, so a create that throws
+    // leaves the target holding what it held before
+    std::vector<Slot> slots(images_);
+    for (Slot& slot : slots) {
+        if (format_ != VK_FORMAT_UNDEFINED) {
+            slot.image = createColour(width, height);
+        }
+        if (wantsDepth_) {
+            // a target's depth is a DepthBuffer, the same class the swapchain passes use
+            slot.depth = boost::make_shared<DepthBuffer>(device_, width, height, sampledDepth_);
+        }
     }
 
-    VkImageViewCreateInfo view{};
-    view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view.image = image_;
-    view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view.format = format_;
-    view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    view.subresourceRange.levelCount = 1;
-    view.subresourceRange.layerCount = 1;
-
-    result = vkCreateImageView(device_->handle(), &view, nullptr, &view_);
-    if (result != VK_SUCCESS) {
-        view_ = VK_NULL_HANDLE;
-        destroy();
-        std::stringstream msg;
-        msg << "Unable to create a vulkan render target view - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+    boost::shared_ptr<pipeline::Sampler> sampler;
+    if (format_ != VK_FORMAT_UNDEFINED) {
+        // the default: linear, because a target is read at whatever size the pass reading it
+        // draws, and clamped, because sampling past its edge is reaching outside what was
+        // rendered. One serves every slot, since they differ only in what was drawn
+        sampler = boost::make_shared<pipeline::Sampler>(device_, pipeline::Sampler::Spec());
     }
 
-    VkSamplerCreateInfo sampler{};
-    sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    // linear, like every other sampler in the renderer: a target is read at whatever size
-    // the pass reading it draws, which is rarely the size it was rendered at
-    sampler.magFilter = VK_FILTER_LINEAR;
-    sampler.minFilter = VK_FILTER_LINEAR;
-    sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    // clamping rather than repeating: sampling past the edge of a target is a shader
-    // reaching outside what was rendered, and wrapping would answer with the far side
-    sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
-    sampler.maxLod = VK_LOD_CLAMP_NONE;
+    VkExtent2D extent{};
+    extent.width = width;
+    extent.height = height;
 
-    result = vkCreateSampler(device_->handle(), &sampler, nullptr, &sampler_);
-    if (result != VK_SUCCESS) {
-        sampler_ = VK_NULL_HANDLE;
-        destroy();
-        std::stringstream msg;
-        msg << "Unable to create a vulkan render target sampler - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+    if (images_ > 1) {
+        ready(slots, extent);
     }
 
-    if (wantsDepth_) {
-        // a depth buffer is the same image at the same size whoever is drawing into it, so
-        // a target's is one of those rather than a second implementation of the same thing
-        depth_ = boost::make_shared<DepthBuffer>(device_, width, height, sampledDepth_);
-    }
+    destroy();
+    slots_ = std::move(slots);
+    sampler_ = std::move(sampler);
+    extent_ = extent;
+}
 
-    extent_.width = width;
-    extent_.height = height;
+/**
+ **/
+boost::shared_ptr<memory::Image> RenderTarget::createColour(uint32_t width, uint32_t height) const {
+    memory::Image::Spec spec;
+    spec.width = width;
+    spec.height = height;
+    spec.format = format_;
+    // a pass draws into a target and a later pass reads it. TRANSFER_SRC lets frame::Capture
+    // copy one out. It is always granted, as SAMPLED is, and its only cost is any compression
+    // a desktop driver disables for it
+    spec.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    return boost::make_shared<memory::Image>(device_, spec);
+}
+
+/**
+ **/
+void RenderTarget::ready(const std::vector<Slot>& slots, const VkExtent2D& extent) const {
+    // a clear by rendering rather than by transfer, because attachment usage is what every
+    // target's images already have
+    memory::Uploader uploader(device_);
+    uploader.oneShot([&slots, &extent](VkCommandBuffer commands) {
+        for (const Slot& slot : slots) {
+            const bool depth = slot.depth && slot.depth->sampled();
+            readied(commands, slot.image ? slot.image->handle() : VK_NULL_HANDLE, slot.image ? slot.image->view() : VK_NULL_HANDLE,
+                depth ? slot.depth->image() : VK_NULL_HANDLE, depth ? slot.depth->view() : VK_NULL_HANDLE, extent);
+        }
+    });
 }
 
 /**
  **/
 void RenderTarget::destroy() {
-    depth_.reset();
-    if (sampler_ != VK_NULL_HANDLE) {
-        vkDestroySampler(device_->handle(), sampler_, nullptr);
-        sampler_ = VK_NULL_HANDLE;
+    if (!slots_.empty()) {
+        // a frame in flight may still be drawing into these or sampling them
+        ring_->retire([slots = std::move(slots_), sampler = std::move(sampler_)]() mutable {
+            slots.clear();
+            sampler.reset();
+        });
     }
-    if (view_ != VK_NULL_HANDLE) {
-        vkDestroyImageView(device_->handle(), view_, nullptr);
-        view_ = VK_NULL_HANDLE;
-    }
-    device_->allocator().free(&memory_);
-    if (image_ != VK_NULL_HANDLE) {
-        vkDestroyImage(device_->handle(), image_, nullptr);
-        image_ = VK_NULL_HANDLE;
-    }
+    // moved from, which leaves them valid but unspecified
+    slots_.clear();
+    sampler_.reset();
     extent_.width = 0;
     extent_.height = 0;
 }
 
 /**
  **/
+uint32_t RenderTarget::images() const noexcept {
+    return images_;
+}
+
+/**
+ **/
+uint32_t RenderTarget::current() const noexcept {
+    return ring_->frame() % images_;
+}
+
+/**
+ **/
+uint32_t RenderTarget::previous() const noexcept {
+    return (ring_->frame() + images_ - 1) % images_;
+}
+
+/**
+ **/
+const RenderTarget::Slot& RenderTarget::slot() const noexcept {
+    // every accessor then answers null rather than reading past the end
+    static const Slot none;
+    if (slots_.empty()) {
+        return none;
+    }
+    return slots_[current()];
+}
+
+/**
+ **/
 VkImage RenderTarget::image() const noexcept {
-    return image_;
+    return slot().image ? slot().image->handle() : VK_NULL_HANDLE;
 }
 
 /**
  **/
 VkImageView RenderTarget::view() const noexcept {
-    return view_;
+    return slot().image ? slot().image->view() : VK_NULL_HANDLE;
 }
 
 /**
  **/
 VkSampler RenderTarget::sampler() const noexcept {
-    return sampler_;
+    return sampler_ ? sampler_->handle() : VK_NULL_HANDLE;
 }
 
 /**
@@ -193,55 +260,44 @@ const VkExtent2D& RenderTarget::extent() const noexcept {
 /**
  **/
 VkImage RenderTarget::depthImage() const noexcept {
-    return depth_ ? depth_->image() : VK_NULL_HANDLE;
+    return slot().depth ? slot().depth->image() : VK_NULL_HANDLE;
 }
 
 /**
  **/
 VkImageView RenderTarget::depthView() const noexcept {
-    return depth_ ? depth_->view() : VK_NULL_HANDLE;
+    return slot().depth ? slot().depth->view() : VK_NULL_HANDLE;
 }
 
 /**
  **/
 VkFormat RenderTarget::depthFormat() const noexcept {
-    return depth_ ? depth_->format() : VK_FORMAT_UNDEFINED;
+    return slot().depth ? slot().depth->format() : VK_FORMAT_UNDEFINED;
 }
 
 /**
  **/
 bool RenderTarget::sampledDepth() const noexcept {
-    return sampledDepth_ && depth_ && depth_->sampled();
+    return sampledDepth_ && slot().depth && slot().depth->sampled();
 }
 
 /**
  **/
-pipeline::Texture RenderTarget::depthTexture() const {
-    pipeline::Texture texture;
-    if (!sampledDepth()) {
-        return texture;
+pipeline::Texture RenderTarget::depthTexture(uint32_t slot) const {
+    if (!sampledDepth() || slot >= slots_.size()) {
+        return pipeline::Texture();
     }
-    texture.image = depth_->image();
-    texture.view = depth_->view();
-    texture.sampler = depth_->sampler();
-    texture.extent = depth_->extent();
-    // borrowed the same way the colour image is - the buffer owns them and rebuilds them
-    // whenever the target is resized, so the allocation stays the empty one
-    texture.owned = false;
-    return texture;
+    return slots_[slot].depth->texture();
 }
 
 /**
  **/
-pipeline::Texture RenderTarget::texture() const {
+pipeline::Texture RenderTarget::texture(uint32_t slot) const {
     pipeline::Texture texture;
-    texture.image = image_;
-    texture.view = view_;
-    texture.sampler = sampler_;
-    texture.extent = extent_;
-    // the allocation, the view and the sampler are the target's and are thrown away every
-    // time it is resized, so what is registered names them rather than taking them over
-    texture.owned = false;
+    if (slot < slots_.size()) {
+        texture.image = slots_[slot].image;
+        texture.sampler = sampler_;
+    }
     return texture;
 }
 

@@ -8,46 +8,19 @@
 #include <glm/vec2.hpp>
 
 namespace v3d::ecs::component {
+
 /**
- * A 2D position
+ * Where a thing is on a plane. An aggregate, so a snapshot of the previous step is a plain
+ * copy, and written directly, since simulation sets it every step.
  **/
-class Position2D final {
- public:
-    Position2D(float x, float y) noexcept;
-
-    /**
-     * Move constructor
-     **/
-    Position2D(Position2D&& p) noexcept;
-
-    /**
-     * Default destructor
-     **/
-    ~Position2D() noexcept = default;
-
-    /**
-     **/
-    float x() const;
-
-    /**
-     **/
-    float y() const;
-
-    /**
-     **/
-    glm::vec2 value() const;
-
-    /**
-     **/
-    void set(const glm::vec2& position);
-
-    /**
-     * Move assignment
-     **/
-    Position2D& operator=(Position2D&& p) noexcept;
-
- private:
-    glm::vec2 position_;
+struct Position2D final {
+    glm::vec2 value{0.0f};
 };
+
+/**
+ * The position alpha of the way from one to the other, which ecs::interpolated uses to draw
+ * it between two simulation steps.
+ **/
+Position2D interpolate(const Position2D& from, const Position2D& to, float alpha);
 
 };  // namespace v3d::ecs::component

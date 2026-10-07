@@ -17,9 +17,9 @@ namespace {
  * How far past the enum the sweeps below run.
  *
  * component::parse() walks to VerticalBox because the enum is kept alphabetical and that is
- * its last entry. Sweeping wider is what turns that into something checked rather than
- * assumed: a type added past VerticalBox is named by name(), whose switch the compiler makes
- * exhaustive, and is then found here while parse() would have skipped it.
+ * its last entry. Sweeping wider checks that: a type added past VerticalBox is named by
+ * name(), whose switch the compiler makes exhaustive, and is then found here while parse()
+ * would have skipped it.
  *
  * An int outside the enumerators is a valid value of a scoped enum's underlying type, so
  * casting one and switching on it falls through to name()'s empty answer rather than being
@@ -32,11 +32,11 @@ const int beyond = 64;
 BOOST_AUTO_TEST_SUITE(type_test)
 
 /**
- * Every type a config can name parses back to itself, per ADR-0047.
+ * Every type a config can name parses back to itself.
  *
- * The two halves of the config's vocabulary have to agree or a component is loadable under a
- * name nothing spells: name() is exhaustive and so cannot forget a type, and this is what
- * stops parse() forgetting one.
+ * The two halves of the config's vocabulary have to agree, or a component is loadable under
+ * a name nothing spells. name() is exhaustive and so cannot leave out a type, and this test
+ * stops parse() leaving one out.
  **/
 BOOST_AUTO_TEST_CASE(every_named_type_parses_back_to_itself) {
     int named = 0;
@@ -50,9 +50,9 @@ BOOST_AUTO_TEST_CASE(every_named_type_parses_back_to_itself) {
         BOOST_CHECK_MESSAGE(v3d::ui::component::parse(text) == type,
             "type " << index << " is named \"" << text << "\" and does not parse back to itself");
     }
-    // the seventeen a config can ask for: everything in the enum but MenuItem, which the menu
+    // the eighteen a config can ask for: everything in the enum but MenuItem, which the menu
     // holding it builds, and Undefined, which is not a component
-    BOOST_CHECK_EQUAL(named, 17);
+    BOOST_CHECK_EQUAL(named, 18);
 }
 
 /**
@@ -72,8 +72,8 @@ BOOST_AUTO_TEST_CASE(no_two_types_share_a_name) {
 }
 
 /**
- * A name no component answers to is Undefined rather than a guess, which is what the loader
- * reports as an unrecognised type.
+ * A name no component has is Undefined rather than a guess, and the loader reports it as an
+ * unrecognised type.
  **/
 BOOST_AUTO_TEST_CASE(an_unknown_name_is_undefined) {
     BOOST_CHECK(v3d::ui::component::parse("") == v3d::ui::component::Type::Undefined);
@@ -81,6 +81,22 @@ BOOST_AUTO_TEST_CASE(an_unknown_name_is_undefined) {
     // a type that exists and that a config cannot name is still not parseable
     BOOST_CHECK(v3d::ui::component::parse("menuitem") == v3d::ui::component::Type::Undefined);
     BOOST_CHECK(v3d::ui::component::name(v3d::ui::component::Type::MenuItem).empty());
+}
+
+/**
+ * A kind of component is answered by its type, so a rule written for strips, flow boxes, tab
+ * bars or text fields asks traits() rather than listing the types it remembered.
+ **/
+BOOST_AUTO_TEST_CASE(a_kind_is_answered_by_its_type) {
+    using v3d::ui::component::Type;
+    using v3d::ui::component::traits;
+    BOOST_CHECK(traits(Type::MenuBar).strip && traits(Type::Toolbar).strip);
+    BOOST_CHECK(traits(Type::HorizontalBox).flow && traits(Type::VerticalBox).flow);
+    BOOST_CHECK(traits(Type::TabBar).pages);
+    BOOST_CHECK(traits(Type::TextBox).text);
+
+    const v3d::ui::component::Traits button = traits(Type::Button);
+    BOOST_CHECK(!button.strip && !button.flow && !button.pages && !button.text);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

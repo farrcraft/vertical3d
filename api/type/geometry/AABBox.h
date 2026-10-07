@@ -51,11 +51,6 @@ class AABBox final {
         * @param max the maximum extents of the bounding box.
         */
     void extents(const glm::vec3 & min, const glm::vec3 & max);
-    /**
-        * Get the origin of the bounding box.
-        * @return the origin of the bounding box.
-        */
-    glm::vec3 origin() const;
 
     /**
         * Extend bounds to include a point.
@@ -65,6 +60,18 @@ class AABBox final {
         * @param point the point to include in the bounding box.
         */
     void extend(const glm::vec3 & point);
+
+    /**
+        * Whether a point is inside the box. The faces count as inside.
+        * @param point the point to test, in the box's own space.
+        */
+    bool contains(const glm::vec3 & point) const;
+    /**
+        * Whether two boxes share any volume. The faces count as inside, so two boxes
+        * that meet at a face overlap.
+        * @param other the box to test against, in the same space.
+        */
+    bool overlaps(const AABBox & other) const;
 
     // set min & max to bound polygon
     // void bound(const Polygon & poly);

@@ -1,4 +1,10 @@
 add_executable(pong
+	"src/component/Direction.h"
+	"src/component/Offset.h"
+	"src/component/PaddleSize.h"
+	"src/component/Score.h"
+	"src/component/Size.h"
+	"src/component/Travel.h"
 	"src/Ball.h" "src/Ball.cxx"
 	"src/GameState.h" "src/GameState.cxx"
 	"src/Paddle.h" "src/Paddle.cxx"
@@ -15,15 +21,13 @@ target_link_libraries(pong PRIVATE
 	v3dlib_ecs
 	v3dlib_engine
 	v3dlib_event
-	v3dlib_image
-	v3dlib_input
-	v3dlib_font
 	v3dlib_log
 	v3dlib_render
 	v3dlib_type
 	v3dlib_ui
 )
 
+v3d_add_app_data(pong)
 v3d_add_shared_data(pong)
 
 # a console subsystem executable is given a console of its own alongside the app's window.

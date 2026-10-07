@@ -6,12 +6,12 @@
 #pragma once
 
 #include <api/asset/Manager.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
-#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/Engine.h>
+#include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
-#include <api/ui/paint/TextRenderer.h>
 
 #include <string>
 
@@ -25,19 +25,19 @@
 /**
  * Everything pong draws, built as one canvas of quads and handed to the render engine.
  *
- * The board, the scoreboard and the menu are all the same primitive - see ADR-0005 - so the
+ * The board, the scoreboard and the menu all go through the batched quad pipeline, so the
  * whole frame reaches the device as one upload and a draw per texture.
  **/
 class PongRenderer final {
  public:
     PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-        const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
+        const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
     /**
      * @param statistics what the loop measured about the frame being drawn
+     * @param alpha how far the frame is between the last simulation step and the next
      **/
-    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
-    void resize(int width, int height);
+    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics, float alpha);
 
     void scene(const boost::shared_ptr<PongScene>& scene);
 
@@ -59,16 +59,16 @@ class PongRenderer final {
  private:
     void drawBoard();
     void drawScores();
-    void drawBall();
-    void drawPaddle(const Paddle& paddle);
+    void drawBall(float alpha);
+    void drawPaddle(const Paddle& paddle, float alpha);
 
     boost::shared_ptr<PongScene> scene_;
     boost::shared_ptr<v3d::ui::Engine> ui_;
 
-    v3d::render::realtime::Canvas canvas_;
     v3d::render::realtime::Engine3D engine_;
+    // the court, in its own units, under the screen's canvas
+    v3d::render::realtime::Canvas court_;
 
-    boost::shared_ptr<v3d::ui::paint::TextRenderer> text_;
-    boost::shared_ptr<v3d::ui::shell::StatisticsOverlay> statistics_;
-    boost::shared_ptr<v3d::ui::paint::ComponentRenderer> uiRenderer_;
+    // built after the engine is initialized, because its atlas is uploaded through it
+    boost::shared_ptr<v3d::ui::shell::Screen> screen_;
 };

@@ -6,9 +6,9 @@
 #pragma once
 
 #include <cstdint>
-#include <deque>
 #include <vector>
 
+#include "CanvasStacks.h"
 #include "Handle.h"
 
 #include <glm/mat4x4.hpp>
@@ -24,24 +24,33 @@ namespace v3d::render::realtime {
 /**
  * Everything 2D the engine draws, accumulated as one stream of textured quads.
  *
- * This is the cpu half of the one batched quad primitive of ADR-0005: a coloured
- * rectangle, a sprite and a glyph are the same quad with a different texture, so they
- * share one vertex buffer and the stream is cut into a new batch only where the texture
- * changes. An untextured quad names no texture and is drawn against the renderer's 1x1
- * white one, so it never cuts a batch of its own.
+ * This is the CPU side of the batched quad primitive. A coloured rectangle, a sprite and a
+ * glyph are the same quad with a different texture. They share one vertex buffer, and the
+ * stream is cut into a new batch only where the texture changes. An untextured quad names no
+ * texture and is drawn against the renderer's 1x1 white one, so it never cuts a batch of
+ * its own.
  *
- * A glyph is the exception ADR-0036 adds: its atlas holds distances rather than coverage,
- * so a batch also records whether it is text and the stream cuts where that changes. A
- * sprite drawn from a glyph atlas and a label sample the same texture and must not merge.
+ * Glyphs are the exception. A glyph atlas holds distances rather than coverage, so a batch
+ * also records whether it is text and the stream cuts where that changes. A sprite drawn
+ * from a glyph atlas and a label sample the same texture and must not merge.
  *
- * Nothing here touches vulkan. The canvas is filled during a tick and handed to
+ * Nothing here calls Vulkan. The canvas is filled during a tick and handed to
  * vulkan::renderer::Quad, which uploads it and turns each batch into a draw item.
  *
  * Coordinates are in pixels with the origin at the top left, and the modelview stack
- * applies on the cpu as vertices are added.
+ * applies on the cpu as vertices are added. A canvas given a space draws in that space's
+ * units instead, mapped into its pixels by projection().
  **/
 class Canvas final {
  public:
+    /**
+     * How a space is fitted into the canvas.
+     **/
+    enum class Fit {
+        Stretch,  /**< fill the canvas, stretching the space where the aspects differ **/
+        Contain   /**< keep the space's aspect, as large as fits, centred with bars either side **/
+    };
+
     /**
      * One vertex of the stream, in the layout the quad pipeline declares.
      **/
@@ -59,8 +68,8 @@ class Canvas final {
         Batch() noexcept;
 
         TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
-        bool text;              /**< whether the run samples a distance field - ADR-0036 **/
-        bool clipped;           /**< whether clip cuts the run down, per ADR-0037 **/
+        bool text;              /**< whether the run samples a distance field **/
+        bool clipped;           /**< whether the run is cut to clip **/
         glm::vec4 clip;         /**< the rectangle it is cut to - min x, min y, max x, max y **/
         uint32_t firstIndex;    /**< where the run starts in indices() **/
         uint32_t indices;       /**< how long the run is **/
@@ -77,7 +86,7 @@ class Canvas final {
     void clear();
 
     /**
-     * The size of the area being drawn into, which is what projection() maps from.
+     * Set the size of the area being drawn into. projection() maps from this size.
      **/
     void resize(uint32_t width, uint32_t height);
 
@@ -92,12 +101,40 @@ class Canvas final {
     uint32_t height() const noexcept;
 
     /**
+     * Draw in a space of the caller's own rather than in pixels: a game's court, say, which
+     * then keeps its coordinates whatever size the window is. The space's origin is its top
+     * left and y grows down, as the pixels' do. Kept across clear() and resize().
+     *
+     * @param size how wide and tall the space is, in its own units. Zero in either goes
+     *        back to drawing in pixels
+     **/
+    void space(const glm::vec2& size, Fit fit);
+
+    /**
+     * @return the space's size, or zero when the canvas draws in pixels
+     **/
+    glm::vec2 space() const noexcept;
+
+    /**
+     * Where the space lands in the canvas, in pixels: x, y, width and height. The whole
+     * canvas when there is no space.
+     **/
+    glm::vec4 viewport() const noexcept;
+
+    /**
+     * A point in the canvas's pixels, a cursor say, in the space's units. The point itself
+     * when there is no space.
+     **/
+    glm::vec2 toSpace(const glm::vec2& pixel) const noexcept;
+
+    /**
      * The transform from canvas pixels to clip space, for the pipeline's push constant.
      *
      * Built by hand rather than with glm::ortho, whose y direction and depth range
      * depend on how glm was configured when it was compiled.
      *
-     * @return an orthographic projection with the origin at the top left
+     * @return an orthographic projection with the origin at the top left, from the space
+     *         into its viewport when there is one
      **/
     glm::mat4 projection() const;
 
@@ -130,9 +167,10 @@ class Canvas final {
      * intersected with whatever is already clipped, so an inner clip can only take room
      * away.
      *
-     * Clipping is per batch and not per vertex: the stream cuts where the rectangle
-     * changes and the device scissors the draw, so a quad straddling the edge is drawn
-     * whole and half of it lands. ADR-0037.
+     * Clipping is per batch and not per vertex. The stream cuts where the rectangle
+     * changes and the device scissors the draw. A quad straddling the edge is drawn whole,
+     * and only the part inside the rectangle lands. A scissor is in pixels, so the
+     * rectangle is mapped out of the space when there is one.
      **/
     void clip(const glm::vec2& min, const glm::vec2& max);
 
@@ -180,10 +218,9 @@ class Canvas final {
     /**
      * A filled band between two radii, as a strip of triangles.
      *
-     * The arc that traces a rounded corner rather than the wedge that fills one, so an
-     * outline around a rounded box costs no second shape and covers nothing inside it.
-     * Angles are as arc() takes them. An inner radius of zero or less is a wedge, and
-     * this is arc().
+     * This traces a rounded corner rather than filling it, so an outline around a rounded
+     * box needs no second shape and covers nothing inside it. Angles are as arc() takes
+     * them. An inner radius of zero or less draws the same wedge as arc().
      *
      * @param outer the radius the band ends at
      * @param inner the radius it starts at, which is the hole it leaves
@@ -244,11 +281,17 @@ class Canvas final {
      **/
     void quad(uint32_t first);
 
+    /**
+     * A point in the space's units, in pixels.
+     **/
+    glm::vec2 toPixels(const glm::vec2& point) const noexcept;
+
     uint32_t width_;
     uint32_t height_;
-    std::deque<glm::mat4> transforms_;
-    /**< what each open clip cuts to, already transformed and intersected; empty is uncut **/
-    std::deque<glm::vec4> clips_;
+    glm::vec2 space_;
+    Fit fit_;
+    TransformStack transforms_;
+    ClipStack clips_;  /**< in the image's pixels, already transformed **/
     std::vector<Vertex> vertices_;
     std::vector<uint32_t> indices_;
     std::vector<Batch> batches_;

@@ -15,9 +15,9 @@ namespace v3d::image {
 namespace {
 
 /**
- * @return the format of that many bits per pixel, or RGB for a depth no format describes -
- *         which is a definite answer rather than a right one, and is why a writer checks the
- *         format it was handed rather than assuming one
+ * @return the format of that many bits per pixel, or RGB for a depth no format describes.
+ *         RGB is then a defined value but not necessarily a correct one, so a writer checks
+ *         the format it receives rather than assuming one
  **/
 Image::Format formatOf(uint8_t bpp) {
     switch (bpp / 8) {
@@ -42,12 +42,6 @@ Image::Image(uint32_t w, uint32_t h, uint8_t b) : width_(w), height_(h), bpp_(b)
     memset(data_, 0, size);
 }
 
-Image::Image(uint64_t len) : width_(0), height_(0), bpp_(0) {
-    data_ = new unsigned char[len];
-    memset(data_, 0, len);
-}
-
-
 Image::~Image() {
     delete[] data_;
 }
@@ -70,21 +64,6 @@ uint32_t Image::height() const {
 
 Image::Format Image::format() const {
     return format_;
-}
-
-void Image::bpp(uint8_t bits) {
-    bpp_ = bits;
-    // the format is the channel count, so it is the depth's to decide and not a second
-    // thing to set - a writer that read a stale one would encode the wrong row length
-    format_ = formatOf(bits);
-}
-
-void Image::width(unsigned int w) {
-    width_ = w;
-}
-
-void Image::height(unsigned int h) {
-    height_ = h;
 }
 
 unsigned char& Image::operator[] (unsigned int i) {

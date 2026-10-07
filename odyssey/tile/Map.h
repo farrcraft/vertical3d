@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/asset/kind/Json.h>
+#include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 #include <api/log/Logger.h>
 
@@ -30,11 +31,10 @@ namespace odyssey::tile {
  *     '@'  floor, and where the player starts
  *
  * Rows of characters rather than an array of objects because a map is read far more often
- * by a person than by the program, and this way the file looks like the board. The format
- * is odyssey's own and lives here rather than in api/grid: the grid is a data structure
- * with no opinion about where a map came from, and one app wanting a file is not a library
- * ([ADR-0016](../../docs/adr/0016-undo-records-what-has-already-happened.md)). It earns a
- * record of its own when something other than this app reads or writes one.
+ * by a person than by the program, and this way the file looks like the board. The rows and
+ * the terrain of '.', '#' and 'o' go to v3d::grid::fromPicture, which builds the grid. The
+ * JSON around them, the kinds and the '@' are odyssey's, because api/grid parses a picture
+ * against a terrain legend and nothing else about a map file.
  **/
 class Map final {
  public:
@@ -68,8 +68,8 @@ class Map final {
 
     /**
      * @return what a tile is made of, or Kind::Wall for a tile off the map - nothing can
-     *         stand outside the board, and answering rather than throwing keeps this the
-     *         same shape as TileGrid::passable()
+     *         stand outside the board, and returning rather than throwing matches
+     *         TileGrid::passable()
      **/
     Kind kind(v3d::grid::TileCoord tile) const;
 

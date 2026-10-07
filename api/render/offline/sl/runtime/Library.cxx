@@ -6,14 +6,16 @@
 /*
     The bodies behind the signatures in sl/Builtins.h: what a CALL instruction does.
 
-    A second translation unit for Machine rather than a class of its own, because every
-    body here reads the live mask, writes the register file and says what it could not do,
-    and all three of those are the machine's own state. What is here is most of the language
-    by volume and almost none of it by mechanism.
+    This is a second translation unit for Machine rather than a class of its own. Every body
+    here reads the live mask, writes the register file and says what it could not do, and all
+    three of those are the machine's own state. The file holds most of the built-in
+    functions, and none of the control flow or the masking they run under.
 */
 
 #include "Machine.h"
 
+#include <api/render/offline/Noise.h>
+#include <api/render/offline/Texture.h>
 #include <api/render/offline/sl/Builtins.h>
 #include <api/render/offline/sl/Types.h>
 
@@ -31,66 +33,9 @@ namespace v3d::render::offline::sl::runtime {
 
 namespace {
 
-/**
- * Which body a call runs.
- *
- * A name rather than the index of the signature that matched, because two signatures of
- * one name differ only in how many arguments they take - `atan(y, x)` and `atan(x)` are one
- * body that asks how many it was given.
- **/
-enum class Body {
-    /** Declared, and answering its default until something implements it. **/
-    NONE,
-    // every component of the answer is this function of the same component of each
-    // argument, which is what makes abs() of a colour the three absolute values
-    ABS, SIGN, FLOOR, CEIL, ROUND, SQRT, EXP, LOG, RADIANS, DEGREES,
-    SIN, COS, TAN, ASIN, ACOS, ATAN, MOD, POW, MIN, MAX, CLAMP, MIX, STEP, SMOOTHSTEP,
-    // a triple read as a direction rather than as three numbers
-    LENGTH, DISTANCE, NORMALIZE, FACEFORWARD, REFLECT, REFRACT,
-    // one component of one value, named or indexed
-    XCOMP, YCOMP, ZCOMP, SETXCOMP, SETYCOMP, SETZCOMP, COMP, SETCOMP,
-    // a named coordinate space, which is the renderer's answer rather than the machine's
-    PTRANSFORM, VTRANSFORM, NTRANSFORM, CTRANSFORM, MTRANSFORM, DEPTH,
-    // a matrix
-    DETERMINANT, TRANSLATE, ROTATE, SCALE,
-    // what the renderer answers rather than the machine
-    AMBIENT, TRANSMISSION, TRACE,
-    PRINTF
-};
+typedef Signature::Body Body;
 
 const float PI = 3.14159265358979323846f;
-
-Body lookup(const std::string & name) {
-    static const struct { const char* name; Body body; } table[] = {
-        { "abs", Body::ABS }, { "sign", Body::SIGN }, { "floor", Body::FLOOR },
-        { "ceil", Body::CEIL }, { "round", Body::ROUND }, { "sqrt", Body::SQRT },
-        { "exp", Body::EXP }, { "log", Body::LOG }, { "radians", Body::RADIANS },
-        { "degrees", Body::DEGREES }, { "sin", Body::SIN }, { "cos", Body::COS },
-        { "tan", Body::TAN }, { "asin", Body::ASIN }, { "acos", Body::ACOS },
-        { "atan", Body::ATAN }, { "mod", Body::MOD }, { "pow", Body::POW },
-        { "min", Body::MIN }, { "max", Body::MAX }, { "clamp", Body::CLAMP },
-        { "mix", Body::MIX }, { "step", Body::STEP }, { "smoothstep", Body::SMOOTHSTEP },
-        { "length", Body::LENGTH }, { "distance", Body::DISTANCE },
-        { "normalize", Body::NORMALIZE }, { "faceforward", Body::FACEFORWARD },
-        { "reflect", Body::REFLECT }, { "refract", Body::REFRACT },
-        { "xcomp", Body::XCOMP }, { "ycomp", Body::YCOMP }, { "zcomp", Body::ZCOMP },
-        { "setxcomp", Body::SETXCOMP }, { "setycomp", Body::SETYCOMP },
-        { "setzcomp", Body::SETZCOMP }, { "comp", Body::COMP }, { "setcomp", Body::SETCOMP },
-        { "ptransform", Body::PTRANSFORM }, { "vtransform", Body::VTRANSFORM },
-        { "ntransform", Body::NTRANSFORM }, { "ctransform", Body::CTRANSFORM },
-        { "mtransform", Body::MTRANSFORM }, { "depth", Body::DEPTH },
-        { "determinant", Body::DETERMINANT }, { "translate", Body::TRANSLATE },
-        { "rotate", Body::ROTATE }, { "scale", Body::SCALE },
-        { "ambient", Body::AMBIENT }, { "transmission", Body::TRANSMISSION },
-        { "trace", Body::TRACE }, { "printf", Body::PRINTF }
-    };
-    for (const auto & entry : table) {
-        if (name == entry.name) {
-            return entry.body;
-        }
-    }
-    return Body::NONE;
-}
 
 float sign(float value) {
     if (value < 0.0f) {
@@ -162,18 +107,18 @@ float once(Body body, float x) {
 }
 
 /**
- * One component of the answer, out of the same component of each argument.
+ * One component of the result, from the same component of each argument.
  **/
 float number(Body body, const float* given, std::size_t count) {
     switch (body) {
         case Body::LOG:
-            // the two argument form is the logarithm to a base, which is the ratio of two
+            // the two argument form is the logarithm to a base: the ratio of two natural logarithms
             return count == 2 ? std::log(given[0]) / std::log(given[1]) : once(body, given[0]);
         case Body::ATAN:
             return count == 2 ? std::atan2(given[0], given[1]) : once(body, given[0]);
         case Body::MOD:
             // RI's mod takes the sign of the divisor rather than of the dividend, so that
-            // mod(-1, 3) is 2 and a value walked backwards round a period stays in it
+            // mod(-1, 3) is 2 and a value decreasing past zero stays inside the period
             return given[1] == 0.0f ? 0.0f : given[0] - given[1] * std::floor(given[0] / given[1]);
         case Body::POW:
             return std::pow(given[0], given[1]);
@@ -202,8 +147,8 @@ glm::vec3 unit(const glm::vec3 & value) {
 }
 
 /**
- * A direction turned to lie on the same side of the surface as the reference does, which is
- * how a shader answers a surface facing away without knowing which way it faces.
+ * A direction turned to lie on the same side of the surface as the reference does, so a
+ * shader can handle a surface facing away without knowing which way it faces.
  **/
 glm::vec3 faceforward(const glm::vec3 & normal, const glm::vec3 & incident,
     const glm::vec3 & reference) {
@@ -223,17 +168,23 @@ glm::vec3 refract(const glm::vec3 & incident, const glm::vec3 & normal, float et
  **/
 class Site final {
  public:
-    Body body = Body::NONE;
-    /** Where the answer goes. **/
+    Body body = Body::STUB;
+    /** Where the result goes. **/
     Value* target = nullptr;
     /**
-     * The value written, which is the answer for every body but a setter - `setxcomp`
-     * writes the argument it was handed and answers nothing.
+     * The value written: the result for every body but a setter. `setxcomp` writes the
+     * argument it was given and returns nothing.
      **/
     Value* written = nullptr;
     const std::vector<const Value*>* given = nullptr;
-    /** The matrix a named coordinate space came to, for the bodies that take one. **/
+    /** The arguments a body returns results through, for one that writes more than one. **/
+    const std::vector<Value*>* outputs = nullptr;
+    /** The matrix of a named coordinate space, for the bodies that take one. **/
     glm::mat4x4 matrix = glm::mat4x4(1.0f);
+    /** The image texture() reads, and where: its own arguments, or the shader's s and t. **/
+    const Texture* texture = nullptr;
+    const Value* s = nullptr;
+    const Value* t = nullptr;
 
     const Value & argument(std::size_t which) const {
         return *(*given)[which];
@@ -243,6 +194,70 @@ class Site final {
         return given->size();
     }
 };
+
+/**
+ * The unpolarised reflectance of a dielectric, the mean of its two polarisations, and the
+ * reflected and refracted directions with it.
+ *
+ * The incident direction and the normal are normalised first, and the normal is taken to
+ * face against the incident direction, as refract() takes it. Past the critical angle
+ * everything is reflected and the refracted direction is zero, as refract() returns it.
+ **/
+void fresnel(const Site & site, unsigned int point) {
+    const glm::vec3 incident = unit(site.argument(0).triple(point));
+    const glm::vec3 normal = unit(site.argument(1).triple(point));
+    const float eta = site.argument(2).number(point);
+    const float cosine = std::fabs(glm::dot(incident, normal));
+    const float k = 1.0f - eta * eta * (1.0f - cosine * cosine);
+    float reflected = 1.0f;
+    if (k > 0.0f) {
+        const float through = std::sqrt(k);
+        const float across = (eta * cosine - through) / (eta * cosine + through);
+        const float along = (cosine - eta * through) / (cosine + eta * through);
+        reflected = 0.5f * (across * across + along * along);
+    }
+    const std::vector<Value*> & outputs = *site.outputs;
+    outputs[0]->number(point, reflected);
+    outputs[1]->number(point, 1.0f - reflected);
+    if (outputs.size() == 4) {
+        outputs[2]->triple(point, incident - 2.0f * glm::dot(incident, normal) * normal);
+        outputs[3]->triple(point, refract(incident, normal, eta));
+    }
+}
+
+/**
+ * Where three components of noise are read from, so that a colour of noise is three patterns
+ * rather than one grey one. The offsets are far apart and off the lattice.
+ **/
+const float STREAMS[3][3] = {
+    { 0.0f, 0.0f, 0.0f }, { 31.416f, 47.853f, 12.793f }, { -73.218f, 9.631f, 58.437f }
+};
+
+void pattern(const Site & site, unsigned int point) {
+    if (site.body == Body::TEXTURE) {
+        const float s = site.s == nullptr ? 0.0f : site.s->number(point);
+        const float t = site.t == nullptr ? 0.0f : site.t->number(point);
+        const glm::vec3 colour = site.texture == nullptr ? glm::vec3(0.0f) : site.texture->sample(s, t);
+        if (site.target->components() == 1) {
+            site.target->number(point, colour.r);
+        } else {
+            site.target->triple(point, colour);
+        }
+        return;
+    }
+    // one float is a line through the noise and two are a plane of it
+    glm::vec3 at(0.0f);
+    if (site.count() == 1 && site.argument(0).components() == 3) {
+        at = site.argument(0).triple(point);
+    } else {
+        at.x = site.argument(0).number(point);
+        at.y = site.count() > 1 ? site.argument(1).number(point) : 0.0f;
+    }
+    for (unsigned int i = 0; i < site.target->components() && i < 3; i++) {
+        const glm::vec3 stream(STREAMS[i][0], STREAMS[i][1], STREAMS[i][2]);
+        site.target->component(point, i, offline::noise(at + stream));
+    }
+}
 
 void geometry(const Site & site, unsigned int point) {
     switch (site.body) {
@@ -257,8 +272,8 @@ void geometry(const Site & site, unsigned int point) {
             site.target->triple(point, unit(site.argument(0).triple(point)));
             return;
         case Body::FACEFORWARD: {
-            // two arguments means the reference is the normal itself, which is what a
-            // shader with no Ng to hand asks for
+            // two arguments means the reference is the normal itself, for a shader that
+            // has no Ng
             const glm::vec3 normal = site.argument(0).triple(point);
             const glm::vec3 reference = site.count() == 3 ? site.argument(2).triple(point) : normal;
             site.target->triple(point, faceforward(normal, site.argument(1).triple(point), reference));
@@ -278,8 +293,8 @@ void geometry(const Site & site, unsigned int point) {
 }
 
 void component(const Site & site, unsigned int point) {
-    // xcomp, ycomp and zcomp are consecutive and so are their setters, which is what makes
-    // the name the index
+    // xcomp, ycomp and zcomp are consecutive and so are their setters, so the offset from
+    // the first gives the component index
     switch (site.body) {
         case Body::XCOMP:
         case Body::YCOMP:
@@ -341,6 +356,9 @@ void matrices(const Site & site, unsigned int point) {
         case Body::DETERMINANT:
             site.target->number(point, glm::determinant(site.argument(0).matrix(point)));
             return;
+        // glm::translate(m, t) is m times a translation, which a column vector meets first.
+        // RenderMan's translate(m, t) also applies t before m, as ConcatTransform does, and
+        // rotate and scale follow the same rule
         case Body::TRANSLATE:
             site.target->matrix(point,
                 glm::translate(site.argument(0).matrix(point), site.argument(1).triple(point)));
@@ -357,9 +375,9 @@ void matrices(const Site & site, unsigned int point) {
 }
 
 /**
- * The group where every component of the answer is the same function of that component of
- * each argument, and a one component argument is read for all of them - which is RI's
- * promotion rather than a zero fill.
+ * The group where every component of the result is the same function of that component of
+ * each argument. A one component argument is read for all of them, as RI promotes it,
+ * rather than a zero fill.
  **/
 void componentwise(const Site & site, unsigned int point) {
     float given[3] = { 0.0f, 0.0f, 0.0f };
@@ -382,6 +400,13 @@ void apply(const Site & site, unsigned int point) {
         case Body::REFLECT:
         case Body::REFRACT:
             geometry(site, point);
+            return;
+        case Body::FRESNEL:
+            fresnel(site, point);
+            return;
+        case Body::TEXTURE:
+        case Body::NOISE:
+            pattern(site, point);
             return;
         case Body::XCOMP:
         case Body::YCOMP:
@@ -452,8 +477,8 @@ std::string format(const std::vector<const Value*> & given, unsigned int point) 
         } else if (next < given.size()) {
             line += printed(conversion, *given[next++], point);
         } else {
-            // a conversion with nothing left to print says so rather than reading past the
-            // arguments, which is the one printf mistake that would otherwise take a render down
+            // a conversion with nothing left to print is reported rather than reading past
+            // the arguments, which would crash the render
             line += "(missing)";
         }
     }
@@ -466,16 +491,18 @@ bool transforming(Body body) {
         body == Body::NTRANSFORM || body == Body::MTRANSFORM;
 }
 
-/**
- * Whether the body writes the argument it was handed rather than answering a value, which
- * decides both which register the mask is asked about and where the answer goes.
- **/
-bool setter(Body body) {
-    return body == Body::SETXCOMP || body == Body::SETYCOMP ||
-        body == Body::SETZCOMP || body == Body::SETCOMP;
-}
-
 };  // namespace
+
+void Machine::colourSpaces(const std::vector<const Value*> & given) {
+    // there is one colour space here and it is the one a framebuffer holds; a scene naming
+    // another gets its colours back unchanged. Every argument before the colour names a
+    // space: the one to convert into, or the one to convert from and then into
+    for (std::size_t which = 0; which + 1 < given.size(); which++) {
+        if (given[which]->text() != "rgb") {
+            report("the colour space \"" + given[which]->text() + "\" is not one this renderer knows");
+        }
+    }
+}
 
 void Machine::builtin(const Instruction & instruction) {
     const std::vector<Signature> & table = builtins();
@@ -484,8 +511,8 @@ void Machine::builtin(const Instruction & instruction) {
         report("a call names no standard library function");
         return;
     }
-    const Body body = lookup(table[index].name);
-    if (body == Body::NONE) {
+    const Body body = table[index].body;
+    if (body == Body::STUB || body == Body::SOURCE) {
         report("'" + table[index].name + "' is declared and does nothing yet, so it answers its default");
         return;
     }
@@ -511,10 +538,21 @@ void Machine::builtin(const Instruction & instruction) {
         shadowed(body == Body::TRACE, *given[0], *given[1], &answer);
         return;
     }
-    site.written = setter(body) ? &file_[static_cast<std::size_t>(instruction.arguments[0])] : site.target;
+    // a function that changes an argument in place writes that register rather than its result.
+    // That register is both where the value goes and the one the mask is checked against
+    const int updates = table[index].updates;
+    site.written = updates >= 0 && static_cast<std::size_t>(updates) < instruction.arguments.size() ?
+        &file_[static_cast<std::size_t>(instruction.arguments[static_cast<std::size_t>(updates)])] : site.target;
+    std::vector<Value*> outputs = written(instruction, table[index].outputs);
+    if (!outputs.empty()) {
+        // the mask is checked against the first: the compiler gives every one the
+        // same storage
+        site.written = outputs.front();
+        site.outputs = &outputs;
+    }
 
-    // a named space is one matrix for the whole batch, since a string is uniform - which is
-    // the reason a string may be uniform only, and the reason this is not a lookup per point
+    // a named space is one matrix for the whole batch, since a string is always uniform, so
+    // this is not a lookup per point
     if (transforming(body)) {
         site.matrix = space(given[0]->text());
         if (given.size() == 3) {
@@ -523,10 +561,10 @@ void Machine::builtin(const Instruction & instruction) {
         }
     } else if (body == Body::DEPTH) {
         site.matrix = space("NDC");
-    } else if (body == Body::CTRANSFORM && given[0]->text() != "rgb") {
-        // there is one colour space here and it is the one a framebuffer holds; a scene
-        // asking for another gets its colours back unchanged rather than wrong
-        report("the colour space \"" + given[0]->text() + "\" is not one this renderer knows");
+    } else if (body == Body::TEXTURE) {
+        site.texture = texture(given, &site.s, &site.t);
+    } else if (body == Body::CTRANSFORM) {
+        colourSpaces(given);
     }
 
     const unsigned int count = site.written->storage() == Storage::VARYING ? batch_ : 1;
@@ -535,13 +573,40 @@ void Machine::builtin(const Instruction & instruction) {
             continue;
         }
         if (body == Body::PRINTF) {
-            // a line per shading point, because a person who wrote a printf asked to be told
-            // every time rather than once
+            // a line per shading point, not deduplicated as the machine's reports are
             printed_.push_back(format(given, point));
             continue;
         }
         apply(site, point);
     }
+}
+
+std::vector<Value*> Machine::written(const Instruction & instruction, int first) {
+    std::vector<Value*> outputs;
+    if (first < 0) {
+        return outputs;
+    }
+    for (std::size_t which = static_cast<std::size_t>(first); which < instruction.arguments.size(); which++) {
+        outputs.push_back(&file_[static_cast<std::size_t>(instruction.arguments[which])]);
+    }
+    return outputs;
+}
+
+const Texture* Machine::texture(const std::vector<const Value*> & given, const Value** s, const Value** t) {
+    if (given.size() == 3) {
+        *s = given[1];
+        *t = given[2];
+    } else {
+        *s = s_ < 0 ? nullptr : &file_[static_cast<std::size_t>(s_)];
+        *t = t_ < 0 ? nullptr : &file_[static_cast<std::size_t>(t_)];
+    }
+    // a name is uniform, so the image is found once for the batch
+    const std::string & name = given[0]->text();
+    const Texture* found = renderer_ == nullptr ? nullptr : renderer_->texture(name);
+    if (found == nullptr) {
+        report("the texture \"" + name + "\" cannot be read, so it answers black");
+    }
+    return found;
 }
 
 void Machine::ambient(Value* target) {
@@ -580,9 +645,9 @@ void Machine::shadowed(bool ray, const Value & from, const Value & to, Value* ta
         return;
     }
     /*
-        The answer a renderer that cannot do it gives. All the light gets through, which is
-        moya without a shadow map, and a ray comes back black, which is what makes trace()
-        the phase 6 hook rather than phase 6.
+        The result when the renderer cannot do it. All the light gets through, so a scene
+        renders unshadowed rather than not at all, and a ray returns black rather than
+        something plausible.
     */
     const unsigned int wide = target->storage() == Storage::VARYING ? batch_ : 1;
     const float answer = ray ? 0.0f : 1.0f;

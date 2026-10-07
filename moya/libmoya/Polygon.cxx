@@ -5,6 +5,9 @@
 
 #include "Polygon.h"
 
+#include <api/type/geometry/Frustum.h>
+#include <api/type/geometry/Plane.h>
+
 #include <cmath>
 #include <cassert>
 #include <iostream>
@@ -12,13 +15,15 @@
 #include <vector>
 
 #include <glm/common.hpp>
+#include <glm/geometric.hpp>
 
-#include "Plane.h"
 #include "RenderContext.h"
 
 namespace v3d::moya {
 
 namespace {
+
+Vertex crossing(const Vertex & a, const Vertex & b, const glm::vec3 & hit);
 
 /**
  * A piece is worth handing back only if it bounds something and is strictly smaller
@@ -73,7 +78,7 @@ Vertex& Polygon::operator[] (size_t idx) {
 glm::vec3 Polygon::geometricNormal(void) const {
     // the first pair of edges that spans an area. A repeated vertex or a collinear run at
     // the head of the polygon gives a zero cross product, which names no plane, so the
-    // walk goes on rather than answering with it
+    // search continues past it
     for (size_t i = 1; i + 1 < vertices_.size(); i++) {
         const glm::vec3 across = glm::cross(vertices_[i].point() - vertices_[0].point(),
                                             vertices_[i + 1].point() - vertices_[0].point());
@@ -83,6 +88,49 @@ glm::vec3 Polygon::geometricNormal(void) const {
         }
     }
     return glm::vec3(0.0f);
+}
+
+/* note - clipping happens after culling
+
+    this is a 3D Sutherland-Hodgman polygon clipper: instead of clipping against a single
+    clipping rectangle edge, it clips against a plane.
+*/
+void Polygon::clip(const v3d::type::geometry::Plane & plane) {
+    const size_t nverts = vertices_.size();
+    // fewer than three vertices bound no area to keep, and the loop below starts on the
+    // vertex before the first one
+    if (nverts < 3) {
+        return;
+    }
+    std::vector<Vertex> clipped;
+    glm::vec3 hit;
+    Vertex s = vertices_[nverts - 1];  // start with last vertex
+    for (size_t j = 0; j < nverts; j++) {
+        const Vertex p = vertices_[j];
+        /*
+         there are 4 possible test cases:
+            case 1: s & p both inside	 - in/in
+            case 2: s inside, p outside - in/out
+            case 3: s & p both outside	 - out/out
+            case 4: s outside, p inside - out/in
+         */
+        const bool pInside = plane.classify(p.point()) != v3d::type::geometry::Plane::NEGATIVE;
+        const bool sInside = plane.classify(s.point()) != v3d::type::geometry::Plane::NEGATIVE;
+        if (pInside) {  // cases 1 & 4
+            if (!sInside) {  // case 4
+                plane.intersectEdge(s.point(), p.point(), &hit);
+                clipped.push_back(crossing(s, p, hit));
+            }
+            clipped.push_back(p);
+        } else if (sInside) {  // case 2
+            plane.intersectEdge(s.point(), p.point(), &hit);
+            clipped.push_back(crossing(s, p, hit));
+        }
+        // case 3: the entire edge is clipped
+        s = p;
+    }
+
+    vertices_ = std::move(clipped);
 }
 
 // return an object space bound of the polygon
@@ -157,31 +205,91 @@ polygons
 namespace {
 
 /**
+ * A corner of a piece: the vertex it came from, with the position, colour, shading normal and
+ * texture coordinates that vertex has. A value the vertex was not given stays unset, so the
+ * piece fills it from the primitive's state as its parent was filled.
+ **/
+Vertex carried(const Vertex & from) {
+    Vertex vert;
+    vert.point(from.point());
+    if (from.hasColor()) {
+        vert.color(from.color());
+    }
+    if (from.hasNormal()) {
+        vert.normal(from.normal());
+    }
+    if (from.hasTexCoord()) {
+        vert.st(from.st());
+    }
+    return vert;
+}
+
+/**
+ * The shading normal part of the way from a to b, as a unit vector. Two equal normals give
+ * that normal back unchanged. Opposite normals meeting half way give zero, which names no
+ * direction, so false is returned and the crossing is left without a normal of its own.
+ **/
+bool between(const glm::vec3 & a, const glm::vec3 & b, float along, glm::vec3* normal) {
+    if (a == b) {
+        *normal = a;
+        return true;
+    }
+    // interpolating unit normals does not give a unit one back
+    const glm::vec3 mixed = a + (b - a) * along;
+    const float length = glm::length(mixed);
+    if (!(length > 0.0f)) {
+        return false;
+    }
+    *normal = mixed / length;
+    return true;
+}
+
+/**
+ * Where an edge meets the plane. Colour, shading normal and texture coordinates are taken as
+ * far along the edge as the point is, each only when both ends of the edge have one. The
+ * normal is renormalised.
+ **/
+Vertex crossing(const Vertex & a, const Vertex & b, const glm::vec3 & hit) {
+    Vertex vert;
+    vert.point(hit);
+    const float span = glm::length(b.point() - a.point());
+    const float along = span > 0.0f ? glm::length(hit - a.point()) / span : 0.0f;
+    if (a.hasColor() && b.hasColor()) {
+        vert.color(a.color() + (b.color() - a.color()) * along);
+    }
+    glm::vec3 normal(0.0f);
+    if (a.hasNormal() && b.hasNormal() && between(a.normal(), b.normal(), along, &normal)) {
+        vert.normal(normal);
+    }
+    if (a.hasTexCoord() && b.hasTexCoord()) {
+        vert.st(a.st() + (b.st() - a.st()) * along);
+    }
+    return vert;
+}
+
+/**
  * An edge that crosses the plane. hit is the vertex both halves come to share, so it goes
  * into each of them; which half keeps A and which keeps B follows the side A is on.
  **/
-void addCrossingEdge(const glm::vec3& a, const glm::vec3& b, const glm::vec3& hit, int side,
+void addCrossingEdge(const Vertex& a, const Vertex& b, const glm::vec3& hit, int side,
     bool first, bool last, const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
-    Vertex vert;
-    vert.point(a);
     if (first) {
         if (side < 0) {
-            p1->addVertex(vert);
+            p1->addVertex(carried(a));
         } else {
-            p2->addVertex(vert);
+            p2->addVertex(carried(a));
         }
     }
 
-    vert.point(hit);
-    p1->addVertex(vert);
-    p2->addVertex(vert);
+    const Vertex shared = crossing(a, b, hit);
+    p1->addVertex(shared);
+    p2->addVertex(shared);
 
-    vert.point(b);
     if (!last) {
         if (side < 0) {
-            p2->addVertex(vert);
+            p2->addVertex(carried(b));
         } else {
-            p1->addVertex(vert);
+            p1->addVertex(carried(b));
         }
     }
 }
@@ -192,45 +300,36 @@ void addCrossingEdge(const glm::vec3& a, const glm::vec3& b, const glm::vec3& hi
  * Only the first edge contributes its A and only a non-final edge contributes its B: every
  * other vertex is the B of the edge before it.
  **/
-void addWholeEdge(const glm::vec3& a, const glm::vec3& b, int side, bool first, bool last,
+void addWholeEdge(const Vertex& a, const Vertex& b, int side, bool first, bool last,
     const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
     const boost::shared_ptr<Polygon>& half = side <= 0 ? p1 : p2;
-    Vertex vert;
-    vert.point(a);
     if (first) {
-        half->addVertex(vert);
+        half->addVertex(carried(a));
     }
-    vert.point(b);
     if (!last) {
-        half->addVertex(vert);
+        half->addVertex(carried(b));
     }
 }
 
 };  // namespace
 
-void Polygon::split(const Plane& plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2) {
+void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2) {
     // intersect each edge with the plane
-    glm::vec3 A;
-    glm::vec3 B;
     glm::vec3 hit;
     for (unsigned int i = 0; i < vertices_.size(); i++) {
         const size_t vcount = vertices_.size();
-        A = vertices_[i].point();
-        if (i == (vcount - 1)) {
-            B = vertices_[0].point();
-        } else {
-            B = vertices_[i + 1].point();
-        }
+        const Vertex & a = vertices_[i];
+        const Vertex & b = i == (vcount - 1) ? vertices_[0] : vertices_[i + 1];
         // classify which side of the plane A is on
-        const int side = plane.classify(A);
+        const int side = plane.classify(a.point());
         const bool first = (i == 0);
         const bool last = (i == (vcount - 1));
-        if (plane.intersectEdge(A, B, &hit)) {
-            addCrossingEdge(A, B, hit, side, first, last, p1, p2);
+        if (plane.intersectEdge(a.point(), b.point(), &hit)) {
+            addCrossingEdge(a, b, hit, side, first, last, p1, p2);
         } else {
             // since there was no intersection, B will be on the same side
-            assert(side == plane.classify(B));
-            addWholeEdge(A, B, side, first, last, p1, p2);
+            assert(side == plane.classify(b.point()));
+            addWholeEdge(a, b, side, first, last, p1, p2);
         }
     }
 }
@@ -248,7 +347,12 @@ void Polygon::split(RenderContext & rc) {
     if (n == glm::vec3(0.0f)) {
         return;
     }
-    const glm::vec3 v0 = vertices_[0].point() - vertices_[1].point();
+    // the edge is taken from the first vertex that differs from the head. A repeated head
+    // gives a zero edge, which names no cutting plane. A polygon with a plane has such a vertex
+    glm::vec3 v0(0.0f);
+    for (size_t i = 1; i < vertices_.size() && v0 == glm::vec3(0.0f); i++) {
+        v0 = vertices_[0].point() - vertices_[i].point();
+    }
 
     // calculate plane's normal
     glm::vec3 pn;
@@ -262,7 +366,7 @@ void Polygon::split(RenderContext & rc) {
     mp /= 2.0;
     pop = bounds.min() + mp;
     // create the intersection plane from pop and pn
-    Plane plane;
+    v3d::type::geometry::Plane plane;
     plane.calculate(pn, pop);
 
     // two new (potentially) polygons created as a result of splitting
@@ -294,6 +398,7 @@ void Polygon::split(RenderContext & rc) {
             // whatever the current transformation, colour and shader have since become
             if (placed()) {
                 piece->place(placement(), color(), normal(), shading());
+                piece->motion(motion());
             }
             rc.addPolygon(piece);
         }
@@ -323,8 +428,8 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
     /*
         bilinear interpolation over the polygon's first four vertices. A triangle's fourth
         corner degenerates onto its third; a polygon with more than four vertices has the
-        rest dropped, which is a wrong grid for a concave one and is what triangulating
-        before dicing would fix.
+        rest dropped, which gives a wrong grid for a concave one. Triangulating before
+        dicing would avoid that.
     */
     const size_t fourth = vertices_.size() > 3 ? 3 : 2;
     glm::vec3 corners[4] = {
@@ -341,8 +446,8 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
         vertices_[2].color(),
         vertices_[fourth].color()
     };
-    // and so does the shading normal, which is what makes a surface given a varying "N"
-    // come out smooth rather than faceted
+    // and so does the shading normal, so a surface given a varying "N" comes out smooth
+    // rather than faceted
     glm::vec3 normals[4] = {
         vertices_[0].normal(),
         vertices_[1].normal(),
@@ -352,6 +457,16 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
     // the geometric normal is one value across the primitive, so there is nothing to
     // interpolate: addPolygon() wrote the same one onto every vertex
     const glm::vec3 geometric = vertices_[0].geometricNormal();
+    // texture coordinates interpolate only when the scene gave every corner one; a grid
+    // without them takes its own parameters as s and t when it is shaded
+    const bool textured = vertices_[0].hasTexCoord() && vertices_[1].hasTexCoord() &&
+        vertices_[2].hasTexCoord() && vertices_[fourth].hasTexCoord();
+    const glm::vec2 st[4] = {
+        vertices_[0].st(),
+        vertices_[1].st(),
+        vertices_[2].st(),
+        vertices_[fourth].st()
+    };
 
     const unsigned int size = grid->size();
     const float span = static_cast<float>(size - 1);
@@ -376,12 +491,24 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
             const float length = glm::length(normal);
             vert.normal(length > 0.0f ? normal / length : geometric);
             vert.geometricNormal(geometric);
+            if (textured) {
+                vert.st(st[0] * ((1.0f - u) * (1.0f - w)) +
+                        st[1] * (u * (1.0f - w)) +
+                        st[2] * (u * w) +
+                        st[3] * ((1.0f - u) * w));
+            }
             grid->addVertex(vert, i, j);
         }
     }
 
     diced_ = true;
     return true;
+}
+
+void clip(Polygon & poly, const v3d::type::geometry::Frustum & frustum) {
+    for (const v3d::type::geometry::Plane & plane : frustum.planes()) {
+        poly.clip(plane);
+    }
 }
 
 };  // namespace v3d::moya

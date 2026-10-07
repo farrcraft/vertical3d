@@ -3,11 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/kind/Json.h>
+#include <api/event/Engine.h>
 #include <api/render/realtime/Canvas.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Image.h>
+#include <api/ui/Length.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Icon.h>
 #include <api/ui/component/Label.h>
@@ -38,7 +40,7 @@
 namespace {
 
 /**
- * A ui engine over a document written inline, which is what a config file amounts to by
+ * A ui engine over a document written inline, which is all a config file amounts to by
  * the time it reaches the loader.
  **/
 boost::shared_ptr<v3d::ui::Engine> load(const std::string& document, bool* loaded) {
@@ -48,9 +50,7 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& document, bool* loade
         dispatcher,
         boost::make_shared<v3d::log::Logger>());
 
-    const boost::shared_ptr<v3d::asset::kind::Json> config = boost::make_shared<v3d::asset::kind::Json>(
-        "vgui", v3d::asset::Type::JsonDocument, boost::json::parse(document).as_object());
-    *loaded = ui->load(config);
+    *loaded = ui->load(boost::json::parse(document).as_object());
     return ui;
 }
 
@@ -202,8 +202,7 @@ BOOST_AUTO_TEST_CASE(a_button_style_carries_a_state_and_its_images) {
 }
 
 /**
- * The document names which theme is active. Without the field the first one loaded is,
- * which is what every config in the tree relies on.
+ * The document names which theme is active. Without the field the first one loaded is.
  **/
 BOOST_AUTO_TEST_CASE(the_document_names_the_active_theme) {
     bool loaded = false;
@@ -250,8 +249,7 @@ BOOST_AUTO_TEST_CASE(a_theme_overrides_what_it_names_and_no_more) {
 }
 
 /**
- * A theme with no styles in it draws exactly as no theme at all does, which is what keeps
- * every ui config written before the styles could be read drawing the same.
+ * A theme with no styles in it draws exactly as no theme at all does.
  **/
 BOOST_AUTO_TEST_CASE(a_nameless_theme_changes_nothing) {
     bool loaded = false;
@@ -314,8 +312,8 @@ BOOST_AUTO_TEST_CASE(the_image_pass_resolves_every_source_the_config_named) {
  * Loader hands a nested component to its parent rather than to the container, so the
  * container's own list reaches only what nothing laid out. Container::get searches the whole
  * tree and the image pass has to as well, or the two disagree about what a document holds.
- * The case earns its place because every image in this tree's own documents is a toolbar's,
- * and a strip's buttons are held separately - so nothing here exercises the ordinary shape.
+ * A strip's buttons are held separately from the tree, so a toolbar's images do not cover
+ * this nested shape.
  **/
 BOOST_AUTO_TEST_CASE(an_image_nested_in_a_layout_is_resolved) {
     bool loaded = false;
@@ -372,8 +370,7 @@ BOOST_AUTO_TEST_CASE(an_unresolved_source_leaves_the_handle_unset) {
 
 /**
  * A button, a label and an icon are components a container can hold, and each carries the
- * box it asks for. position() and size() stay empty until something draws them, per
- * ADR-0034.
+ * box it asks for. position() and size() stay empty until something draws them.
  **/
 BOOST_AUTO_TEST_CASE(a_container_holds_buttons_labels_and_icons) {
     bool loaded = false;
@@ -464,7 +461,7 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
 
 /**
  * A theme's "inactive" style is what a button that cannot be used is skinned from, and it is
- * chosen by Component::enabled() rather than by a button state. ADR-0059.
+ * chosen by Component::enabled() rather than by a button state.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
     bool loaded = false;
@@ -640,6 +637,25 @@ BOOST_AUTO_TEST_CASE(an_icon_given_a_new_source_keeps_it_across_a_resolve) {
 }
 
 /**
+ * A null entry in a container is passed over, and the icons beside it still resolve.
+ **/
+BOOST_AUTO_TEST_CASE(resolving_images_passes_over_a_null_component) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "icon", "name": "slot", "source": "items/wood" }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    ui->container("hud")->add(nullptr);
+
+    const Sheet sheet;
+    BOOST_CHECK_EQUAL(ui->resolveImages(sheet), 1U);
+    BOOST_CHECK_EQUAL(ui->resolveComponentImages(sheet, nullptr), 0U);
+}
+
+/**
  * A button pointed at a different icon falls back to its label until the new one is
  * resolved, rather than drawing the old picture under the new name.
  **/
@@ -710,8 +726,8 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
 }
 
 /**
- * A button whose icon was never resolved falls back to its label, which is what keeps a
- * missing image from leaving an unreadable strip.
+ * A button whose icon was never resolved falls back to its label, so a missing image does
+ * not leave an unreadable strip.
  **/
 BOOST_AUTO_TEST_CASE(an_unresolved_icon_leaves_the_label_drawn) {
     std::vector<Written> written;

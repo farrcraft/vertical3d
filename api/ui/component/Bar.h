@@ -16,8 +16,7 @@ namespace v3d::ui::component {
  * covers, so a bar is sized by its layout like anything else. A horizontal bar fills from
  * the left and a vertical one from the bottom, which is the direction each is read in.
  *
- * The track and the fill are drawn in the "bar" style class the component names, per
- * ADR-0020.
+ * The track and the fill are drawn in the "bar" style class the component names.
  **/
 class Bar : public Component {
  public:

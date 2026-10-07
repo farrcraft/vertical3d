@@ -12,6 +12,7 @@ namespace v3d::ui::shell {
 
 const char* const GameMenu::defaultContainer = "game-menu";
 const char* const GameMenu::defaultMenu = "main-menu";
+const char* const GameMenu::toggleCommand = "showGameMenu";
 
 /**
  **/
@@ -21,6 +22,25 @@ GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspe
     suspend_(suspend),
     containerName_(container),
     menuName_(menu) {
+    if (engine_ && engine_->dispatcher()) {
+        commands_ = engine_->dispatcher()->sink<v3d::event::Event>().connect<&GameMenu::command>(*this);
+    }
+}
+
+/**
+ **/
+void GameMenu::command(const v3d::event::Event& event) {
+    if (!event.context() || event.context()->name() != "ui") {
+        return;
+    }
+    if (event.name() == toggleCommand) {
+        // a held key would otherwise open and close the menu at the repeat rate
+        if (!event.repeat()) {
+            toggle();
+        }
+        return;
+    }
+    navigate(event.name());
 }
 
 /**

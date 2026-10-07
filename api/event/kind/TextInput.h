@@ -14,11 +14,10 @@ namespace v3d::event::kind {
 /**
  * Characters the platform composed, as utf-8.
  *
- * Distinct from a KeyDown because a key is not a character: the same key is "a" and "A"
- * under shift, a dead key and the one after it are one character between them, and an
- * input method may compose several keys into one. What a text box wants is the answer the
- * platform arrived at, so this carries it and KeyDown goes on carrying which key moved.
- * ADR-0040.
+ * Separate from KeyDown because one key does not map to one character. The same key is "a"
+ * and "A" under shift. A dead key and the one after it are one character between them. An
+ * input method may compose several keys into one. A text box needs the characters the
+ * platform composed, so this carries them, and KeyDown carries which key moved.
  **/
 class TextInput final : public Event {
  public:

@@ -11,9 +11,9 @@
 #include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/LineCanvas.h>
 #include <api/render/realtime/Window.h>
-#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/Engine.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -32,20 +32,19 @@ namespace v3d::editor {
 /**
  * The editor's frame: two passes per viewport, over one device.
  *
- * Four views of one scene is four pairs of passes with four cameras, per ADR-0003. Each
- * pass carries its viewport's region as its scissor and its camera at set 0, and the
- * scene pass clears its own region - so the split is a property of the frame rather than
- * of the window.
+ * Four views of one scene are four pairs of passes with four cameras. Each pass carries
+ * its viewport's region as its scissor and its camera at set 0, and the scene pass clears
+ * its own region. The split into views is therefore a property of the frame, not of the
+ * window.
  *
- * A scene pass depth tests, because the wireframe a modeller draws has to be occluded by
- * what is in front of it; they all share one depth buffer, which each clears within its
- * own region. The handle pass that follows it does not, and keeps what the scene pass
- * left: the manipulator is an overlay, and an overlay is a pass without depth per
- * ADR-0011.
+ * A scene pass depth tests, so a wireframe is occluded by what is in front of it. All the
+ * scene passes share one depth buffer, and each clears it within its own region. The
+ * handle pass that follows does not depth test and keeps what the scene pass left,
+ * because the manipulator is an overlay.
  *
- * One more pass follows all of them, over the whole window rather than a view, and holds
- * the ui - quads rather than lines, because a panel and a glyph are the same primitive
- * per ADR-0005.
+ * One more pass follows all of them, over the whole window rather than a view, and draws
+ * the ui. It draws quads rather than lines, because panels and glyphs both go through
+ * the batched quad pipeline.
  */
 class Renderer final {
  public:
@@ -54,7 +53,7 @@ class Renderer final {
      **/
     Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& window,
         const boost::shared_ptr<v3d::log::Logger>& logger,
-        const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
+        const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
     /**
      **/
@@ -87,16 +86,15 @@ class Renderer final {
     /**
      * How wide a run of text is at the size the ui is drawn in.
      *
-     * The cursor routing a press needs the same one this draws with, or a click inside a
-     * text box would place the caret somewhere other than under the pointer - ADR-0057.
-     * Asking the renderer is what keeps them the same callback rather than two built from
-     * the same font and trusted to agree.
+     * The cursor routing a press must measure text with the same function this draws
+     * with, or a click inside a text box would place the caret somewhere other than under
+     * the pointer. Taking it from the renderer guarantees the two are the same function.
      **/
     v3d::ui::paint::Measure measure() const;
 
     /**
-     * How much of the window's edges the ui covers - the menu bar and the toolbars - which
-     * is what the views are not given. Left in x and top in y.
+     * How much of the window's edges the menu bar and the toolbars cover. The views are
+     * laid out in the rest. Left in x and top in y.
      **/
     glm::vec2 insets() const;
 
@@ -104,7 +102,7 @@ class Renderer final {
      * Draw one frame - a pass per view.
      *
      * @param statistics what the loop measured about the frame being drawn, which the
-     *        overlay reads - the app hands it over because api/ui sits below api/engine
+     *        overlay reads. The app passes it in because api/ui cannot depend on api/engine
      **/
     void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
 
@@ -120,7 +118,7 @@ class Renderer final {
 
  private:
     /**
-     * Fill the ui canvas and give the frame the one pass that draws it.
+     * Fill the ui canvas and add the pass that draws it to the frame.
      **/
     void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame,
         const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
@@ -143,10 +141,8 @@ class Renderer final {
     std::vector<v3d::render::realtime::LineCanvas> overlays_;
 
     boost::shared_ptr<v3d::ui::Engine> ui_;
-    boost::shared_ptr<v3d::ui::paint::ComponentRenderer> uiRenderer_;
-    v3d::render::realtime::Canvas canvas_;
-    boost::shared_ptr<v3d::ui::paint::TextRenderer> text_;
-    boost::shared_ptr<v3d::ui::shell::StatisticsOverlay> statistics_;
+    // built after the engine is initialized, because its atlas is uploaded through it
+    boost::shared_ptr<v3d::ui::shell::Screen> screen_;
 
     glm::vec4 background_;
 };

@@ -20,31 +20,28 @@ class TextureFont;
  */
 class TextureTextBuffer : public TextBuffer {
  public:
-    typedef struct {
-        std::string family_;  // e.g. normal, monospace, sans, serif
-        float size_;
-        bool bold_;
-        bool italic_;
-        float rise_;  // vertical displacement from baseline
-        float spacing_;  // spacing between letters
-        float gamma_;
-        glm::vec4 foregroundColor_;
-        glm::vec4 backgroundColor_;
-        bool outline_;
-        glm::vec4 outlineColor_;
-        bool underline_;
-        glm::vec4 underlineColor_;
-        bool overline_;
-        glm::vec4 overlineColor_;
-        bool strikethrough_;
-        glm::vec4 strikethroughColor_;
+    /**
+     * How a run of text is drawn: the size it is laid out at, its colours, and the lines drawn
+     * with it. What is here is what addText() honours.
+     **/
+    struct Markup {
+        /**
+         * The size the text is laid out at; the font's metrics are scaled by its ratio to the
+         * font's own size. Zero or less means the font's own size.
+         **/
+        float size_ = 0.0f;
+        float gamma_ = 1.0f;
+        glm::vec4 foregroundColor_{1.0f};
+        /** Transparent unless a background quad is wanted behind each glyph. **/
+        glm::vec4 backgroundColor_{0.0f};
+        bool underline_ = false;
+        glm::vec4 underlineColor_{1.0f};
+        bool overline_ = false;
+        glm::vec4 overlineColor_{1.0f};
+        bool strikethrough_ = false;
+        glm::vec4 strikethroughColor_{1.0f};
         boost::shared_ptr<TextureFont> font_;
-    } Markup;
-
-    typedef enum {
-        LCD_FILTERING_OFF = 1,
-        LCD_FILTERING_ON = 3
-    } LcdFiltering;
+    };
 
     TextureTextBuffer();
 
@@ -55,7 +52,7 @@ class TextureTextBuffer : public TextBuffer {
     std::vector<float> & gamma();
 
  protected:
-    void addCharacter(glm::vec2 * pen, const Markup & markup, wchar_t current, wchar_t previous);
+    void addCharacter(glm::vec2 * pen, const Markup & markup, wchar_t current);
     void addVertex(const glm::vec3 & position, const glm::vec2 & texture, const glm::vec4 & color, float shift, float gamma);
     void addQuad(const glm::vec2 & xy0, const glm::vec2 & xy1, const glm::vec2 & uv0, const glm::vec2 & uv1, const glm::vec4 & color, float gamma);
 

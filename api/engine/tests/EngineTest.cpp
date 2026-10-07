@@ -3,9 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/config/Type.h>
+#include <api/event/Source.h>
+#include <api/engine/Application.h>
 #include <api/engine/Engine.h>
 #include <api/engine/Feature.h>
 
+#include <cstdlib>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -20,31 +25,20 @@ namespace {
  **/
 class TestEngine final : public v3d::engine::Engine {
  public:
-    using Engine::Engine;
-
-    const boost::shared_ptr<entt::dispatcher>& dispatcher() const {
-        return dispatcher_;
-    }
-
-    const boost::shared_ptr<v3d::event::Engine>& events() const {
-        return eventEngine_;
-    }
-
-    const boost::shared_ptr<v3d::config::Config>& config() const {
-        return config_;
-    }
-
-    const boost::shared_ptr<v3d::asset::Manager>& assets() const {
-        return assetManager_;
+    explicit TestEngine(const std::string& path, v3d::engine::Features features = v3d::engine::Features()) :
+        Engine(path),
+        features_(features) {
     }
 
     /**
-     * route() is where the order of ADR-0043 lives, and eventLoop() renders, so a test
-     * drives the one and never the other.
+     * route() offers an event to the app, the input devices and the engine, in that order.
+     * eventLoop() renders, so a test drives route() and never eventLoop().
      **/
     void offer(const SDL_Event& event) {
         route(event);
     }
+
+    using Engine::rebind;
 
     bool onEvent(const SDL_Event& event) override {
         offered_.push_back(event.type);
@@ -53,6 +47,14 @@ class TestEngine final : public v3d::engine::Engine {
 
     bool take_ = false;
     std::vector<Uint32> offered_;
+
+ protected:
+    v3d::engine::Features features() const override {
+        return features_;
+    }
+
+ private:
+    v3d::engine::Features features_;
 };
 
 /**
@@ -68,12 +70,9 @@ struct Recorder {
     std::vector<v3d::event::Event> events_;
 };
 
-v3d::event::Event source(const boost::shared_ptr<v3d::event::Context>& context,
+v3d::event::Source source(const boost::shared_ptr<v3d::event::Context>& context,
     const std::string& name, v3d::event::State state) {
-    v3d::event::Event event(name, context);
-    event.type(v3d::event::Type::Source);
-    event.state(state);
-    return event;
+    return v3d::event::Source(name, context, state);
 }
 
 /**
@@ -84,12 +83,12 @@ std::string appPath(const std::string& fixture) {
     return "fixtures/" + fixture + "/";
 }
 
-const int configFeature = static_cast<int>(v3d::engine::Feature::Config);
-const int boundFeature = configFeature | static_cast<int>(v3d::engine::Feature::KeyboardInput);
+const v3d::engine::Features configFeature = v3d::engine::Feature::Config;
+const v3d::engine::Features boundFeature = v3d::engine::Feature::Config | v3d::engine::Feature::KeyboardInput;
 
 /**
- * A key going down, as SDL delivers it - the only event in this file the input devices
- * have anything to say about.
+ * A key going down, as SDL delivers it. It is the only event in this file that the input
+ * devices handle.
  **/
 SDL_Event keyDown(SDL_Keycode key) {
     SDL_Event event{};
@@ -98,17 +97,24 @@ SDL_Event keyDown(SDL_Keycode key) {
     return event;
 }
 
+SDL_Event keyUp(SDL_Keycode key) {
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_UP;
+    event.key.key = key;
+    return event;
+}
+
 };  // namespace
 
 /**
  * A mask of nothing builds the asset manager, the dispatcher and the event engine and stops
- * there - no config read, no input devices and no window, which is what makes the engine
- * testable without one.
+ * there: no config read, no input devices and no window, so the engine can be tested
+ * without a window.
  **/
 BOOST_AUTO_TEST_CASE(engine_initialize_no_features_test) {
     TestEngine engine(appPath("good"));
 
-    BOOST_TEST(engine.initialize(0));
+    BOOST_TEST(engine.initialize());
     BOOST_TEST(static_cast<bool>(engine.assets()));
     BOOST_TEST(static_cast<bool>(engine.dispatcher()));
     BOOST_TEST(static_cast<bool>(engine.events()));
@@ -120,9 +126,9 @@ BOOST_AUTO_TEST_CASE(engine_initialize_no_features_test) {
  * Feature::Config reads config.json out of the app's data directory and files what it names.
  **/
 BOOST_AUTO_TEST_CASE(engine_initialize_config_test) {
-    TestEngine engine(appPath("good"));
+    TestEngine engine(appPath("good"), configFeature);
 
-    BOOST_TEST(engine.initialize(configFeature));
+    BOOST_TEST(engine.initialize());
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Window)));
@@ -134,21 +140,21 @@ BOOST_AUTO_TEST_CASE(engine_initialize_config_test) {
  * triggered on the dispatcher comes back out as the destination it was bound to.
  **/
 BOOST_AUTO_TEST_CASE(engine_registers_mappings_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(configFeature));
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
 
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
     boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
-    engine.dispatcher()->trigger(source(keyboard, "w", v3d::event::State::Pressed));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "w", v3d::event::State::Pressed));
 
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "leftPaddleUp");
     BOOST_CHECK_EQUAL(recorder.events_[0].context()->name(), "pong");
 
     // an unbound key produces nothing
-    engine.dispatcher()->trigger(source(keyboard, "q", v3d::event::State::Pressed));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "q", v3d::event::State::Pressed));
     BOOST_CHECK_EQUAL(recorder.events_.size(), 1u);
 }
 
@@ -156,63 +162,62 @@ BOOST_AUTO_TEST_CASE(engine_registers_mappings_test) {
  * A binding naming a state binds that edge only; one naming none matches both.
  **/
 BOOST_AUTO_TEST_CASE(engine_mapping_state_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(configFeature));
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
 
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
     boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
 
-    engine.dispatcher()->trigger(source(keyboard, "escape", v3d::event::State::Pressed));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "escape", v3d::event::State::Pressed));
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "quit");
 
-    engine.dispatcher()->trigger(source(keyboard, "escape", v3d::event::State::Released));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "escape", v3d::event::State::Released));
     BOOST_CHECK_EQUAL(recorder.events_.size(), 1u);
 
     // the unstated binding takes both edges
-    engine.dispatcher()->trigger(source(keyboard, "w", v3d::event::State::Released));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "w", v3d::event::State::Released));
     BOOST_CHECK_EQUAL(recorder.events_.size(), 2u);
 }
 
 /**
  * A destination's param reaches the handler as the event's data, in the type the document
- * wrote it as - which is what lets one action serve several bindings.
+ * wrote it as, so one action can serve several bindings.
  **/
 BOOST_AUTO_TEST_CASE(engine_mapping_param_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(configFeature));
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
 
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
     boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
 
-    engine.dispatcher()->trigger(source(keyboard, "1", v3d::event::State::Pressed));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "1", v3d::event::State::Pressed));
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
     BOOST_REQUIRE(recorder.events_[0].data());
     BOOST_CHECK_EQUAL(std::get<std::string>(recorder.events_[0].data().get()), "cube");
 
-    engine.dispatcher()->trigger(source(keyboard, "2", v3d::event::State::Pressed));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "2", v3d::event::State::Pressed));
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 2u);
     BOOST_REQUIRE(recorder.events_[1].data());
     BOOST_CHECK_EQUAL(std::get<int>(recorder.events_[1].data().get()), 3);
 
-    engine.dispatcher()->trigger(source(keyboard, "g", v3d::event::State::Pressed));
+    v3d::event::publish(*engine.dispatcher(), source(keyboard, "g", v3d::event::State::Pressed));
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 3u);
     BOOST_REQUIRE(recorder.events_[2].data());
     BOOST_CHECK(std::get<bool>(recorder.events_[2].data().get()));
 }
 
 /**
- * The app is offered every event before the bindings are, per ADR-0043, and what it
- * declines goes on to be mapped exactly as it was before there was anywhere else for it
- * to go.
+ * The app is offered every event before the bindings are, and an event it does not consume
+ * is mapped as usual.
  **/
 BOOST_AUTO_TEST_CASE(engine_declined_event_reaches_the_bindings_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(boundFeature));
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
 
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
@@ -225,12 +230,12 @@ BOOST_AUTO_TEST_CASE(engine_declined_event_reaches_the_bindings_test) {
 }
 
 /**
- * And what it takes stops there. This is the whole point of the seam: a click that both
- * presses a button the app drew and gives an order is the bug it exists to prevent.
+ * An event the app consumes goes no further, so one click cannot both press a button the
+ * app drew and issue an order.
  **/
 BOOST_AUTO_TEST_CASE(engine_taken_event_is_not_mapped_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(boundFeature));
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
     engine.take_ = true;
 
     Recorder recorder;
@@ -243,28 +248,28 @@ BOOST_AUTO_TEST_CASE(engine_taken_event_is_not_mapped_test) {
 }
 
 /**
- * A close request is a window fact rather than input, so it is not an app's to decline -
- * an app that could swallow one would be a window that could not be closed.
+ * A close request is handled even when the app consumes it, so the window can always be
+ * closed.
  **/
 BOOST_AUTO_TEST_CASE(engine_quit_survives_a_taken_event_test) {
     SDL_Event quit{};
     quit.type = SDL_EVENT_QUIT;
 
-    TestEngine declining(appPath("good"));
-    BOOST_REQUIRE(declining.initialize(boundFeature));
+    TestEngine declining(appPath("good"), boundFeature);
+    BOOST_REQUIRE(declining.initialize());
     declining.offer(quit);
     BOOST_CHECK(declining.quitting());
 
-    TestEngine taking(appPath("good"));
-    BOOST_REQUIRE(taking.initialize(boundFeature));
+    TestEngine taking(appPath("good"), boundFeature);
+    BOOST_REQUIRE(taking.initialize());
     taking.take_ = true;
     taking.offer(quit);
     BOOST_CHECK(taking.quitting());
 }
 
 /**
- * The default takes nothing, which is what makes the seam additive: the four apps in this
- * tree do not override it and see the events they always saw.
+ * The default onEvent() consumes nothing, so an app that does not override it has every
+ * event mapped.
  **/
 BOOST_AUTO_TEST_CASE(engine_default_takes_no_event_test) {
     v3d::engine::Engine engine(appPath("good"));
@@ -274,87 +279,73 @@ BOOST_AUTO_TEST_CASE(engine_default_takes_no_event_test) {
 }
 
 /**
- * Every rejection below is a false return out of initialize rather than an exception, because
- * a malformed document is what an app ships and a throw out of startup says nothing about
- * which line of it was wrong.
+ * Every rejection below makes initialize() return false rather than throw. A malformed
+ * document is a data error in the app, and the log says what was wrong with it.
  **/
 BOOST_AUTO_TEST_CASE(engine_missing_config_document_test) {
-    TestEngine engine(appPath("nowhere"));
-    BOOST_TEST(!engine.initialize(configFeature));
+    TestEngine engine(appPath("nowhere"), configFeature);
+    BOOST_TEST(!engine.initialize());
 }
 
 BOOST_AUTO_TEST_CASE(engine_unloadable_config_file_test) {
-    TestEngine engine(appPath("unloadable-config"));
-    BOOST_TEST(!engine.initialize(configFeature));
+    TestEngine engine(appPath("unloadable-config"), configFeature);
+    BOOST_TEST(!engine.initialize());
 }
 
 BOOST_AUTO_TEST_CASE(engine_no_mappings_key_test) {
-    TestEngine engine(appPath("no-mappings-key"));
-    BOOST_TEST(!engine.initialize(configFeature));
-    // the document itself loaded - it is the mapping walk that rejected it
+    TestEngine engine(appPath("no-mappings-key"), configFeature);
+    BOOST_TEST(!engine.initialize());
+    // the document itself loaded; reading its mappings rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_not_an_object_test) {
-    TestEngine engine(appPath("mapping-not-object"));
-    BOOST_TEST(!engine.initialize(configFeature));
-    // the document itself loaded - it is the mapping walk that rejected it
+    TestEngine engine(appPath("mapping-not-object"), configFeature);
+    BOOST_TEST(!engine.initialize());
+    // the document itself loaded; reading its mappings rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_missing_source_test) {
-    TestEngine engine(appPath("missing-source"));
-    BOOST_TEST(!engine.initialize(configFeature));
-    // the document itself loaded - it is the mapping walk that rejected it
+    TestEngine engine(appPath("missing-source"), configFeature);
+    BOOST_TEST(!engine.initialize());
+    // the document itself loaded; reading its mappings rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_missing_destination_test) {
-    TestEngine engine(appPath("missing-destination"));
-    BOOST_TEST(!engine.initialize(configFeature));
-    // the document itself loaded - it is the mapping walk that rejected it
+    TestEngine engine(appPath("missing-destination"), configFeature);
+    BOOST_TEST(!engine.initialize());
+    // the document itself loaded; reading its mappings rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_unsupported_param_test) {
-    TestEngine engine(appPath("bad-param"));
-    BOOST_TEST(!engine.initialize(configFeature));
-    // the document itself loaded - it is the mapping walk that rejected it
+    TestEngine engine(appPath("bad-param"), configFeature);
+    BOOST_TEST(!engine.initialize());
+    // the document itself loaded; reading its mappings rejected it
     BOOST_REQUIRE(engine.config());
     BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
 }
 
 /**
- * quit() is what a command handler calls, and the loop reads it after the handler returns.
- * shutdown() is not: it tears down the window that the frame after the handler would draw
- * into.
+ * A command handler calls quit(), and the loop reads the flag after the handler returns.
  **/
 BOOST_AUTO_TEST_CASE(engine_quit_test) {
     TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(0));
+    BOOST_REQUIRE(engine.initialize());
 
     BOOST_TEST(!engine.quitting());
     engine.quit();
     BOOST_TEST(engine.quitting());
 
-    // asking twice is asking once
+    // calling it twice is the same as calling it once
     engine.quit();
     BOOST_TEST(engine.quitting());
-}
-
-/**
- * An engine that never reached the window has nothing to tear down, so an app that fails in
- * initialize can still call shutdown once from main.
- **/
-BOOST_AUTO_TEST_CASE(engine_shutdown_without_window_test) {
-    TestEngine engine(appPath("good"));
-    BOOST_REQUIRE(engine.initialize(0));
-
-    BOOST_TEST(engine.shutdown());
 }
 
 /**
@@ -366,4 +357,164 @@ BOOST_AUTO_TEST_CASE(engine_base_tick_and_render_test) {
 
     BOOST_TEST(engine.tick(16));
     BOOST_TEST(engine.render());
+}
+
+/**
+ * A command is held while the key bound to it is, whether the binding fires on both edges or
+ * on the press alone.
+ **/
+BOOST_AUTO_TEST_CASE(engine_held_follows_the_keyboard_test) {
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
+
+    BOOST_CHECK(!engine.held("pong::leftPaddleUp"));
+    engine.offer(keyDown(SDLK_W));
+    BOOST_CHECK(engine.held("pong::leftPaddleUp"));
+    engine.offer(keyUp(SDLK_W));
+    BOOST_CHECK(!engine.held("pong::leftPaddleUp"));
+
+    // bound for the press alone, and held all the same
+    engine.offer(keyDown(SDLK_ESCAPE));
+    BOOST_CHECK(engine.held("ui::quit"));
+    engine.offer(keyUp(SDLK_ESCAPE));
+    BOOST_CHECK(!engine.held("ui::quit"));
+
+    BOOST_CHECK(!engine.held("pong::nothingBound"));
+}
+
+/**
+ * A rebound command is held by its new key and not by its old one, with nothing asked of the
+ * app but the rebind.
+ **/
+BOOST_AUTO_TEST_CASE(engine_held_follows_a_rebind_test) {
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
+    BOOST_REQUIRE(engine.rebind("pong::leftPaddleUp", "arrow_up"));
+
+    engine.offer(keyDown(SDLK_W));
+    BOOST_CHECK(!engine.held("pong::leftPaddleUp"));
+    engine.offer(keyDown(SDLK_UP));
+    BOOST_CHECK(engine.held("pong::leftPaddleUp"));
+}
+
+/**
+ * Without a keyboard nothing is held, rather than every command reading as up by accident of
+ * a null state.
+ **/
+BOOST_AUTO_TEST_CASE(engine_held_without_a_keyboard_test) {
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
+    BOOST_CHECK(!engine.held("pong::leftPaddleUp"));
+}
+
+/**
+ * With no binding config there is nothing for a rebind to rebuild, so rebind() returns false.
+ **/
+BOOST_AUTO_TEST_CASE(engine_rebind_without_bindings_test) {
+    TestEngine engine(appPath("good"), v3d::engine::Feature::KeyboardInput);
+    BOOST_REQUIRE(engine.initialize());
+    BOOST_CHECK(!engine.rebind("pong::leftPaddleUp", "arrow_up"));
+}
+
+/**
+ * "ui::quit" means the same in every app, so the engine handles it as it handles a closed
+ * window, and no app writes the handler.
+ **/
+BOOST_AUTO_TEST_CASE(engine_answers_ui_quit_test) {
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
+
+    v3d::event::Event other("quit", engine.events()->resolveContext("game"));
+    other.type(v3d::event::Type::Destination);
+    engine.dispatcher()->trigger(other);
+    BOOST_TEST(!engine.quitting());
+
+    v3d::event::Event quit("quit", engine.events()->resolveContext("ui"));
+    quit.type(v3d::event::Type::Destination);
+    engine.dispatcher()->trigger(quit);
+    BOOST_TEST(engine.quitting());
+}
+
+template <typename T>
+concept ShutsDown = requires(T& engine) { engine.shutdown(); };
+template <typename T>
+concept Quits = requires(T& engine) { engine.quit(); };
+static_assert(!ShutsDown<TestEngine>);
+static_assert(Quits<TestEngine>);
+
+namespace {
+
+/**
+ * How often an engine's hooks ran, kept outside the engine so a test can read them after
+ * run() has destroyed it.
+ **/
+struct Lifecycle final {
+    int started = 0;
+    int released = 0;
+    bool starts = true;
+    bool throws = false;
+};
+
+/**
+ * An engine with no features that counts its hooks. One that starts asks to quit at once, so
+ * run() returns without a window or a frame.
+ **/
+class LifecycleEngine final : public v3d::engine::Engine {
+ public:
+    LifecycleEngine(const std::string& path, Lifecycle* counts) :
+        Engine(path),
+        counts_(counts) {
+    }
+
+ protected:
+    v3d::engine::Features features() const override {
+        return v3d::engine::Features();
+    }
+
+    bool start() override {
+        counts_->started++;
+        quit();
+        return counts_->starts;
+    }
+
+    bool release() override {
+        counts_->released++;
+        if (counts_->throws) {
+            throw std::runtime_error("the device was lost");
+        }
+        return true;
+    }
+
+ private:
+    Lifecycle* counts_;
+};
+
+};  // namespace
+
+/**
+ * run() starts an app once and releases it once, and the release happens whether start()
+ * succeeded or not, since start() may have built something before it failed.
+ **/
+BOOST_AUTO_TEST_CASE(engine_releases_once_whether_or_not_it_started_test) {
+    Lifecycle started;
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &started), EXIT_SUCCESS);
+    BOOST_CHECK_EQUAL(started.started, 1);
+    BOOST_CHECK_EQUAL(started.released, 1);
+
+    Lifecycle failed;
+    failed.starts = false;
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &failed), EXIT_FAILURE);
+    BOOST_CHECK_EQUAL(failed.started, 1);
+    BOOST_CHECK_EQUAL(failed.released, 1);
+}
+
+/**
+ * A release that throws is caught and logged by run(), which reports a failure, and it runs
+ * once like any other.
+ **/
+BOOST_AUTO_TEST_CASE(engine_a_release_that_throws_is_a_failure_test) {
+    Lifecycle throwing;
+    throwing.throws = true;
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &throwing), EXIT_FAILURE);
+    BOOST_CHECK_EQUAL(throwing.released, 1);
 }

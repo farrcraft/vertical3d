@@ -5,9 +5,19 @@
 
 #include "Menu.h"
 
+#include <api/ui/input/Command.h>
+
 namespace v3d::ui::component {
 Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
     Component(component::Type::Menu), dispatcher_(dispatcher), active_(-1) {
+}
+
+Menu::~Menu() {
+    for (const boost::shared_ptr<MenuItem>& item : items_) {
+        if (item) {
+            disown(*item);
+        }
+    }
 }
 
 /**
@@ -29,6 +39,9 @@ void Menu::level(const boost::weak_ptr<Menu>& m) {
 }
 
 void Menu::addItem(const boost::shared_ptr<MenuItem>& item) {
+    if (item) {
+        adopt(*item);
+    }
     items_.push_back(item);
 }
 
@@ -112,7 +125,8 @@ bool Menu::down() {
         return false;
     }
     boost::shared_ptr<MenuItem> item = lvl->active();
-    if (!item) {
+    // a disabled item, or one in a disabled menu, is not opened
+    if (!item || !usable(*item)) {
         return false;
     }
     boost::shared_ptr<Menu> sm = item->submenu();
@@ -137,16 +151,15 @@ boost::shared_ptr<MenuItem>& Menu::operator[](size_t i) {
 bool Menu::dispatch(const boost::shared_ptr<MenuItem>& item) const {
     v3d::event::Event event = item->event();
     // an item is only bound to an event when its config gave both a command and a context.
-    // Event::str() dereferences the context, so an unbound event must never be sent.
-    if (!dispatcher_ || !event.context()) {
+    // a disabled item sends nothing
+    if (!usable(*item)) {
         return false;
     }
     boost::optional<v3d::event::EventData> value = item->value();
     if (value) {
         event.data(value.get());
     }
-    dispatcher_->trigger(event);
-    return true;
+    return v3d::ui::input::send(dispatcher_.get(), event);
 }
 
 bool Menu::capturing() const {
@@ -179,7 +192,7 @@ bool Menu::capture(const v3d::event::EventData& value) {
 /**
  **/
 void Menu::activate() {
-    // an activation arriving while one is open is what ends a capture, whichever level
+    // an activation arriving while a capture is open ends it, whichever level
     // the item being captured into belongs to
     if (capture_) {
         const boost::shared_ptr<MenuItem> item = capture_;
@@ -193,6 +206,11 @@ void Menu::activate() {
         return;
     }
     boost::shared_ptr<MenuItem> item = lvl->active();
+    // a disabled item, or one in a disabled menu, does nothing. An input item would otherwise
+    // open a capture and swallow the next key
+    if (item && !usable(*item)) {
+        return;
+    }
     if (item) {
         if (item->itemType() == menu::ItemType::Submenu && item->submenu()) {  // menu item has a submenu so activate the submenu
             down();

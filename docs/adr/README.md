@@ -1,70 +1,141 @@
 # Architecture Decision Records
 
-Why the codebase is shaped the way it is. A decision earns an ADR when it is hard to
-reverse, constrains later phases, or a future reader would otherwise ask "why on earth is
-it done this way". Anything smaller belongs in a comment beside the thing it explains.
+An ADR records a decision that shaped the code: the forces behind it, the options that were
+rejected, and what it costs. It is background reading. The rule a decision produced is stated
+in full in the reference document named in the record's `Documented in` line, and that
+document is where to look for how things work.
 
-Copy [template.md](template.md) and add a row below. Superseding does not delete: set the
-old record's status and leave the file in place.
+A decision earns a record when there was a real alternative, the choice is hard to reverse or
+constrains other code, and the reasons cannot be read from the code. Bug fixes, the behaviour
+of one class, and reference facts do not. [sdlc.md](../sdlc.md#2-decide) has the full test,
+and the `architecture-decision-records` skill covers the format. Copy
+[template.md](template.md) to start one.
 
-| ADR | Title | Status | Date |
-|---|---|---|---|
-| [0001](0001-vulkan-replaces-opengl.md) | Rendering Backend — Vulkan Replaces OpenGL Outright | accepted | 2026-08-30 |
-| [0002](0002-target-vulkan-1-3.md) | Vulkan Version — Target 1.3 Rather Than 1.0 | accepted | 2026-08-30 |
-| [0003](0003-one-realtime-engine.md) | Realtime Engine — One Vulkan Engine Rather Than Separate 2D And 3D | accepted | 2026-08-30 |
-| [0004](0004-operations-as-draw-data.md) | Render Submission — Operations Are Draw Data, Not Draw Code | accepted | 2026-08-30 |
-| [0005](0005-one-batched-quad-primitive.md) | 2D Drawing — One Batched Quad Primitive With An Optional Texture | accepted | 2026-08-30 |
-| [0006](0006-keep-both-pong-and-tetris.md) | App Scope — Both Pong And Tetris Are Kept | accepted | 2026-08-30 |
-| [0007](0007-ci-rendering-tests.md) | CI Rendering Tests — Software Vulkan On A Windows Runner | accepted | 2026-08-30 |
-| [0008](0008-binding-by-update-frequency.md) | Shader Bindings — Descriptor Sets By Update Frequency, Per-Object Data In Push Constants | accepted | 2026-08-31 |
-| [0009](0009-colour-authored-in-display-space.md) | Colour — Authored In Display Space, Presented Through A UNORM Swapchain | accepted | 2026-08-31 |
-| [0010](0010-meshes-are-owned-by-the-app.md) | Geometry Ownership — Meshes Belong To The App, Not To Resources | accepted | 2026-08-31 |
-| [0011](0011-lines-are-the-second-primitive.md) | Line Drawing — A Second Primitive, In World Space, Through The Pass Camera | accepted | 2026-09-01 |
-| [0012](0012-camera-builds-vulkan-clip-space.md) | Camera Convention — `v3d::type::Camera` Builds Vulkan Clip Space | accepted | 2026-09-01 |
-| [0013](0013-mesh-is-a-dag-node.md) | Scene Model — A Mesh Is A dag Node With A Transform, And The Scene Belongs To The Editor | accepted | 2026-09-02 |
-| [0014](0014-picking-is-a-cpu-ray-cast.md) | Picking — A CPU Ray Cast Against The Brep, With Screen Space Proximity For Components | accepted | 2026-09-02 |
-| [0015](0015-manipulators-write-the-object-transform.md) | Manipulators — Handles Write The Object Transform, And Are An Overlay Pass | accepted | 2026-09-02 |
-| [0016](0016-undo-records-what-has-already-happened.md) | Undo — A Command Records What Has Already Happened, And A Gesture Is One Of Them | accepted | 2026-09-02 |
-| [0017](0017-a-command-is-a-name-in-a-context.md) | Command Dispatch — A Command Is A Name In A Context, And The Directory Is The Editor's | accepted | 2026-09-02 |
-| [0018](0018-a-project-is-json-and-stores-topology-verbatim.md) | Project Persistence — A Project Is JSON, And The Topology Is Stored Verbatim | accepted | 2026-09-02 |
-| [0019](0019-the-ui-is-laid-out-by-what-draws-it.md) | Menu Bar — The UI Is Laid Out By What Draws It, And Hit Tested Against Those Bounds | accepted | 2026-09-02 |
-| [0020](0020-a-theme-is-data-and-the-app-resolves-its-images.md) | Themes — A Theme Is Data, And The App Resolves The Images It Names | accepted | 2026-09-04 |
-| [0021](0021-sdl3-mixer-replaces-soloud.md) | Audio Backend — SDL3_mixer Replaces SoLoud, And A Clip Resolves Through The Asset Manager | accepted | 2026-09-04 |
-| [0022](0022-offline-rendering-shares-an-api-library.md) | Offline Rendering Layout — Shared Code Lives In `api/render/offline`, And Each Renderer Is A Library With A Driver | accepted | 2026-09-04 |
-| [0023](0023-rib-is-the-offline-scene-description.md) | Offline Scene Description — RIB Is What Both Renderers Read, And The Editor Exports To It | accepted | 2026-09-04 |
-| [0024](0024-api-type-serves-both-renderers.md) | Shared Types — `api/type` Serves Both Renderers, And A Convention Is A Parameter Rather Than A Fork | accepted | 2026-09-04 |
-| [0025](0025-the-rib-reader-dispatches-a-cpp-request-interface.md) | RIB Dispatch — The Reader Hands A Renderer C++ Requests With Typed Parameter Lists | accepted | 2026-09-05 |
-| [0026](0026-shading-is-a-language-over-a-batch.md) | Offline Shading — Shading Is A Language, And A Shader Runs Over A Batch Of Shading Points | accepted | 2026-09-08 |
-| [0027](0027-the-api-is-consumed-as-source.md) | External Consumption — The api Is Taken As Source Through An `add_subdirectory`-able Root, Not As An Installed Package | accepted | 2026-09-05 |
-| [0028](0028-an-apps-shell-belongs-to-the-api.md) | App Shell — What Every App Repeats Belongs To The api, Not To Each App | accepted | 2026-09-05 |
-| [0029](0029-tile-grids-are-an-api-library.md) | Tile Grids — A Library Of Their Own, 8-Way On The Ground Plane, Asked Rather Than Told What Blocks | accepted | 2026-09-06 |
-| [0030](0030-a-model-is-an-interleaved-array-that-names-its-texture.md) | Loaded Geometry — A Model Is One Interleaved Array With A Material That Names Its Texture | accepted | 2026-09-06 |
-| [0031](0031-a-pass-draws-into-a-target-it-names.md) | Offscreen Rendering — A Pass Draws Into A Target It Names, And The Recorder Leaves It Readable | accepted | 2026-09-06 |
-| [0032](0032-the-loop-simulates-at-a-fixed-step.md) | Game Loop — The Loop Simulates At A Fixed Step And Renders At A Variable One | accepted | 2026-09-06 |
-| [0033](0033-a-consumer-selects-the-api-libraries-it-wants.md) | API Selection — A Consumer Names The Libraries It Wants, And A Manifest Expands The Closure | accepted | 2026-09-06 |
-| [0034](0034-a-component-has-children-and-a-box.md) | UI Layout — A Component Has Children, And The Draw Walk Resolves Its Box | accepted | 2026-09-06 |
-| [0035](0035-an-immediate-mode-layer-over-the-same-canvas.md) | Immediate Mode — A Second Way To Draw A UI, Onto The Same Canvas | accepted | 2026-09-06 |
-| [0036](0036-text-is-a-distinct-kind-of-quad.md) | 2D Drawing — Text Is A Distinct Kind Of Quad, And The Primitive Carries Which | accepted | 2026-09-06 |
-| [0037](0037-clipping-is-a-scissor-the-batch-carries.md) | Clipping — A Clip Rectangle Is Batch State, And The Device Scissors The Draw | accepted | 2026-09-06 |
-| [0038](0038-a-cursor-is-routed-by-the-library-that-drew-it.md) | UI Input — A Cursor Is Routed By The Library That Drew It, And A Press Dispatches A Command | accepted | 2026-09-06 |
-| [0039](0039-layout-never-reads-the-box-it-wrote.md) | UI Layout — The Walk Never Reads The Box It Wrote, And Auto Is The Room A Component Is Offered | accepted | 2026-09-07 |
-| [0040](0040-a-key-goes-to-a-focused-component.md) | UI Input — A Key Goes To A Focused Component, And A Character Is Not A Key | accepted | 2026-09-07 |
-| [0041](0041-a-document-is-written-whole-or-not-at-all.md) | Writing A File — A Document Is Written Whole Or Not At All, And Readably | accepted | 2026-09-07 |
-| [0042](0042-a-textured-quad-in-world-space.md) | 2D Drawing — A Textured Quad In World Space Is A Third Primitive, Ordered By Its Caller | accepted | 2026-09-07 |
-| [0043](0043-an-app-sees-an-event-before-the-bindings-do.md) | Event Routing — An App Sees An Event Before The Bindings Do, And The Window Facts Are Not Its To Decline | accepted | 2026-09-07 |
-| [0044](0044-a-sampled-depth-target-is-read-only.md) | Sampled Depth — Asking For A Readable Depth Target Chooses The Format, And The Recorder Leaves It Read Only | accepted | 2026-09-07 |
-| [0045](0045-a-window-is-dragged-by-the-bar-that-folds-it.md) | Window Dragging — The Title Bar Both Folds And Moves, And The Caller Still Owns Where A Window Starts | accepted | 2026-09-08 |
-| [0046](0046-a-table-given-a-height-scrolls-in-its-own-right.md) | Table Scrolling — A Table Given A Height Scrolls Its Own Rows, And Its Header Stays Above Them | accepted | 2026-09-08 |
-| [0047](0047-a-component-type-is-checked-by-the-compiler.md) | UI Components — A Switch Over A Component Type Is Exhaustive, And The Compiler Names Every Place One Was Forgotten | accepted | 2026-09-08 |
-| [0048](0048-an-api-header-is-named-from-the-repository-root.md) | Include Paths — An api Header Is Named By Its Path From The Repository Root, Inside The Tree As Well As Outside | accepted | 2026-09-08 |
-| [0049](0049-a-consumer-chooses-the-swapchain-format.md) | Presentation — A Consumer Names The Swapchain Format, And UNORM Stays The Default | accepted | 2026-09-08 |
-| [0050](0050-a-frame-is-read-back-in-two-calls.md) | Frame Capture — A Presented Frame Is Read Back In Two Calls, And Nothing In The Tree Compares It | accepted | 2026-09-10 |
-| [0051](0051-the-in-flight-ring-is-not-the-swapchain.md) | Frame Pacing — The In-Flight Ring Is Its Own Class, And Presenting Is What Needs A Chain | accepted | 2026-09-11 |
-| [0052](0052-a-consumer-names-the-camera-hand.md) | Camera Basis — A Consumer Names Which Way `lookat()` Crosses, And Today's Hand Stays The Default | accepted | 2026-09-12 |
-| [0053](0053-a-consumer-chooses-how-memory-is-found.md) | Allocation — A Consumer Chooses Whether Memory Is Suballocated, And One Allocation Per Resource Stays The Default | accepted | 2026-09-12 |
-| [0054](0054-a-realtime-reference-is-a-picture-the-spec-determines.md) | Golden Images — A Realtime Reference Is A Picture The Specification Determines, Compared At Zero Tolerance | accepted | 2026-09-12 |
-| [0055](0055-a-texture-atlas-gutters-its-own-regions.md) | Atlas Packing — A Texture Atlas Reserves The Gutter Around Every Region, And A Caller Asks For The Size It Will Blit | accepted | 2026-09-12 |
-| [0056](0056-a-look-at-keeps-the-basis-it-built.md) | Camera Precision — `lookat()` Keeps The Basis It Built, And Every Other Writer Of The Rotation Clears It | accepted | 2026-09-12 |
-| [0057](0057-a-selection-is-an-anchor-the-caret-moved-from.md) | Text Editing — A Selection Is An Anchor The Caret Moved From, And The Cursor Measures Text To Place One | accepted | 2026-09-13 |
-| [0058](0058-the-platform-half-of-a-ui-router-is-the-apis.md) | UI Input — The Platform Half Of The Keyboard Router Is The api's, And Text Input Follows The Focus | accepted | 2026-09-13 |
-| [0059](0059-disabled-is-a-property-of-a-component.md) | UI Components — Disabled Is A Property Of A Component, Not A Fourth Button State | accepted | 2026-09-13 |
+**Statuses.** *accepted* is in force as written. *amended* is in force, but a later record
+changes part of it, and its header names which. *superseded* has been replaced outright. Some
+numbers have no file. Those records turned out not to be decisions; each row says where the
+content went. Numbers are never reused.
+
+
+## Rendering
+
+| ADR | Decision | Status |
+|---|---|---|
+| [0001](0001-rendering-replace-opengl-with-vulkan.md) | Rendering: replace OpenGL with Vulkan | accepted |
+| [0002](0002-vulkan-require-version-1-3.md) | Vulkan: require version 1.3 | accepted |
+| [0003](0003-rendering-one-engine-for-2d-and-3d.md) | Rendering: one engine for 2D and 3D | accepted |
+| [0004](0004-rendering-submit-draw-items-as-data.md) | Rendering: submit draw items as data | accepted |
+| [0005](0005-2d-one-batched-quad-pipeline.md) | 2D: one batched quad pipeline | amended by 0036, 0042 |
+| [0008](0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency | amended by 0064 |
+| [0009](0009-colour-display-space-unorm-swapchain.md) | Colour: display space, UNORM swapchain | amended by 0049, 0066 |
+| [0010](0010-meshes-owned-by-the-app-that-built-them.md) | Meshes: owned by the app that built them | amended by 0061; superseded by 0065 |
+| [0011](0011-rendering-lines-as-a-world-space-primitive.md) | Rendering: lines as a world-space primitive | accepted |
+| [0012](0012-camera-projection-targets-vulkan-clip-space.md) | Camera: projection targets Vulkan clip space | amended by 0052 |
+| [0031](0031-rendering-passes-draw-into-offscreen-targets.md) | Rendering: passes draw into offscreen targets | amended by 0068 |
+| [0036](0036-text-sdf-glyphs-through-the-quad-shader.md) | Text: SDF glyphs through the quad shader | accepted |
+| [0037](0037-2d-clip-with-a-per-batch-scissor.md) | 2D: clip with a per-batch scissor | accepted |
+| [0042](0042-rendering-world-space-sprites.md) | Rendering: world-space sprites | amended by 0082 |
+| 0044 | *Not a decision. Now in docs/internals/realtime/Memory.md and vulkan/frame/DepthBuffer.h* | removed |
+| [0049](0049-swapchain-caller-picks-the-format.md) | Swapchain: caller picks the format | accepted |
+| [0051](0051-frames-in-flight-ring-separate-from-presenting.md) | Frames: in-flight ring separate from presenting | accepted |
+| [0052](0052-camera-selectable-handedness.md) | Camera: selectable handedness | accepted |
+| [0053](0053-memory-optional-vma-suballocation.md) | Memory: optional VMA suballocation | accepted |
+| 0055 | *Not a decision. Now in api/image/TextureAtlas.h* | removed |
+| 0056 | *Not a decision. Now in api/type/camera/Profile.h* | removed |
+| [0061](0061-resources-explicit-release-generational-handles.md) | Resources: explicit release, generational handles | accepted |
+| [0064](0064-lighting-lit-passes-use-the-shared-recorder.md) | Lighting: lit passes use the shared recorder | amended by 0071 |
+| [0065](0065-meshes-shared-registry-keyed-by-path.md) | Meshes: shared registry keyed by path | amended by 0082 |
+| [0066](0066-lighting-light-in-linear-draw-to-srgb.md) | Lighting: light in linear, draw to sRGB | accepted |
+| 0067 | *Not a decision. Now in docs/api/rendering/Lighting.md and vulkan/renderer/Lit.h* | removed |
+| [0068](0068-rendering-order-passes-by-what-they-read.md) | Rendering: order passes by what they read | accepted |
+| [0071](0071-skinning-joint-matrices-in-one-storage-buffer.md) | Skinning: joint matrices in one storage buffer | accepted |
+| [0075](0075-2d-a-canvas-may-have-its-own-coordinate-space.md) | 2D: a canvas may have its own coordinate space | accepted |
+| [0082](0082-textures-owned-by-the-device-context.md) | Textures: owned by the device context | accepted |
+
+## Offline rendering
+
+| ADR | Decision | Status |
+|---|---|---|
+| [0022](0022-offline-shared-library-with-no-vulkan.md) | Offline: shared library with no Vulkan | amended by 0078 |
+| [0023](0023-offline-rib-is-the-scene-format.md) | Offline: RIB is the scene format | accepted |
+| 0024 | *Never built. Its principle is in docs/contributing/Conventions.md, under API design* | removed |
+| [0025](0025-offline-rib-reader-calls-a-typed-handler-interface.md) | Offline: RIB reader calls a typed handler interface | accepted |
+| [0026](0026-offline-shaders-run-over-batches-of-points.md) | Offline: shaders run over batches of points | accepted |
+| [0076](0076-offline-seeded-samples-resolved-by-one-shared-film.md) | Offline: seeded samples resolved by one shared film | accepted |
+| [0077](0077-offline-one-shared-ray-tracer.md) | Offline: one shared ray tracer | superseded by 0078 |
+| [0078](0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md) | Offline: moya is the one renderer, ray tracing is a hider | accepted |
+
+## User interface
+
+| ADR | Decision | Status |
+|---|---|---|
+| 0019 | *Merged into 0034* | removed |
+| [0020](0020-ui-themes-are-data-apps-load-the-images.md) | UI: themes are data, apps load the images | accepted |
+| [0034](0034-ui-layout-is-resolved-while-drawing.md) | UI: layout is resolved while drawing | accepted |
+| [0035](0035-ui-immediate-mode-beside-the-retained-tree.md) | UI: immediate mode beside the retained tree | accepted |
+| [0038](0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md) | UI: the UI hit-tests the mouse before the app | accepted |
+| 0039 | *Merged into 0034* | removed |
+| [0040](0040-ui-keyboard-focus-and-text-input.md) | UI: keyboard focus and text input | amended by 0058 |
+| 0045 | *Not a decision. Now in docs/api/ui/ImmediateMode.md and api/ui/Immediate.h* | removed |
+| 0046 | *Not a decision. Now in docs/api/ui/ImmediateMode.md and api/ui/Immediate.h* | removed |
+| 0057 | *Not a decision. Now in docs/api/ui/Keyboard.md and api/ui/component/TextBox.h* | removed |
+| [0058](0058-ui-sdl-keyboard-adapter-in-ui-shell.md) | UI: SDL keyboard adapter in ui/shell | accepted |
+| [0059](0059-ui-enabled-is-an-inherited-flag.md) | UI: enabled is an inherited flag | accepted |
+| 0074 | *Not a decision. Now in docs/api/ui/Setup.md and api/ui/shell/Screen.h* | removed |
+
+## Engine, input and assets
+
+| ADR | Decision | Status |
+|---|---|---|
+| [0021](0021-audio-use-sdl3-mixer.md) | Audio: use SDL3_mixer | amended by 0079 |
+| [0028](0028-apps-the-shared-app-shell-lives-in-the-api.md) | Apps: the shared app shell lives in the api | accepted |
+| [0030](0030-models-one-interleaved-array.md) | Models: one interleaved array | superseded by 0069 |
+| [0032](0032-loop-fixed-step-simulation-variable-rate-rendering.md) | Loop: fixed-step simulation, variable-rate rendering | accepted |
+| [0041](0041-files-write-documents-atomically.md) | Files: write documents atomically | accepted |
+| [0043](0043-input-apps-see-raw-events-before-bindings.md) | Input: apps see raw events before bindings | amended by 0081 |
+| [0069](0069-models-material-parts-over-one-vertex-buffer.md) | Models: material parts over one vertex buffer | accepted |
+| [0073](0073-files-migrate-old-documents-one-version-at-a-time.md) | Files: migrate old documents one version at a time | accepted |
+| [0079](0079-assets-loaders-are-registered.md) | Assets: loaders are registered | accepted |
+| [0080](0080-apps-the-engine-owns-startup-and-shutdown-order.md) | Apps: the engine owns startup and shutdown order | accepted |
+| [0081](0081-input-key-events-and-commands-are-separate.md) | Input: key events and commands are separate | accepted |
+
+## Grid and ECS
+
+| ADR | Decision | Status |
+|---|---|---|
+| [0029](0029-grid-8-way-movement-symmetric-line-of-sight.md) | Grid: 8-way movement, symmetric line of sight | accepted |
+| [0060](0060-ecs-interpolate-from-a-previous-step-component.md) | ECS: interpolate from a previous-step component | accepted |
+| [0062](0062-grid-parse-terrain-not-map-files.md) | Grid: parse terrain, not map files | accepted |
+| [0063](0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md) | ECS: draw from a transform plus a component per kind | accepted |
+| [0070](0070-animation-cpu-sampling-playback-on-the-fixed-step.md) | Animation: CPU sampling, playback on the fixed step | accepted |
+| [0072](0072-particles-an-emitter-component-owns-its-particles.md) | Particles: an emitter component owns its particles | accepted |
+
+## Editor
+
+| ADR | Decision | Status |
+|---|---|---|
+| [0013](0013-editor-a-mesh-is-a-dag-node.md) | Editor: a mesh is a dag node | accepted |
+| [0014](0014-editor-pick-by-cpu-ray-cast.md) | Editor: pick by CPU ray cast | accepted |
+| [0015](0015-editor-manipulators-edit-the-object-transform.md) | Editor: manipulators edit the object transform | accepted |
+| [0016](0016-editor-undo-records-completed-changes.md) | Editor: undo records completed changes | accepted |
+| 0017 | *Not a decision. Now in docs/editor/CommandsAndUndo.md and vertical3d/src/command/CommandDirectory.h* | removed |
+| [0018](0018-editor-projects-saved-as-json-with-exact-topology.md) | Editor: projects saved as JSON with exact topology | amended by 0041 |
+
+## Build, testing and code
+
+| ADR | Decision | Status |
+|---|---|---|
+| [0007](0007-ci-render-tests-on-software-vulkan.md) | CI: render tests on software Vulkan | amended by 0054 |
+| [0027](0027-build-consume-the-api-as-source.md) | Build: consume the api as source | amended by 0048 |
+| [0033](0033-build-select-api-libraries-through-a-manifest.md) | Build: select api libraries through a manifest | accepted |
+| [0047](0047-code-exhaustive-enum-switches.md) | Code: exhaustive enum switches | accepted |
+| [0048](0048-includes-name-headers-from-the-repository-root.md) | Includes: name headers from the repository root | accepted |
+| 0050 | *Merged into 0054* | removed |
+| [0054](0054-testing-golden-images-hold-only-spec-exact-output.md) | Testing: golden images hold only spec-exact output | accepted |
+
+## Process
+
+| ADR | Decision | Status |
+|---|---|---|
+| 0006 | *Not a decision: a project-scope call to keep tetris. Noted in docs/plans/completed/Modernization.md* | removed |
+| [0083](0083-review-a-changeset-answers-for-what-it-introduces.md) | Review: a changeset answers for what it introduces | accepted |

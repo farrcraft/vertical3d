@@ -14,8 +14,8 @@
 namespace v3d::moya {
 /*
     the screen space to be rendered is broken down into a grid of tiles (buckets).
-    the framebuffer owns that grid, and the stack of float image planes the buckets
-    write their samples into.
+    the framebuffer owns that grid, and the stack of float image planes the frame's
+    samples are filtered into.
 */
 class FrameBuffer {
  public:
@@ -31,11 +31,9 @@ class FrameBuffer {
         BLUE = 2,
         DEPTH = 3,
         /**
-         * How much of the pixel was drawn into, which is SL's alpha.
-         *
-         * One or nothing while there is one sample per pixel centre; a sampler that
-         * takes more than one is what would put a fraction here. It is what an imager
-         * reads to tell a pixel nothing was drawn into from a black one.
+         * How much of the pixel was drawn into, which is SL's alpha: the filtered
+         * fraction of its samples that hit. An imager reads it to tell a pixel nothing was
+         * drawn into from a black one.
          */
         COVERAGE = 4
     };
@@ -60,7 +58,7 @@ class FrameBuffer {
      */
     size_t primitiveCount(void) const;
     /**
-     * The image planes the hider writes samples into, indexed by Plane.
+     * The image planes the film resolves the frame's samples into, indexed by Plane.
      */
     boost::shared_ptr<v3d::render::offline::FrameBuffer> planes(void) const;
     void addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::geometry::AABBox & bound);

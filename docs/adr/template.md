@@ -1,31 +1,32 @@
-# ADR-NNNN: [Decision Title]
+# ADR-NNNN: Area: choice in a few plain words
 
+**Status**: proposed | accepted | amended | superseded
 **Date**: YYYY-MM-DD
-**Status**: proposed | accepted | deprecated | superseded by ADR-NNNN
-**Deciders**: Joshua Farr
+**Amends**: ADR-NNNN (omit the line if none)
+**Amended by**: ADR-NNNN (omit the line if none)
+**Supersedes**: ADR-NNNN (omit the line if none)
+**Superseded by**: ADR-NNNN (omit the line if none)
+**Documented in**: the reference doc or header that states the current rule
 
 ## Context
 
-[2-5 sentences: the situation, the constraints, the forces at play]
+The constraints and forces that make a choice necessary, in the present tense. Five sentences
+at most. No story of how the problem was found.
 
 ## Decision
 
-[1-3 sentences stating the decision clearly]
+What was chosen, in three sentences at most. No tables and no implementation detail; those
+belong in the document named above.
 
-## Alternatives Considered
+## Alternatives
 
-### Alternative 1: [Name]
-- **Pros**: [benefits]
-- **Cons**: [drawbacks]
-- **Why not**: [specific reason this was rejected]
+### A rejected option
+- **For**: what it would have given
+- **Against**: what it would have cost
+- **Rejected because**: the deciding reason
 
 ## Consequences
 
-### Positive
-- [benefit]
-
-### Negative
-- [trade-off]
-
-### Risks
-- [risk and mitigation]
+- **Gains**: what the decision buys
+- **Costs**: what it gives up, honestly
+- **Revisit when**: the change in circumstances that would reopen it

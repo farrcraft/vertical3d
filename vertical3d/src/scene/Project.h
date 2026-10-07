@@ -16,7 +16,7 @@
 namespace v3d::editor {
 
 /**
- * The document: a scene on disk, read and written as JSON per ADR-0018.
+ * The document: a scene on disk, read and written as JSON.
  *
  * The topology is stored as it stands rather than as the calls that would rebuild it,
  * so a round trip renumbers nothing. Neither the selection nor a mesh's id is stored -
@@ -29,7 +29,8 @@ namespace v3d::editor {
 class Project final {
  public:
     /**
-     * The format version written into every file, and the only one read() accepts.
+     * The format version written into every file. read() migrates an older file forward
+     * one version at a time, and refuses a later one.
      **/
     static const int VERSION;
 
@@ -52,7 +53,7 @@ class Project final {
     /**
      * Write the scene as a project document.
      *
-     * The file already there survives a write that does not complete, per ADR-0041.
+     * The write is atomic: if it does not complete, the file already there is left intact.
      *
      * @param path the file to write, replaced if it exists
      * @param scene what to write

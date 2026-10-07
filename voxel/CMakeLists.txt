@@ -2,13 +2,17 @@ add_executable(voxel
 	"src/engine/Aligned.h"
 	"src/engine/Camera.h" "src/engine/Camera.cxx"
 	"src/engine/ChunkMeshBuilder.h" "src/engine/ChunkMeshBuilder.cxx"
+	"src/engine/ChunkVertex.h"
+	"src/engine/MaterialInfo.h"
 	"src/engine/MortonCode.h" "src/engine/MortonCode.cxx"
+	"src/engine/Nanoseconds.h" "src/engine/Nanoseconds.cxx"
 	"src/engine/SceneUniforms.h"
 	"src/game/GameState.h" "src/game/GameState.cxx"
 	"src/game/Item.h" "src/game/Item.cxx"
 	"src/game/Player.h" "src/game/Player.cxx"
 	"src/noise/noiseutils.h" "src/noise/noiseutils.cpp"
 	"src/voxel/Chunk.h" "src/voxel/Chunk.cxx"
+	"src/voxel/ChunkCulling.h" "src/voxel/ChunkCulling.cxx"
 	"src/voxel/ChunkMeshPool.h" "src/voxel/ChunkMeshPool.cxx"
 	"src/voxel/FaceCulling.h" "src/voxel/FaceCulling.cxx"
 	"src/voxel/MeshBuilder.h" "src/voxel/MeshBuilder.cxx"
@@ -24,11 +28,8 @@ add_executable(voxel
 target_link_libraries(voxel PRIVATE
 	v3dlib_asset
 	v3dlib_config
-	v3dlib_ecs
 	v3dlib_engine
 	v3dlib_event
-	v3dlib_font
-	v3dlib_image
 	v3dlib_input
 	v3dlib_log
 	v3dlib_render
@@ -37,8 +38,8 @@ target_link_libraries(voxel PRIVATE
 	"libnoise"
 )
 
-# libnoise is voxel's alone: it is not prebuilt and is built out of source, per
-# docs/Dependencies.md. link_directories expects its artefacts under vendor/libnoise/Debug.
+# libnoise is voxel's alone. It is not a vcpkg package: it is built from source under
+# vendor/libnoise, and link_directories expects its artefacts under vendor/libnoise/Debug.
 target_include_directories(voxel SYSTEM PRIVATE "${V3D_ROOT}/vendor/libnoise/include/noise")
 target_link_directories(voxel PRIVATE "${V3D_ROOT}/vendor/libnoise/Debug")
 
@@ -56,9 +57,9 @@ target_compile_options(voxel PRIVATE /EHsc)
 
 # noiseutils is Jason Bevins' libnoise utility layer, vendored verbatim. It is not held to
 # the tree's warning level or to either analyser, for the same reason cpplint skips it - a
-# local fix is lost the next time it is taken from upstream. /analyze- is what takes it out of
-# MSVC's analysis and SKIP_LINTING out of clang-tidy's; a suppression list would have to name
-# every finding a later version of either reports.
+# local fix is lost the next time it is taken from upstream. /analyze- takes it out of MSVC's
+# analysis and SKIP_LINTING out of clang-tidy's; a suppression list would have to name every
+# finding a later version of either reports.
 set_source_files_properties("src/noise/noiseutils.cpp" PROPERTIES
 	COMPILE_OPTIONS "/wd4100;/wd4189;/wd4244;/analyze-"
 	SKIP_LINTING TRUE)

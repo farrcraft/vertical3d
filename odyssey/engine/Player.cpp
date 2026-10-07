@@ -5,7 +5,7 @@
 
 #include "Player.h"
 
-#include <api/ecs/component/PositionFixed2D.h>
+#include <api/grid/TileCoord.h>
 
 namespace odyssey::engine {
 
@@ -15,7 +15,7 @@ Player::Player(entt::registry* registry) {
     // register a player entity
     id_ = registry->create();
     // create the components attached to player entity
-    registry->emplace<v3d::ecs::component::PositionFixed2D>(id_, 0, 0);
+    registry->emplace<v3d::grid::TileCoord>(id_, 0, 0);
 }
 
 /**

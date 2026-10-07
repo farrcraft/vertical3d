@@ -26,17 +26,15 @@ typedef boost::shared_ptr<runtime::Program> ProgramPtr;
  * One compiled program with the values a scene bound onto it: what `Surface "plastic" "Ks"
  * [0.8]` makes.
  *
- * A shader **instance** rather than a shader, and named for it, because `sl::Shader` is
- * already the syntax node a file parses to. The distinction is the one the step turns on:
- * a program is compiled once per name and instanced once per request.
+ * Named a shader **instance** because `sl::Shader` is the syntax node a file parses to. A
+ * program is compiled once per name and instanced once per request.
  *
  * The program is shared and the bindings are not. Two primitives shading with `plastic` at
- * different roughnesses are two of these over one program, which is what makes compiling
- * per name the right shape.
+ * different roughnesses are two instances over one program.
  *
  * An instance holds no register file. `write()` puts the bound values into a machine a
- * renderer has prepared, because how many machines there are and how long they live is the
- * renderer's question - moya reuses one across a thousand grids and talyn shades one hit.
+ * renderer has prepared, because the renderer decides how many machines there are and how
+ * long they live. moya reuses one across a thousand grids, and a traced hit is one point.
  **/
 class Instance final {
  public:
@@ -50,8 +48,8 @@ class Instance final {
      * Whether a light shader lights every point without a direction - one using neither
      * `illuminate` nor `solar`.
      *
-     * That is what keeps it out of an illuminance loop and inside `ambient()`, and the
-     * program says it so that a renderer does not read the source again to find out.
+     * Such a light is left out of an illuminance loop and summed by `ambient()`. The program
+     * records this so that a renderer does not have to read the source again.
      **/
     bool ambient() const;
 
@@ -60,9 +58,8 @@ class Instance final {
      *
      * A name the shader does not declare is reported and dropped, because a renderer must
      * accept a request carrying a parameter it does not support. A value that will not
-     * coerce is reported rather than reinterpreted: a colour bound onto a float is a scene
-     * saying something the shader has no reading for, and guessing one is how a picture
-     * comes out wrong quietly.
+     * coerce, such as a colour bound onto a float, is reported rather than reinterpreted.
+     * Guessing a meaning for it would make the picture silently wrong.
      **/
     void bind(const rib::ParameterList & parameters);
 
@@ -72,15 +69,17 @@ class Instance final {
      * since sizing the register file empties it.
      *
      * The defaults are **run** rather than remembered, because a default may name a
-     * coordinate space - `point "shader" (0, 0, 1)` is how three of the four standard
-     * lights aim themselves - and what a space comes to is the renderer's answer, which is
-     * not known until the machine has one attached.
+     * coordinate space: three of the four standard lights aim themselves with
+     * `point "shader" (0, 0, 1)`. The renderer resolves a space, so its value is not known
+     * until a renderer is attached to the machine.
      *
      * @param placement the shader's own space to the machine's current one, which is the
      *        transform that was in force when the scene instanced this shader. A position
      *        a scene binds is stated in that space, and arrives in this one.
+     * @return false if the defaults failed to run, in which case nothing is bound and the
+     *         machine's error() says why
      **/
-    void write(runtime::Machine* machine,
+    [[nodiscard]] bool write(runtime::Machine* machine,
         const glm::mat4x4 & placement = glm::mat4x4(1.0f)) const;
 
  private:
@@ -109,20 +108,5 @@ class Instance final {
 };
 
 typedef boost::shared_ptr<Instance> InstancePtr;
-
-/**
- * A shader instance and the space it was instanced in.
- *
- * RI says a shader's own space is the transform that was in force when a scene named it,
- * and that is what its `point "shader" (0, 0, 1)` and every position a scene binds are
- * stated against. The two travel together everywhere - a surface on a primitive, a light
- * in a scene - which is why they are one thing rather than two fields repeated in each
- * renderer.
- **/
-class Placed final {
- public:
-    InstancePtr shader;
-    glm::mat4x4 placement = glm::mat4x4(1.0f);
-};
 
 };  // namespace v3d::render::offline::sl

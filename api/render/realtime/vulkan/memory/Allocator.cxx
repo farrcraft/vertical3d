@@ -78,21 +78,6 @@ VkResult Allocator::suballocate(VkBuffer buffer, VkImage image, VkMemoryProperty
 
 /**
  **/
-Allocation::Allocation() noexcept :
-    memory(VK_NULL_HANDLE),
-    offset(0),
-    size(0),
-    handle(VK_NULL_HANDLE) {
-}
-
-/**
- **/
-bool Allocation::valid() const noexcept {
-    return memory != VK_NULL_HANDLE;
-}
-
-/**
- **/
 Allocator::Allocator(VkDevice device, VkPhysicalDevice physical, VkInstance instance, Kind kind) :
     device_(device),
     physical_(physical),
@@ -105,8 +90,8 @@ Allocator::Allocator(VkDevice device, VkPhysicalDevice physical, VkInstance inst
     info.physicalDevice = physical_;
     info.device = device_;
     info.instance = instance;
-    // the version the tree draws with - ADR-0001. A suballocator asked for a newer one than
-    // the loader has calls entry points that are not there
+    // Vulkan 1.3, the version the renderer requires. A suballocator asked for a newer one
+    // than the loader has calls entry points that are not there
     info.vulkanApiVersion = VK_API_VERSION_1_3;
 
     const VkResult result = vmaCreateAllocator(&info, &suballocator_);

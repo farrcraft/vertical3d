@@ -40,12 +40,11 @@ const uint32_t height = 32;
 
 /**
  * A projection that measures the world in pixels of the target: x right over [0, width), y
- * down over [0, height), and z into the screen over [0, 1] the way Vulkan clip space wants
- * it - ADR-0012.
+ * down over [0, height), and z into the screen over [0, 1], as Vulkan clip space requires.
  *
- * Built here rather than through type::camera::Camera because what this case is about is the
- * renderer, and a scale and a translation by exact powers of two put a quad's corners on
- * pixel boundaries with no arithmetic to disagree about - ADR-0054.
+ * Built here rather than through type::camera::Camera because the case tests the renderer. A
+ * scale and a translation by exact powers of two put a quad's corners on pixel boundaries with
+ * no rounding, so the picture is exact on any conformant driver.
  **/
 glm::mat4x4 pixels() {
     glm::mat4x4 projection(1.0f);
@@ -75,7 +74,7 @@ constexpr glm::vec4 FAR_COLOUR(0.0f, 0.0f, 1.0f, 1.0f);
  * The two overlapping quads, submitted in the order given.
  *
  * The nearer one is at a quarter of the depth range and the farther at three quarters, so
- * which one wins is not a question a rounding could answer differently.
+ * rounding cannot change which one is in front.
  **/
 void overlapping(WorldCanvas* canvas, bool nearFirst) {
     canvas->clear();
@@ -94,13 +93,13 @@ void overlapping(WorldCanvas* canvas, bool nearFirst) {
  **/
 void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::string& name) {
     boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
-        headless->device, width, height, colourFormat, true);
+        headless->device, headless->context->ring(), width, height, colourFormat, true);
     BOOST_REQUIRE(target->depthView() != VK_NULL_HANDLE);
 
     WorldCanvas canvas;
     overlapping(&canvas, nearFirst);
 
-    Frame frame(headless->context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("world");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pass->depth(true);
@@ -130,7 +129,6 @@ void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::stri
     capture.record(commands, source);
 
     headless->submitAndWait(commands);
-    headless->context->worldQuads()->endFrame();
 
     BOOST_CHECK(headless->silent());
 
@@ -151,21 +149,18 @@ BOOST_AUTO_TEST_SUITE(world_depth_test)
 
 /**
  * Two overlapping opaque world quads come out in the order they were submitted, whichever
- * way round that is, and the depth between them decides nothing -
- * [ADR-0042](../../../../docs/adr/0042-a-textured-quad-in-world-space.md): the depth tested
- * pipeline tests and does not write, so solid geometry occludes a quad and one quad never
+ * way round that is, and the depth between them has no effect. The depth tested pipeline
+ * tests depth and does not write it, so solid geometry occludes a quad and one quad never
  * occludes another.
  *
- * Each order therefore has a picture of its own and the two differ, which is asserted
- * directly rather than left to a reader comparing two files. A pipeline that wrote depth
- * would make them the same picture, and that is the regression this is here to fail on.
+ * Each order therefore has a picture of its own, and the case asserts directly that the two
+ * differ. A pipeline that wrote depth would make them the same picture, and the case fails.
  *
- * The other half of ADR-0042 - the solid geometry that does occlude a quad - is not drawn
- * here, because nothing in this tree writes depth. It needs a pipeline of a consumer's own,
- * the way the depth only pipeline in PipelineBuilderTest is compiled and not drawn with.
+ * Solid geometry occluding a quad is not drawn here. LitSceneTest draws world quads behind a
+ * lit mesh for that.
  *
- * This is the only case in the tree that reaches renderer::World or a depth attachment on a
- * render target, so it is also what says either works at all.
+ * This case also checks that renderer::World and a depth attachment on a render target work
+ * at all.
  **/
 BOOST_AUTO_TEST_CASE(world_quads_are_ordered_by_their_caller_and_not_by_depth) {
     v3d::test::Headless headless(colourFormat, width, height);

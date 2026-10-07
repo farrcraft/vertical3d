@@ -14,7 +14,7 @@ class Text final : public Loader {
  public:
     /**
      **/
-    Text(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
+    Text(const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
      **/

@@ -14,6 +14,7 @@
 #include <entt/entt.hpp>
 
 #include "Context.h"
+#include "Source.h"
 
 namespace v3d::event {
 /**
@@ -23,6 +24,10 @@ class Engine {
      /**
       **/
     explicit Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher);
+    // the dispatcher holds a delegate to this object, which a copy or a move would leave
+    // pointing at the original
+    Engine(const Engine&) = delete;
+    Engine& operator=(const Engine&) = delete;
 
     /**
      **/
@@ -30,7 +35,7 @@ class Engine {
 
     /**
      **/
-    void handleSourceEvent(const Event& source);
+    void handleSourceEvent(const Unclaimed& unclaimed);
 
     /**
      * Look up a context from its name.
@@ -39,28 +44,12 @@ class Engine {
      **/
     boost::shared_ptr<Context> resolveContext(const std::string_view& name);
 
-    /**
-     * Send a destination event named by string, for callers that hold a name rather than
-     * a resolved Event.
-     *
-     * @param context the name of the event's context
-     * @param name the event name
-     **/
-    void dispatch(const std::string_view& context, const std::string& name);
-
-    /**
-     * Send a destination event named by string, carrying a parameter.
-     *
-     * @param context the name of the event's context
-     * @param name the event name
-     * @param data the event's parameter
-     **/
-    void dispatch(const std::string_view& context, const std::string& name, const EventData& data);
-
  private:
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     std::map<std::string, boost::shared_ptr<Mapper>> mappers_;
     std::vector<boost::shared_ptr<Context>> contexts_;
+    // after dispatcher_, so it disconnects before the dispatcher it points into can go
+    entt::scoped_connection source_;
 };
 
 };  // namespace v3d::event

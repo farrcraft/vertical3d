@@ -5,53 +5,16 @@
 
 #include "Jpeg.h"
 
-#include <jpeglib.h>
+#include <api/image/JpegError.h>
 
 #include <cstddef>
-// for setjmp/longjmp used in jpeg error handling
-#include <csetjmp>
 #include <string>
-
 
 namespace v3d::image::reader {
 /**
  **/
 Jpeg::Jpeg(const boost::shared_ptr<v3d::log::Logger>& logger) : Reader(logger) {
 }
-
-// JPEG library error handling
-// jmp_buf is over-aligned, so the struct is padded to suit it. That is the platform's
-// requirement rather than something to pack away, and nothing here is written to a file.
-#pragma warning(push)
-#pragma warning(disable : 4324)
-struct my_error_mgr {
-    struct jpeg_error_mgr pub;  // "public" fields
-    jmp_buf setjmp_buffer;  // for return to caller
-};
-#pragma warning(pop)
-
-typedef struct my_error_mgr* my_error_ptr;
-
-namespace {
-
-/*
-    * Here's the routine that will replace the standard error_exit method:
-    */
-// libjpeg spells this METHODDEF(void), which is static - the anonymous namespace is what
-// gives it internal linkage here, and both together is a redundant static
-void my_error_exit(j_common_ptr cinfo) {
-    // cinfo->err really points to a my_error_mgr struct, so coerce pointer
-    my_error_ptr myerr = (my_error_ptr)cinfo->err;
-
-    // Always display the message.
-    // We could postpone this until after returning, if we chose.
-    (*cinfo->err->output_message) (cinfo);
-
-    // Return control to the setjmp point
-    longjmp(myerr->setjmp_buffer, 1);
-}
-
-};  // namespace
 
 boost::shared_ptr<Image> Jpeg::read(const unsigned char* encoded, std::size_t size) {
     boost::shared_ptr<Image> empty_ptr;
@@ -61,15 +24,15 @@ boost::shared_ptr<Image> Jpeg::read(const unsigned char* encoded, std::size_t si
 
     struct jpeg_decompress_struct cinfo;
 
-    struct my_error_mgr jerr;
+    JpegError jerr;
     // We set up the normal JPEG error routines, then override error_exit.
     cinfo.err = jpeg_std_error(&jerr.pub);
-    jerr.pub.error_exit = my_error_exit;
+    jerr.pub.error_exit = jpegErrorExit;
     // longjmp does not destroy anything constructed after the setjmp point, so every
     // object below that owns memory is declared above it. The decoder signals failure by
     // longjmping out of any of the jpeg_* calls that follow.
     boost::shared_ptr<Image> img;
-    // Establish the setjmp return context for my_error_exit to use.
+    // Establish the setjmp return context for jpegErrorExit to use.
     // C4611 flags the mix of setjmp with C++ object destruction, which the declaration
     // above satisfies: no owning object is constructed after this point.
 #pragma warning(push)

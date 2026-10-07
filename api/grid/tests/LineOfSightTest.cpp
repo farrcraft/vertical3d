@@ -5,6 +5,7 @@
 
 #include <api/grid/LineOfSight.h>
 #include <api/grid/Pathfinding.h>
+#include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 
 #include <algorithm>
@@ -74,9 +75,9 @@ std::uint64_t mix(std::uint64_t value) {
 
 // a grid with roughly a fifth of its tiles walled off, from a seed.
 //
-// layouts are generated rather than authored because the asymmetry the sweep is hunting for
-// only shows up on particular geometry, and a handful of hand drawn maps would be a handful
-// of guesses about which geometry that is
+// layouts are generated rather than authored because the asymmetry the sweep looks for
+// appears only on particular geometry, and a few hand drawn maps would cover only the
+// geometry someone guessed at
 TileGrid scatterFullCover(std::uint64_t seed) {
     TileGrid grid = makeGrid();
 
@@ -211,7 +212,7 @@ BOOST_AUTO_TEST_CASE(sightline_an_off_grid_endpoint_traces_nothing_test) {
 // the sweeps below are over every ordered pair rather than a sample, because the asymmetry a
 // naive trace produces appears only where a line passes exactly through a corner, and nothing
 // about a sampled pair says whether it does. one assertion per sweep rather than one per
-// pair: 32,000 passing checks say nothing that one does not
+// pair, so a passing run does not log 32,000 checks
 
 BOOST_AUTO_TEST_CASE(lineofsight_is_symmetric_over_every_pair_test) {
     std::string asymmetric;

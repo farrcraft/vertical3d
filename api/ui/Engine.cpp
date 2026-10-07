@@ -5,8 +5,8 @@
 
 #include "Engine.h"
 
-#include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
+#include <api/ui/DrawOrder.h>
 #include <api/ui/Image.h>
 #include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
@@ -36,16 +36,20 @@ Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const b
     eventEngine_(eventEngine), dispatcher_(dispatcher), logger_(logger) {
 }
 
-bool Engine::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
+const boost::shared_ptr<entt::dispatcher>& Engine::dispatcher() const noexcept {
+    return dispatcher_;
+}
+
+bool Engine::load(const boost::json::object& config) {
     Loader loader(eventEngine_, dispatcher_, logger_);
-    if (!loader.load(config->document())) {
+    if (!loader.load(config)) {
         return false;
     }
     containers_ = std::move(loader.containers());
     themes_ = std::move(loader.themes());
 
-    // the first theme loaded is active unless the document named one, which is what makes
-    // a config carrying a single theme need no field at all
+    // the first theme loaded is active unless the document named one, so a config carrying
+    // a single theme needs no field at all
     activeTheme_ = themes_.empty() ? nullptr : themes_.front();
     if (!loader.active().empty()) {
         activeTheme(loader.active());
@@ -79,12 +83,16 @@ std::size_t Engine::resolveThemeImages(const Resolve& resolve) {
 }
 
 std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::shared_ptr<Component>& component) {
+    // a container accepts a null entry, and a null component has no image to resolve
+    if (!component) {
+        return 0;
+    }
     std::size_t resolved = 0;
 
     boost::shared_ptr<component::Icon> icon = boost::dynamic_pointer_cast<component::Icon>(component);
     boost::shared_ptr<component::Button> button = boost::dynamic_pointer_cast<component::Button>(component);
     // a strip's buttons are its own rather than children, so they are not reached by the
-    // walk below and are taken here
+    // traversal below and are taken here
     boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
     if (icon) {
         if (resolveIcon(resolve, std::string(icon->source()), icon)) {
@@ -162,7 +170,7 @@ boost::shared_ptr<style::Theme> Engine::theme(const std::string_view& name) cons
  **/
 void Engine::focus(const boost::shared_ptr<Component>& component) {
     // a component that cannot be used is nothing to focus, the same answer one that never
-    // asked to be focusable gets - ADR-0059
+    // asked to be focusable gets
     const boost::shared_ptr<Component> wanted =
         component && component->focusable() && usable(*component) ? component : boost::shared_ptr<Component>();
     const boost::shared_ptr<Component> was = focused_.lock();
@@ -195,14 +203,21 @@ boost::shared_ptr<Component> Engine::focused() const {
     return focused_.lock();
 }
 
+/**
+ **/
+bool Engine::reachable(const boost::shared_ptr<Component>& component) const {
+    if (!component) {
+        return false;
+    }
+    const std::vector<boost::shared_ptr<Component>> order = tabOrder();
+    return std::find(order.begin(), order.end(), component) != order.end();
+}
+
 namespace {
 
 /**
- * Collect what can be focused, in the order the draw walk reaches it.
- *
- * A flow box holds its children in the order it places them and a z index inside one
- * changes nothing, which is the rule Arranger::walk follows and the reason this cannot
- * simply sort everything by depth.
+ * Collect what can be focused, in draw order - forEachDrawn's, so a
+ * control on a tab page that is not up is not one.
  **/
 void focusable(const boost::shared_ptr<Component>& component,
     std::vector<boost::shared_ptr<Component>>* found) {
@@ -212,17 +227,7 @@ void focusable(const boost::shared_ptr<Component>& component,
     if (component->focusable()) {
         found->push_back(component);
     }
-    const std::vector<boost::shared_ptr<Component>>& children = component->children();
-    if (dynamic_cast<const component::Box*>(component.get()) != nullptr ||
-        inDrawOrder(children)) {
-        for (const boost::shared_ptr<Component>& child : children) {
-            focusable(child, found);
-        }
-        return;
-    }
-    for (const boost::shared_ptr<Component>& child : ordered(children)) {
-        focusable(child, found);
-    }
+    forEachDrawn(*component, [found](const boost::shared_ptr<Component>& child) { focusable(child, found); });
 }
 
 };  // namespace
@@ -267,9 +272,9 @@ bool Engine::focusNext(bool forward) {
     }
     const auto here = std::find(order.begin(), order.end(), was);
     if (here == order.end()) {
-        // what held the focus is no longer reachable - hidden, disabled or taken out of the
-        // tree since it took it - so there is no place in the order to move on from, and the
-        // walk starts again rather than leaving the focus somewhere tab cannot get it back
+        // what held the focus is no longer reachable: hidden, disabled or taken out of the
+        // tree since it took it. There is no place in the order to move on from, so the order
+        // starts again rather than leaving the focus somewhere tab cannot get it back
         focus(forward ? order.front() : order.back());
         return true;
     }

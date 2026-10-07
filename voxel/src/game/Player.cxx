@@ -47,16 +47,19 @@ void Player::position(const glm::vec3 & pos) {
     position_ = pos;
 }
 
-void Player::move(Movement direction) {
+void Player::move(Movement direction, bool held) {
     for (unsigned int i = 0; i < 6; i++) {
         if (direction == possibleMoves[i].move_) {
+            if (((movement_ & direction) != 0) == held) {
+                return;
+            }
             glm::vec3 velocity = camera_->currentVelocity();
-            if (movement_ & direction) {
-                velocity[possibleMoves[i].axis_] = 0.0f;
-                movement_ &= ~direction;
-            } else {
+            if (held) {
                 velocity[possibleMoves[i].axis_] = possibleMoves[i].magnitude_;
                 movement_ |= direction;
+            } else {
+                velocity[possibleMoves[i].axis_] = 0.0f;
+                movement_ &= ~direction;
             }
             camera_->currentVelocity(velocity.x, velocity.y, velocity.z);
             return;

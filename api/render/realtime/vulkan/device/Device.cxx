@@ -20,9 +20,9 @@ namespace v3d::render::realtime::vulkan::device {
 
 namespace {
 /**
- * The device extensions the renderer cannot do without. This is where both the check against
- * a candidate device and the list the logical device is created with come from, because a
- * device selected on one list and created with another is selected on terms it is not given.
+ * The device extensions the renderer cannot do without. Both the check against a candidate
+ * device and the list the logical device is created with come from here, so a device is
+ * created with exactly the extensions it was selected for.
  *
  * @param presenting whether the device presents, which is all the swapchain extension is for.
  *        A headless device needs nothing beyond 1.3 core
@@ -47,7 +47,8 @@ Device::QueueFamilies::QueueFamilies() noexcept :
 graphics(0),
 present(0),
 hasGraphics(false),
-hasPresent(false) {
+hasPresent(false),
+timestampBits(0) {
 }
 
 /**
@@ -66,10 +67,18 @@ Device::Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::s
     physical_(VK_NULL_HANDLE),
     device_(VK_NULL_HANDLE),
     graphicsQueue_(VK_NULL_HANDLE),
-    presentQueue_(VK_NULL_HANDLE) {
+    presentQueue_(VK_NULL_HANDLE),
+    timestampPeriod_(0.0f) {
     selectPhysical();
     createLogical();
-    allocator_ = boost::make_shared<memory::Allocator>(device_, physical_, instance_->handle(), allocations);
+    try {
+        allocator_ = boost::make_shared<memory::Allocator>(device_, physical_, instance_->handle(), allocations);
+    } catch (...) {
+        // nothing runs the destructor of an object whose constructor threw
+        vkDestroyDevice(device_, nullptr);
+        device_ = VK_NULL_HANDLE;
+        throw;
+    }
 }
 
 /**
@@ -134,6 +143,12 @@ VkQueue Device::presentQueue() const noexcept {
 
 /**
  **/
+float Device::timestampPeriod() const noexcept {
+    return timestampPeriod_;
+}
+
+/**
+ **/
 Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
     QueueFamilies families;
 
@@ -148,6 +163,7 @@ Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
         if (!families.hasGraphics && (properties[index].queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
             families.graphics = index;
             families.hasGraphics = true;
+            families.timestampBits = properties[index].timestampValidBits;
         }
 
         // without a surface there is nothing to be presentable to, and no handle to ask with
@@ -207,14 +223,21 @@ bool Device::hasRequiredFeatures(VkPhysicalDevice device) {
     VkPhysicalDeviceVulkan13Features features13{};
     features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
 
+    VkPhysicalDeviceVulkan12Features features12{};
+    features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    features12.pNext = &features13;
+
     VkPhysicalDeviceFeatures2 features{};
     features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    features.pNext = &features13;
+    features.pNext = &features12;
 
     vkGetPhysicalDeviceFeatures2(device, &features);
 
-    // ADR-0002 - the renderer draws through dynamic rendering and synchronizes with the 1.3 barrier forms
-    return features13.dynamicRendering == VK_TRUE && features13.synchronization2 == VK_TRUE;
+    // the renderer draws through dynamic rendering and synchronizes with the 1.3 barrier forms.
+    // Separate depth and stencil layouts let a barrier move only the depth aspect of a combined
+    // depth and stencil format; every 1.2 device supports them
+    return features13.dynamicRendering == VK_TRUE && features13.synchronization2 == VK_TRUE &&
+        features12.separateDepthStencilLayouts == VK_TRUE;
 }
 
 /**
@@ -222,22 +245,14 @@ bool Device::hasRequiredFeatures(VkPhysicalDevice device) {
 void Device::selectPhysical() {
     uint32_t count = 0;
     VkResult result = vkEnumeratePhysicalDevices(instance_->handle(), &count, nullptr);
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        std::stringstream msg;
-        msg << "Unable to count the physical vulkan devices - " << resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    check(result, "Unable to count the physical vulkan devices", VK_INCOMPLETE);
     if (count == 0) {
         throw std::runtime_error("No physical vulkan devices are available");
     }
 
     std::vector<VkPhysicalDevice> devices(count);
     result = vkEnumeratePhysicalDevices(instance_->handle(), &count, devices.data());
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        std::stringstream msg;
-        msg << "Unable to enumerate the physical vulkan devices - " << resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    check(result, "Unable to enumerate the physical vulkan devices", VK_INCOMPLETE);
 
     VkPhysicalDeviceProperties selectedProperties{};
     for (VkPhysicalDevice device : devices) {
@@ -282,6 +297,7 @@ void Device::selectPhysical() {
         throw std::runtime_error(msg.str());
     }
 
+    timestampPeriod_ = selectedProperties.limits.timestampPeriod;
     logger_->get()->info("Using vulkan device {}", std::string(selectedProperties.deviceName));
 }
 
@@ -312,11 +328,18 @@ void Device::createLogical() {
     features13.dynamicRendering = VK_TRUE;
     features13.synchronization2 = VK_TRUE;
 
+    // the depth barriers name only the depth aspect, which a combined depth and stencil format
+    // allows only with this feature on. Nothing uses the stencil aspect
+    VkPhysicalDeviceVulkan12Features features12{};
+    features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    features12.pNext = &features13;
+    features12.separateDepthStencilLayouts = VK_TRUE;
+
     // a feature struct chained onto pNext and pEnabledFeatures are mutually exclusive, so
     // the base features travel in the chain as well
     VkPhysicalDeviceFeatures2 features{};
     features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    features.pNext = &features13;
+    features.pNext = &features12;
 
     const std::vector<const char*> extensions = deviceExtensions(presenting());
 
@@ -330,11 +353,7 @@ void Device::createLogical() {
     createInfo.ppEnabledExtensionNames = extensions.data();
 
     VkResult result = vkCreateDevice(physical_, &createInfo, nullptr, &device_);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create a logical vulkan device - " << resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    check(result, "Unable to create a logical vulkan device");
 
     vkGetDeviceQueue(device_, families_.graphics, 0, &graphicsQueue_);
     if (presenting()) {

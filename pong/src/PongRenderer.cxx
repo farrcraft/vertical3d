@@ -13,17 +13,19 @@
 namespace {
 
 /**
- * The size the ui and the scores are drawn at, which the one atlas is scaled to per
- * ADR-0036 rather than rasterized at.
+ * The size the ui and the scores are drawn at. Glyphs are distance fields, so the atlas
+ * is scaled to this size rather than rasterized at it.
  **/
 const float fontSize = 28.0f;
 
+// the court is drawn over black, so a window of another shape shows where it ends
+constexpr glm::vec4 barColour(0.0f, 0.0f, 0.0f, 1.0f);
+constexpr glm::vec4 courtColour(0.06f, 0.07f, 0.10f, 1.0f);
 constexpr glm::vec4 boardColour(0.35f, 0.35f, 0.35f, 1.0f);
 constexpr glm::vec4 ballColour(1.0f, 1.0f, 1.0f, 1.0f);
 constexpr glm::vec4 scoreColour(0.85f, 0.85f, 0.85f, 1.0f);
 
 const unsigned int ballSides = 32;
-const unsigned int wallThickness = 15;
 const unsigned int centreLineWidth = 14;
 
 };  // namespace
@@ -31,20 +33,17 @@ const unsigned int centreLineWidth = 14;
 /**
  **/
 PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
-    engine_(logger, assetManager, registry) {
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
+    engine_(logger, assetManager) {
     engine_.initialize(window);
+    engine_.clearColour(barColour);
 
-    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Quad> quads = engine_.quads();
-    text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
-        [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
-            return quads->texture(atlas);
-        });
+    // the rules are written in the court's units, and the court is fitted to the window
+    court_.space(glm::vec2(PongScene::width, PongScene::height), v3d::render::realtime::Canvas::Fit::Contain);
 
-    statistics_ = boost::make_shared<v3d::ui::shell::StatisticsOverlay>(text_);
-
-    uiRenderer_ = boost::make_shared<v3d::ui::paint::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
-    uiRenderer_->dressing().lineHeight = fontSize * 1.4f;
+    v3d::ui::shell::Screen::Options options;
+    options.size = fontSize;
+    screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
 }
 
 /**
@@ -62,7 +61,7 @@ void PongRenderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
 /**
  **/
 const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& PongRenderer::statistics() const {
-    return statistics_;
+    return screen_->statistics();
 }
 
 /**
@@ -73,46 +72,31 @@ void PongRenderer::shutdown() {
 
 /**
  **/
-void PongRenderer::resize(int width, int height) {
-    if (scene_) {
-        scene_->resize(width, height);
-    }
-    canvas_.resize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-}
-
-/**
- **/
-void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
+void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics, float alpha) {
     if (!scene_) {
         return;
     }
 
-    glm::ivec2 size;
-    if (!engine_.beginFrame(&size)) {
+    if (!screen_->begin()) {
         return;
     }
-    if (canvas_.width() != static_cast<uint32_t>(size.x) || canvas_.height() != static_cast<uint32_t>(size.y)) {
-        resize(size.x, size.y);
-    }
-
-    canvas_.clear();
+    const v3d::render::realtime::Canvas& ui = screen_->canvas();
+    court_.resize(ui.width(), ui.height());
+    court_.clear();
 
     drawBoard();
-    drawPaddle(scene_->left());
-    drawPaddle(scene_->right());
-    drawBall();
+    drawPaddle(scene_->left(), alpha);
+    drawPaddle(scene_->right(), alpha);
+    drawBall(alpha);
     drawScores();
 
-    if (ui_) {
-        uiRenderer_->draw(&canvas_, *ui_);
-    }
+    screen_->draw(ui_.get(), statistics);
 
-    // last, so the numbers sit over the menu as well as the game
-    statistics_->draw(&canvas_, statistics);
-
+    // the menu in front of the court, as a layer of its own
     boost::shared_ptr<v3d::render::realtime::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);
-    engine_.quads()->submit(canvas_, pass.get());
+    engine_.quads()->submit(court_, pass.get(), 0);
+    engine_.quads()->submit(ui, pass.get(), 1);
 
     engine_.renderFrame();
 }
@@ -120,44 +104,47 @@ void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statist
 /**
  **/
 void PongRenderer::drawBoard() {
-    const float width = static_cast<float>(engine_.window()->width());
-    const float height = static_cast<float>(engine_.window()->height());
+    const float width = PongScene::width;
+    const float height = PongScene::height;
     const float half = centreLineWidth * 0.5f;
-    const float wall = static_cast<float>(wallThickness);
+    const float wall = PongScene::wall;
+
+    court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, height), courtColour);
 
     // centre line
-    canvas_.rect(glm::vec2(width * 0.5f - half, 0.0f), glm::vec2(width * 0.5f + half, height), boardColour);
+    court_.rect(glm::vec2(width * 0.5f - half, 0.0f), glm::vec2(width * 0.5f + half, height), boardColour);
     // top and bottom walls
-    canvas_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, wall), boardColour);
-    canvas_.rect(glm::vec2(0.0f, height - wall), glm::vec2(width, height), boardColour);
+    court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, wall), boardColour);
+    court_.rect(glm::vec2(0.0f, height - wall), glm::vec2(width, height), boardColour);
 }
 
 /**
  **/
 void PongRenderer::drawScores() {
-    const float width = static_cast<float>(engine_.window()->width());
-    const float height = static_cast<float>(engine_.window()->height());
+    const float width = PongScene::width;
+    const float height = PongScene::height;
 
     const std::string left = boost::lexical_cast<std::string>(scene_->left().score());
     const std::string right = boost::lexical_cast<std::string>(scene_->right().score());
 
-    text_->draw(&canvas_, left, glm::vec2(width * 0.25f, height * 0.25f), scoreColour, fontSize);
-    text_->draw(&canvas_, right, glm::vec2(width * 0.75f, height * 0.25f), scoreColour, fontSize);
+    screen_->text()->draw(&court_, left, glm::vec2(width * 0.25f, height * 0.25f), scoreColour, fontSize);
+    screen_->text()->draw(&court_, right, glm::vec2(width * 0.75f, height * 0.25f), scoreColour, fontSize);
 }
 
 /**
  **/
-void PongRenderer::drawBall() {
-    canvas_.circle(scene_->ball().position(), scene_->ball().size(), ballSides, ballColour);
+void PongRenderer::drawBall(float alpha) {
+    // size is the side of the box the scene collides, so it is the circle's diameter
+    court_.circle(scene_->ball().drawn(alpha), scene_->ball().size() / 2.0f, ballSides, ballColour);
 }
 
 /**
  **/
-void PongRenderer::drawPaddle(const Paddle& paddle) {
-    canvas_.push();
+void PongRenderer::drawPaddle(const Paddle& paddle, float alpha) {
+    court_.push();
     // the paddle's position is the centre of its travel; its rectangle is drawn from the corner
-    canvas_.translate(glm::vec2(paddle.offset(), paddle.position() - 25.0f));
+    court_.translate(glm::vec2(paddle.offset(), paddle.drawn(alpha) - paddle.length() / 2.0f));
     const glm::vec3 colour = paddle.color();
-    canvas_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(15.0f, 50.0f), glm::vec4(colour, 1.0f));
-    canvas_.pop();
+    court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(paddle.size(), paddle.length()), glm::vec4(colour, 1.0f));
+    court_.pop();
 }

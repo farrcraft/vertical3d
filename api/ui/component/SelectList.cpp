@@ -6,6 +6,7 @@
 #include "SelectList.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -18,9 +19,10 @@ SelectList::SelectList() :
     offset_(0.0f),
     rowHeight_(0.0f),
     widest_(-1.0f),
+    measured_(0),
     selected_(none) {
-    // a control exists to be driven, so it asks for the press and the focus that a panel
-    // laid over a scene must not take - ADR-0034 and ADR-0040
+    // a control is pickable and focusable from the start; a plain component is neither, so a
+    // panel laid over a scene lets presses through
     pickable(true);
     focusable(true);
 }
@@ -28,16 +30,18 @@ SelectList::SelectList() :
 void SelectList::items(const std::vector<std::string>& rows) {
     items_ = rows;
     widest_ = -1.0f;
+    measured_ = 0;
     selected(selected_);
     offset(offset_);
 }
 
-void SelectList::widest(float width) noexcept {
+void SelectList::widest(float width, std::uint64_t measure) noexcept {
     widest_ = width;
+    measured_ = measure;
 }
 
-float SelectList::widest() const noexcept {
-    return widest_;
+float SelectList::widest(std::uint64_t measure) const noexcept {
+    return measure == measured_ ? widest_ : -1.0f;
 }
 
 const std::vector<std::string>& SelectList::items() const noexcept {
@@ -96,9 +100,8 @@ int SelectList::at(const glm::vec2& point) const {
 
 void SelectList::event(const v3d::event::Event& destination) {
     event_ = destination;
-    // stamped here rather than by whoever built it, the way Button and MenuItem do it: an
-    // app applying ADR-0017's destination guard drops anything that is not marked, so a
-    // command that is not stamped is a command that never arrives
+    // marked as a command here rather than by the caller, as Button and MenuItem do, because a
+    // listener that accepts only Destination events drops an unmarked one
     event_.type(v3d::event::Type::Destination);
 }
 

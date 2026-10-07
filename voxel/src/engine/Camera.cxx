@@ -374,8 +374,8 @@ namespace {
  * One axis of the camera's velocity for one frame.
  *
  * A driven axis accelerates toward its limit and is clamped there. An axis that is not
- * driven decelerates toward zero and stops there rather than crossing it, which is what
- * the two signs of the deceleration are for.
+ * driven decelerates toward zero and stops there rather than crossing it. The deceleration
+ * has two signs for this reason.
  **/
 float axisVelocity(float current, float direction, float acceleration, float limit, float elapsed) {
     if (direction != 0.0f) {

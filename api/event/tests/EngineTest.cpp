@@ -4,6 +4,7 @@
  **/
 
 #include <api/event/Engine.h>
+#include <api/event/Source.h>
 
 #include <string>
 #include <vector>
@@ -12,9 +13,7 @@
 #include <boost/make_shared.hpp>
 
 /**
- * The replacement for CommandDirectory: the engine resolves contexts by name, routes a
- * source event through its mappers, and dispatches a destination event by name for callers
- * that hold a string rather than a resolved event.
+ * The engine resolves contexts by name and routes a source event through its mappers.
  **/
 namespace {
 /**
@@ -30,12 +29,9 @@ struct Recorder {
     std::vector<v3d::event::Event> events_;
 };
 
-v3d::event::Event source(const boost::shared_ptr<v3d::event::Context>& context,
+v3d::event::Source source(const boost::shared_ptr<v3d::event::Context>& context,
     const std::string& name, v3d::event::State state) {
-    v3d::event::Event event(name, context);
-    event.type(v3d::event::Type::Source);
-    event.state(state);
-    return event;
+    return v3d::event::Source(name, context, state);
 }
 };  // namespace
 
@@ -51,28 +47,6 @@ BOOST_AUTO_TEST_CASE(engine_context_test) {
 
     // a different name to a different one
     BOOST_CHECK(engine.resolveContext("mouse") != keyboard);
-}
-
-BOOST_AUTO_TEST_CASE(engine_dispatch_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    v3d::event::Engine engine(dispatcher);
-
-    Recorder recorder;
-    dispatcher->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
-
-    // dispatching by name resolves the context and builds the event, so a caller holding
-    // two strings reaches the same sink a resolved Event would
-    engine.dispatch("ui", "quit");
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
-    BOOST_CHECK_EQUAL(recorder.events_[0].name(), "quit");
-    BOOST_CHECK_EQUAL(recorder.events_[0].context()->name(), "ui");
-    BOOST_CHECK(!recorder.events_[0].data());
-
-    // and it can carry the parameter the old one passed as a string
-    engine.dispatch("ui", "setMaxScore", 11);
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 2u);
-    BOOST_REQUIRE(recorder.events_[1].data());
-    BOOST_CHECK_EQUAL(std::get<int>(recorder.events_[1].data().get()), 11);
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_test) {
@@ -93,17 +67,88 @@ BOOST_AUTO_TEST_CASE(engine_mapping_test) {
 
     // a source event reaches the engine through the same dispatcher and comes back out as
     // the destination it maps to
-    dispatcher->trigger(source(keyboard, "w", v3d::event::State::Pressed));
+    v3d::event::publish(*dispatcher, source(keyboard, "w", v3d::event::State::Pressed));
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "leftPaddleUp");
 
     // carrying the edge with it, so one binding serves press and release
     BOOST_CHECK(recorder.events_[0].state() == v3d::event::State::Pressed);
-    dispatcher->trigger(source(keyboard, "w", v3d::event::State::Released));
+    v3d::event::publish(*dispatcher, source(keyboard, "w", v3d::event::State::Released));
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 2u);
     BOOST_CHECK(recorder.events_[1].state() == v3d::event::State::Released);
 
+    // a source also carries whether the press was a held key repeating, so a toggle can
+    // ignore it
+    v3d::event::Source repeated = source(keyboard, "w", v3d::event::State::Pressed);
+    repeated.repeat(true);
+    v3d::event::publish(*dispatcher, repeated);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 3u);
+    BOOST_CHECK(recorder.events_[2].repeat());
+    BOOST_CHECK(!recorder.events_[0].repeat());
+
     // an unbound key produces nothing
-    dispatcher->trigger(source(keyboard, "q", v3d::event::State::Pressed));
-    BOOST_CHECK_EQUAL(recorder.events_.size(), 2u);
+    v3d::event::publish(*dispatcher, source(keyboard, "q", v3d::event::State::Pressed));
+    BOOST_CHECK_EQUAL(recorder.events_.size(), 3u);
+}
+
+BOOST_AUTO_TEST_CASE(engine_lets_the_dispatcher_go_test) {
+    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    {
+        v3d::event::Engine engine(dispatcher);
+        BOOST_CHECK(!dispatcher->sink<v3d::event::Unclaimed>().empty());
+    }
+    // the dispatcher outlives the engine, and a delegate to it would be a dangling call
+    BOOST_CHECK(dispatcher->sink<v3d::event::Unclaimed>().empty());
+}
+
+namespace {
+/**
+ * Hears both sinks into one list, so the order a key and its command arrive in can be read.
+ **/
+struct Order {
+    void key(const v3d::event::Source& source) {
+        heard_.push_back("key " + std::string(source.name()));
+        if (drop_) {
+            source.consume();
+        }
+    }
+
+    void command(const v3d::event::Event& event) {
+        heard_.push_back("command " + std::string(event.name()));
+    }
+
+    bool drop_ = false;
+    std::vector<std::string> heard_;
+};
+};  // namespace
+
+/**
+ * A key and the command it is bound to go to two sinks, and every listener receives the key
+ * before any receives the command, whichever was connected first. A listener on the key can
+ * also consume it, as a key capture does, and then its bindings send nothing.
+ **/
+BOOST_AUTO_TEST_CASE(engine_a_key_is_heard_before_its_command_test) {
+    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    v3d::event::Engine engine(dispatcher);
+
+    boost::shared_ptr<v3d::event::Context> keyboard = engine.resolveContext("keyboard");
+    boost::shared_ptr<v3d::event::Mapper> mapper = boost::make_shared<v3d::event::Mapper>("global");
+    v3d::event::Event bound("up", engine.resolveContext("game"));
+    bound.type(v3d::event::Type::Destination);
+    mapper->map(source(keyboard, "w", v3d::event::State::Any), bound);
+    engine.addMapper(mapper);
+
+    Order order;
+    dispatcher->sink<v3d::event::Event>().connect<&Order::command>(order);
+    dispatcher->sink<v3d::event::Source>().connect<&Order::key>(order);
+
+    v3d::event::publish(*dispatcher, source(keyboard, "w", v3d::event::State::Pressed));
+    BOOST_REQUIRE_EQUAL(order.heard_.size(), 2u);
+    BOOST_TEST(order.heard_[0] == "key w");
+    BOOST_TEST(order.heard_[1] == "command up");
+
+    order.drop_ = true;
+    v3d::event::publish(*dispatcher, source(keyboard, "w", v3d::event::State::Pressed));
+    BOOST_REQUIRE_EQUAL(order.heard_.size(), 3u);
+    BOOST_TEST(order.heard_[2] == "key w");
 }

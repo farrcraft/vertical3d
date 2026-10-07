@@ -89,7 +89,7 @@ bool Chunk::hidden(Voxel::BlockFace face, const glm::ivec3 & position) {
         case Voxel::BLOCK_FACE_ALL:
         case Voxel::BLOCK_FACE_NONE:
             // the two aggregates are not faces, so neither names a neighbour to look at.
-            // MeshBuilder asks about the six single faces and MeshCache::extract has already
+            // MeshBuilder queries the six single faces and MeshCache::extract has already
             // turned an ALL into them, so neither reaches here
             break;
     }

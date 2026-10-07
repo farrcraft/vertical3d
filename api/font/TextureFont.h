@@ -18,11 +18,6 @@ namespace v3d::font {
 
 class TextureFont {
  public:
-    typedef struct {
-        wchar_t charcode_;
-        float kerning_;
-    } Kerning;
-
     typedef enum {
         OUTLINE_TYPE_NONE = 0,
         OUTLINE_TYPE_LINE = 1,
@@ -38,24 +33,35 @@ class TextureFont {
         glm::ivec2 offset_;
         glm::vec2 advance_;
         glm::vec2 st_[2];
-        std::vector<Kerning> kerning_;
         OutlineType outline_;
         float outlineThickness_;
     } Glyph;
 
     /**
-     * @param size the size the face is rasterized at, which for a distance field is the
-     *        one base size every drawn size is a ratio of - ADR-0036
+     * @param size the size the face is rasterized at. For a distance field this is the
+     *        base size, and every drawn size is a ratio of it
      * @param spread how far either side of an edge the distance field runs, in pixels at
-     *        the base size, or zero to rasterize coverage as this always used to. It is
-     *        what decides how far a glyph can be scaled up before its edge softens, and
-     *        it costs the atlas twice itself in each axis of every glyph
+     *        the base size, or zero to rasterize coverage. It decides how far a glyph can
+     *        be scaled up before its edge softens, and adds twice its value to each axis of
+     *        every glyph in the atlas
      **/
     TextureFont(const std::string& filename, float size, const boost::shared_ptr<v3d::log::Logger> & logger,
         unsigned int spread = 0);
 
+    /**
+     * The glyph for a charcode, or null when it was not loaded. -1 is the opaque white square
+     * a line or a background is drawn with, made the first time it is asked for - and null
+     * when the atlas has no room for it.
+     **/
     boost::shared_ptr<Glyph> glyph(wchar_t charcode);
-    static float kerning(const boost::shared_ptr<Glyph>& glyph, wchar_t charcode);
+
+    /**
+     * The glyph already packed for a charcode, or null.
+     *
+     * glyph() rasterizes and packs a charcode it has not seen. This never does, so the atlas
+     * is unchanged. A caller that has uploaded the atlas looks glyphs up through this.
+     **/
+    boost::shared_ptr<Glyph> packed(wchar_t charcode) const;
 
     /**
      **/
@@ -64,10 +70,10 @@ class TextureFont {
     /**
      * Rasterize each charcode and pack it into the atlas.
      *
-     * A glyph that does not fit is counted rather than drawn, and the count is why this
-     * can fail after having packed most of what it was given: text drawn with a partly
+     * A glyph that does not fit is counted rather than drawn. Because of the count, this
+     * can fail after having packed most of what it was given. Text drawn with a partly
      * packed font is missing characters and measures short, so the layout around it is
-     * wrong too. A caller that ignores the answer gets both silently.
+     * wrong too. A caller that ignores the return value gets both silently.
      *
      * @return whether every charcode was packed
      **/
@@ -90,7 +96,6 @@ class TextureFont {
     float underlineThickness() const;
 
  protected:
-    void generateKerning();
     static boost::shared_ptr<Glyph> createGlyph();
 
  private:

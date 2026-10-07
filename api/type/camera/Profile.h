@@ -20,12 +20,11 @@ class Profile {
         *	Which way round lookat() crosses its normals, and so which world direction
         *	ends up on the right of the screen. Both are right handed bases and both
         *	render; they mirror each other horizontally, which also reverses the winding
-        *	a front face presents - see ADR-0012.
+        *	a front face presents.
         *
-        *	A profile in this tree is UpCrossDirection and says nothing, which is what
-        *	every camera here has always meant. DirectionCrossUp exists for an
-        *	application whose geometry was authored against glm::lookAt: adopting this
-        *	camera is otherwise a decision about that application's whole renderer.
+        *	UpCrossDirection is the default. DirectionCrossUp is for an application whose
+        *	geometry was authored against glm::lookAt, so that it can use this camera
+        *	without changing its renderer.
         */
         enum class Hand {
                 UpCrossDirection,       /**< right = up x direction **/
@@ -71,8 +70,8 @@ class Profile {
         Hand hand() const;
         /**
         *	Access the size in pixels of the viewport the camera draws into.
-        *	Zero until something that owns a viewport sets it, which is what
-        *	Camera::orthoFactorHorizontal() and ::orthoFactorVertical() guard against.
+        *	Zero until something that owns a viewport sets it.
+        *	Camera::orthoFactorHorizontal() and ::orthoFactorVertical() guard against zero.
         */
         glm::uvec2 size() const;
 
@@ -96,7 +95,7 @@ class Profile {
         *	Set one of the camera normals.
         *	The three normals and the rotation are independent state - setting a normal
         *	does not recompute the rotation, and rotating does not recompute the normals.
-        *	lookat() is the one call that writes all four consistently.
+        *	Only lookat() writes all four consistently.
         */
         void up(const glm::vec3 & up);
         void right(const glm::vec3 & right);
@@ -110,6 +109,20 @@ class Profile {
         *	@param rotation the new rotation value.
         */
         void rotation(const glm::quat & rotation);
+        /**
+        *	Turn the camera by a rotation composed onto the one it has, in its own axes.
+        *	Unlike rotation(), this keeps the normals in step: they are re-derived from the
+        *	rotation it leaves, so a dolly or a truck after a turn moves along the axes the
+        *	view now has.
+        *	@param local the rotation to compose, which need not be normalized.
+        */
+        void turn(const glm::quat & local);
+        /**
+        *	The rotation as a matrix, which Camera::createView() transposes into the view.
+        *	It is the basis lookat() built while that is still the rotation in force, and the
+        *	rotation cast back to a matrix once anything else has set it.
+        */
+        glm::mat4x4 orientation() const;
         void size(unsigned int width, unsigned int height);
         /**
         *	Choose which basis lookat() builds. It changes nothing until lookat() runs,
@@ -139,9 +152,7 @@ class Profile {
         */
         Profile & operator = (const Profile & p);
 
- protected:
-        friend class Camera;
-
+ private:
         typedef enum CameraOptions {
             OPTION_ORTHOGRAPHIC = (1 << 1),
             OPTION_ADAPTIVE_PROJECTION = (1 << 2),
@@ -165,14 +176,17 @@ class Profile {
         glm::quat rotation_;
 
         /**
-        *	The basis matrix lookat() built, kept so that createView() does not rebuild it
-        *	out of the quaternion - a round trip that costs about 2e-6 of a view element.
+        *	The basis matrix lookat() built. createView() uses it instead of casting the
+        *	quaternion, so a view built through lookat() equals the one glm::lookAt builds,
+        *	exactly. Casting the quaternion differs by about 2e-6 per element.
         *
-        *	**Every writer of rotation_ has to clear this**, because a rotation set any
-        *	other way is not the one this matrix carries. There are three - rotation(),
-        *	Camera::pan() and Camera::tilt() - and a fourth added later has to join them.
-        *	When it is clear, createView() rebuilds from the quaternion as it always did,
-        *	which is what keeps a directly rotated camera working.
+        *	rotation(), turn() and lookat() are the only writers of rotation_. lookat() fills
+        *	this cache, and every other write of the rotation clears it, including
+        *	Camera::pan() and Camera::tilt() through turn(). While it is clear, orientation()
+        *	casts the quaternion. clone() copies the cache along with the rotation.
+        *
+        *	lookat() does not renormalize the up vector it derives, because glm::lookAt does
+        *	not.
         */
         glm::mat4x4 basis_;
         bool basisValid_;

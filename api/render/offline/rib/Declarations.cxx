@@ -5,160 +5,13 @@
 
 #include "Declarations.h"
 
-#include <cstdlib>
+#include "Words.h"
+
 #include <map>
-#include <sstream>
 #include <string>
 #include <vector>
 
 namespace v3d::render::offline::rib {
-
-namespace {
-
-bool storageWord(const std::string & word, Declaration::Storage * storage) {
-    if (word == "constant") {
-        *storage = Declaration::Storage::CONSTANT;
-    } else if (word == "uniform") {
-        *storage = Declaration::Storage::UNIFORM;
-    } else if (word == "varying") {
-        *storage = Declaration::Storage::VARYING;
-    } else if (word == "vertex") {
-        *storage = Declaration::Storage::VERTEX;
-    } else {
-        return false;
-    }
-    return true;
-}
-
-bool typeWord(const std::string & word, Declaration::Type * type) {
-    if (word == "float") {
-        *type = Declaration::Type::FLOAT;
-    } else if (word == "integer" || word == "int") {
-        *type = Declaration::Type::INTEGER;
-    } else if (word == "string") {
-        *type = Declaration::Type::STRING;
-    } else if (word == "color" || word == "colour") {
-        *type = Declaration::Type::COLOR;
-    } else if (word == "point") {
-        *type = Declaration::Type::POINT;
-    } else if (word == "vector") {
-        *type = Declaration::Type::VECTOR;
-    } else if (word == "normal") {
-        *type = Declaration::Type::NORMAL;
-    } else if (word == "matrix") {
-        *type = Declaration::Type::MATRIX;
-    } else if (word == "hpoint") {
-        *type = Declaration::Type::HPOINT;
-    } else {
-        return false;
-    }
-    return true;
-}
-
-std::vector<std::string> words(const std::string & text) {
-    std::istringstream stream(text);
-    std::vector<std::string> result;
-    std::string word;
-    while (stream >> word) {
-        result.push_back(word);
-    }
-    return result;
-}
-
-/**
- * Split a trailing "[n]" off a type word.
- **/
-unsigned int arrayCount(std::string * word) {
-    const std::string::size_type open = word->find('[');
-    if (open == std::string::npos || word->back() != ']') {
-        return 1;
-    }
-    const std::string digits = word->substr(open + 1, word->size() - open - 2);
-    word->erase(open);
-    const long count = std::strtol(digits.c_str(), nullptr, 10);  // NOLINT(runtime/int)
-    return count > 0 ? static_cast<unsigned int>(count) : 1;
-}
-
-};  // namespace
-
-Declaration::Declaration() {
-}
-
-Declaration::Declaration(Storage storage, Type type, unsigned int count) :
-    storage_(storage),
-    type_(type),
-    count_(count) {
-}
-
-bool Declaration::parse(const std::string & text, Declaration * declaration) {
-    std::vector<std::string> parts = words(text);
-    if (parts.empty()) {
-        return false;
-    }
-
-    Storage storage = Storage::UNIFORM;
-    std::size_t index = 0;
-    if (storageWord(parts[0], &storage)) {
-        index = 1;
-    }
-    if (index >= parts.size()) {
-        return false;
-    }
-
-    std::string word = parts[index];
-    const unsigned int count = arrayCount(&word);
-    Type type = Type::FLOAT;
-    if (!typeWord(word, &type)) {
-        return false;
-    }
-
-    *declaration = Declaration(storage, type, count);
-    return true;
-}
-
-Declaration::Storage Declaration::storage() const {
-    return storage_;
-}
-
-Declaration::Type Declaration::type() const {
-    return type_;
-}
-
-unsigned int Declaration::count() const {
-    return count_;
-}
-
-unsigned int Declaration::floats() const {
-    switch (type_) {
-        case Type::STRING:
-            return 0;
-        case Type::COLOR:
-        case Type::POINT:
-        case Type::VECTOR:
-        case Type::NORMAL:
-            return 3;
-        case Type::HPOINT:
-            return 4;
-        case Type::MATRIX:
-            return 16;
-        case Type::FLOAT:
-        case Type::INTEGER:
-        default:
-            return 1;
-    }
-}
-
-unsigned int Declaration::elements(unsigned int vertices) const {
-    switch (storage_) {
-        case Storage::VARYING:
-        case Storage::VERTEX:
-            return vertices;
-        case Storage::CONSTANT:
-        case Storage::UNIFORM:
-        default:
-            return 1;
-    }
-}
 
 Declarations::Declarations() {
     typedef Declaration::Storage Storage;
@@ -200,7 +53,7 @@ Declarations::Declarations() {
     declarations_["background"] = Declaration(Storage::UNIFORM, Type::COLOR, 1);
     declarations_["fov"] = Declaration(Storage::UNIFORM, Type::FLOAT, 1);
 
-    // the identifier attributes, which is how a scene names an object
+    // the identifier attributes, which a scene uses to name an object
     declarations_["name"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
     declarations_["shadinggroup"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
 
@@ -208,6 +61,10 @@ Declarations::Declarations() {
     // these implementation specific, and an undeclared one is a warning per read.
     declarations_["bucketsize"] = Declaration(Storage::UNIFORM, Type::INTEGER, 2);
     declarations_["gridsize"] = Declaration(Storage::UNIFORM, Type::INTEGER, 1);
+    // the parameters of Option "trace" and Option "searchpath", whose names the standard defines
+    declarations_["maxdepth"] = Declaration(Storage::UNIFORM, Type::INTEGER, 1);
+    declarations_["shader"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
+    declarations_["texture"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
 }
 
 bool Declarations::declare(const std::string & name, const std::string & text) {

@@ -22,7 +22,6 @@ class Controller final : public v3d::engine::Engine {
  public:
     explicit Controller(const std::string& path);
 
-    bool initialize();
     /**
      * @return bool
      **/
@@ -30,14 +29,17 @@ class Controller final : public v3d::engine::Engine {
 
     /**
      **/
-    bool render();
+    bool render() override;
+
+    void handleEvent(const v3d::event::Event& event);
+
+ protected:
+    bool start() override;
 
     /**
      * @return bool
      **/
-    bool shutdown();
-
-    void handleEvent(const v3d::event::Event& event);
+    bool release() override;
 
  private:
     /**
@@ -58,4 +60,6 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<TetrisRenderer> renderer_;
     boost::shared_ptr<v3d::ui::Engine> vgui_;
     boost::shared_ptr<v3d::ui::shell::GameMenu> menu_;
+    // the dispatcher holds a delegate to this object; these let it go when the object does
+    entt::scoped_connection events_;
 };

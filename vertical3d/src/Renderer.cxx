@@ -5,7 +5,7 @@
 
 #include "Renderer.h"
 
-#include <api/asset/kind/Image.h>
+#include <api/asset/media/kind/Image.h>
 #include <api/asset/Type.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
@@ -33,7 +33,7 @@ constexpr glm::vec4 background(0.16f, 0.17f, 0.19f, 1.0f);
 const char* const handleSuffix = " handles";
 
 /**
- * The one pass that is not a view's, drawn over all of them.
+ * The pass that belongs to no view, drawn over all of them.
  **/
 const char* const uiPass = "ui";
 
@@ -41,8 +41,8 @@ const char* const uiPass = "ui";
  * How large the whole ui is drawn, as a multiple of the size it was laid out at.
  *
  * Every metric below is a multiple of the text size and the text size is a multiple of
- * this, so the editor scales by one number. That it is one number rather than a rebuilt
- * atlas is what ADR-0036 bought.
+ * this, so the editor scales by one number. Glyphs are distance fields, so a new scale
+ * does not need a rebuilt atlas.
  **/
 const float uiScale = 1.0f;
 
@@ -57,28 +57,23 @@ const float fontSize = 15.0f * uiScale;
  **/
 Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& window,
     const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
     logger_(logger),
     assetManager_(assetManager),
-    engine_(logger, assetManager, registry),
+    engine_(logger, assetManager),
     background_(background) {
     engine_.initialize(window);
     engine_.clearColour(background_);
 
-    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Quad> quads = engine_.quads();
-    text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
-        [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
-            return quads->texture(atlas);
-        });
-
-    uiRenderer_ = boost::make_shared<v3d::ui::paint::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
-    statistics_ = boost::make_shared<v3d::ui::shell::StatisticsOverlay>(text_);
-
-    v3d::ui::paint::Dressing& style = uiRenderer_->dressing();
-    style.lineHeight = fontSize * 1.5f;
-    style.padding = fontSize * 1.4f;
-    style.barHeight = fontSize * 1.8f;
-    style.panelPadding = fontSize * 0.3f;
+    v3d::ui::shell::Screen::Options options;
+    options.size = fontSize;
+    options.dress = [](v3d::ui::paint::Dressing* style, float size) {
+        style->lineHeight = size * 1.5f;
+        style->padding = size * 1.4f;
+        style->barHeight = size * 1.8f;
+        style->panelPadding = size * 0.3f;
+    };
+    screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
 }
 
 /**
@@ -109,56 +104,56 @@ void Renderer::manipulator(const boost::shared_ptr<Manipulator>& manipulator) {
 /**
  **/
 const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& Renderer::statistics() const {
-    return statistics_;
+    return screen_->statistics();
 }
 
 /**
  **/
 v3d::ui::paint::Measure Renderer::measure() const {
-    if (!text_) {
-        return v3d::ui::paint::Measure();
-    }
-    return text_->measure(fontSize);
+    return screen_->text()->measure(screen_->size());
 }
 
 /**
  **/
 void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     ui_ = ui;
-    if (!ui_ || !uiRenderer_) {
+    if (!ui_) {
         return;
     }
 
-    // the app half of ADR-0020: an image a theme names is an asset like any other, and
-    // the texture it becomes is the quad renderer's
+    // a theme names its images but does not load them. The app loads each one as an
+    // asset, and the device context's texture service owns the texture it becomes
     ui_->resolveImages([this](const std::string& source) -> v3d::render::realtime::TextureHandle {
         const v3d::asset::Type type = source.ends_with(".png")
             ? v3d::asset::Type::ImagePng : v3d::asset::Type::ImageTga;
-        boost::shared_ptr<v3d::asset::kind::Image> asset =
-            boost::dynamic_pointer_cast<v3d::asset::kind::Image>(assetManager_->load(source, type));
+        boost::shared_ptr<v3d::asset::media::kind::Image> asset =
+            assetManager_->load<v3d::asset::media::kind::Image>(source, type);
         if (!asset || !asset->image()) {
             return v3d::render::realtime::TextureHandle();
         }
-        return engine_.quads()->texture(asset->image());
+        return engine_.textures()->texture(asset->image());
     });
 
     // the metrics the constructor worked out from the font size stand unless the theme
     // names its own
-    uiRenderer_->theme(ui_->activeTheme());
+    screen_->theme(ui_->activeTheme());
 }
 
 /**
  **/
 glm::vec2 Renderer::insets() const {
-    if (!ui_ || !uiRenderer_) {
+    if (!ui_) {
         return glm::vec2(0.0f, 0.0f);
     }
-    return uiRenderer_->insets(*ui_);
+    return screen_->components().insets(*ui_);
 }
 
 /**
  **/
 void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
+    if (!screen_->begin()) {
+        return;
+    }
     boost::shared_ptr<v3d::render::realtime::Frame> frame = engine_.frame();
     if (!frame) {
         return;
@@ -166,8 +161,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
 
     boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Line> lines = engine_.lines();
 
-    // a view with no scene still draws its grid, which is what an empty document looks
-    // like rather than an error
+    // a view with no scene still draws its grid: an empty document is not an error
     const Scene empty;
     const Scene& scene = scene_ ? *scene_ : empty;
 
@@ -187,8 +181,8 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
         pass->depth(true);
         pass->camera(view->camera()->view(), view->camera()->projection());
 
-        // the handles go over the top of what the scene pass left, undepth tested, so
-        // that a handle lying in the plane of the grid is not lost to it
+        // the handles are drawn over what the scene pass left, without a depth test, so
+        // a handle lying in the plane of the grid is not hidden by it
         boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame->pass(view->name() + handleSuffix);
         overlay->viewport(view->region());
         overlay->keepColour();
@@ -214,25 +208,9 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
     const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
     // the overlay draws onto the same canvas, so this runs for it whether or not there is
     // a ui to draw as well
-    if (!uiRenderer_) {
-        return;
-    }
-    const int width = engine_.window()->width();
-    const int height = engine_.window()->height();
-    if (width <= 0 || height <= 0) {
-        return;
-    }
-    if (canvas_.width() != static_cast<uint32_t>(width) || canvas_.height() != static_cast<uint32_t>(height)) {
-        canvas_.resize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-    }
-
-    canvas_.clear();
-    if (ui_) {
-        uiRenderer_->draw(&canvas_, *ui_);
-    }
-    // last, so the numbers are over the strips rather than under an open menu
-    statistics_->draw(&canvas_, statistics);
-    if (canvas_.empty()) {
+    screen_->draw(ui_.get(), statistics);
+    v3d::render::realtime::Canvas& canvas = screen_->canvas();
+    if (canvas.empty()) {
         return;
     }
 
@@ -241,7 +219,7 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
     boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(uiPass);
     pass->keepColour();
     pass->depth(false);
-    engine_.quads()->submit(canvas_, pass.get());
+    engine_.quads()->submit(canvas, pass.get());
 }
 
 /**

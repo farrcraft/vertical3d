@@ -5,33 +5,37 @@
 
 #include "Engine.h"
 
+#include <api/asset/Json.h>
+#include <api/audio/kind/Sound.h>
 #include <api/event/kind/Sound.h>
 
+#include <SDL3_mixer/SDL_mixer.h>
+
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <boost/foreach.hpp>
+#include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
 namespace v3d::audio {
-
-/**
- **/
-Play::Play() noexcept :
-loops(0),
-fadeInMs(0),
-gain(1.0f) {
-}
 
 Engine::Engine(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher> &dispatcher) :
     dispatcher_(dispatcher), logger_(logger) {
 }
 
+Engine::~Engine() {
+    shutdown();
+}
+
 void Engine::shutdown() {
-    // the tracks go before the mixer that handed them out, and the clips before the tracks
-    // that were playing them
+    // no sound event reaches an engine that has let its device go
+    sound_.release();
+    // the tracks go before the mixer that handed them out, and before the clips they were
+    // playing
     for (const std::pair<const Voice, Playing>& playing : voices_) {
         MIX_DestroyTrack(playing.second.track);
     }
@@ -71,7 +75,7 @@ bool Engine::initialize() {
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
     }
 
-    dispatcher_->sink<v3d::event::kind::Sound>().connect<&Engine::soundEvent>(*this);
+    sound_ = dispatcher_->sink<v3d::event::kind::Sound>().connect<&Engine::soundEvent>(*this);
     return mixer_ != nullptr;
 }
 
@@ -81,8 +85,7 @@ void Engine::soundEvent(const v3d::event::kind::Sound& sound) {
     }
 }
 
-bool Engine::load(const boost::shared_ptr<v3d::asset::kind::Json>& config, const Resolve& resolve) {
-    auto const doc = config->document();
+bool Engine::load(const boost::json::object& doc, const Resolve& resolve) {
     // every lookup is guarded, because boost::json::object::at throws for a key it does
     // not hold and a rejected config has to reach the caller as a false return
     if (!doc.contains("sounds") || !doc.at("sounds").is_array()) {
@@ -102,8 +105,14 @@ bool Engine::load(const boost::shared_ptr<v3d::asset::kind::Json>& config, const
             logger_->get()->error("Sound config names no clip_id or no file");
             return false;
         }
-        const std::string clipId = boost::json::value_to<std::string>(sound.at("clip_id"));
-        const std::string fileName = boost::json::value_to<std::string>(sound.at("file"));
+        const std::optional<std::string> clip = v3d::asset::readString(sound, "clip_id");
+        const std::optional<std::string> file = v3d::asset::readString(sound, "file");
+        if (!clip || !file) {
+            logger_->get()->error("Sound config gives a clip_id or a file that is not a string");
+            return false;
+        }
+        const std::string& clipId = *clip;
+        const std::string& fileName = *file;
         // a clip that will not load leaves the rest of the document to load anyway - one
         // missing wav is not a reason to start an app without any of its sounds
         if (!resolve || !addClip(resolve(fileName), clipId)) {
@@ -113,6 +122,13 @@ bool Engine::load(const boost::shared_ptr<v3d::asset::kind::Json>& config, const
     }
 
     return loaded;
+}
+
+bool Engine::load(const boost::json::object& config, v3d::asset::Manager& assets) {
+    return load(config, [&assets](const std::string& source) -> boost::shared_ptr<AudioClip> {
+        const boost::shared_ptr<kind::Sound> sound = assets.load<kind::Sound>(source, v3d::asset::Type::AudioWav);
+        return sound ? sound->clip() : boost::shared_ptr<AudioClip>();
+    });
 }
 
 bool Engine::addClip(const boost::shared_ptr<AudioClip>& clip, const std::string_view& key) {
@@ -128,6 +144,10 @@ bool Engine::addClip(const boost::shared_ptr<AudioClip>& clip, const std::string
     return true;
 }
 
+bool Engine::has(const std::string_view & clip) const {
+    return sounds_.contains(std::string(clip));
+}
+
 bool Engine::playClip(const std::string_view & clip) {
     // a one shot nobody holds is still a track underneath, so that it can be stopped by
     // stopAll() and mixed on whatever the master gain is
@@ -140,14 +160,32 @@ void Engine::reap() {
             ++playing;
             continue;
         }
-        if (!playing->second.bus.empty()) {
-            // an untagged track, so that being played again on another bus does not leave
-            // it mixed on both
-            MIX_UntagTrack(playing->second.track, playing->second.bus.c_str());
-        }
-        free_.push_back(playing->second.track);
-        playing = voices_.erase(playing);
+        playing = retire(playing);
     }
+}
+
+std::map<Voice, Engine::Playing>::iterator Engine::retire(const std::map<Voice, Playing>::iterator & playing) {
+    if (!playing->second.bus.empty()) {
+        // an untagged track, so that being played again on another bus does not leave it
+        // mixed on both
+        MIX_UntagTrack(playing->second.track, playing->second.bus.c_str());
+    }
+    free_.push_back(playing->second.track);
+    return voices_.erase(playing);
+}
+
+std::map<Voice, Engine::Playing>::iterator Engine::live(Voice voice) {
+    std::map<Voice, Playing>::iterator found = voices_.find(voice);
+    if (found == voices_.end()) {
+        return found;
+    }
+    // a finished sound keeps its entry until the next play() reaps it, so a lookup checks
+    // the track itself and takes back one that has finished
+    if (!MIX_TrackPlaying(found->second.track)) {
+        retire(found);
+        return voices_.end();
+    }
+    return found;
 }
 
 MIX_Track* Engine::claim() {
@@ -220,7 +258,7 @@ Voice Engine::play(const std::string_view & clip, const Play & how) {
 }
 
 bool Engine::stop(Voice voice, int fadeOutMs) {
-    const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
+    const std::map<Voice, Playing>::iterator found = live(voice);
     if (found == voices_.end()) {
         return false;
     }
@@ -244,7 +282,7 @@ bool Engine::playing(Voice voice) const {
 }
 
 bool Engine::gain(Voice voice, float level) {
-    const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
+    const std::map<Voice, Playing>::iterator found = live(voice);
     if (found == voices_.end()) {
         return false;
     }

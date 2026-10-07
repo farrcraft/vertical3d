@@ -5,11 +5,38 @@
 
 #include "Compiler.h"
 
+#include <api/render/offline/sl/syntax/Assignment.h>
+#include <api/render/offline/sl/syntax/Binary.h>
+#include <api/render/offline/sl/syntax/Block.h>
+#include <api/render/offline/sl/syntax/Call.h>
+#include <api/render/offline/sl/syntax/Cast.h>
+#include <api/render/offline/sl/syntax/Conditional.h>
+#include <api/render/offline/sl/syntax/Declaration.h>
+#include <api/render/offline/sl/syntax/Declarator.h>
+#include <api/render/offline/sl/syntax/Expression.h>
+#include <api/render/offline/sl/syntax/ExpressionStatement.h>
+#include <api/render/offline/sl/syntax/For.h>
+#include <api/render/offline/sl/syntax/Function.h>
+#include <api/render/offline/sl/syntax/Index.h>
+#include <api/render/offline/sl/syntax/Jump.h>
+#include <api/render/offline/sl/syntax/Lighting.h>
+#include <api/render/offline/sl/syntax/Parameter.h>
+#include <api/render/offline/sl/syntax/Shader.h>
+#include <api/render/offline/sl/syntax/Statement.h>
+#include <api/render/offline/sl/syntax/Ternary.h>
+#include <api/render/offline/sl/syntax/Tuple.h>
+#include <api/render/offline/sl/syntax/Unary.h>
+#include <api/render/offline/sl/syntax/Variable.h>
+#include <api/render/offline/sl/syntax/Walk.h>
+#include <api/render/offline/sl/syntax/While.h>
+
 #include <algorithm>
 #include <string>
 #include <vector>
 
 #include "Builtins.h"
+#include "Inference.h"
+#include "Symbol.h"
 #include "Types.h"
 
 namespace v3d::render::offline::sl {
@@ -26,8 +53,8 @@ const unsigned int IMAGER = 1u << 2;
  * A shader global: which shader types have it, and which of them may write it.
  *
  * The three lists are the standard's. A name that is not here is not a global, so a light
- * shader mentioning `Ci` is told that `Ci` belongs to a surface and an imager rather than
- * being told it is undeclared - which is a far more useful thing to read.
+ * shader mentioning `Ci` is told that `Ci` belongs to a surface and an imager, rather than
+ * that it is undeclared.
  **/
 class Global final {
  public:
@@ -60,8 +87,8 @@ const Global GLOBALS[] = {
     { "Ci", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
     { "Oi", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
     { "Ps", Type::POINT, Storage::VARYING, LIGHT, 0, false },
-    // an imager writes alpha as well as reading it: a pixel it has painted is no longer
-    // one that nothing was drawn into, and "background" says so
+    // an imager writes alpha as well as reading it: a pixel it paints counts as covered,
+    // and the "background" imager writes alpha to record that
     { "alpha", Type::FLOAT, Storage::VARYING, IMAGER, IMAGER, false },
     // a light writes these; a surface reads them, and only inside an illuminance body
     { "L", Type::VECTOR, Storage::VARYING, SURFACE | LIGHT, LIGHT, true },
@@ -107,13 +134,13 @@ std::string owners(unsigned int shaders) {
     return text;
 }
 
-const char* construct(Lighting::Construct which) {
+const char* construct(syntax::Lighting::Construct which) {
     switch (which) {
-        case Lighting::Construct::ILLUMINANCE:
+        case syntax::Lighting::Construct::ILLUMINANCE:
             return "illuminance";
-        case Lighting::Construct::ILLUMINATE:
+        case syntax::Lighting::Construct::ILLUMINATE:
             return "illuminate";
-        case Lighting::Construct::SOLAR:
+        case syntax::Lighting::Construct::SOLAR:
             return "solar";
     }
     return "";
@@ -130,7 +157,7 @@ bool accepts(Argument wanted, Type given) {
         case Argument::NUMBER:
             return given == Type::FLOAT || given == Type::COLOR || pointlike(given);
         case Argument::POINTLIKE:
-            // a float replicates into a direction, which is what "normalize(0)" leans on
+            // a float replicates into a direction, so "normalize(0)" is accepted
             return pointlike(given) || given == Type::FLOAT;
         case Argument::FLOAT:
             return coercible(given, Type::FLOAT);
@@ -151,6 +178,18 @@ bool accepts(Argument wanted, Type given) {
 }
 
 /**
+ * The type a call's arguments promote to, as an arithmetic operator promotes its operands.
+ * Void when two of them have no arithmetic between them, such as a colour and a point.
+ **/
+Type promoted(const std::vector<Type> & given) {
+    Type result = Type::FLOAT;
+    for (const Type type : given) {
+        result = arithmetic(result, type);
+    }
+    return result;
+}
+
+/**
  * Whether one way of calling a standard library function takes these argument types.
  **/
 bool suits(const Signature & signature, const std::vector<Type> & given) {
@@ -164,139 +203,46 @@ bool suits(const Signature & signature, const std::vector<Type> & given) {
             return false;
         }
     }
-    return true;
+    const bool unmixable = signature.promotes && promoted(given) == Type::VOID;
+    return !unmixable;
 }
 
-bool defines(const std::vector<Function> & functions, const std::string & name) {
+bool defines(const std::vector<syntax::Function> & functions, const std::string & name) {
     return std::ranges::any_of(functions,
-        [&name](const Function & function) { return function.name == name; });
+        [&name](const syntax::Function & function) { return function.name == name; });
 }
 
-void gather(const StatementPtr & statement, std::vector<std::string>* called);
+void gather(const syntax::StatementPtr & statement, std::vector<std::string>* called);
 
 /**
- * Every name an expression calls, added once. What adopt() walks the tree for, before any
- * name has been resolved to anything.
+ * Every name an expression calls, added once. adopt() collects these from the tree before
+ * any name has been resolved.
  **/
-void gather(const ExpressionPtr & expression, std::vector<std::string>* called) {
+void gather(const syntax::ExpressionPtr & expression, std::vector<std::string>* called) {
     if (!expression) {
         return;
     }
-    switch (expression->kind) {
-        case Expression::Kind::CALL: {
-            const Call & call = static_cast<const Call &>(*expression);
-            if (std::ranges::find(*called, call.name) == called->end()) {
-                called->push_back(call.name);
-            }
-            for (const ExpressionPtr & argument : call.arguments) {
-                gather(argument, called);
-            }
-            return;
+    if (expression->kind == syntax::Expression::Kind::CALL) {
+        const syntax::Call & call = static_cast<const syntax::Call &>(*expression);
+        if (std::ranges::find(*called, call.name) == called->end()) {
+            called->push_back(call.name);
         }
-        case Expression::Kind::UNARY:
-            gather(static_cast<const Unary &>(*expression).operand, called);
-            return;
-        case Expression::Kind::BINARY: {
-            const Binary & binary = static_cast<const Binary &>(*expression);
-            gather(binary.left, called);
-            gather(binary.right, called);
-            return;
-        }
-        case Expression::Kind::TERNARY: {
-            const Ternary & ternary = static_cast<const Ternary &>(*expression);
-            gather(ternary.condition, called);
-            gather(ternary.whenTrue, called);
-            gather(ternary.whenFalse, called);
-            return;
-        }
-        case Expression::Kind::CAST:
-            gather(static_cast<const Cast &>(*expression).operand, called);
-            return;
-        case Expression::Kind::TUPLE:
-            for (const ExpressionPtr & element : static_cast<const Tuple &>(*expression).elements) {
-                gather(element, called);
-            }
-            return;
-        case Expression::Kind::INDEX: {
-            const Index & index = static_cast<const Index &>(*expression);
-            gather(index.array, called);
-            gather(index.index, called);
-            return;
-        }
-        case Expression::Kind::NUMBER:
-        case Expression::Kind::STRING:
-        case Expression::Kind::VARIABLE:
-            return;
     }
+    syntax::forEachChild(*expression, [called](const syntax::ExpressionPtr & child) { gather(child, called); });
 }
 
-void gather(const StatementPtr & statement, std::vector<std::string>* called) {
+void gather(const syntax::StatementPtr & statement, std::vector<std::string>* called) {
     if (!statement) {
         return;
     }
-    switch (statement->kind) {
-        case Statement::Kind::BLOCK:
-            for (const StatementPtr & inner : static_cast<const Block &>(*statement).statements) {
-                gather(inner, called);
-            }
-            return;
-        case Statement::Kind::DECLARATION:
-            for (const Declarator & declarator : static_cast<const Declaration &>(*statement).declarators) {
-                gather(declarator.initialiser, called);
-            }
-            return;
-        case Statement::Kind::ASSIGNMENT: {
-            const Assignment & assignment = static_cast<const Assignment &>(*statement);
-            gather(assignment.target, called);
-            gather(assignment.value, called);
-            return;
-        }
-        case Statement::Kind::CONDITIONAL: {
-            const Conditional & conditional = static_cast<const Conditional &>(*statement);
-            gather(conditional.condition, called);
-            gather(conditional.whenTrue, called);
-            gather(conditional.whenFalse, called);
-            return;
-        }
-        case Statement::Kind::WHILE: {
-            const While & loop = static_cast<const While &>(*statement);
-            gather(loop.condition, called);
-            gather(loop.body, called);
-            return;
-        }
-        case Statement::Kind::FOR: {
-            const For & loop = static_cast<const For &>(*statement);
-            gather(loop.initialiser, called);
-            gather(loop.condition, called);
-            gather(loop.step, called);
-            gather(loop.body, called);
-            return;
-        }
-        case Statement::Kind::JUMP:
-            gather(static_cast<const Jump &>(*statement).value, called);
-            return;
-        case Statement::Kind::EXPRESSION:
-            gather(static_cast<const ExpressionStatement &>(*statement).expression, called);
-            return;
-        case Statement::Kind::LIGHTING: {
-            const Lighting & lighting = static_cast<const Lighting &>(*statement);
-            for (const ExpressionPtr & argument : lighting.arguments) {
-                gather(argument, called);
-            }
-            gather(lighting.body, called);
-            return;
-        }
-    }
-}
-
-Storage join(Storage left, Storage right) {
-    return left == Storage::VARYING || right == Storage::VARYING ?
-        Storage::VARYING : Storage::UNIFORM;
+    syntax::forEachChild(*statement,
+        [called](const syntax::ExpressionPtr & child) { gather(child, called); },
+        [called](const syntax::StatementPtr & child) { gather(child, called); });
 }
 
 };  // namespace
 
-Compiler::Compiler(const ShaderPtr & shader) : shader_(shader) {
+Compiler::Compiler(const syntax::ShaderPtr & shader) : shader_(shader) {
 }
 
 const std::string & Compiler::error() const {
@@ -317,7 +263,7 @@ Compiler::Failure Compiler::fail(const std::string & message, unsigned int line,
 int Compiler::declare(const std::string & name, Type type, Storage storage,
     Symbol::Role role, bool writable, unsigned int line, unsigned int column) {
     // a local shadows whatever is outside its block; a parameter that collides with a global
-    // or with another parameter is a shader saying two things by one name
+    // or with another parameter is an error
     if (role == Symbol::Role::PARAMETER) {
         const int existing = lookup(name);
         if (existing >= 0) {
@@ -367,12 +313,12 @@ void Compiler::declareGlobals() {
 }
 
 void Compiler::declareParameters() {
-    for (Parameter & parameter : shader_->parameters) {
+    for (syntax::Parameter & parameter : shader_->parameters) {
         if (parameter.type == Type::VOID) {
             throw fail("a parameter cannot be void", parameter.line, parameter.column);
         }
-        // a parameter is uniform unless it says otherwise: a scene binds one value for the
-        // whole primitive, and only a declaration can say the renderer will vary it
+        // a parameter is uniform unless declared varying: a scene binds one value for the
+        // whole primitive unless the declaration lets the renderer vary it
         const Type given = checkExpression(parameter.defaultValue);
         if (!coercible(given, parameter.type)) {
             throw fail(std::string("the default for '") + parameter.name + "' is " + name(given) +
@@ -393,14 +339,13 @@ bool Compiler::compile() {
         declareGlobals();
         declareParameters();
         adopt();
-        results_.assign(shader_->functions.size(), Storage::UNIFORM);
         calls_.assign(shader_->functions.size(), std::vector<int>());
         checkFunctions();
         checkBlock(shader_->body);
         checkCallGraph();
-        infer();
-        if (!violation_.empty() && error_.empty()) {
-            error_ = violation_;
+        const std::string violation = Inference(shader_, &symbols_).run();
+        if (!violation.empty() && error_.empty()) {
+            error_ = violation;
             return false;
         }
     } catch (const Failure &) {
@@ -410,29 +355,29 @@ bool Compiler::compile() {
 }
 
 void Compiler::adopt() {
-    // a call to diffuse or specular names a function written in the language, which the
-    // shader takes on as its own so that nothing after this pass sees two kinds of function
+    // a call to diffuse or specular names a function written in the language. It is added to
+    // the shader's own functions so that nothing after this pass sees two kinds of function
     std::vector<std::string> called;
-    gather(boost::static_pointer_cast<Statement>(shader_->body), &called);
-    for (const Function & function : shader_->functions) {
-        gather(boost::static_pointer_cast<Statement>(function.body), &called);
+    gather(boost::static_pointer_cast<syntax::Statement>(shader_->body), &called);
+    for (const syntax::Function & function : shader_->functions) {
+        gather(boost::static_pointer_cast<syntax::Statement>(function.body), &called);
     }
     if (called.empty()) {
         return;
     }
-    const std::vector<Function> library = sources();
+    const std::vector<syntax::Function> library = sources();
     for (std::size_t i = 0; i < called.size(); i++) {
         if (defines(shader_->functions, called[i])) {
-            // the shader's own wins, which is how a scene overrides one of these
+            // the shader's own takes precedence, so a scene can override one of these
             continue;
         }
-        for (const Function & candidate : library) {
+        for (const syntax::Function & candidate : library) {
             if (candidate.name != called[i]) {
                 continue;
             }
             shader_->functions.push_back(candidate);
-            // and whatever it calls in turn, which is how specular reaches specularbrdf
-            gather(boost::static_pointer_cast<Statement>(candidate.body), &called);
+            // add whatever it calls in turn, such as specularbrdf from specular
+            gather(boost::static_pointer_cast<syntax::Statement>(candidate.body), &called);
             break;
         }
     }
@@ -440,10 +385,10 @@ void Compiler::adopt() {
 
 void Compiler::checkFunctions() {
     for (std::size_t i = 0; i < shader_->functions.size(); i++) {
-        Function & function = shader_->functions[i];
+        syntax::Function & function = shader_->functions[i];
         const std::size_t mark = scope_.size();
         inside_ = static_cast<int>(i);
-        for (Parameter & formal : function.parameters) {
+        for (syntax::Parameter & formal : function.parameters) {
             if (formal.type == Type::VOID) {
                 throw fail("a parameter cannot be void", formal.line, formal.column);
             }
@@ -457,8 +402,7 @@ void Compiler::checkFunctions() {
 }
 
 void Compiler::checkCallGraph() {
-    // the machine has a register file per shader run and no call stack, so a recursive
-    // shader has no meaning to give. Depth first over the call graph, colouring as it goes
+    // depth first over the call graph, colouring as it goes
     const std::size_t count = calls_.size();
     std::vector<int> colour(count, 0);
     std::vector<std::size_t> stack;
@@ -474,7 +418,7 @@ void Compiler::checkCallGraph() {
                 for (int called : calls_[current]) {
                     const std::size_t next = static_cast<std::size_t>(called);
                     if (colour[next] == 1) {
-                        const Function & function = shader_->functions[next];
+                        const syntax::Function & function = shader_->functions[next];
                         throw fail("'" + function.name + "' calls itself, and a shader run has no call stack",
                             function.line, function.column);
                     }
@@ -490,48 +434,48 @@ void Compiler::checkCallGraph() {
     }
 }
 
-void Compiler::checkBlock(const BlockPtr & block) {
+void Compiler::checkBlock(const syntax::BlockPtr & block) {
     if (!block) {
         return;
     }
     const std::size_t mark = scope_.size();
-    for (const StatementPtr & statement : block->statements) {
+    for (const syntax::StatementPtr & statement : block->statements) {
         checkStatement(statement);
     }
     // a local goes out of scope with its block, and its symbol stays: the machine allocates
-    // against the symbol, and two locals of the same name in sibling blocks are two of them
+    // against the symbol, and two locals of the same name in sibling blocks are two symbols
     scope_.resize(mark);
 }
 
-void Compiler::checkStatement(const StatementPtr & statement) {
+void Compiler::checkStatement(const syntax::StatementPtr & statement) {
     if (!statement) {
         return;
     }
     switch (statement->kind) {
-        case Statement::Kind::BLOCK:
-            checkBlock(boost::static_pointer_cast<Block>(statement));
+        case syntax::Statement::Kind::BLOCK:
+            checkBlock(boost::static_pointer_cast<syntax::Block>(statement));
             return;
-        case Statement::Kind::DECLARATION:
+        case syntax::Statement::Kind::DECLARATION:
             checkDeclaration(statement);
             return;
-        case Statement::Kind::ASSIGNMENT:
+        case syntax::Statement::Kind::ASSIGNMENT:
             checkAssignment(statement);
             return;
-        case Statement::Kind::CONDITIONAL: {
-            const Conditional & conditional = static_cast<const Conditional &>(*statement);
+        case syntax::Statement::Kind::CONDITIONAL: {
+            const syntax::Conditional & conditional = static_cast<const syntax::Conditional &>(*statement);
             checkCondition(conditional.condition, "if");
             checkStatement(conditional.whenTrue);
             checkStatement(conditional.whenFalse);
             return;
         }
-        case Statement::Kind::WHILE: {
-            const While & loop = static_cast<const While &>(*statement);
+        case syntax::Statement::Kind::WHILE: {
+            const syntax::While & loop = static_cast<const syntax::While &>(*statement);
             checkCondition(loop.condition, "while");
             checkStatement(loop.body);
             return;
         }
-        case Statement::Kind::FOR: {
-            const For & loop = static_cast<const For &>(*statement);
+        case syntax::Statement::Kind::FOR: {
+            const syntax::For & loop = static_cast<const syntax::For &>(*statement);
             checkStatement(loop.initialiser);
             if (loop.condition) {
                 checkCondition(loop.condition, "for");
@@ -540,19 +484,19 @@ void Compiler::checkStatement(const StatementPtr & statement) {
             checkStatement(loop.body);
             return;
         }
-        case Statement::Kind::JUMP:
+        case syntax::Statement::Kind::JUMP:
             checkJump(statement);
             return;
-        case Statement::Kind::EXPRESSION:
-            checkExpression(static_cast<const ExpressionStatement &>(*statement).expression);
+        case syntax::Statement::Kind::EXPRESSION:
+            checkExpression(static_cast<const syntax::ExpressionStatement &>(*statement).expression);
             return;
-        case Statement::Kind::LIGHTING:
+        case syntax::Statement::Kind::LIGHTING:
             checkLighting(statement);
             return;
     }
 }
 
-void Compiler::checkCondition(const ExpressionPtr & condition, const char* construct) {
+void Compiler::checkCondition(const syntax::ExpressionPtr & condition, const char* construct) {
     const Type type = checkExpression(condition);
     if (!coercible(type, Type::FLOAT)) {
         throw fail(std::string("the condition of a '") + construct + "' is " + name(type) +
@@ -560,15 +504,15 @@ void Compiler::checkCondition(const ExpressionPtr & condition, const char* const
     }
 }
 
-void Compiler::checkJump(const StatementPtr & statement) {
-    const Jump & jump = static_cast<const Jump &>(*statement);
+void Compiler::checkJump(const syntax::StatementPtr & statement) {
+    const syntax::Jump & jump = static_cast<const syntax::Jump &>(*statement);
     if (!jump.value) {
         return;
     }
     if (inside_ < 0) {
         throw fail("a shader returns no value", statement->line, statement->column);
     }
-    const Function & function = shader_->functions[static_cast<std::size_t>(inside_)];
+    const syntax::Function & function = shader_->functions[static_cast<std::size_t>(inside_)];
     const Type given = checkExpression(jump.value);
     if (!coercible(given, function.type)) {
         throw fail("'" + function.name + "' returns " + name(function.type) + ", not " + name(given),
@@ -576,12 +520,12 @@ void Compiler::checkJump(const StatementPtr & statement) {
     }
 }
 
-void Compiler::checkDeclaration(const StatementPtr & statement) {
-    Declaration & declaration = static_cast<Declaration &>(*statement);
+void Compiler::checkDeclaration(const syntax::StatementPtr & statement) {
+    syntax::Declaration & declaration = static_cast<syntax::Declaration &>(*statement);
     if (declaration.type == Type::VOID) {
         throw fail("a variable cannot be void", statement->line, statement->column);
     }
-    for (Declarator & declarator : declaration.declarators) {
+    for (syntax::Declarator & declarator : declaration.declarators) {
         if (declarator.initialiser) {
             // checked before the name is declared, so "float x = x" reads the outer x
             const Type given = checkExpression(declarator.initialiser);
@@ -595,14 +539,14 @@ void Compiler::checkDeclaration(const StatementPtr & statement) {
     }
 }
 
-void Compiler::checkAssignment(const StatementPtr & statement) {
-    const Assignment & assignment = static_cast<const Assignment &>(*statement);
-    if (assignment.target->kind != Expression::Kind::VARIABLE) {
+void Compiler::checkAssignment(const syntax::StatementPtr & statement) {
+    const syntax::Assignment & assignment = static_cast<const syntax::Assignment &>(*statement);
+    if (assignment.target->kind != syntax::Expression::Kind::VARIABLE) {
         throw fail("only a variable can be assigned to",
             assignment.target->line, assignment.target->column);
     }
     const Type target = checkExpression(assignment.target);
-    const Variable & variable = static_cast<const Variable &>(*assignment.target);
+    const syntax::Variable & variable = static_cast<const syntax::Variable &>(*assignment.target);
     const Symbol & symbol = symbols_[static_cast<std::size_t>(variable.symbol)];
     if (!symbol.writable) {
         const std::string mine = article(shader_->type);
@@ -623,10 +567,10 @@ void Compiler::checkAssignment(const StatementPtr & statement) {
     }
 }
 
-void Compiler::checkLighting(const StatementPtr & statement) {
-    Lighting & lighting = static_cast<Lighting &>(*statement);
+void Compiler::checkLighting(const syntax::StatementPtr & statement) {
+    syntax::Lighting & lighting = static_cast<syntax::Lighting &>(*statement);
     const bool surface = shader_->type == ShaderType::SURFACE;
-    if (lighting.construct == Lighting::Construct::ILLUMINANCE) {
+    if (lighting.construct == syntax::Lighting::Construct::ILLUMINANCE) {
         if (!surface) {
             throw fail("'illuminance' is only valid in a surface shader",
                 statement->line, statement->column);
@@ -638,7 +582,7 @@ void Compiler::checkLighting(const StatementPtr & statement) {
         throw fail(std::string("'") + construct(lighting.construct) + "' is only valid in a light shader",
             statement->line, statement->column);
     }
-    for (const ExpressionPtr & argument : lighting.arguments) {
+    for (const syntax::ExpressionPtr & argument : lighting.arguments) {
         checkExpression(argument);
     }
     depth_++;
@@ -646,46 +590,45 @@ void Compiler::checkLighting(const StatementPtr & statement) {
     depth_--;
 }
 
-Type Compiler::checkExpression(const ExpressionPtr & expression) {
+Type Compiler::checkExpression(const syntax::ExpressionPtr & expression) {
     if (!expression) {
         return Type::VOID;
     }
     switch (expression->kind) {
-        case Expression::Kind::NUMBER:
+        case syntax::Expression::Kind::NUMBER:
             expression->type = Type::FLOAT;
             return expression->type;
-        case Expression::Kind::STRING:
+        case syntax::Expression::Kind::STRING:
             expression->type = Type::STRING;
             return expression->type;
-        case Expression::Kind::VARIABLE:
+        case syntax::Expression::Kind::VARIABLE:
             return checkVariable(expression);
-        case Expression::Kind::CALL:
+        case syntax::Expression::Kind::CALL:
             return checkCall(expression);
-        case Expression::Kind::UNARY:
+        case syntax::Expression::Kind::UNARY:
             return checkUnary(expression);
-        case Expression::Kind::BINARY:
+        case syntax::Expression::Kind::BINARY:
             return checkBinary(expression);
-        case Expression::Kind::TERNARY:
+        case syntax::Expression::Kind::TERNARY:
             return checkTernary(expression);
-        case Expression::Kind::CAST:
+        case syntax::Expression::Kind::CAST:
             return checkCast(expression);
-        case Expression::Kind::TUPLE:
+        case syntax::Expression::Kind::TUPLE:
             // a parenthesised list is a literal for whatever a cast says it is, and means
             // nothing on its own - checkCast is the only place that reads one
             throw fail("a parenthesised list of values needs a type in front of it",
                 expression->line, expression->column);
-        case Expression::Kind::INDEX:
+        case syntax::Expression::Kind::INDEX:
             throw fail("an array is not supported", expression->line, expression->column);
     }
     return Type::VOID;
 }
 
-Type Compiler::checkVariable(const ExpressionPtr & expression) {
-    Variable & variable = static_cast<Variable &>(*expression);
+Type Compiler::checkVariable(const syntax::ExpressionPtr & expression) {
+    syntax::Variable & variable = static_cast<syntax::Variable &>(*expression);
     variable.symbol = lookup(variable.name);
     if (variable.symbol < 0) {
-        // a global of another shader type is a far more useful thing to be told about than
-        // an undeclared name
+        // report a global of another shader type as that, rather than as an undeclared name
         for (const Global & global : GLOBALS) {
             if (variable.name == global.name) {
                 throw fail("'" + variable.name + "' belongs to " + owners(global.shaders) +
@@ -707,8 +650,8 @@ Type Compiler::checkVariable(const ExpressionPtr & expression) {
     return expression->type;
 }
 
-Type Compiler::checkUnary(const ExpressionPtr & expression) {
-    const Unary & unary = static_cast<const Unary &>(*expression);
+Type Compiler::checkUnary(const syntax::ExpressionPtr & expression) {
+    const syntax::Unary & unary = static_cast<const syntax::Unary &>(*expression);
     const Type operand = checkExpression(unary.operand);
     if (unary.op == "!") {
         if (!coercible(operand, Type::FLOAT)) {
@@ -726,15 +669,15 @@ Type Compiler::checkUnary(const ExpressionPtr & expression) {
     return expression->type;
 }
 
-Type Compiler::checkBinary(const ExpressionPtr & expression) {
-    const Binary & binary = static_cast<const Binary &>(*expression);
+Type Compiler::checkBinary(const syntax::ExpressionPtr & expression) {
+    const syntax::Binary & binary = static_cast<const syntax::Binary &>(*expression);
     const Type left = checkExpression(binary.left);
     const Type right = checkExpression(binary.right);
     const std::string & op = binary.op;
 
     if (op == "." || op == "^") {
         // the two that read as something else: a dot product and a cross product, over
-        // positions and directions rather than over anything with three of something
+        // positions and directions rather than over any three-component type
         if (!accepts(Argument::POINTLIKE, left) || !accepts(Argument::POINTLIKE, right)) {
             throw fail("'" + op + "' takes two positions or directions, not " +
                 name(left) + " and " + name(right), expression->line, expression->column);
@@ -775,8 +718,8 @@ Type Compiler::checkBinary(const ExpressionPtr & expression) {
     return expression->type;
 }
 
-Type Compiler::checkTernary(const ExpressionPtr & expression) {
-    const Ternary & ternary = static_cast<const Ternary &>(*expression);
+Type Compiler::checkTernary(const syntax::ExpressionPtr & expression) {
+    const syntax::Ternary & ternary = static_cast<const syntax::Ternary &>(*expression);
     checkCondition(ternary.condition, "?:");
     const Type whenTrue = checkExpression(ternary.whenTrue);
     const Type whenFalse = checkExpression(ternary.whenFalse);
@@ -791,25 +734,25 @@ Type Compiler::checkTernary(const ExpressionPtr & expression) {
     return expression->type;
 }
 
-Type Compiler::checkCast(const ExpressionPtr & expression) {
-    const Cast & cast = static_cast<const Cast &>(*expression);
+Type Compiler::checkCast(const syntax::ExpressionPtr & expression) {
+    const syntax::Cast & cast = static_cast<const syntax::Cast &>(*expression);
     if (cast.type == Type::VOID) {
         throw fail("nothing can be cast to void", expression->line, expression->column);
     }
-    if (!cast.space.empty() && cast.type == Type::FLOAT) {
-        throw fail("a coordinate space means nothing to a float", expression->line, expression->column);
+    if (!cast.space.empty()) {
+        checkSpace(cast);
     }
-    if (cast.operand->kind == Expression::Kind::TUPLE) {
+    if (cast.operand->kind == syntax::Expression::Kind::TUPLE) {
         // a parenthesised list is a literal for the type in front of it: three floats are a
         // point or a colour and sixteen are a matrix
-        const Tuple & tuple = static_cast<const Tuple &>(*cast.operand);
+        const syntax::Tuple & tuple = static_cast<const syntax::Tuple &>(*cast.operand);
         const unsigned int wanted = components(cast.type);
         if (tuple.elements.size() != wanted) {
             throw fail(std::string(name(cast.type)) + " is " + std::to_string(wanted) +
                 " values, and " + std::to_string(tuple.elements.size()) + " were given",
                 cast.operand->line, cast.operand->column);
         }
-        for (const ExpressionPtr & element : tuple.elements) {
+        for (const syntax::ExpressionPtr & element : tuple.elements) {
             const Type given = checkExpression(element);
             if (!coercible(given, Type::FLOAT)) {
                 throw fail("a value of " + std::string(name(cast.type)) + " is a number, not " + name(given),
@@ -820,6 +763,9 @@ Type Compiler::checkCast(const ExpressionPtr & expression) {
         expression->type = cast.type;
         return expression->type;
     }
+    if (cast.operand->kind == syntax::Expression::Kind::CALL) {
+        wanted_ = cast.type;
+    }
     const Type given = checkExpression(cast.operand);
     if (!coercible(given, cast.type)) {
         throw fail(std::string(name(given)) + " cannot be cast to " + name(cast.type),
@@ -829,15 +775,37 @@ Type Compiler::checkCast(const ExpressionPtr & expression) {
     return expression->type;
 }
 
-Type Compiler::checkCall(const ExpressionPtr & expression) {
-    Call & call = static_cast<Call &>(*expression);
+void Compiler::checkSpace(const syntax::Cast & cast) {
+    switch (cast.type) {
+        case Type::POINT:
+        case Type::VECTOR:
+        case Type::NORMAL:
+        case Type::COLOR:
+            // a coordinate space, which the renderer resolves when the shader runs, or for a
+            // colour a colour space, which the emitter converts out of as ctransform does
+            return;
+        case Type::MATRIX:
+            // RenderMan reads this as a matrix relative to the named space. That reading is
+            // not implemented, so the cast is rejected rather than ignored
+            throw fail("a matrix relative to a named space is not supported", cast.line, cast.column);
+        case Type::VOID:
+        case Type::FLOAT:
+        case Type::STRING:
+            throw fail(std::string("a coordinate space means nothing to a ") + name(cast.type),
+                cast.line, cast.column);
+    }
+}
+
+Type Compiler::checkCall(const syntax::ExpressionPtr & expression) {
+    syntax::Call & call = static_cast<syntax::Call &>(*expression);
+    const Type wanted = wanted_;
+    wanted_ = Type::VOID;
     std::vector<Type> given;
     given.reserve(call.arguments.size());
-    for (const ExpressionPtr & argument : call.arguments) {
+    for (const syntax::ExpressionPtr & argument : call.arguments) {
         given.push_back(checkExpression(argument));
     }
-    // a shader's own function wins over a standard one of the same name, which is how a
-    // shader replaces a light model it does not like
+    // a shader's own function takes precedence over a standard one of the same name
     const int function = checkShaderCall(call, given);
     if (function >= 0) {
         call.function = function;
@@ -847,12 +815,12 @@ Type Compiler::checkCall(const ExpressionPtr & expression) {
         expression->type = shader_->functions[static_cast<std::size_t>(function)].type;
         return expression->type;
     }
-    return checkBuiltinCall(call, given);
+    return checkBuiltinCall(call, given, wanted);
 }
 
-int Compiler::checkShaderCall(Call & call, const std::vector<Type> & given) {
+int Compiler::checkShaderCall(syntax::Call & call, const std::vector<Type> & given) {
     for (std::size_t i = 0; i < shader_->functions.size(); i++) {
-        const Function & function = shader_->functions[i];
+        const syntax::Function & function = shader_->functions[i];
         if (function.name != call.name) {
             continue;
         }
@@ -873,9 +841,30 @@ int Compiler::checkShaderCall(Call & call, const std::vector<Type> & given) {
     return -1;
 }
 
-Type Compiler::checkBuiltinCall(Call & call, const std::vector<Type> & given) {
+void Compiler::checkWritten(const syntax::Call & call, const Signature & signature) {
+    for (std::size_t argument = 0; argument < call.arguments.size(); argument++) {
+        const bool output = signature.outputs >= 0 && argument >= static_cast<std::size_t>(signature.outputs);
+        const bool updated = signature.updates >= 0 && argument == static_cast<std::size_t>(signature.updates);
+        if (!output && !updated) {
+            continue;
+        }
+        const syntax::ExpressionPtr & written = call.arguments[argument];
+        if (written->kind != syntax::Expression::Kind::VARIABLE) {
+            throw fail("argument " + std::to_string(argument + 1) + " of '" + call.name +
+                "' is written, so it has to be a variable", written->line, written->column);
+        }
+        const syntax::Variable & variable = static_cast<const syntax::Variable &>(*written);
+        if (!symbols_[static_cast<std::size_t>(variable.symbol)].writable) {
+            throw fail("argument " + std::to_string(argument + 1) + " of '" + call.name +
+                "' is written, and '" + variable.name + "' cannot be assigned", written->line, written->column);
+        }
+    }
+}
+
+Type Compiler::checkBuiltinCall(syntax::Call & call, const std::vector<Type> & given, Type wanted) {
     const std::vector<Signature> & table = builtins();
     bool named = false;
+    std::size_t chosen = table.size();
     for (std::size_t index = 0; index < table.size(); index++) {
         const Signature & signature = table[index];
         if (signature.name != call.name) {
@@ -885,259 +874,32 @@ Type Compiler::checkBuiltinCall(Call & call, const std::vector<Type> & given) {
         if (!suits(signature, given)) {
             continue;
         }
-        call.signature = static_cast<int>(index);
-        call.type = signature.resultFrom >= 0 ?
-            given[static_cast<std::size_t>(signature.resultFrom)] : signature.result;
-        return call.type;
+        if (chosen == table.size()) {
+            chosen = index;
+        }
+        const bool fixed = signature.resultFrom < 0 && !signature.promotes;
+        if (fixed && signature.result == wanted) {
+            chosen = index;
+            break;
+        }
     }
     if (!named) {
         throw fail("'" + call.name + "' is not a function", call.line, call.column);
     }
-    throw fail("'" + call.name + "' cannot be called with those arguments", call.line, call.column);
-}
-
-bool Compiler::escapes(const StatementPtr & loop) const {
-    return std::ranges::find(escaping_, loop.get()) != escaping_.end();
-}
-
-void Compiler::mark(const Statement* loop) {
-    if (std::ranges::find(escaping_, loop) != escaping_.end()) {
-        return;
+    if (chosen == table.size()) {
+        throw fail("'" + call.name + "' cannot be called with those arguments", call.line, call.column);
     }
-    escaping_.push_back(loop);
-    changed_ = true;
-}
-
-void Compiler::spread(int symbol, const ExpressionPtr & from) {
-    Symbol & entry = symbols_[static_cast<std::size_t>(symbol)];
-    if (entry.storage == Storage::VARYING) {
-        return;
+    const Signature & signature = table[chosen];
+    checkWritten(call, signature);
+    call.signature = static_cast<int>(chosen);
+    if (signature.promotes) {
+        call.type = promoted(given);
+    } else if (signature.resultFrom >= 0) {
+        call.type = given[static_cast<std::size_t>(signature.resultFrom)];
+    } else {
+        call.type = signature.result;
     }
-    if (entry.declared) {
-        // an explicit uniform that a varying value reaches is a shader saying two things at
-        // once, and quietly keeping one of them is how a grid comes out with one point's
-        // answer
-        if (violation_.empty()) {
-            const unsigned int line = from ? from->line : shader_->line;
-            const unsigned int column = from ? from->column : shader_->column;
-            violation_ = "'" + entry.name + "' is uniform and is given a varying value at line " +
-                std::to_string(line) + ", column " + std::to_string(column);
-        }
-        return;
-    }
-    entry.storage = Storage::VARYING;
-    changed_ = true;
-}
-
-void Compiler::infer() {
-    // a loop can carry a varying value back to a name that was read before it was written,
-    // so one pass is not enough. Nothing ever moves from varying back to uniform, so the
-    // walk is monotone and settles
-    for (int round = 0; round < 64; round++) {
-        changed_ = false;
-        for (std::size_t i = 0; i < shader_->functions.size(); i++) {
-            inside_ = static_cast<int>(i);
-            inferBlock(shader_->functions[i].body, false);
-        }
-        inside_ = -1;
-        inferBlock(shader_->body, false);
-        if (!changed_) {
-            return;
-        }
-    }
-}
-
-void Compiler::inferBlock(const BlockPtr & block, bool varyingContext) {
-    if (!block) {
-        return;
-    }
-    for (const StatementPtr & statement : block->statements) {
-        inferStatement(statement, varyingContext);
-    }
-}
-
-void Compiler::inferStatement(const StatementPtr & statement, bool varyingContext) {
-    if (!statement) {
-        return;
-    }
-    switch (statement->kind) {
-        case Statement::Kind::BLOCK:
-            inferBlock(boost::static_pointer_cast<Block>(statement), varyingContext);
-            return;
-        case Statement::Kind::DECLARATION:
-            inferDeclaration(statement, varyingContext);
-            return;
-        case Statement::Kind::ASSIGNMENT:
-            inferAssignment(statement, varyingContext);
-            return;
-        case Statement::Kind::CONDITIONAL: {
-            const Conditional & conditional = static_cast<const Conditional &>(*statement);
-            const bool varying = inferExpression(conditional.condition) == Storage::VARYING;
-            inferStatement(conditional.whenTrue, varyingContext || varying);
-            inferStatement(conditional.whenFalse, varyingContext || varying);
-            return;
-        }
-        case Statement::Kind::WHILE: {
-            const While & loop = static_cast<const While &>(*statement);
-            const bool varying = inferExpression(loop.condition) == Storage::VARYING;
-            enclosing_.push_back(statement.get());
-            inferStatement(loop.body, varyingContext || varying || escapes(statement));
-            enclosing_.pop_back();
-            return;
-        }
-        case Statement::Kind::FOR: {
-            const For & loop = static_cast<const For &>(*statement);
-            inferStatement(loop.initialiser, varyingContext);
-            const bool varying = loop.condition ?
-                inferExpression(loop.condition) == Storage::VARYING : false;
-            const bool inside = varyingContext || varying || escapes(statement);
-            enclosing_.push_back(statement.get());
-            inferStatement(loop.step, inside);
-            inferStatement(loop.body, inside);
-            enclosing_.pop_back();
-            return;
-        }
-        case Statement::Kind::JUMP:
-            inferJump(statement, varyingContext);
-            return;
-        case Statement::Kind::EXPRESSION:
-            inferExpression(static_cast<const ExpressionStatement &>(*statement).expression);
-            return;
-        case Statement::Kind::LIGHTING: {
-            const Lighting & lighting = static_cast<const Lighting &>(*statement);
-            for (const ExpressionPtr & argument : lighting.arguments) {
-                inferExpression(argument);
-            }
-            // the body runs once per light with L and Cl set per point, so everything it
-            // writes is varying whatever reached it
-            inferStatement(lighting.body, true);
-            return;
-        }
-    }
-}
-
-void Compiler::inferDeclaration(const StatementPtr & statement, bool varyingContext) {
-    const Declaration & declaration = static_cast<const Declaration &>(*statement);
-    for (const Declarator & declarator : declaration.declarators) {
-        const Storage value = declarator.initialiser ?
-            inferExpression(declarator.initialiser) : Storage::UNIFORM;
-        if (varyingContext || value == Storage::VARYING) {
-            spread(declarator.symbol, declarator.initialiser);
-        }
-    }
-}
-
-void Compiler::inferAssignment(const StatementPtr & statement, bool varyingContext) {
-    const Assignment & assignment = static_cast<const Assignment &>(*statement);
-    const Storage value = inferExpression(assignment.value);
-    inferExpression(assignment.target);
-    const Variable & variable = static_cast<const Variable &>(*assignment.target);
-    // different points take different arms, so anything written under a varying condition is
-    // varying whatever was written to it
-    if (varyingContext || value == Storage::VARYING) {
-        spread(variable.symbol, assignment.value);
-    }
-}
-
-void Compiler::inferJump(const StatementPtr & statement, bool varyingContext) {
-    const Jump & jump = static_cast<const Jump &>(*statement);
-    if (jump.where != Jump::Where::RETURN) {
-        // a lane that breaks or continues under a varying condition leaves the ones beside it
-        // running, so what the rest of the loop body writes differs per point
-        if (varyingContext && !enclosing_.empty()) {
-            mark(enclosing_.back());
-        }
-        return;
-    }
-    if (!jump.value || inside_ < 0) {
-        return;
-    }
-    const Storage value = inferExpression(jump.value);
-    Storage & result = results_[static_cast<std::size_t>(inside_)];
-    if (result != Storage::VARYING && (varyingContext || value == Storage::VARYING)) {
-        result = Storage::VARYING;
-        changed_ = true;
-    }
-}
-
-Storage Compiler::inferExpression(const ExpressionPtr & expression) {
-    if (!expression) {
-        return Storage::UNIFORM;
-    }
-    Storage storage = Storage::UNIFORM;
-    switch (expression->kind) {
-        case Expression::Kind::NUMBER:
-        case Expression::Kind::STRING:
-            // a string names a coordinate space, a texture or a message, and there is no
-            // per-point one to name: allowing one would make every transform a runtime
-            // string lookup
-            storage = Storage::UNIFORM;
-            break;
-        case Expression::Kind::VARIABLE:
-            storage = symbols_[static_cast<std::size_t>(
-                static_cast<const Variable &>(*expression).symbol)].storage;
-            break;
-        case Expression::Kind::UNARY:
-            storage = inferExpression(static_cast<const Unary &>(*expression).operand);
-            break;
-        case Expression::Kind::BINARY: {
-            const Binary & binary = static_cast<const Binary &>(*expression);
-            storage = join(inferExpression(binary.left), inferExpression(binary.right));
-            break;
-        }
-        case Expression::Kind::TERNARY: {
-            const Ternary & ternary = static_cast<const Ternary &>(*expression);
-            storage = join(inferExpression(ternary.condition),
-                join(inferExpression(ternary.whenTrue), inferExpression(ternary.whenFalse)));
-            break;
-        }
-        case Expression::Kind::CAST:
-            // the space is a name rather than an operand, and a name is uniform
-            storage = inferExpression(static_cast<const Cast &>(*expression).operand);
-            break;
-        case Expression::Kind::TUPLE: {
-            const Tuple & tuple = static_cast<const Tuple &>(*expression);
-            for (const ExpressionPtr & element : tuple.elements) {
-                storage = join(storage, inferExpression(element));
-            }
-            break;
-        }
-        case Expression::Kind::CALL:
-            storage = inferCall(expression);
-            break;
-        case Expression::Kind::INDEX:
-            break;
-    }
-    expression->storage = storage;
-    return storage;
-}
-
-Storage Compiler::inferCall(const ExpressionPtr & expression) {
-    const Call & call = static_cast<const Call &>(*expression);
-    Storage storage = Storage::UNIFORM;
-    std::vector<Storage> arguments;
-    arguments.reserve(call.arguments.size());
-    for (const ExpressionPtr & argument : call.arguments) {
-        arguments.push_back(inferExpression(argument));
-        storage = join(storage, arguments.back());
-    }
-    if (call.function < 0) {
-        // a built-in that reads the shading point is varying however uniform its arguments
-        // are: ambient() takes none and answers differently at every point on a grid
-        const bool varying = call.signature >= 0 &&
-            builtins()[static_cast<std::size_t>(call.signature)].varying;
-        return varying ? Storage::VARYING : storage;
-    }
-    const std::size_t index = static_cast<std::size_t>(call.function);
-    const Function & function = shader_->functions[index];
-    // a formal takes the storage of every argument any call site passes it, which is what
-    // makes a function called once with a varying value varying everywhere
-    for (std::size_t i = 0; i < arguments.size() && i < function.parameters.size(); i++) {
-        if (arguments[i] == Storage::VARYING) {
-            spread(function.parameters[i].symbol, call.arguments[i]);
-        }
-    }
-    return join(storage, results_[index]);
+    return call.type;
 }
 
 };  // namespace v3d::render::offline::sl

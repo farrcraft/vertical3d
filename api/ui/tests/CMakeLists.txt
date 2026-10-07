@@ -6,6 +6,7 @@ v3d_add_test(ui
 	"CheckBoxTest.cpp"
 	"ComponentRendererTest.cpp"
 	"CursorTest.cpp"
+	"FileChooserTest.cpp"
 	"FocusTest.cpp"
 	"GameMenuTest.cpp"
 	"ImmediateTest.cpp"
@@ -14,12 +15,15 @@ v3d_add_test(ui
 	"MenuBarTest.cpp"
 	"PainterTest.cpp"
 	"ResolverTest.cpp"
+	"ScreenTest.cpp"
 	"ScrollbarTest.cpp"
 	"ShellKeyboardTest.cpp"
+	"SliderTest.cpp"
 	"SelectListTest.cpp"
 	"StatisticsOverlayTest.cpp"
 	"TabBarTest.cpp"
 	"TextBoxTest.cpp"
+	"TextRendererTest.cpp"
 	"ThemeTest.cpp"
 	"ToolbarTest.cpp"
 	"TypeTest.cpp")
@@ -27,7 +31,8 @@ v3d_add_test(ui
 target_link_libraries(v3dtest_ui PRIVATE
 	v3dlib_ui
 	v3dlib_render
-	v3dlib_font
+	v3dlib_log
+	v3dlib_image
 	v3dlib_event
 	v3dlib_asset
 	v3dlib_type
@@ -36,3 +41,6 @@ target_link_libraries(v3dtest_ui PRIVATE
 	${SDL3_LIBRARIES}
 	${Vulkan_LIBRARIES}
 	Freetype::Freetype)
+
+# TextRendererTest packs real glyphs, so the shared font has to sit beside the executable.
+v3d_add_shared_data(v3dtest_ui)

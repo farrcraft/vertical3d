@@ -12,14 +12,14 @@
 /**
  * A suite that needs a device, and says so rather than passing when there is not one.
  *
- * Every case below the recorder needs a gpu, which a machine or a runner may not have - ADR-0007
- * puts a software implementation on the runner for exactly this reason. The cases cannot simply
- * be skipped from inside, because a run where every case skipped exits zero and reads as a pass,
- * which is the same trap as a validation layer that was never installed reporting no errors.
+ * Every case below the recorder needs a gpu, which a machine may not have. CI provides a
+ * software implementation. The cases cannot be skipped from inside: a run where every case
+ * skipped exits zero and reads as a pass. A validation layer that was never installed hides
+ * errors in the same way.
  *
- * So the probe happens before the framework starts, and a tree with no device it can draw with
- * exits with the code ctest is told to read as "skipped" in api/render/tests/CMakeLists.txt. The
- * run then says which of the two it was.
+ * The probe therefore runs before the framework starts. With no device to draw with, the
+ * process exits with the code that api/render/tests/CMakeLists.txt tells ctest to read as
+ * "skipped", so the result shows whether the cases ran.
  **/
 int main(int argc, char* argv[]) {
     if (!v3d::test::deviceAvailable()) {

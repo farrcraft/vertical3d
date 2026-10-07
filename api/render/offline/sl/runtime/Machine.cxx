@@ -13,6 +13,8 @@
 #include <vector>
 
 #include <glm/geometric.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::render::offline::sl::runtime {
@@ -20,8 +22,8 @@ namespace v3d::render::offline::sl::runtime {
 namespace {
 
 /**
- * A shader with a loop nothing ends would otherwise hang a render rather than fail it, and a
- * hung render says nothing about why.
+ * The most instructions one run executes before it fails. Without a limit, a shader with an
+ * endless loop would hang a render rather than fail it, and give no reason.
  **/
 const std::size_t LIMIT = 4000000;
 
@@ -46,6 +48,20 @@ float compare(Opcode opcode, float left, float right) {
     }
 }
 
+/**
+ * Component i of a value read as one of wide components. A float fills every component, except
+ * that a float read as a matrix is the diagonal matrix. An assignment promotes it the same way.
+ **/
+float promoted(const Value & value, unsigned int point, unsigned int i, unsigned int wide) {
+    if (value.components() != 1) {
+        return value.component(point, i);
+    }
+    if (wide == 16 && i % 5 != 0) {
+        return 0.0f;
+    }
+    return value.number(point);
+}
+
 float combine(Opcode opcode, float left, float right) {
     switch (opcode) {
         case Opcode::ADD:
@@ -62,8 +78,11 @@ float combine(Opcode opcode, float left, float right) {
 };  // namespace
 
 void Machine::prepare(const Program & program, unsigned int batch) {
+    program_ = &program;
     batch_ = batch == 0 ? 1 : batch;
     point_ = program.symbol("P");
+    s_ = program.symbol("s");
+    t_ = program.symbol("t");
     direction_.reset(Type::VECTOR, Storage::VARYING, batch_);
     colour_.reset(Type::COLOR, Storage::VARYING, batch_);
     file_.resize(program.registers.size());
@@ -118,7 +137,14 @@ void Machine::report(const std::string & message) {
     // to say one thing
     if (std::ranges::find(reports_, message) == reports_.end()) {
         reports_.push_back(message);
+        if (logger_) {
+            logger_->get()->warn("shader: {}", message);
+        }
     }
+}
+
+void Machine::logger(const boost::shared_ptr<v3d::log::Logger> & logger) {
+    logger_ = logger;
 }
 
 bool Machine::live(unsigned int point) const {
@@ -169,14 +195,18 @@ void Machine::arithmetic(const Instruction & instruction) {
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     const unsigned int wide = target.components();
 
-    // a matrix times a matrix is the product rather than a component at a time, which is the
-    // one place the shapes and the maths disagree
-    if (instruction.opcode == Opcode::MULTIPLY &&
+    // a matrix times a matrix is the matrix product, and a matrix over a matrix is the left
+    // times the inverse of the right. SL states both in row vectors, so A * B applies A and
+    // then B. A glm matrix applies to a column vector on its right, so the order is reversed
+    if ((instruction.opcode == Opcode::MULTIPLY || instruction.opcode == Opcode::DIVIDE) &&
         left.type() == Type::MATRIX && right.type() == Type::MATRIX) {
         for (unsigned int point = 0; point < count; point++) {
-            if (writable(target, point)) {
-                target.matrix(point, left.matrix(point) * right.matrix(point));
+            if (!writable(target, point)) {
+                continue;
             }
+            const glm::mat4x4 second = instruction.opcode == Opcode::MULTIPLY ?
+                right.matrix(point) : glm::inverse(right.matrix(point));
+            target.matrix(point, second * left.matrix(point));
         }
         return;
     }
@@ -186,8 +216,8 @@ void Machine::arithmetic(const Instruction & instruction) {
             continue;
         }
         for (unsigned int i = 0; i < wide; i++) {
-            // a one component operand is a scale over the whole of the other, which is RI's
-            // promotion rather than a zero fill
+            // a one component operand is a scale over the whole of the other, as RI promotes
+            // it, rather than a zero fill
             const float a = left.component(point, left.components() == 1 ? 0 : i);
             const float b = right.component(point, right.components() == 1 ? 0 : i);
             target.component(point, i, combine(instruction.opcode, a, b));
@@ -200,8 +230,27 @@ void Machine::compare(const Instruction & instruction) {
     const Value & left = file_[static_cast<std::size_t>(instruction.left)];
     const Value & right = file_[static_cast<std::size_t>(instruction.right)];
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
+    // a string holds no number, so two of them are equal or not by their text
+    const bool text = left.type() == Type::STRING && right.type() == Type::STRING;
+    const float same = left.text() == right.text() ? 1.0f : 0.0f;
+    // two colours, points or matrices are equal when every component is; a float on one side
+    // is promoted as an assignment promotes it, so a matrix compares against a diagonal
+    const bool whole = (instruction.opcode == Opcode::EQUAL || instruction.opcode == Opcode::NOT_EQUAL) &&
+        (left.components() > 1 || right.components() > 1);
+    const unsigned int wide = std::max(left.components(), right.components());
     for (unsigned int point = 0; point < count; point++) {
-        if (writable(target, point)) {
+        if (!writable(target, point)) {
+            continue;
+        }
+        if (text) {
+            target.number(point, instruction.opcode == Opcode::NOT_EQUAL ? 1.0f - same : same);
+        } else if (whole) {
+            bool equal = true;
+            for (unsigned int i = 0; i < wide && equal; i++) {
+                equal = promoted(left, point, i, wide) == promoted(right, point, i, wide);
+            }
+            target.number(point, equal == (instruction.opcode == Opcode::EQUAL) ? 1.0f : 0.0f);
+        } else {
             target.number(point, runtime::compare(instruction.opcode,
                 left.number(point), right.number(point)));
         }
@@ -246,8 +295,7 @@ void Machine::unary(const Instruction & instruction) {
 glm::mat4x4 Machine::space(const std::string & name) {
     glm::mat4x4 matrix(1.0f);
     if (renderer_ == nullptr || !renderer_->space(name, &matrix)) {
-        // the value still arrives, in the space it was already in: a scene that named a space
-        // nothing knows renders in the wrong place rather than not at all, and says so
+        // the value still arrives, unchanged in the space it was already in
         report("the coordinate space \"" + name + "\" is not one this renderer knows");
     }
     return matrix;
@@ -256,7 +304,12 @@ glm::mat4x4 Machine::space(const std::string & name) {
 void Machine::transform(const Instruction & instruction) {
     Value & target = file_[static_cast<std::size_t>(instruction.target)];
     const Value & source = file_[static_cast<std::size_t>(instruction.left)];
-    const glm::mat4x4 matrix = space(file_[static_cast<std::size_t>(instruction.right)].text());
+    // only a position or a direction is in a coordinate space, so nothing else asks the
+    // renderer for one. A cast states its value in the named space and the shader works in
+    // the current one, so the cast applies the inverse of the matrix the renderer returns
+    const bool geometric = pointlike(target.type());
+    const glm::mat4x4 matrix = geometric ?
+        glm::inverse(space(file_[static_cast<std::size_t>(instruction.right)].text())) : glm::mat4x4(1.0f);
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     for (unsigned int point = 0; point < count; point++) {
         if (!writable(target, point)) {
@@ -272,8 +325,13 @@ void Machine::transform(const Instruction & instruction) {
             case Type::NORMAL:
                 target.triple(point, ntransform(matrix, source.triple(point)));
                 break;
-            default:
-                // a colour space and a matrix space are ctransform's and mtransform's
+            case Type::VOID:
+            case Type::FLOAT:
+            case Type::COLOR:
+            case Type::MATRIX:
+            case Type::STRING:
+                // the compiler sends a colour's space to ctransform and rejects a space on
+                // any other type, so the value is copied unchanged
                 target.assign(source, point);
                 break;
         }
@@ -306,11 +364,11 @@ bool Machine::nextLight() {
         std::vector<char> reached(batch_, 1);
         bool ambient = false;
         if (!renderer_->light(index, surface, &direction, &colour, &reached, &ambient) || ambient) {
-            // an ambient light is not one an illuminance loop sees: it has no direction to
-            // test against the cone, and ambient() is where it is summed instead
+            // an illuminance loop skips an ambient light: it has no direction to test against
+            // the cone, and ambient() sums it instead
             continue;
         }
-        std::vector<char> lanes = round.base;
+        std::vector<char> lanes = loops_[round.loop].lanes;
         bool any = false;
         for (unsigned int point = 0; point < batch_; point++) {
             if (lanes[point] == 0) {
@@ -358,6 +416,11 @@ bool Machine::illuminate(const Instruction & instruction, bool solar) {
             // the argument is the way the light travels, and L points back along it
             toward = -file_[static_cast<std::size_t>(given[0])].triple(point);
             direction.triple(point, toward);
+            // an angle lets L be any direction inside a cone, chosen against the surface's own
+            // cone, which a light shader is not given. The light comes along its axis instead
+            if (given.size() > 1 && file_[static_cast<std::size_t>(given[1])].number(point) != 0.0f) {
+                report("solar with an angle is lit along its axis only, as if the angle were 0");
+            }
         } else {
             toward = file_[static_cast<std::size_t>(given[0])].triple(point) - surface.triple(point);
             direction.triple(point, toward);
@@ -451,12 +514,27 @@ void Machine::leave(bool loop) {
     }
 }
 
-bool Machine::initialise(const Program & program) {
-    return execute(program, 0, program.prologue);
+bool Machine::initialise() {
+    if (program_ == nullptr) {
+        error_ = "the machine was run before it was prepared";
+        return false;
+    }
+    return execute(*program_, 0, program_->prologue);
 }
 
-bool Machine::run(const Program & program) {
-    return execute(program, program.prologue, program.instructions.size());
+bool Machine::run() {
+    if (program_ == nullptr) {
+        error_ = "the machine was run before it was prepared";
+        report(error_);
+        return false;
+    }
+    if (!execute(*program_, program_->prologue, program_->instructions.size())) {
+        // reported here, so no renderer has to log a failed run itself; initialise() does not
+        // report, because Instance::write reports it with the shader's name
+        report(error_);
+        return false;
+    }
+    return true;
 }
 
 bool Machine::execute(const Program & program, std::size_t from, std::size_t until) {
@@ -466,8 +544,8 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
     loops_.clear();
     frames_.clear();
     illuminations_.clear();
-    // every point until an illuminate or a solar says otherwise, which is what makes a
-    // light shader with neither light the whole batch
+    // every point until an illuminate or a solar narrows it, so a light shader with neither
+    // lights the whole batch
     lit_.assign(batch_, 1);
 
     std::size_t pc = from;
@@ -560,7 +638,7 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
                 }
                 break;
             case Opcode::LOOP_END:
-                // a lane that took a continue comes back for the next pass; one that broke
+                // a lane that took a continue comes back for the next iteration; one that broke
                 // does not, because break cleared it from the loop's own lanes
                 masks_.back() = loops_.back().lanes;
                 pc = static_cast<std::size_t>(anyLive() ? instruction.target : loops_.back().exit);
@@ -591,8 +669,13 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
                 frames_.pop_back();
                 break;
             case Opcode::ILLUMINANCE: {
+                Loop loop;
+                loop.lanes = masks_.back();
+                loop.depth = masks_.size();
+                loop.exit = instruction.target;
+                loops_.push_back(loop);
                 Illumination round;
-                round.base = masks_.back();
+                round.loop = loops_.size() - 1;
                 round.direction = instruction.left;
                 round.colour = instruction.right;
                 round.arguments = instruction.arguments;
@@ -603,7 +686,7 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
             case Opcode::ILLUMINATE:
             case Opcode::SOLAR:
                 // all three narrow the batch to the points one light reaches, and all
-                // three leave over the body when that is none of them
+                // three skip the body when the light reaches none of them
                 if (!admit(instruction)) {
                     pc = static_cast<std::size_t>(instruction.target);
                     continue;
@@ -611,6 +694,7 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
                 break;
             case Opcode::POP_ILLUMINANCE:
                 illuminations_.pop_back();
+                loops_.pop_back();
                 break;
             case Opcode::RETURN:
                 // like a break it does not jump: the masks and the loops between here and

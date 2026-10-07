@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -41,6 +42,12 @@ Component::Component(component::Type type) :
 }
 
 Component::~Component() {
+    // a child an app still holds must not name this as its parent once this is gone
+    for (const boost::shared_ptr<Component>& child : children_) {
+        if (child) {
+            disown(*child);
+        }
+    }
 }
 
 bool Component::visible() const {
@@ -93,6 +100,18 @@ void Component::add(const boost::shared_ptr<Component>& child) {
     }
     child->parent_ = this;
     children_.push_back(child);
+}
+
+void Component::adopt(Component& item) noexcept {
+    if (item.parent_ == nullptr && &item != this) {
+        item.parent_ = this;
+    }
+}
+
+void Component::disown(Component& item) noexcept {
+    if (item.parent_ == this) {
+        item.parent_ = nullptr;
+    }
 }
 
 const std::vector<boost::shared_ptr<Component>>& Component::children() const noexcept {
@@ -191,7 +210,11 @@ bool inDrawOrder(const std::vector<boost::shared_ptr<Component>>& components) no
 }
 
 std::vector<boost::shared_ptr<Component>> ordered(const std::vector<boost::shared_ptr<Component>>& components) {
-    std::vector<boost::shared_ptr<Component>> sorted(components);
+    // a null entry has no depth to sort by and nothing to draw, so it is left out
+    std::vector<boost::shared_ptr<Component>> sorted;
+    sorted.reserve(components.size());
+    std::copy_if(components.begin(), components.end(), std::back_inserter(sorted),
+        [](const boost::shared_ptr<Component>& component) { return component != nullptr; });
     std::stable_sort(sorted.begin(), sorted.end(),
         [](const boost::shared_ptr<Component>& first, const boost::shared_ptr<Component>& second) {
             return first->depth() < second->depth();

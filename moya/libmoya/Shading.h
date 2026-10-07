@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/render/offline/sl/Instance.h>
+#include <api/render/offline/sl/Placed.h>
 
 #include <vector>
 
@@ -29,14 +30,14 @@ class Shading final {
     glm::mat4x4 placement = glm::mat4x4(1.0f);
     /**
      * The opacity that was current, which is SL's Os. The colour travels on the vertices
-     * because a primitive may carry its own varying "Cs"; there is no varying opacity, so
-     * this one value is the whole of it.
+     * because a primitive may carry its own varying "Cs". There is no varying opacity, so
+     * this single value covers the whole primitive.
      **/
     glm::vec3 opacity = glm::vec3(1.0f);
     /**
-     * The lights that were switched on, each with the space the scene instanced it in: a
-     * light shader states `from` and `to` in that space and shades points in eye space,
-     * so the pair is what puts a light where the scene put it rather than at the origin.
+     * The lights that were switched on, each with the space the scene instanced it in. A
+     * light shader states `from` and `to` in that space and shades points in eye space.
+     * The pair places a light where the scene put it rather than at the origin.
      **/
     std::vector<v3d::render::offline::sl::Placed> lights;
 };

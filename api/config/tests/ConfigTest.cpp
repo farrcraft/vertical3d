@@ -5,6 +5,7 @@
 
 #include <api/config/Config.h>
 #include <api/config/Type.h>
+#include <api/log/Logger.h>
 
 #include <string>
 
@@ -46,8 +47,8 @@ BOOST_AUTO_TEST_CASE(config_load_test) {
 }
 
 /**
- * A type the document did not name is a null return rather than a default, which is what lets
- * an app treat an absent config as "take what the code already does".
+ * A type the document did not name is a null return rather than a default, so an app can
+ * treat an absent config as "use the code's defaults".
  **/
 BOOST_AUTO_TEST_CASE(config_absent_type_test) {
     v3d::config::Config config(boost::make_shared<v3d::log::Logger>());
@@ -61,7 +62,7 @@ BOOST_AUTO_TEST_CASE(config_absent_type_test) {
 
 /**
  * Every rejection below is a false return rather than an exception out of engine startup,
- * which is the whole reason load() guards each lookup with a contains().
+ * so load() guards each lookup with contains().
  **/
 BOOST_AUTO_TEST_CASE(config_missing_document_test) {
     BOOST_TEST(!loads("nowhere"));
@@ -83,8 +84,39 @@ BOOST_AUTO_TEST_CASE(config_entry_missing_file_test) {
     BOOST_TEST(!loads("missing-file-key"));
 }
 
-BOOST_AUTO_TEST_CASE(config_unknown_type_test) {
-    BOOST_TEST(!loads("unknown-type"));
+/**
+ * A type or a file that is not a string is a rejection, not the exception boost::json::value_to
+ * throws for it.
+ **/
+BOOST_AUTO_TEST_CASE(config_entry_value_not_a_string_test) {
+    BOOST_CHECK_NO_THROW(BOOST_TEST(!loads("type-not-string")));
+    BOOST_CHECK_NO_THROW(BOOST_TEST(!loads("file-not-string")));
+}
+
+/**
+ * An empty type is refused. Filed under the empty name, it would be what
+ * get(Type::Unknown) finds.
+ **/
+BOOST_AUTO_TEST_CASE(config_entry_empty_type_test) {
+    v3d::config::Config config(boost::make_shared<v3d::log::Logger>());
+    BOOST_TEST(!config.load(assets("empty-type")));
+
+    BOOST_TEST(!config.get(v3d::config::Type::Unknown));
+    BOOST_TEST(!config.get(""));
+}
+
+/**
+ * A type the api has no name for is an app's own document, filed like the rest for the app to
+ * ask for by name - not a reason to refuse the whole config.
+ **/
+BOOST_AUTO_TEST_CASE(config_app_type_test) {
+    v3d::config::Config config(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(config.load(assets("app-type")));
+
+    auto menu = config.get("menu");
+    BOOST_REQUIRE(menu);
+    BOOST_TEST(menu->document().at("items").as_array().size() == 2u);
+    BOOST_TEST(!config.get("nothing"));
 }
 
 BOOST_AUTO_TEST_CASE(config_named_file_absent_test) {
@@ -92,17 +124,17 @@ BOOST_AUTO_TEST_CASE(config_named_file_absent_test) {
 }
 
 /**
- * The extension is what picks a loader, and Manager::loadTypeFromExt throws for one it does
- * not know - so a config naming a file this library cannot load has to be a rejection like
- * any other rather than the one path out of load() that escapes as an exception.
+ * The extension picks a loader, and Manager::loadTypeFromExt returns no asset for an
+ * extension nothing is registered for. A config naming a file this library cannot load is
+ * therefore a rejection like any other.
  **/
 BOOST_AUTO_TEST_CASE(config_unloadable_extension_test) {
     BOOST_TEST(!loads("bad-extension"));
 }
 
 /**
- * A failed load files nothing: an entry read before the one that failed is not worth keeping,
- * since the caller is going to abandon the whole config.
+ * A failed load files nothing: the window entry loads before the binding entry fails, and is not
+ * kept, since the caller is going to abandon the whole config.
  **/
 BOOST_AUTO_TEST_CASE(config_rejection_files_nothing_test) {
     v3d::config::Config config(boost::make_shared<v3d::log::Logger>());

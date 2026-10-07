@@ -10,24 +10,6 @@
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
 
-struct Offset final {
-    float offset_;
-};
-
-struct Score final {
-    int score_;
-};
-
-struct Travel final {
-    bool up_;
-    bool down_;
-};
-
-struct PaddleSize final {
-    float size_;
-    float length_;
-};
-
 class Paddle final {
  public:
     Paddle(entt::registry* registry);
@@ -39,6 +21,17 @@ class Paddle final {
     float offset() const;
     float position() const;
 
+    /**
+     * Where to draw the paddle, alpha of the way from the last step to this one.
+     **/
+    float drawn(float alpha) const;
+
+    /**
+     * Draw the paddle where it is with no motion, after it has been put somewhere rather
+     * than moved there.
+     **/
+    void settle();
+
     glm::vec3 color() const;
 
     void reset();
@@ -46,8 +39,8 @@ class Paddle final {
     bool up();
     bool down();
     int score();
-    float length();
-    float size();
+    float length() const;
+    float size() const;
 
     void up(bool k);
     void down(bool k);

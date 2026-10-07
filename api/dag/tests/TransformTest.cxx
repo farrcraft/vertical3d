@@ -4,6 +4,7 @@
  **/
 
 #include <api/dag/Transform.h>
+#include <api/type/Transform.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -65,4 +66,20 @@ BOOST_AUTO_TEST_CASE(transform_compose_test) {
     BOOST_CHECK_EQUAL(near(apply(transform.matrix(), glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec3(10.0f, 2.0f, 0.0f)), true);
     // y scales by 3 and then turns onto -x
     BOOST_CHECK_EQUAL(near(apply(transform.matrix(), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(7.0f, 0.0f, 0.0f)), true);
+}
+
+/**
+ * A mesh is placed by the same value an ecs entity is, so its parts read back as that value and
+ * the value composes to the matrix the mesh draws with.
+ **/
+BOOST_AUTO_TEST_CASE(transform_value_test) {
+    v3d::dag::Transform transform;
+    transform.translation(glm::vec3(1.0f, 2.0f, 3.0f));
+    transform.scale(glm::vec3(2.0f));
+    transform.translate(glm::vec3(1.0f, 0.0f, 0.0f));
+
+    const v3d::type::Transform & value = transform.value();
+    BOOST_CHECK_EQUAL(value.position.x, 2.0f);
+    BOOST_CHECK_EQUAL(value.scale.y, 2.0f);
+    BOOST_CHECK_EQUAL((value.matrix() == transform.matrix()), true);
 }

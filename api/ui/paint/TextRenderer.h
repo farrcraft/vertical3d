@@ -6,12 +6,14 @@
 #pragma once
 
 #include <api/asset/Manager.h>
+#include <api/font/TextureFont.h>
 #include <api/font/TextureFontCache.h>
 #include <api/font/TextureTextBuffer.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Canvas.h>
 
+#include <cstddef>
 #include <functional>
 #include <string>
 #include <string_view>
@@ -27,24 +29,22 @@ namespace v3d::ui::paint {
 /**
  * One font, packed into one atlas, and the text drawn with it.
  *
- * A glyph is the batched quad of ADR-0005 sampling that atlas, so a line of text joins
+ * A glyph is a batched quad sampling that atlas, so a line of text joins
  * whatever canvas the app is already filling and costs the frame no pass and no draw of
  * its own.
  *
- * measure() and write() are the pair ComponentRenderer is built from. Per ADR-0019 that
- * class takes them as callbacks and names no font type, so drawing a ui costs it no device
- * and this class is what supplies one.
+ * measure() and write() are the callback pair ComponentRenderer is built from. That class
+ * names no font type, so it draws a ui without a device, and this class supplies the font.
  **/
 class TextRenderer {
  public:
     /**
      * How an atlas image becomes a texture the canvas can name.
      *
-     * The one thing in this class that needs a device, so it is the one thing handed in.
-     * Everything else here is cpu side - the cache packs into an image::TextureAtlas and
-     * the buffer lays a string out - and taking the upload as a callback is what lets an
-     * app drawing this canvas with a renderer of its own use the class rather than copy
-     * it. Engine3D's is quads->texture(image).
+     * The only thing in this class that needs a device, so it is handed in. Everything
+     * else here is cpu side: the cache packs into an image::TextureAtlas and the buffer
+     * lays a string out. Taking the upload as a callback lets an app that draws this
+     * canvas with a renderer of its own use the class. Engine3D's is quads->texture(image).
      **/
     typedef std::function<v3d::render::realtime::TextureHandle(
         const boost::shared_ptr<v3d::image::Image>&)> Upload;
@@ -80,8 +80,8 @@ class TextRenderer {
     /**
      * The square the glyphs are packed into. Printable ascii at baseSize with
      * defaultSpread fits this with little to spare, so a larger charset, a larger base or
-     * a wider spread wants more - which is why it is an argument rather than a constant
-     * in the body, and why a font that does not fit now says so.
+     * a wider spread needs more. That is why it is an argument, and a font that does not
+     * fit is logged.
      **/
     static const unsigned int defaultAtlas;
 
@@ -94,8 +94,8 @@ class TextRenderer {
      * says which - so either costs the app its labels rather than its frame.
      *
      * @param upload what puts the packed atlas on the device and names it
-     * @param size the size the font is rasterized at, which per ADR-0036 is the base every
-     *        drawn size is a ratio of rather than the only size available
+     * @param size the size the font is rasterized at. The glyphs are distance fields, so
+     *        this is the base every drawn size is a ratio of rather than the only size
      * @param font the asset to load, resolved against the manager's path
      * @param charcodes the glyphs to pack
      * @param spread the distance field spread, or zero to pack coverage glyphs that only
@@ -117,7 +117,7 @@ class TextRenderer {
     TextRenderer& operator=(const TextRenderer&) = delete;
 
     /**
-     * Whether there is a font with all of its glyphs behind this, which is what decides
+     * Whether there is a font with all of its glyphs behind this, which decides
      * whether anything is measured or drawn.
      *
      * A partly packed atlas counts as not loaded. Drawing what did fit would put text on
@@ -132,7 +132,19 @@ class TextRenderer {
     float size() const noexcept;
 
     /**
+     * The code points a UTF-8 string holds, one per character.
+     *
+     * A byte that does not begin a well formed sequence becomes U+FFFD, the replacement
+     * character, and decoding resumes at the next byte. Overlong forms and surrogates count
+     * as malformed.
+     **/
+    static std::u32string decode(std::string_view utf8);
+
+    /**
      * How wide a string is when it is drawn at a size, in pixels.
+     *
+     * The string is UTF-8. A code point that is not in the packed set adds nothing, the same
+     * as draw() draws nothing for it.
      *
      * @param size the size it will be drawn at, defaulting to the one the atlas holds
      **/
@@ -140,6 +152,10 @@ class TextRenderer {
 
     /**
      * Lay a string out at the pen and append its glyphs to a canvas.
+     *
+     * The string is UTF-8. A code point that is not in the packed set draws nothing and
+     * advances the pen by nothing. The atlas is never added to after the upload, so a glyph
+     * packed later would not be on the device.
      *
      * @param pen where the baseline of the first glyph goes
      * @param size the size to draw at, defaulting to the one the atlas holds
@@ -158,9 +174,9 @@ class TextRenderer {
      * The canvas is held by the returned callback rather than copied, so it has to outlive
      * whatever it is given to.
      *
-     * Per ADR-0019 the pair names no font type, so the size is closed over here rather
-     * than travelling with each string: a ui at one size and a heading at another are two
-     * callback pairs from one TextRenderer, and one atlas serves both.
+     * The pair names no font type, so the size is closed over here rather than travelling
+     * with each string. A ui at one size and a heading at another are two callback pairs
+     * from one TextRenderer, and one atlas serves both.
      **/
     Write write(v3d::render::realtime::Canvas* canvas, float size = 0.0f);
 
@@ -170,6 +186,18 @@ class TextRenderer {
      * is not a size, means the base - so a caller that does not care never scales.
      **/
     float ratio(float size) const noexcept;
+
+    /**
+     * Decode the code point that starts at *index and move *index past it. Malformed input
+     * yields U+FFFD and moves one byte, as decode() describes.
+     **/
+    static char32_t next(std::string_view utf8, std::size_t* index);
+
+    /**
+     * The packed glyph for a code point, or null. This never packs one, because the atlas
+     * is already on the device.
+     **/
+    boost::shared_ptr<v3d::font::TextureFont::Glyph> packed(char32_t point) const;
 
     boost::shared_ptr<v3d::font::TextureFontCache> cache_;
     boost::shared_ptr<v3d::font::TextureTextBuffer> buffer_;

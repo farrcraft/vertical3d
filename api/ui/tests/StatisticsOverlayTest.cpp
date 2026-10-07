@@ -87,8 +87,7 @@ BOOST_AUTO_TEST_CASE(an_overlay_starts_hidden_and_toggles_both_ways) {
 }
 
 /**
- * Nothing is drawn without a text renderer to draw it with, which is what a font that
- * would not load leaves the overlay holding.
+ * Nothing is drawn without a text renderer to draw it with, as when a font would not load.
  **/
 BOOST_AUTO_TEST_CASE(nothing_is_drawn_without_a_text_renderer) {
     const boost::shared_ptr<v3d::ui::paint::TextRenderer> text;
@@ -100,6 +99,16 @@ BOOST_AUTO_TEST_CASE(nothing_is_drawn_without_a_text_renderer) {
     overlay.draw(&canvas, v3d::ui::shell::StatisticsOverlay::Sample());
 
     BOOST_CHECK(canvas.empty());
+}
+
+/**
+ * A span reads as its name and its time, in the frame's own units.
+ **/
+BOOST_AUTO_TEST_CASE(a_span_reads_as_its_name_and_milliseconds) {
+    v3d::ui::shell::StatisticsOverlay::Sample::Span span;
+    span.name = "terrain";
+    span.nanoseconds = 2 * millisecond + 500000;
+    BOOST_CHECK_EQUAL(v3d::ui::shell::StatisticsOverlay::line(span), "terrain 2.5 ms");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

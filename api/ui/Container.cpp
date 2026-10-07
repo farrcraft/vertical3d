@@ -5,6 +5,7 @@
 
 #include "Container.h"
 
+#include <api/ui/DrawOrder.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TabPage.h>
 #include <api/ui/component/Type.h>
@@ -41,37 +42,23 @@ boost::shared_ptr<Component> search(const boost::shared_ptr<Component>& componen
  **/
 boost::shared_ptr<Component> probe(const boost::shared_ptr<Component>& component, const glm::vec2& point) {
     // a disabled subtree is skipped whole, the way a hidden one is: what a component holds
-    // cannot be used when the component cannot - ADR-0059
+    // cannot be used when the component cannot
     if (!component || !component->visible() || !component->enabled()) {
         return nullptr;
     }
 
-    // A tab bar's pages are its children, and only the chosen one was laid out. The rest
-    // keep the boxes they held when they were last up, so walking all of them lets a page
-    // the player has left go on answering for the page they are looking at - which is what
-    // TabBar's header says does not happen, and what Arranger::walk already does not do.
-    if (component->type() == component::Type::TabBar) {
-        const boost::shared_ptr<component::TabPage> page =
-            boost::static_pointer_cast<component::TabBar>(component)->page();
-        if (page) {
-            const boost::shared_ptr<Component> found = probe(page, point);
-            if (found) {
-                return found;
-            }
-        }
-        // the strip itself, which is what a press on a tab reaches
-        return component->pickable() && component->bound().intersect(point) ? component : nullptr;
-    }
-
-    const std::vector<boost::shared_ptr<Component>>& children = component->children();
-    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+    // what was drawn is what can be picked: a tab page that is not up keeps the box it last
+    // held, and a child drawn over its sibling has to be offered the point first
+    std::vector<boost::shared_ptr<Component>> drawn;
+    forEachDrawn(*component, [&drawn](const boost::shared_ptr<Component>& child) { drawn.push_back(child); });
+    for (auto it = drawn.rbegin(); it != drawn.rend(); ++it) {
         const boost::shared_ptr<Component> found = probe(*it, point);
         if (found) {
             return found;
         }
     }
     v3d::type::geometry::Bound2D bound = component->bound();
-    if (component->pickable() && bound.intersect(point)) {
+    if (component->pickable() && bound.contains(point)) {
         return component;
     }
     return nullptr;

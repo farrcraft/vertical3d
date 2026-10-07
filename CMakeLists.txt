@@ -8,8 +8,8 @@ cmake_policy(SET CMP0079 NEW)
 project ("vertical3d")
 
 # The root of this repository. Not CMAKE_SOURCE_DIR, which is the consumer's root once
-# another project reaches this one with add_subdirectory - see ADR-0027. Everything naming
-# a file in this tree goes through this variable instead.
+# another project adds this one with add_subdirectory. Everything naming a file in this
+# tree goes through this variable instead.
 set(V3D_ROOT "${CMAKE_CURRENT_LIST_DIR}" CACHE INTERNAL "The root of the vertical3d tree")
 
 # What a consumer of the api libraries does not want built. Both default on for a build of
@@ -17,10 +17,10 @@ set(V3D_ROOT "${CMAKE_CURRENT_LIST_DIR}" CACHE INTERNAL "The root of the vertica
 option(V3D_BUILD_APPS "Build the applications as well as the api libraries" ${PROJECT_IS_TOP_LEVEL})
 option(V3D_BUILD_TESTS "Build the Boost.Test suites and register them with ctest" ${PROJECT_IS_TOP_LEVEL})
 
-# Which api libraries to build, per ADR-0033. A consumer names the ones it links and gets
-# those and whatever they need; nothing else is added and no package outside that closure is
-# looked for, so an app wanting only v3d::image does not need the Vulkan SDK. The manifest
-# that expands this is cmake/v3dApiLibraries.cmake.
+# Which api libraries to build. A consumer names the ones it links, and gets those and the
+# libraries they depend on. Nothing else is added, and no package outside that set is looked
+# for, so an app that uses only v3d::image does not need the Vulkan SDK. The manifest that
+# expands this list is cmake/v3dApiLibraries.cmake.
 set(V3D_LIBRARIES "all" CACHE STRING "The api libraries to build, or \"all\"")
 
 # This gets us C++17 and newer language features, e.g. nested namespace support - https://docs.microsoft.com/en-us/cpp/error-messages/compiler-errors-1/compiler-error-c2429?view=msvc-160
@@ -38,19 +38,18 @@ add_compile_options("/permissive-")
 string(REGEX REPLACE "/W[0-4]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 add_compile_options("/W4")
 
-# C4062 - an enumerator a switch does not handle - is off at /W4 and is what api/ui leans on to
-# check that a component added to component::Type is decided about everywhere it has to be, per
-# ADR-0047. It reports only for a switch carrying no default label, so it bites where the author
-# meant the switch to be complete and leaves a switch that wants a catch-all alone.
+# C4062 (an enumerator a switch does not handle) is off at /W4. A switch over an enum lists
+# every enumerator and has no default label, so this warning reports every switch that a new
+# enumerator, such as one added to component::Type, has to be handled in. It reports only for
+# a switch with no default label, so a switch that needs a catch-all is left alone.
 add_compile_options("/w14062")
 
-# The three static analysis gates. /WX follows whether this project is the top level one: a
-# consumer that has nested this tree builds it with whatever toolset it happens to have, and a
-# newer one inventing a warning is not that consumer's build to stop.
+# The three static analysis gates. /WX is on only when this project is the top level one. A
+# consumer that nests this tree builds it with its own toolset, and a warning that a newer
+# compiler adds must not stop that consumer's build.
 #
-# The two analysers are off by default even here, because neither is priced for the edit-build
-# loop: each costs several times a plain compile of the tree, and they are a pass over a change
-# rather than a step in building one.
+# The two analysers are off by default even here. Each takes several times as long as a plain
+# compile of the tree, so they are run over a finished change rather than on every build.
 option(V3D_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ${PROJECT_IS_TOP_LEVEL})
 option(V3D_ANALYZE "Run MSVC's /analyze static analysis with the compiler" OFF)
 option(V3D_CLANG_TIDY "Run clang-tidy over every source the compiler builds" OFF)
@@ -61,9 +60,10 @@ endif()
 
 # /analyze's findings are the C6xxx and C26xxx numbers, and they reach /WX like any other
 # warning. External headers are skipped: CMake gives an imported target's include directories
-# to MSVC as /external:I, and /analyze:external- is what stops the analyser walking into them -
-# without it a boost or glm header costs more analysis time than the whole tree and reports
-# findings in code this repository does not own. /analyze:external- is not the default.
+# to MSVC as /external:I, and /analyze:external- stops the analyser walking into them. Without
+# it, a boost or glm header costs more analysis time than the whole tree, and the analyser
+# reports findings in code this repository does not own. /analyze:external- is not the
+# default, so it must be stated.
 if(V3D_ANALYZE)
 	add_compile_options("/analyze" "/analyze:external-")
 endif()
@@ -73,17 +73,16 @@ endif()
 # --driver-mode=cl for an MSVC build itself.
 #
 # /EHsc is repeated to clang-tidy rather than left to the compile command it is already on.
-# CMake writes a system include directory as the joined -external:I<dir>, which clang-cl's
-# option table has as separate only; clang-tidy drops it and, silently, every option after it,
-# so the /EHsc on the command line never reaches the parser and every source that throws fails
-# with "cannot use 'throw' with exceptions disabled". An --extra-arg-before is applied ahead of
-# the command, which is the one position that survives.
+# CMake writes a system include directory as the joined -external:I<dir>, but clang-cl accepts
+# only the separated form. clang-tidy silently drops that option and every option after it, so
+# the /EHsc on the command line never reaches the parser. Every source that throws then fails
+# with "cannot use 'throw' with exceptions disabled". An --extra-arg-before is placed ahead of
+# the command, which is the only position that survives.
 if(V3D_CLANG_TIDY)
 	find_program(V3D_CLANG_TIDY_EXECUTABLE NAMES clang-tidy REQUIRED)
 	set(CMAKE_CXX_CLANG_TIDY "${V3D_CLANG_TIDY_EXECUTABLE}" "--quiet" "--extra-arg-before=/EHsc")
-	# One switch decides whether a finding stops the build, whichever analyser made it. A
-	# clang-tidy finding is otherwise printed and passed over, which is how a check list
-	# nobody has to keep clean stops being one.
+	# One switch decides whether a finding stops the build, whichever analyser made it.
+	# Without this, clang-tidy prints a finding and the build carries on.
 	if(V3D_WARNINGS_AS_ERRORS)
 		list(APPEND CMAKE_CXX_CLANG_TIDY "--warnings-as-errors=*")
 	endif()
@@ -94,8 +93,8 @@ include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dDependencies.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dHelpers.cmake")
 
 # The apps name every api library between them, and every tests directory is one library's,
-# so either of those means all of them. Loud rather than quiet: a consumer that narrowed the
-# selection and left the apps on asked for two things that contradict.
+# so either of those needs all of them. A consumer that narrows the selection and leaves the
+# apps or tests on has asked for two things that contradict, and configure fails.
 if(V3D_BUILD_APPS OR V3D_BUILD_TESTS)
 	if(NOT V3D_LIBRARIES STREQUAL "all")
 		message(FATAL_ERROR
@@ -123,7 +122,6 @@ endif()
 add_subdirectory("api")
 
 if(V3D_BUILD_APPS)
-	add_subdirectory("talyn")
 	add_subdirectory("moya")
 	add_subdirectory("v3dshell")
 	add_subdirectory("pong")

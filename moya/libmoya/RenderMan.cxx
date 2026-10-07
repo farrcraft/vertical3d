@@ -7,11 +7,14 @@
 // #include "Polygon.h"
 #include "Renderer.h"
 
+#include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Arguments.h>
 
 #include <stdarg.h>
 #include <string.h>
 
+#include <algorithm>
+#include <cmath>
 #include <deque>
 #include <string>
 #include <vector>
@@ -64,7 +67,7 @@ void parameters(v3d::moya::RenderContext & rc, RtInt n, RtToken tokens[], RtPoin
         &unresolved);
     for (const std::string & name : unresolved) {
         // a name with no declaration has no length either, so it is dropped rather than
-        // read past - the same answer the reader gives a file
+        // read past, as the RIB reader does for a file
         rc.logger()->get()->warn("RI parameter '{}' was not declared and was skipped", name);
     }
 }
@@ -191,24 +194,24 @@ RtBasis RiBezierBasis,
 RtInt RiLastError;
 
 // RI subroutines
-RtFloat RiGaussianFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
-    return 0.0;
+RtFloat RiGaussianFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+    return v3d::render::offline::filter(v3d::render::offline::Filter::Gaussian, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
-RtFloat RiBoxFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
-    return 0.0;
+RtFloat RiBoxFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+    return v3d::render::offline::filter(v3d::render::offline::Filter::Box, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
-RtFloat RiTriangleFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
-    return 0.0;
+RtFloat RiTriangleFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+    return v3d::render::offline::filter(v3d::render::offline::Filter::Triangle, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
-RtFloat RiCatmullRomFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
-    return 0.0;
+RtFloat RiCatmullRomFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+    return v3d::render::offline::filter(v3d::render::offline::Filter::CatmullRom, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
-RtFloat RiSincFilter(RtFloat /* x */, RtFloat /* y */, RtFloat /* xwidth */, RtFloat /* ywidth */) {
-    return 0.0;
+RtFloat RiSincFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
+    return v3d::render::offline::filter(v3d::render::offline::Filter::Sinc, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
 RtVoid RiErrorIgnore(RtInt code, RtInt severity, char *msg) {
@@ -233,8 +236,8 @@ RtVoid RiProcDynamicLoad(RtPointer data, RtFloat detail) {
 RiGetContext and RiContext have no RIB equivalents
 */
 RtContextHandle RiGetContext(void) {
-    // the handle is the context, which is what makes it something RiContext could make
-    // active again. RI says nothing about what one is, only that it names a context
+    // the handle is the context itself, so RiContext could make it active again. RI does not
+    // define a handle, only that it names a context
     return &renderer().activeRenderContext();
 }
 
@@ -246,7 +249,7 @@ RtToken RiDeclare(char * name, char * declaration) {
         return 0;
     }
     renderer().activeRenderContext().declarations().declare(name, declaration);
-    // RI answers the token the name now stands for, which for this renderer is the name
+    // RI returns the token the name now stands for, which for this renderer is the name
     return name;
 }
 
@@ -340,6 +343,7 @@ is specified as a nonpositive value, the resolution defaults to that of the
 display device for that particular parameter.
 */
 RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
+    // the context takes a side of zero or less as its default, and refuses one that is too large
     renderer().activeRenderContext().imageResolution(xres, yres, aspect);
 }
 
@@ -428,16 +432,50 @@ RtVoid RiClipping(RtFloat hither, RtFloat yon) {
 RtVoid RiClippingPlane(RtFloat x, RtFloat y, RtFloat z, RtFloat nx, RtFloat ny, RtFloat nz) {
 }
 
+RtVoid RiDepthOfField(RtFloat fstop, RtFloat focallength, RtFloat focaldistance) {
+    v3d::render::offline::Sampling & sampling = renderer().activeRenderContext().sampling();
+    sampling.fstop = fstop;
+    sampling.focalLength = focallength;
+    sampling.focalDistance = focaldistance;
+}
+
 RtVoid RiShutter(RtFloat min, RtFloat max) {
+    renderer().activeRenderContext().sampling().shutter = glm::vec2(min, max);
 }
 
 RtVoid RiPixelVariance(RtFloat variation) {
+    renderer().activeRenderContext().sampling().variance = variation;
 }
 
 RtVoid RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
+    renderer().activeRenderContext().sampling().samples = glm::uvec2(
+        v3d::render::offline::sampleCount(xsamples), v3d::render::offline::sampleCount(ysamples));
 }
 
 RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
+    // the C interface names a filter by its function, and only the five RI declares are
+    // known; any other leaves the filter the context had
+    v3d::render::offline::Filter filter = v3d::render::offline::Filter::Gaussian;
+    if (filterfunc == RiBoxFilter) {
+        filter = v3d::render::offline::Filter::Box;
+    } else if (filterfunc == RiTriangleFilter) {
+        filter = v3d::render::offline::Filter::Triangle;
+    } else if (filterfunc == RiCatmullRomFilter) {
+        filter = v3d::render::offline::Filter::CatmullRom;
+    } else if (filterfunc == RiGaussianFilter) {
+        filter = v3d::render::offline::Filter::Gaussian;
+    } else if (filterfunc == RiSincFilter) {
+        filter = v3d::render::offline::Filter::Sinc;
+    } else {
+        return;
+    }
+    // a width the RIB reader would refuse is refused here too, and the context keeps its filter
+    if (!v3d::render::offline::filterWidth(glm::vec2(xwidth, ywidth))) {
+        return;
+    }
+    v3d::render::offline::Sampling & sampling = renderer().activeRenderContext().sampling();
+    sampling.filter = filter;
+    sampling.width = glm::vec2(xwidth, ywidth);
 }
 
 RtVoid RiExposure(RtFloat gain, RtFloat gamma) {
@@ -508,9 +546,15 @@ RtVoid RiDisplayV(char *name, RtToken type, RtToken mode, RtInt n, RtToken token
 }
 
 RtVoid RiHider(RtToken type, ...) {
+    renderer().activeRenderContext().hider(type ? type : "");
 }
 
 RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    // neither hider takes a parameter
+    (void)n;
+    (void)tokens;
+    (void)parms;
+    renderer().activeRenderContext().hider(type ? type : "");
 }
 
 RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) {
@@ -592,8 +636,8 @@ RtLightHandle RiAreaLightSource(RtToken name, ...) {
 }
 
 RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    // an area light is a light whose shape matters, and sampling one is phase 4. It
-    // reaches the context as an ordinary light so that a scene using one still lights
+    // an area light is a light whose shape matters, and moya does not sample its shape. It
+    // reaches the context as an ordinary light so that a scene using one is still lit
     return RiLightSourceV(name, n, tokens, parms);
 }
 
@@ -1016,12 +1060,23 @@ RtVoid RiObjectInstance(RtObjectHandle handle) {
 }
 
 RtVoid RiMotionBegin(RtInt n, ...) {
+    // n times follow, each promoted to a double on its way through the ellipsis
+    va_list arguments;
+    va_start(arguments, n);
+    std::vector<float> times;
+    times.reserve(static_cast<std::size_t>(std::max(n, 0)));
+    for (RtInt i = 0; i < n; i++) {
+        times.push_back(static_cast<float>(va_arg(arguments, double)));
+    }
+    va_end(arguments);
+    renderer().activeRenderContext().motionBegin(times);
 }
 
 RtVoid RiMotionBeginV(RtInt n, RtInt n2, RtToken tokens[], RtPointer parms[]) {
 }
 
 RtVoid RiMotionEnd(void) {
+    renderer().activeRenderContext().motionEnd();
 }
 
 RtVoid RiMakeTexture(char *pic, char *tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, ...) {

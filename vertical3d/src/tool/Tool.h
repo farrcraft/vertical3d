@@ -14,8 +14,8 @@ namespace v3d::editor {
 /**
  * Something the user does with the mouse in a viewport.
  *
- * The interactive half of the command model: a command that also receives motion and
- * button events for as long as it is the active one.
+ * A tool is like a command, but it also receives motion and button events for as long
+ * as it is the active one.
  **/
 class Tool {
  public:

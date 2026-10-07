@@ -1,17 +1,18 @@
-v3d_add_api_library(audio "AudioClip.h" "AudioClip.cpp" "Engine.h" "Engine.cpp")
+v3d_add_api_library(audio "AudioClip.h" "AudioClip.cpp" "Engine.h" "Engine.cpp" "Play.h" "Play.cpp"
+	"Loaders.h" "Loaders.cpp" "kind/Sound.h" "kind/Sound.cpp" "loader/Wav.h" "loader/Wav.cpp")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
-# The mixer is PUBLIC for the same reason - AudioClip and Engine name MIX_ types in their
-# headers, so anything compiling them needs its include directory.
-# EnTT: Engine.h holds a registry.
-target_link_libraries(v3dlib_audio PUBLIC v3dlib_log SDL3_mixer::SDL3_mixer EnTT::EnTT)
+# EnTT: Engine.h holds a dispatcher and a scoped_connection to it.
+target_link_libraries(v3dlib_audio PUBLIC v3dlib_log EnTT::EnTT)
 
-# Engine.h names an asset::Json and an event::Sound. The asset edge closes a cycle -
-# asset's Wav loader builds an audio clip - which CMake resolves for static libraries by
-# repeating them on the link line. Breaking it would mean moving one of the two calls.
-target_link_libraries(v3dlib_audio PUBLIC v3dlib_asset v3dlib_event)
+# PRIVATE: AudioClip.h declares the MIX_ handles it names rather than including the header
+# that defines them, so only these sources compile SDL_mixer.h.
+target_link_libraries(v3dlib_audio PRIVATE SDL3_mixer::SDL3_mixer)
 
-target_link_libraries(v3dlib_audio PRIVATE Boost::json)
+# Engine.h names an event::Sound, and the boost::json::object a sound config is.
+# v3dlib_asset: the wav loader and the sound it builds are an asset::Loader and an
+# asset::Asset. This library depends on the asset core, and not the other way round.
+target_link_libraries(v3dlib_audio PUBLIC v3dlib_event v3dlib_asset Boost::json)
 
 target_compile_options(v3dlib_audio PRIVATE /EHsc)
 

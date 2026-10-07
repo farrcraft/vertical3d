@@ -1,7 +1,7 @@
 # Offline Rendering, Phase 2 — A Scene Worth Rendering
 
 Drafted 2026-09-05, **closed 2026-09-05**. Took up phase 2 of
-[the offline rendering roadmap](../../roadmap/OfflineRendering.md), which stays the account of
+[the offline rendering roadmap](../../roadmap/completed/OfflineRendering.md), which stays the account of
 where both renderers stand and what the later phases are; this plan does not repeat it.
 
 Phase 1 ended with both renderers computing a pixel from geometry, and with the geometry
@@ -28,12 +28,12 @@ Recorded in [docs/adr/](../../adr/), not here. The ones that shape this plan:
 
 | ADR | Decision |
 |---|---|
-| [0022](../../adr/0022-offline-rendering-shares-an-api-library.md) | Shared offline code is `api/render/offline`; each renderer is a library with a driver |
-| [0023](../../adr/0023-rib-is-the-offline-scene-description.md) | RIB is what both renderers read; the editor exports to it, one way |
-| [0024](../../adr/0024-api-type-serves-both-renderers.md) | `api/type` serves both, and a convention is a parameter rather than a fork |
-| [0018](../../adr/0018-a-project-is-json-and-stores-topology-verbatim.md) | The project file is the editor's own, and stores topology verbatim |
-| [0013](../../adr/0013-mesh-is-a-dag-node.md) | A mesh is a dag node with a transform; the scene holds no cameras |
-| [0025](../../adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md) | The reader hands a renderer C++ requests with typed parameter lists |
+| [0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) | Shared offline code is `api/render/offline`; each renderer is a library with a driver |
+| [0023](../../adr/0023-offline-rib-is-the-scene-format.md) | RIB is what both renderers read; the editor exports to it, one way |
+| 0024 (removed) | `api/type` serves both, and a convention is a parameter rather than a fork |
+| [0018](../../adr/0018-editor-projects-saved-as-json-with-exact-topology.md) | The project file is the editor's own, and stores topology verbatim |
+| [0013](../../adr/0013-editor-a-mesh-is-a-dag-node.md) | A mesh is a dag node with a transform; the scene holds no cameras |
+| [0025](../../adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md) | The reader hands a renderer C++ requests with typed parameter lists |
 
 ## What blocks what
 
@@ -57,7 +57,7 @@ phase and is what the first four are for.
 
 ### Step 1 — ADR-0025, what the reader hands a renderer
 
-[ADR-0023](../../adr/0023-rib-is-the-offline-scene-description.md) settled that one reader
+[ADR-0023](../../adr/0023-offline-rib-is-the-scene-format.md) settled that one reader
 dispatches onto an interface both renderers implement. It did not settle what that interface is
 made of, and there are three candidates: moya's RI C ABI (`RtToken`, `RtPointer`, varargs), a
 C++ request interface taking `std::string`, `float`, `glm::mat4x4` and a parsed parameter list,
@@ -70,13 +70,13 @@ Two things it has to weigh, both of which point the same way. **A `va_list` cann
 runtime**, so a reader holding a parsed parameter list cannot call `RiPolygon` at all — only the
 `RiPolygonV` form, which is what the RI standard provides for exactly this caller. And
 `api/render/offline` cannot include `RenderMan.h`: that header is moya's C ABI, and
-[ADR-0022](../../adr/0022-offline-rendering-shares-an-api-library.md) put the shared library below
+[ADR-0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) put the shared library below
 both renderers rather than beside one.
 
 **Done when**: `docs/adr/0025-*.md` exists, is in the index, and step 4 cites it rather than
 re-deriving it.
 
-**Landed** as [ADR-0025](../../adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md).
+**Landed** as [ADR-0025](../../adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md).
 
 ### Step 2 — the tokenizer
 
@@ -288,7 +288,7 @@ implemented request is `Format`, and its commented example file left in step 2.
   basis is that inverse's columns. **A non-rigid camera transform and an off-centre
   `ScreenWindow` are what `CameraProfile` cannot express** — reject either with a message rather
   than rendering a picture that is quietly wrong. If one turns out to be needed, that is where
-  [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md)'s parameter arrives; this phase does
+  ADR-0024 (removed)'s parameter arrives; this phase does
   not expect to need it.
 - `Color` sets the colour of the triangles that follow, which is the flat colour `Triangle`
   already carries.
@@ -312,7 +312,7 @@ plan already named. An axis aligned placement — which is what every fixture he
 
 That is the one limit in the phase a later step will want to reopen, and it is a question about
 `api/type` rather than about talyn: it is exactly the shape
-[ADR-0024](../../adr/0024-api-type-serves-both-renderers.md) anticipated, a convention only one
+ADR-0024 (removed) anticipated, a convention only one
 renderer needs. Nothing here needed it, so nothing was changed — and for every other reason step
 6 predicted, there is no `api/type` change: the camera measures y downward from the top of the
 viewport and `image::Image` row 0 is the top, so the pixel loop still maps straight across.
@@ -354,7 +354,7 @@ count and transform the scene held, and one of the two renderers draws it.
 also writes what it exported to `data_out/export.rib` beside the executable: a round trip cannot
 assert that a renderer draws the file, and handing it to one is the only thing the export is
 for. talyn draws that cube — in white, because the editor's scene has no materials, which is
-what [ADR-0023](../../adr/0023-rib-is-the-offline-scene-description.md) said a scene out of the
+what [ADR-0023](../../adr/0023-offline-rib-is-the-scene-format.md) said a scene out of the
 editor would look like.
 
 The camera is written as an explicit `ScreenWindow` rather than left to the frame aspect. The
@@ -441,3 +441,8 @@ right hand rule; RI states its rotations in a left handed system, so the two may
 sign. Nothing in the tree can tell — both renderers use glm and agree with each other, and there
 is no reference renderer to disagree with. It is named here because a scene from elsewhere is
 what would surface it, and phase 2 is what makes such a scene readable.
+
+## Outcome
+
+Drafted and closed on 2026-09-05. It delivered one RIB reader that dispatches onto an interface
+both renderers implement, and the editor's export to the same format.

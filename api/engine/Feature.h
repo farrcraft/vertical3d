@@ -5,13 +5,14 @@
 
 #pragma once
 
+#include <api/type/Flags.h>
+
 #include <cstdint>
 
 namespace v3d::engine {
-/*
-Features are portions of engine configuration that can be opted into/out of on a per-application basis.
-
-*/
+/**
+ * The portions of the engine an app opts into.
+ **/
 enum class Feature : uint32_t {
     Window = (1 << 0),
     Config = (1 << 1),
@@ -19,12 +20,10 @@ enum class Feature : uint32_t {
     KeyboardInput = (1 << 3)
 };
 
-constexpr Feature operator|(Feature lhs, Feature rhs) {
-    return static_cast<Feature>(static_cast<int>(lhs) | static_cast<int>(rhs));
-}
+using Features = v3d::type::Flags<Feature>;
 
-constexpr bool operator&(int lhs, Feature rhs) {
-    return lhs & static_cast<int>(rhs);
+constexpr Features operator|(Feature lhs, Feature rhs) noexcept {
+    return Features(lhs) | rhs;
 }
 
 };  // namespace v3d::engine

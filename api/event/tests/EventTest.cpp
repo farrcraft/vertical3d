@@ -13,7 +13,7 @@
 #include <boost/make_shared.hpp>
 
 /**
- * The replacement for EventInfo: a name, the context it belongs to, the edge it happened on
+ * An event: a name, the context it belongs to, the edge it happened on
  * and an optional parameter.
  **/
 BOOST_AUTO_TEST_CASE(event_test) {
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(event_ordering_test) {
     boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
     boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");
 
-    // events order by context and name first, which is what keeps every binding on one key
+    // events order by context and name first, which keeps every binding on one key
     // together in the mapper's multimap
     v3d::event::Event escape("escape", keyboard);
     v3d::event::Event ret("return", keyboard);
@@ -109,8 +109,8 @@ BOOST_AUTO_TEST_CASE(event_state_name_test) {
 }
 
 /**
- * Both mouse events carry a position. The assertion is thin on purpose: what it prevents is a
- * field going back to being dropped between the SDL event and the one dispatched from it.
+ * Both mouse events carry a position. The test checks only that the position survives from
+ * the SDL event to the event dispatched from it.
  **/
 BOOST_AUTO_TEST_CASE(mouse_event_position_test) {
     boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");

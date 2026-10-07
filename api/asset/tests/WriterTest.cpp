@@ -6,6 +6,7 @@
 #include <api/asset/Writer.h>
 
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <string>
 
@@ -58,7 +59,7 @@ std::string contents(const boost::filesystem::path& path) {
  *
  * By value rather than by type: a whole number prints without a fractional part, so a double
  * that happens to be 2.0 reads back as an integer. Everything reading a document this writes
- * takes a number rather than a double, which is what makes that harmless.
+ * takes a number rather than a double, so that is harmless.
  **/
 BOOST_AUTO_TEST_CASE(writer_round_trip_test) {
     boost::json::object root;
@@ -94,7 +95,7 @@ BOOST_AUTO_TEST_CASE(writer_round_trip_test) {
 }
 
 /**
- * The two shapes the printer exists for: a float that would otherwise print every digit of
+ * The two cases the printer handles: a float that would otherwise print every digit of
  * the double it was widened to, and a vector that would otherwise take a line per number.
  **/
 BOOST_AUTO_TEST_CASE(writer_readable_test) {
@@ -122,6 +123,57 @@ BOOST_AUTO_TEST_CASE(writer_readable_test) {
 }
 
 /**
+ * A double too large for a float prints as the double it is, and parses back to it.
+ **/
+BOOST_AUTO_TEST_CASE(writer_double_beyond_float_range_test) {
+    boost::json::array numbers{ 1e300, -1e300, 1e39 };
+    const std::string text = v3d::asset::serializeDocument(numbers);
+    BOOST_CHECK(text.find("inf") == std::string::npos);
+
+    boost::system::error_code error;
+    const boost::json::value parsed = boost::json::parse(text, error);
+    BOOST_REQUIRE(!error);
+    BOOST_REQUIRE(parsed.is_array());
+    const boost::json::array& read = parsed.as_array();
+    BOOST_REQUIRE_EQUAL(read.size(), 3u);
+    BOOST_CHECK_CLOSE(read[0].to_number<double>(), 1e300, 1e-9);
+    BOOST_CHECK_CLOSE(read[1].to_number<double>(), -1e300, 1e-9);
+    BOOST_CHECK_CLOSE(read[2].to_number<double>(), 1e39, 1e-9);
+}
+
+/**
+ * A double inside the range of a float that no float holds exactly prints as the double it is.
+ * Narrowed to a float, the first would print as 0 and the second as 123456790.
+ **/
+BOOST_AUTO_TEST_CASE(writer_double_no_float_holds_test) {
+    const boost::json::array numbers{ 1e-50, 123456789.123 };
+    BOOST_CHECK_EQUAL(v3d::asset::serializeDocument(numbers), "[1e-50, 123456789.123]");
+}
+
+/**
+ * JSON has no form for infinity or NaN, so a document holding one, however deeply, is refused
+ * and the file already there is untouched.
+ **/
+BOOST_AUTO_TEST_CASE(writer_refuses_a_non_finite_number_test) {
+    const Sandbox sandbox("non_finite");
+    const boost::filesystem::path path = sandbox.file("settings.json");
+    BOOST_REQUIRE(v3d::asset::writeFile(path, "first"));
+
+    boost::json::object infinite;
+    infinite["scale"] = boost::json::array{ 1.0, std::numeric_limits<double>::infinity() };
+    BOOST_CHECK(!v3d::asset::writeDocument(path, infinite));
+
+    boost::json::object undefined;
+    undefined["nested"] = boost::json::object{ { "value", std::numeric_limits<double>::quiet_NaN() } };
+    BOOST_CHECK(!v3d::asset::writeDocument(path, undefined));
+
+    BOOST_CHECK(!v3d::asset::writeDocument(path, boost::json::value(-std::numeric_limits<double>::infinity())));
+
+    BOOST_CHECK_EQUAL(contents(path), "first");
+    BOOST_CHECK(!boost::filesystem::exists(sandbox.file("settings.json.tmp")));
+}
+
+/**
  * A document reaches the disk terminated, and leaves no sibling behind.
  **/
 BOOST_AUTO_TEST_CASE(writer_write_document_test) {
@@ -136,9 +188,9 @@ BOOST_AUTO_TEST_CASE(writer_write_document_test) {
 }
 
 /**
- * The whole point of ADR-0041: the document already there survives a write that does not
- * complete. The rename is made to fail by leaving a directory where the target is, which
- * neither rename nor remove will replace.
+ * The document already there survives a write that does not complete. The rename is made to
+ * fail by leaving a directory where the target is, which neither rename nor remove will
+ * replace.
  **/
 BOOST_AUTO_TEST_CASE(writer_failed_write_keeps_the_previous_document_test) {
     const Sandbox sandbox("failure");

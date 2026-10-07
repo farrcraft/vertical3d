@@ -17,11 +17,10 @@
 namespace v3d::editor {
 
 /**
- * Writes a scene out as RIB, one way, per ADR-0023. Nothing reads it back.
+ * Writes a scene out as RIB. This is export only: nothing reads it back.
  *
  * **Topology and a placement per mesh, and nothing else.** The editor's Scene has no
- * lights and no materials, so what comes out renders in one flat colour until the scene
- * model grows them.
+ * lights and no materials, so what comes out renders in one flat colour.
  *
  * A face is written as it stands, which is one Polygon per face. RI says a polygon is
  * planar and convex and does no checking, and moya dices a polygon's first four vertices
@@ -37,8 +36,8 @@ class RIBExportVisitor final : public SceneVisitor {
     /**
      * The file header and the camera, written before any mesh.
      *
-     * The scene holds no camera - the views own theirs per ADR-0013 - so the caller says
-     * which one the export means.
+     * The scene holds no camera, because each view owns its own, so the caller passes the
+     * one the export uses.
      *
      * @param camera the view the scene is rendered from
      * @param width the image size to ask the renderer for
@@ -57,9 +56,9 @@ class RIBExportVisitor final : public SceneVisitor {
 
  private:
     /**
-     * Sixteen floats in the order RIB wants them, which is the order glm stores them:
-     * both write the translation last, so a transpose here would move the object to
-     * where its axes point instead.
+     * Sixteen floats in the order RIB expects, which is also the order glm stores them.
+     * Both put the translation last, so a transpose here would move the object to where
+     * its axes point instead.
      **/
     void matrix(const glm::mat4x4& m);
 

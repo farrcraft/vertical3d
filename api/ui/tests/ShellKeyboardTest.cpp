@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/kind/Json.h>
+#include <api/event/Context.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Button.h>
@@ -25,8 +25,8 @@
 namespace {
 
 /**
- * The seam over a ui holding one container. No window: what the platform composes is not
- * what this decides, and a seam given none still routes every key.
+ * The keyboard adapter over a ui holding one container. No window: what the platform composes
+ * is not what this tests, and an adapter given none still routes every key.
  **/
 struct Fixture final {
     Fixture() :
@@ -36,9 +36,7 @@ struct Fixture final {
         ui = boost::make_shared<v3d::ui::Engine>(
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
-        BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui",
-            v3d::asset::Type::JsonDocument,
-            boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object())));
+        BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
         container = ui->container("hud");
         BOOST_REQUIRE(container);
         seam = boost::make_shared<v3d::ui::shell::Keyboard>(ui, dispatcher,
@@ -59,7 +57,7 @@ struct Fixture final {
 
 /**
  * A key going down, as SDL would report it. The modifiers ride on the event rather than
- * being polled, which is what the seam reads them off.
+ * being polled, and the adapter reads them from there.
  **/
 SDL_Event keyDown(SDL_Keycode key, SDL_Keymod mod = SDL_KMOD_NONE) {
     SDL_Event event = {};
@@ -96,8 +94,8 @@ boost::shared_ptr<v3d::ui::component::TextBox> box(const std::string& value) {
 BOOST_AUTO_TEST_SUITE(shell_keyboard_test)
 
 /**
- * A ui with nothing focused takes neither kind of input, which is what leaves a game's
- * movement bindings working until something is clicked into.
+ * A ui with nothing focused takes neither kind of input, so a game's movement bindings keep
+ * working until something is clicked into.
  **/
 BOOST_AUTO_TEST_CASE(nothing_focused_takes_nothing) {
     Fixture fixture;
@@ -136,8 +134,8 @@ BOOST_AUTO_TEST_CASE(a_composed_character_goes_in_at_the_caret) {
 }
 
 /**
- * The modifiers come off the event. Shift and a caret key selects the run it travelled -
- * ADR-0057 - and nothing polled would have said so.
+ * The modifiers come off the event. Shift and a caret key selects the run it travelled, and
+ * nothing polled would have said so.
  **/
 BOOST_AUTO_TEST_CASE(shift_rides_on_the_event) {
     Fixture fixture;
@@ -224,8 +222,8 @@ BOOST_AUTO_TEST_CASE(another_event_is_not_taken) {
 }
 
 /**
- * The focus moving is announced, which is what lets text input follow it. A move under a
- * mouse press is announced the same way, so the seam does not have to see the press.
+ * The focus moving is announced, so text input can follow it. A move under a mouse press is
+ * announced the same way, so the adapter does not have to see the press.
  **/
 BOOST_AUTO_TEST_CASE(the_focus_move_is_announced) {
     Fixture fixture;

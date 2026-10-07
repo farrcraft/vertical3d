@@ -216,8 +216,8 @@ BOOST_AUTO_TEST_CASE(popping_past_the_bottom_of_the_stack_is_harmless) {
 }
 
 /**
- * A stream nothing clipped is one batch covering the whole of it, so the common case is
- * still the single draw the line primitive was built as - ADR-0011.
+ * A stream with no clip in it is one batch covering every vertex, so an unclipped line canvas
+ * is a single draw.
  **/
 BOOST_AUTO_TEST_CASE(an_uncut_stream_is_one_batch) {
     v3d::render::realtime::LineCanvas canvas;
@@ -232,8 +232,8 @@ BOOST_AUTO_TEST_CASE(an_uncut_stream_is_one_batch) {
 
 /**
  * A clip cuts the stream where it opens and where it closes, and the batch between them
- * carries the rectangle the device is to scissor to - ADR-0037. Nothing is dropped on the
- * cpu: the segment inside the clip is still two vertices.
+ * carries the rectangle the device scissors to. Nothing is dropped on the cpu: the segment
+ * inside the clip is still two vertices.
  **/
 BOOST_AUTO_TEST_CASE(a_clip_cuts_the_batch_and_carries_its_rectangle) {
     v3d::render::realtime::LineCanvas canvas;
@@ -277,8 +277,8 @@ BOOST_AUTO_TEST_CASE(a_clip_is_not_moved_by_the_transform) {
 }
 
 /**
- * An inner clip can only take room away from the one around it, which is what makes a
- * clipped box inside a clipped box behave.
+ * An inner clip can only take room away from the one around it, so a clipped box inside a
+ * clipped box never draws outside the outer one.
  **/
 BOOST_AUTO_TEST_CASE(an_inner_clip_only_takes_room_away) {
     v3d::render::realtime::LineCanvas canvas;
@@ -296,8 +296,8 @@ BOOST_AUTO_TEST_CASE(an_inner_clip_only_takes_room_away) {
 
 /**
  * Two clips that miss each other leave an empty rectangle rather than an inverted one. An
- * inverted scissor is a validation error by the time it reaches the device, where an empty
- * one simply draws nothing.
+ * inverted scissor is a validation error once it reaches the device. An empty one draws
+ * nothing.
  **/
 BOOST_AUTO_TEST_CASE(clips_that_miss_leave_nothing_rather_than_an_inverted_rectangle) {
     v3d::render::realtime::LineCanvas canvas;

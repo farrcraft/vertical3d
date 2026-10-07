@@ -10,9 +10,9 @@ namespace v3d::event::kind {
 /**
  * The window gained or lost keyboard focus.
  *
- * An app that does not hear this has to poll SDL_GetWindowFlags for something the loop
- * already had in hand, which is what auto-pause, muting and dropping held input are each
- * waiting on - a key released while unfocused never arrives, so it stays down.
+ * Auto-pause, muting and dropping held input all depend on it, and without it an app would
+ * have to poll SDL_GetWindowFlags. A key released while the window is unfocused never
+ * arrives, so it stays down until focus loss is handled.
  **/
 class WindowFocus final {
  public:

@@ -5,10 +5,11 @@
 
 #include "TextRenderer.h"
 
-#include <api/asset/Type.h>
-#include <api/asset/kind/TextureFont.h>
+#include <api/font/TextureFont.h>
 #include <api/image/TextureAtlas.h>
 
+#include <array>
+#include <limits>
 #include <string>
 #include <string_view>
 
@@ -25,8 +26,8 @@ const char* const TextRenderer::defaultFont = "fonts/NotoSans-Regular.ttf";
 
 // chosen by packing printable ascii and seeing what fit rather than by arithmetic. 48 with
 // a spread of 8 is the largest of the pairs tried that still fits a 512 atlas: 48 and 12
-// does not, and 64 and 8 does not. So the atlas the tree has always used stays the default
-// and the dimensions are an argument for the charset or the base that needs more
+// does not, and 64 and 8 does not. A charset or a base that needs more passes larger
+// atlas dimensions
 const float TextRenderer::baseSize = 48.0f;
 const unsigned int TextRenderer::defaultSpread = 8;
 const unsigned int TextRenderer::defaultAtlas = 512;
@@ -43,48 +44,29 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     unsigned int atlasWidth,
     unsigned int atlasHeight) :
     size_(size) {
-    // a one channel atlas: the glyph's distance becomes its alpha, which is what lets text
-    // go through the quad shader. Subpixel (LCD) filtering would need dual source blending
-    // or a second pass, and is not a distance field
-    cache_ = boost::make_shared<v3d::font::TextureFontCache>(atlasWidth, atlasHeight, v3d::font::TextureTextBuffer::LCD_FILTERING_OFF, logger);
-    cache_->charcodes(charcodes);
-
-    markup_.family_ = "sans";
-    markup_.bold_ = false;
-    markup_.italic_ = false;
-    markup_.rise_ = 0.0f;
-    markup_.spacing_ = 0.0f;
-    markup_.gamma_ = 1.0f;
-    markup_.outline_ = false;
-    markup_.underline_ = false;
-    markup_.overline_ = false;
-    markup_.strikethrough_ = false;
-    markup_.foregroundColor_ = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    // transparent, so no background quad is emitted behind each glyph
-    markup_.backgroundColor_ = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+    // a one channel atlas: the glyph's distance becomes its alpha, so text goes through the
+    // quad shader. Subpixel (LCD) filtering would need dual source blending or a second
+    // pass, and is not a distance field
+    cache_ = boost::make_shared<v3d::font::TextureFontCache>(atlasWidth, atlasHeight, 1, logger);
     markup_.size_ = size_;
 
-    boost::shared_ptr<v3d::asset::Loader> loader = assetManager->resolveLoader(v3d::asset::Type::TextureFont);
-    v3d::asset::ParameterValue value = markup_.size_;
-    loader->parameter("fontSize", value);
-    v3d::asset::ParameterValue field = static_cast<float>(spread);
-    loader->parameter("spread", field);
-    boost::shared_ptr<v3d::asset::kind::TextureFont> asset = boost::dynamic_pointer_cast<v3d::asset::kind::TextureFont>(
-        assetManager->load(font, v3d::asset::Type::TextureFont));
-    if (!asset || !asset->font()) {
-        logger->get()->error("the font {} could not be loaded, so nothing drawn through it will have text", font);
+    // the face is opened here rather than loaded as an asset: what it is rasterized at is this
+    // renderer's to say, and the manager only says where the file is
+    const boost::shared_ptr<v3d::font::TextureFont> face =
+        boost::make_shared<v3d::font::TextureFont>(assetManager->path(font), markup_.size_, logger, spread);
+    face->atlas(cache_->atlas());
+    if (!face->loadGlyphs(charcodes)) {
+        // a face that would not open packs nothing, and one that opened into an atlas too
+        // small packs some. Drawing what did fit would be text with characters missing,
+        // measured short, laid out around the short measure
+        logger->get()->error("{} could not be packed at size {}, so nothing drawn through it will have text", font, size_);
         return;
     }
-
-    asset->font()->atlas(cache_->atlas());
-    if (!asset->font()->loadGlyphs(charcodes)) {
-        // the font itself is fine and the atlas is not - drawing what did fit would be
-        // text with characters missing, measured short, laid out around the short measure
-        logger->get()->error("the atlas could not hold {} at size {}, so nothing drawn through it will have text", font, size_);
-        return;
-    }
-    cache_->add(asset->font());
-    markup_.font_ = asset->font();
+    // the opaque white square a line or a background is drawn with. The text buffer asks
+    // for it with every glyph, so it is packed now rather than after the upload
+    face->glyph(static_cast<wchar_t>(-1));
+    cache_->add(face);
+    markup_.font_ = face;
 
     // every glyph is packed by now, so the atlas can go to the device once and stay there
     atlas_ = upload(cache_->atlas()->image());
@@ -115,13 +97,87 @@ float TextRenderer::ratio(float size) const noexcept {
 
 /**
  **/
+std::u32string TextRenderer::decode(std::string_view utf8) {
+    std::u32string decoded;
+    decoded.reserve(utf8.size());
+    std::size_t index = 0;
+    while (index < utf8.size()) {
+        decoded.push_back(next(utf8, &index));
+    }
+    return decoded;
+}
+
+/**
+ **/
+char32_t TextRenderer::next(std::string_view utf8, std::size_t* index) {
+    const char32_t replacement = 0xFFFD;
+    // the smallest code point each sequence length may encode; anything below is overlong
+    const std::array<char32_t, 5> minimum = {0, 0, 0x80, 0x800, 0x10000};
+
+    const std::size_t start = *index;
+    const unsigned char lead = static_cast<unsigned char>(utf8[start]);
+    std::size_t length = 0;
+    char32_t point = 0;
+    if (lead < 0x80) {
+        length = 1;
+        point = lead;
+    } else if ((lead & 0xE0) == 0xC0) {
+        length = 2;
+        point = static_cast<char32_t>(lead & 0x1F);
+    } else if ((lead & 0xF0) == 0xE0) {
+        length = 3;
+        point = static_cast<char32_t>(lead & 0x0F);
+    } else if ((lead & 0xF8) == 0xF0) {
+        length = 4;
+        point = static_cast<char32_t>(lead & 0x07);
+    }
+
+    bool valid = length > 0 && start + length <= utf8.size();
+    for (std::size_t offset = 1; valid && offset < length; offset++) {
+        const unsigned char following = static_cast<unsigned char>(utf8[start + offset]);
+        if ((following & 0xC0) != 0x80) {
+            valid = false;
+        } else {
+            point = (point << 6) | static_cast<char32_t>(following & 0x3F);
+        }
+    }
+    if (valid && (point < minimum.at(length) || point > 0x10FFFF || (point >= 0xD800 && point <= 0xDFFF))) {
+        valid = false;
+    }
+
+    if (!valid) {
+        *index = start + 1;
+        return replacement;
+    }
+    *index = start + length;
+    return point;
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::font::TextureFont::Glyph> TextRenderer::packed(char32_t point) const {
+    // a code point wider than wchar_t cannot have been packed, since charcodes are wchar_t
+    if (point > static_cast<char32_t>(std::numeric_limits<wchar_t>::max())) {
+        return boost::shared_ptr<v3d::font::TextureFont::Glyph>();
+    }
+    const wchar_t character = static_cast<wchar_t>(point);
+    // -1 names the white square lines are drawn with, which is not a character of text
+    if (character == static_cast<wchar_t>(-1)) {
+        return boost::shared_ptr<v3d::font::TextureFont::Glyph>();
+    }
+    return markup_.font_->packed(character);
+}
+
+/**
+ **/
 float TextRenderer::width(std::string_view text, float size) const {
     if (!loaded()) {
         return 0.0f;
     }
     float width = 0.0f;
-    for (char character : text) {
-        boost::shared_ptr<v3d::font::TextureFont::Glyph> glyph = markup_.font_->glyph(static_cast<wchar_t>(character));
+    std::size_t index = 0;
+    while (index < text.size()) {
+        const boost::shared_ptr<v3d::font::TextureFont::Glyph> glyph = packed(next(text, &index));
         if (glyph) {
             width += glyph->advance_.x;
         }
@@ -141,9 +197,20 @@ void TextRenderer::draw(v3d::render::realtime::Canvas* canvas, std::string_view 
     // the markup's size against the font's is what the layout scales its metrics by
     markup_.size_ = size > 0.0f ? size : size_;
 
+    // only code points with a packed glyph reach the layout, so it never packs one after
+    // the upload. A newline has no glyph and is kept, since it moves the pen
+    std::wstring drawable;
+    drawable.reserve(text.size());
+    std::size_t index = 0;
+    while (index < text.size()) {
+        const char32_t point = next(text, &index);
+        if (point == U'\n' || packed(point)) {
+            drawable.push_back(static_cast<wchar_t>(point));
+        }
+    }
+
     glm::vec2 cursor = pen;
-    const std::wstring wide(text.begin(), text.end());
-    buffer_->addText(&cursor, markup_, wide);
+    buffer_->addText(&cursor, markup_, drawable);
 
     canvas->text(*buffer_, atlas_);
 }

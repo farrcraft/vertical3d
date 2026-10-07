@@ -7,7 +7,7 @@
 
 #include <api/log/Logger.h>
 #include <vertical3d/src/command/CommandStack.h>
-#include <vertical3d/src/command/TransformCommand.h>
+#include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -28,9 +28,9 @@ namespace v3d::editor {
  * the selection is then only selectable. The mode is exclusive, because three sets of
  * handles about one origin could not be told apart by a click.
  *
- * A press grabs a handle if one is under the cursor and does nothing if none is, which
- * is what lets the same button also select - the controller offers the press here first
- * and passes it on only when no handle took it.
+ * A press grabs a handle if one is under the cursor and does nothing if none is, so the
+ * same button can also select. The controller offers the press here first and passes it
+ * on only when no handle took it.
  **/
 class TransformTool final : public Tool {
  public:
@@ -88,15 +88,15 @@ class TransformTool final : public Tool {
     boost::shared_ptr<Manipulator> manipulator() const;
 
     /**
-     * @return whether a handle is being dragged, which is what stops the same press
-     *         from also selecting
+     * @return whether a handle is being dragged. While it is, the same press does not
+     *         also select
      **/
     bool dragging() const noexcept;
 
     /**
-     * End a drag without recording it, which is what replacing the scene does: the
-     * mesh the gesture is holding is leaving the document, so there is nothing left
-     * for a command to be undone against. The mode is kept.
+     * End a drag without recording it, as replacing the scene does. The mesh the gesture
+     * holds is leaving the document, so a command would have nothing to be undone
+     * against. The mode is kept.
      **/
     void cancel();
 
@@ -104,13 +104,13 @@ class TransformTool final : public Tool {
     /**
      * Record the gesture that has just ended, if it moved anything. Every path out of a
      * drag comes through here - a release and a mode change alike - because a change
-     * that reached the mesh but not the stack is one undo cannot reach.
+     * that reached the mesh but not the stack could not be undone.
      **/
     void commit();
 
     /**
-     * Highlight whatever handle the cursor is over, so that a handle says it can be
-     * grabbed before it is.
+     * Highlight whatever handle the cursor is over, so the user can see which handle a
+     * press would grab.
      **/
     void hover(const glm::vec2& position);
 
@@ -130,7 +130,7 @@ class TransformTool final : public Tool {
 
 /**
  * @param name one of "select", "translate", "rotate" or "scale"
- * @param mode where the answer goes - untouched if the name is not one of them
+ * @param mode set to the mode named, and untouched if the name is not one of them
  * @return whether the name named a mode
  **/
 bool transformMode(const std::string& name, TransformTool::Mode* mode);

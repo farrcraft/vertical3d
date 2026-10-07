@@ -5,6 +5,12 @@
 
 #include "RIBHandler.h"
 
+#include <api/type/Checked.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -14,16 +20,39 @@ namespace v3d::moya {
 
 namespace {
 
+/**
+ * A number from a scene as a count of pixels or micropolygons: at least one and at most
+ * largestLimit. Anything else is refused.
+ **/
+std::optional<uint32_t> count(float value) {
+    return v3d::type::toCount(value, 1, RIBHandler::largestLimit);
+}
+
+/**
+ * A picture side as the context takes it. A side too large for an int is held just above
+ * largestResolution, which the context refuses.
+ **/
+int side(unsigned int value) {
+    return static_cast<int>(std::min(value, v3d::render::offline::largestResolution + 1));
+}
+
+/**
+ * The deepest a scene may ask trace() to go. A shader that traces twice at every hit doubles
+ * the rays at every level, and every level holds a shader on the stack.
+ **/
+const float DEEPEST_TRACE = 16.0f;
+
 typedef v3d::render::offline::rib::ParameterList ParameterList;
 
 /**
- * One polygon from a run of the position array, with whatever colour and shading normal
- * the scene gave each corner. A vertex left without either takes the primitive's in
- * addPolygon() - the current colour, and the plane the polygon lies in.
+ * One polygon from a run of the position array, with whatever colour, shading normal and
+ * texture coordinates the scene gave each corner. A vertex left without a colour or a
+ * normal takes the primitive's in addPolygon() - the current colour, and the plane the
+ * polygon lies in.
  **/
 boost::shared_ptr<Polygon> build(const std::vector<glm::vec3> & points,
     const std::vector<glm::vec3> & colors, const std::vector<glm::vec3> & normals,
-    const std::vector<unsigned int> & indices) {
+    const std::vector<float> & st, const std::vector<unsigned int> & indices) {
     boost::shared_ptr<Polygon> polygon = boost::make_shared<Polygon>();
     for (unsigned int index : indices) {
         if (index >= points.size()) {
@@ -36,6 +65,10 @@ boost::shared_ptr<Polygon> build(const std::vector<glm::vec3> & points,
         }
         if (index < normals.size()) {
             vertex.normal(normals[index]);
+        }
+        const std::size_t pair = 2 * static_cast<std::size_t>(index);
+        if (pair + 2 <= st.size()) {
+            vertex.st(glm::vec2(st[pair], st[pair + 1]));
         }
         polygon->addVertex(vertex);
     }
@@ -59,10 +92,26 @@ RenderContext & RIBHandler::context() {
 void RIBHandler::option(const std::string & name, const ParameterList & parameters) {
     if (name == "searchpath") {
         // RI writes it as Option "searchpath" "shader" ["./shaders:&"], and the shader
-        // path is the only one this renderer looks anything up on
+        // and texture paths are the ones this renderer looks anything up on
         if (parameters.has("shader")) {
             context().searchpath(parameters.string("shader", std::string()));
         }
+        if (parameters.has("texture")) {
+            context().textures().searchpath(parameters.string("texture", std::string()));
+        }
+        return;
+    }
+    if (name == "trace" && parameters.has("maxdepth")) {
+        const float depth = parameters.number("maxdepth", 0.0f);
+        const bool usable = std::isfinite(depth) && depth >= 0.0f;
+        if (!usable) {
+            context().logger()->get()->warn("a trace depth of {} is not a depth, and is not used", depth);
+            return;
+        }
+        if (depth > DEEPEST_TRACE) {
+            context().logger()->get()->warn("a trace depth of {} is deeper than {}, and {} is used", depth, DEEPEST_TRACE, DEEPEST_TRACE);
+        }
+        context().traced().traceDepth(static_cast<unsigned int>(std::min(depth, DEEPEST_TRACE)));
         return;
     }
     if (name != "limits") {
@@ -70,11 +119,28 @@ void RIBHandler::option(const std::string & name, const ParameterList & paramete
     }
     const std::vector<float> & bucket = parameters.floats("bucketsize");
     if (bucket.size() >= 2) {
-        context().bucketSize(static_cast<unsigned int>(bucket[0]), static_cast<unsigned int>(bucket[1]));
+        const std::optional<uint32_t> across = count(bucket[0]);
+        const std::optional<uint32_t> down = count(bucket[1]);
+        if (across && down) {
+            context().bucketSize(*across, *down);
+        } else {
+            context().logger()->get()->warn("a bucket size of {} by {} is not a size, and is not used", bucket[0], bucket[1]);
+        }
     }
     if (parameters.has("gridsize")) {
-        context().gridSize(static_cast<unsigned int>(parameters.number("gridsize", 256.0f)));
+        const float grid = parameters.number("gridsize", 256.0f);
+        const std::optional<uint32_t> size = count(grid);
+        if (size) {
+            context().gridSize(*size);
+        } else {
+            context().logger()->get()->warn("a grid size of {} is not a size, and is not used", grid);
+        }
     }
+}
+
+void RIBHandler::hider(const std::string & name, const ParameterList & parameters) {
+    (void)parameters;
+    context().hider(name);
 }
 
 void RIBHandler::surface(const std::string & name, const ParameterList & parameters) {
@@ -95,7 +161,11 @@ void RIBHandler::imager(const std::string & name, const ParameterList & paramete
 }
 
 void RIBHandler::format(unsigned int width, unsigned int height, float pixelAspect) {
-    context().imageResolution(static_cast<int>(width), static_cast<int>(height), pixelAspect);
+    if (width_ > 0 && height_ > 0) {
+        width = width_;
+        height = height_;
+    }
+    context().imageResolution(side(width), side(height), pixelAspect);
 }
 
 void RIBHandler::frameAspectRatio(float aspect) {
@@ -114,9 +184,42 @@ void RIBHandler::clipping(float hither, float yon) {
     context().clipping(hither, yon);
 }
 
+void RIBHandler::depthOfField(float fstop, float focalLength, float focalDistance) {
+    context().sampling().fstop = fstop;
+    context().sampling().focalLength = focalLength;
+    context().sampling().focalDistance = focalDistance;
+}
+
+void RIBHandler::shutter(float open, float close) {
+    context().sampling().shutter = glm::vec2(open, close);
+}
+
+void RIBHandler::pixelSamples(unsigned int x, unsigned int y) {
+    context().sampling().samples = glm::uvec2(x, y);
+}
+
+void RIBHandler::pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) {
+    context().sampling().filter = filter;
+    context().sampling().width = glm::vec2(xwidth, ywidth);
+}
+
+void RIBHandler::pixelVariance(float variation) {
+    context().sampling().variance = variation;
+}
+
 void RIBHandler::output(const std::string & name) {
     output_ = name;
     context().display(name, "file", "rgb");
+}
+
+bool RIBHandler::resolution(int width, int height) {
+    // the context reads a side of zero or less as its default, which is not a size asked for
+    if (width < 1 || height < 1 || !context().imageResolution(width, height, 1.0f)) {
+        return false;
+    }
+    width_ = static_cast<unsigned int>(width);
+    height_ = static_cast<unsigned int>(height);
+    return true;
 }
 
 void RIBHandler::display(const std::string & name, const std::string & type, const std::string & mode,
@@ -177,6 +280,14 @@ void RIBHandler::scale(float sx, float sy, float sz) {
     context().scale(sx, sy, sz);
 }
 
+void RIBHandler::motionBegin(const std::vector<float> & times) {
+    context().motionBegin(times);
+}
+
+void RIBHandler::motionEnd() {
+    context().motionEnd();
+}
+
 void RIBHandler::color(const glm::vec3 & value) {
     context().color(value);
 }
@@ -193,6 +304,7 @@ void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters
     const std::vector<glm::vec3> points = parameters.points("P");
     const std::vector<glm::vec3> colors = parameters.points("Cs");
     const std::vector<glm::vec3> normals = parameters.points("N");
+    const std::vector<float> & st = parameters.floats("st");
     std::vector<unsigned int> indices;
     for (unsigned int i = 0; i < vertices && i < points.size(); i++) {
         indices.push_back(i);
@@ -200,7 +312,15 @@ void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters
     if (indices.size() < 3) {
         return;
     }
-    context().addPolygon(build(points, colors, normals, indices));
+    context().addPolygon(build(points, colors, normals, st, indices));
+}
+
+void RIBHandler::sphere(float radius, float zmin, float zmax, float thetamax, const ParameterList & parameters) {
+    (void)parameters;
+    if (!context().addSphere(radius, zmin, zmax, thetamax) && !spheres_) {
+        spheres_ = true;
+        context().logger()->get()->warn("the reyes hider does not dice spheres, so this scene renders without them");
+    }
 }
 
 void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
@@ -208,6 +328,7 @@ void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const 
     const std::vector<glm::vec3> points = parameters.points("P");
     const std::vector<glm::vec3> colors = parameters.points("Cs");
     const std::vector<glm::vec3> normals = parameters.points("N");
+    const std::vector<float> & st = parameters.floats("st");
     std::size_t offset = 0;
     for (unsigned int count : counts) {
         if (offset + count > indices.size()) {
@@ -215,7 +336,7 @@ void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const 
         }
         if (count >= 3) {
             const std::vector<unsigned int> face(indices.begin() + offset, indices.begin() + offset + count);
-            context().addPolygon(build(points, colors, normals, face));
+            context().addPolygon(build(points, colors, normals, st, face));
         }
         offset += count;
     }

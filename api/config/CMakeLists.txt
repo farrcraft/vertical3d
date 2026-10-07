@@ -1,16 +1,19 @@
 v3d_add_api_library(config
 	"Config.h" "Config.cpp"
 	"CameraProfiles.h" "CameraProfiles.cpp"
+	"SpriteRegion.h" "SpriteRegion.cpp"
+	"SpriteSheet.h" "SpriteSheet.cpp"
 	"SpriteSheets.h" "SpriteSheets.cpp"
- "Sounds.h" "Type.h")
+	"Type.h")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_asset: Config.h names an asset::Json, and load() resolves each file it lists
 # through the asset manager.
 # v3dlib_type: CameraProfiles.h holds a table of type::CameraProfile and hands them out by
 # value.
-# glm: SpriteSheets.h hands a region out as a uv pair.
-target_link_libraries(v3dlib_config PUBLIC v3dlib_log v3dlib_asset v3dlib_type glm::glm)
+# glm: SpriteSheet.h hands a region out as a uv pair.
+# Boost::json: CameraProfiles.h and SpriteSheets.h each read a boost::json::object.
+target_link_libraries(v3dlib_config PUBLIC v3dlib_log v3dlib_asset v3dlib_type glm::glm Boost::json)
 
 target_compile_options(v3dlib_config PRIVATE /EHsc)
 

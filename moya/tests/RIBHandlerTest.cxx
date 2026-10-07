@@ -3,11 +3,18 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/log/Logger.h>
 #include <api/render/offline/rib/Reader.h>
+#include <api/render/offline/trace/Sphere.h>
 #include <moya/libmoya/RIBHandler.h>
+#include <spdlog/sinks/ringbuffer_sink.h>
 
+#include <algorithm>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
@@ -22,11 +29,94 @@ bool read(const std::string & source, v3d::moya::RIBHandler * handler) {
     return reader.read(stream, handler);
 }
 
+/**
+ * The number of pixels whose red is more than half.
+ **/
+unsigned int coverage(const v3d::render::offline::FrameBuffer & planes) {
+    unsigned int covered = 0;
+    for (unsigned int row = 0; row < planes.height(); row++) {
+        for (unsigned int column = 0; column < planes.width(); column++) {
+            if (planes.value(v3d::moya::FrameBuffer::RED, column, row) > 0.5f) {
+                covered++;
+            }
+        }
+    }
+    return covered;
+}
+
+/**
+ * The lines a log writes while this is alive. It adds a sink to the log for its lifetime and
+ * takes it away again, so a case can read what a render said without reading the log file.
+ **/
+class Heard {
+ public:
+    explicit Heard(std::shared_ptr<spdlog::logger> logger) :
+        logger_(std::move(logger)),
+        sink_(std::make_shared<spdlog::sinks::ringbuffer_sink_mt>(64)) {
+        logger_->sinks().push_back(sink_);
+    }
+
+    ~Heard() {
+        std::vector<spdlog::sink_ptr> & sinks = logger_->sinks();
+        sinks.erase(std::remove(sinks.begin(), sinks.end(), sink_), sinks.end());
+    }
+
+    Heard(const Heard &) = delete;
+    Heard & operator=(const Heard &) = delete;
+
+    /**
+     * Whether a line logged so far holds the text.
+     **/
+    bool said(const std::string & text) const {
+        const std::vector<std::string> lines = sink_->last_formatted();
+        return std::any_of(lines.begin(), lines.end(), [&text](const std::string & line) {
+            return line.find(text) != std::string::npos;
+        });
+    }
+
+ private:
+    std::shared_ptr<spdlog::logger> logger_;
+    std::shared_ptr<spdlog::sinks::ringbuffer_sink_mt> sink_;
+};
+
+/**
+ * A quad 1.8 units across facing the camera, at one sample a pixel under a one pixel box, with
+ * the grid size given. At 64 by 48 the quad is 43 pixels across. A grid of 16 is 4 a side, so
+ * the quad is split four times over, into 256 pieces under 3 pixels across. A grid of 4096 is
+ * 64 a side, and dices it whole. Both make the same lattice of micropolygons, 64 a side, so
+ * the two pictures agree wherever a split keeps what its vertices carried.
+ **/
+boost::shared_ptr<v3d::render::offline::FrameBuffer> quad(unsigned int grid, const std::string & shading,
+    const std::string & varying) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    BOOST_REQUIRE(read(
+        "Option \"limits\" \"gridsize\" [" + std::to_string(grid) + "]\n"
+        "Format 64 48 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n" + shading +
+        "Polygon \"P\" [-0.9 -0.9 5  0.9 -0.9 5  0.9 0.9 5  -0.9 0.9 5]\n" + varying +
+        "WorldEnd\n", &handler));
+    return handler.context().framebuffer()->planes();
+}
+
+/**
+ * Pixels inside the quad, spread over it.
+ **/
+const unsigned int INSIDE[][2] = {
+    { 14, 8 }, { 32, 8 }, { 50, 8 },
+    { 14, 24 }, { 22, 24 }, { 32, 24 }, { 42, 24 },
+    { 14, 40 }, { 42, 40 }, { 50, 40 }
+};
+
 };  // namespace
 
 /**
- * A scene reaches the render context through the handler, which is the whole of ADR-0023's
- * claim that one reader drives both renderers.
+ * A scene reaches the render context through the handler, so a RIB file drives the offline
+ * renderer.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_test) {
     v3d::moya::Renderer renderer;
@@ -43,6 +133,37 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_test) {
     BOOST_CHECK_EQUAL(handler.context().imageHeight(), 48u);
     BOOST_REQUIRE(handler.context().framebuffer());
     BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64u);
+}
+
+/**
+ * The sampling requests reach the render context, and a scene that names none of them is
+ * sampled at the RI defaults.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_sampling_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "PixelSamples 4 4\n"
+        "DepthOfField 8 0.1 3\n"
+        "WorldBegin\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().sampling().samples.x, 4u);
+    BOOST_CHECK_EQUAL(handler.context().sampling().samples.y, 4u);
+    BOOST_CHECK_EQUAL(handler.context().sampling().fstop, 8.0f);
+    BOOST_CHECK_CLOSE(handler.context().sampling().focalLength, 0.1f, 1.0e-4f);
+    BOOST_CHECK_EQUAL(handler.context().sampling().focalDistance, 3.0f);
+
+    v3d::moya::Renderer plainRenderer;
+    v3d::moya::RIBHandler silent(&plainRenderer);
+    BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &silent));
+    BOOST_CHECK_EQUAL(silent.context().sampling().samples.x, 2u);
+    BOOST_CHECK_EQUAL(silent.context().sampling().samples.y, 2u);
+    BOOST_CHECK(silent.context().sampling().filter == v3d::render::offline::Filter::Gaussian);
+    BOOST_CHECK_EQUAL(silent.context().sampling().width.x, 2.0f);
+    BOOST_CHECK(silent.context().sampling().pinhole());
 }
 
 /**
@@ -65,8 +186,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_polygon_test) {
 }
 
 /**
- * A scene places its camera with a matrix that translates, which is what the standard's own
- * example does. The world to camera transformation applies as it stands: a transpose and an
+ * A scene places its camera with a matrix that translates, as the standard's own example
+ * does. The world to camera transformation applies as it stands: a transpose and an
  * inverse are both right only when it is a rotation, and neither is when it is not.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_transform_test) {
@@ -146,8 +267,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_attribute_block_test) {
 }
 
 /**
- * A perspective projection makes the nearer of two equal quads the larger one. Until this
- * phase RiProjection("perspective") built the identity matrix, so it made them the same size.
+ * A perspective projection makes the nearer of two equal quads the larger one. An identity
+ * projection would make them the same size.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
     v3d::moya::Renderer renderer;
@@ -174,8 +295,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
     }
     BOOST_CHECK_GT(covered, 0u);
 
-    // the same quad twice as far away covers a quarter of the pixels, which is what a
-    // perspective projection means and what an identity matrix would not do
+    // the same quad twice as far away covers a quarter of the pixels under a perspective
+    // projection, and the same pixels under an identity matrix
     v3d::moya::Renderer far;
     v3d::moya::RIBHandler distant(&far);
     BOOST_REQUIRE(read(
@@ -248,6 +369,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_explicit_screen_window_test) {
     BOOST_REQUIRE(read(
         "ScreenWindow -2 2 -2 2\n"
         "Format 64 48 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
         "Projection \"orthographic\"\n"
         "Clipping 1 100\n"
         "WorldBegin\n"
@@ -263,8 +386,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_explicit_screen_window_test) {
 }
 
 /**
- * Option "limits" is how a scene names the bucket and grid sizes, which is what the standard's
- * example file opens with.
+ * Option "limits" is how a scene names the bucket and grid sizes. The standard's example file
+ * opens with it.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_limits_test) {
     v3d::moya::Renderer renderer;
@@ -280,8 +403,29 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_limits_test) {
 }
 
 /**
- * TransformEnd restores what TransformBegin saved. Popping without restoring left the current
- * transformation wherever the block had moved it.
+ * Option "trace" "maxdepth" sets how deep trace() goes. A depth above sixteen is taken as
+ * sixteen. A depth that is negative or not finite is not used, and the depth stays as it was.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_trace_depth_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read("Option \"trace\" \"maxdepth\" [5]\n", &handler));
+    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 5u);
+
+    BOOST_REQUIRE(read("Option \"trace\" \"maxdepth\" [-3]\n", &handler));
+    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 5u);
+
+    BOOST_REQUIRE(read("Option \"trace\" \"maxdepth\" [1e30]\n", &handler));
+    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 16u);
+
+    BOOST_REQUIRE(read("Option \"trace\" \"maxdepth\" [0]\n", &handler));
+    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 0u);
+}
+
+/**
+ * TransformEnd restores what TransformBegin saved, rather than leaving the current
+ * transformation wherever the block moved it.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_transform_block_test) {
     v3d::moya::Renderer renderer;
@@ -316,4 +460,290 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_output_override_test) {
 
     // nothing is written until WorldEnd, so this reads the context rather than the disk
     BOOST_CHECK_EQUAL(handler.context().displayName(), "data_out/override.png");
+}
+
+/**
+ * The reyes hider dices polygons only, so a scene with a sphere in it renders without the
+ * sphere and logs a warning that says so, rather than failing. The ray hider draws one.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    const Heard heard(handler.context().logger()->get());
+
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Sphere 1 -1 1 360\n"
+        "Polygon \"P\" [-0.2 -0.2 5  0.2 -0.2 5  0.2 0.2 5  -0.2 0.2 5]\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1u);
+    BOOST_TEST(heard.said("does not dice spheres"));
+}
+
+/**
+ * A mirror reflects what the camera cannot see, because a reflection traces the whole scene in
+ * world space. The red quad is above the frame, and the mirror tilted forty five degrees under
+ * it turns every ray up into it. shinymetal with its ambient and its highlight off is Cs times
+ * what it traces.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Projection \"perspective\" \"fov\" [30]\n"
+        "Clipping 0.1 100\n"
+        "WorldBegin\n"
+        "AttributeBegin\n"
+        "Surface \"shinymetal\" \"Ka\" [0] \"Ks\" [0] \"Kr\" [1]\n"
+        "Polygon \"P\" [-1 -1 4  1 -1 4  1 1 6  -1 1 6]\n"
+        "AttributeEnd\n"
+        "AttributeBegin\n"
+        "Color [1 0 0]\n"
+        "Surface \"constant\"\n"
+        "Polygon \"P\" [-3 3 2  3 3 2  3 3 8  -3 3 8]\n"
+        "AttributeEnd\n"
+        "WorldEnd\n", &handler));
+
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 1.0f, 0.01f);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, 32, 24), 1.0e-6f);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 1.0e-6f);
+}
+
+/**
+ * A size given to the handler replaces the size a scene's Format names, as a command line
+ * does, while the scene still renders at that size.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_override_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    handler.resolution(8, 4);
+
+    BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 8u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 4u);
+}
+
+/**
+ * A size given to the handler that is not a picture side is refused, and the scene's Format
+ * is used instead.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_refuses_a_side_out_of_range_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    BOOST_CHECK(!handler.resolution(70000, 4));
+    BOOST_CHECK(!handler.resolution(0, 4));
+    BOOST_CHECK(!handler.resolution(8, -4));
+
+    BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 48u);
+}
+
+/**
+ * A Format side of zero or less is moya's default for that side, 320 by 240, as RI reads it.
+ * A side above largestResolution is skipped, and the size already set is kept.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_format_nonpositive_side_is_the_default_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read("Format 64 0 1\nFormat 70000 16 1\nWorldBegin\nWorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 240u);
+}
+
+/**
+ * A sphere whose radius is not positive is not drawn by the ray hider: it is logged and left
+ * out of the traced scene, rather than built with a range that has no meaning. One with a
+ * positive radius in the same scene is drawn.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_sphere_with_no_size_is_skipped_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Hider \"raytrace\"\n"
+        "Format 16 16 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Sphere -1 -1 1 360\n"
+        "Sphere 0 -1 1 360\n"
+        "Sphere 1 -1 1 360\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().traced().all<v3d::render::offline::trace::Sphere>().size(), 1u);
+}
+
+/**
+ * A primitive whose motion is flat at both ends has no pose to be moved from. A polygon under
+ * such a motion is left out of the frame and a sphere out of the traced scene, and neither
+ * throws or leaves a pose that is not a number.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_motion_flat_at_both_ends_test) {
+    const std::string flat =
+        "Format 16 16 1\n"
+        "Shutter 0 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "MotionBegin [0 1]\n"
+        "Scale 0 1 1\n"
+        "Scale 1 0 1\n"
+        "MotionEnd\n";
+    {
+        v3d::moya::Renderer renderer;
+        v3d::moya::RIBHandler handler(&renderer);
+        BOOST_REQUIRE(read(flat + "Polygon \"P\" [-0.5 -0.5 2  0.5 -0.5 2  0.5 0.5 2  -0.5 0.5 2]\nWorldEnd\n",
+            &handler));
+        BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 0u);
+    }
+    {
+        v3d::moya::Renderer renderer;
+        v3d::moya::RIBHandler handler(&renderer);
+        BOOST_REQUIRE(read("Hider \"raytrace\"\n" + flat + "Sphere 1 -1 1 360\nWorldEnd\n", &handler));
+        BOOST_CHECK(handler.context().traced().all<v3d::render::offline::trace::Sphere>().empty());
+    }
+}
+
+/**
+ * A rotated polygon is bounded by all eight corners of its object space bound. Its two
+ * diagonal corners land at x = 1.5, off the right of the screen window. The quad reaches in
+ * to x = 0.79. A bound built from those two corners alone culls a quad that is on screen.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Hider \"hidden\"\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Surface \"constant\"\n"
+        "Translate 1.5 0 0\n"
+        "Rotate 45 0 0 1\n"
+        "Polygon \"P\" [0 0 5  1 0 5  1 1 5  0 1 5]\n"
+        "WorldEnd\n", &handler));
+
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    BOOST_CHECK_GT(coverage(*planes), 0u);
+    // the centre of column 56, row 7 is near x = 1.02 and y = 0.69, which is inside the quad
+    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 56, 7), 0.5f);
+}
+
+/**
+ * RI freezes the camera options at WorldBegin, so a screen window named after the projection
+ * still frames the picture. A window from 0 to 2 puts a quad spanning -1 to 1 in the left half.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_after_projection_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Format 64 64 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Projection \"orthographic\"\n"
+        "ScreenWindow 0 2 -1 1\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Surface \"constant\"\n"
+        "Polygon \"P\" [-1 -1 5  1 -1 5  1 1 5  -1 1 5]\n"
+        "WorldEnd\n", &handler));
+
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 16, 32), 0.5f);
+    BOOST_CHECK_LT(planes->value(v3d::moya::FrameBuffer::RED, 48, 32), 0.5f);
+}
+
+/**
+ * A polygon whose first two vertices coincide still splits. Its cutting plane comes from the
+ * first edge with a length, and a polygon too large to dice is drawn rather than lost.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_repeated_head_polygon_splits_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Polygon \"P\" [-1 -1 5  -1 -1 5  1 -1 5  1 1 5  -1 1 5]\n"
+        "WorldEnd\n", &handler));
+
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    BOOST_CHECK_GT(coverage(*planes), 0u);
+    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.5f);
+}
+
+/**
+ * A split carries each corner's "Cs" onto its pieces, interpolated where it cuts an edge. A
+ * quad with a different colour at each corner comes out the same split as diced whole.
+ * Colour is bilinear across a grid, and a split of a rectangle through its middle keeps it so,
+ * which leaves only rounding between the two.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_colour_test) {
+    const std::string shading = "Surface \"constant\"\n";
+    const std::string colours = "\"Cs\" [1 0 0  0 1 0  0 0 1  1 1 1]\n";
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> split = quad(16, shading, colours);
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> whole = quad(4096, shading, colours);
+
+    for (const auto & pixel : INSIDE) {
+        BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
+            for (unsigned int channel = 0; channel < 3; channel++) {
+                BOOST_CHECK_SMALL(split->value(channel, pixel[0], pixel[1]) - whole->value(channel, pixel[0], pixel[1]),
+                    0.03f);
+            }
+        }
+    }
+    // the colours do vary across it, so the comparison is not of two flat pictures. The
+    // lower left corner is red and the upper right blue
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 40) > 0.8f);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::BLUE, 14, 40) < 0.2f);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::BLUE, 50, 8) > 0.8f);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 8) < 0.2f);
+}
+
+/**
+ * A split carries each corner's "N" onto its pieces too, so a quad lit through normals that
+ * sweep across it shades as a gradient whether it is split or not. A piece without them would
+ * shade with the quad's plane, and be lit full on.
+ *
+ * The normals are interpolated and renormalised at each cut, which is not quite the bilinear
+ * blend a whole grid makes, so the two agree to a few hundredths rather than exactly.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
+    const std::string shading =
+        "LightSource \"distantlight\" 1 \"to\" [0 0 1]\n"
+        "Surface \"matte\" \"Ka\" [0]\n";
+    const std::string normals = "\"N\" [-0.9 0 -0.436  0 0 -1  0 0 -1  -0.9 0 -0.436]\n";
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> split = quad(16, shading, normals);
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> whole = quad(4096, shading, normals);
+
+    for (const auto & pixel : INSIDE) {
+        BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
+            BOOST_CHECK_SMALL(split->value(v3d::moya::FrameBuffer::RED, pixel[0], pixel[1]) -
+                whole->value(v3d::moya::FrameBuffer::RED, pixel[0], pixel[1]), 0.04f);
+        }
+    }
+    // the left edge leans away from the light and the right faces it
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 24) < 0.7f);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 24) > 0.9f);
 }

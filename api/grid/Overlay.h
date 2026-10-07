@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "TileCoord.h"
 #include "TileGrid.h"
 
 #include <array>
@@ -29,20 +30,18 @@ constexpr float OVERLAY_LIFT = 0.01f;
  * Where a segment of the overlay goes, and in what colour.
  *
  * The overlay is handed out as segments rather than written into a canvas, so that nothing
- * here names a renderer and every case can be asserted without a device - the seam
- * ComponentRenderer takes its text measuring across, for the same reason. A caller drawing
- * through the line primitive of [ADR-0011](../../docs/adr/0011-lines-are-the-second-primitive.md)
- * passes a sink of two lines.
+ * here names a renderer and every case can be tested without a device. A caller drawing
+ * through the renderer's world-space line primitive needs only a short sink that forwards
+ * each segment to it.
  **/
 typedef std::function<void(const glm::vec3& from, const glm::vec3& to, const glm::vec4& colour)> LineSink;
 
 /**
  * Where a filled quad of the overlay goes, and in what colour.
  *
- * The counterpart of LineSink for the world space quad of
- * [ADR-0042](../../docs/adr/0042-a-textured-quad-in-world-space.md), and here for the same
- * reason: nothing in this library names a renderer. The corners arrive in the order
- * tileCorners() gives them, which is the order realtime::WorldCanvas takes them in.
+ * The counterpart of LineSink for the renderer's world-space quad, for the same reason:
+ * nothing in this library names a renderer. The corners arrive in the order tileCorners()
+ * returns them, which is also the order realtime::WorldCanvas expects.
  **/
 typedef std::function<void(const std::array<glm::vec3, 4>& corners, const glm::vec4& colour)> QuadSink;
 
@@ -56,17 +55,17 @@ typedef std::function<void(const std::array<glm::vec3, 4>& corners, const glm::v
 std::array<glm::vec3, 4> tileCorners(const TileGrid& grid, TileCoord tile);
 
 /**
- * The four edges of one tile, which is what a highlight under a cursor or a selection is
- * drawn as. A tile off the grid emits nothing.
+ * The four edges of one tile, for drawing a highlight under a cursor or a selection. A tile
+ * off the grid emits nothing.
  **/
 void outlineTile(const TileGrid& grid, TileCoord tile, const glm::vec4& colour, const LineSink& sink);
 
 /**
- * One tile filled, which is what a highlight under a cursor, a movement range or a
- * threatened square is drawn as. A tile off the grid emits nothing.
+ * One tile filled, for drawing a highlight under a cursor, a movement range or a threatened
+ * square. A tile off the grid emits nothing.
  *
- * The colour is what reaches the sink whole, alpha included: a highlight over ground that
- * has to stay visible is a translucent fill, and whether that blends is the pass's.
+ * The colour reaches the sink unchanged, alpha included, so a highlight that must leave the
+ * ground visible is a translucent fill. Whether it blends is decided by the render pass.
  **/
 void fillTile(const TileGrid& grid, TileCoord tile, const glm::vec4& colour, const QuadSink& sink);
 

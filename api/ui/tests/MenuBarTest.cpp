@@ -3,7 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Context.h>
 #include <api/render/realtime/Canvas.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/MenuBar.h>
@@ -155,7 +157,7 @@ BOOST_AUTO_TEST_CASE(a_closed_bar_draws_only_its_labels) {
 
 /**
  * Nothing is hit until something has been drawn: the bounds a click is tested against are
- * what the last draw left on the components, per ADR-0019.
+ * what the last draw left on the components.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_that_has_not_been_drawn_takes_no_press) {
     Fixture fixture;
@@ -262,8 +264,8 @@ BOOST_AUTO_TEST_CASE(the_cursor_opens_a_flyout_from_a_submenu_item) {
 }
 
 /**
- * Moving off a submenu item onto one of its siblings closes the flyout, which is what stops
- * two of them standing open over each other.
+ * Moving off a submenu item onto one of its siblings closes the flyout, so two of them never
+ * stand open over each other.
  **/
 BOOST_AUTO_TEST_CASE(leaving_a_submenu_item_closes_its_flyout) {
     Fixture fixture;
@@ -310,7 +312,7 @@ BOOST_AUTO_TEST_CASE(a_press_elsewhere_dismisses_an_open_bar_and_nothing_more) {
 }
 
 /**
- * A check item draws its mark only when it is checked, and what checks it is whatever answers
+ * A check item draws its mark only when it is checked, and what checks it is whatever handles
  * its command rather than the item's own activation.
  **/
 BOOST_AUTO_TEST_CASE(a_check_item_draws_a_mark_only_when_it_is_checked) {
@@ -349,6 +351,110 @@ BOOST_AUTO_TEST_CASE(an_item_is_found_by_the_command_it_sends) {
     BOOST_CHECK(fixture.bar->find("test::open"));
     BOOST_CHECK(fixture.bar->find("test::flat"));
     BOOST_CHECK(!fixture.bar->find("test::nothing"));
+}
+
+
+/**
+ * A disabled item is not lit and sends nothing, as a disabled button does not.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_item_sends_nothing) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.draw();
+
+    fixture.bar->press(fixture.label(0));
+    fixture.draw();
+
+    boost::shared_ptr<v3d::ui::component::Menu> panel = fixture.bar->panels().front();
+    (*panel)[0]->enabled(false);
+    fixture.bar->press(Fixture::centre(*(*panel)[0]));
+    BOOST_CHECK(fixture.sent.empty());
+}
+
+/**
+ * A submenu inherits from the item that opens it. Disabling the item disables what the
+ * submenu holds, and keyboard navigation does not open it.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_submenu_item_disables_its_submenu) {
+    Fixture fixture;
+    boost::shared_ptr<v3d::ui::component::Menu> shading = fixture.menu();
+    shading->addItem(fixture.item(v3d::ui::component::menu::ItemType::Action, "Flat", "flat"));
+    boost::shared_ptr<v3d::ui::component::MenuItem> deeper =
+        fixture.item(v3d::ui::component::menu::ItemType::Submenu, "Shading", "");
+    boost::shared_ptr<v3d::ui::component::Menu> view = fixture.menu();
+    deeper->menu(view);
+    deeper->submenu(shading);
+    view->addItem(deeper);
+    view->level(view);
+    view->active(0);
+
+    BOOST_TEST(v3d::ui::usable(*(*shading)[0]));
+    deeper->enabled(false);
+    BOOST_TEST(!v3d::ui::usable(*(*shading)[0]));
+    BOOST_TEST(!view->down());
+    BOOST_TEST(view->level() == view);
+
+    deeper->enabled(true);
+    BOOST_TEST(view->down());
+    BOOST_TEST(view->level() == shading);
+}
+
+/**
+ * A null menu is not added, so the row holds only real menus and opening any of them shows one.
+ **/
+BOOST_AUTO_TEST_CASE(a_null_menu_is_not_added) {
+    Fixture fixture;
+    fixture.bar->add("Empty", boost::shared_ptr<v3d::ui::component::Menu>());
+    BOOST_CHECK_EQUAL(fixture.bar->count(), 0U);
+
+    build(&fixture);
+    BOOST_REQUIRE_EQUAL(fixture.bar->count(), 2U);
+    BOOST_CHECK_EQUAL(fixture.bar->label(0), "File");
+    fixture.draw();
+
+    BOOST_CHECK(fixture.bar->press(fixture.label(0)));
+    BOOST_CHECK_EQUAL(fixture.bar->open(), 0);
+    BOOST_REQUIRE_EQUAL(fixture.bar->panels().size(), 1U);
+    BOOST_CHECK(fixture.bar->panels().front() == fixture.bar->menu(0));
+}
+
+/**
+ * An item an app still holds after its menu is gone names no parent, so asking whether it is
+ * usable does not walk into the menu that was destroyed.
+ **/
+BOOST_AUTO_TEST_CASE(an_item_outlives_its_menu) {
+    Fixture fixture;
+    boost::shared_ptr<v3d::ui::component::MenuItem> kept =
+        fixture.item(v3d::ui::component::menu::ItemType::Action, "Open", "open");
+    {
+        boost::shared_ptr<v3d::ui::component::Menu> menu = fixture.menu();
+        menu->addItem(kept);
+        BOOST_TEST(kept->parent() == menu.get());
+    }
+    BOOST_TEST(kept->parent() == nullptr);
+    BOOST_TEST(v3d::ui::usable(*kept));
+}
+
+/**
+ * A submenu that is replaced no longer names the item as its parent, so it does not walk into
+ * the item once the item is gone. A null submenu removes the one there was.
+ **/
+BOOST_AUTO_TEST_CASE(a_replaced_submenu_is_let_go) {
+    Fixture fixture;
+    boost::shared_ptr<v3d::ui::component::Menu> first = fixture.menu();
+    boost::shared_ptr<v3d::ui::component::Menu> second = fixture.menu();
+    {
+        boost::shared_ptr<v3d::ui::component::MenuItem> deeper =
+            fixture.item(v3d::ui::component::menu::ItemType::Submenu, "Shading", "");
+        deeper->submenu(first);
+        BOOST_TEST(static_cast<const v3d::ui::Component&>(*first).parent() == deeper.get());
+        deeper->submenu(second);
+        BOOST_TEST(static_cast<const v3d::ui::Component&>(*first).parent() == nullptr);
+        BOOST_TEST(static_cast<const v3d::ui::Component&>(*second).parent() == deeper.get());
+        deeper->submenu(boost::shared_ptr<v3d::ui::component::Menu>());
+        BOOST_TEST(static_cast<const v3d::ui::Component&>(*second).parent() == nullptr);
+    }
+    BOOST_TEST(v3d::ui::usable(*first));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

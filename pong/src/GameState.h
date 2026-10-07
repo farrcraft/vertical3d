@@ -20,7 +20,6 @@ class GameState {
     int maxScore() const;
     bool coop() const;
     float ballSize() const;
-    float ballSpeedup() const;
     float ballStartSpeed() const;
 
     void coop(bool mode);
@@ -32,7 +31,6 @@ class GameState {
 
  private:
     float ballSize_;
-    float ballSpeedup_;
     float ballStartSpeed_;
     bool coop_;
     bool paused_;

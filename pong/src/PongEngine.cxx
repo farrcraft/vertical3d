@@ -5,7 +5,9 @@
 
 #include "PongEngine.h"
 
-#include <api/asset/kind/Sound.h>
+#include <api/audio/Loaders.h>
+#include <api/config/Type.h>
+#include <api/ecs/Previous.h>
 #include <api/ecs/component/Color3.h>
 #include <api/ecs/component/Position1D.h>
 #include <api/ecs/component/Position2D.h>
@@ -66,66 +68,42 @@ std::string_view paddleCommand(std::string_view item) {
 PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
 }
 
-bool::PongEngine::initialize() {
-    if (!Engine::initialize(
-        static_cast<int>(v3d::engine::Feature::Window |
-        v3d::engine::Feature::KeyboardInput |
-        v3d::engine::Feature::MouseInput |
-        v3d::engine::Feature::Config))) {
-        return false;
-    }
+bool PongEngine::start() {
+    window()->caption("Pong!");
 
-    window_->caption("Pong!");
-
-    // after Engine::initialize(), because rebinding rebuilds the mapper the config built
-    settings_ = boost::make_shared<v3d::engine::Settings>(ORGANIZATION, APPLICATION, logger_);
+    // once the engine is up, because rebinding rebuilds the mapper the config built
+    settings_ = boost::make_shared<v3d::engine::Settings>(ORGANIZATION, APPLICATION, logger());
     settings_->load();
     applyStoredBindings();
 
-    soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger_, dispatcher_);
+    soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger(), dispatcher());
+    v3d::audio::registerLoaders(*assets(), logger());
     // the return is not read: a device that will not open leaves the engine silent, and the
     // engine logs why. Every clip played against it is a false return.
     soundEngine_->initialize();
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
     menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
         scene_->state().pause(suspended);
     });
 
-    if (config_) {
-        boost::shared_ptr<v3d::asset::kind::Json> soundConfig = config_->get(v3d::config::Type::Sound);
-        if (soundConfig) {
-            // a clip is an asset like any other, so the file the config names is resolved
-            // against the manager's path rather than the working directory
-            soundEngine_->load(soundConfig,
-                [this](const std::string& source) -> boost::shared_ptr<v3d::audio::AudioClip> {
-                    boost::shared_ptr<v3d::asset::kind::Sound> asset = boost::dynamic_pointer_cast<v3d::asset::kind::Sound>(
-                        assetManager_->load(source, v3d::asset::Type::AudioWav));
-                    if (!asset) {
-                        return boost::shared_ptr<v3d::audio::AudioClip>();
-                    }
-                    return asset->clip();
-                });
-        }
-
-        boost::shared_ptr<v3d::asset::kind::Json> uiConfig = config_->get(v3d::config::Type::Ui);
-        if (uiConfig) {
-            if (!vgui_->load(uiConfig)) {
-                return false;
-            }
-        }
+    const boost::json::object* sounds = document(v3d::config::Type::Sound);
+    if (sounds) {
+        soundEngine_->load(*sounds, *assets());
+    }
+    const boost::json::object* ui = document(v3d::config::Type::Ui);
+    if (ui && !vgui_->load(*ui)) {
+        return false;
     }
     boost::shared_ptr<v3d::render::realtime::Window> win = window();
-    renderer_ = boost::make_shared<PongRenderer>(win, logger_, assetManager_, &registry_);
-    scene_ = boost::make_shared<PongScene>(&registry_, dispatcher_);
+    renderer_ = boost::make_shared<PongRenderer>(win, logger(), assets());
+    scene_ = boost::make_shared<PongScene>(&registry_, dispatcher());
     renderer_->scene(scene_);
     renderer_->ui(vgui_);
 
     // register game commands
-    dispatcher_->sink<v3d::event::Event>().connect<&PongEngine::handleEvent>(*this);
-
-    // set the scene size according to the window canvas
-    renderer_->resize(window_->width(), window_->height());
+    events_ = dispatcher()->sink<v3d::event::Event>().connect<&PongEngine::handleEvent>(*this);
+    sources_ = dispatcher()->sink<v3d::event::Source>().connect<&PongEngine::handleSource>(*this);
 
     // reset scene & game state
     scene_->reset();
@@ -139,19 +117,28 @@ bool PongEngine::simulate(float step) {
     if (!v3d::engine::Engine::simulate(step)) {
         return false;
     }
+    // where the ball and paddles were before this step moves them, so the renderer can
+    // interpolate between the two steps
+    v3d::ecs::snapshot<v3d::ecs::component::Position2D>(registry_);
+    v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry_);
+    // the paddles follow the keys held now rather than the presses and releases that arrived,
+    // so a key held through the menu or a change of mode moves its paddle as soon as it can
+    for (const std::string_view command : PongScene::paddleCommands) {
+        scene_->steer(command, held("pong::" + std::string(command)));
+    }
     scene_->tick(step);
     return true;
 }
 
 bool PongEngine::render() {
     const v3d::engine::Statistics& measured = statistics();
-    renderer_->draw({ measured.mean(), measured.last(), measured.steps() });
+    renderer_->draw({ measured.mean(), measured.last(), measured.steps() }, alpha());
     return true;
 }
 
 /**
  **/
-bool PongEngine::shutdown() {
+bool PongEngine::release() {
     if (soundEngine_) {
         soundEngine_->shutdown();
     }
@@ -159,33 +146,21 @@ bool PongEngine::shutdown() {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
     }
-    if (!v3d::engine::Engine::shutdown()) {
-        return false;
-    }
     return true;
 }
 
 void PongEngine::handlePlayEvent(const v3d::event::Event& event) {
-    // play commands
-    // the paddle moves while its key is held, so these follow the event's edge
-    bool held = (event.state() == v3d::event::State::Pressed);
-    if (event.name() == "leftPaddleUp") {
-        if (!scene_->state().paused()) {
-            scene_->left().up(held);
+    // a paddle command is read held in simulate() rather than taken as an event
+    for (const std::string_view command : PongScene::paddleCommands) {
+        if (event.name() == command) {
+            return;
         }
-    } else if (event.name() == "leftPaddleDown") {
-        if (!scene_->state().paused()) {
-            scene_->left().down(held);
-        }
-    } else if (event.name() == "rightPaddleUp") {
-        if (!scene_->state().paused() && scene_->state().coop()) {
-            scene_->right().up(held);
-        }
-    } else if (event.name() == "rightPaddleDown") {
-        if (!scene_->state().paused() && scene_->state().coop()) {
-            scene_->right().down(held);
-        }
-    } else if (event.name() == "showGameMenu") {
+    }
+    if (event.repeat()) {
+        // the rest toggle, and a held key would flick them on and off at the repeat rate
+        return;
+    }
+    if (event.name() == "showGameMenu") {
         menu_->toggle();
     } else if (event.name() == "toggleStatistics") {
         renderer_->statistics()->toggle();
@@ -204,24 +179,12 @@ void PongEngine::handleUiEvent(const v3d::event::Event& event) {
         rebindPaddleKey(event);
     } else if (event.name() == "setSingleplayerMode" || event.name() == "setMultiplayerMode") {
         // coop is the only mode that differs; the second paddle is the same opponent
-        scene_->state().coop(false);
+        scene_->coop(false);
         scene_->reset();
     } else if (event.name() == "setCoopMode") {
-        scene_->state().coop(true);
+        scene_->coop(true);
         scene_->reset();
-    } else if (event.name() == "quit") {
-        // not shutdown() - this is running inside the event loop, which would tick and
-        // render one more frame against the window shutdown() had destroyed
-        quit();
-        return;
     }
-
-    if (event.name() == "showGameMenu") {
-        menu_->toggle();
-        return;
-    }
-
-    menu_->navigate(event.name());
 }
 
 /**
@@ -240,7 +203,7 @@ void PongEngine::rebindPaddleKey(const v3d::event::Event& event) {
     if (!rebind(std::string(command), key)) {
         return;
     }
-    logger_->get()->info("bound {} to {}", command, key);
+    logger()->get()->info("bound {} to {}", command, key);
 
     // stored as it is made rather than on the way out: there is no exit path that reliably
     // runs, and a crash after a rebinding should not lose the rebinding
@@ -257,23 +220,34 @@ void PongEngine::applyStoredBindings() {
             continue;
         }
         if (rebind(std::string(binding.second), key)) {
-            logger_->get()->info("bound {} to {} from settings", binding.second, key);
+            logger()->get()->info("bound {} to {} from settings", binding.second, key);
         }
     }
 }
 
 /**
  **/
-void PongEngine::handleEvent(const v3d::event::Event& event) {
-    // a menu item capturing a key wants the key rather than what it is bound to, so a
-    // source event goes to the capture and no further while one is open
-    if (event.type() == v3d::event::Type::Source && menu_ && menu_->capturing()) {
-        if (event.state() == v3d::event::State::Pressed) {
-            menu_->capture(std::string(event.name()));
-        }
+void PongEngine::handleSource(const v3d::event::Source& source) {
+    if (!menu_ || !menu_->capturing() || source.state() != v3d::event::State::Pressed) {
         return;
     }
+    // escape is left to what it is bound to, which steps back out of the menu and abandons
+    // the capture - so it is never captured as a paddle key
+    if (source.name() == "escape") {
+        return;
+    }
+    // a paddle is steered by keys, and a mouse button shares names with some of them, so
+    // only a keyboard source is captured
+    if (!source.context() || source.context()->name() != "keyboard") {
+        return;
+    }
+    // a menu item capturing a key takes the key itself rather than the command it is bound
+    // to, so the key is consumed and its bindings do not fire
+    menu_->capture(std::string(source.name()));
+    source.consume();
+}
 
+void PongEngine::handleEvent(const v3d::event::Event& event) {
     if (event.context()->name() == "pong") {
         handlePlayEvent(event);
         return;

@@ -23,8 +23,8 @@ const char* const validationLayer = "VK_LAYER_KHRONOS_validation";
 
 /**
  * What the validation layer has to say, put through the logger at a severity that
- * matches its own. An error here is a real one: the layer only speaks when the api
- * has been used in a way that is undefined or about to be.
+ * matches its own. An error here is a real one: the layer only reports an error when the
+ * API has been used in a way that is undefined or about to be.
  **/
 VKAPI_ATTR VkBool32 VKAPI_CALL Instance::report(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT types, const VkDebugUtilsMessengerCallbackDataEXT* data, void* user) {
@@ -91,11 +91,7 @@ Instance::Instance(const boost::shared_ptr<v3d::log::Logger>& logger, const std:
     }
 
     VkResult result = vkCreateInstance(&createInfo, nullptr, &instance_);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create vulkan instance - " << resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    check(result, "Unable to create vulkan instance");
 
     logger_->get()->info("Created vulkan instance with {} extension(s), validation {}",
         enabled.size(), validating_ ? "on" : "off");
@@ -166,8 +162,8 @@ void Instance::createMessenger() {
 
     VkDebugUtilsMessengerCreateInfoEXT info{};
     info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    // info and verbose are left out: they are the layer narrating what it was asked to do
-    // rather than telling us anything is wrong, and they bury the two that matter
+    // info and verbose are left out: they describe what the layer was asked to do rather
+    // than a problem, and they would bury the warnings and errors
     info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
         VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
@@ -229,20 +225,12 @@ bool Instance::hasExtension(const char* extension) {
 void Instance::requireExtensions(const std::vector<const char*>& extensions) {
     uint32_t count = 0;
     VkResult result = vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        std::stringstream msg;
-        msg << "Unable to count vulkan instance extensions - " << resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    check(result, "Unable to count vulkan instance extensions", VK_INCOMPLETE);
 
     std::vector<VkExtensionProperties> available(count);
     if (count > 0) {
         result = vkEnumerateInstanceExtensionProperties(nullptr, &count, available.data());
-        if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-            std::stringstream msg;
-            msg << "Unable to enumerate vulkan instance extensions - " << resultString(result);
-            throw std::runtime_error(msg.str());
-        }
+        check(result, "Unable to enumerate vulkan instance extensions", VK_INCOMPLETE);
     }
 
     std::stringstream missing;

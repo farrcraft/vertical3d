@@ -16,14 +16,29 @@ namespace v3d::ui::component {
 /**
  **/
 MenuBar::MenuBar() : Component(component::Type::MenuBar), hover_(-1), open_(-1) {
+    // a strip is a control unless a document says it is scenery, which lets a press through
+    pickable(true);
+}
+
+/**
+ **/
+MenuBar::~MenuBar() {
+    for (const boost::shared_ptr<Menu>& menu : menus_) {
+        disown(*menu);
+    }
 }
 
 /**
  **/
 void MenuBar::add(const std::string& label, const boost::shared_ptr<Menu>& menu) {
+    // opening a label shows its menu, so a label without one is not added
+    if (!menu) {
+        return;
+    }
     labels_.push_back(label);
     // nothing is hit until a renderer has said where the label went
     bounds_.push_back(v3d::type::geometry::Bound2D(0.0f, 0.0f, 0.0f, 0.0f));
+    adopt(*menu);
     menus_.push_back(menu);
 }
 
@@ -106,7 +121,7 @@ const std::vector<boost::shared_ptr<Menu>>& MenuBar::panels() const noexcept {
  **/
 bool MenuBar::within(const Component& component, const glm::vec2& cursor) {
     v3d::type::geometry::Bound2D bound = component.bound();
-    return bound.intersect(cursor);
+    return bound.contains(cursor);
 }
 
 /**
@@ -114,7 +129,7 @@ bool MenuBar::within(const Component& component, const glm::vec2& cursor) {
 int MenuBar::labelAt(const glm::vec2& cursor) const {
     for (std::size_t index = 0; index < bounds_.size(); index++) {
         v3d::type::geometry::Bound2D bound = bounds_[index];
-        if (bound.intersect(cursor)) {
+        if (bound.contains(cursor)) {
             return static_cast<int>(index);
         }
     }
@@ -126,7 +141,8 @@ int MenuBar::labelAt(const glm::vec2& cursor) const {
 int MenuBar::itemAt(const boost::shared_ptr<Menu>& panel, const glm::vec2& cursor) {
     for (std::size_t index = 0; index < panel->count(); index++) {
         const boost::shared_ptr<MenuItem>& item = (*panel)[index];
-        if (item && within(*item, cursor)) {
+        // an item that cannot be used is not offered the cursor, like a disabled strip button
+        if (item && usable(*item) && within(*item, cursor)) {
             return static_cast<int>(index);
         }
     }

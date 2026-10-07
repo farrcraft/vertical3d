@@ -1,7 +1,7 @@
 add_executable(imagetool "imagetool.cxx")
 
 # Boost::program_options is named here rather than reached through a library: imagetool
-# parses its own command line. The winapi version workaround arrives with v3dlib_image.
+# parses its own command line.
 target_link_libraries(imagetool PRIVATE
 		v3dlib_log
 		v3dlib_image

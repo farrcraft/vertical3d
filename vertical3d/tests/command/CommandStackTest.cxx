@@ -5,6 +5,7 @@
 
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
+#include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/TransformCommand.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -22,8 +23,8 @@
 namespace {
 
 /**
- * A command that records how often it has been asked to do and undo itself, which is
- * what the stack's own behaviour is measured by.
+ * A command that counts how often it has been done and undone. The tests measure the
+ * stack's behaviour by these counts.
  **/
 class CountingCommand final : public v3d::editor::Command {
  public:
@@ -96,7 +97,7 @@ BOOST_AUTO_TEST_CASE(command_stack_undo_redo_test) {
     BOOST_CHECK_EQUAL(stack.undoDepth(), 2u);
     BOOST_CHECK(!stack.canRedo());
 
-    // and the whole history unwinds in order
+    // the whole history unwinds in order
     BOOST_CHECK(stack.undo() == second);
     BOOST_CHECK(stack.undo() == first);
     BOOST_CHECK(!stack.canUndo());
@@ -111,8 +112,8 @@ BOOST_AUTO_TEST_CASE(command_stack_branch_test) {
     stack.undo();
     BOOST_CHECK(stack.canRedo());
 
-    // a new change is a branch of the history that was never taken, so what had been undone
-    // is not reachable any more
+    // a new change starts a new branch of the history, so the undone commands cannot be
+    // redone
     stack.push(second);
     BOOST_CHECK(!stack.canRedo());
     BOOST_CHECK_EQUAL(stack.undoDepth(), 1u);
@@ -164,7 +165,7 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
         boost::make_shared<v3d::editor::CreateCommand>(scene, cube, "cube");
     BOOST_CHECK_EQUAL(command->name(), "create cube");
 
-    // the command is what creates, so the first do and a redo are the same code
+    // the command does the creating, so the first do and a redo run the same code
     command->redo();
     BOOST_CHECK_EQUAL(scene->count(), 1u);
     BOOST_CHECK(scene->selection() == cube);
@@ -174,8 +175,8 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
     BOOST_CHECK(!scene->selection());
     BOOST_CHECK(!cube->selected());
 
-    // the mesh outlives its removal, which is what lets it come back with the id a deeper
-    // command still names
+    // the mesh outlives its removal, so it comes back with the id that a command deeper in
+    // the history still names
     command->redo();
     BOOST_CHECK_EQUAL(scene->count(), 1u);
     BOOST_CHECK(scene->mesh(id) == cube);
@@ -217,7 +218,7 @@ BOOST_AUTO_TEST_CASE(transform_command_test) {
     v3d::editor::TransformCommand command(cube, before, after, "translate");
     BOOST_CHECK_EQUAL(command.name(), "translate");
 
-    // a gesture is undone by putting the whole placement back, not the part that moved
+    // a gesture is undone by restoring the whole placement, not only the part that moved
     command.undo();
     BOOST_CHECK_SMALL(cube->translation().x, 0.001f);
     BOOST_CHECK_CLOSE(cube->scale().x, 1.0f, 0.1f);

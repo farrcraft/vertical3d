@@ -22,11 +22,9 @@ namespace v3d::render::realtime::vulkan::memory {
 /**
  * Static geometry in device local memory - vertices, and indices where a draw is indexed.
  *
- * A mesh is the one thing a draw item names that pipeline::Resources does not own, per ADR-0010:
- * pipelines, materials and textures are built at load time and live until the context
- * does, while meshes are created and thrown away while the app runs. So a mesh is held by
- * whatever built it - a chunk, a model - and a draw item referring to one is only valid
- * while that owner is alive.
+ * A mesh is the only thing a draw item names that pipeline::Resources does not own. A mesh is
+ * held by whatever built it - a chunk, a model, the MeshRegistry - and a draw item referring
+ * to one is only valid while that owner is alive.
  *
  * The buffers are filled once at construction. Rebuilding geometry means building a new
  * mesh rather than refilling this one, since a refill has to wait for every frame that
@@ -41,7 +39,7 @@ class Mesh final {
      * @param vertices the vertex data, in whatever layout the pipeline declares
      * @param vertexBytes its size
      * @param vertexCount how many vertices that is - the stride is the pipeline's, not
-     *        something a mesh knows, so the count cannot be worked out from the size
+     *        something a mesh stores, so the count cannot be worked out from the size
      * @param indices 32 bit indices into it
      * @param indexCount how many
      * @throw std::runtime_error if either buffer cannot be created or filled

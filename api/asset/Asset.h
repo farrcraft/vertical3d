@@ -23,6 +23,16 @@ class Asset {
      **/
     virtual ~Asset() = default;
 
+    /**
+     * @return where the asset was loaded from
+     **/
+    const std::string& name() const noexcept;
+
+    /**
+     * @return the type it was loaded as
+     **/
+    Type type() const noexcept;
+
  protected:
     std::string name_;
     Type type_;

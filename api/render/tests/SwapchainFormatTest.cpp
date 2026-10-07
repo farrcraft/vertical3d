@@ -28,9 +28,9 @@ VkSurfaceFormatKHR offered(VkFormat format, VkColorSpaceKHR space = VK_COLOR_SPA
 BOOST_AUTO_TEST_SUITE(swapchain_format_test)
 
 /**
- * A caller that names no format gets ADR-0009's rule, whatever order the surface lists its
- * formats in. The SRGB entry sits first here because that is the order a driver usually
- * reports and the order a naive pick would take.
+ * A caller that names no format gets a UNORM format in preference to an SRGB one, whatever
+ * order the surface lists its formats in. The SRGB entry sits first here because that is the
+ * order a driver usually reports and the order a naive pick would take.
  **/
 BOOST_AUTO_TEST_CASE(no_preference_takes_unorm) {
     const std::vector<VkSurfaceFormatKHR> formats{
@@ -53,8 +53,7 @@ BOOST_AUTO_TEST_CASE(a_preference_the_surface_offers_wins) {
 
 /**
  * A chain is built either way. A preference the surface cannot satisfy falls back to the
- * default rather than failing, because a window that presents nothing is worse than one whose
- * colours the app has to encode itself.
+ * default rather than failing. The app then has to encode its colours itself.
  **/
 BOOST_AUTO_TEST_CASE(a_preference_the_surface_lacks_falls_back) {
     const std::vector<VkSurfaceFormatKHR> formats{
@@ -65,7 +64,7 @@ BOOST_AUTO_TEST_CASE(a_preference_the_surface_lacks_falls_back) {
 
 /**
  * The colour space is matched as well as the format. The same format in a wide gamut space is
- * a different target, and taking it would hand the app a chain it did not ask for.
+ * a different target, and the app did not request it.
  **/
 BOOST_AUTO_TEST_CASE(a_preference_in_another_colour_space_is_not_a_match) {
     const std::vector<VkSurfaceFormatKHR> formats{

@@ -1,7 +1,7 @@
 # Offline Rendering, Phase 3 — Light And Surface
 
 Drafted 2026-09-05, **closed 2026-09-10**. Takes up phase 3 of
-[the offline rendering roadmap](../roadmap/OfflineRendering.md), which stays the account of where
+[the offline rendering roadmap](../../roadmap/completed/OfflineRendering.md), which stays the account of where
 both renderers stand and what the later phases are; this plan does not repeat it.
 
 Phase 2 ended with both renderers reading a scene from a RIB file and drawing it. A scene can
@@ -23,15 +23,15 @@ renderers run it.
 
 ## Decisions
 
-Recorded in [docs/adr/](../adr/), not here. The ones that shape this plan:
+Recorded in [docs/adr/](../../adr/), not here. The ones that shape this plan:
 
 | ADR | Decision |
 |---|---|
-| [0026](../adr/0026-shading-is-a-language-over-a-batch.md) | Shading is a language, and it runs over a batch of shading points |
-| [0022](../adr/0022-offline-rendering-shares-an-api-library.md) | Shared offline code is `api/render/offline`; each renderer is a library with a driver |
-| [0023](../adr/0023-rib-is-the-offline-scene-description.md) | RIB is what both renderers read; the editor exports to it, one way |
-| [0024](../adr/0024-api-type-serves-both-renderers.md) | `api/type` serves both, and a convention is a parameter rather than a fork |
-| [0025](../adr/0025-the-rib-reader-dispatches-a-cpp-request-interface.md) | The reader hands a renderer C++ requests with typed parameter lists |
+| [0026](../../adr/0026-offline-shaders-run-over-batches-of-points.md) | Shading is a language, and it runs over a batch of shading points |
+| [0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) | Shared offline code is `api/render/offline`; each renderer is a library with a driver |
+| [0023](../../adr/0023-offline-rib-is-the-scene-format.md) | RIB is what both renderers read; the editor exports to it, one way |
+| 0024 (removed) | `api/type` serves both, and a convention is a parameter rather than a fork |
+| [0025](../../adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md) | The reader hands a renderer C++ requests with typed parameter lists |
 
 ## What blocks what
 
@@ -62,7 +62,7 @@ the phase.
 
 ### Step 1 — ADR-0026, shading is a language
 
-**Landed.** [ADR-0026](../adr/0026-shading-is-a-language-over-a-batch.md) is accepted and in the
+**Landed.** [ADR-0026](../../adr/0026-offline-shaders-run-over-batches-of-points.md) is accepted and in the
 index, and the reserved-number note in that index is gone. It weighs five alternatives rather than
 the two the roadmap named: the two extra are an existing language embedded instead of one written,
 and a `.slo`-style compiled shader file, both of which the plan settled in passing and neither of
@@ -70,7 +70,7 @@ which a reader would otherwise find argued anywhere.
 
 The roadmap has carried this question open since it was written, and it reaches past this phase:
 it decides whether talyn is reached from a shader's `trace()`, which is the remaining half of
-[phase 6](../roadmap/OfflineRendering.md). The record has to exist before step 3, because every
+[phase 6](../../roadmap/completed/OfflineRendering.md). The record has to exist before step 3, because every
 step after it is an implementation of one of the alternatives.
 
 Four things it has to weigh, and the record is the place they are argued rather than here:
@@ -141,9 +141,9 @@ Independent of the language and blocking all of it. Neither renderer has a norma
   comment, and leave it for the phase that gives `Plane::clip` an interpolating edge split.
 - talyn: `Triangle` gains a normal, or three of them. The hit needs barycentric coordinates to
   interpolate, and Möller-Trumbore computes them on the way to the distance —
-  [`type::Ray::intersects`](../../api/type/Ray.h) throws them away. **An overload that also reports
+  [`type::Ray::intersects`](../../../api/type/geometry/Ray.h) throws them away. **An overload that also reports
   `u` and `v`** is the change, additive rather than a signature change, and by
-  [ADR-0024](../adr/0024-api-type-serves-both-renderers.md) it belongs in `api/type` where the
+  ADR-0024 (removed) it belongs in `api/type` where the
   editor's picker can have it too.
 
 **Done when**: `v3dtest_type` covers the barycentric overload against a hand-worked triangle, both
@@ -630,7 +630,7 @@ Three things beyond the step's own text:
 - **`sl::Placed` is shared rather than written twice.** A shader instance and the space it was
   instanced in travel together everywhere — a surface on a primitive, a light in a scene, in
   both renderers — so they are one thing in `api/render/offline` per
-  [ADR-0022](../adr/0022-offline-rendering-shares-an-api-library.md) rather than a pair of
+  [ADR-0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) rather than a pair of
   fields repeated in each.
 
 `trace()` is implemented as the step's phase 6 hook asks, with a depth of one: a ray a traced
@@ -756,8 +756,8 @@ phase 2 and two new — on a machine with no GPU.
 
 ## Verification
 
-The four gates in [sdlc.md](../sdlc.md) §4: `ninja -C out/build/x64-Debug`, cpplint per
-[Linting.md](../Linting.md), and `ctest --test-dir out/build/x64-Debug --output-on-failure`.
+The four gates in [sdlc.md](../../sdlc.md) §4: `ninja -C out/build/x64-Debug`, cpplint per
+[Linting.md](../../contributing/Linting.md), and `ctest --test-dir out/build/x64-Debug --output-on-failure`.
 
 Render verification is ctest, as it was in phases 1 and 2. Neither renderer touches a window, a
 device or a swapchain, so "run it and read the validation log" — the method for every other
@@ -802,9 +802,43 @@ steps that ran into them, and each says so where it was settled: a shader's `"sh
 step 9, whether a primitive's `Cs` beats the graphics state's by step 10, and how loud a stub is
 by step 7.
 
-The fourth outlived the phase and is in [TODO.md](../TODO.md):
+The fourth outlived the phase and is in [TODO.md](../../TODO.md):
 
 - **`RiRotate`'s sign**, carried forward from phase 2 and still not decidable from inside the
   tree. A light placed by a rotation was expected to be the thing that made it visible, and it
   was not: both renderers hand the angle to the same `glm::rotate`, so they agree with each
   other whichever of them is right, and a reference picture agreeing with itself says nothing.
+
+## Outcome
+
+Drafted on 2026-09-05 and closed on 2026-09-10. Its twelve steps took up phase 3 of
+[the offline rendering roadmap](../../roadmap/completed/OfflineRendering.md), light and surface.
+It answered the question that roadmap had left open: shading is a language
+([ADR-0026](../../adr/0026-offline-shaders-run-over-batches-of-points.md)), not a fixed set of
+shaders. That made it a subsystem rather than a small task, and phases 4 and 5 waited behind it.
+
+The ordering was almost entirely forced. One step, the surface normal, blocked everything and
+depended on nothing. The five steps that build the language are strictly sequential: an AST
+cannot be type-checked before it parses, and a program cannot run before it is compiled. Only
+the last four steps had any slack.
+
+Four things came out differently, and each was a step's own text being wrong rather than the
+ordering:
+
+- `ambient()` cannot be a function over `illuminance`, as step 7 assumed. A light with no
+  direction cannot be reached by an illuminance loop, and that is what makes it ambient.
+- `Shader` was already the syntax node, so step 8's shader instance is `sl::Instance`.
+- Step 8's C API bodies moved to step 9, because each of them calls a render context method that
+  step 9 wrote.
+- Step 10 had to decide who calls `transmission`, which the plan left open. RenderMan's own
+  standard lights do not call it, so the three directional lights here do.
+
+It also found two things nothing else had:
+
+- The analysis gates had never covered an app. `out/build/verify` was configured with
+  `V3D_BUILD_APPS=OFF`, so `/analyze` and clang-tidy had only ever seen `api/`.
+- Neither renderer could tell an empty pixel from a black one. An imager needs that difference,
+  and phase 1's fix for a black png had hidden it.
+
+The phase closed as intended: the two pictures the tree drew before the language existed are
+drawn by the language, unchanged, through every pass of it.

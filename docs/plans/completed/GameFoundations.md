@@ -26,8 +26,8 @@ linked from here, because those paths do not resolve from this one.
 
 ### Nothing in the api writes a document
 
-[`asset::Json`](../../../api/asset/Json.h) holds a parsed `boost::json::object` and hands it out.
-[`asset::JsonFile`](../../../api/asset/JsonFile.h) opens a file and reads it. `config::Config` resolves
+`asset::Json` holds a parsed `boost::json::object` and hands it out.
+`asset::JsonFile` opens a file and reads it. `config::Config` resolves
 a document by type. **There is no write path anywhere in `api/asset`**, and the tree has one
 consumer that needs one and has built its own:
 
@@ -70,8 +70,8 @@ That is not a game's problem. It is a sentence in an api header describing a hol
 
 ### `MouseButton` drops the position SDL gave it
 
-[`ui::Cursor::press(point)`](../../../api/ui/Cursor.h) takes a point.
-[`event::MouseButton`](../../../api/event/MouseButton.h) carries a button index and an edge and no
+[`ui::Cursor::press(point)`](../../../api/ui/input/Cursor.h) takes a point.
+[`event::MouseButton`](../../../api/event/kind/MouseButton.h) carries a button index and an edge and no
 position. [`input::Mouse::handleEvent`](../../../api/input/Mouse.cpp) reads `event.button.x` and
 `event.button.y` — the position SDL puts on every button event — writes them into its own
 `MouseState`, and then constructs the dispatched event without them:
@@ -88,7 +88,7 @@ must track the last `event::MouseMotion` itself** to reconstruct a number this l
 stored and discarded three lines earlier. There are no such consumers in this tree yet, which is
 exactly why it should be fixed before there are several.
 
-[`MouseMotion`](../../../api/event/MouseMotion.h) already carries a position and a delta. The
+[`MouseMotion`](../../../api/event/kind/MouseMotion.h) already carries a position and a delta. The
 asymmetry is an oversight rather than a design.
 
 ### A ui with no tab order and a scrollbar that scrolls nothing
@@ -116,7 +116,7 @@ gives for a word wider than the line. It is good code and the retained component
 it: [`component::Label`](../../../api/ui/component/Label.h) holds a `std::string` and
 `ComponentRenderer` draws *"one line of text at the position it holds"*.
 
-[UserInterface.md](../../UserInterface.md) says the two ways to write a ui are for different jobs and
+[UserInterface.md](../../api/ui/README.md) says the two ways to write a ui are for different jobs and
 that a hud belongs to the retained one. A hud, a tooltip, an item description and a line of
 dialogue are all more than one line, and all four are on the consuming game's roadmap. This is a
 helper moving up a level, not a feature.
@@ -132,9 +132,9 @@ game drawn in a projection:
 | [`LineCanvas`](../../../api/render/realtime/LineCanvas.h) | world | the camera the pass carries |
 
 So a rectangle can be textured or it can be in the world, and not both.
-[ADR-0005](../../adr/0005-one-batched-quad-primitive.md) is the reason — one batched quad primitive,
+[ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md) is the reason — one batched quad primitive,
 and the primitive was built for a ui. It has held well: a panel, a sprite and a glyph are one
-pipeline, and [ADR-0036](../../adr/0036-text-is-a-distinct-kind-of-quad.md) amended it without
+pipeline, and [ADR-0036](../../adr/0036-text-sdf-glyphs-through-the-quad-shader.md) amended it without
 splitting it.
 
 What it does not cover is a sprite standing on a ground plane. The consuming game has settled, in a
@@ -153,7 +153,7 @@ rather than from a sprite, and that is the argument for settling it once.
 ### A sprite sheet has a packer and no reader
 
 [`image::TextureAtlas`](../../../api/image/TextureAtlas.h) packs regions and is what `api/font` builds
-a glyph atlas with. [`QuadRenderer::texture(image)`](../../../api/render/realtime/vulkan/QuadRenderer.h)
+a glyph atlas with. `QuadRenderer::texture(image)`
 uploads one. `Canvas::rect` takes a uv pair. Every piece of drawing a sprite out of a sheet is
 present.
 
@@ -194,11 +194,11 @@ and [adr/README.md](../../adr/README.md) is the authority if something takes the
 |---|---|
 | **0041** | A document is written whole or not at all — written by step 1 |
 | **0042** | A textured quad in world space, and how it relates to ADR-0005 — written by step 10 |
-| [0005](../../adr/0005-one-batched-quad-primitive.md) | One batched quad primitive — **amended or extended** by 0042, and step 10 is where which of the two is settled |
-| [0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) | The ui is laid out by what draws it — unchanged; steps 7 and 9 keep the `Measure`/`Write` seam |
-| [0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) | An app resolves what a config names — unchanged; step 12's sheet resolves its image the same way a theme does |
-| [0027](../../adr/0027-the-api-is-consumed-as-source.md) | The api is consumed as source — unchanged, and why a consuming game can be planned against unreleased api |
-| [0040](../../adr/0040-a-key-goes-to-a-focused-component.md) | A key goes to a focused component — **extended** by step 8, which gives the focus a second way to move |
+| [0005](../../adr/0005-2d-one-batched-quad-pipeline.md) | One batched quad primitive — **amended or extended** by 0042, and step 10 is where which of the two is settled |
+| 0019 (removed) | The ui is laid out by what draws it — unchanged; steps 7 and 9 keep the `Measure`/`Write` seam |
+| [0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md) | An app resolves what a config names — unchanged; step 12's sheet resolves its image the same way a theme does |
+| [0027](../../adr/0027-build-consume-the-api-as-source.md) | The api is consumed as source — unchanged, and why a consuming game can be planned against unreleased api |
+| [0040](../../adr/0040-ui-keyboard-focus-and-text-input.md) | A key goes to a focused component — **extended** by step 8, which gives the focus a second way to move |
 
 ## What blocks what
 
@@ -235,7 +235,7 @@ and every day it is not done is a day another app writes the workaround.
 
 ### Step 1 — ADR-0041, a document is written whole or not at all
 
-**Landed** as [ADR-0041](../../adr/0041-a-document-is-written-whole-or-not-at-all.md).
+**Landed** as [ADR-0041](../../adr/0041-files-write-documents-atomically.md).
 
 The record comes first, per [sdlc.md](../../sdlc.md).
 
@@ -350,7 +350,7 @@ it.
 ### Step 5 — Pong remembers what it was told
 
 **Landed**, with the org and app recorded in
-[Architecture.md](../../Architecture.md) where the next app will look. Verified by running it:
+[Engine.md](../../api/engine/README.md) where the next app will look. Verified by running it:
 rebound Player 1 Up to `j` through the menu, confirmed the document, restarted and confirmed
 `j` moves the paddle and `w` no longer does, deleted the document and confirmed `w` does again.
 
@@ -374,7 +374,7 @@ answers the new key, delete the file, restart, confirm it answers the shipped on
 **Landed.** The constructor takes the point and the button case in `Mouse::handleEvent` was
 braced so it can be a `const` local rather than a member of the enclosing function.
 
-In [`api/event/MouseButton.h`](../../../api/event/MouseButton.h) and
+In [`api/event/MouseButton.h`](../../../api/event/kind/MouseButton.h) and
 [`api/input/Mouse.cpp`](../../../api/input/Mouse.cpp).
 
 A `glm::vec2 position()` beside `button()` and `pressed()`, filled from the `event.button.x`/`y`
@@ -400,7 +400,7 @@ parent would otherwise produce.
 
 In [`api/ui/`](../../../api/ui/), out of [`Immediate.cpp`](../../../api/ui/Immediate.cpp)'s anonymous
 namespace, and then [`component/Label.h`](../../../api/ui/component/Label.h) and the label's draw path
-in [`ComponentRenderer`](../../../api/ui/ComponentRenderer.cpp).
+in [`ComponentRenderer`](../../../api/ui/paint/ComponentRenderer.cpp).
 
 Two halves:
 
@@ -410,7 +410,7 @@ Two halves:
 - **A label wraps when it has a width to wrap to.** A `Label` whose layout gives it an `Auto` width
   is one line, exactly as today. One that was given a width or a percentage wraps to it, and its
   `Auto` *height* becomes the rows it came to — which is the shape
-  [ADR-0039](../../adr/0039-layout-never-reads-the-box-it-wrote.md) already describes for a component
+  ADR-0039 (removed) already describes for a component
   that makes something of an axis itself, so nothing about layout changes to accommodate it.
 
 **Do not add a rich-text component.** A run of text with per-span colour, a link, an inline icon —
@@ -428,8 +428,8 @@ A key name carries no modifier, `api/ui` cannot reach `api/input` without taking
 and there is no key name for shift-tab — so the app that saw the key says. It defaults to
 false, which is forward-only tab for a caller that ignores it. No `tabIndex` was added.
 
-In [`api/ui/Engine.h`](../../../api/ui/Engine.h) and [`Keys.cpp`](../../../api/ui/Keys.cpp), extending
-[ADR-0040](../../adr/0040-a-key-goes-to-a-focused-component.md).
+In [`api/ui/Engine.h`](../../../api/ui/Engine.h) and [`Keys.cpp`](../../../api/ui/input/Keys.cpp), extending
+[ADR-0040](../../adr/0040-ui-keyboard-focus-and-text-input.md).
 
 `Engine::focus()` holds one component at a time and a press is the only thing that calls it. It
 needs a second caller: a traversal that finds the next `focusable()` component after the one that
@@ -480,7 +480,7 @@ with nothing to scroll draws a track and no thumb, and a bar whose list has gone
 
 ### Step 10 — ADR-0042, a textured quad in world space
 
-**Landed** as [ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md): a third primitive,
+**Landed** as [ADR-0042](../../adr/0042-rendering-world-space-sprites.md): a third primitive,
 `realtime::WorldCanvas`, ordered by its caller, with a depth pipeline that tests and does not
 write. ADR-0005 is narrowed rather than amended, the way ADR-0011 narrowed it.
 
@@ -490,11 +490,11 @@ What it has to settle:
 
 - **A third primitive, or a mode of the quad.** `LineCanvas` is the precedent for the first: a
   separate canvas, world coordinates, drawn through the pass camera, and
-  [ADR-0011](../../adr/0011-lines-are-the-second-primitive.md) is the record that made it a peer rather
+  [ADR-0011](../../adr/0011-rendering-lines-as-a-world-space-primitive.md) is the record that made it a peer rather
   than a variant. The second is `Canvas` learning that a batch is world space and taking its
   projection from the pass, which is a smaller change and a larger claim, since `Canvas` currently
   *is* the definition of screen space in this tree.
-- **Whether it amends [ADR-0005](../../adr/0005-one-batched-quad-primitive.md) or sits beside it.**
+- **Whether it amends [ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md) or sits beside it.**
   0005 says one batched quad primitive draws every 2D thing; 0036 amended it once already, for text.
   A world space quad is either the third amendment or the honest admission that 0005 was about the
   ui.
@@ -557,7 +557,7 @@ resolves to — decide by which one can name the other without a new dependency 
 A `sprite` config type beside `window`, `binding`, `ui`, `sound`, `camera` and `layout`: an image,
 and a table of names over pixel rectangles in it. Loaded like every other config, resolved to a
 texture by the app the way a theme's images are, per
-[ADR-0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) — the library reads the
+[ADR-0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md) — the library reads the
 document and never touches the asset manager.
 
 **Pixels in the document, uv at the call.** An author reads a sprite sheet in pixels and a shader
@@ -608,12 +608,12 @@ that nobody holds a handle to is still the common case — it just gets a track 
 
 **Tests.** `api/audio/tests/` exists and cannot open a device in CI, which bounds this: the clip
 table, the tag bookkeeping and the id lifetime are testable, and whether a sound is audible is not.
-That is the same line [Testing.md](../../Testing.md) already draws around `audio::Engine::initialize()`.
+That is the same line [Testing.md](../../contributing/Testing.md) already draws around `audio::Engine::initialize()`.
 
 ## Considered and not done
 
 **Promoting `CommandDirectory` to `api/event`.**
-[ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md) rejected this with a stated condition —
+ADR-0017 (removed) rejected this with a stated condition —
 *"it moves when a second app wants it"* — and the consuming game's M1 plan predicted its M2 would be
 the trigger. It read the code and concluded not yet: about twelve commands in two contexts that do
 not overlap, answered by two `if` chains, where the editor's directory exists to serve 76 commands
@@ -656,3 +656,26 @@ Two corrections found while reading, neither of which is a step:
   Whichever landed it did not close the note.
 - **`JsonFile::open` uses `fopen_s`**, which is MSVC's, as do all four image readers and writers.
   The tree is Windows-only and this is not urgent; it is worth knowing before step 2 adds a fifth.
+
+## Outcome
+
+Drafted on 2026-09-07 outside this tree, then staged and closed here the same day. Its thirteen
+steps covered what a game needs from these libraries that a demo does not:
+
+- a document written whole or not at all
+  ([ADR-0041](../../adr/0041-files-write-documents-atomically.md));
+- a textured quad in world space
+  ([ADR-0042](../../adr/0042-rendering-world-space-sprites.md));
+- the missing halves of `api/ui` and `api/audio`.
+
+The ordering mattered because the groups were largely independent: four groups, and only two
+with an order inside them. So the one defect it carried, an editor save that truncated the
+previous project before writing the new one, did not wait behind the structural work.
+
+Two things came out differently from the plan:
+
+- Step 8 gave `Keys::press` an argument for whether shift is held. A key name carries no
+  modifier, and `api/ui` cannot ask `api/input` for one without bringing SDL into a library that
+  needs no window to test.
+- Step 12 landed entirely in `api/config`, because a sprite sheet resolves to a texture handle
+  the app already holds.

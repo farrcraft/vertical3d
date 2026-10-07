@@ -5,6 +5,8 @@
 
 #include "Engine3D.h"
 
+#include <vector>
+
 #include <boost/make_shared.hpp>
 
 namespace v3d::render::realtime {
@@ -13,9 +15,9 @@ const char* const Engine3D::colourPass = "colour";
 
 /**
  **/
-Engine3D::Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry,
+Engine3D::Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
     VkFormat preferred) :
-    Engine(logger, assetManager, registry),
+    Engine(logger, assetManager),
     clearColour_(0.06f, 0.07f, 0.10f, 1.0f),
     preferred_(preferred) {
 }
@@ -28,7 +30,7 @@ bool Engine3D::initialize(const boost::shared_ptr<Window>& window) {
     // the context can only be built once there is a created window to take a device from
     context_ = boost::make_shared<Context3D>(logger(), window, preferred_);
 
-    frame_ = boost::make_shared<Frame>(context_);
+    frame_ = boost::make_shared<Frame>();
     frame_->pass(colourPass)->clearColour(clearColour_);
 
     return true;
@@ -38,15 +40,15 @@ bool Engine3D::initialize(const boost::shared_ptr<Window>& window) {
  **/
 bool Engine3D::shutdown() {
     if (context_) {
-        // the swapchain, the device and the window all outlive the frames that were
-        // submitted against them, but only just
-        context_->ring()->waitIdle();
+        // every submitted frame has to finish before the swapchain, the device and the
+        // window are destroyed
+        context_->ring()->waitIdleNoThrow();
     }
     // the context has to go before the window does. It owns the device, which holds
     // the window's surface alive, and the window's teardown unloads the vulkan library -
     // a surface destroyed after that is not destroyed at all, and the instance reports
     // it as leaked
-    // released, not Frame::reset() - the assignment is what tells the two apart at a glance
+    // assigned null rather than calling frame_.reset(), which reads like Frame::reset()
     frame_ = nullptr;
     context_.reset();
     return Engine::shutdown();
@@ -54,7 +56,7 @@ bool Engine3D::shutdown() {
 
 /**
  **/
-boost::shared_ptr<Context> Engine3D::context() {
+boost::shared_ptr<DeviceContext> Engine3D::context() {
     return context_;
 }
 
@@ -66,8 +68,21 @@ boost::shared_ptr<Frame> Engine3D::frame() const {
 
 /**
  **/
+const std::vector<vulkan::frame::Timings::Timing>& Engine3D::timings() const {
+    static const std::vector<vulkan::frame::Timings::Timing> none;
+    return context_ ? context_->ring()->timings().last() : none;
+}
+
+/**
+ **/
 boost::shared_ptr<vulkan::renderer::Quad> Engine3D::quads() const {
     return context_ ? context_->quads() : boost::shared_ptr<vulkan::renderer::Quad>();
+}
+
+/**
+ **/
+boost::shared_ptr<Textures> Engine3D::textures() const {
+    return context_ ? context_->textures() : boost::shared_ptr<Textures>();
 }
 
 /**
@@ -123,6 +138,7 @@ void Engine3D::renderFrame() {
         // the window changed size between the last present and this acquire - rebuild
         // the chain and let the next frame draw into it
         context_->resize();
+        context_->ring()->skip();
         endFrame();
         return;
     }
@@ -133,6 +149,7 @@ void Engine3D::renderFrame() {
         if (window() && window()->width() > 0 && window()->height() > 0) {
             context_->resize();
         }
+        context_->ring()->skip();
         endFrame();
         return;
     }
@@ -143,21 +160,16 @@ void Engine3D::renderFrame() {
     target.image = swapchain->images()[acquisition.image];
     target.view = swapchain->views()[acquisition.image];
     target.extent = swapchain->extent();
+    target.format = swapchain->format();
 
     // the depth buffer is allocated the first frame a pass asks for one, so an app that
     // never depth tests never pays for a full screen image it does not read
-    bool depth = false;
-    for (const boost::shared_ptr<Pass>& pass : frame_->passes()) {
-        if (pass->depth()) {
-            depth = true;
-            break;
-        }
-    }
-    if (depth) {
+    if (frame_->swapchainDepth()) {
         const boost::shared_ptr<vulkan::frame::DepthBuffer> buffer = context_->depth();
         if (buffer->valid()) {
             target.depthImage = buffer->image();
             target.depthView = buffer->view();
+            target.depthFormat = buffer->format();
         }
     }
 
@@ -165,7 +177,8 @@ void Engine3D::renderFrame() {
     // the slots of the frame about to be recorded are free - acquire() waited on its fence
     uniforms->begin(context_->ring()->frame());
 
-    vulkan::frame::Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get());
+    vulkan::frame::Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get(),
+        &context_->ring()->timings());
 
     if (presenter->present(acquisition) == vulkan::frame::Presenter::Status::OutOfDate) {
         context_->resize();
@@ -178,17 +191,6 @@ void Engine3D::renderFrame() {
  **/
 void Engine3D::endFrame() {
     frame_->reset();
-    // the geometry buffers this frame's submissions took go back to the front of
-    // their rings, for the next frame to claim from
-    if (context_) {
-        context_->quads()->endFrame();
-        if (context_->hasLines()) {
-            context_->lines()->endFrame();
-        }
-        if (context_->hasWorldQuads()) {
-            context_->worldQuads()->endFrame();
-        }
-    }
 }
 
 };  // namespace v3d::render::realtime

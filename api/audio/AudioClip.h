@@ -5,9 +5,13 @@
 
 #pragma once
 
-#include <SDL3_mixer/SDL_mixer.h>
-
 #include <string>
+
+// the mixer's handles, named here and defined in SDL_mixer.h, which only this library's
+// sources include - so a consumer of these headers needs nothing from SDL3_mixer
+struct MIX_Audio;
+struct MIX_Mixer;
+struct MIX_Track;
 
 namespace v3d::audio {
 

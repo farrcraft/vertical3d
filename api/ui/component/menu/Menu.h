@@ -25,6 +25,7 @@ class Menu : public Component {
       * @param dispatcher the dispatcher activated menu items send their bound event to
       **/
      explicit Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher);
+     ~Menu() override;
 
     /**
         * Make the next item in the menu active.
@@ -79,8 +80,8 @@ class Menu : public Component {
       * input item begins capturing instead: navigation stops moving, what is fed to
       * capture() becomes the item's value, and the item's event is sent carrying it.
       *
-      * An activation arriving while a capture is open is what ends the capture, so this
-      * is both the verb that starts one and the verb that finishes one.
+      * An activation arriving while a capture is open ends the capture, so this call both
+      * starts and finishes one.
       */
     void activate();
 
@@ -93,7 +94,7 @@ class Menu : public Component {
      * a string or a number is built up rather than pressed.
      *
      * What a value means is the app's: this takes whatever it is fed and puts it on the
-     * item, which is what the item's event carries as its data. For a key input that is a
+     * item, and the item's event carries it as its data. For a key input that is a
      * key name, per api/input/Keyboard.cpp's table, because a key name is what a binding
      * document holds.
      *

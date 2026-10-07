@@ -38,7 +38,7 @@ Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const bo
 Context3D::~Context3D() {
     // the device may still be drawing with everything about to be destroyed. The base waits
     // as well, and by then this has already let go of the presenter
-    ring()->waitIdle();
+    ring()->waitIdleNoThrow();
 }
 
 /**

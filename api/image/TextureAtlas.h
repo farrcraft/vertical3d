@@ -33,10 +33,14 @@ class TextureAtlas {
     /**
      * Reserve room for an image of this size, with a gutter around it.
      *
-     * The rectangle that comes back is the usable one - the size asked for, positioned
-     * inside the gutter - so it is what the blit below and a texture coordinate both
-     * want, and a caller neither adds the gutter to what it asks for nor subtracts it
-     * from what it gets ([ADR-0055](../../docs/adr/0055-a-texture-atlas-gutters-its-own-regions.md)).
+     * The atlas always reserves a one-texel gutter of zeroed texels on all four sides of
+     * the region. Linear filtering at the region's edge therefore never samples a
+     * neighbouring region.
+     *
+     * The rectangle returned is the usable one: the size asked for, positioned inside the
+     * gutter. Pass it to the blit below and use it for texture coordinates as it is. A
+     * caller asks for the size it will blit, and neither adds the gutter to the request
+     * nor subtracts it from the result.
      *
      * @return the usable rectangle, or x and y of -1 when the atlas has no room left
      **/

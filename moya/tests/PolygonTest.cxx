@@ -62,8 +62,7 @@ BOOST_AUTO_TEST_CASE(polygon_remove_middle_vertex_test) {
 }
 
 /**
- * clear empties the polygon, which is how a clip writes its result back over the one it was
- * given.
+ * clear empties the polygon, so a clip can write its result back over the one it was given.
  **/
 BOOST_AUTO_TEST_CASE(polygon_clear_test) {
     v3d::moya::Polygon polygon;
@@ -76,8 +75,8 @@ BOOST_AUTO_TEST_CASE(polygon_clear_test) {
 }
 
 /**
- * The bound is in object space and is the per-axis extent of the vertices, which is what the
- * splitter and the bucket assignment both read.
+ * The bound is in object space and is the per-axis extent of the vertices. The splitter and
+ * the bucket assignment both read it.
  **/
 BOOST_AUTO_TEST_CASE(polygon_bound_test) {
     v3d::moya::Polygon polygon;
@@ -127,8 +126,7 @@ BOOST_AUTO_TEST_CASE(polygon_geometric_normal_test) {
 
 /**
  * The first three vertices need not be the three that name the plane. A repeated vertex or a
- * collinear run at the head of the polygon spans no area, and the walk goes on rather than
- * answering with the nothing it found.
+ * collinear run at the head of the polygon spans no area, and the search continues past it.
  **/
 BOOST_AUTO_TEST_CASE(polygon_geometric_normal_skips_collinear_test) {
     v3d::moya::Polygon polygon;
@@ -141,7 +139,8 @@ BOOST_AUTO_TEST_CASE(polygon_geometric_normal_skips_collinear_test) {
 }
 
 /**
- * A polygon with no area lies in no plane, and answers zero rather than a normalised nothing.
+ * A polygon with no area lies in no plane, and returns zero rather than normalising a zero
+ * vector.
  **/
 BOOST_AUTO_TEST_CASE(polygon_degenerate_normal_test) {
     v3d::moya::Polygon collinear;

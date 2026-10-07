@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/render/offline/MovingTransform.h>
 #include <api/type/geometry/AABBox.h>
 
 #include "MicroPolygonGrid.h"
@@ -27,7 +28,7 @@ class ReyesPrimitive {
         virtual v3d::type::geometry::AABBox bound(void) const;
         /**
          * Break the primitive into smaller ones and submit each back to the first pass,
-         * which is what decides the bucket and the diceability of each piece. The caller
+         * which decides the bucket and the diceability of each piece. The caller
          * discards this primitive afterwards either way, so a primitive that cannot be
          * usefully split submits nothing and is dropped.
          */
@@ -35,10 +36,10 @@ class ReyesPrimitive {
         /**
          * Turn the primitive into a micropolygon grid, one call per grid.
          *
-         * A primitive may need more than one, so the caller loops - each call that
-         * produces a grid replaces what the reference holds and answers true, and the
-         * call after the last one answers false. A primitive that answered true without
-         * end would never leave that loop.
+         * A primitive may need more than one, so the caller loops. Each call that produces
+         * a grid replaces what the reference holds and returns true, and the call after the
+         * last one returns false. A primitive that always returned true would never leave
+         * that loop.
          */
         virtual bool dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & rc);
         virtual void diceable(bool status);
@@ -49,12 +50,12 @@ class ReyesPrimitive {
          * the geometric normal of the plane it lies in, all in the space its vertices are.
          *
          * A primitive keeps them because splitting resubmits its pieces through that pass
-         * during the second one, when none of it is current any more - a scene that places
-         * and colours two objects would otherwise measure a split piece of the first
-         * against the state of the last. The pieces need the colour and the normal for a
-         * second reason: a split builds its vertices from intersection points, so they
-         * carry neither. A piece therefore takes the whole primitive's plane, which is the
-         * plane it lies in too.
+         * during the second one, when none of that state is current any more. Without them,
+         * a scene that places and colours two objects would measure a split piece of the
+         * first against the state of the last. A split carries each vertex's own colour and
+         * shading normal onto the pieces, interpolating them where an edge is cut, so the
+         * colour and the normal here fill only a vertex that has none. The normal is also
+         * every piece's geometric normal, since a piece lies in its parent's plane.
          */
         bool placed(void) const;
         void place(const glm::mat4x4 & toEye, const glm::vec3 & color, const glm::vec3 & normal,
@@ -68,7 +69,16 @@ class ReyesPrimitive {
          */
         const Shading & shading(void) const;
 
+        /**
+         * The object to eye transformation across the shutter, of which placement() is the
+         * open end. The vertices are where the open end puts them, and a sample places
+         * them at its own time. Carried across a split for the reason the rest is.
+         */
+        void motion(const v3d::render::offline::MovingTransform & toEye);
+        const v3d::render::offline::MovingTransform & motion(void) const;
+
  private:
+        v3d::render::offline::MovingTransform motion_;
         glm::mat4x4 placement_ = glm::mat4x4(1.0f);
         glm::vec3 color_ = glm::vec3(1.0f);
         glm::vec3 normal_ = glm::vec3(0.0f);

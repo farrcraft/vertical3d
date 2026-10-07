@@ -23,7 +23,6 @@ v3d_add_test(vertical3d
 	"../src/view/ViewPort.cxx"
 	"../src/view/ConstructionPlane.cxx"
 	"../src/scene/Scene.cxx"
-	"../src/scene/MeshTopology.cxx"
 	"../src/scene/CreatePoly.cxx"
 	"../src/scene/WireframeVisitor.cxx"
 	"../src/scene/RIBExportVisitor.cxx"
@@ -31,6 +30,7 @@ v3d_add_test(vertical3d
 	"../src/command/CommandDirectory.cxx"
 	"../src/command/CommandStack.cxx"
 	"../src/command/CreateCommand.cxx"
+	"../src/command/Placement.cxx"
 	"../src/command/TransformCommand.cxx"
 	"../src/tool/SelectMask.cxx"
 	"../src/tool/SelectTool.cxx"
@@ -44,15 +44,9 @@ v3d_add_test(vertical3d
 target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_asset
 	v3dlib_brep
+	v3dlib_dag
 	v3dlib_event
-	v3dlib_font
 	v3dlib_log
 	v3dlib_render
 	v3dlib_render_offline
-	v3dlib_type
-	${Boost_LIBRARIES}
-	${SDL3_LIBRARIES}
-	${Vulkan_LIBRARIES}
-	${PNG_LIBRARIES}
-	JPEG::JPEG
-	Freetype::Freetype)
+	v3dlib_type)

@@ -3,9 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Source.h>
 #include <api/event/kind/KeyDown.h>
 #include <api/event/kind/KeyUp.h>
 #include <api/input/Keyboard.h>
+#include <api/input/Mouse.h>
 
 #include <cstddef>
 #include <string>
@@ -15,9 +17,8 @@
 #include <boost/make_shared.hpp>
 
 /**
- * The device this replaces was v3D::KeyboardDevice, which pushed key names at registered
- * listeners. A Keyboard turns SDL events into dispatcher events instead, so what a test
- * feeds it is an SDL_Event and what it watches for is what comes out of the dispatcher.
+ * A Keyboard turns SDL events into dispatcher events, so a test feeds it an SDL_Event and
+ * checks what comes out of the dispatcher.
  **/
 namespace {
 struct Recorder {
@@ -29,10 +30,8 @@ struct Recorder {
         up_.push_back(std::string(event.name()));
     }
 
-    void sourceEvent(const v3d::event::Event& event) {
-        if (event.type() == v3d::event::Type::Source) {
-            source_.push_back(event);
-        }
+    void sourceEvent(const v3d::event::Source& event) {
+        source_.push_back(event);
     }
 
     std::vector<std::string> down_;
@@ -40,10 +39,11 @@ struct Recorder {
     std::vector<v3d::event::Event> source_;
 };
 
-SDL_Event keyEvent(uint32_t type, SDL_Keycode key) {
+SDL_Event keyEvent(uint32_t type, SDL_Keycode key, bool repeat = false) {
     SDL_Event event{};
     event.type = type;
     event.key.key = key;
+    event.key.repeat = repeat;
     return event;
 }
 };  // namespace
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(keyboard_test) {
     Recorder recorder;
     dispatcher->sink<v3d::event::kind::KeyDown>().connect<&Recorder::down>(recorder);
     dispatcher->sink<v3d::event::kind::KeyUp>().connect<&Recorder::up>(recorder);
-    dispatcher->sink<v3d::event::Event>().connect<&Recorder::sourceEvent>(recorder);
+    dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
     // a key press is a KeyDown, plus a source event any mapper can bind
     BOOST_CHECK_EQUAL(keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_Q)), true);
@@ -129,9 +129,9 @@ BOOST_AUTO_TEST_CASE(keystate_test) {
 }
 
 /**
- * An edge is a fact about a frame, which is the thing polling cannot answer: a key pressed
- * and released between two flushes was never held when anything looked, and both of its
- * edges are still true of that frame.
+ * A key pressed and released between two flushes was never held when anything checked, but
+ * both of its edges are still true for that frame. Polling the held state alone cannot
+ * detect it.
  **/
 BOOST_AUTO_TEST_CASE(keystate_edge_test) {
     v3d::input::KeyState state;
@@ -189,14 +189,14 @@ BOOST_AUTO_TEST_CASE(keyboard_held_key_test) {
     v3d::input::Keyboard keyboard(context, dispatcher);
 
     Recorder recorder;
-    dispatcher->sink<v3d::event::Event>().connect<&Recorder::sourceEvent>(recorder);
+    dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
-    // SDL repeats key down while a key is held. Every repeat is still a press, and the
-    // release that follows is still a release - the state tracking must not invert on the
-    // way through.
+    // SDL repeats key down while a key is held. Every repeat is still a press, marked as a
+    // repeat, and the release that follows is still a release - the state tracking must not
+    // invert on the way through.
     keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W));
+    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W, true));
+    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W, true));
     keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_UP, SDLK_W));
     keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W));
 
@@ -206,4 +206,23 @@ BOOST_AUTO_TEST_CASE(keyboard_held_key_test) {
     BOOST_CHECK(recorder.source_[2].state() == v3d::event::State::Pressed);
     BOOST_CHECK(recorder.source_[3].state() == v3d::event::State::Released);
     BOOST_CHECK(recorder.source_[4].state() == v3d::event::State::Pressed);
+    BOOST_CHECK(!recorder.source_[0].repeat());
+    BOOST_CHECK(recorder.source_[1].repeat());
+    BOOST_CHECK(recorder.source_[2].repeat());
+    BOOST_CHECK(!recorder.source_[4].repeat());
+}
+
+/**
+ * A key's name reads both ways off one table, so a binding document can be checked against
+ * the names a key event will actually carry.
+ **/
+BOOST_AUTO_TEST_CASE(keyboard_name_table_test) {
+    BOOST_TEST(v3d::input::keyName(SDLK_ESCAPE) == "escape");
+    BOOST_TEST(v3d::input::isKeyName("escape"));
+    BOOST_TEST(v3d::input::isKeyName(v3d::input::keyName(SDLK_A)));
+    BOOST_TEST(!v3d::input::isKeyName("escpae"));
+    BOOST_TEST(!v3d::input::isKeyName(""));
+
+    BOOST_TEST(v3d::input::isButtonName("left"));
+    BOOST_TEST(!v3d::input::isButtonName("a"));
 }

@@ -22,20 +22,20 @@
 #  - misc-no-recursion reports a menu and its submenus, a viewport layout and its children, and
 #    a json value and its members. Each is a tree whose depth is a document's, and recursion is
 #    what walking one looks like.
-#  - misc-multiple-inheritance reports BRep and WingedEdgeBRep, which are a dag::Node and a
-#    dag::Transform. That is ADR-0013, not an oversight.
+#  - misc-multiple-inheritance reports BRep, which is a dag::Node and a dag::Transform. An editor
+#    mesh is a node of the scene graph by design, not by oversight.
 #  - readability-make-member-function-const reports Menu::next and Menu::previous, which move
 #    the active item of the level they lock out of a weak_ptr. Nothing in *this* changes, so
 #    the check is right about the physics and wrong about the meaning.
 #  - readability-non-const-parameter reports the RI entry points in moya's RenderMan.cxx.
 #    RtToken is char*, and the signature is the standard's rather than this tree's to choose.
-#  - readability-container-contains cannot be satisfied for the three command line tools.
+#  - readability-container-contains cannot be satisfied for the two command line tools.
 #    boost::program_options::variables_map inherits contains() from std::map, but the built
 #    boost does not export that instantiation - the call compiles and then fails to link
-#    with an unresolved __declspec(dllimport). count() is what those three keep.
+#    with an unresolved __declspec(dllimport). count() is what those two keep.
 #
-# Every other subtraction is a backlog entry; docs/TODO.md carries what each one reports. The
-# way to remove one is to fix what it reports, not to widen the exclusion.
+# Every other subtraction is open work. The way to remove one is to fix what it reports, not to
+# widen the exclusion.
 Checks: >
   -*,
   bugprone-*,

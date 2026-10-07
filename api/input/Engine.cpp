@@ -14,15 +14,15 @@ namespace v3d::input {
 
 /**
  **/
-Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<entt::dispatcher>& dispatcher, int devices) :
+Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<entt::dispatcher>& dispatcher, DeviceTypes devices) :
     dispatcher_(dispatcher) {
     // add keyboard & mouse devices
-    if (devices & DeviceType::Keyboard) {
+    if (devices.has(DeviceType::Keyboard)) {
         boost::shared_ptr<v3d::event::Context> keyboardContext = eventEngine->resolveContext("keyboard");
         keyboard_ = boost::make_shared<Keyboard>(keyboardContext, dispatcher_);
         devices_.push_back(keyboard_);
     }
-    if (devices & DeviceType::Mouse) {
+    if (devices.has(DeviceType::Mouse)) {
         boost::shared_ptr<v3d::event::Context> mouseContext = eventEngine->resolveContext("mouse");
         mouse_ = boost::make_shared<Mouse>(mouseContext, dispatcher_);
         devices_.push_back(mouse_);

@@ -14,7 +14,7 @@ class Json final : public Loader {
  public:
     /**
      **/
-    Json(Manager* manager, const boost::shared_ptr<v3d::log::Logger>& logger);
+    Json(const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
      **/

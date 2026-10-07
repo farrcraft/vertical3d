@@ -23,21 +23,21 @@ namespace v3d::test {
 const int skipExitCode = 77;
 
 /**
- * @return whether an instance and a device can be had at all, which is what separates a runner
- *         with no gpu from a broken one
+ * @return whether an instance and a device can be created at all, so that a runner with no
+ *         gpu can be told apart from a broken one
  **/
 bool deviceAvailable();
 
 /**
  * An instance, a surface-free device and a context to draw with, for a case that needs all
- * three and cares about none of them.
+ * three but does not test any of them.
  *
- * The context is built knowing what it draws into, because every pipeline it compiles is built
- * against that format - a fixture that described itself afterwards would build its renderers
+ * The context is given its target format at construction, because every pipeline it compiles
+ * is built against that format. Set afterwards, the renderers would already have been built
  * against VK_FORMAT_UNDEFINED.
  *
  * Each case gets its own, so what one leaves on the device cannot reach another. That costs a
- * device creation per case, which is the price of cases that fail independently.
+ * device creation per case, and in return the cases fail independently.
  **/
 struct Headless {
     /**
@@ -60,15 +60,23 @@ struct Headless {
     /**
      * Submit a command buffer from the context's ring and wait for it to finish.
      *
-     * The ring's fence is what it is signalled with, so the next turn around the ring waits on
-     * this submission the way a presented frame's would - ADR-0051.
+     * The submission signals the ring slot's fence, so the next use of that slot waits on this
+     * submission as it would on a presented frame.
      *
      * @param commands a buffer from ring()->begin(), still recording
      **/
     void submitAndWait(VkCommandBuffer commands);
 
     /**
-     * @return whether the validation layer reported nothing, having been on to report it
+     * Submit a command buffer from the context's ring and move on without waiting, the way a
+     * presented frame does, so that what it reads is still in flight when the case continues.
+     *
+     * @param commands a buffer from ring()->begin(), still recording
+     **/
+    void submit(VkCommandBuffer commands);
+
+    /**
+     * @return whether the validation layer was on and reported no errors
      **/
     bool silent() const;
 

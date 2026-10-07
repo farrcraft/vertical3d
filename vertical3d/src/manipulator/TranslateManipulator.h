@@ -19,8 +19,7 @@ namespace v3d::editor {
  * Moves the selection: an arrow per axis, and a box at the centre.
  *
  * An axis handle moves along that axis by the drag's component along it. The centre
- * handle moves in the plane of the screen, which is what a gesture with no axis in mind
- * means.
+ * handle moves in the plane of the screen.
  **/
 class TranslateManipulator final : public Manipulator {
  public:

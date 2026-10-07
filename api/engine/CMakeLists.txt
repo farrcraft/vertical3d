@@ -9,7 +9,9 @@ v3d_add_api_library(engine
 
 # PUBLIC: Engine.h holds one of each of these, so an app that subclasses it compiles all of
 # them - the logger, the asset manager, the config, the event and input engines, the window,
-# and the registry it passes to the render engine.
+# and the registry. type, because Feature.h is a type::Flags. SDL3 because it routes each
+# SDL_Event and hands it to the app. Boost::json because Engine.h and Settings.h name
+# boost::json types.
 target_link_libraries(v3dlib_engine PUBLIC
 	v3dlib_log
 	v3dlib_asset
@@ -17,13 +19,16 @@ target_link_libraries(v3dlib_engine PUBLIC
 	v3dlib_event
 	v3dlib_input
 	v3dlib_render
-	EnTT::EnTT)
+	v3dlib_type
+	SDL3::SDL3
+	EnTT::EnTT
+	Boost::json)
 
-# PRIVATE: initialize() opens the window and resolves the config path, and appPath() derives
-# one from argv[0]. Neither SDL nor boost::filesystem is named by a header here - the run()
-# template calls appPath() rather than reaching for the filesystem itself, so an app that
-# includes Application.h does not need boost::filesystem either.
-target_link_libraries(v3dlib_engine PRIVATE SDL3::SDL3 Boost::filesystem)
+# PRIVATE: initialize() registers the media loaders on the asset manager it builds and
+# resolves the config path, and appPath() derives a path from argv[0].
+# No header here includes boost::filesystem: the run() template calls appPath() instead, so an
+# app that includes Application.h does not need it.
+target_link_libraries(v3dlib_engine PRIVATE Boost::filesystem v3dlib_asset_media)
 
 target_compile_options(v3dlib_engine PRIVATE /EHsc)
 

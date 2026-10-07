@@ -178,6 +178,22 @@ void Profile::rotation(const glm::quat& rotation) {
     basisValid_ = false;
 }
 
+void Profile::turn(const glm::quat& local) {
+    rotation_ = glm::normalize(rotation_ * local);
+    basisValid_ = false;
+
+    // the rotation's columns are the right handed basis lookat() builds, so the normals
+    // come out of it the way lookat() hands them out
+    const glm::mat3 m = glm::mat3_cast(rotation_);
+    right_ = hand_ == Hand::DirectionCrossUp ? -m[0] : m[0];
+    up_ = m[1];
+    direction_ = m[2];
+}
+
+glm::mat4x4 Profile::orientation() const {
+    return basisValid_ ? basis_ : glm::mat4_cast(rotation_);
+}
+
 void Profile::size(unsigned int width, unsigned int height) {
     size_[0] = width;
     size_[1] = height;
@@ -194,17 +210,17 @@ void Profile::lookat(const glm::vec3& center) {
     // start with original up vector
     y = up_;
 
-    // normal of the yz plane is the right vector, crossed the way this tree has always
-    // crossed it, and the normal of the xy plane is the up vector. The result is a right
-    // handed basis: the only one of the two a quaternion can carry
+    // normal of the yz plane is the right vector, taken as up x direction, and the normal
+    // of the xy plane is the up vector. The result is the unmirrored basis, the only one of
+    // the two hands a quaternion can carry
     x = glm::normalize(glm::cross(y, z));
     // the component of the original up perpendicular to the direction, which is the same
     // vector whichever way round the right was taken - the two hands mirror horizontally
     // and agree about which way is up.
     //
-    // Not normalized, because z and x are unit and perpendicular so their cross already is
-    // to within rounding - and normalizing it again is a rounding step glm::lookAt does not
-    // take. Taking it moved the last bits of every view built here away from glm's
+    // Not normalized: z and x are unit and perpendicular, so their cross product is already
+    // unit to within rounding. glm::lookAt does not normalize it either, and doing so would
+    // change the last bits of every view built here compared with glm's
     y = glm::cross(z, x);
 
     /*
@@ -216,7 +232,7 @@ void Profile::lookat(const glm::vec3& center) {
         one. A mirror is an improper transform and no quaternion represents one, so a
         quat_cast of it returns something that is not a rotation at all and the view matrix
         that comes out of it is not rigid. The hand is applied by Camera::createView()
-        instead, which negates view x - ADR-0052.
+        instead, which negates view x.
 
         glm indexes [column][row]:
         [  0,  4,  8,  12 ]
@@ -250,9 +266,9 @@ void Profile::lookat(const glm::vec3& center) {
     basisValid_ = true;
     up_ = y;
     direction_ = z;
-    // the normals are what the hand names, and the mirrored one reports the right the other
-    // way round. It is the basis a caller reads and draws its own geometry against; what the
-    // rotation carries is the proper half of it
+    // the normals follow the hand, so the mirrored hand reports right negated. Callers read
+    // the normals and draw their own geometry against them; the rotation holds the unmirrored
+    // basis
     right_ = hand_ == Hand::DirectionCrossUp ? -x : x;
 }
 
@@ -269,8 +285,8 @@ void Profile::clone(const Profile& profile) {
     direction_ = profile.direction_;
     name_ = profile.name_;
     rotation_ = profile.rotation_;
-    // the cache travels with the rotation it describes, or a clone of a profile built by
-    // lookat() would quietly build its view the other way
+    // the cache is copied with the rotation it describes, so a clone of a profile built by
+    // lookat() builds the same view
     basis_ = profile.basis_;
     basisValid_ = profile.basisValid_;
     options_ = profile.options_;

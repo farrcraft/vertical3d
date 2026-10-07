@@ -11,9 +11,9 @@
 /**
  * The world's heightmap - libnoise perlin over a 256x256 plane, read back per column.
  *
- * height() is virtual so that a chunk can be built against a map that is not a perlin one:
- * a test wanting to know how a column of blocks scales against the world ceiling has no
- * business generating noise to find out.
+ * height() is virtual so that a chunk can be built against a map that is not a perlin one.
+ * A test of how a column of blocks scales against the world ceiling then does not have to
+ * generate noise.
  **/
 class TerrainMap {
  public:

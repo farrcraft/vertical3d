@@ -5,10 +5,6 @@
 
 #include "FrameUniforms.h"
 
-#include <api/render/realtime/vulkan/device/Result.h>
-
-#include <sstream>
-#include <stdexcept>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -42,105 +38,28 @@ set(VK_NULL_HANDLE) {
 
 /**
  **/
-FrameUniforms::FrameUniforms(const boost::shared_ptr<device::Device>& device, uint32_t framesInFlight) :
+FrameUniforms::FrameUniforms(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring) :
     device_(device),
-    layout_(VK_NULL_HANDLE),
-    remaining_(0),
     frame_(0),
     cursor_(0) {
-    createLayout();
-    slots_.resize(framesInFlight > 0 ? framesInFlight : 1);
-}
-
-/**
- **/
-FrameUniforms::~FrameUniforms() {
-    // the buffers go with the slots; the sets go with the pools
-    slots_.clear();
-
-    for (VkDescriptorPool pool : pools_) {
-        vkDestroyDescriptorPool(device_->handle(), pool, nullptr);
-    }
-    pools_.clear();
-
-    if (layout_ != VK_NULL_HANDLE) {
-        vkDestroyDescriptorSetLayout(device_->handle(), layout_, nullptr);
-        layout_ = VK_NULL_HANDLE;
-    }
-}
-
-/**
- **/
-void FrameUniforms::createLayout() {
     VkDescriptorSetLayoutBinding camera{};
     camera.binding = 0;
     camera.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     camera.descriptorCount = 1;
-    // a fragment shader wants the camera as often as a vertex shader does - for a view
+    // a fragment shader needs the camera as often as a vertex shader does - for a view
     // direction, or for reconstructing a position - so both stages see it
     camera.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    pool_ = boost::make_shared<pipeline::DescriptorPool>(device_, ring, std::vector<VkDescriptorSetLayoutBinding>{camera},
+        poolSize, "per frame");
 
-    VkDescriptorSetLayoutCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    info.bindingCount = 1;
-    info.pBindings = &camera;
-
-    VkResult result = vkCreateDescriptorSetLayout(device_->handle(), &info, nullptr, &layout_);
-    if (result != VK_SUCCESS) {
-        layout_ = VK_NULL_HANDLE;
-        std::stringstream msg;
-        msg << "Unable to create the per frame descriptor set layout - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-}
-
-/**
- **/
-void FrameUniforms::addPool() {
-    VkDescriptorPoolSize size{};
-    size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    size.descriptorCount = poolSize;
-
-    VkDescriptorPoolCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    info.maxSets = poolSize;
-    info.poolSizeCount = 1;
-    info.pPoolSizes = &size;
-
-    VkDescriptorPool pool = VK_NULL_HANDLE;
-    VkResult result = vkCreateDescriptorPool(device_->handle(), &info, nullptr, &pool);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create the per frame descriptor pool - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
-    pools_.push_back(pool);
-    remaining_ = poolSize;
+    slots_.resize(ring->framesInFlight() > 0 ? ring->framesInFlight() : 1);
 }
 
 /**
  **/
 FrameUniforms::Slot FrameUniforms::addSlot() {
-    if (pools_.empty() || remaining_ == 0) {
-        addPool();
-    }
-
-    VkDescriptorSetAllocateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    info.descriptorPool = pools_.back();
-    info.descriptorSetCount = 1;
-    info.pSetLayouts = &layout_;
-
     Slot slot;
-    VkResult result = vkAllocateDescriptorSets(device_->handle(), &info, &slot.set);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to allocate a per frame descriptor set - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-    remaining_--;
-
+    slot.set = pool_->allocate();
     slot.buffer = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(Camera));
 
     VkDescriptorBufferInfo buffer{};
@@ -166,7 +85,7 @@ FrameUniforms::Slot FrameUniforms::addSlot() {
 /**
  **/
 VkDescriptorSetLayout FrameUniforms::layout() const noexcept {
-    return layout_;
+    return pool_->layout();
 }
 
 /**

@@ -5,7 +5,8 @@
 
 #include "Picker.h"
 
-#include <vertical3d/src/scene/MeshTopology.h>
+#include <api/brep/Topology.h>
+
 
 #include <cstddef>
 #include <vector>
@@ -21,7 +22,7 @@ namespace {
 
 /**
  * Where along a segment the closest point to a target is, as a fraction of it,
- * clamped to the segment's ends. A degenerate segment answers with its start.
+ * clamped to the segment's ends. A degenerate segment returns zero, its start.
  **/
 float closest(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target) {
     const glm::vec2 along = to - from;
@@ -105,8 +106,8 @@ void Picker::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         return;
     }
 
-    // an object has to be selected before any of its components may be, which is what
-    // keeps a component click inside the mesh the user is working on
+    // an object has to be selected before any of its components may be, so a component
+    // click stays inside the mesh the user is working on
     if (mask_ != SelectMask::Object && !mesh->selected()) {
         return;
     }
@@ -141,8 +142,8 @@ void Picker::surface(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     }
 
     const std::size_t faces = mesh->faceCount();
-    for (std::size_t face = 0; face < faces; face++) {
-        const std::vector<unsigned int> loop = faceLoop(mesh, static_cast<unsigned int>(face));
+    for (v3d::brep::Index face = 0; face < faces; face++) {
+        const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*mesh, face);
         if (loop.size() < 3) {
             continue;
         }
@@ -152,15 +153,15 @@ void Picker::surface(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         glm::vec3 first;
         glm::vec3 second;
         glm::vec3 third;
-        if (!loopSegment(mesh, loop, 0, &first, nullptr)) {
+        if (!v3d::brep::loopSegment(*mesh, loop, 0, &first, nullptr)) {
             continue;
         }
         for (std::size_t index = 1; index + 1 < loop.size(); index++) {
-            if (!loopSegment(mesh, loop, index, &second, &third)) {
+            if (!v3d::brep::loopSegment(*mesh, loop, index, &second, &third)) {
                 continue;
             }
             if (local.intersects(first, second, third, &distance)) {
-                offer(mesh->id(), static_cast<unsigned int>(face), distance);
+                offer(mesh->id(), face, distance);
             }
         }
     }
@@ -170,8 +171,8 @@ void Picker::surface(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
  **/
 void Picker::vertices(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     const std::size_t count = mesh->vertexCount();
-    for (std::size_t index = 0; index < count; index++) {
-        v3d::brep::Vertex* vertex = mesh->vertex(static_cast<unsigned int>(index));
+    for (v3d::brep::Index index = 0; index < count; index++) {
+        const v3d::brep::Vertex* vertex = mesh->vertex(index);
         if (vertex == nullptr) {
             continue;
         }
@@ -183,7 +184,7 @@ void Picker::vertices(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         if (glm::distance(position, cursor_) > tolerance_) {
             continue;
         }
-        offer(mesh->id(), static_cast<unsigned int>(index), depth);
+        offer(mesh->id(), index, depth);
     }
 }
 
@@ -191,18 +192,18 @@ void Picker::vertices(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
  **/
 void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     const std::size_t faces = mesh->faceCount();
-    for (std::size_t face = 0; face < faces; face++) {
-        const std::vector<unsigned int> loop = faceLoop(mesh, static_cast<unsigned int>(face));
+    for (v3d::brep::Index face = 0; face < faces; face++) {
+        const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*mesh, face);
         for (std::size_t index = 0; index < loop.size(); index++) {
             // a half edge and its pair are one edge to a click, so only the half that
             // draws it is offered
-            if (!ownsEdge(mesh, loop[index])) {
+            if (!v3d::brep::ownsEdge(*mesh, loop[index])) {
                 continue;
             }
 
             glm::vec3 from;
             glm::vec3 to;
-            if (!loopSegment(mesh, loop, index, &from, &to)) {
+            if (!v3d::brep::loopSegment(*mesh, loop, index, &from, &to)) {
                 continue;
             }
 
@@ -227,7 +228,7 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
  **/
 bool Picker::screen(const glm::vec3& point, glm::vec2* position, float* depth) const {
     const glm::vec3 world(model_ * glm::vec4(point, 1.0f));
-    const glm::vec3 projected = camera_->project(world, const_cast<int*>(viewport_));
+    const glm::vec3 projected = camera_->project(world, viewport_);
 
     // outside the depth range is behind the near plane or beyond the far one. A point
     // behind a perspective camera divides by a negative w and lands beyond one, so it

@@ -6,6 +6,7 @@
 #include "Settings.h"
 
 #include <api/asset/Manager.h>
+#include <api/asset/Migration.h>
 #include <api/asset/Writer.h>
 #include <api/asset/kind/Json.h>
 
@@ -34,6 +35,7 @@ const char* const DOCUMENT = "settings.json";
 const char* const ENTRIES = "settings";
 
 /**
+ * The key the format's version sits under, which asset::readForward() reads.
  **/
 const char* const FORMAT = "version";
 
@@ -63,26 +65,31 @@ bool Settings::load() {
         return false;
     }
 
-    // through the loader every other document is read with; it answers null for one it
+    // through the loader every other document is read with; it returns null for one it
     // could not parse
     v3d::asset::Manager assets(directory_, logger_);
     const boost::shared_ptr<v3d::asset::kind::Json> document =
-        boost::dynamic_pointer_cast<v3d::asset::kind::Json>(assets.loadTypeFromExt(DOCUMENT));
+        assets.load<v3d::asset::kind::Json>(DOCUMENT);
     if (!document) {
         logger_->get()->error("{} is not a settings document - running on defaults", path_);
         return false;
     }
 
-    const boost::json::object& root = document->document();
-    boost::system::error_code error;
-    const int version = root.contains(FORMAT) ? root.at(FORMAT).to_number<int>(error) : 0;
-    if (!error && version > VERSION) {
-        // a later build wrote it and knows what is in it; overwriting would cost that build
-        // everything it stored
-        logger_->get()->warn("{} is version {} and this build writes {} - running on defaults",
-            path_, version, VERSION);
-        writable_ = false;
-        return false;
+    // the format has one version, so the migration chain has no steps yet
+    boost::json::object root = document->document();
+    switch (v3d::asset::readForward(&root, VERSION, {})) {
+        case v3d::asset::Reading::Current:
+        case v3d::asset::Reading::Migrated:
+            break;
+        case v3d::asset::Reading::Newer:
+            // a later build wrote it; overwriting it would lose everything that build stored
+            logger_->get()->warn("{} was written by a later build than this one, which writes version {} - running on defaults",
+                path_, VERSION);
+            writable_ = false;
+            return false;
+        case v3d::asset::Reading::Refused:
+            logger_->get()->error("{} has no version this build can read - running on defaults", path_);
+            return false;
     }
 
     if (!root.contains(ENTRIES) || !root.at(ENTRIES).is_object()) {

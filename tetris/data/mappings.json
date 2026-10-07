@@ -62,8 +62,8 @@
         "state": "pressed"
       },
       "destination": {
-        "context": "tetris",
-        "name": "toggleMenu"
+        "context": "ui",
+        "name": "showGameMenu"
       }
     },
     {

@@ -10,13 +10,14 @@
 #include <glm/vec3.hpp>
 
 /**
- * Which block in a neighbouring chunk sits against a block's face.
+ * Which block in a neighbouring chunk sits against a block's face. A seam is the boundary
+ * between two chunks.
  *
- * A block on the edge of a chunk has one face its own chunk cannot answer for, and the
- * block behind that face is the far edge of the chunk next door - the block at zero when
+ * A block on the edge of a chunk has one face its own chunk cannot resolve. The block
+ * behind that face is on the far edge of the chunk next door. It is the block at zero when
  * looking out the high side, and the block at chunkSize - 1 when looking out the low side.
  * Getting that backwards keeps faces that should be culled and culls faces that should be
- * kept, and only shows up as seams between chunks.
+ * kept, and the error is visible only at seams.
  **/
 struct Neighbour {
     Neighbour();

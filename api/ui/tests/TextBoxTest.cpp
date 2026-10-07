@@ -3,10 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/kind/Json.h>
+#include <api/event/Context.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
+#include <api/ui/Length.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/input/Cursor.h>
@@ -30,8 +31,8 @@ const float characterWidth = 10.0f;
 
 /**
  * A fixed width per byte, so where a character falls is arithmetic rather than a font. The
- * cursor and the renderer are given the same one, which is what makes a click land where the
- * caret is drawn.
+ * cursor and the renderer are given the same one, so a click lands where the caret is
+ * drawn.
  **/
 float measured(std::string_view text) {
     return static_cast<float>(text.size()) * characterWidth;
@@ -52,8 +53,7 @@ struct Fixture final {
         ui = boost::make_shared<v3d::ui::Engine>(
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
-        BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui", v3d::asset::Type::JsonDocument,
-            boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object())));
+        BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
         container = ui->container("hud");
         BOOST_REQUIRE(container);
         cursor = boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher, &measured);
@@ -180,8 +180,8 @@ BOOST_AUTO_TEST_CASE(a_limit_refuses_an_insertion_whole) {
 }
 
 /**
- * A press moves the keyboard onto what it lands on and takes it off what it does not, which
- * is what makes clicking into a box mean "type here" - ADR-0040.
+ * A press moves the keyboard onto what it lands on and takes it off what it does not, so
+ * clicking into a box means "type here".
  **/
 BOOST_AUTO_TEST_CASE(a_press_gives_and_takes_the_focus) {
     Fixture fixture;
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(a_press_gives_and_takes_the_focus) {
 
 /**
  * A key reaches the focused component and nothing else, so a ui with nothing focused leaves
- * every key to the app - which is what keeps a game's movement keys working.
+ * every key to the app, so a game's movement keys keep working.
  **/
 BOOST_AUTO_TEST_CASE(a_key_goes_to_the_focused_component_or_to_nobody) {
     Fixture fixture;
@@ -257,9 +257,9 @@ BOOST_AUTO_TEST_CASE(a_character_key_is_taken_and_a_command_key_is_not) {
 }
 
 /**
- * A return says the user is done: the box sends its command and whatever answers reads the
- * text, per ADR-0038. An escape leaves the box, which is the only way out of one with no
- * other ui to click on.
+ * A return says the user is done: the box sends its command and whatever handles it reads
+ * the text. An escape leaves the box, which is the only way out of one with no other ui to
+ * click on.
  **/
 BOOST_AUTO_TEST_CASE(a_return_sends_the_command_and_an_escape_leaves_the_box) {
     Fixture fixture;
@@ -323,9 +323,8 @@ BOOST_AUTO_TEST_CASE(a_box_is_sized_by_its_room_and_not_by_its_text) {
  **/
 BOOST_AUTO_TEST_CASE(a_loaded_box_asks_for_the_press_and_the_keyboard) {
     Fixture fixture;
-    BOOST_REQUIRE(fixture.ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui", v3d::asset::Type::JsonDocument,
-        boost::json::parse(R"({ "themes": [], "containers": [ { "name": "form", "visible": true, "components": [
-            { "name": "search", "type": "textbox", "text": "abc", "placeholder": "Search", "limit": 8 } ] } ] })").as_object())));
+    BOOST_REQUIRE(fixture.ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "form", "visible": true, "components": [
+            { "name": "search", "type": "textbox", "text": "abc", "placeholder": "Search", "limit": 8 } ] } ] })").as_object()));
 
     const boost::shared_ptr<v3d::ui::Container> form = fixture.ui->container("form");
     BOOST_REQUIRE(form);
@@ -341,7 +340,7 @@ BOOST_AUTO_TEST_CASE(a_loaded_box_asks_for_the_press_and_the_keyboard) {
 
 /**
  * A selection is the run between the anchor and the caret, and nothing is selected exactly
- * when the two are in the same place - ADR-0057. There is no third piece of state, so a
+ * when the two are in the same place. There is no third piece of state, so a
  * selection cannot point into text that has been retyped.
  **/
 BOOST_AUTO_TEST_CASE(a_selection_is_the_run_between_the_anchor_and_the_caret) {
@@ -367,7 +366,7 @@ BOOST_AUTO_TEST_CASE(a_selection_is_the_run_between_the_anchor_and_the_caret) {
 
 /**
  * An arrow with nothing held lands on an end of the selection rather than a character past
- * it, which is what a first arrow out of a selected run means everywhere else.
+ * it, as in other text editors.
  **/
 BOOST_AUTO_TEST_CASE(an_arrow_out_of_a_selection_lands_on_its_edge) {
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
@@ -382,7 +381,7 @@ BOOST_AUTO_TEST_CASE(an_arrow_out_of_a_selection_lands_on_its_edge) {
     BOOST_CHECK_EQUAL(field->caret(), 4U);
     BOOST_CHECK(!field->selected());
 
-    // and the anchor stays put when the arrow is shifted, which is what selects
+    // and the anchor stays put when the arrow is shifted, so the run is selected
     field->caret(2);
     BOOST_CHECK(field->right(true));
     BOOST_CHECK(field->right(true));
@@ -417,8 +416,7 @@ BOOST_AUTO_TEST_CASE(an_edit_over_a_selection_replaces_the_run) {
 
 /**
  * The limit is measured against what the text would become, so a paste may be as long as the
- * run it replaces plus whatever room was left - and one byte longer than that is refused
- * whole, the way it always was.
+ * run it replaces plus whatever room was left. One byte longer than that is refused whole.
  **/
 BOOST_AUTO_TEST_CASE(a_selection_makes_room_for_what_replaces_it) {
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
@@ -453,9 +451,9 @@ BOOST_AUTO_TEST_CASE(a_selection_lands_on_character_boundaries) {
 }
 
 /**
- * A press puts the caret where it landed, which is what ADR-0057 gave ui::Cursor a Measure
- * for. It is answered against the pen the last draw left on the box, so a ui routed before it
- * is drawn places nothing - the same rule as picking one, per ADR-0019.
+ * A press puts the caret where it landed, through the Measure ui::Cursor is given. It is
+ * measured against the pen the last draw left on the box, so a ui routed before it is drawn
+ * places nothing.
  **/
 BOOST_AUTO_TEST_CASE(a_press_puts_the_caret_where_it_landed) {
     Fixture fixture;
@@ -480,7 +478,7 @@ BOOST_AUTO_TEST_CASE(a_press_puts_the_caret_where_it_landed) {
 
 /**
  * A press leaves the anchor where it landed, so following the cursor selects the run between
- * the two - which is what makes a drag a selection rather than a caret being dragged.
+ * the two, and a drag makes a selection rather than moving the caret.
  **/
 BOOST_AUTO_TEST_CASE(a_drag_selects_the_run_it_crosses) {
     Fixture fixture;
@@ -503,7 +501,7 @@ BOOST_AUTO_TEST_CASE(a_drag_selects_the_run_it_crosses) {
 
 /**
  * A cursor given no Measure names no text, so a press focuses the box and leaves the caret
- * where it was - which is every caller's behaviour before one could be given.
+ * where it was.
  **/
 BOOST_AUTO_TEST_CASE(a_cursor_with_no_measure_leaves_the_caret_alone) {
     Fixture fixture;
@@ -520,8 +518,8 @@ BOOST_AUTO_TEST_CASE(a_cursor_with_no_measure_leaves_the_caret_alone) {
 }
 
 /**
- * Cut, copy, paste and select all, over the clipboard the app hands in - api/ui names no SDL
- * type, so the two calls come from outside it, per ADR-0057.
+ * Cut, copy, paste and select all, over the clipboard the app hands in. api/ui names no SDL
+ * type, so the two calls come from outside it.
  **/
 BOOST_AUTO_TEST_CASE(the_chords_cut_copy_and_paste_the_selection) {
     Fixture fixture;
@@ -574,8 +572,8 @@ BOOST_AUTO_TEST_CASE(a_router_with_no_clipboard_still_edits_everything_else) {
 }
 
 /**
- * A chord the box does not answer goes on to the app, so a ctrl-s still saves while somebody
- * is typing. Only a control that eats every key can stop an app being driven.
+ * A chord the box does not act on goes on to the app, so a ctrl-s still saves while somebody
+ * is typing.
  **/
 BOOST_AUTO_TEST_CASE(a_chord_the_box_does_not_answer_reaches_the_app) {
     Fixture fixture;
@@ -590,7 +588,7 @@ BOOST_AUTO_TEST_CASE(a_chord_the_box_does_not_answer_reaches_the_app) {
 }
 
 /**
- * Shift and a caret key selects the run it travelled, which is the keyboard's half of a drag.
+ * Shift and a caret key selects the run it travelled, the keyboard equivalent of a drag.
  **/
 BOOST_AUTO_TEST_CASE(shift_and_a_caret_key_selects) {
     Fixture fixture;

@@ -5,6 +5,8 @@
 
 #include <api/render/offline/FrameBuffer.h>
 
+#include <cmath>
+
 #include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(framebuffer_plane_test) {
@@ -19,7 +21,7 @@ BOOST_AUTO_TEST_CASE(framebuffer_plane_test) {
 
     buffer.value(2, 3, 2, 0.5f);
     BOOST_CHECK_EQUAL(buffer.value(2, 3, 2), 0.5f);
-    // and the write lands on one pixel of one plane
+    // the write lands on one pixel of one plane
     BOOST_CHECK_EQUAL(buffer.value(1, 3, 2), 0.0f);
     BOOST_CHECK_EQUAL(buffer.value(2, 2, 2), 0.0f);
     BOOST_CHECK_EQUAL(buffer.value(2, 3, 1), 0.0f);
@@ -49,6 +51,10 @@ BOOST_AUTO_TEST_CASE(framebuffer_image_test) {
     BOOST_CHECK_EQUAL((*image)[5], 255);
     BOOST_CHECK_EQUAL((*image)[10], 255);
     BOOST_CHECK_EQUAL((*image)[15], 255);
+
+    // a value that is not a number is black, rather than an undefined conversion to a byte
+    buffer.value(0, 0, 0, std::nanf(""));
+    BOOST_CHECK_EQUAL((*buffer.image(4))[0], 0);
 }
 
 BOOST_AUTO_TEST_CASE(framebuffer_row_order_test) {
@@ -89,7 +95,7 @@ BOOST_AUTO_TEST_CASE(framebuffer_extra_plane_test) {
     // the fourth plane is a depth here, not an alpha
     buffer.value(3, 0, 0, 0.25f);
 
-    // three channels asked for, so the depth is not in the picture
+    // three channels requested, so the depth is not in the picture
     auto image = buffer.image(3);
     BOOST_CHECK_EQUAL(image->bpp(), 24u);
     BOOST_CHECK_EQUAL((*image)[0], 255);

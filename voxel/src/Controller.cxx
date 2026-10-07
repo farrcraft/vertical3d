@@ -7,12 +7,15 @@
 
 #include <api/config/Type.h>
 #include <api/engine/Feature.h>
+#include <api/input/MouseState.h>
 #include <api/render/realtime/Window.h>
+#include <voxel/src/engine/Nanoseconds.h>
 #include <voxel/src/game/GameState.h>
 #include <voxel/src/game/Player.h>
 
 #include <functional>
 #include <string>
+#include <utility>
 
 #include "Renderer.h"
 #include "Scene.h"
@@ -22,7 +25,7 @@
 namespace {
 
 /**
- * The button the immediate layer answers, which is the one a binding config calls "left".
+ * The button the immediate layer responds to, named as a binding config names it.
  **/
 const char* const primaryButton = "left";
 
@@ -34,49 +37,35 @@ Controller::Controller(const std::string& appPath) :
 }
 
 
-bool Controller::initialize() {
-    if (!v3d::engine::Engine::initialize(static_cast<int>(
-        v3d::engine::Feature::Config |
-        v3d::engine::Feature::Window |
-        v3d::engine::Feature::MouseInput |
-        v3d::engine::Feature::KeyboardInput))) {
-        return false;
-    }
+bool Controller::start() {
+    window()->caption("Voxel");
 
-    window_->caption("Voxel");
+    // mouselook reads how far the mouse moved, which relative mode reports at any edge
+    window()->relativeMouse(true);
 
-    // hide the mouse cursor in the window
-    v3d::render::realtime::Window::cursor(false);
-    // move mouse cursor to center of window
-    window_->warpCursor(window_->width() / 2, window_->height() / 2);
-
-    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
     menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
         suspend(suspended);
     });
-    if (config_) {
-        boost::shared_ptr<v3d::asset::kind::Json> uiConfig = config_->get(v3d::config::Type::Ui);
-        if (uiConfig) {
-            if (!vgui_->load(uiConfig)) {
-                return false;
-            }
-        }
+    const boost::json::object* ui = document(v3d::config::Type::Ui);
+    if (ui && !vgui_->load(*ui)) {
+        return false;
     }
 
     // register game commands
-    dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
+    events_ = dispatcher()->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
     // this is actually the game controller
     // maybe we need a separate player controller class to intercept mouse events?
-    dispatcher_->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
+    motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
 
     scene_ = boost::make_shared<Scene>();
 
     boost::shared_ptr<v3d::render::realtime::Window> win = window();
-    renderer_ = boost::make_shared<Renderer>(scene_, win, logger_, assetManager_, &registry_);
+    renderer_ = boost::make_shared<Renderer>(scene_, win, logger(), assets());
     renderer_->ui(vgui_);
 
     // set the scene size according to the window canvas
-    renderer_->resize(window_->width(), window_->height());
+    renderer_->resize(window()->width(), window()->height());
 
     return true;
 }
@@ -89,6 +78,7 @@ bool Controller::tick(unsigned int delta) {
     }
     // the renderer's per-frame work stays here rather than moving to simulate(): remeshing
     // is a budget of chunks per frame, and the debug overlay averages how long a frame took
+    const v3d::engine::Statistics::Scope chunks = measure("chunks");
     renderer_->tick(delta);
     return true;
 }
@@ -100,6 +90,16 @@ bool Controller::simulate(float step) {
         return false;
     }
     if (!scene_->state()->paused()) {
+        // movement follows the keys held now rather than counting presses, so a key let go
+        // while the menu was up is not still moving the player when the menu closes
+        const std::pair<const char*, Player::Movement> moves[] = {
+            { "voxel::moveForward", Player::MOVE_FORWARD }, { "voxel::moveBackward", Player::MOVE_BACKWARD },
+            { "voxel::moveLeft", Player::MOVE_LEFT }, { "voxel::moveRight", Player::MOVE_RIGHT },
+            { "voxel::moveUp", Player::MOVE_UP }, { "voxel::moveDown", Player::MOVE_DOWN }
+        };
+        for (const auto& [command, direction] : moves) {
+            scene_->player()->move(direction, held(command));
+        }
         scene_->tick(step);
     }
     return true;
@@ -109,7 +109,15 @@ bool Controller::simulate(float step) {
  **/
 bool Controller::render() {
     const v3d::engine::Statistics& measured = statistics();
-    renderer_->draw({ measured.mean(), measured.last(), measured.steps() }, tools());
+    v3d::ui::shell::StatisticsOverlay::Sample sample{ measured.mean(), measured.last(), measured.steps(), {} };
+    for (const v3d::engine::Statistics::Row& row : measured.rows()) {
+        sample.spans.push_back({ row.name, row.mean });
+    }
+    // the device's own times, for the passes it drew a few frames ago
+    for (const v3d::render::realtime::vulkan::frame::Timings::Timing& pass : renderer_->timings()) {
+        sample.spans.push_back({ "gpu " + pass.name, nanoseconds(pass.milliseconds) });
+    }
+    renderer_->draw(sample, tools());
     return true;
 }
 
@@ -135,13 +143,10 @@ v3d::ui::Immediate::Input Controller::tools() const {
 
 /**
  **/
-bool Controller::shutdown() {
+bool Controller::release() {
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
-    }
-    if (!v3d::engine::Engine::shutdown()) {
-        return false;
     }
     return true;
 }
@@ -150,75 +155,31 @@ bool Controller::shutdown() {
  **/
 void Controller::suspend(bool suspended) {
     scene_->state()->pause(suspended);
-    v3d::render::realtime::Window::cursor(suspended);
-    if (!suspended) {
-        window_->warpCursor(window_->width() / 2, window_->height() / 2);
-    }
+    // the menu needs a pointer, and leaving relative mode shows one
+    window()->relativeMouse(!suspended);
 }
 
 void Controller::handleEvent(const v3d::event::Event& event) {
-    if (event.context()->name() == "ui") {
-        if (event.name() == "showGameMenu") {
-            menu_->toggle();
-            return;
-        }
-        if (event.name() == "quit") {
-            // not shutdown() - this is running inside the event loop, which would tick and
-            // render one more frame against the window shutdown() had just destroyed
-            quit();
-            return;
-        }
-        menu_->navigate(event.name());
-        return;
-    }
-
     if (event.context()->name() != "voxel") {
         return;
     }
 
-    // the debug overlay is readable whether or not the world is running
-    if (event.name() == "debug") {
+    // the debug overlay is readable whether or not the world is running. It is a toggle, so a
+    // held key's repeats are ignored
+    if (event.name() == "debug" && !event.repeat()) {
         debug_ = !debug_;
         renderer_->debug(debug_);
-        return;
-    }
-
-    // nothing moves while the menu is up
-    if (menu_->visible()) {
-        return;
-    }
-
-    // player commands
-    if (event.name() == "moveForward") {
-        scene_->player()->move(Player::MOVE_FORWARD);
-    } else if (event.name() == "moveBackward") {
-        scene_->player()->move(Player::MOVE_BACKWARD);
-    } else if (event.name() == "moveLeft") {
-        scene_->player()->move(Player::MOVE_LEFT);
-    } else if (event.name() == "moveRight") {
-        scene_->player()->move(Player::MOVE_RIGHT);
-    } else if (event.name() == "moveUp") {
-        scene_->player()->move(Player::MOVE_UP);
-    } else if (event.name() == "moveDown") {
-        scene_->player()->move(Player::MOVE_DOWN);
     }
 }
 
 void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
-    if (!window_->focused()) {
+    if (!window()->focused()) {
         return;
     }
-    // the menu owns the pointer while it is up, so it is not warped back to the centre
+    // the menu owns the pointer while it is up
     if (menu_->visible()) {
         return;
     }
-    const int centerX = window_->width() / 2;
-    const int centerY = window_->height() / 2;
-
-    const glm::vec2 position = event.position();
-    const float heading = position.x - static_cast<float>(centerX);
-    const float pitch = position.y - static_cast<float>(centerY);
-
-    scene_->player()->look(heading, pitch);
-    window_->warpCursor(centerX, centerY);
+    const glm::vec2 moved = event.motion();
+    scene_->player()->look(moved.x, moved.y);
 }

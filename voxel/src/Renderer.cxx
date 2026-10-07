@@ -6,11 +6,14 @@
 #include "Renderer.h"
 
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
-#include <api/render/realtime/vulkan/device/Result.h>
+#include <api/render/realtime/vulkan/pipeline/Material.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
 #include <voxel/src/engine/Camera.h>
 #include <voxel/src/engine/ChunkMeshBuilder.h>
+#include <voxel/src/engine/ChunkVertex.h>
 #include <voxel/src/engine/SceneUniforms.h>
 #include <voxel/src/game/Player.h>
+#include <voxel/src/voxel/ChunkCulling.h>
 #include <voxel/src/voxel/ChunkMeshPool.h>
 #include <voxel/src/voxel/MeshBuilder.h>
 
@@ -52,14 +55,14 @@ const char* const terrainPass = v3d::render::realtime::Engine3D::colourPass;
 const char* const overlayPass = "overlay";
 
 /**
- * The size the ui and the debug overlay are drawn at, which the one atlas is scaled to per
- * ADR-0036 rather than rasterized at.
- **/
-/**
- * What the debug readout's window is titled, which is also the id the layer knows it by.
+ * What the debug readout's window is titled, which is also its id in the immediate layer.
  **/
 const char* const debugTitle = "Debug";
 
+/**
+ * The size the ui and the debug overlay are drawn at. Glyphs are distance fields, so the
+ * atlas is scaled to this size rather than rasterized at it.
+ **/
 const float fontSize = 18.0f;
 
 constexpr glm::vec4 sky(0.4f, 0.6f, 0.9f, 1.0f);
@@ -100,58 +103,41 @@ constexpr glm::vec3 palette[materialCount] = {
 /**
  **/
 Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::render::realtime::Window>& window,
-    const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
+    const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
     scene_(scene),
     logger_(logger),
-    engine_(logger, assetManager, registry),
-    sceneLayout_(VK_NULL_HANDLE),
-    pool_(VK_NULL_HANDLE),
+    engine_(logger, assetManager),
+    drawnChunks_(0),
+    meshedChunks_(0),
     debug_(false) {
     engine_.initialize(window);
     engine_.clearColour(sky);
 
-    context_ = boost::dynamic_pointer_cast<v3d::render::realtime::DeviceContext>(engine_.context());
+    context_ = engine_.context();
     if (!context_) {
-        throw std::runtime_error("The voxel renderer needs a context on a device to build its pipeline against");
+        throw std::runtime_error("The voxel renderer needs a device to build its pipeline against, and the render engine did not start");
     }
 
     createLayout();
     createUniforms();
     createPipeline();
-    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Quad> quads = engine_.quads();
-    text_ = boost::make_shared<v3d::ui::paint::TextRenderer>(assetManager, logger,
-        [quads](const boost::shared_ptr<v3d::image::Image>& atlas) {
-            return quads->texture(atlas);
-        });
-
     meshes_ = boost::make_shared<ChunkMeshPool>();
     builder_ = boost::make_shared<MeshBuilder>(scene_->chunks(),
         ChunkMeshBuilder(context_->device(), context_->uploader()));
 
-    uiRenderer_ = boost::make_shared<v3d::ui::paint::ComponentRenderer>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
-    uiRenderer_->dressing().lineHeight = fontSize * 1.4f;
-
-    // the debug readout is a panel written as calls rather than a tree kept in step with
-    // what it shows, per ADR-0035 - it is a function of the frame it is drawn in
-    tools_ = boost::make_shared<v3d::ui::Immediate>(text_->measure(fontSize), text_->write(&canvas_, fontSize));
-    tools_->dressing().lineHeight = fontSize * 1.4f;
+    v3d::ui::shell::Screen::Options options;
+    options.size = fontSize;
+    // the frame time is in the debug readout, so there is no overlay to draw it
+    options.statistics = false;
+    // the debug readout is an immediate mode panel: it is written as calls every frame
+    // rather than kept as a tree in step with what it shows
+    options.immediate = true;
+    screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
 }
 
 /**
  **/
-Renderer::~Renderer() {
-    // the pipeline and the material belong to Resources - what is owned here is the
-    // descriptor machinery the material's set was allocated out of
-    VkDevice device = context_ ? context_->device()->handle() : VK_NULL_HANDLE;
-    if (device != VK_NULL_HANDLE) {
-        if (pool_ != VK_NULL_HANDLE) {
-            vkDestroyDescriptorPool(device, pool_, nullptr);
-        }
-        if (sceneLayout_ != VK_NULL_HANDLE) {
-            vkDestroyDescriptorSetLayout(device, sceneLayout_, nullptr);
-        }
-    }
-}
+Renderer::~Renderer() = default;
 
 /**
  **/
@@ -163,17 +149,9 @@ void Renderer::createLayout() {
     // the shading is worked out per vertex, so only the vertex stage reads the palette
     block.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    VkDescriptorSetLayoutCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    info.bindingCount = 1;
-    info.pBindings = &block;
-
-    const VkResult result = vkCreateDescriptorSetLayout(context_->device()->handle(), &info, nullptr, &sceneLayout_);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create the voxel scene descriptor set layout - " << v3d::render::realtime::vulkan::device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    // one set, for the one material every chunk in the world draws with
+    scenePool_ = boost::make_shared<v3d::render::realtime::vulkan::pipeline::DescriptorPool>(context_->device(),
+        context_->ring(), std::vector<VkDescriptorSetLayoutBinding>{block}, 1, "voxel scene");
 }
 
 /**
@@ -196,37 +174,7 @@ void Renderer::createUniforms() {
     uniforms_ = boost::make_shared<v3d::render::realtime::vulkan::memory::DeviceBuffer>(
         context_->device(), context_->uploader(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, &uniforms, sizeof(uniforms));
 
-    VkDescriptorPoolSize size{};
-    size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    size.descriptorCount = 1;
-
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    // one set, for the one material every chunk in the world draws with
-    poolInfo.maxSets = 1;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &size;
-
-    VkResult result = vkCreateDescriptorPool(context_->device()->handle(), &poolInfo, nullptr, &pool_);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create the voxel descriptor pool - " << v3d::render::realtime::vulkan::device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
-    VkDescriptorSetAllocateInfo allocation{};
-    allocation.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocation.descriptorPool = pool_;
-    allocation.descriptorSetCount = 1;
-    allocation.pSetLayouts = &sceneLayout_;
-
-    VkDescriptorSet set = VK_NULL_HANDLE;
-    result = vkAllocateDescriptorSets(context_->device()->handle(), &allocation, &set);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to allocate the voxel scene descriptor set - " << v3d::render::realtime::vulkan::device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    VkDescriptorSet set = scenePool_->allocate();
 
     VkDescriptorBufferInfo buffer{};
     buffer.buffer = uniforms_->handle();
@@ -265,7 +213,7 @@ void Renderer::createPipeline() {
         // terrain is opaque, and blending it would cost bandwidth on every fragment of it
         .blend(false)
         .set(context_->frameUniforms()->layout())
-        .set(sceneLayout_)
+        .set(scenePool_->layout())
         .push(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::vec4))
         .colourFormat(context_->colourFormat())
         .depthFormat(context_->depthFormat());
@@ -283,13 +231,21 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& engine) {
  **/
 void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
     const glm::vec3 eye = scene_->camera()->position();
+    const v3d::type::geometry::Frustum frustum(scene_->camera()->projection() * scene_->camera()->view());
     const ChunkMeshPool::EntryMap& entries = meshes_->entries();
 
+    drawnChunks_ = 0;
+    meshedChunks_ = 0;
     for (ChunkMeshPool::EntryMap::const_iterator it = entries.begin(); it != entries.end(); ++it) {
         const ChunkMeshPool::Entry& entry = (*it).second;
         if (!entry.mesh) {
             continue;
         }
+        meshedChunks_++;
+        if (!chunkInView(frustum, entry.origin, entry.size)) {
+            continue;
+        }
+        drawnChunks_++;
 
         v3d::render::realtime::DrawItem item;
         entry.mesh->describe(&item);
@@ -300,8 +256,6 @@ void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
         std::memcpy(item.push.data(), &origin, sizeof(origin));
         item.pushSize = sizeof(origin);
 
-        item.key.pipeline = static_cast<uint16_t>(pipeline_.id());
-        item.key.material = static_cast<uint16_t>(material_.id());
         // near chunks first, so the depth test rejects what is behind them before it is
         // shaded. The far plane is 1000 blocks and a chunk is 16, so quantizing the distance
         // to whole blocks is finer than the ordering can use
@@ -318,30 +272,37 @@ void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statis
     const v3d::ui::Immediate::Input& tools) {
     const glm::vec3 position = scene_->player()->position();
 
-    tools_->begin(&canvas_, tools);
-    if (tools_->window(debugTitle, glm::vec2(20.0f, 20.0f), glm::vec2(260.0f, 132.0f), 0.85f)) {
-        tools_->text(std::string("Voxel ") + VOXEL_VERSION);
+    v3d::ui::Immediate* layer = screen_->immediate();
+    layer->begin(&screen_->canvas(), tools);
+    // a line more for each span of the frame that was timed
+    const float tall = 154.0f + 26.0f * static_cast<float>(statistics.spans.size());
+    if (layer->window(debugTitle, glm::vec2(20.0f, 20.0f), glm::vec2(260.0f, tall), 0.85f)) {
+        layer->text(std::string("Voxel ") + VOXEL_VERSION);
         // the loop already keeps a rolling mean, so nothing here averages anything
-        tools_->text(std::to_string(statistics.mean / 1000000U) + " ms");
+        layer->text(std::to_string(statistics.mean / 1000000U) + " ms");
         std::stringstream where;
         where.precision(1);
         where << std::fixed << "x " << position.x << "  y " << position.y << "  z " << position.z;
-        tools_->text(where.str());
+        layer->text(where.str());
+        layer->text("chunks " + std::to_string(drawnChunks_) + " / " + std::to_string(meshedChunks_));
+        for (const v3d::ui::shell::StatisticsOverlay::Sample::Span& span : statistics.spans) {
+            layer->text(v3d::ui::shell::StatisticsOverlay::line(span));
+        }
     }
-    tools_->endWindow();
-    tools_->end();
+    layer->endWindow();
+    layer->end();
 }
 
 /**
  **/
 void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     const v3d::ui::Immediate::Input& tools) {
-    glm::ivec2 size;
-    if (!engine_.beginFrame(&size)) {
+    if (!screen_->begin()) {
         return;
     }
-    if (canvas_.width() != static_cast<uint32_t>(size.x) || canvas_.height() != static_cast<uint32_t>(size.y)) {
-        resize(size.x, size.y);
+    v3d::render::realtime::Canvas& canvas = screen_->canvas();
+    if (screen_->resized()) {
+        resize(static_cast<int>(canvas.width()), static_cast<int>(canvas.height()));
     }
 
     boost::shared_ptr<v3d::render::realtime::Pass> terrain = engine_.frame()->pass(terrainPass);
@@ -353,29 +314,32 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     drawTerrain(terrain.get());
     scene_->camera()->dirty(false);
 
-    canvas_.clear();
     if (debug_) {
         drawDebug(statistics, tools);
     }
-    if (ui_) {
-        uiRenderer_->draw(&canvas_, *ui_);
-    }
+    screen_->draw(ui_.get(), statistics);
 
     // a second pass rather than more items in the first: the terrain is depth tested and
     // sorted front to back, and the text over it is painter ordered and must not be
     boost::shared_ptr<v3d::render::realtime::Pass> overlay = engine_.frame()->pass(overlayPass);
     overlay->keepColour();
     overlay->depth(false);
-    engine_.quads()->submit(canvas_, overlay.get());
+    engine_.quads()->submit(canvas, overlay.get());
 
     engine_.renderFrame();
 }
 
 /**
  **/
+const std::vector<v3d::render::realtime::vulkan::frame::Timings::Timing>& Renderer::timings() const {
+    return engine_.timings();
+}
+
+/**
+ **/
 void Renderer::tick(unsigned int /* delta */) {
-    // the chunk build has a budget per tick rather than a duration, so how long the last
-    // frame took is nothing to it - the loop keeps that, and the debug readout asks
+    // the chunk build has a budget of chunks per tick rather than a duration, so it does not
+    // use how long the last frame took. The loop measures that for the debug readout
     builder_->build(meshes_, chunkUpdatesPerTick);
 }
 
@@ -390,8 +354,6 @@ void Renderer::resize(int width, int height) {
         w / h,  // aspect
         0.1f,  // near
         1000.0f);  // far
-
-    canvas_.resize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 }
 
 /**

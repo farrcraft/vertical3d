@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/ecs/Previous.h>
+#include <api/ecs/component/Position1D.h>
+#include <api/ecs/component/Position2D.h>
 #include <api/event/kind/Sound.h>
 #include <pong/src/PongScene.h>
 
@@ -20,8 +23,8 @@
 namespace {
 
 /**
- * The scene says what happened by triggering a sound, so the clips a tick fires are the
- * only account of which branch it took.
+ * The scene reports what happened by triggering a sound, so the clips a tick fires are the
+ * only record of which branch it took.
  **/
 struct Sounds final {
     void heard(const v3d::event::kind::Sound& sound) {
@@ -36,9 +39,9 @@ struct Sounds final {
 };
 
 /**
- * The step the engine drains at, which is what every scene speed below is expressed
- * against. Repeated here rather than taken from v3d::engine::Accumulator, because the scene
- * is where pong's rules are and this test links neither the engine nor a device.
+ * The fixed step the engine simulates at, in seconds. Every scene speed below is per second.
+ * It is repeated here rather than taken from v3d::engine::Accumulator, because this test
+ * links neither the engine nor a device.
  **/
 constexpr float STEP = 1.0f / 60.0f;
 
@@ -51,15 +54,14 @@ bool near(const glm::vec2& lhs, const glm::vec2& rhs) {
 }
 
 /**
- * A scene the size of pong's own window, reset and listening. Everything below measures
- * against the 800x600 the app opens at, since the collision tests are written in pixels.
+ * A scene reset and listening. Everything below measures against the 800x600 court, the
+ * units the collision tests are written in.
  **/
 struct Fixture final {
     Fixture() :
         dispatcher_(boost::make_shared<entt::dispatcher>()),
         scene_(&registry_, dispatcher_) {
         dispatcher_->sink<v3d::event::kind::Sound>().connect<&Sounds::heard>(sounds_);
-        scene_.resize(800, 600);
         scene_.reset();
     }
 
@@ -72,8 +74,8 @@ struct Fixture final {
 };  // namespace
 
 /**
- * reset() centres both paddles and the ball and serves to the left, which is the state a
- * round begins in.
+ * reset() centres both paddles and the ball and serves to the left, the state a round
+ * begins in.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_reset_test) {
     Fixture fixture;
@@ -101,7 +103,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_tick_moves_the_ball_test) {
 }
 
 /**
- * A paused scene does nothing at all, which is what the menu holds the game on.
+ * A paused scene does nothing at all. The game is paused while the menu is open.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_paused_test) {
     Fixture fixture;
@@ -140,8 +142,32 @@ BOOST_AUTO_TEST_CASE(pong_scene_right_paddle_collision_test) {
 }
 
 /**
- * A ball level with the paddle's face but past the end of it is not met, which is the case
- * that separates a save from a point.
+ * A ball that has already passed the paddle's face, as a fast one does between two steps, is
+ * still returned rather than let through to the edge behind the paddle.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_paddle_past_the_face_test) {
+    Fixture fixture;
+    fixture.scene_.ball().position(glm::vec2(8.0f, 300.0f));
+    fixture.scene_.ball().direction(glm::vec2(-60.0f, 0.0f));
+
+    fixture.scene_.tick(STEP);
+
+    BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(60.0f, 0.0f)));
+    BOOST_TEST(fixture.sounds_.has("hit"));
+
+    Fixture right;
+    right.scene_.ball().position(glm::vec2(792.0f, 300.0f));
+    right.scene_.ball().direction(glm::vec2(60.0f, 0.0f));
+
+    right.scene_.tick(STEP);
+
+    BOOST_TEST((right.scene_.ball().direction() == glm::vec2(-60.0f, 0.0f)));
+    BOOST_TEST(right.sounds_.has("hit"));
+}
+
+/**
+ * A ball level with the paddle's face but past the end of it is not met. This case
+ * separates a save from a point.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_paddle_miss_test) {
     Fixture fixture;
@@ -155,8 +181,8 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_miss_test) {
 }
 
 /**
- * A paddle travelling as it meets the ball puts a little of that travel into the return,
- * which is the only way a rally changes angle.
+ * A paddle travelling as it meets the ball carries the return the way it is going, on both
+ * sides: a paddle moving up sends the ball up, which is towards smaller y.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_angles_the_return_test) {
     Fixture fixture;
@@ -166,8 +192,92 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_angles_the_return_test) {
 
     fixture.scene_.tick(STEP);
 
+    BOOST_TEST(fixture.scene_.ball().direction().x > 0.0f);
+    BOOST_TEST(fixture.scene_.ball().direction().y < 0.0f);
+
+    Fixture right;
+    right.scene_.ball().position(glm::vec2(780.0f, 300.0f));
+    right.scene_.ball().direction(glm::vec2(60.0f, 0.0f));
+    right.scene_.right().down(true);
+
+    right.scene_.tick(STEP);
+
+    BOOST_TEST(right.scene_.ball().direction().x < 0.0f);
+    BOOST_TEST(right.scene_.ball().direction().y > 0.0f);
+}
+
+/**
+ * A travelling paddle turns the return but does not speed it up. The ball leaves at the speed
+ * it arrived at, however many times a moving paddle returns it.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_moving_paddle_keeps_the_speed_test) {
+    Fixture fixture;
+    fixture.scene_.left().down(true);
+    glm::vec2 incoming(-60.0f, 0.0f);
+    for (int hit = 0; hit < 3; hit++) {
+        fixture.scene_.ball().position(glm::vec2(20.0f, 300.0f));
+        fixture.scene_.ball().direction(incoming);
+
+        fixture.scene_.tick(STEP);
+
+        const glm::vec2 returned = fixture.scene_.ball().direction();
+        BOOST_TEST(returned.x > 0.0f);
+        BOOST_TEST(returned.y > 0.0f);
+        BOOST_TEST(glm::length(returned) == 60.0f, boost::test_tools::tolerance(0.001f));
+        // the next return meets the ball coming back the way this one left
+        incoming = glm::vec2(-returned.x, returned.y);
+    }
+}
+
+/**
+ * Where the ball meets the paddle sets the angle it goes back at: flat off the centre,
+ * downwards off the lower half and upwards off the upper, steepest off the ends. The speed
+ * is kept, whatever the angle.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_paddle_angles_by_where_it_is_struck_test) {
+    const float struck[] = { 290.0f, 300.0f, 310.0f, 330.0f };
+    float lastAngle = -1.0f;
+    for (const float y : struck) {
+        Fixture fixture;
+        fixture.scene_.ball().position(glm::vec2(20.0f, y));
+        fixture.scene_.ball().direction(glm::vec2(-60.0f, 0.0f));
+
+        fixture.scene_.tick(STEP);
+
+        const glm::vec2 returned = fixture.scene_.ball().direction();
+        BOOST_TEST(returned.x > 0.0f);
+        BOOST_TEST(glm::length(returned) == 60.0f, boost::test_tools::tolerance(0.001f));
+        const float angle = std::atan2(returned.y, returned.x);
+        BOOST_TEST(angle > lastAngle);
+        lastAngle = angle;
+    }
+    // the last was struck by the very end, at the steepest return: fifty degrees, downwards
+    BOOST_TEST(lastAngle == 0.8727f, boost::test_tools::tolerance(0.001f));
+
+    // an angled ball struck by the centre goes back flat rather than retracing its line
+    Fixture flat;
+    flat.scene_.ball().position(glm::vec2(20.0f, 300.0f));
+    flat.scene_.ball().direction(glm::vec2(-48.0f, 36.0f));
+
+    flat.scene_.tick(STEP);
+
+    BOOST_TEST(flat.scene_.ball().direction().x == 60.0f, boost::test_tools::tolerance(0.001f));
+    BOOST_TEST(flat.scene_.ball().direction().y == 0.0f, boost::test_tools::tolerance(0.001f));
+}
+
+/**
+ * A ball already heading away from a paddle is not returned again on the step after it was,
+ * however deep past the face it still is.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_paddle_returns_once_test) {
+    Fixture fixture;
+    fixture.scene_.ball().position(glm::vec2(8.0f, 300.0f));
+    fixture.scene_.ball().direction(glm::vec2(60.0f, 0.0f));
+
+    fixture.scene_.tick(STEP);
+
     BOOST_TEST(fixture.scene_.ball().direction().x == 60.0f);
-    BOOST_TEST(fixture.scene_.ball().direction().y == 0.9f);
+    BOOST_TEST(!fixture.sounds_.has("hit"));
 }
 
 /**
@@ -186,6 +296,36 @@ BOOST_AUTO_TEST_CASE(pong_scene_left_edge_scores_test) {
     BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(-60.0f, 0.0f)));
     BOOST_TEST(fixture.scene_.left().position() == 300.0f);
     BOOST_TEST(fixture.sounds_.has("score"));
+}
+
+/**
+ * A point puts the ball back on the centre spot rather than moving it there. The frame after
+ * the point is drawn from the centre, not swept across the court from the edge it left by.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_a_point_settles_the_ball_test) {
+    Fixture fixture;
+    fixture.scene_.ball().position(glm::vec2(5.0f, 100.0f));
+    fixture.scene_.ball().direction(glm::vec2(-60.0f, 0.0f));
+    fixture.scene_.left().position(500.0f);
+
+    v3d::ecs::snapshot<v3d::ecs::component::Position2D>(fixture.registry_);
+    v3d::ecs::snapshot<v3d::ecs::component::Position1D>(fixture.registry_);
+    fixture.scene_.tick(STEP);
+
+    BOOST_TEST(near(fixture.scene_.ball().drawn(0.0f), glm::vec2(400.0f, 300.0f)));
+    BOOST_TEST(fixture.scene_.left().drawn(0.0f) == 300.0f);
+}
+
+/**
+ * Between two steps the ball is drawn between where the steps left it.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_ball_drawn_between_steps_test) {
+    Fixture fixture;
+
+    v3d::ecs::snapshot<v3d::ecs::component::Position2D>(fixture.registry_);
+    fixture.scene_.tick(STEP);
+
+    BOOST_TEST(near(fixture.scene_.ball().drawn(0.5f), glm::vec2(399.5f, 300.0f)));
 }
 
 BOOST_AUTO_TEST_CASE(pong_scene_right_edge_scores_test) {
@@ -227,6 +367,44 @@ BOOST_AUTO_TEST_CASE(pong_scene_bounces_off_the_bottom_test) {
     BOOST_TEST(fixture.scene_.ball().direction().x == 60.0f);
     BOOST_TEST(fixture.scene_.ball().direction().y == -120.0f);
     BOOST_TEST(fixture.sounds_.has("bounce"));
+}
+
+/**
+ * Both walls turn the ball where its edge meets the wall's face, fifteen pixels in, so the
+ * top is no deeper than the bottom.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_walls_turn_the_ball_at_their_faces_test) {
+    Fixture top;
+    top.scene_.ball().position(glm::vec2(400.0f, 20.0f));
+    top.scene_.ball().direction(glm::vec2(60.0f, -120.0f));
+
+    top.scene_.tick(STEP);
+
+    BOOST_TEST(top.scene_.ball().direction().y == 120.0f);
+
+    Fixture clear;
+    clear.scene_.ball().position(glm::vec2(400.0f, 21.0f));
+    clear.scene_.ball().direction(glm::vec2(60.0f, -120.0f));
+
+    clear.scene_.tick(STEP);
+
+    BOOST_TEST(clear.scene_.ball().direction().y == -120.0f);
+    BOOST_TEST(!clear.sounds_.has("bounce"));
+}
+
+/**
+ * A ball still inside a wall on the step after it was turned is heading out of it, and is
+ * not turned back in.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_walls_turn_the_ball_once_test) {
+    Fixture fixture;
+    fixture.scene_.ball().position(glm::vec2(400.0f, 12.0f));
+    fixture.scene_.ball().direction(glm::vec2(60.0f, 120.0f));
+
+    fixture.scene_.tick(STEP);
+
+    BOOST_TEST(fixture.scene_.ball().direction().y == 120.0f);
+    BOOST_TEST(!fixture.sounds_.has("bounce"));
 }
 
 /**
@@ -278,6 +456,23 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_is_bounded_test) {
 }
 
 /**
+ * A paddle less than a step from the end of its run stops at the end rather than carrying the
+ * whole step into the wall. A step is a pixel and a half, and each paddle starts one pixel in.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_paddle_stops_at_the_wall_test) {
+    Fixture fixture;
+    fixture.scene_.left().position(41.0f);
+    fixture.scene_.left().up(true);
+    fixture.scene_.right().position(559.0f);
+    fixture.scene_.right().down(true);
+
+    fixture.scene_.tick(STEP);
+
+    BOOST_TEST(fixture.scene_.left().position() == 40.0f);
+    BOOST_TEST(fixture.scene_.right().position() == 560.0f);
+}
+
+/**
  * Out of coop the right paddle is played by the scene, and it travels towards the ball it is
  * about to have to return.
  **/
@@ -308,8 +503,8 @@ BOOST_AUTO_TEST_CASE(pong_scene_ai_follows_the_ball_downwards_test) {
 }
 
 /**
- * A ball going the other way is not the ai's problem, so it stops rather than carrying on
- * towards where the ball was.
+ * When the ball is moving away from the ai's paddle, the paddle stops rather than carrying
+ * on towards where the ball was.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_ai_rests_when_the_ball_leaves_test) {
     Fixture fixture;
@@ -341,11 +536,9 @@ BOOST_AUTO_TEST_CASE(pong_scene_coop_leaves_the_right_paddle_alone_test) {
 }
 
 /**
- * The bug this scene was carrying: a tick advanced the world by one increment whatever the
- * frame had taken, so the ball and the paddles ran faster on a faster machine. Every speed
- * is now per second, so the same simulated duration produces the same result however it was
- * chopped up - sixty steps of a sixtieth land where a hundred and twenty of a hundred and
- * twentieth do.
+ * Every speed is per second, so the same simulated duration produces the same result however
+ * it is divided into steps. Sixty steps of a sixtieth land where a hundred and twenty steps of
+ * a hundred and twentieth do.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_is_frame_rate_independent_test) {
     Fixture slow;
@@ -364,4 +557,64 @@ BOOST_AUTO_TEST_CASE(pong_scene_is_frame_rate_independent_test) {
 
     BOOST_TEST(near(slow.scene_.ball().position(), fast.scene_.ball().position()));
     BOOST_TEST(slow.scene_.left().position() == fast.scene_.left().position(), boost::test_tools::tolerance(0.01f));
+}
+
+/**
+ * A paddle key let go while the game is paused stops the paddle, so the paddle does not run on
+ * by itself when the menu closes. A key pressed while paused does nothing.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_a_release_while_paused_stops_the_paddle_test) {
+    Fixture fixture;
+
+    BOOST_TEST(fixture.scene_.steer("leftPaddleUp", true));
+    BOOST_TEST(fixture.scene_.left().up());
+    fixture.scene_.state().pause(true);
+    BOOST_TEST(fixture.scene_.steer("leftPaddleUp", false));
+    BOOST_TEST(!fixture.scene_.left().up());
+
+    BOOST_TEST(fixture.scene_.steer("leftPaddleDown", true));
+    BOOST_TEST(!fixture.scene_.left().down());
+    BOOST_TEST(!fixture.scene_.steer("showGameMenu", true));
+}
+
+/**
+ * The computer moves the right paddle when a player has not got it. Changing to coop stops it,
+ * so the player who takes it over does not find it already moving.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_coop_stops_the_computer_paddle_test) {
+    Fixture fixture;
+    fixture.scene_.coop(false);
+    // a ball headed right and above the paddle, which the computer moves up to meet
+    fixture.scene_.ball().direction(glm::vec2(60.0f, 0.0f));
+    fixture.scene_.ball().position(glm::vec2(400.0f, 100.0f));
+    fixture.scene_.tick(STEP);
+    BOOST_REQUIRE(fixture.scene_.right().up());
+
+    fixture.scene_.coop(true);
+    fixture.scene_.reset();
+    BOOST_TEST(!fixture.scene_.right().up());
+    BOOST_TEST(!fixture.scene_.right().down());
+}
+
+/**
+ * A reset starts a new round and leaves a paused game paused, so a mode chosen from the open
+ * menu does not set the ball moving behind it.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_reset_keeps_the_pause_test) {
+    Fixture fixture;
+    fixture.scene_.state().pause(true);
+    fixture.scene_.reset();
+    BOOST_TEST(fixture.scene_.state().paused());
+}
+
+/**
+ * Outside coop the computer steers the right paddle, so the right paddle's keys, read every
+ * step whether held or not, do not stop it.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_keys_leave_the_computer_paddle_alone_test) {
+    Fixture fixture;
+    fixture.scene_.coop(false);
+    fixture.scene_.right().up(true);
+    BOOST_TEST(fixture.scene_.steer("rightPaddleUp", false));
+    BOOST_TEST(fixture.scene_.right().up());
 }

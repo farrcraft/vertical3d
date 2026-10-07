@@ -30,7 +30,6 @@ vertices(0) {
 /**
  **/
 LineCanvas::LineCanvas() {
-    transforms_.push_back(glm::mat4(1.0f));
 }
 
 /**
@@ -38,36 +37,32 @@ LineCanvas::LineCanvas() {
 void LineCanvas::clear() {
     vertices_.clear();
     batches_.clear();
-    transforms_.clear();
-    transforms_.push_back(glm::mat4(1.0f));
-    clips_.clear();
+    transforms_.reset();
+    clips_.reset();
 }
 
 /**
  **/
 void LineCanvas::push() {
-    transforms_.push_back(transforms_.back());
+    transforms_.push();
 }
 
 /**
  **/
 void LineCanvas::pop() {
-    // the identity at the bottom of the stack is the canvas's own and not a caller's to pop
-    if (transforms_.size() > 1) {
-        transforms_.pop_back();
-    }
+    transforms_.pop();
 }
 
 /**
  **/
 void LineCanvas::transform(const glm::mat4& transform) {
-    transforms_.back() = transforms_.back() * transform;
+    transforms_.top() = transforms_.top() * transform;
 }
 
 /**
  **/
 void LineCanvas::translate(const glm::vec3& offset) {
-    glm::mat4& current = transforms_.back();
+    glm::mat4& current = transforms_.top();
     current[3][0] += current[0][0] * offset.x + current[1][0] * offset.y + current[2][0] * offset.z;
     current[3][1] += current[0][1] * offset.x + current[1][1] * offset.y + current[2][1] * offset.z;
     current[3][2] += current[0][2] * offset.x + current[1][2] * offset.y + current[2][2] * offset.z;
@@ -76,43 +71,26 @@ void LineCanvas::translate(const glm::vec3& offset) {
 /**
  **/
 const glm::mat4& LineCanvas::transform() const noexcept {
-    return transforms_.back();
+    return transforms_.top();
 }
 
 /**
  **/
 void LineCanvas::clip(const glm::vec2& min, const glm::vec2& max) {
-    glm::vec4 rect(std::min(min.x, max.x), std::min(min.y, max.y),
-        std::max(min.x, max.x), std::max(min.y, max.y));
-
-    if (!clips_.empty()) {
-        const glm::vec4& outer = clips_.back();
-        rect.x = std::max(rect.x, outer.x);
-        rect.y = std::max(rect.y, outer.y);
-        rect.z = std::min(rect.z, outer.z);
-        rect.w = std::min(rect.w, outer.w);
-    }
-    // two clips that miss each other leave nothing rather than an inverted rectangle,
-    // which is a validation error by the time it reaches a scissor
-    rect.z = std::max(rect.x, rect.z);
-    rect.w = std::max(rect.y, rect.w);
-
-    clips_.push_back(rect);
+    clips_.push(min, max);
 }
 
 /**
  **/
 void LineCanvas::unclip() {
-    if (!clips_.empty()) {
-        clips_.pop_back();
-    }
+    clips_.pop();
 }
 
 /**
  **/
 void LineCanvas::open() {
-    const bool clipped = !clips_.empty();
-    const glm::vec4 clip = clipped ? clips_.back() : glm::vec4(0.0f);
+    const bool clipped = clips_.clipped();
+    const glm::vec4 clip = clips_.top();
 
     if (!batches_.empty() && batches_.back().clipped == clipped && batches_.back().clip == clip) {
         return;
@@ -127,7 +105,7 @@ void LineCanvas::open() {
 /**
  **/
 void LineCanvas::vertex(const glm::vec3& position, const glm::vec4& colour) {
-    const glm::mat4& current = transforms_.back();
+    const glm::mat4& current = transforms_.top();
 
     Vertex added;
     added.position.x = current[0][0] * position.x + current[1][0] * position.y + current[2][0] * position.z + current[3][0];

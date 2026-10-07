@@ -6,8 +6,11 @@
 #include "SpriteSheets.h"
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
+
+#include <boost/json.hpp>
 
 namespace v3d::config {
 
@@ -36,110 +39,6 @@ std::string text(const boost::json::object& entry, const char* key) {
 }
 
 };  // namespace
-
-/**
- **/
-SpriteRegion::SpriteRegion() noexcept :
-x(0),
-y(0),
-width(0),
-height(0) {
-}
-
-/**
- **/
-SpriteSheet::SpriteSheet() :
-width_(0),
-height_(0) {
-}
-
-/**
- **/
-SpriteSheet::SpriteSheet(const std::string& name, const std::string& image, int width, int height) :
-name_(name),
-image_(image),
-width_(width),
-height_(height) {
-}
-
-/**
- **/
-const std::string& SpriteSheet::name() const noexcept {
-    return name_;
-}
-
-/**
- **/
-const std::string& SpriteSheet::image() const noexcept {
-    return image_;
-}
-
-/**
- **/
-int SpriteSheet::width() const noexcept {
-    return width_;
-}
-
-/**
- **/
-int SpriteSheet::height() const noexcept {
-    return height_;
-}
-
-/**
- **/
-bool SpriteSheet::has(const std::string& sprite) const {
-    return regions_.find(sprite) != regions_.end();
-}
-
-/**
- **/
-SpriteRegion SpriteSheet::get(const std::string& sprite) const {
-    const std::map<std::string, SpriteRegion>::const_iterator found = regions_.find(sprite);
-    return found == regions_.end() ? SpriteRegion() : found->second;
-}
-
-/**
- **/
-const std::vector<std::string>& SpriteSheet::sprites() const noexcept {
-    return sprites_;
-}
-
-/**
- **/
-bool SpriteSheet::uv(const std::string& sprite, glm::vec2* uv0, glm::vec2* uv1) const {
-    if (uv0 == nullptr || uv1 == nullptr || width_ <= 0 || height_ <= 0) {
-        return false;
-    }
-    const std::map<std::string, SpriteRegion>::const_iterator found = regions_.find(sprite);
-    if (found == regions_.end()) {
-        return false;
-    }
-
-    const float across = static_cast<float>(width_);
-    const float down = static_cast<float>(height_);
-    *uv0 = glm::vec2(static_cast<float>(found->second.x) / across,
-        static_cast<float>(found->second.y) / down);
-    *uv1 = glm::vec2(static_cast<float>(found->second.x + found->second.width) / across,
-        static_cast<float>(found->second.y + found->second.height) / down);
-    return true;
-}
-
-/**
- **/
-bool SpriteSheet::place(const std::string& sprite, const SpriteRegion& region) {
-    // a region running off the sheet would give a uv outside 0..1, which samples whatever the
-    // wrap mode decides rather than reporting anything
-    if (sprite.empty() || region.width <= 0 || region.height <= 0 ||
-        region.x < 0 || region.y < 0 ||
-        region.x + region.width > width_ || region.y + region.height > height_) {
-        return false;
-    }
-    if (regions_.emplace(sprite, region).second) {
-        sprites_.push_back(sprite);
-    }
-    return true;
-}
 
 /**
  **/
@@ -187,17 +86,14 @@ bool readSprites(const boost::json::object& entry, SpriteSheet* sheet,
 
 /**
  **/
-bool SpriteSheets::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
-    if (!config) {
-        return false;
-    }
-    const boost::json::object doc = config->document();
+bool SpriteSheets::load(const boost::json::object& doc) {
     if (!doc.contains("sheets") || !doc.at("sheets").is_array()) {
         logger_->get()->error("Missing sheets in the sprite config");
         return false;
     }
 
     bool understood = true;
+    std::set<std::string> seen;
     for (const boost::json::value& value : doc.at("sheets").as_array()) {
         if (!value.is_object()) {
             logger_->get()->error("Unrecognized sprite sheet");
@@ -219,7 +115,10 @@ bool SpriteSheets::load(const boost::shared_ptr<v3d::asset::kind::Json>& config)
 
         understood = readSprites(entry, &sheet, logger_) && understood;
 
-        if (sheets_.emplace(sheet.name_, sheet).second) {
+        if (!seen.insert(sheet.name_).second) {
+            logger_->get()->warn("The sprite config names sheet {} more than once, and the last is kept", sheet.name_);
+        }
+        if (sheets_.insert_or_assign(sheet.name_, sheet).second) {
             names_.push_back(sheet.name_);
         }
     }

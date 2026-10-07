@@ -43,8 +43,8 @@ BOOST_AUTO_TEST_CASE(a_bgra_chain_is_swizzled) {
 }
 
 /**
- * The srgb chain a consumer asks for under ADR-0049 is the same channel order as its unorm
- * neighbour - the transfer function is not what decides which byte is red.
+ * An srgb chain, which an app can request, has the same channel order as its unorm neighbour.
+ * The transfer function does not change which byte is red.
  **/
 BOOST_AUTO_TEST_CASE(an_srgb_chain_is_swizzled_the_same_way) {
     const std::vector<unsigned char> pixels = texel(10, 20, 30, 40);

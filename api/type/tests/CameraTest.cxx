@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(camera_projection_test) {
 
     // the orthographic projection spans [-aspect, aspect] horizontally and [-1, 1]
     // vertically, both scaled by the zoom. The vertical scale is negative because vulkan
-    // clip space points y downward where the camera's axes point it up - ADR-0012
+    // clip space points y downward where the camera's axes point it up
     camera.createProjection();
     glm::mat4x4 ortho = camera.projection();
     BOOST_CHECK_CLOSE(ortho[0][0], 2.0f / (2.0f * 1.33f), 0.01f);
@@ -115,9 +115,8 @@ BOOST_AUTO_TEST_CASE(camera_lookat_test) {
 
 /**
  * The two hands mirror each other horizontally and agree about which way is up. The default
- * is what every profile in this tree has always meant, and the other one is the basis
- * glm::lookAt builds from the same eye, up and centre - so an application whose geometry was
- * wound for that one can be handed this camera instead of writing a second.
+ * is UpCrossDirection. DirectionCrossUp is the basis glm::lookAt builds from the same eye, up
+ * and centre, so an application whose geometry was wound for glm can use this camera.
  **/
 BOOST_AUTO_TEST_CASE(camera_profile_hand_test) {
     v3d::type::camera::Profile profile("top");
@@ -127,7 +126,7 @@ BOOST_AUTO_TEST_CASE(camera_profile_hand_test) {
     profile.up(glm::vec3(0.0f, 0.0f, 1.0f));
     profile.lookat(glm::vec3(0.0f, 0.0f, 0.0f));
 
-    // right = up x direction, which is what the rest of this suite asserts
+    // right = up x direction, as the rest of this suite asserts
     BOOST_CHECK_CLOSE(profile.right()[0], 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(profile.up()[2], 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(profile.direction()[1], -1.0f, 0.01f);
@@ -138,8 +137,8 @@ BOOST_AUTO_TEST_CASE(camera_profile_hand_test) {
     mirrored.up(glm::vec3(0.0f, 0.0f, 1.0f));
     mirrored.lookat(glm::vec3(0.0f, 0.0f, 0.0f));
 
-    // the same direction and the same up, and the right the other way round - the whole of
-    // the difference, and the reason the winding a front face presents reverses with it
+    // the same direction and the same up, and the right negated. That is the only
+    // difference, and it reverses the winding of a front face
     BOOST_CHECK_CLOSE(mirrored.right()[0], -1.0f, 0.01f);
     BOOST_CHECK_CLOSE(mirrored.up()[2], 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(mirrored.direction()[1], -1.0f, 0.01f);
@@ -151,15 +150,14 @@ BOOST_AUTO_TEST_CASE(camera_profile_hand_test) {
 }
 
 /**
- * The two hands are mirrors of each other through the matrix a caller draws with, which is
- * the thing that makes one of them usable rather than merely different: the same world point
- * lands at the same height and the same depth in both, and at the negated x.
+ * The two hands mirror each other through the view matrix: the same world point lands at the
+ * same height and the same depth in both, and at the negated x.
  *
- * Asserting the normals is not enough and was the gap that shipped. lookat() writes those
- * from the cross products directly, so they are right whatever the rotation carries, and the
- * mirrored basis is improper - no quaternion represents it. The rotation is the right handed
- * half and createView() applies the mirror, so this also checks the rotation is still a
- * rotation: a quat_cast of a mirror comes back with columns that are not unit length.
+ * The normals alone do not show this. lookat() writes them directly from the cross products,
+ * so they are correct whatever the rotation holds. No quaternion represents the mirrored
+ * basis, so the rotation holds the unmirrored basis and createView() applies the mirror. This
+ * test also checks that the rotation is a proper rotation: a quat_cast of a mirror gives
+ * columns that are not unit length.
  **/
 BOOST_AUTO_TEST_CASE(camera_hands_build_mirrored_views_test) {
     const glm::vec3 eye(6.0f, 8.0f, 10.0f);
@@ -178,8 +176,7 @@ BOOST_AUTO_TEST_CASE(camera_hands_build_mirrored_views_test) {
     mirrored.profile().lookat(centre);
     mirrored.createView();
 
-    // both rotations are rotations, which is what the mirrored one was not while lookat()
-    // built it out of an improper basis
+    // both rotations are proper rotations, with unit columns
     const glm::mat3 basis(glm::mat3_cast(camera.profile().rotation()));
     const glm::mat3 mirroredBasis(glm::mat3_cast(mirrored.profile().rotation()));
     BOOST_CHECK_CLOSE(glm::determinant(basis), 1.0f, 0.01f);
@@ -204,8 +201,8 @@ BOOST_AUTO_TEST_CASE(camera_hands_build_mirrored_views_test) {
         BOOST_CHECK_CLOSE(reflected[2], through[2], 0.01f);
     }
 
-    // the eye is still the origin of view space in the mirrored basis - a mirror through the
-    // rotation moved it, because what came back was not a rigid transform
+    // the eye is still the origin of view space in the mirrored basis, which holds only
+    // while the view is a rigid transform
     const glm::vec4 origin = mirrored.view() * glm::vec4(eye, 1.0f);
     BOOST_CHECK_SMALL(origin[0], 0.001f);
     BOOST_CHECK_SMALL(origin[1], 0.001f);
@@ -335,18 +332,13 @@ BOOST_AUTO_TEST_CASE(camera_ortho_factor_test) {
 }
 
 /**
- * A view built through lookat() is the one glm::lookAt builds, element for element and with
- * no tolerance at all.
+ * A view built through lookat() equals the one glm::lookAt builds, element for element, with
+ * no tolerance. It is checked exactly because a consumer that compares rendered images
+ * against stored references sees a difference of one unit in the last place.
  *
- * **This is the assertion the cached basis exists for**, and it is why it is asserted exactly:
- * a consumer holding its own reference frames re-baselines them for a difference of one unit
- * in the last place, so "close enough" is the thing that costs rather than the thing that
- * passes. Reported by retcon as U18, whose capture moved 153 of 891600 pixels when it adopted
- * this camera.
- *
- * Two conventions have to be undone before the two are comparable, neither of them a
- * difference in the arithmetic: this tree looks along +z where glm looks along -z, so row 2
- * is negated, and ADR-0052's mirrored hand is the basis glm crosses for. Equality is checked
+ * Two conventions are undone before the views are compared. This camera looks along +z where
+ * glm looks along -z, so row 2 is negated. glm's basis is the DirectionCrossUp hand, so the
+ * profile uses that hand. Equality is checked
  * with == rather than by comparing bits, because the mirror turns some zeros negative and
  * -0.0f == 0.0f while their bits differ.
  **/
@@ -393,9 +385,8 @@ BOOST_AUTO_TEST_CASE(camera_lookat_matches_glm_exactly_test) {
 }
 
 /**
- * A rotation set directly still builds its own view, which is the half a cached basis can
- * break: the matrix lookat() kept describes the rotation lookat() built, and any other writer
- * of the rotation has to put it back to being cast from the quaternion.
+ * A rotation set directly still builds its own view. The cached basis describes only the
+ * rotation lookat() built, so every other write of the rotation must clear it.
  **/
 BOOST_AUTO_TEST_CASE(camera_a_set_rotation_outlives_a_cached_basis_test) {
     v3d::type::camera::Camera camera;
@@ -403,7 +394,7 @@ BOOST_AUTO_TEST_CASE(camera_a_set_rotation_outlives_a_cached_basis_test) {
     camera.profile().lookat(glm::vec3(0.0f, 0.0f, 0.0f));
     camera.createView();
 
-    // a quarter turn about y, set rather than looked at, is the view that has to win
+    // a quarter turn about y, set rather than looked at, is the view that must be built
     const glm::quat turned = glm::angleAxis(glm::pi<float>() / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f));
     camera.profile().rotation(turned);
     camera.createView();
@@ -430,4 +421,63 @@ BOOST_AUTO_TEST_CASE(camera_a_set_rotation_outlives_a_cached_basis_test) {
             BOOST_CHECK_EQUAL(panned.view()[column][row], expected[column][row]);
         }
     }
+}
+
+BOOST_AUTO_TEST_CASE(camera_rotate_after_a_lookat_turns_the_view_test) {
+    // the editor's perspective camera is a lookat() profile that the arcball then rotates
+    v3d::type::camera::Camera camera;
+    camera.profile().eye(glm::vec3(0.0f, 0.0f, 5.0f));
+    camera.profile().lookat(glm::vec3(0.0f, 0.0f, 0.0f));
+    camera.createView();
+    const glm::mat4x4 before = camera.view();
+
+    // a turn about one axis, which has two zero components
+    const glm::quat turn = glm::angleAxis(glm::pi<float>() / 6.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+    camera.rotate(turn);
+    camera.createView();
+
+    glm::mat4x4 expected = glm::transpose(glm::mat4_cast(camera.profile().rotation()));
+    expected = glm::translate(expected, -camera.profile().eye());
+    float moved = 0.0f;
+    for (int column = 0; column < 4; ++column) {
+        for (int row = 0; row < 4; ++row) {
+            BOOST_CHECK_SMALL(camera.view()[column][row] - expected[column][row], 0.0001f);
+            moved += std::fabs(camera.view()[column][row] - before[column][row]);
+        }
+    }
+    BOOST_CHECK_GT(moved, 0.1f);
+}
+
+BOOST_AUTO_TEST_CASE(camera_a_degenerate_rotate_is_no_rotation_test) {
+    v3d::type::camera::Camera camera;
+    camera.profile().eye(glm::vec3(0.0f, 0.0f, 5.0f));
+    camera.profile().lookat(glm::vec3(0.0f, 0.0f, 0.0f));
+    const glm::quat before = camera.profile().rotation();
+
+    // what ArcBall::drag returns when the cursor has not moved
+    camera.rotate(glm::quat(0.0f, 0.0f, 0.0f, 0.0f));
+    BOOST_CHECK(camera.profile().rotation() == before);
+}
+
+BOOST_AUTO_TEST_CASE(camera_a_turn_moves_the_normals_with_it_test) {
+    v3d::type::camera::Camera camera;
+    camera.profile().eye(glm::vec3(0.0f, 0.0f, -5.0f));
+    camera.profile().lookat(glm::vec3(0.0f, 0.0f, 0.0f));
+    BOOST_CHECK_CLOSE(camera.profile().direction()[2], 1.0f, 0.01f);
+
+    // a quarter pan about the camera's own y takes the view direction onto world x, and a
+    // dolly after it has to follow
+    camera.pan(glm::half_pi<float>());
+    const glm::vec3 direction = camera.profile().direction();
+    BOOST_CHECK_SMALL(direction[2], 0.0001f);
+    BOOST_CHECK_CLOSE(std::fabs(direction[0]), 1.0f, 0.01f);
+
+    const glm::vec3 eye = camera.profile().eye();
+    camera.dolly(2.0f);
+    BOOST_CHECK_SMALL(glm::length(camera.profile().eye() - (eye + direction * 2.0f)), 0.0001f);
+
+    // and the normals are the view's: direction is the third row of the view's rotation
+    camera.createView();
+    const glm::vec3 viewZ(camera.view()[0][2], camera.view()[1][2], camera.view()[2][2]);
+    BOOST_CHECK_SMALL(glm::length(viewZ - direction), 0.0001f);
 }

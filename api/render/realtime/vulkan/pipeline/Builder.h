@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "Cache.h"
-#include "Resources.h"
+#include "Pipeline.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -26,8 +26,8 @@ namespace v3d::render::realtime::vulkan::pipeline {
  *
  * A VkGraphicsPipelineCreateInfo is a dozen substructures of which a renderer varies
  * four or five, so writing one out inline makes the second pipeline a copy of the first
- * with three lines changed. What is defaulted here is what every pipeline in this engine
- * has agreed on: a dynamic viewport and scissor so a resize costs no rebuild, one
+ * with three lines changed. The defaults are what every pipeline in this engine shares:
+ * a dynamic viewport and scissor so a resize costs no rebuild, one
  * sample, one colour attachment, and dynamic rendering rather than a render pass.
  *
  * The colour attachments are a list of 0..N formats, because how many there are is a
@@ -36,7 +36,7 @@ namespace v3d::render::realtime::vulkan::pipeline {
  *
  * The shader modules belong to the builder and are destroyed with it, since a module is
  * only needed while the pipeline is being compiled. The pipeline and its layout do not -
- * they are handed back for the caller to register with Resources, which is what destroys
+ * they are handed back for the caller to register with Resources, and Resources destroys
  * them.
  *
  * A builder describes one pipeline. Building twice from one builder is allowed and gives
@@ -96,26 +96,25 @@ class Builder final {
     Builder& polygon(VkPolygonMode mode);
 
     /**
-     * Defaults to no culling with a counter clockwise front face - which is what 2D
-     * wants, since a quad whose winding came out wrong should not silently vanish.
+     * Defaults to no culling with a counter clockwise front face, which suits 2D: a quad
+     * whose winding came out wrong should not silently vanish.
      **/
     Builder& cull(VkCullModeFlags mode, VkFrontFace face = VK_FRONT_FACE_COUNTER_CLOCKWISE);
 
     /**
-     * Defaults to neither testing nor writing, which is what painter ordered 2D wants.
+     * Defaults to neither testing nor writing, which suits painter ordered 2D.
      * A pipeline that tests has to be built against a depth format as well.
      **/
     Builder& depth(bool test, bool write, VkCompareOp compare = VK_COMPARE_OP_LESS);
 
     /**
-     * Whether the depth this pipeline writes is offset as it is written, which is what
-     * separates a shadow map's own geometry from the surface tested against it.
+     * Whether the depth this pipeline writes is offset as it is written, which keeps a
+     * shadow map's own geometry from shadowing the surface tested against it.
      *
      * The bias itself is dynamic rather than built in: the constant and the slope factor
-     * are a scene's numbers rather than a pipeline's, so a pipeline that asks for one is
-     * told what it is by vkCmdSetDepthBias before it draws. Asking for none - the default -
-     * leaves the dynamic state out, and a pipeline that never set one would be drawn with
-     * whatever the last caller left behind.
+     * belong to a scene rather than a pipeline, so a biased pipeline receives them through
+     * vkCmdSetDepthBias before it draws. The default, no bias, leaves the dynamic state out.
+     * A biased pipeline drawn without vkCmdSetDepthBias would use whatever bias was last set.
      **/
     Builder& depthBias(bool enabled);
 
@@ -128,14 +127,13 @@ class Builder final {
     /**
      * How a blending pipeline combines what it draws with what is already there.
      *
-     * The defaults are straight alpha over an opaque destination, which is what blend(true)
-     * means and what everything presenting in this tree wants. A pipeline compositing into
-     * something that is itself composited later wants a different destination alpha: a
-     * factor of ZERO keeps the source's, where ONE_MINUS_SRC_ALPHA erodes it.
+     * The defaults are straight alpha over an opaque destination. blend(true) means these
+     * defaults, and every pipeline presenting in this tree uses them. A pipeline compositing
+     * into something that is itself composited later needs a different destination alpha:
+     * a factor of ZERO keeps the source's, where ONE_MINUS_SRC_ALPHA erodes it.
      *
-     * The operation is VK_BLEND_OP_ADD either way. Nothing has wanted subtract or min, and
-     * a caller that does is asking for a second thing rather than a different value of this
-     * one.
+     * The operation is VK_BLEND_OP_ADD either way. Nothing uses subtract or min, and
+     * supporting them would need a separate setting rather than another value here.
      **/
     struct Blend {
         VkBlendFactor sourceColour{VK_BLEND_FACTOR_SRC_ALPHA};
@@ -146,18 +144,18 @@ class Builder final {
 
     /**
      * Blend with factors of the caller's own, which also turns blending on. Every colour
-     * attachment gets them, since this is one answer for the pipeline the way blend() is.
+     * attachment gets them, since blend state applies to the whole pipeline, as blend() does.
      **/
     Builder& blend(const Blend& factors);
 
     /**
      * Add a descriptor set layout. They are numbered in the order they are added, so
-     * set 0 - the per frame frequency of ADR-0008 - has to be added first.
+     * set 0, which holds per frame data, has to be added first.
      **/
     Builder& set(VkDescriptorSetLayout layout);
 
     /**
-     * Declare the push constant block, which is where per object data lives per ADR-0008.
+     * Declare the push constant block, which holds per object data.
      * @param stages which stages read it
      * @param bytes its size, at most DrawItem::pushCapacity for anything a draw item carries
      **/
@@ -166,25 +164,22 @@ class Builder final {
     /**
      * Compile against a layout the caller already owns, rather than building one.
      *
-     * The default is to build one from set() and push(), which is what a pipeline that is
-     * the only thing bound through its layout wants, and it is what every renderer in this
-     * tree does. A pass that binds a descriptor set once and then draws with several
-     * pipelines under it wants the other arrangement: one layout, compiled into each of
-     * them, so that the set bound through it stays bound across the switch. Building a
-     * layout per pipeline would work - layouts declaring the same sets and the same push
-     * range are compatible, so the binding survives either way - but it makes a pass that
-     * means to share one hold several that differ in nothing.
+     * The default builds one from set() and push(), which suits a pipeline that is the only
+     * thing bound through its layout, and is what every renderer in this tree does. A pass
+     * that binds a descriptor set once and then draws with several pipelines under it can
+     * compile one shared layout into each of them, so the set stays bound across the switch.
+     * A layout per pipeline would also work, because layouts declaring the same sets and
+     * push range are compatible, but the pass would then hold several identical layouts.
      *
      * The layout stays the caller's: it is not destroyed with the builder, and it is
-     * handed straight back in the Pipeline so that registering the result still names the
-     * layout its draws bind through. It must outlive them, which is the caller's half of
-     * the arrangement.
+     * returned in the Pipeline so that registering the result names the layout its draws
+     * bind through. The caller must keep it alive as long as the pipelines.
      *
-     * set() then has nothing to describe and is ignored. push() is still read, but only
-     * for the stage flags the returned Pipeline carries so that a draw can push through
-     * the layout given here - the range itself is the caller's, declared when they created
-     * it, and a push() that disagrees with it is a difference Vulkan cannot see and
-     * validation will not report.
+     * set() then has nothing to describe, and is read only to record whether the layout
+     * declares a set 2, where a pass binds its scene. push() is read only for the stage flags
+     * the returned Pipeline carries, so a draw can push through the given layout. The range
+     * itself was declared when the caller created the layout, and a push() that disagrees
+     * with it is detected neither by Vulkan nor by validation.
      *
      * @param layout a layout the caller created and destroys, or VK_NULL_HANDLE to go back
      *        to building one
@@ -195,15 +190,16 @@ class Builder final {
      * The format of the image the pass draws into. Dynamic rendering has no render pass
      * to take it from, so this is not optional.
      *
-     * The same thing as colourFormats() with one format in it, which is what a pipeline
-     * drawing into a single image wants to say.
+     * The same as colourFormats() with one format in it, for a pipeline drawing into a
+     * single image.
      **/
     Builder& colourFormat(VkFormat format);
 
     /**
      * The formats of every image the pass draws into, in attachment order. An empty list
-     * is a pipeline that writes no colour - a shadow pass - and each format gets the same
-     * blend state, since blend() is one answer for the pipeline.
+     * means the pipeline writes no colour, as in a shadow pass. Each format gets the same
+     * blend state, since blend state applies to the whole pipeline. The recorder checks the
+     * first format against the target of every pass the pipeline is bound in.
      **/
     Builder& colourFormats(const std::vector<VkFormat>& formats);
 
@@ -222,15 +218,14 @@ class Builder final {
 
     /**
      * The three pieces of state a caller cannot otherwise check, each exactly as build()
-     * will hand it to Vulkan - build() calls these rather than assembling its own, so what
-     * is read here is what is compiled.
+     * passes it to Vulkan. build() calls these rather than assembling its own, so what is
+     * read here is what is compiled.
      *
-     * **They exist because a VkPipeline cannot be read back.** Nothing about a compiled
-     * pipeline says what it was built from, and a wrong answer in any of the three is a
-     * picture rather than an error: a depth bias left out of the dynamic list silently
-     * becomes the zero in the create info, so vkCmdSetDepthBias does nothing and a shadow
-     * simply does not shift. Validation has nothing to say about any of that, so a consumer
-     * that needs to know asks here.
+     * **They exist because a VkPipeline cannot be read back.** A compiled pipeline does not
+     * record what it was built from, and a mistake in any of the three gives a wrong picture
+     * rather than an error. For example, a depth bias left out of the dynamic list becomes
+     * the zero in the create info, so vkCmdSetDepthBias does nothing and a shadow does not
+     * shift. Validation reports none of this, so a consumer that needs to know checks here.
      **/
     VkPipelineRasterizationStateCreateInfo rasterization() const;
     VkPipelineColorBlendAttachmentState colourBlend() const;

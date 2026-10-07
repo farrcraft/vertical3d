@@ -61,11 +61,7 @@ Builder& Builder::shader(VkShaderStageFlagBits stage, const uint32_t* code, std:
 
     VkShaderModule module = VK_NULL_HANDLE;
     VkResult result = vkCreateShaderModule(device_->handle(), &info, nullptr, &module);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to create a shader module for the " << name_ << " pipeline - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to create a shader module for the " + name_ + " pipeline");
     modules_.push_back(module);
 
     VkPipelineShaderStageCreateInfo created{};
@@ -248,7 +244,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
         throw std::runtime_error(msg.str());
     }
     // an empty list is a pipeline that writes no colour, which a shadow pass is. An entry
-    // left undefined is one nobody named, which is the default and is still a mistake
+    // left undefined was never named; that is the default, and still an error
     for (const VkFormat format : colours_) {
         if (format == VK_FORMAT_UNDEFINED) {
             std::stringstream msg;
@@ -266,10 +262,14 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
 
     Pipeline built;
     built.pushStages = pushBytes_ > 0 ? pushStages_ : 0;
+    built.scene = sets_.size() > 2;
+    built.biased = depthBias_;
+    built.colourFormats = colours_;
+    built.depthFormat = depthFormat_;
 
     // a layout the caller owns is compiled into the pipeline and handed straight back, so
-    // that registering the result names the layout its draws bind through. It is theirs to
-    // destroy, which is why the failure path below is the only one that frees one
+    // that registering the result names the layout its draws bind through. The caller
+    // destroys it, so the failure path below frees a layout only when this builder made it
     const bool ownsLayout = layout_ == VK_NULL_HANDLE;
 
     VkPushConstantRange push{};
@@ -286,11 +286,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
 
     if (ownsLayout) {
         VkResult result = vkCreatePipelineLayout(device, &layout, nullptr, &built.layout);
-        if (result != VK_SUCCESS) {
-            std::stringstream msg;
-            msg << "Unable to create the " << name_ << " pipeline layout - " << device::resultString(result);
-            throw std::runtime_error(msg.str());
-        }
+        device::check(result, "Unable to create the " + name_ + " pipeline layout");
     } else {
         built.layout = layout_;
     }
@@ -326,7 +322,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
 
     const VkPipelineColorBlendAttachmentState attachment = colourBlend();
 
-    // blend() is one answer for the pipeline, so every attachment blends the same way
+    // blend state applies to the whole pipeline, so every attachment blends the same way
     const std::vector<VkPipelineColorBlendAttachmentState> attachments(colours_.size(), attachment);
     VkPipelineColorBlendStateCreateInfo blending{};
     blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -366,9 +362,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
         if (ownsLayout) {
             vkDestroyPipelineLayout(device, built.layout, nullptr);
         }
-        std::stringstream msg;
-        msg << "Unable to create the " << name_ << " pipeline - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to create the " + name_ + " pipeline");
     }
 
     return built;

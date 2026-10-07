@@ -1,14 +1,13 @@
-# A windowed application outside the vertical3d tree, built the way
-# [docs/NewProject.md](../../docs/NewProject.md) describes. It exists to be configured by CI: nothing
-# inside the tree can tell a target that carries its own include path and its own dependencies
-# from one picking them up off the root's global or off an app that names every library,
-# because in this repository both are always there.
+# A windowed application outside the vertical3d tree, built against it as a consumer would. CI
+# configures it to check that each api target carries its own include path and dependencies.
+# Inside the tree that cannot be checked, because the root's global settings and the apps that
+# name every library always supply them.
 #
-# It is a root project of its own rather than a subdirectory of vertical3d, which is what makes
-# CMAKE_SOURCE_DIR differ from V3D_ROOT.
+# It is a root project of its own rather than a subdirectory of vertical3d, so
+# CMAKE_SOURCE_DIR differs from V3D_ROOT.
 #
-# Its vcpkg.json and vcpkg-configuration.json are copies of the tree's, which is what a real
-# consumer repository carries. CI does not install from them - it points the configure at the
+# Its vcpkg.json and vcpkg-configuration.json are copies of the tree's, as a real consumer
+# repository carries. CI does not install from them - it points the configure at the
 # install the ctest job already made - so the copies here document the requirement rather than
 # doubling the CI cost of it.
 
@@ -17,9 +16,9 @@ cmake_minimum_required(VERSION 3.21)
 project("v3dstarter" CXX)
 
 # What a consumer sets for itself, and all of it. The language standard and /permissive- are
-# deliberately not in the api's interface properties; everything else a v3d:: target needs -
-# its include root, /EHsc, /utf-8, the boost winapi version workaround, and every third party
-# dependency its headers name - arrives through the target.
+# deliberately not in the api's interface properties. Everything else a v3d:: target needs
+# arrives through the target: its include root, /EHsc, /utf-8, and every third party
+# dependency its headers name.
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options("/permissive-")
@@ -29,10 +28,10 @@ add_compile_options("/permissive-")
 set(V3D_BUILD_APPS OFF)
 set(V3D_BUILD_TESTS OFF)
 
-# The three libraries this app links, per ADR-0033. Their closure is what gets built and what
-# decides which packages are looked for, so naming them here rather than leaving V3D_LIBRARIES
-# at "all" is also what makes CI check that the closure is right: an api library that does not
-# declare something it links fails this configure and no other.
+# The three libraries this app links. V3D_LIBRARIES selects which api libraries are built: the
+# named ones and everything they depend on, and only their packages are looked for. Naming them
+# rather than leaving V3D_LIBRARIES at "all" makes CI check that closure: an api library that
+# does not declare something it links fails this configure.
 set(V3D_LIBRARIES engine log render)
 get_filename_component(V3D_TREE "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 add_subdirectory("${V3D_TREE}" v3d)
@@ -43,14 +42,14 @@ add_executable(v3dstarter
 
 # A CMake function is global once defined, so the tree's data helpers are callable here. This
 # one copies data/ beside the executable, because the engine resolves every asset relative to
-# the exe. v3d_add_shared_data(v3dstarter) would add the tree's own data/ - the fonts and themes
-# - which this app does not draw and so does not ask for.
+# the exe. v3d_add_shared_data(v3dstarter) would add the tree's own data/, which holds the
+# shared font, and this app draws no text and so does not ask for it.
 v3d_add_app_data(v3dstarter)
 
 # Three targets and no third party package of its own. boost::filesystem is compiled by these
 # sources - asset/Manager.h names a path - but it arrives through v3d::asset, so nothing here
 # has to name it. A consumer that does name a package itself has to find_package it in its own
-# scope; see docs/NewProject.md.
+# scope.
 target_link_libraries(v3dstarter PRIVATE
 	v3d::engine
 	v3d::log

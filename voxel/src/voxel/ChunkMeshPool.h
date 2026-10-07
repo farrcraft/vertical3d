@@ -12,12 +12,12 @@
 #include <glm/vec3.hpp>
 
 /**
- * The meshed chunks, held by the app because nothing in the engine owns geometry - ADR-0010.
+ * The meshed chunks, held by the app.
  *
  * A chunk that is remeshed replaces its entry, and the mesh that was there is destroyed with
- * the last reference to it. Which is why a remesh has to happen while nothing is in flight
- * against the old buffers - the pool is only written from a tick, before the frame that
- * reads it is recorded.
+ * the last reference to it. A remesh must therefore happen while nothing in flight uses the
+ * old buffers, so the pool is only written from a tick, before the frame that reads it is
+ * recorded.
  **/
 class ChunkMeshPool {
  public:
@@ -29,6 +29,7 @@ class ChunkMeshPool {
 
         boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> mesh;
         glm::vec3 origin;  /**< the chunk's corner in blocks, which its vertices are relative to **/
+        float size;        /**< how many blocks the chunk spans along each axis **/
     };
 
     typedef boost::unordered_map<size_t, Entry> EntryMap;
@@ -36,7 +37,8 @@ class ChunkMeshPool {
     /**
      * Take a chunk's mesh, replacing whatever was there.
      **/
-    void add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>& mesh, const glm::vec3& origin);
+    void add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>& mesh, const glm::vec3& origin,
+        float size);
 
     /**
      * @return the meshes, for a caller building a draw item out of each

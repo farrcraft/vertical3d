@@ -5,9 +5,13 @@
 
 #include "Recorder.h"
 
+#include <api/render/realtime/vulkan/memory/Barriers.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <sstream>
+#include <stdexcept>
 #include <vector>
 
 #include "RenderTarget.h"
@@ -23,10 +27,10 @@ namespace {
  * names, or the last.
  *
  * A target is brought into the layout a pass attaches it in once, before the first pass
- * that writes it, and left readable after the last one - so two passes drawing into one
+ * that writes it. It is left readable after the last one, so two passes drawing into one
  * target cost one pair of barriers rather than two. Scanned rather than tallied because a
- * frame has a handful of passes, and a walk is easier to be sure of than a map that has
- * to be cleared every frame.
+ * frame has a handful of passes, and a scan is easier to verify than a map that has to be
+ * cleared every frame.
  **/
 bool firstWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
     for (std::size_t before = 0; before < index; ++before) {
@@ -47,6 +51,17 @@ bool lastWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t i
 }
 
 /**
+ * Whether any pass that writes the same target as passes[index] uses its depth. A target is
+ * opened and closed once a frame, so its depth image is moved if any of its passes needs it.
+ **/
+bool depthWritten(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
+    const boost::shared_ptr<RenderTarget>& target = passes[index]->target();
+    return std::ranges::any_of(passes, [&target](const boost::shared_ptr<Pass>& other) {
+        return other->target() == target && other->depth();
+    });
+}
+
+/**
  * Where a pass actually draws: a target of its own, or what the frame was given.
  **/
 Recorder::Target resolve(const Pass& pass, const Recorder::Target& frame) {
@@ -62,6 +77,8 @@ Recorder::Target resolve(const Pass& pass, const Recorder::Target& frame) {
     into.depthImage = offscreen->depthImage();
     into.depthView = offscreen->depthView();
     into.sampledDepth = offscreen->sampledDepth();
+    into.format = offscreen->format();
+    into.depthFormat = offscreen->depthFormat();
     return into;
 }
 
@@ -99,6 +116,8 @@ extent{0, 0},
 depthImage(VK_NULL_HANDLE),
 depthView(VK_NULL_HANDLE),
 sampledDepth(false),
+format(VK_FORMAT_UNDEFINED),
+depthFormat(VK_FORMAT_UNDEFINED),
 finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
 }
 
@@ -107,6 +126,7 @@ finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
 Recorder::Bound::Bound() noexcept :
 pipeline(nullptr),
 frameSet(VK_NULL_HANDLE),
+sceneSet(VK_NULL_HANDLE),
 set(VK_NULL_HANDLE),
 vertexBuffer(VK_NULL_HANDLE),
 vertexBufferOffset(0),
@@ -114,31 +134,27 @@ indexBuffer(VK_NULL_HANDLE),
 indexBufferOffset(0),
 area{},
 scissor{},
-scissorSet(false) {
+scissorSet(false),
+into(nullptr) {
 }
 
 /**
  **/
 void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target& target, const pipeline::Resources& resources,
-    FrameUniforms* uniforms) {
+    FrameUniforms* uniforms, Timings* timings) {
     // the acquired image comes back in whatever layout it was left in, and nothing in the
-    // frame reads it, so undefined is the honest source layout and the cheapest one
-    transition(commands, target.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-    // the context's depth buffer is only wanted by a pass drawing into the swapchain image -
-    // a pass with a target of its own attaches that target's, at that target's size
-    bool depth = false;
-    for (const boost::shared_ptr<Pass>& pass : frame.passes()) {
-        if (pass->depth() && !pass->target()) {
-            depth = true;
-            break;
-        }
-    }
-    if (depth && target.depthImage != VK_NULL_HANDLE) {
-        transitionDepth(commands, target.depthImage);
+    // frame reads it, so undefined is the correct source layout and the cheapest one. A frame
+    // given no image is one whose every pass names a target of its own
+    if (target.image != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::colourForDrawing(target.image)});
     }
 
-    const std::vector<boost::shared_ptr<Pass>>& passes = frame.passes();
+    if (frame.swapchainDepth() && target.depthImage != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::depthForDrawing(target.depthImage)});
+    }
+
+    // every pass drawing into a target before every pass reading it
+    const std::vector<boost::shared_ptr<Pass>> passes = frame.ordered();
     for (std::size_t index = 0; index < passes.size(); ++index) {
         const boost::shared_ptr<Pass>& pass = passes[index];
 
@@ -146,31 +162,53 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
         const bool offscreen = static_cast<bool>(pass->target());
 
         if (offscreen && firstWrite(passes, index)) {
-            // undefined as the source layout: a target carries nothing from one frame to the
-            // next, the same way the swapchain image and the depth buffer do not. The
-            // barrier still orders this frame's writes after the reads the previous frame
-            // made of the same image
-            transition(commands, into.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            if (pass->depth() && into.depthImage != VK_NULL_HANDLE) {
-                transitionDepth(commands, into.depthImage);
-            }
+            openTarget(commands, depthWritten(passes, index), into);
         }
 
+        if (timings != nullptr) {
+            timings->open(commands, pass->name());
+        }
         record(commands, *pass, into, resources, writeCamera(uniforms, *pass, into));
+        if (timings != nullptr) {
+            timings->close(commands);
+        }
 
-        // what a target is for: every pass after the last one that wrote it can sample it
         if (offscreen && lastWrite(passes, index)) {
-            transition(commands, into.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            // and the same for its depth, where anything is going to read that - a shadow
-            // map has no colour worth reading and is only ever this half
-            if (pass->depth() && into.sampledDepth && into.depthImage != VK_NULL_HANDLE) {
-                transitionDepthForReading(commands, into.depthImage);
-            }
+            closeTarget(commands, depthWritten(passes, index), into);
         }
     }
 
-    transition(commands, target.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, target.finalLayout);
+    if (target.image != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::colourAfterDrawing(target.image, target.finalLayout)});
+    }
+}
+
+/**
+ **/
+void Recorder::openTarget(VkCommandBuffer commands, bool depth, const Target& into) {
+    // undefined as the source layout: a target carries nothing from one frame to the next,
+    // the same way the swapchain image and the depth buffer do not. The barrier still orders
+    // this frame's writes after the reads the previous frame made of the same image
+    if (into.image != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::colourForDrawing(into.image)});
+    }
+    if (depth && into.depthImage != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::depthForDrawing(into.depthImage)});
+    }
+}
+
+/**
+ **/
+void Recorder::closeTarget(VkCommandBuffer commands, bool depth, const Target& into) {
+    // every pass after the last one that wrote the target can sample it
+    if (into.image != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::colourAfterDrawing(into.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
+    }
+    // and the same for its depth when it was created sampled: DEPTH_READ_ONLY_OPTIMAL lets a
+    // later pass both sample it and depth test against it. A shadow map has only this half
+    if (depth && into.sampledDepth && into.depthImage != VK_NULL_HANDLE) {
+        memory::record(commands, {memory::depthForSampling(into.depthImage)});
+    }
 }
 
 /**
@@ -213,8 +251,10 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& 
     rendering.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
     rendering.renderArea = area;
     rendering.layerCount = 1;
-    rendering.colorAttachmentCount = 1;
-    rendering.pColorAttachments = &colour;
+    // a target with no colour image is one a depth-only pipeline draws into
+    const bool hasColour = target.view != VK_NULL_HANDLE;
+    rendering.colorAttachmentCount = hasColour ? 1 : 0;
+    rendering.pColorAttachments = hasColour ? &colour : nullptr;
     rendering.pDepthAttachment = depth ? &depthAttachment : nullptr;
 
     vkCmdBeginRendering(commands, &rendering);
@@ -235,12 +275,13 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& 
     pass.ordered(&ordered);
 
     Bound bound;
-    // an item that names no clip of its own draws into the whole of this, per ADR-0037
+    bound.into = &target;
+    // an item that names no clip of its own draws into all of this
     bound.area = area;
     bound.scissor = area;
     bound.scissorSet = true;
     for (const DrawItem* item : ordered) {
-        record(commands, *item, resources, frameSet, &bound);
+        record(commands, pass, *item, resources, frameSet, &bound);
     }
 
     vkCmdEndRendering(commands);
@@ -248,15 +289,49 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& 
 
 /**
  **/
-void Recorder::record(VkCommandBuffer commands, const DrawItem& item, const pipeline::Resources& resources, VkDescriptorSet frameSet, Bound* bound) {
-    // the escape hatch of ADR-0004, for work the item's fields cannot describe. It
-    // records whatever it likes, so nothing about what is bound survives it
+void Recorder::check(const Pass& pass, const pipeline::Pipeline& pipeline, const Target& into) {
+    if (pipeline.scene && pass.scene() == VK_NULL_HANDLE) {
+        std::stringstream msg;
+        msg << "The " << pass.name() << " pass draws with a pipeline that declares a scene at set 2, and names none";
+        throw std::runtime_error(msg.str());
+    }
+    if (pipeline.biased && !pass.depthBias()) {
+        std::stringstream msg;
+        msg << "The " << pass.name() << " pass draws with a pipeline built with depth bias, and names no bias";
+        throw std::runtime_error(msg.str());
+    }
+    // the pipeline's formats must match the target's. Validation reports a mismatch too, but
+    // only with its layers on, and as a draw rather than a pass. The recorder attaches one
+    // colour image at most, so only the first format is compared
+    if (into.format != VK_FORMAT_UNDEFINED && !pipeline.colourFormats.empty() && pipeline.colourFormats.front() != into.format) {
+        std::stringstream msg;
+        msg << "The " << pass.name() << " pass draws into colour format " << into.format
+            << " with a pipeline built for colour format " << pipeline.colourFormats.front();
+        throw std::runtime_error(msg.str());
+    }
+    if (pass.depth() && into.depthFormat != VK_FORMAT_UNDEFINED && pipeline.depthFormat != VK_FORMAT_UNDEFINED &&
+        pipeline.depthFormat != into.depthFormat) {
+        std::stringstream msg;
+        msg << "The " << pass.name() << " pass draws into depth format " << into.depthFormat
+            << " with a pipeline built for depth format " << pipeline.depthFormat;
+        throw std::runtime_error(msg.str());
+    }
+}
+
+/**
+ **/
+void Recorder::record(VkCommandBuffer commands, const Pass& pass, const DrawItem& item, const pipeline::Resources& resources,
+    VkDescriptorSet frameSet, Bound* bound) {
+    // the escape hatch, for work the item's fields cannot describe. It may record anything,
+    // so nothing about what is bound is assumed to survive it
     if (item.record) {
         item.record(commands);
         const VkRect2D area = bound->area;
+        const Target* into = bound->into;
         *bound = Bound();
-        // what it did to the scissor is its own business, so the next item sets one again
+        // it may have changed the scissor, so the next item sets one again
         bound->area = area;
+        bound->into = into;
         return;
     }
 
@@ -268,18 +343,34 @@ void Recorder::record(VkCommandBuffer commands, const DrawItem& item, const pipe
     }
 
     if (pipeline != bound->pipeline) {
+        check(pass, *pipeline, *bound->into);
         vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
         bound->pipeline = pipeline;
         // a different layout invalidates what was bound against the old one
         bound->frameSet = VK_NULL_HANDLE;
+        bound->sceneSet = VK_NULL_HANDLE;
         bound->set = VK_NULL_HANDLE;
+        if (pipeline->biased) {
+            // dynamic state outlives a bind only into another pipeline that also declares
+            // it dynamic, so a biased pipeline sets it every time it is bound
+            const Pass::DepthBias& bias = *pass.depthBias();
+            vkCmdSetDepthBias(commands, bias.constant, bias.clamp, bias.slope);
+        }
     }
 
     if (frameSet != VK_NULL_HANDLE && frameSet != bound->frameSet) {
-        // set 0 is the per frame frequency of ADR-0008 - the camera the whole pass draws
-        // through, which is why it is bound here and never per item
+        // set 0 holds per frame data: the camera the whole pass draws through, so it is bound
+        // here and never per item
         vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1, &frameSet, 0, nullptr);
         bound->frameSet = frameSet;
+    }
+
+    if (pipeline->scene && pass.scene() != bound->sceneSet) {
+        // set 2 is the scene, shared by every lit item in the pass, so it is bound once for
+        // the pass like set 0, and only for a pipeline that declares one
+        VkDescriptorSet scene = pass.scene();
+        vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 2, 1, &scene, 0, nullptr);
+        bound->sceneSet = scene;
     }
 
     if (item.pushSize > 0 && pipeline->pushStages != 0) {
@@ -288,7 +379,7 @@ void Recorder::record(VkCommandBuffer commands, const DrawItem& item, const pipe
 
     const pipeline::Material* material = resources.material(item.material);
     if (material != nullptr && material->set != VK_NULL_HANDLE && material->set != bound->set) {
-        // set 1 is the per material frequency of the same convention
+        // set 1 holds per material data
         vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 1, 1, &material->set, 0, nullptr);
         bound->set = material->set;
     }
@@ -345,129 +436,6 @@ void Recorder::scissor(VkCommandBuffer commands, const DrawItem& item, Bound* bo
     vkCmdSetScissor(commands, 0, 1, &wanted);
     bound->scissor = wanted;
     bound->scissorSet = true;
-}
-
-/**
- **/
-void Recorder::transition(VkCommandBuffer commands, VkImage image, VkImageLayout from, VkImageLayout to) {
-    VkImageMemoryBarrier2 barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    barrier.oldLayout = from;
-    barrier.newLayout = to;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-
-    if (to == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
-        // two things have to have happened before the transition writes the image.
-        //
-        // COLOR_ATTACHMENT_OUTPUT is the stage the presenter waits the image-available
-        // semaphore at, and a transition is a write: without that stage in the first scope
-        // the barrier is not ordered after the wait, and the acquire's read of the image
-        // races it. Synchronization validation reports that as WRITE_AFTER_READ against
-        // vkAcquireNextImageKHR.
-        //
-        // FRAGMENT_SHADER is for a render target rather than the swapchain: there is one
-        // image and two frames in flight, so the previous frame may still be sampling it. A
-        // barrier's first scope reaches work already submitted to the queue, so naming the
-        // stage that reads is what orders the two.
-        barrier.srcStageMask =
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-        // a write after a read needs the reads to have happened, not to be visible
-        barrier.srcAccessMask = VK_ACCESS_2_NONE;
-        barrier.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-        barrier.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-    } else if (to == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-        // a target changing hands: what the pass wrote has to be visible to the fragment
-        // shader of whichever later pass samples it
-        barrier.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-        barrier.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-        barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-        barrier.dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-    } else {
-        // presentation is not a pipeline stage - the semaphore it waits on is what
-        // orders it, so the barrier only has to make the writes visible
-        barrier.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-        barrier.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-        barrier.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_2_NONE;
-    }
-
-    VkDependencyInfo dependency{};
-    dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-    dependency.imageMemoryBarrierCount = 1;
-    dependency.pImageMemoryBarriers = &barrier;
-
-    vkCmdPipelineBarrier2(commands, &dependency);
-}
-
-/**
- **/
-void Recorder::transitionDepthForReading(VkCommandBuffer commands, VkImage image) {
-    VkImageMemoryBarrier2 barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-    barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-    // the writes being waited on are the depth tests of the pass that just ran, and what
-    // waits on them is a fragment shader sampling the result
-    barrier.srcStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
-    barrier.srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-    barrier.dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-
-    VkDependencyInfo dependency{};
-    dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-    dependency.imageMemoryBarrierCount = 1;
-    dependency.pImageMemoryBarriers = &barrier;
-
-    vkCmdPipelineBarrier2(commands, &dependency);
-}
-
-/**
- **/
-void Recorder::transitionDepth(VkCommandBuffer commands, VkImage image) {
-    VkImageMemoryBarrier2 barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    // nothing carries depth from one frame to the next, so what the last frame left is
-    // not worth the barrier it would cost to preserve
-    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-    // one depth image serves every frame in flight, so this transition lands on top of the
-    // last frame's storeOp. A layout transition is a write of its own, and the access bit is
-    // what makes the earlier write available to it - a stage on its own orders nothing.
-    // Depth is written at both fragment test stages
-    barrier.srcStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
-    barrier.srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    barrier.dstStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
-    barrier.dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-    VkDependencyInfo dependency{};
-    dependency.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-    dependency.imageMemoryBarrierCount = 1;
-    dependency.pImageMemoryBarriers = &barrier;
-
-    vkCmdPipelineBarrier2(commands, &dependency);
 }
 
 };  // namespace v3d::render::realtime::vulkan::frame

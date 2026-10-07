@@ -3,10 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/kind/Json.h>
+#include <api/event/Engine.h>
 #include <api/render/realtime/Canvas.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
+#include <api/ui/Length.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/paint/ComponentRenderer.h>
@@ -41,7 +43,7 @@ v3d::ui::paint::ComponentRenderer build(std::vector<Written>* written) {
 }
 
 /**
- * A page with one label in it, so that a test can tell whether the page was walked.
+ * A page with one label in it, so that a test can tell whether the page was laid out.
  **/
 boost::shared_ptr<v3d::ui::component::TabPage> page(const std::string& label, const std::string& holds) {
     boost::shared_ptr<v3d::ui::component::TabPage> component =
@@ -132,8 +134,8 @@ BOOST_AUTO_TEST_CASE(the_page_is_laid_out_under_the_strip) {
 }
 
 /**
- * A tab is as wide as its label, and which one a point is on is answered against where the
- * draw put them. A bar that has never been drawn answers nothing, per ADR-0019.
+ * A tab is as wide as its label, and which one a point is on is found against where the
+ * draw put them. A bar that has never been drawn returns no tab.
  **/
 BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
@@ -219,8 +221,7 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_strip_of_pages) {
     boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
         boost::make_shared<v3d::log::Logger>());
-    BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>(
-        "vgui", v3d::asset::Type::JsonDocument, boost::json::parse(document).as_object())));
+    BOOST_REQUIRE(ui->load(boost::json::parse(document).as_object()));
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels =
         boost::dynamic_pointer_cast<v3d::ui::component::TabBar>(ui->container("hud")->get("panels"));

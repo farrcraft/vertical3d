@@ -11,6 +11,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -33,13 +34,22 @@ class StatisticsOverlay final {
      * this over instead of the overlay reaching for it.
      **/
     struct Sample final {
+        /**
+         * Where a frame's time went, by name: a scope on the cpu, or a pass on the device.
+         **/
+        struct Span final {
+            std::string name;
+            std::uint64_t nanoseconds { 0 };
+        };
+
         std::uint64_t mean { 0 };  /**< the mean frame over the window, in nanoseconds **/
         std::uint64_t last { 0 };  /**< the last frame, in nanoseconds **/
         unsigned int steps { 0 };  /**< simulation steps the last frame owed **/
+        std::vector<Span> spans;   /**< drawn a line each, under the frame's own lines **/
     };
 
     /**
-     * How many lines are drawn, which is what lines() fills.
+     * How many lines are drawn, which lines() fills.
      **/
     static constexpr std::size_t rows = 3;
 
@@ -47,8 +57,8 @@ class StatisticsOverlay final {
      * @param text the renderer the lines are drawn with, which decides their size
      **/
     /**
-     * @param text the font the readout is drawn with, whose atlas is at a base size rather
-     *        than at the size this draws - ADR-0036
+     * @param text the font the readout is drawn with. Its atlas holds distance field glyphs
+     *        at a base size, scaled to the size this draws
      * @param size the size to draw the readout at. A frame time is a thing to glance at
      *        rather than read, so it defaults smaller than a ui's own text
      **/
@@ -75,6 +85,12 @@ class StatisticsOverlay final {
     void visible(bool visible) noexcept;
 
     /**
+     * @param size the size to draw the readout at from the next draw()
+     **/
+    void size(float size) noexcept;
+    float size() const noexcept;
+
+    /**
      * Append the overlay to a canvas, or nothing at all while it is hidden.
      **/
     void draw(v3d::render::realtime::Canvas* canvas, const Sample& sample);
@@ -86,6 +102,11 @@ class StatisticsOverlay final {
      * a device or a window.
      **/
     static std::array<std::string, rows> lines(const Sample& sample);
+
+    /**
+     * The line a span is drawn as, below the frame's.
+     **/
+    static std::string line(const Sample::Span& span);
 
  private:
     boost::shared_ptr<paint::TextRenderer> text_;

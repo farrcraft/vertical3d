@@ -13,15 +13,19 @@
 namespace v3d::asset {
 
 /**
- * The write side of what JsonFile does for reading, per ADR-0041.
+ * Writing documents to disk, the counterpart of readFile and the Json loader for reading.
  *
  * A caller decides what its document holds; this decides only how it reaches the disk.
  **/
 
 /**
  * Render a document as text a person can read and diff: a scalar, a vector and a record of
- * those stay on one line, everything else is indented two spaces a level, and a double prints
- * as the float it was widened from.
+ * those stay on one line, and everything else is indented two spaces a level. A double that a
+ * float holds exactly prints as that float, in the float's shortest form. Any other double
+ * prints as a double, in its own shortest form.
+ *
+ * JSON has no form for infinity or NaN, and this prints them as std::to_chars spells them.
+ * writeDocument() refuses a document holding one.
  *
  * Named for the document rather than for what it does, because an unqualified serialize() on a
  * boost::json::value resolves to the one-line boost::json::serialize through ADL.
@@ -31,7 +35,7 @@ namespace v3d::asset {
 std::string serializeDocument(const boost::json::value& document);
 
 /**
- * Replace the file at path with bytes, whole or not at all, per ADR-0041.
+ * Replace the file at path with bytes, whole or not at all.
  *
  * The bytes go to a sibling temporary that is renamed onto the target, so the file already
  * there survives every failure but the rename. Nothing is flushed to the device, so this is
@@ -45,6 +49,9 @@ bool writeFile(const boost::filesystem::path& path, const std::string& bytes);
 
 /**
  * Write a document through serializeDocument() and writeFile(), terminated with a newline.
+ *
+ * @return false for a document holding an infinite or NaN number, which leaves path untouched,
+ *         and otherwise what writeFile() returns
  **/
 bool writeDocument(const boost::filesystem::path& path, const boost::json::value& document);
 

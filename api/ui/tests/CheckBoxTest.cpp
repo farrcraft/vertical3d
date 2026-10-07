@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/kind/Json.h>
+#include <api/event/Engine.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
@@ -49,7 +49,7 @@ v3d::ui::paint::ComponentRenderer build(std::vector<Written>* written) {
 }
 
 /**
- * A ui engine over a document written inline, which is what a config file amounts to by
+ * A ui engine over a document written inline, which is all a config file amounts to by
  * the time it reaches the loader.
  **/
 boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
@@ -59,8 +59,7 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
         dispatcher,
         boost::make_shared<v3d::log::Logger>());
 
-    BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>(
-        "vgui", v3d::asset::Type::JsonDocument, boost::json::parse(config).as_object())));
+    BOOST_REQUIRE(ui->load(boost::json::parse(config).as_object()));
     return ui;
 }
 
@@ -150,8 +149,8 @@ BOOST_AUTO_TEST_CASE(a_radio_button_is_a_check_box_with_a_round_mark) {
 }
 
 /**
- * Neither owns the state it shows: a check box is checked by whatever answered its command,
- * and starts however the config left it. ADR-0019.
+ * Neither owns the state it shows: a check box is checked by whatever handled its command,
+ * and starts however the config left it.
  **/
 BOOST_AUTO_TEST_CASE(the_loader_reads_a_check_box_a_radio_button_and_a_clip) {
     const std::string document = R"({

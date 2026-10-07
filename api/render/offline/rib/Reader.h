@@ -12,10 +12,12 @@
 #include <string>
 #include <vector>
 
+#include "Declaration.h"
 #include "Declarations.h"
 #include "Handler.h"
 #include "Lexer.h"
 #include "Parameters.h"
+#include "Token.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>
@@ -23,16 +25,16 @@
 namespace v3d::render::offline::rib {
 
 /**
- * Reads an ASCII RIB stream and drives a handler, per ADR-0023 and ADR-0025.
+ * Reads an ASCII RIB stream and calls a handler for each request.
  *
- * The handler is a parameter rather than a member, so one reader serves both renderers and
- * a suite can drive it with a handler that only counts.
+ * The handler is a parameter rather than a member, so one reader serves the renderer and a
+ * suite can drive it with a handler that only counts.
  *
  * An unrecognised request is reported once per name rather than once per occurrence, and
- * its arguments are skipped: only a string, a number or an array can be an argument, so
- * the next identifier begins the next request whatever this one was. **A scene that
- * rendered nothing and a scene that was not understood look identical from outside**,
- * which is why the report exists at all.
+ * its arguments are skipped. Only a string, a number or an array can be an argument, so
+ * the next identifier begins the next request whatever this one was. The report exists
+ * because **a scene that rendered nothing and a scene that was not understood look
+ * identical from outside**.
  **/
 class Reader final {
  public:
@@ -56,12 +58,18 @@ class Reader final {
      **/
     const std::vector<std::string> & unrecognised() const;
 
+    /**
+     * The requests that were read but not built, once each. A primitive that deforms inside
+     * a motion block is one.
+     **/
+    const std::vector<std::string> & unsupported() const;
+
  private:
     /**
-     * What one group of requests made of a name it was offered.
+     * The result of offering a request name to one group of requests.
      *
      * Unhandled is not a failure: it means the name belongs to another group, and the next
-     * one is asked. Only the last group's Unhandled is a request this reader does not know.
+     * group is tried. Only the last group's Unhandled is a request this reader does not recognise.
      **/
     enum class Result {
         Unhandled,
@@ -75,11 +83,19 @@ class Reader final {
      * The request set, split the way the RI standard groups it. Each takes the name a
      * request began with and either recognises it or passes.
      **/
+    /**
+     * The requests that are a name and a parameter list and nothing else, which read the same
+     * way and differ only in which handler method they forward to.
+     **/
+    Result namedRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result optionRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result cameraRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result displayRequest(const std::string & name, Lexer * lexer, Handler * handler);
-    static Result blockRequest(const std::string & name, Handler * handler);
+    Result lensRequest(const std::string & name, Lexer * lexer, Handler * handler);
+    Result sampleRequest(const std::string & name, Lexer * lexer, Handler * handler);
+    Result blockRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result transformRequest(const std::string & name, Lexer * lexer, Handler * handler);
+    Result motionRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result attributeRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result shaderRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result primitiveRequest(const std::string & name, Lexer * lexer, Handler * handler);
@@ -115,7 +131,11 @@ class Reader final {
     Declarations declarations_;
     std::string error_;
     std::vector<std::string> unrecognised_;
+    std::vector<std::string> unsupported_;
     std::set<std::string> reported_;
+    /** Whether a motion block is open, and how many primitives it has held. **/
+    bool motion_ = false;
+    unsigned int motionPrimitives_ = 0;
 };
 
 };  // namespace v3d::render::offline::rib

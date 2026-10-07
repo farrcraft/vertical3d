@@ -5,45 +5,20 @@
 
 #pragma once
 
-#include <glm/vec2.hpp>
-
 namespace v3d::ecs::component {
+
 /**
- * A 1D position
+ * Where a thing is along a line. An aggregate, so a snapshot of the previous step is a plain
+ * copy, and written directly, since simulation sets it every step.
  **/
-class Position1D final {
- public:
-    Position1D(float x) noexcept;
-
-    /**
-     * Move constructor
-     **/
-    Position1D(Position1D&& p) noexcept;
-
-    /**
-     * Default destructor
-     **/
-    ~Position1D() noexcept = default;
-
-    /**
-     **/
-    float x() const;
-
-    /**
-     **/
-    float value() const;
-
-    /**
-     **/
-    void set(float pos);
-
-    /**
-     * Move assignment
-     **/
-    Position1D& operator=(Position1D&& p) noexcept;
-
- private:
-    float position_;
+struct Position1D final {
+    float value = 0.0f;
 };
+
+/**
+ * The position alpha of the way from one to the other, which ecs::interpolated uses to draw
+ * it between two simulation steps.
+ **/
+Position1D interpolate(const Position1D& from, const Position1D& to, float alpha);
 
 };  // namespace v3d::ecs::component

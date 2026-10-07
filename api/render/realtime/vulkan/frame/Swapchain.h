@@ -25,8 +25,9 @@ namespace v3d::render::realtime::vulkan::frame {
  * built for it. Rather than fail, the chain is left empty in that case and valid()
  * says so, leaving the caller to skip drawing and try again after the next resize.
  *
- * The colour format is UNORM unless the caller names one - ADR-0009 and ADR-0049. What was
- * settled on is format(), and a pipeline drawing into the chain is built against it.
+ * The colour format is UNORM unless the caller names one, so a colour a shader writes is the
+ * colour that appears. The format chosen is format(), and a pipeline drawing into the chain
+ * is built against it.
  **/
 class Swapchain final {
  public:
@@ -36,9 +37,9 @@ class Swapchain final {
      * @param width the width to size the images to, when the surface leaves us the choice
      * @param height the height to size the images to, when the surface leaves us the choice
      * @param preferred the colour format to present through, where the surface offers it.
-     *        VK_FORMAT_UNDEFINED leaves the choice to ADR-0009, and so does a format the
-     *        surface does not offer - a chain is built either way. Ask format() for what
-     *        was settled on.
+     *        VK_FORMAT_UNDEFINED selects the UNORM default, and so does a format the surface
+     *        does not offer - a chain is built either way. format() returns the format
+     *        chosen.
      **/
     Swapchain(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
         VkFormat preferred = VK_FORMAT_UNDEFINED);
@@ -90,6 +91,15 @@ class Swapchain final {
     const std::vector<VkImageView>& views() const noexcept;
 
     /**
+     * Whether the images can be copied out of, which frame::Capture requires. The chain asks
+     * for TRANSFER_SRC usage where the surface supports it, and is built without it where
+     * the surface does not.
+     *
+     * @return whether the images were created with TRANSFER_SRC usage
+     **/
+    bool copyable() const noexcept;
+
+    /**
      * @return how many images the chain holds
      **/
     std::size_t length() const noexcept;
@@ -97,13 +107,13 @@ class Swapchain final {
     /**
      * Which of the formats a surface offers the chain is built with.
      *
-     * Public because it decides nothing else and needs no device, so a machine with no gpu
+     * Public because it has no side effects and needs no device, so a machine with no GPU
      * can still test the rule.
      *
      * @param formats what the surface offers, as vulkan reported them
      * @param preferred the caller's choice, or VK_FORMAT_UNDEFINED for none
      * @return the preferred format in a non linear srgb colour space where it is offered,
-     *         otherwise a 32 bit UNORM one per ADR-0009, otherwise the first offered
+     *         otherwise a 32 bit UNORM one, otherwise the first offered
      **/
     static VkSurfaceFormatKHR chooseFormat(const std::vector<VkSurfaceFormatKHR>& formats,
         VkFormat preferred = VK_FORMAT_UNDEFINED);
@@ -150,6 +160,7 @@ class Swapchain final {
     VkFormat preferred_;
     VkFormat format_;
     VkExtent2D extent_;
+    bool copyable_;
     std::vector<VkImage> images_;
     std::vector<VkImageView> views_;
 };

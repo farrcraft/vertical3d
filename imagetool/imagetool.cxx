@@ -5,6 +5,7 @@
 
 #include <api/image/Factory.h>
 #include <api/image/Crop.h>
+#include <api/log/Logger.h>
 
 #include <cstdint>
 #include <cstdio>
@@ -115,13 +116,7 @@ int run(int argc, char *argv[]) {
     if (!silent) {
         std::cout << "Reading: " << infile << "\n";
     }
-    try {
-        image = factory.read(infile);
-    }
-    catch (std::string & e) {
-        std::cout << "error reading image! - " << e << "\n";
-        exit(EXIT_FAILURE);
-    }
+    image = factory.read(infile);
     if (!image) {
         std::cout << "error reading file!" << "\n";
         exit(EXIT_FAILURE);
@@ -164,8 +159,8 @@ int run(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
     // the option parser and the image factory both report by throwing, and an exception
     // leaving main is an abort with no message in it. The handler reports through stdio
-    // rather than the stream the rest of the file writes to: a last resort that can itself
-    // throw is not one
+    // rather than the stream the rest of the file writes to, because the handler itself
+    // must not throw
     try {
         return run(argc, argv);
     } catch (const std::exception& error) {

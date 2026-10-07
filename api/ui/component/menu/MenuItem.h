@@ -42,7 +42,7 @@ class Menu;
  * Activating an input type item puts its menu into capture rather than dispatching: what
  * Menu::capture() is then given becomes the item's value, and the item's event carries it.
  * A key input ends at the first key it is given, because a binding is one key; the other two
- * end at the next activation, which the ui::selectMenu binding is what sends.
+ * end at the next activation, which the ui::selectMenu binding sends.
  **/
 class MenuItem : public Component {
  public:
@@ -55,6 +55,7 @@ class MenuItem : public Component {
      * @param param the command paramater
      */
     MenuItem(menu::ItemType type, const std::string & label);
+    ~MenuItem() override;
 
     /**
       * Set the menu item text label 

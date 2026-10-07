@@ -12,6 +12,7 @@
 #include <vulkan/vulkan.h>
 
 #include <string_view>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -25,12 +26,13 @@ class Swapchain;
 
 /**
  * A drawn image read back off the device and written out as a png - a presented frame off the
- * swapchain, or an offscreen target a pass drew into per ADR-0031.
+ * swapchain, or an offscreen target a pass drew into.
  *
- * Copying and writing are two calls because a queue submit sits between them: record() adds
+ * Copying and writing are two calls because a queue submit sits between them. record() adds
  * the copy to the command buffer the frame is already being drawn into, and write() reads
- * the result once that submit has completed. What orders the two is the caller's - a fence
- * it already waits on, or a device wait.
+ * the result once that frame's fence has signalled. The caller is responsible for that
+ * synchronisation - a fence it already waits on, or a device wait. A record() with no
+ * write() after it is not detected: the copy runs and is discarded.
  *
  * The readback allocation is made by the first record() and reused by every later one, so a
  * renderer that holds a Capture and never asks for one pays nothing for it.
@@ -39,7 +41,7 @@ class Capture final {
  public:
     /**
      * What a capture reads from. A swapchain image and a render target differ only in these
-     * four things, which is why record() takes them rather than either class.
+     * four things, so record() takes them rather than either class.
      **/
     struct Source {
         Source() noexcept;
@@ -48,6 +50,12 @@ class Capture final {
         VkExtent2D extent;     /**< its size **/
         VkFormat format;       /**< its colour format, which decides the channel order **/
         VkImageLayout layout;  /**< what it is in when record() is called, and what it is left in **/
+        /**
+         * Whether to copy the depth aspect rather than colour. Only a D32_SFLOAT image can be
+         * read this way, because its copy is one plain float per texel, which a test compares.
+         * It is also the depth format the renderer prefers.
+         **/
+        bool depth;
     };
 
     /**
@@ -68,7 +76,8 @@ class Capture final {
      * used afterwards exactly as one that is not.
      *
      * @param commands a command buffer that is still recording
-     * @pre the image is in source.layout, and what wrote it is a colour attachment write
+     * @pre the image is in source.layout, and what wrote it is an attachment write
+     * @throw std::runtime_error for a depth source in a format other than D32_SFLOAT
      **/
     void record(VkCommandBuffer commands, const Source& source);
 
@@ -77,7 +86,10 @@ class Capture final {
      *
      * @param commands the buffer the frame was recorded into, still recording
      * @param image which of the chain's images was acquired
-     * @pre the image is in PRESENT_SRC, which is where Recorder::record leaves it
+     * @pre the image is in PRESENT_SRC. Recorder::record leaves it there.
+     * @throw std::runtime_error when the chain's images lack TRANSFER_SRC usage, because the
+     *        surface does not support it (Swapchain::copyable() is false), or when image is
+     *        not an index into the chain
      **/
     void record(VkCommandBuffer commands, const Swapchain& swapchain, uint32_t image);
 
@@ -89,6 +101,16 @@ class Capture final {
      *         the writer could not open the path
      **/
     bool write(std::string_view filename);
+
+    /**
+     * What the last record() of a depth source copied, one float per pixel in row order.
+     * Compared in a test rather than written as a png, because a picture of depth would round
+     * it to the eight bits a png channel holds.
+     *
+     * @pre the submit carrying that record() has completed
+     * @return the depths, or nothing when the last record() was not of a depth source
+     **/
+    std::vector<float> depth() const;
 
     /**
      * Turn a copied image into one the writers understand.
@@ -110,6 +132,7 @@ class Capture final {
     uint32_t width_;
     uint32_t height_;
     VkFormat format_;
+    bool depth_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::frame

@@ -11,6 +11,7 @@
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/ui/input/Cursor.h>
+#include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
@@ -29,6 +30,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/filesystem/path.hpp>
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 
@@ -50,21 +52,11 @@ class Controller final : public v3d::engine::Engine {
     explicit Controller(const std::string& path);
 
     /**
-     * Bring up the window, read the config, and build the views out of it.
-     * @return whether the editor can run
-     **/
-    bool initialize();
-
-    /**
      **/
     bool render() override;
 
     /**
-     **/
-    bool shutdown() override;
-
-    /**
-     * Offer every event to the ui before the bindings map it, per ADR-0043.
+     * Offer every event to the ui before the bindings map it.
      *
      * Only the keyboard goes this way. A press has to interleave with the camera and the
      * transform tools - drag() offers the ui the press and drives a camera with the one it
@@ -79,8 +71,8 @@ class Controller final : public v3d::engine::Engine {
     void handleEvent(const v3d::event::Event& event);
 
     /**
-     * The cursor moved. Which view it is over is what decides which camera a drag
-     * drives, so this is where the active view is chosen.
+     * The cursor moved. The view under the cursor decides which camera a drag drives, so
+     * this is where the active view is chosen.
      **/
     void handleMotion(const v3d::event::kind::MouseMotion& event);
 
@@ -88,6 +80,17 @@ class Controller final : public v3d::engine::Engine {
      * The window changed size, so the layout divides a different area between the views.
      **/
     void handleResize(const v3d::event::kind::WindowResize& event);
+
+ protected:
+    /**
+     * Bring up the window, read the config, and build the views out of it.
+     * @return whether the editor can run
+     **/
+    bool start() override;
+
+    /**
+     **/
+    bool release() override;
 
  private:
     /**
@@ -104,8 +107,8 @@ class Controller final : public v3d::engine::Engine {
     void syncUi();
 
     /**
-     * Offer the cursor to the ui before the tools see it. Which part of the ui is offered
-     * it first is the library's, per ADR-0038.
+     * Offer the cursor to the ui before the tools see it. The ui library decides which of
+     * its parts is offered the cursor first.
      * @return whether the ui took it
      **/
     bool uiMotion(const glm::vec2& cursor);
@@ -117,9 +120,8 @@ class Controller final : public v3d::engine::Engine {
     bool uiPress(const glm::vec2& cursor);
 
     /**
-     * Register a handler for every command the editor answers to. What is not in here
-     * is what the editor cannot do, which is how an untranslated menu item reports
-     * itself.
+     * Register a handler for every command the editor supports. A menu item naming a
+     * command that is not registered here logs a warning when it is invoked.
      **/
     void registerCommands();
 
@@ -136,26 +138,21 @@ class Controller final : public v3d::engine::Engine {
     void history(const std::string& name);
 
     /**
-     * Read the project over the scene, or write the scene out as one.
-     *
-     * There is no file chooser in the tree, so both work on one document at a fixed
-     * path - see ADR-0018.
+     * Choose a project to read over the scene, write the scene to the project it came from,
+     * or choose a name to write it under. The project starts as project.json beside the
+     * executable, and is whatever was last opened or saved as after that.
      **/
     void openProject();
     void saveProject();
+    void saveProjectAs();
 
     /**
-     * Write the scene out as RIB for the offline renderers, per ADR-0023.
+     * Write the scene out as RIB for the offline renderer.
      *
-     * One way: topology and a placement per mesh, from the active view's camera. The
-     * project format stays the editor's own and nothing reads this back.
+     * Export only: topology and a placement per mesh, from the active view's camera.
+     * Nothing reads the RIB back; the editor saves and opens its own project format.
      **/
     void exportProject();
-
-    /**
-     * @return where the one document lives, beside the executable
-     **/
-    std::string projectPath() const;
 
     /**
      * @return where the RIB export goes, beside the executable
@@ -202,9 +199,12 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<v3d::ui::Engine> vgui_;
     boost::shared_ptr<v3d::ui::input::Cursor> uiCursor_;
     boost::shared_ptr<v3d::ui::shell::Keyboard> uiKeys_;
+    boost::shared_ptr<v3d::ui::shell::FileChooser> chooser_;
     boost::shared_ptr<v3d::ui::component::MenuBar> menu_;
     std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
     boost::shared_ptr<Project> project_;
+    // the document Save writes to
+    boost::filesystem::path projectPath_;
     CommandDirectory directory_;
     boost::shared_ptr<CommandStack> commands_;
     boost::shared_ptr<v3d::config::CameraProfiles> profiles_;
@@ -221,6 +221,10 @@ class Controller final : public v3d::engine::Engine {
     // whether the ui took the press, so that the release that ends it does not reach
     // the tools that never saw the press
     bool uiGrab_;
+    // the dispatcher holds a delegate to this object; these let it go when the object does
+    entt::scoped_connection events_;
+    entt::scoped_connection motion_;
+    entt::scoped_connection resize_;
 };
 
 };  // namespace v3d::editor

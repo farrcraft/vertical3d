@@ -21,10 +21,12 @@ TextureTextBuffer::TextureTextBuffer() :
     lineStart_(0) {
 }
 
-void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar_t current, wchar_t /* previous */) {
+void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar_t current) {
     if (current == L'\n') {
         pen->x = origin_.x;
-        const float lineScale = markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
+        // the same ratio as a glyph's metrics, so a markup with no size moves down one line
+        // at the font's own size
+        const float lineScale = markup.size_ > 0.0f && markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
         pen->y += (markup.font_->height() - markup.font_->descender()) * lineScale;
         /*
         descender_ = 0.0f;
@@ -39,11 +41,14 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     if (!glyph) {
         return;
     }
+    // the lines and the background are drawn with the white square, which a full atlas may
+    // have had no room for: the glyph is still drawn, and they are not
+    const bool lines = black != nullptr;
 
-    // every metric below is in pixels of the size the face was rasterized at, so asking
-    // for another size is asking for them at a ratio of it - ADR-0036. A markup whose
-    // size is the font's own leaves this at one, which is every caller that has not asked
-    const float scale = markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
+    // every metric below is in pixels of the size the face was rasterized at, so another
+    // size scales them by the ratio. A markup that sets no size, or the font's own, leaves
+    // this at one
+    const float scale = markup.size_ > 0.0f && markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
     const float advance = glyph->advance_.x * scale;
     const float height = markup.font_->height() * scale;
     const float descender = markup.font_->descender() * scale;
@@ -56,7 +61,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     size_t istart = indices().size();
     size_t vstart = vertices().size();
 
-    if (markup.backgroundColor_.a > 0.0f) {
+    if (lines && markup.backgroundColor_.a > 0.0f) {
         glm::vec2 xy0(pen->x, pen->y + descender);
         glm::vec2 xy1(pen->x + advance, xy0.y + height + linegap);
 
@@ -66,7 +71,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         icount += 6;
     }
 
-    if (markup.underline_) {
+    if (lines && markup.underline_) {
         glm::vec2 xy0(pen->x, pen->y + underlinePosition);
         glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
@@ -76,7 +81,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         icount += 6;
     }
 
-    if (markup.overline_) {
+    if (lines && markup.overline_) {
         glm::vec2 xy0(pen->x, pen->y + ascender);
         glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
@@ -86,11 +91,11 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         icount += 6;
     }
 
-    if (markup.strikethrough_) {
+    if (lines && markup.strikethrough_) {
         glm::vec2 xy0(pen->x, pen->y + ascender * .33f);
         glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
-        addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.overlineColor_, markup.gamma_);
+        addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.strikethroughColor_, markup.gamma_);
 
         vcount += 4;
         icount += 6;
@@ -163,9 +168,8 @@ void TextureTextBuffer::addText(glm::vec2* pen, const Markup& markup, const std:
         descender_ = markup.font_->descender();
     }
     */
-    addCharacter(pen, markup, text[0], 0);
-    for (unsigned int i = 1; i < text.length(); ++i) {
-        addCharacter(pen, markup, text[i], text[i - 1]);
+    for (const wchar_t character : text) {
+        addCharacter(pen, markup, character);
     }
 }
 

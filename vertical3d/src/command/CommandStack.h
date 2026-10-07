@@ -17,13 +17,12 @@ namespace v3d::editor {
 /**
  * The editor's history: what has been done, and what has been undone out of it.
  *
- * Pushing never applies anything - a command arrives already done, per ADR-0016 - and
- * pushing abandons whatever had been undone, because a new change makes a branch of the
- * history that was never taken.
+ * Pushing never applies anything, because a command arrives already done. Pushing
+ * discards whatever had been undone: a new change starts a new branch of the history, so
+ * the undone commands cannot be redone.
  *
- * The stack has a capacity so that a session cannot grow one without bound; the oldest
- * commands are dropped first, which is the part of the history furthest from being
- * undone.
+ * The stack has a capacity so that a session's history cannot grow without bound. The
+ * oldest commands are dropped first, since they are furthest from being undone.
  **/
 class CommandStack final {
  public:
@@ -66,8 +65,8 @@ class CommandStack final {
     std::size_t redoDepth() const noexcept;
 
     /**
-     * Forget the history, which is what opening a document does. Nothing is undone on
-     * the way out: the scene the commands describe is being replaced.
+     * Clear the history, as opening a document does. Nothing is undone first, because the
+     * scene the commands describe is being replaced.
      **/
     void clear() noexcept;
 

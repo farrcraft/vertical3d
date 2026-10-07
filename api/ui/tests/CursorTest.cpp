@@ -3,10 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/kind/Json.h>
+#include <api/event/Context.h>
 #include <api/render/realtime/Canvas.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
+#include <api/ui/Length.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/Panel.h>
@@ -15,6 +17,8 @@
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TabPage.h>
 #include <api/ui/component/TextBox.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/MenuBar.h>
 #include <api/ui/input/Cursor.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
@@ -36,7 +40,7 @@ const float characterWidth = 10.0f;
  * A ui engine holding one container, built by hand rather than loaded, plus the renderer
  * that places what it holds and the router that answers a cursor over it.
  *
- * Nothing is picked until something has been drawn, per ADR-0019, so every case here draws
+ * Nothing is picked until something has been drawn, so every case here draws
  * before it clicks.
  **/
 struct Fixture final {
@@ -53,8 +57,7 @@ struct Fixture final {
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
         bool loaded = false;
-        loaded = ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui", v3d::asset::Type::JsonDocument,
-            boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
+        loaded = ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object());
         BOOST_REQUIRE(loaded);
         container = ui->container("hud");
         BOOST_REQUIRE(container);
@@ -66,7 +69,7 @@ struct Fixture final {
     }
 
     /**
-     * Place a component at a box and draw the container, which is what leaves it pickable.
+     * Place a component at a box and draw the container, which leaves it pickable.
      **/
     void place(const boost::shared_ptr<v3d::ui::Component>& component, const glm::vec2& corner,
         const glm::vec2& size) {
@@ -98,8 +101,7 @@ struct Fixture final {
 BOOST_AUTO_TEST_SUITE(cursor_test)
 
 /**
- * A button in a container answers a click by sending its command, which is what nothing did
- * before ADR-0038: a button outside a strip carried a bound event and nothing sent it.
+ * A button in a container sends its command when it is clicked, as one on a strip does.
  **/
 BOOST_AUTO_TEST_CASE(a_button_in_a_container_sends_its_command) {
     Fixture fixture;
@@ -116,8 +118,8 @@ BOOST_AUTO_TEST_CASE(a_button_in_a_container_sends_its_command) {
 }
 
 /**
- * A press that lands on nothing pickable is not taken, so a hud of labels over a scene leaves
- * the scene clickable - which is what ADR-0034's pickable() default of false is for.
+ * A press that lands on nothing pickable is not taken. pickable() is false by default, so a
+ * hud of labels over a scene leaves the scene clickable.
  **/
 BOOST_AUTO_TEST_CASE(a_press_on_nothing_pickable_falls_through) {
     Fixture fixture;
@@ -137,7 +139,7 @@ BOOST_AUTO_TEST_CASE(a_press_on_nothing_pickable_falls_through) {
 }
 
 /**
- * Nothing is picked until it has been drawn, per ADR-0019, so a router asked before the first
+ * Nothing is picked until it has been drawn, so a router asked before the first
  * frame answers nothing rather than guessing.
  **/
 BOOST_AUTO_TEST_CASE(nothing_is_picked_before_anything_is_drawn) {
@@ -152,8 +154,8 @@ BOOST_AUTO_TEST_CASE(nothing_is_picked_before_anything_is_drawn) {
 }
 
 /**
- * A check box sends its command and marks nothing: whatever answers the command sets checked(),
- * so the mark cannot disagree with what the item reports - ADR-0019.
+ * A check box sends its command and marks nothing: whatever handles the command sets
+ * checked(), so the mark cannot disagree with what the item reports.
  **/
 BOOST_AUTO_TEST_CASE(a_check_box_sends_its_command_and_marks_nothing) {
     Fixture fixture;
@@ -313,7 +315,7 @@ BOOST_AUTO_TEST_CASE(the_hover_follows_the_component_a_press_would_land_on) {
 
 /**
  * A component that takes no press takes no hover either, so a label laid over a scene does
- * not flicker as the cursor crosses it - ADR-0034's pickable() decides both.
+ * not flicker as the cursor crosses it: pickable() decides both.
  **/
 BOOST_AUTO_TEST_CASE(a_component_that_is_not_pickable_is_not_hovered) {
     Fixture fixture;
@@ -329,10 +331,9 @@ BOOST_AUTO_TEST_CASE(a_component_that_is_not_pickable_is_not_hovered) {
 }
 
 /**
- * A page the player has left keeps the box it held while it was up, so offering a point to
- * every page of a bar lets a component nobody can see answer for the one they are looking
- * at. Only the chosen page is walked, which is what TabBar's header says and what
- * Arranger::walk already does.
+ * A page the player has left keeps the box it held while it was up. Offering a point to
+ * every page of a bar would let a hidden component take a press meant for the visible one.
+ * Only the chosen page is offered the point, as only the chosen page is laid out.
  **/
 BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
     Fixture fixture;
@@ -345,7 +346,7 @@ BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
         boost::make_shared<v3d::ui::component::TabPage>();
     second->label("Two");
 
-    // one button on each page, in the same place, which is what a settings screen with two
+    // one button on each page, in the same place, as on a settings screen with two
     // pages of controls looks like
     const boost::shared_ptr<v3d::ui::component::Button> onFirst =
         boost::make_shared<v3d::ui::component::Button>();
@@ -390,11 +391,9 @@ BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
 /**
  * Every component that carries a command sends it as a destination event.
  *
- * ADR-0017 splits a sink's traffic into the source half and the destination half, and an app
- * that drops everything that is not a destination - which is what the ADR asks for - never
- * sees a command that was not stamped. Button and MenuItem stamped theirs from the start and
- * the rest did not, so a check box worked in a test that read the event and did nothing in
- * an app that routed it.
+ * A listener that drops every event that is not a destination never sees an unmarked
+ * command. A control that did not mark its event would work in a test that reads the event
+ * and do nothing in an app that routes it.
  **/
 BOOST_AUTO_TEST_CASE(a_command_is_sent_as_a_destination) {
     Fixture fixture;
@@ -421,9 +420,9 @@ BOOST_AUTO_TEST_CASE(a_command_is_sent_as_a_destination) {
 }
 
 /**
- * A disabled component is never offered the point: it sends nothing, and the hover the
- * cursor would have written on it is not written either - which is the half of ADR-0059
- * that keeps "disabled" from being undone by a cursor passing over it.
+ * A disabled component is never offered the point, so it sends nothing. The hover the
+ * cursor would have written on it is not written either, so a cursor passing over it
+ * cannot undo its disabled look.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_button_is_neither_picked_nor_lit) {
     Fixture fixture;
@@ -475,6 +474,111 @@ BOOST_AUTO_TEST_CASE(a_disabled_box_takes_what_it_holds_with_it) {
     fixture.draw();
     BOOST_CHECK(!fixture.cursor->press(glm::vec2(50.0f, 50.0f)));
     BOOST_CHECK_EQUAL(fixture.sent.size(), 1U);
+}
+
+/**
+ * A strip is offered a press before the tree, and takes one anywhere on it, its empty run
+ * included. A button the tree holds under a strip is out of reach while the strip is a
+ * control.
+ **/
+BOOST_AUTO_TEST_CASE(a_strip_takes_a_press_before_the_tree) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> under =
+        boost::make_shared<v3d::ui::component::Button>();
+    under->event(v3d::event::Event("under", fixture.context));
+    fixture.place(under, glm::vec2(0.0f, 0.0f), glm::vec2(800.0f, 100.0f));
+
+    const boost::shared_ptr<v3d::ui::component::Toolbar> strip =
+        boost::make_shared<v3d::ui::component::Toolbar>(fixture.dispatcher, v3d::ui::component::Toolbar::Edge::Top);
+    const boost::shared_ptr<v3d::ui::component::Button> go = boost::make_shared<v3d::ui::component::Button>();
+    go->label("Go");
+    go->event(v3d::event::Event("go", fixture.context));
+    strip->add(go);
+    fixture.container->add(strip);
+    fixture.draw();
+
+    BOOST_CHECK(strip->pickable());
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(700.0f, 4.0f)));
+    BOOST_CHECK(fixture.sent.empty());
+}
+
+/**
+ * A strip marked as scenery is offered nothing: a press on its empty run and on its button
+ * both reach the tree under it, and the cursor moving over it lights nothing of the strip's.
+ **/
+BOOST_AUTO_TEST_CASE(a_strip_that_is_not_pickable_lets_a_press_through) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> under =
+        boost::make_shared<v3d::ui::component::Button>();
+    under->event(v3d::event::Event("under", fixture.context));
+    fixture.place(under, glm::vec2(0.0f, 0.0f), glm::vec2(800.0f, 100.0f));
+
+    const boost::shared_ptr<v3d::ui::component::Toolbar> strip =
+        boost::make_shared<v3d::ui::component::Toolbar>(fixture.dispatcher, v3d::ui::component::Toolbar::Edge::Top);
+    const boost::shared_ptr<v3d::ui::component::Button> go = boost::make_shared<v3d::ui::component::Button>();
+    go->label("Go");
+    go->event(v3d::event::Event("go", fixture.context));
+    strip->add(go);
+    strip->pickable(false);
+    fixture.container->add(strip);
+    fixture.draw();
+
+    const glm::vec2 onButton = go->position() + go->size() * 0.5f;
+    BOOST_CHECK(fixture.cursor->motion(onButton));
+    BOOST_CHECK_EQUAL(go->state(), v3d::ui::component::Button::STATE_NORMAL);
+
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(700.0f, 4.0f)));
+    BOOST_CHECK(fixture.cursor->press(onButton));
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 2U);
+    BOOST_CHECK_EQUAL(fixture.sent[0], "test::under");
+    BOOST_CHECK_EQUAL(fixture.sent[1], "test::under");
+}
+
+/**
+ * A disabled strip is skipped the way a disabled subtree is, so a press on it takes nothing
+ * when nothing is under it.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_strip_takes_nothing) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Toolbar> strip =
+        boost::make_shared<v3d::ui::component::Toolbar>(fixture.dispatcher, v3d::ui::component::Toolbar::Edge::Top);
+    const boost::shared_ptr<v3d::ui::component::Button> go = boost::make_shared<v3d::ui::component::Button>();
+    go->label("Go");
+    go->event(v3d::event::Event("go", fixture.context));
+    strip->add(go);
+    strip->enabled(false);
+    fixture.container->add(strip);
+    fixture.draw();
+
+    const glm::vec2 onButton = go->position() + go->size() * 0.5f;
+    BOOST_CHECK(!fixture.cursor->motion(onButton));
+    BOOST_CHECK(!fixture.cursor->press(onButton));
+    BOOST_CHECK(fixture.sent.empty());
+}
+
+/**
+ * A document marks a strip as scenery the way it marks anything else, a menu bar included,
+ * though a menu bar's box is the renderer's and is not read.
+ **/
+BOOST_AUTO_TEST_CASE(a_document_marks_a_strip_as_scenery) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
+        boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
+        boost::make_shared<v3d::log::Logger>());
+    const bool loaded = ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "menubar", "name": "menus", "pickable": false, "menus": [] },
+            { "type": "toolbar", "name": "hotbar", "pickable": false, "buttons": [] },
+            { "type": "toolbar", "name": "tools", "buttons": [] }
+        ] } ] })").as_object());
+    BOOST_REQUIRE(loaded);
+    const boost::shared_ptr<v3d::ui::Container> hud = ui->container("hud");
+    BOOST_REQUIRE(hud);
+    BOOST_REQUIRE(hud->get("menus"));
+    BOOST_CHECK(!hud->get("menus")->pickable());
+    BOOST_REQUIRE(hud->get("hotbar"));
+    BOOST_CHECK(!hud->get("hotbar")->pickable());
+    BOOST_REQUIRE(hud->get("tools"));
+    BOOST_CHECK(hud->get("tools")->pickable());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

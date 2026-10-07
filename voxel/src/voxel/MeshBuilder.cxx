@@ -85,6 +85,6 @@ void MeshBuilder::generateChunk(const boost::shared_ptr<ChunkMeshPool> & pool, c
         }
         cache_->extract((*it).second, faces, origin);
     }
-    pool->add(chunkId, meshes_.build(cache_), origin);
+    pool->add(chunkId, meshes_.build(cache_), origin, static_cast<float>(chunkSize));
     chunk->dirty(false);
 }

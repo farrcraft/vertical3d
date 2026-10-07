@@ -9,6 +9,7 @@
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 
 #include <cstddef>
+#include <string>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -40,20 +41,18 @@ const VkDeviceSize initialIndexBytes = 16ULL * 1024;
 
 /**
  **/
-World::World(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device,
+World::World(const boost::shared_ptr<device::Device>& device,
     const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
     const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
-    const boost::shared_ptr<Quad>& quads, VkFormat colour, VkFormat depth) :
-    logger_(logger),
+    const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth) :
     device_(device),
     cache_(cache),
     resources_(resources),
     ring_(ring),
     uniforms_(uniforms),
-    quads_(quads),
-    cursor_(0) {
+    textures_(textures) {
+    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, initialVertexBytes, initialIndexBytes);
     createPipelines(colour, depth);
-    geometry_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 }
 
 /**
@@ -66,8 +65,17 @@ World::~World() {
 /**
  **/
 void World::createPipelines(VkFormat colour, VkFormat depth) {
+    pipeline_ = createPipeline("world", colour, VK_FORMAT_UNDEFINED, Blend::Alpha);
+    depthPipeline_ = createPipeline("world-depth", colour, depth, Blend::Alpha);
+    additivePipeline_ = createPipeline("world-additive", colour, VK_FORMAT_UNDEFINED, Blend::Additive);
+    additiveDepthPipeline_ = createPipeline("world-additive-depth", colour, depth, Blend::Additive);
+}
+
+/**
+ **/
+PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, VkFormat depth, Blend blend) {
     pipeline::Builder builder(device_);
-    builder.name("world")
+    builder.name(name)
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
         .vertexBinding(0, sizeof(WorldCanvas::Vertex))
@@ -75,61 +83,50 @@ void World::createPipelines(VkFormat colour, VkFormat depth) {
         .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(WorldCanvas::Vertex, uv))
         .vertexAttribute(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(WorldCanvas::Vertex, colour))
         // a quad standing in the world is seen from whichever side the camera is on, and a
-        // tile highlight is seen from above and below - ADR-0042
+        // tile highlight is seen from above and below
         .cull(VK_CULL_MODE_NONE)
         .set(uniforms_->layout())
-        .set(quads_->materialLayout())
+        .set(textures_->layout())
         .colourFormat(colour);
 
-    pipeline_ = resources_->add(builder.build(cache_));
-
-    // tests and does not write, per ADR-0042: the scene occludes a quad and a quad does not
-    // cut a hole in the one behind it where both are transparent
-    builder.name("world-depth").depth(true, false).depthFormat(depth);
-    depthPipeline_ = resources_->add(builder.build(cache_));
-}
-
-/**
- **/
-World::Geometry World::claim() {
-    std::vector<Geometry>& ring = geometry_[ring_->frame()];
-    if (cursor_ >= ring.size()) {
-        Geometry geometry;
-        geometry.vertices = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialVertexBytes);
-        geometry.indices = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, initialIndexBytes);
-        ring.push_back(geometry);
+    if (blend == Blend::Additive) {
+        // the destination's alpha is kept, so adding light never changes how opaque the
+        // picture is
+        pipeline::Builder::Blend adding;
+        adding.sourceColour = VK_BLEND_FACTOR_SRC_ALPHA;
+        adding.destinationColour = VK_BLEND_FACTOR_ONE;
+        adding.sourceAlpha = VK_BLEND_FACTOR_ZERO;
+        adding.destinationAlpha = VK_BLEND_FACTOR_ONE;
+        builder.blend(adding);
     }
-    return ring[cursor_++];
+
+    // tests and does not write: the scene occludes a quad and a quad does not
+    // cut a hole in the one behind it where both are transparent
+    if (depth != VK_FORMAT_UNDEFINED) {
+        builder.depth(true, false).depthFormat(depth);
+    }
+    return resources_->add(builder.build(cache_));
 }
 
 /**
  **/
-void World::endFrame() noexcept {
-    cursor_ = 0;
-}
-
-/**
- **/
-void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer) {
-    if (pass == nullptr || canvas.empty() || !quads_) {
+void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer, Blend blend) {
+    if (pass == nullptr || canvas.empty() || !textures_) {
         return;
     }
 
-    // the device may still be reading what this frame's slots held two frames ago
-    ring_->waitFrame();
-
-    const Geometry claimed = claim();
     const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(WorldCanvas::Vertex);
     const VkDeviceSize indexBytes = canvas.indices().size() * sizeof(uint32_t);
-
-    claimed.vertices->grow(vertexBytes);
-    claimed.indices->grow(indexBytes);
+    const frame::StreamRing::Geometry claimed = stream_->claim(vertexBytes, indexBytes);
     claimed.vertices->write(canvas.vertices().data(), vertexBytes);
     claimed.indices->write(canvas.indices().data(), indexBytes);
 
     // dynamic rendering matches a pipeline to the pass's attachments, so which of the two
     // is drawn with follows from whether the pass has a depth buffer
-    const PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
+    PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
+    if (blend == Blend::Additive) {
+        handle = pass->depth() ? additiveDepthPipeline_ : additivePipeline_;
+    }
 
     for (const WorldCanvas::Batch& batch : canvas.batches()) {
         if (batch.indices == 0) {
@@ -137,12 +134,10 @@ void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer) {
         }
         // an unset texture is the untextured case, drawn against white
         const MaterialHandle bound =
-            quads_->material(batch.texture.valid() ? batch.texture : quads_->white());
+            textures_->material(batch.texture.valid() ? batch.texture : textures_->white());
 
         DrawItem item;
         item.key.layer = layer;
-        item.key.pipeline = static_cast<uint16_t>(handle.id());
-        item.key.material = static_cast<uint16_t>(bound.id());
         item.pipeline = handle;
         item.material = bound;
         item.vertexBuffer = claimed.vertices->handle();

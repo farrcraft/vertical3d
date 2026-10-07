@@ -20,7 +20,7 @@
 namespace v3d::editor {
 
 /**
- * What a click at a screen point hit, per ADR-0014.
+ * What a click at a screen point hit, found by a ray cast on the CPU.
  *
  * An object and a face are hit by the ray meeting a triangle of the mesh; a vertex and
  * an edge, by being drawn within a few pixels of the cursor.
@@ -39,11 +39,11 @@ class Picker final : public SceneVisitor {
          **/
         bool valid;
         /**
-         * The dag::Node id of the mesh, which is what a selection names.
+         * The dag::Node id of the mesh. A selection names a mesh by this id.
          **/
         unsigned int mesh;
         /**
-         * Which kind of thing was hit, which is the mask the pick was made under.
+         * Which kind of thing was hit. It is the mask the pick was made under.
          **/
         SelectMask kind;
         /**
@@ -112,7 +112,7 @@ class Picker final : public SceneVisitor {
 
     float tolerance_;
 
-    // the state of one pick, valid only for the duration of the walk
+    // the state of one pick, valid only while the scene is being traversed
     SelectMask mask_;
     v3d::type::geometry::Ray ray_;
     v3d::type::camera::Camera* camera_;

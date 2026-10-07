@@ -24,8 +24,8 @@ Two of the nine entries closed between `c4bb7aa` and `11ae25c`, as part of
 
 | Was | Now |
 |---|---|
-| The retained tree does not wrap text | [`ui::wrap`](../../../api/ui/Text.h) is used by [`Arranger.cpp:135`](../../../api/ui/Arranger.cpp#L135) to measure a `Label`'s rows and by [`ComponentRenderer.cpp:248`](../../../api/ui/ComponentRenderer.cpp#L248) to draw them |
-| No world-space filled primitive | [`grid::fillTile` and `fillTiles`](../../../api/grid/Overlay.h#L71) over the textured world-space quad of [ADR-0042](../../adr/0042-a-textured-quad-in-world-space.md) |
+| The retained tree does not wrap text | `ui::wrap` is used by [`Arranger.cpp:135`](../../../api/ui/Arranger.cpp#L135) to measure a `Label`'s rows and by [`ComponentRenderer.cpp:248`](../../../api/ui/paint/ComponentRenderer.cpp) to draw them |
+| No world-space filled primitive | [`grid::fillTile` and `fillTiles`](../../../api/grid/Overlay.h#L71) over the textured world-space quad of [ADR-0042](../../adr/0042-rendering-world-space-sprites.md) |
 
 That is worth saying plainly rather than leaving the reader to diff two commits: a list written
 against a tree that is still moving goes stale in the direction of *less* work, and the two
@@ -134,7 +134,7 @@ ADR-0043.** Two things are settled and neither is obvious:
 
 - *The app goes before the bindings*, because the app is the outer layer — it drew over the
   scene, so it is what the cursor is pointing at. This is the same rule
-  [ADR-0038](../../adr/0038-a-cursor-is-routed-by-the-library-that-drew-it.md) applies inside
+  [ADR-0038](../../adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md) applies inside
   `api/ui`, extended one layer out.
 - *`handleEvent` runs whatever the app returns*, because quit, resize and focus are window
   facts rather than input. An app that consumed a resize would be a window that never resized,
@@ -152,7 +152,7 @@ returning true stops the bindings seeing the event, one returning false does not
 
 **What it unblocks.** The whole of the consuming game's engine-adoption block, which is
 otherwise driving its own loop — legal, since `Accumulator` is public and
-[ADR-0032](../../adr/0032-the-loop-simulates-at-a-fixed-step.md)'s fixed step comes with it, but it
+[ADR-0032](../../adr/0032-loop-fixed-step-simulation-variable-rate-rendering.md)'s fixed step comes with it, but it
 declines the one thing that block exists to adopt.
 
 ### Step 2 — `run<T>` forwards what an app was built with
@@ -182,12 +182,12 @@ argument arrives.
 
 ### Step 3 — `TextRenderer` takes its atlas upload as a seam
 
-[`ui::TextRenderer`](../../../api/ui/TextRenderer.h) is the reference implementation of the
-`Measure`/`Write` pair, and by [ADR-0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) that pair names no font type so that
+[`ui::TextRenderer`](../../../api/ui/paint/TextRenderer.h) is the reference implementation of the
+`Measure`/`Write` pair, and by ADR-0019 (removed) that pair names no font type so that
 drawing a ui costs no device. Every part of the class holds to that — `font::TextureFontCache`
 packs into a CPU `image::TextureAtlas`, `font::TextureTextBuffer` lays a string out,
 `Canvas::text()` copies the result into the stream — and then the constructor takes a
-`vulkan::QuadRenderer` and uses it on [one line](../../../api/ui/TextRenderer.cpp#L91):
+`vulkan::QuadRenderer` and uses it on [one line](../../../api/ui/paint/TextRenderer.cpp):
 
 ```cpp
 atlas_ = quads->texture(cache_->atlas()->image());
@@ -253,7 +253,7 @@ returning `hovered_ != 0 || active_ != 0`. The `active_` half is what stops a sc
 dragged from losing the cursor the moment the drag leaves the widget's box.
 
 This is the immediate layer's half of the rule
-[ADR-0038](../../adr/0038-a-cursor-is-routed-by-the-library-that-drew-it.md) already states for the
+[ADR-0038](../../adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md) already states for the
 retained tree, so it cites that ADR rather than earning one.
 [`ImmediateTest.cpp`](../../../api/ui/tests/ImmediateTest.cpp) covers it: over a window, off it,
 and held through a drag that leaves the widget.
@@ -287,7 +287,7 @@ sets one and then returns early does not leak it into the next frame.
 
 ### Step 6 — An image reader that can be pointed at a buffer
 
-[`asset::loader::Gltf`](../../../api/asset/loader/Gltf.cpp#L181) reports an image embedded in a
+[`asset::loader::Gltf`](../../../api/asset/media/loader/Gltf.cpp) reports an image embedded in a
 `.glb` and leaves it empty:
 
 ```cpp
@@ -342,11 +342,11 @@ asserting the two paths agree pixel for pixel through [`image::Compare`](../../.
 The largest item, and the only one that is a design change rather than a seam. Recorded in
 [TODO.md](../../TODO.md) already.
 
-[`RenderTarget`](../../../api/render/realtime/vulkan/RenderTarget.h) allocates a
-[`DepthBuffer`](../../../api/render/realtime/vulkan/DepthBuffer.h) at the target's size and
-[`Recorder`](../../../api/render/realtime/vulkan/Recorder.cxx#L151) transitions it for the pass to
+[`RenderTarget`](../../../api/render/realtime/vulkan/frame/RenderTarget.h) allocates a
+[`DepthBuffer`](../../../api/render/realtime/vulkan/frame/DepthBuffer.h) at the target's size and
+[`Recorder`](../../../api/render/realtime/vulkan/frame/Recorder.cxx) transitions it for the pass to
 test against. But the image is created with
-[`usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT`](../../../api/render/realtime/vulkan/DepthBuffer.cxx#L82)
+[`usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT`](../../../api/render/realtime/vulkan/frame/DepthBuffer.cxx)
 and nothing else, there is no sampler, and `RenderTarget::texture()` describes the colour image
 only. So a shadow map has somewhere to be written and nothing to read it with — the target's
 whole reason for existing, applied to the one attachment it does not apply to.
@@ -362,9 +362,9 @@ Four changes, and they are in order:
    that everything outside the light's frustum is lit rather than shadowed.
 3. **`RenderTarget` exposes `depthTexture()`** beside `texture()`, with the same contract — a
    view and a sampler to bind, not an allocation to own, per
-   [`Resources`](../../../api/render/realtime/vulkan/Resources.h#L59).
+   [`Resources`](../../../api/render/realtime/vulkan/pipeline/Resources.h).
 4. **`Recorder` transitions the depth image after the last pass that wrote it**, the way it
-   already does for [colour](../../../api/render/realtime/vulkan/Recorder.cxx#L157). Not to
+   already does for [colour](../../../api/render/realtime/vulkan/frame/Recorder.cxx). Not to
    `SHADER_READ_ONLY_OPTIMAL` but to `VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL`, which is the
    layout a depth aspect is sampled in, and only when the target was built sampled — a target
    whose depth nothing reads should not pay a barrier for it.
@@ -376,8 +376,8 @@ makes on the app's behalf — a pass that both samples a depth target and writes
 this design forbids rather than detects.
 
 **Verification is the awkward part.** Everything below the recorder needs a window and a GPU
-([Testing.md](../../Testing.md)), so this is verified by
-[ADR-0007](../../adr/0007-ci-rendering-tests.md)'s standing answer: run an app and read the log,
+([Testing.md](../../contributing/Testing.md)), so this is verified by
+[ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md)'s standing answer: run an app and read the log,
 with a silent validation layer as the signal. The layer is exactly the right instrument here —
 a sampled image in the wrong layout, a missing usage bit and a format without the sampled
 feature are all things it says out loud. `chooseFormat`'s new branch is the one half with no
@@ -431,7 +431,28 @@ verified by the four apps still drawing text. Step 7 is the render-verification 
 
 Update the state note in the table above, set the ADR's status if the step carried one, and for
 step 7 delete [TODO.md](../../TODO.md)'s depth-target line rather than marking it done. Steps 1, 3
-and 7 each move something a document owns: [Architecture.md](../../Architecture.md) for the loop's
-new seam, [UserInterface.md](../../UserInterface.md) for `TextRenderer`'s constructor and
+and 7 each move something a document owns: [Engine.md](../../api/engine/README.md) for the loop's
+new seam, [UserInterface.md](../../api/ui/README.md) for `TextRenderer`'s constructor and
 `Immediate`'s two additions, and
-[RenderingPipeline.md](../../RenderingPipeline.md) for a target whose depth can be read.
+[RenderingPipeline.md](../../api/rendering/README.md) for a target whose depth can be read.
+
+## Outcome
+
+Drafted and closed on 2026-09-07. Its seven steps covered the places where an `api/` library
+assumed its host app was one of the four in this tree:
+
+- a loop that gave an app no access to its own events
+  ([ADR-0043](../../adr/0043-input-apps-see-raw-events-before-bindings.md));
+- a text renderer that was device-free in every line but one;
+- an immediate-mode layer that could not be asked whether it wanted the cursor;
+- an image reader that could only read from a path;
+- a depth target that was written but could not be sampled (ADR-0044, removed).
+
+The ordering mattered because only the event change blocked anything. A different step was the
+only one whose cost was growing, because a copy of `ui::TextRenderer` existed downstream for
+the sake of a single line. Two entries the list was drafted from had already closed in
+[GameFoundations](GameFoundations.md) before it was written.
+
+[What came out differently](#what-came-out-differently) records the deviations from the plan.
+One more: step 7 has no headless test case. `chooseFormat` queries a physical device for format
+properties, so it needs a device like everything else below the recorder.

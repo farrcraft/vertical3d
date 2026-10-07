@@ -13,7 +13,7 @@
 namespace v3d::event {
 
 Engine::Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher) : dispatcher_(dispatcher) {
-    dispatcher->sink<Event>().connect<&Engine::handleSourceEvent>(*this);
+    source_ = dispatcher->sink<Unclaimed>().connect<&Engine::handleSourceEvent>(*this);
 }
 
 /**
@@ -25,36 +25,18 @@ void Engine::addMapper(const boost::shared_ptr<Mapper>& mapper) {
 
 /**
  **/
-void Engine::handleSourceEvent(const Event& source) {
-    if (source.type() != Type::Source) {
-        return;
-    }
+void Engine::handleSourceEvent(const Unclaimed& unclaimed) {
+    const Source& source = *unclaimed.source;
     for (auto it = mappers_.begin(); it != mappers_.end(); it++) {
         std::vector<Event> destinations = it->second->destinations(source);
         for (auto mapped = destinations.begin(); mapped != destinations.end(); ++mapped) {
             // carry the edge across so a handler can tell press from release without
             // needing a separate binding for each
             mapped->state(source.state());
+            mapped->repeat(source.repeat());
             dispatcher_->trigger(*mapped);
         }
     }
-}
-
-/**
- **/
-void Engine::dispatch(const std::string_view& context, const std::string& name) {
-    Event event(name, resolveContext(context));
-    event.type(Type::Destination);
-    dispatcher_->trigger(event);
-}
-
-/**
- **/
-void Engine::dispatch(const std::string_view& context, const std::string& name, const EventData& data) {
-    Event event(name, resolveContext(context));
-    event.type(Type::Destination);
-    event.data(data);
-    dispatcher_->trigger(event);
 }
 
 /**

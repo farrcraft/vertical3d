@@ -47,9 +47,9 @@ class FrameBuffer final {
     /**
      * The leading planes as an image, row 0 at the top.
      *
-     * The plane count is not the channel count: a renderer's own planes sit after the
-     * image channels and are not part of the picture, and a depth written into alpha
-     * is a wrong image that looks like a shading fault.
+     * The plane count is not the channel count. A renderer's own planes sit after the
+     * image channels and are not part of the picture. A depth written into alpha gives
+     * a wrong image that looks like a shading fault.
      *
      * A value outside [0, 1] saturates rather than wrapping - the cast alone turns a
      * bright pixel dark.

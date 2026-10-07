@@ -17,16 +17,16 @@ namespace v3d::engine {
 /**
  * What a player changed, in a document under userPath().
  *
- * An overlay rather than a copy: only a setting somebody touched is stored, so deleting the
- * file is a reset and a setting nobody touched keeps tracking whatever the build ships rather
- * than a snapshot of it taken the first time a menu was opened. A binding added in a later
- * build therefore reaches a player who already has a settings document.
+ * Only a setting the player changed is stored. Deleting the file resets everything, and an
+ * unchanged setting follows whatever the build ships. A binding added in a later build
+ * therefore reaches a player who already has a settings document.
  *
- * The schema is the app's. This knows a key, a value and a version, the way config::Config
- * does not know what a camera profile means. Applying a setting is elsewhere - a binding is
- * Engine::rebind(), a window size is Window::request().
+ * The app defines the schema; this stores only keys, values and a version. Applying a
+ * setting is done elsewhere: a binding through Engine::rebind(), a window size through
+ * Window::request().
  *
- * Written whole or not at all, per ADR-0041.
+ * The document is written whole or not at all: to a temporary file that is then renamed over
+ * the target.
  **/
 class Settings final {
  public:
@@ -49,14 +49,15 @@ class Settings final {
      * A missing file is the common case and not a failure: nothing is held and every read
      * gives its caller's default. A document this build does not understand is treated the
      * same way, and a document from a later version additionally makes this read-only, so a
-     * player who downgrades keeps the settings the newer build wrote.
+     * player who downgrades keeps the settings the newer build wrote. An older one is read
+     * forward through asset::readForward(), and one with no version it can read is refused.
      *
      * @return whether a document was read
      **/
     bool load();
 
     /**
-     * Write what is held, per ADR-0041.
+     * Write what is held, whole or not at all.
      *
      * Call this when something changes rather than when the app exits: there is no exit path
      * that reliably runs, and a crash after a rebinding should not lose the rebinding.

@@ -27,8 +27,8 @@ std::string appPath(const char* executable) {
 /**
  **/
 std::string userPath(const std::string& org, const std::string& app) {
-    // SDL owns what it hands back and needs no SDL_Init to hand it back, so this is
-    // callable from the earliest part of an app's startup
+    // SDL owns the returned string and needs no SDL_Init to return it, so this can be
+    // called at the very start of an app's startup
     char* path = SDL_GetPrefPath(org.c_str(), app.c_str());
     if (path == nullptr) {
         v3d::log::Logger logger;
@@ -38,7 +38,7 @@ std::string userPath(const std::string& org, const std::string& app) {
 
     const std::string directory(path);
     SDL_free(path);
-    // SDL guarantees the trailing separator, which is what appPath() also promises
+    // SDL guarantees the trailing separator, as appPath() does
     return directory;
 }
 

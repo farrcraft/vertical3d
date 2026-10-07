@@ -1,13 +1,10 @@
-v3d_add_api_library(font "BitmapFont.h" "BitmapFont.cxx" "BitmapTextBuffer.h" "BitmapTextBuffer.cxx" "Font2D.h" "Font2D.cxx"
-	  "TextBuffer.h" "TextBuffer.cxx" "TextureFont.h" "TextureFont.cxx" "TextureFontCache.h" "TextureFontCache.cxx"
+v3d_add_api_library(font "TextBuffer.h" "TextBuffer.cxx" "TextureFont.h" "TextureFont.cxx" "TextureFontCache.h" "TextureFontCache.cxx"
 	"TextureTextBuffer.h" "TextureTextBuffer.cxx")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
-# Freetype: TextureFont.h names FT_Library and FT_Face.
-target_link_libraries(v3dlib_font PUBLIC v3dlib_log v3dlib_image Freetype::Freetype glm::glm)
-
-# PRIVATE: the atlas is bounded with a type::Bound2D, which no font header names.
-target_link_libraries(v3dlib_font PRIVATE v3dlib_type)
+target_link_libraries(v3dlib_font PUBLIC v3dlib_log v3dlib_image glm::glm)
+# PRIVATE: TextureFont.h holds FreeType behind a declared class, and only the source includes it.
+target_link_libraries(v3dlib_font PRIVATE Freetype::Freetype)
 
 target_compile_options(v3dlib_font PRIVATE /EHsc)
 

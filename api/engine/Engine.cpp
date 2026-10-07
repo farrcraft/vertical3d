@@ -5,12 +5,17 @@
 
 #include "Engine.h"
 
+#include <api/asset/Json.h>
+#include <api/asset/media/Loaders.h>
 #include <api/event/kind/WindowFocus.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/input/DeviceType.h>
+#include <api/input/Keyboard.h>
+#include <api/input/Mouse.h>
 
 #include <SDL3/SDL.h>
 
+#include <algorithm>
 #include <map>
 #include <string>
 
@@ -24,7 +29,6 @@ namespace v3d::engine {
  **/
 Engine::Engine(const std::string& appPath) :
     appPath_(appPath),
-    features_(0),
     needShutdown_(false),
     quitting_(false) {
 }
@@ -41,203 +45,195 @@ bool Engine::quitting() const noexcept {
     return quitting_;
 }
 
-bool Engine::readMappingSource(const boost::json::object& mapping, v3d::event::Event* event) {
-    if (!mapping.contains("source") || !mapping.at("source").is_object()) {
-        logger_->get()->error("Missing mapping source");
-        return false;
-    }
-    auto const source = mapping.at("source");
-    if (!source.as_object().contains("name") || !source.as_object().contains("context")) {
-        logger_->get()->error("Mapping source needs both a name and a context");
-        return false;
-    }
-    std::string sourceName = boost::json::value_to<std::string>(source.at("name"));
-    std::string sourceContextName = boost::json::value_to<std::string>(source.at("context"));
-    boost::shared_ptr<v3d::event::Context> sourceContext = eventEngine_->resolveContext(sourceContextName);
-    *event = v3d::event::Event(sourceName, sourceContext);
-    event->type(v3d::event::Type::Source);
-    // an optional "state" binds one edge only - "pressed"/"down" or "released"/"up".
-    // without it the binding matches both, which is what most actions want.
-    if (source.as_object().contains("state")) {
-        std::string sourceState = boost::json::value_to<std::string>(source.at("state"));
-        event->state(v3d::event::stringToState(sourceState));
-    }
-    return true;
-}
-
-bool Engine::readMappingDestination(const boost::json::object& mapping, v3d::event::Event* event) {
-    if (!mapping.contains("destination") || !mapping.at("destination").is_object()) {
-        logger_->get()->error("Missing mapping destination");
-        return false;
-    }
-    auto const destination = mapping.at("destination");
-    if (!destination.as_object().contains("name") || !destination.as_object().contains("context")) {
-        logger_->get()->error("Mapping destination needs both a name and a context");
-        return false;
-    }
-    std::string destinationName = boost::json::value_to<std::string>(destination.at("name"));
-    std::string destinationContextName = boost::json::value_to<std::string>(destination.at("context"));
-    boost::shared_ptr<v3d::event::Context> destinationContext = eventEngine_->resolveContext(destinationContextName);
-    *event = v3d::event::Event(destinationName, destinationContext);
-    event->type(v3d::event::Type::Destination);
-    // an optional "param" lets one action serve several bindings, telling them apart by
-    // the value it arrives with. It reaches the handler as the event's data, the same
-    // way a menu item's value does.
-    if (!destination.as_object().contains("param")) {
-        return true;
-    }
-    auto const param = destination.at("param");
-    if (param.is_int64()) {
-        event->data(static_cast<int>(param.as_int64()));
-    } else if (param.is_bool()) {
-        event->data(param.as_bool());
-    } else if (param.is_string()) {
-        event->data(boost::json::value_to<std::string>(param));
-    } else {
-        logger_->get()->error("Unsupported binding param type for [{}]", destinationName);
-        return false;
-    }
-    return true;
-}
-
-bool Engine::registerEventMappings() {
-    boost::shared_ptr<v3d::asset::kind::Json> mappingConfig = config_->get(v3d::config::Type::Binding);
-    if (!mappingConfig) {
-        return true;
-    }
-
-    // We're only supporting a single global mapper for now
-    boost::shared_ptr<v3d::event::Mapper> mapper = boost::make_shared<v3d::event::Mapper>("global");
-
-    auto const doc = mappingConfig->document();
-    // every lookup below is guarded by a contains() rather than reaching straight for
-    // at(): boost::json::at throws, and a mapping document this function does not
-    // understand has to come back as a false return, not as an exception out of startup.
-    if (!doc.contains("mappings") || !doc.at("mappings").is_array()) {
-        logger_->get()->error("Missing mappings in config");
-        return false;
-    }
-    auto const items = doc.at("mappings").as_array();
-    for (const auto* it = items.begin(); it != items.end(); ++it) {
-        if (!it->is_object()) {
-            logger_->get()->error("Unrecognized mapping");
-            return false;
-        }
-        auto const mapping = it->as_object();
-        v3d::event::Event sourceEvent;
-        v3d::event::Event destinationEvent;
-        if (!readMappingSource(mapping, &sourceEvent) ||
-            !readMappingDestination(mapping, &destinationEvent)) {
-            return false;
-        }
-        // a rebound command keeps the context and the edge the config gave it, and takes
-        // only its name from what the player chose
-        const std::map<std::string, std::string>::const_iterator rebound =
-            rebindings_.find(destinationEvent.str());
-        if (rebound != rebindings_.end()) {
-            v3d::event::Event replacement(rebound->second, sourceEvent.context());
-            replacement.type(v3d::event::Type::Source);
-            replacement.state(sourceEvent.state());
-            sourceEvent = replacement;
-        }
-
-        mapper->map(sourceEvent, destinationEvent);
-    }
-    // addMapper stores by name, so this replaces the mapper rather than adding a second
-    eventEngine_->addMapper(mapper);
-    return true;
-}
-
 /**
  **/
 bool Engine::rebind(const std::string& command, const std::string& key) {
-    if (!config_) {
-        return false;
-    }
-    rebindings_[command] = key;
-    return registerEventMappings();
+    return bindings_ && bindings_->rebind(command, key);
 }
 
 /**
  **/
-bool Engine::initialize(int features) {
+bool Engine::initialize() {
     logger_ = boost::make_shared<v3d::log::Logger>();
-    features_ = features;
+    features_ = features();
 
     logger_->get()->info("Initializing engine...");
 
     std::string dataPath = appPath_ + std::string("data/");
     assetManager_ = boost::make_shared<v3d::asset::Manager>(dataPath, logger_);
+    v3d::asset::media::registerLoaders(*assetManager_, logger_);
 
     dispatcher_ = boost::make_shared<entt::dispatcher>();
     eventEngine_ = boost::make_shared<v3d::event::Engine>(dispatcher_);
+    quitCommand_ = dispatcher_->sink<v3d::event::Event>().connect<&Engine::command>(*this);
 
-    if (features_ & Feature::Config) {
-        config_ = boost::make_shared<v3d::config::Config>(logger_);
-        // Load config (through the asset manager)
-        if (!config_->load(assetManager_)) {
-            return false;
-        }
-        // If config includes event mappings/bindings, they will get loaded here
-        if (!registerEventMappings()) {
+    if (features_.has(Feature::Config) && !loadConfig()) {
+        return false;
+    }
+    startInput();
+    if (features_.has(Feature::Window) && !openWindow()) {
+        return false;
+    }
+    return start();
+}
+
+/**
+ **/
+bool Engine::loadConfig() {
+    config_ = boost::make_shared<v3d::config::Config>(logger_);
+    // Load config (through the asset manager)
+    if (!config_->load(assetManager_)) {
+        return false;
+    }
+    // a binding config is optional: an app with none sends no commands from a key
+    const boost::shared_ptr<v3d::asset::kind::Json> mappings = config_->get(v3d::config::Type::Binding);
+    if (mappings) {
+        bindings_ = boost::make_shared<v3d::event::Bindings>(eventEngine_, logger_,
+            [](const v3d::event::Event& source) {
+                const std::string_view device = source.context() ? source.context()->name() : std::string_view();
+                if (device == "keyboard") {
+                    return v3d::input::isKeyName(source.name());
+                }
+                if (device == "mouse") {
+                    return v3d::input::isButtonName(source.name());
+                }
+                return true;
+            });
+        if (!bindings_->load(mappings->document())) {
             return false;
         }
     }
+    return true;
+}
 
-    int devices = 0;
-    if (features_ & Feature::KeyboardInput) {
+/**
+ **/
+void Engine::startInput() {
+    v3d::input::DeviceTypes devices;
+    if (features_.has(Feature::KeyboardInput)) {
         devices |= v3d::input::DeviceType::Keyboard;
     }
-    if (features_ & Feature::MouseInput) {
+    if (features_.has(Feature::MouseInput)) {
         devices |= v3d::input::DeviceType::Mouse;
     }
-    if (devices != 0) {
+    if (!devices.empty()) {
         inputEngine_ = boost::make_shared<v3d::input::Engine>(eventEngine_, dispatcher_, devices);
     }
+}
 
-    if (features_ & Feature::Window) {
-        // Initialize SDL
-        if (!SDL_Init(SDL_INIT_VIDEO)) {
-            logger_->get()->error("SDL could not initialize! SDL_Error: {}", SDL_GetError());
-            return false;
-        }
-        // We've reached a point of initialization that will require a shutdown
-        needShutdown_ = true;
+/**
+ **/
+bool Engine::openWindow() {
+    // Initialize SDL
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        logger_->get()->error("SDL could not initialize! SDL_Error: {}", SDL_GetError());
+        return false;
+    }
+    // We've reached a point of initialization that will require a shutdown
+    needShutdown_ = true;
 
-        window_ = boost::make_shared<v3d::render::realtime::Window>(logger_);
+    window_ = boost::make_shared<v3d::render::realtime::Window>(logger_);
 
-        // a size of -1 leaves the window at its own default, so an app with no window
-        // config, or none carrying dimensions, still gets a window
-        int width = -1;
-        int height = -1;
-        if (features_ & Feature::Config) {
-            boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
-            if (windowConfig) {
-                auto const doc = windowConfig->document();
-                auto const window = doc.at("window");
-                width = boost::json::value_to<int>(window.at("width"));
-                height = boost::json::value_to<int>(window.at("height"));
+    // a size of -1 leaves the window at its own default, so an app with no window
+    // config, or none carrying dimensions, still gets a window
+    int width = -1;
+    int height = -1;
+    if (features_.has(Feature::Config)) {
+        boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
+        if (windowConfig) {
+            // as with the bindings, a window document that cannot be read makes startup
+            // return false rather than throw
+            const boost::json::object& doc = windowConfig->document();
+            const boost::json::object* window = v3d::asset::readObject(doc, "window");
+            if (window == nullptr || !window->contains("width") || !window->contains("height") ||
+                !window->at("width").is_int64() || !window->at("height").is_int64()) {
+                logger_->get()->error("The window config needs a window with a whole width and height");
+                return false;
             }
-        }
-        if (!window_->create(width, height)) {
-            return false;
+            width = static_cast<int>(window->at("width").as_int64());
+            height = static_cast<int>(window->at("height").as_int64());
         }
     }
+    return window_->create(width, height);
+}
+
+/**
+ **/
+Engine::~Engine() {
+    if (needShutdown_) {
+        window_->destroy();
+        SDL_Quit();
+    }
+}
+
+/**
+ **/
+Features Engine::features() const {
+    return Feature::Window | Feature::Config | Feature::KeyboardInput | Feature::MouseInput;
+}
+
+/**
+ **/
+const boost::json::object* Engine::document(v3d::config::Type type) const {
+    return document(v3d::config::typeName(type));
+}
+
+/**
+ **/
+const boost::json::object* Engine::document(std::string_view type) const {
+    if (!config_) {
+        return nullptr;
+    }
+    const boost::shared_ptr<v3d::asset::kind::Json> held = config_->get(type);
+    return held ? &held->document() : nullptr;
+}
+
+/**
+ **/
+Statistics::Scope Engine::measure(std::string_view name) {
+    return statistics_.scope(name);
+}
+
+/**
+ **/
+bool Engine::start() {
+    return true;
+}
+
+/**
+ **/
+bool Engine::release() {
     return true;
 }
 
 /**
  **/
 bool Engine::shutdown() {
+    // the app's release() runs once, before the window is destroyed: whatever presents to
+    // the window has to wait for the device to go idle while the window still exists
+    bool released = true;
+    if (!released_) {
+        released_ = true;
+        // a release that throws leaves the window and SDL to ~Engine, which runs after the
+        // app's own members are destroyed, so whatever presents to the window still goes first
+        released = release();
+    }
     if (!needShutdown_) {
-        return true;
+        return released;
     }
     logger_->get()->info("Shutting down engine...");
-    if (features_ & Feature::Window) {
-        window_->destroy();
-        SDL_Quit();
+    window_->destroy();
+    SDL_Quit();
+    needShutdown_ = false;
+    return released;
+}
+
+/**
+ **/
+void Engine::command(const v3d::event::Event& event) {
+    if (event.str() == "ui::quit") {
+        quit();
     }
-    return true;
 }
 
 /**
@@ -249,13 +245,13 @@ bool Engine::render() {
 /**
  **/
 void Engine::route(const SDL_Event& event) {
-    // the app is the outer layer - it drew over the scene, so it is what the cursor is
-    // pointing at - and what it takes never reaches the bindings, per ADR-0043
+    // the app is offered the event first, because it draws over the scene and so is what
+    // the cursor points at. An event the app consumes never reaches the bindings
     if (!onEvent(event) && inputEngine_ && inputEngine_->filterEvent(event)) {
         return;
     }
-    // quit, resize and focus are window facts rather than input, so they are not an app's
-    // to decline and not a binding's to consume
+    // quit, resize and focus are window events rather than input, so the engine handles
+    // them even when the app consumed the event
     handleEvent(event);
 }
 
@@ -266,8 +262,6 @@ bool Engine::onEvent(const SDL_Event& event) {
     return false;
 }
 
-/**
- **/
 /**
  **/
 void Engine::handleEvent(const SDL_Event& event) {
@@ -285,8 +279,8 @@ void Engine::handleEvent(const SDL_Event& event) {
         }
         dispatcher_->trigger(v3d::event::kind::WindowResize(event.window.data1, event.window.data2));
         break;
-    // a key released while the window is unfocused never arrives, so an app that wants
-    // held input dropped needs to be told focus went rather than poll for it
+    // a key released while the window is unfocused never arrives, so an app that drops
+    // held input on focus loss is told when focus goes rather than polling for it
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
         dispatcher_->trigger(v3d::event::kind::WindowFocus(true));
         break;
@@ -311,8 +305,8 @@ bool Engine::eventLoop() {
         while (SDL_PollEvent(&event) != 0 && !quitting_) {
             route(event);
         }
-        // an event handler may have asked to stop, and the window it drew into can have
-        // gone with it - so nothing after this point runs on the frame that quit
+        // an event handler may have asked to stop, and its window may be gone, so nothing
+        // after this point runs on the frame that quit
         if (quitting_) {
             break;
         }
@@ -323,21 +317,20 @@ bool Engine::eventLoop() {
         if (!tick(static_cast<unsigned int>(elapsed / SDL_NS_PER_MS))) {
             return false;
         }
-        // and advance the simulation by however many whole steps that frame owes, per
-        // ADR-0032 - the accumulator clamps the frame and carries the remainder forward
+        // advance the simulation by each whole fixed step now due. The accumulator clamps
+        // the frame and carries the remainder forward
         statistics_.frame(elapsed, accumulator_.accumulate(elapsed));
         while (accumulator_.drain()) {
             if (!simulate(Accumulator::seconds)) {
                 return false;
             }
         }
-        // and draw the frame on the screen
+        // draw the frame on the screen
         if (!render()) {
             return false;
         }
-        // the edges belonged to this frame, and everything that reads them has now run. The
-        // loop is what clears them, so "exactly once per frame" is not a precondition an app
-        // has to honour
+        // the edges belong to this frame, and everything that reads them has now run. The
+        // loop clears them so that an app does not have to
         if (inputEngine_) {
             inputEngine_->flush();
         }
@@ -355,6 +348,17 @@ const v3d::input::KeyState* Engine::keys() const {
  **/
 const v3d::input::MouseState* Engine::mouse() const {
     return inputEngine_ ? inputEngine_->mouse() : nullptr;
+}
+
+/**
+ **/
+bool Engine::held(std::string_view command) const {
+    const v3d::input::KeyState* state = keys();
+    if (!bindings_ || state == nullptr) {
+        return false;
+    }
+    return std::ranges::any_of(bindings_->sources(command),
+        [state](const v3d::event::Event& source) { return state->held(source.name()); });
 }
 
 /**
@@ -379,6 +383,26 @@ const Statistics& Engine::statistics() const noexcept {
 
 boost::shared_ptr<v3d::render::realtime::Window> Engine::window() const {
     return window_;
+}
+
+const boost::shared_ptr<v3d::log::Logger>& Engine::logger() const noexcept {
+    return logger_;
+}
+
+const boost::shared_ptr<v3d::config::Config>& Engine::config() const noexcept {
+    return config_;
+}
+
+const boost::shared_ptr<v3d::asset::Manager>& Engine::assets() const noexcept {
+    return assetManager_;
+}
+
+const boost::shared_ptr<entt::dispatcher>& Engine::dispatcher() const noexcept {
+    return dispatcher_;
+}
+
+const boost::shared_ptr<v3d::event::Engine>& Engine::events() const noexcept {
+    return eventEngine_;
 }
 
 };  // namespace v3d::engine

@@ -5,10 +5,11 @@
 
 #include "RIBExportVisitor.h"
 
+#include <api/brep/Topology.h>
+
 #include <ostream>
 #include <vector>
 
-#include "MeshTopology.h"
 
 namespace v3d::editor {
 
@@ -35,9 +36,9 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, unsigned i
     *stream_ << "Format " << width << " " << height << " 1\n";
 
     /*
-        The screen window is written rather than left to the frame aspect, because the
-        editor's camera states its aperture as a pixel aspect and an ortho zoom and there
-        is no reason to make a reader rederive it.
+        The screen window is written rather than left to the frame aspect. The editor's
+        camera states its aperture as a pixel aspect and an ortho zoom, and a reader should
+        not have to derive the window from those.
     */
     if (profile.orthographic()) {
         const float top = profile.orthoZoom();
@@ -50,8 +51,8 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, unsigned i
     }
     *stream_ << "Clipping " << clipping.x << " " << clipping.y << "\n";
 
-    // what a scene sets between Projection and WorldBegin is the world to camera
-    // transformation, which is what a view matrix is
+    // the transform set between Projection and WorldBegin is the world to camera
+    // transformation, which a view matrix already is
     *stream_ << "Transform ";
     matrix(camera.view());
     *stream_ << "\n";
@@ -75,9 +76,8 @@ void RIBExportVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     matrix(mesh->matrix());
     *stream_ << "\n";
 
-    const v3d::brep::Index faces = static_cast<v3d::brep::Index>(mesh->faceCount());
-    for (v3d::brep::Index face = 0; face < faces; face++) {
-        const std::vector<unsigned int> loop = faceLoop(mesh, face);
+    for (v3d::brep::Index face = 0; face < mesh->faceCount(); face++) {
+        const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*mesh, face);
         if (loop.size() < 3) {
             continue;
         }
@@ -87,7 +87,7 @@ void RIBExportVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         for (std::size_t index = 0; index < loop.size(); index++) {
             glm::vec3 from(0.0f);
             glm::vec3 to(0.0f);
-            if (!loopSegment(mesh, loop, index, &from, &to)) {
+            if (!v3d::brep::loopSegment(*mesh, loop, index, &from, &to)) {
                 points.clear();
                 break;
             }

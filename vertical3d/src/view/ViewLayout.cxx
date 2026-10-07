@@ -5,7 +5,10 @@
 
 #include "ViewLayout.h"
 
+#include <api/asset/Json.h>
+
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -37,22 +40,29 @@ bool ViewLayout::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
         return false;
     }
     auto const doc = config->document();
-    if (!doc.contains("layout") || !doc.at("layout").is_object()) {
+    const boost::json::object* found = v3d::asset::readObject(doc, "layout");
+    if (found == nullptr) {
         logger_->get()->error("Missing layout in the layout config");
         return false;
     }
-    auto const layout = doc.at("layout").as_object();
+    auto const layout = *found;
     if (layout.contains("name")) {
-        name_ = boost::json::value_to<std::string>(layout.at("name"));
+        const std::optional<std::string> name = v3d::asset::readString(layout, "name");
+        if (!name) {
+            logger_->get()->error("A layout's name is a string");
+            return false;
+        }
+        name_ = *name;
     }
-    if (!layout.contains("root") || !layout.at("root").is_object()) {
+    const boost::json::object* root = v3d::asset::readObject(layout, "root");
+    if (root == nullptr) {
         logger_->get()->error("A layout needs a root node");
         return false;
     }
 
     views_.clear();
     root_ = Node();
-    if (!loadNode(layout.at("root").as_object(), &root_)) {
+    if (!loadNode(*root, &root_)) {
         return false;
     }
     if (views_.empty()) {
@@ -67,23 +77,37 @@ bool ViewLayout::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
 bool ViewLayout::loadNode(const boost::json::object& entry, Node* into) {
     // a leaf names the camera it shows; anything else is a split
     if (entry.contains("camera")) {
+        const std::optional<std::string> camera = v3d::asset::readString(entry, "camera");
+        if (!camera) {
+            logger_->get()->error("A layout node's camera is a name");
+            return false;
+        }
         View view;
-        view.camera = boost::json::value_to<std::string>(entry.at("camera"));
+        view.camera = *camera;
         into->view = views_.size();
         views_.push_back(view);
         return true;
     }
 
-    if (!entry.contains("children") || !entry.at("children").is_array()) {
+    const boost::json::array* children = v3d::asset::readArray(entry, "children");
+    if (children == nullptr) {
         logger_->get()->error("A layout node is either a camera or a split with children");
         return false;
     }
+    // place() treats a node with no children as a leaf, so an empty split would take a view
+    if (children->empty()) {
+        logger_->get()->error("A layout split has no children");
+        return false;
+    }
     // horizontal puts its children side by side; vertical stacks them
-    const std::string split = entry.contains("split") ?
-        boost::json::value_to<std::string>(entry.at("split")) : std::string("vertical");
-    into->vertical = (split != "horizontal");
+    const std::optional<std::string> split = v3d::asset::readString(entry, "split");
+    if (entry.contains("split") && !split) {
+        logger_->get()->error("A layout node's split is horizontal or vertical");
+        return false;
+    }
+    into->vertical = (split.value_or("vertical") != "horizontal");
 
-    for (auto const& child : entry.at("children").as_array()) {
+    for (auto const& child : *children) {
         if (!child.is_object()) {
             logger_->get()->error("Unrecognized layout node");
             return false;
@@ -125,7 +149,7 @@ void ViewLayout::place(const Node& node, const glm::vec4& region) {
 
     const std::size_t count = node.children.size();
     // the last child takes what integer division left over, so the children cover the
-    // whole region rather than leaving a seam of undrawn pixels down the middle
+    // whole region rather than leaving a gap of undrawn pixels down the middle
     float offset = node.vertical ? region.y : region.x;
     const float total = node.vertical ? region.w : region.z;
     const float end = offset + total;

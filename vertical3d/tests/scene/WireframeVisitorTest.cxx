@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(wireframe_transform_test) {
         BOOST_CHECK(vertex.position.x <= 11.1f);
     }
 
-    // and the transform is popped, so the next mesh does not inherit it
+    // the transform is popped, so the next mesh does not inherit it
     BOOST_CHECK_SMALL(canvas.transform()[3][0], 0.0001f);
 }
 
@@ -99,6 +99,35 @@ BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
         }
     }
     BOOST_CHECK_EQUAL(highlighted, 2u);
+}
+
+/**
+ * A selected face is outlined on all four of its edges, including those the neighbouring face
+ * draws.
+ **/
+BOOST_AUTO_TEST_CASE(wireframe_selected_face_is_outlined_test) {
+    v3d::render::realtime::LineCanvas canvas;
+    v3d::editor::WireframeVisitor wireframe(&canvas);
+
+    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    wireframe.visit(cube);
+    const glm::vec4 unselected = canvas.vertices()[0].colour;
+
+    for (v3d::brep::Index face = 0; face < cube->faceCount(); face++) {
+        canvas.clear();
+        cube->face(face)->selected(true);
+        wireframe.visit(cube);
+        cube->face(face)->selected(false);
+
+        unsigned int highlighted = 0;
+        for (const v3d::render::realtime::LineCanvas::Vertex& vertex : canvas.vertices()) {
+            if (vertex.colour != unselected) {
+                highlighted++;
+            }
+        }
+        // four edges of two vertices each
+        BOOST_CHECK_EQUAL(highlighted, 8u);
+    }
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_scene_test) {

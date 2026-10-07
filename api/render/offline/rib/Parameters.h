@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "Declarations.h"
+#include "Declaration.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
@@ -20,7 +20,7 @@ namespace v3d::render::offline::rib {
 /**
  * The token-value pairs of one request, typed by the declarations that were in force.
  *
- * Parameters are typed once, in the reader, so neither renderer re-derives how many
+ * Parameters are typed once, in the reader, so no handler re-derives how many
  * floats "Cs" is. A name that is not here reads as empty or as the caller's fallback
  * rather than throwing: a renderer must accept a request carrying a parameter it does
  * not support.
@@ -34,8 +34,8 @@ class ParameterList final {
     std::size_t size() const;
 
     /**
-     * Every parameter the request carried, in name order. What a consumer that binds onto
-     * something of its own walks, rather than asking for the names it already knows.
+     * Every parameter the request carried, in name order. A consumer that binds parameters
+     * onto its own variables iterates these, rather than looking up names fixed in advance.
      **/
     std::vector<std::string> names() const;
 
@@ -64,9 +64,9 @@ class ParameterList final {
 
     /**
      * Sixteen floats as a matrix, or the identity. RIB writes a matrix in row major
-     * order under RI's row vector convention and glm stores column major under a column
-     * vector one, so reading the floats in order is the change of convention - a
-     * transpose here would undo it.
+     * order under RI's row vector convention, and glm stores column major under a column
+     * vector one. Reading the floats in order therefore converts between the conventions,
+     * and a transpose here would undo it.
      **/
     glm::mat4x4 matrix(const std::string & name) const;
 

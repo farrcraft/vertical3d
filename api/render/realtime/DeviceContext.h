@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
@@ -17,8 +18,6 @@
 #include <api/render/realtime/vulkan/renderer/Quad.h>
 #include <api/render/realtime/vulkan/renderer/World.h>
 
-#include "Context.h"
-
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime {
@@ -27,16 +26,16 @@ namespace v3d::render::realtime {
  * pipeline cache and resources, the uploader, set 0, and the three renderers.
  *
  * This is usable on its own. A context that draws into a window is Context3D, which adds the
- * chain and the presenter; a context that draws into an offscreen target is this, told what
- * format and size that target is. Nothing here knows which it is - under dynamic rendering a
- * pipeline is built against the format of whatever it draws into, and that is the whole of
- * what a renderer needs to be told about its destination.
+ * chain and the presenter. A context that draws into an offscreen target is this class, given
+ * that target's format and size. The code here is the same for both. Under dynamic rendering
+ * a pipeline is built against the format of whatever it draws into, and that format is all a
+ * renderer needs to be given about its destination.
  *
- * Every renderer is built on the first call for it and kept. An app that draws no lines would
- * otherwise pay two pipeline compiles and a vertex buffer per frame in flight for nothing, and
- * a context built before its destination is described has nothing to build them against yet.
+ * Every renderer is built on the first call for it and kept. An app that draws no lines then
+ * pays no pipeline compiles or vertex buffers for them. A context built before its
+ * destination is described has nothing to build them against yet.
  **/
-class DeviceContext : public Context {
+class DeviceContext {
  public:
     /**
      * @param logger
@@ -52,7 +51,7 @@ class DeviceContext : public Context {
 
     /**
      **/
-    ~DeviceContext() override;
+    virtual ~DeviceContext();
 
     /**
      * @return the device backing the context
@@ -60,8 +59,8 @@ class DeviceContext : public Context {
     boost::shared_ptr<vulkan::device::Device> device() const;
 
     /**
-     * @return the frames recorded ahead of the device - ADR-0051. Anything keeping a resource
-     *         per frame in flight indexes it by this
+     * @return the frames recorded ahead of the device. Anything keeping a resource per frame
+     *         in flight indexes it by this
      **/
     boost::shared_ptr<vulkan::frame::Ring> ring() const;
 
@@ -76,7 +75,7 @@ class DeviceContext : public Context {
     boost::shared_ptr<vulkan::pipeline::Resources> resources() const;
 
     /**
-     * @return set 0, where each pass's camera is written and bound from - ADR-0008
+     * @return set 0, where each pass's camera is written and bound from
      **/
     boost::shared_ptr<vulkan::frame::FrameUniforms> frameUniforms() const;
 
@@ -107,8 +106,8 @@ class DeviceContext : public Context {
     /**
      * The depth buffer, allocated on the first call and sized by extent() from then on.
      *
-     * Lazy because a 2D app never asks: pong and tetris draw painter ordered quads and would
-     * otherwise pay a full screen depth image for nothing.
+     * Lazy because a 2D app never asks: pong and tetris draw painter ordered quads and need
+     * no full screen depth image.
      *
      * @return the buffer, which may be invalid if there is no area to allocate
      **/
@@ -120,7 +119,14 @@ class DeviceContext : public Context {
     bool hasDepth() const noexcept;
 
     /**
-     * @return the batched quad primitive of ADR-0005, which every 2D thing draws through
+     * Where a texture is uploaded and made a material. Every renderer that samples a texture
+     * gets it here, and so does an app. Built with the context, because a context that draws
+     * nothing still loads textures.
+     **/
+    boost::shared_ptr<Textures> textures() const;
+
+    /**
+     * @return the batched quad primitive, which every 2D thing draws through
      * @throw std::runtime_error if its pipelines cannot be created
      **/
     boost::shared_ptr<vulkan::renderer::Quad> quads();
@@ -131,7 +137,7 @@ class DeviceContext : public Context {
     bool hasQuads() const noexcept;
 
     /**
-     * @return the line primitive of ADR-0011, which every line in the engine draws through
+     * @return the world space line primitive, which every line in the engine draws through
      * @throw std::runtime_error if its pipelines cannot be created
      **/
     boost::shared_ptr<vulkan::renderer::Line> lines();
@@ -142,7 +148,7 @@ class DeviceContext : public Context {
     bool hasLines() const noexcept;
 
     /**
-     * @return the world space quad primitive of ADR-0042
+     * @return the world space quad primitive
      * @throw std::runtime_error if its pipelines cannot be created
      **/
     boost::shared_ptr<vulkan::renderer::World> worldQuads();
@@ -180,6 +186,7 @@ class DeviceContext : public Context {
     VkFormat colourFormat_;
     VkExtent2D extent_;
     VkFormat depthFormat_;
+    boost::shared_ptr<Textures> textures_;
     boost::shared_ptr<vulkan::renderer::Quad> quads_;
     boost::shared_ptr<vulkan::renderer::Line> lines_;
     boost::shared_ptr<vulkan::renderer::World> worldQuads_;

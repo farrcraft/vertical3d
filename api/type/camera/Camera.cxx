@@ -34,7 +34,7 @@ based on gluUnProject
 takes a screen space coordinate and the viewport dimensions
 and returns the world space coordinate
 */
-glm::vec3 Camera::unproject(const glm::vec3& point, int viewport[4]) {
+glm::vec3 Camera::unproject(const glm::vec3& point, const int viewport[4]) const {
     glm::vec4 p;
     // normalize point to range [-1, 1]
     p[0] = (point[0] - viewport[0]) * 2.0f / viewport[2] - 1.0f;
@@ -59,7 +59,7 @@ based on gluProject
 takes a world space coordinate and the viewport dimensions
 returns the screen space coordinate
 */
-glm::vec3 Camera::project(const glm::vec3& point, int viewport[4]) {
+glm::vec3 Camera::project(const glm::vec3& point, const int viewport[4]) const {
     glm::vec4 p;
     p = view() * glm::vec4(point, 1.0f);
     p = projection() * p;
@@ -76,9 +76,9 @@ glm::vec3 Camera::project(const glm::vec3& point, int viewport[4]) {
     return p;
 }
 
-geometry::Ray Camera::ray(const glm::vec2& point, int viewport[4]) {
+geometry::Ray Camera::ray(const glm::vec2& point, const int viewport[4]) const {
     // the two ends of the pixel's line through the frustum. Depth zero is the near
-    // plane and one is the far one, per ADR-0012
+    // plane and one is the far one
     const glm::vec3 from = unproject(glm::vec3(point.x, point.y, 0.0f), viewport);
     const glm::vec3 to = unproject(glm::vec3(point.x, point.y, 1.0f), viewport);
     return geometry::Ray(from, to - from);
@@ -87,7 +87,7 @@ geometry::Ray Camera::ray(const glm::vec2& point, int viewport[4]) {
 /*
 build either an orthographic or perspective projection matrix
 
-both are vulkan clip space, per ADR-0012: y points down and depth runs from zero at the
+both are vulkan clip space: y points down and depth runs from zero at the
 near plane to one at the far one. The camera looks along its own direction vector, which
 the profile documents as +z of the basis its three normals define - so a point in front
 of the camera has a positive view z, and w is that z rather than its negation.
@@ -96,7 +96,7 @@ the frustum the fov and the pixel aspect describe is symmetric about both axes, 
 are no off centre terms in the third column.
 */
 void Camera::createProjection() {  // active scene bound
-    float aspect = profile_.pixelAspect_;
+    float aspect = profile_.pixelAspect();
     if (!orthographic()) {
         /*
             [x	 0	 0	0]
@@ -112,13 +112,15 @@ void Camera::createProjection() {  // active scene bound
             C and D put the near plane at depth zero and the far one at depth one; the
             negated y is the flip into vulkan's downward clip space.
         */
-        float ymax = profile_.near_ * tan(profile_.fov_ * glm::pi<float>() / 360.0f);
+        const float near = profile_.clipping()[0];
+        const float far = profile_.clipping()[1];
+        float ymax = near * tan(profile_.fov() * glm::pi<float>() / 360.0f);
         float xmax = ymax * aspect;
 
-        float x = profile_.near_ / xmax;
-        float y = profile_.near_ / ymax;
-        float C = profile_.far_ / (profile_.far_ - profile_.near_);
-        float D = -(profile_.far_ * profile_.near_) / (profile_.far_ - profile_.near_);
+        float x = near / xmax;
+        float y = near / ymax;
+        float C = far / (far - near);
+        float D = -(far * near) / (far - near);
 
         projection_[0][0] = x;
         projection_[1][0] = 0.0f;
@@ -151,13 +153,13 @@ void Camera::createProjection() {  // active scene bound
             near and far are distances from the camera along its direction of view; left,
             right, top and bottom are points on the respective clipping planes.
         */
-        aspect *= profile_.orthoZoom_;
+        aspect *= profile_.orthoZoom();
         float left = -1.0f * aspect;
         float right = 1.0f * aspect;
-        float top = 1.0f * profile_.orthoZoom_;
-        float bottom = -1.0f * profile_.orthoZoom_;
-        float far_val = profile_.far_;
-        float near_val = profile_.near_;
+        float top = 1.0f * profile_.orthoZoom();
+        float bottom = -1.0f * profile_.orthoZoom();
+        float far_val = profile_.clipping()[1];
+        float near_val = profile_.clipping()[0];
 
         float tx = -(right + left) / (right - left);
         // the y flip takes the sign of ty with it
@@ -187,17 +189,17 @@ void Camera::createView() {
     // a world point is translated to the eye and then rotated into the camera's axes.
     // The rotation applied is the profile's inverse, which for a pure rotation is its
     // transpose, and it has to come after the translation or it turns the eye offset too
-    glm::vec3 e = -profile_.eye_;
+    glm::vec3 e = -profile_.eye();
     // the basis lookat() built when it is still the rotation in force, and the rotation
     // cast back to a matrix when anything else has set it since. The two agree to about
     // 2e-6 of an element; the cached one is the same arithmetic glm::lookAt does, so a
     // view built through lookat() matches one built through glm::lookAt exactly
-    view_ = glm::transpose(profile_.basisValid_ ? profile_.basis_ : glm::mat4_cast(profile_.rotation_));
+    view_ = glm::transpose(profile_.orientation());
     view_ = glm::translate(view_, e);
-    if (profile_.hand_ == Profile::Hand::DirectionCrossUp) {
-        // the mirrored basis is the rotation with view x negated, and this is where that
-        // happens rather than in the rotation, which carries no mirror - ADR-0052. Applied
-        // on the left, so it mirrors the view rather than the world the rotation is turning
+    if (profile_.hand() == Profile::Hand::DirectionCrossUp) {
+        // the mirrored basis is the rotation with view x negated. A quaternion cannot carry
+        // a mirror, so the negation is applied here. Applied on the left, so it mirrors the
+        // view rather than the world the rotation is turning
         glm::mat4x4 mirror(1.0f);
         mirror[0][0] = -1.0f;
         view_ = mirror * view_;
@@ -210,30 +212,14 @@ void Camera::createView() {
     pan and tilt are types of rotation with restrictions
 */
 void Camera::pan(float angle) {
-    glm::vec3 axis(0.0, 1.0, 0.0);
-    glm::quat local_rotation(1.0f, 0.0f, 0.0f, 0.0f);
-    local_rotation = glm::rotate(local_rotation, angle, axis);
-    glm::quat total;
-    total = profile_.rotation_;
-    total = total * local_rotation;
-    profile_.rotation_ = total;
-    // composing onto the rotation leaves the basis lookat() cached describing the old one
-    profile_.basisValid_ = false;
+    profile_.turn(glm::angleAxis(angle, glm::vec3(0.0f, 1.0f, 0.0f)));
 }
 
 /*
     tilt - move vertically around a fixed axis (camera's x axis) - look up/down
 */
 void Camera::tilt(float angle) {
-    glm::vec3 axis(1.0, 0.0, 0.0);
-    glm::quat local_rotation(1.0f, 0.0f, 0.0f, 0.0f);
-    local_rotation = glm::rotate(local_rotation, angle, axis);
-    glm::quat total;
-    total = profile_.rotation_;
-    total = total * local_rotation;
-    profile_.rotation_ = total;
-    // composing onto the rotation leaves the basis lookat() cached describing the old one
-    profile_.basisValid_ = false;
+    profile_.turn(glm::angleAxis(angle, glm::vec3(1.0f, 0.0f, 0.0f)));
 }
 
 /*
@@ -242,8 +228,7 @@ void Camera::tilt(float angle) {
     dolly - same as pedestal but use direction vector instead of up vector
 */
 void Camera::dolly(float d) {
-    glm::vec3 ed = profile_.direction_ * d;
-    profile_.eye_ += ed;
+    profile_.eye(profile_.eye() + profile_.direction() * d);
 }
 
 /*
@@ -252,15 +237,14 @@ void Camera::dolly(float d) {
     normalized - add eye delta to current eye position
 */
 void Camera::truck(float delta) {
-    glm::vec3 ed = profile_.right_ * delta;
-    profile_.eye_ += ed;
+    profile_.eye(profile_.eye() + profile_.right() * delta);
 }
 
 /*
     zoom - affects the camera lens to zoom in or out (dolly without moving camera)
 */
 void Camera::zoom(float z) {
-    profile_.orthoZoom_ += z;
+    profile_.orthoZoom(profile_.orthoZoom() + z);
 }
 
 /*
@@ -268,8 +252,7 @@ void Camera::zoom(float z) {
     pedestal - same as truck but use up vector instead of right vector
 */
 void Camera::pedestal(float delta) {
-    glm::vec3 ed = profile_.up_ * delta;
-    profile_.eye_ += ed;
+    profile_.eye(profile_.eye() + profile_.up() * delta);
 }
 
 glm::mat4x4 Camera::view() const {
@@ -289,23 +272,26 @@ void Camera::orthographic(bool ortho) {
 }
 
 float Camera::orthoFactorHorizontal() const {
-    if (profile_.size_[0] == 0) {
+    if (profile_.size()[0] == 0) {
         return 0.0f;
     }
-    return (profile_.orthoZoom_ * 2.0f * profile_.pixelAspect_) / profile_.size_[0];
+    return (profile_.orthoZoom() * 2.0f * profile_.pixelAspect()) / profile_.size()[0];
 }
 
 float Camera::orthoFactorVertical() const {
-    if (profile_.size_[1] == 0) {
+    if (profile_.size()[1] == 0) {
         return 0.0f;
     }
-    return (profile_.orthoZoom_ * 2.0f) / profile_.size_[1];
+    return (profile_.orthoZoom() * 2.0f) / profile_.size()[1];
 }
 
 void Camera::rotate(const glm::quat& new_rot) {
-    if (new_rot[0] != 0.0 && new_rot[1] != 0.0 && new_rot[2] != 0.0 && new_rot[3] != 0.0) {
-        profile_.rotation_ *= new_rot;
+    // ArcBall::drag returns a zero quaternion for a drag too short to have an axis, which
+    // is no rotation at all rather than one to compose
+    if (glm::dot(new_rot, new_rot) <= glm::epsilon<float>()) {
+        return;
     }
+    profile_.turn(new_rot);
 }
 
 };  // namespace v3d::type::camera

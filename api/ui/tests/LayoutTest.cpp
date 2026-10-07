@@ -4,7 +4,9 @@
  **/
 
 #include <api/render/realtime/Canvas.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
+#include <api/ui/Length.h>
 #include <api/ui/component/Bar.h>
 #include <api/ui/component/HorizontalBox.h>
 #include <api/ui/component/Label.h>
@@ -236,6 +238,24 @@ BOOST_AUTO_TEST_CASE(a_container_draws_in_depth_order) {
 }
 
 /**
+ * A container holding a null still sorts what else it holds, and leaves the null out.
+ **/
+BOOST_AUTO_TEST_CASE(a_null_component_is_left_out_of_the_draw_order) {
+    v3d::ui::Container container("hud", true);
+    const boost::shared_ptr<v3d::ui::component::Panel> first = panel("first");
+    const boost::shared_ptr<v3d::ui::component::Panel> second = panel("second");
+    first->depth(5);
+    container.add(first);
+    container.add(boost::shared_ptr<v3d::ui::Component>());
+    container.add(second);
+
+    const std::vector<boost::shared_ptr<v3d::ui::Component>> order = container.ordered();
+    BOOST_REQUIRE_EQUAL(order.size(), 2U);
+    BOOST_CHECK_EQUAL(order[0]->name(), "second");
+    BOOST_CHECK_EQUAL(order[1]->name(), "first");
+}
+
+/**
  * Nothing is picked until something has been drawn, only a pickable component takes the
  * point, and a child is offered it before the component holding it.
  **/
@@ -271,6 +291,39 @@ BOOST_AUTO_TEST_CASE(a_point_is_picked_by_the_deepest_pickable_component) {
     BOOST_CHECK_EQUAL(container.pick(glm::vec2(20.0f, 20.0f))->name(), "plate");
     // outside the plate, the backdrop under it still takes the point
     BOOST_CHECK_EQUAL(container.pick(glm::vec2(300.0f, 150.0f))->name(), "backdrop");
+}
+
+/**
+ * Inside a component as at the top of a container, the child drawn last is the one a point
+ * reaches first. A nested child with a depth out of the order it was added in is picked
+ * where it was drawn rather than where it was added.
+ **/
+BOOST_AUTO_TEST_CASE(a_nested_child_is_picked_in_the_order_it_was_drawn) {
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 200);
+
+    const boost::shared_ptr<v3d::ui::component::Panel> backdrop = panel("backdrop");
+    backdrop->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Percent);
+    backdrop->layout().height = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Percent);
+    // the same square twice, the first added drawn over the second by its depth
+    const boost::shared_ptr<v3d::ui::component::Panel> over = panel("over");
+    const boost::shared_ptr<v3d::ui::component::Panel> under = panel("under");
+    for (const boost::shared_ptr<v3d::ui::component::Panel>& each : { over, under }) {
+        each->layout().x = v3d::ui::Length(10.0f, v3d::ui::Length::Unit::Pixels);
+        each->layout().y = v3d::ui::Length(10.0f, v3d::ui::Length::Unit::Pixels);
+        each->layout().width = v3d::ui::Length(50.0f, v3d::ui::Length::Unit::Pixels);
+        each->layout().height = v3d::ui::Length(50.0f, v3d::ui::Length::Unit::Pixels);
+        each->pickable(true);
+    }
+    over->depth(5);
+    backdrop->add(over);
+    backdrop->add(under);
+
+    v3d::ui::Container container("hud", true);
+    container.add(backdrop);
+    build().draw(&canvas, container);
+
+    BOOST_CHECK_EQUAL(container.pick(glm::vec2(20.0f, 20.0f))->name(), "over");
 }
 
 /**
@@ -336,7 +389,7 @@ BOOST_AUTO_TEST_CASE(a_rounded_panel_is_bands_and_wedges_in_one_batch) {
 
 /**
  * A component that asks to clip cuts what it holds off at its own box, so the batch its
- * children are drawn in carries that box for the device to scissor to - ADR-0037. The
+ * children are drawn in carries that box for the device to scissor to. The
  * parent's own quads are not cut: a panel draws inside itself already.
  **/
 BOOST_AUTO_TEST_CASE(a_component_that_clips_cuts_its_children_to_its_box) {
@@ -369,7 +422,7 @@ BOOST_AUTO_TEST_CASE(a_component_that_clips_cuts_its_children_to_its_box) {
     BOOST_CHECK_CLOSE(cut.clip.z, 120.0f, 0.001f);
     BOOST_CHECK_CLOSE(cut.clip.w, 80.0f, 0.001f);
     // and the child is left holding the box it asked for rather than the one it can show,
-    // which is what the cursor is still tested against
+    // which the cursor is still tested against
     BOOST_CHECK_CLOSE(inner->size().x, 400.0f, 0.001f);
 }
 

@@ -8,9 +8,8 @@
 #include <api/asset/Manager.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
-#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/Engine.h>
-#include <api/ui/paint/TextRenderer.h>
+#include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
 
 #include <map>
@@ -30,17 +29,17 @@ class TetrisScene;
  * Everything tetris draws, built as one canvas of quads and handed to the render engine.
  *
  * Every block on the board samples one atlas, so the whole well, the falling tetrad and the
- * preview reach the device as a single batch - see ADR-0005. Text and the menu are the same
- * primitive against their own textures.
+ * preview reach the device as a single batch of quads. Text and the menu are quads too,
+ * against their own textures.
  **/
 class TetrisRenderer final {
  public:
      TetrisRenderer(const boost::shared_ptr<v3d::render::realtime::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-         const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
+         const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
     /**
      * @param statistics what the loop measured about the frame being drawn, which the
-     *        overlay reads - the app hands it over because api/ui sits below api/engine
+     *        overlay reads. The app passes it in because api/ui cannot depend on api/engine
      **/
     void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
     void resize(int width, int height);
@@ -105,13 +104,11 @@ class TetrisRenderer final {
     boost::shared_ptr<v3d::ui::Engine> ui_;
     boost::shared_ptr<v3d::log::Logger> logger_;
 
-    v3d::render::realtime::Canvas canvas_;
     v3d::render::realtime::Engine3D engine_;
 
     v3d::render::realtime::TextureHandle pieces_;
     std::map<std::string, Sprite> sprites_;
 
-    boost::shared_ptr<v3d::ui::paint::TextRenderer> text_;
-    boost::shared_ptr<v3d::ui::shell::StatisticsOverlay> statistics_;
-    boost::shared_ptr<v3d::ui::paint::ComponentRenderer> uiRenderer_;
+    // built after the engine is initialized, because its atlas is uploaded through it
+    boost::shared_ptr<v3d::ui::shell::Screen> screen_;
 };

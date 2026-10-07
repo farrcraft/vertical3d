@@ -49,6 +49,7 @@ class Device final {
         uint32_t present;
         bool hasGraphics;
         bool hasPresent;
+        uint32_t timestampBits;  /**< how many bits of a timestamp the graphics family writes, 0 for none **/
     };
 
     /**
@@ -57,8 +58,8 @@ class Device final {
      * @param surface the surface the device has to be able to present to, or null for a
      *        headless device that only draws
      * @param allocations how the memory behind every buffer and image on this device is
-     *        found. One allocation per resource unless a consumer asks otherwise, which is
-     *        what an application with per-frame resources wants - ADR-0053
+     *        found. One allocation per resource unless a consumer asks otherwise, as an
+     *        application with per-frame resources should
      **/
     Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Instance>& instance,
         const boost::shared_ptr<Surface>& surface = nullptr,
@@ -107,6 +108,11 @@ class Device final {
     VkQueue graphicsQueue() const noexcept;
 
     /**
+     * @return how many nanoseconds one tick of a timestamp is
+     **/
+    float timestampPeriod() const noexcept;
+
+    /**
      * @return the queue finished images are presented on, or null on a headless device
      **/
     VkQueue presentQueue() const noexcept;
@@ -132,7 +138,8 @@ class Device final {
     static bool hasRequiredExtensions(VkPhysicalDevice device, bool presenting);
 
     /**
-     * @return whether a physical device offers the 1.3 features the renderer draws with
+     * @return whether a physical device offers the 1.3 features the renderer draws with, and
+     *         the separate depth and stencil layouts its depth barriers rely on
      **/
     static bool hasRequiredFeatures(VkPhysicalDevice device);
 
@@ -148,6 +155,7 @@ class Device final {
     QueueFamilies families_;
     VkQueue graphicsQueue_;
     VkQueue presentQueue_;
+    float timestampPeriod_;
     /**< built once the logical device exists, and outlived by nothing it allocated for **/
     boost::shared_ptr<memory::Allocator> allocator_;
 };

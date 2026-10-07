@@ -7,8 +7,7 @@
 
 #include <api/render/realtime/vulkan/device/Result.h>
 
-#include <sstream>
-#include <stdexcept>
+#include <utility>
 
 #include <boost/make_shared.hpp>
 
@@ -19,9 +18,12 @@ namespace v3d::render::realtime::vulkan::frame {
 Ring::Ring(const boost::shared_ptr<device::Device>& device, uint32_t framesInFlight) :
     device_(device),
     framesInFlight_(framesInFlight > 0 ? framesInFlight : 1),
-    frame_(0) {
+    frame_(0),
+    begun_(0),
+    retired_(framesInFlight_) {
     pool_ = boost::make_shared<CommandPool>(device_, device_->families().graphics);
     commands_ = pool_->allocate(framesInFlight_);
+    timings_ = boost::make_shared<Timings>(device_, framesInFlight_);
 
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -32,10 +34,14 @@ Ring::Ring(const boost::shared_ptr<device::Device>& device, uint32_t framesInFli
         VkFence fence = VK_NULL_HANDLE;
         VkResult result = vkCreateFence(device_->handle(), &fenceInfo, nullptr, &fence);
         if (result != VK_SUCCESS) {
-            std::stringstream msg;
-            msg << "Unable to create a vulkan fence - " << device::resultString(result);
-            throw std::runtime_error(msg.str());
+            // the destructor does not run for a constructor that throws, so the fences
+            // already made are destroyed here
+            for (VkFence made : inFlight_) {
+                vkDestroyFence(device_->handle(), made, nullptr);
+            }
+            inFlight_.clear();
         }
+        device::check(result, "Unable to create a vulkan fence");
         inFlight_.push_back(fence);
     }
 }
@@ -43,8 +49,10 @@ Ring::Ring(const boost::shared_ptr<device::Device>& device, uint32_t framesInFli
 /**
  **/
 Ring::~Ring() {
-    // nothing may be waiting on a fence when it is destroyed
-    waitIdle();
+    // nothing may be waiting on a fence when it is destroyed, and nothing retired may still
+    // be read by a frame
+    waitIdleNoThrow();
+    retired_.flush();
 
     for (VkFence fence : inFlight_) {
         vkDestroyFence(device_->handle(), fence, nullptr);
@@ -75,23 +83,61 @@ uint32_t Ring::frame() const noexcept {
 void Ring::waitFrame() const {
     VkFence fence = inFlight_[frame_];
     VkResult result = vkWaitForFences(device_->handle(), 1, &fence, VK_TRUE, UINT64_MAX);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to wait on a vulkan frame fence - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to wait on a vulkan frame fence");
 }
 
 /**
  **/
 void Ring::waitIdle() const {
+    VkResult result = vkDeviceWaitIdle(device_->handle());
+    device::check(result, "Unable to wait for the vulkan device to go idle");
+}
+
+/**
+ **/
+void Ring::waitIdleNoThrow() const noexcept {
     vkDeviceWaitIdle(device_->handle());
 }
 
 /**
  **/
-VkFence Ring::fence() const noexcept {
-    return inFlight_[frame_];
+uint64_t Ring::begun() const noexcept {
+    return begun_;
+}
+
+/**
+ **/
+void Ring::skip() noexcept {
+    skipped_++;
+}
+
+/**
+ **/
+uint64_t Ring::turns() const noexcept {
+    return starts_ + skipped_;
+}
+
+/**
+ **/
+uint64_t Ring::recording() const noexcept {
+    // between a submit and the next begin, items are queued for the frame about to be begun
+    return pending_ ? begun_ : begun_ + 1;
+}
+
+/**
+ **/
+void Ring::retire(std::function<void()> destroy) {
+    retired_.retire(recording(), std::move(destroy));
+}
+
+/**
+ **/
+VkFence Ring::submitting() {
+    pending_ = false;
+    VkFence fence = inFlight_[frame_];
+    const VkResult result = vkResetFences(device_->handle(), 1, &fence);
+    device::check(result, "Unable to reset a vulkan frame fence");
+    return fence;
 }
 
 /**
@@ -99,32 +145,34 @@ VkFence Ring::fence() const noexcept {
 VkCommandBuffer Ring::begin() {
     waitFrame();
 
-    VkFence fence = inFlight_[frame_];
-    VkResult result = vkResetFences(device_->handle(), 1, &fence);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to reset a vulkan frame fence - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
-
     VkCommandBuffer commands = commands_[frame_];
-    result = vkResetCommandBuffer(commands, 0);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to reset a vulkan command buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    VkResult result = vkResetCommandBuffer(commands, 0);
+    device::check(result, "Unable to reset a vulkan command buffer");
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     result = vkBeginCommandBuffer(commands, &beginInfo);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to begin a vulkan command buffer - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+    device::check(result, "Unable to begin a vulkan command buffer");
+
+    // a slot begun and never submitted, because recording threw, is begun again rather than
+    // counted again. Its frame never reached the device. Counting it twice would collect
+    // something retired while the frame before it may still be reading it.
+    const bool again = pending_;
+
+    // what this slot timed the last time it was submitted is readable now its fence has signalled
+    timings_->begin(commands, frame_, !again);
+
+    // counted only once nothing can throw, because a begin that failed waited on a slot without
+    // moving past it, and counting it would collect a frame early
+    if (!again) {
+        begun_++;
+        retired_.collect(begun_);
     }
+    // counted on a begin again too, so per-frame state reset through turns() is reset for it
+    starts_++;
+    pending_ = true;
 
     return commands;
 }
@@ -133,6 +181,12 @@ VkCommandBuffer Ring::begin() {
  **/
 void Ring::advance() noexcept {
     frame_ = (frame_ + 1) % framesInFlight_;
+}
+
+/**
+ **/
+Timings& Ring::timings() noexcept {
+    return *timings_;
 }
 
 };  // namespace v3d::render::realtime::vulkan::frame

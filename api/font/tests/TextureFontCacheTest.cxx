@@ -4,6 +4,8 @@
  **/
 
 #include <api/font/TextureFontCache.h>
+#include <api/image/TextureAtlas.h>
+#include <api/log/Logger.h>
 
 #include <string>
 
@@ -20,9 +22,8 @@ L"`abcdefghijklmnopqrstuvwxyz{|}~";
 };  // namespace
 
 /**
- * The cache this replaces was v3D::FontCache, which loaded fonts by name. TextureFontCache
- * does not load anything - it owns the atlas the fonts share and keeps the fonts that have
- * been built against it, keyed by file and size.
+ * TextureFontCache does not load anything: it owns the atlas the fonts share and keeps the
+ * fonts that have been built against it, keyed by file and size.
  **/
 BOOST_AUTO_TEST_CASE(texturefontcache_test) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
@@ -98,9 +99,8 @@ BOOST_AUTO_TEST_CASE(texturefont_glyph_test) {
  * An atlas too small for what it is given fails rather than reporting success.
  *
  * The 64x64 here is chosen to be hopeless rather than marginal: printable ascii at 48px
- * wants far more than that, so the run packs some glyphs and then cannot. What is being
- * asserted is that the partial success is reported as failure - the count of glyphs that
- * did not fit used to be kept and never read, so a caller saw true and drew text with
+ * needs far more than that, so the run packs some glyphs and then cannot. The test checks
+ * that the partial success is reported as failure, so a caller does not draw text with
  * characters missing.
  **/
 BOOST_AUTO_TEST_CASE(texturefont_atlas_overflow_test) {
@@ -127,10 +127,9 @@ BOOST_AUTO_TEST_CASE(texturefont_atlas_overflow_test) {
  * defaults to.
  *
  * A distance field glyph carries its spread on every side, so it is substantially larger
- * than the coverage glyph of the same face and size, and the 512 square the tree has always
- * packed into was the thing most likely to stop being enough. It is still enough at 48 with
- * a spread of 8, and it is close: raising either knob one step overflows it, which is what
- * the second half of this asserts and why the dimensions are an argument now.
+ * than the coverage glyph of the same face and size. A 512 square atlas is still enough at
+ * 48 with a spread of 8, but only just: raising either one step overflows it, and the
+ * caller then has to pass larger dimensions. The second half of this test checks that.
  **/
 BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
@@ -149,15 +148,15 @@ BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
     tooBig->atlas(cramped.atlas());
     BOOST_CHECK_EQUAL(tooBig->loadGlyphs(kPrintable), false);
 
-    // and asking for the dimensions it needs is what makes it fit
+    // and it fits once the atlas is given the dimensions it needs
     v3d::font::TextureFontCache larger(1024, 1024, 1, logger);
     boost::shared_ptr<v3d::font::TextureFont> wider =
         boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0f, logger, 12);
     wider->atlas(larger.atlas());
     BOOST_CHECK_EQUAL(wider->loadGlyphs(kPrintable), true);
 
-    // a distance field glyph is the coverage one grown by the spread on each side, which
-    // is the whole of why the budget moved
+    // a distance field glyph is the coverage one grown by the spread on each side, so it
+    // needs more atlas space
     boost::shared_ptr<v3d::font::TextureFontCache> plain =
         boost::make_shared<v3d::font::TextureFontCache>(512, 512, 1, logger);
     boost::shared_ptr<v3d::font::TextureFont> coverage =
@@ -182,4 +181,31 @@ BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
     BOOST_CHECK(wide->st_[1][0] <= 1.0f);
     BOOST_CHECK(wide->st_[0][1] >= 0.0f);
     BOOST_CHECK(wide->st_[1][1] <= 1.0f);
+}
+
+/**
+ * packed() finds a glyph that was loaded and never loads one that was not.
+ *
+ * glyph() packs a charcode it has not seen, so asking it for one is what shows packed()
+ * left the atlas alone.
+ **/
+BOOST_AUTO_TEST_CASE(texturefont_packed_never_loads_test) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::font::TextureFontCache cache(256, 256, 1, logger);
+
+    boost::shared_ptr<v3d::font::TextureFont> font =
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 12.0f, logger);
+    font->atlas(cache.atlas());
+    BOOST_REQUIRE_EQUAL(font->loadGlyphs(L"a"), true);
+
+    BOOST_CHECK(font->packed(L'a') != nullptr);
+    BOOST_CHECK(font->packed(L'a') == font->glyph(L'a'));
+
+    // asked twice, because a load on the first call would answer the second
+    BOOST_CHECK(font->packed(L'z') == nullptr);
+    BOOST_CHECK(font->packed(L'z') == nullptr);
+
+    // glyph() is the call that loads
+    BOOST_CHECK(font->glyph(L'z') != nullptr);
+    BOOST_CHECK(font->packed(L'z') != nullptr);
 }

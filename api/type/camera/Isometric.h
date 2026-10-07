@@ -17,14 +17,14 @@ namespace v3d::type::camera {
  * to one of four azimuths.
  *
  * A camera behaviour rather than a camera: it holds where the view is aimed and from which
- * of the four corners, and apply() writes that onto a Camera, which is what builds the
+ * of the four corners, and apply() writes that onto a Camera, which builds the
  * matrices. Nothing here reads an input device - a caller maps its own keys or gestures onto
  * rotate(), pan() and zoomBy(), the same way ArcBall is handed points rather than events.
  *
- * The four azimuths are what makes it a snap camera rather than a free orbit: everything on
- * the board is authored to be legible from four fixed corners, and no orientation between
- * them has to be. pan() is measured in the view's own axes rather than the world's, so
- * dragging right moves the scene right whichever corner the camera is at.
+ * The four azimuths make it a snap camera rather than a free orbit: a scene is authored to be
+ * legible from the four corners, and from no angle between them. pan() is measured in the
+ * view's own axes rather than the world's, so dragging right moves the scene right whichever
+ * corner the camera is at.
  **/
 class Isometric {
  public:
@@ -77,8 +77,8 @@ class Isometric {
 
     /**
      * Snap to an azimuth without going through the steps between. Wraps, so any index is
-     * valid, which is what lets a capture reach all four orientations without driving the
-     * camera the way a player would.
+     * valid. A capture uses this to reach all four orientations without driving the camera
+     * as a player would.
      **/
     void azimuth(int index);
 
@@ -91,19 +91,17 @@ class Isometric {
     /**
      * The ground plane direction that is to the right on screen at the current azimuth.
      *
-     * Crossed the way this orbit's hand names, because which way a basis hands is a
-     * convention - see ADR-0012 - and a pan built on the other one moves the scene the
-     * wrong way with nothing else looking wrong.
+     * Crossed the way this orbit's hand() names. A pan built on the other hand moves the
+     * scene the wrong way while everything else looks correct.
      **/
     glm::vec3 right() const;
 
     /**
-     * Which basis this orbit is driving, which decides which way right() points and is
-     * what apply() puts on the camera.
+     * The basis this orbit drives. It decides which way right() points, and apply() writes
+     * it onto the camera's profile.
      *
-     * The orbit owns it rather than the profile, because pan() and right() have to agree
-     * with what is drawn and neither of them is handed a camera. A caller sets it here
-     * once and the two cannot disagree.
+     * The orbit holds it rather than the profile because pan() and right() receive no
+     * camera, yet must agree with what is drawn. A caller sets it here once.
      **/
     Profile::Hand hand() const;
     void hand(Profile::Hand hand);
@@ -145,13 +143,12 @@ class Isometric {
      * Write this placement onto a camera: the eye, the orientation that aims it at the
      * target, the orthographic half height, and orthographic itself.
      *
-     * The clipping distances, the pixel aspect and the viewport size stay the caller's -
-     * they belong to whoever owns the viewport rather than to the orbit. The matrices are
-     * not rebuilt here either, so a frame that moves the camera several times builds them
-     * once, which is what ViewPort does.
+     * This does not set the clipping distances, the pixel aspect or the viewport size; they
+     * belong to whoever owns the viewport. It does not rebuild the matrices either, so a
+     * frame that moves the camera several times builds them once, as ViewPort does.
      *
-     * The profile's Hand does not stay the caller's: this writes its own, so that the basis
-     * the camera draws through is the one right() and pan() were measured in.
+     * It does set the profile's Hand, so the camera draws through the basis that right()
+     * and pan() were measured in.
      **/
     void apply(Camera* camera) const;
 

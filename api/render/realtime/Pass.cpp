@@ -6,10 +6,24 @@
 #include "Pass.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
 
 namespace v3d::render::realtime {
+
+namespace {
+
+/**
+ * A handle's slot as a key field. Slots that do not fit in sixteen bits, and an unset handle,
+ * share the last value. Items with those slots may cost extra binds, but the order of layers
+ * is unaffected.
+ **/
+uint16_t slot(uint32_t id) noexcept {
+    return static_cast<uint16_t>(std::min<uint32_t>(id, 0xFFFFu));
+}
+
+};  // namespace
 
 /**
  **/
@@ -19,6 +33,7 @@ Pass::Pass(const std::string& name) :
     viewport_(0.0f, 0.0f, 0.0f, 0.0f),
     view_(1.0f),
     projection_(1.0f),
+    scene_(VK_NULL_HANDLE),
     clears_(true),
     depth_(false),
     sorts_(false) {
@@ -81,6 +96,20 @@ const boost::shared_ptr<vulkan::frame::RenderTarget>& Pass::target() const noexc
 
 /**
  **/
+void Pass::reads(const boost::shared_ptr<vulkan::frame::RenderTarget>& target) {
+    if (target && std::find(reads_.begin(), reads_.end(), target) == reads_.end()) {
+        reads_.push_back(target);
+    }
+}
+
+/**
+ **/
+const std::vector<boost::shared_ptr<vulkan::frame::RenderTarget>>& Pass::reads() const noexcept {
+    return reads_;
+}
+
+/**
+ **/
 void Pass::viewport(const glm::vec4& region) noexcept {
     viewport_ = region;
 }
@@ -126,6 +155,8 @@ bool Pass::sorts() const noexcept {
  **/
 void Pass::submit(const DrawItem& item) {
     items_.push_back(item);
+    items_.back().key.pipeline = slot(item.pipeline.id());
+    items_.back().key.material = slot(item.material.id());
 }
 
 /**
@@ -148,8 +179,8 @@ void Pass::ordered(std::vector<const DrawItem*>* into) const {
     if (!sorts_) {
         return;
     }
-    // stable, so that items whose keys are equal keep the order they arrived in - which
-    // is what a run of quads sharing a pipeline and a material depends on
+    // stable, so that items whose keys are equal keep the order they arrived in. A run of
+    // quads sharing a pipeline and a material depends on that
     std::stable_sort(into->begin(), into->end(), [](const DrawItem* left, const DrawItem* right) {
         return left->key < right->key;
     });
@@ -160,6 +191,30 @@ void Pass::ordered(std::vector<const DrawItem*>* into) const {
 void Pass::reset() noexcept {
     // the capacity is worth keeping - the next frame submits about as much as this one did
     items_.clear();
+}
+
+/**
+ **/
+void Pass::scene(VkDescriptorSet set) noexcept {
+    scene_ = set;
+}
+
+/**
+ **/
+VkDescriptorSet Pass::scene() const noexcept {
+    return scene_;
+}
+
+/**
+ **/
+void Pass::depthBias(float constant, float slope, float clamp) noexcept {
+    bias_ = DepthBias{constant, slope, clamp};
+}
+
+/**
+ **/
+const std::optional<Pass::DepthBias>& Pass::depthBias() const noexcept {
+    return bias_;
 }
 
 };  // namespace v3d::render::realtime

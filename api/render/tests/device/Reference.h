@@ -18,13 +18,14 @@ namespace v3d::test {
  * Write back what a capture read out of a target, and compare it against the picture
  * committed under the same name.
  *
- * What a reference is allowed to contain is
- * [ADR-0054](../../../../docs/adr/0054-a-realtime-reference-is-a-picture-the-spec-determines.md).
- * A case drawing anything outside that rule asserts spot checks and validation silence
- * instead of calling this, and has no committed picture at all.
+ * A reference may contain only output the Vulkan specification fixes exactly, so any
+ * conformant driver produces it bit for bit. That means axis aligned geometry on integer pixel
+ * boundaries, channel values of 0 or 1 or texels copied one per pixel, and no blend other than
+ * an opaque one. A case that draws anything else checks individual pixels and an empty
+ * validation log instead, and has no committed picture.
  *
- * The comparison is exact, so a case that drifts outside the rule fails on the device that
- * did not bless it rather than passing everywhere by a tolerance.
+ * The comparison is exact, so a case that breaks the rule fails on any device other than the
+ * one that produced its reference.
  *
  * What was drawn is written to `data_out/<name>.png` whether or not it matched, because the
  * capture has no other way out. A deliberate change to a picture is that file copied over

@@ -18,12 +18,16 @@ namespace v3d::editor {
 /**
  * What the editor can be asked to do, by name.
  *
- * A command is identified by "context::name", which is what an `event::Event` reports
- * from `str()` - so a key binding and a menu item that carry the same event reach the
- * same handler, per ADR-0017. Nothing here knows where an invocation came from.
+ * A command is identified by a "context::name" string, the value `event::Event::str()`
+ * returns, and the directory maps that string to a handler. A key binding and a menu item
+ * that carry the same event therefore reach the same handler. The directory does not
+ * record where an invocation came from.
  *
- * A name with no handler is not an error the directory can answer: `invoke` says the
- * name is unknown and the caller decides what that means.
+ * A name with no handler is not an error here: `invoke` returns false and the caller
+ * decides what that means.
+ *
+ * The directory and `Tool` belong to the editor, not to the api. Only the editor invokes
+ * one command from several places, and only the editor has tools that hold a gesture open.
  **/
 class CommandDirectory final {
  public:
@@ -50,7 +54,8 @@ class CommandDirectory final {
 
     /**
      * Register a handler that runs on the press only. A release of the same binding is
-     * still handled - it just does nothing - so the command does not report as unknown.
+     * still handled - it just does nothing - so the command does not report as unknown. A held
+     * key's repeat is handled the same way, and holding the key runs the action once.
      * @param name the command's "context::name"
      * @param handler what to run
      * @return false when the name is already registered, leaving the first handler in place
@@ -69,8 +74,8 @@ class CommandDirectory final {
     bool invoke(const v3d::event::Event& event) const;
 
     /**
-     * Every registered command, in name order. What the editor can do, which is what a
-     * menu translated from another tree has to be checked against.
+     * Every registered command, in name order. A menu definition can be checked against
+     * this list.
      **/
     std::vector<std::string> names() const;
 

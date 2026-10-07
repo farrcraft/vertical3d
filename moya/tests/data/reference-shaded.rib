@@ -1,7 +1,11 @@
 ##RenderMan RIB-Structure 1.1
-##Scene Two surfaces under two lights - the first moya picture with shading in it
+##Scene Two surfaces under two lights
 version 3.03
 Format 64 48 1
+# one sample at each pixel centre under a one pixel box, which the film gives back exactly:
+# this picture pins the hider and the shading, and reference-sampled pins the sampling
+PixelSamples 1 1
+PixelFilter "box" 1 1
 Projection "orthographic"
 Clipping 1 100
 WorldBegin
@@ -20,7 +24,7 @@ AttributeBegin
 Color [0.9 0.4 0.2]
 Surface "matte"
 # the normals sweep across the quad, so the cosine falloff is a gradient rather than one
-# value - which is also what says a varying "N" reached the shader
+# value, and the gradient shows that a varying "N" reached the shader
 Polygon "P" [-1.2 -0.8 5  -0.1 -0.8 5  -0.1 0.8 5  -1.2 0.8 5]
         "N" [-0.9 0 -0.436  0 0 -1  0 0 -1  -0.9 0 -0.436]
 AttributeEnd

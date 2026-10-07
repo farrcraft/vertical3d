@@ -68,6 +68,9 @@ void Resolver::chrome() {
     readColour(style, "fill", &base_.fill);
     readColour(style, "thumb", &base_.thumb);
     readColour(style, "mark", &base_.mark);
+    readColour(style, "caret", &base_.caret);
+    readColour(style, "placeholder", &base_.placeholder);
+    readColour(style, "tab", &base_.tab);
     readColour(style, "text", &base_.text);
     readColour(style, "active-text", &base_.activeText);
     readColour(style, "disabled-text", &base_.disabledText);
@@ -92,6 +95,7 @@ const char* Resolver::named(Class className) noexcept {
         case Class::Panel:     return "panel";
         case Class::Bar:       return "bar";
         case Class::Scrollbar: return "scrollbar";
+        case Class::Slider:    return "slider";
         case Class::CheckBox:  return "checkbox";
         case Class::Radio:     return "radio";
         case Class::List:      return "list";
@@ -129,18 +133,29 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readMetric(style, "radius", &dressing.radius);
             break;
         case Class::Scrollbar:
-            // a scrollbar is not a progress bar: it dresses from its own class, so a theme
-            // that paints a health bar green does not paint a scrollbar green as well
+            // a scrollbar dresses from its own class, so a theme that paints a health bar
+            // green does not also paint every scrollbar green
             readColour(style, "track", &dressing.track);
             readColour(style, "thumb", &dressing.thumb);
             readColour(style, "border", &dressing.border);
             readMetric(style, "border-width", &dressing.borderWidth);
             readMetric(style, "radius", &dressing.radius);
             break;
+        case Class::Slider:
+            // a track, the fill up to the thumb, and the thumb. A class of its own, so a
+            // theme's bar and scrollbar styles do not change it
+            readColour(style, "track", &dressing.track);
+            readColour(style, "fill", &dressing.fill);
+            readColour(style, "thumb", &dressing.thumb);
+            readColour(style, "border", &dressing.border);
+            readMetric(style, "border-width", &dressing.borderWidth);
+            readMetric(style, "radius", &dressing.radius);
+            readMetric(style, "mark-size", &dressing.markSize);
+            break;
         case Class::CheckBox:
         case Class::Radio:
-            // the box a mark sits in is a track rather than a panel: it is the thing the
-            // mark is drawn over, the way a bar's fill is drawn over one
+            // the box a mark sits in is dressed as a track, because the mark is drawn over
+            // it the way a bar's fill is drawn over its track
             readColour(style, "background", &dressing.track);
             readColour(style, "mark", &dressing.mark);
             readColour(style, "border", &dressing.border);
@@ -160,7 +175,7 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             break;
         case Class::Tabs:
             readColour(style, "background", &dressing.panel);
-            readColour(style, "tab", &dressing.track);
+            readColour(style, "tab", &dressing.tab);
             readColour(style, "highlight", &dressing.highlight);
             readColour(style, "text", &dressing.text);
             readColour(style, "active-text", &dressing.activeText);
@@ -172,10 +187,8 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readColour(style, "background", &dressing.panel);
             readColour(style, "border", &dressing.border);
             readColour(style, "text", &dressing.text);
-            // the caret is the mark of a text box: the one thing drawn over the text that
-            // is the component's own rather than the app's
-            readColour(style, "caret", &dressing.mark);
-            readColour(style, "placeholder", &dressing.track);
+            readColour(style, "caret", &dressing.caret);
+            readColour(style, "placeholder", &dressing.placeholder);
             // what is drawn behind the selected run, the way a list highlights a chosen row
             readColour(style, "highlight", &dressing.highlight);
             readMetric(style, "border-width", &dressing.borderWidth);
@@ -183,12 +196,12 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readMetric(style, "line-height", &dressing.lineHeight);
             break;
         case Class::Button:
-            // a button's fill is its skin's and its label is the base's, so the ring below
-            // is the whole of what it reads as a Dressing
+            // a button's fill comes from its skin and its label colour from the base, so
+            // the ring below is all it reads as a Dressing
             break;
     }
-    // the ring is chrome every class may override, read here rather than in nine branches
-    // that would all say the same thing. A class naming neither is ringed out of the base
+    // every class may override the focus ring, so it is read once here for all of them.
+    // A class naming neither property draws the base's ring
     readColour(style, "focus", &dressing.focus);
     readMetric(style, "focus-width", &dressing.focusWidth);
     return dressing;

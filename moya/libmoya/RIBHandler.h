@@ -15,7 +15,7 @@
 namespace v3d::moya {
 
 /**
- * Drives a reyes render context from a RIB stream, per ADR-0023 and ADR-0025.
+ * Drives a render context from a RIB stream. The reader calls one typed method per RI request.
  *
  * RiBegin and RiEnd have no RIB equivalent - the standard says they are implied at the
  * start and end of a file - so a handler creates the context it drives and destroys it
@@ -31,12 +31,18 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     ~RIBHandler();
 
     void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
+    void hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
 
     void format(unsigned int width, unsigned int height, float pixelAspect) override;
     void frameAspectRatio(float aspect) override;
     void screenWindow(float left, float right, float bottom, float top) override;
     void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
     void clipping(float hither, float yon) override;
+    void depthOfField(float fstop, float focalLength, float focalDistance) override;
+    void shutter(float open, float close) override;
+    void pixelSamples(unsigned int x, unsigned int y) override;
+    void pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) override;
+    void pixelVariance(float variation) override;
     void display(const std::string & name, const std::string & type, const std::string & mode,
         const v3d::render::offline::rib::ParameterList & parameters) override;
 
@@ -53,6 +59,8 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void translate(float dx, float dy, float dz) override;
     void rotate(float angle, float dx, float dy, float dz) override;
     void scale(float sx, float sy, float sz) override;
+    void motionBegin(const std::vector<float> & times) override;
+    void motionEnd() override;
 
     void color(const glm::vec3 & value) override;
     void opacity(const glm::vec3 & value) override;
@@ -69,6 +77,12 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
     void pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
         const v3d::render::offline::rib::ParameterList & parameters) override;
+    /**
+     * Drawn by the ray hider only, because the reyes hider dices polygons only. The first
+     * sphere a scene names under the reyes hider is reported.
+     **/
+    void sphere(float radius, float zmin, float zmax, float thetamax,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
      * The context the requests are landing in, which is where a driver reads the
@@ -84,9 +98,23 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
      **/
     void output(const std::string & name);
 
+    /**
+     * The size of the picture whatever the scene's Format says. A scene's Format still sets
+     * the pixel aspect ratio, and arrives after this is set.
+     *
+     * @return false, changing nothing, when a side is below 1 or above largestResolution
+     **/
+    bool resolution(int width, int height);
+
+    /** The largest grid or bucket size, in micropolygons or pixels, that is not refused. **/
+    static constexpr unsigned int largestLimit = 65536;
+
  private:
     Renderer * renderer_;
     std::string output_;
+    unsigned int width_ = 0;
+    unsigned int height_ = 0;
+    bool spheres_ = false;
 };
 
 };  // namespace v3d::moya

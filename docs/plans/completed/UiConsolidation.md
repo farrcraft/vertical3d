@@ -5,12 +5,12 @@ Fourteen steps across `api/ui`, `api/render/realtime`, the editor's cursor routi
 debug readout. No app data file changed after all - see step 13.
 
 `api/ui` is ~9,100 lines of library and ~3,750 of tests, and a third of the library is three
-files: [`ComponentRenderer.cpp`](../../../api/ui/ComponentRenderer.cpp) at 1124,
+files: [`ComponentRenderer.cpp`](../../../api/ui/paint/ComponentRenderer.cpp) at 1124,
 [`Engine.cpp`](../../../api/ui/Engine.cpp) at 912 and [`Immediate.cpp`](../../../api/ui/Immediate.cpp)
-at 762. It grew fast — [ADR-0034](../../adr/0034-a-component-has-children-and-a-box.md),
-[0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md),
-[0036](../../adr/0036-text-is-a-distinct-kind-of-quad.md) and
-[0037](../../adr/0037-clipping-is-a-scissor-the-batch-carries.md) all landed on 2026-09-06 — and
+at 762. It grew fast — [ADR-0034](../../adr/0034-ui-layout-is-resolved-while-drawing.md),
+[0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md),
+[0036](../../adr/0036-text-sdf-glyphs-through-the-quad-shader.md) and
+[0037](../../adr/0037-2d-clip-with-a-per-batch-scissor.md) all landed on 2026-09-06 — and
 what it has not had since is a pass over its shape.
 
 **Three of the twelve steps are defects that ship in this tree today**, and one of them makes a
@@ -22,14 +22,14 @@ that puts the JSON loader into every app that wants to draw a string.
 
 ### A translucent panel is opaque, and `window(alpha)` does nothing
 
-[`plateBox()`](../../../api/ui/Painter.cpp) fills the **whole** box with the outline colour and
+[`plateBox()`](../../../api/ui/paint/Painter.cpp) fills the **whole** box with the outline colour and
 then fills the inset over it. Shipped defaults are `border` at alpha 1.0 and `panel` at alpha
-0.92, on both sides of the library — [`ComponentRenderer::Style`](../../../api/ui/ComponentRenderer.cpp)
+0.92, on both sides of the library — [`ComponentRenderer::Style`](../../../api/ui/paint/ComponentRenderer.cpp)
 and [`Immediate::Style`](../../../api/ui/Immediate.cpp) declare the same two values. So a panel's
 interior is `0.92 × panel + 0.08 × border`, which is **fully opaque**: the scene behind never
 shows through, and the panel is tinted 8% toward its own border.
 
-[`fillBox()`](../../../api/ui/Painter.cpp) goes to some trouble to lay its three bands and four
+[`fillBox()`](../../../api/ui/paint/Painter.cpp) goes to some trouble to lay its three bands and four
 wedges down without overlapping — *"which matters because a box is usually drawn with an alpha,
 and anything drawn twice under one would show"* — and then `plateBox` does exactly that at the
 scale of the whole box.
@@ -43,19 +43,19 @@ is inert.** A window at alpha 0.5 is as opaque as one at 1.0 and differs only in
 
 ### The draw path allocates per component, per frame
 
-Every drawn component runs [`lookup()`](../../../api/ui/ComponentRenderer.cpp), which calls
+Every drawn component runs [`lookup()`](../../../api/ui/paint/ComponentRenderer.cpp), which calls
 [`Theme::getStyleSet()`](../../../api/ui/style/Theme.cpp) — a `std::vector` of every matching style,
 built by linear scan with `std::string` comparison, of which `front()` is kept and the rest
 discarded — plus a `std::string(name)` allocation from the `string_view` on the way in. Then it
 runs four to seven `readColour`/`readMetric` calls, each of which constructs a
-`pair<std::string, std::string>` key ([`Style.cpp`](../../../api/ui/Style.cpp)) and does a
+`pair<std::string, std::string>` key ([`Style.cpp`](../../../api/ui/style/Style.cpp)) and does a
 `dynamic_pointer_cast` to recover a type the class string already named. A select list does seven
 of these per frame, a check box six, a panel four.
 
 Three more on the same path:
 
 - **Text measurement allocates.** `Measure` takes `const std::string&` while components store
-  text and hand back `string_view`, so [`ComponentRenderer.cpp`](../../../api/ui/ComponentRenderer.cpp)
+  text and hand back `string_view`, so [`ComponentRenderer.cpp`](../../../api/ui/paint/ComponentRenderer.cpp)
   reads `measure_(std::string(label->text()))` at three sites.
 - **`natural()` for a `SELECT_LIST` measures every item, every frame**, to find the widest row —
   a hundred-row list is a hundred text measurements per frame for a number that changes only when
@@ -86,12 +86,12 @@ Meanwhile the editor already hand-writes the routing that does exist.
 first *"because an open panel is drawn over a toolbar"*, then tells every toolbar to `leave()` or
 `motion()`; [`uiPress`](../../../vertical3d/src/Controller.cxx) does the same ordering again for a
 press. That ordering rule belongs to the library — it is a fact about how the library draws —
-and [ADR-0028](../../adr/0028-an-apps-shell-belongs-to-the-api.md) is the standing answer for what
+and [ADR-0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md) is the standing answer for what
 every app repeats.
 
 ### Two `Style` structs, one style class, and defaults that differ by 2×
 
-[`ComponentRenderer::theme()`](../../../api/ui/ComponentRenderer.cpp) and
+[`ComponentRenderer::theme()`](../../../api/ui/paint/ComponentRenderer.cpp) and
 [`Immediate::theme()`](../../../api/ui/Immediate.cpp) both read the `"ui"` style class, with
 overlapping key names — `line-height`, `padding`, `bar-height`, `radius`, `scrollbar-width` —
 into two different structs whose defaults are roughly a factor of two apart:
@@ -120,34 +120,34 @@ drift on their own.
 ### Three types called `Style`, and three namespace rules in one directory
 
 `v3d::ui::Style` (a bag of properties), `v3d::ui::style::Theme`'s notion of one, and
-[`ComponentRenderer::Style`](../../../api/ui/ComponentRenderer.h) (a struct of colours and metrics)
+[`ComponentRenderer::Style`](../../../api/ui/paint/ComponentRenderer.h) (a struct of colours and metrics)
 are three concepts within one letter of each other. It already costs a docblock:
 `lookup()` has to say *"the return type is the library's Style and not this class's."* When a
 signature needs a paragraph to say which type it returns, the naming is the defect.
 
-[`Conventions.md`](../../Conventions.md) says namespaces mirror the `api/` path. In
+[`Conventions.md`](../../contributing/Conventions.md) says namespaces mirror the `api/` path. In
 `component/menu/`, `Menu.h`, `MenuBar.h` and `MenuItem.h` are `v3d::ui::component` while their
 sibling [`Type.h`](../../../api/ui/component/menu/Type.h) is `v3d::ui::menu`; in `style/property/`
 everything is `v3d::ui::style::prop`, an abbreviation the path does not have. Three rules, one
 subtree.
 
 The headers are wrong in the other direction too.
-[`ComponentRenderer.h`](../../../api/ui/ComponentRenderer.h) includes `Engine.h` and fourteen
+[`ComponentRenderer.h`](../../../api/ui/paint/ComponentRenderer.h) includes `Engine.h` and fourteen
 component headers purely to name types in signatures, and `Engine.h` pulls `boost::json`, EnTT,
 the event engine and the logger behind it. Then
-[`TextRenderer.h`](../../../api/ui/TextRenderer.h) includes `ComponentRenderer.h` — only to name
+[`TextRenderer.h`](../../../api/ui/paint/TextRenderer.h) includes `ComponentRenderer.h` — only to name
 the `Measure` and `Write` typedefs. So every app renderer that wants to draw a string compiles
 the JSON loader and the whole widget set. All of it is forward-declarable.
 
 `Measure` and `Write` are themselves declared twice as unrelated types, on
-[`ComponentRenderer`](../../../api/ui/ComponentRenderer.h) and on
+[`ComponentRenderer`](../../../api/ui/paint/ComponentRenderer.h) and on
 [`Immediate`](../../../api/ui/Immediate.h). They interoperate only because both are `std::function`
 of the same signature, so `TextRenderer::measure()` returning the `ComponentRenderer` one and
 being handed to `Immediate` reads as a mistake that happens to compile.
 
 ### Dead weight
 
-[`Overlay.h`](../../../api/ui/Overlay.h) has no consumer, opens with a stray doubled `/**`, and its
+[`Overlay.h`](../../../api/grid/Overlay.h) has no consumer, opens with a stray doubled `/**`, and its
 premise — a transparent *mode* against a colour mode — is contradicted outright by `Color.h`
 above. [`Menu::navigate()`](../../../api/ui/component/menu/Menu.cpp) ignores its `wrap` argument,
 moves nothing, and returns `true` for any valid enum value, under a header that promises
@@ -163,8 +163,8 @@ naming classes actually called `HorizontalBox` and `VerticalBox`.
 
 [TODO.md](../../TODO.md) already records the stubs and the undriven `Immediate`. It does not record
 that two ad-hoc replacements for `Immediate` exist in the tree —
-[`voxel/src/DebugOverlay.h`](../../../voxel/src/DebugOverlay.h) and
-[`api/ui/StatisticsOverlay.h`](../../../api/ui/StatisticsOverlay.h) are both a rolling frame average
+`voxel/src/DebugOverlay.h` and
+[`api/ui/StatisticsOverlay.h`](../../../api/ui/shell/StatisticsOverlay.h) are both a rolling frame average
 rendered as lines of text, which is the panel the immediate layer was built for.
 
 ### Two small ones
@@ -182,11 +182,11 @@ Recorded in [adr/](../../adr/), not here.
 | ADR | Decision |
 |---|---|
 | **0038** | Who turns a cursor into a command — written by step 8, and the reason step 9 is the api's rather than each app's |
-| [0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md) | The ui is laid out by what draws it — unchanged. Step 7 moves the walk into a class of its own; it does not move it out of the draw |
-| [0034](../../adr/0034-a-component-has-children-and-a-box.md) | A component has children and a box — unchanged |
-| [0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md) | An immediate mode layer over the same canvas — **corrected** twice by this plan: its state map is not pruned (step 3), and its "ui" style does not dress both sides (step 10) |
-| [0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) | A theme is data and the app resolves its images — unchanged; step 10 splits a class within it, not the rule |
-| [0028](../../adr/0028-an-apps-shell-belongs-to-the-api.md) | What every app repeats belongs to the api — the argument step 9 rests on |
+| 0019 (removed) | The ui is laid out by what draws it — unchanged. Step 7 moves the walk into a class of its own; it does not move it out of the draw |
+| [0034](../../adr/0034-ui-layout-is-resolved-while-drawing.md) | A component has children and a box — unchanged |
+| [0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md) | An immediate mode layer over the same canvas — **corrected** twice by this plan: its state map is not pruned (step 3), and its "ui" style does not dress both sides (step 10) |
+| [0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md) | A theme is data and the app resolves its images — unchanged; step 10 splits a class within it, not the rule |
+| [0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md) | What every app repeats belongs to the api — the argument step 9 rests on |
 
 0038 is the next free number; [adr/README.md](../../adr/README.md) is the authority, and `0026` is a
 reserved gap rather than an available one.
@@ -255,7 +255,7 @@ source is a link error rather than a compile one.
 
 Drop `v3dlib_ui` from [`odyssey/CMakeLists.txt`](../../../odyssey/CMakeLists.txt) in the same
 commit. It links the library and includes nothing from it, which is the linking rule in
-[Build.md](../../Build.md#linking-rules) read backwards — an app names the targets it uses, and
+[Build.md](../../contributing/Build.md#linking-rules) read backwards — an app names the targets it uses, and
 this one does not use this.
 
 **Pure subtraction.** Nothing that draws today changes.
@@ -267,7 +267,7 @@ between them where the corners are round. `Canvas::ring()` is the arc with a hol
 draws one, which was the alternative the plan preferred over a mitred approximation. Confirmed
 by eye in voxel at step 12 - the sky shows through the debug window.
 
-**Was.** In [`api/ui/Painter.cpp`](../../../api/ui/Painter.cpp).
+**Was.** In [`api/ui/Painter.cpp`](../../../api/ui/paint/Painter.cpp).
 
 Draw the border as bands around the interior rather than as a full box behind it, so that a
 `panel` colour with alpha lets the scene through as `Color.h` says it should, and
@@ -294,7 +294,7 @@ missing for a single frame - would have lost the scroll and the fold of every pa
 toggle. `Immediate::retention` is how many frames a widget keeps what it holds.
 
 **Was.** In [`api/ui/Immediate.cpp`](../../../api/ui/Immediate.cpp) and
-[ADR-0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md).
+[ADR-0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md).
 
 ADR-0035 records as a consequence that *"the map is cleared of anything not drawn for a frame, so
 the cost is bounded."* There is no `erase` anywhere in the file — `state_` is only ever inserted
@@ -333,7 +333,7 @@ retained one moved out to `Dressing.h` where step 7 could cache it.
 **Was.** Across [`api/ui/`](../../../api/ui/) and every consumer.
 
 `v3d::ui::menu` becomes `v3d::ui::component::menu` and `v3d::ui::style::prop` becomes
-`v3d::ui::style::property`, per [Conventions.md](../../Conventions.md). `ComponentRenderer::Style`
+`v3d::ui::style::property`, per [Conventions.md](../../contributing/Conventions.md). `ComponentRenderer::Style`
 becomes `ComponentRenderer::Dressing` — the struct of colours and metrics a component is drawn
 with, which is what step 7 caches — leaving `v3d::ui::Style` as the only `Style` in the library.
 
@@ -351,8 +351,8 @@ is in flight. It touches four apps only where they name a menu type.
 **Closed.** `Immediate.h` got the same treatment, which the plan had not asked for and which
 takes `Canvas.h` off it too.
 
-**Was.** New `api/ui/Text.h`, plus [`ComponentRenderer.h`](../../../api/ui/ComponentRenderer.h),
-[`Immediate.h`](../../../api/ui/Immediate.h) and [`TextRenderer.h`](../../../api/ui/TextRenderer.h).
+**Was.** New `api/ui/Text.h`, plus [`ComponentRenderer.h`](../../../api/ui/paint/ComponentRenderer.h),
+[`Immediate.h`](../../../api/ui/Immediate.h) and [`TextRenderer.h`](../../../api/ui/paint/TextRenderer.h).
 
 One pair of typedefs in `v3d::ui`, taken by both consumers, so that
 `TextRenderer::measure()` returns the type `Immediate` accepts rather than a different type that
@@ -379,9 +379,9 @@ component by const reference, because it now writes what it measured onto a list
 draw writes a box.
 
 **Was.** New `api/ui/style/Resolver.{h,cpp}`, plus
-[`ComponentRenderer.cpp`](../../../api/ui/ComponentRenderer.cpp),
-[`Immediate.cpp`](../../../api/ui/Immediate.cpp), [`Style.h`](../../../api/ui/Style.h) and
-[`Text.h`](../../../api/ui/Text.h).
+[`ComponentRenderer.cpp`](../../../api/ui/paint/ComponentRenderer.cpp),
+[`Immediate.cpp`](../../../api/ui/Immediate.cpp), [`Style.h`](../../../api/ui/style/Style.h) and
+`Text.h`.
 
 The single highest-value change in the plan. A resolver holds the active theme and a
 `map<pair<class, name>, Dressing>`; `Dressing` is the plain struct of colours and metrics each
@@ -429,11 +429,11 @@ implementations of the strip rule, is closed without it. `natural()` and `arrang
 where the walk that calls them is. Reopen it if a test ever needs layout without paint, which
 is the one benefit that would have been real; nothing has asked.
 
-In [`ComponentRenderer.{h,cpp}`](../../../api/ui/ComponentRenderer.h).
+In [`ComponentRenderer.{h,cpp}`](../../../api/ui/paint/ComponentRenderer.h).
 
 `natural()`, `arrange()`, `walk()` and `insets()` become a class that resolves boxes and writes
 them onto components, and `ComponentRenderer` becomes the paint half that it calls. This does not
-move layout out of the draw — [ADR-0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md)
+move layout out of the draw — ADR-0019 (removed)
 stands, and one walk still decides both what is drawn and what is clicked — it moves it out of a
 1124-line class that also does theme ingestion, eleven paint routines, strip stacking, nine-slice
 skinning and menu panel placement.
@@ -458,7 +458,7 @@ need no change, which is the check that the move was a move.
 
 ### Step 9 — ADR-0038, who turns a cursor into a command
 
-**Closed.** [ADR-0038](../../adr/0038-a-cursor-is-routed-by-the-library-that-drew-it.md). It
+**Closed.** [ADR-0038](../../adr/0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md). It
 settled a router over the engine rather than a dispatcher on `Container`, for the reason the
 plan expected: the ordering between a menu panel, a toolbar and a tree is the half the editor
 was writing by hand, and a dispatcher on `Container` fixes the other half.
@@ -477,7 +477,7 @@ What it has to settle:
   the right order.** The second is the one this plan expects: the ordering between a menu panel, a
   toolbar and a container tree is a fact about how the library draws, and it is currently written
   in [`vertical3d/src/Controller.cxx`](../../../vertical3d/src/Controller.cxx) — which is the
-  signature [ADR-0028](../../adr/0028-an-apps-shell-belongs-to-the-api.md) names.
+  signature [ADR-0028](../../adr/0028-apps-the-shared-app-shell-lives-in-the-api.md) names.
 - **What a press on a picked component means**, given that a `CheckBox` "does not own the state it
   shows" per ADR-0019 — the router dispatches the component's event and something else answers by
   setting `checked()`. That rule is already recorded; what is new is who sends the event.
@@ -534,9 +534,9 @@ mouselook, so its window cannot be folded or scrolled. TODO carries it.
 with a different owner, and the useful change there is giving it to the three apps that hold a
 `TextRenderer` and do not draw it - which TODO already records and which is not this plan's.
 
-**Was.** In [`voxel/src/`](../../../voxel/src/) and [`api/ui/StatisticsOverlay.h`](../../../api/ui/StatisticsOverlay.h).
+**Was.** In [`voxel/src/`](../../../voxel/src/) and [`api/ui/StatisticsOverlay.h`](../../../api/ui/shell/StatisticsOverlay.h).
 
-`voxel`'s [`DebugOverlay`](../../../voxel/src/DebugOverlay.h) — 123 lines producing a build string, a
+`voxel`'s `DebugOverlay` — 123 lines producing a build string, a
 rolling frame rate and a player position as lines of text — becomes a call into `Immediate` and is
 deleted. It is exactly the panel ADR-0035 argued for, and it was written in the same tree in the
 same week.
@@ -560,7 +560,7 @@ the plan expected: the editor's theme is the only one in the tree that names a s
 and it names colours rather than metrics.
 
 **Was.** In [`api/ui/`](../../../api/ui/), [`vertical3d/data/vgui.json`](../../../vertical3d/data/vgui.json)
-and [ADR-0035](../../adr/0035-an-immediate-mode-layer-over-the-same-canvas.md).
+and [ADR-0035](../../adr/0035-ui-immediate-mode-beside-the-retained-tree.md).
 
 Two style classes — `"ui"` for the retained chrome and something else for the immediate layer's —
 so that a theme can set `line-height` for a HUD without setting it for a debug window. The
@@ -579,14 +579,14 @@ default alone.
 
 ### Step 14 — `docs/UserInterface.md`
 
-**Closed.** [UserInterface.md](../../UserInterface.md), with rows added to
-[docs/README.md](../../README.md) and [CLAUDE.md](../../CLAUDE.md).
+**Closed.** [UserInterface.md](../../api/ui/README.md), with rows added to
+[docs/README.md](../../README.md) and [CLAUDE.md](../../../CLAUDE.md).
 
-**Was.** New [`docs/UserInterface.md`](../../UserInterface.md), plus
-[`docs/README.md`](../../README.md) and [`CLAUDE.md`](../../CLAUDE.md).
+**Was.** New [`docs/UserInterface.md`](../../api/ui/README.md), plus
+[`docs/README.md`](../../README.md) and [`CLAUDE.md`](../../../CLAUDE.md).
 
 Eight ADRs, two paradigms, thirty classes and no owning document —
-[`Architecture.md`](../../Architecture.md) names `api/ui` once, in passing, and the CLAUDE.md routing
+`Architecture.md` names `api/ui` once, in passing, and the CLAUDE.md routing
 table has rows for the realtime renderer, the offline renderers and the editor but not for this.
 
 What it owns: the two ways to write a ui and which to reach for, the box model and how a `Length`
@@ -667,3 +667,26 @@ consumer pressure behind it. Reopen it when a registry has a second reason to ex
 - **Should `natural()` become virtual on `Component`?** Raised in step 8 and deliberately left
   open there, because the answer depends on whether step 10 gives components more behaviour of
   their own or less.
+
+## Outcome
+
+Drafted on 2026-09-06 from an architecture review of `api/ui`, and closed on 2026-09-07. Its
+fourteen steps covered a library that had gained four ADRs in a day and had not had its shape
+reviewed since.
+
+The ordering mattered for two reasons:
+
+- Three steps were shipping defects: an opaque "translucent" panel, an `Immediate` state map that
+  grew without bound although its ADR said it did not, and a `window()` alpha argument that did
+  nothing. Those were separate fixes that did not wait behind the structural work.
+- The structural work had a strict order. Names and headers came before the draw path, or the
+  draw path would have been written twice. The style resolver came before the renderer was split,
+  because the resolver is one half of that split.
+
+Two things came out differently from the plan:
+
+- Step 8 did not split layout out of the renderer. Layout and paint call each other by design.
+  The defect the split was meant to fix, two implementations of the strip rule that disagreed
+  about a left toolbar's width on the first frame, was fixed without it.
+- Step 12 found that a game which owns the mouse has no cursor to give the immediate layer, so
+  voxel's debug window cannot be folded.

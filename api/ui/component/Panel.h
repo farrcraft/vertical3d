@@ -14,8 +14,8 @@ namespace v3d::ui::component {
  * is made of.
  *
  * It carries no colours of its own: what it is filled with, what its border is drawn in
- * and how far its corners are rounded are the "panel" style class the component names,
- * per ADR-0020. A panel with no style draws in the renderer's defaults.
+ * and how far its corners are rounded are the "panel" style class the component names.
+ * A panel with no style draws in the renderer's defaults.
  **/
 class Panel : public Component {
  public:

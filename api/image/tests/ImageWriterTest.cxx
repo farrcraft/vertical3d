@@ -6,6 +6,7 @@
 // jpeglib.h names FILE in its stdio helpers without including stdio itself
 
 #include <api/image/Factory.h>
+#include <api/log/Logger.h>
 
 #include <stdio.h>
 #include <jpeglib.h>
@@ -91,7 +92,8 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
-    const char* lossless[] = { "data_out/test_orientation.tga", "data_out/test_orientation.png" };
+    const char* lossless[] = { "data_out/test_orientation.tga", "data_out/test_orientation.png",
+        "data_out/test_orientation.bmp" };
     for (const char* filename : lossless) {
         BOOST_TEST_CONTEXT(filename) {
             BOOST_REQUIRE_EQUAL(factory.write(filename, image), true);
@@ -333,4 +335,75 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_grey_test, OutputDirectory) {
     BOOST_REQUIRE(decoded);
     BOOST_CHECK_EQUAL(decoded->width(), side);
     BOOST_CHECK_EQUAL(decoded->height(), side);
+}
+
+BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, OutputDirectory) {
+    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::image::Factory factory(logger);
+
+    // red at half opacity: a jpeg has nowhere to put the alpha, and libjpeg's default
+    // handler would end the process rather than refuse four components under JCS_RGB
+    boost::shared_ptr<v3d::image::Image> rgba = boost::make_shared<v3d::image::Image>(2, 2, 32);
+    for (unsigned int pixel = 0; pixel < 4; ++pixel) {
+        (*rgba)[pixel * 4 + 0] = 0xff;
+        (*rgba)[pixel * 4 + 1] = 0;
+        (*rgba)[pixel * 4 + 2] = 0;
+        (*rgba)[pixel * 4 + 3] = 0x80;
+    }
+
+    const char* names[] = { "data_out/test_rgba.jpg", "data_out/test_rgba.JPEG" };
+    for (const char* filename : names) {
+        BOOST_TEST_CONTEXT(filename) {
+            BOOST_REQUIRE_EQUAL(factory.write(filename, rgba), true);
+            boost::shared_ptr<v3d::image::Image> read = factory.read(filename);
+            BOOST_REQUIRE(read != nullptr);
+            BOOST_CHECK_EQUAL(read->bpp(), 24u);
+            BOOST_CHECK_GE((*read)[0], 0xfd);
+            BOOST_CHECK_LE((*read)[1], 2);
+            BOOST_CHECK_LE((*read)[2], 2);
+        }
+    }
+}
+
+/**
+ * A 32 bit image keeps its alpha through a TGA, which stores BGRA: the colour channels are
+ * reordered and the alpha is carried across rather than left as the zero a fresh buffer holds.
+ **/
+BOOST_FIXTURE_TEST_CASE(imagewriter_tga_alpha_test, OutputDirectory) {
+    boost::shared_ptr<v3d::image::Image> img32 = boost::make_shared<v3d::image::Image>(2, 1, 32);
+    for (unsigned int pixel = 0; pixel < 2; ++pixel) {
+        (*img32)[pixel * 4 + 0] = 0x10;
+        (*img32)[pixel * 4 + 1] = 0x20;
+        (*img32)[pixel * 4 + 2] = 0x30;
+        (*img32)[pixel * 4 + 3] = 0x80;
+    }
+    v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(factory.write("data_out/alpha.tga", img32));
+
+    boost::shared_ptr<v3d::image::Image> image = factory.read("data_out/alpha.tga");
+    BOOST_REQUIRE(image != nullptr);
+    BOOST_REQUIRE_EQUAL(image->bpp(), 32u);
+    BOOST_CHECK_EQUAL((*image)[0], 0x10);
+    BOOST_CHECK_EQUAL((*image)[2], 0x30);
+    BOOST_CHECK_EQUAL((*image)[3], 0x80);
+    BOOST_CHECK_EQUAL((*image)[7], 0x80);
+}
+
+/**
+ * A picture wider than a TGA header can describe is refused before the file is opened, so a
+ * file already at that name keeps its contents.
+ **/
+BOOST_FIXTURE_TEST_CASE(imagewriter_tga_too_wide_leaves_the_file_test, OutputDirectory) {
+    v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
+    const std::string filename = "data_out/too_wide.tga";
+
+    boost::shared_ptr<v3d::image::Image> small = boost::make_shared<v3d::image::Image>(2, 1, 8);
+    BOOST_REQUIRE(factory.write(filename, small));
+    const boost::uintmax_t before = boost::filesystem::file_size(filename);
+    BOOST_REQUIRE(before > 0u);
+
+    // one row of one byte a pixel, so the picture is wide and still costs only 64 KiB
+    boost::shared_ptr<v3d::image::Image> wide = boost::make_shared<v3d::image::Image>(65536, 1, 8);
+    BOOST_CHECK(!factory.write(filename, wide));
+    BOOST_CHECK_EQUAL(boost::filesystem::file_size(filename), before);
 }

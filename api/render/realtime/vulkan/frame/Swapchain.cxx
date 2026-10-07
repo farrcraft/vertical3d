@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -26,7 +25,8 @@ Swapchain::Swapchain(const boost::shared_ptr<v3d::log::Logger>& logger, const bo
     swapchain_(VK_NULL_HANDLE),
     preferred_(preferred),
     format_(VK_FORMAT_UNDEFINED),
-    extent_{0, 0} {
+    extent_(),
+    copyable_(false) {
     try {
         create(width, height);
         createViews();
@@ -47,7 +47,8 @@ Swapchain::~Swapchain() {
  **/
 void Swapchain::recreate(uint32_t width, uint32_t height) {
     // the images cannot go away while the queues are still reading them
-    vkDeviceWaitIdle(device_->handle());
+    VkResult result = vkDeviceWaitIdle(device_->handle());
+    device::check(result, "Unable to wait for the vulkan device before recreating the swapchain");
     destroy();
     create(width, height);
     createViews();
@@ -91,6 +92,12 @@ const std::vector<VkImageView>& Swapchain::views() const noexcept {
 
 /**
  **/
+bool Swapchain::copyable() const noexcept {
+    return copyable_;
+}
+
+/**
+ **/
 std::size_t Swapchain::length() const noexcept {
     return images_.size();
 }
@@ -103,34 +110,26 @@ Swapchain::Support Swapchain::querySupport() const {
     VkSurfaceKHR surface = device_->surface()->handle();
 
     VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical, surface, &support.capabilities);
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to read the vulkan surface capabilities - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to read the vulkan surface capabilities");
 
     uint32_t formatCount = 0;
     result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical, surface, &formatCount, nullptr);
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        std::stringstream msg;
-        msg << "Unable to count the vulkan surface formats - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to count the vulkan surface formats", VK_INCOMPLETE);
     support.formats.resize(formatCount);
     if (formatCount > 0) {
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physical, surface, &formatCount, support.formats.data());
+        result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical, surface, &formatCount, support.formats.data());
+        device::check(result, "Unable to read the vulkan surface formats", VK_INCOMPLETE);
+        support.formats.resize(formatCount);
     }
 
     uint32_t modeCount = 0;
     result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical, surface, &modeCount, nullptr);
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        std::stringstream msg;
-        msg << "Unable to count the vulkan present modes - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to count the vulkan present modes", VK_INCOMPLETE);
     support.presentModes.resize(modeCount);
     if (modeCount > 0) {
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physical, surface, &modeCount, support.presentModes.data());
+        result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical, surface, &modeCount, support.presentModes.data());
+        device::check(result, "Unable to read the vulkan present modes", VK_INCOMPLETE);
+        support.presentModes.resize(modeCount);
     }
 
     if (support.formats.empty() || support.presentModes.empty()) {
@@ -143,8 +142,8 @@ Swapchain::Support Swapchain::querySupport() const {
 /**
  **/
 VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>& formats, VkFormat preferred) {
-    // a caller's format wins where the surface offers it, and falls through where it does
-    // not - ADR-0049
+    // a caller's format is used where the surface offers it, and falls through where it does
+    // not
     if (preferred != VK_FORMAT_UNDEFINED) {
         for (const VkSurfaceFormatKHR& format : formats) {
             if (format.format == preferred && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -154,8 +153,8 @@ VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>
     }
 
     // a UNORM format rather than an SRGB one, so a colour a shader writes is the colour
-    // that appears - see ADR-0009. An _SRGB target encodes on write, taking every colour
-    // in the engine as linear and brightening it
+    // that appears. An _SRGB target encodes on write, treating every colour in the engine
+    // as linear and brightening it
     for (const VkSurfaceFormatKHR& format : formats) {
         if ((format.format == VK_FORMAT_B8G8R8A8_UNORM || format.format == VK_FORMAT_R8G8B8A8_UNORM) &&
             format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -204,6 +203,7 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     if (extent.width == 0 || extent.height == 0) {
         format_ = surfaceFormat.format;
         extent_ = extent;
+        copyable_ = false;
         logger_->get()->info("Window has no area, leaving the vulkan swapchain empty");
         return;
     }
@@ -222,7 +222,13 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
+    // TRANSFER_SRC lets frame::Capture copy an image out. A surface need not support it, and
+    // the chain is built without it rather than not at all
+    const bool copyable = (support.capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (copyable) {
+        createInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    }
 
     // where one queue family draws and another presents, both of them need to reach the images
     const device::Device::QueueFamilies& families = device_->families();
@@ -244,35 +250,26 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     VkResult result = vkCreateSwapchainKHR(device_->handle(), &createInfo, nullptr, &swapchain_);
     if (result != VK_SUCCESS) {
         swapchain_ = VK_NULL_HANDLE;
-        std::stringstream msg;
-        msg << "Unable to create the vulkan swapchain - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to create the vulkan swapchain");
     }
 
     format_ = surfaceFormat.format;
     extent_ = extent;
+    copyable_ = copyable;
 
     uint32_t count = 0;
     result = vkGetSwapchainImagesKHR(device_->handle(), swapchain_, &count, nullptr);
-    if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        std::stringstream msg;
-        msg << "Unable to count the vulkan swapchain images - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to count the vulkan swapchain images", VK_INCOMPLETE);
     images_.resize(count);
     if (count > 0) {
         result = vkGetSwapchainImagesKHR(device_->handle(), swapchain_, &count, images_.data());
-        if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-            std::stringstream msg;
-            msg << "Unable to read the vulkan swapchain images - " << device::resultString(result);
-            throw std::runtime_error(msg.str());
-        }
+        device::check(result, "Unable to read the vulkan swapchain images", VK_INCOMPLETE);
     }
 
     logger_->get()->info("Created a vulkan swapchain of {} images at {} x {}", images_.size(), extent_.width, extent_.height);
 
-    // silent when there was no preference or it was met; a caller whose colours depend on
-    // the format would otherwise have to work out that it did not get one - ADR-0049
+    // silent when there was no preference or it was met. A caller whose colours depend on
+    // the format is told when it did not get the one it named
     if (preferred_ != VK_FORMAT_UNDEFINED && format_ != preferred_) {
         logger_->get()->warn("The surface does not offer swapchain format {}, so {} is what the chain was built with",
             static_cast<int>(preferred_), static_cast<int>(format_));
@@ -301,11 +298,7 @@ void Swapchain::createViews() {
 
         VkImageView view = VK_NULL_HANDLE;
         VkResult result = vkCreateImageView(device_->handle(), &createInfo, nullptr, &view);
-        if (result != VK_SUCCESS) {
-            std::stringstream msg;
-            msg << "Unable to create a view onto a vulkan swapchain image - " << device::resultString(result);
-            throw std::runtime_error(msg.str());
-        }
+        device::check(result, "Unable to create a view onto a vulkan swapchain image");
         views_.push_back(view);
     }
 }
@@ -325,6 +318,7 @@ void Swapchain::destroy() {
         vkDestroySwapchainKHR(device_->handle(), swapchain_, nullptr);
         swapchain_ = VK_NULL_HANDLE;
     }
+    copyable_ = false;
 }
 
 };  // namespace v3d::render::realtime::vulkan::frame

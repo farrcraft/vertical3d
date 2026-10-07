@@ -5,15 +5,18 @@
 
 #include "Ball.h"
 
+#include <api/ecs/Previous.h>
 #include <api/ecs/component/Color3.h>
 #include <api/ecs/component/Position2D.h>
+#include <pong/src/component/Direction.h>
+#include <pong/src/component/Size.h>
 
 #include <cmath>
 
 Ball::Ball(entt::registry* registry) : registry_(registry) {
     id_ = registry->create();
     // create the components attached to ball entity
-    registry->emplace<v3d::ecs::component::Position2D>(id_, 0.0f, 0.0f);
+    registry->emplace<v3d::ecs::component::Position2D>(id_, glm::vec2(0.0f));
     registry->emplace<Size>(id_, 1.0f);
     registry->emplace<Direction>(id_, glm::vec2(0.0f, 0.0f));
 }
@@ -30,19 +33,26 @@ glm::vec2 Ball::direction() const {
 
 glm::vec2 Ball::position() const {
     v3d::ecs::component::Position2D& component = registry_->get<v3d::ecs::component::Position2D>(id_);
-    return component.value();
+    return component.value;
 }
 
 void Ball::position(const glm::vec2 & pos) {
     v3d::ecs::component::Position2D& component = registry_->get<v3d::ecs::component::Position2D>(id_);
-    component.set(pos);
+    component.value = pos;
+}
+
+glm::vec2 Ball::drawn(float alpha) const {
+    return v3d::ecs::interpolated<v3d::ecs::component::Position2D>(*registry_, id_, alpha).value;
+}
+
+void Ball::settle() {
+    v3d::ecs::settle<v3d::ecs::component::Position2D>(*registry_, id_);
 }
 
 void Ball::move(float step) {
     Direction& direction = registry_->get<Direction>(id_);
     v3d::ecs::component::Position2D& position = registry_->get<v3d::ecs::component::Position2D>(id_);
-    glm::vec2 lastPosition = position.value();
-    position.set(lastPosition + (direction.direction_ * step));
+    position.value += direction.direction_ * step;
 }
 
 float Ball::size() const {

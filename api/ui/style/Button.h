@@ -19,9 +19,9 @@ class Button : public Style {
     /**
      * Which look the style dresses, which a theme names with "state".
      *
-     * Its own rather than component::Button::ButtonState: three of these are the transient
-     * state the cursor writes, and the fourth is a component being disabled, which nothing
-     * about the cursor touches and lasts until something says otherwise - ADR-0059.
+     * Separate from component::Button::ButtonState. Three of these looks are the transient
+     * state the cursor writes. The fourth is a disabled component, which the cursor never
+     * changes.
      */
     enum class State {
         Normal,

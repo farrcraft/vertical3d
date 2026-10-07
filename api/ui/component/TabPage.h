@@ -15,8 +15,8 @@ namespace v3d::ui::component {
  * One page of a tab bar - a label on the strip, and whatever the page holds under it.
  *
  * A page draws nothing of its own: it is a box that holds components, the way a flow box
- * is, and only the chosen page of a bar is walked at all. What it holds is laid out
- * against the room the strip left, per ADR-0034.
+ * is, and only the chosen page of a bar is laid out or drawn. Its children are laid out in
+ * the space below the strip.
  **/
 class TabPage : public Component {
  public:

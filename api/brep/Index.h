@@ -21,9 +21,8 @@ using Index = uint32_t;
 /**
  * The index a half edge, face or vertex reference carries when it points at nothing.
  *
- * The value is part of the project file format per ADR-0018, which stores a reference
- * that may be absent as this sentinel, so it cannot be changed without breaking every
- * document already written.
+ * The value is part of the project file format, which stores a reference that may be
+ * absent as this sentinel. Changing it breaks every project file already written.
  **/
 constexpr Index INVALID_ID = (1u << 31);
 

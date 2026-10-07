@@ -21,28 +21,49 @@
 #include <boost/make_shared.hpp>
 
 namespace v3d::font {
+/**
+ * The library and the face a font is read through, for as long as it is being read. Whatever
+ * is open is closed by release(), by opening another, or by the owner going - so no path
+ * through a load has to remember which of the two it had got as far as.
+ **/
 class TextureFont::Freetype {
  public:
-     explicit Freetype(const boost::shared_ptr<v3d::log::Logger> & logger);
+    explicit Freetype(const boost::shared_ptr<v3d::log::Logger> & logger);
+    ~Freetype();
+
+    Freetype(const Freetype&) = delete;
+    Freetype& operator=(const Freetype&) = delete;
 
     bool loadFace(const std::string& filename, float size);
 
     void release();
 
-    FT_Library library_;
-    FT_Face face_;
+    FT_Library library_ = nullptr;
+    FT_Face face_ = nullptr;
     boost::shared_ptr<v3d::log::Logger> logger_;
 };
 
 TextureFont::Freetype::Freetype(const boost::shared_ptr<v3d::log::Logger>& logger) : logger_(logger) {
 }
 
+TextureFont::Freetype::~Freetype() {
+    release();
+}
+
 void TextureFont::Freetype::release() {
-    FT_Done_Face(face_);
-    FT_Done_FreeType(library_);
+    if (face_ != nullptr) {
+        FT_Done_Face(face_);
+        face_ = nullptr;
+    }
+    if (library_ != nullptr) {
+        FT_Done_FreeType(library_);
+        library_ = nullptr;
+    }
 }
 
 bool TextureFont::Freetype::loadFace(const std::string& filename, float size) {
+    release();
+
     // initialize freetype library
     FT_Error error;
     error = FT_Init_FreeType(&library_);
@@ -55,7 +76,7 @@ bool TextureFont::Freetype::loadFace(const std::string& filename, float size) {
     error = FT_New_Face(library_, filename.c_str(), 0, &face_);
     if (error != 0) {
         logger_->get()->error("Error creating new freetype face!");
-        FT_Done_FreeType(library_);
+        release();
         return false;
     }
 
@@ -109,6 +130,11 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
     lcdWeights_[3] = 0x40;
     lcdWeights_[4] = 0x10;
 
+    // what the face would have set, for a face that does not open
+    underlinePosition_ = 0.0f;
+    underlineThickness_ = 0.0f;
+    linegap_ = 0.0f;
+
     freetype_ = boost::make_shared<Freetype>(logger);
 
     // the face is loaded at its own size. Asking for a hundred times the size - the
@@ -129,8 +155,7 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
     underlineThickness_ = underlineThickness_ < 0.0f ? std::ceil(underlineThickness_ - 0.5f) : std::floor(underlineThickness_ + 0.5f);
     underlineThickness_ = std::max(underlineThickness_, 1.0f);
 
-    // metrics are 26.6 fixed point, which carries the fractional pixel the /100 was
-    // reaching for
+    // metrics are 26.6 fixed point, which already carries fractional pixels
     FT_Size_Metrics metrics = freetype_->face_->size->metrics;
     ascender_ = metrics.ascender / 64.0f;
     descender_ = metrics.descender / 64.0f;
@@ -166,18 +191,27 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::createGlyph() {
     return glyph;
 }
 
+boost::shared_ptr<TextureFont::Glyph> TextureFont::packed(wchar_t charcode) const {
+    const wchar_t lineCode = static_cast<wchar_t>(-1);
+
+    for (const boost::shared_ptr<Glyph>& candidate : glyphs_) {
+        if ((candidate->charcode_ == charcode) &&
+            ((charcode == lineCode) ||
+                ((candidate->outline_ == outline_) &&
+                    (candidate->outlineThickness_ == outlineThickness_)))) {
+            return candidate;
+        }
+    }
+    return boost::shared_ptr<Glyph>();
+}
+
 boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
     wchar_t lineCode = static_cast<wchar_t>(-1);
 
-    for (unsigned int i = 0; i < glyphs_.size(); ++i) {
-        if ((glyphs_[i]->charcode_ == charcode) &&
-            ((charcode == lineCode) ||
-                ((glyphs_[i]->outline_ == outline_) &&
-                    (glyphs_[i]->outlineThickness_ == outlineThickness_)))) {
-            return glyphs_[i];
-        }
+    boost::shared_ptr<Glyph> glyph = packed(charcode);
+    if (glyph) {
+        return glyph;
     }
-    boost::shared_ptr<Glyph> glyph;
     // -1 is used for line drawing (overline, underline, strikethrough) and background
     if (charcode == lineCode) {
         glm::ivec4 region = atlas_->region(4, 4);
@@ -294,7 +328,7 @@ class GlyphHandle final {
  * Which of freetype's render modes a run of glyphs is rasterized through.
  *
  * A three channel atlas is subpixel filtered and has to stay so. A single channel one is a
- * distance field when a spread was asked for - ADR-0036 - and coverage otherwise.
+ * distance field when a spread was asked for, and coverage otherwise.
  **/
 FT_Render_Mode glyphRenderMode(unsigned int depth, bool sdf) {
     if (depth == 3) {
@@ -313,7 +347,7 @@ FT_Int32 glyphLoadFlags(FT_Library library, TextureFont::OutlineType outline, bo
     unsigned int depth, bool lcdFiltering, const unsigned char* lcdWeights, bool sdf) {
     FT_Int32 flags = 0;
     // a distance field is built from the outline, so the load must not have rendered one
-    // to a bitmap already - the caller renders it afterwards, in the mode it wants
+    // to a bitmap already - the caller renders it afterwards, in the mode it needs
     if (outline != TextureFont::OUTLINE_TYPE_NONE || sdf) {
         flags |= FT_LOAD_NO_BITMAP;
     } else {
@@ -425,7 +459,7 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
         FT_Error error = FT_Load_Glyph(freetype_->face_, glyphIndex, flags);
         if (error != 0) {
             logger_->get()->error("Error loading glyph!");
-            FT_Done_FreeType(freetype_->library_);
+            freetype_->release();
             return false;
         }
 
@@ -491,7 +525,6 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
         glyphs_.push_back(glyph);
     }
 
-    generateKerning();
     freetype_->release();
 
     if (missed > 0) {
@@ -501,38 +534,6 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
     }
 
     return true;
-}
-
-void TextureFont::generateKerning() {
-    // For each glyph couple combination, check if kerning is necessary
-    // Starts at index 1 since 0 is for the special backgroudn glyph
-    for (unsigned int i = 1; i < glyphs_.size(); ++i) {
-        boost::shared_ptr<Glyph> glyph = glyphs_[i];
-        FT_UInt glyphIndex = FT_Get_Char_Index(freetype_->face_, glyph->charcode_);
-        glyph->kerning_.clear();
-
-        for (unsigned int j = 1; j < glyphs_.size(); ++j) {
-            boost::shared_ptr<Glyph> prevGlyph = glyphs_[j];
-            FT_UInt prevIndex = FT_Get_Char_Index(freetype_->face_, prevGlyph->charcode_);
-            FT_Vector kerning;
-            FT_Get_Kerning(freetype_->face_, prevIndex, glyphIndex, FT_KERNING_UNFITTED, &kerning);
-            if (kerning.x) {
-                // 64 * 64 because of 26.6 encoding AND the transform matrix used
-                // in loadFace (hres = 64)
-                Kerning k = { prevGlyph->charcode_, kerning.x / (64.0f * 64.0f) };
-                glyph->kerning_.push_back(k);
-            }
-        }
-    }
-}
-
-float TextureFont::kerning(const boost::shared_ptr<Glyph>& glyph, wchar_t charcode) {
-    for (unsigned int i = 0; i < glyph->kerning_.size(); ++i) {
-        if (glyph->kerning_[i].charcode_ == charcode) {
-            return glyph->kerning_[i].kerning_;
-        }
-    }
-    return 0.0f;
 }
 
 float TextureFont::size() const {

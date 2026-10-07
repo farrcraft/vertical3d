@@ -92,8 +92,8 @@ class MouseState final {
     /**
      * How far the wheel turned since the last flush, away from the reader first.
      *
-     * An edge rather than a position: there is no such thing as where a wheel is, so this
-     * is cleared with the button edges and a frame that reads it late reads zero.
+     * An edge rather than a position, because a wheel has no position. It is cleared with
+     * the button edges, so a frame that reads it after the flush reads zero.
      **/
     float wheel() const noexcept;
 

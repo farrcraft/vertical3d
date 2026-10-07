@@ -7,8 +7,6 @@
 
 #include <api/render/realtime/vulkan/device/Result.h>
 
-#include <sstream>
-#include <stdexcept>
 #include <vector>
 
 namespace v3d::render::realtime::vulkan::frame {
@@ -26,9 +24,7 @@ CommandPool::CommandPool(const boost::shared_ptr<device::Device>& device, uint32
     VkResult result = vkCreateCommandPool(device_->handle(), &createInfo, nullptr, &pool_);
     if (result != VK_SUCCESS) {
         pool_ = VK_NULL_HANDLE;
-        std::stringstream msg;
-        msg << "Unable to create a vulkan command pool - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
+        throw device::failure(result, "Unable to create a vulkan command pool");
     }
 }
 
@@ -63,11 +59,7 @@ std::vector<VkCommandBuffer> CommandPool::allocate(uint32_t count) const {
     allocateInfo.commandBufferCount = count;
 
     VkResult result = vkAllocateCommandBuffers(device_->handle(), &allocateInfo, buffers.data());
-    if (result != VK_SUCCESS) {
-        std::stringstream msg;
-        msg << "Unable to allocate vulkan command buffers - " << device::resultString(result);
-        throw std::runtime_error(msg.str());
-    }
+    device::check(result, "Unable to allocate vulkan command buffers");
 
     return buffers;
 }

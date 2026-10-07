@@ -31,13 +31,13 @@ Recorded in [docs/adr/](../../adr/), not here. The ones that shape this plan:
 
 | ADR | Decision |
 |---|---|
-| [0001](../../adr/0001-vulkan-replaces-opengl.md) | Vulkan replaces OpenGL outright — no dual backend, no fallback |
-| [0002](../../adr/0002-target-vulkan-1-3.md) | Target Vulkan 1.3, for dynamic rendering and synchronization2 |
-| [0003](../../adr/0003-one-realtime-engine.md) | One realtime engine, with the render pass as the unit of variation |
-| [0004](../../adr/0004-operations-as-draw-data.md) | Operations are draw data; the engine sorts, merges and records |
-| [0005](../../adr/0005-one-batched-quad-primitive.md) | One batched quad primitive with an optional texture |
-| [0006](../../adr/0006-keep-both-pong-and-tetris.md) | Both pong and tetris are kept |
-| [0007](../../adr/0007-ci-rendering-tests.md) | Render tests run on a Windows runner against software Vulkan |
+| [0001](../../adr/0001-rendering-replace-opengl-with-vulkan.md) | Vulkan replaces OpenGL outright — no dual backend, no fallback |
+| [0002](../../adr/0002-vulkan-require-version-1-3.md) | Target Vulkan 1.3, for dynamic rendering and synchronization2 |
+| [0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md) | One realtime engine, with the render pass as the unit of variation |
+| [0004](../../adr/0004-rendering-submit-draw-items-as-data.md) | Operations are draw data; the engine sorts, merges and records |
+| [0005](../../adr/0005-2d-one-batched-quad-pipeline.md) | One batched quad primitive with an optional texture |
+| 0006 (removed) | Both pong and tetris are kept |
+| [0007](../../adr/0007-ci-render-tests-on-software-vulkan.md) | Render tests run on a Windows runner against software Vulkan |
 
 ## Where things actually stand
 
@@ -89,7 +89,7 @@ routine whose navigation was always in `Menu`, which migrated intact, so `ui::Na
 needs no reconciliation. What closed it: the renderer was rebuilt on the batched quad with
 the menu bar (ADR-0019), hit-testing arrived with it against the bounds a draw leaves, and
 the theme half landed as
-[ADR-0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md) - a theme is JSON,
+[ADR-0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md) - a theme is JSON,
 `ComponentRenderer` draws with the `ui` style it names, and an image the config names is
 resolved to a texture by a callback the app supplies rather than by the library loading it.
 
@@ -189,7 +189,7 @@ The survey also found what voxel needs that the api does not have, which is what
 a phase rather than a port: a depth buffer (`Pass::depth` is stored and ignored, and there is
 no depth image in `api/render` at all), a way for an app to build a second pipeline without
 forking `QuadRenderer`'s 150 inline lines, set 0 from
-[ADR-0008](../../adr/0008-binding-by-update-frequency.md) (created with zero bindings, never
+[ADR-0008](../../adr/0008-shaders-descriptor-sets-by-update-frequency.md) (created with zero bindings, never
 bound), device-local buffers with a staging upload for static geometry, and the sorting that
 a few hundred chunk draws is the first frame to need. Items one to three are what phase 6's
 multiple viewports need too.
@@ -238,7 +238,7 @@ and nothing provided them: `v3d::gl::Canvas` batched coloured quads but carried 
 coordinates, so every tetris piece, all text and every odyssey tile was unserved. Because the
 engine was consolidating, the primitive had to satisfy all three apps, and its shape had to be
 decided before the frame loop was built around it or it would have been built twice. That is
-[ADR-0005](../../adr/0005-one-batched-quad-primitive.md), and it held: one quad serves a
+[ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md), and it held: one quad serves a
 rectangle, a sprite, a glyph and a menu panel across four apps and the editor's ui.
 
 ## Phases
@@ -252,7 +252,7 @@ None of this is blocked. It shrinks the surface area everything else has to work
 - ~~Audit `luxa/` against `api/ui`~~ — done, [docs/audits/completed/LuxaAudit.md](../../audits/completed/LuxaAudit.md), and
   **the nine-item list is worked off and the tree deleted as of 2026-09-04**. The last two
   items were one piece of work, recorded as
-  [ADR-0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a theme is
+  [ADR-0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md): a theme is
   data the ui engine reads, and an image it names is resolved to a texture by the app.
 - ~~Audit `v3dlibs/` against the api libraries~~ — done,
   [docs/audits/completed/V3dlibsAudit.md](../../audits/completed/V3dlibsAudit.md), and **the five-item list is worked off and the
@@ -369,7 +369,7 @@ Done, 2026-08-31. A window clears to a colour and survives a resize and a minimi
   outside the cache is not retroactively put into it. Nothing is registered yet - phase 3
   fills these when it builds the quad pipeline.
 - ~~Bind by update frequency, and write the convention down.~~ Done, in
-  [docs/RenderingPipeline.md](../../RenderingPipeline.md): set 0 per frame bound by the pass,
+  [docs/RenderingPipeline.md](../../api/rendering/README.md): set 0 per frame bound by the pass,
   set 1 per material, push constants per object. The sort key's field order matches it.
 
 Two things landed alongside, neither of them planned:
@@ -378,7 +378,7 @@ Two things landed alongside, neither of them planned:
   vulkan code had never run.
 - **`api/render` has a test suite now** - 16 cases over the frame model, the sort key and the
   handle registry, which are the parts that need neither a window nor a GPU. Everything below
-  the recorder still waits on [ADR-0007](../../adr/0007-ci-rendering-tests.md).
+  the recorder still waits on [ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md).
 
 Done when: a window clears to a colour and survives a resize and a minimize. It does.
 
@@ -425,7 +425,7 @@ One decision and several defects turned up on the way:
   only ever cleared. An `_SRGB` target encodes on write, so every colour in the engine was
   displayed brighter than it was written - the `(0.06, 0.07, 0.10)` clear came out mid slate
   grey. Now a `UNORM` format, recorded as
-  [ADR-0009](../../adr/0009-colour-authored-in-display-space.md), which is the decision voxel
+  [ADR-0009](../../adr/0009-colour-display-space-unorm-swapchain.md), which is the decision voxel
   will have to revisit.
 - **Validation was loaded and silent, which is indistinguishable from validation that is not
   loaded.** Nothing created a debug messenger, so nothing the layer said reached anybody.
@@ -521,7 +521,7 @@ and `piece()` gained the setter that matches its getter, so a board can be arran
 
 Still not done: `tetris/run-unit-tests.sh` invokes a `unit_tests` binary that does not
 exist, and the renderer has no coverage - that waits on
-[ADR 0007](../../adr/0007-ci-rendering-tests.md) like the rest of the device-side work.
+[ADR 0007](../../adr/0007-ci-render-tests-on-software-vulkan.md) like the rest of the device-side work.
 
 ### Phase 5 — voxel and odyssey, and the engine consolidation
 
@@ -591,14 +591,14 @@ tetris, and waiting for the port below to use them for what they were built for.
 - ~~**Set 0.**~~ Done, as `vulkan::FrameUniforms` — the layout every pipeline in the engine
   declares, plus a slot per pass per frame in flight holding view, projection, their product
   and the viewport. `Recorder` writes and binds it per pass.
-  [ADR-0008](../../adr/0008-binding-by-update-frequency.md) stays **proposed**: the set is built
+  [ADR-0008](../../adr/0008-shaders-descriptor-sets-by-update-frequency.md) stays **proposed**: the set is built
   and bound, and no shader has read it yet, which is the check that record asked for.
 - ~~**Device-local buffers with a staging upload.**~~ Done, as `vulkan::DeviceBuffer` over a
   shared `vulkan::Uploader` — the one-shot record/submit/wait that `TextureFactory` had
   privately and now uses from the same place. `vulkan::Mesh` is the pair of them a draw
   reads.
 - ~~**Decide whether geometry is a `Resources` handle.**~~ Decided: **no**, and recorded as
-  [ADR-0010](../../adr/0010-meshes-are-owned-by-the-app.md). `Resources` never frees an
+  [ADR-0010](../../adr/0010-meshes-owned-by-the-app-that-built-them.md). `Resources` never frees an
   individual resource, and a chunk mesh dies while the app runs; the sort key has no geometry
   field, so a handle would sort nothing. The app owns meshes, and `vulkan::Mesh` is the api
   type it owns them as.
@@ -609,7 +609,7 @@ tetris, and waiting for the port below to use them for what they were built for.
 
 **Port voxel.** Done, 2026-09-01, and voxel draws terrain. It is the first app in the tree
 with a depth tested, sorted scene of its own pipeline, and the first thing to read set 0 —
-which is what [ADR-0008](../../adr/0008-binding-by-update-frequency.md) was waiting for.
+which is what [ADR-0008](../../adr/0008-shaders-descriptor-sets-by-update-frequency.md) was waiting for.
 
 - ~~Rewrite the two shaders it loads for Vulkan GLSL — explicit `set` and `binding`, matrices
   in set 0, the 16-material table in a UBO — and compile them with `v3d_add_shader`.~~ Done,
@@ -762,7 +762,7 @@ struck through below that turn out not to be this phase's after all.
   having the quad pipeline read set 0 like everything else is a change to the shared pipeline
   all four apps draw through, and it belongs with phase 6's multiple viewports — the first
   thing that actually needs a per-pass camera on a 2D pass.
-- **Revisit [ADR-0009](../../adr/0009-colour-authored-in-display-space.md).** Not yet due. The
+- **Revisit [ADR-0009](../../adr/0009-colour-display-space-unorm-swapchain.md).** Not yet due. The
   record itself says the reckoning comes when a lit scene has to blend in linear space, and
   nothing in this phase added lighting. Carried to whichever phase does.
 
@@ -802,7 +802,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   JSON config form. `RenderView` turns out to be an empty `Gtk::DrawingArea` and is worth
   nothing. The survey's eleven-item delete list replaces this bullet.
 - ~~**The api has no line primitive, and that is this phase's largest gap.**~~ Landed
-  2026-09-01 as [ADR-0011](../../adr/0011-lines-are-the-second-primitive.md).
+  2026-09-01 as [ADR-0011](../../adr/0011-rendering-lines-as-a-world-space-primitive.md).
   `realtime::LineCanvas` accumulates segments on the cpu - `line`, `polyline`, `box`,
   `circle` and a transform stack - and `vulkan::LineRenderer` draws the whole of one as a
   single non-indexed line list. Positions are in world space and read the pass camera at set
@@ -841,7 +841,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
     every rotation was one event stale and the first after a click was identity.
 - ~~**`v3d::type::Camera` builds OpenGL clip space**, which nothing can draw with.~~
   Fixed 2026-09-01, recorded as
-  [ADR-0012](../../adr/0012-camera-builds-vulkan-clip-space.md). This was not on the list
+  [ADR-0012](../../adr/0012-camera-projection-targets-vulkan-clip-space.md). This was not on the list
   because nothing had ever drawn through the class: its `createProjection()` was written
   against `glFrustum` and `glOrtho`, so y pointed up and depth ran -1 to 1, and under Vulkan
   a scene comes out mirrored with the near half of the frustum clipped away. Voxel had
@@ -866,7 +866,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   would not do: growing a buffer replaces the allocation and invalidates the handle every
   draw item recorded before it is holding.
 - ~~Selection needed three things the api did not have.~~ **All three landed 2026-09-02.**
-  The first two are [ADR-0013](../../adr/0013-mesh-is-a-dag-node.md): `brep::BRep` derives from
+  The first two are [ADR-0013](../../adr/0013-editor-a-mesh-is-a-dag-node.md): `brep::BRep` derives from
   `dag::Node` and `dag::Transform`, so a mesh has an id and a placement, and `selected()` is
   on all four of `Vertex`, `HalfEdge`, `Face` and `BRep` — `Face`'s had been commented out
   rather than kept, so it was four of four missing rather than three. `dag::Transform` had to
@@ -875,7 +875,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   ever built it. It now composes translation * rotation * scale, and `translation(v)` sets
   where it used to accumulate.
   - ~~**Picking is the third**~~ — landed as
-    [ADR-0014](../../adr/0014-picking-is-a-cpu-ray-cast.md): a cpu ray cast against the brep,
+    [ADR-0014](../../adr/0014-editor-pick-by-cpu-ray-cast.md): a cpu ray cast against the brep,
     not an id-buffer pass. An id buffer would start by writing the triangle primitive the
     tree does not have, needs a readback that either stalls the frame or answers a click a
     frame late, and cannot answer for a one pixel line at all. So an object and a face —
@@ -924,7 +924,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   - `CameraControlTool` drives whichever view the cursor is over, so a four way split is
     four cameras and one tool. The modifier held picks the move, as `view::camera::*` did.
   - `HWRenderContext` and `Visitor` are deleted. The first is the GL render context and does
-    not survive [ADR-0001](../../adr/0001-vulkan-replaces-opengl.md); the second was an empty
+    not survive [ADR-0001](../../adr/0001-rendering-replace-opengl-with-vulkan.md); the second was an empty
     class in the old `v3D` namespace with no members and no consumer.
   - **There is a scene as of 2026-09-02.** `v3d::editor::Scene`, `SceneVisitor` and the four
     `create_poly_*` primitives moved out of `v3dlibs/core` into `vertical3d/src`, which
@@ -963,7 +963,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
     `ComponentRenderer::insets()` is what the views are shrunk by. 55 of the menu's 75
     commands still have no handler and log themselves when clicked.
 - ~~Multiple viewports are the feature that will push hardest on the pass model from
-  [ADR-0003](../../adr/0003-one-realtime-engine.md).~~ Done 2026-09-01, and **the model
+  [ADR-0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md).~~ Done 2026-09-01, and **the model
   expressed it**. Four views is four `Pass`es over one `Frame`: each carries its region as
   its viewport and scissor, its own camera at set 0, and clears its own region of the colour
   and depth attachments. Nothing in the frame model had to change to allow it -
@@ -972,7 +972,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   above, which is a renderer defect rather than a model one. The orthographic per-pass
   camera deferred out of phase 5 lands with ADR-0012.
 - ~~The three manipulators.~~ Landed 2026-09-02 as
-  [ADR-0015](../../adr/0015-manipulators-write-the-object-transform.md). A handle writes the
+  [ADR-0015](../../adr/0015-editor-manipulators-edit-the-object-transform.md). A handle writes the
   mesh's `dag::Transform` and never its geometry, is drawn at the object's own origin
   because that is where the transform pivots, and is picked by projecting itself to the
   screen and measuring the cursor's distance from it. `Manipulator` is the base - an axis
@@ -999,7 +999,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
     manipulator writes the transform. Moving a component is a modelling operation and there
     is none.
 - ~~**Undo has no prototype.**~~ Designed and landed 2026-09-02 as
-  [ADR-0016](../../adr/0016-undo-records-what-has-already-happened.md). Rigel has no undo or
+  [ADR-0016](../../adr/0016-editor-undo-records-completed-changes.md). Rigel has no undo or
   redo anywhere, so there was nothing to fold in. **A command is a record of a change that
   has already been made**, not a request to make one: `Command` has `undo()`, `redo()` and
   `name()` and no `execute()`, and `CommandStack::push` never applies anything. That is what
@@ -1026,7 +1026,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   - Still open: nothing but a create and a transform is undoable, and a modelling operation
     that edits geometry will need to record the topology it changed rather than a placement.
 - ~~**There is nothing a menu item could invoke.**~~ Landed 2026-09-02 as
-  [ADR-0017](../../adr/0017-a-command-is-a-name-in-a-context.md), which is item 8 of the
+  ADR-0017 (removed), which is item 8 of the
   survey's delete list. A command is identified by its context and name together -
   `Event::str()`, which is the form gui.xml's 51 command strings are already in - and
   `v3d::editor::CommandDirectory` maps that to a handler. A key binding and a menu item carry
@@ -1045,7 +1045,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
   - **`Tool` stays in the editor**, which is the other half of survey item 8. No game in the
     repository holds a gesture open across events, and one consumer is not a library.
 - ~~**A project is not saved anywhere.**~~ Landed 2026-09-02 as
-  [ADR-0018](../../adr/0018-a-project-is-json-and-stores-topology-verbatim.md), which is item 9
+  [ADR-0018](../../adr/0018-editor-projects-saved-as-json-with-exact-topology.md), which is item 9
   of the survey's delete list. A project is a JSON document holding a version, a name and one
   array of meshes - rigel's `<project>`/`<scene>`/`<mesh>` shape in the encoding the tree
   already parses, since the XML library rigel used went with `vault/quantumxml`.
@@ -1073,7 +1073,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
     path beside the executable. No "save as", no dirty flag, and nothing warns before a load
     replaces unsaved work.
 - ~~**There is nothing that draws a menu.**~~ Landed 2026-09-02 as
-  [ADR-0019](../../adr/0019-the-ui-is-laid-out-by-what-draws-it.md). `api/ui` had a menu, but it
+  ADR-0019 (removed). `api/ui` had a menu, but it
   was a game's pause menu - one panel centred on the canvas, navigated by the keyboard, with
   no notion of a strip and no idea where the cursor is. **Drawing is what lays the ui out**:
   `ComponentRenderer` leaves every component holding the bounds it was drawn in, and
@@ -1104,7 +1104,7 @@ manipulator gizmos, a construction plane, selection, and an undoable command mod
     name and the five with no node type to select are left out as ADR-0014 left them out of
     the mask; and the left toolbar's four icons were labelled instead, there being no image
     path in `api/ui` at the time. **The left toolbar is iconic as of 2026-09-04**, with
-    [ADR-0020](../../adr/0020-a-theme-is-data-and-the-app-resolves-its-images.md): a `Button`
+    [ADR-0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md): a `Button`
     names an image, the ui engine's image pass resolves it through the app, and the four PNGs
     were recovered out of `rigel/icons/` into `vertical3d/data/icons/` before that tree was
     deleted.
@@ -1179,7 +1179,7 @@ Work:
     hour; the binary cache is what makes a second run cheap.
   - **libnoise is built out of source**, because the `CMakeCache.txt` it commits names a
     generator no runner has. It is the only vendored library the workflow builds since
-    [ADR-0021](../../adr/0021-sdl3-mixer-replaces-soloud.md) took the mixer from vcpkg.
+    [ADR-0021](../../adr/0021-audio-use-sdl3-mixer.md) took the mixer from vcpkg.
   - Ninja and a `vcvars64.bat` located through `vswhere`, rather than the Visual Studio
     generator, so a CI failure means what a local one does. Everything but the runner-specific
     half - the SDK install, the runner's vcpkg, and `vswhere` - was verified locally by
@@ -1215,7 +1215,7 @@ Work:
 - ~~Start coverage on the libraries that need neither a window nor a GPU.~~ Done, and closed
   as of 2026-09-04 - `dag`, `asset`, `config`, `ecs`, `audio`, `log` and `engine` included.
   All of it can run in CI from day one, which the render libraries cannot — see
-  [ADR-0007](../../adr/0007-ci-rendering-tests.md).
+  [ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md).
 
 Two items on `docs/TODO.md` — "Get tests working again" and "integrate tests into github
 actions" — are this workstream.
@@ -1268,7 +1268,7 @@ one. What stays here is the record of the defects the phases closed around.
   already did, and both exit validation clean.
 - ~~**Nothing in the tree makes a sound, and the reason is the vendored soloud.**~~ Fixed
   2026-09-04 by replacing it: `api/audio` is SDL3_mixer from vcpkg per
-  [ADR-0021](../../adr/0021-sdl3-mixer-replaces-soloud.md), and pong plays its clips. The
+  [ADR-0021](../../adr/0021-audio-use-sdl3-mixer.md), and pong plays its clips. The
   faults underneath it went the same day - a clip resolves through the asset manager,
   `initialize()` reports what the backend said instead of ignoring it, and `playClip` and
   teardown are guarded against a device that never opened. Taking the port moved the vcpkg
@@ -1296,4 +1296,9 @@ unbuilt input capture — is the editor section of [docs/TODO.md](../../TODO.md)
 ## Open questions
 
 None outstanding. The last one — how render tests run in CI — is settled in
-[ADR-0007](../../adr/0007-ci-rendering-tests.md).
+[ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md).
+
+## Outcome
+
+Closed on 2026-09-04. It covered several overlapping rewrites: SDL3, the migration of the legacy
+trees, Vulkan, the engine consolidation and the per-app ports.

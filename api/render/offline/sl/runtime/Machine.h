@@ -5,12 +5,17 @@
 
 #pragma once
 
+#include <api/log/Logger.h>
+
 #include <string>
 #include <vector>
+
+#include <boost/shared_ptr.hpp>
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
+#include "Instruction.h"
 #include "Program.h"
 #include "Renderer.h"
 #include "Value.h"
@@ -20,14 +25,14 @@ namespace v3d::render::offline::sl::runtime {
 /**
  * Runs a program over a batch of shading points.
  *
- * **The execution mask is a stack.** A condition every point agrees about is a jump; one they
- * disagree about runs both arms, each under the lanes that took it, and an arm no lane took
- * is skipped - which is the optimisation that makes the common case free. A loop iterates
- * while any lane is live, and `break`, `continue` and `return` clear lanes rather than
- * jumping out, because the lanes beside them have not finished.
+ * **The execution mask is a stack.** A condition with the same value at every point is a
+ * jump. A condition whose value differs runs both arms, each under the lanes that took it,
+ * and an arm no lane took is skipped. A loop iterates while any lane is live, and `break`,
+ * `continue` and `return` clear lanes rather than jumping out, because the lanes beside
+ * them have not finished.
  *
- * **talyn's batch is one point.** No special case and no second path: the same program, the
- * same instructions, a mask one bit wide. That is the whole reason the model is a batch.
+ * **A traced hit's batch is one point.** It runs the same program and the same instructions
+ * with a mask one bit wide, with no special case and no second path.
  *
  * **A run allocates once.** prepare() sizes the register file for a program and a batch; a
  * renderer then writes its inputs into the file, calls run(), and reads the results out - a
@@ -36,24 +41,29 @@ namespace v3d::render::offline::sl::runtime {
 class Machine final {
  public:
     /**
-     * Size the register file for this program and batch, and write its constants in. A batch
-     * of zero is read as one.
+     * Size the register file for this program and batch, write its constants in, and hold the
+     * program for run() and initialise(). A register file therefore cannot be run with a
+     * program it was not sized for. The program has to outlive the machine's use of it. A
+     * batch of zero is read as one.
      **/
     void prepare(const Program & program, unsigned int batch);
 
     /**
-     * Run it. False when something went wrong, which error() names.
+     * Run the program prepare() was given. False when something went wrong, which error()
+     * names - and when nothing was prepared. A failure is also reported, so it reaches the log
+     * once per machine however many runs fail the same way.
      *
      * Starts after the program's prologue, which is the declared parameter defaults:
      * running those again per grid would overwrite whatever a scene bound.
      **/
-    bool run(const Program & program);
+    bool run();
 
     /**
      * Run only the prologue, which leaves each parameter register holding the default the
-     * shader declared. What `Shader` reads its defaults out of, once.
+     * shader declared. `Instance::write()` calls it before writing a scene's values. A failure
+     * here is not reported: `Instance::write()` reports it with the shader's name.
      **/
-    bool initialise(const Program & program);
+    bool initialise();
 
     /**
      * A register, by the index the program gave it. The first `Program::symbols` of them
@@ -65,27 +75,37 @@ class Machine final {
     unsigned int batch() const;
 
     /**
-     * What the machine asks a renderer for. Null until one is attached, which leaves a named
-     * coordinate space unchanged and reported.
+     * The renderer that supplies what the machine does not hold. Null until one is attached,
+     * which leaves a named coordinate space unchanged and reported.
      **/
     void renderer(Renderer* renderer);
 
     const std::string & error() const;
 
     /**
-     * What a run said about the things it could not do - a space no renderer knew, a
-     * built-in with no body yet. One line per distinct message, because a scene that rendered
-     * wrong and a scene that was not understood look identical from outside, and a 640 by 480
-     * render must not print a million lines to say so.
+     * Reports of what a run could not do, such as a space no renderer knew or a built-in with
+     * no body. One line per distinct message, so a 640 by 480 render does not print a million
+     * copies of one message.
      **/
     const std::vector<std::string> & reports() const;
 
     /**
+     * Where a report also goes, as a warning, the first time it is made. Without one, reports
+     * are only kept for reports() to read.
+     **/
+    void logger(const boost::shared_ptr<v3d::log::Logger> & logger);
+
+    /**
+     * Keeps a message for reports(), and logs it, once however often it is made.
+     **/
+    void report(const std::string & message);
+
+    /**
      * What a `printf` in the shader wrote, in the order it wrote it, cleared at the start
-     * of every run. A renderer drains it into its log and a case reads it.
+     * of every run. A renderer drains it into its log, and a test reads it.
      *
-     * Not reports(), which says one thing once: a person who wrote a printf is asking to be
-     * told every time, and a line per shading point is what they asked for.
+     * Unlike reports(), nothing here is deduplicated: a printf writes a line per shading
+     * point.
      **/
     const std::vector<std::string> & printed() const;
 
@@ -93,8 +113,8 @@ class Machine final {
      * Which points a light shader's run lit, for the renderer to hand back to the surface
      * shader's illuminance loop.
      *
-     * Every point until an `illuminate` or a `solar` narrows it, which is what makes a
-     * light shader with neither - `ambientlight` - light the whole batch.
+     * Every point until an `illuminate` or a `solar` narrows it, so a light shader with
+     * neither, such as `ambientlight`, lights the whole batch.
      **/
     const std::vector<char> & lit() const;
 
@@ -122,26 +142,27 @@ class Machine final {
     };
 
     /**
-     * An illuminance loop in progress: which light the body runs for next, the lanes the
-     * loop opened with, and the registers the construct named.
+     * An illuminance loop in progress: which light the body runs for next, the loop entry that
+     * holds the lanes still going round it, and the registers the construct named. The lanes
+     * live in a loop entry so that a break, a continue and a return clear them as they clear
+     * any other loop's.
      **/
     class Illumination final {
      public:
         unsigned int light = 0;
-        std::vector<char> base;
+        std::size_t loop = 0;
         int direction = -1;
         int colour = -1;
         std::vector<int> arguments;
     };
 
-    /** One pass over a range of the instructions, which is what both entry points are. **/
+    /** One pass over a range of the instructions, used by both run() and initialise(). **/
     bool execute(const Program & program, std::size_t from, std::size_t until);
 
     bool live(unsigned int point) const;
     bool anyLive() const;
     /** Whether an instruction writing this value should write this point of it. **/
     bool writable(const Value & target, unsigned int point) const;
-    void report(const std::string & message);
 
     void move(const Instruction & instruction);  // NOLINT(build/include_what_you_use) - the name, not std::move
     void component(const Instruction & instruction);
@@ -151,27 +172,38 @@ class Machine final {
     void unary(const Instruction & instruction);
     void transform(const Instruction & instruction);  // NOLINT(build/include_what_you_use) - the name, not std::transform
     /**
-     * A standard library call. Defined in Library.cxx, which is most of the language by
-     * volume and none of it by mechanism: every body there is arithmetic over the value
-     * model, and the four that are not ask the renderer.
+     * A standard library call. Defined in Library.cxx, where every body is arithmetic over
+     * the value model except the few that call the renderer.
      **/
     void builtin(const Instruction & instruction);
+    /** Report each colour space a ctransform names that is not "rgb". **/
+    void colourSpaces(const std::vector<const Value*> & given);
     /**
      * The sum of what every ambient light adds to the batch. Its own body rather than one
-     * of Library.cxx's, because it is the one built-in that runs the lights itself: an
-     * ambient light has no direction, so an illuminance loop cannot reach it.
+     * of Library.cxx's, because it is the only built-in that runs the lights itself: an
+     * ambient light has no direction, so an illuminance loop skips it.
      **/
     void ambient(Value* target);
     /**
-     * transmission and trace, which are the two the renderer answers about a line between
-     * two points. A renderer that cannot lets all the light through and traces nothing,
-     * and says which.
+     * The registers a call writes rather than reads, from its first written argument on, or
+     * none for a call that returns through its result.
+     **/
+    std::vector<Value*> written(const Instruction & instruction, int first);
+    /**
+     * The image a texture() call names, and the s and t it reads at: its own arguments, or
+     * the shader's s and t when it was given only the name. Null, and reported once, when the
+     * renderer cannot read it.
+     **/
+    const Texture* texture(const std::vector<const Value*> & given, const Value** s, const Value** t);
+    /**
+     * transmission and trace, the two calls the renderer computes along a line between two
+     * points. When the renderer cannot do them, all the light gets through, nothing is
+     * traced, and the machine reports which call failed.
      **/
     void shadowed(bool ray, const Value & from, const Value & to, Value* target);
     /**
-     * The matrix into a named coordinate space, the identity and a report when no renderer
-     * knows it - a scene that named a space nothing knows renders in the wrong place rather
-     * than not at all, and says so.
+     * The matrix into a named coordinate space. When the renderer does not recognise the space,
+     * it is the identity and a report, so the scene still renders, in the wrong place.
      **/
     glm::mat4x4 space(const std::string & name);
     /** Push the lanes of the condition that are, or are not, non-zero. **/
@@ -179,8 +211,8 @@ class Machine final {
     /** Narrow a loop to the lanes its condition still holds. **/
     void narrow(const Instruction & instruction);
     /**
-     * Narrow the batch to the points one light reaches, whichever end of the message
-     * passing asked. False when there is no such point, and the body is left over.
+     * Narrow the batch to the points one light reaches, for either side of the message
+     * passing. False when there is no such point, and the body is skipped.
      **/
     bool admit(const Instruction & instruction);
     /**
@@ -195,7 +227,7 @@ class Machine final {
     bool illuminate(const Instruction & instruction, bool solar);
     /**
      * Whether a direction lies inside the cone an axis and a half angle name. A cone that
-     * named neither takes everything.
+     * names neither contains every direction.
      **/
     bool inside(const glm::vec3 & direction, const std::vector<int> & cone,
         std::size_t first, unsigned int point) const;
@@ -212,17 +244,23 @@ class Machine final {
     std::vector<Frame> frames_;
     std::vector<Illumination> illuminations_;
     /**
-     * Where an ambient light's answer lands before it is added in. Members rather than
+     * Where an ambient light's result lands before it is added in. Members rather than
      * locals so that a grid summing the same two lights a thousand times allocates once.
      **/
     Value direction_;
     Value colour_;
-    /** The register P is, for the built-in that asks the lights about the batch. **/
+    /** The register holding P, for ambient(), which runs the lights over the batch. **/
     int point_ = -1;
+    /** The registers holding s and t, which texture() reads when no coordinates are given. **/
+    int s_ = -1;
+    int t_ = -1;
     std::vector<char> lit_;
     std::vector<std::string> reports_;
+    boost::shared_ptr<v3d::log::Logger> logger_;
     std::vector<std::string> printed_;
     Renderer* renderer_ = nullptr;
+    /** What prepare() sized the register file for. **/
+    const Program* program_ = nullptr;
     unsigned int batch_ = 1;
     std::string error_;
 };

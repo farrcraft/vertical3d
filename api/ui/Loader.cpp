@@ -5,6 +5,7 @@
 
 #include "Loader.h"
 
+#include <api/asset/Json.h>
 #include <api/event/Engine.h>
 #include <api/log/Logger.h>
 #include <api/ui/component/Bar.h>
@@ -18,6 +19,7 @@
 #include <api/ui/component/RadioButton.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
+#include <api/ui/component/Slider.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TabPage.h>
 #include <api/ui/component/TextBox.h>
@@ -37,12 +39,16 @@
 #include <api/ui/style/property/Number.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
+#include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "Component.h"
 #include "Container.h"
+#include "Length.h"
 
 #include <boost/json/value_to.hpp>
 #include <boost/make_shared.hpp>
@@ -56,7 +62,7 @@ namespace {
  * Read a fixed length array of numbers - a position, a size, a colour.
  *
  * @param fallback what to answer with when the field is absent or the wrong length,
- *      which is what lets every one of these be optional
+ *      so every one of these is optional
  **/
 template <typename T, std::size_t N>
 T numbers(const boost::json::object& entry, const std::string& field, const T& fallback) {
@@ -240,8 +246,7 @@ bool Loader::loadTheme(const boost::json::object& entry) {
     std::string themeName = boost::json::value_to<std::string>(entry.at("name"));
     boost::shared_ptr<style::Theme> theme = boost::make_shared<style::Theme>(themeName);
 
-    // a theme with no styles in it is legal and draws in the defaults, which is what
-    // every ui config in the tree was before the styles could be read
+    // a theme with no styles in it is legal and draws in the defaults
     if (entry.contains("styles")) {
         if (!entry.at("styles").is_array()) {
             logger_->get()->error("Unrecognized styles config in theme [{}]", themeName);
@@ -265,8 +270,8 @@ bool Loader::loadTheme(const boost::json::object& entry) {
 
 boost::shared_ptr<Component> Loader::buildComponent(const std::string& componentType, const boost::json::object& entry) {
     // the config's vocabulary is component::name()'s, so this switches on what a type is
-    // rather than on what it was spelled. An exhaustive switch, per ADR-0047: a component
-    // added to the enum names this function until it is given a way to be built
+    // rather than on what it was spelled. An exhaustive switch, so a component added to
+    // the enum fails the build here until it is given a way to be built
     switch (component::parse(componentType)) {
         case component::Type::Menu: {
             boost::shared_ptr<component::Menu> menu = loadMenu(entry);
@@ -293,6 +298,8 @@ boost::shared_ptr<Component> Loader::buildComponent(const std::string& component
             return loadBar(entry);
         case component::Type::Scrollbar:
             return loadScrollbar(entry);
+        case component::Type::Slider:
+            return loadSlider(entry);
         case component::Type::SelectList:
             return loadSelectList(entry);
         case component::Type::TextBox:
@@ -332,17 +339,18 @@ boost::shared_ptr<Component> Loader::loadComponent(const boost::json::object& en
 
     component->name(componentName);
     // a menu and a menu bar are placed entirely by the renderer, so reading a box onto one
-    // would be read and then written over
+    // would be read and then written over. What else they carry is read like anything's
     const component::Type type = component::parse(componentType);
     if (type != component::Type::Menu && type != component::Type::MenuBar) {
-        loadAttributes(entry, component);
+        loadLayout(entry, &component->layout());
     }
+    loadAttributes(entry, component);
     if (!loadChildren(entry, component)) {
         return nullptr;
     }
     // which tab is up is a place in the pages, so it can only be read once the pages the
     // children array named are there
-    if (componentType == "tabs" && entry.contains("selected")) {
+    if (type == component::Type::TabBar && entry.contains("selected")) {
         boost::static_pointer_cast<component::TabBar>(component)->selected(
             boost::json::value_to<int>(entry.at("selected")));
     }
@@ -422,7 +430,7 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
         } else if (stateName == "press") {
             state = style::Button::State::Press;
         } else if (stateName == "disabled" || stateName == "inactive") {
-            // both names dress a component that is not enabled - ADR-0059
+            // both names dress a component that is not enabled
             state = style::Button::State::Disabled;
         } else if (stateName != "normal") {
             logger_->get()->error("A button style has no state [{}]", stateName);
@@ -518,7 +526,6 @@ boost::shared_ptr<style::Property> Loader::loadProperty(const std::string& secti
 /**
  **/
 void Loader::loadAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component) {
-    loadLayout(entry, &component->layout());
     if (entry.contains("style")) {
         component->style(boost::json::value_to<std::string>(entry.at("style")));
     }
@@ -576,8 +583,8 @@ boost::shared_ptr<component::Button> Loader::loadButton(const boost::json::objec
  **/
 boost::shared_ptr<component::Panel> Loader::loadPanel(const boost::json::object& entry) {
     static_cast<void>(entry);
-    // everything a panel is drawn with is its style's, per ADR-0020, so there is nothing
-    // of its own to read
+    // everything a panel is drawn with comes from its style, so there is nothing of its
+    // own to read
     return boost::make_shared<component::Panel>();
 }
 
@@ -593,6 +600,25 @@ boost::shared_ptr<component::Bar> Loader::loadBar(const boost::json::object& ent
         bar->direction(component::Bar::Direction::Vertical);
     }
     return bar;
+}
+
+/**
+ **/
+boost::shared_ptr<component::Slider> Loader::loadSlider(const boost::json::object& entry) {
+    boost::shared_ptr<component::Slider> slider = boost::make_shared<component::Slider>();
+    // a key that is absent, not a number, or beyond the range of a float takes its default
+    const auto number = [&entry](const char* key, float fallback) {
+        const std::optional<double> value = v3d::asset::readNumber(entry, key);
+        const bool fits = value && std::abs(*value) <= static_cast<double>(std::numeric_limits<float>::max());
+        return fits ? static_cast<float>(*value) : fallback;
+    };
+    slider->range(number("minimum", 0.0f), number("maximum", 1.0f), number("step", 0.0f));
+    slider->value(number("value", slider->minimum()));
+    const v3d::event::Event command = loadCommand(entry);
+    if (command.context()) {
+        slider->event(command);
+    }
+    return slider;
 }
 
 /**
@@ -701,8 +727,8 @@ void Loader::loadCheckBox(const boost::json::object& entry, const boost::shared_
     if (entry.contains("label")) {
         box->label(boost::json::value_to<std::string>(entry.at("label")));
     }
-    // a mark in the config is the state the ui starts in; after that it is whatever
-    // answers the command that sets one, per ADR-0019
+    // a mark in the config is the state the ui starts in; after that, whatever handles
+    // the command sets it
     box->checked(flag(entry, "checked", false));
     const v3d::event::Event command = loadCommand(entry);
     if (command.context()) {
@@ -717,6 +743,7 @@ void Loader::loadBox(const boost::json::object& entry, const boost::shared_ptr<c
         box->spacing(static_cast<float>(boost::json::value_to<double>(entry.at("spacing"))));
     }
     box->stretch(flag(entry, "stretch", box->stretch()));
+    box->wrap(flag(entry, "wrap", box->wrap()));
 }
 
 /**
@@ -861,8 +888,16 @@ boost::shared_ptr<component::Toolbar> Loader::loadToolbar(const boost::json::obj
             logger_->get()->error("Unrecognized toolbar button config");
             return nullptr;
         }
-        // a button in a strip is read the same way a button in a container is
-        bar->add(loadButton(buttonIterator->as_object()));
+        // a button in a strip is read the same way a button in a container is, so "enabled",
+        // "style", "name" and "visible" on one mean what they mean anywhere else
+        const boost::shared_ptr<component::Button> button = loadButton(buttonIterator->as_object());
+        loadAttributes(buttonIterator->as_object(), button);
+        // a name that is not a string is ignored, and the button has none
+        const std::optional<std::string> name = v3d::asset::readString(buttonIterator->as_object(), "name");
+        if (name) {
+            button->name(*name);
+        }
+        bar->add(button);
     }
     return bar;
 }

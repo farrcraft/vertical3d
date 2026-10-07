@@ -5,7 +5,8 @@
 
 #include "Project.h"
 
-#include <api/asset/kind/JsonFile.h>
+#include <api/asset/File.h>
+#include <api/asset/Migration.h>
 #include <api/asset/Writer.h>
 #include <api/brep/BRep.h>
 #include <api/brep/Face.h>
@@ -15,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -58,7 +60,7 @@ bool numbers(const boost::json::object& entry, const char* key, std::size_t coun
 }
 
 /**
- * Read a whole number, which is what every reference within a mesh is.
+ * Read a whole number. Every reference within a mesh is one.
  * A double, a negative, or one too large for brep::Index is a malformed index
  * rather than one to round or truncate.
  * @return false when the entry is missing or is not one, leaving out alone
@@ -84,17 +86,6 @@ bool index(const boost::json::object& entry, const char* key, v3d::brep::Index* 
 }
 
 /**
- * Whether a reference names something the mesh holds. INVALID_ID is allowed
- * wherever a reference may be absent - an edge on a boundary has no pair.
- **/
-bool refers(v3d::brep::Index id, std::size_t count, bool optional) {
-    if (optional && id == v3d::brep::INVALID_ID) {
-        return true;
-    }
-    return id < count;
-}
-
-/**
  **/
 boost::json::array vector(const glm::vec3& v) {
     return boost::json::array{ v.x, v.y, v.z };
@@ -116,13 +107,13 @@ class WriteVisitor final : public SceneVisitor {
         transform["scale"] = vector(mesh->scale());
 
         boost::json::array vertices;
-        for (std::size_t id = 0; id < mesh->vertexCount(); id++) {
-            vertices.push_back(vector(mesh->vertex(static_cast<unsigned int>(id))->point()));
+        for (v3d::brep::Index id = 0; id < mesh->vertexCount(); id++) {
+            vertices.push_back(vector(mesh->vertex(id)->point()));
         }
 
         boost::json::array edges;
-        for (std::size_t id = 0; id < mesh->edgeCount(); id++) {
-            const v3d::brep::HalfEdge* edge = mesh->edge(static_cast<unsigned int>(id));
+        for (v3d::brep::Index id = 0; id < mesh->edgeCount(); id++) {
+            const v3d::brep::HalfEdge* edge = mesh->edge(id);
             boost::json::object entry;
             entry["vertex"] = edge->vertex();
             entry["face"] = edge->face();
@@ -132,8 +123,8 @@ class WriteVisitor final : public SceneVisitor {
         }
 
         boost::json::array faces;
-        for (std::size_t id = 0; id < mesh->faceCount(); id++) {
-            const v3d::brep::Face* face = mesh->face(static_cast<unsigned int>(id));
+        for (v3d::brep::Index id = 0; id < mesh->faceCount(); id++) {
+            const v3d::brep::Face* face = mesh->face(id);
             boost::json::object entry;
             entry["normal"] = vector(face->normal());
             entry["edge"] = face->edge();
@@ -226,33 +217,21 @@ bool readFaces(const boost::json::array& faces, const std::string& path,
             logger->get()->error("A face in {} is missing its normal or its edge", path);
             return false;
         }
-        mesh->addFace(v3d::brep::Face(glm::vec3(normal[0], normal[1], normal[2]),
-            static_cast<unsigned int>(edge)));
+        mesh->addFace(v3d::brep::Face(glm::vec3(normal[0], normal[1], normal[2]), edge));
     }
     return true;
 }
 
 /**
- * A reference out of range is a mesh the wireframe and the picker would walk off the end
- * of, so it is refused here rather than found by whatever reads it first.
+ * A reference out of range would make the wireframe and the picker index past the end
+ * of the mesh, so it is refused here rather than found by whatever reads it first.
  **/
 bool validMesh(const boost::shared_ptr<v3d::brep::BRep>& mesh, const std::string& path,
     const boost::shared_ptr<v3d::log::Logger>& logger) {
-    for (std::size_t id = 0; id < mesh->edgeCount(); id++) {
-        const v3d::brep::HalfEdge* edge = mesh->edge(static_cast<unsigned int>(id));
-        if (!refers(edge->vertex(), mesh->vertexCount(), false) ||
-            !refers(edge->face(), mesh->faceCount(), true) ||
-            !refers(edge->pair(), mesh->edgeCount(), true) ||
-            !refers(edge->next(), mesh->edgeCount(), true)) {
-            logger->get()->error("Edge {} in {} names something the mesh does not hold", id, path);
-            return false;
-        }
-    }
-    for (std::size_t id = 0; id < mesh->faceCount(); id++) {
-        if (!refers(mesh->face(static_cast<unsigned int>(id))->edge(), mesh->edgeCount(), false)) {
-            logger->get()->error("Face {} in {} names an edge the mesh does not hold", id, path);
-            return false;
-        }
+    std::string problem;
+    if (!mesh->validate(&problem)) {
+        logger->get()->error("A mesh in {} is not whole: {}", path, problem);
+        return false;
     }
     return true;
 }
@@ -314,24 +293,31 @@ bool Project::read(const std::string& path, const boost::shared_ptr<Scene>& scen
         return false;
     }
 
-    const std::string text = v3d::asset::kind::read_file(path.c_str());
-    if (text.empty()) {
+    const std::optional<std::string> text = v3d::asset::readFile(path);
+    if (!text || text->empty()) {
         logger_->get()->error("No project to read at {}", path);
         return false;
     }
 
     boost::system::error_code error;
-    const boost::json::value document = boost::json::parse(text, error);
+    const boost::json::value document = boost::json::parse(*text, error);
     if (error || !document.is_object()) {
         logger_->get()->error("{} is not a project: {}", path, error.message());
         return false;
     }
-    const boost::json::object& root = document.as_object();
-
-    v3d::brep::Index version = 0;
-    if (!index(root, "version", &version) || version != static_cast<v3d::brep::Index>(VERSION)) {
-        logger_->get()->error("{} is not a version {} project", path, VERSION);
-        return false;
+    // an older file is migrated one version at a time. The format has one version, so the
+    // migration chain is empty
+    boost::json::object root = document.as_object();
+    switch (v3d::asset::readForward(&root, VERSION, {})) {
+        case v3d::asset::Reading::Current:
+        case v3d::asset::Reading::Migrated:
+            break;
+        case v3d::asset::Reading::Newer:
+            logger_->get()->error("{} was written by a later build, which this one cannot read", path);
+            return false;
+        case v3d::asset::Reading::Refused:
+            logger_->get()->error("{} has no version this build can read", path);
+            return false;
     }
     if (!root.contains("meshes") || !root.at("meshes").is_array()) {
         logger_->get()->error("{} has no meshes", path);

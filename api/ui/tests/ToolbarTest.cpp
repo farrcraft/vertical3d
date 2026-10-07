@@ -3,8 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Context.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/Container.h>
+#include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/MenuBar.h>
 #include <api/ui/paint/ComponentRenderer.h>
@@ -14,6 +16,7 @@
 #include <string_view>
 #include <vector>
 
+#include <boost/json/parse.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <entt/entt.hpp>
@@ -203,8 +206,8 @@ BOOST_AUTO_TEST_CASE(toolbar_hover_follows_the_cursor) {
 }
 
 /**
- * A button is found by the command it sends, which is how whatever answers a command marks
- * the button that names it. A button that is not a toggle never shows a mark.
+ * A button is found by the command it sends. Whatever handles a command marks the button
+ * that names it this way. A button that is not a toggle never shows a mark.
  **/
 BOOST_AUTO_TEST_CASE(toolbar_marks_by_command) {
     Fixture fixture;
@@ -265,10 +268,9 @@ BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
  * Two left strips stand side by side rather than on top of each other, on the first frame as
  * well as the ones after it.
  *
- * The draw used to advance past a column by the box the strip was last drawn in, which is
- * nothing until it has been drawn once - so on the first frame both strips were placed at the
- * left edge, and insets() disagreed because it advanced by what the strip would be drawn at.
- * One implementation of the rule is what makes the two agree.
+ * The draw and insets() both advance past a column by what the strip will be drawn at, not
+ * by the box it was last drawn in, which is nothing before the first draw. Both use one
+ * implementation, so the two agree.
  **/
 BOOST_AUTO_TEST_CASE(toolbar_two_columns_stand_side_by_side_on_the_first_frame) {
     Fixture fixture;
@@ -293,4 +295,81 @@ BOOST_AUTO_TEST_CASE(toolbar_two_columns_stand_side_by_side_on_the_first_frame) 
     BOOST_TEST(right.position().x == left.size().x + 1.0f);
     // and the two together take exactly what the app was told they would
     BOOST_TEST(right.position().x + right.size().x + 1.0f == reserved);
+}
+
+/**
+ * A strip holds its buttons outside children(), and they inherit from the strip: a disabled
+ * one disables every button on it, which then takes no press and sends nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_strip_disables_its_buttons) {
+    Fixture fixture;
+    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
+
+    BOOST_TEST(v3d::ui::usable(*bar->button(1)));
+    bar->enabled(false);
+    BOOST_TEST(!v3d::ui::usable(*bar->button(1)));
+
+    bar->press(Fixture::centre(*bar->button(1)));
+    BOOST_TEST(fixture.sent.empty());
+}
+
+/**
+ * A hidden button takes no room in its strip, is not drawn and takes no press. The buttons
+ * after it close up, so a press where it would have been lands on the next one.
+ **/
+BOOST_AUTO_TEST_CASE(a_hidden_button_takes_no_room_and_no_press) {
+    Fixture fixture;
+    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
+    bar->button(0)->visible(false);
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
+
+    BOOST_TEST(bar->button(1)->position().x == 0.0f);
+
+    BOOST_TEST(bar->press(glm::vec2(5.0f, 5.0f)));
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
+    BOOST_TEST(fixture.sent.front() == "test::translate");
+}
+
+/**
+ * A left strip starts below every top strip, whichever of the two a document lists first, so
+ * the two never overlap.
+ **/
+BOOST_AUTO_TEST_CASE(a_left_strip_listed_first_still_starts_below_a_top_one) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Toolbar> left =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
+    const boost::shared_ptr<v3d::ui::component::Toolbar> top =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
+
+    v3d::ui::Container container("editor", true);
+    container.add(left);
+    container.add(top);
+    fixture.renderer.draw(&fixture.canvas, container);
+
+    const v3d::ui::Component& column = *left;
+    const v3d::ui::Component& row = *top;
+    BOOST_TEST(row.position().y == 0.0f);
+    BOOST_TEST(column.position().y == row.size().y + 1.0f);
+}
+
+/**
+ * A document names a toolbar button. A name that is not a string is ignored rather than
+ * failing the load, and the button has no name.
+ **/
+BOOST_AUTO_TEST_CASE(a_toolbar_button_name_that_is_not_a_string_is_ignored) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
+        boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "editor", "visible": true,
+        "components": [ { "type": "toolbar", "name": "tools", "edge": "top", "buttons": [
+            { "label": "Select", "name": "select" }, { "label": "Move", "name": 7 }
+        ] } ] } ] })").as_object()));
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        boost::dynamic_pointer_cast<v3d::ui::component::Toolbar>(ui->container("editor")->get("tools"));
+    BOOST_REQUIRE(bar);
+    BOOST_TEST(bar->button(0)->name() == "select");
+    BOOST_TEST(bar->button(1)->name().empty());
 }

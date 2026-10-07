@@ -3,10 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/kind/Json.h>
+#include <api/event/Engine.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
+#include <api/ui/Length.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
@@ -66,7 +67,7 @@ BOOST_AUTO_TEST_SUITE(select_list_test)
 
 /**
  * The rows go under the plate's clip, so a list holding more than it shows draws inside its
- * own box - ADR-0037 - and the row height the style resolved to is left on the list.
+ * own box, and the row height the style resolved to is left on the list.
  **/
 BOOST_AUTO_TEST_CASE(the_rows_are_cut_off_at_the_list) {
     std::vector<Written> written;
@@ -146,9 +147,9 @@ BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_the_box_does_not_show) {
 }
 
 /**
- * Which row a point is on is answered against the box the list was drawn in and the scroll it
- * was drawn at, so the cursor lands on what is under it rather than on what would be there
- * unscrolled. A list that has never been drawn answers nothing, per ADR-0019.
+ * Which row a point is on is found against the box the list was drawn in and the scroll it
+ * was drawn at. The cursor lands on what is under it rather than on what would be there
+ * unscrolled. A list that has never been drawn returns no row.
  **/
 BOOST_AUTO_TEST_CASE(a_point_names_the_row_under_it) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
@@ -248,8 +249,7 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_list) {
     boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
         boost::make_shared<v3d::log::Logger>());
-    BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>(
-        "vgui", v3d::asset::Type::JsonDocument, boost::json::parse(document).as_object())));
+    BOOST_REQUIRE(ui->load(boost::json::parse(document).as_object()));
 
     const boost::shared_ptr<v3d::ui::component::SelectList> saves =
         boost::dynamic_pointer_cast<v3d::ui::component::SelectList>(ui->container("panel")->get("saves"));

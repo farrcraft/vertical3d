@@ -5,6 +5,7 @@
 
 #include <api/asset/Writer.h>
 #include <api/engine/Settings.h>
+#include <api/log/Logger.h>
 
 #include <string>
 
@@ -21,8 +22,8 @@ boost::shared_ptr<v3d::log::Logger> logger() {
 }
 
 /**
- * Every case reads and writes the same real directory - userPath() is the only thing that
- * says where that is - so each starts by removing whatever the last one left.
+ * Every case reads and writes the same real directory, the one userPath() returns, so each
+ * starts by removing whatever the last one left.
  **/
 v3d::engine::Settings fresh(const std::string& app) {
     v3d::engine::Settings settings("vertical3d_tests", app, logger());
@@ -111,8 +112,8 @@ BOOST_AUTO_TEST_CASE(settings_unknown_key_survives_test) {
 }
 
 /**
- * A document from a later build runs on defaults and is not written back: the build that
- * wrote it knows what is in it, and this one would drop everything it does not.
+ * A document from a later build runs on defaults and is not written back, because writing it
+ * would drop every setting this build does not read.
  **/
 BOOST_AUTO_TEST_CASE(settings_future_version_test) {
     v3d::engine::Settings settings = fresh("future");
@@ -136,7 +137,7 @@ BOOST_AUTO_TEST_CASE(settings_future_version_test) {
 
 /**
  * A document that got truncated, or that somebody edited into something that will not parse,
- * costs the settings and not the app.
+ * loses the settings but does not stop the app.
  **/
 BOOST_AUTO_TEST_CASE(settings_malformed_document_test) {
     v3d::engine::Settings settings = fresh("malformed");
@@ -172,4 +173,23 @@ BOOST_AUTO_TEST_CASE(settings_wrong_type_test) {
     BOOST_CHECK_EQUAL(settings.integer("width", 1280), 1280);
 
     boost::filesystem::remove(settings.path());
+}
+
+/**
+ * A document with no version, or one that is not a number, is refused rather than read as it
+ * is. Like a malformed one it is replaceable, since nothing says a later build wrote it.
+ **/
+BOOST_AUTO_TEST_CASE(settings_unreadable_version_test) {
+    for (const std::string& document : {
+            std::string("{ \"settings\": { \"paddle1up\": \"z\" } }"),
+            std::string("{ \"version\": \"1\", \"settings\": { \"paddle1up\": \"z\" } }"),
+            std::string("{ \"version\": 0, \"settings\": { \"paddle1up\": \"z\" } }") }) {
+        v3d::engine::Settings settings = fresh("unversioned");
+        put(settings, document);
+
+        BOOST_CHECK_EQUAL(settings.load(), false);
+        BOOST_CHECK_EQUAL(settings.text("paddle1up", "w"), "w");
+        BOOST_CHECK_EQUAL(settings.writable(), true);
+        boost::filesystem::remove(settings.path());
+    }
 }

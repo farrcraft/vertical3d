@@ -19,7 +19,6 @@
 class Renderer;
 class Scene;
 
-
 /**
  * Application controller
  */
@@ -32,15 +31,6 @@ class Controller final : public v3d::engine::Engine {
         explicit Controller(const std::string& path);
 
         /**
-          * Initialize the engine.
-          * Initialization includes only the minimal amount of work required to get
-          * a window displayed on the screen.
-          *
-          * @return bool
-          **/
-        bool initialize();
-
-        /**
          * Advance the game world time
          * @return bool
          **/
@@ -51,22 +41,17 @@ class Controller final : public v3d::engine::Engine {
          * Draw the current frame
          * @return bool
          **/
-        bool render();
+        bool render() override;
 
         /**
          * What to hand the immediate layer this frame.
          *
          * The game owns the mouse while it is being played: mouselook warps the pointer
-         * back to the centre every frame, so its position means nothing. This answers the
-         * real cursor only while the menu is up, and a default Input otherwise, which
-         * leaves the debug window a readout.
+         * back to the centre every frame, so its position means nothing. This returns the
+         * real cursor only while the menu is up, and a default Input otherwise, so the debug
+         * window cannot be clicked.
          **/
         v3d::ui::Immediate::Input tools() const;
-
-        /**
-         * @return bool
-         **/
-        bool shutdown();
 
         void handleEvent(const v3d::event::Event& event);
 
@@ -77,12 +62,27 @@ class Controller final : public v3d::engine::Engine {
          **/
         void handleMotion(const v3d::event::kind::MouseMotion& event);
 
+ protected:
+        /**
+          * Initialize the engine.
+          * Initialization includes only the minimal amount of work required to get
+          * a window displayed on the screen.
+          *
+          * @return bool
+          **/
+        bool start() override;
+
+        /**
+         * @return bool
+         **/
+        bool release() override;
+
  private:
         /**
          * Pause the world while the menu is over it, and give the pointer back.
          *
-         * The cursor goes with the menu: mouselook warps the pointer to the centre every
-         * frame, which a menu cannot be clicked or seen through.
+         * The cursor is released while the menu is up: mouselook warps the pointer to the
+         * centre every frame, and the menu could not be clicked while it does.
          **/
         void suspend(bool suspended);
 
@@ -91,4 +91,7 @@ class Controller final : public v3d::engine::Engine {
         boost::shared_ptr<v3d::ui::Engine> vgui_;
         boost::shared_ptr<v3d::ui::shell::GameMenu> menu_;
         bool debug_;
+    // the dispatcher holds a delegate to this object; these let it go when the object does
+    entt::scoped_connection events_;
+    entt::scoped_connection motion_;
 };

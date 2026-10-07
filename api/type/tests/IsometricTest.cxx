@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(isometriccamera_eye_is_on_the_orbit_test) {
         const glm::vec3 offset = orbit.eye() - orbit.target();
 
         // the eye is one distance from the target whichever corner it is at, and the same
-        // height above it - which is what makes the four views comparable
+        // height above it, so the four views are comparable
         BOOST_CHECK_CLOSE(glm::length(offset), orbit.distance(), 0.01f);
         BOOST_CHECK_CLOSE(offset.y, std::sin(orbit.elevation()) * orbit.distance(), 0.01f);
     }
@@ -121,10 +121,9 @@ BOOST_AUTO_TEST_CASE(isometriccamera_a_quarter_turn_turns_the_axes_test) {
 
 /**
  * right() is to the right on screen and forward() is away, at every azimuth and in either
- * hand. The hand turns the ground vector and the view together, so what a caller sees is the
- * invariant and the basis underneath it is not - an orbit whose right() followed one hand
- * while apply() drew in the other passes every assertion above this one and moves the scene
- * the wrong way here.
+ * hand. The hand changes the ground vectors and the view together, so the screen direction
+ * stays fixed while the basis changes. An orbit whose right() followed one hand while apply()
+ * drew in the other passes every test above this one and fails this one.
  **/
 BOOST_AUTO_TEST_CASE(isometriccamera_right_is_to_the_right_on_screen_test) {
     const v3d::type::camera::Profile::Hand hands[] = {
@@ -147,13 +146,13 @@ BOOST_AUTO_TEST_CASE(isometriccamera_right_is_to_the_right_on_screen_test) {
             const glm::vec3 toRight = screen(&camera, orbit.target() + orbit.right() * 2.0f);
             const glm::vec3 away = screen(&camera, orbit.target() + orbit.forward() * 2.0f);
 
-            // which way a camera basis hands is a convention, and a pan built on the other
-            // one moves the scene the wrong way with nothing else looking wrong. this is the
-            // assertion that says the axes are the screen's and not a cross product's
+            // a pan built on the wrong hand moves the scene the wrong way while everything
+            // else looks correct, so this checks the axes against the screen rather than
+            // against a cross product
             BOOST_CHECK_EQUAL(toRight.x > centre.x, true);
             BOOST_CHECK_SMALL(toRight.y - centre.y, 0.01f);
 
-            // away from the eye is up the screen, and clip space points y down - ADR-0012
+            // away from the eye is up the screen, and clip space points y down
             BOOST_CHECK_EQUAL(away.y < centre.y, true);
             BOOST_CHECK_SMALL(away.x - centre.x, 0.01f);
         }
@@ -161,9 +160,9 @@ BOOST_AUTO_TEST_CASE(isometriccamera_right_is_to_the_right_on_screen_test) {
 }
 
 /**
- * The two hands' ground axes are the horizontal mirror of each other, which is what a pan
- * measured in one and drawn through the other gets wrong: forward() is shared and right()
- * is negated.
+ * The two hands' ground axes are the horizontal mirror of each other: forward() is shared and
+ * right() is negated. A pan measured in one hand and drawn through the other moves the wrong
+ * way.
  **/
 BOOST_AUTO_TEST_CASE(isometriccamera_the_hand_turns_the_pan_axis_test) {
     v3d::type::camera::Isometric orbit;

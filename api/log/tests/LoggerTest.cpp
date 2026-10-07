@@ -7,9 +7,13 @@
 
 #include <spdlog/spdlog.h>
 
+#include <cstdio>
+#include <fstream>
+#include <iterator>
 #include <memory>
 #include <string>
 
+#include <boost/filesystem/operations.hpp>
 #include <boost/test/unit_test.hpp>
 
 /**
@@ -28,9 +32,8 @@ BOOST_AUTO_TEST_CASE(logger_registers_under_one_name_test) {
 }
 
 /**
- * spdlog throws on a second registration under the same name, and apps really do build two -
- * so the second Logger takes over the one already registered rather than bringing the
- * process down.
+ * spdlog throws on a second registration under the same name, and apps do construct two
+ * Loggers. The second takes over the one already registered rather than ending the process.
  **/
 BOOST_AUTO_TEST_CASE(logger_second_instance_shares_the_first_test) {
     v3d::log::Logger first;
@@ -54,12 +57,50 @@ BOOST_AUTO_TEST_CASE(logger_writes_at_every_level_test) {
 }
 
 /**
- * get() hands back the reference the wrapper holds, so a caller that reseats it - which is
- * what a test double would do - is seen by the next call rather than by a copy.
+ * open() is where the log goes from then on. run() uses it to put the log beside the
+ * executable rather than wherever the app was started from.
  **/
-BOOST_AUTO_TEST_CASE(logger_get_is_a_reference_test) {
-    v3d::log::Logger logger;
-    std::shared_ptr<spdlog::logger>& held = logger.get();
+BOOST_AUTO_TEST_CASE(logger_open_moves_the_log_test) {
+    const std::string path = "logger_open_test.log";
+    std::remove(path.c_str());
 
-    BOOST_TEST(held.get() == logger.get().get());
+    BOOST_TEST(v3d::log::Logger::open(path));
+    {
+        // a handle keeps the file open, so it is let go of before the file is removed below
+        v3d::log::Logger logger;
+        logger.get()->info("written to the moved log");
+        logger.get()->flush();
+    }
+
+    // the file exists as soon as it is opened, so it is the line in it that shows the log moved
+    std::string contents;
+    {
+        std::ifstream file(path);
+        contents.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+    }
+    BOOST_TEST(contents.find("written to the moved log") != std::string::npos);
+
+    // back to the default for whatever runs after. With no handle left on the test's log, that
+    // closes its file, and the removal can succeed
+    v3d::log::Logger::open("v3d.log");
+    BOOST_CHECK_EQUAL(std::remove(path.c_str()), 0);
+}
+
+/**
+ * A path that cannot be opened does not throw. The log goes to stderr instead, so an app in a
+ * directory it cannot write to still starts.
+ **/
+BOOST_AUTO_TEST_CASE(logger_open_falls_back_when_the_file_cannot_be_opened_test) {
+    // a directory is not a file the log can be opened as
+    const std::string path = "logger_open_test_directory";
+    boost::filesystem::create_directory(path);
+
+    bool opened = true;
+    BOOST_CHECK_NO_THROW(opened = v3d::log::Logger::open(path));
+    BOOST_TEST(!opened);
+    v3d::log::Logger logger;
+    BOOST_CHECK_NO_THROW(logger.get()->info("still logging"));
+
+    v3d::log::Logger::open("v3d.log");
+    boost::filesystem::remove(path);
 }

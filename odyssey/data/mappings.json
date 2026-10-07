@@ -68,7 +68,7 @@
         "state": "pressed"
       },
       "destination": {
-        "context": "odyssey",
+        "context": "ui",
         "name": "quit"
       }
     }

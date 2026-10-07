@@ -5,11 +5,15 @@
 
 #include "Bmp.h"
 
-#include <api/image/BmpHeader.h>
+#include <api/image/BmpFileHeader.h>
+#include <api/image/BmpInfoHeader.h>
+#include <api/image/BmpRgbQuad.h>
+#include <api/image/Channels.h>
 
 #include <cstring>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 
@@ -41,8 +45,7 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
 
     fheader.type_ = 19778;
     fheader.offset_ = sizeof(bmp_file_header) + sizeof(bmp_info_header) + shades * sizeof(bmp_rgb_quad);
-    // the total file size, filled in below once the padded data length is known -
-    // sizeof(img->data()) was the size of the pointer
+    // the total file size, filled in below once the padded data length is known
     fheader.size_ = fheader.offset_;
 
     bmp_info_header iheader;
@@ -53,8 +56,8 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     iheader.height_ = img->height();
     iheader.bits_ = img->bpp();
     iheader.compression_ = 0;
-    // a reader sizes the table from the bit depth rather than from these, but a file that
-    // says how many of its colours it uses is the one a reader outside this tree expects
+    // a reader takes the table's length from the count of colours used, so the count is
+    // the whole ramp the table below holds
     iheader.used_ = shades;
     iheader.important_ = shades;
 
@@ -80,8 +83,7 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     file.write(reinterpret_cast<char*>(&fheader), sizeof(bmp_file_header));
     file.write(reinterpret_cast<char*>(&iheader), sizeof(bmp_info_header));
 
-    // the whole ramp, because a reader takes the table's length from the bit depth and
-    // reads 1 << bits entries whatever this file says it uses
+    // the whole ramp, as many entries as the header says the file uses
     for (uint32_t shade = 0; shade < shades; ++shade) {
         bmp_rgb_quad entry;
         entry.blue_ = entry.green_ = entry.red_ = static_cast<unsigned char>(shade);
@@ -89,31 +91,24 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
         file.write(reinterpret_cast<char*>(&entry), sizeof(bmp_rgb_quad));
     }
 
-    boost::shared_ptr<Image> image = boost::make_shared<Image>(size);
-    unsigned char* data = image->data();
-    unsigned char* temp = img->data();
+    std::vector<unsigned char> scratch(size);
+    unsigned char* data = scratch.data();
+    const unsigned char* temp = img->data();
 
     // each row is copied on its own, because the padding is per row and the source
-    // image has none of it. Walking both buffers with a single index and a modulo test
-    // ran off the end of each - past the destination by a row's worth of padding, and
-    // past the source by however many bytes of padding the whole image adds up to.
+    // image has none of it. A single index over both buffers would run off the end of
+    // each. The height is written positive, which means the rows are stored bottom up, so
+    // the image's top row goes last
     for (uint64_t row = 0; row < rows; ++row) {
-        unsigned char* dest = data + row * pad;
+        unsigned char* dest = data + (rows - 1 - row) * pad;
         const unsigned char* src = temp + row * rowBytes;
         if (grey) {
             // an index is one byte and has no channel order to correct
             memcpy(dest, src, static_cast<size_t>(rowBytes));
             continue;
         }
-        for (uint32_t column = 0; column < img->width(); ++column) {
-            // rgb in memory, bgr on disk
-            dest[column * channels + 0] = src[column * channels + 2];
-            dest[column * channels + 1] = src[column * channels + 1];
-            dest[column * channels + 2] = src[column * channels + 0];
-            if (img->format() == v3d::image::Image::Format::RGBA) {
-                dest[column * channels + 3] = src[column * channels + 3];
-            }
-        }
+        // rgb in memory, bgr on disk
+        swapRedBlue(src, dest, img->width(), channels);
     }
 
     // write image data

@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/type/Transform.h>
+
 #include <glm/glm.hpp>
 #include <glm/ext/quaternion_float.hpp>
 
@@ -23,30 +25,30 @@ class Transform {
 
     void scale(const glm::vec3 & s);
     void rotation(const glm::quat & r);
-    virtual void translation(const glm::vec3 & t);
+    void translation(const glm::vec3 & t);
 
     glm::vec3 scale(void) const;
     glm::quat rotation(void) const;
-    virtual glm::vec3 translation(void) const;
+    glm::vec3 translation(void) const;
 
     /**
      * Move by an offset, rather than to a position - what a drag of a translate
      * manipulator does, where the gesture measures a delta and not a destination.
      **/
-    virtual void translate(const glm::vec3 & offset);
+    void translate(const glm::vec3 & offset);
 
     /**
-     * @return the composition, translation * rotation * scale.
-     *
-     * Scale is applied first so that it acts along the object's own axes: composed the
-     * other way round, a non-uniform scale shears everything the rotation turned.
+     * @return the composition, translation * rotation * scale - type::Transform::matrix()
      **/
     glm::mat4 matrix(void) const;
 
+    /**
+     * @return all three parts at once, as the value an ecs entity is placed by
+     **/
+    const v3d::type::Transform & value(void) const;
+
  private:
-    glm::vec3 translation_;
-    glm::vec3 scale_;
-    glm::quat rotation_;
+    v3d::type::Transform value_;
 };
 
 };  // namespace v3d::dag

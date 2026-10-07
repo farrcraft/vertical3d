@@ -1,0 +1,209 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#include <api/render/offline/rib/Lexer.h>
+#include <api/render/offline/rib/Token.h>
+
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <boost/test/unit_test.hpp>
+
+namespace {
+
+typedef v3d::render::offline::rib::Token Token;
+
+std::vector<Token> lex(const std::string & source, std::string * error = nullptr) {
+    std::istringstream stream(source);
+    v3d::render::offline::rib::Lexer lexer(stream);
+    std::vector<Token> tokens;
+    for (;;) {
+        Token token = lexer.next();
+        if (token.kind() == Token::Kind::END) {
+            break;
+        }
+        tokens.push_back(token);
+    }
+    if (error) {
+        *error = lexer.error();
+    }
+    return tokens;
+}
+
+};  // namespace
+
+BOOST_AUTO_TEST_CASE(riblexer_request_test) {
+    std::vector<Token> tokens = lex("Format 640 480 1");
+
+    BOOST_REQUIRE_EQUAL(tokens.size(), 4u);
+    BOOST_CHECK(tokens[0].kind() == Token::Kind::IDENTIFIER);
+    BOOST_CHECK_EQUAL(tokens[0].text(), "Format");
+    BOOST_CHECK(tokens[1].kind() == Token::Kind::NUMBER);
+    BOOST_CHECK_EQUAL(tokens[1].value(), 640.0f);
+    BOOST_CHECK_EQUAL(tokens[3].value(), 1.0f);
+}
+
+/**
+ * A string carries what is between the quotes, spaces included, with the escapes resolved.
+ **/
+BOOST_AUTO_TEST_CASE(riblexer_string_test) {
+    std::vector<Token> tokens = lex("\"two words\" \"a \\\"quote\\\" and a \\\\\" \"\\101\"");
+
+    BOOST_REQUIRE_EQUAL(tokens.size(), 3u);
+    BOOST_CHECK(tokens[0].kind() == Token::Kind::STRING);
+    BOOST_CHECK_EQUAL(tokens[0].text(), "two words");
+    BOOST_CHECK_EQUAL(tokens[1].text(), "a \"quote\" and a \\");
+    // \101 is octal for 'A'
+    BOOST_CHECK_EQUAL(tokens[2].text(), "A");
+}
+
+BOOST_AUTO_TEST_CASE(riblexer_unterminated_string_test) {
+    std::string error;
+    std::vector<Token> tokens = lex("Surface \"plastic", &error);
+
+    BOOST_CHECK_EQUAL(tokens.size(), 1u);
+    BOOST_CHECK(error.contains("unterminated string"));
+    // the error gives the position
+    BOOST_CHECK(error.contains("column 9"));
+}
+
+/**
+ * Whitespace is not significant, so an array spans lines.
+ **/
+BOOST_AUTO_TEST_CASE(riblexer_array_across_lines_test) {
+    std::vector<Token> tokens = lex("Polygon \"P\" \n[-100. 0. -100.\n 100. 0. 100.]\n");
+
+    BOOST_REQUIRE_EQUAL(tokens.size(), 10u);
+    BOOST_CHECK(tokens[2].kind() == Token::Kind::ARRAY_BEGIN);
+    BOOST_CHECK_EQUAL(tokens[3].value(), -100.0f);
+    BOOST_CHECK(tokens[9].kind() == Token::Kind::ARRAY_END);
+}
+
+/**
+ * A leading and a trailing point are both legal and both appear in the standard's own example
+ * file, as does an exponent.
+ **/
+BOOST_AUTO_TEST_CASE(riblexer_number_forms_test) {
+    std::vector<Token> tokens = lex(".5 5. -1e3 +2.5E-2 1.0e38 0");
+
+    BOOST_REQUIRE_EQUAL(tokens.size(), 6u);
+    BOOST_CHECK_EQUAL(tokens[0].value(), 0.5f);
+    BOOST_CHECK_EQUAL(tokens[1].value(), 5.0f);
+    BOOST_CHECK_EQUAL(tokens[2].value(), -1000.0f);
+    BOOST_CHECK_CLOSE(tokens[3].value(), 0.025f, 0.001f);
+    BOOST_CHECK_CLOSE(tokens[4].value(), 1.0e38f, 0.001f);
+    BOOST_CHECK_EQUAL(tokens[5].value(), 0.0f);
+}
+
+/**
+ * A comment runs to the end of the line, and a structure comment is a comment.
+ **/
+BOOST_AUTO_TEST_CASE(riblexer_comment_test) {
+    std::vector<Token> tokens = lex("##RenderMan RIB-Structure 1.1\nFormat 32 16 1  #renderer specific\nWorldBegin");
+
+    BOOST_REQUIRE_EQUAL(tokens.size(), 5u);
+    BOOST_CHECK_EQUAL(tokens[0].text(), "Format");
+    BOOST_CHECK_EQUAL(tokens[4].text(), "WorldBegin");
+}
+
+/**
+ * The position is the token's first character, counting from one.
+ **/
+BOOST_AUTO_TEST_CASE(riblexer_position_test) {
+    std::vector<Token> tokens = lex("Format 640\n  WorldBegin");
+
+    BOOST_REQUIRE_EQUAL(tokens.size(), 3u);
+    BOOST_CHECK_EQUAL(tokens[0].line(), 1u);
+    BOOST_CHECK_EQUAL(tokens[0].column(), 1u);
+    BOOST_CHECK_EQUAL(tokens[1].column(), 8u);
+    BOOST_CHECK_EQUAL(tokens[2].line(), 2u);
+    BOOST_CHECK_EQUAL(tokens[2].column(), 3u);
+}
+
+/**
+ * Both encodings are part of the format and neither is supported. Parsed as ASCII they would
+ * produce nonsense rather than an error, so the lexer reports an error instead.
+ **/
+BOOST_AUTO_TEST_CASE(riblexer_binary_rejected_test) {
+    std::string error;
+    lex(std::string("\x80\x05" "Format", 8), &error);
+    BOOST_CHECK(error.contains("binary RIB"));
+
+    std::string gzipped;
+    lex(std::string("\x1f\x8b\x08\x00", 4), &gzipped);
+    BOOST_CHECK(gzipped.contains("gzipped RIB"));
+}
+
+BOOST_AUTO_TEST_CASE(riblexer_unexpected_character_test) {
+    std::string error;
+    lex("Format 640 * 480", &error);
+
+    BOOST_CHECK(error.contains("unexpected character '*'"));
+}
+
+/**
+ * The standard's own example file, which covers the most RIB syntax in the tree: quoted strings,
+ * bracketed arrays spanning lines, structure comments, unbracketed parameter values and every
+ * number form.
+ **/
+BOOST_AUTO_TEST_CASE(riblexer_example_file_test) {
+    std::ifstream file("data/example.rib");
+    BOOST_REQUIRE(file.is_open());
+
+    v3d::render::offline::rib::Lexer lexer(file);
+    unsigned int identifiers = 0;
+    unsigned int count = 0;
+    for (Token token = lexer.next(); token.kind() != Token::Kind::END; token = lexer.next()) {
+        if (token.kind() == Token::Kind::IDENTIFIER) {
+            identifiers++;
+        }
+        count++;
+    }
+
+    BOOST_CHECK_EQUAL(lexer.error(), "");
+    BOOST_CHECK_GT(count, 200u);
+    // one per request, and the file holds two frames of them
+    BOOST_CHECK_GT(identifiers, 40u);
+}
+
+/**
+ * peek() leaves the token for next(). The reader uses it to read a request name before
+ * deciding whether it handles what follows.
+ **/
+BOOST_AUTO_TEST_CASE(riblexer_peek_test) {
+    std::istringstream stream("Format 640");
+    v3d::render::offline::rib::Lexer lexer(stream);
+
+    BOOST_CHECK_EQUAL(lexer.peek().text(), "Format");
+    BOOST_CHECK_EQUAL(lexer.peek().text(), "Format");
+    BOOST_CHECK_EQUAL(lexer.next().text(), "Format");
+    BOOST_CHECK_EQUAL(lexer.next().value(), 640.0f);
+    BOOST_CHECK(lexer.next().kind() == Token::Kind::END);
+}
+
+/**
+ * A file saved with a UTF-8 byte order mark is text, and lexes as the requests after the mark
+ * rather than being refused as binary.
+ **/
+BOOST_AUTO_TEST_CASE(riblexer_byte_order_mark_is_skipped_test) {
+    std::string error;
+    std::vector<Token> tokens = lex("\xEF\xBB\xBF" "Format 640 480 1", &error);
+    BOOST_CHECK(error.empty());
+    BOOST_REQUIRE_EQUAL(tokens.size(), 4u);
+    BOOST_CHECK_EQUAL(tokens[0].text(), "Format");
+}
+
+/**
+ * A stream that has been read from before is lexed from where it stands, not from its start.
+ **/
+BOOST_AUTO_TEST_CASE(riblexer_reads_from_where_the_stream_stands_test) {
+    std::istringstream stream("Skipped Format 640");
+    std::string skipped;
+    stream >> skipped;
+    v3d::render::offline::rib::Lexer lexer(stream);
+    BOOST_CHECK_EQUAL(lexer.next().text(), "Format");
+}

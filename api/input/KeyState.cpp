@@ -49,7 +49,7 @@ bool KeyState::operator() (const std::string& c) {
         keys_.push_back(c);
     }
     // both edges can be true of one key in one frame, so this records rather than replaces:
-    // a key pressed and released between two flushes answers both, and held neither
+    // a key pressed and released between two flushes reports both edges and is not held
     if (held) {
         pressed_.push_back(c);
     } else {

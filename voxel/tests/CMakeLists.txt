@@ -1,15 +1,22 @@
 # The meshing and terrain logic needs neither a window nor a device, so it is testable the
-# same way an api library is. The renderer is not, and is not covered here - that waits on
-# ADR 0007 like the rest of the device-side work.
+# same way an api library is. The renderer needs a device and is not covered here.
 v3d_add_test(voxel
 	"TestMain.cxx"
 	"ChunkTest.cxx"
+	"ChunkCullingTest.cxx"
 	"FaceCullingTest.cxx"
 	"MeshCacheTest.cxx"
 	"MortonCodeTest.cxx"
+	"NanosecondsTest.cxx"
+	"PlayerTest.cxx"
+	"../src/engine/Camera.cxx"
 	"../src/engine/MortonCode.cxx"
+	"../src/engine/Nanoseconds.cxx"
+	"../src/game/Item.cxx"
+	"../src/game/Player.cxx"
 	"../src/noise/noiseutils.cpp"
 	"../src/voxel/Chunk.cxx"
+	"../src/voxel/ChunkCulling.cxx"
 	"../src/voxel/FaceCulling.cxx"
 	"../src/voxel/MeshCache.cxx"
 	"../src/voxel/TerrainMap.cxx"
@@ -29,5 +36,5 @@ target_link_directories(v3dtest_voxel PRIVATE "${V3D_ROOT}/vendor/libnoise/Debug
 # A chunk is built against a TerrainMap, and the vtable of the one the tests derive from
 # refers to the perlin implementation whether or not any test generates noise.
 target_link_libraries(v3dtest_voxel PRIVATE
-	${Boost_LIBRARIES}
+	v3dlib_type
 	"libnoise")

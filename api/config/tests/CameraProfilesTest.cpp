@@ -4,19 +4,21 @@
  **/
 
 #include <api/config/CameraProfiles.h>
+#include <api/log/Logger.h>
 #include <api/type/camera/Camera.h>
 
 #include <string>
 
 #include <boost/test/unit_test.hpp>
 
+#include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
 namespace {
 
-boost::shared_ptr<v3d::asset::kind::Json> config(const std::string& text) {
+boost::json::object config(const std::string& text) {
     boost::json::value parsed = boost::json::parse(text);
-    return boost::make_shared<v3d::asset::kind::Json>("cameras", v3d::asset::Type::JsonDocument, parsed.as_object());
+    return parsed.as_object();
 }
 
 boost::shared_ptr<v3d::log::Logger> logger() {
@@ -62,8 +64,8 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
 }
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_orientation_test) {
-    // the lookat is what orients a profile: the three normals and the rotation have to
-    // agree, and a table naming each of them separately is a table that can disagree
+    // lookat() orients a profile, so the three normals and the rotation agree; a table
+    // naming each of them separately could disagree
     v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config(cameras)));
 
@@ -102,4 +104,22 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_rejects_test) {
     BOOST_CHECK(!profiles.load(config("{\"cameras\": {}}")));
     // a profile with no name could never be looked up by a layout
     BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"orthographic\": true}]}")));
+    // a name or an adaptive setting that is not a string is refused rather than thrown
+    BOOST_CHECK_NO_THROW(BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": 5}]}"))));
+    BOOST_CHECK_NO_THROW(BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"adaptive\": 3}]}"))));
+}
+
+/**
+ * A vector holding something other than numbers is the wrong shape, and the default is kept.
+ **/
+BOOST_AUTO_TEST_CASE(cameraprofiles_vector_of_strings_test) {
+    v3d::config::CameraProfiles profiles(logger());
+
+    BOOST_CHECK_NO_THROW(BOOST_REQUIRE(profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"eye\": [\"x\", 1, 2]}]}"))));
+    BOOST_CHECK(profiles.has("a"));
+
+    const glm::vec3 eye = profiles.get("a").eye();
+    BOOST_CHECK_SMALL(eye[0], 0.001f);
+    BOOST_CHECK_SMALL(eye[1], 0.001f);
+    BOOST_CHECK_CLOSE(eye[2], -10.0f, 0.01f);
 }

@@ -7,9 +7,9 @@
 
 #include <array>
 #include <cstdint>
-#include <deque>
 #include <vector>
 
+#include "CanvasStacks.h"
 #include "Handle.h"
 
 #include <glm/mat4x4.hpp>
@@ -23,21 +23,21 @@ namespace v3d::render::realtime {
  * Everything the engine draws as textured quads standing in the world, accumulated as one
  * stream.
  *
- * The cpu half of the third primitive of ADR-0042, and the counterpart of Canvas in space
- * and of LineCanvas in primitive: a quad here has four world corners and is drawn through
+ * The CPU side of the world space quad primitive. It draws the same quads as Canvas, but in
+ * world space as LineCanvas does. A quad here has four world corners and is drawn through
  * the camera its pass carries at set 0, so a pass whose camera was never set draws it in
  * clip space.
  *
- * Nothing here touches vulkan.
+ * Nothing here calls Vulkan.
  *
- * **The order is the caller's.** Quads are drawn in the order they were added, because what
- * a quad's depth means is the caller's knowledge - in an isometric projection a sprite is
+ * **The caller sets the draw order.** Quads are drawn in the order they were added, because
+ * a quad's depth means something only to the caller. In an isometric projection a sprite is
  * behind another when its feet are further up the ground plane, not when it is further from
  * the camera. Depth testing hides a quad behind solid geometry and never behind another
- * quad, per ADR-0042.
+ * quad.
  *
- * Batching is ADR-0005's rule unchanged: the stream cuts where the bound texture changes,
- * and an untextured quad names no texture and is drawn against the renderer's 1x1 white one.
+ * Batching follows Canvas: the stream cuts where the bound texture changes, and an
+ * untextured quad names no texture and is drawn against the renderer's 1x1 white one.
  **/
 class WorldCanvas final {
  public:
@@ -73,8 +73,8 @@ class WorldCanvas final {
     WorldCanvas();
 
     /**
-     * Drop everything accumulated and reset the transform stack, keeping the capacity.
-     * Called at the start of a tick, since the stream is rebuilt every frame.
+     * Drop everything accumulated and reset the transform stack and the tint, keeping the
+     * capacity. Called at the start of a tick, since the stream is rebuilt every frame.
      **/
     void clear();
 
@@ -103,6 +103,18 @@ class WorldCanvas final {
      * @return the transform vertices are being written through
      **/
     const glm::mat4& transform() const noexcept;
+
+    /**
+     * Multiply every quad added from here on by a colour, until the tint is set again. It is
+     * a light over the whole world, such as dusk or an act's palette, set once rather than by
+     * every caller. White leaves the colours alone.
+     **/
+    void tint(const glm::vec4& colour);
+
+    /**
+     * @return the colour quads are being multiplied by
+     **/
+    const glm::vec4& tint() const noexcept;
 
     /**
      * An untextured quad, drawn against the renderer's white texture.
@@ -159,7 +171,8 @@ class WorldCanvas final {
      **/
     void fan(uint32_t first);
 
-    std::deque<glm::mat4> transforms_;
+    TransformStack transforms_;
+    glm::vec4 tint_;
     std::vector<Vertex> vertices_;
     std::vector<uint32_t> indices_;
     std::vector<Batch> batches_;

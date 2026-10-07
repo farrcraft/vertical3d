@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(chunk_ceiling_is_measured_in_blocks_test) {
     BOOST_CHECK(!full.empty());
     BOOST_CHECK_EQUAL(full.blocks().size(), chunkSize * chunkSize * chunkSize);
 
-    // the chunk count is what was passed before, and it leaves the same chunk empty
+    // passing the chunk count instead leaves the same chunk empty
     Chunk starved(&terrain, glm::ivec3(0, 1, 0), worldHeightInBlocks / chunkSize);
     BOOST_CHECK(starved.empty());
     BOOST_CHECK_EQUAL(starved.blocks().size(), 0u);
@@ -82,8 +82,8 @@ BOOST_AUTO_TEST_CASE(chunk_hides_faces_between_its_own_blocks_test) {
     BOOST_CHECK(chunk.hidden(Voxel::BLOCK_FACE_FRONT, interior));
     BOOST_CHECK(chunk.hidden(Voxel::BLOCK_FACE_BACK, interior));
 
-    // one on the wall has a face its own chunk cannot answer for, which is what sends the
-    // check across the seam
+    // one on the wall has a face its own chunk cannot resolve, so the check crosses the
+    // seam into the next chunk
     BOOST_CHECK(!chunk.hidden(Voxel::BLOCK_FACE_LEFT, glm::ivec3(0, 8, 8)));
     BOOST_CHECK(!chunk.hidden(Voxel::BLOCK_FACE_RIGHT, glm::ivec3(15, 8, 8)));
 }
@@ -93,8 +93,8 @@ BOOST_AUTO_TEST_CASE(chunk_positions_its_blocks_in_the_world_test) {
     const glm::ivec3 position(2, 1, 3);
     Chunk chunk(&terrain, position, worldHeightInBlocks);
 
-    // the block at the chunk's own corner sits at the corner of the chunk in world blocks,
-    // which is what MeshCache subtracts back off to make the mesh chunk local
+    // the block at the chunk's own corner sits at the corner of the chunk in world blocks.
+    // MeshCache subtracts that corner to make the mesh chunk local
     const boost::shared_ptr<Voxel> corner = chunk.blocks()[MortonCode::encode(glm::ivec3(0, 0, 0))];
     BOOST_REQUIRE(corner);
     BOOST_CHECK_EQUAL(corner->position().x, static_cast<float>(position.x * chunkSize));

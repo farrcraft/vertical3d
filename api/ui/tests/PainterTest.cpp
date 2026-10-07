@@ -19,8 +19,7 @@ namespace {
 constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 
 /**
- * A colour that lets what is behind it through, which is what an outline drawn under a
- * plate would stop doing.
+ * A translucent colour, so an outline drawn under a plate would show through it.
  **/
 constexpr glm::vec4 translucent(0.1f, 0.1f, 0.1f, 0.5f);
 
@@ -71,9 +70,9 @@ BOOST_AUTO_TEST_SUITE(painter_test)
 /**
  * An outline traces the edges of a box and covers nothing inside them, square or rounded.
  *
- * This is what lets a plate's interior carry an alpha: an outline drawn as a box behind the
- * fill would show through it as a tint, and would stop whatever the plate covers showing
- * through at all.
+ * This lets a plate's interior carry an alpha. An outline drawn as a box behind the fill
+ * would show through it as a tint, and would stop whatever the plate covers showing through
+ * at all.
  **/
 BOOST_AUTO_TEST_CASE(an_outline_covers_nothing_inside_it) {
     const float width = 4.0f;
@@ -138,9 +137,9 @@ BOOST_AUTO_TEST_CASE(a_plate_draws_its_interior_once) {
  * An outline as thick as half the shorter side is the whole box, and neither it nor the fill
  * inside it folds over.
  *
- * The two runs that meet in the middle are the whole of it; the other two have no length
- * left to cover and are not drawn, which is what says the clamp happened rather than the
- * box being drawn over itself twice.
+ * The two runs that meet in the middle are the whole of it. The other two have no length
+ * left to cover and are not drawn. That shows the clamp happened rather than the box being
+ * drawn over itself twice.
  **/
 BOOST_AUTO_TEST_CASE(an_outline_thicker_than_the_box_is_the_box) {
     v3d::render::realtime::Canvas canvas;

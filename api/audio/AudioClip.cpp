@@ -5,6 +5,8 @@
 
 #include "AudioClip.h"
 
+#include <SDL3_mixer/SDL_mixer.h>
+
 #include <string>
 
 namespace v3d::audio {

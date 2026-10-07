@@ -15,9 +15,8 @@ enum class Type {
     JsonDocument = 3,
     AudioWav = 4,
     Text = 5,
-    Font2D = 9,
-    TextureFont = 10,
     ImageTga = 11,
-    ModelGltf = 12
+    ModelGltf = 12,
+    ImageBmp = 13
 };
 };  // namespace v3d::asset

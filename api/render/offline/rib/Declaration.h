@@ -1,0 +1,77 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
+
+#include <string>
+
+namespace v3d::render::offline::rib {
+
+/**
+ * The storage class and type of one parameter.
+ *
+ * RIB does not say how many values a parameter takes - the declaration does, and without
+ * one a reader is stuck at the first parameter that is not "P". The type gives the float
+ * count of an element and the class gives how many elements a primitive carries.
+ **/
+class Declaration final {
+ public:
+    enum class Storage {
+        CONSTANT,
+        UNIFORM,
+        VARYING,
+        VERTEX
+    };
+
+    enum class Type {
+        FLOAT,
+        INTEGER,
+        STRING,
+        COLOR,
+        POINT,
+        VECTOR,
+        NORMAL,
+        MATRIX,
+        HPOINT
+    };
+
+    Declaration();
+    Declaration(Storage storage, Type type, unsigned int count);
+
+    /**
+     * Read a declaration - "uniform point", "varying float", "float[3]", "point". An
+     * omitted class is uniform, the standard's default.
+     *
+     * @return false when no type word was found, leaving the result untouched
+     **/
+    static bool parse(const std::string & text, Declaration * declaration);
+
+    Storage storage() const;
+    Type type() const;
+
+    /**
+     * The array count from a "[n]" suffix, 1 when there is none.
+     **/
+    unsigned int count() const;
+
+    /**
+     * How many floats one element of this type is, per RI table 5.1. A string is none -
+     * it is counted in strings.
+     **/
+    unsigned int floats() const;
+
+    /**
+     * How many elements a primitive of this many vertices carries: one for constant and
+     * uniform, one per vertex for varying and vertex.
+     **/
+    unsigned int elements(unsigned int vertices) const;
+
+ private:
+    Storage storage_ = Storage::UNIFORM;
+    Type type_ = Type::FLOAT;
+    unsigned int count_ = 1;
+};
+
+};  // namespace v3d::render::offline::rib

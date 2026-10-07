@@ -9,7 +9,6 @@ add_executable("vertical3d"
 
 	"src/scene/Scene.h" "src/scene/Scene.cxx"
 	"src/scene/SceneVisitor.h"
-	"src/scene/MeshTopology.h" "src/scene/MeshTopology.cxx"
 	"src/scene/CreatePoly.h" "src/scene/CreatePoly.cxx"
 	"src/scene/WireframeVisitor.h" "src/scene/WireframeVisitor.cxx"
 	"src/scene/RIBExportVisitor.h" "src/scene/RIBExportVisitor.cxx"
@@ -19,6 +18,7 @@ add_executable("vertical3d"
 	"src/command/CommandDirectory.h" "src/command/CommandDirectory.cxx"
 	"src/command/CommandStack.h" "src/command/CommandStack.cxx"
 	"src/command/CreateCommand.h" "src/command/CreateCommand.cxx"
+	"src/command/Placement.h" "src/command/Placement.cxx"
 	"src/command/TransformCommand.h" "src/command/TransformCommand.cxx"
 
 	"src/tool/Tool.h"
@@ -35,14 +35,12 @@ add_executable("vertical3d"
 
 target_link_libraries(vertical3d PRIVATE
 	v3dlib_asset
+	v3dlib_asset_media
 	v3dlib_brep
 	v3dlib_config
-	v3dlib_ecs
+	v3dlib_dag
 	v3dlib_engine
 	v3dlib_event
-	v3dlib_font
-	v3dlib_image
-	v3dlib_input
 	v3dlib_log
 	v3dlib_render
 	v3dlib_type

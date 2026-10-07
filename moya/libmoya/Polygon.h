@@ -13,8 +13,12 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::moya {
+namespace v3d::type::geometry {
+class Frustum;
 class Plane;
+};  // namespace v3d::type::geometry
+
+namespace v3d::moya {
 class RenderContext;
 
 class Polygon : public ReyesPrimitive {
@@ -51,9 +55,16 @@ class Polygon : public ReyesPrimitive {
      * the way the vertices are.
      *
      * One value for the whole polygon - SL's Ng. A polygon whose vertices are collinear,
-     * or which has fewer than three of them, has no plane and answers zero.
+     * or which has fewer than three of them, has no plane and returns zero.
      **/
     glm::vec3 geometricNormal(void) const;
+
+    /**
+     * Sutherland-Hodgman clip of the polygon against a plane, keeping the positive half
+     * space. The polygon is rewritten in place, so a caller can clip against one plane after
+     * another.
+     **/
+    void clip(const v3d::type::geometry::Plane & plane);
 
     // reyes methods
     // virtual bool diceable(void) const;
@@ -62,13 +73,19 @@ class Polygon : public ReyesPrimitive {
     virtual bool dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & rc);
 
  protected:
-    void split(const Plane & plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2);
+    void split(const v3d::type::geometry::Plane & plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2);
 
  private:
     std::vector<Vertex> vertices_;
-    // one grid covers the whole polygon, so dice() answers true once and false
-    // afterwards - the caller loops until it answers false
+    // one grid covers the whole polygon, so dice() returns true once and false
+    // afterwards; the caller loops until it returns false
     bool diced_ = false;
 };
+
+/**
+ * Clip a polygon against each of a frustum's planes in turn, keeping what is inside all six.
+ * The polygon is rewritten in place.
+ **/
+void clip(Polygon & poly, const v3d::type::geometry::Frustum & frustum);
 
 };  // namespace v3d::moya

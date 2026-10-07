@@ -1,6 +1,6 @@
 # The engine without a window: the feature mask, the config and mappings initialize() reads,
-# and the quit flag the loop stops on. Nothing here asks for Feature::Window, which is what
-# would need SDL and a device.
+# and the quit flag the loop stops on. No test asks for Feature::Window, which would need SDL
+# and a device.
 v3d_add_test(engine
 	"TestMain.cpp"
 	"ApplicationTest.cpp"
@@ -10,16 +10,14 @@ v3d_add_test(engine
 	"EngineTest.cpp"
 	"SettingsTest.cpp")
 
-# SDL3: the engine names SDL directly, and reaches the mixer through v3dlib_asset.
+# SDL3: the engine names SDL directly.
 target_link_libraries(v3dtest_engine PRIVATE
 	v3dlib_engine
 	v3dlib_config
 	v3dlib_asset
 	v3dlib_event
+	v3dlib_log
 	v3dlib_input
-	v3dlib_render
-	v3dlib_image
-	v3dlib_font
 	${Boost_LIBRARIES}
 	${SDL3_LIBRARIES}
 	${PNG_LIBRARIES}

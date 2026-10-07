@@ -43,4 +43,22 @@ constexpr Type stringToType(const std::string_view& typeName) {
     }
     return  Type::Unknown;
 }
+
+/**
+ * The name a config entry gives a type, which is the key Config files the document under.
+ * The inverse of stringToType, and empty for Unknown.
+ **/
+constexpr std::string_view typeName(Type type) {
+    switch (type) {
+        case Type::Window: return "window";
+        case Type::Binding: return "binding";
+        case Type::Ui: return "ui";
+        case Type::Sound: return "sound";
+        case Type::Camera: return "camera";
+        case Type::Layout: return "layout";
+        case Type::Sprite: return "sprite";
+        case Type::Unknown: break;
+    }
+    return std::string_view();
+}
 };  // namespace v3d::config

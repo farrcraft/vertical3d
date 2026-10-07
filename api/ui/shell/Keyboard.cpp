@@ -36,7 +36,7 @@ Keyboard::Keyboard(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<
  **/
 Keyboard::~Keyboard() {
     // the engine holds a callback that captured this, and it outlives this whenever an app
-    // keeps the ui and rebuilds the seam
+    // keeps the ui and rebuilds this adapter
     if (ui_) {
         ui_->onFocus(Engine::Focused());
     }
@@ -74,7 +74,7 @@ void Keyboard::follow(const boost::shared_ptr<Component>& focused) {
     if (!window_) {
         return;
     }
-    const bool typed = focused && focused->type() == component::Type::TextBox;
+    const bool typed = focused && component::traits(focused->type()).text;
     if (typed == window_->textInput()) {
         return;
     }

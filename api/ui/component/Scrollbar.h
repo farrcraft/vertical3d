@@ -17,19 +17,17 @@ class SelectList;
 /**
  * A track with a thumb on it, saying which part of something taller than its box is shown.
  *
- * The bar is the arithmetic and not the input: an app that picked one calls drag() with
- * where the cursor is and reads offset(), which is how far to translate whatever the bar
- * scrolls. What it scrolls is a component of its own that clips its children, per
- * ADR-0037 - the bar does not hold it, because the two are laid out side by side rather
- * than one inside the other.
+ * The bar does the arithmetic, not the input handling. An app that picked one calls drag()
+ * with where the cursor is and reads offset(). The offset is how far to translate whatever
+ * the bar scrolls. What it scrolls is a separate component that clips its children. The bar
+ * does not hold it, because the two are laid out side by side.
  *
- * A bar can instead be told which list it scrolls, and then it holds no range of its own:
- * the content, the page and the offset are the list's, and dragging the thumb moves the
- * list. An unbound bar is unchanged, which is what keeps it useful as a progress shaped
- * control for something with no component behind it.
+ * A bar can instead be told which list it scrolls, and then it holds no range of its own.
+ * The content, the page and the offset are the list's, and dragging the thumb moves the
+ * list. An unbound bar keeps a range of its own, so it can also scroll something with no
+ * component behind it.
  *
- * The track and the thumb are drawn in the "bar" style class the component names, per
- * ADR-0020.
+ * The track and the thumb are drawn in the "bar" style class the component names.
  **/
 class Scrollbar : public Component {
  public:
@@ -47,9 +45,8 @@ class Scrollbar : public Component {
     /**
      * How far an arrow key moves a bar that scrolls a range rather than a list, in pixels.
      *
-     * A range is pixels of something the bar knows nothing about, so there is nothing in it
-     * to read a line off - unlike a bound list, which is rows and says how tall one is. One
-     * line of ordinary text is the useful answer and this is a stand-in for it.
+     * Unlike a bound list, a range has no row height to step by. This stands in for one
+     * line of ordinary text.
      **/
     static const float lineStep;
 
@@ -79,7 +76,7 @@ class Scrollbar : public Component {
 
     /**
      * What there is to scroll through and how much of it is shown, both in pixels along
-     * the bar's direction. Ignored while a list is bound, which answers both itself.
+     * the bar's direction. Ignored while a list is bound, because the list supplies both.
      *
      * The offset is clamped to what the new range leaves, so a list that shrank while
      * scrolled to its end comes back to the end of what is left rather than past it.
@@ -102,7 +99,7 @@ class Scrollbar : public Component {
     void scroll(float distance);
 
     /**
-     * @return the furthest the page can start, which is what the page does not show
+     * @return the furthest the page can start. This equals how much the page does not show.
      **/
     float maximum() const noexcept;
 
@@ -134,8 +131,7 @@ class Scrollbar : public Component {
      * to what was clicked and then follows the cursor.
      *
      * The point is in canvas pixels and is measured against the box the bar was last
-     * drawn in, so a bar that has not been drawn scrolls nowhere - the same rule as
-     * picking one, per ADR-0019.
+     * drawn in, so a bar that has not been drawn does not scroll.
      *
      * @param point where the cursor is
      **/
@@ -153,5 +149,23 @@ class Scrollbar : public Component {
     Direction direction_;
     boost::weak_ptr<SelectList> scrolled_;
 };
+
+/**
+ * The length of a scrollbar's thumb: as much of the track as what is shown is of the whole,
+ * so the thumb shows how much there is as well as where the view sits. Never shorter than
+ * Scrollbar::minimumThumb. The component and the immediate layer both use this.
+ **/
+float thumbLength(float track, float shown, float whole) noexcept;
+
+/**
+ * Where along the track a thumb of that length starts, for an offset into a span.
+ **/
+float thumbStart(float track, float length, float offset, float span) noexcept;
+
+/**
+ * The offset a drag to a point along the track asks for. The cursor holds the middle of the
+ * thumb, so what is under it stays under it.
+ **/
+float dragOffset(float track, float length, float along, float span) noexcept;
 
 };  // namespace v3d::ui::component

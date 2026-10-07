@@ -18,8 +18,8 @@ const int TabBar::none;
 TabBar::TabBar() :
     Component(Type::TabBar),
     selected_(0) {
-    // a control exists to be driven, so it asks for the press and the focus that a panel
-    // laid over a scene must not take - ADR-0034 and ADR-0040
+    // a control is pickable and focusable from the start; a plain component is neither, so a
+    // panel laid over a scene lets presses through
     pickable(true);
     focusable(true);
 }
@@ -46,8 +46,8 @@ int TabBar::selected() const noexcept {
 
 boost::shared_ptr<TabPage> TabBar::page() const {
     const std::vector<boost::shared_ptr<TabPage>> held = pages();
-    // the first page is what a bar shows until something chose another, so an index that
-    // was set before the pages were added still lands on one
+    // a bar starts on its first page, and that index is held from before any page is added,
+    // so it lands on the first page once there is one
     if (held.empty()) {
         return nullptr;
     }

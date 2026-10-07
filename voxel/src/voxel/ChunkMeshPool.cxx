@@ -6,13 +6,16 @@
 #include "ChunkMeshPool.h"
 
 ChunkMeshPool::Entry::Entry() :
-    origin(0.0f, 0.0f, 0.0f) {
+    origin(0.0f, 0.0f, 0.0f),
+    size(0.0f) {
 }
 
-void ChunkMeshPool::add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>& mesh, const glm::vec3& origin) {
+void ChunkMeshPool::add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>& mesh, const glm::vec3& origin,
+    float size) {
     Entry entry;
     entry.mesh = mesh;
     entry.origin = origin;
+    entry.size = size;
     pool_[chunkId] = entry;
 }
 

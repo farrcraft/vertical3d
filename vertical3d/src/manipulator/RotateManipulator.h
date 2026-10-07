@@ -18,9 +18,8 @@ namespace v3d::editor {
 /**
  * Turns the selection: a ring per axis, about the object's origin.
  *
- * An axis ring turns by however far the cursor swept round the origin on screen, which
- * is the gesture the ring invites. The centre handle tumbles the object about the
- * camera's own axes instead.
+ * An axis ring turns by however far the cursor swept round the origin on screen. The
+ * centre handle tumbles the object about the camera's own axes instead.
  **/
 class RotateManipulator final : public Manipulator {
  public:
@@ -36,15 +35,6 @@ class RotateManipulator final : public Manipulator {
 
  private:
     /**
-     * How far the cursor swept round the manipulator's origin, in radians about a
-     * handle's axis.
-     *
-     * Measured on the screen rather than in the world, because the ring is what the
-     * gesture follows. Clip space points y down, so a rotation about an axis running
-     * into the screen sweeps the opposite way round the origin from one about an axis
-     * coming out of it, and the sign follows from which it is.
-     **/
-    /**
      * How close the cursor comes to the ring about one axis, in pixels.
      *
      * A ring is not one segment, so it is tested as the run of segments it is drawn
@@ -54,6 +44,15 @@ class RotateManipulator final : public Manipulator {
     static float ringDistance(const Placement& placement, const glm::vec3& unit,
         const ViewPort& view, const glm::vec2& cursor);
 
+    /**
+     * How far the cursor swept round the manipulator's origin, in radians about a
+     * handle's axis.
+     *
+     * Measured on the screen rather than in the world, because the gesture follows the
+     * ring as drawn. Clip space points y down. A rotation about an axis running into
+     * the screen sweeps the opposite way round the origin from one about an axis coming
+     * out of it, and the sign follows the axis's direction.
+     **/
     static float swept(const ViewPort& view, const Placement& placement, Axis axis,
         const glm::vec2& from, const glm::vec2& to);
 };

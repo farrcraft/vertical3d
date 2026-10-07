@@ -24,6 +24,16 @@ namespace {
  **/
 constexpr float epsilon = 1e-7f;
 
+/**
+ * Whether every component of a ray's origin and direction is finite. Each intersection test
+ * refuses a ray that is not, because a comparison with NaN is false and lets it pass every
+ * rejection test.
+ **/
+bool finite(const glm::vec3& origin, const glm::vec3& direction) {
+    return std::isfinite(origin.x) && std::isfinite(origin.y) && std::isfinite(origin.z) &&
+        std::isfinite(direction.x) && std::isfinite(direction.y) && std::isfinite(direction.z);
+}
+
 };  // namespace
 
 /**
@@ -76,6 +86,10 @@ Ray Ray::transformed(const glm::mat4& transform) const {
 bool Ray::intersects(const AABBox& box, float* distance) const {
     const glm::vec3 min = box.min();
     const glm::vec3 max = box.max();
+    // std::max and std::min below keep their first argument when the other is NaN
+    if (!finite(origin_, direction_)) {
+        return false;
+    }
 
     // not near/far: the windows headers define both as macros
     float entryDistance = 0.0f;
@@ -117,6 +131,9 @@ bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c,
 
 bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance,
     float* u, float* v) const {
+    if (!finite(origin_, direction_)) {
+        return false;
+    }
     const glm::vec3 ab = b - a;
     const glm::vec3 ac = c - a;
     const glm::vec3 perpendicular = glm::cross(direction_, ac);
@@ -154,6 +171,30 @@ bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c,
     }
     if (v != nullptr) {
         *v = weightC;
+    }
+    return true;
+}
+
+/**
+ **/
+bool Ray::intersects(const Plane& plane, float* distance) const {
+    if (!finite(origin_, direction_)) {
+        return false;
+    }
+    // the plane's equation along the ray is distance(origin) + t * dot(normal, direction),
+    // which is zero where the ray crosses. Neither term needs a unit normal, since a scale
+    // of one is a scale of the other
+    const float approach = glm::dot(plane.normal(), direction_);
+    if (std::fabs(approach) < epsilon) {
+        return false;
+    }
+    const float hit = -plane.signedDistance(origin_) / approach;
+    if (hit < 0.0f) {
+        return false;
+    }
+
+    if (distance != nullptr) {
+        *distance = hit;
     }
     return true;
 }

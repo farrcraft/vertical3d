@@ -50,9 +50,9 @@ Recorder::Target describe(const boost::shared_ptr<RenderTarget>& target) {
 /**
  * Read back what a capture wrote.
  *
- * Going through the file rather than asking the capture for its pixels is deliberate: it is
- * the same round trip the reference comparison makes, so a case asserting a colour by hand and
- * one asserting a picture are reading the same bytes.
+ * This reads the file rather than asking the capture for its pixels. The reference comparison
+ * makes the same round trip, so a case that checks a colour by hand and one that checks a
+ * picture read the same bytes.
  **/
 boost::shared_ptr<v3d::image::Image> written(const boost::shared_ptr<v3d::log::Logger>& logger, const std::string& path) {
     v3d::image::reader::Png png(logger);
@@ -80,16 +80,16 @@ std::vector<unsigned char> rgba(unsigned char r, unsigned char g, unsigned char 
 BOOST_AUTO_TEST_SUITE(offscreen_frame_test)
 
 /**
- * The whole of a frame, drawn into a target rather than a chain: a pass that clears, recorded
- * by the recorder, submitted, and read back. What it asserts is what ADR-0007 chose - that the
- * validation layer had nothing to say about any of it.
+ * A complete frame, drawn into a target rather than a chain: a pass that clears, recorded by
+ * the recorder, submitted, and read back. The case passes if the validation layer reports no
+ * errors and every texel is the clear colour.
  **/
 BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 
@@ -129,19 +129,18 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
 }
 
 /**
- * The same frame with a quad in it, which is the first case that reaches a pipeline: the
- * renderer compiles one against the target's format rather than a chain's, and the recorder
- * binds and draws it.
+ * The same frame with a quad in it, so the case reaches a pipeline: the renderer compiles one
+ * against the target's format rather than a chain's, and the recorder binds and draws it.
  *
- * This is the case the committed picture is checked against, and it is the dullest one the
- * suite can draw on purpose - one flat rect on a cleared target, at integer boundaries, in
- * channels at the ends of their range. Under ADR-0054 every conformant implementation owes
- * the same bytes for it, so the reference is the specification's rather than this machine's.
+ * The picture is compared against a committed reference, so it is deliberately simple: one
+ * flat rect on a cleared target, at integer boundaries, in channels at the ends of their
+ * range. The Vulkan specification fixes that output exactly, so any conformant driver
+ * produces it bit for bit.
  **/
 BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     Canvas canvas;
     canvas.resize(width, height);
@@ -150,7 +149,7 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     // pixel that should have been background and is not
     canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
@@ -170,34 +169,33 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     capture.record(commands, source);
 
     headless.submitAndWait(commands);
-    headless.context->quads()->endFrame();
 
     BOOST_CHECK(headless.silent());
 
-    // every texel rather than the five a spot check reached: a quad drawn at the wrong scale,
-    // flipped in y or off by a pixel differs from the reference wherever it differs
+    // every texel rather than a few spot checks, so a quad drawn at the wrong scale, flipped in
+    // y or off by a pixel fails wherever a texel differs from the reference
     v3d::test::checkReference(headless.logger, &capture, "quad");
 }
 
 
 /**
- * A quad drawn with a texture the case uploads, which is the only thing in the tree that
- * asserts the upload path: a texture that arrived transposed, mirrored, in the wrong channel
- * order or in the wrong mip is a picture rather than a validation error.
+ * A quad drawn with a texture the case uploads. This is the only check of the upload path: a
+ * texture that arrived transposed, mirrored, in the wrong channel order or in the wrong mip
+ * gives a wrong picture rather than a validation error.
  *
- * The texture is built here rather than committed beside the reference, because a file would
- * be a second thing to keep in step with the picture. Its four quadrants are four different
- * full range colours over a rectangle that is wider than it is tall, so a transpose and a
- * flip in either axis are all different pictures.
+ * The texture is built here rather than committed beside the reference, so there is no second
+ * file to keep in step with the picture. Its four quadrants are four different full range
+ * colours over a rectangle that is wider than it is tall, so a transpose and a flip in either
+ * axis all give different pictures.
  *
- * It is drawn at one texel per pixel on integer boundaries, which is what ADR-0054 requires
- * of a sampled reference: every sampler in the tree is linear and at that scale the filter
- * lands on texel centres, so what reaches the target is the texel unchanged.
+ * It is drawn at one texel per pixel on integer boundaries, so the output is exact. Every
+ * sampler in the tree is linear, and at that scale the filter lands on texel centres, so
+ * each texel reaches the target unchanged.
  **/
 BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     // 32 by 16, which is the size the quad below covers in pixels
     const uint32_t textureWidth = 32;
@@ -215,7 +213,7 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
         }
     }
     const v3d::render::realtime::TextureHandle uploaded =
-        headless.context->quads()->texture(texels.data(), textureWidth, textureHeight, 4);
+        headless.context->textures()->texture(texels.data(), textureWidth, textureHeight, 4);
     BOOST_REQUIRE(uploaded.valid());
 
     Canvas canvas;
@@ -225,7 +223,7 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f),
         glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), uploaded);
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
@@ -245,7 +243,6 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     capture.record(commands, source);
 
     headless.submitAndWait(commands);
-    headless.context->quads()->endFrame();
 
     BOOST_CHECK(headless.silent());
 
@@ -254,9 +251,8 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
 
 /**
  * The same clear, on a device whose memory comes from a suballocator rather than from one
- * device allocation per resource - ADR-0053. Nothing in this tree asks for that allocator, so
- * this case is the only thing that runs it: without one the second path would compile and
- * never execute, which is the failure mode of keeping the first as the default.
+ * device allocation per resource. Nothing in this tree selects that allocator, because direct
+ * allocation is the default. This case is the only code that runs the suballocated path.
  *
  * It asserts the picture as well as the silence, because an allocation bound at the wrong
  * offset is a wrong picture rather than a reported error - a suballocated region starts part
@@ -268,9 +264,9 @@ BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
     BOOST_REQUIRE(headless.device->allocator().kind() ==
         v3d::render::realtime::vulkan::memory::Allocator::Kind::Suballocated);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, width, height, colourFormat);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
-    Frame frame(headless.context);
+    Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 
@@ -302,6 +298,127 @@ BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
             }
         }
     }
+}
+
+/**
+ * A pass drawing into part of its target, with a clip rectangle that reaches outside that part.
+ * The scissor is clamped to the pass's region, so the layer reports nothing, and only the
+ * pixels inside both the clip and the region are drawn. The rest of the region is the clear
+ * colour. Pixels outside the region are undefined and are not checked.
+ **/
+BOOST_AUTO_TEST_CASE(a_clip_is_cut_to_the_pass_viewport) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+
+    // the region is the middle of the target: 32 by 16 at 16, 8
+    const uint32_t regionX = 16;
+    const uint32_t regionY = 8;
+    const uint32_t regionWidth = 32;
+    const uint32_t regionHeight = 16;
+
+    // the canvas covers the region, and the clip is in the image's pixels: 0,0 to 24,12 overlaps
+    // the region only from 16,8 to 24,12
+    Canvas canvas;
+    canvas.resize(regionWidth, regionHeight);
+    canvas.clear();
+    canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(24.0f, 12.0f));
+    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(regionWidth), static_cast<float>(regionHeight)),
+        glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    canvas.unclip();
+
+    Frame frame;
+    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    pass->viewport(glm::vec4(static_cast<float>(regionX), static_cast<float>(regionY), static_cast<float>(regionWidth),
+        static_cast<float>(regionHeight)));
+    pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+    headless.context->quads()->submit(canvas, pass.get());
+
+    Capture capture(headless.device, headless.logger);
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::record(commands, frame, describe(target), *headless.context->resources(), headless.context->frameUniforms().get());
+    Capture::Source source;
+    source.image = target->image();
+    source.extent = target->extent();
+    source.format = target->format();
+    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    capture.record(commands, source);
+    headless.submitAndWait(commands);
+
+    BOOST_CHECK(headless.silent());
+
+    BOOST_REQUIRE(capture.write("data_out/offscreen_clipped_viewport.png"));
+    boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, "data_out/offscreen_clipped_viewport.png");
+    BOOST_REQUIRE(picture);
+    for (uint32_t y = regionY; y < regionY + regionHeight; y++) {
+        for (uint32_t x = regionX; x < regionX + regionWidth; x++) {
+            const bool clipped = x < 24 && y < 12;
+            const std::vector<unsigned char> expected = clipped ? rgba(255, 0, 0, 255) : rgba(0, 255, 0, 255);
+            if (texel(picture, x, y) != expected) {
+                BOOST_ERROR("texel " << x << "," << y << " should be " << (clipped ? "the quad" : "the clear colour"));
+                return;
+            }
+        }
+    }
+}
+
+/**
+ * A frame that is begun and never submitted, as when recording throws, leaves its fence
+ * signalled. Beginning the same slot again then returns rather than waiting forever, and the
+ * frame after it draws and is silent.
+ **/
+BOOST_AUTO_TEST_CASE(an_abandoned_frame_can_be_begun_again) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    VkCommandBuffer abandoned = headless.context->ring()->begin();
+    BOOST_REQUIRE(abandoned != VK_NULL_HANDLE);
+
+    const uint64_t begun = headless.context->ring()->begun();
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    BOOST_REQUIRE(commands == abandoned);
+    // the frame begun again is the same frame, so it is not counted twice, and nothing retired
+    // is collected a frame early
+    BOOST_CHECK_EQUAL(headless.context->ring()->begun(), begun);
+    headless.submitAndWait(commands);
+    BOOST_CHECK(headless.silent());
+
+    // once that frame is submitted, the next begin is a new frame
+    headless.submitAndWait(headless.context->ring()->begin());
+    BOOST_CHECK_EQUAL(headless.context->ring()->begun(), begun + 1);
+}
+
+/**
+ * Something retired between a submit and the next begin may be named by items queued for the
+ * frame about to begin. It therefore outlives that frame, and is destroyed only once
+ * framesInFlight frames after it have begun. Something retired while a frame is being recorded
+ * is destroyed once framesInFlight frames after that one have begun.
+ **/
+BOOST_AUTO_TEST_CASE(a_retirement_outlives_the_frame_about_to_begin) {
+    // declared before the device, because the ring runs whatever is still held when it goes
+    bool queued = false;
+    bool recording = false;
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<v3d::render::realtime::vulkan::frame::Ring> ring = headless.context->ring();
+    headless.submitAndWait(ring->begin());
+
+    ring->retire([&queued]() { queued = true; });
+    for (uint32_t frame = 0; frame < ring->framesInFlight(); frame++) {
+        headless.submit(ring->begin());
+        BOOST_CHECK(!queued);
+    }
+    headless.submit(ring->begin());
+    BOOST_CHECK(queued);
+
+    VkCommandBuffer commands = ring->begin();
+    ring->retire([&recording]() { recording = true; });
+    headless.submit(commands);
+    for (uint32_t frame = 1; frame < ring->framesInFlight(); frame++) {
+        headless.submit(ring->begin());
+        BOOST_CHECK(!recording);
+    }
+    headless.submit(ring->begin());
+    BOOST_CHECK(recording);
+
+    ring->waitIdle();
+    BOOST_CHECK(headless.silent());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

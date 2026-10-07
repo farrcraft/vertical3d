@@ -13,58 +13,27 @@
 #include <functional>
 
 #include "Handle.h"
+#include "SortKey.h"
 
 namespace v3d::render::realtime {
 
 /**
- * Where a draw item falls in the order the engine records items in.
- *
- * The fields are ordered from the coarsest grouping to the finest and packed into one
- * integer, so a whole pass sorts on a single comparison. Layer comes first because 2D
- * content is painter ordered: a sprite drawn later has to stay on top of the one under
- * it whatever pipeline or material either of them uses. Within a layer, grouping by
- * pipeline and then material is what lets the recorder merge adjacent items.
- *
- * Nothing sorts yet - the recorder walks each pass in submission order, per ADR-0004 -
- * so filling the key in is a caller's obligation that nothing enforces.
- **/
-struct SortKey final {
-    /**
-     **/
-    SortKey() noexcept;
-
-    /**
-     * @return the fields packed coarsest first, so that a < comparison orders items
-     **/
-    uint64_t packed() const noexcept;
-
-    /**
-     **/
-    bool operator<(const SortKey& other) const noexcept;
-
-    uint16_t layer;     /**< painter order - lower layers are recorded first **/
-    uint16_t pipeline;  /**< the pipeline handle's slot, so items sharing a pipeline group **/
-    uint16_t material;  /**< the material handle's slot, so items sharing a descriptor set group **/
-    uint16_t depth;     /**< view depth quantized to 16 bits, for front to back ordering within a material **/
-};
-
-/**
  * A description of one draw, submitted to a pass for the engine to record.
  *
- * An item is data rather than code - the engine owns sorting, merging and recording,
- * so nothing here touches a command buffer directly. The one exception is record, the
- * escape hatch for work the model cannot yet describe; it is meant for the odd case,
- * and reaching for it routinely is the signal that the model needs extending.
+ * An item is data rather than code. The engine sorts, merges and records items, so nothing
+ * here writes to a command buffer directly. The exception is record, an escape hatch for
+ * work the fields cannot describe yet. It is meant for rare cases; needing it routinely
+ * means the item needs a new field.
  **/
 struct DrawItem final {
     /**
      * How many bytes of push constants an item can carry.
      *
-     * 128 is what vulkan guarantees, and taking all of it is what lets an item carry a
-     * transform alongside the handful of floats a lit or graded material wants - a mat4
-     * and a vec4 and a scalar is 84, and the quad primitive's lone mat4 is 64. The cost is
-     * real and is paid per item per frame: an item is copied into a pass's queue by value,
-     * so the unfilled part of the block is memcpyd whether or not a pipeline declared it.
+     * 128 is the minimum Vulkan guarantees. Using all of it lets an item carry a transform
+     * alongside the few values a lit or graded material needs. The lit renderer's mat4,
+     * vec4, scalar and joint index take 88 bytes, and the quad primitive's mat4 and text flag
+     * take 68. The cost is paid per item per frame: an item is copied into a pass's queue by
+     * value, so the unused part of the block is copied whether or not a pipeline declared it.
      **/
     static const std::size_t pushCapacity = 128;
 
@@ -93,7 +62,7 @@ struct DrawItem final {
     uint32_t firstInstance;    /**< the first instance **/
 
     bool scissored;            /**< whether the draw is cut down, rather than covering the pass **/
-    VkRect2D scissor;          /**< what it is cut to, in the pixels of the image drawn into - ADR-0037 **/
+    VkRect2D scissor;          /**< what it is cut to, in the pixels of the image drawn into **/
 
     /**
      * Records the item itself, for work the fields above cannot describe.

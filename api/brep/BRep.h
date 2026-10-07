@@ -9,6 +9,7 @@
 #include <api/dag/Transform.h>
 #include <api/type/geometry/AABBox.h>
 
+#include <string>
 #include <vector>
 
 #include "Vertex.h"
@@ -33,42 +34,26 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
 
         static const Index INVALID_ID;
 
-        class edge_iterator {
-         public:
-                edge_iterator();
-                edge_iterator(const boost::shared_ptr<BRep>& brep, Index face);
-                ~edge_iterator();
-
-                HalfEdge * operator * ();
-                edge_iterator operator++ (int);
-
-                void reset(const boost::shared_ptr<BRep>& brep, Index face);
-                boost::shared_ptr<BRep> brep(void) const;
-
-         private:
-                HalfEdge * edge_;
-                Index firstEdge_;
-                boost::shared_ptr<BRep> brep_;
-        };
-
-        class vertex_iterator {
-         public:
-                vertex_iterator();
-                vertex_iterator(const boost::shared_ptr<BRep>& brep, Index face);
-                ~vertex_iterator();
-
-                Vertex * operator * ();
-                vertex_iterator operator++ (int);
-
-                void reset(const boost::shared_ptr<BRep>& brep, Index face);
-
-         private:
-                edge_iterator iterator_;
-        };
-
+        /**
+         * A component by index, or null when the mesh holds no such one. Walking a face is
+         * faceLoop()'s - see Topology.h.
+         **/
         HalfEdge * edge(Index e);
         Face * face(Index f);
         Vertex * vertex(Index vert);
+        const HalfEdge * edge(Index e) const;
+        const Face * face(Index f) const;
+        const Vertex * vertex(Index vert) const;
+
+        /**
+         * Whether every reference the mesh holds is to something it holds: a half edge's
+         * vertex always, and its face, pair and next unless they are INVALID_ID; a face's
+         * edge always. A next chain that does not close is allowed, since an unfinished
+         * modelling operation leaves one, and faceLoop() ends it.
+         *
+         * @param problem what is wrong, for a caller to report, when anything is
+         **/
+        bool validate(std::string * problem) const;
 
         v3d::type::geometry::AABBox bound(void) const;
 
@@ -87,10 +72,6 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
 
         void addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & normal);
         void addEdge(const glm::vec3 & point);
-
-        void splitEdge(Index edge, const glm::vec3 & point);
-        void extrudeFace(Index face);
-        void splitFace(Index face, Index leftEdge, Index rightEdge, const glm::vec3 & leftPoint, const glm::vec3 & rightPoint);
 
         size_t vertexCount(void) const;
         size_t edgeCount(void) const;
@@ -112,20 +93,5 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         bool selected_;
 };
 
-/**
- * Get the mid point of the face of a mesh
- * @param mesh the brep
- * @param face the face number to get the center of
- * @return the point located in the middle of the face
- */
-glm::vec3 center(const boost::shared_ptr<BRep>& mesh, Index face);
-/**
- * Get the UV vectors for a mesh face
- * @param mesh the mesh to use
- * @param face the face number to get the coordinates for
- * @param u the address of a vector to store the results in
- * @param v the address of a vector to store the results in
- */
-void faceUV(const boost::shared_ptr<BRep>& mesh, Index face, glm::vec3* u, glm::vec3* v);
 
 };  // namespace v3d::brep

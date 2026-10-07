@@ -6,8 +6,9 @@
 #pragma once
 
 #include <cstdint>
-#include <deque>
 #include <vector>
+
+#include "CanvasStacks.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -19,12 +20,12 @@ namespace v3d::render::realtime {
 /**
  * Everything the engine draws as lines, accumulated as one stream of segments.
  *
- * The cpu half of the line primitive of ADR-0011, and the counterpart of Canvas: filled
+ * The CPU side of the world space line primitive, and the counterpart of Canvas: filled
  * during a tick and handed to vulkan::renderer::Line, which draws the whole stream as one
  * line list. There is no index buffer - segments rarely share a vertex, so indexing a
  * line list costs more than it saves.
  *
- * Nothing here touches vulkan.
+ * Nothing here calls Vulkan.
  *
  * Coordinates are in world space, not in pixels. A line canvas draws through the camera
  * its pass carries at set 0, so a pass whose camera was never set draws it in clip
@@ -50,7 +51,7 @@ class LineCanvas final {
     struct Batch final {
         Batch() noexcept;
 
-        bool clipped;           /**< whether clip cuts the run down, per ADR-0037 **/
+        bool clipped;           /**< whether the run is cut to clip **/
         glm::vec4 clip;         /**< the rectangle it is cut to - min x, min y, max x, max y **/
         uint32_t firstVertex;   /**< where the run starts in vertices() **/
         uint32_t vertices;      /**< how long the run is **/
@@ -93,7 +94,7 @@ class LineCanvas final {
     const glm::mat4& transform() const noexcept;
 
     /**
-     * Cut everything drawn until the matching unclip() to a rectangle, per ADR-0037.
+     * Cut everything drawn until the matching unclip() to a rectangle.
      *
      * The rectangle is in the pixels of the image being drawn into, and the modelview
      * stack does not apply to it. Canvas resolves its clip through the transform because
@@ -175,9 +176,8 @@ class LineCanvas final {
      **/
     void vertex(const glm::vec3& position, const glm::vec4& colour);
 
-    std::deque<glm::mat4> transforms_;
-    /**< what each open clip cuts to, already intersected; empty is uncut **/
-    std::deque<glm::vec4> clips_;
+    TransformStack transforms_;
+    ClipStack clips_;
     std::vector<Vertex> vertices_;
     std::vector<Batch> batches_;
 };

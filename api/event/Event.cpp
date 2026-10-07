@@ -17,10 +17,6 @@ Event::Event(const std::string& name) :
     name_(name), hasData_(false), type_(Type::Unknown), state_(State::Any) {
 }
 
-bool Event::operator() (const Event& lhs, const Event& rhs) const {
-    return lhs.str() == rhs.str();
-}
-
 bool Event::operator <(const Event& rhs) const {
     int order = str().compare(rhs.str());
     if (order != 0) {
@@ -59,6 +55,18 @@ void Event::state(State s) {
  **/
 State Event::state() const {
     return state_;
+}
+
+/**
+ **/
+void Event::repeat(bool repeated) noexcept {
+    repeat_ = repeated;
+}
+
+/**
+ **/
+bool Event::repeat() const noexcept {
+    return repeat_;
 }
 
 std::string Event::str() const {

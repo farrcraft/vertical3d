@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/kind/Json.h>
+#include <api/event/Engine.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Panel.h>
@@ -33,8 +33,7 @@ struct Fixture final {
         ui = boost::make_shared<v3d::ui::Engine>(
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
-        BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui",
-            v3d::asset::Type::JsonDocument, boost::json::parse(document).as_object())));
+        BOOST_REQUIRE(ui->load(boost::json::parse(document).as_object()));
         keys = boost::make_shared<v3d::ui::input::Keys>(ui, dispatcher);
     }
 
@@ -95,7 +94,7 @@ BOOST_AUTO_TEST_CASE(the_focus_moves_forward_and_back_and_wraps) {
     BOOST_CHECK(fixture.ui->focusNext(true));
     BOOST_CHECK_EQUAL(focusedName(fixture.ui), "first");
 
-    // backwards is the same walk the other way, and wraps at the other end
+    // backwards is the same order the other way, and wraps at the other end
     BOOST_CHECK(fixture.ui->focusNext(false));
     BOOST_CHECK_EQUAL(focusedName(fixture.ui), "third");
     BOOST_CHECK(fixture.ui->focusNext(false));
@@ -130,7 +129,7 @@ BOOST_AUTO_TEST_CASE(a_hidden_subtree_is_skipped) {
 }
 
 /**
- * Depth is what orders the walk, and a flow box is the exception: it holds its children in
+ * Depth sets the tab order, and a flow box is the exception: it holds its children in
  * the order it places them, so a z index inside one changes nothing. This mirrors what
  * Arranger::walk does, and the two have to agree or the tab order is not the reading order.
  **/
@@ -228,7 +227,7 @@ BOOST_AUTO_TEST_CASE(a_hidden_container_is_skipped) {
 
 /**
  * A disabled subtree is skipped whole, the way a hidden one is: a group of controls greyed
- * out by the box around them must not be tabbed into - ADR-0059.
+ * out by the box around them must not be tabbed into.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_subtree_is_skipped) {
     Fixture fixture(ONE_CONTAINER);
@@ -279,8 +278,8 @@ BOOST_AUTO_TEST_CASE(a_disabled_component_cannot_be_focused) {
 
 /**
  * A component disabled while it held the focus answers no key and takes no characters, so
- * both reach the app's bindings. Tab and escape still move the focus off it, which is what
- * keeps one from being stuck on a control nobody can use.
+ * both reach the app's bindings. Tab and escape still move the focus off it, so the focus
+ * is never stuck on a control nobody can use.
  **/
 BOOST_AUTO_TEST_CASE(a_component_disabled_while_focused_takes_no_key) {
     Fixture fixture(ONE_CONTAINER);
@@ -296,6 +295,64 @@ BOOST_AUTO_TEST_CASE(a_component_disabled_while_focused_takes_no_key) {
 
     BOOST_CHECK(fixture.keys->press("tab"));
     BOOST_CHECK_EQUAL(focusedName(fixture.ui), "second");
+}
+
+/**
+ * A tab bar holds every page and shows one. A control on a page that is not up is not
+ * reached by tab. It was never laid out or drawn, and typing into it would go somewhere the
+ * player cannot see.
+ **/
+BOOST_AUTO_TEST_CASE(a_control_on_a_hidden_page_is_not_focused) {
+    Fixture fixture(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
+        { "name": "panels", "type": "tabs", "selected": 0, "children": [
+            { "name": "shown", "type": "tab", "label": "Shown",
+              "children": [ { "name": "here", "type": "textbox" } ] },
+            { "name": "hidden", "type": "tab", "label": "Hidden",
+              "children": [ { "name": "there", "type": "textbox" } ] }
+        ] }
+    ] } ] })");
+
+    // the strip, then what is on the page that is up, then round to the strip again - and
+    // never the box on the page nobody can see
+    BOOST_CHECK(fixture.ui->focusFirst());
+    BOOST_CHECK_EQUAL(focusedName(fixture.ui), "panels");
+    BOOST_CHECK(fixture.ui->focusNext(true));
+    BOOST_CHECK_EQUAL(focusedName(fixture.ui), "here");
+    BOOST_CHECK(fixture.ui->focusNext(true));
+    BOOST_CHECK_EQUAL(focusedName(fixture.ui), "panels");
+}
+
+/**
+ * A box hidden while it holds the focus, as a dialog's name field is when the dialog closes,
+ * takes no more keys or text. It gives the focus up on the next one, tab and escape included,
+ * which goes on to the app, so a game's keys work again without a click first. Hiding the
+ * container it is in does the same.
+ **/
+BOOST_AUTO_TEST_CASE(a_component_hidden_while_focused_lets_keys_through) {
+    Fixture fixture(ONE_CONTAINER);
+    const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
+    hud->add(box("field"));
+
+    fixture.ui->focus(hud->get("field"));
+    hud->get("field")->visible(false);
+    BOOST_CHECK(!fixture.keys->text("w"));
+    BOOST_CHECK(!fixture.ui->focused());
+    BOOST_CHECK(!fixture.keys->press("w"));
+
+    hud->get("field")->visible(true);
+    fixture.ui->focus(hud->get("field"));
+    hud->visible(false);
+    BOOST_CHECK(!fixture.keys->press("a"));
+    BOOST_CHECK(!fixture.ui->focused());
+
+    // tab and escape go on to the app too, rather than being spent on a ui nobody can see
+    for (const char* key : {"tab", "escape"}) {
+        hud->visible(true);
+        fixture.ui->focus(hud->get("field"));
+        hud->visible(false);
+        BOOST_CHECK(!fixture.keys->press(key));
+        BOOST_CHECK(!fixture.ui->focused());
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

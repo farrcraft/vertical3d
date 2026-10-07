@@ -27,16 +27,18 @@ namespace v3d::ui::component {
  * descended into - panels() is that stack, outermost first, and is what a renderer draws
  * and what the cursor is tested against.
  *
- * The bar answers where the cursor is out of the bounds a renderer left on the
- * components, per ADR-0019, so nothing is hit until something has been drawn.
+ * The bar tests the cursor against the bounds a renderer left on the components, so
+ * nothing is hit until something has been drawn.
+ *
+ * It is pickable from the start, and one marked otherwise is offered nothing.
  **/
 class MenuBar : public Component {
  public:
     MenuBar();
-    ~MenuBar() = default;
+    ~MenuBar() override;
 
     /**
-     * Add a menu to the end of the row.
+     * Add a menu to the end of the row. A null menu is ignored, and the row is left as it was.
      * @param label what the bar shows for it
      * @param menu the menu that drops down from it
      **/
@@ -62,9 +64,9 @@ class MenuBar : public Component {
     /**
      * Where a renderer put one menu's label in the strip.
      *
-     * The strip is the bar's own drawing, so the strip's layout is the bar's state: a
-     * menu is drawn twice - once as a label up here and again as the panel it drops - and
-     * its own bounds are the panel.
+     * A menu is drawn twice, as a label in the strip and as the panel it drops, and one
+     * component cannot hold two rectangles. The bar holds the labels' bounds, and each
+     * menu's own bounds are its panel.
      *
      * @param index which menu, which must be less than count()
      **/

@@ -10,6 +10,7 @@
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
 #include <api/event/kind/MouseMotion.h>
+#include <api/grid/TileCoord.h>
 #include <api/input/Engine.h>
 #include <api/log/Logger.h>
 #include <odyssey/render/Renderer.h>
@@ -40,15 +41,6 @@ class Engine final : public v3d::engine::Engine {
     explicit Engine(const std::string& appPath);
 
     /**
-     * Initialize the engine.
-     * Initialization includes only the minimal amount of work required to get
-     * a window displayed on the screen.
-     * 
-     * @return bool
-     **/
-    bool initialize();
-
-    /**
      * Advance the game world by one fixed simulation step
      * @return bool
      **/
@@ -60,10 +52,20 @@ class Engine final : public v3d::engine::Engine {
      **/
     bool render() override;
 
+ protected:
+    /**
+     * Initialize the engine.
+     * Initialization includes only the minimal amount of work required to get
+     * a window displayed on the screen.
+     * 
+     * @return bool
+     **/
+    bool start() override;
+
     /**
      * @return bool
      **/
-    bool shutdown() override;
+    bool release() override;
 
  private:
     /**
@@ -73,7 +75,7 @@ class Engine final : public v3d::engine::Engine {
 
     /**
      * Track the cursor. A click carries no position of its own, so the last motion is
-     * where the click happened - which is how the editor reads a pick too.
+     * where the click happened.
      **/
     void handleMotion(const v3d::event::kind::MouseMotion& event);
 
@@ -85,7 +87,7 @@ class Engine final : public v3d::engine::Engine {
 
     /**
      * One tile in a direction, if the player is not already walking a route and the tile
-     * can be entered. The grid answers that, so a step and a route refuse the same tiles.
+     * can be entered. The grid decides that, so a step and a route refuse the same tiles.
      **/
     void step(int dx, int dy);
 
@@ -100,6 +102,9 @@ class Engine final : public v3d::engine::Engine {
     glm::vec2 cursor_{0.0f, 0.0f};
     boost::shared_ptr<odyssey::render::Renderer> renderer_;
     boost::shared_ptr<odyssey::system::Movement> movementSystem_;
+    // the dispatcher holds a delegate to this object; these let it go when the object does
+    entt::scoped_connection events_;
+    entt::scoped_connection motion_;
 };
 
 };  // namespace odyssey::engine

@@ -4,6 +4,8 @@
  **/
 
 #include <api/grid/Pathfinding.h>
+#include <api/grid/TileCoord.h>
+#include <api/grid/TileGrid.h>
 #include <odyssey/tile/Map.h>
 
 #include <string>
@@ -59,8 +61,8 @@ BOOST_AUTO_TEST_CASE(map_load_test) {
 }
 
 /**
- * A kind decides passability and cover together, which is the only place those two are
- * chosen - the grid holds them and has no opinion about what a crate is.
+ * A kind decides passability and cover together. This is the only place those two are
+ * chosen: the grid stores them but does not define what a crate is.
  **/
 BOOST_AUTO_TEST_CASE(map_kinds_carry_cover_test) {
     boost::shared_ptr<odyssey::tile::Map> board = map();
@@ -78,9 +80,9 @@ BOOST_AUTO_TEST_CASE(map_kinds_carry_cover_test) {
 }
 
 /**
- * The whole point of the map: a route over it, found by the api rather than by the app.
- * The straight line from the start to the far corner crosses a wall, so a path that goes
- * around is a path the grid actually searched for.
+ * A route over the map, found by the api rather than by the app. The straight line from
+ * the start to the far corner crosses a wall, so a path that goes around shows the grid
+ * actually searched for it.
  **/
 BOOST_AUTO_TEST_CASE(map_is_routable_test) {
     boost::shared_ptr<odyssey::tile::Map> board = map();
@@ -97,7 +99,7 @@ BOOST_AUTO_TEST_CASE(map_is_routable_test) {
     BOOST_CHECK_EQUAL(v3d::grid::tileDistance(board->start(), goal), 2);
     BOOST_CHECK_EQUAL(path.size() - 1, 4u);
 
-    // and every tile of it is one the map says can be walked on
+    // every tile of it is one the map says can be walked on
     for (const v3d::grid::TileCoord& tile : path) {
         BOOST_CHECK(board->grid()->passable(tile));
     }

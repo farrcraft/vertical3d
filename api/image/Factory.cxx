@@ -14,6 +14,8 @@
 #include <api/image/writer/Png.h>
 #include <api/image/writer/Tga.h>
 
+#include <algorithm>
+#include <cctype>
 #include <cstddef>
 #include <map>
 #include <string>
@@ -23,18 +25,41 @@
 #include <boost/make_shared.hpp>
 
 namespace v3d::image {
+
+namespace {
+
+/**
+ * The key a file's readers and writers are registered under: its extension, lower case and
+ * without the dot. A name with no extension yields an empty key, which nothing is under.
+ **/
+std::string format(std::string_view filename) {
+    std::string ext = boost::filesystem::path(std::string(filename)).extension().string();
+    if (!ext.empty()) {
+        ext.erase(0, 1);
+    }
+    std::transform(ext.begin(), ext.end(), ext.begin(),
+        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return ext;
+}
+
+};  // namespace
+
 /**
  **/
 Factory::Factory(const boost::shared_ptr<v3d::log::Logger>& logger) : logger_(logger) {
     add("tga", boost::make_shared<reader::Tga>(logger));
     add("bmp", boost::make_shared<reader::Bmp>(logger));
     add("png", boost::make_shared<reader::Png>(logger));
-    add("jpg", boost::make_shared<reader::Jpeg>(logger));
+    const boost::shared_ptr<Reader> jpegReader = boost::make_shared<reader::Jpeg>(logger);
+    add("jpg", jpegReader);
+    add("jpeg", jpegReader);
 
     add("tga", boost::make_shared<writer::Tga>(logger));
     add("bmp", boost::make_shared<writer::Bmp>(logger));
     add("png", boost::make_shared<writer::Png>(logger));
-    add("jpg", boost::make_shared<writer::Jpeg>(logger));
+    const boost::shared_ptr<Writer> jpegWriter = boost::make_shared<writer::Jpeg>(logger);
+    add("jpg", jpegWriter);
+    add("jpeg", jpegWriter);
 }
 
 void Factory::add(const std::string& name, const boost::shared_ptr<Reader>& reader) {
@@ -48,8 +73,7 @@ void Factory::add(const std::string& name, const boost::shared_ptr<Writer>& writ
 bool Factory::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
     boost::filesystem::path full_path = boost::filesystem::system_complete(static_cast<std::string>(filename));
 
-    std::string ext = static_cast<std::string>(filename).substr(filename.length() - 3);
-    std::map<std::string, boost::shared_ptr<Writer> >::iterator it = writers_.find(ext);
+    std::map<std::string, boost::shared_ptr<Writer> >::iterator it = writers_.find(format(filename));
     if (it != writers_.end()) {
         boost::shared_ptr<Writer> writer = (*it).second;
         return writer->write(full_path.string(), img);
@@ -61,7 +85,7 @@ boost::shared_ptr<Image> Factory::read(std::string_view filename) {
     boost::filesystem::path full_path = boost::filesystem::system_complete(static_cast<std::string>(filename));
     std::string filepath = full_path.string();
 
-    std::string ext = static_cast<std::string>(filename).substr(filename.length() - 3);
+    const std::string ext = format(filename);
 
     logger_->get()->debug("ImageFactory::read - reading file {} with reader bound to extension {} from path {}", filename, ext, filepath);
 

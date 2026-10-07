@@ -5,7 +5,7 @@
 
 #include "GameState.h"
 
-GameState::GameState() : ballSize_(10.0f), coop_(true), maxScore_(5) {
+GameState::GameState() : ballSize_(10.0f), coop_(true), paused_(false), maxScore_(5) {
     reset();
 }
 
@@ -18,12 +18,9 @@ bool GameState::paused() const {
 }
 
 void GameState::reset() {
-    // percentage to increase ball speed each round
-    ballSpeedup_ = 1.0f;
-    // pixels per second: the ball crosses the 800 pixel court in a little over thirteen
-    // seconds when it is served, and faster every round after
+    // court units per second: a served ball crosses the 800 unit court in a little over
+    // thirteen seconds
     ballStartSpeed_ = 60.0f;
-    paused_ = false;
 }
 
 int GameState::maxScore() const {
@@ -36,10 +33,6 @@ bool GameState::coop() const {
 
 float GameState::ballSize() const {
     return ballSize_;
-}
-
-float GameState::ballSpeedup() const {
-    return ballSpeedup_;
 }
 
 float GameState::ballStartSpeed() const {

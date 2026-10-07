@@ -9,11 +9,20 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/SelectList.h>
+#include <api/ui/component/Slider.h>
 #include <api/ui/component/Type.h>
 
 #include <boost/pointer_cast.hpp>
 
 namespace v3d::ui::input {
+
+bool send(entt::dispatcher* dispatcher, const v3d::event::Event& event) {
+    if (dispatcher == nullptr || !event.context()) {
+        return false;
+    }
+    dispatcher->trigger(event);
+    return true;
+}
 
 v3d::event::Event command(const boost::shared_ptr<Component>& component) {
     if (!component) {
@@ -36,6 +45,11 @@ v3d::event::Event command(const boost::shared_ptr<Component>& component) {
             const boost::shared_ptr<component::SelectList> list =
                 boost::dynamic_pointer_cast<component::SelectList>(component);
             return list ? list->event() : v3d::event::Event();
+        }
+        case component::Type::Slider: {
+            const boost::shared_ptr<component::Slider> slider =
+                boost::dynamic_pointer_cast<component::Slider>(component);
+            return slider ? slider->event() : v3d::event::Event();
         }
         case component::Type::Bar:
         case component::Type::HorizontalBox:
@@ -61,7 +75,7 @@ v3d::event::Event command(const boost::shared_ptr<Component>& component) {
             return v3d::event::Event();
     }
     // every enumerator is handled above and the switch carries no default, so C4062 names
-    // this function when a component type is added - see ADR-0047
+    // this function when a component type is added
     return v3d::event::Event();
 }
 

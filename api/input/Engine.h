@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "Device.h"
+#include "DeviceType.h"
 #include "Keyboard.h"
 #include "KeyState.h"
 #include "Mouse.h"
@@ -29,7 +30,7 @@ class Engine final {
  public:
     /**
      **/
-    Engine(const boost::shared_ptr<v3d::event::Engine> & eventEngine, const boost::shared_ptr<entt::dispatcher> &dispatcher, int devices);
+    Engine(const boost::shared_ptr<v3d::event::Engine> & eventEngine, const boost::shared_ptr<entt::dispatcher> &dispatcher, DeviceTypes devices);
 
     /**
      **/
@@ -37,7 +38,7 @@ class Engine final {
 
     /**
      * Forget the edges every device recorded this frame. Called once per frame by the loop,
-     * which is what makes "exactly once" something an app does not have to arrange.
+     * so an app does not have to arrange for it to happen exactly once.
      **/
     void flush();
 
@@ -55,8 +56,8 @@ class Engine final {
 
  private:
     std::vector<boost::shared_ptr<Device> > devices_;
-    /**< the same two devices as above where they were asked for, kept apart so the state
-         they own can be reached without asking what kind each element is **/
+    /**< the same two devices as above where they were requested, kept separately so the
+         state they own can be reached without checking what kind each element is **/
     boost::shared_ptr<Keyboard> keyboard_;
     boost::shared_ptr<Mouse> mouse_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;

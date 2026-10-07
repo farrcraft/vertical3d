@@ -10,11 +10,9 @@
 #define NOMINMAX
 #endif
 
-#include <api/asset/kind/Json.h>
+#include <api/asset/Manager.h>
 #include <api/event/kind/Sound.h>
 #include <api/log/Logger.h>
-
-#include <SDL3_mixer/SDL_mixer.h>
 
 #include <cstdint>
 #include <functional>
@@ -23,7 +21,9 @@
 #include <vector>
 
 #include "AudioClip.h"
+#include "Play.h"
 
+#include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <entt/entt.hpp>
@@ -35,40 +35,9 @@ namespace v3d::audio {
  *
  * An id rather than a pointer, so that a handle to a sound that has since finished is
  * refused rather than being a pointer to a track the engine has recycled underneath it.
- * Zero is no sound at all, which is what a failed play() gives back.
+ * Zero is no sound at all, which a failed play() returns.
  **/
 typedef uint32_t Voice;
-
-/**
- * How to start a sound. Every field has the value a one shot wants, so the default is what
- * playClip() has always done.
- **/
-struct Play final {
-    Play() noexcept;
-
-    /**
-     * The bus the sound is mixed on - "music", "sfx", "ambience". A tag is a named group
-     * with a volume for the cost of a string, which is what makes a settings screen three
-     * sliders rather than one. Empty is no bus.
-     **/
-    std::string bus;
-
-    /**
-     * How many times to repeat after the first play. -1 loops until stopped, which is what
-     * a bed of ambience or a music track wants.
-     **/
-    int loops;
-
-    /**
-     * How long to fade up from silence, in milliseconds, so a bed starts without a click.
-     **/
-    int fadeInMs;
-
-    /**
-     * The sound's own volume, multiplied by its bus's. 1 is unchanged.
-     **/
-    float gain;
-};
 
 /**
  * An Audio / Sound processing engine
@@ -76,13 +45,19 @@ struct Play final {
 class Engine final {
  public:
     Engine(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher>& dispatcher);
-    ~Engine() = default;
+    /**
+     * Shuts down, so the device, the tracks and the dispatcher's delegate to this engine
+     * go with it whether or not the owner called shutdown() itself.
+     **/
+    ~Engine();
+    Engine(const Engine&) = delete;
+    Engine& operator=(const Engine&) = delete;
 
     /**
-     * What turns the source a sound config names into a loaded clip, per ADR-0021.
-     *
-     * This library never reaches the asset manager: `v3dlib_asset` loads through
-     * `v3dlib_audio`, so the dependency cannot run both ways.
+     * Turns the source a sound config names into a loaded clip. This library never reaches
+     * the asset manager itself, so an app whose clips do not come from files supplies one of
+     * these. The manager overload of load() below wraps the asset manager in one, for an app
+     * that loads its clips as assets.
      **/
     typedef std::function<boost::shared_ptr<AudioClip>(const std::string& source)> Resolve;
 
@@ -98,12 +73,19 @@ class Engine final {
     /**
      * Load every clip a sound config names, through the resolver the app supplies.
      *
-     * @param config the document, an array of clip ids over the files that hold them
+     * @param doc the document, an array of clip ids over the files that hold them
      * @param resolve what turns one of those files into a clip
      * @return false when the document is malformed, or when a clip it named would not
      *         load - the clips that did load are kept either way
      **/
-    bool load(const boost::shared_ptr<v3d::asset::kind::Json> & config, const Resolve & resolve);
+    bool load(const boost::json::object & doc, const Resolve & resolve);
+
+    /**
+     * Load every clip a sound config names through an asset manager, which must have had
+     * registerLoaders() called on it. This saves every app that plays sound writing the same
+     * resolver. A source resolves against the manager's path like any other asset.
+     **/
+    bool load(const boost::json::object & config, v3d::asset::Manager & assets);
 
     /**
      * File an already loaded clip under the id a sound event will name.
@@ -114,7 +96,13 @@ class Engine final {
     bool addClip(const boost::shared_ptr<AudioClip> & clip, const std::string_view & key);
 
     /**
-     * Start a clip and forget it, which is what a one shot is.
+     * Whether a clip is filed under an id. This needs no device, so it shows what load()
+     * and addClip() filed on a machine that has none.
+     **/
+    bool has(const std::string_view & clip) const;
+
+    /**
+     * Start a clip without keeping a handle to it: a one shot.
      *
      * @return whether it started
      **/
@@ -180,10 +168,23 @@ class Engine final {
      * Take the tracks of every finished sound back, so a game that starts one shots does
      * not grow a track per sound played.
      *
-     * Called as a sound is started rather than on a timer, because that is the only moment
-     * the engine is asked for anything and a finished track costs nothing until then.
+     * Called as a sound is started rather than on a timer, because a finished track costs
+     * nothing until a new one is needed.
      **/
     void reap();
+
+    /**
+     * Take one finished voice's track back onto the free list.
+     *
+     * @return the entry after it
+     **/
+    std::map<Voice, Playing>::iterator retire(const std::map<Voice, Playing>::iterator & playing);
+
+    /**
+     * @return the voice's entry while its track is playing, or the end of voices_. A voice
+     *         whose track has finished is retired here rather than at the next play().
+     **/
+    std::map<Voice, Playing>::iterator live(Voice voice);
 
     /**
      * @return a track off the free list, or a new one, or null when the mixer will give
@@ -198,6 +199,8 @@ class Engine final {
     std::map<Voice, Playing> voices_;
     std::vector<MIX_Track*> free_;   /**< reaped tracks, waiting to be played again **/
     Voice nextVoice_ = 1;            /**< never reused, so a stale handle stays stale **/
+    // after dispatcher_, so it disconnects before the dispatcher it points into can go
+    entt::scoped_connection sound_;
 };
 
 };  // namespace v3d::audio

@@ -5,6 +5,7 @@
 
 #include <api/image/TextureAtlas.h>
 #include <api/image/Image.h>
+#include <api/log/Logger.h>
 
 #include <vector>
 
@@ -27,8 +28,8 @@ BOOST_AUTO_TEST_CASE(textureatlas_region_is_the_size_asked_for) {
 
     const glm::ivec4 region = atlas.region(8, 6);
 
-    // the gutter is the atlas's business, so what comes back is what was asked for and
-    // not what was reserved behind it
+    // the atlas handles the gutter itself, so the rectangle returned is the size requested
+    // and not the size reserved
     BOOST_CHECK_EQUAL(region.z, 8);
     BOOST_CHECK_EQUAL(region.w, 6);
 
@@ -44,8 +45,8 @@ BOOST_AUTO_TEST_CASE(textureatlas_region_is_the_size_asked_for) {
  * borders another region, so a sampler reading a region's edge cannot reach a neighbour.
  *
  * Filling each region with 0xff and then reading the ring around it says this without
- * knowing where the packer put anything - a gutter that is still zero was written by
- * nobody, and the atlas clears its image at construction.
+ * knowing where the packer put anything. A gutter texel that is still zero was not written,
+ * because the atlas clears its image at construction.
  **/
 BOOST_AUTO_TEST_CASE(textureatlas_regions_do_not_touch) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();

@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(a_face_records_its_triangles_direction_and_type_test) {
     boost::shared_ptr<MeshCache> mesh = cache();
     mesh->extract(block(glm::vec3(0.0f, 0.0f, 0.0f)), Voxel::BLOCK_FACE_TOP, glm::vec3(0.0f));
 
-    // the face is what the vertex shader reads its normal and its material out of
+    // the vertex shader reads its normal and its material from the face
     const glm::ivec4 face = mesh->faces()[0];
     BOOST_CHECK_EQUAL(face.x, 0);
     BOOST_CHECK_EQUAL(face.y, 1);
@@ -56,8 +56,8 @@ BOOST_AUTO_TEST_CASE(a_face_records_its_triangles_direction_and_type_test) {
 }
 
 BOOST_AUTO_TEST_CASE(faces_are_wound_counter_clockwise_from_outside_test) {
-    // which is what lets the pipeline cull back faces - and, because the camera's projection
-    // flips y, what makes its front face setting clockwise
+    // counter clockwise winding lets the pipeline cull back faces. Because the camera's
+    // projection flips y, the pipeline's front face setting is clockwise
     boost::shared_ptr<MeshCache> mesh = cache();
     mesh->extract(block(glm::vec3(0.0f, 0.0f, 0.0f)), Voxel::BLOCK_FACE_FRONT, glm::vec3(0.0f));
 
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(every_face_of_a_block_fits_the_cache_test) {
     BOOST_CHECK_EQUAL(mesh->vertexCount(), 24u);
     BOOST_CHECK_EQUAL(mesh->triCount(), 12u);
 
-    // reset is what a chunk is remeshed through, and it keeps the allocation
+    // a chunk is remeshed through reset, which keeps the allocation
     mesh->reset();
     BOOST_CHECK_EQUAL(mesh->faceCount(), 0u);
     BOOST_CHECK_EQUAL(mesh->vertexCount(), 0u);

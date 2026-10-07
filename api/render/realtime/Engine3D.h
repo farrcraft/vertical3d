@@ -7,7 +7,8 @@
 
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 
-#include "Context.h"
+#include <vector>
+
 #include "Context3D.h"
 #include "Engine.h"
 #include "Frame.h"
@@ -24,12 +25,11 @@ class Engine3D : public Engine {
     /**
      * @param logger
      * @param assetManager
-     * @param registry
-     * @param preferred the colour format to present through - ADR-0049. An app whose
-     *        shaders write linear light names one here; leaving it undefined is the
-     *        display space default every app in this tree presents through.
+     * @param preferred the colour format to present through. An app whose shaders write
+     *        linear light names one here. Leaving it undefined selects the display space
+     *        (UNORM) default every app in this tree presents through.
      **/
-    Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry,
+    Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
         VkFormat preferred = VK_FORMAT_UNDEFINED);
 
     /**
@@ -70,19 +70,31 @@ class Engine3D : public Engine {
     boost::shared_ptr<Frame> frame() const;
 
     /**
+     * How long the device spent on each pass of a frame, by the pass's name. The frame is
+     * as many behind as there are frames in flight, and the list is empty on a device that
+     * writes no timestamps.
+     **/
+    const std::vector<vulkan::frame::Timings::Timing>& timings() const;
+
+    /**
      * The colour the frame's first pass clears to.
      **/
     void clearColour(const glm::vec4& colour);
 
     /**
-     * The batched quad primitive every 2D thing draws through - ADR-0005. An app fills a
-     * Canvas during its tick and hands both to this.
+     * The batched quad primitive every 2D thing draws through. An app fills a Canvas during
+     * its tick and hands both to this.
      **/
     boost::shared_ptr<vulkan::renderer::Quad> quads() const;
 
     /**
-     * The line primitive of ADR-0011. An app fills a LineCanvas during its tick and
-     * hands both to this.
+     * @return where a texture is uploaded and made a material, or null before initialize()
+     **/
+    boost::shared_ptr<Textures> textures() const;
+
+    /**
+     * The world space line primitive. An app fills a LineCanvas during its tick and hands
+     * both to this.
      *
      * Built on the first call rather than at startup, so an app that draws no lines pays
      * nothing for it.
@@ -90,8 +102,8 @@ class Engine3D : public Engine {
     boost::shared_ptr<vulkan::renderer::Line> lines();
 
     /**
-     * The world space quad primitive of ADR-0042. An app fills a WorldCanvas during its
-     * tick and hands both to this.
+     * The world space quad primitive. An app fills a WorldCanvas during its tick and hands
+     * both to this.
      *
      * Built on the first call rather than at startup, so an app that draws none pays
      * nothing for it.
@@ -103,19 +115,18 @@ class Engine3D : public Engine {
      **/
     static const char* const colourPass;
 
-    boost::shared_ptr<Context> context();
+    boost::shared_ptr<DeviceContext> context();
 
  private:
     /**
-     * Drop what the frame collected and give back the geometry buffers its submissions
-     * took, whether or not the frame was recorded.
+     * Drop what the frame collected, whether or not the frame was recorded.
      **/
     void endFrame();
 
     boost::shared_ptr<Context3D> context_;
     boost::shared_ptr<Frame> frame_;
     glm::vec4 clearColour_;
-    /**< what initialize() asks the chain for; the chain settles what it gets **/
+    /**< what initialize() requests from the chain; the chain decides what it gets **/
     VkFormat preferred_;
 };
 };  // namespace v3d::render::realtime

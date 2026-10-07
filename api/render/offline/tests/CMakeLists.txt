@@ -1,8 +1,12 @@
-# The offline library is cpu only, so unlike its realtime sibling every part of it is
-# testable without a window or a device.
+# The offline library runs on the CPU only, so every part of it is testable without a
+# window or a device.
 v3d_add_test(render_offline
 	"TestMain.cxx"
 	"FrameBufferTest.cxx"
+	"FilmTest.cxx"
+	"MovingTransformTest.cxx"
+	"TextureTest.cxx"
+	"NoiseTest.cxx"
 	"RibLexerTest.cxx"
 	"RibDeclarationsTest.cxx"
 	"RibReaderTest.cxx"
@@ -15,9 +19,13 @@ v3d_add_test(render_offline
 	"SlLibraryTest.cxx"
 	"SlLightingTest.cxx"
 	"SlShaderLibraryTest.cxx"
-	"SlImagerTest.cxx")
+	"SlImagerTest.cxx"
+	"SlGlobalsTest.cxx"
+	"SlWalkTest.cxx"
+	"TraceSceneTest.cxx"
+	"TraceHitShaderTest.cxx")
 
-target_link_libraries(v3dtest_render_offline PRIVATE v3dlib_render_offline ${Boost_LIBRARIES})
+target_link_libraries(v3dtest_render_offline PRIVATE v3dlib_render_offline v3dlib_image v3dlib_log v3dlib_type ${Boost_LIBRARIES})
 
 # The suite opens its fixtures by a relative path against the working directory, which
 # v3d_add_test points at the executable.

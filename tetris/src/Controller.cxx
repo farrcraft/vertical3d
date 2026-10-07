@@ -5,6 +5,7 @@
 
 #include "Controller.h"
 
+#include <api/config/Type.h>
 #include <api/engine/Feature.h>
 
 #include <string>
@@ -15,48 +16,35 @@
 #include <boost/make_shared.hpp>
 
 Controller::Controller(const std::string& path) : v3d::engine::Engine(path) {
-    logger_ = boost::make_shared<v3d::log::Logger>();
 }
 
-bool Controller::initialize() {
-    if (!Engine::initialize(
-        static_cast<int>(v3d::engine::Feature::Window |
-            v3d::engine::Feature::KeyboardInput |
-            v3d::engine::Feature::MouseInput |
-            v3d::engine::Feature::Config))) {
-        return false;
-    }
+bool Controller::start() {
+    window()->caption("Tetris!");
 
-    window_->caption("Tetris!");
-
-    vgui_ = boost::make_shared<v3d::ui::Engine>(eventEngine_, dispatcher_, logger_);
+    vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
     menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
         scene_->pause(suspended);
     });
-    if (config_) {
-        boost::shared_ptr<v3d::asset::kind::Json> uiConfig = config_->get(v3d::config::Type::Ui);
-        if (uiConfig) {
-            if (!vgui_->load(uiConfig)) {
-                return false;
-            }
-        }
+    const boost::json::object* ui = document(v3d::config::Type::Ui);
+    if (ui && !vgui_->load(*ui)) {
+        return false;
     }
 
-    scene_ = boost::make_shared<TetrisScene>(logger_);
-    if (!scene_->load(assetManager_)) {
+    scene_ = boost::make_shared<TetrisScene>(logger());
+    if (!scene_->load(assets())) {
         return false;
     }
 
     boost::shared_ptr<v3d::render::realtime::Window> win = window();
-    renderer_ = boost::make_shared<TetrisRenderer>(win, logger_, assetManager_, &registry_);
+    renderer_ = boost::make_shared<TetrisRenderer>(win, logger(), assets());
     renderer_->scene(scene_);
     renderer_->ui(vgui_);
 
     // register game commands
-    dispatcher_->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
+    events_ = dispatcher()->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
 
     // set the scene size according to the window canvas
-    renderer_->resize(window_->width(), window_->height());
+    renderer_->resize(window()->width(), window()->height());
 
     scene_->reset();
 
@@ -81,13 +69,10 @@ bool Controller::render() {
 
 /**
  **/
-bool Controller::shutdown() {
+bool Controller::release() {
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
-    }
-    if (!v3d::engine::Engine::shutdown()) {
-        return false;
     }
     return true;
 }
@@ -131,15 +116,17 @@ void Controller::rotate(Tetrad::RotationDirection direction) {
 
 void Controller::handleEvent(const v3d::event::Event& event) {
     if (event.context()->name() == "tetris") {
-        if (event.name() == "toggleMenu") {
-            menu_->toggle();
-            return;
-        }
         if (event.name() == "toggleStatistics") {
-            renderer_->statistics()->toggle();
+            // a toggle, so a held key's repeats are ignored rather than flicking it on and off
+            if (!event.repeat()) {
+                renderer_->statistics()->toggle();
+            }
             return;
         }
         if (event.name() == "debugMode") {
+            if (event.repeat()) {
+                return;
+            }
             scene_->debug(!scene_->debug());
             scene_->board()->debug(scene_->debug());
             return;
@@ -157,7 +144,7 @@ void Controller::handleEvent(const v3d::event::Event& event) {
         } else if (event.name() == "rotatePieceCCW") {
             rotate(Tetrad::COUNTERCLOCKWISE);
         } else if (event.name() == "dropPiece") {
-            scene_->board()->dropTetrad();
+            scene_->board()->dropTetrad(event.repeat());
         }
         return;
     }
@@ -166,18 +153,6 @@ void Controller::handleEvent(const v3d::event::Event& event) {
         if (event.name() == "newGame") {
             scene_->reset();
             menu_->toggle();
-            return;
         }
-        if (event.name() == "quit") {
-            // not shutdown() - this is running inside the event loop, which would tick and
-            // render one more frame against the window shutdown() had destroyed
-            quit();
-            return;
-        }
-        if (event.name() == "toggleMenu") {
-            menu_->toggle();
-            return;
-        }
-        menu_->navigate(event.name());
     }
 }

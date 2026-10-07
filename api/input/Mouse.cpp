@@ -5,11 +5,15 @@
 
 #include "Mouse.h"
 
+#include <api/event/Source.h>
 #include <api/event/kind/MouseButton.h>
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/MouseWheel.h>
 
+#include <algorithm>
+#include <initializer_list>
 #include <string>
+#include <string_view>
 
 namespace v3d::input {
 
@@ -37,6 +41,11 @@ std::string buttonEvent(unsigned int button) {
 
 /**
  **/
+bool isButtonName(std::string_view name) {
+    const std::initializer_list<unsigned int> buttons{SDL_BUTTON_LEFT, SDL_BUTTON_MIDDLE, SDL_BUTTON_RIGHT, SDL_BUTTON_X1, SDL_BUTTON_X2};
+    return std::ranges::any_of(buttons, [name](unsigned int button) { return buttonEvent(button) == name; });
+}
+
 bool Mouse::handleEvent(const SDL_Event& event) {
     std::string buttonName;
     bool pressed = true;
@@ -46,7 +55,7 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         pressed = (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN);
         buttonName = buttonEvent(event.button.button);
         // a button we have no name for cannot be bound to anything, and must not reach
-        // MouseState either - it would be held under an empty name that nothing can ask for
+        // MouseState either - it would be held under an empty name that no caller can query
         if (buttonName.empty()) {
             return true;
         }
@@ -81,10 +90,8 @@ bool Mouse::handleEvent(const SDL_Event& event) {
 
     // trigger a source event so any mappers can propagate a mapped event, the same way
     // the keyboard does. The edge is the event's state, not its data.
-    v3d::event::Event source(buttonName, context_);
-    source.type(v3d::event::Type::Source);
-    source.state(pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
-    dispatcher_->trigger(source);
+    v3d::event::publish(*dispatcher_, v3d::event::Source(buttonName, context_,
+        pressed ? v3d::event::State::Pressed : v3d::event::State::Released));
 
     return true;
 }

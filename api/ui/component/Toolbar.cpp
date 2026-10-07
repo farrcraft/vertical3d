@@ -5,6 +5,8 @@
 
 #include "Toolbar.h"
 
+#include <api/ui/input/Command.h>
+
 #include <cstddef>
 #include <string>
 
@@ -18,6 +20,18 @@ Toolbar::Toolbar(const boost::shared_ptr<entt::dispatcher>& dispatcher, Edge edg
     Component(component::Type::Toolbar),
     dispatcher_(dispatcher),
     edge_(edge) {
+    // a strip is a control unless a document says it is scenery, which lets a press through
+    pickable(true);
+}
+
+/**
+ **/
+Toolbar::~Toolbar() {
+    for (const boost::shared_ptr<Button>& button : buttons_) {
+        if (button) {
+            disown(*button);
+        }
+    }
 }
 
 /**
@@ -29,6 +43,9 @@ Toolbar::Edge Toolbar::edge() const noexcept {
 /**
  **/
 void Toolbar::add(const boost::shared_ptr<Button>& button) {
+    if (button) {
+        adopt(*button);
+    }
     buttons_.push_back(button);
 }
 
@@ -48,13 +65,13 @@ boost::shared_ptr<Button> Toolbar::button(std::size_t index) const {
  **/
 boost::shared_ptr<Button> Toolbar::buttonAt(const glm::vec2& cursor) const {
     for (const boost::shared_ptr<Button>& button : buttons_) {
-        // a button that cannot be used is not offered the cursor, so the strip neither
-        // lights it nor sends its command - ADR-0059
-        if (!button || !usable(*button)) {
+        // a button that cannot be used or is hidden is not offered the cursor, so the strip
+        // neither lights it nor sends its command
+        if (!button || !button->visible() || !usable(*button)) {
             continue;
         }
         v3d::type::geometry::Bound2D bound = button->bound();
-        if (bound.intersect(cursor)) {
+        if (bound.contains(cursor)) {
             return button;
         }
     }
@@ -71,7 +88,7 @@ bool Toolbar::motion(const glm::vec2& cursor) {
         }
     }
     v3d::type::geometry::Bound2D bound = this->bound();
-    return bound.intersect(cursor);
+    return bound.contains(cursor);
 }
 
 /**
@@ -88,19 +105,14 @@ void Toolbar::leave() {
  **/
 bool Toolbar::press(const glm::vec2& cursor) {
     v3d::type::geometry::Bound2D bound = this->bound();
-    if (!bound.intersect(cursor)) {
+    if (!bound.contains(cursor)) {
         return false;
     }
     const boost::shared_ptr<Button> over = buttonAt(cursor);
     // the gap between the buttons and the edges of the strip takes the press and does
     // nothing with it, so a click that misses a button does not reach the scene under it
     if (over) {
-        const v3d::event::Event event = over->event();
-        // a button is only bound when its config gave both a command and a context.
-        // Event::str() dereferences the context, so an unbound event must never be sent
-        if (dispatcher_ && event.context()) {
-            dispatcher_->trigger(event);
-        }
+        v3d::ui::input::send(dispatcher_.get(), over->event());
     }
     return true;
 }

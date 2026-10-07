@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "Context.h"
 #include "Pass.h"
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -17,17 +17,12 @@ namespace v3d::render::realtime {
 /**
  * Everything to be drawn for one image, as a list of passes.
  *
- * A frame is built up during a tick and recorded in one step at the end of it. The list
- * holds one pass while nothing needs more, but it is a list from the start because
- * compositing, offscreen targets and an editor's several viewports are all more passes
- * over the same frame rather than a different kind of frame - see ADR-0003.
+ * A frame is built up during a tick and recorded in one step at the end of it. Compositing,
+ * offscreen targets and an editor's several viewports are all extra passes over the same
+ * frame, not a different kind of frame.
  **/
 class Frame {
  public:
-    /**
-     **/
-    explicit Frame(const boost::shared_ptr<Context>& context);
-
     /**
      * The pass of that name, added to the end of the list if the frame has none.
      * @return the pass, which stays valid until the frame is destroyed
@@ -35,29 +30,48 @@ class Frame {
     boost::shared_ptr<Pass> pass(const std::string& name);
 
     /**
-     * The pass of that name, added immediately ahead of another one if the frame has none.
-     *
-     * A pass drawing into a target has to be recorded before the passes that sample it -
-     * ADR-0031 - and the colour pass every frame carries is created by Engine3D before an
-     * app has said anything, so a pass added at the end would be recorded too late. This is
-     * how an offscreen pass gets in front of it.
-     *
-     * @param name the pass to find or create
-     * @param before the pass it goes ahead of; it is appended if the frame has no pass of
-     *        that name, so ordering against something that is not there is not an error
-     * @return the pass, which stays valid until the frame is destroyed
-     **/
-    boost::shared_ptr<Pass> passBefore(const std::string& name, const std::string& before);
-
-    /**
-     * @return the passes, in the order they will be recorded
+     * @return the passes, in the order they were created
      **/
     const std::vector<boost::shared_ptr<Pass>>& passes() const noexcept;
 
     /**
-     * @return the context the frame is drawn against
+     * The passes in the order they are recorded: every pass drawing into a target before
+     * every pass that reads() it, and otherwise the order they were created in.
+     * Passes drawing into one target, the swapchain image included, always keep the order
+     * they were created in, since each draws over what the one before it left.
+     *
+     * @throw std::runtime_error if two passes each read what the other draws, which no order
+     *        can record
      **/
-    boost::shared_ptr<Context> context() const noexcept;
+    std::vector<boost::shared_ptr<Pass>> ordered() const;
+
+    /**
+     * The context's depth buffer serves only passes drawing into the swapchain image. A pass
+     * with a target of its own attaches that target's depth.
+     *
+     * @return whether a pass drawing into the swapchain image tests depth
+     **/
+    bool swapchainDepth() const noexcept;
+
+    /**
+     * What ordered() places a pass by: the identity of what it draws into, null for the
+     * swapchain image, and of what it reads. A pass reading what it also draws into is reading
+     * that target's previous frame, and is ordered against the others drawing into it only by
+     * when it was created.
+     **/
+    struct Node final {
+        const void* writes = nullptr;
+        std::vector<const void*> reads;
+    };
+
+    /**
+     * ordered() over identities alone, so that the ordering can be tested without a device to
+     * make a target on.
+     *
+     * @return the indices of the nodes in the order they are recorded
+     * @throw std::runtime_error on a cycle
+     **/
+    static std::vector<std::size_t> order(const std::vector<Node>& nodes);
 
     /**
      * Drop what every pass has collected, keeping the passes themselves.
@@ -65,7 +79,6 @@ class Frame {
     void reset() noexcept;
 
  private:
-    boost::shared_ptr<Context> context_;
     std::vector<boost::shared_ptr<Pass>> passes_;
 };
 };  // namespace v3d::render::realtime

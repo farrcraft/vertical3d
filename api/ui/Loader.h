@@ -40,6 +40,7 @@ class Menu;
 class MenuBar;
 class Panel;
 class Scrollbar;
+class Slider;
 class RadioButton;
 class SelectList;
 class TabPage;
@@ -50,10 +51,9 @@ class Toolbar;
 /**
  * Builds containers and themes out of a ui config document.
  *
- * Separate from Engine, which is what the built ui is: a loader is a thing that runs once
- * and a ui is a thing that is asked questions for as long as the app lives, and keeping
- * them together put twenty-five parsing methods and boost::json into a header every app
- * that draws a ui compiles.
+ * Separate from Engine, which holds the built ui. A loader runs once and a ui is queried
+ * for as long as the app lives. Keeping them apart keeps the parsing methods and
+ * boost::json out of a header every app that draws a ui compiles.
  *
  * Nothing here is kept. `load()` fills the two collections and hands them over.
  **/
@@ -138,6 +138,7 @@ class Loader final {
     static boost::shared_ptr<component::Panel> loadPanel(const boost::json::object& entry);
     static boost::shared_ptr<component::Bar> loadBar(const boost::json::object& entry);
     static boost::shared_ptr<component::Scrollbar> loadScrollbar(const boost::json::object& entry);
+    boost::shared_ptr<component::Slider> loadSlider(const boost::json::object& entry);
     boost::shared_ptr<component::SelectList> loadSelectList(const boost::json::object& entry);
     boost::shared_ptr<component::TextBox> loadTextBox(const boost::json::object& entry);
     static boost::shared_ptr<component::TabPage> loadTabPage(const boost::json::object& entry);
@@ -185,11 +186,11 @@ class Loader final {
         const boost::json::object& property, const std::string& name, std::string* propertyClass);
 
     /**
-     * Read what every component may carry whatever its type: where it is, how big it is,
-     * which style draws it, whether it is drawn at all, whether it answers the cursor, and
-     * what it is drawn in front of.
+     * Read what every component may carry whatever its type: which style draws it, whether
+     * it is drawn at all, whether it answers the cursor, and what it is drawn in front of.
+     * Where it is and how big are loadLayout()'s, which a menu does not take.
      **/
-    void loadAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component);
+    static void loadAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component);
 
     /**
      * Read a component's box - "position" and "size" as two lengths each, and the corner of

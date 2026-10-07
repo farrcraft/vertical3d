@@ -31,18 +31,29 @@ class Config final {
      * 
      * @param assetManager loads JSON files as managed assets
      * 
+     * An entry with an empty type is refused. typeName() returns the empty string for
+     * Type::Unknown, so get(Type::Unknown) would otherwise find that entry.
+     *
      * @return true if all of the config is successfully loaded
      **/
     bool load(const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
     /**
-     * Get a loaded config
+     * Get a loaded config of a type the api reads.
      **/
     boost::shared_ptr<v3d::asset::kind::Json> get(Type configType);
 
+    /**
+     * Get a loaded config by the type its entry names, which may be one of the app's own -
+     * a type the api has never heard of is filed like any other.
+     *
+     * @return the document, or null when config.json names none of that type
+     **/
+    boost::shared_ptr<v3d::asset::kind::Json> get(std::string_view type);
+
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;
-    std::unordered_map<Type, boost::shared_ptr<v3d::asset::kind::Json> > configs_;
+    std::unordered_map<std::string, boost::shared_ptr<v3d::asset::kind::Json> > configs_;
 };
 };  // namespace v3d::config
 

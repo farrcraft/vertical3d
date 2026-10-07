@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/kind/Json.h>
+#include <api/event/Context.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Button.h>
@@ -42,9 +42,7 @@ struct Fixture final {
         ui = boost::make_shared<v3d::ui::Engine>(
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
-        BOOST_REQUIRE(ui->load(boost::make_shared<v3d::asset::kind::Json>("vgui",
-            v3d::asset::Type::JsonDocument,
-            boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object())));
+        BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
         container = ui->container("hud");
         BOOST_REQUIRE(container);
         keys = boost::make_shared<v3d::ui::input::Keys>(ui, dispatcher);
@@ -75,10 +73,10 @@ boost::shared_ptr<v3d::ui::component::Button> button(Fixture* fixture, const std
 BOOST_AUTO_TEST_SUITE(keyboard_drive_test)
 
 /**
- * A control asks for the press and the focus in its own constructor, the way a text box does.
+ * A control is pickable and focusable from its own constructor, as a text box is.
  *
- * A screen holding nothing focusable is a screen a tab cannot move through, so a component
- * that answers a click and does not ask for the focus is one that needs a mouse.
+ * A screen holding nothing focusable cannot be tabbed through, so a control that takes a
+ * click but not the focus would need a mouse.
  **/
 BOOST_AUTO_TEST_CASE(a_control_is_focusable_and_pickable_without_being_asked) {
     BOOST_CHECK(boost::make_shared<v3d::ui::component::Button>()->focusable());
@@ -101,9 +99,8 @@ BOOST_AUTO_TEST_CASE(a_control_is_focusable_and_pickable_without_being_asked) {
 /**
  * focusFirst() is how a screen says it is keyboard driven.
  *
- * focusNext() leaves a ui with nothing focused alone on purpose, so a press was the only
- * thing that ever gave out a first focus - which is exactly the mouse a keyboard driven
- * screen does not have.
+ * focusNext() leaves a ui with nothing focused alone, so without this only a press could
+ * give out the first focus, and a keyboard driven screen has no mouse.
  **/
 BOOST_AUTO_TEST_CASE(a_screen_is_started_off_by_focusing_its_first_control) {
     Fixture fixture;
@@ -123,7 +120,7 @@ BOOST_AUTO_TEST_CASE(a_screen_is_started_off_by_focusing_its_first_control) {
 }
 
 /**
- * A ui holding nothing focusable stays as it was, which is the hud ADR-0040 is protecting.
+ * A ui holding nothing focusable stays as it was, so a hud leaves the movement keys alone.
  **/
 BOOST_AUTO_TEST_CASE(a_screen_with_nothing_focusable_is_left_alone) {
     Fixture fixture;
@@ -178,8 +175,8 @@ BOOST_AUTO_TEST_CASE(a_letter_reaching_a_button_still_reaches_the_game) {
 }
 
 /**
- * A check box sends its command and marks nothing: whatever answers the command sets
- * checked(), per ADR-0019. A key activating one must not shortcut that, or a box driven by
+ * A check box sends its command and marks nothing: whatever handles the command sets
+ * checked(). A key activating one must not shortcut that, or a box driven by
  * the keyboard would show a state a box driven by the mouse does not.
  **/
 BOOST_AUTO_TEST_CASE(a_key_does_not_mark_a_check_box_it_activates) {
@@ -199,8 +196,8 @@ BOOST_AUTO_TEST_CASE(a_key_does_not_mark_a_check_box_it_activates) {
 /**
  * The arrows step through a list's rows and send its command, the way clicking a row does.
  *
- * A list owns which row is chosen - the exception ADR-0019 names - so the router moves the
- * selection and then sends, rather than sending and waiting to be told.
+ * A list owns which row is chosen, so the router moves the selection and then sends the
+ * command.
  **/
 BOOST_AUTO_TEST_CASE(the_arrows_step_through_a_list) {
     Fixture fixture;
@@ -251,8 +248,8 @@ BOOST_AUTO_TEST_CASE(a_list_does_not_wrap_at_either_end) {
 }
 
 /**
- * The arrows change which tab page is up. A bar carries no command, so nothing is sent -
- * which is what a click on a tab does too.
+ * The arrows change which tab page is up. A bar carries no command, so nothing is sent, as
+ * with a click on a tab.
  **/
 BOOST_AUTO_TEST_CASE(the_arrows_turn_the_pages_of_a_tab_bar) {
     Fixture fixture;
@@ -277,9 +274,6 @@ BOOST_AUTO_TEST_CASE(the_arrows_turn_the_pages_of_a_tab_bar) {
 /**
  * A scrollbar is driven from the keyboard like everything else: the arrows move it by a
  * line, the page keys by what the page shows, and home and end run to the ends.
- *
- * It was the one control that still needed a mouse, which is what made paging the thing it
- * scrolls the app's rather than the bar's.
  **/
 BOOST_AUTO_TEST_CASE(the_keys_move_a_scrollbar_by_a_line_and_by_a_page) {
     Fixture fixture;
@@ -356,8 +350,8 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_steps_by_a_row_of_the_list_it_scrolls) {
 }
 
 /**
- * A bar showing all of its content takes no key. A control that swallows a key it could not
- * have acted on is one that stops a game being played while it holds the focus.
+ * A bar showing all of its content takes no key, so the key goes on to the app's bindings
+ * while the bar holds the focus.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_takes_no_key) {
     Fixture fixture;

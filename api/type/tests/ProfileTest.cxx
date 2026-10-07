@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE(cameraprofile_test) {
     BOOST_CHECK_CLOSE(untouched.view()[3][0], -4.0f, 0.01f);
 
     // clipping planes reach the projection, which maps them onto the [0, 1] depth range
-    // vulkan clips against - ADR-0012
+    // vulkan clips against
     profile.clipping(1.0f, 3.0f);
     v3d::type::camera::Camera clipped(profile);
     clipped.createProjection();

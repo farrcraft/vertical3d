@@ -9,19 +9,26 @@
 #include "KeyState.h"
 
 #include <string>
+#include <string_view>
 
 namespace v3d::input {
 
 /**
- * What this library calls a key - "escape", "arrow_left", "a" - which is the name a
- * binding in mappings.json names and the name ui::Keys is handed.
+ * What this library calls a key, such as "escape", "arrow_left" or "a". A binding in
+ * mappings.json uses this name, and ui::Keys receives it.
  *
- * Public because ui::shell::Keyboard names the keys it hands a text box from this table
- * too, so a binding and a text box always agree on what a key is called.
+ * Public because ui::shell::Keyboard also names the keys it passes to a text box from this
+ * table, so a binding and a text box always agree on what a key is called.
  *
  * @return the name, or an empty string for a key this library has none for
  **/
 std::string keyName(SDL_Keycode key);
+
+/**
+ * Whether a name is one that keyName() returns for some key. A binding document is checked
+ * against this, so a misspelt key is reported rather than bound to nothing.
+ **/
+bool isKeyName(std::string_view name);
 
 /**
  **/

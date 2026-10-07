@@ -48,7 +48,11 @@ class Player {
     glm::vec3 position() const;
     void position(const glm::vec3 & pos);
 
-    void move(Movement direction);
+    /**
+     * Start or stop moving in one direction.
+     * @param held whether the direction's key is held: true moves that way, false stops
+     */
+    void move(Movement direction, bool held);
     void look(float heading, float pitch);
 
     static bool checkWorldCollision(const glm::vec3 & position);

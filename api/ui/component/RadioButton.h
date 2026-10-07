@@ -15,12 +15,11 @@ namespace v3d::ui::component {
  * One of a set of choices - a check box with a round mark and the name of the set it
  * belongs to.
  *
- * It is a check box because it is the same state under a different mark: the click sends
- * a command and marks nothing, and whatever answers the command checks this one and
- * clears the rest of its group. Nothing here clears them, for the reason nothing here
- * checks anything - ADR-0019.
+ * It derives from CheckBox because it holds the same state under a different mark. A
+ * click sends a command and marks nothing. Whatever handles the command checks this one
+ * and clears the rest of its group; nothing here clears them.
  *
- * The mark and the outline are the "radio" style class the component names, per ADR-0020.
+ * The mark and the outline are the "radio" style class the component names.
  **/
 class RadioButton : public CheckBox {
  public:
@@ -28,8 +27,8 @@ class RadioButton : public CheckBox {
     ~RadioButton() = default;
 
     /**
-     * Set which set of choices this is one of. The name means nothing to the library and
-     * everything to whatever answers the command.
+     * Set which set of choices this is one of. The library does not interpret the name;
+     * whatever handles the command does.
      **/
     void group(const std::string& name);
     std::string_view group() const;

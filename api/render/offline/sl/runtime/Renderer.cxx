@@ -5,15 +5,16 @@
 
 #include "Renderer.h"
 
+#include <string>
 #include <vector>
 
 namespace v3d::render::offline::sl::runtime {
 
 /*
-    What a renderer that cannot do the thing answers. Each is the reading under which a
-    scene renders wrong rather than not at all: the machine says out loud what it could not
-    do, and a picture missing a shadow is easier to read than no picture. The parameter
-    names are in comments because none of them is looked at.
+    The defaults for a renderer that cannot do these things. Each default lets a scene
+    render wrongly rather than not at all: the machine reports what it could not do, and a
+    picture missing a shadow is easier to diagnose than no picture. The parameter names are
+    in comments because none of them is used.
 */
 
 unsigned int Renderer::lights() {
@@ -34,6 +35,10 @@ bool Renderer::transmission(const Value & /* from */, const Value & /* to */,
 bool Renderer::trace(const Value & /* origin */, const Value & /* direction */,
     Value* /* colour */) {
     return false;
+}
+
+const Texture* Renderer::texture(const std::string & /* name */) {
+    return nullptr;
 }
 
 };  // namespace v3d::render::offline::sl::runtime

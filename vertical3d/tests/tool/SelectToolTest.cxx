@@ -4,7 +4,6 @@
  **/
 
 #include <vertical3d/src/scene/CreatePoly.h>
-#include <vertical3d/src/scene/MeshTopology.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -72,7 +71,7 @@ BOOST_AUTO_TEST_CASE(select_tool_object_test) {
     select->button(1, true, glm::vec2(200.0f, 200.0f));
     BOOST_CHECK_EQUAL(cube->selected(), true);
 
-    // a miss in object mode clears the selection, which is how a modeller deselects
+    // a miss in object mode clears the selection
     select->button(1, true, glm::vec2(10.0f, 10.0f));
     BOOST_CHECK_EQUAL(cube->selected(), false);
 
@@ -154,8 +153,7 @@ BOOST_AUTO_TEST_CASE(select_tool_mask_change_test) {
     BOOST_CHECK_EQUAL(selectedComponents(cube), 1u);
 
     // changing the mask clears the components: a face selection means nothing to an
-    // operation working on edges, and leaving it set is what would let two kinds be
-    // selected at once
+    // operation working on edges, and leaving it set would let two kinds be selected at once
     select->activate("edge");
     BOOST_CHECK(select->mask() == v3d::editor::SelectMask::Edge);
     BOOST_CHECK_EQUAL(selectedComponents(cube), 0u);

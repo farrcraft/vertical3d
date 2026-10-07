@@ -5,7 +5,7 @@
 
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/pipeline/Pipeline.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -52,12 +52,11 @@ void describe(Builder* builder) {
 BOOST_AUTO_TEST_SUITE(pipeline_builder_test)
 
 /**
- * A pipeline with no colour attachment at all compiles, which is what a shadow pass is and
- * what the builder could not express while the attachment count was the literal 1.
+ * A pipeline with no colour attachment at all compiles, as a shadow pass requires.
  *
- * The assertion is the compile plus the layer's silence: a colorAttachmentCount that
- * disagreed with pColorAttachmentFormats, or a blend state with attachments a pipeline
- * writing no colour has no use for, is what validation would report here.
+ * The case checks the compile and an empty validation log. Validation would report a
+ * colorAttachmentCount that disagreed with pColorAttachmentFormats, or blend attachments on a
+ * pipeline that writes no colour.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_with_no_colour_attachment_compiles) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -77,9 +76,8 @@ BOOST_AUTO_TEST_CASE(a_pipeline_with_no_colour_attachment_compiles) {
 }
 
 /**
- * Two colour attachments compile, so the list is a list rather than a switch between none and
- * one. Nothing in this tree draws into two, which is why the case is here rather than proven
- * by a renderer.
+ * Two colour attachments compile, so the builder accepts any number of attachments, not only
+ * none or one. Nothing in this tree draws into two, so only this case covers it.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_with_two_colour_attachments_compiles) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -98,14 +96,12 @@ BOOST_AUTO_TEST_CASE(a_pipeline_with_two_colour_attachments_compiles) {
 }
 
 /**
- * A depth only pipeline that offsets what it writes compiles - which is what a shadow pass
- * actually is, and what the attachment list alone was not enough to express.
+ * A depth only pipeline that offsets what it writes compiles, as a shadow pass requires.
  *
- * The compile is the whole assertion, and it is a narrow one: validation has nothing to say
- * here about VK_DYNAMIC_STATE_DEPTH_BIAS being left out of the dynamic list, because the
- * create info's own factors are zero and a zero bias is a no-op. Measured rather than
- * assumed - this case passes unchanged with the dynamic state removed, which is what
- * a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state is below for.
+ * The case checks only the compile. Validation does not report VK_DYNAMIC_STATE_DEPTH_BIAS
+ * missing from the dynamic list, because the create info's own factors are zero and a zero
+ * bias does nothing. This case passes with the dynamic state removed, so
+ * a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state below checks it instead.
  **/
 BOOST_AUTO_TEST_CASE(a_depth_only_pipeline_with_a_bias_compiles) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -124,13 +120,13 @@ BOOST_AUTO_TEST_CASE(a_depth_only_pipeline_with_a_bias_compiles) {
 }
 
 /**
- * Blend factors of the caller's own compile, and a pipeline given none still blends the way
- * it always has - the struct's defaults are what blend(true) has always meant.
+ * Blend factors chosen by the caller compile. A pipeline given none uses the struct's defaults,
+ * which are the straight alpha blend that blend(true) applies.
  *
- * A destination alpha of ZERO is the case this exists for: a pass compositing into something
- * that is itself composited later keeps the source's alpha, where the straight alpha default
- * erodes it. What it comes out looking like is not asserted here and cannot be - a blend is
- * specified to a precision rather than to a value, so ADR-0054 gives it no reference.
+ * The case uses a destination alpha of ZERO. A pass compositing into a target that is itself
+ * composited later then keeps the source's alpha, where the straight alpha default erodes it.
+ * The resulting picture is not checked, because a blend is specified to a precision rather
+ * than to a value and so has no reference picture.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_with_named_blend_factors_compiles) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -152,9 +148,8 @@ BOOST_AUTO_TEST_CASE(a_pipeline_with_named_blend_factors_compiles) {
 }
 
 /**
- * A builder nobody told about colour still fails, which is the guard colourFormat() has
- * always had. An empty list is a pipeline that writes no colour; the default is one nobody
- * filled in, and the two must not read the same.
+ * A builder given no colour format fails to build. An empty list means a pipeline that writes
+ * no colour, while the default means the caller set nothing, and the two must not be confused.
  **/
 BOOST_AUTO_TEST_CASE(a_colour_format_nobody_named_is_still_an_error) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -167,15 +162,14 @@ BOOST_AUTO_TEST_CASE(a_colour_format_nobody_named_is_still_an_error) {
 }
 
 /**
- * A depth bias reaches Vulkan as both halves of what it takes, and neither half arrives
- * unasked.
+ * A depth bias reaches Vulkan as both the rasterization flag and the dynamic state, and a
+ * builder that sets no bias sets neither.
  *
- * **This is the assertion a consumer needs and a compile cannot make.** A pipeline that
- * enables the bias but leaves VK_DYNAMIC_STATE_DEPTH_BIAS out of the dynamic list compiles
- * silently and validates silently - the create info's own factors are zero, so
- * vkCmdSetDepthBias then does nothing and a shadow does not shift. Nothing about a compiled
- * VkPipeline says which of the two it got, so the state is read from the builder that will
- * hand it over.
+ * **A compile cannot check this.** A pipeline that enables the bias but leaves
+ * VK_DYNAMIC_STATE_DEPTH_BIAS out of the dynamic list compiles and validates without error.
+ * The create info's own factors are zero, so vkCmdSetDepthBias then does nothing and a shadow
+ * does not shift. A compiled VkPipeline does not expose its dynamic state, so the case reads
+ * the state from the builder.
  **/
 BOOST_AUTO_TEST_CASE(a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -188,7 +182,7 @@ BOOST_AUTO_TEST_CASE(a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state) 
     const std::vector<VkDynamicState> dynamics = biased.dynamics();
     BOOST_CHECK(std::find(dynamics.begin(), dynamics.end(), VK_DYNAMIC_STATE_DEPTH_BIAS) != dynamics.end());
 
-    // and the default disturbs neither, so the rest of the tree is provably where it was
+    // the default sets neither, and keeps only the viewport and scissor dynamic states
     Builder plain(headless.device);
     describe(&plain);
     plain.depth(true, true).depthFormat(depthFormat).colourFormats({});
@@ -202,12 +196,11 @@ BOOST_AUTO_TEST_CASE(a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state) 
 }
 
 /**
- * Named blend factors arrive in the attachment state as named, and the ones nobody names are
- * the straight alpha the tree has always applied.
+ * Named blend factors arrive in the attachment state as named, and the factors left unnamed
+ * are the straight alpha default.
  *
- * A destination alpha of ZERO is the case this exists for, and it is the field that cannot be
- * checked any other way: ADR-0054 gives a blend no reference picture, because a blend is
- * specified to a precision rather than to a value.
+ * Reading the state is the only check of a destination alpha of ZERO. A blend is specified to
+ * a precision rather than to a value, so it has no reference picture.
  **/
 BOOST_AUTO_TEST_CASE(blend_factors_reach_the_attachment_as_named) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -221,7 +214,7 @@ BOOST_AUTO_TEST_CASE(blend_factors_reach_the_attachment_as_named) {
     const VkPipelineColorBlendAttachmentState state = named.colourBlend();
     BOOST_CHECK_EQUAL(state.blendEnable, VK_TRUE);
     BOOST_CHECK_EQUAL(state.dstAlphaBlendFactor, VK_BLEND_FACTOR_ZERO);
-    // the three nobody moved are still what they were
+    // the three factors left unnamed keep their defaults
     BOOST_CHECK_EQUAL(state.srcColorBlendFactor, VK_BLEND_FACTOR_SRC_ALPHA);
     BOOST_CHECK_EQUAL(state.dstColorBlendFactor, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
     BOOST_CHECK_EQUAL(state.srcAlphaBlendFactor, VK_BLEND_FACTOR_ONE);
@@ -241,16 +234,14 @@ BOOST_AUTO_TEST_CASE(blend_factors_reach_the_attachment_as_named) {
  * One layout the caller owns is compiled into every pipeline given it, and comes back in each
  * of them so that registering the result names the layout its draws bind through.
  *
- * **This is the arrangement a pass wants when it binds a set once and then draws with several
- * pipelines under it**, which is where a layout built per pipeline stops being an obvious
- * equivalent: layouts declaring the same sets and the same push range are compatible, so the
- * binding would survive either way, but a pass that means to share one would hold several that
- * differ in nothing.
+ * A pass that binds a set once and then draws with several pipelines can share one layout this
+ * way. Separate layouts declaring the same sets and push range would also be compatible, but
+ * the pass would then hold several identical layouts.
  *
- * **The second half of the assertion is the destroy at the end.** The builder must not free a
- * layout it was handed - it is destroyed once here, after both pipelines were built from it and
- * after the builders are gone, and a builder that had freed it would make that a double free
- * the layer reports rather than a leak nobody sees.
+ * **The destroy at the end is the second half of the check.** The builder must not free a
+ * layout it was given. The case destroys the layout once, after both pipelines are built and
+ * the builders are gone. If a builder had already freed it, the validation layer would report
+ * a double free.
  **/
 BOOST_AUTO_TEST_CASE(one_layout_the_caller_owns_serves_every_pipeline_given_it) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -290,8 +281,7 @@ BOOST_AUTO_TEST_CASE(one_layout_the_caller_owns_serves_every_pipeline_given_it) 
 }
 
 /**
- * A builder nobody hands a layout still builds its own, and two of them are two layouts - so
- * the default this adds a door beside is exactly where it was.
+ * A builder given no layout builds its own, so two such builders give two different layouts.
  **/
 BOOST_AUTO_TEST_CASE(a_builder_given_no_layout_still_builds_its_own) {
     v3d::test::Headless headless(colourFormat, width, height);

@@ -25,7 +25,7 @@ enum class SelectMask {
 
 /**
  * @param name one of "object", "vertex", "edge" or "face"
- * @param mask where the answer goes - untouched if the name is not one of them
+ * @param mask set to the mask named, and untouched if the name is not one of them
  * @return whether the name named a mask
  **/
 bool selectMask(const std::string& name, SelectMask* mask);

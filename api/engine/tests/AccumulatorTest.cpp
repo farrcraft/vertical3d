@@ -39,8 +39,8 @@ Result run(Accumulator* accumulator, const std::vector<std::uint64_t>& frames) {
 }  // namespace
 
 /**
- * A frame shorter than a step owes nothing, but the time is kept rather than discarded -
- * which is the whole difference from a millisecond delta that rounds to zero.
+ * A frame shorter than a step makes no step due, but its time is kept rather than discarded,
+ * unlike a millisecond delta that rounds to zero.
  **/
 BOOST_AUTO_TEST_CASE(accumulator_short_frames_test) {
     Accumulator accumulator;
@@ -48,8 +48,8 @@ BOOST_AUTO_TEST_CASE(accumulator_short_frames_test) {
     BOOST_CHECK_EQUAL(accumulator.steps(), 0u);
     BOOST_CHECK(!accumulator.drain());
 
-    // 16 ms of microsecond frames is still short of a step, and still owes nothing - a
-    // millisecond clock would have reported zero for every one of them and lost all 16
+    // 16 ms of microsecond frames is still short of a step; a millisecond clock would
+    // report zero for each of them and lose all 16
     const std::vector<std::uint64_t> frames(15999, 1000);
     Result result = run(&accumulator, frames);
     BOOST_CHECK_EQUAL(result.steps, 0u);
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(accumulator_short_frames_test) {
 }
 
 /**
- * A frame of exactly one step owes exactly one, and leaves nothing behind.
+ * A frame of exactly one step makes exactly one due, and leaves nothing behind.
  **/
 BOOST_AUTO_TEST_CASE(accumulator_whole_step_test) {
     Accumulator accumulator;
@@ -73,9 +73,8 @@ BOOST_AUTO_TEST_CASE(accumulator_whole_step_test) {
 }
 
 /**
- * 144 Hz alternating 6 and 7 ms is what the millisecond clock produced, and it is the case
- * a fixed step exists to make well behaved: over a second the frames still add up to a
- * second of simulation, whatever any individual frame owed.
+ * 144 Hz measured in whole milliseconds alternates 6 and 7 ms frames. Over a second they
+ * still add up to a second of simulation, whatever any one frame made due.
  **/
 BOOST_AUTO_TEST_CASE(accumulator_jitter_test) {
     Accumulator accumulator;
@@ -89,13 +88,12 @@ BOOST_AUTO_TEST_CASE(accumulator_jitter_test) {
     // 72 frames of 6 ms and 72 of 7 ms is 936 ms, which is 56 whole steps of 16.667 ms
     BOOST_CHECK_EQUAL(result.steps, 56u);
     BOOST_CHECK_EQUAL(result.simulated, 56ULL * Accumulator::step);
-    // no frame is longer than a step, so no frame ever owes more than one
+    // no frame is longer than a step, so no frame ever makes more than one due
     BOOST_CHECK_EQUAL(result.worst, 1u);
 }
 
 /**
- * The same simulated duration however it was paced. This is the property the whole record
- * is for: a scene stepped 600 times is a scene stepped 600 times.
+ * The same real duration gives the same number of steps however its frames were paced.
  **/
 BOOST_AUTO_TEST_CASE(accumulator_pacing_test) {
     const std::uint64_t second = 1000000000ULL;
@@ -117,9 +115,9 @@ BOOST_AUTO_TEST_CASE(accumulator_pacing_test) {
 }
 
 /**
- * A window drag or a breakpoint hands the loop seconds. Without the clamp that is hundreds
- * of steps in one frame, each making the next frame later still; with it the world runs
- * slow for a moment, which is the correct failure.
+ * A window drag or a breakpoint gives the loop a frame several seconds long. The clamp
+ * limits it, so the world runs slow for a moment instead of running hundreds of steps in one
+ * frame.
  **/
 BOOST_AUTO_TEST_CASE(accumulator_clamp_test) {
     Accumulator accumulator;
@@ -137,8 +135,8 @@ BOOST_AUTO_TEST_CASE(accumulator_clamp_test) {
 }
 
 /**
- * The remainder read as a fraction, which is what a renderer interpolating between two
- * simulation states blends by.
+ * The remainder read as a fraction, which a renderer interpolating between two simulation
+ * states blends by.
  **/
 BOOST_AUTO_TEST_CASE(accumulator_alpha_test) {
     Accumulator accumulator;
@@ -153,8 +151,7 @@ BOOST_AUTO_TEST_CASE(accumulator_alpha_test) {
 }
 
 /**
- * steps() reports what the last accumulate() found owed, which is the number worth watching:
- * 0 or 1 with occasional 2s is healthy, and a sustained 3 means the clamp is doing real work.
+ * steps() reports how many steps the last accumulate() made due.
  **/
 BOOST_AUTO_TEST_CASE(accumulator_steps_test) {
     Accumulator accumulator;

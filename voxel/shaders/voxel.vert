@@ -9,7 +9,7 @@
  * everything the interpolator needs.
  *
  * Positions arrive in chunk local blocks and the chunk's origin comes in a push constant,
- * which is what lets a chunk be culled or moved without rebuilding its mesh.
+ * so a chunk can be culled or moved without rebuilding its mesh.
  **/
 
 layout(location = 0) in vec3 position;
@@ -18,7 +18,7 @@ layout(location = 1) in vec2 info;
 
 layout(location = 0) out vec3 intensity;
 
-// set 0, the per frame frequency of ADR-0008 - the camera the whole pass draws through
+// set 0, updated once per frame - the camera the whole pass draws through
 layout(set = 0, binding = 0) uniform Camera {
     mat4 view;
     mat4 projection;
@@ -32,7 +32,7 @@ struct MaterialInfo {
     vec4 specular;  // reflectivity in rgb, the shininess exponent in w
 };
 
-// set 1, the per material frequency - the one light and the block palette, written once
+// set 1, updated once per material - the one light and the block palette, written once
 layout(set = 1, binding = 0) uniform Scene {
     vec4 lightPosition;  // in world space
     vec4 ambient;        // light intensities

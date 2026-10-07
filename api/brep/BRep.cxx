@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <string>
 #include <vector>
 
 #include <glm/common.hpp>
@@ -15,134 +16,10 @@ namespace v3d::brep {
 const Index BRep::INVALID_ID = v3d::brep::INVALID_ID;
 
 
-BRep::edge_iterator::edge_iterator() : firstEdge_(INVALID_ID), edge_(0) {
-}
-
-BRep::edge_iterator::edge_iterator(const boost::shared_ptr<BRep>& brep, Index face) {
-    reset(brep, face);
-}
-
-BRep::edge_iterator::~edge_iterator() {
-}
-
-void BRep::edge_iterator::reset(const boost::shared_ptr<BRep>& brep, Index face_id) {
-    brep_ = brep;
-    Face* face = brep_->face(face_id);
-    if (!face) {
-        edge_ = 0;
-        return;
-    }
-    firstEdge_ = face->edge();
-    edge_ = brep_->edge(firstEdge_);
-}
-
-HalfEdge* BRep::edge_iterator::operator * () {
-    return edge_;
-}
-
-BRep::edge_iterator BRep::edge_iterator::operator++ (int) {
-    if (!edge_)
-        return *this;
-    Index nextEdge = edge_->next();
-    if (nextEdge == firstEdge_) {
-        edge_ = 0;
-        return *this;
-    }
-    edge_ = brep_->edge(nextEdge);
-
-    return *this;
-}
-
-boost::shared_ptr<BRep> BRep::edge_iterator::brep(void) const {
-    return brep_;
-}
-
-BRep::vertex_iterator::vertex_iterator() {
-}
-
-BRep::vertex_iterator::vertex_iterator(const boost::shared_ptr<BRep>& brep, Index faceID) {
-    reset(brep, faceID);
-}
-
-BRep::vertex_iterator::~vertex_iterator() {
-}
-
-Vertex* BRep::vertex_iterator::operator * () {
-    if ((*iterator_) == 0)
-        return 0;
-    return (iterator_.brep()->vertex((*iterator_)->vertex()));
-}
-
-BRep::vertex_iterator BRep::vertex_iterator::operator++ (int) {
-    if ((*iterator_) == 0)
-        return *this;
-    iterator_++;
-    return *this;
-}
-
-void BRep::vertex_iterator::reset(const boost::shared_ptr<BRep>& brep, Index face) {
-    iterator_.reset(brep, face);
-}
-
-
 BRep::BRep() : selected_(false) {
 }
 
 BRep::~BRep() {
-}
-
-glm::vec3 center(const boost::shared_ptr<BRep>& mesh, Index face) {
-    float nverts = 0.0;
-    glm::vec3 mid(0.0, 0.0, 0.0);
-
-    BRep::vertex_iterator it(mesh, face);
-    Vertex* vert;
-    // get edge vertices
-    glm::vec3 pt;
-    for (; *it != 0; it++) {
-        vert = *it;
-        pt = vert->point();
-        mid += pt;
-        nverts += 1.0;
-    }
-
-    mid /= nverts;
-
-    return mid;
-}
-
-void faceUV(const boost::shared_ptr<BRep>& mesh, Index face, glm::vec3* u, glm::vec3* v) {
-    BRep::edge_iterator it(mesh, face);
-    if (*it == 0)
-        return;
-
-    HalfEdge* edge = *it;
-    if (!edge)
-        return;
-
-    glm::vec3 norm;
-
-    Index vert = edge->vertex();
-    assert(vert != BRep::INVALID_ID);
-    Index pair = edge->next();  // edge->pair();
-    assert(pair != BRep::INVALID_ID);
-    Index pair_vert = mesh->edge(pair)->vertex();
-    assert(pair_vert != BRep::INVALID_ID);
-    *u = mesh->vertex(vert)->point() - mesh->vertex(pair_vert)->point();
-    it++;
-    edge = *it;
-    assert(edge != 0);
-    vert = edge->vertex();
-    assert(vert != BRep::INVALID_ID);
-    pair = edge->next();  // edge->pair();
-    assert(pair != BRep::INVALID_ID);
-    pair_vert = mesh->edge(pair)->vertex();
-    assert(pair_vert != BRep::INVALID_ID);
-    *v = mesh->vertex(vert)->point() - mesh->vertex(pair_vert)->point();
-
-    norm = glm::normalize(glm::cross(*u, *v));
-    *v = glm::normalize(glm::cross(*u, norm));
-    *u = glm::normalize(glm::cross(*v, norm));
 }
 
 Index BRep::addVertex(const glm::vec3& v) {
@@ -260,13 +137,14 @@ Index BRep::findPair(Index edge, Index prevEdge) {
         if (edges_[index].face() != face &&
             edges_[index].vertex() == edges_[prevEdge].vertex()) {
             // find potential pair's prev edge
+            // bounded by the edge count, so a ring that does not close ends the search
             Index pair_prev = edges_[index].next();
-            assert(pair_prev != INVALID_ID);
-            for (; edges_[pair_prev].next() != index; ) {
+            std::size_t steps = 0;
+            while (pair_prev < edges_.size() && edges_[pair_prev].next() != index && steps++ < edges_.size()) {
                 pair_prev = edges_[pair_prev].next();
-                assert(pair_prev != INVALID_ID);
             }
-            if (edges_[pair_prev].vertex() == edges_[edge].vertex())
+            if (pair_prev < edges_.size() && edges_[pair_prev].next() == index &&
+                edges_[pair_prev].vertex() == edges_[edge].vertex())
                 return index;
         }
         /* #2
@@ -312,6 +190,55 @@ Vertex* BRep::vertex(Index vert) {
     return 0;
 }
 
+const HalfEdge* BRep::edge(Index edge) const {
+    return edge < edges_.size() ? &edges_[edge] : nullptr;
+}
+
+const Face* BRep::face(Index face) const {
+    return face < faces_.size() ? &faces_[face] : nullptr;
+}
+
+const Vertex* BRep::vertex(Index vert) const {
+    return vert < vertices_.size() ? &vertices_[vert] : nullptr;
+}
+
+namespace {
+
+/**
+ * Whether a reference is to something there are this many of, or is the sentinel where one
+ * may be absent.
+ **/
+bool refers(Index reference, std::size_t count, bool optional) {
+    if (reference == INVALID_ID) {
+        return optional;
+    }
+    return reference < count;
+}
+
+};  // namespace
+
+bool BRep::validate(std::string* problem) const {
+    for (std::size_t id = 0; id < edges_.size(); id++) {
+        const HalfEdge & edge = edges_[id];
+        if (!refers(edge.vertex(), vertices_.size(), false) || !refers(edge.face(), faces_.size(), true) ||
+            !refers(edge.pair(), edges_.size(), true) || !refers(edge.next(), edges_.size(), true)) {
+            if (problem != nullptr) {
+                *problem = "edge " + std::to_string(id) + " names something the mesh does not hold";
+            }
+            return false;
+        }
+    }
+    for (std::size_t id = 0; id < faces_.size(); id++) {
+        if (!refers(faces_[id].edge(), edges_.size(), false)) {
+            if (problem != nullptr) {
+                *problem = "face " + std::to_string(id) + " names an edge the mesh does not hold";
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
 size_t BRep::vertexCount(void) const {
     return vertices_.size();
 }
@@ -337,25 +264,6 @@ Index BRep::addEdge(const HalfEdge& e) {
 Index BRep::addFace(const Face& f) {
     faces_.push_back(f);
     return static_cast<Index>(faces_.size() - 1);
-}
-
-void BRep::splitEdge(Index edge, const glm::vec3& point) {
-    Index vertex;
-    vertices_.push_back(point);
-    vertex = static_cast<Index>(vertices_.size() - 1);
-
-    HalfEdge newEdge(edges_[edge]);
-    // edge goes from PVT to point
-    // newEdge goes from point to NVT
-    newEdge.vertex(vertex);
-
-    Index new_edge_id;
-    edges_.push_back(newEdge);
-    new_edge_id = static_cast<Index>(edges_.size() - 1);
-
-    newEdge.pair(edge);
-    newEdge.next(edges_[edge].next());
-    edges_[edge].next(new_edge_id);
 }
 
 bool BRep::selected(void) const noexcept {

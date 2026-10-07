@@ -20,8 +20,8 @@ class Property;
 /**
  * One entry of a theme: the properties a component of a given class and name is drawn with.
  *
- * A style is keyed by the pair rather than by either half, which is what lets a theme carry
- * a default for every button and an override for one of them. The properties themselves are
+ * A style is keyed by the pair rather than by either half, so a theme can carry a default
+ * for every button and an override for one of them. The properties themselves are
  * typed - a colour, a number, a font, an image - and are read back through the free
  * functions below rather than by casting at the call site.
  */
@@ -74,7 +74,7 @@ class Style {
 
 /**
  * Read a colour property out of a style, leaving what is there when the style does not
- * name it. Both ways of writing a ui dress themselves from a theme this way, per ADR-0020.
+ * name it. Both the retained components and the immediate layer read a theme this way.
  **/
 void readColour(const boost::shared_ptr<Style>& target, const std::string& name, glm::vec4* into);
 

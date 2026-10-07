@@ -28,33 +28,32 @@ class TextBox;
 namespace v3d::ui::input {
 
 /**
- * Turns a cursor into a command, per ADR-0038.
+ * Turns a cursor into a command.
  *
  * A point is offered to the ui in the reverse of the order it was drawn - menu bars first,
  * then toolbars, then the component tree - and the first thing that takes it stops the
- * walk. That order is a fact about how ComponentRenderer draws, which is why it lives here
- * rather than in each app.
+ * search. That order follows how ComponentRenderer draws, so it lives here rather than in
+ * each app.
  *
  * A press on a pickable component sends that component's bound event and is consumed. A
- * press on anything else is not, so a hud of labels over a scene leaves the scene
- * clickable, which is what ADR-0034's pickable() default of false is for.
+ * press on anything else is not. pickable() is false by default, so a hud of labels over a
+ * scene leaves the scene clickable.
  *
- * Everything is tested against the boxes the last draw left on the components, per
- * ADR-0019, so nothing is picked until something has been drawn.
+ * Everything is tested against the boxes the last draw left on the components, so nothing
+ * is picked until something has been drawn.
  *
- * A cursor measures text, because the one thing a press can land in the middle of is a line
- * of it - ADR-0057. That is the same Measure both renderers take, and a cursor given none
- * still routes every press: a text box then keeps the caret it had rather than taking one
- * from where it was clicked.
+ * A cursor measures text so that a press inside a text box can place the caret. It takes
+ * the same Measure both renderers take. A cursor given none still routes every press, and a
+ * text box then keeps the caret it had rather than taking one from where it was clicked.
  **/
 class Cursor final {
  public:
     /**
      * @param ui the containers to offer a point to, in the order they were loaded
      * @param dispatcher where a picked component's event is sent
-     * @param measure how wide a run of text is when the app draws it, which is what turns
-     *        a point inside a text box into a caret. The same callback the renderer drawing
-     *        this ui was given, so that the two agree about where a character is
+     * @param measure how wide a run of text is when the app draws it, so that a point
+     *        inside a text box becomes a caret position. Pass the callback the renderer
+     *        drawing this ui was given, so that the two agree about where a character is
      **/
     Cursor(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
         const paint::Measure& measure = paint::Measure());
@@ -62,11 +61,11 @@ class Cursor final {
     /**
      * The cursor moved.
      *
-     * A press being held goes on being followed wherever the cursor is, which is what
-     * drags a scrollbar's thumb; otherwise this is what leaves a button hovered, whether
-     * it sits on a strip or in the tree.
+     * A press being held goes on being followed wherever the cursor is, so a scrollbar's
+     * thumb follows it. Otherwise this sets which button is hovered, whether it sits on a
+     * strip or in the tree.
      *
-     * @return whether the ui took it, which is what stops it reaching the scene under it
+     * @return whether the ui took it, in which case it does not reach the scene under it
      **/
     bool motion(const glm::vec2& point);
 
@@ -77,7 +76,7 @@ class Cursor final {
     bool press(const glm::vec2& point);
 
     /**
-     * The primary button came up, which is what ends a drag. Nothing is dispatched here -
+     * The primary button came up, ending a drag. Nothing is dispatched here -
      * a command is sent as the press lands, the way a strip's is.
      * @return whether the ui took it
      **/
@@ -97,9 +96,9 @@ class Cursor final {
     /**
      * Light one component up and put back whatever was lit before it.
      *
-     * A component is hovered when it is the one a press would land on, so the same
-     * pickable() that decides what takes a click decides what lights up - which is what
-     * keeps a hud of labels from flickering as the cursor crosses it. ADR-0034.
+     * A component is hovered when it is the one a press would land on. The same pickable()
+     * that decides what takes a click decides what lights up, so a hud of labels does not
+     * flicker as the cursor crosses it.
      **/
     void hover(const boost::shared_ptr<Component>& component);
 
@@ -121,12 +120,18 @@ class Cursor final {
     void dispatch(const boost::shared_ptr<Component>& component) const;
 
     /**
+     * Carry a held press to where the cursor is now, for a component that is dragged: a
+     * scrollbar's thumb, a slider's, or a text box's selection.
+     **/
+    void follow(const boost::shared_ptr<Component>& holding, const glm::vec2& point) const;
+
+    /**
      * Put a box's caret where a point landed, or take the selection out to there when the
      * press that started it is still down.
      *
      * A cursor with no Measure names no text and leaves the box alone.
      *
-     * @param extend whether the anchor stays where it was, which is what a drag does
+     * @param extend whether the anchor stays where it was, as it does during a drag
      **/
     void place(const boost::shared_ptr<component::TextBox>& box, const glm::vec2& point,
         bool extend) const;

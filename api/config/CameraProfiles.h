@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 
@@ -13,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::config {
@@ -23,7 +23,7 @@ namespace v3d::config {
  *
  * A profile is described by where the camera is and what it looks at rather than by
  * its three normals: the basis and the rotation have to agree, and
- * Profile::lookat() is the one call that writes all four consistently.
+ * only Profile::lookat() writes all four consistently.
  **/
 class CameraProfiles final {
  public:
@@ -36,10 +36,10 @@ class CameraProfiles final {
      * Read every profile in the document.
      * A profile missing a name is rejected; every other field has a default.
      *
-     * @param config the parsed cameras.json
+     * @param doc the parsed cameras.json
      * @return whether the table was understood
      **/
-    bool load(const boost::shared_ptr<v3d::asset::kind::Json>& config);
+    bool load(const boost::json::object& doc);
 
     /**
      * @param name the profile name, as whatever names a view names it

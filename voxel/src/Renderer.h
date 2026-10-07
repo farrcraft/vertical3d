@@ -10,15 +10,17 @@
 #include <api/render/realtime/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
-#include <api/ui/paint/ComponentRenderer.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
-#include <api/ui/paint/TextRenderer.h>
 
 #include <vulkan/vulkan.h>
 
+#include <cstddef>
 #include <string>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
@@ -32,11 +34,10 @@ class MeshBuilder;
 /**
  * The terrain, and the text drawn over it.
  *
- * Two passes, because the two want opposite things from the frame: the terrain is a depth
- * tested, sorted scene of one draw item per chunk through a pipeline of its own, and the
- * overlay and the ui are painter ordered quads on the batched primitive of ADR-0005 drawn on
- * top of it. The pass is the unit of variation, per ADR-0003, so neither has to know about
- * the other.
+ * Two passes, because the two need opposite settings. The terrain is a depth tested, sorted
+ * scene of one draw item per chunk through a pipeline of its own. The overlay and the ui
+ * are painter ordered quads, drawn on top of it through the batched quad pipeline. Each pass
+ * carries its own settings, so neither depends on the other.
  */
 class Renderer {
  public:
@@ -44,7 +45,7 @@ class Renderer {
      * @throw std::runtime_error if the pipeline or its uniforms cannot be built
      **/
     Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::render::realtime::Window>& window,
-        const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
+        const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
     /**
      **/
@@ -54,11 +55,14 @@ class Renderer {
     Renderer& operator=(const Renderer&) = delete;
 
     /**
-     * Draw the frame
-     */
+     * @return how long the device spent on each pass, by its name
+     **/
+    const std::vector<v3d::render::realtime::vulkan::frame::Timings::Timing>& timings() const;
+
     /**
+     * Draw the frame.
      * @param statistics what the loop measured about its own pacing, which the debug
-     *        window reads - the app hands it over because api/ui sits below api/engine
+     *        window reads. The app passes it in because api/ui cannot depend on api/engine
      * @param tools what the cursor did, for the immediate layer - Controller::tools()
      **/
     void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
@@ -100,12 +104,13 @@ class Renderer {
     void createPipeline();
 
     /**
-     * One draw item per meshed chunk, submitted to the terrain pass.
+     * One draw item per meshed chunk in the camera's view, submitted to the terrain pass.
      **/
     void drawTerrain(v3d::render::realtime::Pass* pass);
 
     /**
-     * The F3 readout - the build, what the loop measured, and where the player is standing.
+     * The F3 readout - the build, what the loop measured, where the player is standing, and
+     * how many of the meshed chunks were drawn.
      **/
     void drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
         const v3d::ui::Immediate::Input& tools);
@@ -118,21 +123,20 @@ class Renderer {
     v3d::render::realtime::Engine3D engine_;
 
     boost::shared_ptr<v3d::render::realtime::DeviceContext> context_;
-    VkDescriptorSetLayout sceneLayout_;
-    VkDescriptorPool pool_;
+    boost::shared_ptr<v3d::render::realtime::vulkan::pipeline::DescriptorPool> scenePool_;
     boost::shared_ptr<v3d::render::realtime::vulkan::memory::DeviceBuffer> uniforms_;
     v3d::render::realtime::PipelineHandle pipeline_;
     v3d::render::realtime::MaterialHandle material_;
 
     boost::shared_ptr<ChunkMeshPool> meshes_;
     boost::shared_ptr<MeshBuilder> builder_;
+    std::size_t drawnChunks_;   /**< how many chunks the last frame drew **/
+    std::size_t meshedChunks_;  /**< how many it could have, being meshed **/
 
     bool debug_;
 
-    v3d::render::realtime::Canvas canvas_;
-    boost::shared_ptr<v3d::ui::paint::TextRenderer> text_;
 
     boost::shared_ptr<v3d::ui::Engine> ui_;
-    boost::shared_ptr<v3d::ui::paint::ComponentRenderer> uiRenderer_;
-    boost::shared_ptr<v3d::ui::Immediate> tools_;
+    // built after the engine is initialized, because its atlas is uploaded through it
+    boost::shared_ptr<v3d::ui::shell::Screen> screen_;
 };

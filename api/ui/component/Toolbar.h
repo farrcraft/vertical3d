@@ -26,8 +26,11 @@ namespace v3d::ui::component {
  * a left one is a column as tall as what is under the top strip. The buttons themselves
  * are the same either way.
  *
- * The strip answers the cursor out of the bounds a renderer left on its buttons, per
- * ADR-0019, so nothing is hit until something has been drawn.
+ * The strip tests the cursor against the bounds a renderer left on its buttons, so nothing
+ * is hit until something has been drawn.
+ *
+ * It is pickable from the start. One marked otherwise is scenery: the cursor offers it
+ * nothing, and a press on it, gaps and buttons alike, falls to whatever is under it.
  **/
 class Toolbar : public Component {
  public:
@@ -44,6 +47,7 @@ class Toolbar : public Component {
      * @param edge which edge the strip runs along
      **/
     Toolbar(const boost::shared_ptr<entt::dispatcher>& dispatcher, Edge edge);
+    ~Toolbar() override;
 
     /**
      * @return which edge the strip runs along
@@ -67,7 +71,7 @@ class Toolbar : public Component {
 
     /**
      * The cursor moved. A button under it is left in its hover state and every other one
-     * is put back to normal, which is what a renderer draws the highlight from.
+     * is put back to normal, and a renderer draws the highlight from that.
      *
      * @param cursor where it is, in the pixels the strip was drawn in
      * @return whether it is over the strip

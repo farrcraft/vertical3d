@@ -49,6 +49,14 @@ const glm::mat4x4 & ReyesPrimitive::placement(void) const {
     return placement_;
 }
 
+void ReyesPrimitive::motion(const v3d::render::offline::MovingTransform & toEye) {
+    motion_ = toEye;
+}
+
+const v3d::render::offline::MovingTransform & ReyesPrimitive::motion(void) const {
+    return motion_;
+}
+
 const glm::vec3 & ReyesPrimitive::color(void) const {
     return color_;
 }

@@ -18,8 +18,8 @@ namespace v3d::ui::paint {
  * drawing a component reads fields rather than asking a map for them.
  *
  * A theme's "ui" style names the defaults, and a component's own style class names what
- * differs from them, per ADR-0020. What a style does not name keeps the value it had, so
- * a theme carrying nothing changes nothing. style::Resolver is what works one out.
+ * differs from them. What a style does not name keeps the value it had, so a theme
+ * carrying nothing changes nothing. style::Resolver works one out.
  **/
 struct Dressing final {
     Dressing() noexcept;
@@ -40,6 +40,9 @@ struct Dressing final {
     glm::vec4 fill;          /**< the filled part of a bar **/
     glm::vec4 thumb;         /**< the part of a scrollbar's track that is taken hold of **/
     glm::vec4 mark;          /**< what a checked box or a chosen radio button is marked with **/
+    glm::vec4 caret;         /**< a text box's caret **/
+    glm::vec4 placeholder;   /**< what an empty text box shows in place of text **/
+    glm::vec4 tab;           /**< a tab that is not the chosen one **/
     glm::vec4 text;          /**< an ordinary item's label **/
     glm::vec4 activeText;    /**< the label of the item navigation is on **/
     glm::vec4 disabledText;  /**< the label of a control that is there and cannot be used **/

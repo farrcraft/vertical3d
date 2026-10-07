@@ -19,9 +19,10 @@ extent_(extent),
 depthFormat_(VK_FORMAT_UNDEFINED) {
     ring_ = boost::make_shared<vulkan::frame::Ring>(device_, framesInFlight);
     pipelineCache_ = boost::make_shared<vulkan::pipeline::Cache>(device_);
-    resources_ = boost::make_shared<vulkan::pipeline::Resources>(device_);
+    resources_ = boost::make_shared<vulkan::pipeline::Resources>(device_, ring_);
     uploader_ = boost::make_shared<vulkan::memory::Uploader>(device_);
-    frameUniforms_ = boost::make_shared<vulkan::frame::FrameUniforms>(device_, ring_->framesInFlight());
+    textures_ = boost::make_shared<Textures>(device_, resources_, ring_, uploader_);
+    frameUniforms_ = boost::make_shared<vulkan::frame::FrameUniforms>(device_, ring_);
     // settled here even though the image may never be built, because every pipeline that
     // could draw into a depth pass is built against it
     depthFormat_ = vulkan::frame::DepthBuffer::chooseFormat(device_->physical());
@@ -32,7 +33,7 @@ depthFormat_(VK_FORMAT_UNDEFINED) {
 DeviceContext::~DeviceContext() {
     // the device may still be drawing with everything about to be destroyed
     if (ring_) {
-        ring_->waitIdle();
+        ring_->waitIdleNoThrow();
     }
 }
 
@@ -114,10 +115,16 @@ bool DeviceContext::hasDepth() const noexcept {
 
 /**
  **/
+boost::shared_ptr<Textures> DeviceContext::textures() const {
+    return textures_;
+}
+
+/**
+ **/
 boost::shared_ptr<vulkan::renderer::Quad> DeviceContext::quads() {
     if (!quads_) {
-        quads_ = boost::make_shared<vulkan::renderer::Quad>(logger_, device_, pipelineCache_, resources_, ring_,
-            frameUniforms_, colourFormat_, depthFormat_);
+        quads_ = boost::make_shared<vulkan::renderer::Quad>(device_, pipelineCache_, resources_, ring_,
+            frameUniforms_, textures_, colourFormat_, depthFormat_);
     }
     return quads_;
 }
@@ -132,7 +139,7 @@ bool DeviceContext::hasQuads() const noexcept {
  **/
 boost::shared_ptr<vulkan::renderer::Line> DeviceContext::lines() {
     if (!lines_) {
-        lines_ = boost::make_shared<vulkan::renderer::Line>(logger_, device_, pipelineCache_, resources_, ring_,
+        lines_ = boost::make_shared<vulkan::renderer::Line>(device_, pipelineCache_, resources_, ring_,
             frameUniforms_, colourFormat_, depthFormat_);
     }
     return lines_;
@@ -148,8 +155,8 @@ bool DeviceContext::hasLines() const noexcept {
  **/
 boost::shared_ptr<vulkan::renderer::World> DeviceContext::worldQuads() {
     if (!worldQuads_) {
-        worldQuads_ = boost::make_shared<vulkan::renderer::World>(logger_, device_, pipelineCache_, resources_,
-            ring_, frameUniforms_, quads(), colourFormat_, depthFormat_);
+        worldQuads_ = boost::make_shared<vulkan::renderer::World>(device_, pipelineCache_, resources_,
+            ring_, frameUniforms_, textures_, colourFormat_, depthFormat_);
     }
     return worldQuads_;
 }

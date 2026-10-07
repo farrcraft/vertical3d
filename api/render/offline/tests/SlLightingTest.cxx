@@ -3,12 +3,17 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/log/Logger.h>
 #include <api/render/offline/sl/Compiler.h>
 #include <api/render/offline/sl/Emitter.h>
 #include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <api/render/offline/sl/syntax/Shader.h>
 
+#include <cstdio>
+#include <fstream>
+#include <iterator>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -30,7 +35,7 @@ typedef v3d::render::offline::sl::runtime::Opcode Opcode;
 bool build(const std::string & source, Program* program, std::string* error) {
     std::istringstream stream(source);
     v3d::render::offline::sl::Parser parser(stream);
-    std::vector<v3d::render::offline::sl::ShaderPtr> shaders = parser.parse();
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
     if (shaders.size() != 1) {
         *error = parser.error();
         return false;
@@ -51,9 +56,9 @@ bool build(const std::string & source, Program* program, std::string* error) {
 /**
  * One light shader, compiled and ready to run over a batch.
  *
- * A light with neither `illuminate` nor `solar` in it is an ambient one, which is what
- * keeps it out of an illuminance loop and inside `ambient()`. The program says so, which
- * is what the renderers will read in step 9 rather than asking the source again.
+ * A light with neither `illuminate` nor `solar` in it is an ambient one, so it is left out
+ * of an illuminance loop and summed by `ambient()`. The program records this, so a renderer
+ * reads it there rather than from the source.
  **/
 class Lamp final {
  public:
@@ -76,7 +81,7 @@ class Lamp final {
                 machine_.value(where).triple(point, surface.triple(point));
             }
         }
-        if (!machine_.run(program_)) {
+        if (!machine_.run()) {
             return false;
         }
         const int away = program_.symbol("L");
@@ -98,7 +103,7 @@ class Lamp final {
 
 /**
  * The renderer's half of the message passing: it holds the light shader instances a scene
- * named, and running one is what an illuminance loop asks it for.
+ * named, and an illuminance loop calls it to run one.
  **/
 class Scene final : public v3d::render::offline::sl::runtime::Renderer {
  public:
@@ -145,7 +150,7 @@ class Lit final {
     }
 
     void run() {
-        BOOST_REQUIRE_MESSAGE(machine_.run(program_), machine_.error());
+        BOOST_REQUIRE_MESSAGE(machine_.run(), machine_.error());
     }
 
     glm::vec3 colour(unsigned int point) const {
@@ -175,7 +180,7 @@ light overhead() {
 /**
  * A light shader's `solar` sets L against the direction the light travels, so that L points
  * from the surface toward the light in the illuminance body that reads it. Every point of
- * the batch is lit, which is what makes a light at infinity distant.
+ * the batch is lit, because a light at infinity reaches everything from one direction.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_solar_test) {
     Scene scene;
@@ -202,9 +207,81 @@ BOOST_AUTO_TEST_CASE(sllighting_solar_test) {
 }
 
 /**
- * A light with a position aims a cone, and the points outside it are not lit at all. That
- * is the light's own end of the mask: L is written for every point it reaches and the ones
- * it misses come back as points the surface never runs the body for.
+ * A solar light with an angle is lit along its axis, and the machine reports once that the
+ * angle is not honoured rather than lighting a cone it cannot choose a direction in.
+ **/
+BOOST_AUTO_TEST_CASE(sllighting_solar_angle_is_reported_test) {
+    std::string error;
+    Program program;
+    BOOST_REQUIRE_MESSAGE(build(
+        "light wide() {\n"
+        "    solar(vector (0, 0, -1), 0.5) {\n"
+        "        Cl = color (1, 1, 1);\n"
+        "    }\n"
+        "}\n", &program, &error), error);
+    Machine machine;
+    machine.prepare(program, 2);
+    BOOST_REQUIRE(machine.run());
+
+    BOOST_CHECK_CLOSE(machine.value(program.symbol("L")).triple(0).z, 1.0f, 0.01f);
+    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1u);
+    BOOST_CHECK_EQUAL(machine.reports()[0], "solar with an angle is lit along its axis only, as if the angle were 0");
+}
+
+/**
+ * A machine given a logger writes each report to it once, as a warning, so a report reaches
+ * someone reading the log rather than only a caller that asks for reports().
+ **/
+BOOST_AUTO_TEST_CASE(sllighting_a_report_reaches_the_log_test) {
+    const std::string path = "sl_reports_test.log";
+    std::remove(path.c_str());
+    // the log is pointed back at its default however the case ends, so a failed check here
+    // does not leave every later case writing to this file
+    struct Restore final {
+        ~Restore() {
+            // a destructor may not throw, and a log that cannot be reopened only costs the
+            // later cases their log lines
+            try {
+                v3d::log::Logger::open("v3d.log");
+            } catch (...) {
+                return;
+            }
+        }
+    } restore;
+    BOOST_REQUIRE(v3d::log::Logger::open(path));
+    {
+        std::string error;
+        Program program;
+        BOOST_REQUIRE_MESSAGE(build(
+            "light wide() {\n"
+            "    solar(vector (0, 0, -1), 0.5) {\n"
+            "        Cl = color (1, 1, 1);\n"
+            "    }\n"
+            "}\n", &program, &error), error);
+        Machine machine;
+        machine.logger(boost::make_shared<v3d::log::Logger>());
+        machine.prepare(program, 2);
+        BOOST_REQUIRE(machine.run());
+        BOOST_REQUIRE(machine.run());
+        v3d::log::Logger().get()->flush();
+    }
+    // back to the default, which lets go of the test's file before it is read and removed
+    v3d::log::Logger::open("v3d.log");
+
+    std::ifstream file(path);
+    const std::string contents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    file.close();
+    const std::string line = "solar with an angle is lit along its axis only";
+    const std::size_t first = contents.find(line);
+    BOOST_CHECK(first != std::string::npos);
+    BOOST_CHECK(contents.find(line, first + 1) == std::string::npos);
+    std::remove(path.c_str());
+}
+
+/**
+ * A light with a position aims a cone, and the points outside it are not lit at all. This is
+ * the light shader's side of the mask: L is written for every point it reaches, and the
+ * surface never runs the body for the points it misses.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_illuminate_cone_test) {
     Scene scene;
@@ -243,9 +320,9 @@ BOOST_AUTO_TEST_CASE(sllighting_illuminate_cone_test) {
 }
 
 /**
- * The done-when of the step: `diffuse` over one distant light is the cosine of the angle
- * between the surface and the light, and it is one line of the language rather than a
- * built-in with privileged access to the lights.
+ * `diffuse` over one distant light is the cosine of the angle between the surface and the
+ * light, and it is one line of the language rather than a built-in with privileged access
+ * to the lights.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_diffuse_is_the_cosine_test) {
     Scene scene;
@@ -255,7 +332,7 @@ BOOST_AUTO_TEST_CASE(sllighting_diffuse_is_the_cosine_test) {
     lit.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
     // 60 degrees off the light, whose cosine is a half
     lit.normal(1, glm::vec3(0.8660254f, 0.0f, 0.5f));
-    // facing away, which the illuminance cone of PI/2 keeps out of the sum entirely
+    // facing away, so the illuminance cone of PI/2 leaves the light out of the sum entirely
     lit.normal(2, glm::vec3(0.0f, 0.0f, -1.0f));
     lit.run();
 
@@ -265,10 +342,9 @@ BOOST_AUTO_TEST_CASE(sllighting_diffuse_is_the_cosine_test) {
 }
 
 /**
- * The other done-when: a two light scene runs the body twice, with that light's own L and
- * Cl each time. Two colours that do not overlap say which light each component came from,
- * so a body that ran once with the last light's values would fail rather than pass by
- * halves.
+ * A two light scene runs the body twice, with that light's own L and Cl each time. Two
+ * colours that do not overlap show which light each component came from, so a body that ran
+ * once with the last light's values fails.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_two_lights_test) {
     Scene scene;
@@ -297,8 +373,8 @@ BOOST_AUTO_TEST_CASE(sllighting_two_lights_test) {
 }
 
 /**
- * An illuminance cone keeps a light out of the sum, which is what stops a surface being
- * lit from behind. The same scene with no cone sums both.
+ * An illuminance cone leaves a light out of the sum, so a surface is not lit from behind.
+ * The same scene with no cone sums both.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_illuminance_cone_test) {
     Scene scene;
@@ -323,9 +399,9 @@ BOOST_AUTO_TEST_CASE(sllighting_illuminance_cone_test) {
 }
 
 /**
- * `ambient()` sums the lights an illuminance loop cannot see. A light with neither
- * `illuminate` nor `solar` has no direction to test against a cone, which is exactly what
- * makes it ambient and exactly why it needs its own built-in.
+ * `ambient()` sums the lights an illuminance loop skips. A light with neither `illuminate`
+ * nor `solar` is ambient: it has no direction to test against a cone, so it needs its own
+ * built-in.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_ambient_test) {
     Scene scene;
@@ -344,14 +420,14 @@ BOOST_AUTO_TEST_CASE(sllighting_ambient_test) {
     Lit summed("color sum = 0;\nilluminance(P) { sum += Cl; }\nCi = sum;", &scene, 1);
     summed.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
     summed.run();
-    // and the ambient one is not in the illuminance loop
+    // the ambient one is not in the illuminance loop
     BOOST_CHECK_CLOSE(summed.colour(0).r, 1.0f, 0.1f);
 }
 
 /**
- * A renderer that cannot answer a shadow lets all the light through and says so once. That
- * is moya until it has a shadow map, and the difference between a scene that rendered
- * without shadows and one that was not understood.
+ * A renderer that cannot compute a shadow lets all the light through, and the machine
+ * reports it once. The report tells a scene that rendered without shadows apart from one
+ * that was not understood.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_transmission_without_a_renderer_test) {
     Scene scene;
@@ -365,11 +441,10 @@ BOOST_AUTO_TEST_CASE(sllighting_transmission_without_a_renderer_test) {
 }
 
 /**
- * The phase 6 hook exists and reports that it is one. A ray comes back black rather than
- * coming back with something plausible, because a plausible answer is the failure mode
- * phase 1 named.
+ * When a renderer cannot trace, the machine reports it. A ray returns black rather than something
+ * plausible, because a plausible value would hide the failure.
  **/
-BOOST_AUTO_TEST_CASE(sllighting_trace_is_a_hook_test) {
+BOOST_AUTO_TEST_CASE(sllighting_trace_without_a_renderer_test) {
     Scene scene;
     Lit lit("Ci = trace(P, vector (0, 0, 1));", &scene, 4);
     lit.run();
@@ -381,9 +456,9 @@ BOOST_AUTO_TEST_CASE(sllighting_trace_is_a_hook_test) {
 }
 
 /**
- * `specular` and `phong` are the language too, and each is adopted into the shader that
- * calls it rather than being a built-in. specular reaches specularbrdf, which is what says
- * the adoption is transitive.
+ * `specular` and `phong` are written in the language too, and each is added to the shader
+ * that calls it rather than being a built-in. specular calls specularbrdf, which shows that
+ * adding them is transitive.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_specular_test) {
     Scene scene;
@@ -400,4 +475,71 @@ BOOST_AUTO_TEST_CASE(sllighting_specular_test) {
     dulled.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
     dulled.run();
     BOOST_CHECK_CLOSE(dulled.colour(0).r, 1.0f, 0.1f);
+}
+
+/**
+ * A lane that returns from inside an illuminance loop has finished, and so has one that
+ * breaks out of it. Neither runs the body again for the next light.
+ **/
+BOOST_AUTO_TEST_CASE(sllighting_return_and_break_leave_illuminance_test) {
+    Scene scene;
+    scene.add(OVERHEAD, 1);
+    scene.add(
+        "light sideways() {\n"
+        "    solar(vector (-1, 0, 0), 0) {\n"
+        "        Cl = color (0, 0.25, 0);\n"
+        "    }\n"
+        "}\n", 1);
+
+    Lit returned(
+        "color first() {\n"
+        "    illuminance(P) {\n"
+        "        return Cl;\n"
+        "    }\n"
+        "    return color (9, 9, 9);\n"
+        "}\n"
+        "Ci = first();", &scene, 1);
+    returned.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    returned.run();
+    BOOST_CHECK_CLOSE(returned.colour(0).r, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(returned.colour(0).g, 1.0f, 0.1f);
+
+    Lit broken("color sum = 0;\nilluminance(P) { sum += Cl; break; }\nCi = sum;", &scene, 1);
+    broken.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    broken.run();
+    BOOST_CHECK_CLOSE(broken.colour(0).r, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(broken.colour(0).g, 1.0f, 0.1f);
+}
+
+/**
+ * Lanes of one batch leave an illuminance loop at different lights. A continue skips one light
+ * for the lanes that take it, and a break ends the loop for those lanes alone; the lanes beside
+ * them go on through every light.
+ **/
+BOOST_AUTO_TEST_CASE(sllighting_lanes_leave_illuminance_at_different_lights_test) {
+    Scene scene;
+    scene.add(OVERHEAD, 2);
+    scene.add(
+        "light sideways() {\n"
+        "    solar(vector (-1, 0, 0), 0) {\n"
+        "        Cl = color (0, 0.25, 0);\n"
+        "    }\n"
+        "}\n", 2);
+
+    Lit skipped("color sum = 0;\nilluminance(P) { if (xcomp(P) > 0) { continue; } sum += Cl; }\nCi = sum;", &scene, 2);
+    Lit broken("color sum = 0;\nilluminance(P) { sum += Cl; if (xcomp(P) > 0) { break; } }\nCi = sum;", &scene, 2);
+    for (Lit* lit : { &skipped, &broken }) {
+        lit->position(0, glm::vec3(1.0f, 0.0f, 0.0f));
+        lit->position(1, glm::vec3(-1.0f, 0.0f, 0.0f));
+        lit->normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+        lit->normal(1, glm::vec3(0.0f, 0.0f, 1.0f));
+        lit->run();
+    }
+
+    // the first lane continues past every light, and the second sums both
+    BOOST_CHECK_SMALL(skipped.colour(0).g, 0.0001f);
+    BOOST_CHECK_CLOSE(skipped.colour(1).g, 1.25f, 0.1f);
+    // the first lane breaks after the first light, and the second sums both
+    BOOST_CHECK_CLOSE(broken.colour(0).g, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(broken.colour(1).g, 1.25f, 0.1f);
 }

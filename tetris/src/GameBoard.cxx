@@ -36,7 +36,7 @@ GameBoard::GameBoard(const boost::shared_ptr<v3d::log::Logger>& logger) :
 bool GameBoard::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
     boost::shared_ptr<v3d::asset::kind::Text> file;
     try {
-        file = boost::dynamic_pointer_cast<v3d::asset::kind::Text>(assetManager->load("pieces/shapes.txt", v3d::asset::Type::Text));
+        file = assetManager->load<v3d::asset::kind::Text>("pieces/shapes.txt", v3d::asset::Type::Text);
     } catch (const std::exception& error) {
         logger_->get()->error("unable to read the tetrad shapes - {}", error.what());
         return false;
@@ -111,8 +111,10 @@ void GameBoard::reset() {
     over_ = false;
 }
 
-bool GameBoard::dropTetrad() {
-    fastFall_ = !fastFall_;
+bool GameBoard::dropTetrad(bool repeated) {
+    if (!repeated) {
+        fastFall_ = !fastFall_;
+    }
     return fastFall_;
 }
 
@@ -242,8 +244,8 @@ void GameBoard::lockTetrad() {
             }
             const unsigned int row = position.second + i;
             const unsigned int column = position.first + j;
-            // fits() has already said the tetrad is inside the board, but a lock is the one
-            // place a stray write would corrupt the heap rather than draw something odd
+            // fits() has already checked the tetrad is inside the board, but a stray write during
+            // a lock would corrupt the heap rather than draw something odd, so it is checked again
             if (row < rows_ && column < cols_) {
                 pieces_[row][column] = Piece(shape.color_);
             }

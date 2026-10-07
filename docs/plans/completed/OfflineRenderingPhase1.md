@@ -1,7 +1,7 @@
 # Offline Rendering, Phase 1 — Each Renderer Computes A Pixel
 
 Drafted 2026-09-05, **closed 2026-09-05**. Took up phase 1 of
-[the offline rendering roadmap](../../roadmap/OfflineRendering.md), which stays the account of
+[the offline rendering roadmap](../../roadmap/completed/OfflineRendering.md), which stays the account of
 where both renderers stand and what the later phases are; this plan does not repeat it.
 
 **All six steps landed.** Both renderers produce a picture whose pixels came from geometry,
@@ -17,7 +17,7 @@ moya's clean exit is what a correct render of a scene it culled entirely looks l
 either produces a pixel whose value came from geometry, a rendered image can be compared against
 a committed reference in ctest on every push with no GPU — the first render regression test the
 repo has had, since everything below the recorder in `api/render` still waits on
-[ADR-0007](../../adr/0007-ci-rendering-tests.md).
+[ADR-0007](../../adr/0007-ci-render-tests-on-software-vulkan.md).
 
 So the deliverable is not a good picture. It is a picture that would change if the code broke.
 
@@ -27,10 +27,10 @@ Recorded in [docs/adr/](../../adr/), not here. The ones that shape this plan:
 
 | ADR | Decision |
 |---|---|
-| [0022](../../adr/0022-offline-rendering-shares-an-api-library.md) | Shared offline code is `api/render/offline`; each renderer is a library with a driver |
-| [0023](../../adr/0023-rib-is-the-offline-scene-description.md) | RIB is what both renderers read; the editor exports to it |
-| [0024](../../adr/0024-api-type-serves-both-renderers.md) | `api/type` serves both, and a convention is a parameter rather than a fork |
-| [0007](../../adr/0007-ci-rendering-tests.md) | Render tests on a Windows runner — which these two do not need |
+| [0022](../../adr/0022-offline-shared-library-with-no-vulkan.md) | Shared offline code is `api/render/offline`; each renderer is a library with a driver |
+| [0023](../../adr/0023-offline-rib-is-the-scene-format.md) | RIB is what both renderers read; the editor exports to it |
+| 0024 (removed) | `api/type` serves both, and a convention is a parameter rather than a fork |
+| [0007](../../adr/0007-ci-render-tests-on-software-vulkan.md) | Render tests on a Windows runner — which these two do not need |
 
 ## What blocks what
 
@@ -100,8 +100,8 @@ Mirroring moya, which is already `libmoya` + `moya` + `tests`:
 - `talyn/CMakeLists.txt` becomes the three `add_subdirectory` lines moya's is.
 
 The 35-item wish list and the design note at the top of `talyn.cxx` do not move with it. The
-list is the roadmap's phases 3 to 5 and the note is [ADR-0022](../../adr/0022-offline-rendering-shares-an-api-library.md),
-[ADR-0023](../../adr/0023-rib-is-the-offline-scene-description.md) and the roadmap's phase 6 — a
+list is the roadmap's phases 3 to 5 and the note is [ADR-0022](../../adr/0022-offline-shared-library-with-no-vulkan.md),
+[ADR-0023](../../adr/0023-offline-rib-is-the-scene-format.md) and the roadmap's phase 6 — a
 comment that repeats a plan or a record goes stale where nobody is looking.
 
 **Done when**: `ctest -N` lists a talyn suite, and `talyn --file data/test-scene-01.rib
@@ -144,7 +144,7 @@ background colour on miss.
   have been called for the viewport being rendered.
 - **No `api/type` change.** The camera measures y downward from the top of the viewport and
   `image::Image` row 0 is the top, so the pixel loop maps straight across with the convention
-  ADR-0012 already set. The parameter [ADR-0024](../../adr/0024-api-type-serves-both-renderers.md)
+  ADR-0012 already set. The parameter ADR-0024 (removed)
   calls for is needed when moya routes a projection through `Camera`, which this phase does not
   do.
 - **Something has to write the alpha plane.** Four planes are RGBA and nothing writes the
@@ -263,7 +263,7 @@ and read the validation log" is not the method here — ctest is.
 ## What this phase does not do
 
 - **No RIB.** The tokenizer, the declaration table and the geometry requests are phase 2 and
-  [ADR-0023](../../adr/0023-rib-is-the-offline-scene-description.md). A consequence worth stating
+  [ADR-0023](../../adr/0023-offline-rib-is-the-scene-format.md). A consequence worth stating
   plainly: **talyn's driver still writes a background-only image at the end of this phase**,
   because its only route to a scene is a file it cannot yet read. talyn's picture comes from its
   suite, moya's from its driver, and the asymmetry closes in phase 2. A built-in demo scene
@@ -291,3 +291,8 @@ they are settled deliberately. All three are settled:
 - How the depth plane is addressed. **By name** — `moya::FrameBuffer::Plane` names the three
   colour channels and the depth, and `CHANNELS` says how many of them are the picture. A
   position-only convention reads the same at the call site whether it is right or wrong.
+
+## Outcome
+
+Drafted and closed on 2026-09-05. It delivered the shared `api/render/offline` library, and each
+renderer computing a pixel that came from geometry.

@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/SortKey.h>
 
 #include <algorithm>
 #include <vector>
@@ -23,8 +23,8 @@ BOOST_AUTO_TEST_CASE(default_key_is_zero) {
 }
 
 /**
- * Layer dominates everything else. This is the whole reason the field exists: a sprite in a
- * later layer stays on top of an earlier one whatever pipeline or material either uses.
+ * Layer outranks every other field, so a sprite in a later layer stays on top of an earlier
+ * one whatever pipeline or material either uses.
  **/
 BOOST_AUTO_TEST_CASE(layer_outranks_every_other_field) {
     v3d::render::realtime::SortKey lower;
@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(layer_outranks_every_other_field) {
 
     v3d::render::realtime::SortKey higher;
     higher.layer = 2;
-    // everything the higher layer could be beaten on, it is
+    // the lower layer has the highest value in every other field
     lower.pipeline = 0xFFFF;
     lower.material = 0xFFFF;
     lower.depth = 0xFFFF;
@@ -60,8 +60,7 @@ BOOST_AUTO_TEST_CASE(fields_order_coarsest_first) {
 }
 
 /**
- * The packing is reversible in the sense that matters - two different classifications never
- * collapse onto the same key.
+ * Two different classifications never pack to the same key.
  **/
 BOOST_AUTO_TEST_CASE(fields_do_not_collide) {
     v3d::render::realtime::SortKey first;
@@ -81,7 +80,7 @@ BOOST_AUTO_TEST_CASE(fields_do_not_collide) {
 }
 
 /**
- * Sorting a queue by key groups items the way the recorder will want to merge them.
+ * Sorting a queue by key groups items so that the recorder can merge adjacent ones.
  **/
 BOOST_AUTO_TEST_CASE(sorting_groups_by_pipeline_within_a_layer) {
     std::vector<v3d::render::realtime::SortKey> keys;

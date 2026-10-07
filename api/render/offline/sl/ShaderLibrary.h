@@ -18,19 +18,19 @@
 namespace v3d::render::offline::sl {
 
 /**
- * What a scene's `Surface "plastic"` reaches: a name, compiled on first use and kept.
+ * Resolves the shader a scene names, as in `Surface "plastic"`. A name is compiled on first
+ * use and kept.
  *
- * **The standard shaders are source strings compiled into the library**, per
- * [ADR-0026](../../../../docs/adr/0026-shading-is-a-language-over-a-batch.md), so
- * `Surface "matte"` works against no files at all - which is what makes a renderer's suite
- * hermetic and a first render possible with nothing installed. `Option "searchpath"
- * "shader"` adds directories for everything else, and a `.sl` file found there wins over a
- * built-in of the same name so that a scene can replace one.
+ * **The standard shaders are source strings compiled into the library**, so `Surface "matte"`
+ * works with no shader files at all. A renderer's test suite is then hermetic, and a first
+ * render needs nothing installed. `Option "searchpath" "shader"` adds directories for
+ * everything else. A `.sl` file found there takes precedence over a built-in of the same
+ * name, so a scene can replace one.
  *
- * **A shader that will not compile is reported and substituted rather than fatal.** RI asks
- * a renderer to carry on. The report names the shader and the position, and it is loud,
- * because a scene whose shader failed and a scene that named no shader must not look the
- * same from outside.
+ * **A shader that will not compile is reported and substituted rather than fatal.** RI
+ * requires a renderer to carry on. The report names the shader and the position and is
+ * logged as an error, because a scene whose shader failed and a scene that named no shader
+ * must not look the same from outside.
  **/
 class ShaderLibrary final {
  public:
@@ -61,7 +61,7 @@ class ShaderLibrary final {
 
  private:
     /**
-     * The program for a name, compiling it the first time it is asked for. Null when it
+     * The program for a name, compiling it the first time it is requested. Null when it
      * will not compile, which is cached too - a scene naming a broken shader on a thousand
      * primitives is one report and one attempt.
      **/
