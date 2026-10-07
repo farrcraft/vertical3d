@@ -47,8 +47,8 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import * as path from 'node:path';
 
-import { blankComments, codeLines } from './lexer.ts';
 import { isEntryPoint } from './entry.ts';
+import { blankComments, codeLines } from './lexer.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 

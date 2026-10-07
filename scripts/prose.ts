@@ -28,7 +28,7 @@
  * Each finding prints as "path:line: rule: detail | sentence". The exit status is 1 when there
  * is a finding. It is 2 when the script cannot run: a --base that names no commit or shares no
  * history with HEAD, an empty --base, or a failed git command. It runs on Node 24 or later,
- * which strips the types. It needs only Node's own modules and scripts/lexer.ts.
+ * which strips the types. It needs only Node's own modules, scripts/lexer.ts and scripts/entry.ts.
  */
 
 import { Buffer } from 'node:buffer';
@@ -37,8 +37,8 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { basename } from 'node:path';
 import process from 'node:process';
 
-import { commentLines } from './lexer.ts';
 import { isEntryPoint } from './entry.ts';
+import { commentLines } from './lexer.ts';
 
 const MAX_WORDS = 35;
 const MAX_MD_COLUMNS = 100;

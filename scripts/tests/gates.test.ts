@@ -1,12 +1,15 @@
 /**
  * Tests for the entry points of the review gates that read C++ through scripts/lexer.ts.
  *
- * Each test feeds a gate a shape of C++ source that a lexer can misread. Run them with
- * node --test "scripts/tests/*.test.ts".
+ * Most tests feed a gate a shape of C++ source that a lexer can misread. The last ones start each
+ * gate as a process, to see that it runs. Run them with node --test "scripts/tests/*.test.ts".
  */
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import process from 'node:process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -125,26 +128,44 @@ test('linkrule reads includes outside comments and #if 0 blocks', () => {
 });
 
 // Each gate runs its command line when Node is started with it, and not when a test imports it.
-// A gate that did not run would exit 0, so each is given a base that is not a commit and must
-// refuse it.
+// A gate that did not run would exit 0, so each is given an input it must refuse: a base that is
+// not a commit, or an option it does not take. Each runs from the repository root, as CI runs it.
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+
+/** Starts a gate with the given arguments, from the repository root. */
+function start(script: string, args: string[]) {
+    return spawnSync(process.execPath, [script, ...args], { cwd: ROOT, encoding: 'utf8' });
+}
+
 for (const gate of ['prose.ts', 'boundary.ts']) {
     test(`${gate} runs when Node is started with it`, () => {
-        const script = fileURLToPath(new URL(`../${gate}`, import.meta.url));
-        const run = spawnSync(process.execPath, [script, '--base', 'no-such-ref'], { encoding: 'utf8' });
+        const run = start(join(ROOT, 'scripts', gate), ['--base', 'no-such-ref']);
         assert.equal(run.status, 2, run.stderr);
         assert.match(run.stderr, /no-such-ref/);
     });
 }
 
 test('failsfirst.ts runs when Node is started with it', () => {
-    const script = fileURLToPath(new URL('../failsfirst.ts', import.meta.url));
-    const run = spawnSync(process.execPath, [script, '--no-such-option'], { encoding: 'utf8' });
+    const run = start(join(ROOT, 'scripts', 'failsfirst.ts'), ['--no-such-option']);
     assert.equal(run.status, 2, run.stderr);
 });
 
 test('linkrule.ts runs when Node is started with it', () => {
-    const script = fileURLToPath(new URL('../linkrule.ts', import.meta.url));
-    const run = spawnSync(process.execPath, [script, '--no-such-option'], { encoding: 'utf8' });
+    const run = start(join(ROOT, 'scripts', 'linkrule.ts'), ['--no-such-option']);
     assert.equal(run.status, 2, run.stderr);
     assert.match(run.stderr, /usage/);
+});
+
+// Node resolves a module's own path through a link, and leaves the path it was started with as
+// given. A gate started through a junction or a symbolic link still has to see that it runs.
+test('a gate started through a linked directory runs', () => {
+    const scratch = mkdtempSync(join(tmpdir(), 'v3d-gates-'));
+    const linked = join(scratch, 'scripts');
+    try {
+        symlinkSync(join(ROOT, 'scripts'), linked, process.platform === 'win32' ? 'junction' : 'dir');
+        const run = start(join(linked, 'linkrule.ts'), ['--no-such-option']);
+        assert.equal(run.status, 2, run.stderr);
+    } finally {
+        rmSync(scratch, { recursive: true, force: true });
+    }
 });

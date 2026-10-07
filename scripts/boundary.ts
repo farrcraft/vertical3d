@@ -42,16 +42,16 @@
 // Each report is printed as path:line: rule: excerpt. The exit status is 1 when there is any
 // report, and 0 otherwise.
 //
-// Node runs this file directly: it uses only node: modules, scripts/lexer.ts and type annotations
-// Node can strip.
+// Node runs this file directly: it uses only node: modules, scripts/lexer.ts, scripts/entry.ts and
+// type annotations Node can strip.
 
 import { spawnSync } from 'node:child_process';
 import { Buffer } from 'node:buffer';
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
-import { codeLines } from './lexer.ts';
 import { isEntryPoint } from './entry.ts';
+import { codeLines } from './lexer.ts';
 
 /** An added line: its text, and its code with comments and the insides of literals removed. */
 export type Line = { path: string; number: number; text: string; code: string };

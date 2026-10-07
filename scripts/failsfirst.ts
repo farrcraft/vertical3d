@@ -10,7 +10,7 @@
 //     node scripts/failsfirst.ts --list             only print the new cases and their suites.
 //
 // Node runs this file directly, with its types stripped. It uses only Node's built-in modules
-// and the lexer beside it.
+// and the lexer and entry modules beside it.
 //
 // What it does:
 //
@@ -100,8 +100,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import process from "node:process";
 
+import { isEntryPoint } from "./entry.ts";
 import { blankComments } from "./lexer.ts";
-import { isEntryPoint } from './entry.ts';
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const MAIN_BUILD = path.join(ROOT, "out", "build", "x64-Debug");

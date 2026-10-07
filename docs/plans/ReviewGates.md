@@ -120,5 +120,8 @@ The closing review of the commits since the eleventh round found 17 findings, on
 in the fails-first harness. They are fixed, and the harness's first full runs pass: every new
 test fails or does not build without its change, and the one that passes says why. The review of
 that fix commit found 8 Minor findings, in fallback paths and in text written with the fixes.
-The review of their fix found 4 Minor findings, all in wording. Those are fixed in turn, and the
-review of that last fix diff remains.
+The review of their fix found 4 Minor findings, all in wording, and its fix left two lexer gaps
+that four separate lexers kept reopening. The gates now share one lexer and have tests of their
+own. The review of that change found one Major: a gate ran nothing on Node 24.0 and 24.1. The
+review of its fix found one more: a gate started through a symbolic link ran nothing. Both are
+fixed with tests that start each gate as a process.

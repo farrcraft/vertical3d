@@ -206,8 +206,8 @@ component rather than the variable.
 
 `scripts/linkrule.ts` checks these rules for every app, app library and test suite. Run it with
 `node scripts/linkrule.ts` from the repository root. It prints each violation as
-`path: rule: detail` and exits 1 when it finds one. It does not check the api libraries, which
-the configure checks.
+`path: rule: detail` and exits 1 when it finds one. It takes no arguments, and exits 2 when given
+one. It does not check the api libraries, which the configure checks.
 
 **PUBLIC or PRIVATE:** link a package or another api library PUBLIC when one of the library's
 headers includes it, and PRIVATE when only its sources do. The configure enforces this for api
