@@ -125,3 +125,7 @@ that four separate lexers kept reopening. The gates now share one lexer and have
 own. The review of that change found one Major: a gate ran nothing on Node 24.0 and 24.1. The
 review of its fix found one more: a gate started through a symbolic link ran nothing. Both are
 fixed with tests that start each gate as a process.
+
+Each review of the gates found one more fault in a less common setup. The gates now support one
+environment, which Linting.md states, and a fault reachable only outside it is Minor. One review
+of the last two commits under that rule closes step 8.

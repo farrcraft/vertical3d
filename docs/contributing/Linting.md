@@ -186,6 +186,16 @@ Vulkan SDK, a vcpkg install and the libnoise submodule.
 
 Neither `/analyze` nor clang-tidy runs in CI, because of their cost. They are run locally.
 
+### The review gates' environment
+
+The review gates in `scripts/` support one environment. A fault that needs another one is not a
+defect in them, and goes on the known-debt list if it is worth recording.
+
+- Node 24 or later. A gate started on an earlier Node stops with exit 2 and says so.
+- A checkout of this repository with its full history, so a gate can find a merge base.
+- The repository root as the working directory, as CI and these documents run them.
+- For `scripts/failsfirst.ts` only, the Windows developer environment `scripts\build.cmd` uses.
+
 [.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs three of the
 review gates on an Ubuntu runner with Node: the link rule (`scripts/linkrule.ts`), prose
 (`scripts/prose.ts`) and boundary input (`scripts/boundary.ts`). It runs on each pull request

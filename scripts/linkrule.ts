@@ -47,7 +47,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import * as path from 'node:path';
 
-import { isEntryPoint } from './entry.ts';
+import { shouldRun } from './entry.ts';
 import { blankComments, codeLines } from './lexer.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -628,6 +628,6 @@ function main(): number {
     return found.length > 0 ? 1 : 0;
 }
 
-if (isEntryPoint(import.meta.url)) {
+if (shouldRun(import.meta.url)) {
     process.exitCode = main();
 }

@@ -35,7 +35,7 @@ A review that says "no findings" without that line has not shown it covered the 
 | Field | Meaning |
 |---|---|
 | Class | One of the classes below |
-| Severity | Major, if the change can produce a wrong result, a crash, a leak or undefined behaviour in a reachable case. Minor otherwise |
+| Severity | Major, if the change can produce a wrong result, a crash, a leak or undefined behaviour in a reachable case. Minor otherwise. For the review gates in `scripts/`, a case is reachable when it arises in their supported environment, which [Linting.md](Linting.md#the-review-gates-environment) states |
 | Where | File and line |
 | Defect and failure | What is wrong, and a concrete case where it goes wrong |
 | Siblings | The other sites of the same pattern, and whether each has the defect |

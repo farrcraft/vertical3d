@@ -37,7 +37,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { basename } from 'node:path';
 import process from 'node:process';
 
-import { isEntryPoint } from './entry.ts';
+import { shouldRun } from './entry.ts';
 import { commentLines } from './lexer.ts';
 
 const MAX_WORDS = 35;
@@ -829,7 +829,7 @@ function main(): number {
     return findings.length > 0 ? 1 : 0;
 }
 
-if (isEntryPoint(import.meta.url)) {
+if (shouldRun(import.meta.url)) {
     try {
         process.exitCode = main();
     } catch (error) {

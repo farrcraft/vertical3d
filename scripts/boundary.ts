@@ -50,7 +50,7 @@ import { Buffer } from 'node:buffer';
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
-import { isEntryPoint } from './entry.ts';
+import { shouldRun } from './entry.ts';
 import { codeLines } from './lexer.ts';
 
 /** An added line: its text, and its code with comments and the insides of literals removed. */
@@ -339,6 +339,6 @@ function main(): number {
     return reports.length > 0 ? 1 : 0;
 }
 
-if (isEntryPoint(import.meta.url)) {
+if (shouldRun(import.meta.url)) {
     process.exitCode = main();
 }

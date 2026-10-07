@@ -15,6 +15,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { attachCode, check } from '../boundary.ts';
+import { supportedNode } from '../entry.ts';
 import { casesIn } from '../failsfirst.ts';
 import { includesIn, usesIn } from '../linkrule.ts';
 import { checkLines } from '../prose.ts';
@@ -168,4 +169,13 @@ test('a gate started through a linked directory runs', () => {
     } finally {
         rmSync(scratch, { recursive: true, force: true });
     }
+});
+
+test('the gates support Node 24 and later', () => {
+    assert.equal(supportedNode('24.0.0'), true);
+    assert.equal(supportedNode('24.19.0'), true);
+    assert.equal(supportedNode('25.1.0'), true);
+    assert.equal(supportedNode('23.11.0'), false);
+    assert.equal(supportedNode('22.18.0'), false);
+    assert.equal(supportedNode('not a version'), false);
 });

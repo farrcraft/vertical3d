@@ -100,7 +100,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import process from "node:process";
 
-import { isEntryPoint } from "./entry.ts";
+import { shouldRun } from "./entry.ts";
 import { blankComments } from "./lexer.ts";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
@@ -957,6 +957,6 @@ function main(): number {
     }
 }
 
-if (isEntryPoint(import.meta.url)) {
+if (shouldRun(import.meta.url)) {
     process.exitCode = main();
 }
