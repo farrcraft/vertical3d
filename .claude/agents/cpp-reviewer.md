@@ -55,8 +55,7 @@ recur.
 
 ## Correctness and lifetime
 
-An item here is Major when it can crash, leak or corrupt state in a reachable case. A source
-missing from its list and an include of a deleted tree are Build findings, and Minor.
+The Severity section above grades each finding. The items here are the ones most often Major.
 
 - **A `VkResult` ignored.** Every Vulkan call returning one is checked with
   `vulkan::device::check`, which throws with the result in words from

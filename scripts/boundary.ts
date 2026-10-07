@@ -164,6 +164,8 @@ function headerPath(header: string): string | null {
     return name.startsWith('b/') ? name.slice(2) : null;
 }
 
+// This function and its comment are byte-identical in prose.ts, boundary.ts and failsfirst.ts.
+// Each script runs standalone, so they share no module.
 /**
  * Returns whether the quote at index is a digit separator. It is one only between two digits of
  * a number literal: the token before it starts with a digit, and the characters on both sides

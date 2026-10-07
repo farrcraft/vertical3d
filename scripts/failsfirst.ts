@@ -226,9 +226,14 @@ function changedFiles(base: string, head: string): Change[] {
     return changes;
 }
 
-// Whether the quote at index is a digit separator. It is one only between two digits of a number
-// literal: the token before it starts with a digit, and the characters on both sides are digits
-// of that number's base. Anything else, such as the quote after u8, opens a character literal.
+// This function and its comment are byte-identical in prose.ts, boundary.ts and failsfirst.ts.
+// Each script runs standalone, so they share no module.
+/**
+ * Returns whether the quote at index is a digit separator. It is one only between two digits of
+ * a number literal: the token before it starts with a digit, and the characters on both sides
+ * are digits of that number's base. Anything else, such as the quote after u8, opens a character
+ * literal.
+ */
 function isDigitSeparator(text: string, index: number): boolean {
     let start = index;
     while (start > 0 && /[\w.']/.test(text[start - 1])) {
@@ -239,12 +244,16 @@ function isDigitSeparator(text: string, index: number): boolean {
         return false;
     }
     const digit = /^0[xX]/.test(token) ? /[0-9A-Fa-f]/ : /[0-9]/;
-    return digit.test(text[index - 1] ?? "") && digit.test(text[index + 1] ?? "");
+    return digit.test(text[index - 1] ?? '') && digit.test(text[index + 1] ?? '');
 }
 
+// A raw string literal's opening, with its delimiter.
+const RAW_STRING = /(?<!\w)(?:u8|[uUL])?R"([^()\\\s]{0,16})\(/y;
+
 // The text with every comment replaced by spaces of the same length, so that an offset in the
-// result is the same offset in the text. A // or /* inside a string or a character literal does
-// not start a comment.
+// result is the same offset in the text. A // or /* inside a string, a raw string or a character
+// literal does not start a comment. A backslash before a line break, LF or CRLF, continues a
+// string onto the next line.
 function blankComments(text: string): string {
     const out = text.split("");
     const blank = (from: number, to: number): void => {
@@ -256,6 +265,8 @@ function blankComments(text: string): string {
     };
     let i = 0;
     while (i < text.length) {
+        RAW_STRING.lastIndex = i;
+        const raw = RAW_STRING.exec(text);
         if (text.startsWith("//", i)) {
             const end = text.indexOf("\n", i);
             const stop = end < 0 ? text.length : end;
@@ -266,11 +277,14 @@ function blankComments(text: string): string {
             const stop = end < 0 ? text.length : end + 2;
             blank(i, stop);
             i = stop;
+        } else if (raw) {
+            const close = text.indexOf(")" + raw[1] + '"', RAW_STRING.lastIndex);
+            i = close < 0 ? text.length : close + raw[1].length + 2;
         } else if (text[i] === '"' || (text[i] === "'" && !isDigitSeparator(text, i))) {
             const quote = text[i];
             let j = i + 1;
             while (j < text.length && text[j] !== quote && text[j] !== "\n") {
-                j += text[j] === "\\" ? 2 : 1;
+                j += text[j] === "\\" && text.startsWith("\r\n", j + 1) ? 3 : text[j] === "\\" ? 2 : 1;
             }
             i = j + 1;
         } else {

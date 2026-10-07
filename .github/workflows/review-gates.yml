@@ -36,7 +36,7 @@ jobs:
           echo "GATE_BASE=origin/${{ github.base_ref }}" >> "$GITHUB_ENV"
         elif [ -z "${BEFORE//0/}" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
           if ! parent=$(git rev-parse --verify --quiet 'HEAD^'); then
-            echo "::error::The push names no previous tip of main and HEAD is a root commit, so there is no base to compare against."
+            echo "::error::The push names no previous tip of main that the checkout has, and HEAD is a root commit, so there is no base to compare against."
             exit 1
           fi
           echo "GATE_BASE=$parent" >> "$GITHUB_ENV"

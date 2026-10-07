@@ -83,8 +83,9 @@ runs in CI in `review-gates.yml`. The configure checks the api libraries.
 
 **Closed.** `toCount` and `toInteger` in `api/type/Checked.h` convert a float to a count or an
 integer, and refuse a value that is not finite or does not fit. `api/asset/Json.h` has reads that
-check a JSON value's type. `scripts/boundary.ts` checks a changeset's added lines for a bare
-`static_cast` from a float to an integer type, and for any `value_to`, outside the helpers. It runs
+check a JSON value's type. `scripts/boundary.ts` checks a changeset's added lines, outside the
+helpers and the test files, for any `value_to` and for a `static_cast` to an integer type whose
+operand the text shows to be a float. That second check reads text, not types. It runs
 in CI in `review-gates.yml`. The branch's guarded JSON reads and its RIB counts, sizes, frame
 numbers and handles go through the helpers.
 
@@ -117,4 +118,5 @@ The closing review of the commits since the eleventh round found 17 findings, on
 in the fails-first harness. They are fixed, and the harness's first full runs pass: every new
 test fails or does not build without its change, and the one that passes says why. The review of
 that fix commit found 8 Minor findings, in fallback paths and in text written with the fixes.
-They are fixed, and one more review of that fix diff remains.
+The review of their fix found 4 Minor findings, all in wording. Those are fixed in turn, and the
+review of that last fix diff remains.

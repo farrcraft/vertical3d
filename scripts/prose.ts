@@ -482,6 +482,27 @@ function scriptSpans(lines: string[]): CommentSpan[] {
     return spans;
 }
 
+// This function and its comment are byte-identical in prose.ts, boundary.ts and failsfirst.ts.
+// Each script runs standalone, so they share no module.
+/**
+ * Returns whether the quote at index is a digit separator. It is one only between two digits of
+ * a number literal: the token before it starts with a digit, and the characters on both sides
+ * are digits of that number's base. Anything else, such as the quote after u8, opens a character
+ * literal.
+ */
+function isDigitSeparator(text: string, index: number): boolean {
+    let start = index;
+    while (start > 0 && /[\w.']/.test(text[start - 1])) {
+        start -= 1;
+    }
+    const token = text.slice(start, index);
+    if (!/^\.?\d/.test(token)) {
+        return false;
+    }
+    const digit = /^0[xX]/.test(token) ? /[0-9A-Fa-f]/ : /[0-9]/;
+    return digit.test(text[index - 1] ?? '') && digit.test(text[index + 1] ?? '');
+}
+
 function commentSpans(lines: string[], kind: Kind): CommentSpan[] {
     const spans: CommentSpan[] = [];
     if (kind === 'script') {
@@ -518,7 +539,7 @@ function commentSpans(lines: string[], kind: Kind): CommentSpan[] {
                     position += 1;
                     continue;
                 }
-                if (char === '"' || char === '\'') {
+                if (char === '"' || (char === '\'' && !isDigitSeparator(line, position))) {
                     inString = char;
                 } else if (line.startsWith('//', position)) {
                     pieces.push([position + 2, line.slice(position + 2)]);

@@ -194,8 +194,9 @@ read only the lines added since a base:
 
 - on a pull request, the base is the branch the pull request merges into;
 - on a push to `main`, the base is the previous tip of `main`. When the push names no previous
-  tip, as on a new branch or after a force push, the base is the pushed commit's parent. A
-  pushed root commit has no parent, and the step fails with a message.
+  tip, as on a new branch, or names one the checkout does not have, as after some force pushes,
+  the base is the pushed commit's parent. A pushed root commit has no parent, and the step fails
+  with a message.
 
 The fails-first gate, `scripts/failsfirst.ts`, does not run in CI. It builds the tree twice and
 the device suite needs a GPU, so it runs locally before review.
