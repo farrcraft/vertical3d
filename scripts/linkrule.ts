@@ -47,6 +47,8 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import * as path from 'node:path';
 
+import { blankComments, codeLines } from './lexer.ts';
+
 const ROOT = path.resolve(import.meta.dirname, '..');
 
 const SOURCE_SUFFIXES = ['.h', '.hpp', '.inl', '.c', '.cpp', '.cxx'];
@@ -290,53 +292,15 @@ function carried(targets: Map<string, Target>, name: string, boost: string[], se
 
 // --- C++ -----------------------------------------------------------------------------------
 
-/** Remove comments and #if 0 blocks, and string and character literals unless asked not to. */
+/**
+ * Remove comments and #if 0 blocks, and reduce string and character literals to their quotes
+ * unless asked to keep them.
+ */
 function stripCpp(text: string, keepStrings: boolean): string {
-    const out: string[] = [];
-    const raw = /R"([^(\s]*)\(/y;
-    let i = 0;
-    const n = text.length;
-    while (i < n) {
-        const c = text[i];
-        if (text.startsWith('//', i)) {
-            const j = text.indexOf('\n', i);
-            i = j < 0 ? n : j;
-        } else if (text.startsWith('/*', i)) {
-            const j = text.indexOf('*/', i + 2);
-            out.push(j < 0 ? ' ' : '\n'.repeat(text.slice(i, j).split('\n').length - 1));
-            i = j < 0 ? n : j + 2;
-        } else if (c === 'R' && text[i + 1] === '"' && (i === 0 || !/\w/.test(text[i - 1]))) {
-            raw.lastIndex = i;
-            const m = raw.exec(text);
-            if (!m) {
-                out.push(c);
-                i += 1;
-                continue;
-            }
-            const close = text.indexOf(')' + m[1] + '"', raw.lastIndex);
-            const end = close < 0 ? n : close + m[1].length + 2;
-            out.push(keepStrings ? text.slice(i, end) : '""');
-            i = end;
-        } else if (c === '"' || c === '\'') {
-            if (c === '\'' && i > 0 && /[A-Za-z0-9]/.test(text[i - 1])) {
-                out.push(c);    // a digit separator
-                i += 1;
-                continue;
-            }
-            let j = i + 1;
-            while (j < n && text[j] !== c && text[j] !== '\n') {
-                j += text[j] === '\\' ? 2 : 1;
-            }
-            out.push(keepStrings ? text.slice(i, j + 1) : c + c);
-            i = j + 1;
-        } else {
-            out.push(c);
-            i += 1;
-        }
-    }
+    const lines = keepStrings ? blankComments(text).split('\n') : codeLines(text);
     const kept: string[] = [];
     let depth = 0;
-    for (const line of out.join('').split('\n')) {
+    for (const line of lines) {
         const s = line.trim();
         if (depth > 0) {
             if (/^#\s*if/.test(s)) {
@@ -443,35 +407,48 @@ class Tree {
         }
         const raw = read(file);
         const includes: Array<[string, string | null]> = [];
-        for (const m of stripCpp(raw, true).matchAll(INCLUDE)) {
+        for (const name of includesIn(raw)) {
             let found: string | null = null;
             for (const base of [path.dirname(file), ROOT]) {
-                const candidate = path.normalize(path.join(base, m[1]));
+                const candidate = path.normalize(path.join(base, name));
                 if (candidate.startsWith(ROOT) && isFile(candidate)) {
                     found = candidate;
                     break;
                 }
             }
-            includes.push([m[1], found]);
+            includes.push([name, found]);
         }
-        const uses: Array<[string[], string]> = [];
-        for (const m of stripCpp(raw, false).matchAll(QUALIFIED)) {
-            if (m[2] && !m[1]) {
-                continue;
-            }
-            const parts = m[3].split('::').slice(1).map((p) => p.trim());
-            for (let k = parts.length; k > 0; k -= 1) {
-                const libs = this.namespaces.get(parts.slice(0, k).join('::'));
-                if (libs !== undefined) {
-                    uses.push([[...libs].sort(), 'v3d::' + parts.join('::')]);
-                    break;
-                }
-            }
-        }
-        const result = { includes, uses };
+        const result = { includes, uses: usesIn(raw, this.namespaces) };
         this.cache.set(file, result);
         return result;
     }
+}
+
+/** The text of each include in a C++ file, in order. */
+export function includesIn(text: string): string[] {
+    return [...stripCpp(text, true).matchAll(INCLUDE)].map((m) => m[1]);
+}
+
+/**
+ * The names in a v3d::<lib>:: namespace that a C++ file uses, each with the libraries that declare
+ * the longest namespace of it found in namespaces.
+ */
+export function usesIn(text: string, namespaces: Map<string, Set<string>>): Array<[string[], string]> {
+    const uses: Array<[string[], string]> = [];
+    for (const m of stripCpp(text, false).matchAll(QUALIFIED)) {
+        if (m[2] && !m[1]) {
+            continue;
+        }
+        const parts = m[3].split('::').slice(1).map((p) => p.trim());
+        for (let k = parts.length; k > 0; k -= 1) {
+            const libs = namespaces.get(parts.slice(0, k).join('::'));
+            if (libs !== undefined) {
+                uses.push([[...libs].sort(), 'v3d::' + parts.join('::')]);
+                break;
+            }
+        }
+    }
+    return uses;
 }
 
 // --- the rules -----------------------------------------------------------------------------
@@ -645,4 +622,6 @@ function main(): number {
     return found.length > 0 ? 1 : 0;
 }
 
-process.exitCode = main();
+if (import.meta.main) {
+    process.exitCode = main();
+}

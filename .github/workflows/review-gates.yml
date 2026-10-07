@@ -43,6 +43,9 @@ jobs:
         else
           echo "GATE_BASE=$BEFORE" >> "$GITHUB_ENV"
         fi
+    # the gates' own tests, including the C++ lexer they share
+    - name: Gate tests
+      run: node --test "scripts/tests/*.test.ts"
     - name: Link rule
       run: node scripts/linkrule.ts
     # each gate reports even when an earlier one failed

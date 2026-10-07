@@ -198,5 +198,9 @@ read only the lines added since a base:
   the base is the pushed commit's parent. A pushed root commit has no parent, and the step fails
   with a message.
 
+The workflow first runs the gates' own tests in `scripts/tests/`, which cover the C++ lexer the
+gates share in `scripts/lexer.ts`. Run them locally with `node --test "scripts/tests/*.test.ts"`
+from the repository root.
+
 The fails-first gate, `scripts/failsfirst.ts`, does not run in CI. It builds the tree twice and
 the device suite needs a GPU, so it runs locally before review.

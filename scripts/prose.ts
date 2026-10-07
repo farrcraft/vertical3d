@@ -28,7 +28,7 @@
  * Each finding prints as "path:line: rule: detail | sentence". The exit status is 1 when there
  * is a finding. It is 2 when the script cannot run: a --base that names no commit or shares no
  * history with HEAD, an empty --base, or a failed git command. It runs on Node 24 or later,
- * which strips the types, with no dependencies.
+ * which strips the types. It needs only Node's own modules and scripts/lexer.ts.
  */
 
 import { Buffer } from 'node:buffer';
@@ -36,6 +36,8 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { basename } from 'node:path';
 import process from 'node:process';
+
+import { commentLines } from './lexer.ts';
 
 const MAX_WORDS = 35;
 const MAX_MD_COLUMNS = 100;
@@ -110,7 +112,7 @@ interface ParagraphLine {
     line: string;
 }
 
-interface Finding {
+export interface Finding {
     path: string;
     number: number;
     rule: string;
@@ -118,7 +120,7 @@ interface Finding {
 }
 
 /** The lines a path adds, or null when the whole file is checked. */
-type Added = Set<number> | null;
+export type Added = Set<number> | null;
 
 /** A reason the script cannot run, printed as one line with exit status 2. */
 class Stop extends Error {}
@@ -482,76 +484,15 @@ function scriptSpans(lines: string[]): CommentSpan[] {
     return spans;
 }
 
-// This function and its comment are byte-identical in prose.ts, boundary.ts and failsfirst.ts.
-// Each script runs standalone, so they share no module.
-/**
- * Returns whether the quote at index is a digit separator. It is one only between two digits of
- * a number literal: the token before it starts with a digit, and the characters on both sides
- * are digits of that number's base. Anything else, such as the quote after u8, opens a character
- * literal.
- */
-function isDigitSeparator(text: string, index: number): boolean {
-    let start = index;
-    while (start > 0 && /[\w.']/.test(text[start - 1])) {
-        start -= 1;
-    }
-    const token = text.slice(start, index);
-    if (!/^\.?\d/.test(token)) {
-        return false;
-    }
-    const digit = /^0[xX]/.test(token) ? /[0-9A-Fa-f]/ : /[0-9]/;
-    return digit.test(text[index - 1] ?? '') && digit.test(text[index + 1] ?? '');
-}
-
 function commentSpans(lines: string[], kind: Kind): CommentSpan[] {
     const spans: CommentSpan[] = [];
     if (kind === 'script') {
         return scriptSpans(lines);
     }
     if (kind === 'slash') {
-        let inBlock = false;
-        lines.forEach((line, index) => {
-            const pieces: Array<[number, string]> = [];
-            let position = 0;
-            let inString: string | null = null;
-            while (position < line.length) {
-                if (inBlock) {
-                    const end = line.indexOf('*/', position);
-                    if (end < 0) {
-                        pieces.push([position, line.slice(position)]);
-                        position = line.length;
-                    } else {
-                        pieces.push([position, line.slice(position, end)]);
-                        position = end + 2;
-                        inBlock = false;
-                    }
-                    continue;
-                }
-                const char = line[position];
-                if (inString !== null) {
-                    if (char === '\\') {
-                        position += 2;
-                        continue;
-                    }
-                    if (char === inString) {
-                        inString = null;
-                    }
-                    position += 1;
-                    continue;
-                }
-                if (char === '"' || (char === '\'' && !isDigitSeparator(line, position))) {
-                    inString = char;
-                } else if (line.startsWith('//', position)) {
-                    pieces.push([position + 2, line.slice(position + 2)]);
-                    break;
-                } else if (line.startsWith('/*', position)) {
-                    inBlock = true;
-                    position += 2;
-                    continue;
-                }
-                position += 1;
-            }
-            for (const [column, text] of pieces) {
+        commentLines(lines.join('\n')).forEach((comments, index) => {
+            const line = lines[index];
+            for (const { column, text } of comments) {
                 const alone = column === 0 || line.slice(0, column - 2).trim() === '';
                 spans.push({ number: index + 1, column, text, alone });
             }
@@ -792,11 +733,21 @@ function inLinkTarget(line: string, column: number): boolean {
 }
 
 function checkFile(path: string, added: Added, newFiles: Set<string>): Finding[] {
-    const kind = fileKind(path);
-    if (kind === null || excluded(path, newFiles) || !existsSync(path) || !statSync(path).isFile()) {
+    if (fileKind(path) === null || excluded(path, newFiles) || !existsSync(path) || !statSync(path).isFile()) {
         return [];
     }
-    const lines = readLines(path);
+    return checkLines(path, readLines(path), added);
+}
+
+/**
+ * Return the findings for the lines of a file, read as the kind its path names. Added holds the
+ * numbers of the lines to check, or is null to check them all.
+ */
+export function checkLines(path: string, lines: string[], added: Added): Finding[] {
+    const kind = fileKind(path);
+    if (kind === null) {
+        return [];
+    }
     const findings: Finding[] = [];
     if (kind === 'md') {
         // A document whose own headings name phases, such as a procedure, may refer to them.
@@ -877,12 +828,14 @@ function main(): number {
     return findings.length > 0 ? 1 : 0;
 }
 
-try {
-    process.exitCode = main();
-} catch (error) {
-    if (!(error instanceof Stop)) {
-        throw error;
+if (import.meta.main) {
+    try {
+        process.exitCode = main();
+    } catch (error) {
+        if (!(error instanceof Stop)) {
+            throw error;
+        }
+        process.stderr.write(`prose.ts: ${error.message}\n`);
+        process.exitCode = 2;
     }
-    process.stderr.write(`prose.ts: ${error.message}\n`);
-    process.exitCode = 2;
 }

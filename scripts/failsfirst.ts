@@ -9,7 +9,8 @@
 //     node scripts/failsfirst.ts --commit 5ff63287  one commit, against its parent.
 //     node scripts/failsfirst.ts --list             only print the new cases and their suites.
 //
-// Node runs this file directly, with its types stripped. It uses only Node's built-in modules.
+// Node runs this file directly, with its types stripped. It uses only Node's built-in modules
+// and the lexer beside it.
 //
 // What it does:
 //
@@ -99,6 +100,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import process from "node:process";
 
+import { blankComments } from "./lexer.ts";
+
 const ROOT = path.resolve(import.meta.dirname, "..");
 const MAIN_BUILD = path.join(ROOT, "out", "build", "x64-Debug");
 const MAX_BUFFER = 512 * 1024 * 1024;
@@ -164,7 +167,7 @@ type ListedSource = { suite: string; directory: string; source: string };
 // A source dropped from a suite's list in the worktree, and whether the change added it.
 type Drop = { source: string; added: boolean };
 type Env = Record<string, string>;
-type Found = { path: string; stated: string | null };
+export type Found = { path: string; stated: string | null };
 
 type Case = {
     path: string;            // the --run_test path: suite names and the case name
@@ -226,74 +229,6 @@ function changedFiles(base: string, head: string): Change[] {
     return changes;
 }
 
-// This function and its comment are byte-identical in prose.ts, boundary.ts and failsfirst.ts.
-// Each script runs standalone, so they share no module.
-/**
- * Returns whether the quote at index is a digit separator. It is one only between two digits of
- * a number literal: the token before it starts with a digit, and the characters on both sides
- * are digits of that number's base. Anything else, such as the quote after u8, opens a character
- * literal.
- */
-function isDigitSeparator(text: string, index: number): boolean {
-    let start = index;
-    while (start > 0 && /[\w.']/.test(text[start - 1])) {
-        start -= 1;
-    }
-    const token = text.slice(start, index);
-    if (!/^\.?\d/.test(token)) {
-        return false;
-    }
-    const digit = /^0[xX]/.test(token) ? /[0-9A-Fa-f]/ : /[0-9]/;
-    return digit.test(text[index - 1] ?? '') && digit.test(text[index + 1] ?? '');
-}
-
-// A raw string literal's opening, with its delimiter.
-const RAW_STRING = /(?<!\w)(?:u8|[uUL])?R"([^()\\\s]{0,16})\(/y;
-
-// The text with every comment replaced by spaces of the same length, so that an offset in the
-// result is the same offset in the text. A // or /* inside a string, a raw string or a character
-// literal does not start a comment. A backslash before a line break, LF or CRLF, continues a
-// string onto the next line.
-function blankComments(text: string): string {
-    const out = text.split("");
-    const blank = (from: number, to: number): void => {
-        for (let k = from; k < to; k++) {
-            if (out[k] !== "\n") {
-                out[k] = " ";
-            }
-        }
-    };
-    let i = 0;
-    while (i < text.length) {
-        RAW_STRING.lastIndex = i;
-        const raw = RAW_STRING.exec(text);
-        if (text.startsWith("//", i)) {
-            const end = text.indexOf("\n", i);
-            const stop = end < 0 ? text.length : end;
-            blank(i, stop);
-            i = stop;
-        } else if (text.startsWith("/*", i)) {
-            const end = text.indexOf("*/", i + 2);
-            const stop = end < 0 ? text.length : end + 2;
-            blank(i, stop);
-            i = stop;
-        } else if (raw) {
-            const close = text.indexOf(")" + raw[1] + '"', RAW_STRING.lastIndex);
-            i = close < 0 ? text.length : close + raw[1].length + 2;
-        } else if (text[i] === '"' || (text[i] === "'" && !isDigitSeparator(text, i))) {
-            const quote = text[i];
-            let j = i + 1;
-            while (j < text.length && text[j] !== quote && text[j] !== "\n") {
-                j += text[j] === "\\" && text.startsWith("\r\n", j + 1) ? 3 : text[j] === "\\" ? 2 : 1;
-            }
-            i = j + 1;
-        } else {
-            i += 1;
-        }
-    }
-    return out.join("");
-}
-
 // The reason a case's doc comment gives for passing without the change, or null. The doc
 // comment is the comment that ends just before the case's macro: one block comment, or a run
 // of // lines.
@@ -333,7 +268,7 @@ function statedReason(text: string, at: number): string | null {
 
 // The --run_test path of every case in a test source, with the reason its doc comment gives
 // for passing without the change.
-function casesIn(text: string): Found[] {
+export function casesIn(text: string): Found[] {
     const found: Found[] = [];
     const suites: string[] = [];
     for (const match of blankComments(text).matchAll(TOKEN)) {
@@ -1021,4 +956,6 @@ function main(): number {
     }
 }
 
-process.exitCode = main();
+if (import.meta.main) {
+    process.exitCode = main();
+}

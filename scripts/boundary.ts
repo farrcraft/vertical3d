@@ -42,16 +42,19 @@
 // Each report is printed as path:line: rule: excerpt. The exit status is 1 when there is any
 // report, and 0 otherwise.
 //
-// Node runs this file directly: it uses only node: modules and type annotations Node can strip.
+// Node runs this file directly: it uses only node: modules, scripts/lexer.ts and type annotations
+// Node can strip.
 
 import { spawnSync } from 'node:child_process';
 import { Buffer } from 'node:buffer';
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
+import { codeLines } from './lexer.ts';
+
 /** An added line: its text, and its code with comments and the insides of literals removed. */
-type Line = { path: string; number: number; text: string; code: string };
-type Report = { path: string; number: number; rule: string; excerpt: string };
+export type Line = { path: string; number: number; text: string; code: string };
+export type Report = { path: string; number: number; rule: string; excerpt: string };
 
 const SOURCE = /\.(h|hpp|c|cc|cpp|cxx)$/;
 
@@ -87,9 +90,6 @@ const FLOATY = new RegExp([
     '(?<![\\w.])\\d+[eE][+-]?\\d+[fFlL]?(?![\\w.])',
     '(?<![\\w.])\\d+[fF](?![\\w.])',
 ].join('|'));
-
-/** A raw string literal's opening, with its delimiter. */
-const RAW_STRING = /(?<!\w)(?:u8|[uUL])?R"([^()\\\s]{0,16})\(/y;
 
 /**
  * The options that make git print a diff this script can read, whatever the user's
@@ -164,71 +164,6 @@ function headerPath(header: string): string | null {
     return name.startsWith('b/') ? name.slice(2) : null;
 }
 
-// This function and its comment are byte-identical in prose.ts, boundary.ts and failsfirst.ts.
-// Each script runs standalone, so they share no module.
-/**
- * Returns whether the quote at index is a digit separator. It is one only between two digits of
- * a number literal: the token before it starts with a digit, and the characters on both sides
- * are digits of that number's base. Anything else, such as the quote after u8, opens a character
- * literal.
- */
-function isDigitSeparator(text: string, index: number): boolean {
-    let start = index;
-    while (start > 0 && /[\w.']/.test(text[start - 1])) {
-        start -= 1;
-    }
-    const token = text.slice(start, index);
-    if (!/^\.?\d/.test(token)) {
-        return false;
-    }
-    const digit = /^0[xX]/.test(token) ? /[0-9A-Fa-f]/ : /[0-9]/;
-    return digit.test(text[index - 1] ?? '') && digit.test(text[index + 1] ?? '');
-}
-
-/**
- * Returns the code on each line of a C++ file, with comments removed and each string or
- * character literal reduced to its quotes. A block comment and a raw string may span lines, so
- * the file is read whole.
- */
-function codeLines(content: string): string[] {
-    const out: string[] = [];
-    const length = content.length;
-    let index = 0;
-    while (index < length) {
-        const char = content[index];
-        RAW_STRING.lastIndex = index;
-        const raw = RAW_STRING.exec(content);
-        if (content.startsWith('//', index)) {
-            const end = content.indexOf('\n', index);
-            index = end < 0 ? length : end;
-        } else if (content.startsWith('/*', index)) {
-            const end = content.indexOf('*/', index + 2);
-            const stop = end < 0 ? length : end + 2;
-            out.push(' ' + '\n'.repeat(content.slice(index, stop).split('\n').length - 1));
-            index = stop;
-        } else if (raw) {
-            const close = content.indexOf(')' + raw[1] + '"', RAW_STRING.lastIndex);
-            const stop = close < 0 ? length : close + raw[1].length + 2;
-            out.push('""' + '\n'.repeat(content.slice(index, stop).split('\n').length - 1));
-            index = stop;
-        } else if (char === '"' || (char === '\'' && !isDigitSeparator(content, index))) {
-            let end = index + 1;
-            while (end < length && content[end] !== char && content[end] !== '\n') {
-                // a backslash before a line break continues the literal onto the next line
-                end += content[end] === '\\' && content.startsWith('\r\n', end + 1) ? 3 : content[end] === '\\' ? 2 : 1;
-            }
-            // the line breaks a continued literal spans are kept, so that later lines keep their numbers
-            const breaks = content.slice(index, Math.min(end, length)).split('\n').length - 1;
-            out.push(char + char + '\n'.repeat(breaks));
-            index = end < length && content[end] === char ? end + 1 : end;
-        } else {
-            out.push(char);
-            index += 1;
-        }
-    }
-    return out.join('').split('\n').map((line) => line.replace(/\r$/, ''));
-}
-
 /** Returns every added line in a C++ source or header, with its path and line number. */
 function addedLines(base: string): Line[] {
     const diff = git('diff', '--unified=0', ...DIFF_OPTIONS, base);
@@ -293,18 +228,28 @@ function addedLines(base: string): Line[] {
         }
         content.split(/\r?\n/).forEach((text, index) => added.push({ path: name, number: index + 1, text }));
     }
+    return attachCode(added, (name) => {
+        try {
+            return readFileSync(name, 'utf8');
+        } catch {
+            // a file the diff names and the working tree lacks has no added lines to read
+            return '';
+        }
+    });
+}
+
+/**
+ * Returns the added lines with the code of each, read from the whole file that read returns for
+ * its path.
+ */
+export function attachCode(added: Array<{ path: string; number: number; text: string }>,
+    read: (path: string) => string): Line[] {
     // whether a line is code is a property of the whole file: an added line may sit inside a
     // block comment that an unchanged line opened
     const files = new Map<string, string[]>();
     return added.map((line) => {
         if (!files.has(line.path)) {
-            let content = '';
-            try {
-                content = readFileSync(line.path, 'utf8');
-            } catch {
-                // a file the diff names and the working tree lacks has no added lines to read
-            }
-            files.set(line.path, codeLines(content));
+            files.set(line.path, codeLines(read(line.path)));
         }
         const code = files.get(line.path)?.[line.number - 1] ?? '';
         return { ...line, code };
@@ -331,7 +276,7 @@ function operand(text: string, start: number): { body: string; closed: boolean }
 }
 
 /** Returns the reports for a list of added lines, in order. */
-function check(lines: Line[]): Report[] {
+export function check(lines: Line[]): Report[] {
     const reports: Report[] = [];
     lines.forEach((line, position) => {
         const { path, number, text, code } = line;
@@ -393,4 +338,6 @@ function main(): number {
     return reports.length > 0 ? 1 : 0;
 }
 
-process.exitCode = main();
+if (import.meta.main) {
+    process.exitCode = main();
+}
