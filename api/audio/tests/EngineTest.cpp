@@ -5,6 +5,8 @@
 
 #include <api/audio/Engine.h>
 #include <api/audio/Play.h>
+#include <api/event/kind/Sound.h>
+#include <api/log/Logger.h>
 
 #include <string>
 #include <vector>

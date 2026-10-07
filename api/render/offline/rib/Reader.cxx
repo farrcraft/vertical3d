@@ -5,11 +5,14 @@
 
 #include "Reader.h"
 
+#include <api/type/Checked.h>
+
 #include <cmath>
 #include <cstdint>
 #include <fstream>
 #include <istream>
 #include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -96,12 +99,12 @@ bool Reader::counts(Lexer * lexer, std::vector<unsigned int> * out) {
         if (token.kind() == Kind::ARRAY_END) {
             return true;
         }
-        // the largest float below 2^32, so the conversion to unsigned is defined
-        const bool count = token.kind() == Kind::NUMBER && token.value() >= 0.0f && token.value() <= 4294967040.0f;
+        const std::optional<uint32_t> count = token.kind() == Kind::NUMBER ?
+            v3d::type::toCount(token.value(), std::numeric_limits<uint32_t>::max()) : std::nullopt;
         if (!count) {
             return fail("expected a count", token);
         }
-        out->push_back(static_cast<unsigned int>(token.value()));
+        out->push_back(*count);
     }
 }
 
@@ -260,15 +263,16 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c)) {
             return Result::Failed;
         }
-        // a size below one pixel or above 65536 is skipped, because converting it to
-        // unsigned is undefined. A fraction is truncated. An aspect that is not a positive
-        // finite number asks for the device's own, which is square pixels.
-        const bool size = resolution(a) && resolution(b);
-        if (!size) {
+        // a size below one pixel or above largestResolution is skipped. A fraction is
+        // truncated. An aspect that is not a positive finite number asks for the device's own,
+        // which is square pixels.
+        const std::optional<uint32_t> width = v3d::type::toCount(a, 1, largestResolution);
+        const std::optional<uint32_t> height = v3d::type::toCount(b, 1, largestResolution);
+        if (!width || !height) {
             logger_->get()->warn("RIB Format {} {} {} is not a picture size and was skipped", a, b, c);
             return Result::Handled;
         }
-        handler->format(static_cast<unsigned int>(a), static_cast<unsigned int>(b), c > 0.0f && std::isfinite(c) ? c : 1.0f);
+        handler->format(*width, *height, c > 0.0f && std::isfinite(c) ? c : 1.0f);
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -338,11 +342,12 @@ Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, H
         if (!number(lexer, &a)) {
             return Result::Failed;
         }
-        if (!std::isfinite(a) || std::fabs(a) > 2.0e9f) {
+        const std::optional<int32_t> frame = v3d::type::toInteger(a, -2000000000, 2000000000);
+        if (!frame) {
             logger_->get()->warn("RIB FrameBegin {} is not a frame number and was skipped", a);
             return Result::Handled;
         }
-        handler->frameBegin(static_cast<int>(a));
+        handler->frameBegin(*frame);
         return Result::Handled;
     }
     if (name == "FrameEnd") {
@@ -623,11 +628,11 @@ bool Reader::handle(Lexer * lexer, std::string * value) {
     const Token token = lexer->peek();
     if (token.kind() == Kind::NUMBER) {
         lexer->next();
-        // a handle within a 32 bit integer either way, so the conversion is defined
-        if (!(std::fabs(token.value()) <= 2.0e9f)) {
+        const std::optional<int32_t> number = v3d::type::toInteger(token.value(), -2000000000, 2000000000);
+        if (!number) {
             return fail("expected a light handle", token);
         }
-        *value = std::to_string(static_cast<std::int64_t>(token.value()));
+        *value = std::to_string(*number);
         return true;
     }
     return text(lexer, value);

@@ -10,6 +10,7 @@
 #include <api/asset/media/loader/Gltf.h>
 #include <api/image/Compare.h>
 #include <api/image/Factory.h>
+#include <api/log/Logger.h>
 #include <api/type/animation/Channel.h>
 #include <api/type/animation/Clip.h>
 #include <api/type/animation/Pose.h>

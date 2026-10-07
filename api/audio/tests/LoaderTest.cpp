@@ -7,6 +7,7 @@
 #include <api/asset/Type.h>
 #include <api/audio/Loaders.h>
 #include <api/audio/kind/Sound.h>
+#include <api/log/Logger.h>
 
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>

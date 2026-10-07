@@ -4,6 +4,7 @@
  **/
 
 #include <api/event/Bindings.h>
+#include <api/log/Logger.h>
 
 #include <string>
 #include <vector>

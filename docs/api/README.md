@@ -51,7 +51,7 @@ Boost.
 | `grid` | none | glm |
 | `image` | log | libpng, libjpeg, glm |
 | `asset` | log | (Boost only) |
-| `event` | log | glm, EnTT |
+| `event` | log, asset | glm, EnTT |
 | `dag` | type | glm |
 | `ecs` | type | glm, EnTT |
 | `brep` | dag, type | glm |
@@ -69,8 +69,8 @@ The same picture as layers, lowest first. A library uses only libraries in the r
 
 ```
 log   type   grid                          no device, no window
-image  asset  event  dag  ecs
-font   config  brep  asset_media
+image  asset  dag  ecs
+font   config  brep  asset_media  event
 render_offline                             offline renderer, no Vulkan or SDL
 input                                      SDL3
 audio                                      SDL3_mixer

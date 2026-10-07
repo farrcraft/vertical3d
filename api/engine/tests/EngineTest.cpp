@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/config/Type.h>
 #include <api/event/Source.h>
 #include <api/engine/Application.h>
 #include <api/engine/Engine.h>

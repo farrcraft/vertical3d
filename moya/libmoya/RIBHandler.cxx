@@ -5,8 +5,12 @@
 
 #include "RIBHandler.h"
 
+#include <api/type/Checked.h>
+
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -17,11 +21,11 @@ namespace v3d::moya {
 namespace {
 
 /**
- * Whether a number from a scene can be a count of pixels or micropolygons: at least one, and
- * small enough to be one. Converting anything else to unsigned is undefined.
+ * A number from a scene as a count of pixels or micropolygons: at least one and at most 65536.
+ * Anything else is refused.
  **/
-bool count(float value) {
-    return std::isfinite(value) && value >= 1.0f && value <= 65536.0f;
+std::optional<uint32_t> count(float value) {
+    return v3d::type::toCount(value, 1, 65536);
 }
 
 /**
@@ -107,16 +111,19 @@ void RIBHandler::option(const std::string & name, const ParameterList & paramete
     }
     const std::vector<float> & bucket = parameters.floats("bucketsize");
     if (bucket.size() >= 2) {
-        if (count(bucket[0]) && count(bucket[1])) {
-            context().bucketSize(static_cast<unsigned int>(bucket[0]), static_cast<unsigned int>(bucket[1]));
+        const std::optional<uint32_t> across = count(bucket[0]);
+        const std::optional<uint32_t> down = count(bucket[1]);
+        if (across && down) {
+            context().bucketSize(*across, *down);
         } else {
             context().logger()->get()->warn("a bucket size of {} by {} is not a size, and is not used", bucket[0], bucket[1]);
         }
     }
     if (parameters.has("gridsize")) {
         const float grid = parameters.number("gridsize", 256.0f);
-        if (count(grid)) {
-            context().gridSize(static_cast<unsigned int>(grid));
+        const std::optional<uint32_t> size = count(grid);
+        if (size) {
+            context().gridSize(*size);
         } else {
             context().logger()->get()->warn("a grid size of {} is not a size, and is not used", grid);
         }

@@ -6,11 +6,12 @@ v3d_add_test(asset
 	"ManagerTest.cpp"
 	"LoaderTest.cpp"
 	"JsonTest.cpp"
+	"JsonReadTest.cpp"
 	"WriterTest.cpp"
 	"MigrationTest.cpp"
 	"TextTest.cpp")
 
-target_link_libraries(v3dtest_asset PRIVATE v3dlib_asset ${Boost_LIBRARIES})
+target_link_libraries(v3dtest_asset PRIVATE v3dlib_asset v3dlib_log ${Boost_LIBRARIES})
 
 # The manager resolves a relative path against the working directory, which v3d_add_test
 # points at the executable, so the fixtures have to sit beside it.

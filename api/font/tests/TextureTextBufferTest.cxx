@@ -5,6 +5,7 @@
 
 #include <api/font/TextureFontCache.h>
 #include <api/font/TextureTextBuffer.h>
+#include <api/log/Logger.h>
 
 #include <string>
 

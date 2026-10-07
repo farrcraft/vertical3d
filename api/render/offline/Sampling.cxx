@@ -5,6 +5,8 @@
 
 #include "Sampling.h"
 
+#include <api/type/Checked.h>
+
 #include <cmath>
 #include <string>
 
@@ -68,7 +70,7 @@ float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width) {
 }
 
 bool resolution(float side) {
-    return side >= 1.0f && side <= static_cast<float>(largestResolution);
+    return v3d::type::toCount(side, 1, largestResolution).has_value();
 }
 
 bool filterWidth(const glm::vec2 & width) {

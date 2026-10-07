@@ -4,6 +4,8 @@
  **/
 
 #include <api/font/TextureFontCache.h>
+#include <api/image/TextureAtlas.h>
+#include <api/log/Logger.h>
 
 #include <string>
 

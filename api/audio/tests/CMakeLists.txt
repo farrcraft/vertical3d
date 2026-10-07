@@ -11,4 +11,6 @@ v3d_add_test(audio
 target_link_libraries(v3dtest_audio PRIVATE
 	v3dlib_audio
 	v3dlib_asset
+	v3dlib_event
+	v3dlib_log
 	${SDL3_LIBRARIES})

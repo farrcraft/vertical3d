@@ -6,6 +6,7 @@
 #include <api/asset/Loader.h>
 #include <api/asset/Manager.h>
 #include <api/asset/Type.h>
+#include <api/log/Logger.h>
 
 #include <string>
 

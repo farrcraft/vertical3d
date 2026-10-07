@@ -8,6 +8,7 @@
 #include <api/asset/media/Loaders.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/asset/media/kind/Model.h>
+#include <api/log/Logger.h>
 
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>

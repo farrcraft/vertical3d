@@ -5,6 +5,7 @@
 
 #include <api/config/Config.h>
 #include <api/config/Type.h>
+#include <api/log/Logger.h>
 
 #include <string>
 

@@ -115,6 +115,36 @@ numbers.
   evenly within `angle` radians of `axis`.
 - It is not thread-safe, and the values depend on the order of calls.
 
+## Checked conversions
+
+A float read from a file, the command line or a caller is made into an integer through
+[api/type/Checked.h](../../api/type/Checked.h), never through a bare `static_cast`. Converting a
+float that is outside an integer type's range is undefined behaviour, and NaN and infinity are
+outside every range.
+
+- `toCount(value, minimum, maximum)` returns a `std::optional<uint32_t>`. `toCount(value,
+  maximum)` is the same with a minimum of zero.
+- `toInteger(value, minimum, maximum)` returns a `std::optional<int32_t>`, for an index, a frame
+  number or a handle.
+
+Both follow the same rules:
+
+- **NaN and both infinities are refused.**
+- **A value below `minimum` or above `maximum` is refused.** The range is tested on the value as
+  given, before its fraction is dropped. For example, 2.5 is refused when `maximum` is 2, and
+  -0.5 is refused when `minimum` is 0.
+- **A value that passes is truncated toward zero.** 7.9 becomes 7 and -2.5 becomes -2.
+- A range whose `minimum` is above its `maximum` refuses every value.
+- Neither function throws. A refusal is an empty optional, and the caller decides whether to
+  warn, skip or fall back.
+
+The bounds are compared as doubles. A float cannot hold 2^32 - 1, so a float comparison would
+admit 2^32 itself. `toCount(value, UINT32_MAX)` accepts every float up to 4294967040, the
+largest float below 2^32.
+
+A conversion that clamps, wraps or rounds to nearest has a different rule and does not use
+these functions. Examples are the scissor rectangle, the noise lattice and the sample count.
+
 ## Flags
 
 `v3d::type::Flags<E>` ([api/type/Flags.h](../../api/type/Flags.h)) is a set of an enum's bits.

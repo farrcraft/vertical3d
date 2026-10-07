@@ -5,6 +5,7 @@ v3d_add_test(type
 	"ArcBallTest.cxx"
 	"Bound2DTest.cxx"
 	"CameraTest.cxx"
+	"CheckedTest.cxx"
 	"EffectTest.cxx"
 	"FlagsTest.cxx"
 	"FrustumTest.cxx"

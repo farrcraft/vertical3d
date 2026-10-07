@@ -25,7 +25,7 @@ v3d_add_test(render_offline
 	"TraceSceneTest.cxx"
 	"TraceHitShaderTest.cxx")
 
-target_link_libraries(v3dtest_render_offline PRIVATE v3dlib_render_offline v3dlib_image v3dlib_log ${Boost_LIBRARIES})
+target_link_libraries(v3dtest_render_offline PRIVATE v3dlib_render_offline v3dlib_image v3dlib_log v3dlib_type ${Boost_LIBRARIES})
 
 # The suite opens its fixtures by a relative path against the working directory, which
 # v3d_add_test points at the executable.

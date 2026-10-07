@@ -7,6 +7,7 @@ draw on a GPU.
 - [Running the tests](#running-the-tests)
 - [How the suites are organised](#how-the-suites-are-organised)
 - [Writing a test](#writing-a-test)
+- [Checking that a new test fails first](#checking-that-a-new-test-fails-first)
 - [The render device suite](#the-render-device-suite)
 - [Reference images](#reference-images)
 - [Verifying a rendering change](#verifying-a-rendering-change)
@@ -124,6 +125,28 @@ See [Traps](#traps) for what the copy means when you add a fixture.
 - **Write a picture for a person to look at** when a frame cannot be checked exactly. Write it to
   `data_out/` beside the executable, and assert what can be asserted: validation silence and a
   few properties of the picture.
+
+## Checking that a new test fails first
+
+A test that passes without the code it claims to test is a weak test.
+[scripts/failsfirst.ts](../../scripts/failsfirst.ts) checks the cases a changeset adds. Run it on
+a branch before review:
+
+```
+node scripts/failsfirst.ts                  # the branch, from its merge base with main
+node scripts/failsfirst.ts --commit <sha>   # one commit
+node scripts/failsfirst.ts --list           # list the new cases, build nothing
+```
+
+The script finds the Boost.Test cases the changeset adds and the suite each one belongs to. It
+builds those suites in a separate git worktree, with every file outside a `tests/` directory at
+its base version, and runs each new case there. Each case should fail or fail to build. A case
+that passes is a weak test, and the script exits with 1.
+
+The worktree build is separate from `out/build/x64-Debug` and installs no packages. It reuses
+the packages that build installed. The script's header lists its limits. A `render_device` case
+needs a GPU, and is reported as skipped without one. A case that fails only because it reads a
+fixture the change added has to be read by hand.
 
 ## The render device suite
 

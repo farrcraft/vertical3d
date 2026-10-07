@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Engine.h>
 #include <api/ui/Engine.h>
 #include <api/ui/shell/GameMenu.h>
 

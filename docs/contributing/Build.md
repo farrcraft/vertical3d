@@ -196,9 +196,18 @@ source it compiles, including the app sources it shares.
 **An app takes third-party packages through the `v3dlib_*` targets.** A library links a package
 PUBLIC when its headers include it, so the package reaches every app that links the library. glm
 comes through `v3dlib_type`, EnTT through `v3dlib_event`, Boost.Filesystem and Boost.JSON through
-`v3dlib_asset`, and SDL3 through `v3dlib_engine`. The one exception is a package the app uses
-directly that no `v3dlib_*` target provides. Examples are `Boost::program_options` in the apps
-that parse a command line, and voxel's vendored `libnoise`.
+`v3dlib_asset`, and SDL3 through `v3dlib_engine`. The one exception is a package the app's own
+sources include that none of the `v3dlib_*` targets it links carries. Examples are
+`Boost::program_options` in the apps that parse a command line, voxel's vendored `libnoise`, and
+`Boost::filesystem` in the moya suite. An app suite does not name `Boost::unit_test_framework`,
+because `v3d_add_test` links it. A variable such as `${Boost_LIBRARIES}` counts as every target it
+names, and config-mode Boost sets it to every component the tree finds, so an app names a Boost
+component rather than the variable.
+
+`scripts/linkrule.ts` checks these rules for every app, app library and test suite. Run it with
+`node scripts/linkrule.ts` from the repository root. It prints each violation as
+`path: rule: detail` and exits 1 when it finds one. It does not check the api libraries, which
+the configure checks.
 
 **PUBLIC or PRIVATE:** link a package or another api library PUBLIC when one of the library's
 headers includes it, and PRIVATE when only its sources do. The configure enforces this for api

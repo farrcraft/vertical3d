@@ -5,6 +5,9 @@
 
 #include "Config.h"
 
+#include <api/asset/Json.h>
+
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -53,13 +56,14 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
             logger_->get()->error("Config entry needs both a type and a file");
             return false;
         }
-        // value_to throws for a value that is not a string
-        if (!entry.at("type").is_string() || !entry.at("file").is_string()) {
+        const std::optional<std::string> type = v3d::asset::readString(entry, "type");
+        const std::optional<std::string> file = v3d::asset::readString(entry, "file");
+        if (!type || !file) {
             logger_->get()->error("Config entry gives a type or a file that is not a string");
             return false;
         }
-        std::string typeName = boost::json::value_to<std::string>(entry.at("type"));
-        std::string fileName = boost::json::value_to<std::string>(entry.at("file"));
+        const std::string& typeName = *type;
+        const std::string& fileName = *file;
         // the empty name is what typeName gives Type::Unknown, so a document filed under it
         // would be found by get(Type::Unknown)
         if (typeName.empty()) {

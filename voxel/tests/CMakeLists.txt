@@ -35,5 +35,4 @@ target_link_directories(v3dtest_voxel PRIVATE "${V3D_ROOT}/vendor/libnoise/Debug
 # refers to the perlin implementation whether or not any test generates noise.
 target_link_libraries(v3dtest_voxel PRIVATE
 	v3dlib_type
-	${Boost_LIBRARIES}
 	"libnoise")

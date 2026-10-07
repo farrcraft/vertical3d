@@ -158,6 +158,25 @@ so adding an enumerator fails the build at every switch that does not handle it.
 - Where an enum is parsed from text, the parser's upper bound is the last enumerator. Keep the
   bound and the enum in step, and keep a test that checks the round trip.
 
+## Boundary input
+
+A value from a file, the command line or a caller goes through the checked helpers before it is
+used.
+
+- **A float that becomes an integer** goes through `toCount` or `toInteger` in
+  [api/type/Checked.h](../../api/type/Checked.h), not a bare `static_cast`.
+  [Types.md](../api/Types.md#checked-conversions) states their rules.
+- **A member of a JSON object** is read through `readString`, `readNumber`, `readBool`,
+  `readObject` or `readArray` in [api/asset/Json.h](../../api/asset/Json.h), not through
+  `boost::json::value_to`. [Assets.md](../api/Assets.md#json-documents) states their rules.
+- A conversion that clamps, wraps or rounds to nearest states its own rule beside the code. It
+  clamps or tests the value before the cast, so the cast is always defined.
+
+`node scripts/boundary.ts` checks the lines a change adds. It reports any `value_to`, and any
+`static_cast` to an integer type whose operand contains a float function, a float literal or
+`.value()`. The second check reads text, not types, so it misses a float held in a plain
+variable and reports some casts that are safe. The script's header lists what it cannot see.
+
 ## Commits
 
 One concern per commit. The message says *why* where the diff does not make it obvious. Where

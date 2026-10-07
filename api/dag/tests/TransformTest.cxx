@@ -4,6 +4,7 @@
  **/
 
 #include <api/dag/Transform.h>
+#include <api/type/Transform.h>
 
 #include <boost/test/unit_test.hpp>
 

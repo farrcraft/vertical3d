@@ -7,6 +7,7 @@
 #include <api/asset/Manager.h>
 #include <api/asset/Type.h>
 #include <api/asset/kind/Text.h>
+#include <api/log/Logger.h>
 
 #include <optional>
 #include <string>

@@ -5,8 +5,13 @@
 
 #include "Film.h"
 
+#include <api/type/Checked.h>
+
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <limits>
+#include <optional>
 #include <stdexcept>
 
 namespace v3d::render::offline {
@@ -32,19 +37,21 @@ const Film::Pixel & Film::at(unsigned int column, unsigned int row) const {
 }
 
 void Film::add(const Sample & sample) {
-    if (width_ == 0 || height_ == 0) {
+    if (width_ == 0 || height_ == 0 || !std::isfinite(sample.raster.x) || !std::isfinite(sample.raster.y)) {
         return;
     }
-    // the pixels whose centres are within half the filter's width of the sample
+    // the pixels whose centres are within half the filter's width of the sample. Each edge is
+    // held within one pixel of the film before it is made an integer. A sample far off the film
+    // then gives an empty span, and every conversion is defined.
     const glm::vec2 half = filterWidth_ * 0.5f;
     const float left = std::ceil(sample.raster.x - half.x - 0.5f);
     const float right = std::floor(sample.raster.x + half.x - 0.5f);
     const float top = std::ceil(sample.raster.y - half.y - 0.5f);
     const float bottom = std::floor(sample.raster.y + half.y - 0.5f);
-    const int x0 = static_cast<int>(std::max(left, 0.0f));
-    const int x1 = static_cast<int>(std::min(right, static_cast<float>(width_) - 1.0f));
-    const int y0 = static_cast<int>(std::max(top, 0.0f));
-    const int y1 = static_cast<int>(std::min(bottom, static_cast<float>(height_) - 1.0f));
+    const int x0 = static_cast<int>(std::clamp(left, 0.0f, static_cast<float>(width_)));
+    const int x1 = static_cast<int>(std::clamp(right, -1.0f, static_cast<float>(width_) - 1.0f));
+    const int y0 = static_cast<int>(std::clamp(top, 0.0f, static_cast<float>(height_)));
+    const int y1 = static_cast<int>(std::clamp(bottom, -1.0f, static_cast<float>(height_) - 1.0f));
 
     for (int row = y0; row <= y1; row++) {
         for (int column = x0; column <= x1; column++) {
@@ -62,15 +69,12 @@ void Film::add(const Sample & sample) {
     }
 
     // a depth belongs to the pixel the sample is in, and to no other
-    if (!sample.hit || sample.raster.x < 0.0f || sample.raster.y < 0.0f) {
+    const std::optional<uint32_t> column = v3d::type::toCount(sample.raster.x, std::numeric_limits<uint32_t>::max());
+    const std::optional<uint32_t> row = v3d::type::toCount(sample.raster.y, std::numeric_limits<uint32_t>::max());
+    if (!sample.hit || !column || !row || *column >= width_ || *row >= height_) {
         return;
     }
-    const unsigned int column = static_cast<unsigned int>(sample.raster.x);
-    const unsigned int row = static_cast<unsigned int>(sample.raster.y);
-    if (column >= width_ || row >= height_) {
-        return;
-    }
-    Pixel & pixel = pixels_[static_cast<std::size_t>(row) * width_ + column];
+    Pixel & pixel = pixels_[static_cast<std::size_t>(*row) * width_ + *column];
     if (!pixel.hit || sample.depth < pixel.depth) {
         pixel.depth = sample.depth;
         pixel.hit = true;

@@ -5,6 +5,7 @@
 
 #include <api/image/TextureAtlas.h>
 #include <api/image/Image.h>
+#include <api/log/Logger.h>
 
 #include <vector>
 

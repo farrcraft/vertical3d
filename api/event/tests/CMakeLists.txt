@@ -5,4 +5,4 @@ v3d_add_test(event
 	"EventTest.cpp"
 	"MapperTest.cpp")
 
-target_link_libraries(v3dtest_event PRIVATE v3dlib_event EnTT::EnTT ${Boost_LIBRARIES})
+target_link_libraries(v3dtest_event PRIVATE v3dlib_event v3dlib_log EnTT::EnTT ${Boost_LIBRARIES})

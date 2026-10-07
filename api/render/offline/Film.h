@@ -50,6 +50,10 @@ class Film final {
     unsigned int width() const;
     unsigned int height() const;
 
+    /**
+     * Filters a sample into the pixels near it. A sample whose raster position is not finite
+     * reaches no pixel.
+     **/
     void add(const Sample & sample);
 
     /**

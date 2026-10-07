@@ -5,6 +5,7 @@
 
 #include <api/asset/Writer.h>
 #include <api/engine/Settings.h>
+#include <api/log/Logger.h>
 
 #include <string>
 

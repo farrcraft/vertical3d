@@ -5,6 +5,7 @@
 
 #include "Engine.h"
 
+#include <api/asset/Json.h>
 #include <api/asset/media/Loaders.h>
 #include <api/event/kind/WindowFocus.h>
 #include <api/event/kind/WindowResize.h>
@@ -143,7 +144,7 @@ bool Engine::openWindow() {
             // as with the bindings, a window document that cannot be read makes startup
             // return false rather than throw
             const boost::json::object& doc = windowConfig->document();
-            const boost::json::object* window = doc.contains("window") ? doc.at("window").if_object() : nullptr;
+            const boost::json::object* window = v3d::asset::readObject(doc, "window");
             if (window == nullptr || !window->contains("width") || !window->contains("height") ||
                 !window->at("width").is_int64() || !window->at("height").is_int64()) {
                 logger_->get()->error("The window config needs a window with a whole width and height");

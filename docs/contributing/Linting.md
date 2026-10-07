@@ -7,10 +7,13 @@ The four checks are cpplint, the compiler's warnings, MSVC `/analyze` and clang-
 is clean at all four**, so every finding is new and should be fixed. cpplint runs in CI. The
 other three are build options declared in [CMakeLists.txt](../../CMakeLists.txt).
 
+A fifth check, the prose gate, applies the writing rules. It reads only the lines a change adds.
+
 - [cpplint](#cpplint)
 - [The compiler](#the-compiler)
 - [MSVC /analyze](#msvc-analyze)
 - [clang-tidy](#clang-tidy)
+- [Prose](#prose)
 - [CI](#ci)
 
 ## cpplint
@@ -135,6 +138,40 @@ Two traps, both silent:
 - **clang-tidy ignores a check name it does not know.** `.clang-tidy` enables whole families and
   subtracts checks by name, so a subtracted name that stops matching a check turns that check
   back on.
+
+## Prose
+
+[scripts/prose.ts](../../scripts/prose.ts) checks the writing rules in
+[Conventions.md](Conventions.md#writing). It needs Node 24 or later and nothing else. Run it from
+the repository root:
+
+```
+node scripts/prose.ts
+```
+
+It compares the working tree with the merge base of `HEAD` and `origin/main`, or `main` when
+there is no `origin/main`. `--base REF` names another branch to compare with. Uncommitted and
+untracked files are included, so it can run before a commit.
+
+It reads the lines a change adds to Markdown files and to the comments of C++, GLSL, CMake, batch
+and YAML files. It rebuilds the paragraph around each added line and checks every sentence that
+overlaps one. It reports:
+
+- a sentence of more than 35 words;
+- a sentence that starts with "And" or "So";
+- a clause such as "X, which is what Y", or the same with how, where, why or when;
+- "knows", "wants", "owes" or "trusts", or "does not know" and its kin, after a subject that is
+  not a person, an app, a caller or a consumer;
+- "used to", a date or "phase N", except in [plans/](../plans) and [roadmap/](../roadmap);
+- a Markdown line longer than 100 columns;
+- a comment line more than 10 columns longer than every other line of its paragraph.
+
+Code fences, code spans, tables, headings, URLs and front matter are not checked. Neither are
+`vendor/`, [audits/](../audits), the completed plans and roadmaps, or an ADR that is not new.
+
+Each finding prints as `path:line: rule: detail | sentence`, and the script exits with 1 when
+there is one. `--all FILE...` checks whole files instead of a change. The tree is not clean at
+`--all`, so use it to try a rule, not as a gate.
 
 ## CI
 

@@ -3,7 +3,7 @@ add_executable(moya "moya.cxx")
 target_link_libraries(moya
 	PRIVATE
 	v3dlib_moya
-	v3dlib_type
+	v3dlib_log
 	v3dlib_render_offline
 	Boost::program_options
 )

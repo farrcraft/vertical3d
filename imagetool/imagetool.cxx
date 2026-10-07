@@ -5,6 +5,7 @@
 
 #include <api/image/Factory.h>
 #include <api/image/Crop.h>
+#include <api/log/Logger.h>
 
 #include <cstdint>
 #include <cstdio>

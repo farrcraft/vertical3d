@@ -4,6 +4,7 @@
  **/
 
 #include <api/asset/Manager.h>
+#include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/paint/TextRenderer.h>

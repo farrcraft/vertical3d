@@ -5,6 +5,7 @@
 
 #include <api/brep/BRep.h>
 #include <api/brep/Topology.h>
+#include <api/type/geometry/AABBox.h>
 
 #include <algorithm>
 #include <type_traits>

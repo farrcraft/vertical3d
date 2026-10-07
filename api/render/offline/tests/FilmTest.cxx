@@ -9,6 +9,7 @@
 #include <api/render/offline/Sampling.h>
 
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -166,6 +167,37 @@ BOOST_AUTO_TEST_CASE(film_one_sample_is_exact_test) {
     BOOST_CHECK_EQUAL(frame.value(0, 1, 0), 0.0f);
     BOOST_CHECK_EQUAL(frame.value(4, 1, 0), 0.0f);
     BOOST_CHECK_EQUAL(frame.value(3, 1, 0), 99.0f);
+}
+
+/**
+ * A sample whose raster position is not finite, or lies far off the film on either side,
+ * reaches no pixel: it adds no colour, no coverage and no depth.
+ **/
+BOOST_AUTO_TEST_CASE(film_sample_off_the_film_reaches_no_pixel_test) {
+    const v3d::render::offline::Sampling sampling = box(1, 2.0f);
+    v3d::render::offline::Film film(3, 2, sampling);
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float infinity = std::numeric_limits<float>::infinity();
+    const std::vector<glm::vec2> positions = {
+        glm::vec2(nan, 0.5f), glm::vec2(0.5f, nan), glm::vec2(infinity, 0.5f), glm::vec2(0.5f, -infinity),
+        glm::vec2(1.0e12f, 0.5f), glm::vec2(-1.0e12f, 0.5f), glm::vec2(0.5f, 1.0e12f), glm::vec2(0.5f, -1.0e12f),
+    };
+    for (const glm::vec2& position : positions) {
+        v3d::render::offline::Film::Sample sample;
+        sample.raster = position;
+        sample.colour = glm::vec3(1.0f);
+        sample.hit = true;
+        sample.depth = 1.0f;
+        film.add(sample);
+    }
+    for (unsigned int row = 0; row < 2; row++) {
+        for (unsigned int column = 0; column < 3; column++) {
+            float depth = 0.0f;
+            BOOST_CHECK(!film.depth(column, row, &depth));
+            BOOST_CHECK_EQUAL(film.coverage(column, row), 0.0f);
+            BOOST_CHECK_EQUAL(film.colour(column, row).r, 0.0f);
+        }
+    }
 }
 
 /**

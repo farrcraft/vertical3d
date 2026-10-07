@@ -16,10 +16,8 @@ target_link_libraries(v3dtest_engine PRIVATE
 	v3dlib_config
 	v3dlib_asset
 	v3dlib_event
+	v3dlib_log
 	v3dlib_input
-	v3dlib_render
-	v3dlib_image
-	v3dlib_font
 	${Boost_LIBRARIES}
 	${SDL3_LIBRARIES}
 	${PNG_LIBRARIES}

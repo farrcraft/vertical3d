@@ -84,6 +84,11 @@ it uses.
 - A CI check that fails on a bare `static_cast` from a float to an integer type, and on a
   `value_to` that no type test guards, outside the helpers.
 
+Built: `toCount` and `toInteger` in `api/type/Checked.h`, the reads in `api/asset/Json.h`, and
+`scripts/boundary.ts`, which checks a changeset's added lines. The branch's guarded JSON reads
+and its RIB counts, sizes, frame numbers and handles go through the helpers. Open: the CI step
+that runs the script, and the reports it still makes on the branch, which step 8 settles.
+
 ### Step 7 — Gate: tests that fail first
 
 A script that reverts a change's non-test files, builds, runs the tests the change added, and fails
@@ -97,4 +102,8 @@ when that review is clean.
 
 ## State
 
-Steps 1 to 3 are closed. The gates, steps 4 to 7, are next.
+Steps 1 to 3 are closed. The four gates exist as `scripts/*.ts`, run by Node with no
+dependencies, and are not yet in CI. Against the branch, the link rule passes, the prose gate
+reports 317 lines and the boundary gate 20, about half of them lines the heuristic cannot tell
+are safe. Wiring them into CI waits on how a safe line is marked; step 8 then fixes what they
+report.

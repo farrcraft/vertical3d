@@ -5,12 +5,14 @@
 
 #include "Engine.h"
 
+#include <api/asset/Json.h>
 #include <api/audio/kind/Sound.h>
 #include <api/event/kind/Sound.h>
 
 #include <SDL3_mixer/SDL_mixer.h>
 
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -103,13 +105,14 @@ bool Engine::load(const boost::json::object& doc, const Resolve& resolve) {
             logger_->get()->error("Sound config names no clip_id or no file");
             return false;
         }
-        // value_to throws for a value that is not a string
-        if (!sound.at("clip_id").is_string() || !sound.at("file").is_string()) {
+        const std::optional<std::string> clip = v3d::asset::readString(sound, "clip_id");
+        const std::optional<std::string> file = v3d::asset::readString(sound, "file");
+        if (!clip || !file) {
             logger_->get()->error("Sound config gives a clip_id or a file that is not a string");
             return false;
         }
-        const std::string clipId = boost::json::value_to<std::string>(sound.at("clip_id"));
-        const std::string fileName = boost::json::value_to<std::string>(sound.at("file"));
+        const std::string& clipId = *clip;
+        const std::string& fileName = *file;
         // a clip that will not load leaves the rest of the document to load anyway - one
         // missing wav is not a reason to start an app without any of its sounds
         if (!resolve || !addClip(resolve(fileName), clipId)) {

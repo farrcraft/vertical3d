@@ -13,6 +13,7 @@
 #include <api/render/offline/trace/Tracer.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Triangle.h>
+#include <api/type/geometry/Ray.h>
 
 #include <string>
 #include <vector>

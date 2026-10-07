@@ -5,7 +5,10 @@
 
 #include "Bindings.h"
 
+#include <api/asset/Json.h>
+
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -47,18 +50,18 @@ std::vector<Event> Bindings::sources(std::string_view command) const {
 }
 
 bool Bindings::build() {
-    // every lookup below is guarded by a contains() rather than reaching straight for at(), and
-    // every value is checked for its type before it is read: boost::json::at and value_to
-    // throw, and a document this does not understand has to come back as a false return, not
-    // as an exception out of startup
+    // every member is read through the checked reads, which return nothing for a member that is
+    // missing or of the wrong type. A document this does not understand has to come back as a
+    // false return, not as an exception out of startup.
     const boost::json::object& doc = *document_;
-    if (!doc.contains("mappings") || !doc.at("mappings").is_array()) {
+    const boost::json::array* mappings = v3d::asset::readArray(doc, "mappings");
+    if (mappings == nullptr) {
         logger_->get()->error("Missing mappings in config");
         return false;
     }
 
     boost::shared_ptr<Mapper> mapper = boost::make_shared<Mapper>("global");
-    for (const boost::json::value& item : doc.at("mappings").as_array()) {
+    for (const boost::json::value& item : *mappings) {
         if (!item.is_object()) {
             logger_->get()->error("Unrecognized mapping");
             return false;
@@ -90,68 +93,70 @@ bool Bindings::build() {
 }
 
 bool Bindings::readSource(const boost::json::object& mapping, Event* event) {
-    if (!mapping.contains("source") || !mapping.at("source").is_object()) {
+    const boost::json::object* source = v3d::asset::readObject(mapping, "source");
+    if (source == nullptr) {
         logger_->get()->error("Missing mapping source");
         return false;
     }
-    const boost::json::object& source = mapping.at("source").as_object();
-    if (!source.contains("name") || !source.contains("context")) {
+    if (!source->contains("name") || !source->contains("context")) {
         logger_->get()->error("Mapping source needs both a name and a context");
         return false;
     }
-    if (!source.at("name").is_string() || !source.at("context").is_string()) {
+    const std::optional<std::string> name = v3d::asset::readString(*source, "name");
+    const std::optional<std::string> context = v3d::asset::readString(*source, "context");
+    if (!name || !context) {
         logger_->get()->error("Mapping source needs a name and a context that are strings");
         return false;
     }
-    const std::string name = boost::json::value_to<std::string>(source.at("name"));
-    const std::string context = boost::json::value_to<std::string>(source.at("context"));
-    *event = Event(name, events_->resolveContext(context));
+    *event = Event(*name, events_->resolveContext(*context));
     event->type(Type::Source);
     // an optional "state" binds one edge only - "pressed"/"down" or "released"/"up". Without
     // it the binding matches both, as most actions need.
-    if (source.contains("state")) {
-        if (!source.at("state").is_string()) {
-            logger_->get()->error("Mapping source state for [{}] is not a string", name);
+    if (source->contains("state")) {
+        const std::optional<std::string> state = v3d::asset::readString(*source, "state");
+        if (!state) {
+            logger_->get()->error("Mapping source state for [{}] is not a string", *name);
             return false;
         }
-        event->state(stringToState(boost::json::value_to<std::string>(source.at("state"))));
+        event->state(stringToState(*state));
     }
     return true;
 }
 
 bool Bindings::readDestination(const boost::json::object& mapping, Event* event) {
-    if (!mapping.contains("destination") || !mapping.at("destination").is_object()) {
+    const boost::json::object* destination = v3d::asset::readObject(mapping, "destination");
+    if (destination == nullptr) {
         logger_->get()->error("Missing mapping destination");
         return false;
     }
-    const boost::json::object& destination = mapping.at("destination").as_object();
-    if (!destination.contains("name") || !destination.contains("context")) {
+    if (!destination->contains("name") || !destination->contains("context")) {
         logger_->get()->error("Mapping destination needs both a name and a context");
         return false;
     }
-    if (!destination.at("name").is_string() || !destination.at("context").is_string()) {
+    const std::optional<std::string> name = v3d::asset::readString(*destination, "name");
+    const std::optional<std::string> context = v3d::asset::readString(*destination, "context");
+    if (!name || !context) {
         logger_->get()->error("Mapping destination needs a name and a context that are strings");
         return false;
     }
-    const std::string name = boost::json::value_to<std::string>(destination.at("name"));
-    const std::string context = boost::json::value_to<std::string>(destination.at("context"));
-    *event = Event(name, events_->resolveContext(context));
+    *event = Event(*name, events_->resolveContext(*context));
     event->type(Type::Destination);
     // an optional "param" lets one action serve several bindings, telling them apart by the
     // value it arrives with. It reaches the handler as the event's data, the same way a menu
     // item's value does.
-    if (!destination.contains("param")) {
+    if (!destination->contains("param")) {
         return true;
     }
-    const boost::json::value& param = destination.at("param");
+    const boost::json::value& param = destination->at("param");
+    const std::optional<std::string> text = v3d::asset::readString(*destination, "param");
     if (param.is_int64()) {
         event->data(static_cast<int>(param.as_int64()));
     } else if (param.is_bool()) {
         event->data(param.as_bool());
-    } else if (param.is_string()) {
-        event->data(boost::json::value_to<std::string>(param));
+    } else if (text) {
+        event->data(*text);
     } else {
-        logger_->get()->error("Unsupported binding param type for [{}]", name);
+        logger_->get()->error("Unsupported binding param type for [{}]", *name);
         return false;
     }
     return true;

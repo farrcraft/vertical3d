@@ -7,7 +7,7 @@ v3d_add_test(image
 	"TextureAtlasTest.cxx"
 	"CropTest.cxx")
 
-target_link_libraries(v3dtest_image PRIVATE v3dlib_image ${Boost_LIBRARIES} ${PNG_LIBRARIES} JPEG::JPEG)
+target_link_libraries(v3dtest_image PRIVATE v3dlib_image v3dlib_log ${Boost_LIBRARIES} ${PNG_LIBRARIES} JPEG::JPEG)
 
 # The readers resolve a relative path against the working directory, which v3d_add_test
 # points at the executable, so the fixtures have to sit beside it.

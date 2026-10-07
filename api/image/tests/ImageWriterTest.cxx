@@ -6,6 +6,7 @@
 // jpeglib.h names FILE in its stdio helpers without including stdio itself
 
 #include <api/image/Factory.h>
+#include <api/log/Logger.h>
 
 #include <stdio.h>
 #include <jpeglib.h>

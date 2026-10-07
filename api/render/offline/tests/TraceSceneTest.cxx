@@ -10,6 +10,7 @@
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>
+#include <api/type/geometry/Ray.h>
 
 #include <cmath>
 

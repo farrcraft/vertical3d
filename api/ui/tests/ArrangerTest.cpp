@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>

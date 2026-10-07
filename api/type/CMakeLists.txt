@@ -1,4 +1,5 @@
 v3d_add_api_library(type
+"Checked.h" "Checked.cxx"
 "Flags.h"
 "Model.h" "Model.cxx"
 "Random.h" "Random.cxx"

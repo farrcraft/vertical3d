@@ -12,5 +12,4 @@ v3d_add_test(tetris
 # itself, so the suite needs only the asset library and the logger.
 target_link_libraries(v3dtest_tetris PRIVATE
 	v3dlib_asset
-	v3dlib_log
-	${Boost_LIBRARIES})
+	v3dlib_log)

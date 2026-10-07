@@ -7,6 +7,7 @@
 #include <api/config/SpriteSheet.h>
 #include <api/config/SpriteSheets.h>
 #include <api/asset/Writer.h>
+#include <api/log/Logger.h>
 
 #include <limits>
 #include <string>

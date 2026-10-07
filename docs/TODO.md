@@ -392,17 +392,6 @@ without the turn counter it was written for. Its sibling test does fail without 
   written by hand.
 - `RotateManipulator.h` has two doc blocks above `ringDistance`, one of which belongs to `swept()`.
 
-### Build
-
-[] **Targets that break the app linking rule.**
-
-- `imagetool` uses the logger without including its header.
-- moya's app links `v3dlib_type` and includes none of it, and uses the logger without its header
-  or link.
-- The moya suite names PNG and JPEG directly.
-- The brep and dag suites use `api/type` types without including them, and the dag suite does not
-  link `v3dlib_type`.
-
 ### Prose
 
 [] **Writing rules broken in text the tenth round added.** A "So" opener in

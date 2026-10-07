@@ -5,6 +5,9 @@
 
 #include "CameraProfiles.h"
 
+#include <api/asset/Json.h>
+
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -20,37 +23,33 @@ namespace {
  *         something other than numbers
  **/
 glm::vec3 vector(const boost::json::object& entry, const char* key, const glm::vec3& fallback) {
-    if (!entry.contains(key) || !entry.at(key).is_array()) {
+    const boost::json::array* values = v3d::asset::readArray(entry, key);
+    if (values == nullptr) {
         return fallback;
     }
-    const boost::json::array& values = entry.at(key).as_array();
-    if (values.size() != 3 || !values[0].is_number() || !values[1].is_number() || !values[2].is_number()) {
+    const boost::json::array& list = *values;
+    if (list.size() != 3 || !list[0].is_number() || !list[1].is_number() || !list[2].is_number()) {
         return fallback;
     }
     return glm::vec3(
-        static_cast<float>(values[0].to_number<double>()),
-        static_cast<float>(values[1].to_number<double>()),
-        static_cast<float>(values[2].to_number<double>()));
+        static_cast<float>(list[0].to_number<double>()),
+        static_cast<float>(list[1].to_number<double>()),
+        static_cast<float>(list[2].to_number<double>()));
 }
 
 /**
  * @return the value read, or the fallback if the entry is missing or not a number
  **/
 float number(const boost::json::object& entry, const char* key, float fallback) {
-    if (!entry.contains(key) || !entry.at(key).is_number()) {
-        return fallback;
-    }
-    return static_cast<float>(entry.at(key).to_number<double>());
+    const std::optional<double> value = v3d::asset::readNumber(entry, key);
+    return value ? static_cast<float>(*value) : fallback;
 }
 
 /**
  * @return the value read, or the fallback if the entry is missing or not a bool
  **/
 bool flag(const boost::json::object& entry, const char* key, bool fallback) {
-    if (!entry.contains(key) || !entry.at(key).is_bool()) {
-        return fallback;
-    }
-    return entry.at(key).as_bool();
+    return v3d::asset::readBool(entry, key).value_or(fallback);
 }
 
 };  // namespace
@@ -75,15 +74,17 @@ bool CameraProfiles::load(const boost::json::object& doc) {
             return false;
         }
         auto const entry = value.as_object();
-        if (!entry.contains("name") || !entry.at("name").is_string()) {
+        const std::optional<std::string> named = v3d::asset::readString(entry, "name");
+        if (!named) {
             logger_->get()->error("A camera profile needs a name");
             return false;
         }
-        if (entry.contains("adaptive") && !entry.at("adaptive").is_string()) {
+        const std::optional<std::string> adaptiveRead = v3d::asset::readString(entry, "adaptive");
+        if (entry.contains("adaptive") && !adaptiveRead) {
             logger_->get()->error("A camera profile's adaptive is none, projection, position or both");
             return false;
         }
-        std::string name = boost::json::value_to<std::string>(entry.at("name"));
+        const std::string& name = *named;
 
         v3d::type::camera::Profile profile(name);
         profile.orthographic(flag(entry, "orthographic", true));
@@ -92,8 +93,7 @@ bool CameraProfiles::load(const boost::json::object& doc) {
         profile.pixelAspect(number(entry, "aspect", 1.33f));
         profile.clipping(number(entry, "near", 0.1f), number(entry, "far", 100.0f));
 
-        const std::string adaptive = entry.contains("adaptive") ?
-            boost::json::value_to<std::string>(entry.at("adaptive")) : std::string("none");
+        const std::string adaptive = adaptiveRead.value_or("none");
         profile.adaptiveProjection(adaptive == "both" || adaptive == "projection");
         profile.adaptivePosition(adaptive == "both" || adaptive == "position");
 

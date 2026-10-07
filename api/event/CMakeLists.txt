@@ -22,6 +22,9 @@ v3d_add_api_library(event
 # the boost::json::object it was read from.
 target_link_libraries(v3dlib_event PUBLIC v3dlib_log glm::glm EnTT::EnTT Boost::json)
 
+# PRIVATE: only Bindings.cpp includes the checked JSON reads.
+target_link_libraries(v3dlib_event PRIVATE v3dlib_asset)
+
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")
 endif()

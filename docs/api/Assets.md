@@ -83,9 +83,34 @@ Background: [ADR-0079](../adr/0079-assets-loaders-are-registered.md)
 
 ## JSON documents
 
-`asset::kind::Json::document()` returns the parsed `boost::json::object`. Read it defensively:
-`boost::json::object::at()` throws on a missing key. Check `contains()` and the value's kind
-first, and return false with a log line when the document is not what you expect.
+`asset::kind::Json::document()` returns the parsed `boost::json::object`. Read its members
+through the checked reads in [api/asset/Json.h](../../api/asset/Json.h). `boost::json::object::at()`
+throws on a missing key, and `boost::json::value_to` and the `as_` accessors throw on a value of
+the wrong type. When the document is not what you expect, return false with a log line.
+
+Each checked read takes an object and a key:
+
+| Read | Returns | Refuses |
+|---|---|---|
+| `readString(object, key)` | `std::optional<std::string>` | anything but a string |
+| `readNumber(object, key)` | `std::optional<double>` | anything but a number |
+| `readBool(object, key)` | `std::optional<bool>` | anything but `true` or `false` |
+| `readObject(object, key)` | `const boost::json::object*` | anything but an object |
+| `readArray(object, key)` | `const boost::json::array*` | anything but an array |
+
+- **A missing member and a member of the wrong type are both refused.** The read returns an
+  empty optional or a null pointer, and does not throw for either.
+- **A caller that reports the two cases differently tests `contains()` first**, then reads.
+- `readNumber` takes a signed integer, an unsigned integer or a double, and returns a double. An
+  integer beyond 2^53 loses precision. The value is not tested for being finite.
+- `readBool` does not take a number as a bool.
+- `readObject` and `readArray` return a pointer into the object rather than a copy. The pointer
+  is valid while the object is unchanged.
+- An element of an array is not a member, so these reads do not apply to it. Test its kind with
+  `is_string()` or `is_number()` before reading it.
+
+A number that becomes an integer goes through the checked conversions in
+[Types.md](Types.md#checked-conversions) after it is read.
 
 `asset::readFile(path)` in [api/asset/File.h](../../api/asset/File.h) reads a whole file as
 bytes, without a loader. It sizes the file, then reads it. It returns `std::nullopt` when the
