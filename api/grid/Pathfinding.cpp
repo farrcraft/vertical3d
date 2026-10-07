@@ -245,8 +245,8 @@ DistanceField::DistanceField(const TileGrid& grid, TileCoord goal, const TileFil
     width_ = grid.width();
     // the flood goes outward from the goal and records each step on the tile it leads *to*.
     // it reads as the cost of coming back the other way because both halves of the rule are
-    // symmetric: a diagonal costs the same either way, and the two corners it squeezes
-    // between are the same two tiles from both ends. UNREACHED and UNREACHABLE are one value
+    // symmetric. A diagonal costs the same either way. The two corners it squeezes between
+    // are the same two tiles from both ends. UNREACHED and UNREACHABLE are one value
     costs_ = flood(Walk(grid, enterable), goal, UNREACHED, {});
 }
 

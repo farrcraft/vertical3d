@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_the_box_does_not_show) {
 
 /**
  * Which row a point is on is found against the box the list was drawn in and the scroll it
- * was drawn at, so the cursor lands on what is under it rather than on what would be there
+ * was drawn at. The cursor lands on what is under it rather than on what would be there
  * unscrolled. A list that has never been drawn returns no row.
  **/
 BOOST_AUTO_TEST_CASE(a_point_names_the_row_under_it) {

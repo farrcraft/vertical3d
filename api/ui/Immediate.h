@@ -30,11 +30,11 @@ class Theme;
 /**
  * A ui written as calls rather than as a tree.
  *
- * A panel is a sequence between begin() and end(): each widget is placed where the layout
- * pen has got to, drawn onto the same quad canvas the retained components draw onto, hit
- * tested against the box it was just drawn in, and returns its result on the spot. There is
- * nothing to keep in step with the state it shows, because it is a function of that state,
- * so it suits tool panels that read live state.
+ * A panel is a sequence between begin() and end(). Each widget is placed where the layout
+ * pen has got to and drawn onto the same quad canvas the retained components draw onto. It
+ * is hit tested against the box it was just drawn in, and returns its result on the spot.
+ * There is nothing to keep in step with the state it shows, because it is a function of
+ * that state, so it suits tool panels that read live state.
  *
  * Text is the caller's to draw, the same way ComponentRenderer takes it: this class knows
  * how wide a string is and where it goes, and v3d::font turns it into glyphs.

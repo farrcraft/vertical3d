@@ -17,8 +17,8 @@ is the part of this choice that cannot be changed later without rewriting the ma
 ## Decision
 
 Shading is a language. `api/render/offline` compiles a subset of SL into a flat instruction
-program, and a machine runs it over a batch of shading points under an execution mask, so a
-grid and a single traced hit take the same code path. Shaders are compiled from source when
+program. A machine runs it over a batch of shading points under an execution mask, so a grid
+and a single traced hit take the same code path. Shaders are compiled from source when
 first named, and the standard shaders are compiled into the library as source.
 
 ## Alternatives
@@ -37,9 +37,9 @@ first named, and the standard shaders are compiled into the library as source.
 ### A shading language with a scalar execution model
 - **For**: A much simpler machine, with no mask stack and no per-point bookkeeping. `if` is a
   jump, and one traced hit is the natural case.
-- **Against**: The reyes hider would enter the interpreter once per grid vertex, which is where
-  it does all its work. The semantics change too: a scalar `if` has no answer for a condition
-  that differs across a grid except to run the shader once per point.
+- **Against**: The reyes hider shades a whole grid at a time, and would enter the interpreter once
+  for each vertex of it. The semantics change too: a scalar `if` has no answer for a condition that
+  differs across a grid except to run the shader once per point.
 - **Rejected because**: It has no migration path. Everything else here can be revised by adding
   code; this would be revised by replacing the machine.
 

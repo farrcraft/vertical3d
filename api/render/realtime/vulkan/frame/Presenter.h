@@ -24,9 +24,9 @@ namespace v3d::render::realtime::vulkan::frame {
  * The acquire / record / submit / present loop, and the synchronization it needs.
  *
  * The frames recorded ahead of the device are a Ring, which this drives but which works
- * without it. What is here is what needs the chain: an image-available semaphore per frame,
- * and a render-finished semaphore per swapchain image rather than per frame, because
- * presentation waits on it and presentation is tied to the image.
+ * without it. This holds what needs the chain: an image-available semaphore per frame, and a
+ * render-finished semaphore per swapchain image. The second is per image rather than per
+ * frame, because presentation waits on it and presentation is tied to the image.
  *
  * The submit made by present() is what signals the ring's fence for the frame it recorded.
  *

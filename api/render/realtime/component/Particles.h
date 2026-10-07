@@ -38,8 +38,8 @@ struct Particles final {
 
     /**
      * Whether the clip runs once over a particle's whole life, however long that is, or plays by
-     * the particle's age in seconds - a puff that thins as it dies, or a flame that flickers at
-     * its own rate.
+     * the particle's age in seconds. The first suits a puff that thins as it dies, and the
+     * second a flame that flickers at its own rate.
      **/
     bool overLife{ false };
 

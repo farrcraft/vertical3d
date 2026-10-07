@@ -8,9 +8,10 @@
 
 The offline renderer needs a scene description, and two candidates exist in the tree. RIB is
 the text serialisation of the RenderMan Interface (RI) calls, and moya already declares those
-calls. The editor's project file ([ADR-0018](0018-editor-projects-saved-as-json-with-exact-topology.md))
-is the only source of modelled meshes, and `api/asset` already parses it. The project file holds
-topology and a placement per mesh and nothing else: no lights and no materials.
+calls. The editor's project file
+([ADR-0018](0018-editor-projects-saved-as-json-with-exact-topology.md)) is the only source of
+modelled meshes, and `api/asset` already parses it. The project file holds topology and a
+placement per mesh and nothing else: no lights and no materials.
 
 ## Decision
 
@@ -44,8 +45,8 @@ internal to the editor. When the editor needs a scene rendered offline, it expor
   - The RI request set decides what a scene can say. It is a published specification, so the
     tree does not invent a format.
   - The editor's document format can change without breaking the renderer.
-  - An unimplemented request is accepted and ignored, which is what the RI standard asks of a
-    renderer that lacks a feature.
+  - An unimplemented request is accepted and ignored. The RI standard asks this of a renderer
+    that lacks a feature.
 - **Costs**:
   - A full tokenizer is required before any geometry works: quoted strings, bracketed arrays and
     parameter lists typed by declaration.

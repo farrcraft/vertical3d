@@ -68,9 +68,9 @@ BOOST_AUTO_TEST_CASE(the_dressing_is_filled_in_for_the_size) {
 
 /**
  * A rescale rebuilds what closes over the size and dresses it for the new one. The theme goes
- * to what was rebuilt. The immediate layer is the same layer, given the new text, and the
- * overlay is the same overlay, at a new size and as visible as it
- * was - so an app that toggles it through a handle it kept still reaches the one drawn.
+ * to what was rebuilt. The immediate layer is the same layer, given the new text. The
+ * overlay is the same overlay, at a new size and as visible as it was. An app that toggles
+ * it through a handle it kept still reaches the one drawn.
  **/
 BOOST_AUTO_TEST_CASE(a_rescale_rebuilds_what_closes_over_the_size) {
     v3d::ui::shell::Screen::Options options = sized(20.0f);

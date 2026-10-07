@@ -79,9 +79,9 @@ glm::vec3 Tracer::transmitted(const glm::vec3 & from, const glm::vec3 & to, cons
 
     /*
         Everything between here and the light takes its share, and nothing beyond the light
-        does. An occluder lets through what its Os does not stop, read off the primitive
-        rather than by running its shader: a shadow is a visibility question, and asking
-        a shader would make every shadow ray a shading one.
+        does. An occluder lets through what its Os does not stop. Os is read off the
+        primitive rather than by running its shader. A shadow is a visibility question, and
+        asking a shader would make every shadow ray a shading one.
     */
     glm::vec3 through(1.0f);
     float past = 0.0f;

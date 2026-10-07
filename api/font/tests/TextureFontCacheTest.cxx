@@ -155,8 +155,8 @@ BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
     wider->atlas(larger.atlas());
     BOOST_CHECK_EQUAL(wider->loadGlyphs(kPrintable), true);
 
-    // a distance field glyph is the coverage one grown by the spread on each side, which
-    // is why it needs more atlas space
+    // a distance field glyph is the coverage one grown by the spread on each side, so it
+    // needs more atlas space
     boost::shared_ptr<v3d::font::TextureFontCache> plain =
         boost::make_shared<v3d::font::TextureFontCache>(512, 512, 1, logger);
     boost::shared_ptr<v3d::font::TextureFont> coverage =

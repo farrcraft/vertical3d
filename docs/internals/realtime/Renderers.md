@@ -18,7 +18,7 @@ depth state.
 | `FullScreen` | 1 | neither | one triangle from three vertices and no vertex buffer; caller's fragment SPIR-V |
 
 `DeviceContext` builds `Quad`, `Line` and `World` on first request against its colour format and
-`depthFormat()`. `Quad` is lazy too, because `Context3D` does not know its format until the
+`depthFormat()`. `Quad` is lazy too, because `Context3D` has no format until the
 swapchain exists.
 
 **Quad text.** A batch carries a text flag, and `Canvas` never merges across it. The fragment

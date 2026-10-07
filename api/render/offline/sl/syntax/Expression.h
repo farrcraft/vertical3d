@@ -45,7 +45,7 @@ class Expression {
     /**
      * What the expression turns out to be, filled in by Compiler.
      *
-     * The tree carries its own analysis rather than a second structure keyed by node: the
+     * The tree carries its own analysis rather than a second structure keyed by node. The
      * two are written and read by passes in the same library, and a parallel map would be
      * one more thing to keep in step. Until the compiler has run, `storage` is UNSPECIFIED
      * and `type` means nothing.

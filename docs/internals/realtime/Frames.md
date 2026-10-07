@@ -163,21 +163,21 @@ pass of the frame that writes the target uses depth, whichever passes are first 
 ## Timings and statistics
 
 **GPU timings.** The ring owns a `vulkan::frame::Timings`: a timestamp query pool per slot, with
-room for 64 spans a frame. `Ring::begin()` reads what the slot timed on its last use (its fence
-has signalled, so this never waits) and resets the queries in the new command buffer. The
-recorder writes a timestamp either side of every pass, under the pass name. So
-`Engine3D::timings()` reports the frame that is as old as the ring is deep. A caller recording
-its own commands into the ring's buffer may `open()` and `close()` spans of its own; spans do not
-nest. A graphics family with zero `timestampValidBits` leaves timings off, and every call does
-nothing.
+room for 64 spans a frame. `Ring::begin()` reads what the slot timed on its last use (its fence has
+signalled, so this never waits) and resets the queries in the new command buffer. The recorder
+writes a timestamp either side of every pass, under the pass name. `Engine3D::timings()` therefore
+reports the frame that is as old as the ring is deep. A caller recording its own commands into the
+ring's buffer may `open()` and `close()` spans of its own; spans do not nest. A graphics family
+with zero `timestampValidBits` leaves timings off, and every call does nothing.
 
 **CPU statistics.** `engine::Statistics::scope(name)` times a span of the frame on the CPU into
 its own row, and `ui::shell::StatisticsOverlay` draws a line per span it is given.
 
 ## Frame capture
 
-`vulkan::frame::Capture` copies an image into a host-visible `Buffer` and writes a PNG. Its use is
-in [api/rendering/FramesAndTargets.md](../../api/rendering/FramesAndTargets.md#reading-a-frame-back). Inside:
+`vulkan::frame::Capture` copies an image into a host-visible `Buffer` and writes a PNG. Its use
+is in [api/rendering/FramesAndTargets.md](../../api/rendering/FramesAndTargets.md#reading-a-frame-back).
+Inside:
 
 - `record()` takes a `Capture::Source` (image, extent, format, layout, depth flag), so one code
   path reads a swapchain image or a target. The swapchain overload fills one in from an acquired

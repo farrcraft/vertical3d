@@ -45,8 +45,8 @@ ordering.
 - **Costs**:
   - The `SDL_Renderer` software fallback is gone, on the grounds that no target environment
     lacks a Vulkan driver.
-  - Losing it also removes the free route to headless render tests, which is why
-    [ADR-0007](0007-ci-render-tests-on-software-vulkan.md) is needed.
+  - Losing it also removes the free route to headless render tests.
+    [ADR-0007](0007-ci-render-tests-on-software-vulkan.md) is needed because of this.
   - Logical presentation and stretch-to-fit, free under `SDL_Renderer`, have to be rebuilt as
     an offscreen target and a scaled draw.
 - **Revisit when**: a target without a Vulkan driver has to be supported. The cost of reopening

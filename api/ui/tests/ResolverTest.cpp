@@ -165,9 +165,9 @@ BOOST_AUTO_TEST_CASE(the_ui_style_is_read_into_the_base) {
 }
 
 /**
- * The colour a control that cannot be used is drawn in is the theme's to name, and it is
- * named once in "ui" rather than per class - so a theme that dresses one control disabled
- * has dressed them all.
+ * The theme names the colour a control that cannot be used is drawn in. It is named once in
+ * "ui" rather than per class, so a theme that dresses one control disabled has dressed them
+ * all.
  **/
 BOOST_AUTO_TEST_CASE(the_ui_style_names_the_disabled_colour) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE(a_class_can_ring_its_own_control) {
  * A button's ring comes out of the "button" class, which is the only thing a button reads as a
  * Dressing - its fill is nine images and its label is the base's.
  *
- * A button's styles are told apart by state as well as by name, and the first of the set is
+ * A button's styles are told apart by state as well as by name. The first of the set is
  * used here, because a ring shows where the keyboard is rather than what state the button
  * is in.
  **/
@@ -259,8 +259,8 @@ BOOST_AUTO_TEST_CASE(a_buttons_ring_comes_out_of_the_button_class) {
 /**
  * The immediate layer reads its own style class, not the retained side's.
  *
- * The two use the same keys at different sizes - a hud is read at a glance and a tool panel
- * is read closely - so with one class a theme's "line-height" for one would break the other.
+ * The two use the same keys at different sizes: a hud is read at a glance and a tool panel
+ * is read closely. With one class, a theme's "line-height" for one would break the other.
  **/
 BOOST_AUTO_TEST_CASE(the_two_ways_of_writing_a_ui_read_different_classes) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =

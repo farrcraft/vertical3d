@@ -63,7 +63,7 @@ class MovingTransform final {
      * Both ends followed by a matrix - a request outside a block, or a camera applied after.
      **/
     MovingTransform after(const glm::mat4x4 & matrix) const;
-    /** A matrix followed by both ends, which is how the camera transformation applies. **/
+    /** A matrix followed by both ends: the order in which the camera transformation applies. **/
     MovingTransform before(const glm::mat4x4 & matrix) const;
 
     /**

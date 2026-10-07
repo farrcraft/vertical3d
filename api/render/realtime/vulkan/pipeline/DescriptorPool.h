@@ -22,8 +22,8 @@ namespace v3d::render::realtime::vulkan::pipeline {
 /**
  * Descriptor sets of one layout, and the layout itself.
  *
- * Sets are allocated out of a list of Vulkan pools that grows by a fixed count whenever the
- * last one is full, so the number of sets a frame or a scene needs is not fixed up front.
+ * Sets are allocated out of a list of Vulkan pools. The list grows by a fixed count whenever
+ * the last one is full, so the number of sets a frame or a scene needs is not fixed up front.
  * Individual sets are not freed: one handed back is kept and given out again once the ring
  * reports that no frame in flight can still be binding it.
  *

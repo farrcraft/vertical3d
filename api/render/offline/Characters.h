@@ -49,9 +49,9 @@ class Characters final {
     unsigned int column() const;
 
     /**
-     * The rest of a quoted string whose opening quote has been consumed, with its escapes
-     * resolved, up to and including the closing quote: the standard C escapes, up to three
-     * octal digits, and any other escaped character as itself.
+     * The rest of a quoted string whose opening quote has been consumed, up to and including
+     * the closing quote. Its escapes are resolved: the standard C escapes, up to three octal
+     * digits, and any other escaped character as itself.
      *
      * @param lineEnds whether a newline ends the string unterminated rather than being part
      *        of it

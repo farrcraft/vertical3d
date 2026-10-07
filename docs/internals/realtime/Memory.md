@@ -69,8 +69,8 @@ A consumer chooses the kind in the `Device` constructor.
   unconditionally.
 - VMA is a private dependency. `Allocator.h` and `Allocation.h` declare its handle types
   themselves, and `vk_mem_alloc.h` is compiled in exactly one translation unit,
-  [`VmaImpl.cxx`](../../../api/render/realtime/vulkan/memory/VmaImpl.cxx), with warnings and analysis
-  off.
+  [`VmaImpl.cxx`](../../../api/render/realtime/vulkan/memory/VmaImpl.cxx), with warnings and
+  analysis off.
 - The allocator is destroyed before the device. See [ownership](README.md#object-chain-and-ownership).
 
 Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
@@ -129,8 +129,8 @@ layouts), materials and textures. It is built on `Registry<Tag, T>`
 **Handles.** `Handle<Tag>` ([`Handle.h`](../../../api/render/realtime/Handle.h)) holds a 32-bit slot
 and a 32-bit generation. The tag keeps `PipelineHandle`, `MaterialHandle`, `TextureHandle` and
 `MeshHandle` distinct types. A released slot is reused by a later `add()` with its generation
-incremented, and `resolve()` refuses a handle whose generation is stale. So a handle can never
-come to name whatever fills its slot next. Only the slot is a sort order.
+incremented, and `resolve()` refuses a handle whose generation is stale. A handle can therefore
+never come to name whatever fills its slot next. Only the slot is a sort order.
 
 **Deferred destruction.** Releasing a handle hands the objects behind it to the ring as a
 callback (`Ring::retire()`). `vulkan::frame::Retirement` stores each callback with the last frame
@@ -142,7 +142,8 @@ fence of the slot's previous use. The ring's destructor waits for the device and
 left.
 
 **A release and the items already queued.** A draw item names its material by handle, and the
-recorder resolves it when the frame is recorded. So a release cannot take effect at once:
+recorder resolves it when the frame is recorded. A release therefore cannot take effect at
+once:
 
 - A released material goes on resolving until the frame `Ring::recording()` named at the release
   is submitted. Items queued before the release draw with it. It resolves to nothing after.
@@ -153,7 +154,7 @@ recorder resolves it when the frame is recorded. So a release cannot take effect
   a released texture until then.
 - Releasing a handle already waiting in the ring returns false.
 
-So a mesh, a texture or a post source released after its items are queued and before
+As a result, a mesh, a texture or a post source released after its items are queued and before
 `renderFrame()` is drawn by that frame. The callbacks share `Resources`' registries through a
 shared pointer, because the ring outlives `Resources` and may run them after it is destroyed.
 

@@ -108,8 +108,8 @@ target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset v3dlib_image 
 target_link_libraries(v3dlib_render PRIVATE GPUOpen::VulkanMemoryAllocator)
 
 # VMA is one header that is both declaration and implementation, compiled in exactly one
-# translation unit. Its warnings and both analysers are switched off, as api/asset/media does for cgltf,
-# because a local fix would be lost the next time the port is updated.
+# translation unit. Its warnings and both analysers are switched off, as api/asset/media does
+# for cgltf, because a local fix would be lost the next time the port is updated.
 set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES
 	COMPILE_OPTIONS "/analyze-;/W0"
 	SKIP_LINTING TRUE)

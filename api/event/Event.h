@@ -48,7 +48,7 @@ class Event {
     /**
      * Whether a press is the platform repeating a key that is held down, rather than a new
      * press. A binding carries it from the key to the command. A command that acts while its
-     * key is held, such as moving a piece, takes repeats; one that toggles something, such as
+     * key is held, such as moving a piece, takes repeats. One that toggles something, such as
      * a menu, ignores them, or holding the key would flick it on and off.
      **/
     void repeat(bool repeated) noexcept;

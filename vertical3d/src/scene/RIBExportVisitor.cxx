@@ -36,9 +36,9 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, unsigned i
     *stream_ << "Format " << width << " " << height << " 1\n";
 
     /*
-        The screen window is written rather than left to the frame aspect, because the
-        editor's camera states its aperture as a pixel aspect and an ortho zoom, and a reader
-        should not have to derive it from those.
+        The screen window is written rather than left to the frame aspect. The editor's
+        camera states its aperture as a pixel aspect and an ortho zoom, and a reader should
+        not have to derive the window from those.
     */
     if (profile.orthographic()) {
         const float top = profile.orthoZoom();

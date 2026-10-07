@@ -15,11 +15,11 @@ generation has no occupants at all.
 
 ## Decision
 
-Tile grids are `api/grid`, a library with no device or windowing types, and three rules are fixed
-in it: movement is 8-way at a flat cost per step, a diagonal may not pass between two blocked
-tiles, and sight between two tiles gives the same answer from either end. What the grid cannot
-know, such as what may be entered or what blocks a line, it asks the caller for through a
-predicate, and it is never told what an occupant is.
+Tile grids are `api/grid`, a library with no device or windowing types. Three rules are fixed in
+it. Movement is 8-way at a flat cost per step. A diagonal may not pass between two blocked tiles.
+Sight between two tiles gives the same answer from either end. The grid does not hold what may be
+entered or what blocks a line, so it asks the caller for those through a predicate. It is never
+told what an occupant is.
 
 ## Alternatives
 

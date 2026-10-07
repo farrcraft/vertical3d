@@ -164,7 +164,7 @@ files.
 `v3d_add_shader(<target> <source>)` runs the Vulkan SDK's `glslc` on a GLSL file. glslc writes
 the SPIR-V as a C initialiser list to `<binary dir>/shaders/<name>.inc`, and the C++ source
 `#include`s that file into a `uint32_t` array. The generated file is outside the source tree,
-which is why its include stays quoted (see [Conventions.md](Conventions.md#includes)).
+so its include stays quoted (see [Conventions.md](Conventions.md#includes)).
 
 - The engine's shaders are in [api/render/shaders/](../../api/render/shaders).
 - `OUTPUT` gives the compiled module a name other than the source file's name.

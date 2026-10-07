@@ -298,8 +298,8 @@ BOOST_AUTO_TEST_CASE(a_component_disabled_while_focused_takes_no_key) {
 }
 
 /**
- * A tab bar holds every page and shows one, and a control on a page that is not up is not
- * reached by tab: it was never laid out or drawn, and typing into it would go somewhere the
+ * A tab bar holds every page and shows one. A control on a page that is not up is not
+ * reached by tab. It was never laid out or drawn, and typing into it would go somewhere the
  * player cannot see.
  **/
 BOOST_AUTO_TEST_CASE(a_control_on_a_hidden_page_is_not_focused) {

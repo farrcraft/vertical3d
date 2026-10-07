@@ -241,7 +241,7 @@ void focusScene(v3d::moya::RenderContext & rc, bool lens) {
 }
 
 /**
- * How many pixels along a row are partly covered, which is how wide an edge is.
+ * How many pixels along a row are partly covered. That count is the width of an edge.
  **/
 unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage,
     unsigned int row, unsigned int from, unsigned int to) {
@@ -328,9 +328,9 @@ void motionScene(v3d::moya::RenderContext & rc) {
 
 /**
  * The coverage of a quad that slid twelve pixels right while the shutter was open, along the
- * row through its middle. Its left edge leaves pixels 8 to 19 one after another and its right
- * edge reaches pixels 32 to 43, so under a one pixel box the coverage climbs a twelfth a pixel
- * from 8 and falls a twelfth a pixel from 32, and is whole between.
+ * row through its middle. Its left edge leaves pixels 8 to 19 one after another, and its
+ * right edge reaches pixels 32 to 43. Under a one pixel box the coverage climbs a twelfth a
+ * pixel from 8, falls a twelfth a pixel from 32, and is whole between.
  **/
 void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, unsigned int row) {
     BOOST_CHECK_EQUAL(planes.value(coverage, 7, row), 0.0f);
@@ -834,10 +834,10 @@ BOOST_AUTO_TEST_CASE(moya_in_focus_is_sharp_test) {
 
 /**
  * The quad off the plane of focus spreads its edge over its circle of confusion. Under a one
- * pixel box, a pinhole leaves the edge in a pixel or two; the lens, a quarter of a unit across
- * and focused four units out, blurs a point ten units out over 2 * 0.25 * (10 - 4) / 10 of a
- * unit there, which is about five pixels at this field of view. The reyes hider gets there by
- * moving the micropolygon and the ray hider by moving the ray.
+ * pixel box, a pinhole leaves the edge in a pixel or two. The lens is a quarter of a unit
+ * across and focused four units out. It blurs a point ten units out over
+ * 2 * 0.25 * (10 - 4) / 10 of a unit there, about five pixels at this field of view. The reyes
+ * hider gets there by moving the micropolygon, and the ray hider by moving the ray.
  **/
 BOOST_AUTO_TEST_CASE(moya_out_of_focus_spreads_test) {
     for (const char* hider : HIDERS) {
@@ -949,9 +949,9 @@ BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
 
     /*
         The two hiders also agree on the same file away from the edges, where the reyes hider's
-        micropolygons are flat: in a shadow of both lights, in the point light's shadow alone,
-        lit by both, and the imager's background. An edge moves by up to a micropolygon, so
-        only the insides are pinned.
+        micropolygons are flat. The regions checked are a shadow of both lights, the point
+        light's shadow alone, a region lit by both, and the imager's background. An edge moves
+        by up to a micropolygon, so only the insides are pinned.
     */
     boost::shared_ptr<v3d::render::offline::FrameBuffer> traced = read(SHADOW_SCENE, "raytrace");
     const unsigned int pixels[][2] = { { 40, 30 }, { 24, 40 }, { 56, 26 }, { 8, 8 }, { 2, 2 } };

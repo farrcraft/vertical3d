@@ -15,10 +15,10 @@ draws its play area and its menu in one pass, and the menu is in pixels.
 
 ## Decision
 
-A canvas may be given a space: a size in the game's units with its origin at the top left, and
-a fit, either stretched to the canvas or contained at its own aspect ratio with bars either
-side. `projection()` maps the space into the viewport, `toSpace()` maps a pixel back, and a clip
-rectangle is mapped to pixels for the scissor. A canvas with no space draws in pixels, and the
+A canvas may be given a space: a size in the game's units with its origin at the top left, and a
+fit. The fit is either stretched to the canvas or contained at its own aspect ratio with bars
+either side. `projection()` maps the space into the viewport, `toSpace()` maps a pixel back, and a
+clip rectangle is mapped to pixels for the scissor. A canvas with no space draws in pixels, and the
 2D pass keeps taking its projection from the canvas rather than reading set 0.
 
 ## Alternatives

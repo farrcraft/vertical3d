@@ -46,10 +46,10 @@ namespace v3d::render::realtime::vulkan::renderer {
  * There is one pipeline here and every 2D thing in the engine draws with it: a rectangle,
  * a sprite and a glyph differ only in which texture is bound and what the vertex colour is.
  *
- * A Canvas is filled on the CPU during a tick and handed here, which uploads its geometry
- * into buffers belonging to the frame about to be recorded and turns each of its
- * batches into a draw item on a pass. The buffers are per frame in flight, because the
- * device may still be reading the previous frame's out of the previous slot.
+ * A Canvas is filled on the CPU during a tick and handed here. This uploads its geometry
+ * into buffers belonging to the frame about to be recorded, and turns each of its batches
+ * into a draw item on a pass. The buffers are per frame in flight, because the device may
+ * still be reading the previous frame's out of the previous slot.
  *
  * A frame may submit any number of canvases, and each submission takes a pair of
  * buffers of its own out of the frame's ring. They cannot share one pair: growing a

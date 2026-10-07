@@ -28,7 +28,7 @@ namespace v3d::render::offline::trace {
  * What a ray can meet: the primitives in world space, the lights on them, and the colour of
  * a ray that misses all of them.
  *
- * A primitive is anything that can intersect a ray and describe the hit, and the scene holds
+ * A primitive is anything that can intersect a ray and describe the hit. The scene holds
  * them as one list, so a new kind of primitive is a new class rather than a change here.
  **/
 class Scene final {

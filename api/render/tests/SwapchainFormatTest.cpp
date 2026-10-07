@@ -29,8 +29,8 @@ BOOST_AUTO_TEST_SUITE(swapchain_format_test)
 
 /**
  * A caller that names no format gets a UNORM format in preference to an SRGB one, whatever
- * order the surface lists its formats in. The SRGB entry sits first here because that is the order a driver usually
- * reports and the order a naive pick would take.
+ * order the surface lists its formats in. The SRGB entry sits first here because that is the
+ * order a driver usually reports and the order a naive pick would take.
  **/
 BOOST_AUTO_TEST_CASE(no_preference_takes_unorm) {
     const std::vector<VkSurfaceFormatKHR> formats{

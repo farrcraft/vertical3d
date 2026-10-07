@@ -171,10 +171,10 @@ BOOST_AUTO_TEST_CASE(a_sprite_without_a_transform_is_not_drawn) {
 }
 
 /**
- * A small isometric game world: a 1.6 high marker at the player's feet and a 0.9 high acorn at
- * (2.6, 0, -2.2), on one sheet, under an isometric profile with the eye at (10, 14.142, -10).
- * sprites() must emit the billboard corners built from the profile's right and up, in one
- * batch, keyed along the camera's forward flattened onto the ground.
+ * A small isometric game world. A 1.6 high marker stands at the player's feet and a 0.9 high
+ * acorn at (2.6, 0, -2.2), both on one sheet. The profile is isometric, with the eye at
+ * (10, 14.142, -10). sprites() must emit the billboard corners built from the profile's right
+ * and up, in one batch, keyed along the camera's forward flattened onto the ground.
  *
  * From that eye the acorn is nearer the camera than the player standing at the origin, so the
  * player is drawn first.

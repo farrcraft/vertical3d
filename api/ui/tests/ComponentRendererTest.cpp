@@ -404,7 +404,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
 
 /**
  * Disabling a box greys what it holds. Routing a point or a tab skips a disabled subtree and
- * never reaches it, but drawing reaches every component on its own, so a label inside a
+ * never reaches it. Drawing reaches every component on its own, so a label inside a
  * disabled group has to check what is around it.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_box_greys_the_label_it_holds) {

@@ -43,9 +43,9 @@ orthographic projection and no depth.
 **`DeviceContext` is usable without a window.** It is given a colour format and an extent at
 construction, or later through the protected `describe()`. Every pipeline built through it is
 compiled against that format. A headless context (as in the device tests) is a
-`DeviceContext` on a `Device` built with no surface. `Context3D` cannot know its format at
-construction because its swapchain does not exist yet, so it calls `describe()` after creating
-the swapchain and after every rebuild. A renderer already built keeps the format it was compiled
+`DeviceContext` on a `Device` built with no surface. `Context3D` has no format at construction
+because its swapchain does not exist yet, so it calls `describe()` after creating the swapchain
+and after every rebuild. A renderer already built keeps the format it was compiled
 with.
 
 **Member order sets teardown order.** C++ destroys members in reverse declaration order:
@@ -101,6 +101,6 @@ Background: [ADR-0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md),
 ## Tests
 
 Unit tests that need no GPU (canvas batching, sort keys, frame ordering, recorder checks,
-swapchain format choice, retirement, capture conversion) and device tests that draw headless are
-in [api/render/tests](../../../api/render/tests). How to run them and verify a rendering change is in
-[contributing/Testing.md](../../contributing/Testing.md).
+swapchain format choice, retirement, capture conversion) and device tests that draw headless
+are in [api/render/tests](../../../api/render/tests). How to run them and verify a rendering
+change is in [contributing/Testing.md](../../contributing/Testing.md).

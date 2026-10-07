@@ -15,8 +15,8 @@ namespace v3d::asset {
  * The whole of a file, as bytes.
  *
  * The caller decides what a missing or unreadable file means, so this only reports that it
- * happened: a loader turns it into no asset and a log line, and a reader of a document the
- * user chose turns it into a message.
+ * happened. A loader turns it into no asset and a log line. A reader of a document the user
+ * chose turns it into a message.
  *
  * The file is sized before it is read, and a read that returns fewer bytes than that size is
  * a failure.

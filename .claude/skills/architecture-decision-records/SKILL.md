@@ -58,8 +58,8 @@ Copy [`docs/adr/template.md`](../../../docs/adr/template.md). Do not invent a va
 `0032-loop-fixed-step-simulation-variable-rate-rendering.md`.
 
 **Header.** `Status` is one of proposed, accepted, amended or superseded. The header also
-carries `Date`, `Amends`, `Amended by`, `Supersedes`, `Superseded by` and `Documented in`. Omit any link line
-that has nothing to link.
+carries `Date`, `Amends`, `Amended by`, `Supersedes`, `Superseded by` and `Documented in`.
+Omit any link line that has nothing to link.
 
 **Context.** Five sentences at most, in the present tense. Give the constraints and forces that
 make a choice necessary. Do not tell the story of how the problem was found. Do not name other
@@ -80,7 +80,8 @@ they stop being true. They belong in the commit message.
 
 1. Take the next number from the index.
 2. Draft it from `template.md`, and leave no placeholder text.
-3. Add a row to the right area table in `docs/adr/README.md`: `| [NNNN](file.md) | Title | status |`.
+3. Add a row to the right area table in `docs/adr/README.md`:
+   `| [NNNN](file.md) | Title | status |`.
 4. Update the document named in `Documented in` so that it states the rule.
 5. **Show it to the user before committing.** The decision is theirs. A record marked
    `accepted` that the user never accepted is a false statement that outlives the

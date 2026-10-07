@@ -50,9 +50,9 @@ void clear(VkCommandBuffer commands, VkImageView colour, VkImageView depth, cons
 }
 
 /**
- * Clear a slot's images, taking each from undefined into the layout a pass draws in and then
- * into the layout the recorder leaves a target in after its last pass, so that a slot no pass
- * has drawn into looks like one a pass has. A null image is one the slot does not have.
+ * Clear a slot's images. Each goes from undefined into the layout a pass draws in, and then
+ * into the layout the recorder leaves a target in after its last pass. A slot no pass has
+ * drawn into then looks like one a pass has. A null image is one the slot does not have.
  **/
 void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, VkImage depth, VkImageView depthView,
     const VkExtent2D& extent) {
@@ -160,8 +160,8 @@ boost::shared_ptr<memory::Image> RenderTarget::createColour(uint32_t width, uint
     spec.height = height;
     spec.format = format_;
     // a pass draws into a target and a later pass reads it. TRANSFER_SRC lets frame::Capture
-    // copy one out; it is always granted, as SAMPLED is, and its only cost is any
-    // compression a desktop driver disables for it
+    // copy one out. It is always granted, as SAMPLED is, and its only cost is any compression
+    // a desktop driver disables for it
     spec.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     return boost::make_shared<memory::Image>(device_, spec);
 }

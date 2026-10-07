@@ -67,7 +67,8 @@ void record(v3d::test::Headless* headless, const Frame& frame, const boost::shar
 
 /**
  * Every value a channel can take, spread over a square so that red, green and blue all vary
- * independently - 64 by 64 is 4096 texels, and each channel sweeps 0 to 255 along its own axis.
+ * independently. A square of 64 by 64 is 4096 texels, and each channel sweeps 0 to 255 along
+ * its own axis.
  **/
 std::vector<unsigned char> sweep(uint32_t size) {
     std::vector<unsigned char> texels(static_cast<std::size_t>(size) * size * 4);
@@ -426,11 +427,12 @@ BOOST_AUTO_TEST_CASE(a_replaced_table_regrades_its_sources) {
 }
 
 /**
- * A table replaced straight after a frame that grades with the old one is submitted, without
- * waiting for it, leaves that frame silent, and the frame after the swap grades with the new
- * table. replace() uploads the new table and waits for the queue to go idle, so the submitted
- * frame has finished before the old table and material are released. The case checks that the
- * validation layer reports no errors and that the second frame gives the complement.
+ * A frame grades with the old table and is submitted, and the table is replaced without waiting
+ * for that frame. The validation layer reports nothing for it, and the frame after the swap
+ * grades with the new table. replace() uploads the new table and waits for the queue to go
+ * idle, so the submitted frame has finished before the old table and material are released.
+ * The case checks that the validation layer reports no errors and that the second frame gives
+ * the complement.
  **/
 BOOST_AUTO_TEST_CASE(a_table_replaced_after_a_submit_keeps_the_frame_silent) {
     const uint32_t size = 64;

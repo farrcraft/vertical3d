@@ -133,8 +133,8 @@ class Window final {
      * In relative mode the cursor is hidden and held in the window, and a motion event's
      * motion() is how far the mouse moved however near an edge it is, which mouselook
      * reads. The platform releases the mouse while the window is not focused and captures
-     * it again on focus, so an app turns the mode off only for its own reasons, such as a
-     * menu that needs a pointer.
+     * it again on focus. An app therefore turns the mode off only for its own reasons, such
+     * as a menu that needs a pointer.
      *
      * @param on whether to enter relative mode
      * @return whether the platform accepted the change; false for a window not yet created

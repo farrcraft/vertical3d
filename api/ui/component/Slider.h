@@ -17,8 +17,8 @@ namespace v3d::ui::component {
  *
  * Unlike a scrollbar it holds a value in its own units rather than an offset into content
  * it does not hold, and its thumb does not say how much of anything is shown. It owns the
- * value, the way a list owns which row is chosen, and sends its command each time the value
- * changes - by a press, a drag or a key - so whatever answers reads value() back.
+ * value, the way a list owns which row is chosen. It sends its command each time the value
+ * changes, by a press, a drag or a key, so whatever answers reads value() back.
  *
  * The track, the fill up to the thumb and the thumb are the "slider" style class the
  * component names.

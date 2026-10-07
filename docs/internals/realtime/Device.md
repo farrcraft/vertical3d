@@ -19,9 +19,9 @@ qualifies, the constructor throws naming the requirement.
 The 1.3 features are requested explicitly through a `VkPhysicalDeviceVulkan13Features`, and
 `separateDepthStencilLayouts` through a `VkPhysicalDeviceVulkan12Features`, both chained onto
 `VkPhysicalDeviceFeatures2`. `separateDepthStencilLayouts` lets a barrier move only the depth
-aspect of a combined depth and stencil format, which is what every depth barrier does. A chained features struct and `pEnabledFeatures` are mutually
-exclusive, so the base features travel in the chain too. `wideLines` is not requested, which is
-why lines are one pixel wide.
+aspect of a combined depth and stencil format, and every depth barrier does that. A chained
+features struct and `pEnabledFeatures` are mutually exclusive, so the base features travel in
+the chain too. `wideLines` is not requested, so lines are one pixel wide.
 
 A device given no surface is headless: it selects on the graphics family alone, enables no
 swapchain extension, and has no present queue. Everything that draws works on it; `Swapchain` and

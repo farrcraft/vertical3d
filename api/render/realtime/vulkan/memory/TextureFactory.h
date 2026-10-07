@@ -33,8 +33,8 @@ class Buffer;
  * so nothing needs an upload that overlaps the frames being drawn.
  *
  * A single channel image is given a view that swizzles its one channel into alpha and
- * ones into rgb, so a glyph atlas samples as white-with-coverage and the quad shader reads
- * text and sprites the same way.
+ * ones into rgb. A glyph atlas therefore samples as white-with-coverage, and the quad
+ * shader reads text and sprites the same way.
  *
  * Every texture is read through the same sampler, which the factory makes once and each
  * texture shares.

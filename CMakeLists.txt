@@ -60,10 +60,10 @@ endif()
 
 # /analyze's findings are the C6xxx and C26xxx numbers, and they reach /WX like any other
 # warning. External headers are skipped: CMake gives an imported target's include directories
-# to MSVC as /external:I, and /analyze:external- is what stops the analyser walking into them -
-# without it a boost or glm header costs more analysis time than the whole tree and reports
-# findings in code this repository does not own. /analyze:external- is not the default, so it
-# must be stated.
+# to MSVC as /external:I, and /analyze:external- stops the analyser walking into them. Without
+# it, a boost or glm header costs more analysis time than the whole tree, and the analyser
+# reports findings in code this repository does not own. /analyze:external- is not the
+# default, so it must be stated.
 if(V3D_ANALYZE)
 	add_compile_options("/analyze" "/analyze:external-")
 endif()

@@ -47,8 +47,8 @@ BOOST_AUTO_TEST_CASE(component_interpolate_test) {
 }
 
 /**
- * A component is emplaced with the value it holds and read back through the registry, which
- * is how every app holds one.
+ * A component is emplaced with the value it holds and read back through the registry. Every
+ * app holds its components this way.
  **/
 BOOST_AUTO_TEST_CASE(component_registry_test) {
     entt::registry registry;

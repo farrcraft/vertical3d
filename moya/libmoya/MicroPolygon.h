@@ -29,9 +29,9 @@ class MicroPolygon {
  * Whether a point in raster space falls inside a micropolygon, and its depth there.
  *
  * The micropolygon is its four corners in raster space, in the order
- * MicroPolygonGrid::microPolygon gives them, and is tested as the two triangles 0, 1, 2 and
- * 0, 2, 3 - a micropolygon need not be planar, and a triangle always is. Either winding is
- * inside, and a point on an edge is too, so two micropolygons sharing an edge leave no gap.
+ * MicroPolygonGrid::microPolygon gives them. It is tested as the two triangles 0, 1, 2 and
+ * 0, 2, 3, because a micropolygon need not be planar and a triangle always is. Either winding
+ * is inside, and a point on an edge is too, so two micropolygons sharing an edge leave no gap.
  *
  * @param depth set to the corners' depths interpolated across the triangle the point is in
  **/

@@ -39,9 +39,9 @@ class RotateManipulator final : public Manipulator {
      * handle's axis.
      *
      * Measured on the screen rather than in the world, because the gesture follows the
-     * ring as drawn. Clip space points y down, so a rotation about an axis running
-     * into the screen sweeps the opposite way round the origin from one about an axis
-     * coming out of it, and the sign follows from which it is.
+     * ring as drawn. Clip space points y down. A rotation about an axis running into
+     * the screen sweeps the opposite way round the origin from one about an axis coming
+     * out of it, and the sign follows the axis's direction.
      **/
     /**
      * How close the cursor comes to the ring about one axis, in pixels.

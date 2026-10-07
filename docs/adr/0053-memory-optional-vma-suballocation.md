@@ -16,9 +16,9 @@ resources.
 
 ## Decision
 
-`memory::Allocator` is the one place an allocation is made, in one of two kinds chosen when the
-`Device` is constructed: direct, one device allocation per resource and the default, or
-suballocated, regions of larger blocks handed out by the Vulkan Memory Allocator (VMA). A
+`memory::Allocator` is the one place an allocation is made. It makes one of two kinds, chosen
+when the `Device` is constructed. Direct, the default, is one device allocation per resource.
+Suballocated is regions of larger blocks handed out by the Vulkan Memory Allocator (VMA). A
 resource holds an `Allocation` rather than a `VkDeviceMemory`, because a suballocated region
 starts partway into a shared block and is mapped and freed through the allocator that made it.
 

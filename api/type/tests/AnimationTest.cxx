@@ -123,8 +123,9 @@ BOOST_AUTO_TEST_CASE(animation_the_root_places_the_skeleton_test) {
 }
 
 /**
- * Sampling the bend at its keys and between them: the rest pose at 0, a quarter turn at 1 with
- * the top joint swung to (-1, 1, 0), and an eighth turn at a half with nothing else moved.
+ * Sampling the bend at its keys and between them. At 0 it is the rest pose. At 1 it is a
+ * quarter turn with the top joint swung to (-1, 1, 0). At a half it is an eighth turn with
+ * nothing else moved.
  **/
 BOOST_AUTO_TEST_CASE(animation_sampling_a_linear_rotation_test) {
     const Skeleton skeleton = strip();
@@ -177,7 +178,7 @@ BOOST_AUTO_TEST_CASE(animation_sampling_a_time_that_is_not_finite_test) {
 /**
  * A cubic spline gives each key's value at the key, and between them the Hermite blend of the
  * values and tangents. The top joint rises from 1 to 2 with an out tangent of +x and an in
- * tangent of -x, which at a half puts it a quarter along x: 0.125 of each tangent, the second
+ * tangent of -x. At a half that puts it a quarter along x: 0.125 of each tangent, the second
  * negated by its basis and again by its sign.
  **/
 BOOST_AUTO_TEST_CASE(animation_sampling_a_cubic_spline_test) {

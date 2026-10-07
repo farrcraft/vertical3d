@@ -191,8 +191,8 @@ The rules:
 
 - The upgrade runs on a copy and stamps the version after each step. The caller's document is
   replaced only if every step succeeds, so a document is never left half-upgraded.
-- **A step must read and write only the document it is given.** `readForward()` cannot undo a change a
-  step makes anywhere else.
+- **A step must read and write only the document it is given.** `readForward()` cannot undo a
+  change a step makes anywhere else.
 - **Refusing to overwrite a `Newer` document is the caller's job.** `engine::Settings` does it
   through `writable()`.
 - A step is plain code with no schema behind it. Write a test for each one.
@@ -359,8 +359,8 @@ described in [Types.md](Types.md#models).
 - **A texture the file embeds arrives decoded.** A `.glb` stores images in its own buffer, and a
   `.gltf` may inline one as a data uri, whose `data:image/png` or `data:image/jpeg` prefix
   states its type when the file gives no `mimeType`. Neither has a name to give, so the loader
-  decodes it and `kind::Model::baseColourImage(material)` returns it. It is null for a named texture or no
-  texture.
+  decodes it and `kind::Model::baseColourImage(material)` returns it. It is null for a named
+  texture or no texture.
 - An embedded image in a format glTF does not allow, or one that does not decode, costs the
   model that texture. The model still loads.
 
@@ -369,7 +369,8 @@ described in [Types.md](Types.md#models).
 - **The first skin** any mesh in the scene is bound to becomes the model's skeleton. Its joints
   are reordered so that every parent comes before its children.
 - **A skin with fewer inverse bind matrices than joints gives no asset** and a log line, and so
-  does one whose inverse bind matrices are not 4x4 matrices. A skin with no inverse bind matrices binds each joint by the identity.
+  does one whose inverse bind matrices are not 4x4 matrices. A skin with no inverse bind
+  matrices binds each joint by the identity.
 - Every vertex gets an influence. **Four influences per vertex are read**, and a second set of
   joints and weights is dropped.
 - **A skinned mesh is placed by its joints, not by its node.**

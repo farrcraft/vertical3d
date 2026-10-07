@@ -209,9 +209,9 @@ BOOST_AUTO_TEST_CASE(an_auto_extent_is_the_room_on_the_first_walk) {
 }
 
 /**
- * A component that names neither x nor y sits at the corner it is anchored to, which is its
- * parent's rather than the canvas's - so a child of a panel away from the origin is inside
- * that panel.
+ * A component that names neither x nor y sits at the corner it is anchored to. That corner
+ * is its parent's rather than the canvas's, so a child of a panel away from the origin is
+ * inside that panel.
  **/
 BOOST_AUTO_TEST_CASE(an_auto_position_is_the_corner_of_the_parent) {
     v3d::ui::style::Resolver styles;
@@ -288,8 +288,8 @@ BOOST_AUTO_TEST_CASE(an_auto_extent_along_a_flow_is_not_the_whole_line) {
 
 /**
  * Layout never reads the box a previous pass wrote, so the same tree laid out twice lands
- * in the same place - and a tree laid out against a new canvas lands against that one
- * rather than against the size before it.
+ * in the same place. A tree laid out against a new canvas lands against that one rather
+ * than against the size before it.
  **/
 BOOST_AUTO_TEST_CASE(a_second_walk_lands_where_the_first_did) {
     v3d::ui::style::Resolver styles;

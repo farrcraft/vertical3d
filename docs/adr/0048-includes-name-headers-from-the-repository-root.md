@@ -41,9 +41,9 @@ app's own headers, so no relative parent include remains anywhere.
 
 ### A `v3d/` prefix matching the namespace
 - **For**: The include path and the namespace read the same, as in many C++ libraries.
-- **Against**: It needs either a mirrored header tree, which is a build step and a second copy of
-  every header, or renaming `api/` to `v3d/`, which moves every file and breaks every path in
-  every document. Nothing is installed, so no install step could build the mirror.
+- **Against**: It needs either a mirrored header tree or renaming `api/` to `v3d/`. A mirrored
+  tree is a build step and a second copy of every header. The rename moves every file and breaks
+  every path in every document. Nothing is installed, so no install step could build the mirror.
 - **Rejected because**: It costs a tree-wide rename or a permanent build step, to make one path
   segment match a namespace.
 
@@ -64,8 +64,8 @@ app's own headers, so no relative parent include remains anywhere.
     include root.
 - **Costs**:
   - Converting the tree was a large mechanical diff, which adds noise to `git blame`.
-  - cpplint treats an angle-bracket include ending in `.h` as a C system header. So `<api/...>`
-    must come before every C++ system header, which constrains include order.
+  - cpplint treats an angle-bracket include ending in `.h` as a C system header. As a result,
+    `<api/...>` must come before every C++ system header, which constrains include order.
   - Include lines are longer.
   - Nothing in the build or cpplint enforces the rule, because a relative include compiles
     just as well. A grep is the only check.

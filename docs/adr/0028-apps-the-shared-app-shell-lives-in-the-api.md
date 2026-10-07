@@ -6,9 +6,10 @@
 
 ## Context
 
-Every app with a window needs the same shell around its game: a font and glyph atlas, a way to
-draw text, an in-game menu that pauses the game, a `main` that logs what the renderer threw, and
-a check that skips drawing while the window is minimized. None of it is game logic. When each app
+Every app with a window needs the same shell around its game. The shell is a font and glyph
+atlas, a way to draw text, and an in-game menu that pauses the game. It is also a `main` that
+logs what the renderer threw, and a check that skips drawing while the window is minimized. None
+of it is game logic. When each app
 writes its own copy, a fix has to be made in every copy, and the copies drift apart. Anything
 shared here must keep `ComponentRenderer` free of the font library: it takes text measuring and
 drawing as callbacks so that its tests run without a window

@@ -23,9 +23,9 @@ namespace v3d::render::realtime::vulkan::pipeline {
 class Sampler final {
  public:
     /**
-     * What to make. The defaults are what a texture and a render target are read through:
-     * linear, because both are drawn at sizes other than their own, and clamped to the
-     * edge, because a region's neighbour in an atlas is another sprite and wrapping would
+     * What to make. The defaults are what a texture and a render target are read through. They
+     * are linear, because both are drawn at sizes other than their own. They are clamped to
+     * the edge, because a region's neighbour in an atlas is another sprite and wrapping would
      * bleed it in.
      **/
     struct Spec final {

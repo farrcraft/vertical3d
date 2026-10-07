@@ -13,9 +13,9 @@ namespace v3d::render::realtime::vulkan::memory {
 
 /**
  * The layout transitions the engine makes, each named for what the image is being made ready
- * for. Every one is the whole of a single level, single layer image, and the stages and access
- * either side are decided here rather than by whoever records it, so that two places moving an
- * image the same way cannot drift apart.
+ * for. Every one is the whole of a single level, single layer image. The stages and access
+ * either side are decided here rather than by whoever records it, so that two places moving
+ * an image the same way cannot drift apart.
  **/
 
 /**
@@ -31,8 +31,8 @@ VkImageMemoryBarrier2 colourForDrawing(VkImage image);
 VkImageMemoryBarrier2 colourAfterDrawing(VkImage image, VkImageLayout to);
 
 /**
- * Into DEPTH_ATTACHMENT for a pass to test against. What the image held is discarded, which
- * is why the first pass to use it in a frame has to clear.
+ * Into DEPTH_ATTACHMENT for a pass to test against. What the image held is discarded, so the
+ * first pass to use it in a frame has to clear.
  *
  * This and depthForSampling() name only the depth aspect, because their layouts are depth-only
  * and naming the stencil aspect with them is an error. For a format that also has stencil, that

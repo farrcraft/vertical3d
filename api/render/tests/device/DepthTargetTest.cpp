@@ -189,9 +189,9 @@ std::vector<float> drawBeside(v3d::test::Headless* headless, const boost::shared
 BOOST_AUTO_TEST_SUITE(depth_target_test)
 
 /**
- * A target with sampled depth and no colour is what a shadow map draws into, and the depth a
- * pass writes there is what the specification says it is: the plane's depth wherever a quad
- * covers a pixel, and the clear everywhere else.
+ * A shadow map draws into a target with sampled depth and no colour. The depth a pass writes
+ * there is what the specification says it is: the plane's depth wherever a quad covers a
+ * pixel, and the clear everywhere else.
  **/
 BOOST_AUTO_TEST_CASE(a_depth_only_target_holds_the_depth_drawn) {
     v3d::test::Headless headless(colourFormat, width, height);

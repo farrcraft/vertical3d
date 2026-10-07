@@ -41,9 +41,9 @@ the same document as a `boost::json::object`, or null if the config lists none.
 
 How failures are reported:
 
-- `config.json` missing, an entry without a `type` or `file`, an entry whose `type` or `file`
-  is not a string, an entry whose `type` is empty, or a listed file that does not load, is
-  logged and stops startup.
+- Each of these is logged and stops startup: `config.json` missing, an entry without a `type`
+  or `file`, and an entry whose `type` or `file` is not a string. An entry whose `type` is
+  empty, and a listed file that does not load, are treated the same way.
 - The window document and the bindings check every key they read. A document they do not
   understand is a line in the log and a failed startup, not an exception.
 - A config document names images and never loads them. The app resolves a theme's images and a
@@ -82,8 +82,8 @@ table of named rectangles in an image:
 
 - Rectangles are in pixels, and each sheet states its own size. `SpriteSheet::uv()` divides one
   by the other to give the uv pair a canvas takes.
-- A sheet with no name, image or size is rejected and the others are kept. So is a sprite whose
-  rectangle runs off the sheet.
+- A sheet with no name, image or size is rejected and the others are kept. A sprite whose
+  rectangle runs off the sheet is rejected too.
 - A document that names a sheet more than once logs a warning, and the last sheet of that name
   is kept. It keeps the place in `names()` that the name first took.
 - `get()` returns an empty sheet or region for a name it does not hold, and `uv()` returns

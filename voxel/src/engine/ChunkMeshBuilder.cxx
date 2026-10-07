@@ -29,9 +29,9 @@ boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> ChunkMeshBuilder:
         return boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>();
     }
 
-    // the face a vertex belongs to carries its normal and its material, and a vertex
-    // is only ever shared within one face, so the per face pair can be scattered out to the
-    // four corners the face added
+    // the face a vertex belongs to carries its normal and its material. A vertex is only
+    // ever shared within one face, so the per face pair can be scattered out to the four
+    // corners the face added
     std::vector<ChunkVertex> vertices(vertexCount);
     const glm::vec3* positions = mesh->vertices();
     for (size_t i = 0; i < vertexCount; i++) {

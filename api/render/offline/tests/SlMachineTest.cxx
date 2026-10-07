@@ -272,9 +272,9 @@ BOOST_AUTO_TEST_CASE(slmachine_empty_mask_skips_an_arm_test) {
 }
 
 /**
- * A break in a varying while leaves the other lanes running: a lane goes by losing its bit,
- * because there is nowhere to jump to on its behalf while the lanes beside it are still in
- * the loop.
+ * A break in a varying while leaves the other lanes running. A lane leaves by losing its
+ * bit, because there is nowhere to jump to on its behalf while the lanes beside it are still
+ * in the loop.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_break_leaves_the_others_running_test) {
     std::string error;
@@ -678,7 +678,7 @@ BOOST_AUTO_TEST_CASE(slmachine_return_leaves_the_function_test) {
 
 /**
  * A return inside a loop inside a function leaves both, and leaves nothing outside the
- * function: the lanes come out of every mask and every loop the body opened, and out of none
+ * function. The lanes come out of every mask and every loop the body opened, and out of none
  * that the caller did.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_return_out_of_a_loop_test) {

@@ -174,9 +174,9 @@ class TextRenderer {
      * The canvas is held by the returned callback rather than copied, so it has to outlive
      * whatever it is given to.
      *
-     * The pair names no font type, so the size is closed over here rather
-     * than travelling with each string: a ui at one size and a heading at another are two
-     * callback pairs from one TextRenderer, and one atlas serves both.
+     * The pair names no font type, so the size is closed over here rather than travelling
+     * with each string. A ui at one size and a heading at another are two callback pairs
+     * from one TextRenderer, and one atlas serves both.
      **/
     Write write(v3d::render::realtime::Canvas* canvas, float size = 0.0f);
 

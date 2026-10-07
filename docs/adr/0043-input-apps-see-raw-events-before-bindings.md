@@ -34,7 +34,8 @@ itself consumed.
 - **Against**: the app draws over the scene, so it is what the cursor points at. A click on a
   button the app drew would also fire the command bound to that click.
 - **Rejected because**: it inverts the layering. `ui::Cursor::press()` applies the same
-  front-to-back rule inside the ui ([ADR-0038](0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md)).
+  front-to-back rule inside the ui
+  ([ADR-0038](0038-ui-the-ui-hit-tests-the-mouse-before-the-app.md)).
 
 ### Window handling first, before the app sees anything
 - **For**: an app cannot swallow a close request, even by returning true for everything.

@@ -59,9 +59,9 @@ BOOST_AUTO_TEST_CASE(crop_of_the_whole_image_is_the_image) {
 }
 
 /**
- * A rectangle that is not wholly inside the source is refused rather than clamped: reading
+ * A rectangle that is not wholly inside the source is refused rather than clamped. Reading
  * past the end of a row returns the start of the next one, so it produces wrong pixels
- * rather than an error, and clamping would return an image of a size nobody requested.
+ * rather than an error. Clamping would return an image of a size nobody requested.
  **/
 BOOST_AUTO_TEST_CASE(crop_refuses_what_it_cannot_cut) {
     const boost::shared_ptr<v3d::image::Image> source = painted(4, 4, 0);

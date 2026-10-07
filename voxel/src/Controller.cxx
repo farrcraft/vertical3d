@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -28,6 +29,22 @@ namespace {
  * The button the immediate layer responds to, named as a binding config names it.
  **/
 const char* const primaryButton = "left";
+
+/**
+ * A span the device timed, in milliseconds, as whole nanoseconds. A negative span or a NaN is
+ * zero. A span longer than a count of nanoseconds holds is the largest count.
+ **/
+std::uint64_t nanoseconds(double milliseconds) {
+    const double value = milliseconds * 1.0e6;
+    if (!(value >= 0.0)) {
+        return 0;
+    }
+    // 2^64 is exact as a double, and every double below it converts
+    if (!(value < 18446744073709551616.0)) {
+        return std::numeric_limits<std::uint64_t>::max();
+    }
+    return static_cast<std::uint64_t>(value);
+}
 
 };  // namespace
 
@@ -115,7 +132,7 @@ bool Controller::render() {
     }
     // the device's own times, for the passes it drew a few frames ago
     for (const v3d::render::realtime::vulkan::frame::Timings::Timing& pass : renderer_->timings()) {
-        sample.spans.push_back({ "gpu " + pass.name, static_cast<std::uint64_t>(pass.milliseconds * 1.0e6) });
+        sample.spans.push_back({ "gpu " + pass.name, nanoseconds(pass.milliseconds) });
     }
     renderer_->draw(sample, tools());
     return true;

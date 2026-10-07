@@ -27,20 +27,20 @@ typedef std::array<glm::vec3, 4> Corners;
     Where a micropolygon is in raster space for a sample: at its time, and seen from its
     point on the lens.
 
-    A lens point L moves the eye across the lens and keeps the plane of focus where it was,
-    so a point at eye depth z moves by L (1 - z / focus) in eye x and y before it is
+    A lens point L moves the eye across the lens and keeps the plane of focus where it was.
+    A point at eye depth z then moves by L (1 - z / focus) in eye x and y before it is
     projected. On the plane of focus that is nothing, and everywhere else it is the circle of
     confusion.
 
-    A still micropolygon is cheap: the move leaves z, and so the perspective divide, alone,
-    which makes a corner's raster position linear in L. It is projected three times, at the
-    centre of the lens and a unit along each axis of it, and every sample's corners are a sum
-    of those, and the lens's four extremes bound them all.
+    A still micropolygon is cheap. The move leaves z alone, and with it the perspective
+    divide, so a corner's raster position is linear in L. Each corner is projected three
+    times: at the centre of the lens, and a unit along each axis of it. Every sample's corners
+    are a sum of those, and the lens's four extremes bound them all.
 
     A moving one is placed afresh for every sample, by the primitive's motion from its reference
     end to the sample's time. Its bound is the union of where it is at a run of times across
-    the shutter, grown by the furthest a corner moves between two of them, which covers a
-    path that curves between them.
+    the shutter. The bound is grown by the furthest a corner moves between two of those times,
+    so it covers a path that curves between them.
 */
 class Placement {
  public:
@@ -102,10 +102,10 @@ class Placement {
     }
 
     /**
-     * Whether a sample can be covered at all. A still micropolygon's bound is the answer, and
-     * a moving one is tested against the bound of the slice of the shutter the sample's time
-     * falls in: where the micropolygon was at either end of the slice, grown by the furthest
-     * a corner moves in one.
+     * Whether a sample can be covered at all. For a still micropolygon, its bound is the answer.
+     * A moving one is tested against the bound of the slice of the shutter the sample's time
+     * falls in. That bound is where the micropolygon was at either end of the slice, grown by
+     * the furthest a corner moves in one slice.
      */
     bool reaches(const Samples::Sample & sample) const {
         if (!motion_.moving()) {
@@ -113,7 +113,9 @@ class Placement {
         }
         const float span = shutter_.y - shutter_.x;
         const float along = span > 0.0f ? (sample.time - shutter_.x) / span * static_cast<float>(STEPS) : 0.0f;
-        const unsigned int slice = std::min(STEPS - 1, static_cast<unsigned int>(std::max(0.0f, along)));
+        // held within the slices before it is made an integer; a NaN fails the test and takes the first
+        const float held = along >= 0.0f ? std::min(along, static_cast<float>(STEPS - 1)) : 0.0f;
+        const unsigned int slice = static_cast<unsigned int>(held);  // checked: held is in [0, STEPS - 1]
         const glm::vec2 low = glm::vec2(glm::min(stepMin_[slice], stepMin_[slice + 1])) - glm::vec2(stride_);
         const glm::vec2 high = glm::vec2(glm::max(stepMax_[slice], stepMax_[slice + 1])) + glm::vec2(stride_);
         return sample.raster.x >= low.x && sample.raster.x <= high.x &&
@@ -270,12 +272,24 @@ class Motions {
  * The pixels a bound touches, clipped to the frame: left, top, right and bottom.
  */
 std::array<int, 4> pixels(const glm::vec3 & min, const glm::vec3 & max, const Samples & samples) {
+    // a bound with a NaN in it touches no pixel
+    if (std::isnan(min.x) || std::isnan(min.y) || std::isnan(max.x) || std::isnan(max.y)) {
+        return { 0, 0, -1, -1 };
+    }
+    const int columns = static_cast<int>(samples.width());
+    const int rows = static_cast<int>(samples.height());
+    // the pixel a coordinate falls in, held within one pixel of the frame before it is made an
+    // integer, so a bound far off the frame or infinite gives an empty or a whole span
+    const auto pixel = [](float coordinate, int count) {
+        const float held = std::clamp(std::floor(coordinate), -1.0f, static_cast<float>(count));
+        return static_cast<int>(held);  // checked: not NaN above, and held within [-1, count]
+    };
     // a sample may be anywhere in its pixel, so every pixel the bound touches
     return {
-        std::max(0, static_cast<int>(std::floor(min.x))),
-        std::max(0, static_cast<int>(std::floor(min.y))),
-        std::min(static_cast<int>(samples.width()) - 1, static_cast<int>(std::floor(max.x))),
-        std::min(static_cast<int>(samples.height()) - 1, static_cast<int>(std::floor(max.y)))
+        std::max(0, pixel(min.x, columns)),
+        std::max(0, pixel(min.y, rows)),
+        std::min(columns - 1, pixel(max.x, columns)),
+        std::min(rows - 1, pixel(max.y, rows))
     };
 }
 
@@ -396,10 +410,10 @@ bool Bucket::render(RenderContext & rc) {
                 hide(*grid, *prim, rc);
             }
         } else {
-            // split primitive into smaller (possibly diceable) primitives
-            // the splitter feeds each piece back through the first pass, which buckets it
-            // and decides whether it is diceable in turn, so the original is finished with
-            // either way
+            // split the primitive into smaller primitives, which may be diceable. The
+            // splitter feeds each piece back through the first pass. That pass buckets the
+            // piece and decides whether it is diceable in turn, so the original is finished
+            // with either way
             prim->split(rc);
             primitives_.erase(primitives_.begin() + i);
             i--;

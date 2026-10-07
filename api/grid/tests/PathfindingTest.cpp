@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(findpath_rounding_an_offset_wall_is_free_test) {
     BOOST_CHECK_EQUAL(contiguous(path), true);
     BOOST_CHECK_EQUAL(std::ranges::none_of(path, [](TileCoord t) { return t.x == 4 && t.y < 8; }), true);
 
-    // straight across is 8 steps, and going around by way of the gap at (4, 8) is also 8:
+    // straight across is 8 steps, and going around by way of the gap at (4, 8) is also 8.
     // the four rows of detour are absorbed by the four columns of travel it already had to
     // make. with 8 way movement at a flat cost, a wall adds cost only when the way round
     // leaves the diagonal envelope

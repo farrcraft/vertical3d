@@ -18,7 +18,7 @@ namespace v3d::ui::component {
 /**
  * One line of text the user can edit, with a caret in it.
  *
- * A text box owns what it shows, the way a SelectList owns its rows: the text is a place
+ * A text box owns what it shows, the way a SelectList owns its rows. The text is a place
  * in the component rather than a fact about the app, and there is nowhere else for a
  * half-typed word to live. Whatever handles its command reads text() when it arrives.
  *

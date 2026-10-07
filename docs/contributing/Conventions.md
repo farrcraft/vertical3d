@@ -48,7 +48,7 @@ It should report only generated `.inc` headers. Searching for `../` alone is not
 it misses `"subdirectory/Header.h"`.
 
 **Include order matters to cpplint.** cpplint treats any angle-bracket include ending in `.h` as a
-C system header. So the order in a file is:
+C system header. The order in a file is therefore:
 
 1. The file's own header (in a source file), or `#pragma once` (in a header).
 2. The project's own headers, such as `<api/...>`, together with `<vulkan/vulkan.h>`.
@@ -103,7 +103,8 @@ These rules apply to code comments and to every document in [docs/](..) alike.
 
 - **Plain words, literal statements.** Say what a thing does or requires. Avoid aphorisms
   ("a character is not a key"), inverted sentences ("X, which is what Y") and personification.
-  Code requires, stores, returns or receives; it does not want, know, owe or trust.
+  Code requires, stores, returns or receives. Do not describe it as wanting, knowing, owing or
+  trusting.
 - **Short sentences, one idea each.** Aim for about 25 words. Split anything over 35.
 - **Define a term before using it,** or use the standard word for it. In-house shorthand such
   as "seam", "the walk" or "the tier" means nothing to a new reader.
@@ -171,6 +172,9 @@ used.
   `boost::json::value_to`. [Assets.md](../api/Assets.md#json-documents) states their rules.
 - A conversion that clamps, wraps or rounds to nearest states its own rule beside the code. It
   clamps or tests the value before the cast, so the cast is always defined.
+- **A cast the boundary gate reports and that is defined** ends with a comment naming why, such
+  as `// checked: fx is finite`, and the gate then accepts the line. A clamp alone is not a
+  reason, because `std::clamp` passes a NaN through.
 
 `node scripts/boundary.ts` checks the lines a change adds. It reports any `value_to`, and any
 `static_cast` to an integer type whose operand contains a float function, a float literal or

@@ -57,7 +57,7 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     face->atlas(cache_->atlas());
     if (!face->loadGlyphs(charcodes)) {
         // a face that would not open packs nothing, and one that opened into an atlas too
-        // small packs some - drawing what did fit would be text with characters missing,
+        // small packs some. Drawing what did fit would be text with characters missing,
         // measured short, laid out around the short measure
         logger->get()->error("{} could not be packed at size {}, so nothing drawn through it will have text", font, size_);
         return;

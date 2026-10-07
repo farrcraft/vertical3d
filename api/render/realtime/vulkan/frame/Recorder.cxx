@@ -27,7 +27,7 @@ namespace {
  * names, or the last.
  *
  * A target is brought into the layout a pass attaches it in once, before the first pass
-  * that writes it, and left readable after the last one, so two passes drawing into one
+ * that writes it. It is left readable after the last one, so two passes drawing into one
  * target cost one pair of barriers rather than two. Scanned rather than tallied because a
  * frame has a handful of passes, and a scan is easier to verify than a map that has to be
  * cleared every frame.

@@ -60,8 +60,8 @@ namespace v3d::ui::paint {
 /**
  * Draws the ui onto a canvas of quads.
  *
- * A panel, a highlight and a line of text are all batched quads, so the whole ui is added
- * to whatever canvas the app is already filling and costs the frame no pass and no draw of
+ * A panel, a highlight and a line of text are all batched quads. The whole ui is added to
+ * whatever canvas the app is already filling, and costs the frame no pass and no draw of
  * its own.
  *
  * Text is the caller's to lay out. This library knows where a label goes and how wide the
@@ -278,8 +278,8 @@ class ComponentRenderer {
 
     /**
      * The colours and metrics before any component's own style class is applied over
-     * them, which the parts of the ui with no style class of their own are drawn
-     * with - a menu panel, a toolbar strip, a label.
+     * them. The parts of the ui with no style class of their own are drawn with these:
+     * a menu panel, a toolbar strip, a label.
      **/
     const Dressing& base() const noexcept;
 

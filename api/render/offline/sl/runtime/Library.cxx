@@ -6,9 +6,9 @@
 /*
     The bodies behind the signatures in sl/Builtins.h: what a CALL instruction does.
 
-    A second translation unit for Machine rather than a class of its own, because every
-    body here reads the live mask, writes the register file and says what it could not do,
-    and all three of those are the machine's own state. The file holds most of the built-in
+    This is a second translation unit for Machine rather than a class of its own. Every body
+    here reads the live mask, writes the register file and says what it could not do, and all
+    three of those are the machine's own state. The file holds most of the built-in
     functions, and none of the control flow or the masking they run under.
 */
 

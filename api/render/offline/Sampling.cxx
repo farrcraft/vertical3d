@@ -89,7 +89,7 @@ unsigned int sampleCount(float rate) {
     if (!(rate <= static_cast<float>(maximumSamples))) {
         return maximumSamples;
     }
-    return static_cast<unsigned int>(std::lround(rate));
+    return static_cast<unsigned int>(std::lround(rate));  // checked: rate is in [1, maximumSamples], and a NaN returned above
 }
 
 float Sampling::lensRadius() const {

@@ -16,9 +16,8 @@ class Image {
         /**
          * The format of the image (the number of channels)
          *
-         * The value is the channel count, which is what a writer divides bpp by to get the
-         * bits in a channel. Grey is one channel; a texture atlas packed at depth 1 produces
-         * it.
+         * The value is the channel count. A writer divides bpp by it to get the bits in a
+         * channel. Grey is one channel; a texture atlas packed at depth 1 produces it.
          */
         enum class Format {
             Grey = 1,

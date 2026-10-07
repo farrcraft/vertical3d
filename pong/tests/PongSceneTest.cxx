@@ -299,8 +299,8 @@ BOOST_AUTO_TEST_CASE(pong_scene_left_edge_scores_test) {
 }
 
 /**
- * A point puts the ball back on the centre spot rather than moving it there, so the frame after
- * it is drawn from the centre and not swept across the court from the edge it left by.
+ * A point puts the ball back on the centre spot rather than moving it there. The frame after
+ * the point is drawn from the centre, not swept across the court from the edge it left by.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_a_point_settles_the_ball_test) {
     Fixture fixture;
@@ -537,8 +537,8 @@ BOOST_AUTO_TEST_CASE(pong_scene_coop_leaves_the_right_paddle_alone_test) {
 
 /**
  * Every speed is per second, so the same simulated duration produces the same result however
- * it is divided into steps: sixty steps of a sixtieth land where a hundred and twenty of a
- * hundred and twentieth do.
+ * it is divided into steps. Sixty steps of a sixtieth land where a hundred and twenty steps of
+ * a hundred and twentieth do.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_is_frame_rate_independent_test) {
     Fixture slow;

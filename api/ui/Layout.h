@@ -21,8 +21,8 @@ namespace v3d::ui {
  * would forget what it asked for the moment its parent changed size.
  *
  * Nothing here reads the output. A box is worked out from the box around it and from what
- * the component makes of itself, so the answer is the same however many times it is asked
- * and whatever was on the screen before.
+ * the component makes of itself. The answer is the same however many times it is asked and
+ * whatever was on the screen before.
  *
  * x and y are measured from the anchored corner and grow inwards, so a bottom right
  * anchor with an x of 8 sits eight pixels in from the right edge whatever the parent's

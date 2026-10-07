@@ -80,7 +80,7 @@ class Arranger final {
      * everything it holds.
      *
      * The canvas and the paint are both optional. Given neither, this resolves every box
-     * and draws nothing, which is how to ask for layout on its own.
+     * and draws nothing. Pass neither to ask for layout on its own.
      *
      * @param bounds where this component goes, which its parent worked out
      * @param paint what fills each box as it is written, or empty to place and not draw

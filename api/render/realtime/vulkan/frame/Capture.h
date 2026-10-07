@@ -28,7 +28,7 @@ class Swapchain;
  * A drawn image read back off the device and written out as a png - a presented frame off the
  * swapchain, or an offscreen target a pass drew into.
  *
- * Copying and writing are two calls because a queue submit sits between them: record() adds
+ * Copying and writing are two calls because a queue submit sits between them. record() adds
  * the copy to the command buffer the frame is already being drawn into, and write() reads
  * the result once that frame's fence has signalled. The caller is responsible for that
  * synchronisation - a fence it already waits on, or a device wait. A record() with no

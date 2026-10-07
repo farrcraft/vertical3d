@@ -142,9 +142,9 @@ class Component {
     Component* parent() const noexcept;
 
     /**
-     * Take an item this component holds outside children() - a toolbar's buttons, a menu's
-     * items - so that the item inherits from this component: usable() walks up through the
-     * holder, and a disabled strip disables what is on it. The holder lays out and draws the
+     * Take an item this component holds outside children(), such as a toolbar's buttons or a
+     * menu's items, so that the item inherits from this component. usable() walks up through
+     * the holder, and a disabled strip disables what is on it. The holder lays out and draws the
      * item itself, so it is not a child and no traversal reaches it as one.
      *
      * An item already held by something else is left with it, as add() leaves a child.

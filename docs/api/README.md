@@ -83,7 +83,8 @@ Three consequences matter when choosing what to link:
 - **Anything that links `render` needs the Vulkan SDK to configure**, because the renderer's
   shaders are compiled at build time. That includes `ui` and `engine`.
 - **Only `audio` needs SDL3_mixer.** The engine does not link it, so an app that plays sound
-  links `v3d::audio` itself and registers its loader. [engine/Audio.md](engine/Audio.md#audio) shows how.
+  links `v3d::audio` itself and registers its loader. [engine/Audio.md](engine/Audio.md#audio)
+  shows how.
 - **`type`, `grid`, `ecs`, `image`, `asset` and `config` need no device and no window**, so a
   test of game rules built on them runs anywhere.
 

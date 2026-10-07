@@ -59,9 +59,9 @@ bool filterWidth(const glm::vec2 & width);
 constexpr unsigned int maximumSamples = 256;
 
 /**
- * How many samples a PixelSamples rate requests along one axis. RI takes a float. A rate
- * below one, or one that is not a number, takes one sample, and a rate above
- * maximumSamples takes maximumSamples.
+ * How many samples a PixelSamples rate requests along one axis. RI takes a float. A rate below
+ * one, or one that is not a number, takes one sample, and a rate above maximumSamples takes
+ * maximumSamples.
  **/
 unsigned int sampleCount(float rate);
 

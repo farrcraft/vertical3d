@@ -117,6 +117,6 @@ the two axes it looks across. A perspective view gets the ground plane.
 change while a drag is under way, so a drag that crosses a border keeps its camera. The camera,
 select and transform tools all work in the active view.
 
-The editor draws lines only. A shaded display mode is not built, which is why a selected face is
-drawn as its outline and a selected vertex as a small box. The outline covers every edge of
+The editor draws lines only. A shaded display mode is not built, so a selected face is drawn as
+its outline and a selected vertex as a small box. The outline covers every edge of
 the face, including the edges it shares with a neighbour.

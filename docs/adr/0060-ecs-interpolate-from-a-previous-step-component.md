@@ -24,7 +24,7 @@ which blends the two through an `interpolate()` function written beside `T`. A t
 
 ### A previous and a current value inside the component
 - **For**: the simplest to write. There is no second component, and one lookup reads both values.
-- **Against**: every type that wants interpolation changes shape, including each game's own. The
+- **Against**: every type that is interpolated changes shape, including each game's own. The
   pair must be shifted every step whether or not the thing moved, or a stopped thing is drawn
   still sliding.
 - **Rejected because**: it puts the bookkeeping in every writer of every moving type, and one of

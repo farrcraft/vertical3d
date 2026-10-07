@@ -50,7 +50,7 @@ float compare(Opcode opcode, float left, float right) {
 
 /**
  * Component i of a value read as one of wide components. A float fills every component, except
- * that a float read as a matrix is the diagonal matrix, which is how an assignment promotes it.
+ * that a float read as a matrix is the diagonal matrix. An assignment promotes it the same way.
  **/
 float promoted(const Value & value, unsigned int point, unsigned int i, unsigned int wide) {
     if (value.components() != 1) {

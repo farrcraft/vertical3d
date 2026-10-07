@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_step_test) {
 }
 
 /**
- * A componentwise built-in over a colour is that function of each of the three, and a float
+ * A componentwise built-in over a colour is that function of each of the three. A float
  * argument beside a colour one is read for all three, as RI promotes it, rather than a zero
  * fill. "mix(Cs, Cl, 0.5)" relies on this.
  **/
@@ -644,10 +644,10 @@ BOOST_AUTO_TEST_CASE(sllibrary_matrix_order_test) {
 }
 
 /**
- * A matrix through a space is the two composed, and a colour through one is the colour:
- * there is one colour space here and it is the one a framebuffer holds, so a scene naming
- * another gets its colours back unchanged and a report. With two spaces named, either one
- * that is not rgb is reported.
+ * A matrix through a space is the two composed, and a colour through one is the colour.
+ * There is one colour space here, the one a framebuffer holds. A scene naming another gets
+ * its colours back unchanged and a report. With two spaces named, either one that is not
+ * rgb is reported.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_matrix_and_colour_spaces_test) {
     Spaces renderer;
@@ -702,9 +702,9 @@ BOOST_AUTO_TEST_CASE(sllibrary_calculatenormal_is_a_stub_test) {
 }
 
 /**
- * A function is declared with what runs it, so the table and the machine always agree: the
- * functions written in the language are exactly those declared as source, and every other
- * body is one the machine runs or a stub it reports.
+ * A function is declared with what runs it, so the table and the machine always agree. The
+ * functions written in the language are exactly those declared as source. Every other body
+ * is one the machine runs or a stub it reports.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_bodies_test) {
     std::set<std::string> written;

@@ -272,9 +272,9 @@ bool Engine::focusNext(bool forward) {
     }
     const auto here = std::find(order.begin(), order.end(), was);
     if (here == order.end()) {
-        // what held the focus is no longer reachable - hidden, disabled or taken out of the
-        // tree since it took it - so there is no place in the order to move on from, and the
-        // order starts again rather than leaving the focus somewhere tab cannot get it back
+        // what held the focus is no longer reachable: hidden, disabled or taken out of the
+        // tree since it took it. There is no place in the order to move on from, so the order
+        // starts again rather than leaving the focus somewhere tab cannot get it back
         focus(forward ? order.front() : order.back());
         return true;
     }

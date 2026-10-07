@@ -18,12 +18,12 @@ class SelectList;
  * A track with a thumb on it, saying which part of something taller than its box is shown.
  *
  * The bar does the arithmetic, not the input handling. An app that picked one calls drag()
- * with where the cursor is and reads offset(), which is how far to translate whatever the
- * bar scrolls. What it scrolls is a separate component that clips its children. The bar
+ * with where the cursor is and reads offset(). The offset is how far to translate whatever
+ * the bar scrolls. What it scrolls is a separate component that clips its children. The bar
  * does not hold it, because the two are laid out side by side.
  *
- * A bar can instead be told which list it scrolls, and then it holds no range of its own:
- * the content, the page and the offset are the list's, and dragging the thumb moves the
+ * A bar can instead be told which list it scrolls, and then it holds no range of its own.
+ * The content, the page and the offset are the list's, and dragging the thumb moves the
  * list. An unbound bar keeps a range of its own, so it can also scroll something with no
  * component behind it.
  *
@@ -99,7 +99,7 @@ class Scrollbar : public Component {
     void scroll(float distance);
 
     /**
-     * @return the furthest the page can start, which is how much the page does not show
+     * @return the furthest the page can start. This equals how much the page does not show.
      **/
     float maximum() const noexcept;
 

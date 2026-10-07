@@ -387,9 +387,9 @@ BOOST_AUTO_TEST_CASE(an_abandoned_frame_can_be_begun_again) {
 
 /**
  * Something retired between a submit and the next begin may be named by items queued for the
- * frame about to begin, so it outlives that frame: it is destroyed only once framesInFlight
- * frames after it have begun. Something retired while a frame is being recorded is destroyed
- * once framesInFlight frames after that one have begun.
+ * frame about to begin. It therefore outlives that frame, and is destroyed only once
+ * framesInFlight frames after it have begun. Something retired while a frame is being recorded
+ * is destroyed once framesInFlight frames after that one have begun.
  **/
 BOOST_AUTO_TEST_CASE(a_retirement_outlives_the_frame_about_to_begin) {
     // declared before the device, because the ring runs whatever is still held when it goes

@@ -273,9 +273,9 @@ BOOST_AUTO_TEST_CASE(a_reader_is_recorded_after_a_writer_created_later) {
 }
 
 /**
- * Passes the reads do not order keep the order they were created in, and passes into one
- * target keep it whatever else moves: an overlay created after the colour pass still draws
- * over it once the scene the colour pass reads has been moved in front of both.
+ * Passes the reads do not order keep the order they were created in. Passes into one target
+ * keep it whatever else moves. An overlay created after the colour pass still draws over it
+ * once the scene the colour pass reads has been moved in front of both.
  **/
 BOOST_AUTO_TEST_CASE(passes_the_reads_do_not_order_keep_their_order) {
     const std::vector<Node> independent{node(&sceneTarget), node(&shadowTarget), node(nullptr)};

@@ -105,8 +105,8 @@ class WorldCanvas final {
     const glm::mat4& transform() const noexcept;
 
     /**
-     * Multiply every quad added from here on by a colour, until the tint is set again - a
-     * light over the whole world, such as dusk or an act's palette, set once rather than by
+     * Multiply every quad added from here on by a colour, until the tint is set again. It is
+     * a light over the whole world, such as dusk or an act's palette, set once rather than by
      * every caller. White leaves the colours alone.
      **/
     void tint(const glm::vec4& colour);

@@ -22,7 +22,7 @@ reads a box written by a previous frame, so layout depends only on the tree and 
 ## Alternatives
 
 ### A separate measure pass and arrange pass before drawing
-- **For**: the conventional design. A component knows its size before it is drawn, and a parent
+- **For**: the conventional design. A component's size is computed before it is drawn, and a parent
   can size itself to its children.
 - **Against**: two walks have to agree about the same rectangle, and the hit test has to choose
   which one to believe. Measuring text still needs the app's font callback, so both passes share

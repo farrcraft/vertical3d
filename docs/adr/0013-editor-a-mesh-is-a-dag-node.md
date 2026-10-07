@@ -7,9 +7,9 @@
 ## Context
 
 `v3d::brep::BRep` is a half-edge mesh with no identity, no placement and no selection state.
-Picking has to name the mesh it hit, manipulators have to write a placement, a selection has to
-persist between the click that makes it and the operation that uses it, and a project file has
-to store where each mesh sits. `api/dag` already provides `Node`, which gives an object an id,
+Picking has to name the mesh it hit, and manipulators have to write a placement. A selection has
+to persist between the click that makes it and the operation that uses it. A project file has to
+store where each mesh sits. `api/dag` already provides `Node`, which gives an object an id,
 and `Transform`, which gives it a placement. The editor also needs somewhere to hold its meshes.
 
 ## Decision

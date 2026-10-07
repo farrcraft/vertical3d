@@ -30,10 +30,10 @@
 namespace v3d::render::realtime::vulkan::renderer {
 
 /**
- * The device side of a lit scene: the cel and outline pipelines a registered model is drawn
- * with, the shadow pipeline it casts with, a skinned variant of each, and the scene set both
- * passes bind at set 2. The scene set carries every joint palette drawn in the frame in one
- * storage buffer, so a skinned model casts the pose it is drawn in.
+ * The device side of a lit scene. It holds the cel and outline pipelines a registered model is
+ * drawn with, the shadow pipeline it casts with, and a skinned variant of each. It also holds
+ * the scene set both passes bind at set 2. The scene set carries every joint palette drawn in
+ * the frame in one storage buffer, so a skinned model casts the pose it is drawn in.
  *
  * Every pipeline here declares the camera at set 0, the albedo at set 1 in the Textures
  * material layout, and the scene at set 2, with one push block for the object. What they
@@ -128,8 +128,8 @@ class Lit final {
      *
      * One scene a frame: the set is the frame's own, so a second call in the same frame
      * replaces what the first wrote. It waits for the frame it writes to have finished its last
-     * submission, the way renderer::Quad does before writing its geometry, so it is called
-     * while the frame is built and before the ring begins it.
+     * submission, the way renderer::Quad does before writing its geometry. It is therefore
+     * called while the frame is built and before the ring begins it.
      *
      * @param shadowMap the depth a shadow pass drew, or an unset handle for no shadow
      * @param palette every joint matrix drawn this frame - realtime::Poses::palette()

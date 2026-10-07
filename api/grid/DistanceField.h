@@ -19,15 +19,15 @@ namespace v3d::grid {
  *
  * A flood fill outward from the goal, so cost() returns the cost of a route to the goal from
  * any tile of the board. Use it rather than tileDistance() to move toward a goal.
- * tileDistance() ignores what is in the way, so the tile it calls closest to a goal behind a
+ * tileDistance() ignores what is in the way. The tile it calls closest to a goal behind a
  * wall is the tile against the wall, and a mover there has no closer tile to go to.
  *
  * The goal is never tested against the grid or the filter, exactly as findPath() never
- * tests the tile its mover is standing on: whoever is standing on the goal does not make it
- * unreachable, and without the exemption a flood seeded on an occupied tile could not leave
- * it. Every other tile of the field was admitted by the filter, and both the step cost and
- * the corner rule read the same in either direction, so the cost recorded on a tile is what
- * a route from that tile to the goal costs.
+ * tests the tile its mover is standing on. Whoever is standing on the goal does not make it
+ * unreachable. Without the exemption, a flood seeded on an occupied tile could not leave it.
+ * Every other tile of the field was admitted by the filter. Both the step cost and the corner
+ * rule read the same in either direction. The cost recorded on a tile is therefore what a
+ * route from that tile to the goal costs.
  *
  * Building one floods the whole board, so build it once outside a loop over candidate tiles
  * rather than once per tile.

@@ -209,8 +209,8 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
 BOOST_AUTO_TEST_SUITE(effects_test)
 
 /**
- * A fire in a 2D world: a flame playing its clip over each particle's life and smoke swaying
- * above it, sorted among a figure in front of the fire and one behind, under a dusk tint.
+ * A fire in a 2D world under a dusk tint. A flame plays its clip over each particle's life and
+ * smoke sways above it, sorted among a figure in front of the fire and one behind.
  * Filtering and blending differ between conformant drivers, so there is no reference picture.
  * The case checks that the validation layer reports no errors and that the fire moves between
  * frames. The frames go to data_out/fire_*.png for a person to look at.

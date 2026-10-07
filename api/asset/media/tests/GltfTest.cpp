@@ -92,8 +92,8 @@ void checkInfluences(const v3d::type::Model& model) {
  **/
 void checkParts(const v3d::type::Model& model) {
     // where the vertices land: each primitive's triangle moved by its node and then turned a
-    // quarter about +z by the parent, in the order the parts hold them - A and C in material
-    // 0's part, then B in material 1's. Whole numbers throughout, so exact
+    // quarter about +z by the parent. They are in the order the parts hold them: A and C in
+    // material 0's part, then B in material 1's. Whole numbers throughout, so exact
     const glm::vec3 placed[9] = {
         {0, 2, 0}, {0, 3, 0}, {-1, 2, 0},    // A, under node 1's (2, 0, 0)
         {-3, 0, 2}, {-3, 1, 2}, {-4, 0, 2},  // C, under node 2's (0, 3, 0)
@@ -426,8 +426,8 @@ BOOST_AUTO_TEST_CASE(gltf_a_skinned_mesh_is_not_placed_by_its_node_test) {
 }
 
 /**
- * An unskinned mesh in a skinned model follows the joint above it, wholly, and stands where
- * its node puts it while that joint is at rest - half a unit above top, which is at y = 2.
+ * An unskinned mesh in a skinned model follows the joint above it, wholly. While that joint
+ * is at rest, the mesh stands where its node puts it: half a unit above top, which is at y = 2.
  **/
 BOOST_AUTO_TEST_CASE(gltf_an_unskinned_mesh_follows_a_joint_test) {
     boost::shared_ptr<v3d::type::Model> model = load(SKINNED);
@@ -570,9 +570,9 @@ BOOST_AUTO_TEST_CASE(gltf_reads_a_blender_rig_test) {
 }
 
 /**
- * Blender's bend at its end has turned middle a quarter about its own x, which the exporter
- * makes glTF's x: top, a unit above middle in the finished skeleton, swings from (0, 2, 0) to
- * (0, 1, 1).
+ * Blender's bend at its end has turned middle a quarter about its own x axis, which the
+ * exporter makes glTF's x axis. Top is a unit above middle in the finished skeleton, and it
+ * swings from (0, 2, 0) to (0, 1, 1).
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_blender_clip_bends_the_rig_test) {
     boost::shared_ptr<v3d::type::Model> model = load(BLENDER);

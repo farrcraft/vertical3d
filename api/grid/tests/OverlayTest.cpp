@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(overlay_grid_spans_the_board_test) {
 
     for (const Segment& segment : recorder.segments()) {
         // every line runs the full extent of the board on one axis and sits on a tile
-        // boundary on the other, so the outline uses the grid's own arithmetic rather than a
+        // boundary on the other. The outline uses the grid's own arithmetic rather than a
         // separate calculation of where the tiles are
         const bool alongZ = segment.from.x == segment.to.x;
         if (alongZ) {

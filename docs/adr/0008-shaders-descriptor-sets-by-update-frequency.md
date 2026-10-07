@@ -16,7 +16,7 @@ encodes the answer, so changing it later means rewriting all of them at once.
 ## Decision
 
 Descriptor sets are grouped by how often their contents change. Set 0 holds per-frame data such
-as the camera and is bound once by the pass; set 1 holds a material, such as its texture; data
+as the camera and is bound once by the pass. Set 1 holds a material, such as its texture. Data
 that changes per object, such as a transform or tint, goes in push constants rather than a third
 set. The sort key is ordered to match: layer, pipeline, material, depth.
 

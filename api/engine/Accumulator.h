@@ -42,8 +42,8 @@ class Accumulator final {
      * Take one frame of elapsed real time.
      *
      * @param elapsed nanoseconds since the previous frame, clamped before it is added
-     * @return how many whole steps are now due, which is how many times drain() will
-     *         return true before it stops
+     * @return how many whole steps are now due. drain() returns true that many times
+     *         before it stops.
      **/
     unsigned int accumulate(std::uint64_t elapsed) noexcept;
 

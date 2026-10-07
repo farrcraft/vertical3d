@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(the_centre_is_the_middle_of_the_map_at_half_depth) {
 
 /**
  * The box reaches a radius either side, so a point that far along the light's right is at the
- * map's edge, and one that far towards or away from the light is a quarter of the depth nearer
+ * map's edge. A point that far towards or away from the light is a quarter of the depth nearer
  * or further.
  **/
 BOOST_AUTO_TEST_CASE(a_radius_out_is_the_edge_of_the_map) {

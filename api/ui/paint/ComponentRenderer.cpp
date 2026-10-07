@@ -362,7 +362,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
     const glm::vec2 min = button->position();
     Arranger::place(*button, min, size);
 
-    // a button that cannot be used is never lit, whatever the cursor last left on it; and a
+    // a button that cannot be used is never lit, whatever the cursor last left on it. A
     // checked toggle keeps its highlight whether or not the cursor is on it, so a strip
     // shows which mask and which tool are in force
     const bool lit = usable(*button) &&

@@ -22,7 +22,7 @@ namespace v3d::render::offline::rib {
  * line; '##' is a structure comment carrying metadata and is skipped the same way.
  *
  * A number token holds a float and the caller narrows on use: "Format 640 480 1" and
- * "Clipping 10 1000.0" are the same kind. Where a request wants an integer, the reader
+ * "Clipping 10 1000.0" are the same kind. Where a request takes an integer, the reader
  * checks the range before converting and truncates a fraction. A count or a handle out of
  * range fails the stream, and a picture size or frame number out of range skips the request.
  **/

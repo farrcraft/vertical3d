@@ -201,6 +201,30 @@ BOOST_AUTO_TEST_CASE(film_sample_off_the_film_reaches_no_pixel_test) {
 }
 
 /**
+ * On a film whose filter width is NaN, a sample is filtered into no pixel. A hit still records
+ * its depth in the pixel it lies in.
+ **/
+BOOST_AUTO_TEST_CASE(film_nan_filter_width_reaches_no_pixel_test) {
+    const v3d::render::offline::Sampling sampling = box(1, std::numeric_limits<float>::quiet_NaN());
+    v3d::render::offline::Film film(3, 2, sampling);
+    v3d::render::offline::Film::Sample sample;
+    sample.raster = glm::vec2(1.5f, 0.5f);
+    sample.colour = glm::vec3(1.0f);
+    sample.hit = true;
+    sample.depth = 2.0f;
+    film.add(sample);
+    for (unsigned int row = 0; row < 2; row++) {
+        for (unsigned int column = 0; column < 3; column++) {
+            BOOST_CHECK_EQUAL(film.coverage(column, row), 0.0f);
+            BOOST_CHECK_EQUAL(film.colour(column, row).r, 0.0f);
+        }
+    }
+    float depth = 0.0f;
+    BOOST_CHECK(film.depth(1, 0, &depth));
+    BOOST_CHECK_EQUAL(depth, 2.0f);
+}
+
+/**
  * A pixel's samples are the same whatever order pixels are requested in and on a second
  * sampler, fall inside the pixel, and differ from one pass to the next.
  **/

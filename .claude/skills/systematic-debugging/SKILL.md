@@ -40,8 +40,8 @@ to a window, so for those disciplined reading and bisection matter most.
   in the Bash tool, `./scripts/build.cmd > "$TEMP/v3d-build.log" 2>&1` writes the log outside
   the tree. From `cmd.exe` it is `scripts\build.cmd > "%TEMP%\v3d-build.log" 2>&1`.
 - **Check whether it is the environment rather than the code.** A stale CMake cache, a
-  missing `VULKAN_SDK`, an unbuilt libnoise. `docs/contributing/Build.md` has each of them, and the tree
-  is otherwise clean at every gate `docs/contributing/Linting.md` lists.
+  missing `VULKAN_SDK`, an unbuilt libnoise. `docs/contributing/Build.md` has each of them,
+  and the tree is otherwise clean at every gate `docs/contributing/Linting.md` lists.
 - **Reproduce it deliberately** and write the steps down. For an app, that means which app,
   which `data/` config, and what you did.
 - **Narrow it.** Build one target rather than the tree. For a compile error, `cl /Zs` on a

@@ -41,7 +41,7 @@ the array empty.
 - **Gains**:
   - A file with several surfaces loads whole.
   - One upload, one handle and one skeleton per file, and a part is an index range the recorder
-    already knows how to draw.
+    can already draw.
   - A static model's vertex data is unchanged.
 - **Costs**:
   - Every consumer walks a model's parts, including the common one-part case.

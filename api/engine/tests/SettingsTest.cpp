@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(settings_unknown_key_survives_test) {
 
 /**
  * A document from a later build runs on defaults and is not written back, because writing it
- * would drop everything this build does not know about.
+ * would drop every setting this build does not read.
  **/
 BOOST_AUTO_TEST_CASE(settings_future_version_test) {
     v3d::engine::Settings settings = fresh("future");
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(settings_wrong_type_test) {
 
 /**
  * A document with no version, or one that is not a number, is refused rather than read as it
- * is - and like a malformed one it is replaceable, since nothing says a later build wrote it.
+ * is. Like a malformed one it is replaceable, since nothing says a later build wrote it.
  **/
 BOOST_AUTO_TEST_CASE(settings_unreadable_version_test) {
     for (const std::string& document : {

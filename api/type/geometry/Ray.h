@@ -52,11 +52,10 @@ class Ray final {
     /**
      * The same ray seen from another space.
      *
-     * The direction is transformed as a vector and the origin as a point, and neither
-     * is renormalised: under a scale, renormalising would change what a distance means,
-     * and a hit found in model space could not be compared with one found in world
-     * space. To move a world ray into a mesh's own space, pass the inverse of
-     * that mesh's matrix.
+     * The direction is transformed as a vector and the origin as a point, and neither is
+     * renormalised. Under a scale, renormalising would change what a distance means, and a
+     * hit found in model space could not be compared with one found in world space. To move
+     * a world ray into a mesh's own space, pass the inverse of that mesh's matrix.
      **/
     Ray transformed(const glm::mat4& transform) const;  // NOLINT(build/include_what_you_use) - the name, not std::transform
 
@@ -100,7 +99,7 @@ class Ray final {
     /**
      * Where this ray crosses a plane.
      *
-     * A ray lying in the plane, or parallel to it, does not cross it, and neither does one that
+     * A ray lying in the plane, or parallel to it, does not cross it. Neither does one that
      * would have to run backwards to reach it: a click on the sky is not a click on the ground
      * behind the camera.
      *

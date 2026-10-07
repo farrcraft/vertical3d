@@ -64,8 +64,8 @@ class Gltf final : public Loader {
      *
      * @param model the asset being loaded, for the line a failure is reported on
      * @return the pixels, or null where the format is one glTF does not allow embedded or
-     *         the bytes do not decode - either of which is a texture the model loses and
-     *         not a model that fails to load
+     *         the bytes do not decode. Either way the model loses that texture and still
+     *         loads.
      **/
     boost::shared_ptr<v3d::image::Image> decodeEmbedded(const cgltf_image& image, std::string_view model);
 };

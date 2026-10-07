@@ -5,6 +5,7 @@
 
 #include "Loader.h"
 
+#include <api/asset/Json.h>
 #include <api/event/Engine.h>
 #include <api/log/Logger.h>
 #include <api/ui/component/Bar.h>
@@ -38,7 +39,10 @@
 #include <api/ui/style/property/Number.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
+#include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -602,8 +606,11 @@ boost::shared_ptr<component::Bar> Loader::loadBar(const boost::json::object& ent
  **/
 boost::shared_ptr<component::Slider> Loader::loadSlider(const boost::json::object& entry) {
     boost::shared_ptr<component::Slider> slider = boost::make_shared<component::Slider>();
+    // a key that is absent, not a number, or beyond the range of a float takes its default
     const auto number = [&entry](const char* key, float fallback) {
-        return entry.contains(key) ? static_cast<float>(boost::json::value_to<double>(entry.at(key))) : fallback;
+        const std::optional<double> value = v3d::asset::readNumber(entry, key);
+        const bool fits = value && std::abs(*value) <= static_cast<double>(std::numeric_limits<float>::max());
+        return fits ? static_cast<float>(*value) : fallback;
     };
     slider->range(number("minimum", 0.0f), number("maximum", 1.0f), number("step", 0.0f));
     slider->value(number("value", slider->minimum()));
@@ -885,8 +892,10 @@ boost::shared_ptr<component::Toolbar> Loader::loadToolbar(const boost::json::obj
         // "style", "name" and "visible" on one mean what they mean anywhere else
         const boost::shared_ptr<component::Button> button = loadButton(buttonIterator->as_object());
         loadAttributes(buttonIterator->as_object(), button);
-        if (buttonIterator->as_object().contains("name")) {
-            button->name(boost::json::value_to<std::string>(buttonIterator->as_object().at("name")));
+        // a name that is not a string is ignored, and the button has none
+        const std::optional<std::string> name = v3d::asset::readString(buttonIterator->as_object(), "name");
+        if (name) {
+            button->name(*name);
         }
         bar->add(button);
     }

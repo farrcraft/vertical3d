@@ -19,9 +19,9 @@ namespace v3d::render::offline {
  * Turns a renderer's samples into pixels. Both of moya's hiders write here, and the pixel filter
  * is applied here and nowhere else.
  *
- * A sample is filtered into every pixel whose centre is within half the filter's width of it, on
- * each axis, as it arrives, so the film holds a weighted sum per pixel rather than the samples. Its memory is a
- * frame buffer's, whatever the sample count.
+ * A sample is filtered as it arrives into every pixel whose centre is within half the filter's
+ * width of it on each axis. The film therefore holds a weighted sum per pixel rather than the
+ * samples. Its memory is a frame buffer's, whatever the sample count.
  **/
 class Film final {
  public:
@@ -52,7 +52,8 @@ class Film final {
 
     /**
      * Filters a sample into the pixels near it. A sample whose raster position is not finite
-     * reaches no pixel.
+     * reaches no pixel. On a film whose filter width is NaN, a sample is filtered into no pixel,
+     * and a hit still records its depth in the pixel it lies in.
      **/
     void add(const Sample & sample);
 

@@ -102,9 +102,9 @@ BOOST_AUTO_TEST_CASE(moya_matte_under_one_light_test) {
 }
 
 /**
- * A light behind the surface lights nothing. The illuminance cone of PI/2 inside
- * `diffuse` keeps it out of the sum, so a scene with lights on both sides does not come out
- * uniformly bright.
+ * A light behind the surface lights nothing. The illuminance cone of PI/2 inside `diffuse`
+ * keeps it out of the sum, so a scene with lights on both sides does not come out uniformly
+ * bright.
  **/
 BOOST_AUTO_TEST_CASE(moya_a_light_behind_the_surface_test) {
     v3d::moya::RenderContext rc;
@@ -228,8 +228,8 @@ BOOST_AUTO_TEST_CASE(moya_a_light_is_placed_test) {
 }
 
 /**
- * A light's own space is the light's while it runs, not the surface's it is lighting: a
- * light placed inside an attribute block the surface is outside of still lights from where
+ * A light runs in its own space, not in the space of the surface it is lighting. A light
+ * placed inside an attribute block that the surface is outside of still lights from where
  * the block put it.
  **/
 BOOST_AUTO_TEST_CASE(moya_a_light_runs_in_its_own_space_test) {

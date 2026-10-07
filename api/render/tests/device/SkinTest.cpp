@@ -337,9 +337,9 @@ BOOST_AUTO_TEST_CASE(an_exported_rig_is_drawn_mid_clip) {
 
 /**
  * A skinned caster is drawn into the shadow map in its pose, not the one it was bound in. A
- * square of one joint faces the light at z = -1, which is a quarter of the way into the light's
- * range, and the joint stands half a unit nearer the far plane, so the square is cast at
- * z = -0.5: three eighths. Cast in its bind pose it would read a quarter.
+ * square of one joint faces the light at z = -1, a quarter of the way into the light's range.
+ * The joint stands half a unit nearer the far plane, so the square is cast at z = -0.5: three
+ * eighths. Cast in its bind pose it would read a quarter.
  **/
 BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     const uint32_t size = 16;

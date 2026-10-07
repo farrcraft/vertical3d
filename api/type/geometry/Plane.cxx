@@ -47,21 +47,23 @@ float Plane::distance(void) const {
 }
 
 /*
-    calculate the normal and distance of a plane given three coplanar points
-    normal N is the cross product of vectors U and V:
+    Calculate the normal and distance of a plane given three coplanar points.
+
+    The normal N is the cross product of vectors U and V:
         U = B - A
         V = C - A
         N.x = (U.y * V.z) - (U.z * V.y)
         N.y = (U.z * V.x) - (U.x * V.z)
         N.z = (U.x * V.y) - (U.y * V.x)
-    the resulting normal will not be in normalized form
-    distance d is the dot product of normalized normal N and point A:
+
+    The resulting normal is not in normalized form.
+
+    The distance d is the dot product of the normalized normal N and point A:
         d = (N.x * A.x) + (N.y * A.y) + (N.z * A.z)
-    plane equation:
-        Ax + By + Cz = d where x, y, and z are points in 3d space, A, B, and C are
-            are the x, y, and z components of the surface normal, and d is the
-            distance value. any point (x,y,z) that satisfies this equation lies on
-            the plane
+
+    In the plane equation Ax + By + Cz = d, x, y and z are a point in 3d space. A, B and C
+    are the x, y and z components of the surface normal, and d is the distance value. Any
+    point (x, y, z) that satisfies this equation lies on the plane.
 */
 void Plane::calculate(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 & C) {
     glm::vec3 n = glm::normalize(glm::cross((B - A), (C - A)));  // normal = AB*AC

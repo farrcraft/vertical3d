@@ -34,9 +34,9 @@ BOOST_AUTO_TEST_SUITE(type_test)
 /**
  * Every type a config can name parses back to itself.
  *
- * The two halves of the config's vocabulary have to agree or a component is loadable under a
- * name nothing spells: name() is exhaustive and so cannot forget a type, and this test
- * stops parse() forgetting one.
+ * The two halves of the config's vocabulary have to agree, or a component is loadable under
+ * a name nothing spells. name() is exhaustive and so cannot leave out a type, and this test
+ * stops parse() leaving one out.
  **/
 BOOST_AUTO_TEST_CASE(every_named_type_parses_back_to_itself) {
     int named = 0;

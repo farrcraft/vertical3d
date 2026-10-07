@@ -42,16 +42,18 @@ void Film::add(const Sample & sample) {
     }
     // the pixels whose centres are within half the filter's width of the sample. Each edge is
     // held within one pixel of the film before it is made an integer. A sample far off the film
-    // then gives an empty span, and every conversion is defined.
+    // then gives an empty span. A filter width that is NaN gives an empty span too. Otherwise
+    // the raster position is finite, so no edge is NaN, and every conversion is defined.
     const glm::vec2 half = filterWidth_ * 0.5f;
+    const bool spans = !std::isnan(half.x) && !std::isnan(half.y);
     const float left = std::ceil(sample.raster.x - half.x - 0.5f);
     const float right = std::floor(sample.raster.x + half.x - 0.5f);
     const float top = std::ceil(sample.raster.y - half.y - 0.5f);
     const float bottom = std::floor(sample.raster.y + half.y - 0.5f);
-    const int x0 = static_cast<int>(std::clamp(left, 0.0f, static_cast<float>(width_)));
-    const int x1 = static_cast<int>(std::clamp(right, -1.0f, static_cast<float>(width_) - 1.0f));
-    const int y0 = static_cast<int>(std::clamp(top, 0.0f, static_cast<float>(height_)));
-    const int y1 = static_cast<int>(std::clamp(bottom, -1.0f, static_cast<float>(height_) - 1.0f));
+    const int x0 = spans ? static_cast<int>(std::clamp(left, 0.0f, static_cast<float>(width_))) : 0;  // checked: not NaN when spans
+    const int x1 = spans ? static_cast<int>(std::clamp(right, -1.0f, static_cast<float>(width_) - 1.0f)) : -1;  // checked: not NaN when spans
+    const int y0 = spans ? static_cast<int>(std::clamp(top, 0.0f, static_cast<float>(height_))) : 0;  // checked: not NaN when spans
+    const int y1 = spans ? static_cast<int>(std::clamp(bottom, -1.0f, static_cast<float>(height_) - 1.0f)) : -1;  // checked: not NaN when spans
 
     for (int row = y0; row <= y1; row++) {
         for (int column = x0; column <= x1; column++) {

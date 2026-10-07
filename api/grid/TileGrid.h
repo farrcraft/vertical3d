@@ -25,9 +25,9 @@ namespace v3d::grid {
  * grid.
  *
  * Cover height and passability are independent flags and neither implies the other. The
- * sensible combinations are listed here rather than enforced: a crate or a low
- * wall is Half and impassable, a doorway is None and passable, a solid wall is Full and
- * impassable, and open ground is None and passable.
+ * sensible combinations are listed here rather than enforced. A crate or a low wall is Half
+ * and impassable. A doorway is None and passable. A solid wall is Full and impassable. Open
+ * ground is None and passable.
  *
  * Declared in increasing height, so the best cover of a set is its maximum.
  **/

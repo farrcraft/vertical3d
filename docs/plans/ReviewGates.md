@@ -54,8 +54,8 @@ text the gates will check.
 ### Step 3 — The two findings that cannot wait
 
 **Closed.** Checking every sibling site, as Review.md asks, found two more defects of the same
-pattern: a full-screen source released twice handed its descriptor set back twice, and a
-descriptor pool was destroyed under frames still using it. Both are fixed with tests that failed
+pattern. A full-screen source released twice handed its descriptor set back twice. A descriptor
+pool was destroyed under frames still using it. Both are fixed with tests that failed
 first. `RiFormat` was the sibling of the pixel filter check, and refuses a resolution that cannot
 be made.
 
@@ -66,9 +66,9 @@ be made.
 
 ### Step 4 — Gate: prose
 
-A script checks every comment and document a change touches for the writing rules: sentences over
-35 words, the banned openers, "which is what" and its kin, and a line extended past the wrap of
-its paragraph. It runs in CI beside cpplint and fails the build.
+A script checks every comment and document a change touches for the writing rules. It reports
+sentences over 35 words, the banned openers, and "which is what" and its kin. It also reports a
+line extended past the wrap of its paragraph. It runs in CI beside cpplint and fails the build.
 
 ### Step 5 — Gate: build conventions
 
@@ -102,8 +102,12 @@ when that review is clean.
 
 ## State
 
-Steps 1 to 3 are closed. The four gates exist as `scripts/*.ts`, run by Node with no
-dependencies, and are not yet in CI. Against the branch, the link rule passes, the prose gate
-reports 317 lines and the boundary gate 20, about half of them lines the heuristic cannot tell
-are safe. Wiring them into CI waits on how a safe line is marked; step 8 then fixes what they
-report.
+Steps 1 to 7 are closed. The gates are `scripts/*.ts`, run by Node with no dependencies, and
+the link rule, prose and boundary gates run in CI in `review-gates.yml`. A line the boundary
+gate reports and that is defined carries a `// checked:` comment naming why.
+
+Step 8 is under way. The branch passes all three CI gates: 317 prose lines were rewritten, and
+the boundary gate's reports were fixed or given a reason. Fixing them found three more defects:
+a NaN filter width in `Film::add`, a bound that is not a number in moya's buckets, and a GPU
+time that wraps in voxel. What is left is the first full run of `failsfirst.ts`, and one review
+of the commits since the eleventh round.

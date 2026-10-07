@@ -71,7 +71,7 @@ why: a second API beside the RI C API breaks the standard's "one true API" claus
   alone leaves the old copy in place, and the suite tests the old file. Touch a source file of
   the suite, or copy the fixture into `out/build/x64-Debug/moya/tests/data/` by hand.
 - **To look at a reference at a useful size**, copy its `.rib` to a scratch directory, raise its
-  `Format`, give it an absolute shader search path, and render it with the driver from the
+  `Format`, and give it an absolute shader search path. Render it with the driver from the
   driver's directory.
 
 [Testing.md](../contributing/Testing.md) covers the test framework, image comparison and the rest

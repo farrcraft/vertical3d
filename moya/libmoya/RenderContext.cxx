@@ -237,8 +237,8 @@ glm::mat4x4 RenderContext::projectionMatrix() const {
             window then selects the part of screen space the image covers.
 
             The interface looks down +z, so w is +z rather than the -z a right handed
-            system would write, and depth runs [-1, 1] to match the orthographic branch,
-            which is the depth range the cull below names to its Frustum.
+            system would write. Depth runs [-1, 1] to match the orthographic branch. The
+            cull below passes that same depth range to its Frustum.
         */
         const float tangent = std::tan(glm::radians(fov_) / 2.0f);
         projection = glm::mat4x4(0.0f);
@@ -823,9 +823,9 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     const glm::vec3 objectMax = bound_max;
     transformBound(toEye, objectMin, objectMax, &bound_min, &bound_max);
 
-    // a moving primitive is culled by where it is at both ends of the shutter as well as where
-    // it is stored; the size test below reads where it is stored, because a split shrinks a
-    // primitive and never the distance it travels
+    // a moving primitive is culled by where it is at both ends of the shutter, as well as by
+    // where it is stored. The size test below reads where it is stored, because a split
+    // shrinks a primitive and never the distance it travels
     glm::vec3 swept_min = bound_min;
     glm::vec3 swept_max = bound_max;
     sweep(poly->motion(), objectMin, objectMax, &swept_min, &swept_max);

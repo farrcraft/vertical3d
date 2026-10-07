@@ -33,10 +33,10 @@ namespace v3d::render::realtime::vulkan::renderer {
 /**
  * The device side of the world space quad primitive.
  *
- * A canvas is filled on the CPU during a tick and handed here, which uploads it into
- * buffers belonging to the frame about to be recorded and turns each of its batches into a
- * draw item on a pass. The buffers are per frame in flight, because the device may still be
- * reading the previous frame's out of the previous slot.
+ * A canvas is filled on the CPU during a tick and handed here. This uploads it into buffers
+ * belonging to the frame about to be recorded, and turns each of its batches into a draw item
+ * on a pass. The buffers are per frame in flight, because the device may still be reading the
+ * previous frame's out of the previous slot.
  *
  * A frame may submit any number of canvases, and each submission takes a pair of buffers of
  * its own out of the frame's ring. They cannot share one pair: growing a buffer replaces the
@@ -107,13 +107,13 @@ class World final {
 
  private:
     /**
-     * Compile the world quad pipeline for each blend twice - once for a pass with a depth
-     * attachment and once for a pass without, because dynamic rendering matches a pipeline to
-     * the attachments of the pass it draws into.
+     * Compile the world quad pipeline for each blend twice: once for a pass with a depth
+     * attachment and once for a pass without. Dynamic rendering matches a pipeline to the
+     * attachments of the pass it draws into.
      *
-     * The ones built for a pass with depth **test without writing**: solid
-     * geometry in front of a quad hides it, and two blended quads do not cut holes in each
-     * other where their transparent parts overlap.
+     * The ones built for a pass with depth **test without writing**. Solid geometry in front
+     * of a quad hides it, and two blended quads do not cut holes in each other where their
+     * transparent parts overlap.
      **/
     void createPipelines(VkFormat colour, VkFormat depth);
 

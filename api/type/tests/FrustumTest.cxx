@@ -120,8 +120,8 @@ BOOST_AUTO_TEST_CASE(frustum_camera_depth_test) {
 
 /**
  * The depth range is not a formality. Read as [-1, 1], an orthographic camera's near plane
- * falls far behind its eye and a perspective one's at half its near distance, so a box in
- * that gap is kept by the wrong range and dropped by the right one.
+ * falls far behind its eye, and a perspective one's falls at half its near distance. A box
+ * in that gap is kept by the wrong range and dropped by the right one.
  **/
 BOOST_AUTO_TEST_CASE(frustum_depth_range_matters_test) {
     const v3d::type::geometry::AABBox gap = box(glm::vec3(-0.1f, -0.1f, 0.6f), glm::vec3(0.1f, 0.1f, 0.8f));

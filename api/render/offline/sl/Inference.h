@@ -81,7 +81,7 @@ class Inference final {
      **/
     std::vector<const syntax::Statement*> escaping_;
     /**
-     * A uniform that a varying value reached, held until the fixed point has settled: the
+     * A uniform that a varying value reached, held until the fixed point has settled. The
      * inference cannot report while it is still running, because a symbol may become varying
      * on a later round than the one that read it.
      **/

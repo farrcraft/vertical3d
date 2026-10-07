@@ -35,9 +35,9 @@ class RenderTarget;
 class Pass final {
  public:
     /**
-     * What vkCmdSetDepthBias is given, in its terms: a constant offset in units of the
-     * depth format's smallest step, one scaled by the polygon's slope, and the most either
-     * may add up to - zero for no limit.
+     * What vkCmdSetDepthBias is given, in its terms. The fields are a constant offset in
+     * units of the depth format's smallest step, one scaled by the polygon's slope, and the
+     * most either may add up to - zero for no limit.
      **/
     struct DepthBias final {
         float constant;

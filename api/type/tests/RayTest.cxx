@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(ray_plane_unnormalised_test) {
 
 /**
  * A ground pick through an orthographic camera looking down at an angle. Its rays are
- * parallel, so the two clicks land in different places on the ground, and two clicks a
+ * parallel, so the two clicks land in different places on the ground. Two clicks a
  * horizontal step apart on the screen start the same height above it and travel the same
  * distance to reach it.
  **/

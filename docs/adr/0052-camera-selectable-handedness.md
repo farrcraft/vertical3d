@@ -9,7 +9,7 @@
 
 [ADR-0012](0012-camera-projection-targets-vulkan-clip-space.md) fixed the camera's basis as
 `right = up × direction`. `glm::lookAt` uses `right = direction × up`. From the same eye, centre
-and up the two give opposite right vectors and the same up vector, so each image is the
+and up the two give opposite right vectors and the same up vector. Each image is therefore the
 horizontal mirror of the other, and a mirror reverses the winding of every front face. An app
 whose meshes are wound for `glm::lookAt` and that culls back faces sees nothing through this
 camera, so it cannot adopt `type::camera` without rewinding all its geometry. A mirror is not a

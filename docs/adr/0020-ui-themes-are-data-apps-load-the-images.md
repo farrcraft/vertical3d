@@ -16,10 +16,10 @@ necessarily one texture.
 ## Decision
 
 A theme is JSON read by `ui::Engine::load`, and the renderer takes from it only the values it
-names, keeping its defaults for the rest. The library never loads or uploads an image:
+names, keeping its defaults for the rest. The library never loads or uploads an image.
 `Engine::resolveImages()` passes each source name to a callback the app supplies, and keeps the
-`ui::Image` that comes back, which is a texture handle and the region of that texture the image
-occupies. What a source name means is the app's business, so the library never reads a sprite
+`ui::Image` that comes back. A `ui::Image` is a texture handle and the region of that texture the
+image occupies. What a source name means is the app's business, so the library never reads a sprite
 sheet.
 
 ## Alternatives

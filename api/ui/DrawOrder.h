@@ -18,8 +18,8 @@ namespace v3d::ui {
 /**
  * Visit what a component holds that is live, in the order it is drawn.
  *
- * A tab bar holds every page and draws only the chosen one; a flow box draws its children in
- * the order it holds them, because that order is what it lays out; anything else draws by
+ * A tab bar holds every page and draws only the chosen one. A flow box draws its children in
+ * the order it holds them, because that order is what it lays out. Anything else draws by
  * depth. This is the only statement of that rule. Drawing, picking and the tab order all go
  * through it, so a control on a hidden page is neither picked nor focused, and a child is
  * picked where it was drawn.

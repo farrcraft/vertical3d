@@ -28,8 +28,9 @@ namespace v3d::render::realtime::vulkan::frame {
  *
  * A scene of a few hundred draws shares one view and one projection, so they are bound
  * once for the pass rather than pushed per draw. This owns the layout every pipeline in
- * the engine declares at set 0, so those pipelines are interchangeable within a pass: a descriptor set bound for one stays bound across a pipeline change to
- * another built against the same layout.
+ * the engine declares at set 0, so those pipelines are interchangeable within a pass. A
+ * descriptor set bound for one stays bound across a pipeline change to another built
+ * against the same layout.
  *
  * There is a slot per pass per frame in flight, because a frame's several passes have
  * different cameras and the device may still be reading the set two frames back. Slots

@@ -771,9 +771,9 @@ bool Immediate::table(const std::string& id, unsigned int columns, float height)
     row_.sameLine = false;
 
     // the gutter is reserved for as long as the table has a height, whether or not there
-    // is anything to scroll yet, so that the columns do not re-flow when a row arrives -
-    // and so that the bar can be drawn the frame the content overflows rather than the one
-    // after, as a window's has to be
+    // is anything to scroll yet. The columns then do not re-flow when a row arrives. The
+    // bar can also be drawn the frame the content overflows rather than the one after, as
+    // a window's has to be
     if (table_.height > 0.0f) {
         row_.right -= dressing_.scrollbarWidth + dressing_.spacing;
     }

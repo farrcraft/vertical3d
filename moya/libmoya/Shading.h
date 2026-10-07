@@ -35,9 +35,9 @@ class Shading final {
      **/
     glm::vec3 opacity = glm::vec3(1.0f);
     /**
-     * The lights that were switched on, each with the space the scene instanced it in: a
-     * light shader states `from` and `to` in that space and shades points in eye space,
-     * so the pair places a light where the scene put it rather than at the origin.
+     * The lights that were switched on, each with the space the scene instanced it in. A
+     * light shader states `from` and `to` in that space and shades points in eye space.
+     * The pair places a light where the scene put it rather than at the origin.
      **/
     std::vector<v3d::render::offline::sl::Placed> lights;
 };

@@ -75,8 +75,8 @@ enum class Opcode {
     MASK_NOT,
     POP_MASK,
     /**
-     * Begin a loop. `target` is the address of its POP_LOOP, which is where a test that
-     * runs out of lanes jumps to.
+     * Begin a loop. `target` is the address of its POP_LOOP. A test that runs out of lanes
+     * jumps there.
      **/
     LOOP,
     /**
@@ -101,9 +101,9 @@ enum class Opcode {
     /**
      * Open an inlined function body.
      *
-     * A call is inlined because a run has no call stack, and the body is bracketed rather
-     * than merely pasted in because a `return` inside it means "these lanes are done with
-     * this function", not "done with this shader".
+     * A call is inlined because a run has no call stack. The body is bracketed rather than
+     * merely pasted in, because a `return` inside it means "these lanes are done with this
+     * function", not "done with this shader".
      **/
     ENTER,
     /** Close an inlined body: the lanes that returned from it are live again. **/
@@ -127,7 +127,7 @@ enum class Opcode {
     ILLUMINANCE_NEXT,
     POP_ILLUMINANCE,
     /**
-     * The other end of the message passing, in a light shader with a position: L is from
+     * The other end of the message passing, in a light shader with a position. L is from
      * the point being lit toward `arguments[0]`, and the batch narrows to the points inside
      * the cone `arguments[1]` and `arguments[2]` name. `left` and `right` are the light
      * shader's L and Ps. Jump to `target` when the light reaches no point at all.

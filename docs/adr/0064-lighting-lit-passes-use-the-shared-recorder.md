@@ -17,11 +17,11 @@ nothing else can draw into them.
 
 ## Decision
 
-A `Pass` may name a scene set, which the recorder binds at set 2 once per pass, and a depth
-bias, which it records whenever it binds a pipeline built with one; a biased pipeline in a pass
-that names no bias is an error at record time. Lit passes are ordinary passes in a `Frame`,
-recorded by the same recorder as quad, world and line passes. ADR-0008's per-frame set is split
-into the camera at set 0 and the scene at set 2.
+A `Pass` may name a scene set, which the recorder binds at set 2 once per pass. It may also name a
+depth bias, which the recorder records whenever it binds a pipeline built with one. A biased
+pipeline in a pass that names no bias is an error at record time. Lit passes are ordinary passes in
+a `Frame`, recorded by the same recorder as quad, world and line passes. ADR-0008's per-frame set
+is split into the camera at set 0 and the scene at set 2.
 
 ## Alternatives
 

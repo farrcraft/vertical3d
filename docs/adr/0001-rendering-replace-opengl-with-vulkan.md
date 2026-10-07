@@ -37,8 +37,8 @@ and GLEW dependencies leave the tree.
 ## Consequences
 
 - **Gains**:
-  - Explicit control over submission, synchronisation and memory, which is where the
-    performance gain comes from.
+  - Explicit control over submission, synchronisation and memory. The performance gain comes
+    from this control.
   - Modern GPU features are within reach.
   - Every render feature is built once, against one backend.
 - **Costs**:

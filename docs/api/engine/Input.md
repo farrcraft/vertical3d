@@ -63,8 +63,8 @@ this for mouse motion and resize.
 2. Unless one of them called `consume()` on it, the event engine sends the commands it is bound
    to on `sink<event::Event>`.
 
-So every listener hears the key before any listener hears its command, whatever order they
-connected in. A key capture, such as a "press a key to rebind" menu item, listens on
+Every listener therefore hears the key before any listener hears its command, whatever order
+they connected in. A key capture, such as a "press a key to rebind" menu item, listens on
 `sink<event::Source>` and calls `consume()` on the key it takes. That key then makes no command.
 pong's `handleSource` is an example.
 

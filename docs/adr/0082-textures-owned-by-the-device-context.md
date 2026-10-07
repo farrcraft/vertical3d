@@ -8,7 +8,7 @@
 ## Context
 
 Every primitive that samples a texture shares one texture factory, one descriptor pool and
-layout for set 1, one white texture and one map from texture to material, so that an atlas is
+layout for set 1, one white texture and one map from texture to material. An atlas is therefore
 uploaded once and is one material ([ADR-0042](0042-rendering-world-space-sprites.md),
 [ADR-0065](0065-meshes-shared-registry-keyed-by-path.md)). Whatever owns that pool is a
 dependency of every 2D and 3D renderer and of `MeshRegistry`. If the 2D quad renderer owns it,

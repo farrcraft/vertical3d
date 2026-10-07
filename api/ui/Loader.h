@@ -52,7 +52,7 @@ class Toolbar;
  * Builds containers and themes out of a ui config document.
  *
  * Separate from Engine, which holds the built ui. A loader runs once and a ui is queried
- * for as long as the app lives, and keeping them apart keeps the parsing methods and
+ * for as long as the app lives. Keeping them apart keeps the parsing methods and
  * boost::json out of a header every app that draws a ui compiles.
  *
  * Nothing here is kept. `load()` fills the two collections and hands them over.

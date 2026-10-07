@@ -33,8 +33,8 @@ endfunction()
 # themselves are the inputs to.
 #
 # **Not a POST_BUILD step on the target.** POST_BUILD runs only when the target itself
-# relinks, so an edited asset would not be copied until the next relink, and the app would
-# keep reading the old copy while Ninja reports "no work to do".
+# relinks, so an edited asset would not be copied until the next relink. Until then the app
+# would keep reading the old copy while Ninja reports "no work to do".
 #
 # A stamp file is the rule's output because a generator cannot compare timestamps on a
 # directory. CONFIGURE_DEPENDS re-globs when the build runs rather than only at configure
@@ -66,8 +66,8 @@ function(v3d_copy_data target name source)
 	add_custom_target(${copier} DEPENDS "${stamp}")
 	add_dependencies(${target} ${copier})
 	# An app that takes both the shared data and its own copies two directories into one
-	# destination, and nothing orders those against each other - so they are chained in the
-	# order they were requested rather than left to run at the same time.
+	# destination, and nothing orders those copies against each other. They are chained in
+	# the order they were requested rather than left to run at the same time.
 	get_target_property(previous ${target} V3D_LAST_DATA_TARGET)
 	if(previous)
 		add_dependencies(${copier} ${previous})

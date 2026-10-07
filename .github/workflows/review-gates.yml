@@ -1,0 +1,39 @@
+name: review gates
+# The checks docs/contributing/Review.md lists for the classes a tool can find. The prose and
+# boundary gates read only the lines a change adds, so they compare against the branch the pull
+# request merges into, or against the previous tip of main after a push to it. The link rule
+# checks the whole tree. The fails-first harness builds the tree twice and needs a GPU for the
+# device suite, so it runs locally before review and not here.
+#
+# push is filtered to the default branch and pull_request is not, for the reason cpplint.yml
+# gives.
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+    # the whole history, so each gate can find where the change left the branch it merges into
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    # Node runs the gates directly; they use only its own modules and need no install
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24
+    - name: Set the base to compare against
+      shell: bash
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo "GATE_BASE=origin/${{ github.base_ref }}" >> "$GITHUB_ENV"
+        else
+          echo "GATE_BASE=${{ github.event.before }}" >> "$GITHUB_ENV"
+        fi
+    - name: Link rule
+      run: node scripts/linkrule.ts
+    - name: Prose
+      run: node scripts/prose.ts --base "$GATE_BASE"
+    - name: Boundary input
+      run: node scripts/boundary.ts --base "$GATE_BASE"

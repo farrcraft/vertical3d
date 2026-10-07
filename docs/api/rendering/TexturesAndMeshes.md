@@ -52,8 +52,8 @@ meshes.release(crate);
 - `clip(handle, name)` returns the index of a skinned entry's animation clip, for
   `ecs::component::play()`.
 
-A registered mesh is drawn by the [lit pass](Lighting.md#the-lit-pass). Geometry an app builds and draws
-itself (voxel's chunks, for instance) is a `vulkan::memory::Mesh` owned by the app. A
+A registered mesh is drawn by the [lit pass](Lighting.md#the-lit-pass). Geometry an app builds
+and draws itself (voxel's chunks, for instance) is a `vulkan::memory::Mesh` owned by the app. A
 `DrawItem` refers to its buffers directly and is valid only while the mesh is alive.
 `Mesh::describe(&item)` fills an item's geometry fields.
 

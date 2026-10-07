@@ -82,9 +82,9 @@ void Arranger::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_p
         canvas->clip(component->position(), component->position() + component->size());
     }
 
-    // which children are walked, and in what order, is forEachDrawn's: the chosen page of a
-    // tab bar only, so a page that is not up has no box; a flow box's in the order it holds
-    // them; anything else's by depth. What is here is where each one goes
+    // forEachDrawn decides which children are walked, and in what order. A tab bar walks the
+    // chosen page only, so a page that is not up has no box. A flow box walks its children in
+    // the order it holds them. Anything else walks by depth. What is here is where each goes
     const component::Traits kind = component::traits(component->type());
     const auto* tabs = kind.pages ? static_cast<const component::TabBar*>(component.get()) : nullptr;
     const auto* box = kind.flow ? static_cast<const component::Box*>(component.get()) : nullptr;
@@ -449,9 +449,9 @@ void Arranger::strip(component::Toolbar& bar, const glm::vec2& corner, const glm
         if (!button || !button->visible()) {
             continue;
         }
-        // the strip decides how big a button in it is - a row's is as wide as its label and
-        // a column's is as wide as the strip - and the button is then drawn at that size, the
-        // same way a button anywhere else is
+        // the strip decides how big a button in it is. A row's is as wide as its label and a
+        // column's is as wide as the strip. The button is then drawn at that size, the same
+        // way a button anywhere else is
         const glm::vec2 box = row
             ? glm::vec2(extent(*button) + styles_.base().padding, size.y)
             : glm::vec2(size.x, styles_.base().lineHeight);
@@ -474,8 +474,8 @@ void Arranger::panel(component::Menu& menu, const glm::vec2& origin, const glm::
     }
     const paint::Dressing& base = styles_.base();
     // a column either side of the labels: the mark on the left and the submenu arrow on the
-    // right, both of which are there whether or not this menu uses them, so that every label
-    // in one panel starts at the same place
+    // right. Both are there whether or not this menu uses them, so that every label in one
+    // panel starts at the same place
     const float column = base.lineHeight * markColumn;
     const glm::vec2 size(widest + column * 2.0f + base.padding * 0.5f,
         base.lineHeight * static_cast<float>(count) + base.panelPadding * 2.0f);
@@ -525,7 +525,7 @@ void Arranger::centred(component::Menu& level, const glm::vec2& room) const {
 /**
  **/
 v3d::type::geometry::Bound2D Arranger::lineRoom(bool vertical, const v3d::type::geometry::Bound2D& bounds) {
-    // along the line the children share the room, so none of them is offered any of it: an
+    // along the line the children share the room, so none of them is offered any of it. An
     // Auto extent there is what the child makes of itself, and a child that makes nothing of
     // itself asks for nothing. Across the line each is offered the whole of it, which
     // stretch() then enforces

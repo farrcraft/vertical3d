@@ -70,8 +70,8 @@ class TextureFont {
     /**
      * Rasterize each charcode and pack it into the atlas.
      *
-     * A glyph that does not fit is counted rather than drawn, and the count is why this
-     * can fail after having packed most of what it was given: text drawn with a partly
+     * A glyph that does not fit is counted rather than drawn. Because of the count, this
+     * can fail after having packed most of what it was given. Text drawn with a partly
      * packed font is missing characters and measures short, so the layout around it is
      * wrong too. A caller that ignores the return value gets both silently.
      *

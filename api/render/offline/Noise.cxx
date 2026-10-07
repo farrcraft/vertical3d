@@ -48,8 +48,8 @@ float lerp(float t, float a, float b) {
 
 /**
  * The dot product of the offset with one of the twelve edge directions of a cube, picked by
- * the low four bits of the hash; the four that repeat keep the choice a mask rather than a
- * division.
+ * the low four bits of the hash. Four of the directions repeat, so the choice is a mask
+ * rather than a division.
  **/
 float gradient(int hash, float x, float y, float z) {
     const int h = hash & 15;
@@ -77,9 +77,9 @@ float noise(const glm::vec3 & point) {
     const float fz = std::floor(point.z);
     // the lattice repeats every 256 cells, so a cell is reduced by that period before it
     // becomes an int, which a coordinate past the range of an int could not
-    const int cx = static_cast<int>(std::fmod(fx, 256.0f)) & 255;
-    const int cy = static_cast<int>(std::fmod(fy, 256.0f)) & 255;
-    const int cz = static_cast<int>(std::fmod(fz, 256.0f)) & 255;
+    const int cx = static_cast<int>(std::fmod(fx, 256.0f)) & 255;  // checked: fx is finite, so the remainder lies in (-256, 256)
+    const int cy = static_cast<int>(std::fmod(fy, 256.0f)) & 255;  // checked: fy is finite, so the remainder lies in (-256, 256)
+    const int cz = static_cast<int>(std::fmod(fz, 256.0f)) & 255;  // checked: fz is finite, so the remainder lies in (-256, 256)
     const float x = point.x - fx;
     const float y = point.y - fy;
     const float z = point.z - fz;

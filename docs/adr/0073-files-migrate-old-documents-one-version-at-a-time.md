@@ -37,7 +37,7 @@ writing a migrated document back or refusing to overwrite a newer one, is the ca
 ## Consequences
 
 - **Gains**:
-  - A new version costs one step that knows only the version before it.
+  - A new version costs one step that reads only the version before it.
   - A document from any earlier version is read by the same steps in order, and is never left half
     migrated.
   - A document with no version, or a version that is not a whole number, is refused rather than

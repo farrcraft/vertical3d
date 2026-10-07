@@ -49,14 +49,17 @@ Notes on individual components:
   the app reads `offset()` and moves whatever it scrolls itself. Placing it beside what it
   scrolls is the app's job either way. Binding is done in code; the document cannot bind
   one.
+- **A `Slider`** key that is absent, is not a number, or is beyond the range of a float takes
+  its default. The default `value` is the minimum.
 - **A `SelectList`** with no `items` is filled by the app with `items(rows)`. It draws only
   the rows its box shows and clips them to its plate.
 - **A `TabBar`** draws and lays out only the selected page. Components on other pages have no
   box that frame, so they are not picked or focused.
 - **A `Toolbar`** button entry reads every button key, plus `name`, `style`, `visible` and
-  `enabled`. A button with an `icon` is sized to the icon; otherwise to its label. A toolbar
-  button falls back to its label when its icon is not resolved. A hidden button takes no room
-  in its strip, is not drawn and takes no press, and the buttons after it close up.
+  `enabled`. A `name` that is not a string is ignored, and the button has no name. A button
+  with an `icon` is sized to the icon; otherwise to its label. A toolbar button falls back to
+  its label when its icon is not resolved. A hidden button takes no room in its strip, is not
+  drawn and takes no press, and the buttons after it close up.
 - **A `Menu` or `MenuBar` item** has a `label`, a `type`, and optionally `command` and
   `context`. Item types are `action`, `submenu` (which holds its own `items`), `check`,
   `radio`, `input`, `numeric_input` and `key_input`. A check and a radio item are marked by

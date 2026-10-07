@@ -26,7 +26,7 @@ namespace v3d::config {
  *
  * **Unlike the other config readers this one also writes**, because a tool produces a sprite
  * sheet rather than a person. A packer writes the document through document() rather than
- * its own code, since a second implementation could drift silently: get() returns an empty
+ * its own code, since a second implementation could drift silently. get() returns an empty
  * region for a missing name and uv() returns false, so a badly written sheet draws nothing
  * and reports nothing. load() and document() read and write the same table.
  **/

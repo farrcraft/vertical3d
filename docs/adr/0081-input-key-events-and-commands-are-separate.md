@@ -11,7 +11,7 @@ A device reports a key or button edge, and the event engine maps it to the comma
 bindings name. When keys and commands share one event type on one dispatcher sink, every listener
 hears both and has to filter by a flag at run time, and a listener that forgets handles every
 keypress twice. When the event engine maps a key from inside the key's own delivery, whether a
-listener hears the key or its command first depends on the order things connected, and an EnTT
+listener hears the key or its command first depends on the order things connected. An EnTT
 dispatcher calls the last-connected listener first. A key capture, such as a rebinding screen,
 needs to take a key before the key makes any command.
 
@@ -19,9 +19,9 @@ needs to take a key before the key makes any command.
 
 A key is an `event::Source` and a command an `event::Event`, delivered on two sinks, so a listener
 on `sink<Event>` hears commands and nothing else. `event::publish()` is the one way to send a
-source: it delivers the key to every listener on `sink<Source>` and then, unless one called
-`consume()`, hands it to the event engine to send the commands it is bound to. Every listener
-therefore hears the key before any hears its command, whatever order they connected in.
+source. It delivers the key to every listener on `sink<Source>`. Then, unless one called
+`consume()`, it hands the key to the event engine to send the commands it is bound to. Every
+listener therefore hears the key before any hears its command, whatever order they connected in.
 
 ## Alternatives
 

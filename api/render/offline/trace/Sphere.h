@@ -16,9 +16,9 @@
 namespace v3d::render::offline::trace {
 
 /**
- * RI's sphere: centred on its own origin, cut to the slab between two heights on its z axis
- * and swept through an angle about it, and placed in world space by the transformation that
- * was current.
+ * RI's sphere. It is centred on its own origin, cut to the slab between two heights on its z
+ * axis and swept through an angle about it. The transformation that was current places it in
+ * world space.
  *
  * It is intersected where it is defined rather than tessellated, so its silhouette is exact
  * at any size. Its normal points out, which is RI's orientation; an inside-out sphere needs

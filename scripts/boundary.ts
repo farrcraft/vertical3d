@@ -10,7 +10,16 @@
 //                float: floor, ceil, round, trunc, fmod and their kin, sqrt or pow, .value(),
 //                as_double(), a cast to float or double, or a float literal.
 //
-// Lines in the helper files themselves are not checked, and neither is a comment.
+// Lines in the helper files themselves are not checked, and neither is a comment or a test
+// file: a test converts values it chose, not input.
+//
+// A line the heuristic reports and that is safe for a reason the text does not show carries a
+// trailing comment naming the reason, and is then accepted:
+//
+//   const int cx = static_cast<int>(std::fmod(fx, 256.0f)) & 255;  // checked: fx is finite
+//
+// The reason has to say why the conversion is defined. A clamp alone is not a reason, because
+// std::clamp passes a NaN through.
 //
 // Rule float-cast is a heuristic. It reads the text of the operand, not its type, so it cannot
 // see:
@@ -25,7 +34,7 @@
 //
 // The changeset is every commit since the merge base with origin/main, or with main when there
 // is no origin/main, plus the working tree and untracked source files. --base names another
-// commit to compare against. Each report is printed as path:line: rule: excerpt. The exit status
+// branch or commit, and the changeset starts at its merge base with HEAD. Each report is printed as path:line: rule: excerpt. The exit status
 // is 1 when there is any report, and 0 otherwise.
 //
 // Node runs this file directly: it uses only node: modules and type annotations Node can strip.
@@ -47,6 +56,12 @@ const HELPERS = new Set([
 ]);
 
 const SKIPPED = ['vendor/', 'out/', 'vcpkg_installed/'];
+
+/** A test file, which converts values it chose rather than input. */
+const TEST = /(^|\/)tests\//;
+
+/** The comment that accepts a reported line, with the reason the conversion is defined. */
+const CHECKED = /\/\/\s*checked:\s*\S/;
 
 const VALUE_TO = /\bvalue_to\s*</;
 
@@ -82,10 +97,9 @@ function stop(message: string): never {
 
 /** Returns the commit the changeset is measured from. */
 function mergeBase(override: string | null): string {
-    if (override) {
-        return override;
-    }
-    for (const branch of ['origin/main', 'main']) {
+    // the changeset starts where it left the branch it is compared with, so commits that branch
+    // has gained since are not counted as the changeset's
+    for (const branch of override ? [override] : ['origin/main', 'main']) {
         const base = git('merge-base', 'HEAD', branch);
         if (base) {
             return base.trim();
@@ -165,7 +179,10 @@ function check(lines: Line[]): Report[] {
     const reports: Report[] = [];
     lines.forEach((line, position) => {
         const { path, number, text } = line;
-        if (HELPERS.has(path) || !SOURCE.test(path) || SKIPPED.some((prefix) => path.startsWith(prefix))) {
+        if (HELPERS.has(path) || !SOURCE.test(path) || TEST.test(path) || SKIPPED.some((prefix) => path.startsWith(prefix))) {
+            return;
+        }
+        if (CHECKED.test(text)) {
             return;
         }
         const code = stripComment(text);

@@ -32,11 +32,11 @@ struct Bounds final {
  * The matrix a directional light draws its shadow map through: an orthographic box around a
  * sphere, seen from the light.
  *
- * The eye is placed two radii out towards the light, and the far plane four radii beyond it,
- * so the sphere spans a quarter to three quarters of the depth range and a caster just
+ * The eye is placed two radii out towards the light, and the far plane four radii beyond it.
+ * The sphere therefore spans a quarter to three quarters of the depth range, and a caster just
  * outside it still lands in the map. The view is built as type::camera::Profile::lookat and
- * Camera::createProjection build a camera's, so a face is wound the same way under the light
- * as under the camera a scene is drawn through, and one cull mode serves both passes.
+ * Camera::createProjection build a camera's. A face is therefore wound the same way under the
+ * light as under the camera a scene is drawn through, and one cull mode serves both passes.
  *
  * @param towards the direction towards the light - LitSettings::light. It need not be
  *        normalised, and must not be zero

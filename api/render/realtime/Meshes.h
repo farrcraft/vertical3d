@@ -22,7 +22,7 @@ class Lit;
  * lit pass.
  *
  * Each is drawn where its transform puts it, alpha of the way from its previous step when it
- * has one, with a draw per part of its registry entry using that part's albedo and base
+ * has one. It takes a draw per part of its registry entry, using that part's albedo and base
  * colour. A skinned entry is drawn with Lit's skinned pipelines, in the pose poses() gave it.
  * One the poses do not name is skipped, since it has no palette to be drawn with. Outlines go
  * in first, for every entity, and surfaces after, so the pass draws each hull before any

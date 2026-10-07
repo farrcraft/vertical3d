@@ -6,8 +6,9 @@
 
 ## Context
 
-A model can carry a skeleton and clips ([ADR-0069](0069-models-material-parts-over-one-vertex-buffer.md)),
-and something has to advance a clip and sample a pose from it. Simulation runs on a fixed step
+A model can carry a skeleton and clips
+([ADR-0069](0069-models-material-parts-over-one-vertex-buffer.md)), and something has to advance
+a clip and sample a pose from it. Simulation runs on a fixed step
 and drawing runs once a frame, so a character has to be drawn between steps the way a transform
 is ([ADR-0060](0060-ecs-interpolate-from-a-previous-step-component.md)). A skeleton has dozens of
 joints, and a game shows at most a few dozen animated characters. The rules for choosing a clip

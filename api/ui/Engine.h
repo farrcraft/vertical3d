@@ -87,9 +87,9 @@ class Engine {
     /**
      * Put the keyboard on one component, taking it off whatever had it.
      *
-     * One component at a time, and the engine is where that is decided because both
-     * routers reach it: ui::Cursor gives the focus as a press lands and ui::Keys reads it
-     * to know where a key goes.
+     * One component at a time. The engine decides it because both routers reach the
+     * engine. ui::Cursor gives the focus as a press lands, and ui::Keys reads it to find
+     * where a key goes.
      *
      * @param component what to focus, or null for nothing. A component that did not ask
      *      to be focusable is nothing, so a press on a panel takes the focus off rather
@@ -148,9 +148,9 @@ class Engine {
      * **A ui with nothing focused is left alone**, so a game's movement keys keep working:
      * tab must not take the focus onto the first widget of a hud nobody is looking at.
      *
-     * When the component that held the focus is no longer reachable - hidden, disabled or
-     * taken out of the tree since - there is no place in the order to move on from, so tab
-     * starts again at the first component.
+     * The component that held the focus may no longer be reachable: hidden, disabled or
+     * taken out of the tree since. Then there is no place in the order to move on from, so
+     * tab starts again at the first component.
      *
      * @param forward whether to move to the next one rather than the previous one
      * @return whether the focus moved, which a ui holding one focusable component and a ui

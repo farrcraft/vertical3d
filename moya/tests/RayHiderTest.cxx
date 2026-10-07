@@ -25,8 +25,8 @@ namespace {
 typedef v3d::moya::FrameBuffer Planes;
 
 /**
- * A 16 by 16 frame of an orthographic camera looking down +z from z = -1. The frame is square,
- * so the screen window covers world x and y over [-1, 1], and a pixel centre is at
+ * A 16 by 16 frame of an orthographic camera looking down +z from z = -1. The frame is
+ * square, so the screen window covers world x and y over [-1, 1]. A pixel centre is at
  * x = -1 + (column + 0.5) / 8 and y = 1 - (row + 0.5) / 8.
  **/
 const unsigned int SIZE = 16;
@@ -277,9 +277,9 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_is_repeatable_test) {
 }
 
 /**
- * An off centre screen window is a camera like any other: here it covers world x over [0, 2],
- * so a quad on the left of the world is out of the picture and one at x in [0, 1] fills the
- * left half of it.
+ * An off centre screen window is a camera like any other. Here it covers world x over
+ * [0, 2]. A quad on the left of the world is out of the picture, and one at x in [0, 1]
+ * fills the left half of it.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_off_centre_screen_window_test) {
     v3d::moya::Renderer renderer;
@@ -303,7 +303,7 @@ BOOST_AUTO_TEST_CASE(rayhider_off_centre_screen_window_test) {
 
 /**
  * A world to camera matrix that is not a rotation and a translation is a camera like any
- * other: one that doubles the world puts a quad half a unit across over a whole unit of
+ * other. One that doubles the world puts a quad half a unit across over a whole unit of
  * screen.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_scaling_camera_test) {
@@ -463,9 +463,9 @@ BOOST_AUTO_TEST_CASE(rayhider_lights_per_primitive_test) {
 }
 
 /**
- * A primary ray is found by inverting the projection the reyes hider projects through, so a
- * point along it projects back to the raster position it was cast through - off the middle
- * of an uncentred screen window too - and it starts on the near plane.
+ * A primary ray is found by inverting the projection the reyes hider projects through. A
+ * point along it projects back to the raster position it was cast through, including off
+ * the middle of an uncentred screen window. The ray starts on the near plane.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_inverts_the_projection_test) {
     v3d::moya::RenderContext rc;

@@ -18,7 +18,7 @@ quad the one 2D primitive, but its vertex carries a 2D position.
 ## Decision
 
 A third primitive, `realtime::WorldCanvas`, collects textured quads whose vertices carry a 3D
-world position, and `vulkan::renderer::World` draws them through the pass camera at set 0, as
+world position. `vulkan::renderer::World` draws them through the pass camera at set 0, as
 [ADR-0011](0011-rendering-lines-as-a-world-space-primitive.md) does for lines, with the quad
 pipeline's fragment stage. Quads are drawn in the order they were added, and the caller decides
 that order. In a pass with a depth buffer the pipeline tests depth and does not write it.
@@ -47,7 +47,7 @@ that order. In a pass with a depth buffer the pipeline tests depth and does not 
 - **For**: No ordering question, and correct against the rest of the scene in both directions.
 - **Against**: A blended quad that writes depth hides whatever is behind its whole rectangle,
   transparent parts included. An alpha cutout or alpha to coverage avoids that but gives hard
-  edges, which a stylised 2D look does not want.
+  edges, and hard edges do not suit a stylised 2D look.
 - **Rejected because**: It replaces the ordering problem with a worse one.
 
 ## Consequences

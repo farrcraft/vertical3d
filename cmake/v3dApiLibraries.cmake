@@ -98,8 +98,8 @@ set(V3D_API_ui_PATH "ui")
 set(V3D_API_ui_REQUIRES log render asset event font image input type)
 set(V3D_API_ui_PACKAGES SDL3 glm EnTT)
 
-# The imported target each package provides, which is how the verification below recognises
-# a package in a link line. A package that provides only an include directory, such as cgltf,
+# The imported target each package provides. The verification below recognises a package in
+# a link line by this target. A package that provides only an include directory, such as cgltf,
 # has no target and so cannot be checked this way.
 set(V3D_PACKAGE_TARGETS
 	"Vulkan::Vulkan=Vulkan"

@@ -50,9 +50,9 @@ class ReyesPrimitive {
          * the geometric normal of the plane it lies in, all in the space its vertices are.
          *
          * A primitive keeps them because splitting resubmits its pieces through that pass
-         * during the second one, when none of it is current any more - a scene that places
-         * and colours two objects would otherwise measure a split piece of the first
-         * against the state of the last. A split carries each vertex's own colour and
+         * during the second one, when none of that state is current any more. Without them,
+         * a scene that places and colours two objects would measure a split piece of the
+         * first against the state of the last. A split carries each vertex's own colour and
          * shading normal onto the pieces, interpolating them where an edge is cut, so the
          * colour and the normal here fill only a vertex that has none. The normal is also
          * every piece's geometric normal, since a piece lies in its parent's plane.

@@ -68,8 +68,8 @@ class RenderTarget final {
      *        frame of. Each image of a target with more than one starts cleared and readable,
      *        so previous() can be read on the first frame
      * @throw std::runtime_error if allocation fails, if either dimension is zero, if there
-     *        is no colour and no sampled depth, which would be a target with nothing to read,
-     *        or if images is neither one nor the frames in flight
+     *        is no colour and no sampled depth, or if images is neither one nor the frames in
+     *        flight. A target with no colour and no sampled depth would have nothing to read
      **/
     RenderTarget(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring,
         uint32_t width, uint32_t height, VkFormat colour, bool depth = false, bool sampledDepth = false,
@@ -209,8 +209,8 @@ class RenderTarget final {
 
     /**
      * Clear every slot and leave it in the layout a reader samples it in, as though a pass had
-     * drawn into it, so that a frame reading previous() before anything has reads a defined
-     * image rather than one in an undefined layout.
+     * drawn into it. A frame that reads previous() before anything has drawn then reads a
+     * defined image rather than one in an undefined layout.
      **/
     void ready(const std::vector<Slot>& slots, const VkExtent2D& extent) const;
 

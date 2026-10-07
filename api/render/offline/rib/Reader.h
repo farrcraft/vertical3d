@@ -31,7 +31,7 @@ namespace v3d::render::offline::rib {
  * suite can drive it with a handler that only counts.
  *
  * An unrecognised request is reported once per name rather than once per occurrence, and
- * its arguments are skipped: only a string, a number or an array can be an argument, so
+ * its arguments are skipped. Only a string, a number or an array can be an argument, so
  * the next identifier begins the next request whatever this one was. The report exists
  * because **a scene that rendered nothing and a scene that was not understood look
  * identical from outside**.

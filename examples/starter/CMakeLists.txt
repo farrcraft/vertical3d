@@ -16,9 +16,9 @@ cmake_minimum_required(VERSION 3.21)
 project("v3dstarter" CXX)
 
 # What a consumer sets for itself, and all of it. The language standard and /permissive- are
-# deliberately not in the api's interface properties; everything else a v3d:: target needs -
-# its include root, /EHsc, /utf-8, and every third party dependency its headers name - arrives
-# through the target.
+# deliberately not in the api's interface properties. Everything else a v3d:: target needs
+# arrives through the target: its include root, /EHsc, /utf-8, and every third party
+# dependency its headers name.
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options("/permissive-")

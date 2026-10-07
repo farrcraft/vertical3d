@@ -16,8 +16,8 @@ namespace v3d::render::realtime::vulkan::frame {
  * Destruction held back until every frame that might still read what is being destroyed has
  * finished.
  *
- * An entry is a callback, so this does not depend on what it destroys: a texture, a
- * descriptor set going back to a free list, or anything later that has to outlive the frames
+ * An entry is a callback, so this does not depend on what it destroys. That may be a texture,
+ * a descriptor set going back to a free list, or anything later that has to outlive the frames
  * in flight. It needs no device either, because the count of frames begun is handed in by
  * whoever is counting - the ring.
  **/

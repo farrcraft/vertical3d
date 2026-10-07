@@ -2,9 +2,9 @@
 
 /**
  * One triangle that covers the whole target a pass draws into, from three vertices and no
- * vertex buffer. Its uv runs from 0 at the top left of the target to 1 at the bottom right, so
- * a fragment stage reading set 1 at uv reads the texel under the pixel - Vulkan's clip space
- * has y down, and so does an image.
+ * vertex buffer. Its uv runs from 0 at the top left of the target to 1 at the bottom right. A
+ * fragment stage reading set 1 at uv therefore reads the texel under the pixel, because
+ * Vulkan's clip space has y down, and so does an image.
  **/
 
 layout(location = 0) out vec2 uv;

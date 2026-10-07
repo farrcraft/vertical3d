@@ -28,7 +28,7 @@ namespace v3d::render::realtime::vulkan::frame {
  * sorted - see Pass::sort. A sorted pass is recorded in sort key order, so items sharing a
  * pipeline and a material end up adjacent and need no binds between them.
  *
- * Nothing already bound is rebound: a pipeline and a descriptor set are bound only when
+ * Nothing already bound is rebound. A pipeline and a descriptor set are bound only when
  * an item names a different one than the last item did, so a run of quads sharing a
  * texture costs one bind between them.
  **/

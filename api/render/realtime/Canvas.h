@@ -25,7 +25,7 @@ namespace v3d::render::realtime {
  * Everything 2D the engine draws, accumulated as one stream of textured quads.
  *
  * This is the CPU side of the batched quad primitive. A coloured rectangle, a sprite and a
- * glyph are the same quad with a different texture, so they share one vertex buffer and the
+ * glyph are the same quad with a different texture. They share one vertex buffer, and the
  * stream is cut into a new batch only where the texture changes. An untextured quad names no
  * texture and is drawn against the renderer's 1x1 white one, so it never cuts a batch of
  * its own.
@@ -167,9 +167,9 @@ class Canvas final {
      * intersected with whatever is already clipped, so an inner clip can only take room
      * away.
      *
-     * Clipping is per batch and not per vertex: the stream cuts where the rectangle
-     * changes and the device scissors the draw, so a quad straddling the edge is drawn
-     * whole and only the part inside the rectangle lands. A scissor is in pixels, so the
+     * Clipping is per batch and not per vertex. The stream cuts where the rectangle
+     * changes and the device scissors the draw. A quad straddling the edge is drawn whole,
+     * and only the part inside the rectangle lands. A scissor is in pixels, so the
      * rectangle is mapped out of the space when there is one.
      **/
     void clip(const glm::vec2& min, const glm::vec2& max);

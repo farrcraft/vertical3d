@@ -34,7 +34,7 @@ callback, and destroyed once every frame that began before the release has finis
   need.
 
 ### A scope: everything registered for a scene is released with it
-- **For**: Matches what loading by region wants: unload the region and everything it loaded
+- **For**: Matches what loading by region needs: unload the region and everything it loaded
   goes.
 - **Against**: Built into the registry it is a second ownership model, which the editor and the
   UI would never use.

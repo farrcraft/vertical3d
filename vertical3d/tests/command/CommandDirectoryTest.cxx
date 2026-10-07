@@ -123,8 +123,8 @@ BOOST_AUTO_TEST_CASE(commanddirectory_passes_the_state_through) {
 }
 
 /**
- * A press handler runs on the press and on a binding that names no edge, but not on the
- * release or on a held key's repeat - which are still handled, so the command does not
+ * A press handler runs on the press and on a binding that names no edge. It does not run on
+ * the release or on a held key's repeat. Those are still handled, so the command does not
  * report as unknown.
  **/
 BOOST_AUTO_TEST_CASE(commanddirectory_ignores_a_release_of_a_press_command) {

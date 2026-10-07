@@ -30,7 +30,7 @@ struct DrawItem final {
      * How many bytes of push constants an item can carry.
      *
      * 128 is the minimum Vulkan guarantees. Using all of it lets an item carry a transform
-     * alongside the few values a lit or graded material needs: the lit renderer's mat4,
+     * alongside the few values a lit or graded material needs. The lit renderer's mat4,
      * vec4, scalar and joint index take 88 bytes, and the quad primitive's mat4 and text flag
      * take 68. The cost is paid per item per frame: an item is copied into a pass's queue by
      * value, so the unused part of the block is copied whether or not a pipeline declared it.

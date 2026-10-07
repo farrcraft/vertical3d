@@ -57,8 +57,8 @@ rule.
 
 ## 3. Build
 
-[Conventions.md](contributing/Conventions.md) has the house style, and [Build.md](contributing/Build.md) covers
-configuring and building.
+[Conventions.md](contributing/Conventions.md) has the house style, and
+[Build.md](contributing/Build.md) covers configuring and building.
 
 One concern per commit. The message says *why* where the diff does not make it obvious. Where a
 commit implements a decision, the message names the ADR.
@@ -74,8 +74,8 @@ locally. The tree is clean at all four, so every finding is a real one. See
 
 **Tests.** Each api library has a Boost.Test binary, as does each app with logic worth
 covering. Run them with `ctest --test-dir out/build/x64-Debug --output-on-failure`. A change
-with a testable CPU half brings test cases with it. [Testing.md](contributing/Testing.md) records what is
-covered and what cannot be.
+with a testable CPU half brings test cases with it. [Testing.md](contributing/Testing.md) records
+what is covered and what cannot be.
 
 **Review.** A changeset merges when its review is clean: it introduces no finding at any
 severity. A defect it did not introduce goes in the known-debt list in [TODO.md](TODO.md).
@@ -85,7 +85,8 @@ to do.
 **Rendering.** CI runs the device tests against lavapipe, a software Vulkan driver, and a few of
 them compare against committed reference images. Locally, a rendering change is checked by
 running the app and reading the log. The Khronos validation layer reports through the logger,
-so a run with no validation messages is the signal. [Testing.md](contributing/Testing.md) has the detail.
+so a run with no validation messages is the signal. [Testing.md](contributing/Testing.md) has the
+detail.
 
 ## 5. Record
 

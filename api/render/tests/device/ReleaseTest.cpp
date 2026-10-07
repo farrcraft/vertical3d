@@ -286,7 +286,7 @@ BOOST_AUTO_TEST_CASE(a_target_resized_in_flight_outlives_its_frame) {
 }
 
 /**
- * A texture registered from a target shares the target's image, so a resize leaves the
+ * A texture registered from a target shares the target's image. A resize therefore leaves the
  * registered texture naming the old image rather than one that has been destroyed, and a
  * frame that still samples it draws.
  **/

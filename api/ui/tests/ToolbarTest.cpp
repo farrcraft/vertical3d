@@ -6,6 +6,7 @@
 #include <api/event/Context.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/ui/Container.h>
+#include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/MenuBar.h>
 #include <api/ui/paint/ComponentRenderer.h>
@@ -15,6 +16,7 @@
 #include <string_view>
 #include <vector>
 
+#include <boost/json/parse.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <entt/entt.hpp>
@@ -204,8 +206,8 @@ BOOST_AUTO_TEST_CASE(toolbar_hover_follows_the_cursor) {
 }
 
 /**
- * A button is found by the command it sends, which is how whatever handles a command marks
- * the button that names it. A button that is not a toggle never shows a mark.
+ * A button is found by the command it sends. Whatever handles a command marks the button
+ * that names it this way. A button that is not a toggle never shows a mark.
  **/
 BOOST_AUTO_TEST_CASE(toolbar_marks_by_command) {
     Fixture fixture;
@@ -351,4 +353,23 @@ BOOST_AUTO_TEST_CASE(a_left_strip_listed_first_still_starts_below_a_top_one) {
     const v3d::ui::Component& row = *top;
     BOOST_TEST(row.position().y == 0.0f);
     BOOST_TEST(column.position().y == row.size().y + 1.0f);
+}
+
+/**
+ * A document names a toolbar button. A name that is not a string is ignored rather than
+ * failing the load, and the button has no name.
+ **/
+BOOST_AUTO_TEST_CASE(a_toolbar_button_name_that_is_not_a_string_is_ignored) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
+        boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "editor", "visible": true,
+        "components": [ { "type": "toolbar", "name": "tools", "edge": "top", "buttons": [
+            { "label": "Select", "name": "select" }, { "label": "Move", "name": 7 }
+        ] } ] } ] })").as_object()));
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        boost::dynamic_pointer_cast<v3d::ui::component::Toolbar>(ui->container("editor")->get("tools"));
+    BOOST_REQUIRE(bar);
+    BOOST_TEST(bar->button(0)->name() == "select");
+    BOOST_TEST(bar->button(1)->name().empty());
 }

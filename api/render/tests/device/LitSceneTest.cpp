@@ -316,7 +316,7 @@ BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_and_silent) {
     LitSettings settings;
     settings.outline = 0.1f;
 
-    // the frame is built before it is begun, as an engine builds one during its tick: a scene
+    // the frame is built before it is begun, as an engine builds one during its tick. A scene
     // waits for its slot to be free, and a begun frame's fence is not signalled until it is
     // submitted
     Frame frame;
@@ -399,7 +399,7 @@ BOOST_AUTO_TEST_CASE(a_released_mesh_is_not_walked) {
 /**
  * A caster is drawn into a shadow map at the depth the light's matrix gives it. This is the
  * depth target's case again, with the quads standing in the world and drawn through Lit's
- * shadow pipeline and shadow::light, so the depths are exact for the same reason: each front
+ * shadow pipeline and shadow::light. The depths are exact for the same reason: each front
  * face is a plane of one depth, at a quarter and three quarters of the light's range.
  *
  * A third entity that casts no shadow stands nearer the light over the right quad. If it were
@@ -424,9 +424,9 @@ BOOST_AUTO_TEST_CASE(a_caster_is_drawn_into_the_shadow_map_at_its_depth) {
         headless.context->frameUniforms(), headless.context->textures(), colourFormat,
         v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()), map->depthFormat());
 
-    // the light looks along +z from two units out, over a sphere of one, so a face at z = -1
-    // is a quarter of the way into its range and one at z = 1 three quarters. Each block is
-    // half a unit wide and spans the same rectangles as the depth target's two quads
+    // the light looks along +z from two units out, over a sphere of one. A face at z = -1 is
+    // therefore a quarter of the way into its range, and one at z = 1 three quarters. Each
+    // block is half a unit wide and spans the same rectangles as the depth target's two quads
     entt::registry registry;
     const glm::vec3 scale(0.5f, 1.0f, 1.0f);
     place(&registry, block, glm::vec3(-0.5f, 0.0f, -0.5f), scale, true);
@@ -509,11 +509,11 @@ BOOST_AUTO_TEST_CASE(a_shadow_falls_on_the_ground) {
 }
 
 /**
- * A full-size lit game scene built from this tree's fixtures: a ground that casts nothing, two
- * upright figures and ten props at set yaws under one key light at LitSettings' defaults, seen
- * through an orthographic camera at 45 degrees at 1280 by 720. The frame is a shadow pass, the
- * lit scene into an sRGB target, and a grade into a target in an sRGB swapchain format. The
- * grade uses the identity table.
+ * A full-size lit game scene built from this tree's fixtures. It holds a ground that casts
+ * nothing, two upright figures and ten props at set yaws, under one key light at LitSettings'
+ * defaults. It is seen through an orthographic camera at 45 degrees at 1280 by 720. The frame
+ * is a shadow pass, the lit scene into an sRGB target, and a grade into a target in an sRGB
+ * swapchain format. The grade uses the identity table.
  *
  * The passes are created in the opposite order, grade first, as an engine creates its colour
  * pass before a game adds anything. Each pass names what it reads, so the frame must record a
@@ -717,7 +717,7 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
 }
 
 /**
- * World quads drawn in the lit pass after its meshes are depth-tested against them: a green
+ * World quads drawn in the lit pass after its meshes are depth-tested against them. A green
  * ground quad under a red cube, submitted after the cube, is hidden where the cube stands and
  * seen everywhere else. A world quad drawn without the scene's depth would cover the cube's top
  * face at the centre of the picture. The quads go through a World built against the scene
@@ -792,8 +792,8 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
 }
 
 /**
- * The light's colour multiplies the lit band: the top face of a white cube, which faces the key
- * and so is in the lit band, is white under a white light and red under a red one. The lit band's
+ * The light's colour multiplies the lit band. The top face of a white cube faces the key and so
+ * is in the lit band. It is white under a white light and red under a red one. The lit band's
  * multiplier is one and the colours are whole, so both are exact.
  **/
 BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
@@ -851,9 +851,9 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
 }
 
 /**
- * Rain in a lit scene: a shower falling over the look of a red cube on a white ground, drawn as
- * streaks along each drop's velocity, added to the scene in the lit pass, under a blue light at
- * night. A streak's appearance depends on filtering and blending, which differ between
+ * Rain in a lit scene under a blue light at night. A shower falls over the look of a red cube on
+ * a white ground. It is drawn as streaks along each drop's velocity and added to the scene in the
+ * lit pass. A streak's appearance depends on filtering and blending, which differ between
  * conformant drivers, so there is no reference picture. The case checks that the validation
  * layer reports no errors and that the rain moves between frames. The frames go to
  * data_out/rain_*.png for a person to look at.

@@ -96,9 +96,9 @@ class RenderContext {
         void projection(std::string name, float fov = 90.0);
         /**
             *	maps to RiHider()
-            *	"hidden", RI's default, is the reyes hider; "raytrace" casts a primary ray
-            *	through every sample instead. Any other name is reported and
-            *	leaves the hider as it was.
+            *	"hidden", RI's default, is the reyes hider. "raytrace" casts a
+            *	primary ray through every sample instead. Any other name is
+            *	reported, and the hider stays as it was.
             */
         void hider(const std::string & name);
         bool raytracing() const;

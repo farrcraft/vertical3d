@@ -135,8 +135,8 @@ Two traps, both silent:
   without a warning. The symptom is "cannot use 'throw' with exceptions disabled" on every source
   that throws. The build passes `--extra-arg-before=/EHsc` to clang-tidy, which puts `/EHsc`
   ahead of the compile command so it survives.
-- **clang-tidy ignores a check name it does not know.** `.clang-tidy` enables whole families and
-  subtracts checks by name, so a subtracted name that stops matching a check turns that check
+- **clang-tidy ignores a check name it does not recognise.** `.clang-tidy` enables whole families
+  and subtracts checks by name, so a subtracted name that stops matching a check turns that check
   back on.
 
 ## Prose

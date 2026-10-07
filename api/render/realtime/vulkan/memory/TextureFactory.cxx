@@ -25,8 +25,8 @@ namespace v3d::render::realtime::vulkan::memory {
 TextureFactory::TextureFactory(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader) :
     device_(device),
     uploader_(uploader) {
-    // the default: linear, because a glyph atlas is sampled at whatever size the text is drawn
-    // at and a sprite at whatever size the window is, and clamped, because a region's
+    // the default. It is linear, because a glyph atlas is sampled at whatever size the text is
+    // drawn at and a sprite at whatever size the window is. It is clamped, because a region's
     // neighbour in an atlas is a different glyph and wrapping would bleed it in
     sampler_ = boost::make_shared<pipeline::Sampler>(device_, pipeline::Sampler::Spec());
 }

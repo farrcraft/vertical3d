@@ -38,7 +38,7 @@ Notes:
 - **The colour format is required**, and a pipeline that tests or writes depth also needs
   `depthFormat()`. The recorder's check compares these against the pass at bind time.
 - `blend(Blend{...})` sets custom factors and turns blending on. A pass compositing into
-  something composited later wants `destinationAlpha = ZERO`; the default erodes the source's
+  something composited later needs `destinationAlpha = ZERO`; the default erodes the source's
   alpha.
 - `depthBias(true)` sets `depthBiasEnable` and adds `VK_DYNAMIC_STATE_DEPTH_BIAS`, so the values
   come from the pass.
@@ -169,10 +169,11 @@ The lit shaders share their blocks through includes:
 - `lit/lit.glsl` declares the `Camera` (set 0), `Scene` (set 2, binding 0) and `Object` (push)
   blocks. Every lit shader includes it, so a block is written once.
 - `lit/pose.glsl` defines `pose()`: the identity normally, or the weighted joint matrices when
-  `SKINNED` is defined, in which case it includes `lit/skin.glsl` (the palette at set 2, binding 2,
-  and the joint and weight attributes at locations 3 and 4).
+  `SKINNED` is defined. When `SKINNED` is defined it also includes `lit/skin.glsl`: the palette
+  at set 2, binding 2, and the joint and weight attributes at locations 3 and 4.
 
 `Lit::Shaders::embedded()` returns the built-in SPIR-V; a consumer may pass its own (see
-[api/rendering/Lighting.md](../../api/rendering/Lighting.md#replacing-the-lit-shaders)). Pipeline creation is the only
-check that a replacement matches the layout. When changing a block in `lit.glsl`, change
-`SceneUniforms` or `Lit::Object` to match; reordering members is not caught by anything.
+[api/rendering/Lighting.md](../../api/rendering/Lighting.md#replacing-the-lit-shaders)).
+Pipeline creation is the only check that a replacement matches the layout. When changing a
+block in `lit.glsl`, change `SceneUniforms` or `Lit::Object` to match; reordering members is not
+caught by anything.

@@ -258,10 +258,10 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_twice_after_a_play_without_a_device_t
 }
 
 /**
- * The dispatcher is shared with the rest of the app and can outlive the engine, so the
- * delegate initialize() hands it has to go when the engine does, whether or not anything
- * called shutdown() - and with or without a device, since initialize() connects whenever
- * SDL's audio subsystem starts, whether or not a device opens.
+ * The dispatcher is shared with the rest of the app and can outlive the engine. The delegate
+ * initialize() hands it has to go when the engine does, whether or not anything called
+ * shutdown(). That holds with or without a device, since initialize() connects whenever SDL's
+ * audio subsystem starts, whether or not a device opens.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_lets_the_dispatcher_go_test) {
     boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();

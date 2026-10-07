@@ -17,7 +17,7 @@ geometry for drawing an overlay. Terms are defined in the [glossary](README.md#g
 `v3dlib_grid`, namespace `v3d::grid`, depends on glm only. It names no device, window or
 renderer, so it runs and is tested anywhere.
 
-The grid holds terrain and nothing else. It does not know what stands on a tile. When a query
+The grid holds terrain and nothing else. It does not record what stands on a tile. When a query
 needs to know about occupants, the caller passes a predicate:
 
 - `TileFilter` (`std::function<bool(TileCoord)>`) says whether a tile may be entered, on top of

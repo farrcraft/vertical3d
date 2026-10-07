@@ -42,9 +42,9 @@ class Machine final {
  public:
     /**
      * Size the register file for this program and batch, write its constants in, and hold the
-     * program for run() and initialise(), so a register file cannot be run with a program it
-     * was not sized for. The program has to outlive the machine's use of it. A batch of zero is
-     * read as one.
+     * program for run() and initialise(). A register file therefore cannot be run with a
+     * program it was not sized for. The program has to outlive the machine's use of it. A
+     * batch of zero is read as one.
      **/
     void prepare(const Program & program, unsigned int batch);
 

@@ -32,9 +32,10 @@ The ray hider casts every primary ray into it. Under either hider, a shader's `t
   whose radius is not positive is logged and not drawn.
   `Orientation` is not read, so a sphere cannot be turned inside out.
 - **A moving primitive is stored where its motion's reference end put it**, which is the open
-  end unless that end has no inverse ([CamerasAndSampling.md](CamerasAndSampling.md#motion-blur)). `Scene::nearest()` takes
-  the poses at a time: a ray is carried back into the stored pose, and its hit is carried
-  forward again.
+  end unless that end has no inverse
+  ([CamerasAndSampling.md](CamerasAndSampling.md#motion-blur)). `Scene::nearest()` takes the
+  poses at a time: a ray is carried back into the stored pose, and its hit is carried forward
+  again.
 - **`Scene::nearest()` tests every primitive.** There is no acceleration structure.
 
 ### The tracer

@@ -19,7 +19,7 @@ namespace v3d::render::realtime {
  * The resources of one kind the engine owns, each addressed by a handle.
  *
  * Draw items refer to pipelines, materials and textures by handle so that a sort key can
- * be built from them - a pointer sorts by whatever the allocator happened to hand out,
+ * be built from them. A pointer sorts by whatever the allocator happened to hand out,
  * which reorders a frame differently every run. A handle's slot is its sort order.
  *
  * A released slot is reused by a later add, with its generation moved on, and a handle

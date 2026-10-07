@@ -331,7 +331,7 @@ BOOST_AUTO_TEST_CASE(a_component_that_is_not_pickable_is_not_hovered) {
 }
 
 /**
- * A page the player has left keeps the box it held while it was up, so offering a point to
+ * A page the player has left keeps the box it held while it was up. Offering a point to
  * every page of a bar would let a hidden component take a press meant for the visible one.
  * Only the chosen page is offered the point, as only the chosen page is laid out.
  **/
@@ -392,8 +392,8 @@ BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
  * Every component that carries a command sends it as a destination event.
  *
  * A listener that drops every event that is not a destination never sees an unmarked
- * command, so a control that did not mark its event would work in a test that reads the
- * event and do nothing in an app that routes it.
+ * command. A control that did not mark its event would work in a test that reads the event
+ * and do nothing in an app that routes it.
  **/
 BOOST_AUTO_TEST_CASE(a_command_is_sent_as_a_destination) {
     Fixture fixture;
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE(a_command_is_sent_as_a_destination) {
 }
 
 /**
- * A disabled component is never offered the point: it sends nothing, and the hover the
+ * A disabled component is never offered the point, so it sends nothing. The hover the
  * cursor would have written on it is not written either, so a cursor passing over it
  * cannot undo its disabled look.
  **/
@@ -478,7 +478,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_box_takes_what_it_holds_with_it) {
 
 /**
  * A strip is offered a press before the tree, and takes one anywhere on it, its empty run
- * included - so a button the tree holds under a strip is out of reach while the strip is a
+ * included. A button the tree holds under a strip is out of reach while the strip is a
  * control.
  **/
 BOOST_AUTO_TEST_CASE(a_strip_takes_a_press_before_the_tree) {

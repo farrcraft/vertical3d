@@ -258,8 +258,8 @@ BOOST_AUTO_TEST_CASE(a_character_key_is_taken_and_a_command_key_is_not) {
 
 /**
  * A return says the user is done: the box sends its command and whatever handles it reads
- * the text. An escape leaves the box, which is the only way out of one with no
- * other ui to click on.
+ * the text. An escape leaves the box, which is the only way out of one with no other ui to
+ * click on.
  **/
 BOOST_AUTO_TEST_CASE(a_return_sends_the_command_and_an_escape_leaves_the_box) {
     Fixture fixture;
@@ -416,8 +416,7 @@ BOOST_AUTO_TEST_CASE(an_edit_over_a_selection_replaces_the_run) {
 
 /**
  * The limit is measured against what the text would become, so a paste may be as long as the
- * run it replaces plus whatever room was left - and one byte longer than that is refused
- * whole.
+ * run it replaces plus whatever room was left. One byte longer than that is refused whole.
  **/
 BOOST_AUTO_TEST_CASE(a_selection_makes_room_for_what_replaces_it) {
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");

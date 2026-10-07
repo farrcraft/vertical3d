@@ -36,8 +36,8 @@ class DeviceContext;
 /**
  * Models on the device, each uploaded once and named by handle.
  *
- * A model loaded from a path, or added under a name, is uploaded the first time and handed
- * back by the same handle every time after, so a hundred props drawn from one file are one
+ * A model loaded from a path, or added under a name, is uploaded the first time. Every later
+ * request for it returns the same handle, so a hundred props drawn from one file are one
  * upload. A model is one vertex buffer drawn a part at a time. Each part's albedo is a
  * texture and a material from the context's Textures, shared by every part naming the same
  * image, and the white texture for a part naming none.
@@ -154,7 +154,7 @@ class MeshRegistry final {
     std::optional<uint32_t> clip(const MeshHandle& handle, const std::string& name) const;
 
     /**
-     * @return how many entries are registered, which is how many models are on the device
+     * @return how many entries are registered: one per model on the device
      **/
     std::size_t count() const noexcept;
 

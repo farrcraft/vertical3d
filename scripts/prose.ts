@@ -418,7 +418,9 @@ function splitSentences(masked: string): Array<[number, number]> {
     for (const match of masked.matchAll(/[.!?]["')\]]*(\s+)(?=\S)/g)) {
         const before = masked.slice(0, match.index + 1).split(/\s+/).filter(Boolean);
         const word = before.length > 0 ? before[before.length - 1].toLowerCase() : '';
-        if (ABBREVIATIONS.has(word.replace(/^[("']+/, '')) || /^[a-z]\.$/.test(word)) {
+        // a one-letter word ends a sentence like any other: in this tree it is a variable, such
+        // as the x of a vector, far more often than an initial
+        if (ABBREVIATIONS.has(word.replace(/^[("']+/, ''))) {
             continue;
         }
         const end = match.index + match[0].length - match[1].length;

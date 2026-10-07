@@ -1,9 +1,9 @@
 # Cases that need no window and no device. A pass collects draw items and a sort key orders them
 # without touching vulkan. The three canvases are cpu side too: batching, the transform stack, the
-# projection and the line geometry. So are the choice of swapchain format, the channel order of a
+# projection and the line geometry. The choice of swapchain format, the channel order of a
 # captured frame, the frame count after which a released resource is destroyed, and the scissor a
-# clip rectangle becomes. Everything else below the recorder needs a device, and is in
-# render_device below.
+# clip rectangle becomes are cpu side too. Everything else below the recorder needs a device, and
+# is in render_device below.
 v3d_add_test(render
 	"TestMain.cpp"
 	"FrameTest.cpp"

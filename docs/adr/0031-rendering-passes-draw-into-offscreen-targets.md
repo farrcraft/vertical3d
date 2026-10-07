@@ -17,12 +17,12 @@ attachment is any image view named when the pass begins.
 
 ## Decision
 
-A pass may name a `frame::RenderTarget` and draws into the swapchain image when it names none.
-The recorder moves a target's images into an attachment layout before the first pass that draws
-into it and into a readable layout after the last one, so every later pass can sample it as an
-ordinary texture. A target's depth can be sampled too, as a shadow map needs, and the target is
-told so at creation because a device may allow a depth format as an attachment but not for
-sampling.
+A pass may name a `frame::RenderTarget` and draws into the swapchain image when it names none. The
+recorder moves a target's images into an attachment layout before the first pass that draws into
+it. It moves them into a readable layout after the last one, so every later pass can sample the
+target as an ordinary texture. A target's depth can be sampled too, as a shadow map needs, and the
+target is told so at creation because a device may allow a depth format as an attachment but not
+for sampling.
 
 ## Alternatives
 

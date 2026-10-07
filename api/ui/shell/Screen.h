@@ -37,9 +37,9 @@ namespace v3d::ui::shell {
  * side would be a library cycle. Engine3D is forward-declared so that no api/ui header names
  * a Vulkan type.
  *
- * What is drawn into the canvas, and which pass it is submitted to, stay the app's. So do
- * the passes themselves: begin() begins the frame and sizes the canvas, and the app fills it
- * and submits it where it likes.
+ * What is drawn into the canvas, and which pass it is submitted to, stay the app's. The
+ * passes themselves stay the app's too: begin() begins the frame and sizes the canvas, and
+ * the app fills it and submits it where it likes.
  *
  * Everything that closes over the font's size is rebuilt by scale(), so a component renderer
  * this hands out is one to draw with now and not to keep. The immediate layer is the same one

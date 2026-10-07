@@ -18,7 +18,7 @@ namespace v3d::type::geometry {
  * The six planes bounding what a view projection matrix keeps, and a box tested against them.
  *
  * The planes come from the matrix by Gribb-Hartmann extraction, so the frustum is in whatever
- * space the matrix reads: a projection alone gives one in eye space, and a projection times a
+ * space the matrix reads. A projection alone gives one in eye space. A projection times a
  * view gives one in world space. Each plane faces inward.
  **/
 class Frustum final {
@@ -56,9 +56,9 @@ class Frustum final {
     int intersect(const AABBox& box) const;
 
     /**
-     * The planes, in the order clip-space -x, +x, -y, +y, near, far. Plane 2 bounds clip
-     * y = -w and plane 3 bounds clip y = w. The cameras in api/type build a y-down clip space,
-     * so for them plane 2 is the top of the screen and plane 3 the bottom.
+     * The planes, in the order clip-space -x, +x, -y, +y, near, far. Clip y = -w is bounded
+     * by plane 2, and clip y = w by plane 3. The cameras in api/type build a y-down clip
+     * space, so for them plane 2 is the top of the screen and plane 3 the bottom.
      *
      * The planes are read straight out of the matrix and are not normalised. signedDistance()
      * on one tells the side a point is on, but its value is not a distance.

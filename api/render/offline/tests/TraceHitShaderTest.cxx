@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(trace_an_occluder_casts_a_shadow_test) {
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, tilted));
 
     v3d::render::offline::trace::Tracer shader(&scene);
-    // one unit over from the occluder, which is where its shadow lands
+    // one unit over from the occluder, where its shadow lands
     BOOST_CHECK_SMALL(shader.shade(at(scene, 1.0f, 0.0f)).r, 0.0001f);
     // well away from it, where only the cosine applies
     BOOST_CHECK_CLOSE(shader.shade(at(scene, 4.0f, -4.0f)).r, 0.70710678f, 0.5f);

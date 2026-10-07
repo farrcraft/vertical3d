@@ -10,7 +10,7 @@ A review that reads whole files reports every defect it finds, whether the chang
 it was there before. In a tree with old code, that means a changeset that touches an old file can
 never come back clean, and each fix round reads more of the file and finds more. Some defects
 recur in the same few shapes, such as an unchecked conversion at an input boundary or a comment
-that has drifted from the code, and a tool finds those more reliably than a reader. A fix that
+that has drifted from the code. A tool finds those more reliably than a reader. A fix that
 corrects one site of a shape and not its siblings is found again by the next review.
 
 ## Decision

@@ -48,7 +48,7 @@ settings_->save();                                      // save on every change
   A document with no version, or a version that is not a whole number, is refused and the app
   runs on defaults.
 - A document from a newer build is read-only: `writable()` is false and `save()` does nothing.
-  So a player who runs an older build keeps the settings the newer one wrote.
+  A player who runs an older build therefore keeps the settings the newer one wrote.
 - Saving is atomic. See [Writing files](#writing-files).
 
 The meaning of each key is the app's. `Settings` stores keys and values; applying one is the

@@ -57,8 +57,8 @@ BOOST_AUTO_TEST_CASE(logger_writes_at_every_level_test) {
 }
 
 /**
- * open() is where the log goes from then on, which is how run() puts it beside the executable
- * rather than wherever the app was started from.
+ * open() is where the log goes from then on. run() uses it to put the log beside the
+ * executable rather than wherever the app was started from.
  **/
 BOOST_AUTO_TEST_CASE(logger_open_moves_the_log_test) {
     const std::string path = "logger_open_test.log";

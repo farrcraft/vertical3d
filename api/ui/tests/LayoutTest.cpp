@@ -295,7 +295,7 @@ BOOST_AUTO_TEST_CASE(a_point_is_picked_by_the_deepest_pickable_component) {
 
 /**
  * Inside a component as at the top of a container, the child drawn last is the one a point
- * reaches first, so a nested child with a depth out of the order it was added in is picked
+ * reaches first. A nested child with a depth out of the order it was added in is picked
  * where it was drawn rather than where it was added.
  **/
 BOOST_AUTO_TEST_CASE(a_nested_child_is_picked_in_the_order_it_was_drawn) {

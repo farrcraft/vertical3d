@@ -202,8 +202,8 @@ Background: [ADR-0007](../adr/0007-ci-render-tests-on-software-vulkan.md)
 `checkReference()`, at a tolerance of zero.
 
 A reference must be identical on every conformant Vulkan driver, including lavapipe in CI and
-your GPU locally. So a reference may contain only output that the Vulkan specification fixes
-exactly:
+your GPU locally. A reference may therefore contain only output that the Vulkan specification
+fixes exactly:
 
 - Geometry that is axis-aligned and lies on whole-pixel boundaries, so no pixel is partly
   covered.

@@ -28,8 +28,9 @@ namespace {
 const float owedSlack = 1e-4f;
 
 /**
- * The most particles one step can owe: the largest float below 2^32, so that the count still
- * fits the unsigned it is returned as. An emitter's cap keeps far fewer than this alive.
+ * The most particles that can fall due in one step: the largest float below 2^32, so that the
+ * count still fits the unsigned it is returned as. An emitter's cap keeps far fewer than this
+ * alive.
  **/
 const float mostOwed = 4294967040.0f;
 

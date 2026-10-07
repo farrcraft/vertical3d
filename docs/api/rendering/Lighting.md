@@ -14,8 +14,8 @@ three flat bands. A cast shadow drops a fragment one band.
 
 ### Setting it up
 
-A lit scene draws linear light into an sRGB target (see [Colour](ColourAndPost.md#colour)). Build the targets and
-the renderer once:
+A lit scene draws linear light into an sRGB target (see [Colour](ColourAndPost.md#colour)).
+Build the targets and the renderer once:
 
 ```cpp
 auto context = renderer_->context();

@@ -40,7 +40,7 @@ VkImageMemoryBarrier2 colourForDrawing(VkImage image) {
     // two things have to have happened before the transition writes the image.
     //
     // COLOR_ATTACHMENT_OUTPUT is the stage the presenter waits the image-available
-    // semaphore at, and a transition is a write: without that stage in the first scope
+    // semaphore at, and a transition is a write. Without that stage in the first scope
     // the barrier is not ordered after the wait, and the acquire's read of the image
     // races it. Synchronization validation reports that as WRITE_AFTER_READ against
     // vkAcquireNextImageKHR.
@@ -135,10 +135,10 @@ VkImageMemoryBarrier2 uploadedForSampling(VkImage image) {
  **/
 VkImageMemoryBarrier2 forReadback(VkImage image, VkImageAspectFlags aspect, VkImageLayout from) {
     VkImageMemoryBarrier2 into = barrier(image, aspect, from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    // ALL_COMMANDS rather than the stage that drew: what this has to be ordered after is
-    // whatever transitioned the image into PRESENT_SRC, and a capture cannot tell which
-    // barrier that was or which stage it named as its second scope. What has to be made
-    // visible is still only the frame's own writes.
+    // ALL_COMMANDS rather than the stage that drew. This has to be ordered after whatever
+    // transitioned the image into PRESENT_SRC, and a capture cannot tell which barrier that
+    // was or which stage it named as its second scope. What has to be made visible is still
+    // only the frame's own writes.
     into.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
     into.srcAccessMask = (aspect & VK_IMAGE_ASPECT_DEPTH_BIT) != 0
         ? VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT

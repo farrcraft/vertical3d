@@ -38,7 +38,7 @@ when it arrived, so a traced hit is lit as the camera sees the same surface.
 - **Against**: Two drivers, two RIB handlers and two render contexts remain over one shared
   state, sized for exactly two consumers.
 - **Rejected because**: Once the state is shared, what remains of the second renderer is a
-  hider, which is what this decision makes it.
+  hider, and this decision makes it a hider.
 
 ### Shadow maps in moya instead of a tracer
 - **For**: The standard reyes answer, with no second copy of the geometry.

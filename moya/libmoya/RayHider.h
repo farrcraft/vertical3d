@@ -26,8 +26,8 @@ namespace v3d::moya {
  * scene, rather than primitives diced and bucketed.
  *
  * A ray is found by inverting the same camera to raster transformation the reyes hider
- * projects through, so the two hiders cannot disagree about where a pixel looks; it is then
- * carried into world space, where the traced scene is.
+ * projects through, so the two hiders cannot disagree about where a pixel looks. The ray is
+ * then carried into world space, where the traced scene is.
  **/
 class RayHider final : public Hider {
  public:

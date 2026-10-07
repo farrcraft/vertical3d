@@ -200,8 +200,8 @@ region back out of a sheet.
 
 `api/asset` reads glTF 2.0 into a `v3d::type::Model`. That is the only geometry the api loads
 from a file. No app in this tree loads one: voxel builds its terrain procedurally and the editor
-models with `brep::BRep`. So the gap below comes from the library's own tests, not from an app.
-[Assets.md](api/Assets.md) describes the loader.
+models with `brep::BRep`. The gap below therefore comes from the library's own tests, not from
+an app. [Assets.md](api/Assets.md) describes the loader.
 
 [] **External buffers are resolved by cgltf, not by the asset manager.** A `.gltf` file with
 external buffers has them resolved relative to the file, which is cgltf's own behaviour. It
@@ -312,10 +312,9 @@ not compare a picture.
 `ui::TextRenderer`'s atlas upload needs a device, which the `render_device` suite could give it.
 
 [] **Some rendering cannot be checked against a reference picture.** A reference image may hold
-only what the Vulkan specification determines exactly. So blending, filtered sampling,
-multisampling and text are checked only by a silent validation log and by spot checks. Checking
-them more strongly needs a second Vulkan implementation to compare against, and this tree has
-none.
+only what the Vulkan specification determines exactly. Blending, filtered sampling, multisampling
+and text are therefore checked only by a silent validation log and by spot checks. Checking them
+more strongly needs a second Vulkan implementation to compare against, and this tree has none.
 
 ## Known review findings
 
@@ -337,6 +336,12 @@ non-string value through `const float*`, so an `RtInt` array arrives as its bit 
 
 [] **`Polygon::clip` ignores whether an edge met the plane.** `intersectEdge`'s result is dropped
 and the point it did not set is used. `Polygon::split` has the same shape.
+
+[] **The ui `Loader` reads most document keys without testing their type.** Its other
+`boost::json::value_to` reads throw out of `ui::Engine::load` when a key holds the wrong type.
+Among them are a component's `type`, `name`, `style`, `depth` and `label`, a theme's `name`, a
+container's `visible` and a style property's `value`. The fix reads them through
+`api/asset/Json.h`.
 
 ### Contract
 
@@ -391,15 +396,6 @@ without the turn counter it was written for. Its sibling test does fail without 
 - `api/asset/media/tests/CMakeLists.txt` says every glTF fixture has a generator script; three are
   written by hand.
 - `RotateManipulator.h` has two doc blocks above `ringDistance`, one of which belongs to `swept()`.
-
-### Prose
-
-[] **Writing rules broken in text the tenth round added.** A "So" opener in
-`docs/internals/realtime/Memory.md`; "which is what" in `docs/internals/realtime/Device.md` and
-`docs/offline/ShadingLanguage.md`; a 52-word comment in `api/event/Bindings.cpp`; a figure of
-speech in a `PostTest.cpp` comment; and lines extended past the wrap in `docs/api/Assets.md`,
-`docs/internals/realtime/Device.md`, `docs/offline/CamerasAndSampling.md`,
-`api/render/offline/Film.h` and `docs/internals/realtime/Memory.md`.
 
 ## Documentation
 

@@ -155,8 +155,8 @@ children are live and in what order:
 - a flow box visits its children in the order it holds them
 - anything else visits its children by depth
 
-The draw pass, `Container::pick()` and `Engine::tabOrder()` all use it. So a control on a page
-that is not shown is neither drawn, picked nor focused.
+The draw pass, `Container::pick()` and `Engine::tabOrder()` all use it. A control on a page
+that is not shown is therefore neither drawn, picked nor focused.
 
 `Container::pick(point)` walks the same order in reverse:
 
@@ -303,7 +303,7 @@ property silently not found.
 `interact(id, min, max)` decides hover, hold and click for one box. A widget is hovered only
 if the cursor is in its box now and it was the hovered id last frame. That second condition
 is how a later window takes the cursor from an earlier one. A disabled widget is offered
-nothing. `interact()` knows nothing about clipping.
+nothing. `interact()` takes no account of clipping.
 
 A window and a table each measure their content, clamp their scroll, draw a bar and take the
 wheel, through `closeScroll()`. `scrollbar()` draws and drags the bar for both. A window

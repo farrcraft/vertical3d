@@ -72,8 +72,8 @@ Rules:
 ### Pass order
 
 Passes are recorded in the order they were created, with one exception. A pass that names a
-target in `reads()` is recorded after every pass that draws into that target. So a scene pass
-that reads a shadow map can be created first and still draw second.
+target in `reads()` is recorded after every pass that draws into that target. A scene pass that
+reads a shadow map can therefore be created first and still draw second.
 
 - Passes that draw into the same target, the window included, keep their creation order.
 - A pass that samples a target without naming it in `reads()` is recorded where it was created,

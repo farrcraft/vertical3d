@@ -31,9 +31,9 @@ Plane rowPlane(const glm::mat4& m, unsigned int row, float wWeight, float rowWei
     the plane extraction is described in: http://www2.ravensoft.com/users/ggribb/plane%20extraction.pdf
 
     each plane is where one clip coordinate meets its bound, -w <= x <= w and the same in y.
-    Depth is the one that differs: a [0, 1] clip volume keeps 0 <= z, so its near plane is the
-    z row alone, and a [-1, 1] one keeps -w <= z, so its near plane is the w row plus the z
-    row. Both keep z <= w, so their far planes agree.
+    Depth is the one that differs. A [0, 1] clip volume keeps 0 <= z, so its near plane is the
+    z row alone. A [-1, 1] one keeps -w <= z, so its near plane is the w row plus the z row.
+    Both keep z <= w, so their far planes agree.
 */
 Frustum::Frustum(const glm::mat4& viewProjection, Depth depth) :
     planes_{

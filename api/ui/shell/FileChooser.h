@@ -20,11 +20,11 @@ namespace v3d::ui::shell {
 /**
  * Choosing a file to open or a name to save under, in a ui an app's config lays out.
  *
- * Like GameMenu it drives components the config names rather than being one: a list of what
- * is in a directory, a box the name is typed into, and a label that says where the list is.
- * Their commands are the app's to route here - the list's to pick(), and whatever its
- * buttons send to accept() and close(). A config that names none of them still has a chooser
- * whose state can be driven and read, which is how it is tested.
+ * Like GameMenu it drives components the config names rather than being one. They are a
+ * list of what is in a directory, a box the name is typed into, and a label that says where
+ * the list is. Their commands are the app's to route here: the list's to pick(), and
+ * whatever its buttons send to accept() and close(). A config that names none of them still
+ * has a chooser whose state can be driven and read. The tests drive it that way.
  *
  * Drawn in the game's own ui rather than the platform's dialog, which cannot be drawn over a
  * fullscreen game or themed.
@@ -118,8 +118,9 @@ class FileChooser final {
      * Choose the name in the field, in the directory shown.
      *
      * A name that is empty, "." or "..", or that holds a separator or a colon, is refused.
-     * Opening refuses a file that is not there. Saving over a file that is there asks first: this returns false and
-     * confirming() is true, and accepting the same name again replaces it.
+     * Opening refuses a file that is not there. Saving over a file that is there asks
+     * first: this returns false and confirming() is true, and accepting the same name
+     * again replaces it.
      *
      * @return whether a path was chosen, and the chooser closed
      **/

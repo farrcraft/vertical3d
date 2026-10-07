@@ -31,9 +31,9 @@ namespace {
     points from the point being shaded toward the light, so a spotlight tests its cone
     against -L, the direction the light travels.
 
-    Each of the three directional lights calls transmission() for how much of its light
-    arrives, which is how a shadow is cast. A renderer with no ray tracer returns full
-    transmission, so its lights cast no shadows.
+    Each of the three directional lights casts a shadow by calling transmission() for how much
+    of its light arrives. A renderer with no ray tracer returns full transmission, so its
+    lights cast no shadows.
 
     shinymetal is RI's with trace() where RI reads an environment map. glass is not one of
     RI's, since RI defines no refracting shader. glass is opaque because it shows what is

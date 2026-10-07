@@ -108,7 +108,7 @@ named. The language is in `api/render/offline/sl`.
   cast drops the translation, and a normal cast takes the inverse transpose of that inverse.
 - **NDC is raster space divided by the resolution.** x runs right and y runs down over
   [0, 1], from the upper left corner of the picture, as raster does. Its z is screen depth
-  moved from [-1, 1] onto [0, 1], which is what `depth()` returns. moya's grids define NDC. A
+  moved from [-1, 1] onto [0, 1], the value `depth()` returns. moya's grids define NDC. A
   traced hit has no screen, raster or NDC space.
 
 ### Built-in shaders
@@ -204,7 +204,8 @@ files on disk.
   to read is remembered as missing. The machine returns black for it and logs it once.
   `offline::Texture` samples bilinearly between texel centres and wraps periodically, RI's
   defaults, with `t` running down the image. A coordinate that is not finite reads black. A grey
-  image fills all three channels and an alpha channel is dropped. Called with only a name, `texture()` reads at the shader's `s` and `t`.
+  image fills all three channels and an alpha channel is dropped. Called with only a name,
+  `texture()` reads at the shader's `s` and `t`.
 - **`noise()` is Perlin's improved noise in SL's range**: `[0, 1]`, and `0.5` on every lattice
   point. Its permutation is shuffled by a `type::Random` with a fixed seed, so a pattern is the
   same on every machine. Its float, pair and point forms read a line, a plane and a volume of

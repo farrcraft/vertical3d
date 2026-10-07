@@ -20,7 +20,7 @@ namespace v3d::render::realtime::vulkan::memory {
  * Runs one-shot transfer commands on the graphics queue and waits for them.
  *
  * Everything that has to reach device local memory - a texture's pixels, a mesh's
- * vertices - is copied there by a command buffer that belongs to nothing else, and the
+ * vertices - is copied there by a command buffer that belongs to nothing else. The
  * caller cannot free its staging buffer until that copy has run. This therefore waits,
  * which keeps a staging allocation's lifetime within the function that made it.
  *

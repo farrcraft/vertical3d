@@ -54,8 +54,8 @@ class Renderer {
      * transform("space", P) applies this matrix. A cast such as `point "space" (x, y, z)` states
      * a value in the named space, so it applies the inverse.
      *
-     * moya's grids are shaded in camera space and a traced hit in world space, which is why this is
-     * a callback rather than a table the library holds.
+     * This is a callback rather than a table the library holds, because moya's grids are shaded
+     * in camera space and a traced hit in world space.
      *
      * @param name the space: "current", "object", "shader", "world", "camera", "raster", ...
      * @param matrix where to put it, if the renderer recognises the space

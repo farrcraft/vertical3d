@@ -205,9 +205,9 @@ class Manipulator {
     /**
      * How far a point is from a segment, both in screen pixels.
      *
-     * A handle is a run of segments however it is drawn - a shaft is one and a ring is
-     * as many as it is approximated with - so this test decides whether the cursor is on
-     * one. Testing only the points a ring is drawn through would leave the gaps between
+     * A handle is a run of segments however it is drawn. A shaft is one segment, and a
+     * ring is as many as it is approximated with. This test decides whether the cursor is
+     * on one. Testing only the points a ring is drawn through would leave the gaps between
      * them ungrabbable, and the gaps grow with the ring.
      **/
     static float distanceToSegment(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target);

@@ -52,9 +52,9 @@ struct Emitter final {
     float drag{ 0.0f };      /**< the fraction of its velocity a particle loses a second **/
 
     /**
-     * A sideways drift added where a particle is drawn rather than where it is simulated, a
-     * snowflake's: so far either side along the camera's right, swaying so many times a second,
-     * each particle at its own phase.
+     * A sideways drift, like a snowflake's, added where a particle is drawn rather than where
+     * it is simulated. It reaches so far either side along the camera's right and sways so
+     * many times a second, each particle at its own phase.
      **/
     float sway{ 0.0f };
     float swayRate{ 0.0f };

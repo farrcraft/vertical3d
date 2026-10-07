@@ -33,8 +33,8 @@ from is alive.
 
 ### A mesh cache in the api, keyed by what built the geometry
 - **For**: removes duplicate meshes, and gives the api a place for a memory budget later.
-- **Against**: a cache needs an eviction policy, and only the owner knows when a chunk mesh is
-  dead. Building it first means guessing the policy.
+- **Against**: a cache needs an eviction policy, and only the owning app can tell when a chunk
+  mesh is dead. Building it first means guessing the policy.
 - **Rejected because**: premature. A cache can be built later on top of owned meshes without
   changing this decision.
 

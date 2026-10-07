@@ -34,10 +34,10 @@ enum class TokenKind {
  * One lexical unit of a shading language source.
  *
  * A keyword is separated from an identifier here rather than in the parser because the
- * set is closed and small: the shader types, the data types, the storage classes, the
- * control flow, and the three lighting constructs. Everything else that looks like a name
- * is an identifier. The symbol table decides what an identifier means, not the lexer, so a
- * shader can declare a variable named after a built-in.
+ * set is closed and small. It holds the shader types, the data types, the storage classes,
+ * the control flow, and the three lighting constructs. Everything else that looks like a
+ * name is an identifier. The symbol table decides what an identifier means, not the lexer,
+ * so a shader can declare a variable named after a built-in.
  **/
 class Token final : public v3d::render::offline::Lexeme<TokenKind> {
  public:

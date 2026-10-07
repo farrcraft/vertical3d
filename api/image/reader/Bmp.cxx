@@ -125,7 +125,7 @@ bool supported(const bmp_info_header& header, const boost::shared_ptr<v3d::log::
  **/
 bool readMasks(const unsigned char* encoded, std::size_t length, const bmp_info_header& header, Masks* masks) {
     if (header.bits_ == 16) {
-        // five bits a channel, which is what an uncompressed 16 bit file means
+        // an uncompressed 16 bit file has five bits a channel
         *masks = Masks{0x7C00u, 0x03E0u, 0x001Fu, 0u};
     } else if (header.bits_ == 32) {
         *masks = Masks{0x00FF0000u, 0x0000FF00u, 0x000000FFu, 0xFF000000u};

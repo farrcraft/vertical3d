@@ -106,7 +106,7 @@ endings. [docs/contributing/Conventions.md](docs/contributing/Conventions.md) ha
 
 ## When a change lands
 
-Per [docs/sdlc.md](docs/sdlc.md): update the open plan or `docs/TODO.md`, set an ADR's status if
-one was decided, re-read the comments the change added, and update the reference document for
-whatever the change moved, so it states the new rule. Update this file only if the change moved
+Per [docs/sdlc.md](docs/sdlc.md): update the open plan or `docs/TODO.md`, and set an ADR's
+status if one was decided. Re-read the comments the change added. Update the reference document
+for whatever the change moved, so it states the new rule. Update this file only if the change moved
 the routing, one of the rules above, or the shape of the tree.

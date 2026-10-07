@@ -90,8 +90,8 @@ cmake --build vendor/libnoise/build-ninja
   libnoise build.
 - `CMAKE_POLICY_VERSION_MINIMUM=3.5` is required because libnoise declares
   `cmake_minimum_required(VERSION 3.0)`, which current CMake rejects.
-- The archive must land in `vendor/libnoise/Debug`, which is where voxel's
-  `target_link_directories` looks.
+- The archive must land in `vendor/libnoise/Debug`, because voxel's `target_link_directories`
+  looks there.
 
 ## Setting up vcpkg
 
@@ -169,7 +169,8 @@ To move every package to newer versions, update the baseline and configure again
 not contain an entry for port X", even when `vendor/vcpkg/ports/X` exists.
 
 Copy the new baseline into
-[examples/starter/vcpkg-configuration.json](../../examples/starter/vcpkg-configuration.json) as well.
+[examples/starter/vcpkg-configuration.json](../../examples/starter/vcpkg-configuration.json) as
+well.
 
 A new baseline usually reinstalls most packages, including boost. See [Build.md](Build.md#traps)
 for the cost.

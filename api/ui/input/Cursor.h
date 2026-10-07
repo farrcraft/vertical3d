@@ -96,9 +96,9 @@ class Cursor final {
     /**
      * Light one component up and put back whatever was lit before it.
      *
-     * A component is hovered when it is the one a press would land on, so the same
-     * pickable() that decides what takes a click decides what lights up, so a hud of labels
-     * does not flicker as the cursor crosses it.
+     * A component is hovered when it is the one a press would land on. The same pickable()
+     * that decides what takes a click decides what lights up, so a hud of labels does not
+     * flicker as the cursor crosses it.
      **/
     void hover(const boost::shared_ptr<Component>& component);
 

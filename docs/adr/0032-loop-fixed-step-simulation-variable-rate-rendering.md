@@ -33,7 +33,7 @@ code, not configuration, so every machine simulates the same world the same way.
 ### Replace `tick()` with `simulate()` outright
 - **For**: one virtual and one timing model, so no app can put work on the wrong one.
 - **Against**: per-frame work such as input polling, ui animation and camera smoothing has nowhere
-  to go but a fixed step it does not want.
+  to go but a fixed step it does not need.
 - **Rejected because**: the two kinds of work are different, so the loop has both.
 
 ### `simulate()` takes whole milliseconds, like `tick()`

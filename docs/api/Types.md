@@ -80,9 +80,9 @@ projection times a view gives world space.
 +y plane the bottom.
 
 **Tell it the depth range of the matrix.** The default, `Depth::ZeroToOne`, matches the
-matrices `type::camera::Camera` builds. moya's matrices use `Depth::MinusOneToOne`. With the wrong one,
-the near plane is placed behind the true one. The frustum then keeps boxes it should cull, which
-looks correct and is hard to notice.
+matrices `type::camera::Camera` builds. moya's matrices use `Depth::MinusOneToOne`. With the
+wrong one, the near plane is placed behind the true one. The frustum then keeps boxes it should
+cull, which looks correct and is hard to notice.
 
 `intersect(box)` is conservative. A box near a frustum corner can be outside the frustum while
 inside every plane separately, and it is reported as `CROSSING`. The test never culls a box it
@@ -165,9 +165,10 @@ none. `engine::Features` is the example in the tree.
 
 The camera classes are in `v3d::type::camera` ([api/type/camera/](../../api/type/camera/)):
 
-- `Profile` holds a camera's settings: the eye position, the basis (`up`, `right`,
-  `direction`), the rotation, the clipping distances, the vertical field of view in degrees,
-  the orthographic zoom, the pixel aspect ratio, the viewport size and the handedness.
+- `Profile` holds a camera's settings. They are the eye position, the basis (`up`, `right`,
+  `direction`), the rotation and the clipping distances. They are also the vertical field of
+  view in degrees, the orthographic zoom, the pixel aspect ratio, the viewport size and the
+  handedness.
 - `Camera` holds a profile and builds the projection and view matrices from it.
 - `Isometric` is an orbit around a target on the ground, snapped to four azimuths.
 - `ArcBall` turns a mouse drag into a rotation for `Camera::rotate()`.
@@ -345,11 +346,11 @@ the clock's functions.
 - `sample(time)` wraps an unwrapped time into `[0, duration]`. Pass its result to
   `animation::sample()`.
 - `crossed(from, to, marker)` counts how many times a step passed a marker time, such as a
-  footstep. A step that ends exactly on the marker passes it; one that starts on it does not.
-  So each marker is reported once however the steps fall. A marker at the duration is reported
-  once when a clamped clip stops, and on every wrap of a looping one. A step that starts or ends
-  at a time that is not finite passes nothing, nor does a marker that is not a number. A count
-  too large for a `uint32_t` is held at its largest value.
+  footstep. A step that ends exactly on the marker passes it; one that starts on it does not. Each
+  marker is therefore reported once however the steps fall. A marker at the duration is reported
+  once when a clamped clip stops, and on every wrap of a looping one. A step that starts or ends at
+  a time that is not finite passes nothing, nor does a marker that is not a number. A count too
+  large for a `uint32_t` is held at its largest value.
 - `finished(time)` is true when a clamped clip has reached its end. A looping one never has.
 - A duration of zero or less is a clock that never moves.
 

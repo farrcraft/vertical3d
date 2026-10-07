@@ -210,6 +210,23 @@ BOOST_AUTO_TEST_CASE(a_document_names_a_slider) {
 }
 
 /**
+ * A key that is not a number, or is beyond the range of a float, takes its default rather
+ * than failing the load.
+ **/
+BOOST_AUTO_TEST_CASE(a_slider_key_that_is_not_a_number_takes_its_default) {
+    Fixture fixture(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
+        { "type": "slider", "name": "music", "minimum": "low", "maximum": 1e300, "step": [ 5 ], "value": true }
+    ] } ] })");
+    const boost::shared_ptr<v3d::ui::component::Slider> slider =
+        boost::dynamic_pointer_cast<v3d::ui::component::Slider>(fixture.container->get("music"));
+    BOOST_REQUIRE(slider);
+    BOOST_CHECK_EQUAL(slider->minimum(), 0.0f);
+    BOOST_CHECK_EQUAL(slider->maximum(), 1.0f);
+    BOOST_CHECK_EQUAL(slider->step(), 0.0f);
+    BOOST_CHECK_EQUAL(slider->value(), 0.0f);
+}
+
+/**
  * A slider runs the width it is offered and is as tall as its class's mark.
  **/
 BOOST_AUTO_TEST_CASE(a_slider_is_as_tall_as_its_mark) {
