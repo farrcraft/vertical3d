@@ -40,7 +40,7 @@
  * Usage: node scripts/linkrule.ts
  *
  * Each violation prints as "path: rule: detail". The exit status is 1 when there is a
- * violation, and 0 otherwise.
+ * violation, 2 when the command is given an argument, and 0 otherwise.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -48,6 +48,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import * as path from 'node:path';
 
 import { blankComments, codeLines } from './lexer.ts';
+import { isEntryPoint } from './entry.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 
@@ -604,6 +605,11 @@ function check(tree: Tree, t: Target, boost: string[], report: Report): void {
 }
 
 function main(): number {
+    // the check takes no arguments, so an option meant for it is refused rather than ignored
+    if (process.argv.length > 2) {
+        console.error('usage: node scripts/linkrule.ts');
+        return 2;
+    }
     const { targets, boost } = loadTargets();
     const tree = new Tree(targets);
     const found: string[] = [];
@@ -622,6 +628,6 @@ function main(): number {
     return found.length > 0 ? 1 : 0;
 }
 
-if (import.meta.main) {
+if (isEntryPoint(import.meta.url)) {
     process.exitCode = main();
 }

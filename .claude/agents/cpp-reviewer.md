@@ -56,7 +56,7 @@ recur.
 ## Correctness and lifetime
 
 The Severity section above grades each finding. The Vulkan and lifetime items here are the ones
-most often Major; the two build items at the end are Minor.
+most often Major.
 
 - **A `VkResult` ignored.** Every Vulkan call returning one is checked with
   `vulkan::device::check`, which throws with the result in words from

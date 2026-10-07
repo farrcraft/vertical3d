@@ -38,6 +38,7 @@ import { basename } from 'node:path';
 import process from 'node:process';
 
 import { commentLines } from './lexer.ts';
+import { isEntryPoint } from './entry.ts';
 
 const MAX_WORDS = 35;
 const MAX_MD_COLUMNS = 100;
@@ -828,7 +829,7 @@ function main(): number {
     return findings.length > 0 ? 1 : 0;
 }
 
-if (import.meta.main) {
+if (isEntryPoint(import.meta.url)) {
     try {
         process.exitCode = main();
     } catch (error) {

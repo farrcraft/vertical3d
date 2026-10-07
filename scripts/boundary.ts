@@ -51,6 +51,7 @@ import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
 import { codeLines } from './lexer.ts';
+import { isEntryPoint } from './entry.ts';
 
 /** An added line: its text, and its code with comments and the insides of literals removed. */
 export type Line = { path: string; number: number; text: string; code: string };
@@ -338,6 +339,6 @@ function main(): number {
     return reports.length > 0 ? 1 : 0;
 }
 
-if (import.meta.main) {
+if (isEntryPoint(import.meta.url)) {
     process.exitCode = main();
 }

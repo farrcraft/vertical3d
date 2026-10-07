@@ -19,7 +19,8 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    # Node runs the gates directly; they use only its own modules and need no install
+    # Node runs the gates directly; they use only its own modules and the gates' shared ones in
+    # scripts/, and need no install
     - uses: actions/setup-node@v4
       with:
         node-version: 24
@@ -43,12 +44,13 @@ jobs:
         else
           echo "GATE_BASE=$BEFORE" >> "$GITHUB_ENV"
         fi
-    # the gates' own tests, including the C++ lexer they share
+    # the gates' own tests, including the C++ lexer they share. Each step after this one runs
+    # even when an earlier one failed, so every gate reports
     - name: Gate tests
       run: node --test "scripts/tests/*.test.ts"
     - name: Link rule
+      if: ${{ !cancelled() }}
       run: node scripts/linkrule.ts
-    # each gate reports even when an earlier one failed
     - name: Prose
       if: ${{ !cancelled() }}
       run: node scripts/prose.ts --base "$GATE_BASE"

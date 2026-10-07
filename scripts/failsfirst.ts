@@ -101,6 +101,7 @@ import * as path from "node:path";
 import process from "node:process";
 
 import { blankComments } from "./lexer.ts";
+import { isEntryPoint } from './entry.ts';
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const MAIN_BUILD = path.join(ROOT, "out", "build", "x64-Debug");
@@ -956,6 +957,6 @@ function main(): number {
     }
 }
 
-if (import.meta.main) {
+if (isEntryPoint(import.meta.url)) {
     process.exitCode = main();
 }

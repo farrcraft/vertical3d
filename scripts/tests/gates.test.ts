@@ -6,7 +6,10 @@
  */
 
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import process from 'node:process';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { attachCode, check } from '../boundary.ts';
 import { casesIn } from '../failsfirst.ts';
@@ -102,8 +105,9 @@ test('linkrule counts a name after a character literal holding a quote', () => {
     assert.deepEqual(usesIn('auto c = u8\'"\'; v3d::grid::Cell cell;', GRID), [[['v3dlib_grid'], 'v3d::grid::Cell']]);
 });
 
-test('linkrule counts a name after a CRLF-continued string', () => {
-    const text = 'const char* s = "a \\\r\nb";\r\nv3d::grid::Cell cell;\r\n';
+test('linkrule counts a name after a CRLF-continued string, and not one inside it', () => {
+    // the continued part holds a qualified name; read as code it would be counted as a use
+    const text = 'const char* s = "a \\\r\nv3d::grid::Other";\r\nv3d::grid::Cell cell;\r\n';
     assert.deepEqual(usesIn(text, GRID), [[['v3dlib_grid'], 'v3d::grid::Cell']]);
 });
 
@@ -118,4 +122,29 @@ test('linkrule reads includes outside comments and #if 0 blocks', () => {
         '#include <f.h>',
     ].join('\n');
     assert.deepEqual(includesIn(text), ['a.h', 'f.h']);
+});
+
+// Each gate runs its command line when Node is started with it, and not when a test imports it.
+// A gate that did not run would exit 0, so each is given a base that is not a commit and must
+// refuse it.
+for (const gate of ['prose.ts', 'boundary.ts']) {
+    test(`${gate} runs when Node is started with it`, () => {
+        const script = fileURLToPath(new URL(`../${gate}`, import.meta.url));
+        const run = spawnSync(process.execPath, [script, '--base', 'no-such-ref'], { encoding: 'utf8' });
+        assert.equal(run.status, 2, run.stderr);
+        assert.match(run.stderr, /no-such-ref/);
+    });
+}
+
+test('failsfirst.ts runs when Node is started with it', () => {
+    const script = fileURLToPath(new URL('../failsfirst.ts', import.meta.url));
+    const run = spawnSync(process.execPath, [script, '--no-such-option'], { encoding: 'utf8' });
+    assert.equal(run.status, 2, run.stderr);
+});
+
+test('linkrule.ts runs when Node is started with it', () => {
+    const script = fileURLToPath(new URL('../linkrule.ts', import.meta.url));
+    const run = spawnSync(process.execPath, [script, '--no-such-option'], { encoding: 'utf8' });
+    assert.equal(run.status, 2, run.stderr);
+    assert.match(run.stderr, /usage/);
 });

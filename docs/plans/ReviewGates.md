@@ -104,8 +104,9 @@ when that review is clean.
 
 ## State
 
-Steps 1 to 7 are closed. The gates are `scripts/*.ts`, run by Node with no dependencies. All four
-read C++ through one lexer, `scripts/lexer.ts`, and the tests in `scripts/tests/` cover it and
+Steps 1 to 7 are closed. The four gates are `prose.ts`, `linkrule.ts`, `boundary.ts` and
+`failsfirst.ts` in `scripts/`, run by Node with no dependencies. All four read C++ through one
+lexer, `scripts/lexer.ts`, and the tests in `scripts/tests/` cover it and
 each gate's entry points. The tests, the link rule, prose and boundary gates run in CI in
 `review-gates.yml`, and the fails-first gate runs locally. A line the boundary gate reports and
 that is defined carries a `// checked:` comment naming why.
