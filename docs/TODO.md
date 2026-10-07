@@ -303,6 +303,13 @@ position.
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.
 
+[] **The glTF fixture generators are Python.** The repository holds no Python, and committed
+scripts are TypeScript run by Node. Five generators in `api/asset/tests/data/` write glTF by hand
+and can move to TypeScript: `make_embedded_fixture.py`, `make_model_fixture.py`,
+`make_modes_fixture.py`, `make_parts_fixture.py` and `make_skin_fixture.py`.
+`make_blender_fixture.py` runs inside Blender, which scripts only in Python, so it needs a
+decision of its own: keep it as the one exception, or keep only the fixture it wrote.
+
 [] **Nothing asserts the pipeline cache.** The device suite covers everything below the
 recorder in `api/render` except the pipeline cache. A test for it would count what was compiled,
 not compare a picture.
