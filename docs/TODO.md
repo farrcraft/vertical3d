@@ -317,6 +317,101 @@ multisampling and text are checked only by a silent validation log and by spot c
 them more strongly needs a second Vulkan implementation to compare against, and this tree has
 none.
 
+## Known review findings
+
+Defects a review found that the change under review did not introduce.
+[Review.md](contributing/Review.md) says how this list is used: a reviewer reads it first and
+does not report an entry again. Each entry names its class.
+
+### Boundary input
+
+[] **`TileGrid` lets a tile size that is not a number through.** `TileGrid.cpp` tests
+`tileSize <= 0`, which NaN and infinity pass; its header says a size that is not positive throws.
+
+[] **The editor's orthographic zoom has no floor.** `Camera::zoom` scales the half height by a
+factor that one large drag takes to zero or below, and a zero never recovers. `Isometric::zoom`
+clamps; this does not.
+
+[] **The C interface reads an integer parameter as a float.** `rib::Arguments` reads every
+non-string value through `const float*`, so an `RtInt` array arrives as its bit pattern.
+
+[] **`Polygon::clip` ignores whether an edge met the plane.** `intersectEdge`'s result is dropped
+and the point it did not set is used. `Polygon::split` has the same shape.
+
+### Contract
+
+[] **A held activation key repeats a ui command.** `Keys::press` takes every key-down, so a held
+space or return on a button, check box or list sends its command at the key repeat rate.
+
+[] **The centred game menu draws a disabled item as live.** `ComponentRenderer` greys a disabled
+item in a panel and not in the centred menu, which refuses to activate it.
+
+[] **A theme overlays the one before it.** `Resolver::chrome` writes only what the new theme names,
+so a switch keeps the old theme's values where the new one is silent, and a null theme keeps all
+of them.
+
+[] **Two views of one camera share one pass.** A layout may name a camera profile twice, and the
+pass is named after the profile, so the second view overwrites the first.
+
+[] **Playing no clip with a fade freezes the old pose.** `Playback::advance` returns before the
+fade code when the clip is `none`, so the old clip is blended at weight zero for ever.
+
+### Cleanup
+
+[] **The direct allocator leaks a buffer or image when no memory type suits it.**
+`memoryType()` throws after the object is made, and the constructors clean up only a failed bind.
+
+[] **`Presenter` leaks its semaphores when its constructor throws part way.**
+
+### Weak test
+
+[] **`a_frame_begun_again_restarts_its_claims` never claims on the slot it began twice.** It passes
+without the turn counter it was written for. Its sibling test does fail without it.
+
+### Drift
+
+[] **Stale comments and doc sentences.**
+
+- `Cursor.h` and `docs/api/ui/Mouse.md` say a release sends nothing; a slider can send its command
+  on release.
+- `Menu.h` says `previous()` returns false on a wrap; it returns true.
+- `Manipulator.h` says the profile's normals do not follow its rotation; they do now.
+- `ProfileTest.cxx` says "looking down -z" of a camera that looks along +z.
+- `Retirement.h` documents its tag as the frames begun; it is the last frame that may name the
+  object.
+- `docs/internals/realtime/Memory.md` and `Barriers.h` list two depth-only layouts and leave out
+  the readback barrier, which needs the same feature.
+- `Renderer.h` and `docs/offline/ShadingLanguage.md` call "shader" space the light's placement; it
+  is the inverse.
+- `docs/internals/realtime/Frames.md` does not state the scissor's rules for an edge that is not a
+  number or is past 2^24.
+- The root `CMakeLists.txt` says the apps name every api library between them; none names font.
+- `docs/contributing/Testing.md`'s fixture list leaves out the font and ui suites, which take the
+  shared font through a build rule.
+- `api/asset/media/tests/CMakeLists.txt` says every glTF fixture has a generator script; three are
+  written by hand.
+- `RotateManipulator.h` has two doc blocks above `ringDistance`, one of which belongs to `swept()`.
+
+### Build
+
+[] **Targets that break the app linking rule.**
+
+- `imagetool` uses the logger without including its header.
+- moya's app links `v3dlib_type` and includes none of it, and uses the logger without its header
+  or link.
+- The moya suite names PNG and JPEG directly.
+- The brep and dag suites use `api/type` types without including them, and the dag suite does not
+  link `v3dlib_type`.
+
+### Prose
+
+[] **Writing rules broken in text the tenth round added.** A "So" opener in
+`docs/internals/realtime/Memory.md`; "which is what" in `docs/internals/realtime/Device.md` and
+`docs/offline/ShadingLanguage.md`; a 52-word comment in `api/event/Bindings.cpp`; a figure of
+speech in a `PostTest.cpp` comment; and lines extended past the wrap in `docs/api/Assets.md`,
+`docs/internals/realtime/Device.md`, `docs/offline/CamerasAndSampling.md`,
+`api/render/offline/Film.h` and `docs/internals/realtime/Memory.md`.
+
 ## Documentation
 
 [] **The reasons for moving to SDL3 are not recorded.** No ADR records why SDL3 replaced

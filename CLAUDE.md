@@ -26,6 +26,7 @@ is SDL3.
 | A dependency, vcpkg, the Vulkan SDK | [docs/contributing/Dependencies.md](docs/contributing/Dependencies.md) |
 | Tests, or verifying a rendering change | [docs/contributing/Testing.md](docs/contributing/Testing.md) |
 | A lint or analyser finding | [docs/contributing/Linting.md](docs/contributing/Linting.md) |
+| Reviewing a change, or fixing a review finding | [docs/contributing/Review.md](docs/contributing/Review.md) |
 | Style, comments and documents | [docs/contributing/Conventions.md](docs/contributing/Conventions.md) |
 | `api/engine`, `config`, `event`, `input`, `audio`, `log` | [docs/api/engine/](docs/api/engine/README.md) |
 | `api/type`, `api/grid`, `api/ecs` | [docs/api/Types.md](docs/api/Types.md), [Grid.md](docs/api/Grid.md), [ECS.md](docs/api/ECS.md) |

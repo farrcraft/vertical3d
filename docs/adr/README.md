@@ -138,3 +138,4 @@ content went. Numbers are never reused.
 | ADR | Decision | Status |
 |---|---|---|
 | 0006 | *Not a decision: a project-scope call to keep tetris. Noted in docs/plans/completed/Modernization.md* | removed |
+| [0083](0083-review-a-changeset-answers-for-what-it-introduces.md) | Review: a changeset answers for what it introduces | accepted |

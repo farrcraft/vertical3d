@@ -25,6 +25,11 @@ and that document states the rules. `docs/adr/README.md` indexes the decisions b
 when you need to know why a rule exists.
 
 Review only what changed and what the change makes wrong. Do not audit the file.
+`docs/contributing/Review.md` defines a finding: a defect the change introduced. A defect that
+was already there is not one; check the "Known review findings" list in `docs/TODO.md`, and
+report an older defect only as a note, never as a finding. Read every sibling site of each
+pattern the diff touches, because a fix to one site of a pattern is incomplete until every site
+is checked.
 
 ## Severity
 
@@ -170,13 +175,19 @@ you run a check, quote what it said; if you do not, do not imply that you did.
 Group by severity, most severe first. For each finding:
 
 ```
-SEVERITY  path/to/file.cxx:120
+SEVERITY  CLASS  path/to/file.cxx:120
   <one sentence saying what is wrong>
+  Failure: <a concrete case where it goes wrong>
+  Siblings: <the other sites of the same pattern, and whether each has the defect>
   Why it matters: <the invariant, ADR, or documented convention it breaks>
   Suggested fix: <the smallest change that resolves it>
 ```
 
-Close with one line: what you verified by running, and what you did not.
+CLASS is one of the classes in `docs/contributing/Review.md`: boundary input, drift, prose, weak
+test, cleanup, build, contract or semantics.
+
+Close with two lines: what you read in full and what only as a diff, and what you verified by
+running and what you did not.
 
 Say plainly when the change is clean. Do not manufacture findings to look thorough, and do
 not restate what the built-in reviewer would already have said.

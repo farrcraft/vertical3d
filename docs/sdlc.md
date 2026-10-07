@@ -77,6 +77,11 @@ covering. Run them with `ctest --test-dir out/build/x64-Debug --output-on-failur
 with a testable CPU half brings test cases with it. [Testing.md](contributing/Testing.md) records what is
 covered and what cannot be.
 
+**Review.** A changeset merges when its review is clean: it introduces no finding at any
+severity. A defect it did not introduce goes in the known-debt list in [TODO.md](TODO.md).
+[Review.md](contributing/Review.md) defines a finding, what a reviewer reads, and what a fix has
+to do.
+
 **Rendering.** CI runs the device tests against lavapipe, a software Vulkan driver, and a few of
 them compare against committed reference images. Locally, a rendering change is checked by
 running the app and reading the log. The Khronos validation layer reports through the logger,

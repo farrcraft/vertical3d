@@ -14,6 +14,7 @@ For anyone building, testing or changing the tree.
 | [contributing/Dependencies.md](contributing/Dependencies.md) | vcpkg, the Vulkan SDK, libnoise, and adding or updating a package |
 | [contributing/Testing.md](contributing/Testing.md) | Running and writing tests, the GPU tests, reference images, and checking a rendering change |
 | [contributing/Linting.md](contributing/Linting.md) | cpplint, warnings as errors, `/analyze` and clang-tidy |
+| [contributing/Review.md](contributing/Review.md) | What counts as a review finding, what a reviewer reads, and what a fix has to do |
 | [contributing/Conventions.md](contributing/Conventions.md) | Code style, and how to write comments and documents |
 | [../CONTRIBUTING.md](../CONTRIBUTING.md) | Where engine changes are made when you found the problem from another project |
 
