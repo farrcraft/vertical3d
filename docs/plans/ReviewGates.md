@@ -68,9 +68,9 @@ be made.
 
 **Closed.** `scripts/prose.ts` checks the lines a change adds to Markdown files and to the comments
 of C++, GLSL, CMake, batch, YAML, TypeScript and JavaScript files. It reports sentences over 35
-words, the banned openers, "which is what" and its kin, personified code, history, Markdown lines
-over 100 columns, and a comment line extended past the wrap of its paragraph. It runs in CI in
-`review-gates.yml` and fails the run.
+words, the banned openers, "which is what" and its kin, personified code and history. It also
+reports a Markdown line or a comment line on its own over 100 columns, and a comment line
+extended past the wrap of its paragraph. It runs in CI in `review-gates.yml` and fails the run.
 
 ### Step 5 — Gate: build conventions
 
@@ -130,3 +130,7 @@ Each review of the gates found one more fault in a less common setup. The gates 
 environment, which Linting.md states, and a fault reachable only outside it is Minor. The review
 of the last two commits under that rule found no Major and 5 Minor findings, in the documents,
 two comments and one test. They are fixed. What remains of step 8 is the merge.
+
+The review of that fix found a two-line comment whose second line ran to 114 columns. The
+extended-line rule needs three lines, so the prose gate did not see it. The gate now also holds a
+comment line on its own to 100 columns, and the 10 such lines the branch added are rewrapped.

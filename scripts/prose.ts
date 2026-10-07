@@ -13,7 +13,8 @@
  *                    with a subject that is not a person or whoever writes an app.
  *   history          "used to" (not the passive "is used to"), a date, or "phase N". Plans and
  *                    roadmaps are exempt, because they describe change.
- *   long-line        a Markdown prose line longer than 100 columns.
+ *   long-line        a Markdown prose line, or a comment line with no code before it, longer
+ *                    than 100 columns.
  *   extended-line    a comment line more than 10 columns longer than every other line of its
  *                    paragraph, in a paragraph of at least three lines that is wrapped at 70
  *                    columns or more.
@@ -41,7 +42,7 @@ import { shouldRun } from './entry.ts';
 import { commentLines } from './lexer.ts';
 
 const MAX_WORDS = 35;
-const MAX_MD_COLUMNS = 100;
+const MAX_COLUMNS = 100;
 const EXTENDED_MARGIN = 10;
 const EXTENDED_BASELINE = 70;
 
@@ -106,11 +107,15 @@ const CODE_LIKE = new RegExp('(;\\s*$|[{}]\\s*$|^\\s*#\\s*(include|define|if|end
 
 type Kind = 'md' | 'slash' | 'script' | 'hash' | 'cmd';
 
-/** One line of a paragraph: its number, the column its prose starts at, and the whole line. */
+/**
+ * One line of a paragraph: its number, the column its prose starts at, and the whole line. Alone
+ * is true for a comment line with no code before the comment.
+ */
 interface ParagraphLine {
     number: number;
     column: number;
     line: string;
+    alone?: boolean;
 }
 
 export interface Finding {
@@ -552,7 +557,7 @@ function commentParagraphs(lines: string[], kind: Kind): ParagraphLine[][] {
             flush();
         }
         const start = column + markerLength + (body.length - body.trimStart().length);
-        current.push({ number, column: start, line: lines[number - 1] });
+        current.push({ number, column: start, line: lines[number - 1], alone });
     }
     flush();
     return paragraphs;
@@ -760,7 +765,7 @@ export function checkLines(path: string, lines: string[], added: Added): Finding
                     continue;
                 }
                 const length = columns(line);
-                if (length > MAX_MD_COLUMNS && !LINK_ONLY.test(line) && !inLinkTarget(line, MAX_MD_COLUMNS)) {
+                if (length > MAX_COLUMNS && !LINK_ONLY.test(line) && !inLinkTarget(line, MAX_COLUMNS)) {
                     findings.push({ path, number, rule: 'long-line', detail: `${length} columns` });
                 }
             }
@@ -768,6 +773,16 @@ export function checkLines(path: string, lines: string[], added: Added): Finding
     } else {
         for (const paragraph of commentParagraphs(lines, kind)) {
             findings.push(...checkParagraph(paragraph, added, path, true, false));
+            // A comment after code is held to the code's width, which cpplint checks.
+            for (const { number, line, alone } of paragraph) {
+                if (!alone || (added !== null && !added.has(number)) || /https?:\/\//.test(line)) {
+                    continue;
+                }
+                const length = columns(line.trimEnd());
+                if (length > MAX_COLUMNS) {
+                    findings.push({ path, number, rule: 'long-line', detail: `${length} columns` });
+                }
+            }
         }
     }
     const unique = new Map<string, Finding>();

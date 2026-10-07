@@ -45,7 +45,7 @@ class Characters final {
 
     /** The line of the last character consumed, counting from one. **/
     unsigned int line() const;
-    /** The column of the last character consumed, which is zero before the first character of a line. **/
+    /** The column of the last character consumed, zero before a line's first character. **/
     unsigned int column() const;
 
     /**

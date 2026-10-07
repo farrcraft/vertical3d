@@ -155,9 +155,9 @@ It compares the working tree with the merge base of `HEAD` and `origin/main`, or
 there is no `origin/main`. `--base REF` names another branch to compare with. Uncommitted and
 untracked files are included, so it can run before a commit.
 
-It reads the lines a change adds to Markdown files and to the comments of C++, GLSL, CMake, batch
-and YAML files. It rebuilds the paragraph around each added line and checks every sentence that
-overlaps one. It reports:
+It reads the lines a change adds to Markdown files and to the comments of C++, GLSL, CMake, batch,
+YAML, TypeScript and JavaScript files. It rebuilds the paragraph around each added line and
+checks every sentence that overlaps one. It reports:
 
 - a sentence of more than 35 words;
 - a sentence that starts with "And" or "So";
@@ -165,7 +165,7 @@ overlaps one. It reports:
 - "knows", "wants", "owes" or "trusts", or "does not know" and its kin, after a subject that is
   not a person, an app, a caller or a consumer;
 - "used to", a date or "phase N", except in [plans/](../plans) and [roadmap/](../roadmap);
-- a Markdown line longer than 100 columns;
+- a Markdown line, or a comment line with no code before it, longer than 100 columns;
 - a comment line more than 10 columns longer than every other line of its paragraph.
 
 Code fences, code spans, tables, headings, URLs and front matter are not checked. Neither are

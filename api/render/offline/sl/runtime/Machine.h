@@ -203,7 +203,7 @@ class Machine final {
     void shadowed(bool ray, const Value & from, const Value & to, Value* target);
     /**
      * The matrix into a named coordinate space. When the renderer does not recognise the space,
-     * it is the identity and a report, so the scene renders in the wrong place rather than not at all.
+     * it is the identity and a report, so the scene still renders, in the wrong place.
      **/
     glm::mat4x4 space(const std::string & name);
     /** Push the lanes of the condition that are, or are not, non-zero. **/

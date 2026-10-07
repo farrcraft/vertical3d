@@ -58,6 +58,16 @@ test('prose skips a comment marker inside a continued string', () => {
     assert.deepEqual(prose(lines), ['4: opener']);
 });
 
+test('prose reports a comment line past 100 columns, and not a comment after code', () => {
+    const long = `// ${'word '.repeat(20)}`;
+    const lines = [
+        '// A short comment line before it.',
+        long,
+        `int count = 0;  ${long}`,
+    ];
+    assert.deepEqual(prose(lines), ['2: long-line']);
+});
+
 test('boundary reports a cast on a line that starts with a dereference', () => {
     const text = 'void f(int* out, float x) {\n    *out = static_cast<int>(std::floor(x));\n}';
     assert.deepEqual(boundary(text, [2]), ['2: float-cast']);

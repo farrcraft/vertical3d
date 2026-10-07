@@ -38,7 +38,9 @@ class RayHider final : public Hider {
      public:
         /** The world to camera transformation. **/
         glm::mat4x4 toCamera = glm::mat4x4(1.0f);
-        /** Camera to raster, which a ray is found by inverting and a depth is projected through. **/
+        /**
+         * Camera to raster, which a ray is found by inverting and a depth is projected through.
+         **/
         glm::mat4x4 toRaster = glm::mat4x4(1.0f);
         bool perspective = false;
         /** Where a primary ray starts, in camera space z. **/

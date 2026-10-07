@@ -433,9 +433,10 @@ Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Ha
 }
 
 /**
- * Reads the blocks a scene is nested out of. None of them carries an argument.
+ * Reads the blocks a scene is nested out of. None of them carries an argument. It is a member,
+ * not static, so it sits in the group table beside the others.
  **/
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static) - a member, so it sits in the group table beside the others
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 Reader::Result Reader::blockRequest(const std::string & name, Lexer * lexer, Handler * handler) {
     (void)lexer;
     if (name == "WorldBegin") {

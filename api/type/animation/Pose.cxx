@@ -53,7 +53,7 @@ void palette(const Skeleton& skeleton, const Pose& pose, std::vector<glm::mat4>*
         const glm::mat4& above = joint.parent < 0 ? skeleton.root : (*out)[static_cast<std::size_t>(joint.parent)];
         (*out)[index] = above * matrix;
     }
-    // done in a second pass, because a child reads its parent's global matrix and not its skinning one
+    // a second pass, because a child reads its parent's global matrix, not its skinning one
     for (std::size_t index = 0; index < skeleton.joints.size(); index++) {
         (*out)[index] = (*out)[index] * skeleton.joints[index].inverseBind;
     }

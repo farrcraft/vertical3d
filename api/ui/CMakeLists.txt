@@ -77,9 +77,9 @@ target_link_libraries(v3dlib_ui PUBLIC
 	glm::glm
 	EnTT::EnTT)
 
-# PRIVATE: v3dlib_input: shell/Keyboard.cpp decodes an SDL key through input::keyName, so that the name
-# a binding is written against and the name a text box answers come from one table. The header
-# names neither the device nor SDL_Event beyond a forward declaration.
+# PRIVATE: v3dlib_input: shell/Keyboard.cpp decodes an SDL key through input::keyName, so that
+# the name a binding is written against and the name a text box answers come from one table. The
+# header names neither the device nor SDL_Event beyond a forward declaration.
 # SDL3::SDL3: shell/Keyboard.cpp reads SDL events and the clipboard through SDL.
 target_link_libraries(v3dlib_ui PRIVATE v3dlib_input SDL3::SDL3)
 

@@ -62,7 +62,8 @@ const VkFormat colourFormat = VK_FORMAT_R8G8B8A8_SRGB;
 const uint32_t width = 128;
 const uint32_t height = 128;
 
-// a strip bound to three joints, with a bend among its clips - api/asset/tests/data/make_skin_fixture.py
+// a strip bound to three joints, with a bend among its clips, made by
+// api/asset/tests/data/make_skin_fixture.py
 const char* STRIP = "bending_strip.glb";
 
 boost::shared_ptr<v3d::asset::Manager> assets(const v3d::test::Headless& headless) {

@@ -62,7 +62,7 @@ FullScreen::FullScreen(const boost::shared_ptr<device::Device>& device, const bo
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, spec.fragment.data(), spec.fragment.size() * sizeof(uint32_t))
         .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE)
         .depth(false, false)
-        // every pixel is written once, from what is read, so there is nothing under it to blend with
+        // every pixel is written once, from what is read, so nothing under it needs blending
         .blend(false)
         .set(uniforms->layout())
         .set(sources_->layout())
