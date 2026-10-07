@@ -157,8 +157,9 @@ test('linkrule.ts runs when Node is started with it', () => {
     assert.match(run.stderr, /usage/);
 });
 
-// Node resolves a module's own path through a link, and does not resolve the path it was
-// started with through links. A gate started through a junction or a symbolic link still has to see that it runs.
+// Node resolves a module's own path through a link, and does not resolve the path it was started
+// with through links. A gate started through a junction or a symbolic link still has to see that
+// it runs.
 test('a gate started through a linked directory runs', () => {
     const scratch = mkdtempSync(join(tmpdir(), 'v3d-gates-'));
     const linked = join(scratch, 'scripts');
