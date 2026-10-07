@@ -343,15 +343,8 @@ is specified as a nonpositive value, the resolution defaults to that of the
 display device for that particular parameter.
 */
 RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
-    // a side outside the range is refused, as the RIB reader refuses it, and the context keeps
-    // the resolution it had. An aspect that is not a positive finite number is square pixels
-    const bool size = v3d::render::offline::resolution(static_cast<float>(xres)) &&
-        v3d::render::offline::resolution(static_cast<float>(yres));
-    if (!size) {
-        return;
-    }
-    const bool square = !(aspect > 0.0f) || !std::isfinite(aspect);
-    renderer().activeRenderContext().imageResolution(xres, yres, square ? 1.0f : aspect);
+    // the context takes a side of zero or less as its default, and refuses one that is too large
+    renderer().activeRenderContext().imageResolution(xres, yres, aspect);
 }
 
 RtVoid RiFrameAspectRatio(RtFloat aspect) {

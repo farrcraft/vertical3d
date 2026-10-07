@@ -4,6 +4,7 @@
  **/
 
 #include <api/log/Logger.h>
+#include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/Renderer.h>
@@ -21,30 +22,29 @@ namespace {
 
 /**
  * The picture, grid and bucket sizes the command line names, each checked before it is used.
- * A size outside 1 to 65536 is reported, and the scene's own size or the default is kept.
+ * A size the renderer refuses is reported, and the scene's own size or the default is kept.
  **/
 void sizes(const boost::program_options::variables_map& var_map, v3d::moya::RIBHandler* handler) {
     const bool width = var_map.count("width") > 0;
     const bool height = var_map.count("height") > 0;
-    // a size larger than this on a side is refused as a mistake. A picture within it can still
-    // be larger than memory holds, and main reports the allocation that fails
-    const int largest = 65536;
+    // a picture within the largest side can still be larger than memory holds, and main
+    // reports the allocation that fails
     if (width && height) {
         const int x = var_map["width"].as<int>();
         const int y = var_map["height"].as<int>();
-        if (x < 1 || y < 1 || x > largest || y > largest) {
-            std::cout << "--width and --height have to be between 1 and " << largest << ", so the scene's Format is used" << "\n";
-        } else {
-            handler->resolution(static_cast<unsigned int>(x), static_cast<unsigned int>(y));
+        if (!handler->resolution(x, y)) {
+            std::cout << "--width and --height have to be between 1 and " << v3d::render::offline::largestResolution
+                << ", so the scene's Format is used" << "\n";
         }
     } else if (width || height) {
         std::cout << "--width and --height have to be given together, so the scene's Format is used" << "\n";
     }
     // the command line sets the grid and bucket sizes before the scene is read, so a scene
     // that names its own with Option "limits" replaces them
+    const unsigned int largest = v3d::moya::RIBHandler::largestLimit;
     if (var_map.count("grid")) {
         const int grid = var_map["grid"].as<int>();
-        if (grid < 1 || grid > largest) {
+        if (grid < 1 || static_cast<unsigned int>(grid) > largest) {
             std::cout << "--grid has to be between 1 and " << largest << ", so the default is used" << "\n";
         } else {
             handler->context().gridSize(static_cast<unsigned int>(grid));
@@ -52,7 +52,7 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::RIBH
     }
     if (var_map.count("bucket")) {
         const int bucket = var_map["bucket"].as<int>();
-        if (bucket < 1 || bucket > largest) {
+        if (bucket < 1 || static_cast<unsigned int>(bucket) > largest) {
             std::cout << "--bucket has to be between 1 and " << largest << ", so the default is used" << "\n";
         } else {
             handler->context().bucketSize(static_cast<unsigned int>(bucket), static_cast<unsigned int>(bucket));

@@ -335,13 +335,20 @@ clamps; this does not.
 non-string value through `const float*`, so an `RtInt` array arrives as its bit pattern.
 
 [] **`Polygon::clip` ignores whether an edge met the plane.** `intersectEdge`'s result is dropped
-and the point it did not set is used. `Polygon::split` has the same shape.
+and the point it did not set is used. `Polygon::split` tests the result. When `intersectEdge`
+returns false, `split` asserts that `classify` puts both ends on one side, and the assert is
+compiled out of a release build. The two tests can disagree for an edge that touches the plane.
 
 [] **The ui `Loader` reads most document keys without testing their type.** Its other
 `boost::json::value_to` reads throw out of `ui::Engine::load` when a key holds the wrong type.
 Among them are a component's `type`, `name`, `style`, `depth` and `label`, a theme's `name`, a
 container's `visible` and a style property's `value`. The fix reads them through
 `api/asset/Json.h`.
+
+[] **Two config readers narrow a JSON integer to `int` without a range check.** `Bindings.cpp`
+casts a binding's integer `param` from `int64_t` to `int`. `Engine.cpp` does the same with the
+window config's `width` and `height`. A value outside the range of `int`, such as 2^32 + 640,
+becomes a different number with no warning.
 
 ### Contract
 
@@ -393,9 +400,6 @@ without the turn counter it was written for. Its sibling test does fail without 
 - The root `CMakeLists.txt` says the apps name every api library between them; none names font.
 - `docs/contributing/Testing.md`'s fixture list leaves out the font and ui suites, which take the
   shared font through a build rule.
-- `api/asset/media/tests/CMakeLists.txt` says every glTF fixture has a generator script; three are
-  written by hand.
-- `RotateManipulator.h` has two doc blocks above `ringDistance`, one of which belongs to `swept()`.
 
 ## Documentation
 

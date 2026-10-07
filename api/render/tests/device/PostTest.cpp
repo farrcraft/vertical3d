@@ -262,6 +262,11 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
  * A source released twice hands its set back once. The material goes on resolving for the frame
  * already queued, so a second release that found it and handed its set back again would leave
  * the pool giving one set to two sources.
+ *
+ * Passes before the change: a second release finds the material only while a released one goes
+ * on resolving for its queued frame. The same change adds the rule that keeps it resolving.
+ * Without that rule the first release removes the material, and the second finds nothing to
+ * hand back.
  **/
 BOOST_AUTO_TEST_CASE(a_source_released_twice_hands_its_set_back_once) {
     const uint32_t size = 16;

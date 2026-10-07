@@ -1,5 +1,6 @@
 add_library("v3dlib_moya" 
 	"Bucket.h" "Bucket.cxx"
+	"Footprint.h" "Footprint.cxx"
 	"FrameBuffer.h" "FrameBuffer.cxx"
 	"GridShader.h" "GridShader.cxx"
 	"MicroPolygon.h" "MicroPolygon.cxx"

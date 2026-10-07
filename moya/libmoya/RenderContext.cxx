@@ -332,14 +332,21 @@ float RenderContext::hither() const {
     sets the pixel resolution and aspect ratio of the image to be rendered
     default values will be used when not called
 */
-void RenderContext::imageResolution(int xres, int yres, float aspect) {
-    xres_ = xres;
-    yres_ = yres;
-    pixelAspect_ = aspect;
-    if (!frameAspectNamed_ && yres_ > 0) {
+bool RenderContext::imageResolution(int xres, int yres, float aspect) {
+    // RI reads a side of zero or less as the device's default for that side
+    const unsigned int width = xres > 0 ? static_cast<unsigned int>(xres) : defaultWidth;
+    const unsigned int height = yres > 0 ? static_cast<unsigned int>(yres) : defaultHeight;
+    if (width > v3d::render::offline::largestResolution || height > v3d::render::offline::largestResolution) {
+        return false;
+    }
+    xres_ = width;
+    yres_ = height;
+    pixelAspect_ = aspect > 0.0f && std::isfinite(aspect) ? aspect : 1.0f;
+    if (!frameAspectNamed_) {
         frameAspectRatio(xres_ * pixelAspect_ / yres_);
         frameAspectNamed_ = false;
     }
+    return true;
 }
 
 /*

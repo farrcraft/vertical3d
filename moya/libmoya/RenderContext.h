@@ -66,13 +66,19 @@ class RenderContext {
         float pixelAspect() const;
 
         // manipulators
+        /** The picture's size when no Format names one. **/
+        static constexpr unsigned int defaultWidth = 320;
+        static constexpr unsigned int defaultHeight = 240;
+
         /**
             *	maps to RiFormat(xres, yres, aspect)
-            *	sets the pixel resolution and aspect ratio of the image to 
-            *	be rendered
-            *	default values will be used when not called
+            *	sets the pixel resolution and aspect ratio of the image to be rendered.
+            *	A side of zero or less takes the default for that side, defaultWidth or
+            *	defaultHeight. A side above largestResolution is refused, and the context keeps
+            *	the size it had. An aspect that is not a positive finite number is square pixels.
+            *	@return false when a side is refused
             */
-        void imageResolution(int xres, int yres, float aspect);
+        bool imageResolution(int xres, int yres, float aspect);
         /**
             *	maps to RiFrameAspectRatio(aspect)
             *	the ratio of the width of the whole image to its height. Set by
@@ -396,8 +402,8 @@ class RenderContext {
         boost::shared_ptr<FrameBuffer> frameBuffer_;
         boost::shared_ptr<Samples> samples_;
         // camera options
-        unsigned int xres_ = 320;
-        unsigned int yres_ = 240;
+        unsigned int xres_ = defaultWidth;
+        unsigned int yres_ = defaultHeight;
         float pixelAspect_ = 1.0f;
         float crop_[4] = { 0.0f, 1.0f, 0.0f, 1.0f };  // region of raster that is rendered
         float frameAspect_ = 4.0f / 3.0f;

@@ -66,33 +66,34 @@ be made.
 
 ### Step 4 — Gate: prose
 
-A script checks every comment and document a change touches for the writing rules. It reports
-sentences over 35 words, the banned openers, and "which is what" and its kin. It also reports a
-line extended past the wrap of its paragraph. It runs in CI beside cpplint and fails the build.
+**Closed.** `scripts/prose.ts` checks the lines a change adds to Markdown files and to the
+comments of C++, GLSL, CMake, batch and YAML files. It reports sentences over 35 words, the
+banned openers, "which is what" and its kin, personified code, history, Markdown lines over 100
+columns, and a comment line extended past the wrap of its paragraph. It runs in CI in
+`review-gates.yml` and fails the run.
 
 ### Step 5 — Gate: build conventions
 
-The link-rule check from the eleventh round becomes a script in CI: each app and suite names the
-`v3dlib_*` targets whose headers it includes, and includes the header of every library whose type
-it uses.
+**Closed.** `scripts/linkrule.ts` checks every app, app library and test suite: each names the
+`v3dlib_*` targets whose headers it includes and no others, and includes the header of every
+library whose namespace it uses. It also checks link visibility and third-party packages. It
+runs in CI in `review-gates.yml`. The configure checks the api libraries.
 
 ### Step 6 — Gate: boundary input
 
-- Checked conversions in `api/type`: a float to a count or an index, refusing a value that is not
-  finite or does not fit.
-- Checked reads in `api/asset` for a JSON value of the expected type.
-- A CI check that fails on a bare `static_cast` from a float to an integer type, and on a
-  `value_to` that no type test guards, outside the helpers.
-
-Built: `toCount` and `toInteger` in `api/type/Checked.h`, the reads in `api/asset/Json.h`, and
-`scripts/boundary.ts`, which checks a changeset's added lines. The branch's guarded JSON reads
-and its RIB counts, sizes, frame numbers and handles go through the helpers. Open: the CI step
-that runs the script, and the reports it still makes on the branch, which step 8 settles.
+**Closed.** `toCount` and `toInteger` in `api/type/Checked.h` convert a float to a count or an
+integer, and refuse a value that is not finite or does not fit. `api/asset/Json.h` has reads
+that check a JSON value's type. `scripts/boundary.ts` checks a changeset's added lines for a bare
+`static_cast` from a float to an integer type, and for a `value_to` that no type test guards,
+outside the helpers. It runs in CI in `review-gates.yml`. The branch's guarded JSON reads and
+its RIB counts, sizes, frame numbers and handles go through the helpers.
 
 ### Step 7 — Gate: tests that fail first
 
-A script that reverts a change's non-test files, builds, runs the tests the change added, and fails
-when any of them passes. It runs on a branch before review.
+**Closed.** `scripts/failsfirst.ts` finds the test cases a changeset adds, and builds their
+suites in a separate worktree with the changeset's non-test files at their base version. It runs
+each new case there, and fails when any of them passes. It runs locally before review and not in
+CI, because it builds the tree twice and the device suite needs a GPU.
 
 ### Step 8 — Close the branch
 
@@ -102,12 +103,13 @@ when that review is clean.
 
 ## State
 
-Steps 1 to 7 are closed. The gates are `scripts/*.ts`, run by Node with no dependencies, and
-the link rule, prose and boundary gates run in CI in `review-gates.yml`. A line the boundary
-gate reports and that is defined carries a `// checked:` comment naming why.
+Steps 1 to 7 are closed. The gates are `scripts/*.ts`, run by Node with no dependencies. The link
+rule, prose and boundary gates run in CI in `review-gates.yml`, and the fails-first gate runs
+locally. A line the boundary gate reports and that is defined carries a `// checked:` comment
+naming why.
 
-Step 8 is under way. The branch passes all three CI gates: 317 prose lines were rewritten, and
-the boundary gate's reports were fixed or given a reason. Fixing them found three more defects:
-a NaN filter width in `Film::add`, a bound that is not a number in moya's buckets, and a GPU
-time that wraps in voxel. What is left is the first full run of `failsfirst.ts`, and one review
-of the commits since the eleventh round.
+Step 8 is under way. The branch passes the gates: 317 prose lines were rewritten, and the
+boundary gate's reports were fixed or given a reason. Fixing them found three more defects: a NaN
+filter width in `Film::add`, a bound that is not a number in moya's buckets, and a GPU time that
+wraps in voxel. The closing review of the commits since the eleventh round found 17 findings,
+which are being fixed. One more review, of the fix diff only, remains.

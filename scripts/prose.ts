@@ -2,7 +2,8 @@
  * Check the writing rules on the prose a change adds.
  *
  * The rules are the ones in docs/contributing/Conventions.md#writing. The script reads the lines
- * a change adds to Markdown files and to the comments of C++, GLSL, CMake, batch and YAML files.
+ * a change adds to Markdown files and to the comments of C++, GLSL, TypeScript, JavaScript,
+ * CMake, batch and YAML files.
  * It rebuilds the paragraph around each added line and checks every sentence that overlaps one:
  *
  *   long-sentence    a sentence of more than 35 words. A code span counts as one word.
@@ -25,9 +26,12 @@
  *   node scripts/prose.ts --all FILE...  check whole files
  *
  * Each finding prints as "path:line: rule: detail | sentence". The exit status is 1 when there
- * is a finding. It runs on Node 24 or later, which strips the types, with no dependencies.
+ * is a finding. It is 2 when the script cannot run: a --base that names no commit or shares no
+ * history with HEAD, an empty --base, or a failed git command. It runs on Node 24 or later,
+ * which strips the types, with no dependencies.
  */
 
+import { Buffer } from 'node:buffer';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { basename } from 'node:path';
@@ -42,6 +46,16 @@ const MARKDOWN_SUFFIXES = ['.md'];
 const SLASH_SUFFIXES = ['.h', '.hpp', '.cpp', '.cxx', '.glsl', '.vert', '.frag', '.comp'];
 const HASH_SUFFIXES = ['.cmake', '.yml', '.yaml'];
 const CMD_SUFFIXES = ['.cmd', '.bat'];
+const SCRIPT_SUFFIXES = ['.ts', '.js', '.mjs', '.cjs'];
+
+// The options that make git print a diff this script can read, whatever the user's
+// configuration. They fix the a/ and b/ prefixes, and turn off colour, external and
+// text-converting drivers, and rename detection.
+const DIFF_OPTIONS = ['--src-prefix=a/', '--dst-prefix=b/', '--no-color', '--no-ext-diff', '--no-textconv',
+    '--no-renames'];
+
+// The escapes git's C-style quoting of a path uses, other than an octal byte.
+const ESCAPES: Record<string, number> = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13, '"': 34, '\\': 92 };
 
 // Historical records, and third-party or generated trees.
 const EXCLUDED_PREFIXES = ['vendor/', 'out/', 'docs/plans/completed/', 'docs/roadmap/completed/',
@@ -87,7 +101,7 @@ const CODE_LIKE = new RegExp('(;\\s*$|[{}]\\s*$|^\\s*#\\s*(include|define|if|end
     + '^\\s*\\w+\\(.*\\)\\s*$|^\\s*(return|if|for|while|auto|const|void|int|float)\\b.*[;({]|->|'
     + '::\\w+\\()');
 
-type Kind = 'md' | 'slash' | 'hash' | 'cmd';
+type Kind = 'md' | 'slash' | 'script' | 'hash' | 'cmd';
 
 /** One line of a paragraph: its number, the column its prose starts at, and the whole line. */
 interface ParagraphLine {
@@ -106,20 +120,72 @@ interface Finding {
 /** The lines a path adds, or null when the whole file is checked. */
 type Added = Set<number> | null;
 
+/** A reason the script cannot run, printed as one line with exit status 2. */
+class Stop extends Error {}
+
 function git(...args: string[]): string {
-    return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 1 << 30, stdio: ['ignore', 'pipe', 'pipe'] });
+    try {
+        return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 1 << 30, stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (error) {
+        const stderr = String((error as { stderr?: unknown }).stderr ?? '').trim().split('\n')[0];
+        throw new Stop(`git ${args.join(' ')} failed${stderr ? ': ' + stderr : ''}`);
+    }
+}
+
+function succeeds(...args: string[]): boolean {
+    try {
+        git(...args);
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 function mergeBase(ref: string | undefined): string {
-    const refs = ref === undefined ? ['origin/main', 'main'] : [ref];
-    for (const candidate of refs) {
-        try {
+    if (ref !== undefined) {
+        if (!succeeds('rev-parse', '--verify', '--quiet', `${ref}^{commit}`)) {
+            throw new Stop(`--base ${ref}: not a commit`);
+        }
+        if (!succeeds('merge-base', 'HEAD', ref)) {
+            throw new Stop(`--base ${ref}: no merge base with HEAD`);
+        }
+        return git('merge-base', 'HEAD', ref).trim();
+    }
+    for (const candidate of ['origin/main', 'main']) {
+        if (succeeds('merge-base', 'HEAD', candidate)) {
             return git('merge-base', 'HEAD', candidate).trim();
-        } catch {
-            continue;
         }
     }
-    throw new Error(`no merge base of HEAD with ${refs.join(' or ')}; pass --base`);
+    throw new Stop('no merge base of HEAD with origin/main or main; pass --base');
+}
+
+/**
+ * Return the path a diff header line such as "+++ b/name" names, or null for /dev/null. Git
+ * quotes a name that holds a control character, a quote, a backslash or a byte above 127, and
+ * ends an unquoted name that holds a space with a tab.
+ */
+function headerPath(header: string): string | null {
+    let name = header.slice(4);
+    const quoted = /^"((?:[^"\\]|\\.)*)"/.exec(name);
+    if (quoted) {
+        const bytes: number[] = [];
+        const body = quoted[1];
+        for (let index = 0; index < body.length; index++) {
+            if (body[index] !== '\\') {
+                bytes.push(...Buffer.from(body[index], 'utf8'));
+            } else if (/[0-7]{3}/.test(body.slice(index + 1, index + 4))) {
+                bytes.push(parseInt(body.slice(index + 1, index + 4), 8));
+                index += 3;
+            } else {
+                index += 1;
+                bytes.push(ESCAPES[body[index]] ?? body.charCodeAt(index));
+            }
+        }
+        name = Buffer.from(bytes).toString('utf8');
+    } else {
+        name = name.replace(/\t$/, '');
+    }
+    return name.startsWith('b/') ? name.slice(2) : null;
 }
 
 function columns(text: string): number {
@@ -134,6 +200,9 @@ function fileKind(path: string): Kind | null {
     }
     if (SLASH_SUFFIXES.some((suffix) => lower.endsWith(suffix))) {
         return 'slash';
+    }
+    if (SCRIPT_SUFFIXES.some((suffix) => lower.endsWith(suffix))) {
+        return 'script';
     }
     if (name === 'CMakeLists.txt' || HASH_SUFFIXES.some((suffix) => lower.endsWith(suffix))) {
         return 'hash';
@@ -154,21 +223,21 @@ function excluded(path: string, newFiles: Set<string>): boolean {
 /** Map each changed path to the lines the working tree adds since base, and list the new files. */
 function addedLines(base: string): { added: Map<string, Added>; newFiles: Set<string> } {
     const newFiles = new Set<string>();
-    for (const line of git('diff', '--name-status', '--no-renames', base).split('\n')) {
-        const parts = line.split('\t');
-        if (parts[0] === 'A') {
-            newFiles.add(parts[parts.length - 1]);
+    const fields = git('diff', '--name-status', '-z', ...DIFF_OPTIONS, base).split('\0');
+    for (let index = 0; index + 1 < fields.length; index += 2) {
+        if (fields[index] === 'A') {
+            newFiles.add(fields[index + 1]);
         }
     }
     const added = new Map<string, Added>();
     let current: Set<number> | null = null;
-    for (const line of git('diff', '--unified=0', '--no-color', '--no-renames', base).split('\n')) {
+    for (const line of git('diff', '--unified=0', ...DIFF_OPTIONS, base).split('\n')) {
         if (line.startsWith('+++ ')) {
-            const target = line.slice(4);
+            const target = headerPath(line.replace(/\r$/, ''));
             current = null;
-            if (target.startsWith('b/')) {
+            if (target !== null) {
                 current = new Set<number>();
-                added.set(target.slice(2), current);
+                added.set(target, current);
             }
         } else if (line.startsWith('@@') && current !== null) {
             const match = /^@@ -\S+ \+(\d+)(?:,(\d+))? @@/.exec(line);
@@ -182,7 +251,7 @@ function addedLines(base: string): { added: Map<string, Added>; newFiles: Set<st
         }
     }
     // A file not yet added to the index is new in its entirety.
-    for (const path of git('ls-files', '--others', '--exclude-standard').split('\n')) {
+    for (const path of git('ls-files', '-z', '--others', '--exclude-standard').split('\0')) {
         if (path) {
             newFiles.add(path);
             added.set(path, null);
@@ -270,8 +339,128 @@ interface CommentSpan {
     alone: boolean;
 }
 
+/**
+ * Return the offset just past the regular expression literal that starts at a slash, or -1 when
+ * the slash divides. A slash starts a literal where an operand is expected: after an operator,
+ * an opening bracket, a comma, a keyword such as return, or at the start of the text.
+ */
+function regexEnd(text: string, start: number): number {
+    const before = text.slice(0, start).trimEnd();
+    const word = /[\w$]+$/.exec(before);
+    if (word ? !/^(return|typeof|case|do|else|in|of|new|delete|void|throw|instanceof|yield|await)$/.test(word[0])
+        : before !== '' && /[)\]"'`]$/.test(before)) {
+        return -1;
+    }
+    let inClass = false;
+    for (let index = start + 1; index < text.length; index++) {
+        const char = text[index];
+        if (char === '\n') {
+            return -1;
+        } else if (char === '\\') {
+            index += 1;
+        } else if (char === '[') {
+            inClass = true;
+        } else if (char === ']') {
+            inClass = false;
+        } else if (char === '/' && !inClass) {
+            return index + 1;
+        }
+    }
+    return -1;
+}
+
+/**
+ * Return the comments of a TypeScript or JavaScript file. Strings, template literals and regular
+ * expression literals are skipped, so a // or /* inside one starts no comment. A template's ${}
+ * expressions are read as code.
+ */
+function scriptSpans(lines: string[]): CommentSpan[] {
+    const text = lines.join('\n');
+    const ranges: Array<[number, number]> = [];
+    // the brace depth at which each open ${ of a template closes
+    const templates: number[] = [];
+    let braces = 0;
+    let inTemplate = false;
+    let index = 0;
+    while (index < text.length) {
+        const char = text[index];
+        if (inTemplate) {
+            if (char === '\\') {
+                index += 2;
+            } else if (char === '`') {
+                inTemplate = false;
+                index += 1;
+            } else if (text.startsWith('${', index)) {
+                templates.push(braces);
+                braces += 1;
+                inTemplate = false;
+                index += 2;
+            } else {
+                index += 1;
+            }
+            continue;
+        }
+        if (text.startsWith('//', index)) {
+            const end = text.indexOf('\n', index);
+            ranges.push([index + 2, end < 0 ? text.length : end]);
+            index = end < 0 ? text.length : end;
+        } else if (text.startsWith('/*', index)) {
+            const end = text.indexOf('*/', index + 2);
+            ranges.push([index + 2, end < 0 ? text.length : end]);
+            index = end < 0 ? text.length : end + 2;
+        } else if (char === '"' || char === '\'') {
+            let end = index + 1;
+            while (end < text.length && text[end] !== char && text[end] !== '\n') {
+                end += text[end] === '\\' ? 2 : 1;
+            }
+            index = end + 1;
+        } else if (char === '`') {
+            inTemplate = true;
+            index += 1;
+        } else if (char === '/') {
+            const end = regexEnd(text, index);
+            index = end < 0 ? index + 1 : end;
+        } else {
+            if (char === '{') {
+                braces += 1;
+            } else if (char === '}') {
+                braces -= 1;
+                if (templates.length > 0 && templates[templates.length - 1] === braces) {
+                    templates.pop();
+                    inTemplate = true;
+                }
+            }
+            index += 1;
+        }
+    }
+    const starts: number[] = [];
+    let offset = 0;
+    for (const line of lines) {
+        starts.push(offset);
+        offset += line.length + 1;
+    }
+    const spans: CommentSpan[] = [];
+    let row = 0;
+    for (const [from, to] of ranges) {
+        while (row + 1 < starts.length && starts[row + 1] <= from) {
+            row += 1;
+        }
+        for (let at = row; at < lines.length && starts[at] <= to; at++) {
+            const column = Math.max(from, starts[at]) - starts[at];
+            const end = Math.min(to, starts[at] + lines[at].length) - starts[at];
+            const line = lines[at];
+            const alone = column === 0 || line.slice(0, column - 2).trim() === '';
+            spans.push({ number: at + 1, column, text: line.slice(column, end), alone });
+        }
+    }
+    return spans;
+}
+
 function commentSpans(lines: string[], kind: Kind): CommentSpan[] {
     const spans: CommentSpan[] = [];
+    if (kind === 'script') {
+        return scriptSpans(lines);
+    }
     if (kind === 'slash') {
         let inBlock = false;
         lines.forEach((line, index) => {
@@ -601,9 +790,9 @@ function main(): number {
     let all: string[] | null = null;
     for (let index = 0; index < args.length; index++) {
         const arg = args[index];
-        if (arg === '--base') {
-            base = args[++index];
-            if (base === undefined) {
+        if (arg === '--base' || arg.startsWith('--base=')) {
+            base = arg === '--base' ? args[++index] : arg.slice('--base='.length);
+            if (base === undefined || base.trim() === '') {
                 usage();
             }
         } else if (arg === '--all') {
@@ -641,4 +830,12 @@ function main(): number {
     return findings.length > 0 ? 1 : 0;
 }
 
-process.exitCode = main();
+try {
+    process.exitCode = main();
+} catch (error) {
+    if (!(error instanceof Stop)) {
+        throw error;
+    }
+    process.stderr.write(`prose.ts: ${error.message}\n`);
+    process.exitCode = 2;
+}

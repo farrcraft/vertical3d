@@ -24,8 +24,8 @@
  *                     that none of the v3dlib_* targets it links carries. A suite never names
  *                     Boost::unit_test_framework, because v3d_add_test links it. A variable
  *                     such as ${Boost_LIBRARIES} names every target it expands to: config-mode
- *                     Boost sets it to all the components the tree finds, and ${PNG_LIBRARIES}
- *                     and its kin name the package's target.
+ *                     Boost sets it to all the components the tree finds, and
+ *                     ${PNG_LIBRARIES} and its kin name the package's target.
  *   package-unlinked  an app or an app suite includes a package header that no target it
  *                     links carries and that it does not name itself.
  *
@@ -108,9 +108,10 @@ function isFile(p: string): boolean {
     return existsSync(p) && statSync(p).isFile();
 }
 
-function git(...args: string[]): string[] {
-    return execFileSync('git', args, { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 })
-        .split('\n').filter((line) => line.length > 0);
+/** The tracked files matching the pathspecs, as plain paths: -z stops git quoting a name. */
+function lsFiles(...pathspecs: string[]): string[] {
+    return execFileSync('git', ['ls-files', '-z', '--', ...pathspecs], { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 })
+        .split('\0').filter((line) => line.length > 0);
 }
 
 function endsWithAny(name: string, suffixes: string[]): boolean {
@@ -191,7 +192,7 @@ function cmakeCommands(text: string): Array<[string, string[]]> {
 }
 
 function loadTargets(): { targets: Map<string, Target>; boost: string[] } {
-    const files = git('ls-files', '*CMakeLists.txt', '*.cmake').filter((f) => !f.startsWith('examples/'));
+    const files = lsFiles('*CMakeLists.txt', '*.cmake').filter((f) => !f.startsWith('examples/'));
     const targets = new Map<string, Target>();
     const linkCalls: string[][] = [];
     let boost: string[] = [];
@@ -359,7 +360,9 @@ function stripCpp(text: string, keepStrings: boolean): string {
 const INCLUDE = /^[ \t]*#[ \t]*include[ \t]*[<"]([^>"]+)[>"]/gm;
 const DECLARATION = /\bnamespace\s+v3d((?:::\w+)+)\s*\{/g;
 const FORWARD_ONLY = /\s*(?:(?:class|struct)\s+\w+\s*;\s*)*\}/y;
-const QUALIFIED = /(?<![\w:])(namespace\s+)?v3d((?:\s*::\s*\w+)+)/g;
+// A namespace declaration such as "namespace v3d::grid {" names no use, and a using-directive
+// such as "using namespace v3d::grid;" does.
+const QUALIFIED = /(?<![\w:])(using\s+)?(namespace\s+)?v3d((?:\s*::\s*\w+)+)/g;
 
 interface Scan {
     includes: Array<[string, string | null]>;
@@ -408,7 +411,7 @@ class Tree {
 
     /** Map each namespace an api library declares, joined by ::, to the libraries declaring it. */
     findNamespaces(): void {
-        for (const f of git('ls-files', 'api')) {
+        for (const f of lsFiles('api')) {
             if (!endsWithAny(f, SOURCE_SUFFIXES)) {
                 continue;
             }
@@ -453,10 +456,10 @@ class Tree {
         }
         const uses: Array<[string[], string]> = [];
         for (const m of stripCpp(raw, false).matchAll(QUALIFIED)) {
-            if (m[1]) {
+            if (m[2] && !m[1]) {
                 continue;
             }
-            const parts = m[2].split('::').slice(1).map((p) => p.trim());
+            const parts = m[3].split('::').slice(1).map((p) => p.trim());
             for (let k = parts.length; k > 0; k -= 1) {
                 const libs = this.namespaces.get(parts.slice(0, k).join('::'));
                 if (libs !== undefined) {

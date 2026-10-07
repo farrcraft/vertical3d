@@ -23,17 +23,27 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version: 24
+    # A push names the previous tip of main. That is all zeros when the branch is new, and may be
+    # missing after a force push, so the base is then the merge base with origin/main.
     - name: Set the base to compare against
       shell: bash
+      env:
+        BEFORE: ${{ github.event.before }}
       run: |
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           echo "GATE_BASE=origin/${{ github.base_ref }}" >> "$GITHUB_ENV"
+        elif [ -z "${BEFORE//0/}" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          echo "GATE_BASE=$(git merge-base HEAD origin/main)" >> "$GITHUB_ENV"
         else
-          echo "GATE_BASE=${{ github.event.before }}" >> "$GITHUB_ENV"
+          echo "GATE_BASE=$BEFORE" >> "$GITHUB_ENV"
         fi
     - name: Link rule
       run: node scripts/linkrule.ts
+    # each gate reports even when an earlier one failed
     - name: Prose
+      if: ${{ !cancelled() }}
       run: node scripts/prose.ts --base "$GATE_BASE"
     - name: Boundary input
+      if: ${{ !cancelled() }}
       run: node scripts/boundary.ts --base "$GATE_BASE"

@@ -21,11 +21,19 @@ namespace v3d::moya {
 namespace {
 
 /**
- * A number from a scene as a count of pixels or micropolygons: at least one and at most 65536.
- * Anything else is refused.
+ * A number from a scene as a count of pixels or micropolygons: at least one and at most
+ * largestLimit. Anything else is refused.
  **/
 std::optional<uint32_t> count(float value) {
-    return v3d::type::toCount(value, 1, 65536);
+    return v3d::type::toCount(value, 1, RIBHandler::largestLimit);
+}
+
+/**
+ * A picture side as the context takes it. A side too large for an int is held just above
+ * largestResolution, which the context refuses.
+ **/
+int side(unsigned int value) {
+    return static_cast<int>(std::min(value, v3d::render::offline::largestResolution + 1));
 }
 
 /**
@@ -157,7 +165,7 @@ void RIBHandler::format(unsigned int width, unsigned int height, float pixelAspe
         width = width_;
         height = height_;
     }
-    context().imageResolution(static_cast<int>(width), static_cast<int>(height), pixelAspect);
+    context().imageResolution(side(width), side(height), pixelAspect);
 }
 
 void RIBHandler::frameAspectRatio(float aspect) {
@@ -204,10 +212,14 @@ void RIBHandler::output(const std::string & name) {
     context().display(name, "file", "rgb");
 }
 
-void RIBHandler::resolution(unsigned int width, unsigned int height) {
-    width_ = width;
-    height_ = height;
-    context().imageResolution(static_cast<int>(width), static_cast<int>(height), 1.0f);
+bool RIBHandler::resolution(int width, int height) {
+    // the context reads a side of zero or less as its default, which is not a size asked for
+    if (width < 1 || height < 1 || !context().imageResolution(width, height, 1.0f)) {
+        return false;
+    }
+    width_ = static_cast<unsigned int>(width);
+    height_ = static_cast<unsigned int>(height);
+    return true;
 }
 
 void RIBHandler::display(const std::string & name, const std::string & type, const std::string & mode,

@@ -263,11 +263,11 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c)) {
             return Result::Failed;
         }
-        // a size below one pixel or above largestResolution is skipped. A fraction is
-        // truncated. An aspect that is not a positive finite number asks for the device's own,
-        // which is square pixels.
-        const std::optional<uint32_t> width = v3d::type::toCount(a, 1, largestResolution);
-        const std::optional<uint32_t> height = v3d::type::toCount(b, 1, largestResolution);
+        // a side formatSide() refuses skips the request. A side of zero or less arrives as 0,
+        // which asks for the renderer's default. An aspect that is not a positive finite number
+        // asks for the device's own, which is square pixels.
+        const std::optional<uint32_t> width = formatSide(a);
+        const std::optional<uint32_t> height = formatSide(b);
         if (!width || !height) {
             logger_->get()->warn("RIB Format {} {} {} is not a picture size and was skipped", a, b, c);
             return Result::Handled;

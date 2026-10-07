@@ -13,6 +13,7 @@
 
 #include <boost/make_shared.hpp>
 
+#include "Footprint.h"
 #include "FrameBuffer.h"
 #include "GridShader.h"
 #include "RenderContext.h"
@@ -111,11 +112,7 @@ class Placement {
         if (!motion_.moving()) {
             return true;
         }
-        const float span = shutter_.y - shutter_.x;
-        const float along = span > 0.0f ? (sample.time - shutter_.x) / span * static_cast<float>(STEPS) : 0.0f;
-        // held within the slices before it is made an integer; a NaN fails the test and takes the first
-        const float held = along >= 0.0f ? std::min(along, static_cast<float>(STEPS - 1)) : 0.0f;
-        const unsigned int slice = static_cast<unsigned int>(held);  // checked: held is in [0, STEPS - 1]
+        const unsigned int slice = shutterSlice(sample.time, shutter_, STEPS);
         const glm::vec2 low = glm::vec2(glm::min(stepMin_[slice], stepMin_[slice + 1])) - glm::vec2(stride_);
         const glm::vec2 high = glm::vec2(glm::max(stepMax_[slice], stepMax_[slice + 1])) + glm::vec2(stride_);
         return sample.raster.x >= low.x && sample.raster.x <= high.x &&
@@ -269,28 +266,11 @@ class Motions {
 };
 
 /**
- * The pixels a bound touches, clipped to the frame: left, top, right and bottom.
+ * The pixels a bound touches in the frame the samples cover.
  */
 std::array<int, 4> pixels(const glm::vec3 & min, const glm::vec3 & max, const Samples & samples) {
-    // a bound with a NaN in it touches no pixel
-    if (std::isnan(min.x) || std::isnan(min.y) || std::isnan(max.x) || std::isnan(max.y)) {
-        return { 0, 0, -1, -1 };
-    }
-    const int columns = static_cast<int>(samples.width());
-    const int rows = static_cast<int>(samples.height());
-    // the pixel a coordinate falls in, held within one pixel of the frame before it is made an
-    // integer, so a bound far off the frame or infinite gives an empty or a whole span
-    const auto pixel = [](float coordinate, int count) {
-        const float held = std::clamp(std::floor(coordinate), -1.0f, static_cast<float>(count));
-        return static_cast<int>(held);  // checked: not NaN above, and held within [-1, count]
-    };
-    // a sample may be anywhere in its pixel, so every pixel the bound touches
-    return {
-        std::max(0, pixel(min.x, columns)),
-        std::max(0, pixel(min.y, rows)),
-        std::min(columns - 1, pixel(max.x, columns)),
-        std::min(rows - 1, pixel(max.y, rows))
-    };
+    // a side is at most largestResolution, which an int holds
+    return footprint(min, max, static_cast<int>(samples.width()), static_cast<int>(samples.height()));
 }
 
 /*

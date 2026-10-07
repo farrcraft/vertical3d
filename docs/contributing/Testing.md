@@ -141,7 +141,26 @@ node scripts/failsfirst.ts --list           # list the new cases, build nothing
 The script finds the Boost.Test cases the changeset adds and the suite each one belongs to. It
 builds those suites in a separate git worktree, with every file outside a `tests/` directory at
 its base version, and runs each new case there. Each case should fail or fail to build. A case
-that passes is a weak test, and the script exits with 1.
+fails only when Boost.Test reports a failed check. A binary that cannot start, or that exits
+with an error and reports no failure, is "not run". A case that passes is a weak test, and the
+script exits with 1.
+
+A case can guard against a defect that only the change itself makes possible, such as a double
+release under a release rule the same change adds. That case passes on the base by design. Its
+doc comment says so in a line that starts `Passes before the change:` and gives the reason:
+
+```cpp
+/**
+ * A source released twice hands its set back once.
+ *
+ * Passes before the change: a second release can find the material only while a released one
+ * goes on resolving for its queued frame, and that rule is part of the same change.
+ **/
+```
+
+The script reports such a case as "passes, stated", prints the reason, and does not fail. The
+reason has to name what the change adds that makes the defect possible. A reviewer reads it,
+and a reason that does not name one makes the case a weak test.
 
 The worktree build is separate from `out/build/x64-Debug` and installs no packages. It reuses
 the packages that build installed. The script's header lists its limits. A `render_device` case

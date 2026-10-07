@@ -18,7 +18,7 @@ corrects one site of a shape and not its siblings is found again by the next rev
 A changeset's review is clean when the changeset introduces no finding, at any severity, and a
 changeset merges only when its review is clean. A defect the changeset did not introduce is
 recorded in the known-debt list and is not a finding against it. The classes a tool can find are
-gated in CI and are not left to reviewers.
+checked by a tool, and a reviewer reports one of them only when the tool missed it.
 
 ## Alternatives
 
@@ -32,19 +32,20 @@ gated in CI and are not left to reviewers.
 - **For**: reviews close quickly, and minor findings are still written down.
 - **Against**: minor findings a change introduces become debt the moment it merges, so the debt
   grows with every change.
-- **Rejected because**: debt should only shrink, and a new minor finding costs least to fix
-  while the change is fresh.
+- **Rejected because**: a change should not add its own defects to the debt, and a new minor
+  finding costs least to fix while the change is fresh.
 
 ## Consequences
 
 - **Gains**:
   - A clean review is reachable for any changeset, however old the code around it.
-  - The known-debt list is the one place old defects live, and it only shrinks.
+  - The known-debt list is the one place old defects live, and a changeset never adds a defect of
+    its own to it.
   - Reviewers spend their reading on what a tool cannot check.
 - **Costs**:
   - Every finding has to be traced to whether the change introduced it, which takes judgement
     when a change moves or rewrites old code.
   - Old defects in a file a change touches stay until someone takes them on.
   - The gates have to be built, and kept, before the rule can hold.
-- **Revisit when**: the known-debt list stops shrinking, or the gates miss a class often enough
-  that reviewers are finding it again.
+- **Revisit when**: entries on the known-debt list stay open long after their files are next
+  changed, or the gates miss a class often enough that reviewers are finding it again.

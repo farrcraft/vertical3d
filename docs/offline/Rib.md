@@ -33,11 +33,10 @@ accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"s
   which it is. A UTF-8 byte order mark at the start is skipped, and a stream is read from where
   it stands rather than from its beginning.
 - **A request whose number cannot be used is skipped with a warning.** This covers a `Format`
-  whose resolution is not between 1 and 65536. It also covers a `FrameBegin` whose frame number
-  is not finite, and a `PixelFilter` whose width is not positive. Reading continues with the
-  next request. A `Format` aspect that is not a positive finite number asks for the device's
-  own, which is square pixels. `RiFormat` and `RiPixelFilter` in the C interface refuse the same
-  values, and the context keeps what it had.
+  with a side that [Cameras and projections](CamerasAndSampling.md#cameras-and-projections)
+  refuses. It also covers a `FrameBegin` whose frame number is not finite, and a `PixelFilter`
+  whose width is not positive. Reading continues with the next request. `RiFormat` and
+  `RiPixelFilter` in the C interface refuse the same values, and the context keeps what it had.
 - **`Option "trace" "maxdepth"` is a depth from 0 to 16.** A larger depth is taken as 16, with
   a warning. A depth that is negative or not finite is not used, with a warning, and the depth
   stays as it was. A fraction is rounded down.

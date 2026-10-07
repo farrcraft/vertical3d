@@ -5,6 +5,7 @@ add_executable(voxel
 	"src/engine/ChunkVertex.h"
 	"src/engine/MaterialInfo.h"
 	"src/engine/MortonCode.h" "src/engine/MortonCode.cxx"
+	"src/engine/Nanoseconds.h" "src/engine/Nanoseconds.cxx"
 	"src/engine/SceneUniforms.h"
 	"src/game/GameState.h" "src/game/GameState.cxx"
 	"src/game/Item.h" "src/game/Item.cxx"

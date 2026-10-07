@@ -8,6 +8,7 @@ is clean at all four**, so every finding is new and should be fixed. cpplint run
 other three are build options declared in [CMakeLists.txt](../../CMakeLists.txt).
 
 A fifth check, the prose gate, applies the writing rules. It reads only the lines a change adds.
+It runs in CI with the other review gates, which [Review.md](Review.md) lists.
 
 - [cpplint](#cpplint)
 - [The compiler](#the-compiler)
@@ -184,3 +185,16 @@ tree on a Windows runner and runs the tests. cpplint needs only Python. The buil
 Vulkan SDK, a vcpkg install and the libnoise submodule.
 
 Neither `/analyze` nor clang-tidy runs in CI, because of their cost. They are run locally.
+
+[.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs three of the
+review gates on an Ubuntu runner with Node: the link rule (`scripts/linkrule.ts`), prose
+(`scripts/prose.ts`) and boundary input (`scripts/boundary.ts`). It runs on each pull request
+and on each push to `main`. The link rule checks the whole tree. The prose and boundary gates
+read only the lines added since a base:
+
+- on a pull request, the base is the branch the pull request merges into;
+- on a push to `main`, the base is the previous tip of `main`, or the merge base with
+  `origin/main` when the push creates a new branch.
+
+The fails-first gate, `scripts/failsfirst.ts`, does not run in CI. It builds the tree twice and
+the device suite needs a GPU, so it runs locally before review.

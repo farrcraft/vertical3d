@@ -112,7 +112,8 @@ BOOST_AUTO_TEST_CASE(renderman_sampling_test) {
 /**
  * A width or a resolution the RIB reader refuses is refused through the C interface too, and
  * the context keeps what it had. A width that is not a number would otherwise reach the film
- * and place a sample at an undefined pixel index.
+ * and place a sample at an undefined pixel index. A side above largestResolution is refused,
+ * and an aspect that is not a number is square pixels.
  **/
 BOOST_AUTO_TEST_CASE(renderman_refuses_what_the_reader_refuses_test) {
     RiBegin(RI_NULL);
@@ -124,16 +125,35 @@ BOOST_AUTO_TEST_CASE(renderman_refuses_what_the_reader_refuses_test) {
     BOOST_CHECK_EQUAL(context().sampling().width.x, 2.0f);
     BOOST_CHECK_EQUAL(context().sampling().width.y, 2.0f);
 
-    RiFormat(32, 16, 1.0f);
-    RiFormat(-1, 16, 1.0f);
-    RiFormat(32, 0, 1.0f);
+    RiFormat(32, 16, 2.0f);
     RiFormat(70000, 16, 1.0f);
+    RiFormat(32, 65537, 1.0f);
+    BOOST_CHECK_EQUAL(context().imageWidth(), 32u);
+    BOOST_CHECK_EQUAL(context().imageHeight(), 16u);
+    BOOST_CHECK_EQUAL(context().pixelAspect(), 2.0f);
     RiFormat(32, 16, std::nanf(""));
+    BOOST_CHECK_EQUAL(context().pixelAspect(), 1.0f);
     RiWorldBegin();
     RiWorldEnd();
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().framebuffer()->planes();
     BOOST_REQUIRE(planes);
     BOOST_CHECK_EQUAL(planes->width(), 32u);
     BOOST_CHECK_EQUAL(planes->height(), 16u);
+    RiEnd();
+}
+
+/**
+ * RI reads a side of zero or less as the device's default for that side, which for moya is
+ * 320 by 240. The other side keeps the size the call named.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_format_nonpositive_side_is_the_default_test) {
+    RiBegin(RI_NULL);
+    RiFormat(-1, 16, 1.0f);
+    BOOST_CHECK_EQUAL(context().imageWidth(), 320u);
+    BOOST_CHECK_EQUAL(context().imageHeight(), 16u);
+
+    RiFormat(32, 0, 1.0f);
+    BOOST_CHECK_EQUAL(context().imageWidth(), 32u);
+    BOOST_CHECK_EQUAL(context().imageHeight(), 240u);
     RiEnd();
 }

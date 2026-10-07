@@ -9,12 +9,11 @@
 #include <api/engine/Feature.h>
 #include <api/input/MouseState.h>
 #include <api/render/realtime/Window.h>
+#include <voxel/src/engine/Nanoseconds.h>
 #include <voxel/src/game/GameState.h>
 #include <voxel/src/game/Player.h>
 
-#include <cstdint>
 #include <functional>
-#include <limits>
 #include <string>
 #include <utility>
 
@@ -29,22 +28,6 @@ namespace {
  * The button the immediate layer responds to, named as a binding config names it.
  **/
 const char* const primaryButton = "left";
-
-/**
- * A span the device timed, in milliseconds, as whole nanoseconds. A negative span or a NaN is
- * zero. A span longer than a count of nanoseconds holds is the largest count.
- **/
-std::uint64_t nanoseconds(double milliseconds) {
-    const double value = milliseconds * 1.0e6;
-    if (!(value >= 0.0)) {
-        return 0;
-    }
-    // 2^64 is exact as a double, and every double below it converts
-    if (!(value < 18446744073709551616.0)) {
-        return std::numeric_limits<std::uint64_t>::max();
-    }
-    return static_cast<std::uint64_t>(value);
-}
 
 };  // namespace
 

@@ -168,7 +168,9 @@ shared pointer, because the ring outlives `Resources` and may run them after it 
 - `Resources::release(TextureHandle)` does not release a material naming the texture; whoever
   made the material does that. `Textures::release()` releases both.
 - Pipelines are built at load time and never released.
-- `Resources`' destructor destroys everything still registered, in the order Vulkan requires.
+- `Resources`' destructor destroys only the pipelines. Textures and materials still registered
+  are destroyed with the registries `Resources` shares with pending releases, once the ring has
+  run those releases. A material's descriptor set is freed with the pool it came from.
 
 **What is registered for a render target shares its images.** A `pipeline::Texture` holds its
 image through a shared pointer, so whichever of the target and the registration lets go last

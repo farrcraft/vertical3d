@@ -62,7 +62,10 @@ and draws itself (voxel's chunks, for instance) is a `vulkan::memory::Mesh` owne
 **Release a handle once nothing more will be queued with it. Items queued before the release are
 still drawn by their frame.** The GPU object behind the handle lives on until no frame in flight
 can use it. A handle holds a slot and a generation. A released slot is reused with a new
-generation, so an old handle never comes to mean something else; it resolves to nothing.
+generation, so an old handle never comes to mean something else. A released texture handle
+resolves to nothing at once. A released material handle goes on resolving until the frame being
+recorded at the release is submitted, so items queued before the release draw with it. It
+resolves to nothing after that.
 
 | Resource | Release with |
 |---|---|

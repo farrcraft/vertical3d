@@ -8,6 +8,8 @@
 #include <api/type/Checked.h>
 
 #include <cmath>
+#include <cstdint>
+#include <optional>
 #include <string>
 
 namespace v3d::render::offline {
@@ -71,6 +73,13 @@ float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width) {
 
 bool resolution(float side) {
     return v3d::type::toCount(side, 1, largestResolution).has_value();
+}
+
+std::optional<uint32_t> formatSide(float side) {
+    if (side <= 0.0f && std::isfinite(side)) {
+        return 0;
+    }
+    return v3d::type::toCount(side, 1, largestResolution);
 }
 
 bool filterWidth(const glm::vec2 & width) {

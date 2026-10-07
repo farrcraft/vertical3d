@@ -534,6 +534,37 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_override_test) {
 }
 
 /**
+ * A size given to the handler that is not a picture side is refused, and the scene's Format
+ * is used instead.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_refuses_a_side_out_of_range_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    BOOST_CHECK(!handler.resolution(70000, 4));
+    BOOST_CHECK(!handler.resolution(0, 4));
+    BOOST_CHECK(!handler.resolution(8, -4));
+
+    BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 48u);
+}
+
+/**
+ * A Format side of zero or less is moya's default for that side, 320 by 240, as RI reads it.
+ * A side above largestResolution is skipped, and the size already set is kept.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_format_nonpositive_side_is_the_default_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    BOOST_REQUIRE(read("Format 64 0 1\nFormat 70000 16 1\nWorldBegin\nWorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 240u);
+}
+
+/**
  * A sphere whose radius is not positive is not drawn by the ray hider: it is logged and left
  * out of the traced scene, rather than built with a range that has no meaning. One with a
  * positive radius in the same scene is drawn.

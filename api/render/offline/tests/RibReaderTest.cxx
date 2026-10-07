@@ -747,19 +747,22 @@ BOOST_AUTO_TEST_CASE(ribreader_capable_handler_test) {
 
 /**
  * A Format, a FrameBegin or a PixelFilter width that is not a size is skipped with a warning,
- * rather than converted to an unsigned count, which is undefined for a negative number. The
- * file still reads, and the requests that are sizes still arrive.
+ * rather than converted to an unsigned count, which is undefined for one out of range. A
+ * Format side above largestResolution, infinite, or between 0 and 1 is not a size. The file
+ * still reads, and the requests that are sizes still arrive.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_sizes_that_are_not_sizes_are_skipped_test) {
     CountingHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read(
-        "Format -1 480 1\n"
+        "Format 65537 480 1\n"
+        "Format 640 1e39 1\n"
+        "Format 0.5 480 1\n"
         "PixelFilter \"box\" 0 1\n"
         "FrameBegin 1e30\n"
         "FrameEnd\n", &handler, &reader));
-    BOOST_CHECK_EQUAL(handler.width_, 0u);
+    BOOST_CHECK_EQUAL(handler.count("Format"), 0u);
     BOOST_CHECK_EQUAL(handler.filterWidth_.x, 0.0f);
     BOOST_CHECK_EQUAL(handler.count("PixelFilter"), 0u);
     BOOST_CHECK_EQUAL(handler.count("FrameBegin"), 0u);
@@ -768,6 +771,25 @@ BOOST_AUTO_TEST_CASE(ribreader_sizes_that_are_not_sizes_are_skipped_test) {
     BOOST_REQUIRE(read("Format 64 48 1\nPixelFilter \"box\" 2 2\n", &handler, &reader));
     BOOST_CHECK_EQUAL(handler.width_, 64u);
     BOOST_CHECK_EQUAL(handler.filterWidth_.x, 2.0f);
+}
+
+/**
+ * A Format side of zero or less asks for the renderer's default for that side, as RI reads it.
+ * It arrives as 0, and the other side arrives as named.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_format_nonpositive_side_asks_for_the_default_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read("Format -1 480 1\n", &handler, &reader));
+    BOOST_CHECK_EQUAL(handler.count("Format"), 1u);
+    BOOST_CHECK_EQUAL(handler.width_, 0u);
+    BOOST_CHECK_EQUAL(handler.height_, 480u);
+
+    BOOST_REQUIRE(read("Format 640 0 1\n", &handler, &reader));
+    BOOST_CHECK_EQUAL(handler.count("Format"), 2u);
+    BOOST_CHECK_EQUAL(handler.width_, 640u);
+    BOOST_CHECK_EQUAL(handler.height_, 0u);
 }
 
 /**

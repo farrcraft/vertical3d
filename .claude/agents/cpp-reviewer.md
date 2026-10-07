@@ -34,11 +34,15 @@ is checked.
 
 ## Severity
 
-- **BLOCKER** — the build or a stated invariant is broken, or the change silently defeats
-  something the project relies on.
-- **MAJOR** — a convention in `docs/contributing/Conventions.md` or an ADR is violated, or a
-  process obligation the change created is unmet.
-- **MINOR** — a real improvement the author can reasonably decline.
+There are two severities, as `docs/contributing/Review.md` defines them:
+
+- **Major** — the change can produce a wrong result, a crash, a leak or undefined behaviour in a
+  reachable case.
+- **Minor** — any other defect the change introduced.
+
+A breach of a convention, an ADR or a process obligation is Minor unless it causes a Major
+outcome. A Minor finding still blocks the merge: a review is clean only with no finding at any
+severity. The sections below say what to look for, not how severe each finding is.
 
 Report nothing you cannot point at a line for. An empty review is a valid review.
 
@@ -49,17 +53,19 @@ recur.
 
 ---
 
-## BLOCKER
+## Correctness and lifetime
+
+These are usually Major, because each one can crash, leak or corrupt state in a reachable case.
 
 - **A `VkResult` ignored.** Every Vulkan call returning one is checked with
   `vulkan::device::check`, which throws with the result in words from
   `vulkan::device::resultString`. A call whose result is tolerated, such as `VK_INCOMPLETE` or
   `VK_SUBOPTIMAL_KHR`, names it in the check or tests for it. The one exception is a wait for
   the device to go idle in a destructor or a teardown, which must not throw:
-  `Ring::waitIdleNoThrow()` exists for that. Any other dropped result is a blocker, not a nit.
+  `Ring::waitIdleNoThrow()` exists for that. Any other dropped result is a finding.
 - **A Vulkan or OS handle not owned by a class with a destructor.** `Instance`, `Surface`,
   `Device` and `Swapchain` are RAII wrappers, non-copyable, each destroying exactly what it
-  created. A raw handle stored and freed by hand somewhere else is a blocker.
+  created. A raw handle stored and freed by hand somewhere else is a finding.
 - **Destruction out of order.** Destruction is the reverse of creation, and the ordering is
   real: the surface goes before both the instance it belongs to and the window it presents
   to; swapchain images cannot be destroyed while the queues may still be reading them, which
@@ -75,7 +81,7 @@ recur.
   trees were deleted on 2026-09-04. Nothing can name them any more, and a diff that does is
   either stale or was written against a checkout that predates the deletion.
 
-## MAJOR — conventions
+## Conventions
 
 ### House style
 
@@ -121,7 +127,7 @@ The records are load-bearing and easy to break without noticing:
 - **ADR-0005** — one quad primitive with an optional texture. A second pipeline or vertex
   format for the untextured case is a finding; untextured quads sample the 1x1 white texture.
 
-## MAJOR — process obligations the change created
+## Process obligations the change created
 
 From `docs/sdlc.md`:
 
@@ -141,7 +147,7 @@ From `docs/sdlc.md`:
   the architecture, the build or a convention without updating the document that owns it -
   `docs/README.md` says which that is.
 
-## MINOR — the usual C++, briefly
+## The usual C++, briefly
 
 Only where real, and never at length:
 

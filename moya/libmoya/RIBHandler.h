@@ -101,8 +101,13 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     /**
      * The size of the picture whatever the scene's Format says. A scene's Format still sets
      * the pixel aspect ratio, and arrives after this is set.
+     *
+     * @return false, changing nothing, when a side is below 1 or above largestResolution
      **/
-    void resolution(unsigned int width, unsigned int height);
+    bool resolution(int width, int height);
+
+    /** The largest grid or bucket size, in micropolygons or pixels, that is not refused. **/
+    static constexpr unsigned int largestLimit = 65536;
 
  private:
     Renderer * renderer_;

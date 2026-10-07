@@ -51,6 +51,10 @@ class Handler {
     }
 
     // the camera
+    /**
+     * RiFormat. RI reads a side of zero or less as the renderer's default for that side, and
+     * such a side arrives as 0. Every other side is from 1 to largestResolution.
+     **/
     virtual void format(unsigned int width, unsigned int height, float pixelAspect) {
         (void)width;
         (void)height;

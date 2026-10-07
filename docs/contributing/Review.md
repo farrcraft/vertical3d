@@ -62,7 +62,11 @@ reviewer reports them only when the tool missed one.
   it in the same change. The commit message lists the sites it checked.
 - **Test what the fix claims.** A test fails before the fix and passes after it. When a fix adds
   a guarantee to a header or a document, a test exercises that guarantee as it is written, in the
-  case the words cover. A guarantee about a textured mesh needs a textured mesh in its test.
+  case the words cover. A guarantee about a textured mesh needs a textured mesh in its test. A
+  test of a defect that only the change itself makes possible passes before the change. Its doc
+  comment then has a line that starts `Passes before the change:` and names what the change adds
+  that makes the defect possible. [Testing.md](Testing.md#checking-that-a-new-test-fails-first)
+  shows the form.
 - **State the rule once.** A fix that changes a rule updates the reference document that owns it
   and the comment beside the code, and adds no other copy.
 

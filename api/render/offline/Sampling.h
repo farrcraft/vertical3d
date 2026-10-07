@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
+#include <optional>
 #include <string>
 
 #include <glm/vec2.hpp>
@@ -47,6 +49,14 @@ constexpr unsigned int largestResolution = 65536;
  * cannot be made.
  **/
 bool resolution(float side);
+
+/**
+ * What one side of a Format asks for. RI reads a side of zero or less as the renderer's
+ * default for that side, and this returns it as 0. A side that resolution() accepts is that
+ * count, with its fraction dropped. Every other side is refused: one that is not finite, one
+ * between 0 and 1, and one above largestResolution.
+ **/
+std::optional<uint32_t> formatSide(float side);
 
 /**
  * Whether a filter width is a positive finite number on each axis. A width that is not would
