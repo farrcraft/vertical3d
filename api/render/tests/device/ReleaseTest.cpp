@@ -12,7 +12,9 @@
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -123,9 +125,111 @@ BOOST_AUTO_TEST_CASE(a_texture_released_in_flight_outlives_its_frame) {
 }
 
 /**
- * A texture registered after a release reuses the released slot, and draws as itself rather
- * than as the texture that was in the slot before. A material looked up by slot alone would
- * hand back the old descriptor set, naming an image that has been destroyed.
+ * A sprite whose texture is released after the sprite is queued, and before the frame is
+ * begun, is drawn with that texture by that frame. The queued item names the texture's material
+ * by handle, and the frame resolves it when it is recorded.
+ **/
+BOOST_AUTO_TEST_CASE(a_sprite_whose_texture_is_released_after_it_is_queued_draws_it) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+
+    // one frame submitted first, so the ring has begun a frame before the release
+    idle(&headless);
+
+    const TextureHandle texture = flat(&headless, 0xFF, 0x00, 0xFF);
+    Canvas canvas;
+    canvas.resize(width, height);
+    canvas.clear();
+    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
+        glm::vec4(1.0f), texture);
+
+    Frame frame;
+    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    headless.context->quads()->submit(canvas, pass.get());
+
+    BOOST_CHECK(headless.context->textures()->release(texture));
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::Target described;
+    described.image = target->image();
+    described.view = target->view();
+    described.extent = target->extent();
+    described.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    Recorder::record(commands, frame, described, *headless.context->resources(), headless.context->frameUniforms().get());
+
+    Capture capture(headless.device, headless.logger);
+    Capture::Source source;
+    source.image = target->image();
+    source.extent = target->extent();
+    source.format = target->format();
+    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    capture.record(commands, source);
+    headless.submit(commands);
+
+    for (uint32_t turn = 0; turn <= headless.context->ring()->framesInFlight(); turn++) {
+        idle(&headless);
+    }
+    headless.context->ring()->waitIdle();
+
+    BOOST_CHECK(headless.silent());
+
+    BOOST_REQUIRE(capture.write("data_out/release_sprite_after_queueing.png"));
+    v3d::image::reader::Png png(headless.logger);
+    const boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/release_sprite_after_queueing.png");
+    BOOST_REQUIRE(picture);
+    const unsigned char* pixels = picture->data();
+    for (uint32_t texel = 0; texel < width * height; texel++) {
+        const unsigned char* at = pixels + static_cast<std::size_t>(texel) * 4;
+        if (at[0] != 0xFF || at[1] != 0x00 || at[2] != 0xFF || at[3] != 0xFF) {
+            BOOST_ERROR("texel " << texel << " is not the released sprite's texture");
+            return;
+        }
+    }
+}
+
+/**
+ * A material released goes on resolving until the frame queued at its release is submitted, and
+ * a texture released resolves to nothing at once. Each is held until that frame has finished,
+ * and a second release of either finds nothing to release.
+ **/
+BOOST_AUTO_TEST_CASE(a_released_handle_is_held_until_its_frame_finishes) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<v3d::render::realtime::vulkan::pipeline::Resources> resources = headless.context->resources();
+
+    idle(&headless);
+    const std::size_t before = resources->textureCount();
+    const TextureHandle texture = flat(&headless, 0xFF, 0x00, 0x00);
+    const v3d::render::realtime::MaterialHandle material = resources->add(v3d::render::realtime::vulkan::pipeline::Material());
+
+    BOOST_CHECK(resources->release(material));
+    BOOST_CHECK(!resources->release(material));
+    BOOST_CHECK(resources->release(texture));
+    BOOST_CHECK(!resources->release(texture));
+
+    // the frame queued at the release is recorded with the material, and nothing new can name
+    // the texture
+    BOOST_CHECK(resources->texture(texture) == nullptr);
+    BOOST_CHECK_EQUAL(resources->textureCount(), before + 1);
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    BOOST_CHECK(resources->material(material) != nullptr);
+    headless.submit(commands);
+    BOOST_CHECK(resources->material(material) == nullptr);
+    BOOST_CHECK_EQUAL(resources->textureCount(), before + 1);
+
+    for (uint32_t turn = 0; turn < headless.context->ring()->framesInFlight(); turn++) {
+        idle(&headless);
+    }
+    headless.context->ring()->waitIdle();
+    BOOST_CHECK_EQUAL(resources->textureCount(), before);
+    BOOST_CHECK(!resources->release(material));
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A texture registered once a released one's frames have finished reuses the released slot, and
+ * draws as itself rather than as the texture that was in the slot before. A material looked up
+ * by slot alone would hand back the old descriptor set, naming an image that has been destroyed.
  **/
 BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -134,6 +238,9 @@ BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
     TextureHandle red = flat(&headless, 0xFF, 0x00, 0x00);
     draw(&headless, target, red, nullptr);
     BOOST_REQUIRE(headless.context->textures()->release(red));
+    for (uint32_t turn = 0; turn <= headless.context->ring()->framesInFlight(); turn++) {
+        idle(&headless);
+    }
 
     TextureHandle green = flat(&headless, 0x00, 0xFF, 0x00);
     BOOST_REQUIRE_EQUAL(green.id(), red.id());

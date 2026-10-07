@@ -11,6 +11,9 @@
 #include <api/render/realtime/vulkan/frame/Ring.h>
 
 #include <cstddef>
+#include <cstdint>
+#include <map>
+#include <set>
 
 #include "Material.h"
 #include "Pipeline.h"
@@ -27,10 +30,9 @@ namespace v3d::render::realtime::vulkan::pipeline {
  * they carry is stable. That requires an owner that outlives the frames using a resource,
  * which this class is.
  *
- * A resource lives until it is released or the context goes. A released handle
- * resolves to nothing at once, and what it named is handed to the ring to destroy once the
- * frames that may still read it have finished. Pipelines are built at load time and are not
- * released.
+ * A resource lives until it is released or the context goes. Pipelines are built at load time
+ * and are not released. A released material or texture keeps its slot until every frame that
+ * may name it has finished, so its handle is never reused early.
  **/
 class Resources final {
  public:
@@ -65,18 +67,29 @@ class Resources final {
     TextureHandle add(const Texture& texture);
 
     /**
-     * Stop addressing a material. Its descriptor set belongs to the pool it came from, so
-     * whoever allocated it decides what happens to the set.
+     * Stop addressing a material.
      *
-     * @return whether the handle referred to anything
+     * Draw items queued before the release may name it, and are recorded into the frame
+     * Ring::recording() names. The handle goes on resolving until that frame is submitted, and
+     * resolves to nothing after. Its slot is freed once that frame has finished.
+     *
+     * The descriptor set belongs to the pool it came from, and whoever allocated it returns it
+     * there.
+     *
+     * @return whether the handle referred to anything not already released
      **/
     bool release(const MaterialHandle& handle);
 
     /**
-     * Stop addressing a texture, and destroy what it owns once no frame in flight can still
-     * be sampling it. A material naming it has to be released as well, by whoever made it.
+     * Stop addressing a texture.
      *
-     * @return whether the handle referred to anything
+     * The handle resolves to nothing at once. A texture is resolved only to write a descriptor,
+     * which may be bound after the frame. What it owns is destroyed, and its slot freed, once the
+     * frame Ring::recording() names has finished.
+     *
+     * A material naming it has to be released as well, by whoever made it.
+     *
+     * @return whether the handle referred to anything not already released
      **/
     bool release(const TextureHandle& handle);
 
@@ -86,26 +99,39 @@ class Resources final {
     const Pipeline* pipeline(const PipelineHandle& handle) const;
 
     /**
-     * @return the material the handle refers to, or nullptr
+     * @return the material the handle refers to, or nullptr. A released material resolves
+     *         until the frame its release was queued into is submitted.
      **/
     const Material* material(const MaterialHandle& handle) const;
 
     /**
-     * @return the texture the handle refers to, or nullptr
+     * @return the texture the handle refers to, or nullptr once it is released
      **/
     const Texture* texture(const TextureHandle& handle) const;
 
     /**
-     * @return how many textures are registered and not released
+     * @return how many textures are held. A released texture is counted until it is destroyed,
+     *         once the frames that may read it have finished.
      **/
     std::size_t textureCount() const noexcept;
 
  private:
+    /**
+     * What a release hands to the ring. The ring may run it after this object is destroyed, so
+     * it is shared with every callback rather than reached through this.
+     **/
+    struct Held final {
+        Registry<MaterialTag, Material> materials;
+        Registry<TextureTag, Texture> textures;
+        /**< each released material, and the last frame it may be recorded into **/
+        std::map<MaterialHandle, uint64_t> retiringMaterials;
+        std::set<TextureHandle> retiringTextures;
+    };
+
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<frame::Ring> ring_;
     Registry<PipelineTag, Pipeline> pipelines_;
-    Registry<MaterialTag, Material> materials_;
-    Registry<TextureTag, Texture> textures_;
+    boost::shared_ptr<Held> held_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::pipeline

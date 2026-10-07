@@ -72,6 +72,9 @@ v3d_add_shader(v3dtest_render_device "shaders/scene.frag")
 # a full-screen pass that copies by position, so the identity case is exact on any implementation
 v3d_add_shader(v3dtest_render_device "shaders/copy.frag")
 
+# writes the texture bound at set 1, so a case can show which material a draw was recorded with
+v3d_add_shader(v3dtest_render_device "shaders/albedo.frag")
+
 # the mesh registry's cases load models, and the asset suite already keeps the fixtures
 target_compile_definitions(v3dtest_render_device PRIVATE V3D_ASSET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../../asset/tests/data")
 

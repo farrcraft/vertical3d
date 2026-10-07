@@ -38,6 +38,23 @@ bool filterNamed(const std::string & name, Filter * filter);
  **/
 float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width);
 
+/** The largest picture side a renderer accepts, in pixels. **/
+constexpr unsigned int largestResolution = 65536;
+
+/**
+ * Whether a picture side is a whole count from 1 to largestResolution. A side outside that
+ * range is refused wherever a resolution enters the renderer, because a framebuffer of it
+ * cannot be made.
+ **/
+bool resolution(float side);
+
+/**
+ * Whether a filter width is a positive finite number on each axis. A width that is not would
+ * place a sample in no pixel, or at a pixel index that is not defined, so it is refused
+ * wherever a width enters the renderer.
+ **/
+bool filterWidth(const glm::vec2 & width);
+
 /** The most samples a pixel takes along one axis. **/
 constexpr unsigned int maximumSamples = 256;
 

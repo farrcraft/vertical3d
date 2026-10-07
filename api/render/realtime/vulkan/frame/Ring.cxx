@@ -119,11 +119,15 @@ uint64_t Ring::turns() const noexcept {
 
 /**
  **/
+uint64_t Ring::recording() const noexcept {
+    // between a submit and the next begin, items are queued for the frame about to be begun
+    return pending_ ? begun_ : begun_ + 1;
+}
+
+/**
+ **/
 void Ring::retire(std::function<void()> destroy) {
-    // between a submit and the next begin, items already queued for the next frame may name
-    // what is released, so that frame is counted as begun. While a frame is being recorded, it
-    // is the last that can name it
-    retired_.retire(pending_ ? begun_ : begun_ + 1, std::move(destroy));
+    retired_.retire(recording(), std::move(destroy));
 }
 
 /**

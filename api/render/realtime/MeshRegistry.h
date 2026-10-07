@@ -46,9 +46,9 @@ class DeviceContext;
  * is what a pipeline drawing an entry declares. A model with a skeleton is uploaded as a
  * SkinnedVertex instead, and keeps its skeleton and clips on the CPU for whatever poses it.
  *
- * A handle is released explicitly, and resolves to nothing at once. The mesh is destroyed
- * once no frame in flight can still be drawing it, and an albedo once the last entry naming
- * it is released.
+ * A handle is released explicitly, and resolves to nothing at once. An albedo is released with
+ * the last entry naming it. Items queued before a release are still drawn by their frame, with
+ * their albedo, and the mesh is destroyed once that frame has finished.
  **/
 class MeshRegistry final {
  public:
@@ -134,9 +134,9 @@ class MeshRegistry final {
         const std::vector<boost::shared_ptr<image::Image>>& albedos = {});
 
     /**
-     * Stop addressing an entry. What only it was using is destroyed once no frame in flight
-     * can still be using it. That includes a frame whose draw items were queued before the
-     * release and which has not been recorded yet.
+     * Stop addressing an entry. Items queued before the release are still drawn by their frame,
+     * with their albedo. What only this entry was using is destroyed once that frame has
+     * finished.
      *
      * @return whether the handle referred to anything
      **/

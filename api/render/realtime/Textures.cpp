@@ -151,11 +151,13 @@ bool Textures::release(const TextureHandle& handle) {
 
     const std::map<TextureHandle, MaterialHandle>::const_iterator found = materials_.find(handle);
     if (found != materials_.end()) {
+        // a released material goes on resolving for the frame already queued, so only a
+        // release that took effect hands the set back, and a set is never handed back twice
         const vulkan::pipeline::Material* material = resources_->material(found->second);
-        if (material != nullptr) {
-            sets_->release(material->set);
+        VkDescriptorSet set = material != nullptr ? material->set : VK_NULL_HANDLE;
+        if (resources_->release(found->second)) {
+            sets_->release(set);
         }
-        resources_->release(found->second);
         materials_.erase(found);
     }
     for (std::map<VkImageView, TextureHandle>::const_iterator target = targets_.begin(); target != targets_.end(); ++target) {

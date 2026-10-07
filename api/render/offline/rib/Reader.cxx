@@ -263,7 +263,7 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
         // a size below one pixel or above 65536 is skipped, because converting it to
         // unsigned is undefined. A fraction is truncated. An aspect that is not a positive
         // finite number asks for the device's own, which is square pixels.
-        const bool size = a >= 1.0f && a <= 65536.0f && b >= 1.0f && b <= 65536.0f;
+        const bool size = resolution(a) && resolution(b);
         if (!size) {
             logger_->get()->warn("RIB Format {} {} {} is not a picture size and was skipped", a, b, c);
             return Result::Handled;
@@ -410,11 +410,7 @@ Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Ha
             }
             return Result::Handled;
         }
-        // a filter with no width takes in no samples, and one of a width that is not a number
-        // weighs every sample as one
-        const bool wide = a > 0.0f && std::isfinite(a);
-        const bool tall = b > 0.0f && std::isfinite(b);
-        if (!wide || !tall) {
+        if (!filterWidth(glm::vec2(a, b))) {
             logger_->get()->warn("RIB PixelFilter width {} {} is not a width and was skipped", a, b);
             return Result::Handled;
         }

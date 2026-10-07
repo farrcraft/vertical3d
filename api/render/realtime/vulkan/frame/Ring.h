@@ -115,15 +115,19 @@ class Ring final {
     uint64_t turns() const noexcept;
 
     /**
+     * @return the count, as begun() counts, of the frame a draw item queued now is recorded
+     *         into. That is the frame begun and not yet submitted, or else the next one to be
+     *         begun.
+     **/
+    uint64_t recording() const noexcept;
+
+    /**
      * Hold a destruction back until every frame that may name the released object has
      * finished.
      *
-     * For something released while a frame recorded before the release may still be reading
-     * it. Between a submit and the next begin(), that includes the frame about to be begun,
-     * because draw items queued for it before the release may name the object. While a frame
-     * is begun and not yet submitted, it is the last frame counted. The callback runs from a
-     * later begin(), or from the destructor once the device is idle, and is the last use of
-     * whatever it captured.
+     * The last frame that may name it is recording(), because draw items queued for that frame
+     * before the release may name the object. The callback runs from a later begin(), or from
+     * the destructor once the device is idle, and is the last use of whatever it captured.
      **/
     void retire(std::function<void()> destroy);
 

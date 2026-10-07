@@ -44,7 +44,8 @@ class DescriptorPool final {
         const std::vector<VkDescriptorSetLayoutBinding>& bindings, uint32_t setsPerPool, const std::string& name);
 
     /**
-     * Destroys the pools, which frees every set allocated from them, and then the layout.
+     * Destroys the pools, which frees every set allocated from them, and then the layout. Both
+     * are destroyed through the ring, once no frame queued or in flight can still bind a set.
      **/
     ~DescriptorPool();
 

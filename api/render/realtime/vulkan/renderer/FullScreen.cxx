@@ -114,8 +114,14 @@ bool FullScreen::release(const MaterialHandle& source) {
     if (material == nullptr) {
         return false;
     }
-    sources_->release(material->set);
-    return resources_->release(source);
+    // a released material goes on resolving for the frame already queued, so the set is handed
+    // back only by the release that took effect, never by a second one
+    VkDescriptorSet set = material->set;
+    if (!resources_->release(source)) {
+        return false;
+    }
+    sources_->release(set);
+    return true;
 }
 
 /**

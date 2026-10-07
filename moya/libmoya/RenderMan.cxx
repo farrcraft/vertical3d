@@ -7,12 +7,14 @@
 // #include "Polygon.h"
 #include "Renderer.h"
 
+#include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Arguments.h>
 
 #include <stdarg.h>
 #include <string.h>
 
 #include <algorithm>
+#include <cmath>
 #include <deque>
 #include <string>
 #include <vector>
@@ -341,7 +343,15 @@ is specified as a nonpositive value, the resolution defaults to that of the
 display device for that particular parameter.
 */
 RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
-    renderer().activeRenderContext().imageResolution(xres, yres, aspect);
+    // a side outside the range is refused, as the RIB reader refuses it, and the context keeps
+    // the resolution it had. An aspect that is not a positive finite number is square pixels
+    const bool size = v3d::render::offline::resolution(static_cast<float>(xres)) &&
+        v3d::render::offline::resolution(static_cast<float>(yres));
+    if (!size) {
+        return;
+    }
+    const bool square = !(aspect > 0.0f) || !std::isfinite(aspect);
+    renderer().activeRenderContext().imageResolution(xres, yres, square ? 1.0f : aspect);
 }
 
 RtVoid RiFrameAspectRatio(RtFloat aspect) {
@@ -464,6 +474,10 @@ RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
     } else if (filterfunc == RiSincFilter) {
         filter = v3d::render::offline::Filter::Sinc;
     } else {
+        return;
+    }
+    // a width the RIB reader would refuse is refused here too, and the context keeps its filter
+    if (!v3d::render::offline::filterWidth(glm::vec2(xwidth, ywidth))) {
         return;
     }
     v3d::render::offline::Sampling & sampling = renderer().activeRenderContext().sampling();

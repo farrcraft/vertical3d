@@ -67,6 +67,16 @@ float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width) {
     return 0.0f;
 }
 
+bool resolution(float side) {
+    return side >= 1.0f && side <= static_cast<float>(largestResolution);
+}
+
+bool filterWidth(const glm::vec2 & width) {
+    const bool wide = width.x > 0.0f && std::isfinite(width.x);
+    const bool tall = width.y > 0.0f && std::isfinite(width.y);
+    return wide && tall;
+}
+
 unsigned int sampleCount(float rate) {
     // the comparison is written so that a NaN takes one sample too
     if (!(rate >= 1.0f)) {

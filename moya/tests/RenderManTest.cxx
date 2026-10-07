@@ -3,9 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <moya/libmoya/RenderMan.h>
+#include <api/render/offline/FrameBuffer.h>
+#include <moya/libmoya/FrameBuffer.h>
 #include <moya/libmoya/RenderContext.h>
+#include <moya/libmoya/RenderMan.h>
 
+#include <cmath>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -103,5 +106,34 @@ BOOST_AUTO_TEST_CASE(renderman_sampling_test) {
     RiPixelFilter(nullptr, 1.0f, 1.0f);
     BOOST_CHECK(context().sampling().filter == v3d::render::offline::Filter::CatmullRom);
     BOOST_CHECK_EQUAL(context().sampling().width.x, 3.0f);
+    RiEnd();
+}
+
+/**
+ * A width or a resolution the RIB reader refuses is refused through the C interface too, and
+ * the context keeps what it had. A width that is not a number would otherwise reach the film
+ * and place a sample at an undefined pixel index.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_refuses_what_the_reader_refuses_test) {
+    RiBegin(RI_NULL);
+    RiPixelFilter(RiBoxFilter, 2.0f, 2.0f);
+    RiPixelFilter(RiGaussianFilter, std::nanf(""), 1.0f);
+    RiPixelFilter(RiGaussianFilter, 0.0f, 1.0f);
+    RiPixelFilter(RiGaussianFilter, 1.0f, -1.0f);
+    BOOST_CHECK(context().sampling().filter == v3d::render::offline::Filter::Box);
+    BOOST_CHECK_EQUAL(context().sampling().width.x, 2.0f);
+    BOOST_CHECK_EQUAL(context().sampling().width.y, 2.0f);
+
+    RiFormat(32, 16, 1.0f);
+    RiFormat(-1, 16, 1.0f);
+    RiFormat(32, 0, 1.0f);
+    RiFormat(70000, 16, 1.0f);
+    RiFormat(32, 16, std::nanf(""));
+    RiWorldBegin();
+    RiWorldEnd();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().framebuffer()->planes();
+    BOOST_REQUIRE(planes);
+    BOOST_CHECK_EQUAL(planes->width(), 32u);
+    BOOST_CHECK_EQUAL(planes->height(), 16u);
     RiEnd();
 }

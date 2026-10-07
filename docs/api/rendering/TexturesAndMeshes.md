@@ -59,9 +59,10 @@ itself (voxel's chunks, for instance) is a `vulkan::memory::Mesh` owned by the a
 
 ## Releasing resources
 
-**A released handle stops working at once, and the GPU object behind it lives on until no frame
-in flight can use it.** A handle holds a slot and a generation. A released slot is reused with
-a new generation, so an old handle never comes to mean something else; it resolves to nothing.
+**Release a handle once nothing more will be queued with it. Items queued before the release are
+still drawn by their frame.** The GPU object behind the handle lives on until no frame in flight
+can use it. A handle holds a slot and a generation. A released slot is reused with a new
+generation, so an old handle never comes to mean something else; it resolves to nothing.
 
 | Resource | Release with |
 |---|---|

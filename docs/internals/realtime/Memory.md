@@ -128,25 +128,42 @@ layouts), materials and textures. It is built on `Registry<Tag, T>`
 
 **Handles.** `Handle<Tag>` ([`Handle.h`](../../../api/render/realtime/Handle.h)) holds a 32-bit slot
 and a 32-bit generation. The tag keeps `PipelineHandle`, `MaterialHandle`, `TextureHandle` and
-`MeshHandle` distinct types. A released slot is reused by the next `add()` with its generation
-incremented, and `resolve()` refuses a handle whose generation is stale. So a released handle
-resolves to nothing at once, and can never come to name whatever fills its slot next. Only the
-slot is a sort order.
+`MeshHandle` distinct types. A released slot is reused by a later `add()` with its generation
+incremented, and `resolve()` refuses a handle whose generation is stale. So a handle can never
+come to name whatever fills its slot next. Only the slot is a sort order.
 
 **Deferred destruction.** Releasing a handle hands the objects behind it to the ring as a
 callback (`Ring::retire()`). `vulkan::frame::Retirement` stores each callback with the last frame
-that may name the released object. While a frame is begun and not yet submitted, that is the
-frame being recorded. Between a submit and the next begin, it is the frame about to be begun,
-because draw items queued for it before the release may name the object. So a mesh or texture
-released after its items are queued and before `renderFrame()` outlives that frame.
-`Ring::begin()` runs every callback whose frames have finished: a frame has finished once
-`framesInFlight` more frames have begun, because beginning a frame waits on the fence of the
-slot's previous use. The ring's destructor waits for
-the device and runs everything left.
+that may name the released object, `Ring::recording()`. While a frame is begun and not yet
+submitted, that is the frame being recorded. Between a submit and the next begin, it is the frame
+about to be begun. `Ring::begin()` runs every callback whose frames have finished: a frame has
+finished once `framesInFlight` more frames have begun, because beginning a frame waits on the
+fence of the slot's previous use. The ring's destructor waits for the device and runs everything
+left.
+
+**A release and the items already queued.** A draw item names its material by handle, and the
+recorder resolves it when the frame is recorded. So a release cannot take effect at once:
+
+- A released material goes on resolving until the frame `Ring::recording()` named at the release
+  is submitted. Items queued before the release draw with it. It resolves to nothing after.
+- A released texture resolves to nothing at once. A texture is resolved only to write a
+  descriptor, and that descriptor may be bound after the frame. Its image lives until the frame
+  has finished.
+- A released material or texture keeps its slot until its callback runs. `textureCount()` counts
+  a released texture until then.
+- Releasing a handle already waiting in the ring returns false.
+
+So a mesh, a texture or a post source released after its items are queued and before
+`renderFrame()` is drawn by that frame. The callbacks share `Resources`' registries through a
+shared pointer, because the ring outlives `Resources` and may run them after it is destroyed.
 
 - **Anything driving frames must call `Ring::begin()`,** or nothing retired is ever collected. A
   device test counting live allocations has to run the ring that far first.
-- A released material returns its descriptor set to its `DescriptorPool` the same way.
+- A released material returns its descriptor set to its `DescriptorPool` the same way. Its owner
+  hands the set back only when `Resources::release()` returned true, so a set is never handed
+  back twice.
+- A `DescriptorPool`'s destructor retires its Vulkan pools and layout the same way, so a set from
+  a destroyed `FullScreen` lives until the frames binding it have finished.
 - `Resources::release(TextureHandle)` does not release a material naming the texture; whoever
   made the material does that. `Textures::release()` releases both.
 - Pipelines are built at load time and never released.

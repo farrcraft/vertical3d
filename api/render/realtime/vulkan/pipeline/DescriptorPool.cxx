@@ -54,11 +54,23 @@ DescriptorPool::DescriptorPool(const boost::shared_ptr<device::Device>& device, 
 /**
  **/
 DescriptorPool::~DescriptorPool() {
-    for (VkDescriptorPool pool : pools_) {
-        vkDestroyDescriptorPool(device_->handle(), pool, nullptr);
-    }
-    if (layout_ != VK_NULL_HANDLE) {
-        vkDestroyDescriptorSetLayout(device_->handle(), layout_, nullptr);
+    const boost::shared_ptr<device::Device> device = device_;
+    VkDescriptorSetLayout layout = layout_;
+    const auto destroy = [device, layout](const std::vector<VkDescriptorPool>& pools) {
+        for (VkDescriptorPool pool : pools) {
+            vkDestroyDescriptorPool(device->handle(), pool, nullptr);
+        }
+        if (layout != VK_NULL_HANDLE) {
+            vkDestroyDescriptorSetLayout(device->handle(), layout, nullptr);
+        }
+    };
+    // a set from here may be bound by a frame already queued or in flight, so the pools go once
+    // those frames have finished. If the ring cannot hold them, they go once the device is idle
+    try {
+        ring_->retire([destroy, pools = pools_]() { destroy(pools); });
+    } catch (...) {
+        ring_->waitIdleNoThrow();
+        destroy(pools_);
     }
 }
 

@@ -5,17 +5,22 @@
 
 #include <api/asset/Manager.h>
 #include <api/asset/media/Loaders.h>
+#include <api/image/Image.h>
+#include <api/image/reader/Png.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/type/Model.h>
 
+#include <cstddef>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
@@ -30,6 +35,7 @@ using v3d::render::realtime::MeshHandle;
 using v3d::render::realtime::MeshRegistry;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::PipelineHandle;
+using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
 using v3d::render::realtime::vulkan::pipeline::Builder;
@@ -43,6 +49,14 @@ const uint32_t height = 16;
 const uint32_t vertexShader[] =
 #include "shaders/depth.vert.inc"
 ;  // NOLINT(whitespace/semicolon) - the initialiser it terminates is the include above
+
+const uint32_t coverShader[] =
+#include "shaders/scene.vert.inc"
+;  // NOLINT(whitespace/semicolon)
+
+const uint32_t albedoShader[] =
+#include "shaders/albedo.frag.inc"
+;  // NOLINT(whitespace/semicolon)
 
 /**
  * A registry loading from the asset suite's fixtures, which the build names rather than
@@ -156,9 +170,14 @@ BOOST_AUTO_TEST_CASE(two_models_naming_one_image_share_its_material) {
     BOOST_CHECK(meshes->resolve(crate) == nullptr);
     BOOST_CHECK(headless.context->resources()->material(barrelEntry.material) != nullptr);
 
+    // the last user's release releases the albedo. Its material resolves for the frame already
+    // queued, and to nothing once that frame is submitted
     BOOST_CHECK(meshes->release(barrel));
-    BOOST_CHECK(headless.context->resources()->material(barrelEntry.material) == nullptr);
     BOOST_CHECK(headless.context->resources()->texture(barrelEntry.texture) == nullptr);
+    BOOST_CHECK(headless.context->resources()->material(barrelEntry.material) != nullptr);
+    headless.submit(headless.context->ring()->begin());
+    BOOST_CHECK(headless.context->resources()->material(barrelEntry.material) == nullptr);
+    headless.context->ring()->waitIdle();
     BOOST_CHECK(headless.silent());
 }
 
@@ -363,6 +382,101 @@ BOOST_AUTO_TEST_CASE(a_mesh_released_after_its_items_are_queued_outlives_its_fra
     headless.context->ring()->waitIdle();
 
     BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A textured mesh released after an item drawing it is queued, and before the frame is begun,
+ * is drawn with its albedo by that frame. The item names its material by handle, and the frame
+ * resolves it when it is recorded, so the material has to outlive the release as the mesh does.
+ *
+ * The triangle covers the target and the albedo is one flat colour at the ends of each channel's
+ * range, so every texel of the picture is that colour on any conformant implementation.
+ **/
+BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_its_albedo) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
+
+    const boost::shared_ptr<v3d::image::Image> albedo = boost::make_shared<v3d::image::Image>(4, 4, 32);
+    for (std::size_t texel = 0; texel < std::size_t{16}; texel++) {
+        unsigned char* at = albedo->data() + texel * 4;
+        at[0] = 0xFF;
+        at[1] = 0x00;
+        at[2] = 0xFF;
+        at[3] = 0xFF;
+    }
+    const MeshHandle handle = meshes->add("triangle", triangle(""), {albedo});
+    const MeshRegistry::Entry* entry = meshes->resolve(handle);
+    BOOST_REQUIRE(entry != nullptr);
+    BOOST_REQUIRE_EQUAL(entry->parts.size(), 1U);
+    BOOST_REQUIRE(entry->parts[0].texture != headless.context->textures()->white());
+
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        width, height, colourFormat);
+
+    // the vertex stage covers the target from the index alone, so the mesh's three indices
+    // draw a triangle over every pixel whatever its positions are
+    Builder builder(headless.device);
+    builder.name("mesh-albedo")
+        .shader(VK_SHADER_STAGE_VERTEX_BIT, coverShader, sizeof(coverShader))
+        .shader(VK_SHADER_STAGE_FRAGMENT_BIT, albedoShader, sizeof(albedoShader))
+        .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
+        .blend(false)
+        .set(headless.context->frameUniforms()->layout())
+        .set(headless.context->textures()->layout())
+        .colourFormat(colourFormat);
+    const PipelineHandle pipeline = headless.context->resources()->add(builder.build(headless.context->pipelineCache()));
+
+    // one frame submitted first, so the ring has begun a frame before the release
+    headless.submitAndWait(headless.context->ring()->begin());
+
+    Frame frame;
+    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    DrawItem item;
+    item.pipeline = pipeline;
+    item.material = entry->parts[0].material;
+    entry->mesh->describe(&item);
+    pass->submit(item);
+
+    // the albedo has no other user, so this releases its texture and material as well
+    BOOST_CHECK(meshes->release(handle));
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::Target described;
+    described.image = target->image();
+    described.view = target->view();
+    described.extent = target->extent();
+    described.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    Recorder::record(commands, frame, described, *headless.context->resources(), headless.context->frameUniforms().get());
+
+    Capture capture(headless.device, headless.logger);
+    Capture::Source source;
+    source.image = target->image();
+    source.extent = target->extent();
+    source.format = target->format();
+    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    capture.record(commands, source);
+    headless.submit(commands);
+
+    for (uint32_t turn = 0; turn <= headless.context->ring()->framesInFlight(); turn++) {
+        headless.submit(headless.context->ring()->begin());
+    }
+    headless.context->ring()->waitIdle();
+
+    BOOST_CHECK(headless.silent());
+
+    BOOST_REQUIRE(capture.write("data_out/mesh_released_after_queueing.png"));
+    v3d::image::reader::Png png(headless.logger);
+    const boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/mesh_released_after_queueing.png");
+    BOOST_REQUIRE(picture);
+    const unsigned char* pixels = picture->data();
+    for (uint32_t texel = 0; texel < width * height; texel++) {
+        const unsigned char* at = pixels + static_cast<std::size_t>(texel) * 4;
+        if (at[0] != 0xFF || at[1] != 0x00 || at[2] != 0xFF || at[3] != 0xFF) {
+            BOOST_ERROR("texel " << texel << " is not the albedo of the released mesh");
+            return;
+        }
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

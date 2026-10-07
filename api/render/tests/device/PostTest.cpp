@@ -12,6 +12,7 @@
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
 #include <api/render/realtime/vulkan/renderer/FullScreen.h>
 
 #include <algorithm>
@@ -257,6 +258,94 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
 }
 
 /**
+ * A source released twice hands its set back once. The material goes on resolving for the frame
+ * already queued, so a second release that found it and handed its set back again would leave
+ * the pool giving one set to two sources.
+ **/
+BOOST_AUTO_TEST_CASE(a_source_released_twice_hands_its_set_back_once) {
+    const uint32_t size = 16;
+    v3d::test::Headless headless(colourFormat, size, size);
+    boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        size, size, colourFormat);
+
+    FullScreen::Spec spec;
+    spec.name = "copy";
+    spec.fragment.assign(std::begin(copyShader), std::end(copyShader));
+    spec.colour = colourFormat;
+    FullScreen copy(headless.device, headless.context->pipelineCache(), headless.context->resources(),
+        headless.context->ring(), headless.context->frameUniforms(), spec);
+    const TextureHandle texture = headless.context->textures()->texture(*scene);
+
+    const MaterialHandle source = copy.source({texture});
+    BOOST_CHECK(copy.release(source));
+    BOOST_CHECK(!copy.release(source));
+
+    for (uint32_t frame = 0; frame <= headless.context->ring()->framesInFlight(); frame++) {
+        headless.submit(headless.context->ring()->begin());
+    }
+    headless.context->ring()->waitIdle();
+
+    const MaterialHandle first = copy.source({texture});
+    const MaterialHandle second = copy.source({texture});
+    const v3d::render::realtime::vulkan::pipeline::Material* a = headless.context->resources()->material(first);
+    const v3d::render::realtime::vulkan::pipeline::Material* b = headless.context->resources()->material(second);
+    BOOST_REQUIRE(a != nullptr && b != nullptr);
+    BOOST_CHECK(a->set != b->set);
+    BOOST_CHECK(copy.release(first));
+    BOOST_CHECK(copy.release(second));
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A full-screen pass destroyed after its source is queued, with the source released first, still
+ * draws that source in the frame. The source's set belongs to the pass's pool, so the pool has
+ * to outlive the frame as the material does.
+ **/
+BOOST_AUTO_TEST_CASE(a_pass_destroyed_after_its_source_is_queued_draws_it) {
+    const uint32_t size = 16;
+    v3d::test::Headless headless(colourFormat, size, size);
+    boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        size, size, colourFormat);
+    std::vector<unsigned char> texels;
+    for (uint32_t texel = 0; texel < size * size; texel++) {
+        texels.insert(texels.end(), {0x00, 0xFF, 0xFF, 0xFF});
+    }
+    const TextureHandle texture = headless.context->textures()->texture(texels.data(), size, size, 4);
+
+    FullScreen::Spec spec;
+    spec.name = "copy";
+    spec.fragment.assign(std::begin(copyShader), std::end(copyShader));
+    spec.colour = colourFormat;
+    boost::shared_ptr<FullScreen> copy = boost::make_shared<FullScreen>(headless.device, headless.context->pipelineCache(),
+        headless.context->resources(), headless.context->ring(), headless.context->frameUniforms(), spec);
+    const MaterialHandle source = copy->source({texture});
+
+    Frame frame;
+    boost::shared_ptr<Pass> post = frame.pass("copy");
+    post->target(output);
+    copy->submit(source, post.get());
+    BOOST_CHECK(copy->release(source));
+    copy.reset();
+
+    Capture capture(headless.device, headless.logger);
+    record(&headless, frame, output, &capture);
+    BOOST_CHECK(headless.silent());
+
+    BOOST_REQUIRE(capture.write("data_out/post_destroyed_after_queueing.png"));
+    v3d::image::reader::Png png(headless.logger);
+    const boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/post_destroyed_after_queueing.png");
+    BOOST_REQUIRE(picture);
+    const unsigned char* pixels = picture->data();
+    for (uint32_t texel = 0; texel < size * size; texel++) {
+        const unsigned char* at = pixels + static_cast<std::size_t>(texel) * 4;
+        if (at[0] != 0x00 || at[1] != 0xFF || at[2] != 0xFF || at[3] != 0xFF) {
+            BOOST_ERROR("texel " << texel << " is not the queued source");
+            return;
+        }
+    }
+}
+
+/**
  * The identity table leaves a scene as it was, to within the filtering the implementation does
  * between entries. In exact arithmetic the result is the input, because every entry is its own
  * position and a linear blend of neighbours is the input. The precision of a filter's weights
@@ -379,8 +468,8 @@ BOOST_AUTO_TEST_CASE(a_table_replaced_after_a_submit_keeps_the_frame_silent) {
 
 /**
  * A grade registers its table, and each source registers its scene. Destroying the grade
- * releases its table and any source still held, so the context holds the same number of
- * textures as before the grade was made.
+ * releases its table and any source still held. Once the frames in flight have finished, the
+ * context holds the same number of textures as before the grade was made.
  **/
 BOOST_AUTO_TEST_CASE(a_destroyed_grade_releases_its_table_and_sources) {
     const uint32_t size = 16;
@@ -395,12 +484,14 @@ BOOST_AUTO_TEST_CASE(a_destroyed_grade_releases_its_table_and_sources) {
         BOOST_CHECK(graded.source(*scene).valid());
         BOOST_CHECK_EQUAL(headless.context->resources()->textureCount(), before + 2);
     }
-    BOOST_CHECK_EQUAL(headless.context->resources()->textureCount(), before);
+    // released, and held until the frame that may still be queued against them has finished
+    BOOST_CHECK_EQUAL(headless.context->resources()->textureCount(), before + 2);
 
     for (uint32_t frame = 0; frame <= headless.context->ring()->framesInFlight(); frame++) {
         headless.submit(headless.context->ring()->begin());
     }
     headless.context->ring()->waitIdle();
+    BOOST_CHECK_EQUAL(headless.context->resources()->textureCount(), before);
     BOOST_CHECK(headless.silent());
 }
 

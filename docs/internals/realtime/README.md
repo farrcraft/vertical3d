@@ -79,7 +79,7 @@ Background: [ADR-0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md),
 - **Per-object data goes in push constants**, within `DrawItem::pushCapacity` (128 bytes).
 - **Never write a barrier inline.** Use or add a function in `memory/Barriers.h`.
 - **Never destroy a GPU object a frame may still use.** Retire it through `Ring::retire()`. This
-  covers textures, sets, outgrown stream buffers and target images.
+  covers materials, textures, sets, descriptor pools, outgrown stream buffers and target images.
 - **Never share one stream buffer between two submissions.** `Buffer::grow()` replaces the
   allocation and invalidates the handle earlier draw items hold.
 - **Write per-frame data after `Ring::waitFrame()`** and before the ring begins the frame.

@@ -53,6 +53,12 @@ text the gates will check.
 
 ### Step 3 — The two findings that cannot wait
 
+**Closed.** Checking every sibling site, as Review.md asks, found two more defects of the same
+pattern: a full-screen source released twice handed its descriptor set back twice, and a
+descriptor pool was destroyed under frames still using it. Both are fixed with tests that failed
+first. `RiFormat` was the sibling of the pixel filter check, and refuses a resolution that cannot
+be made.
+
 - A mesh released after its draw items are queued keeps its material until the frame is done, not
   only its buffers and images. The test uses a textured mesh.
 - A pixel filter width given through the C interface is checked as the RIB reader checks it, so a
@@ -91,4 +97,4 @@ when that review is clean.
 
 ## State
 
-Steps 1 and 2 are closed. Step 3 is next.
+Steps 1 to 3 are closed. The gates, steps 4 to 7, are next.

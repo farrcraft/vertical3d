@@ -114,9 +114,11 @@ class Textures final {
     VkDescriptorSetLayout layout() const noexcept;
 
     /**
-     * Release a texture and the material drawn with it. The handle resolves to
-     * nothing at once, and the image and the descriptor set are reclaimed once no frame in
-     * flight can still be reading them.
+     * Release a texture and the material drawn with it.
+     *
+     * The texture handle resolves to nothing at once. The material goes on resolving for the
+     * frame being queued, so items queued before the release draw with the texture. The image
+     * and the descriptor set are reclaimed once that frame has finished.
      *
      * @return whether anything was released. The white texture is never released, so a handle
      *         depthTexture() gave back for a target with nothing to sample can be released
