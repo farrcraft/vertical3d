@@ -231,7 +231,31 @@ function addedLines(base: string): { added: Map<string, Added>; newFiles: Set<st
     }
     const added = new Map<string, Added>();
     let current: Set<number> | null = null;
+    // the lines left in the current hunk, from its header; a line inside a hunk is never a file
+    // header, even when it is an added line that starts "++ "
+    let oldLeft = 0;
+    let newLeft = 0;
     for (const line of git('diff', '--unified=0', ...DIFF_OPTIONS, base).split('\n')) {
+        if (oldLeft > 0 || newLeft > 0) {
+            if (line.startsWith('+')) {
+                newLeft -= 1;
+                continue;
+            }
+            if (line.startsWith('-')) {
+                oldLeft -= 1;
+                continue;
+            }
+            if (line.startsWith(' ')) {
+                oldLeft -= 1;
+                newLeft -= 1;
+                continue;
+            }
+            if (line.startsWith('\\')) {
+                continue;
+            }
+            oldLeft = 0;
+            newLeft = 0;
+        }
         if (line.startsWith('+++ ')) {
             const target = headerPath(line.replace(/\r$/, ''));
             current = null;
@@ -239,12 +263,14 @@ function addedLines(base: string): { added: Map<string, Added>; newFiles: Set<st
                 current = new Set<number>();
                 added.set(target, current);
             }
-        } else if (line.startsWith('@@') && current !== null) {
-            const match = /^@@ -\S+ \+(\d+)(?:,(\d+))? @@/.exec(line);
+        } else if (line.startsWith('@@')) {
+            const match = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line);
             if (match) {
-                const start = Number(match[1]);
-                const count = match[2] === undefined ? 1 : Number(match[2]);
-                for (let number = start; number < start + count; number++) {
+                const start = Number(match[2]);
+                const count = match[3] === undefined ? 1 : Number(match[3]);
+                oldLeft = match[1] === undefined ? 1 : Number(match[1]);
+                newLeft = count;
+                for (let number = start; number < start + count && current !== null; number++) {
                     current.add(number);
                 }
             }

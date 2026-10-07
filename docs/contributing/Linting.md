@@ -8,7 +8,7 @@ is clean at all four**, so every finding is new and should be fixed. cpplint run
 other three are build options declared in [CMakeLists.txt](../../CMakeLists.txt).
 
 A fifth check, the prose gate, applies the writing rules. It reads only the lines a change adds.
-It runs in CI with the other review gates, which [Review.md](Review.md) lists.
+It runs in CI with the link rule and boundary gates. [Review.md](Review.md) lists every gate.
 
 - [cpplint](#cpplint)
 - [The compiler](#the-compiler)
@@ -193,8 +193,9 @@ and on each push to `main`. The link rule checks the whole tree. The prose and b
 read only the lines added since a base:
 
 - on a pull request, the base is the branch the pull request merges into;
-- on a push to `main`, the base is the previous tip of `main`, or the merge base with
-  `origin/main` when the push creates a new branch.
+- on a push to `main`, the base is the previous tip of `main`. When the push names no previous
+  tip, as on a new branch or after a force push, the base is the pushed commit's parent. A
+  pushed root commit has no parent, and the step fails with a message.
 
 The fails-first gate, `scripts/failsfirst.ts`, does not run in CI. It builds the tree twice and
 the device suite needs a GPU, so it runs locally before review.

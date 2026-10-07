@@ -66,10 +66,10 @@ be made.
 
 ### Step 4 — Gate: prose
 
-**Closed.** `scripts/prose.ts` checks the lines a change adds to Markdown files and to the
-comments of C++, GLSL, CMake, batch and YAML files. It reports sentences over 35 words, the
-banned openers, "which is what" and its kin, personified code, history, Markdown lines over 100
-columns, and a comment line extended past the wrap of its paragraph. It runs in CI in
+**Closed.** `scripts/prose.ts` checks the lines a change adds to Markdown files and to the comments
+of C++, GLSL, CMake, batch, YAML, TypeScript and JavaScript files. It reports sentences over 35
+words, the banned openers, "which is what" and its kin, personified code, history, Markdown lines
+over 100 columns, and a comment line extended past the wrap of its paragraph. It runs in CI in
 `review-gates.yml` and fails the run.
 
 ### Step 5 — Gate: build conventions
@@ -82,11 +82,11 @@ runs in CI in `review-gates.yml`. The configure checks the api libraries.
 ### Step 6 — Gate: boundary input
 
 **Closed.** `toCount` and `toInteger` in `api/type/Checked.h` convert a float to a count or an
-integer, and refuse a value that is not finite or does not fit. `api/asset/Json.h` has reads
-that check a JSON value's type. `scripts/boundary.ts` checks a changeset's added lines for a bare
-`static_cast` from a float to an integer type, and for a `value_to` that no type test guards,
-outside the helpers. It runs in CI in `review-gates.yml`. The branch's guarded JSON reads and
-its RIB counts, sizes, frame numbers and handles go through the helpers.
+integer, and refuse a value that is not finite or does not fit. `api/asset/Json.h` has reads that
+check a JSON value's type. `scripts/boundary.ts` checks a changeset's added lines for a bare
+`static_cast` from a float to an integer type, and for any `value_to`, outside the helpers. It runs
+in CI in `review-gates.yml`. The branch's guarded JSON reads and its RIB counts, sizes, frame
+numbers and handles go through the helpers.
 
 ### Step 7 — Gate: tests that fail first
 
@@ -111,5 +111,10 @@ naming why.
 Step 8 is under way. The branch passes the gates: 317 prose lines were rewritten, and the
 boundary gate's reports were fixed or given a reason. Fixing them found three more defects: a NaN
 filter width in `Film::add`, a bound that is not a number in moya's buckets, and a GPU time that
-wraps in voxel. The closing review of the commits since the eleventh round found 17 findings,
-which are being fixed. One more review, of the fix diff only, remains.
+wraps in voxel.
+
+The closing review of the commits since the eleventh round found 17 findings, one of them Major
+in the fails-first harness. They are fixed, and the harness's first full runs pass: every new
+test fails or does not build without its change, and the one that passes says why. The review of
+that fix commit found 8 Minor findings, in fallback paths and in text written with the fixes.
+They are fixed, and one more review of that fix diff remains.

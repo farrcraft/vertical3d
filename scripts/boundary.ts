@@ -165,6 +165,25 @@ function headerPath(header: string): string | null {
 }
 
 /**
+ * Returns whether the quote at index is a digit separator. It is one only between two digits of
+ * a number literal: the token before it starts with a digit, and the characters on both sides
+ * are digits of that number's base. Anything else, such as the quote after u8, opens a character
+ * literal.
+ */
+function isDigitSeparator(text: string, index: number): boolean {
+    let start = index;
+    while (start > 0 && /[\w.']/.test(text[start - 1])) {
+        start -= 1;
+    }
+    const token = text.slice(start, index);
+    if (!/^\.?\d/.test(token)) {
+        return false;
+    }
+    const digit = /^0[xX]/.test(token) ? /[0-9A-Fa-f]/ : /[0-9]/;
+    return digit.test(text[index - 1] ?? '') && digit.test(text[index + 1] ?? '');
+}
+
+/**
  * Returns the code on each line of a C++ file, with comments removed and each string or
  * character literal reduced to its quotes. A block comment and a raw string may span lines, so
  * the file is read whole.
@@ -190,13 +209,15 @@ function codeLines(content: string): string[] {
             const stop = close < 0 ? length : close + raw[1].length + 2;
             out.push('""' + '\n'.repeat(content.slice(index, stop).split('\n').length - 1));
             index = stop;
-        } else if (char === '"' || (char === '\'' && !/\b\d[\w']*$/.test(content.slice(Math.max(0, index - 32), index)))) {
-            // a quote after the digits of a number is a digit separator, not a character literal
+        } else if (char === '"' || (char === '\'' && !isDigitSeparator(content, index))) {
             let end = index + 1;
             while (end < length && content[end] !== char && content[end] !== '\n') {
-                end += content[end] === '\\' ? 2 : 1;
+                // a backslash before a line break continues the literal onto the next line
+                end += content[end] === '\\' && content.startsWith('\r\n', end + 1) ? 3 : content[end] === '\\' ? 2 : 1;
             }
-            out.push(char + char);
+            // the line breaks a continued literal spans are kept, so that later lines keep their numbers
+            const breaks = content.slice(index, Math.min(end, length)).split('\n').length - 1;
+            out.push(char + char + '\n'.repeat(breaks));
             index = end < length && content[end] === char ? end + 1 : end;
         } else {
             out.push(char);
@@ -215,18 +236,46 @@ function addedLines(base: string): Line[] {
     const added: Array<{ path: string; number: number; text: string }> = [];
     let path: string | null = null;
     let number = 0;
+    // the lines left in the current hunk, from its header; a line inside a hunk is never a file
+    // header, even when it is an added line that starts "++ "
+    let oldLeft = 0;
+    let newLeft = 0;
     for (const raw of diff.split(/\r?\n/)) {
+        if (oldLeft > 0 || newLeft > 0) {
+            if (raw.startsWith('+')) {
+                if (path !== null) {
+                    added.push({ path, number, text: raw.slice(1) });
+                }
+                number += 1;
+                newLeft -= 1;
+                continue;
+            }
+            if (raw.startsWith('-')) {
+                oldLeft -= 1;
+                continue;
+            }
+            if (raw.startsWith(' ')) {
+                number += 1;
+                oldLeft -= 1;
+                newLeft -= 1;
+                continue;
+            }
+            if (raw.startsWith('\\')) {
+                continue;
+            }
+            oldLeft = 0;
+            newLeft = 0;
+        }
         if (raw.startsWith('+++ ')) {
             path = headerPath(raw);
             if (path !== null && !SOURCE.test(path)) {
                 path = null;
             }
         } else if (raw.startsWith('@@')) {
-            const match = /^@@ -\S+ \+(\d+)/.exec(raw);
-            number = match ? Number(match[1]) : 0;
-        } else if (raw.startsWith('+') && path !== null) {
-            added.push({ path, number, text: raw.slice(1) });
-            number += 1;
+            const match = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(raw);
+            number = match ? Number(match[2]) : 0;
+            oldLeft = match ? Number(match[1] ?? 1) : 0;
+            newLeft = match ? Number(match[3] ?? 1) : 0;
         }
     }
     const untracked = git('ls-files', '-z', '--others', '--exclude-standard') ?? '';

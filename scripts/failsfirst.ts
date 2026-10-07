@@ -28,8 +28,9 @@
 //    else under a tests/ directory keeps its head version: the test sources, their
 //    CMakeLists.txt, and the fixtures under tests/data, tests/fixtures and tests/device/data.
 //    A head v3d_add_test list can name a source outside tests/ that the change added, such as
-//    an app source a suite compiles. That source is dropped from the list in the worktree, and
-//    so is any source the configure reports as missing.
+//    an app source a suite compiles. That source is dropped from the list in the worktree. When
+//    the configure reports a source missing, it is dropped from each list that names a file of
+//    that name the worktree lacks; a list whose entry resolves to a file that exists keeps it.
 // 3. Configures the worktree into its own build directory and builds only the affected suites.
 //    The configure reuses the packages the main build already installed: it points
 //    VCPKG_INSTALLED_DIR at that install, turns VCPKG_MANIFEST_INSTALL off, and uses the
@@ -137,8 +138,9 @@ const ADD_TEST = /v3d_add_test\s*\(\s*(\w+)([\s\S]*?)\)/g;
 // that threw or crashed inside the framework.
 const BOOST_FAILURE = /\*\*\* \d+ failures? (?:is|are) detected|\berror: in "|\bfailure occurred/i;
 
-// The line in a case's doc comment that says why it passes without the change.
-const STATED = /Passes before the change:\s*/;
+// The line in a case's doc comment that says why it passes without the change. It starts the
+// text of the comment line, after the comment marker and any space.
+const STATED = /^Passes before the change:\s*/;
 const SOURCE_SUFFIXES = [".cpp", ".cxx", ".cc", ".c"];
 
 // The developer environment, as scripts\build.cmd enters it, followed by a dump of the
@@ -159,6 +161,8 @@ const ENVIRONMENT_CMD = [
 type Change = { status: string; file: string };
 type SuiteEntry = { suite: string; directory: string };
 type ListedSource = { suite: string; directory: string; source: string };
+// A source dropped from a suite's list in the worktree, and whether the change added it.
+type Drop = { source: string; added: boolean };
 type Env = Record<string, string>;
 type Found = { path: string; stated: string | null };
 
@@ -222,6 +226,22 @@ function changedFiles(base: string, head: string): Change[] {
     return changes;
 }
 
+// Whether the quote at index is a digit separator. It is one only between two digits of a number
+// literal: the token before it starts with a digit, and the characters on both sides are digits
+// of that number's base. Anything else, such as the quote after u8, opens a character literal.
+function isDigitSeparator(text: string, index: number): boolean {
+    let start = index;
+    while (start > 0 && /[\w.']/.test(text[start - 1])) {
+        start -= 1;
+    }
+    const token = text.slice(start, index);
+    if (!/^\.?\d/.test(token)) {
+        return false;
+    }
+    const digit = /^0[xX]/.test(token) ? /[0-9A-Fa-f]/ : /[0-9]/;
+    return digit.test(text[index - 1] ?? "") && digit.test(text[index + 1] ?? "");
+}
+
 // The text with every comment replaced by spaces of the same length, so that an offset in the
 // result is the same offset in the text. A // or /* inside a string or a character literal does
 // not start a comment.
@@ -246,7 +266,7 @@ function blankComments(text: string): string {
             const stop = end < 0 ? text.length : end + 2;
             blank(i, stop);
             i = stop;
-        } else if (text[i] === '"' || (text[i] === "'" && !/[0-9A-Fa-f]$/.test(text.slice(Math.max(0, i - 1), i)))) {
+        } else if (text[i] === '"' || (text[i] === "'" && !isDigitSeparator(text, i))) {
             const quote = text[i];
             let j = i + 1;
             while (j < text.length && text[j] !== quote && text[j] !== "\n") {
@@ -286,7 +306,7 @@ function statedReason(text: string, at: number): string | null {
     if (first < 0) {
         return null;
     }
-    const reason: string[] = [lines[first].slice(lines[first].search(STATED)).replace(STATED, "")];
+    const reason: string[] = [lines[first].replace(STATED, "")];
     for (const line of lines.slice(first + 1)) {
         if (line === "") {
             break;
@@ -530,7 +550,7 @@ function dropSource(worktree: string, directory: string, suite: string, source: 
 
 // Makes the worktree: the head revision with every file outside tests/ at its base version.
 // Returns, for each suite, the sources dropped from its list because the change added them.
-function makeWorktree(head: string, base: string, changes: Change[], worktree: string): Map<string, string[]> {
+function makeWorktree(head: string, base: string, changes: Change[], worktree: string): Map<string, Drop[]> {
     console.log(`worktree: ${worktree}`);
     git(["worktree", "add", "--detach", worktree, head]);
     // a deleted file comes back even under tests/, because a base CMakeLists.txt may add the
@@ -547,11 +567,11 @@ function makeWorktree(head: string, base: string, changes: Change[], worktree: s
 
     // a head list that names a source the change added would stop the configure
     const removed = new Set(remove);
-    const dropped = new Map<string, string[]>();
+    const dropped = new Map<string, Drop[]>();
     for (const { suite, directory, source } of listedSources(head)) {
         if (removed.has(source) && dropSource(worktree, directory, suite, source)) {
             console.log(`dropped ${source} from v3dtest_${suite}: the change added it`);
-            dropped.set(suite, [...(dropped.get(suite) ?? []), source]);
+            dropped.set(suite, [...(dropped.get(suite) ?? []), { source, added: true }]);
         }
     }
 
@@ -592,10 +612,12 @@ function missingSources(output: string): string[] {
     return [...output.matchAll(/Cannot find source file:\s*\r?\n(?:\s*\r?\n)?\s*(\S[^\r\n]*)/g)].map((m) => m[1].trim());
 }
 
-// Configures the worktree. A source the configure cannot find is dropped from the head list that
-// names it, and the configure runs again; the drops are added to dropped.
+// Configures the worktree. A source the configure cannot find is dropped from each head list that
+// names it and resolves to a file the worktree lacks, and the configure runs again. A list in
+// another directory that spells the name the same way names a different file, and keeps it. The
+// drops are added to dropped, marked with whether the change added the source.
 function configure(worktree: string, build: string, cache: Map<string, string>, env: Env, scratch: string,
-                   head: string, dropped: Map<string, string[]>): void {
+                   head: string, added: Set<string>, dropped: Map<string, Drop[]>): void {
     let toolchain = cache.get("CMAKE_TOOLCHAIN_FILE") ?? "vendor/vcpkg/scripts/buildsystems/vcpkg.cmake";
     if (!path.isAbsolute(toolchain)) {
         toolchain = path.join(ROOT, toolchain);
@@ -624,9 +646,12 @@ function configure(worktree: string, build: string, cache: Map<string, string>, 
                 // the configure prints the entry as the list spelled it, or as an absolute path
                 const full = path.isAbsolute(name) ?
                     path.relative(worktree, name).split(path.sep).join("/") : sourceOf(directory, named);
-                if (full === source && dropSource(worktree, directory, suite, source)) {
+                if (full !== source || fs.existsSync(path.join(worktree, ...source.split("/")))) {
+                    continue;
+                }
+                if (dropSource(worktree, directory, suite, source)) {
                     console.log(`dropped ${source} from v3dtest_${suite}: the configure cannot find it`);
-                    dropped.set(suite, [...(dropped.get(suite) ?? []), source]);
+                    dropped.set(suite, [...(dropped.get(suite) ?? []), { source, added: added.has(source) }]);
                     progress = true;
                 }
             }
@@ -680,6 +705,21 @@ function failedSources(output: string, directory: string, suite: string, sources
         failed.push(owners[0]);
     }
     return failed;
+}
+
+// Why a suite that lost sources from its list may not build: the sources the change added, and
+// those the worktree lacks for another reason.
+function dropNote(drops: Drop[]): string {
+    const added = drops.filter((d) => d.added).map((d) => d.source);
+    const missing = drops.filter((d) => !d.added).map((d) => d.source);
+    const parts: string[] = [];
+    if (added.length > 0) {
+        parts.push(`the suite needs ${added.join(", ")}, which the change added`);
+    }
+    if (missing.length > 0) {
+        parts.push(`the suite lists ${missing.join(", ")}, which the worktree does not have`);
+    }
+    return parts.join("; ");
 }
 
 function escapeRegExp(text: string): string {
@@ -820,7 +860,8 @@ function check(cases: Case[], base: string, head: string, changes: Change[], opt
     try {
         made = true;
         const dropped = makeWorktree(head, base, changes, worktree);
-        configure(worktree, build, cache, env, scratch, head, dropped);
+        const added = new Set(changes.filter((c) => c.status === "A").map((c) => c.file));
+        configure(worktree, build, cache, env, scratch, head, added, dropped);
         const bySuite = new Map<string, Case[]>();
         for (const c of cases) {
             if (!bySuite.has(c.suite)) {
@@ -837,7 +878,7 @@ function check(cases: Case[], base: string, head: string, changes: Change[], opt
             const executable = buildSuite(suite, directory, sources, suiteCases, worktree, build, env, scratch);
             for (const c of suiteCases) {
                 if (c.result === FAILS_TO_BUILD && !c.note && dropped.has(suite)) {
-                    c.note = `the suite needs ${dropped.get(suite)!.join(", ")}, which the change added`;
+                    c.note = dropNote(dropped.get(suite)!);
                 }
                 if (c.result !== null) {
                     continue;

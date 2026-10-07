@@ -68,8 +68,9 @@ Background: [ADR-0076](../adr/0076-offline-seeded-samples-resolved-by-one-shared
   a 90 degree field of view for a perspective one, and clipping from `1e-10` to `1e38`.
 - **A picture side is from 1 to 65536 pixels**, `largestResolution` in
   [Sampling.h](../../api/render/offline/Sampling.h), wherever it enters the renderer: `Format`,
-  `RiFormat` or the command line. A larger side is refused, and so is one that is infinite or
-  between 0 and 1. The size already set is kept. A fraction is dropped.
+  `RiFormat` or the command line. A larger side is refused, and so is one that is not a number,
+  is infinite in either direction, or is between 0 and 1. The size already set is kept. A
+  fraction is dropped.
 - **A `Format` side of zero or less is the default for that side**, 320 for the width and 240
   for the height, as RI reads it. The other side keeps the size `Format` named. A pixel aspect
   that is not a positive finite number is square pixels.
