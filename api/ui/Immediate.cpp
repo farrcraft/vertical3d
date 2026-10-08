@@ -264,6 +264,13 @@ void Immediate::end() {
     }
 }
 
+void Immediate::block(const glm::vec2& min, const glm::vec2& max) {
+    if (paint::inside(min, max, input_.cursor)) {
+        // an id no widget answers to, so the block takes the cursor and gives it to nothing
+        hovering_ = identify("##block");
+    }
+}
+
 bool Immediate::capturing() const noexcept {
     // the held half matters as much as the hovered one: a scrubber being dragged keeps the
     // cursor after the drag has left its box, and a click that lands there is still spent

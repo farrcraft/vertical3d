@@ -72,6 +72,19 @@ widget that has just appeared or moved is hovered a frame late.
 dragging something it drew. Ask it before acting on a click of the app's own. It answers from
 the previous frame.
 
+**Something another renderer draws is not this layer's, unless it is blocked.** A modal
+backdrop drawn over the whole viewport by another renderer is neither a window nor a widget, so
+a click on it reaches the scene. `Immediate::block(min, max)` claims a rectangle for the layer
+without drawing in it:
+
+```cpp
+ui.block(glm::vec2(0.0f), glm::vec2(width, height));   // the backdrop's rectangle
+```
+
+The rectangle counts toward `capturing()` as a window does. It takes the cursor from whatever the
+layer drew before it, a widget drawn after it inside it takes the cursor back, and the answer is
+a frame behind.
+
 The layer keeps a little state per id: a window's fold, drag offset and scroll, and a tab
 strip's selection. `Immediate::retention` (60 frames) is how long that state is kept after a
 widget stops being drawn. A panel behind a toggle comes back scrolled, folded and placed as

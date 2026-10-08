@@ -79,7 +79,7 @@ reference captures where a step says they move, and deletes the handoff.
 | [4](#step-4--a-pass-decides-whether-depth-is-written) | Depth writing as a pass's dynamic state | `api/render/realtime` | Done |
 | [5](#step-5--quad-linearises-into-an-srgb-target) | `renderer::Quad` linearising into an `_SRGB` target | `api/render` | Done |
 | [6](#step-6--the-device-describes-itself-without-vulkan-types) | Device information without Vulkan types | `api/render/realtime` | Open |
-| [7](#step-7--immediate-blocks-a-rectangle) | `Immediate::block()` | `api/ui` | Open |
+| [7](#step-7--immediate-blocks-a-rectangle) | `Immediate::block()` | `api/ui` | Done |
 | [8](#step-8--an-entity-reference-that-knows-its-entity-is-gone) | `ecs::Ref` | `api/ecs` | Done |
 | [9](#step-9--an-isometric-camera-controller) | A command-driven controller for `camera::Isometric` | `api/engine` | Open |
 | [10](#step-10--picking-and-the-entry-point) | `Camera::screenPoint()`, `pick()`, and an `SDL_main` header | `api/type`, `api/engine` | Open |
@@ -252,6 +252,8 @@ click on it reaches the scene below.
 
 - `Immediate::block(min, max)` counts toward `capturing()` exactly as a window does, and like a
   window is answered one frame behind.
+
+**Done, 2026-10-07.** The case is in `ImmediateTest`. An empty `block()` fails it.
 
 **Gate.** A blocked rectangle with no widget in it makes `capturing()` true for a cursor inside it
 on the next frame, and false for one outside it. Vacuous if a widget is drawn in the rectangle
