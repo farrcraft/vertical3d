@@ -196,3 +196,14 @@ well.
 
 A new baseline usually reinstalls most packages, including boost. See [Build.md](Build.md#traps)
 for the cost.
+
+**Dependabot does not move the baseline.** It updates only a `builtin-baseline` in `vcpkg.json`,
+and this tree keeps the baseline in `vcpkg-configuration.json`. It does open pull requests for
+what it can read, as [.github/dependabot.yml](../../.github/dependabot.yml) configures:
+
+- the GitHub actions the workflows use, weekly and in one group. It moves each pinned sha and the
+  release in its comment together;
+- the `vendor/libnoise` submodule, monthly;
+- the development container's base image in `.devcontainer/Dockerfile`, monthly.
+
+Each pull request runs CI like any other, so an update that breaks the build is found there.
