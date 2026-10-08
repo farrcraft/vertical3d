@@ -42,6 +42,12 @@ Notes:
   alpha.
 - `depthBias(true)` sets `depthBiasEnable` and adds `VK_DYNAMIC_STATE_DEPTH_BIAS`, so the values
   come from the pass.
+- `depthWriteDynamic(true)` adds `VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE`, so a pass may choose
+  whether the pipeline writes depth. The write flag given to `depth()` is the pipeline's own
+  value, used when the pass names none. `Line`'s and `World`'s depth pipelines opt in. `Lit`'s
+  do not, because a lit surface is opaque and always writes.
+
+  Background: [ADR-0085](../../adr/0085-rendering-a-pass-chooses-whether-depth-is-written.md)
 - `layout(VkPipelineLayout)` compiles against a layout the caller owns, for several pipelines
   that share one layout under one bound set. `set()` is then read only to detect a set 2, and
   `push()` only for stage flags. The caller destroys that layout.

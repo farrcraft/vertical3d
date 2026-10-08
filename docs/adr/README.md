@@ -51,6 +51,7 @@ content went. Numbers are never reused.
 | [0071](0071-skinning-joint-matrices-in-one-storage-buffer.md) | Skinning: joint matrices in one storage buffer | accepted |
 | [0075](0075-2d-a-canvas-may-have-its-own-coordinate-space.md) | 2D: a canvas may have its own coordinate space | accepted |
 | [0082](0082-textures-owned-by-the-device-context.md) | Textures: owned by the device context | accepted |
+| [0085](0085-rendering-a-pass-chooses-whether-depth-is-written.md) | Rendering: a pass chooses whether depth is written | accepted |
 
 ## Offline rendering
 

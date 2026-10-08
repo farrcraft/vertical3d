@@ -12,8 +12,8 @@ depth state.
 | Renderer | Pipelines | Depth variant | Notes |
 |---|---|---|---|
 | `Quad` | 2 | neither tests nor writes | one vertex format (position, uv, colour); untextured quads sample white; `text` push flag selects the distance-field branch |
-| `Line` | 2 | tests and writes | `LINE_LIST`, no index buffer; positions in world space through set 0 |
-| `World` | 4 (alpha and additive, each with and without depth) | tests, does not write | additive: colour added by source alpha, destination alpha kept |
+| `Line` | 2 | tests and writes, unless the pass turns writing off | `LINE_LIST`, no index buffer; positions in world space through set 0 |
+| `World` | 4 (alpha and additive, each with and without depth) | tests, does not write unless the pass turns writing on | additive: colour added by source alpha, destination alpha kept |
 | `Lit` | cel, outline, shadow, and a skinned version of each | tests and writes | front face given at construction, clockwise by default; back faces culled (outline culls front); shadow pipeline has depth bias; built only when given a shadow format |
 | `FullScreen` | 1 | neither | one triangle from three vertices and no vertex buffer; caller's fragment SPIR-V |
 

@@ -479,6 +479,73 @@ BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_under_the_mirrored_hand) {
 }
 
 /**
+ * A pass that turns depth writing off reaches only the pipelines that allow it. A near red cube
+ * is drawn first and a far green one after it, straight behind it, in a pass with depth writing
+ * off. Lit's pipelines write depth whatever the pass says, so the near cube still hides the far
+ * one and the centre is red. Were the pass to reach them, the far cube would pass the depth test
+ * against the clear value and draw over the near one.
+ *
+ * The two cubes are submitted from two registries, one after the other, so the near one is
+ * drawn first whatever order a registry walks its entities in.
+ **/
+BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        width, height, colourFormat, true);
+
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
+    MeshRegistry meshes(headless.logger, headless.context, assets);
+    const MeshHandle red = meshes.add("red", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
+    const MeshHandle green = meshes.add("green", cube(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)));
+
+    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
+        headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
+
+    v3d::type::camera::Isometric orbit;
+    orbit.target(glm::vec3(0.0f));
+    orbit.zoom(3.0f);
+    v3d::type::camera::Camera camera;
+    camera.profile().clipping(0.1f, 100.0f);
+    orbit.apply(&camera);
+    camera.createProjection();
+    camera.createView();
+
+    // the far cube is three units further along the view, so an orthographic camera draws it
+    // exactly behind the near one
+    entt::registry nearer;
+    entt::registry farther;
+    place(&nearer, red, glm::vec3(0.0f), glm::vec3(1.0f), false);
+    place(&farther, green, camera.profile().direction() * 3.0f, glm::vec3(1.0f), false);
+
+    LitSettings settings;
+    settings.outline = 0.0f;
+
+    Frame frame;
+    boost::shared_ptr<Pass> pass = frame.pass("lit");
+    pass->target(target);
+    pass->depth(true);
+    pass->depthWrite(false);
+    pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    pass->camera(camera.view(), camera.projection());
+    pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
+    v3d::render::realtime::meshes(nearer, 1.0f, meshes, lit, settings.outline, pass.get());
+    v3d::render::realtime::meshes(farther, 1.0f, meshes, lit, settings.outline, pass.get());
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
+        headless.context->frameUniforms().get());
+    boost::shared_ptr<v3d::image::Image> picture = readBack(&headless, commands, target, "data_out/lit_unwritten_pass.png");
+    BOOST_REQUIRE(picture);
+    BOOST_CHECK(headless.silent());
+
+    const unsigned char* centre = picture->data() + (static_cast<std::size_t>(height / 2) * width + width / 2) * 4;
+    BOOST_TEST_MESSAGE("centre " << int(centre[0]) << "," << int(centre[1]) << "," << int(centre[2]));
+    BOOST_CHECK_GT(centre[0], 0);
+    BOOST_CHECK_EQUAL(centre[1], 0);
+}
+
+/**
  * An entity whose mesh was released is skipped rather than drawn from a stale entry, so
  * meshes() submits nothing for it and nothing for its outline.
  **/

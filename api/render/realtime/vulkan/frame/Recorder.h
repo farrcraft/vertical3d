@@ -149,6 +149,14 @@ class Recorder final {
      * clipped against a canvas larger than the image cannot name a region outside it.
      **/
     static void scissor(VkCommandBuffer commands, const DrawItem& item, Bound* bound);
+
+    /**
+     * Set the dynamic state a pipeline that was just bound declares and takes from the pass:
+     * its depth bias, and whether it writes depth.
+     *
+     * @pre check() has passed, so a biased pipeline's pass names a bias
+     **/
+    static void dynamics(VkCommandBuffer commands, const Pass& pass, const pipeline::Pipeline& pipeline);
 };
 
 };  // namespace v3d::render::realtime::vulkan::frame

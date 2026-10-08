@@ -135,6 +135,12 @@ only for pipelines whose layout declares a third set, so a quad in a lit pass bi
 extra. `Pass::depthBias()` is recorded with `vkCmdSetDepthBias` whenever a pipeline built with
 `Builder::depthBias(true)` is bound, and ignored for other pipelines.
 
+**Depth writing** is set the same way. Whenever a pipeline built with
+`Builder::depthWriteDynamic(true)` is bound, the recorder calls `vkCmdSetDepthWriteEnable` with
+`Pass::depthWrite()`, or with the pipeline's own value when the pass names none. It sets the
+state even when the pass names nothing, because a pipeline that declares the state and draws
+without it set is a validation error. Other pipelines ignore the pass's choice.
+
 **`DrawItem::record`** is an escape hatch: a callback the recorder calls instead of issuing its
 own draw. It exists for work the item fields cannot describe. Reaching for it routinely means
 the item model needs extending.

@@ -119,6 +119,15 @@ class Builder final {
     Builder& depthBias(bool enabled);
 
     /**
+     * Whether a pass may decide if this pipeline writes depth.
+     *
+     * With it on, depth writing is dynamic state. The write flag given to depth() is the
+     * pipeline's own value, which it draws with in a pass that names none. A pass that names one
+     * overrides it. Off by default, which builds the flag in.
+     **/
+    Builder& depthWriteDynamic(bool enabled);
+
+    /**
      * Defaults to straight alpha blending. Opaque geometry should turn it off - blending
      * costs bandwidth on every fragment whether or not any of them is transparent.
      **/
@@ -251,6 +260,7 @@ class Builder final {
     bool blend_;
     Blend factors_;
     bool depthBias_;
+    bool depthWriteDynamic_;
     VkShaderStageFlags pushStages_;
     uint32_t pushBytes_;
     VkPipelineLayout layout_;

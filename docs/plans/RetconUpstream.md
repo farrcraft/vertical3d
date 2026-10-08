@@ -39,7 +39,7 @@ Two findings need more than the handoff says:
 
 | Question | Who | Step |
 |---|---|---|
-| How does an overlay draw lines that test depth without writing it? | **Decided**, 2026-10-07: depth writing is a pass's choice, as dynamic state. ADR-0085 | 4 |
+| How does an overlay draw lines that test depth without writing it? | **Decided**, 2026-10-07: depth writing is a pass's choice, as dynamic state. [ADR-0085](../adr/0085-rendering-a-pass-chooses-whether-depth-is-written.md) | 4 |
 | Does the `Engine3D` capture test open a hidden window, and does CI run it? | **Half decided**, 2026-10-07: a visible window in a suite of its own. CI waits on a run | 1 |
 | Where does an isometric controller live? | **Decided**, 2026-10-07: `api/engine`, reading commands | 9 |
 | Does `api/audio` grow events and parameters, with an optional FMOD backend? | **Decided yes**, 2026-10-07. ADR-0084 records it and amends ADR-0021 | 11 |
@@ -76,7 +76,7 @@ reference captures where a step says they move, and deletes the handoff.
 | [1](#step-1--engine3d-captures-the-frame-it-presents) | `Engine3D::capture()` | `api/render/realtime` | Built; CI's window unknown |
 | [2](#step-2--lit-takes-a-front-face) | A front face on `renderer::Lit` | `api/render/realtime` | Done |
 | [3](#step-3--a-texture-names-its-sampler) | A sampler spec on `TextureFactory::create()` | `api/render/realtime` | Done |
-| [4](#step-4--a-pass-decides-whether-depth-is-written) | Depth writing as a pass's dynamic state | `api/render/realtime` | Open |
+| [4](#step-4--a-pass-decides-whether-depth-is-written) | Depth writing as a pass's dynamic state | `api/render/realtime` | Done |
 | [5](#step-5--quad-linearises-into-an-srgb-target) | `renderer::Quad` linearising into an `_SRGB` target | `api/render` | Open |
 | [6](#step-6--the-device-describes-itself-without-vulkan-types) | Device information without Vulkan types | `api/render/realtime` | Open |
 | [7](#step-7--immediate-blocks-a-rectangle) | `Immediate::block()` | `api/ui` | Open |
@@ -189,6 +189,10 @@ default.
   being set is a validation error, so the set is unconditional.
 - **`Line` and `World` opt in.** `Lit` does not: a lit surface is opaque and always writes, and a
   pass that turns writing off leaves it alone.
+
+**Done, 2026-10-07.** As designed. The line cases are `depth_write_test` in the device suite, and
+the lit case is in `LitSceneTest`. Each of four faults fails a case: the pass ignored, writing
+off when the pass names nothing, the state left unset then, and `Lit` opting in.
 
 **Gate.** Three pictures and one silence:
 

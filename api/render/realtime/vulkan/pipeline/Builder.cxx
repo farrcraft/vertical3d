@@ -28,6 +28,7 @@ Builder::Builder(const boost::shared_ptr<device::Device>& device) :
     depthCompare_(VK_COMPARE_OP_LESS),
     blend_(true),
     depthBias_(false),
+    depthWriteDynamic_(false),
     pushStages_(0),
     pushBytes_(0),
     layout_(VK_NULL_HANDLE),
@@ -137,6 +138,13 @@ Builder& Builder::depthBias(bool enabled) {
 
 /**
  **/
+Builder& Builder::depthWriteDynamic(bool enabled) {
+    depthWriteDynamic_ = enabled;
+    return *this;
+}
+
+/**
+ **/
 Builder& Builder::blend(bool enabled) {
     blend_ = enabled;
     return *this;
@@ -232,6 +240,10 @@ std::vector<VkDynamicState> Builder::dynamics() const {
     if (depthBias_) {
         dynamics.push_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
     }
+    // and depth writing for a pipeline that lets each pass choose it
+    if (depthWriteDynamic_) {
+        dynamics.push_back(VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE);
+    }
     return dynamics;
 }
 
@@ -264,6 +276,8 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     built.pushStages = pushBytes_ > 0 ? pushStages_ : 0;
     built.scene = sets_.size() > 2;
     built.biased = depthBias_;
+    built.writeDynamic = depthWriteDynamic_;
+    built.depthWrite = depthWrite_;
     built.colourFormats = colours_;
     built.depthFormat = depthFormat_;
 

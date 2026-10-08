@@ -49,6 +49,7 @@ A pass has these settings:
 |---|---|---|
 | `clearColour(colour)` / `keepColour()` | Clear the target before drawing, or draw over what is there. | Clears |
 | `depth(bool)` | Test depth. 2D passes do not; they rely on drawing order. | Off |
+| `depthWrite(optional<bool>)` | Whether lines and world quads write depth. Other pipelines ignore it. | Each as built |
 | `target(renderTarget)` | Draw into an offscreen target instead of the window. | The window |
 | `reads(renderTarget)` | Declare that this pass samples a target another pass draws. | None |
 | `viewport(glm::vec4(x, y, w, h))` | The region of the target to draw into, in pixels. Zero width or height means all of it. | All |
@@ -66,6 +67,11 @@ Rules:
 - **Turn sorting on for a depth-tested scene with many objects.** Grouping lets the renderer
   skip rebinding the same pipeline and texture. The sort is stable, so equal keys keep their
   submission order.
+- **Turn depth writing off for translucent lines that share edges.** Lines write depth by
+  default, so the first of two lines on a shared edge hides the second, and draw order decides
+  the colour. `depthWrite(false)` keeps the depth test and drops the write. Lines and world
+  quads follow it; lit meshes always write. A wireframe view leaves it unset, so a near line
+  hides a far one.
 - **A layer only matters in a sorted pass.** `submit(canvas, pass, layer)` takes a layer, and a
   sorted pass draws lower layers first. An unsorted pass ignores it.
 
