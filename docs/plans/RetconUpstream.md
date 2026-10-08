@@ -40,7 +40,7 @@ Two findings need more than the handoff says:
 | Question | Who | Step |
 |---|---|---|
 | How does an overlay draw lines that test depth without writing it? | **Decided**, 2026-10-07: depth writing is a pass's choice, as dynamic state. ADR-0085 | 4 |
-| Does the `Engine3D` capture test open a hidden window, and does CI run it? | Settled in step 1 | 1 |
+| Does the `Engine3D` capture test open a hidden window, and does CI run it? | **Half decided**, 2026-10-07: a visible window in a suite of its own. CI waits on a run | 1 |
 | Where does an isometric controller live? | **Decided**, 2026-10-07: `api/engine`, reading commands | 9 |
 | Does `api/audio` grow events and parameters, with an optional FMOD backend? | **Decided yes**, 2026-10-07. ADR-0084 records it and amends ADR-0021 | 11 |
 
@@ -73,7 +73,7 @@ reference captures where a step says they move, and deletes the handoff.
 
 | | What | Where | State |
 |---|---|---|---|
-| [1](#step-1--engine3d-captures-the-frame-it-presents) | `Engine3D::capture()` | `api/render/realtime` | Open |
+| [1](#step-1--engine3d-captures-the-frame-it-presents) | `Engine3D::capture()` | `api/render/realtime` | Built; CI's window unknown |
 | [2](#step-2--lit-takes-a-front-face) | A front face on `renderer::Lit` | `api/render/realtime` | Open |
 | [3](#step-3--a-texture-names-its-sampler) | A sampler spec on `TextureFactory::create()` | `api/render/realtime` | Open |
 | [4](#step-4--a-pass-decides-whether-depth-is-written) | Depth writing as a pass's dynamic state | `api/render/realtime` | Open |
@@ -103,6 +103,15 @@ cannot take a screenshot or run a golden-image test of its own window.
 in the render test suite, skipped with exit code 77 when no surface can be made. The device tests
 already skip that way without a device. The other is a test outside CI. Find out whether the
 Windows CI runner can create a window before choosing.
+
+**State, 2026-10-07.** Built, with the gate below in `render_window`, a third render suite under
+`api/render/tests/window/`. Each case opens a small visible SDL window. `Window` has no hidden
+flag, and adding one only for a test was not worth an api change. The suite exits 77 when no
+window can be made, so a machine without a display skips it. It passes locally, and fails with
+the copy moved before `Recorder::record()`. What is left: a CI run on a pull request, to learn
+whether the Windows runner can open a window. If it can, the workflow fails on a skip of this
+suite as it does for `render_device`. If it cannot, the skip stays and this test runs only
+locally.
 
 **Gate.** Request a capture, render one frame of a known clear colour, and read the file back to
 that colour. Vacuous if it asserts only that the file exists: a capture recorded before

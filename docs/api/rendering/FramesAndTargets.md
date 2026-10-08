@@ -157,9 +157,26 @@ build that renderer yourself against the target's formats (see
 
 ## Reading a frame back
 
-`vulkan::frame::Capture` copies a drawn image into CPU memory and writes it as a PNG. It is for
-code that records frames itself, such as a headless context or a device test. `Engine3D` has no
-capture hook.
+An app on `Engine3D` captures its window with one call:
+
+```cpp
+renderer_->capture("frame.png");   // the next frame that presents is written to frame.png
+```
+
+- **The file holds the next frame that is presented.** It is copied after the frame is recorded
+  and before it is presented. A frame that is skipped, because the window has no area or the
+  chain is being rebuilt, keeps the request for the next one.
+- **A request is answered once.** The frame that tries to write the file clears the request, so
+  a path that cannot be written is reported in the log once.
+- **`capture()` returns false before `initialize()`, and when the chain cannot be copied out of.**
+  The chain has `TRANSFER_SRC` usage only where the surface supports it. Nothing is requested
+  then.
+- The captured frame waits for the device to go idle before it reads the copy back, so it does
+  not overlap the next frame.
+
+`vulkan::frame::Capture` does the copy. Code that records frames itself, such as a headless
+context or a device test, uses it directly. It copies a drawn image into CPU memory and writes it
+as a PNG.
 
 It takes two calls, because a GPU submit has to complete between them:
 

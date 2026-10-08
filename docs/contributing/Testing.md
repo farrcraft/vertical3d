@@ -9,6 +9,7 @@ draw on a GPU.
 - [Writing a test](#writing-a-test)
 - [Checking that a new test fails first](#checking-that-a-new-test-fails-first)
 - [The render device suite](#the-render-device-suite)
+- [The render window suite](#the-render-window-suite)
 - [Reference images](#reference-images)
 - [Verifying a rendering change](#verifying-a-rendering-change)
 - [Traps](#traps)
@@ -44,6 +45,8 @@ pull request and on each push to `main`.
   `api/asset/media/tests/` and `render_offline` is in `api/render/offline/tests/`.
 - **One extra suite for the realtime renderer on a real device**, `render_device`, from
   `api/render/tests/device/`. See [The render device suite](#the-render-device-suite).
+- **One more for the frame loop on a real window**, `render_window`, from
+  `api/render/tests/window/`. See [The render window suite](#the-render-window-suite).
 - **One suite per app that has logic worth testing**: moya, odyssey, pong, tetris, vertical3d
   and voxel, each in `<app>/tests/`.
 
@@ -89,8 +92,8 @@ target_link_libraries(v3dtest_image PRIVATE v3dlib_image)
 
 You link the library under test yourself, and every other library whose header the suite
 includes, rather than reaching it through the library under test. Each suite's `TestMain`
-defines `BOOST_TEST_MODULE` and nothing else. The exception is `render_device`, whose `main`
-checks for a device first.
+defines `BOOST_TEST_MODULE` and nothing else. The exceptions are `render_device`, whose `main`
+checks for a device first, and `render_window`, whose `main` checks for a window.
 
 A suite with fixture files copies a directory of them beside the executable in a `POST_BUILD`
 command, which the suite's `tests/CMakeLists.txt` writes. Most suites copy their `tests/data/`
@@ -211,6 +214,18 @@ This is a separate executable from `v3dtest_render`, which tests the renderer's 
 so that `v3dtest_render` runs on any machine.
 
 Background: [ADR-0007](../adr/0007-ci-render-tests-on-software-vulkan.md)
+
+## The render window suite
+
+`v3dtest_render_window` tests what only a window can show: `Engine3D` acquiring, recording and
+presenting to a swapchain. Each case opens a small SDL window, builds an `Engine3D` on it, and
+closes both when it ends. Every case asserts validation silence, as the device suite's do.
+
+`main` opens one window before Boost.Test starts. When SDL cannot start, the window cannot be
+made, or no device can present to it, the executable exits with 77 and ctest reports the suite
+as `Skipped`. The reason is printed to the console.
+
+A window appears on the screen for each case while the suite runs.
 
 ## Reference images
 

@@ -80,3 +80,13 @@ target_compile_definitions(v3dtest_render_device PRIVATE V3D_ASSET_FIXTURES="${C
 
 target_link_libraries(v3dtest_render_device PRIVATE v3dlib_render v3dlib_ecs v3dlib_image v3dlib_asset v3dlib_asset_media v3dlib_log v3dlib_type Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
 set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)
+
+# A third binary, because these cases present to a window, which needs a display as well as a
+# device. Where no window can be made, or nothing can present to it, the binary exits with 77.
+v3d_add_test(render_window
+	"window/TestMain.cpp"
+	"window/Windowed.cpp"
+	"window/EngineCaptureTest.cpp")
+
+target_link_libraries(v3dtest_render_window PRIVATE v3dlib_render v3dlib_image v3dlib_log Boost::filesystem ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
+set_tests_properties(render_window PROPERTIES SKIP_RETURN_CODE 77)

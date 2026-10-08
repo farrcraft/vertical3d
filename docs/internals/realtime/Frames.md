@@ -66,9 +66,18 @@ hold a different number of images.
    context's depth buffer if any pass on the swapchain tests depth.
 3. `FrameUniforms::begin(ring->frame())` starts the frame's set 0 slots.
 4. `Recorder::record()` records every pass.
-5. `Presenter::present()` ends the buffer, submits it with `vkQueueSubmit2`, and presents.
-   `OutOfDate` rebuilds the chain for the next frame.
-6. `Frame::reset()` drops every pass's items.
+5. If `capture()` named a file, `Capture::record()` copies the image, which the recorder left in
+   `PRESENT_SRC_KHR`. A chain that is not `copyable()` logs an error and drops the request
+   instead, since `Capture` throws for it.
+6. `Presenter::present()` ends the buffer, submits it with `vkQueueSubmit2`, and presents.
+7. With a capture recorded, `Ring::waitIdle()` waits for the submit and `Capture::write()` writes
+   the file, and the request is cleared whether or not the write succeeded. The submit stands
+   when presenting reports the chain out of date, so the file is written in that case too.
+8. If `present()` reported `OutOfDate`, the chain is rebuilt for the next frame.
+9. `Frame::reset()` drops every pass's items.
+
+A frame dropped at step 1 never reaches step 5, so a capture request waits for a frame that
+presents.
 
 `beginFrame()` calls `renderFrame()` itself when the window has no area, so a minimized app still
 turns the loop over.
