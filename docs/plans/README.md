@@ -21,6 +21,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 | Plan | Area | What it delivers |
 |---|---|---|
 | [ReviewGates](ReviewGates.md) | Process, CI | A changeset reviews clean: a finding is what the change introduced, and the classes a tool can find are gated |
+| [RetconUpstream](RetconUpstream.md) | Realtime rendering, UI, ECS, engine | Frame capture on `Engine3D`, four renderer seams a game on the other camera hand or an sRGB chain needs, and five small helpers |
 
 ## Completed plans
 
