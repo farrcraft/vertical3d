@@ -16,12 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     # the whole history, so each gate can find where the change left the branch it merges into
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       with:
         fetch-depth: 0
     # Node runs the gates directly; they use only its own modules and the gates' shared ones in
     # scripts/, and need no install
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: 24
     # A push names the previous tip of main. That is all zeros when the branch is new, can be
@@ -51,6 +51,19 @@ jobs:
     - name: Link rule
       if: ${{ !cancelled() }}
       run: node scripts/linkrule.ts
+    # Every action is pinned to a full commit sha, because a tag can be moved to other code after
+    # it was reviewed. The version in the comment beside each sha is for a reader, and nothing
+    # checks it. A local action, named by a path in this repository, needs no sha.
+    - name: Actions are pinned to a commit
+      if: ${{ !cancelled() }}
+      shell: bash
+      run: |
+        if grep -nE '^\s*(-\s*)?uses:' .github/workflows/*.yml \
+            | grep -vE 'uses:\s*\./' \
+            | grep -vE 'uses:\s*[^@[:space:]]+@[0-9a-f]{40}(\s|$)'; then
+          echo "::error::Each uses: above names a tag or a branch. Pin it to the full commit sha the tag points at."
+          exit 1
+        fi
     - name: Prose
       if: ${{ !cancelled() }}
       run: node scripts/prose.ts --base "$GATE_BASE"
