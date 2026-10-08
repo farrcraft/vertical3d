@@ -486,6 +486,9 @@ BOOST_AUTO_TEST_CASE(a_grey_quad_reads_back_grey_from_an_srgb_target) {
 /**
  * The same quad reads back as 0x80 from a UNORM target, which stores what it is given. A quad
  * decoded whatever its target would read about 0x37 here, darkening every UNORM app's ui.
+ *
+ * Passes before the change: the decode to linear is what the change adds, so before it nothing
+ * could reach a UNORM target and darken it.
  **/
 BOOST_AUTO_TEST_CASE(a_grey_quad_reads_back_grey_from_a_unorm_target) {
     const std::vector<unsigned char> centre = greyQuad(VK_FORMAT_R8G8B8A8_UNORM, "data_out/quad_grey_unorm.png");
