@@ -32,7 +32,8 @@ class FmodEvents final : public Events {
     /**
      * Create and initialize the Studio system.
      *
-     * @throw std::runtime_error when FMOD cannot create or initialize it
+     * @throw std::runtime_error when fmodstudio.dll or fmod.dll cannot be loaded, or when FMOD
+     * cannot create or initialize the system
      **/
     explicit FmodEvents(const boost::shared_ptr<v3d::log::Logger>& logger);
 

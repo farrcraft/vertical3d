@@ -58,8 +58,9 @@ events_->update();                                       // once a frame, in tic
 
 - **The backend is FMOD Studio when the build has it, and the null backend otherwise.** A build
   has FMOD only when it was configured with `V3D_FMOD_ROOT`; see
-  [Dependencies.md](../../contributing/Dependencies.md#fmod-studio). The null backend plays
-  nothing.
+  [Dependencies.md](../../contributing/Dependencies.md#fmod-studio). A build with FMOD still
+  gets the null backend when FMOD's dlls are not beside the executable, or FMOD fails to start.
+  The null backend plays nothing.
 - **Every call says whether it did anything.** `bank()`, `play()` and `parameter()` return false
   for a bank that did not load, an event no loaded bank holds, or a parameter that does not
   exist, and always on the null backend. A game treats false as silence, not as an error.

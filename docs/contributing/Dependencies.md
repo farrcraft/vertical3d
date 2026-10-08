@@ -79,9 +79,10 @@ redistributing it, and its downloads need an account on fmod.com. To build the F
    `C:/Program Files (x86)/FMOD SoundSystem/FMOD Studio API Windows` by default.
 2. Configure with `-DV3D_FMOD_ROOT=<that directory>`. The configure stops if the directory holds
    no `api/studio/inc/fmod_studio.hpp`.
-3. An executable that links `v3dlib_audio` needs `fmod.dll` and `fmodstudio.dll` beside it at run
-   time. The audio test suite copies them. An app copies them itself, from
-   `$<TARGET_FILE:v3d_fmod_core>` and `$<TARGET_FILE:v3d_fmod_studio>`.
+3. An executable that plays events needs `fmod.dll` and `fmodstudio.dll` beside it at run time.
+   `v3dlib_audio` delay-loads FMOD, so an executable without them still starts, and `events()`
+   returns the null backend. The audio test suite copies them. An app that plays events copies
+   them itself, from `$<TARGET_FILE:v3d_fmod_core>` and `$<TARGET_FILE:v3d_fmod_studio>`.
 
 Setting `V3D_FMOD_ROOT` back to empty builds the null backend alone again.
 

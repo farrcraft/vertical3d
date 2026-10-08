@@ -6,6 +6,7 @@
 #include "FmodEvents.h"
 
 #include <fmod_errors.h>
+#include <SDL3/SDL_loadso.h>
 
 #include <stdexcept>
 #include <string>
@@ -29,6 +30,13 @@ const int maximumChannels = 512;
 FmodEvents::FmodEvents(const boost::shared_ptr<v3d::log::Logger>& logger) :
     logger_(logger),
     system_(nullptr) {
+    // The build delay-loads fmodstudio.dll, and a delay-loaded call into a dll that cannot be
+    // found ends the process. Loading it here first turns a missing dll into an exception.
+    SDL_SharedObject* studio = SDL_LoadObject("fmodstudio.dll");
+    if (studio == nullptr) {
+        throw std::runtime_error(std::string("FMOD's dlls could not be loaded: ") + SDL_GetError());
+    }
+    SDL_UnloadObject(studio);
     FMOD_RESULT result = FMOD::Studio::System::create(&system_);
     if (result != FMOD_OK) {
         throw std::runtime_error(std::string("FMOD could not create a Studio system: ") + FMOD_ErrorString(result));

@@ -23,6 +23,12 @@ if(V3D_FMOD_ROOT)
 		INTERFACE_LINK_LIBRARIES v3d_fmod_core)
 	target_sources(v3dlib_audio PRIVATE "FmodEvents.h" "FmodEvents.cpp")
 	target_link_libraries(v3dlib_audio PRIVATE v3d_fmod_studio)
+	# fmodstudio.dll is delay-loaded, so an executable that links this library starts without
+	# FMOD's dlls beside it. FmodEvents checks the dll loads before its first FMOD call, and
+	# events() hands back the null backend when it does not. fmod.dll needs no entry: nothing here
+	# imports from it directly, and fmodstudio.dll loads it.
+	target_link_options(v3dlib_audio INTERFACE "/DELAYLOAD:fmodstudio.dll")
+	target_link_libraries(v3dlib_audio PRIVATE delayimp)
 	target_compile_definitions(v3dlib_audio PRIVATE V3D_AUDIO_FMOD)
 endif()
 
