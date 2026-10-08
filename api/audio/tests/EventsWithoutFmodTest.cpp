@@ -11,6 +11,7 @@
 
 BOOST_AUTO_TEST_SUITE(events_without_fmod_test)
 
+#ifndef V3D_AUDIO_FMOD
 /**
  * Built only without the FMOD backend, as CI builds. events() hands back the null backend rather
  * than null or a throw, so a game that asks for events always has an object to call.
@@ -22,5 +23,6 @@ BOOST_AUTO_TEST_CASE(events_hands_back_the_null_backend) {
     BOOST_TEST(events->name() == "null");
     BOOST_TEST(!events->play("event:/UI/Cancel"));
 }
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()
