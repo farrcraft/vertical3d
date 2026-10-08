@@ -49,6 +49,9 @@ jobs:
           # libnoise is a submodule and is needed: voxel compiles its headers and its suite
           # links it. It is the only submodule; SDL3_mixer comes from vcpkg.
           submodules: true
+          # the whole history, so the fails-first step can find the branch a pull request
+          # merges into and read each changed file at its version there
+          fetch-depth: 0
 
       # Defender holds a file while it scans it. Files this job writes are often opened again
       # immediately: the linker's output to embed a manifest, and again by the applocal copy
@@ -370,3 +373,28 @@ jobs:
             -DVCPKG_INSTALLED_DIR="%GITHUB_WORKSPACE%\out\build\ci\vcpkg_installed" ^
             -DVCPKG_MANIFEST_INSTALL=OFF || exit /b 1
           cmake --build "%STARTER_BUILD_DIR%" || exit /b 1
+
+      # Node runs the fails-first harness directly, with no install, at the version the other
+      # gates run on in review-gates.yml.
+      - uses: actions/setup-node@v4
+        if: github.event_name == 'pull_request'
+        with:
+          node-version: 24
+
+      # Every test case a pull request adds has to fail without the rest of the pull request: a
+      # case that passes on the base does not test the change. The harness builds the affected
+      # suites a second time, in a worktree with every file outside tests/ at the base, reusing
+      # this job's packages and its link pool. It runs the render suites on lavapipe as the
+      # Test step does. Only pull requests run it, because a push to main has already been
+      # checked as one.
+      - name: The new test cases fail without the change
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        env:
+          VK_LAYER_VALIDATE_SYNC: "1"
+          # the harness enters the developer environment through this file rather than looking
+          # for a Visual Studio edition the image does not have
+          V3D_VCVARS: ${{ runner.temp }}\vcvars.bat
+        run: |
+          node scripts/failsfirst.ts --build "$env:BUILD_DIR" --base "origin/${{ github.base_ref }}"
+          if ($LASTEXITCODE -ne 0) { throw "the fails-first harness exited $LASTEXITCODE" }

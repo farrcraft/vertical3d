@@ -132,13 +132,15 @@ See [Traps](#traps) for what the copy means when you add a fixture.
 ## Checking that a new test fails first
 
 A test that passes without the code it claims to test is a weak test.
-[scripts/failsfirst.ts](../../scripts/failsfirst.ts) checks the cases a changeset adds. Run it on
-a branch before review:
+[scripts/failsfirst.ts](../../scripts/failsfirst.ts) checks the cases a changeset adds. CI runs it
+on every pull request, and fails the pull request when a new case passes on the base or is not
+run. Run it on a branch before review, so that CI does not find it first:
 
 ```
 node scripts/failsfirst.ts                  # the branch, from its merge base with main
 node scripts/failsfirst.ts --commit <sha>   # one commit
 node scripts/failsfirst.ts --list           # list the new cases, build nothing
+node scripts/failsfirst.ts --build <dir>    # reuse a build other than out/build/x64-Debug
 ```
 
 The script finds the Boost.Test cases the changeset adds and the suite each one belongs to. It
@@ -146,7 +148,8 @@ builds those suites in a separate git worktree, with every file outside a `tests
 its base version, and runs each new case there. Each case should fail or fail to build. A case
 fails only when Boost.Test reports a failed check. A binary that cannot start, or that exits
 with an error and reports no failure, is "not run". A case that passes is a weak test, and the
-script exits with 1.
+script exits with 1. A case that was not run, or was skipped, leaves it unchecked, and the script
+exits with 2.
 
 A case can guard against a defect that only the change itself makes possible, such as a double
 release under a release rule the same change adds. That case passes on the base by design. Its
@@ -165,10 +168,11 @@ The script reports such a case as "passes, stated", prints the reason, and does 
 reason has to name what the change adds that makes the defect possible. A reviewer reads it,
 and a reason that does not name one makes the case a weak test.
 
-The worktree build is separate from `out/build/x64-Debug` and installs no packages. It reuses
-the packages that build installed. The script's header lists its limits. A `render_device` case
-needs a GPU, and is reported as skipped without one. A case that fails only because it reads a
-fixture the change added has to be read by hand.
+The worktree build is separate from `out/build/x64-Debug`, or the build `--build` names, and
+installs no packages. It reuses the packages that build installed, and its link job pool if it
+has one. The script's header lists its limits. A `render_device` case needs a Vulkan device, and
+a `render_window` case a window too. Without one the case is reported as skipped. A case that
+fails only because it reads a fixture the change added has to be read by hand.
 
 ## The render device suite
 

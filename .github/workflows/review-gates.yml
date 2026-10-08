@@ -2,8 +2,8 @@ name: review gates
 # The checks docs/contributing/Review.md lists for the classes a tool can find. The prose and
 # boundary gates read only the lines a change adds, so they compare against the branch the pull
 # request merges into, or against the previous tip of main after a push to it. The link rule
-# checks the whole tree. The fails-first harness builds the tree twice and needs a GPU for the
-# device suite, so it runs locally before review and not here.
+# checks the whole tree. The fails-first harness needs the compiler, the packages and the
+# software Vulkan driver, so it runs in ctest.yml after that workflow's build, not here.
 #
 # push is filtered to the default branch and pull_request is not, for the reason cpplint.yml
 # gives.

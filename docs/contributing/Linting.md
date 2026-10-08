@@ -203,8 +203,12 @@ The workflow first runs the gates' own tests in `scripts/tests/`, which cover th
 gates share in `scripts/lexer.ts`. Run them locally with `node --test "scripts/tests/*.test.ts"`
 from the repository root.
 
-The fails-first gate, `scripts/failsfirst.ts`, does not run in CI. It builds the tree twice and
-the device suite needs a GPU, so it runs locally before review.
+The fails-first gate, `scripts/failsfirst.ts`, runs in
+[.github/workflows/ctest.yml](../../.github/workflows/ctest.yml) instead, as that job's last step
+on each pull request. It needs the compiler, the packages and the software Vulkan driver, which
+that job already has. It compares against the branch the pull request merges into, and fails
+the job when a new case passes without the change or was not run. Run it locally as well, before
+review: see [Testing.md](Testing.md#checking-that-a-new-test-fails-first).
 
 ## The review gates' environment
 

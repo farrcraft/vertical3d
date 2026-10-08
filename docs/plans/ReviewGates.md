@@ -93,8 +93,8 @@ numbers and handles go through the helpers.
 
 **Closed.** `scripts/failsfirst.ts` finds the test cases a changeset adds, and builds their
 suites in a separate worktree with the changeset's non-test files at their base version. It runs
-each new case there, and fails when any of them passes. It runs locally before review and not in
-CI, because it builds the tree twice and the device suite needs a GPU.
+each new case there, and fails when any of them passes. It runs locally before review, and in
+`ctest.yml` on each pull request, after that job's build and on its software Vulkan driver.
 
 ### Step 8 — Close the branch
 
@@ -108,8 +108,8 @@ Steps 1 to 7 are closed. The four gates are `prose.ts`, `linkrule.ts`, `boundary
 `failsfirst.ts` in `scripts/`, run by Node with no dependencies. All four read C++ through one
 lexer, `scripts/lexer.ts`, and the tests in `scripts/tests/` cover it and
 each gate's entry points. The tests, the link rule, prose and boundary gates run in CI in
-`review-gates.yml`, and the fails-first gate runs locally. A line the boundary gate reports and
-that is defined carries a `// checked:` comment naming why.
+`review-gates.yml`, and the fails-first gate runs in `ctest.yml`. A line the boundary gate
+reports and that is defined carries a `// checked:` comment naming why.
 
 Step 8's review is closed. The branch passes the gates: 317 prose lines were rewritten, and the
 boundary gate's reports were fixed or given a reason. Fixing them found three more defects: a NaN
