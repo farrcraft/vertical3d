@@ -75,7 +75,7 @@ reference captures where a step says they move, and deletes the handoff.
 |---|---|---|---|
 | [1](#step-1--engine3d-captures-the-frame-it-presents) | `Engine3D::capture()` | `api/render/realtime` | Built; CI's window unknown |
 | [2](#step-2--lit-takes-a-front-face) | A front face on `renderer::Lit` | `api/render/realtime` | Done |
-| [3](#step-3--a-texture-names-its-sampler) | A sampler spec on `TextureFactory::create()` | `api/render/realtime` | Open |
+| [3](#step-3--a-texture-names-its-sampler) | A sampler spec on `TextureFactory::create()` | `api/render/realtime` | Done |
 | [4](#step-4--a-pass-decides-whether-depth-is-written) | Depth writing as a pass's dynamic state | `api/render/realtime` | Open |
 | [5](#step-5--quad-linearises-into-an-srgb-target) | `renderer::Quad` linearising into an `_SRGB` target | `api/render` | Open |
 | [6](#step-6--the-device-describes-itself-without-vulkan-types) | Device information without Vulkan types | `api/render/realtime` | Open |
@@ -152,6 +152,9 @@ for an atlas and a sprite, and wrong for a surface meant to tile. `Textures::mat
   spec. A default spec shares the factory's sampler, as now. Any other is made once per distinct
   spec and shared, so a scene of tiling textures holds one repeating sampler.
 - `Textures::texture()` passes it through. `Sampler::Spec` needs an equality operator.
+
+**Done, 2026-10-07.** Both `Textures::texture()` overloads take the spec last. The gate is
+`texture_sampler_test` in the device suite.
 
 **Gate.** Create one default and two repeating textures. The default's sampler differs from the
 repeating ones, and the two repeating textures share theirs. Vacuous if it asserts only that a

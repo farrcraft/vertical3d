@@ -49,7 +49,8 @@ v3d_add_test(render_device
 	"device/RenderTargetTest.cpp"
 	"device/PostTest.cpp"
 	"device/PipelineBuilderTest.cpp"
-	"device/TimingsTest.cpp")
+	"device/TimingsTest.cpp"
+	"device/TextureSamplerTest.cpp")
 
 # A committed picture is resolved against the working directory, which v3d_add_test points at
 # the executable, so the references have to sit beside it. moya copies its own the same way.

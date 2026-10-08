@@ -28,7 +28,7 @@ TextureFactory::TextureFactory(const boost::shared_ptr<device::Device>& device, 
     // the default. It is linear, because a glyph atlas is sampled at whatever size the text is
     // drawn at and a sprite at whatever size the window is. It is clamped, because a region's
     // neighbour in an atlas is a different glyph and wrapping would bleed it in
-    sampler_ = boost::make_shared<pipeline::Sampler>(device_, pipeline::Sampler::Spec());
+    sampler(pipeline::Sampler::Spec());
 }
 
 /**
@@ -38,19 +38,20 @@ TextureFactory::~TextureFactory() {
 
 /**
  **/
-pipeline::Texture TextureFactory::create(const boost::shared_ptr<v3d::image::Image>& image, Encoding encoding) const {
+pipeline::Texture TextureFactory::create(const boost::shared_ptr<v3d::image::Image>& image, Encoding encoding,
+    const pipeline::Sampler::Spec& sampler) const {
     if (!image) {
         throw std::runtime_error("A vulkan texture needs an image to be created from");
     }
     // bpp really is bits per pixel here, whatever the name suggests: the loaders set it
     // to 24 or 32, and a glyph atlas of depth 1 to 8
-    return create(image->data(), image->width(), image->height(), image->bpp() / 8, encoding);
+    return create(image->data(), image->width(), image->height(), image->bpp() / 8, encoding, sampler);
 }
 
 /**
  **/
 pipeline::Texture TextureFactory::create(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
-    Encoding encoding) const {
+    Encoding encoding, const pipeline::Sampler::Spec& sampler) const {
     if (pixels == nullptr || width == 0 || height == 0) {
         throw std::runtime_error("A vulkan texture needs pixels and a non-zero size");
     }
@@ -102,7 +103,7 @@ pipeline::Texture TextureFactory::create(const unsigned char* pixels, uint32_t w
 
     pipeline::Texture texture;
     texture.image = boost::make_shared<Image>(device_, spec);
-    texture.sampler = sampler_;
+    texture.sampler = this->sampler(sampler);
 
     upload(staging, *texture.image, VkExtent3D{width, height, 1});
     return texture;
@@ -127,9 +128,22 @@ pipeline::Texture TextureFactory::volume(const unsigned char* texels, uint32_t w
 
     pipeline::Texture texture;
     texture.image = boost::make_shared<Image>(device_, spec);
-    texture.sampler = sampler_;
+    texture.sampler = sampler(pipeline::Sampler::Spec());
     upload(staging, *texture.image, VkExtent3D{width, height, depth});
     return texture;
+}
+
+/**
+ **/
+boost::shared_ptr<pipeline::Sampler> TextureFactory::sampler(const pipeline::Sampler::Spec& spec) const {
+    // a scene names a handful of specs, so a search is cheaper than keeping them ordered
+    for (const auto& [made, existing] : samplers_) {
+        if (made == spec) {
+            return existing;
+        }
+    }
+    samplers_.emplace_back(spec, boost::make_shared<pipeline::Sampler>(device_, spec));
+    return samplers_.back().second;
 }
 
 /**

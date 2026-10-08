@@ -49,14 +49,16 @@ Textures::Textures(const boost::shared_ptr<vulkan::device::Device>& device,
 /**
  **/
 TextureHandle Textures::texture(const boost::shared_ptr<v3d::image::Image>& image,
-    vulkan::memory::TextureFactory::Encoding encoding) {
-    return resources_->add(factory_->create(image, encoding));
+    vulkan::memory::TextureFactory::Encoding encoding, const vulkan::pipeline::Sampler::Spec& sampler) {
+    return resources_->add(factory_->create(image, encoding, sampler));
 }
 
 /**
  **/
-TextureHandle Textures::texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels) {
-    return resources_->add(factory_->create(pixels, width, height, channels));
+TextureHandle Textures::texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
+    const vulkan::pipeline::Sampler::Spec& sampler) {
+    return resources_->add(factory_->create(pixels, width, height, channels,
+        vulkan::memory::TextureFactory::Encoding::Display, sampler));
 }
 
 /**

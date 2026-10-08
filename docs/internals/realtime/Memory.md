@@ -205,7 +205,11 @@ serves every primitive from one pool.
 - uploads `UNORM` by default (`Encoding::Display`), or `_SRGB` with `Encoding::Srgb`;
 - gives a single-channel image (`R8_UNORM`) a view swizzled to `(1, 1, 1, R)`, so a coverage
   mask or a glyph atlas samples as white with alpha and the shader needs no branch for it;
-- can create a 3D texture from raw texels, which `Grade` uses for its table.
+- can create a 3D texture from raw texels, which `Grade` uses for its table;
+- makes one `pipeline::Sampler` per distinct `Sampler::Spec` it is asked for, and hands each
+  texture the shared one. The default spec's sampler is made when the factory is, and a volume
+  texture is always read through it. The specs are kept in a list and searched, since a scene
+  names only a few.
 
 `Textures::depthTexture(target)` and `texture(target)` return the white texture for a target with
 nothing of that kind to sample. A descriptor written against an image without sampled usage is

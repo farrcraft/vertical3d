@@ -18,6 +18,18 @@ textures->release(sprite);                                            // see Rel
 - A texture is uploaded as display-space `UNORM` unless you pass
   `TextureFactory::Encoding::Srgb` (see [Colour](ColourAndPost.md#colour)).
 - A single-channel image is read as a coverage mask: white, with the channel as alpha.
+- **A texture is read linear and clamped to the edge** unless you pass a
+  `vulkan::pipeline::Sampler::Spec` as the last argument. The default suits an atlas and a
+  sprite. A surface meant to tile names a repeating address mode:
+
+  ```cpp
+  vulkan::pipeline::Sampler::Spec tiling;
+  tiling.address = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  TextureHandle floor = textures->texture(image, TextureFactory::Encoding::Srgb, tiling);
+  ```
+
+  One sampler is made for each distinct spec and shared by every texture that names it.
+  `material()` binds the texture's own sampler.
 - `white()` is the 1×1 white texture. It is never released.
 - **Upload at load time.** An upload waits for the GPU to finish the copy, so uploading during
   play stalls the frame.

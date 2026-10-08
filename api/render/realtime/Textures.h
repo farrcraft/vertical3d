@@ -13,6 +13,7 @@
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/pipeline/Sampler.h>
 
 #include <vulkan/vulkan.h>
 
@@ -55,15 +56,20 @@ class Textures final {
     /**
      * Upload an image and register it, so a draw can name it.
      * @param encoding how a shader reads it back - as authored unless something lights it
+     * @param sampler how a shader reads the image. The default is linear and clamped to the
+     *        edge. A surface meant to tile names a repeating address mode
      **/
     TextureHandle texture(const boost::shared_ptr<v3d::image::Image>& image,
-        vulkan::memory::TextureFactory::Encoding encoding = vulkan::memory::TextureFactory::Encoding::Display);
+        vulkan::memory::TextureFactory::Encoding encoding = vulkan::memory::TextureFactory::Encoding::Display,
+        const vulkan::pipeline::Sampler::Spec& sampler = vulkan::pipeline::Sampler::Spec());
 
     /**
      * @param pixels tightly packed rows of width * channels bytes
      * @param channels 1 for a coverage mask such as a glyph atlas, 3 or 4 for colour
+     * @param sampler how a shader reads the image, as above
      **/
-    TextureHandle texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels);
+    TextureHandle texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
+        const vulkan::pipeline::Sampler::Spec& sampler = vulkan::pipeline::Sampler::Spec());
 
     /**
      * Register a render target so that a draw can sample what a pass drew into it.
