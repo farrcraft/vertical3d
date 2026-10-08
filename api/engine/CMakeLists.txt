@@ -5,6 +5,7 @@ v3d_add_api_library(engine
 	"Statistics.h" "Statistics.cpp"
 	"Engine.h" "Engine.cpp"
 	"Settings.h" "Settings.cpp"
+	"IsometricController.h" "IsometricController.cpp"
 )
 
 # PUBLIC: Engine.h holds one of each of these, so an app that subclasses it compiles all of

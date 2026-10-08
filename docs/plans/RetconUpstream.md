@@ -81,7 +81,7 @@ reference captures where a step says they move, and deletes the handoff.
 | [6](#step-6--the-device-describes-itself-without-vulkan-types) | Device information without Vulkan types | `api/render/realtime` | Done |
 | [7](#step-7--immediate-blocks-a-rectangle) | `Immediate::block()` | `api/ui` | Done |
 | [8](#step-8--an-entity-reference-that-knows-its-entity-is-gone) | `ecs::Ref` | `api/ecs` | Done |
-| [9](#step-9--an-isometric-camera-controller) | A command-driven controller for `camera::Isometric` | `api/engine` | Open |
+| [9](#step-9--an-isometric-camera-controller) | A command-driven controller for `camera::Isometric` | `api/engine` | Done |
 | [10](#step-10--picking-and-the-entry-point) | `Camera::screenPoint()`, `pick()`, and an `SDL_main` header | `api/type`, `api/engine` | Open |
 | [11](#step-11--audio-events-and-parameters) | Audio events and parameters | `api/audio` | Open |
 
@@ -305,6 +305,11 @@ from settings.
   `release()` leaves nothing on the dispatcher.
 - `api/engine` already links `api/type` and `api/input`, so no link changes. Each pan, rotate and
   zoom goes through `Isometric`'s own methods, which keep the clamps and the wrap in one place.
+
+**Done, 2026-10-07.** `held()` is passed in as a callable, with a constructor that takes the
+`Engine`, so the gate runs with no window. The cases are `isometric_controller_test` in the engine
+suite, with a fourth for the disconnect. Each of three faults fails a case: rotating on a repeat,
+moving per call, and panning along world axes.
 
 **Gate.**
 
