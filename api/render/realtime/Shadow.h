@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/type/camera/Profile.h>
+
 #include <optional>
 #include <span>
 
@@ -35,15 +37,17 @@ struct Bounds final {
  * The eye is placed two radii out towards the light, and the far plane four radii beyond it.
  * The sphere therefore spans a quarter to three quarters of the depth range, and a caster just
  * outside it still lands in the map. The view is built as type::camera::Profile::lookat and
- * Camera::createProjection build a camera's. A face is therefore wound the same way under the
- * light as under the camera a scene is drawn through, and one cull mode serves both passes.
+ * Camera::createView build a camera's in the hand given. A face is therefore wound the same way
+ * under the light as under a camera of that hand, and one cull mode serves both passes.
  *
  * @param towards the direction towards the light - LitSettings::light. It need not be
  *        normalised, and must not be zero
  * @param centre the middle of what should cast and receive shadows
  * @param radius how far from the centre that reaches, which must be above zero
+ * @param hand the hand of the camera the scene is drawn through
  **/
-glm::mat4 light(const glm::vec3& towards, const glm::vec3& centre, float radius);
+glm::mat4 light(const glm::vec3& towards, const glm::vec3& centre, float radius,
+    type::camera::Profile::Hand hand = type::camera::Profile::Hand::UpCrossDirection);
 
 /**
  * A sphere around every entity carrying an ecs::component::Transform and a

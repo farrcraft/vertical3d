@@ -19,7 +19,7 @@ namespace v3d::render::realtime::shadow {
 
 /**
  **/
-glm::mat4 light(const glm::vec3& towards, const glm::vec3& centre, float radius) {
+glm::mat4 light(const glm::vec3& towards, const glm::vec3& centre, float radius, type::camera::Profile::Hand hand) {
     // the light looks along +z of its own basis, as a camera does, from the light towards the
     // centre
     const glm::vec3 z = -glm::normalize(towards);
@@ -28,8 +28,10 @@ glm::mat4 light(const glm::vec3& towards, const glm::vec3& centre, float radius)
     // an up parallel to the view has no right to cross into, which a light straight overhead
     // would give
     const glm::vec3 up = std::abs(z.y) > 0.99f ? glm::vec3(0.0f, 0.0f, 1.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
-    const glm::vec3 x = glm::normalize(glm::cross(up, z));
-    const glm::vec3 y = glm::cross(z, x);
+    const glm::vec3 right = glm::normalize(glm::cross(up, z));
+    const glm::vec3 y = glm::cross(z, right);
+    // the mirrored hand negates the right and keeps the up, as Camera::createView negates view x
+    const glm::vec3 x = hand == type::camera::Profile::Hand::DirectionCrossUp ? -right : right;
 
     // the basis transposed, then the eye moved to the origin
     glm::mat4 view(1.0f);

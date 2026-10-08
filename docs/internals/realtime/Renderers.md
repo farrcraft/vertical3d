@@ -14,7 +14,7 @@ depth state.
 | `Quad` | 2 | neither tests nor writes | one vertex format (position, uv, colour); untextured quads sample white; `text` push flag selects the distance-field branch |
 | `Line` | 2 | tests and writes | `LINE_LIST`, no index buffer; positions in world space through set 0 |
 | `World` | 4 (alpha and additive, each with and without depth) | tests, does not write | additive: colour added by source alpha, destination alpha kept |
-| `Lit` | cel, outline, shadow, and a skinned version of each | tests and writes | front face clockwise, back faces culled (outline culls front); shadow pipeline has depth bias; built only when given a shadow format |
+| `Lit` | cel, outline, shadow, and a skinned version of each | tests and writes | front face given at construction, clockwise by default; back faces culled (outline culls front); shadow pipeline has depth bias; built only when given a shadow format |
 | `FullScreen` | 1 | neither | one triangle from three vertices and no vertex buffer; caller's fragment SPIR-V |
 
 `DeviceContext` builds `Quad`, `Line` and `World` on first request against its colour format and
@@ -25,10 +25,12 @@ swapchain exists.
 shader thresholds a text batch's sampled distance at 0.5 with `smoothstep`, using `fwidth` for a
 one-pixel edge at any scale. Other batches return `colour * texel`.
 
-**Lit front faces are clockwise.** A model is wound counter-clockwise seen from outside, and the
-cameras in `api/type` flip y into Vulkan clip space. `shadow::light()` builds its view the way
-`type::camera::Camera` does, so faces wind the same under the light and the shadow pipeline culls
-as the cel one does.
+**Lit front faces are clockwise by default.** A model is wound counter-clockwise seen from
+outside, and the cameras in `api/type` flip y into Vulkan clip space. A camera on
+`Profile::Hand::DirectionCrossUp` also mirrors x, which reverses the winding again, so `Lit`
+takes the front face as its last constructor argument. All six pipelines cull by it.
+`shadow::light()` builds its view the way `type::camera::Camera` does in the hand it is given,
+so faces wind the same under the light and the shadow pipeline culls as the cel one does.
 
 **`Lit::scene()`** writes the frame's slot: a uniform buffer (`SceneUniforms`, std140, matching
 the `Scene` block in `lit.glsl`), the shadow map binding, and the palette storage buffer. It waits

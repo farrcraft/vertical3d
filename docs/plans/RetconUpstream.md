@@ -74,7 +74,7 @@ reference captures where a step says they move, and deletes the handoff.
 | | What | Where | State |
 |---|---|---|---|
 | [1](#step-1--engine3d-captures-the-frame-it-presents) | `Engine3D::capture()` | `api/render/realtime` | Built; CI's window unknown |
-| [2](#step-2--lit-takes-a-front-face) | A front face on `renderer::Lit` | `api/render/realtime` | Open |
+| [2](#step-2--lit-takes-a-front-face) | A front face on `renderer::Lit` | `api/render/realtime` | Done |
 | [3](#step-3--a-texture-names-its-sampler) | A sampler spec on `TextureFactory::create()` | `api/render/realtime` | Open |
 | [4](#step-4--a-pass-decides-whether-depth-is-written) | Depth writing as a pass's dynamic state | `api/render/realtime` | Open |
 | [5](#step-5--quad-linearises-into-an-srgb-target) | `renderer::Quad` linearising into an `_SRGB` target | `api/render` | Open |
@@ -128,6 +128,13 @@ wrong side.
 - A `VkFrontFace front = VK_FRONT_FACE_CLOCKWISE` parameter, last on the constructor, read by all
   three `cull()` calls in `Lit.cxx`. Taking a `Profile::Hand` instead would tie a renderer to the
   camera type, and the face is what the pipeline needs.
+
+**Done, 2026-10-07.** The shadow pass needed more than the face. `shadow::light()` builds the
+light's view in `UpCrossDirection`, so a counter-clockwise face culled the caster's near side and
+the map stored its far side. `shadow::light()` therefore takes a `Profile::Hand` too, defaulting
+to the current one. The gate's shadow check is the exact depth case run in the mirrored hand,
+which a closed mesh's picture could not have caught: its far side still casts. Each of the four
+cull and hand sites, reverted alone, fails a case.
 
 **Gate.** A picture in `LitSceneTest`: a closed mesh wound counter-clockwise, drawn by a `Lit`
 built with `VK_FRONT_FACE_COUNTER_CLOCKWISE`, shows its lit faces and its outline. Vacuous if only
