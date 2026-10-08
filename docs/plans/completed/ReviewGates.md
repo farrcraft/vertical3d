@@ -6,11 +6,11 @@ Each round found about thirty findings and, after the fifth, about one major. A 
 came from the fixes themselves: findings in text the fix added, and guarantees a fix wrote down
 without a test of them.
 
-[completed/ReviewFixes.md](completed/ReviewFixes.md) records the rounds. The plan rests on three
+[ReviewFixes.md](ReviewFixes.md) records the rounds. The plan rests on three
 patterns read from them:
 
 - **The same few shapes recur.** About a third of all findings were boundary input, prose, weak
-  tests or build conventions, which a tool can check. [Review.md](../contributing/Review.md) names
+  tests or build conventions, which a tool can check. [Review.md](../../contributing/Review.md) names
   the classes.
 - **A fix corrected one site and missed its siblings.** The string check reached six loaders in
   six rounds; the NaN check reached one overload of three; the disabled check reached two paths of
@@ -38,17 +38,17 @@ patterns read from them:
 
 ### Step 1 — The rule and the classes
 
-**Closed.** [Review.md](../contributing/Review.md) states what a finding is, what a reviewer reads,
+**Closed.** [Review.md](../../contributing/Review.md) states what a finding is, what a reviewer reads,
 what a finding records, the classes, and what a fix has to do. ADR-0083 records why.
 
 - Update the `cpp-reviewer` agent to classify each finding, say whether the change introduced it,
   list sibling sites, and end with what it read.
-- Route reviews through Review.md from `CLAUDE.md` and [sdlc.md](../sdlc.md).
+- Route reviews through Review.md from `CLAUDE.md` and [sdlc.md](../../sdlc.md).
 
 ### Step 2 — The known-debt list
 
 **Closed.** The eleventh round's open findings are entries under "Known review findings" in
-[TODO.md](../TODO.md), each with its class. Each was older than the round that found it, or is in
+[TODO.md](../../TODO.md), each with its class. Each was older than the round that found it, or is in
 text the gates will check.
 
 ### Step 3 — The two findings that cannot wait
@@ -102,35 +102,22 @@ Run every gate on `feat/motion-and-queries` and fix what they find that the bran
 Then run one review of the commits since the eleventh round, against Review.md. The branch merges
 when that review is clean.
 
-## State
+## Outcome
 
-Steps 1 to 7 are closed. The four gates are `prose.ts`, `linkrule.ts`, `boundary.ts` and
-`failsfirst.ts` in `scripts/`, run by Node with no dependencies. All four read C++ through one
-lexer, `scripts/lexer.ts`, and the tests in `scripts/tests/` cover it and
-each gate's entry points. The tests, the link rule, prose and boundary gates run in CI in
-`review-gates.yml`, and the fails-first gate runs in `ctest.yml`. A line the boundary gate
-reports and that is defined carries a `// checked:` comment naming why.
+Drafted 2026-10-06 and closed 2026-10-07, when `feat/motion-and-queries` merged as pull request
+15. A changeset now answers for the defects it introduces, and older ones are listed as known debt
+in [TODO.md](../../TODO.md) ([ADR-0083](../../adr/0083-review-a-changeset-answers-for-what-it-introduces.md)).
 
-Step 8's review is closed. The branch passes the gates: 317 prose lines were rewritten, and the
-boundary gate's reports were fixed or given a reason. Fixing them found three more defects: a NaN
-filter width in `Film::add`, a bound that is not a number in moya's buckets, and a GPU time that
-wraps in voxel.
+Four of the classes in [Review.md](../../contributing/Review.md) have a gate in `scripts/`, run by
+Node with no dependencies and reading C++ through one shared lexer:
 
-The closing review of the commits since the eleventh round found 17 findings, one of them Major
-in the fails-first harness. They are fixed, and the harness's first full runs pass: every new
-test fails or does not build without its change, and the one that passes says why. The review of
-that fix commit found 8 Minor findings, in fallback paths and in text written with the fixes.
-The review of their fix found 4 Minor findings, all in wording, and its fix left two lexer gaps
-that four separate lexers kept reopening. The gates now share one lexer and have tests of their
-own. The review of that change found one Major: a gate ran nothing on Node 24.0 and 24.1. The
-review of its fix found one more: a gate started through a symbolic link ran nothing. Both are
-fixed with tests that start each gate as a process.
+- `prose.ts`, `linkrule.ts` and `boundary.ts` run in `review-gates.yml`, with the gates' own tests;
+- `failsfirst.ts` runs in `ctest.yml` on each pull request, after that job's build.
 
-Each review of the gates found one more fault in a less common setup. The gates now support one
-environment, which Linting.md states, and a fault reachable only outside it is Minor. The review
-of the last two commits under that rule found no Major and 5 Minor findings, in the documents,
-two comments and one test. They are fixed. What remains of step 8 is the merge.
+The gates support one environment, which [Linting.md](../../contributing/Linting.md) states.
 
-The review of that fix found a two-line comment whose second line ran to 114 columns. The
-extended-line rule needs three lines, so the prose gate did not see it. The gate now also holds a
-comment line on its own to 100 columns, and the 10 such lines the branch added are rewrapped.
+The rounds this plan was drafted to stop did not stop at once. The branch's closing review found
+17 findings, one of them Major and in the fails-first harness itself. Each review after it found
+fewer, and each new kind of finding became a gate rule or a gate test. Building the gates also
+found defects the reviews had missed: three sibling sites in step 3, and a NaN filter width, a
+bound that was not a number and a wrapping GPU time while the branch was brought clean.
