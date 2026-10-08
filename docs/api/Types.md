@@ -90,10 +90,11 @@ should keep.
 
 ### Picking the ground
 
-To find where a click lands on the ground, cast `Camera::ray()` and intersect it with a
-`Plane`. There is no helper for this, because which way is up is the caller's choice. Code that
-clips a renderer's own primitive against a plane belongs to that renderer, as moya's
-`Polygon::clip` does.
+`Camera::pick(cursor, viewport, plane)` returns where a click lands on a plane, such as the
+ground. It casts `ray()` and intersects the ray with the plane, and returns nothing when the ray
+does not cross the plane ahead of the near plane. The caller passes the plane, because which way
+is up is the caller's choice. Code that clips a renderer's own primitive against a plane belongs
+to that renderer, as moya's `Polygon::clip` does.
 
 ## Random numbers
 
@@ -184,6 +185,9 @@ The camera classes are in `v3d::type::camera` ([api/type/camera/](../../api/type
 - The camera looks along `+z` of its own basis, so a point in front of it has a positive view
   `z`.
 - `project()` and `unproject()` are inverses of each other.
+- **`project()` places a point behind a perspective camera as though it were in front**, mirrored
+  through the centre. `screenPoint(point, viewport)` returns nothing for such a point, and for a
+  viewport with no area. Use it to place a label or a marker over something in the world.
 - **The matrices are cached.** Call `createProjection()` and `createView()` after changing the
   profile. `projection()`, `view()` and `ray()` read the cached matrices.
 - `ray(point, viewport)` casts a world-space ray from a window pixel. It starts at the near plane

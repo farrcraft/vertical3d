@@ -82,7 +82,7 @@ reference captures where a step says they move, and deletes the handoff.
 | [7](#step-7--immediate-blocks-a-rectangle) | `Immediate::block()` | `api/ui` | Done |
 | [8](#step-8--an-entity-reference-that-knows-its-entity-is-gone) | `ecs::Ref` | `api/ecs` | Done |
 | [9](#step-9--an-isometric-camera-controller) | A command-driven controller for `camera::Isometric` | `api/engine` | Done |
-| [10](#step-10--picking-and-the-entry-point) | `Camera::screenPoint()`, `pick()`, and an `SDL_main` header | `api/type`, `api/engine` | Open |
+| [10](#step-10--picking-and-the-entry-point) | `Camera::screenPoint()`, `pick()`, and an `SDL_main` header | `api/type`, `api/engine` | Done |
 | [11](#step-11--audio-events-and-parameters) | Audio events and parameters | `api/audio` | Open |
 
 ### Step 1 — `Engine3D` captures the frame it presents
@@ -336,6 +336,12 @@ Two small helpers, taken together because each is a few lines.
   in `api/engine` that includes it, documented as the one the file calling `run<T>` includes,
   removes the three copies. **Gate:** the three apps build and link with their own include
   removed.
+
+**Done, 2026-10-07.** `pick()` is a member of `Camera` beside `ray()`, rather than a free
+function. `api/engine/Main.h` is the header. Five apps carried the include, not three: vertical3d
+and odyssey did too, and all five build and link on `Main.h`. The starter example is a console
+executable and includes neither. A log call given one argument for two fields fails to compile
+with C7595, so the logging finding is closed and the engine's logging section says so.
 
 Format-checked logging is not a step. `Logger::get()` returns spdlog's logger, which checks its
 format string at compile time under C++23. Confirm that with one deliberately wrong call before

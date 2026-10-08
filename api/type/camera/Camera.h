@@ -5,11 +5,15 @@
 
 #pragma once
 
+#include <api/type/geometry/Plane.h>
 #include <api/type/geometry/Ray.h>
+
+#include <optional>
 
 #include "Profile.h"
 
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::type::camera {
 
@@ -40,6 +44,18 @@ class Camera {
         glm::vec3 project(const glm::vec3 & point, const int viewport[4]) const;
 
         /**
+         *	Where a world point lands on the screen, if it lands anywhere.
+         *	project() divides by w whatever its sign, so a point behind a perspective
+         *	camera comes back mirrored through the centre of the viewport as though it
+         *	were in front. This returns nothing for such a point, and for a viewport
+         *	with no area. An orthographic camera has nothing behind it.
+         *	@param point the point, in world space
+         *	@param viewport the region the camera draws into, as x, y, width, height
+         *	@return the point in window pixels, with its depth in z, or nothing
+         */
+        std::optional<glm::vec3> screenPoint(const glm::vec3 & point, const int viewport[4]) const;
+
+        /**
          *	The ray a screen point casts into the scene, in world space.
          *	It starts at the near plane and its direction is a unit vector, so a
          *	distance along it is in world units. An orthographic camera gives a ray
@@ -51,6 +67,18 @@ class Camera {
          *	@param viewport the region the camera draws into, as x, y, width, height
          */
         geometry::Ray ray(const glm::vec2 & point, const int viewport[4]) const;
+
+        /**
+         *	The point on a plane under the cursor: ray() followed by the ray's crossing
+         *	of the plane, the question a grid game asks of its ground.
+         *	@param cursor where the cursor is, in window pixels
+         *	@param viewport the region the camera draws into, as x, y, width, height
+         *	@param plane the plane to pick on, such as the ground
+         *	@return where the cursor's ray crosses the plane, or nothing when it does not
+         *	        cross it ahead of the near plane
+         */
+        std::optional<glm::vec3> pick(const glm::vec2 & cursor, const int viewport[4],
+            const geometry::Plane & plane) const;
 
         /**
          *	Create a projection matrix.

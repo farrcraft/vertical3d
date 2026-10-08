@@ -72,6 +72,10 @@ executable before anything logs. A test or a tool that never calls `log::Logger:
 such as one in a directory the process cannot write to, does not throw: the log goes to stderr
 and its first line says why. A handle taken before `open()` keeps writing where it was taken.
 
+**A format string is checked when it compiles.** `logger_->get()` is spdlog's logger, which takes
+fmt's checked format string, so a call whose arguments do not match its `{}` fields does not
+build.
+
 A `v3d::log::Logger` is a handle on that one log. Passing a logger to a class says where it
 logs; it does not give the class a separate log. Log through `get()`, with spdlog's `{}`
 placeholders:

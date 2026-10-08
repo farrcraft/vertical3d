@@ -3,10 +3,7 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
 **/
 
-// the WinMain a windows subsystem executable is entered through, which calls this main
-#include <SDL3/SDL_main.h>
-
-#include <api/engine/Application.h>
+#include <api/engine/Main.h>
 
 #include "Controller.h"
 
