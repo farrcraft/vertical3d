@@ -44,7 +44,10 @@ builds one unless told not to.
   nanoseconds, the simulation steps the last frame ran, and a list of named timing spans.
   The app copies these out of `engine::Statistics`.
 - `size` defaults to 16 pixels, smaller than the ui's own text.
-- `lines(sample)` returns the text without drawing it.
+- `device(name)` sets a top line naming the GPU. `Screen` sets it from
+  `Device::description()` when it builds the overlay.
+- `lines(sample)` returns the frame's lines without drawing them, and `content(sample)` returns
+  every line `draw()` would draw.
 
 ### FileChooser
 

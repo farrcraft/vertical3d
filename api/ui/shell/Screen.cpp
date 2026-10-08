@@ -48,6 +48,9 @@ Screen::Screen(v3d::render::realtime::Engine3D* engine, const boost::shared_ptr<
         });
     if (options_.statistics) {
         statistics_ = boost::make_shared<StatisticsOverlay>(text_);
+        if (engine != nullptr && engine->context()) {
+            statistics_->device(engine->context()->device()->description().name);
+        }
     }
     build();
 }

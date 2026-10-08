@@ -30,6 +30,11 @@ swapchain extension, and has no present queue. Everything that draws works on it
 `Device` also records the timestamp period and the graphics family's `timestampValidBits`, for
 [timings](Frames.md#timings-and-statistics).
 
+`Device::description()` names the selected device without a Vulkan type: its name, the Vulkan
+version it supports split into major, minor and patch, its PCI vendor id, and its driver version
+as the vendor encodes it. It is filled in `selectPhysical()` and never changes. A diagnostics
+readout reads it rather than `physical()`, so it needs no Vulkan include.
+
 **Validation.** `Instance` enables `VK_LAYER_KHRONOS_validation` when it is installed, with a
 messenger that routes messages through the logger and counts errors and warnings
 (`errors()`, `warnings()`, `firstError()`). Without the messenger the layer reports nowhere,

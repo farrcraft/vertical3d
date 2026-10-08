@@ -11,6 +11,7 @@
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "Instance.h"
@@ -50,6 +51,19 @@ class Device final {
         bool hasGraphics;
         bool hasPresent;
         uint32_t timestampBits;  /**< how many bits of a timestamp the graphics family writes, 0 for none **/
+    };
+
+    /**
+     * What the device is, for a diagnostics readout, in types that need no Vulkan include to
+     * read. Filled once, when the device is selected.
+     **/
+    struct Description final {
+        std::string name;           /**< as the driver reports it **/
+        uint32_t apiMajor = 0;      /**< the Vulkan version the device supports **/
+        uint32_t apiMinor = 0;
+        uint32_t apiPatch = 0;
+        uint32_t vendor = 0;        /**< the PCI vendor id **/
+        uint32_t driver = 0;        /**< the driver version, encoded as its vendor encodes it **/
     };
 
     /**
@@ -117,6 +131,11 @@ class Device final {
      **/
     VkQueue presentQueue() const noexcept;
 
+    /**
+     * @return the device's name, Vulkan version, vendor and driver
+     **/
+    const Description& description() const noexcept;
+
  private:
     /**
      * Pick the first physical device that can draw, and present when there is a surface,
@@ -156,6 +175,7 @@ class Device final {
     VkQueue graphicsQueue_;
     VkQueue presentQueue_;
     float timestampPeriod_;
+    Description description_;
     /**< built once the logical device exists, and outlived by nothing it allocated for **/
     boost::shared_ptr<memory::Allocator> allocator_;
 };

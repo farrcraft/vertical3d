@@ -9,6 +9,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
@@ -109,6 +110,28 @@ BOOST_AUTO_TEST_CASE(a_span_reads_as_its_name_and_milliseconds) {
     span.name = "terrain";
     span.nanoseconds = 2 * millisecond + 500000;
     BOOST_CHECK_EQUAL(v3d::ui::shell::StatisticsOverlay::line(span), "terrain 2.5 ms");
+}
+
+/**
+ * A named device is the top line, above the frame's lines and the spans. With none named there
+ * is no such line, so the frame's first line is on top.
+ **/
+BOOST_AUTO_TEST_CASE(a_named_device_is_the_top_line) {
+    v3d::ui::shell::StatisticsOverlay overlay{boost::shared_ptr<v3d::ui::paint::TextRenderer>()};
+    v3d::ui::shell::StatisticsOverlay::Sample sample;
+    sample.spans.push_back({"terrain", millisecond});
+    const auto frame = v3d::ui::shell::StatisticsOverlay::lines(sample);
+
+    std::vector<std::string> content = overlay.content(sample);
+    BOOST_REQUIRE_EQUAL(content.size(), frame.size() + 1);
+    BOOST_CHECK_EQUAL(content.front(), frame.front());
+
+    overlay.device("Test GPU");
+    content = overlay.content(sample);
+    BOOST_REQUIRE_EQUAL(content.size(), frame.size() + 2);
+    BOOST_CHECK_EQUAL(content.front(), "Test GPU");
+    BOOST_CHECK_EQUAL(content[1], frame.front());
+    BOOST_CHECK_EQUAL(content.back(), "terrain 1.0 ms");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -78,7 +78,7 @@ reference captures where a step says they move, and deletes the handoff.
 | [3](#step-3--a-texture-names-its-sampler) | A sampler spec on `TextureFactory::create()` | `api/render/realtime` | Done |
 | [4](#step-4--a-pass-decides-whether-depth-is-written) | Depth writing as a pass's dynamic state | `api/render/realtime` | Done |
 | [5](#step-5--quad-linearises-into-an-srgb-target) | `renderer::Quad` linearising into an `_SRGB` target | `api/render` | Done |
-| [6](#step-6--the-device-describes-itself-without-vulkan-types) | Device information without Vulkan types | `api/render/realtime` | Open |
+| [6](#step-6--the-device-describes-itself-without-vulkan-types) | Device information without Vulkan types | `api/render/realtime` | Done |
 | [7](#step-7--immediate-blocks-a-rectangle) | `Immediate::block()` | `api/ui` | Done |
 | [8](#step-8--an-entity-reference-that-knows-its-entity-is-gone) | `ecs::Ref` | `api/ecs` | Done |
 | [9](#step-9--an-isometric-camera-controller) | A command-driven controller for `camera::Isometric` | `api/engine` | Open |
@@ -240,6 +240,11 @@ Vulkan include. A diagnostics overlay needs both.
 
 Waiting for the device to go idle is not a gap: `DeviceContext::ring()->waitIdle()` already needs
 no Vulkan type.
+
+**Done, 2026-10-07.** `Device::Description`, read by `description()`. The version is the one the
+physical device reports supporting. `selectPhysical()` checks that version against 1.3.
+`Screen` names the device on the overlay it builds. Gates: `device_description_test` in the device
+suite, and a case in `StatisticsOverlayTest` for the top line.
 
 **Gate.** The struct's version matches the version the device was created against, read from the
 headless device. Vacuous if it checks only that the name is not empty.

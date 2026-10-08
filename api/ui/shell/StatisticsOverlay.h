@@ -108,10 +108,27 @@ class StatisticsOverlay final {
      **/
     static std::string line(const Sample::Span& span);
 
+    /**
+     * Name the device the frames are drawn on, which is drawn as the top line. Empty, the
+     * default, draws no such line.
+     *
+     * Set once rather than carried by each Sample, because it does not change from frame to
+     * frame.
+     **/
+    void device(const std::string& name);
+    const std::string& device() const noexcept;
+
+    /**
+     * Every line draw() puts on the canvas, top to bottom: the device, the frame's lines, and a
+     * line per span.
+     **/
+    std::vector<std::string> content(const Sample& sample) const;
+
  private:
     boost::shared_ptr<paint::TextRenderer> text_;
     float size_;
     bool visible_;
+    std::string device_;
 };
 
 };  // namespace v3d::ui::shell
