@@ -80,7 +80,7 @@ reference captures where a step says they move, and deletes the handoff.
 | [5](#step-5--quad-linearises-into-an-srgb-target) | `renderer::Quad` linearising into an `_SRGB` target | `api/render` | Open |
 | [6](#step-6--the-device-describes-itself-without-vulkan-types) | Device information without Vulkan types | `api/render/realtime` | Open |
 | [7](#step-7--immediate-blocks-a-rectangle) | `Immediate::block()` | `api/ui` | Open |
-| [8](#step-8--an-entity-reference-that-knows-its-entity-is-gone) | `ecs::Ref` | `api/ecs` | Open |
+| [8](#step-8--an-entity-reference-that-knows-its-entity-is-gone) | `ecs::Ref` | `api/ecs` | Done |
 | [9](#step-9--an-isometric-camera-controller) | A command-driven controller for `camera::Isometric` | `api/engine` | Open |
 | [10](#step-10--picking-and-the-entry-point) | `Camera::screenPoint()`, `pick()`, and an `SDL_main` header | `api/type`, `api/engine` | Open |
 | [11](#step-11--audio-events-and-parameters) | Audio events and parameters | `api/audio` | Open |
@@ -258,6 +258,9 @@ hazard.
 - Its comment says it is for view state. A container the rules maintain, such as a turn order, is
   kept correct by whatever destroyed the entity, and checking on read there would hide a fault in
   that maintenance.
+
+**Done, 2026-10-07.** Header only, in `api/ecs/Ref.h`. `get()` is `registry.valid()`, which is
+the version check. An index-only lookup fails the gate.
 
 **Gate.** Destroy the entity, create entities until EnTT recycles its index, and assert the
 reference still reads null. Vacuous without the recycle: a plain destroy then read passes for a

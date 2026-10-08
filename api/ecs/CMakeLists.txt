@@ -6,6 +6,7 @@ v3d_add_api_library(ecs
  "component/Playback.h" "component/Playback.cpp"
  "component/Emitter.h" "component/Emitter.cpp"
  "Previous.h"
+ "Ref.h"
  "System.h" "System.cpp")
 
 target_link_libraries(v3dlib_ecs PUBLIC v3dlib_type glm::glm EnTT::EnTT)

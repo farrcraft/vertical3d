@@ -36,6 +36,28 @@ only when the player has a position.
 `api/ecs` (`v3dlib_ecs`) depends on `api/type`, glm and EnTT, and on no device. Game rules
 written over it can be tested headless.
 
+### Holding an entity across frames
+
+**A stored `entt::entity` can come to name a different entity.** EnTT reuses a destroyed
+entity's index for the next one it creates, with a new version. Hold an entity that may be
+destroyed while you hold it in a `v3d::ecs::Ref`:
+
+```cpp
+v3d::ecs::Ref selected_;
+...
+selected_.set(clicked);
+...
+const entt::entity target = selected_.get(registry_);   // entt::null once it is destroyed
+if (target != entt::null) { ... }
+```
+
+- `get()` compares the stored version with the registry's, so it reads `entt::null` even after
+  the index has been reused.
+- `clear()` holds nothing, as does a default `Ref`.
+- **A `Ref` is for view state**: a selection, an inspector's target, the entity a camera follows.
+  A container the game rules keep, such as a turn order, holds plain entities. Whatever destroys
+  an entity removes it from such a container, and a `Ref` there would hide a missed removal.
+
 ## Systems
 
 `v3d::ecs::System` ([api/ecs/System.h](../../api/ecs/System.h)) is a registry pointer and one
