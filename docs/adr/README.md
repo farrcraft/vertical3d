@@ -88,7 +88,7 @@ content went. Numbers are never reused.
 
 | ADR | Decision | Status |
 |---|---|---|
-| [0021](0021-audio-use-sdl3-mixer.md) | Audio: use SDL3_mixer | amended by 0079 |
+| [0021](0021-audio-use-sdl3-mixer.md) | Audio: use SDL3_mixer | amended by 0079, 0084 |
 | [0028](0028-apps-the-shared-app-shell-lives-in-the-api.md) | Apps: the shared app shell lives in the api | accepted |
 | [0030](0030-models-one-interleaved-array.md) | Models: one interleaved array | superseded by 0069 |
 | [0032](0032-loop-fixed-step-simulation-variable-rate-rendering.md) | Loop: fixed-step simulation, variable-rate rendering | accepted |
@@ -99,6 +99,7 @@ content went. Numbers are never reused.
 | [0079](0079-assets-loaders-are-registered.md) | Assets: loaders are registered | accepted |
 | [0080](0080-apps-the-engine-owns-startup-and-shutdown-order.md) | Apps: the engine owns startup and shutdown order | accepted |
 | [0081](0081-input-key-events-and-commands-are-separate.md) | Input: key events and commands are separate | accepted |
+| [0084](0084-audio-events-and-parameters-behind-an-interface.md) | Audio: events and parameters behind an interface | accepted |
 
 ## Grid and ECS
 

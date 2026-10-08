@@ -42,7 +42,7 @@ Two findings need more than the handoff says:
 | How does an overlay draw lines that test depth without writing it? | **Decided**, 2026-10-07: depth writing is a pass's choice, as dynamic state. [ADR-0085](../adr/0085-rendering-a-pass-chooses-whether-depth-is-written.md) | 4 |
 | Does the `Engine3D` capture test open a hidden window, and does CI run it? | **Half decided**, 2026-10-07: a visible window in a suite of its own. CI waits on a run | 1 |
 | Where does an isometric controller live? | **Decided**, 2026-10-07: `api/engine`, reading commands | 9 |
-| Does `api/audio` grow events and parameters, with an optional FMOD backend? | **Decided yes**, 2026-10-07. ADR-0084 records it and amends ADR-0021 | 11 |
+| Does `api/audio` grow events and parameters, with an optional FMOD backend? | **Decided yes**, 2026-10-07. [ADR-0084](../adr/0084-audio-events-and-parameters-behind-an-interface.md) records it and amends ADR-0021 | 11 |
 
 Two of retcon's findings are declined here and get no step:
 
@@ -83,7 +83,7 @@ reference captures where a step says they move, and deletes the handoff.
 | [8](#step-8--an-entity-reference-that-knows-its-entity-is-gone) | `ecs::Ref` | `api/ecs` | Done |
 | [9](#step-9--an-isometric-camera-controller) | A command-driven controller for `camera::Isometric` | `api/engine` | Done |
 | [10](#step-10--picking-and-the-entry-point) | `Camera::screenPoint()`, `pick()`, and an `SDL_main` header | `api/type`, `api/engine` | Done |
-| [11](#step-11--audio-events-and-parameters) | Audio events and parameters | `api/audio` | Open |
+| [11](#step-11--audio-events-and-parameters) | Audio events and parameters | `api/audio` | Done |
 
 ### Step 1 — `Engine3D` captures the frame it presents
 
@@ -364,6 +364,13 @@ SDL3_mixer cannot back events or parameters.
 - **An FMOD Studio backend** behind a configure option, off by default. Its SDK is fetched at
   configure time and never committed, because its licence does not allow redistribution.
   CI builds without it.
+
+**Done, 2026-10-07.** One change from the plan: the SDK is not fetched at configure time.
+FMOD's downloads need an account, so `V3D_FMOD_ROOT` names an install on the machine instead.
+`audio::events()` returns the backend. The FMOD backend was built against FMOD Studio 2.03.14,
+which is installed here. It passed `/analyze` and clang-tidy, and played `event:/UI/Cancel` from
+the SDK's example banks in `fmod_events_test`, which is built only with the SDK. The null case
+fails if `play()` reports true.
 
 **Gate.** The null backend accepts a bank, an event and a parameter and reports each as not
 played. The FMOD backend has no CI gate, because CI has no SDK. It is proved by running an app

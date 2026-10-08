@@ -1,5 +1,30 @@
 v3d_add_api_library(audio "AudioClip.h" "AudioClip.cpp" "Engine.h" "Engine.cpp" "Play.h" "Play.cpp"
-	"Loaders.h" "Loaders.cpp" "kind/Sound.h" "kind/Sound.cpp" "loader/Wav.h" "loader/Wav.cpp")
+	"Loaders.h" "Loaders.cpp" "kind/Sound.h" "kind/Sound.cpp" "loader/Wav.h" "loader/Wav.cpp"
+	"Events.h" "Events.cpp" "NullEvents.h" "NullEvents.cpp")
+
+# The FMOD Studio event backend, built only against an SDK installed on this machine. The SDK's
+# licence forbids committing it, and its downloads need an account, so nothing here fetches it.
+# Empty, the default, builds the null event backend alone, as CI does.
+set(V3D_FMOD_ROOT "" CACHE PATH "An FMOD Studio API for Windows install, to build the FMOD event backend against")
+if(V3D_FMOD_ROOT)
+	if(NOT EXISTS "${V3D_FMOD_ROOT}/api/studio/inc/fmod_studio.hpp")
+		message(FATAL_ERROR "V3D_FMOD_ROOT is ${V3D_FMOD_ROOT}, which holds no api/studio/inc/fmod_studio.hpp")
+	endif()
+	add_library(v3d_fmod_core SHARED IMPORTED GLOBAL)
+	set_target_properties(v3d_fmod_core PROPERTIES
+		IMPORTED_LOCATION "${V3D_FMOD_ROOT}/api/core/lib/x64/fmod.dll"
+		IMPORTED_IMPLIB "${V3D_FMOD_ROOT}/api/core/lib/x64/fmod_vc.lib"
+		INTERFACE_INCLUDE_DIRECTORIES "${V3D_FMOD_ROOT}/api/core/inc")
+	add_library(v3d_fmod_studio SHARED IMPORTED GLOBAL)
+	set_target_properties(v3d_fmod_studio PROPERTIES
+		IMPORTED_LOCATION "${V3D_FMOD_ROOT}/api/studio/lib/x64/fmodstudio.dll"
+		IMPORTED_IMPLIB "${V3D_FMOD_ROOT}/api/studio/lib/x64/fmodstudio_vc.lib"
+		INTERFACE_INCLUDE_DIRECTORIES "${V3D_FMOD_ROOT}/api/studio/inc"
+		INTERFACE_LINK_LIBRARIES v3d_fmod_core)
+	target_sources(v3dlib_audio PRIVATE "FmodEvents.h" "FmodEvents.cpp")
+	target_link_libraries(v3dlib_audio PRIVATE v3d_fmod_studio)
+	target_compile_definitions(v3dlib_audio PRIVATE V3D_AUDIO_FMOD)
+endif()
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # EnTT: Engine.h holds a dispatcher and a scoped_connection to it.
