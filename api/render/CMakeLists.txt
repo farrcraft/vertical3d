@@ -73,6 +73,9 @@ v3d_add_api_library(render
 # loaded from disk - see v3d_add_shader in cmake/v3dHelpers.cmake.
 v3d_add_shader(v3dlib_render "shaders/quad.vert")
 v3d_add_shader(v3dlib_render "shaders/quad.frag")
+# the same stage for an _SRGB target, which decodes before writing so the target's encode on store
+# gives back the colour the quad was given
+v3d_add_shader(v3dlib_render "shaders/quad.frag" OUTPUT "linear_quad.frag" DEFINES LINEARISE)
 
 # The world space line primitive.
 v3d_add_shader(v3dlib_render "shaders/line.vert")

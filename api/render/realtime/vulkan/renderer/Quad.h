@@ -99,6 +99,17 @@ class Quad final {
      **/
     void submit(const Canvas& canvas, Pass* pass, uint16_t layer = 0);
 
+    /**
+     * Whether a quad drawn into this format is decoded to linear before it is written.
+     *
+     * A quad's colour is the colour that should appear. An _SRGB format encodes what is stored,
+     * so for one of those the quad is decoded first and the encode gives the colour back. Any
+     * other format stores what it is given.
+     *
+     * Device free, so a test can pin which formats are converted.
+     **/
+    static bool linearises(VkFormat colour) noexcept;
+
  private:
     /**
      * Compile the quad pipeline twice - once for a pass with a depth attachment and once

@@ -77,7 +77,7 @@ reference captures where a step says they move, and deletes the handoff.
 | [2](#step-2--lit-takes-a-front-face) | A front face on `renderer::Lit` | `api/render/realtime` | Done |
 | [3](#step-3--a-texture-names-its-sampler) | A sampler spec on `TextureFactory::create()` | `api/render/realtime` | Done |
 | [4](#step-4--a-pass-decides-whether-depth-is-written) | Depth writing as a pass's dynamic state | `api/render/realtime` | Done |
-| [5](#step-5--quad-linearises-into-an-srgb-target) | `renderer::Quad` linearising into an `_SRGB` target | `api/render` | Open |
+| [5](#step-5--quad-linearises-into-an-srgb-target) | `renderer::Quad` linearising into an `_SRGB` target | `api/render` | Done |
 | [6](#step-6--the-device-describes-itself-without-vulkan-types) | Device information without Vulkan types | `api/render/realtime` | Open |
 | [7](#step-7--immediate-blocks-a-rectangle) | `Immediate::block()` | `api/ui` | Open |
 | [8](#step-8--an-entity-reference-that-knows-its-entity-is-gone) | `ecs::Ref` | `api/ecs` | Done |
@@ -217,6 +217,12 @@ whose chain is `_SRGB` hits this as soon as it draws UI over the scene.
   new parameter, and every caller in the tree is on UNORM.
 - The variant is a second embedded shader, or a specialisation constant on `quad.frag`. The
   constant keeps one source file.
+
+**Done, 2026-10-07.** The variant is a second compile of `quad.frag` with `LINEARISE` defined, as
+the skinned lit shaders are made, which keeps one source file without adding specialisation
+constants to `Builder`. `Quad::linearises()` names the formats. The gate's cases are in
+`OffscreenFrameTest`. The sRGB case allows one either side of `0x80` for the encode's rounding.
+The local GPU reads exactly `0x80`; lavapipe is checked only in CI.
 
 **Gate.** Two pictures. A `#808080` quad drawn into an `R8G8B8A8_SRGB` target reads back as
 `0x80` through `Capture::convert`, and the same quad into a UNORM target reads back `0x80` too.
