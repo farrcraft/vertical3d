@@ -18,9 +18,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 ## Open plans
 
-| Plan | Area | What it delivers |
-|---|---|---|
-| [RetconUpstream](RetconUpstream.md) | Realtime rendering, UI, ECS, engine | Frame capture on `Engine3D`, four renderer seams a game on the other camera hand or an sRGB chain needs, and five small helpers |
+None.
 
 ## Completed plans
 
@@ -28,6 +26,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [RetconUpstream](completed/RetconUpstream.md) | Realtime rendering, UI, ECS, engine, audio | 2026-10-08 | Frame capture on `Engine3D`, four renderer seams a game on the other camera hand or an sRGB chain needs, five small helpers, and audio events behind an interface |
 | [ReviewGates](completed/ReviewGates.md) | Process, CI | 2026-10-07 | A changeset reviews clean: a finding is what the change introduced, and four classes a tool can find are gated in CI |
 | [ReviewFixes](completed/ReviewFixes.md) | All of `api/`, moya, pong, voxel, docs | 2026-10-05 | Fixed the findings of a code review of `feat/motion-and-queries`, each with a test that failed first, and recorded the four that were not defects |
 | [DocumentationRefresh](completed/DocumentationRefresh.md) | Documentation | 2026-10-05 | Plain-language docs split by reader, ADRs renamed and rewritten with a qualification test, and comments that state their rules without citing ADRs |

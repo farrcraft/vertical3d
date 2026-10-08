@@ -57,7 +57,8 @@ with a testable CPU-side part is expected to add test cases.
 
 These have no automated test:
 
-- `Feature::Window`, which opens the SDL window. A CI runner has no display.
+- `Feature::Window`, which opens an app's SDL window. The render window suite opens its windows
+  through `render::realtime::Window` and not through the feature.
 - `audio::Engine::initialize()`, which opens the audio device. The rest of `api/audio` is tested,
   but not whether a sound is audible. An engine with no device gives back no voice, so every
   case but one runs without a device. `audio_engine_lets_the_dispatcher_go_test` needs SDL's
@@ -230,6 +231,10 @@ made, or no device can present to it, the executable exits with 77 and ctest rep
 as `Skipped`. The reason is printed to the console.
 
 A window appears on the screen for each case while the suite runs.
+
+**In CI a skip is a failure here too.** The Windows runner opens a window, and lavapipe presents
+to it. A workflow step runs the executable again and fails the job on exit code 77, because a
+skip there means the window or the swapchain stopped working and no `Engine3D` case was checked.
 
 ## Reference images
 

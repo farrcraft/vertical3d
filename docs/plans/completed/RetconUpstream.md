@@ -10,7 +10,7 @@ repository under `docs/upstream/` and are not linked here, because their paths d
 from this one. What they found is restated below where the reasoning is worth keeping. Each
 handoff also names the gate its change must bring, and those gates are carried into the steps.
 
-**The reason to do this here is the same as [EmbeddingSeams](completed/EmbeddingSeams.md)'s.**
+**The reason to do this here is the same as [EmbeddingSeams](EmbeddingSeams.md)'s.**
 Each finding is a place where a library has only met the apps in this tree. `Lit` has only met
 a camera on `Profile::Hand::UpCrossDirection`. `Quad` has only met a UNORM target. Three of
 this tree's own apps include `SDL3/SDL_main.h` themselves, beside the `run<T>` that is meant to
@@ -39,10 +39,10 @@ Two findings need more than the handoff says:
 
 | Question | Who | Step |
 |---|---|---|
-| How does an overlay draw lines that test depth without writing it? | **Decided**, 2026-10-07: depth writing is a pass's choice, as dynamic state. [ADR-0085](../adr/0085-rendering-a-pass-chooses-whether-depth-is-written.md) | 4 |
-| Does the `Engine3D` capture test open a hidden window, and does CI run it? | **Half decided**, 2026-10-07: a visible window in a suite of its own. CI waits on a run | 1 |
+| How does an overlay draw lines that test depth without writing it? | **Decided**, 2026-10-07: depth writing is a pass's choice, as dynamic state. [ADR-0085](../../adr/0085-rendering-a-pass-chooses-whether-depth-is-written.md) | 4 |
+| Does the `Engine3D` capture test open a hidden window, and does CI run it? | **Decided**, 2026-10-08: a visible window in a suite of its own, which CI runs and fails on a skip of | 1 |
 | Where does an isometric controller live? | **Decided**, 2026-10-07: `api/engine`, reading commands | 9 |
-| Does `api/audio` grow events and parameters, with an optional FMOD backend? | **Decided yes**, 2026-10-07. [ADR-0084](../adr/0084-audio-events-and-parameters-behind-an-interface.md) records it and amends ADR-0021 | 11 |
+| Does `api/audio` grow events and parameters, with an optional FMOD backend? | **Decided yes**, 2026-10-07. [ADR-0084](../../adr/0084-audio-events-and-parameters-behind-an-interface.md) records it and amends ADR-0021 | 11 |
 
 Two of retcon's findings are declined here and get no step:
 
@@ -53,8 +53,8 @@ Two of retcon's findings are declined here and get no step:
   swap a shader without relinking can read the words itself and hand them to `Builder::shader()`.
 
 Both rules are stated in the documents that own them: the parser rule in
-[Assets.md](../api/Assets.md#json-documents), and the shader rule in
-[Pipelines.md](../internals/realtime/Pipelines.md#shaders).
+[Assets.md](../../api/Assets.md#json-documents), and the shader rule in
+[Pipelines.md](../../internals/realtime/Pipelines.md#shaders).
 
 ## What blocks what
 
@@ -77,7 +77,7 @@ reference captures where a step says they move, and deletes the handoff.
 
 | | What | Where | State |
 |---|---|---|---|
-| [1](#step-1--engine3d-captures-the-frame-it-presents) | `Engine3D::capture()` | `api/render/realtime` | Built; CI's window unknown |
+| [1](#step-1--engine3d-captures-the-frame-it-presents) | `Engine3D::capture()` | `api/render/realtime` | Done |
 | [2](#step-2--lit-takes-a-front-face) | A front face on `renderer::Lit` | `api/render/realtime` | Done |
 | [3](#step-3--a-texture-names-its-sampler) | A sampler spec on `TextureFactory::create()` | `api/render/realtime` | Done |
 | [4](#step-4--a-pass-decides-whether-depth-is-written) | Depth writing as a pass's dynamic state | `api/render/realtime` | Done |
@@ -112,10 +112,11 @@ Windows CI runner can create a window before choosing.
 `api/render/tests/window/`. Each case opens a small visible SDL window. `Window` has no hidden
 flag, and adding one only for a test was not worth an api change. The suite exits 77 when no
 window can be made, so a machine without a display skips it. It passes locally, and fails with
-the copy moved before `Recorder::record()`. What is left: a CI run on a pull request, to learn
-whether the Windows runner can open a window. If it can, the workflow fails on a skip of this
-suite as it does for `render_device`. If it cannot, the skip stays and this test runs only
-locally.
+the copy moved before `Recorder::record()`.
+
+**Done, 2026-10-08.** The Windows runner opens a window: on pull request 16 the suite ran on
+lavapipe and passed rather than skipping. `ctest.yml` now fails the job on a skip of this suite,
+as it does for `render_device`.
 
 **Gate.** Request a capture, render one frame of a known clear colour, and read the file back to
 that colour. Vacuous if it asserts only that the file exists: a capture recorded before
@@ -347,10 +348,6 @@ and odyssey did too, and all five build and link on `Main.h`. The starter exampl
 executable and includes neither. A log call given one argument for two fields fails to compile
 with C7595, so the logging finding is closed and the engine's logging section says so.
 
-Format-checked logging is not a step. `Logger::get()` returns spdlog's logger, which checks its
-format string at compile time under C++23. Confirm that with one deliberately wrong call before
-closing the finding.
-
 ### Step 11 — Audio events and parameters
 
 `api/audio` plays clips by key on named buses through SDL3_mixer. retcon's audio is FMOD Studio:
@@ -380,8 +377,35 @@ fails if `play()` reports true.
 played. The FMOD backend has no CI gate, because CI has no SDK. It is proved by running an app
 against a real bank. Vacuous if the null backend's test only checks that nothing throws.
 
-## Closing
+## Outcome
 
-When every step is closed, or closed as declined, this plan moves to
-[completed/](completed/) with an Outcome section. A declined step's reasoning goes into the
-document that owns its subject, and anything unfinished goes to [TODO.md](../TODO.md).
+Drafted 2026-10-07 against `55509de` and closed 2026-10-08. All eleven steps landed, and the
+two findings declined at the start state their rules in the documents that own them. Each step
+names its gate, and each gate was shown to fail on the fault it names.
+
+- **Frame capture.** `Engine3D::capture()` writes the frame it presents. Its cases are in a third
+  render suite, `render_window`, which opens a real window. CI runs it on lavapipe and fails on a
+  skip.
+- **Four renderer seams.** `Lit` takes a front face, and `shadow::light()` takes the camera's hand.
+  A texture names its sampler, and equal specs share one. A pass chooses whether depth is written
+  ([ADR-0085](../../adr/0085-rendering-a-pass-chooses-whether-depth-is-written.md)). `Quad`
+  linearises into an `_SRGB` target.
+- **Five helpers.** `Device::Description`, `Immediate::block()`, `ecs::Ref`,
+  `engine::IsometricController`, and `Camera::screenPoint()` and `pick()` with
+  `api/engine/Main.h`.
+- **Audio events and parameters** behind an interface, with a null backend and an optional FMOD
+  Studio backend ([ADR-0084](../../adr/0084-audio-events-and-parameters-behind-an-interface.md)).
+
+What turned out differently from the plan:
+
+- The shadow pass needed the camera's hand as well as the front face.
+- `pick()` is a member of `Camera`, and five apps carried the `SDL_main` include, not three.
+- The FMOD SDK is named by `V3D_FMOD_ROOT` rather than fetched, because its downloads need an
+  account. The closing review found that an FMOD build which calls `audio::events()` would not
+  start without FMOD's dlls beside it. `fmodstudio.dll` is now delay-loaded, and a missing dll
+  gives the null backend.
+- The `Engine3D` gate needed a window, which no test had opened before.
+
+Nothing was left open. The FMOD backend has no CI gate because CI has no SDK. That is a limit
+of the backend, stated in [Dependencies.md](../../contributing/Dependencies.md#fmod-studio), and
+not unfinished work.
