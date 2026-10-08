@@ -29,4 +29,7 @@ if(V3D_FMOD_ROOT)
 			"$<TARGET_FILE_DIR:v3dtest_audio>"
 		COMMENT "Copying the FMOD dlls beside the audio tests"
 		VERBATIM)
+else()
+	# Without the backend, events() hands back the null backend. CI builds this case.
+	target_sources(v3dtest_audio PRIVATE "EventsWithoutFmodTest.cpp")
 endif()

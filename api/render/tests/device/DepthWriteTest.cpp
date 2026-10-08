@@ -8,10 +8,12 @@
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/LineCanvas.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/WorldCanvas.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/renderer/Line.h>
+#include <api/render/realtime/vulkan/renderer/World.h>
 
 #include <cstddef>
 #include <optional>
@@ -30,6 +32,7 @@
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::LineCanvas;
 using v3d::render::realtime::Pass;
+using v3d::render::realtime::WorldCanvas;
 using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
@@ -54,31 +57,56 @@ glm::mat4x4 pixels() {
 }
 
 /**
- * A red line and then a green one along the same row of pixels at the same depth, drawn into a
- * depth tested pass, and the colour of a pixel on the row.
+ * What a case draws twice at the same depth.
+ **/
+enum class Drawn {
+    Lines,
+    WorldQuads
+};
+
+/**
+ * A red shape and then a green one over the same pixels at the same depth, drawn into a depth
+ * tested pass, and the colour of a pixel they both cover.
  *
- * Both lines are one draw of the same pipeline, so they cover the same pixels on any driver.
- * Where the first line writes depth, the second fails the LESS test at the equal depth.
+ * The shapes are lines along one row, or world quads over a band of rows. Both shapes are one
+ * draw of the same pipeline, so they cover the same pixels on any driver. Where the first shape
+ * writes depth, the second fails the LESS test at the equal depth.
  *
  * @param write what the pass names for depth writing
- * @return "red", "green" or "neither", for the pixel at the middle of the row
+ * @return "red", "green" or "neither", for the pixel at the middle of row 16
  **/
-std::string drawCoincidentLines(v3d::test::Headless* headless, std::optional<bool> write, const std::string& path) {
+std::string drawCoincident(v3d::test::Headless* headless, Drawn drawn, std::optional<bool> write, const std::string& path) {
     boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
         headless->device, headless->context->ring(), width, height, colourFormat, true);
 
-    LineCanvas canvas;
-    canvas.line(glm::vec3(0.0f, 16.5f, 0.5f), glm::vec3(64.0f, 16.5f, 0.5f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-    canvas.line(glm::vec3(0.0f, 16.5f, 0.5f), glm::vec3(64.0f, 16.5f, 0.5f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+    const glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
+    const glm::vec4 green(0.0f, 1.0f, 0.0f, 1.0f);
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("lines");
+    boost::shared_ptr<Pass> pass = frame.pass("coincident");
     pass->target(target);
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pass->depth(true);
     pass->depthWrite(write);
     pass->camera(glm::mat4x4(1.0f), pixels());
-    headless->context->lines()->submit(canvas, pass.get());
+
+    LineCanvas lines;
+    WorldCanvas quads;
+    if (drawn == Drawn::Lines) {
+        lines.line(glm::vec3(0.0f, 16.5f, 0.5f), glm::vec3(64.0f, 16.5f, 0.5f), red);
+        lines.line(glm::vec3(0.0f, 16.5f, 0.5f), glm::vec3(64.0f, 16.5f, 0.5f), green);
+        headless->context->lines()->submit(lines, pass.get());
+    } else {
+        const WorldCanvas::Corners band{
+            glm::vec3(0.0f, 8.0f, 0.5f),
+            glm::vec3(64.0f, 8.0f, 0.5f),
+            glm::vec3(64.0f, 24.0f, 0.5f),
+            glm::vec3(0.0f, 24.0f, 0.5f)
+        };
+        quads.quad(band, red);
+        quads.quad(band, green);
+        headless->context->worldQuads()->submit(quads, pass.get());
+    }
 
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
@@ -122,7 +150,7 @@ BOOST_AUTO_TEST_SUITE(depth_write_test)
  **/
 BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_draws_the_second_line) {
     v3d::test::Headless headless(colourFormat, width, height);
-    BOOST_TEST(drawCoincidentLines(&headless, false, "data_out/lines_unwritten.png") == "green");
+    BOOST_TEST(drawCoincident(&headless, Drawn::Lines, false, "data_out/lines_unwritten.png") == "green");
     BOOST_TEST(headless.silent());
 }
 
@@ -132,7 +160,28 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_draws_the_second_line) {
  **/
 BOOST_AUTO_TEST_CASE(a_pass_that_names_nothing_writes_line_depth) {
     v3d::test::Headless headless(colourFormat, width, height);
-    BOOST_TEST(drawCoincidentLines(&headless, std::nullopt, "data_out/lines_written.png") == "red");
+    BOOST_TEST(drawCoincident(&headless, Drawn::Lines, std::nullopt, "data_out/lines_written.png") == "red");
+    BOOST_TEST(headless.silent());
+}
+
+/**
+ * World quads are built without depth writes, and a pass that asks for them makes the first of
+ * two coincident quads hide the second. Without the pass's choice reaching the quads' pipeline,
+ * the green quad would draw.
+ **/
+BOOST_AUTO_TEST_CASE(a_pass_with_depth_writes_makes_world_quads_write) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    BOOST_TEST(drawCoincident(&headless, Drawn::WorldQuads, true, "data_out/quads_written.png") == "red");
+    BOOST_TEST(headless.silent());
+}
+
+/**
+ * A pass that names nothing draws world quads as their pipeline was built, without depth
+ * writes, so the second quad draws over the first.
+ **/
+BOOST_AUTO_TEST_CASE(a_pass_that_names_nothing_leaves_world_quads_unwritten) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    BOOST_TEST(drawCoincident(&headless, Drawn::WorldQuads, std::nullopt, "data_out/quads_unwritten.png") == "green");
     BOOST_TEST(headless.silent());
 }
 

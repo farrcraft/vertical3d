@@ -112,6 +112,51 @@ BOOST_AUTO_TEST_CASE(a_pan_after_a_rotate_follows_the_view) {
 }
 
 /**
+ * A held zoom in narrows the view by its speed for each second, and a held zoom out widens it by
+ * the same amount. A controller with the two commands swapped would widen on a zoom in.
+ **/
+BOOST_AUTO_TEST_CASE(a_held_zoom_in_narrows_and_zoom_out_widens) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    IsometricController::Speeds speeds;
+    speeds.zoom = 3.0f;
+
+    const std::set<std::string, std::less<>> in{"camera::zoom_in"};
+    Isometric closer;
+    IsometricController zoomingIn(&closer, dispatcher, holding(&in), IsometricController::Commands(), speeds);
+    zoomingIn.simulate(1.0f);
+    BOOST_TEST(closer.zoom() == Isometric::DEFAULT_ZOOM - 3.0f, boost::test_tools::tolerance(1e-5f));
+
+    const std::set<std::string, std::less<>> out{"camera::zoom_out"};
+    Isometric wider;
+    IsometricController zoomingOut(&wider, dispatcher, holding(&out), IsometricController::Commands(), speeds);
+    zoomingOut.simulate(1.0f);
+    BOOST_TEST(wider.zoom() == Isometric::DEFAULT_ZOOM + 3.0f, boost::test_tools::tolerance(1e-5f));
+}
+
+/**
+ * Each pan command moves the target along its own direction: left against right(), up along
+ * forward() and down against it. A controller that read one command for two directions would
+ * move one of these the wrong way.
+ **/
+BOOST_AUTO_TEST_CASE(each_pan_command_moves_its_own_way) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    IsometricController::Speeds speeds;
+    speeds.pan = 2.0f;
+    const auto moved = [&](const std::string& command) {
+        const std::set<std::string, std::less<>> down{command};
+        Isometric orbit;
+        IsometricController controller(&orbit, dispatcher, holding(&down), IsometricController::Commands(), speeds);
+        const glm::vec3 before = orbit.target();
+        controller.simulate(1.0f);
+        return orbit.target() - before;
+    };
+    const Isometric reference;
+    BOOST_TEST(near(moved("camera::pan_left"), reference.right() * -2.0f));
+    BOOST_TEST(near(moved("camera::pan_up"), reference.forward() * 2.0f));
+    BOOST_TEST(near(moved("camera::pan_down"), reference.forward() * -2.0f));
+}
+
+/**
  * A controller that is gone leaves nothing on the dispatcher, so a rotate command after it is
  * destroyed reaches no orbit.
  **/
