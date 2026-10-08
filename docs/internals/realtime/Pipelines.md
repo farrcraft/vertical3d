@@ -161,9 +161,15 @@ data files: CMake does not copy per-app data into the build tree, and a shader f
 executable would go stale silently. `v3d_add_shader`, `OUTPUT`, `DEFINES`, includes and depfiles
 are described in [contributing/Build.md](../../contributing/Build.md#shaders).
 
+**The api reads no shader from disk.** A game that wants to swap a shader without relinking reads
+the SPIR-V words itself and hands them to `Builder::shader()`, or to `Lit::Shaders` for the lit
+pipelines. A loader in the api would make every app ship and find shader files, to serve the one
+that wants to replace them.
+
 | Shader | Used by |
 |---|---|
 | `quad.vert`, `quad.frag` | `Quad` |
+| `linear_quad.frag` | `Quad` drawing into an `_SRGB` format: `quad.frag` compiled with `LINEARISE` |
 | `line.vert`, `line.frag` | `Line` |
 | `world.vert`, `world.frag` | `World` |
 | `fullscreen.vert`, `grade.frag` | `FullScreen`, `Grade` |

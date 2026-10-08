@@ -52,6 +52,10 @@ Two of retcon's findings are declined here and get no step:
 - **Shaders read from disk.** Every app in this tree embeds its SPIR-V, and a game that wants to
   swap a shader without relinking can read the words itself and hand them to `Builder::shader()`.
 
+Both rules are stated in the documents that own them: the parser rule in
+[Assets.md](../api/Assets.md#json-documents), and the shader rule in
+[Pipelines.md](../internals/realtime/Pipelines.md#shaders).
+
 ## What blocks what
 
 Nothing here blocks anything else here. The order is by what each step unblocks for retcon:

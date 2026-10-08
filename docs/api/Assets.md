@@ -88,6 +88,10 @@ through the checked reads in [api/asset/Json.h](../../api/asset/Json.h). `boost:
 throws on a missing key, and `boost::json::value_to` and the `as_` accessors throw on a value of
 the wrong type. When the document is not what you expect, return false with a log line.
 
+**A game's own text format keeps its parser in the game.** The api parses the formats its own
+libraries read: JSON documents, glTF, and RIB for moya. A grammar added for one game's record or
+script files would commit the api to keeping that format stable for games that do not use it.
+
 Each checked read takes an object and a key:
 
 | Read | Returns | Refuses |
