@@ -8,6 +8,7 @@
 //     node scripts/failsfirst.ts --base 13a9557     the commits after 13a9557.
 //     node scripts/failsfirst.ts --commit 5ff63287  one commit, against its parent.
 //     node scripts/failsfirst.ts --list             only print the new cases and their suites.
+//     node scripts/failsfirst.ts --build out/build/ci   reuse another build's packages.
 //
 // Node runs this file directly, with its types stripped. It uses only Node's built-in modules
 // and the lexer and entry modules beside it.
@@ -36,9 +37,11 @@
 //    The configure reuses the packages the main build already installed: it points
 //    VCPKG_INSTALLED_DIR at that install, turns VCPKG_MANIFEST_INSTALL off, and uses the
 //    checkout's vcpkg toolchain file, so nothing is installed. The values come from the main
-//    build's CMakeCache.txt. vendor/libnoise is linked into the worktree with a directory
-//    junction, because voxel links its prebuilt library. /WX is off, so that only an error
-//    counts as a failure to build.
+//    build's CMakeCache.txt, which is out/build/x64-Debug unless --build names another. A link
+//    job pool the main build was configured with is configured here too, because the link
+//    edges it serialises also copy dlls. vendor/libnoise is linked into the worktree with a
+//    directory junction, because voxel links its prebuilt library. /WX is off, so that only an
+//    error counts as a failure to build.
 // 4. Runs each new case alone, as v3dtest_<suite>.exe --run_test=<path>, from the executable's
 //    directory so that its fixtures resolve.
 // 5. Prints one row per case and exits 1 when any case passed without a stated reason. The
@@ -55,7 +58,8 @@
 //                        rest are built and run.
 //     PASSES - weak      the case passes without the change. It does not test the change.
 //     passes, stated     the case passes without the change, and its doc comment says why.
-//     skipped (no GPU)   the render_device binary found no Vulkan device and exited with 77.
+//     skipped            the binary found no Vulkan device, or render_window no window, and
+//                        exited with 77.
 //     not run            the binary did not find the case, timed out, could not start, or
 //                        exited with an error and reported no failed check. A binary that
 //                        cannot load a DLL is one of these, and so is a suite whose build
@@ -78,8 +82,9 @@
 // Limits:
 //
 // - Only committed revisions are compared. Uncommitted changes in the checkout are ignored.
-// - A render_device case needs a Vulkan device. Without one the binary skips, and the case is
-//   reported as skipped, not as passing or failing.
+// - A render_device case needs a Vulkan device, and a render_window case a window as well.
+//   Without one the binary skips, and the case is reported as skipped, not as passing or
+//   failing.
 // - A case can fail without the change only because of a fixture the change added, such as a
 //   file the old code cannot read. That counts as failing here, but it shows that the fixture
 //   is new, not that the test checks the new code. Read such a case by hand.
@@ -104,19 +109,20 @@ import { shouldRun } from "./entry.ts";
 import { blankComments } from "./lexer.ts";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
-const MAIN_BUILD = path.join(ROOT, "out", "build", "x64-Debug");
+const DEFAULT_BUILD = path.join("out", "build", "x64-Debug");
 const MAX_BUFFER = 512 * 1024 * 1024;
 
 const FAILS = "fails";
 const FAILS_TO_BUILD = "fails to build";
 const PASSES = "PASSES - weak";
 const PASSES_STATED = "passes, stated";
-const SKIPPED = "skipped (no GPU)";
+const SKIPPED = "skipped";
 const NOT_RUN = "not run";
 
-// A Boost.Test executable that found no usable device before starting. Only render_device
-// returns it.
+// A Boost.Test executable that found no usable device, or no window, before starting. Only these
+// suites return it.
 const SKIP_RETURN_CODE = 77;
+const SKIPPING_SUITES = new Set(["render_device", "render_window"]);
 
 // The tokens that open and close a Boost.Test suite and that declare a case. A data case with
 // a fixture names the case in its second argument, and every other macro in its first.
@@ -186,6 +192,7 @@ type Options = {
     keep: boolean;
     scratch: string | null;
     timeout: number;
+    build: string;
 };
 
 class Failure extends Error {}
@@ -566,13 +573,13 @@ function missingSources(output: string): string[] {
 // names it and resolves to a file the worktree lacks, and the configure runs again. A list in
 // another directory that spells the name the same way names a different file, and keeps it. The
 // drops are added to dropped, marked with whether the change added the source.
-function configure(worktree: string, build: string, cache: Map<string, string>, env: Env, scratch: string,
-                   head: string, added: Set<string>, dropped: Map<string, Drop[]>): void {
+function configure(worktree: string, build: string, mainBuild: string, cache: Map<string, string>, env: Env,
+                   scratch: string, head: string, added: Set<string>, dropped: Map<string, Drop[]>): void {
     let toolchain = cache.get("CMAKE_TOOLCHAIN_FILE") ?? "vendor/vcpkg/scripts/buildsystems/vcpkg.cmake";
     if (!path.isAbsolute(toolchain)) {
         toolchain = path.join(ROOT, toolchain);
     }
-    const installed = cache.get("VCPKG_INSTALLED_DIR") || path.join(MAIN_BUILD, "vcpkg_installed");
+    const installed = cache.get("VCPKG_INSTALLED_DIR") || path.join(mainBuild, "vcpkg_installed");
     const command = [
         "cmake", "-S", worktree, "-B", build, "-G", "Ninja",
         "-DCMAKE_BUILD_TYPE=" + (cache.get("CMAKE_BUILD_TYPE") ?? "Debug"),
@@ -582,6 +589,14 @@ function configure(worktree: string, build: string, cache: Map<string, string>, 
         "-DVCPKG_MANIFEST_INSTALL=OFF",
         "-DV3D_WARNINGS_AS_ERRORS=OFF",
     ];
+    // a link edge also copies dlls out of the shared install, so a build that serialised links
+    // for that reason has them serialised here too
+    for (const name of ["CMAKE_JOB_POOLS", "CMAKE_JOB_POOL_LINK"]) {
+        const value = cache.get(name);
+        if (value) {
+            command.push(`-D${name}=${value}`);
+        }
+    }
     const listed = listedSources(head);
     for (let attempt = 1; ; attempt++) {
         console.log(`configuring ${build}`);
@@ -780,7 +795,7 @@ function classify(c: Case, done: Outcome, timeout: number): void {
     const output = done.output;
     if (done.status === 0) {
         c.result = c.stated === null ? PASSES : PASSES_STATED;
-    } else if (done.status === SKIP_RETURN_CODE && c.suite === "render_device") {
+    } else if (done.status === SKIP_RETURN_CODE && SKIPPING_SUITES.has(c.suite)) {
         c.result = SKIPPED;
     } else if (/no test cases matching filter|test setup error/i.test(output)) {
         c.result = NOT_RUN;
@@ -801,17 +816,20 @@ function check(cases: Case[], base: string, head: string, changes: Change[], opt
     if (fs.existsSync(scratch)) {
         throw new Failure(`${scratch} exists; remove it or pass --scratch`);
     }
+    // read before the scratch directory exists, so a build that is not configured leaves nothing
+    const cache = readCache(options.build);
     fs.mkdirSync(scratch, { recursive: true });
     const worktree = path.join(scratch, "src");
     const build = path.join(scratch, "build");
-    const cache = readCache(MAIN_BUILD);
-    const env = developerEnvironment(scratch);
     let made = false;
     try {
+        // inside the try, so that a developer environment that will not start removes the scratch
+        // directory on the way out
+        const env = developerEnvironment(scratch);
         made = true;
         const dropped = makeWorktree(head, base, changes, worktree);
         const added = new Set(changes.filter((c) => c.status === "A").map((c) => c.file));
-        configure(worktree, build, cache, env, scratch, head, added, dropped);
+        configure(worktree, build, options.build, cache, env, scratch, head, added, dropped);
         const bySuite = new Map<string, Case[]>();
         for (const c of cases) {
             if (!bySuite.has(c.suite)) {
@@ -854,7 +872,7 @@ function check(cases: Case[], base: string, head: string, changes: Change[], opt
 }
 
 const USAGE = `usage: node scripts/failsfirst.ts [--base REF | --commit SHA] [--list] [--keep]
-                                  [--scratch DIR] [--timeout SECONDS]
+                                  [--scratch DIR] [--timeout SECONDS] [--build DIR]
 
 Check that the test cases a changeset adds fail without its code.
 
@@ -865,10 +883,14 @@ Check that the test cases a changeset adds fail without its code.
   --keep             keep the worktree and its build
   --scratch DIR      the directory for the worktree and the build
                      (default: a directory under the system temporary directory)
-  --timeout SECONDS  seconds allowed for one case (default: 900)`;
+  --timeout SECONDS  seconds allowed for one case (default: 900)
+  --build DIR        the configured build whose packages and settings are reused
+                     (default: out/build/x64-Debug)`;
 
 function parseOptions(argv: string[]): Options {
-    const options: Options = { base: null, commit: null, list: false, keep: false, scratch: null, timeout: 900 };
+    const options: Options = {
+        base: null, commit: null, list: false, keep: false, scratch: null, timeout: 900, build: path.join(ROOT, DEFAULT_BUILD),
+    };
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         const value = (): string => {
@@ -883,6 +905,8 @@ function parseOptions(argv: string[]): Options {
             options.commit = value();
         } else if (arg === "--scratch") {
             options.scratch = value();
+        } else if (arg === "--build") {
+            options.build = path.resolve(ROOT, value());
         } else if (arg === "--timeout") {
             options.timeout = Number.parseInt(value(), 10);
             if (!(options.timeout > 0)) {

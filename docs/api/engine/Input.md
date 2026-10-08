@@ -145,6 +145,34 @@ counting command edges, so it works for a binding that fires on press only, and 
 - A command is its name and context, without its param. Directions that must be held
   independently need separate commands, not one command with different params.
 
+### Driving an isometric camera
+
+`engine::IsometricController` moves a `type::camera::Isometric` the app owns, from commands:
+
+```cpp
+// in start()
+controller_ = std::make_unique<v3d::engine::IsometricController>(&orbit_, *this);
+
+// in simulate(step)
+controller_->simulate(step);
+
+// in release()
+controller_.reset();
+```
+
+- **Bind the keys in the binding document**, to `camera::rotate_left`, `camera::rotate_right`,
+  `camera::pan_up`, `camera::pan_down`, `camera::pan_left`, `camera::pan_right`,
+  `camera::zoom_in` and `camera::zoom_out`. Other names can be given in
+  `IsometricController::Commands`.
+- **A rotate command turns one step per press.** A repeat of a held key is ignored, so holding
+  the key does not spin the camera. Left turns clockwise seen from above, and right
+  counterclockwise.
+- **Pan and zoom move while their command is held**, read with `held()` from `simulate()`. The
+  speeds are in `IsometricController::Speeds`: world units a second for a pan, and orthographic
+  half height a second for a zoom. A pan follows the view's own axes, so up stays up on screen
+  after a rotate.
+- Destroying the controller disconnects it from the dispatcher.
+
 ### Mouse look
 
 Call `window()->relativeMouse(true)`. The pointer is hidden and held inside the window, and

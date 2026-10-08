@@ -76,6 +76,29 @@ glm::vec3 Camera::project(const glm::vec3& point, const int viewport[4]) const {
     return p;
 }
 
+std::optional<glm::vec3> Camera::screenPoint(const glm::vec3& point, const int viewport[4]) const {
+    if (viewport[2] <= 0 || viewport[3] <= 0) {
+        return std::nullopt;
+    }
+    // w is the depth in front of the eye for a perspective camera, and one for an
+    // orthographic one. A point at or behind the eye has no place on the screen
+    const glm::vec4 clip = projection() * (view() * glm::vec4(point, 1.0f));
+    if (clip[3] <= 0.0f) {
+        return std::nullopt;
+    }
+    return project(point, viewport);
+}
+
+std::optional<glm::vec3> Camera::pick(const glm::vec2& cursor, const int viewport[4],
+    const geometry::Plane& plane) const {
+    const geometry::Ray cast = ray(cursor, viewport);
+    float distance = 0.0f;
+    if (!cast.intersects(plane, &distance)) {
+        return std::nullopt;
+    }
+    return cast.point(distance);
+}
+
 geometry::Ray Camera::ray(const glm::vec2& point, const int viewport[4]) const {
     // the two ends of the pixel's line through the frustum. Depth zero is the near
     // plane and one is the far one

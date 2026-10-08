@@ -23,10 +23,18 @@ class AppEngine : public v3d::engine::Engine {
     bool release() override;                   // release the renderer
 };
 
+// main.cxx
+#include <api/engine/Main.h>
+
 int main(int argc, char* argv[]) {
     return v3d::engine::run<AppEngine>(argv[0], "myapp");
 }
 ```
+
+**The file that defines `main` includes `api/engine/Main.h`, and no other file does.** It brings
+in `run<T>` and SDL's entry point. A windowed executable is entered through `WinMain`, which
+`SDL3/SDL_main.h` defines and which calls `main`. That definition must be in exactly one
+translation unit. An app does not include `SDL_main.h` itself.
 
 ### The run function
 

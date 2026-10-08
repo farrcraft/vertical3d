@@ -5,6 +5,8 @@
 
 #include "Engine3D.h"
 
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -50,6 +52,9 @@ bool Engine3D::shutdown() {
     // it as leaked
     // assigned null rather than calling frame_.reset(), which reads like Frame::reset()
     frame_ = nullptr;
+    // the capture's readback buffer belongs to the device the context owns
+    capture_.reset();
+    capturePath_.clear();
     context_.reset();
     return Engine::shutdown();
 }
@@ -104,6 +109,19 @@ void Engine3D::clearColour(const glm::vec4& colour) {
     if (frame_) {
         frame_->pass(colourPass)->clearColour(colour);
     }
+}
+
+/**
+ **/
+bool Engine3D::capture(std::string_view path) {
+    if (!context_ || !context_->swapchain()->copyable()) {
+        return false;
+    }
+    if (!capture_) {
+        capture_ = boost::make_shared<vulkan::frame::Capture>(context_->device(), logger());
+    }
+    capturePath_ = path;
+    return true;
 }
 
 /**
@@ -180,7 +198,30 @@ void Engine3D::renderFrame() {
     vulkan::frame::Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get(),
         &context_->ring()->timings());
 
-    if (presenter->present(acquisition) == vulkan::frame::Presenter::Status::OutOfDate) {
+    // a chain rebuilt since the request may have lost TRANSFER_SRC, and Capture throws for that
+    const bool capturing = !capturePath_.empty() && swapchain->copyable();
+    if (!capturePath_.empty() && !capturing) {
+        logger()->get()->error("Cannot capture a frame to {}: the swapchain images cannot be copied out of", capturePath_);
+        capturePath_.clear();
+    }
+    if (capturing) {
+        // after the recorder, which leaves the image in PRESENT_SRC as the copy expects
+        capture_->record(acquisition.commands, *swapchain, acquisition.image);
+    }
+
+    // the submission stands even when the chain has gone out of date, so a capture recorded
+    // into it is written either way
+    const bool outOfDate = presenter->present(acquisition) == vulkan::frame::Presenter::Status::OutOfDate;
+
+    if (capturing) {
+        context_->ring()->waitIdle();
+        if (!capture_->write(capturePath_)) {
+            logger()->get()->error("Cannot write a captured frame to {}", capturePath_);
+        }
+        capturePath_.clear();
+    }
+
+    if (outOfDate) {
         context_->resize();
     }
 

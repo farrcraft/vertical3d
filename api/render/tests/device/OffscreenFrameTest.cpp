@@ -75,6 +75,55 @@ std::vector<unsigned char> rgba(unsigned char r, unsigned char g, unsigned char 
     return std::vector<unsigned char>{r, g, b, a};
 }
 
+/**
+ * Fill a target of the given format with a #808080 quad, and read back the texel in its middle.
+ *
+ * The quad renderer is built against the context's format, so the context is made for the
+ * target's. The capture converts the stored bytes as they are, without decoding sRGB, so it reads
+ * what the target holds.
+ **/
+std::vector<unsigned char> greyQuad(VkFormat format, const std::string& path) {
+    v3d::test::Headless headless(format, width, height);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, format);
+
+    Canvas canvas;
+    canvas.resize(width, height);
+    canvas.clear();
+    const float grey = 128.0f / 255.0f;
+    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)),
+        glm::vec4(grey, grey, grey, 1.0f));
+
+    Frame frame;
+    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    headless.context->quads()->submit(canvas, pass.get());
+
+    Capture capture(headless.device, headless.logger);
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::record(commands, frame, describe(target), *headless.context->resources(), headless.context->frameUniforms().get());
+    Capture::Source source;
+    source.image = target->image();
+    source.extent = target->extent();
+    source.format = target->format();
+    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    capture.record(commands, source);
+    headless.submitAndWait(commands);
+
+    BOOST_CHECK(headless.silent());
+    BOOST_REQUIRE(capture.write(path));
+    boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, path);
+    BOOST_REQUIRE(picture);
+    return texel(picture, width / 2, height / 2);
+}
+
+/**
+ * @return whether a byte read back is within one of 0x80. The sRGB encode on store may round
+ *         either way, and an unconverted grey stores about 0xBC
+ **/
+bool nearGrey(unsigned char value) {
+    return value >= 0x7F && value <= 0x81;
+}
+
 };  // namespace
 
 BOOST_AUTO_TEST_SUITE(offscreen_frame_test)
@@ -419,6 +468,34 @@ BOOST_AUTO_TEST_CASE(a_retirement_outlives_the_frame_about_to_begin) {
 
     ring->waitIdle();
     BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A quad's colour is the colour that appears, whether the target stores it as written or encodes
+ * it as sRGB. A #808080 quad reads back as 0x80 from an _SRGB target, which it does only because
+ * the quad was decoded to linear before the target encoded it.
+ **/
+BOOST_AUTO_TEST_CASE(a_grey_quad_reads_back_grey_from_an_srgb_target) {
+    const std::vector<unsigned char> centre = greyQuad(VK_FORMAT_R8G8B8A8_SRGB, "data_out/quad_grey_srgb.png");
+    BOOST_TEST_MESSAGE("centre " << int(centre[0]) << "," << int(centre[1]) << "," << int(centre[2]));
+    BOOST_TEST(nearGrey(centre[0]));
+    BOOST_TEST(nearGrey(centre[1]));
+    BOOST_TEST(nearGrey(centre[2]));
+}
+
+/**
+ * The same quad reads back as 0x80 from a UNORM target, which stores what it is given. A quad
+ * decoded whatever its target would read about 0x37 here, darkening every UNORM app's ui.
+ *
+ * Passes before the change: the decode to linear is what the change adds, so before it nothing
+ * could reach a UNORM target and darken it.
+ **/
+BOOST_AUTO_TEST_CASE(a_grey_quad_reads_back_grey_from_a_unorm_target) {
+    const std::vector<unsigned char> centre = greyQuad(VK_FORMAT_R8G8B8A8_UNORM, "data_out/quad_grey_unorm.png");
+    BOOST_TEST_MESSAGE("centre " << int(centre[0]) << "," << int(centre[1]) << "," << int(centre[2]));
+    BOOST_TEST(centre[0] == 0x80);
+    BOOST_TEST(centre[1] == 0x80);
+    BOOST_TEST(centre[2] == 0x80);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

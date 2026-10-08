@@ -81,7 +81,8 @@ void Line::createPipelines(VkFormat colour, VkFormat depth) {
 
     pipeline_ = resources_->add(builder.build(cache_));
 
-    builder.name("line-depth").depth(true, true).depthFormat(depth);
+    // writes depth unless the pass says otherwise, so a near wireframe hides a far one
+    builder.name("line-depth").depth(true, true).depthWriteDynamic(true).depthFormat(depth);
     depthPipeline_ = resources_->add(builder.build(cache_));
 }
 

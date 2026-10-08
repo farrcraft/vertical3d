@@ -5,8 +5,11 @@
 
 #pragma once
 
+#include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "Context3D.h"
@@ -47,6 +50,24 @@ class Engine3D : public Engine {
      * and draws nothing at all while the window has no area.
      **/
     void renderFrame() override;
+
+    /**
+     * Write the next frame that is presented to a png.
+     *
+     * The frame is copied after it is recorded and before it is presented, so the file holds
+     * exactly what reached the window. A frame that is skipped, because the window has no area
+     * or the chain is being rebuilt, keeps the request for the next one that presents. Once a
+     * frame has tried to write the file the request is cleared, so a path that cannot be
+     * written fails once and is reported in the log.
+     *
+     * The frame waits for the device to go idle before it reads the copy back, so a frame that
+     * is captured does not overlap the next one.
+     *
+     * @param path where the png is written
+     * @return false, and nothing is requested, before initialize() or when the chain's images
+     *         cannot be copied out of because the surface does not allow it
+     **/
+    bool capture(std::string_view path);
 
     /**
      * Whether there is a frame worth building, and how big it is.
@@ -128,5 +149,9 @@ class Engine3D : public Engine {
     glm::vec4 clearColour_;
     /**< what initialize() requests from the chain; the chain decides what it gets **/
     VkFormat preferred_;
+    /**< made by the first capture() and kept, so its readback buffer is reused **/
+    boost::shared_ptr<vulkan::frame::Capture> capture_;
+    /**< where the next presented frame is written, or empty when none is asked for **/
+    std::string capturePath_;
 };
 };  // namespace v3d::render::realtime

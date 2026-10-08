@@ -217,4 +217,16 @@ const std::optional<Pass::DepthBias>& Pass::depthBias() const noexcept {
     return bias_;
 }
 
+/**
+ **/
+void Pass::depthWrite(std::optional<bool> write) noexcept {
+    write_ = write;
+}
+
+/**
+ **/
+std::optional<bool> Pass::depthWrite() const noexcept {
+    return write_;
+}
+
 };  // namespace v3d::render::realtime

@@ -66,6 +66,29 @@ A project in another repository needs the SDK only if the api libraries it selec
 The SDK also provides the Khronos validation layer, which the renderer turns on when it is
 installed. [Testing.md](Testing.md#verifying-a-rendering-change) explains how to use it.
 
+## FMOD Studio
+
+FMOD Studio backs `api/audio`'s event interface. It is optional, and the tree builds without it:
+CI does, and so does any machine without the SDK. Without it, an app that plays events gets the
+null backend, which plays nothing.
+
+**The SDK is never committed and never downloaded by the build.** Its licence forbids
+redistributing it, and its downloads need an account on fmod.com. To build the FMOD backend:
+
+1. Install the FMOD Studio API for Windows. It installs to
+   `C:/Program Files (x86)/FMOD SoundSystem/FMOD Studio API Windows` by default.
+2. Configure with `-DV3D_FMOD_ROOT=<that directory>`. The configure stops if the directory holds
+   no `api/studio/inc/fmod_studio.hpp`.
+3. An executable that plays events needs `fmod.dll` and `fmodstudio.dll` beside it at run time.
+   `v3dlib_audio` delay-loads FMOD, so an executable without them still starts, and `events()`
+   returns the null backend. The audio test suite copies them. An app that plays events copies
+   them itself, from `$<TARGET_FILE:v3d_fmod_core>` and `$<TARGET_FILE:v3d_fmod_studio>`.
+
+Setting `V3D_FMOD_ROOT` back to empty builds the null backend alone again.
+
+With the SDK configured, the audio suite plays an event from the example banks the SDK ships.
+CI has no SDK, so that case never runs there.
+
 ## libnoise
 
 [libnoise](https://github.com/eXpl0it3r/libnoise) is an unofficial fork of libnoise with CMake
@@ -174,3 +197,14 @@ well.
 
 A new baseline usually reinstalls most packages, including boost. See [Build.md](Build.md#traps)
 for the cost.
+
+**Dependabot does not move the baseline.** It updates only a `builtin-baseline` in `vcpkg.json`,
+and this tree keeps the baseline in `vcpkg-configuration.json`. It does open pull requests for
+what it can read, as [.github/dependabot.yml](../../.github/dependabot.yml) configures:
+
+- the GitHub actions the workflows use, weekly and in one group. It moves each pinned sha and the
+  release in its comment together;
+- the `vendor/libnoise` submodule, monthly;
+- the development container's base image in `.devcontainer/Dockerfile`, monthly.
+
+Each pull request runs CI like any other, so an update that breaks the build is found there.

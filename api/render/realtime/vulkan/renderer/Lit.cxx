@@ -117,7 +117,7 @@ Lit::Shaders Lit::Shaders::embedded() {
 Lit::Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<pipeline::Cache>& cache,
     const boost::shared_ptr<pipeline::Resources>& resources, const boost::shared_ptr<frame::Ring>& ring,
     const boost::shared_ptr<frame::FrameUniforms>& uniforms, const boost::shared_ptr<Textures>& textures,
-    VkFormat colour, VkFormat depth, VkFormat shadow, const Shaders& shaders) :
+    VkFormat colour, VkFormat depth, VkFormat shadow, const Shaders& shaders, VkFrontFace front) :
     device_(device),
     cache_(cache),
     resources_(resources),
@@ -148,12 +148,12 @@ Lit::Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_pt
         std::vector<VkDescriptorSetLayoutBinding>{block, map, palette}, ring_->framesInFlight(), "scene");
     slots_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 
-    createPipelines(shaders, colour, depth, shadow);
+    createPipelines(shaders, colour, depth, shadow, front);
 }
 
 /**
  **/
-void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat depth, VkFormat shadow) {
+void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat depth, VkFormat shadow, VkFrontFace front) {
     const auto bytes = [](const std::vector<uint32_t>& code) { return code.size() * sizeof(uint32_t); };
 
     for (const bool skinned : {false, true}) {
@@ -163,7 +163,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
             .shader(VK_SHADER_STAGE_VERTEX_BIT, meshVertex.data(), bytes(meshVertex))
             .shader(VK_SHADER_STAGE_FRAGMENT_BIT, shaders.cel.data(), bytes(shaders.cel));
         vertex(&cel, skinned, false);
-        cel.cull(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE)
+        cel.cull(VK_CULL_MODE_BACK_BIT, front)
             .depth(true, true)
             // a lit surface is opaque, and blending it would cost bandwidth on every fragment
             .blend(false)
@@ -179,7 +179,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
             .shader(VK_SHADER_STAGE_VERTEX_BIT, outlineVertex.data(), bytes(outlineVertex))
             .shader(VK_SHADER_STAGE_FRAGMENT_BIT, shaders.outlineFragment.data(), bytes(shaders.outlineFragment));
         vertex(&outline, skinned, false);
-        outline.cull(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_CLOCKWISE)
+        outline.cull(VK_CULL_MODE_FRONT_BIT, front)
             .depth(true, true)
             .blend(false)
             .colourFormat(colour)
@@ -197,7 +197,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
         caster.name(skinned ? "lit-shadow-skinned" : "lit-shadow")
             .shader(VK_SHADER_STAGE_VERTEX_BIT, shadowVertex.data(), bytes(shadowVertex));
         vertex(&caster, skinned, true);
-        caster.cull(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE)
+        caster.cull(VK_CULL_MODE_BACK_BIT, front)
             .depth(true, true)
             .depthBias(true)
             .colourFormats({})

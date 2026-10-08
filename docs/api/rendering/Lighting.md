@@ -31,6 +31,20 @@ vulkan::renderer::Lit lit(context->device(), context->pipelineCache(), context->
 
 Pass `VK_FORMAT_UNDEFINED` as the last format for a scene with no shadows.
 
+**A camera on `Profile::Hand::DirectionCrossUp` needs a counter-clockwise front face.** That
+hand mirrors the image, which reverses the winding of every face on screen. `Lit` culls with a
+clockwise front face unless told otherwise, which is right for the default hand:
+
+```cpp
+vulkan::renderer::Lit lit(context->device(), context->pipelineCache(), context->resources(),
+    context->ring(), context->frameUniforms(), context->textures(),
+    scene->format(), scene->depthFormat(), map->depthFormat(),
+    vulkan::renderer::Lit::Shaders::embedded(), VK_FRONT_FACE_COUNTER_CLOCKWISE);
+```
+
+The cel, outline and shadow pipelines all cull by this face. The light's matrix therefore has to
+be built in the camera's hand too: pass the hand to `shadow::light()`.
+
 ### Each frame
 
 ```cpp
@@ -80,8 +94,11 @@ fit. `alsoCover` adds points that must be inside the map, such as where a charac
 to. `fit` returns nothing when no entity casts. The radius is never below
 `shadow::minimumRadius` (0.01), so one caster with no margin still gives a usable matrix.
 
-`shadow::light(towards, centre, radius)` builds the matrix the shadow pass draws through: an
-orthographic box around the sphere, seen from the light.
+`shadow::light(towards, centre, radius, hand)` builds the matrix the shadow pass draws through:
+an orthographic box around the sphere, seen from the light. `hand` is the camera's
+`Profile::Hand`, and defaults to `UpCrossDirection`. A face is wound the same way under the
+light as under a camera of that hand, so the shadow pipeline culls the same faces the cel
+pipeline does. A light built in the other hand stores each caster's far side in the map.
 
 **The map does not follow the casters.** Fit it at scene load, or when the casters move
 somewhere new.

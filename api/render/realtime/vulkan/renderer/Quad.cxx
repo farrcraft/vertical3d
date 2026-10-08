@@ -40,6 +40,10 @@ const uint32_t fragmentShader[] =
 #include "shaders/quad.frag.inc"
 ;  // NOLINT(whitespace/semicolon)
 
+const uint32_t linearFragmentShader[] =
+#include "shaders/linear_quad.frag.inc"
+;  // NOLINT(whitespace/semicolon)
+
 /**
  * What each geometry buffer starts at, in bytes. A screen of quads fits without
  * growing, and the buffers double from here when something does not.
@@ -85,11 +89,30 @@ Quad::~Quad() {
 
 /**
  **/
+bool Quad::linearises(VkFormat colour) noexcept {
+    switch (colour) {
+        case VK_FORMAT_R8_SRGB:
+        case VK_FORMAT_R8G8_SRGB:
+        case VK_FORMAT_R8G8B8_SRGB:
+        case VK_FORMAT_B8G8R8_SRGB:
+        case VK_FORMAT_R8G8B8A8_SRGB:
+        case VK_FORMAT_B8G8R8A8_SRGB:
+        case VK_FORMAT_A8B8G8R8_SRGB_PACK32:
+            return true;
+        default:
+            return false;
+    }
+}
+
+/**
+ **/
 void Quad::createPipelines(VkFormat colour, VkFormat depth) {
+    const bool linear = linearises(colour);
     pipeline::Builder builder(device_);
     builder.name("quad")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
+        .shader(VK_SHADER_STAGE_FRAGMENT_BIT, linear ? linearFragmentShader : fragmentShader,
+            linear ? sizeof(linearFragmentShader) : sizeof(fragmentShader))
         .vertexBinding(0, sizeof(Canvas::Vertex))
         .vertexAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Canvas::Vertex, position))
         .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Canvas::Vertex, uv))

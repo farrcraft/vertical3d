@@ -263,6 +263,20 @@ class Immediate {
     bool capturing() const noexcept;
 
     /**
+     * Claim a rectangle of the screen for this layer, though it draws nothing there.
+     *
+     * For something another renderer draws, such as a modal backdrop over the whole viewport,
+     * that should still stop a click reaching the scene below. The rectangle counts toward
+     * capturing() exactly as a window does. It takes the cursor from everything drawn before
+     * it, and a widget drawn after it inside it takes the cursor back. The answer is one frame
+     * behind.
+     *
+     * @param min the top left corner, in the canvas's pixels
+     * @param max the bottom right corner
+     **/
+    void block(const glm::vec2& min, const glm::vec2& max);
+
+    /**
      * Put the next widget beside the last one rather than under it.
      **/
     void sameLine();

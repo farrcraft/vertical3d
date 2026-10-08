@@ -12,6 +12,8 @@
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <utility>
+#include <vector>
 
 #include "Uploader.h"
 
@@ -36,8 +38,9 @@ class Buffer;
  * ones into rgb. A glyph atlas therefore samples as white-with-coverage, and the quad
  * shader reads text and sprites the same way.
  *
- * Every texture is read through the same sampler, which the factory makes once and each
- * texture shares.
+ * A texture is read through the sampler its spec names. The factory makes one sampler for each
+ * distinct spec and shares it, so a scene of tiling textures holds one repeating sampler. Every
+ * texture created with the default spec shares the factory's default sampler.
  **/
 class TextureFactory final {
  public:
@@ -74,16 +77,20 @@ class TextureFactory final {
      *        because a three channel format is not something a device has to support
      * @param encoding how a shader reads the colour back. A coverage mask is not a colour
      *        and ignores it
+     * @param sampler how a shader reads the image. The default is linear and clamped to the
+     *        edge, which suits an atlas and a sprite. A surface meant to tile names a repeating
+     *        address mode
      * @return the created image and the sampler it is read through, for the caller to register
      * @throw std::runtime_error if any part of the creation or upload fails
      **/
     pipeline::Texture create(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
-        Encoding encoding = Encoding::Display) const;
+        Encoding encoding = Encoding::Display, const pipeline::Sampler::Spec& sampler = pipeline::Sampler::Spec()) const;
 
     /**
      * @param image the image to upload, whose bpp decides the channel count
      **/
-    pipeline::Texture create(const boost::shared_ptr<v3d::image::Image>& image, Encoding encoding = Encoding::Display) const;
+    pipeline::Texture create(const boost::shared_ptr<v3d::image::Image>& image, Encoding encoding = Encoding::Display,
+        const pipeline::Sampler::Spec& sampler = pipeline::Sampler::Spec()) const;
 
     /**
      * A 3D texture, read as it is stored - a lookup table rather than a colour anyone authored.
@@ -98,9 +105,16 @@ class TextureFactory final {
      **/
     void upload(const Buffer& staging, const Image& image, const VkExtent3D& extent) const;
 
+    /**
+     * @return the sampler made for a spec, made now if no texture has named that spec before
+     **/
+    boost::shared_ptr<pipeline::Sampler> sampler(const pipeline::Sampler::Spec& spec) const;
+
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<Uploader> uploader_;
-    boost::shared_ptr<pipeline::Sampler> sampler_;
+    /**< one sampler per distinct spec, the default first. Mutable because creating a texture
+     *   does not change what the factory makes, only what it has already made **/
+    mutable std::vector<std::pair<pipeline::Sampler::Spec, boost::shared_ptr<pipeline::Sampler>>> samplers_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::memory

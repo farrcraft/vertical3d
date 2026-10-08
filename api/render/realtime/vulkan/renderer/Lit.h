@@ -86,12 +86,18 @@ class Lit final {
      * @param depth the format of that pass's depth
      * @param shadow the depth format of the target a shadow pass draws into, or
      *        VK_FORMAT_UNDEFINED for a scene that casts no shadow and builds no shadow pipeline
+     * @param front the winding of a face that faces the camera, as it lands on screen. Clockwise
+     *        is right for a camera on type::camera::Profile::Hand::UpCrossDirection, and
+     *        counter clockwise for one on DirectionCrossUp, which mirrors the image. The cel,
+     *        outline and shadow pipelines all cull by it, so the light's matrix is built in the
+     *        camera's hand too: see shadow::light.
      * @throw std::runtime_error if a pipeline or the scene layout cannot be created
      **/
     Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<pipeline::Cache>& cache,
         const boost::shared_ptr<pipeline::Resources>& resources, const boost::shared_ptr<frame::Ring>& ring,
         const boost::shared_ptr<frame::FrameUniforms>& uniforms, const boost::shared_ptr<Textures>& textures,
-        VkFormat colour, VkFormat depth, VkFormat shadow, const Shaders& shaders = Shaders::embedded());
+        VkFormat colour, VkFormat depth, VkFormat shadow, const Shaders& shaders = Shaders::embedded(),
+        VkFrontFace front = VK_FRONT_FACE_CLOCKWISE);
 
     Lit(const Lit&) = delete;
     Lit& operator=(const Lit&) = delete;
@@ -162,7 +168,7 @@ class Lit final {
      * Compile the cel and outline pipelines against the colour and depth formats, and the
      * shadow pipeline against its own depth format when there is one.
      **/
-    void createPipelines(const Shaders& shaders, VkFormat colour, VkFormat depth, VkFormat shadow);
+    void createPipelines(const Shaders& shaders, VkFormat colour, VkFormat depth, VkFormat shadow, VkFrontFace front);
 
     /**
      * The frame's slot, created the first time the frame asks for one.

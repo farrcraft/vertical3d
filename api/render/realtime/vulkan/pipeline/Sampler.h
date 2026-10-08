@@ -36,6 +36,11 @@ class Sampler final {
         VkSamplerAddressMode address;  /**< in all three directions **/
         VkBorderColor border;          /**< read only when address clamps to the border **/
         float maxLod;
+
+        /**
+         * Two specs are equal when every field is, so they would make the same sampler.
+         **/
+        bool operator==(const Spec& other) const noexcept = default;
     };
 
     /**

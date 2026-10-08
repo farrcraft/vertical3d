@@ -49,6 +49,7 @@ A pass has these settings:
 |---|---|---|
 | `clearColour(colour)` / `keepColour()` | Clear the target before drawing, or draw over what is there. | Clears |
 | `depth(bool)` | Test depth. 2D passes do not; they rely on drawing order. | Off |
+| `depthWrite(optional<bool>)` | Whether lines and world quads write depth. Other pipelines ignore it. | Each as built |
 | `target(renderTarget)` | Draw into an offscreen target instead of the window. | The window |
 | `reads(renderTarget)` | Declare that this pass samples a target another pass draws. | None |
 | `viewport(glm::vec4(x, y, w, h))` | The region of the target to draw into, in pixels. Zero width or height means all of it. | All |
@@ -66,6 +67,11 @@ Rules:
 - **Turn sorting on for a depth-tested scene with many objects.** Grouping lets the renderer
   skip rebinding the same pipeline and texture. The sort is stable, so equal keys keep their
   submission order.
+- **Turn depth writing off for translucent lines that share edges.** Lines write depth by
+  default, so the first of two lines on a shared edge hides the second, and draw order decides
+  the colour. `depthWrite(false)` keeps the depth test and drops the write. Lines and world
+  quads follow it; lit meshes always write. A wireframe view leaves it unset, so a near line
+  hides a far one.
 - **A layer only matters in a sorted pass.** `submit(canvas, pass, layer)` takes a layer, and a
   sorted pass draws lower layers first. An unsorted pass ignores it.
 
@@ -157,9 +163,26 @@ build that renderer yourself against the target's formats (see
 
 ## Reading a frame back
 
-`vulkan::frame::Capture` copies a drawn image into CPU memory and writes it as a PNG. It is for
-code that records frames itself, such as a headless context or a device test. `Engine3D` has no
-capture hook.
+An app on `Engine3D` captures its window with one call:
+
+```cpp
+renderer_->capture("frame.png");   // the next frame that presents is written to frame.png
+```
+
+- **The file holds the next frame that is presented.** It is copied after the frame is recorded
+  and before it is presented. A frame that is skipped, because the window has no area or the
+  chain is being rebuilt, keeps the request for the next one.
+- **A request is answered once.** The frame that tries to write the file clears the request, so
+  a path that cannot be written is reported in the log once.
+- **`capture()` returns false before `initialize()`, and when the chain cannot be copied out of.**
+  The chain has `TRANSFER_SRC` usage only where the surface supports it. Nothing is requested
+  then.
+- The captured frame waits for the device to go idle before it reads the copy back, so it does
+  not overlap the next frame.
+
+`vulkan::frame::Capture` does the copy. Code that records frames itself, such as a headless
+context or a device test, uses it directly. It copies a drawn image into CPU memory and writes it
+as a PNG.
 
 It takes two calls, because a GPU submit has to complete between them:
 

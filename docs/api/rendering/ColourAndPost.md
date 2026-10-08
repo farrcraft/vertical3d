@@ -70,6 +70,10 @@ renderer_ = boost::make_shared<Engine3D>(logger(), assets(), VK_FORMAT_B8G8R8A8_
 - Otherwise it falls back to the `UNORM` default and logs a warning.
 - **Build pipelines against `renderer_->context()->colourFormat()`**, the format that was
   actually chosen, never against the format you asked for.
+- **2D and ui colours stay display space on an `_SRGB` chain.** The quad renderer decodes a
+  quad's colour to linear before an `_SRGB` target stores it, so the target's encode gives the
+  authored colour back. A `#808080` quad shows as `#808080` on either kind of chain. Into any
+  other format a quad is written as it is.
 
 **A lit scene works in linear light and draws into an `_SRGB` target**, which encodes the result
 when it is stored. Its albedo textures are uploaded with `TextureFactory::Encoding::Srgb`, so

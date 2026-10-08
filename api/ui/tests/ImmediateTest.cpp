@@ -790,6 +790,28 @@ BOOST_AUTO_TEST_CASE(a_given_width_is_spent_once) {
 }
 
 /**
+ * A blocked rectangle with nothing drawn in it captures the cursor the frame after, as a window
+ * does, and only inside itself. Nothing is drawn there, so without the block the cursor is over
+ * nothing this layer drew.
+ **/
+BOOST_AUTO_TEST_CASE(a_blocked_rectangle_captures_the_cursor_inside_it) {
+    std::vector<Written> written;
+    v3d::render::realtime::Canvas canvas;
+    canvas.resize(400, 300);
+    v3d::ui::Immediate ui = build(&written);
+
+    ui.begin(&canvas, hover(glm::vec2(200.0f, 150.0f)));
+    ui.block(glm::vec2(100.0f, 100.0f), glm::vec2(300.0f, 200.0f));
+    ui.end();
+    BOOST_CHECK(ui.capturing());
+
+    ui.begin(&canvas, hover(glm::vec2(50.0f, 250.0f)));
+    ui.block(glm::vec2(100.0f, 100.0f), glm::vec2(300.0f, 200.0f));
+    ui.end();
+    BOOST_CHECK(!ui.capturing());
+}
+
+/**
  * A width wider than the room left is clamped to it rather than drawn off the edge.
  **/
 BOOST_AUTO_TEST_CASE(a_given_width_cannot_exceed_the_row) {

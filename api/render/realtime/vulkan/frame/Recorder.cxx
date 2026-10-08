@@ -289,6 +289,23 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& 
 
 /**
  **/
+void Recorder::dynamics(VkCommandBuffer commands, const Pass& pass, const pipeline::Pipeline& pipeline) {
+    // dynamic state outlives a bind only into another pipeline that also declares it dynamic,
+    // so each state is set every time a pipeline that declares it is bound
+    if (pipeline.biased) {
+        const Pass::DepthBias& bias = *pass.depthBias();
+        vkCmdSetDepthBias(commands, bias.constant, bias.clamp, bias.slope);
+    }
+    if (pipeline.writeDynamic) {
+        // set even when the pass names nothing: a pipeline that declares the state and draws
+        // without it set is a validation error
+        const bool write = pass.depthWrite().value_or(pipeline.depthWrite);
+        vkCmdSetDepthWriteEnable(commands, write ? VK_TRUE : VK_FALSE);
+    }
+}
+
+/**
+ **/
 void Recorder::check(const Pass& pass, const pipeline::Pipeline& pipeline, const Target& into) {
     if (pipeline.scene && pass.scene() == VK_NULL_HANDLE) {
         std::stringstream msg;
@@ -350,12 +367,7 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const DrawItem
         bound->frameSet = VK_NULL_HANDLE;
         bound->sceneSet = VK_NULL_HANDLE;
         bound->set = VK_NULL_HANDLE;
-        if (pipeline->biased) {
-            // dynamic state outlives a bind only into another pipeline that also declares
-            // it dynamic, so a biased pipeline sets it every time it is bound
-            const Pass::DepthBias& bias = *pass.depthBias();
-            vkCmdSetDepthBias(commands, bias.constant, bias.clamp, bias.slope);
-        }
+        dynamics(commands, pass, *pipeline);
     }
 
     if (frameSet != VK_NULL_HANDLE && frameSet != bound->frameSet) {

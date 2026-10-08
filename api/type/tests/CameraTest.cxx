@@ -4,9 +4,11 @@
  **/
 
 #include <api/type/camera/Camera.h>
+#include <api/type/geometry/Plane.h>
 #include <api/type/geometry/Ray.h>
 
 #include <cmath>
+#include <optional>
 
 #include <boost/test/unit_test.hpp>
 
@@ -310,6 +312,58 @@ BOOST_AUTO_TEST_CASE(camera_ray_test) {
     v3d::type::geometry::Ray edge = perspective.ray(glm::vec2(0.0f, 240.0f), viewport);
     BOOST_CHECK_SMALL(middle.direction()[0], 0.001f);
     BOOST_CHECK_LT(edge.direction()[0], -0.1f);
+}
+
+/**
+ * A point behind a perspective camera has no screen point, and one in front lands where
+ * project() puts it. Under an orthographic camera w is always one and nothing is behind it, so
+ * the case uses a perspective one.
+ **/
+BOOST_AUTO_TEST_CASE(camera_screen_point_test) {
+    v3d::type::camera::Camera perspective;
+    perspective.orthographic(false);
+    perspective.createProjection();
+    perspective.createView();
+    int viewport[4] = { 0, 0, 640, 480 };
+
+    // the default camera looks along +z from the origin
+    const std::optional<glm::vec3> ahead = perspective.screenPoint(glm::vec3(0.0f, 0.0f, 5.0f), viewport);
+    BOOST_REQUIRE(ahead.has_value());
+    BOOST_CHECK_CLOSE((*ahead)[0], 320.0f, 0.01f);
+    BOOST_CHECK_CLOSE((*ahead)[1], 240.0f, 0.01f);
+
+    BOOST_CHECK(!perspective.screenPoint(glm::vec3(0.0f, 0.0f, -5.0f), viewport).has_value());
+    BOOST_CHECK(!perspective.screenPoint(glm::vec3(1.0f, 1.0f, -5.0f), viewport).has_value());
+
+    int empty[4] = { 0, 0, 0, 480 };
+    BOOST_CHECK(!perspective.screenPoint(glm::vec3(0.0f, 0.0f, 5.0f), empty).has_value());
+}
+
+/**
+ * The cursor at the middle of the viewport picks the point on the ground straight below a camera
+ * looking down, and a cursor whose ray never meets the ground picks nothing.
+ **/
+BOOST_AUTO_TEST_CASE(camera_pick_test) {
+    v3d::type::camera::Camera camera;
+    camera.profile().eye(glm::vec3(2.0f, 10.0f, 3.0f));
+    camera.profile().up(glm::vec3(0.0f, 0.0f, 1.0f));
+    camera.profile().lookat(glm::vec3(2.0f, 0.0f, 3.0f));
+    camera.createProjection();
+    camera.createView();
+    int viewport[4] = { 0, 0, 640, 480 };
+
+    v3d::type::geometry::Plane ground;
+    ground.calculate(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f));
+    const std::optional<glm::vec3> picked = camera.pick(glm::vec2(320.0f, 240.0f), viewport, ground);
+    BOOST_REQUIRE(picked.has_value());
+    BOOST_CHECK_CLOSE((*picked)[0], 2.0f, 0.1f);
+    BOOST_CHECK_SMALL((*picked)[1], 0.001f);
+    BOOST_CHECK_CLOSE((*picked)[2], 3.0f, 0.1f);
+
+    // a plane above the camera is behind every ray it casts downward
+    v3d::type::geometry::Plane ceiling;
+    ceiling.calculate(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 20.0f, 0.0f));
+    BOOST_CHECK(!camera.pick(glm::vec2(320.0f, 240.0f), viewport, ceiling).has_value());
 }
 
 BOOST_AUTO_TEST_CASE(camera_ortho_factor_test) {

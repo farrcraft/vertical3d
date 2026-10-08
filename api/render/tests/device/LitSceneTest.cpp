@@ -265,33 +265,32 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
     }
 }
 
-};  // namespace
-
-BOOST_AUTO_TEST_SUITE(lit_scene_test)
-
 /**
- * A lit cube, outlined, drawn through the recorder from an entity. Lighting arithmetic is left
- * to the implementation, so there is no reference picture. The case checks that the validation
- * layer reports no errors, and checks one pixel. The pixel at the centre lands on the cube's
- * top face, which faces the key light and so is in the lit band of the cube's own colour. The
- * same pixel checks the winding: with the faces the wrong way round, the near side of the
- * outline hull would cover it in black.
+ * A lit red cube, outlined, drawn through the recorder from an entity, and the checks the
+ * picture has to pass. The pixel at the centre lands on the cube's top face, which faces the
+ * key light and so is in the lit band of the cube's own colour. The same pixel checks the
+ * winding. With the outline's faces the wrong way round, the near side of its hull covers the
+ * pixel in black. With the cel pass's faces the wrong way round, the inside of the bottom face
+ * shows there instead.
  *
- * The picture is always written to data_out/lit_cube.png for a person to look at.
+ * @param hand the camera's hand
+ * @param front the front face Lit is built with
+ * @param path where the picture is written, for a person to look at
  **/
-BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_and_silent) {
-    v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand hand, VkFrontFace front,
+    const std::string& path) {
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
         width, height, colourFormat, true);
 
-    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
 
-    v3d::asset::media::registerLoaders(*assets, headless.logger);
-    MeshRegistry meshes(headless.logger, headless.context, assets);
+    v3d::asset::media::registerLoaders(*assets, headless->logger);
+    MeshRegistry meshes(headless->logger, headless->context, assets);
     const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
 
-    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-        headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
+    Lit lit(headless->device, headless->context->pipelineCache(), headless->context->resources(), headless->context->ring(),
+        headless->context->frameUniforms(), headless->context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED,
+        Lit::Shaders::embedded(), front);
 
     entt::registry registry;
     const entt::entity entity = registry.create();
@@ -305,6 +304,7 @@ BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_and_silent) {
     orbit.target(glm::vec3(0.0f));
     orbit.zoom(1.5f);
     orbit.elevation(1.0471976f);
+    orbit.hand(hand);
     v3d::type::camera::Camera camera;
     camera.profile().clipping(0.1f, 100.0f);
     orbit.apply(&camera);
@@ -328,25 +328,25 @@ BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_and_silent) {
     pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
     v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
 
-    VkCommandBuffer commands = headless.context->ring()->begin();
+    VkCommandBuffer commands = headless->context->ring()->begin();
     // the pass names its own target, so the frame is given no image
-    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-        headless.context->frameUniforms().get());
+    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
+        headless->context->frameUniforms().get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless->device, headless->logger);
     Capture::Source source;
     source.image = target->image();
     source.extent = target->extent();
     source.format = target->format();
     source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     capture.record(commands, source);
-    headless.submitAndWait(commands);
+    headless->submitAndWait(commands);
 
-    BOOST_CHECK(headless.silent());
-    BOOST_REQUIRE(capture.write("data_out/lit_cube.png"));
+    BOOST_CHECK(headless->silent());
+    BOOST_REQUIRE(capture.write(path));
 
-    v3d::image::reader::Png png(headless.logger);
-    boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/lit_cube.png");
+    v3d::image::reader::Png png(headless->logger);
+    boost::shared_ptr<v3d::image::Image> picture = png.read(path);
     BOOST_REQUIRE(picture);
     const unsigned char* centre = picture->data() + (static_cast<std::size_t>(height / 2) * width + width / 2) * 4;
     BOOST_TEST_MESSAGE("centre " << int(centre[0]) << "," << int(centre[1]) << "," << int(centre[2]));
@@ -364,6 +364,185 @@ BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_and_silent) {
     }
     BOOST_TEST_MESSAGE("outline pixels " << outlined);
     BOOST_CHECK_GT(outlined, 0U);
+}
+
+/**
+ * A caster is drawn into a shadow map at the depth the light's matrix gives it. This is the
+ * depth target's case again, with the quads standing in the world and drawn through Lit's
+ * shadow pipeline and shadow::light. The depths are exact for the same reason: each front
+ * face is a plane of one depth, at a quarter and three quarters of the light's range.
+ *
+ * A third entity that casts no shadow stands nearer the light over the right quad. If it were
+ * drawn into the map, it would put its own depth there.
+ *
+ * The depth stored is the face nearest the light. With the shadow pipeline culling the wrong
+ * way round, it would be the far face of each block instead.
+ *
+ * @param hand the hand the light's matrix is built in
+ * @param front the front face Lit is built with
+ **/
+void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front) {
+    const uint32_t size = 16;
+    v3d::test::Headless headless(colourFormat, size, size);
+    boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        size, size, VK_FORMAT_UNDEFINED, true, true);
+    if (map->depthFormat() != VK_FORMAT_D32_SFLOAT) {
+        BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
+        return;
+    }
+
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
+    MeshRegistry meshes(headless.logger, headless.context, assets);
+    const MeshHandle block = meshes.add("block", cube(glm::vec4(1.0f)));
+    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
+        headless.context->frameUniforms(), headless.context->textures(), colourFormat,
+        v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()), map->depthFormat(),
+        Lit::Shaders::embedded(), front);
+
+    // the light looks along +z from two units out, over a sphere of one. A face at z = -1 is
+    // therefore a quarter of the way into its range, and one at z = 1 three quarters. Each
+    // block is half a unit wide and spans the same rectangles as the depth target's two quads
+    entt::registry registry;
+    const glm::vec3 scale(0.5f, 1.0f, 1.0f);
+    place(&registry, block, glm::vec3(-0.5f, 0.0f, -0.5f), scale, true);
+    place(&registry, block, glm::vec3(0.5f, 0.0f, 1.5f), scale, true);
+    place(&registry, block, glm::vec3(0.5f, 0.0f, 0.5f), scale, false);
+
+    const glm::mat4 light = v3d::render::realtime::shadow::light(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f), 1.0f, hand);
+
+    Frame frame;
+    boost::shared_ptr<Pass> pass = frame.pass("shadow");
+    pass->target(map);
+    pass->depth(true);
+    pass->scene(lit.scene(v3d::render::realtime::pack(LitSettings(), light, 1.0f / size)));
+    // the pipeline is biased, so the pass names a bias - none, so that the depths stay exact
+    pass->depthBias(0.0f, 0.0f);
+    v3d::render::realtime::casters(registry, 1.0f, meshes, lit, pass.get());
+    BOOST_CHECK_EQUAL(pass->items().size(), 2U);
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
+        headless.context->frameUniforms().get());
+
+    Capture capture(headless.device, headless.logger);
+    Capture::Source source;
+    source.image = map->depthImage();
+    source.extent = map->extent();
+    source.format = map->depthFormat();
+    source.layout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+    source.depth = true;
+    capture.record(commands, source);
+    headless.submitAndWait(commands);
+
+    BOOST_CHECK(headless.silent());
+    const std::vector<float> depths = capture.depth();
+    BOOST_REQUIRE_EQUAL(depths.size(), static_cast<std::size_t>(size) * size);
+    const auto at = [&depths, size](uint32_t x, uint32_t y) { return depths[static_cast<std::size_t>(y) * size + x]; };
+    // the mirrored hand mirrors the map, so the two blocks change sides
+    const bool mirrored = hand == v3d::type::camera::Profile::Hand::DirectionCrossUp;
+    BOOST_CHECK_EQUAL(at(mirrored ? 11 : 4, 8), 0.25f);
+    BOOST_CHECK_EQUAL(at(mirrored ? 4 : 11, 8), 0.75f);
+    BOOST_CHECK_EQUAL(at(8, 8), 1.0f);
+    BOOST_CHECK_EQUAL(at(0, 0), 1.0f);
+}
+
+};  // namespace
+
+BOOST_AUTO_TEST_SUITE(lit_scene_test)
+
+/**
+ * A lit cube, outlined, drawn through the recorder from an entity under the default camera.
+ * Lighting arithmetic is left to the implementation, so there is no reference picture. The case
+ * checks that the validation layer reports no errors, and checks the pixels drawLitCube names.
+ *
+ * The picture is always written to data_out/lit_cube.png for a person to look at.
+ **/
+BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_and_silent) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    drawLitCube(&headless, v3d::type::camera::Profile::Hand::UpCrossDirection, VK_FRONT_FACE_CLOCKWISE,
+        "data_out/lit_cube.png");
+}
+
+/**
+ * The same cube under a camera on the mirrored hand, which glm::lookAt builds, drawn by a Lit
+ * whose front face is counter clockwise. The image is mirrored, so a Lit left at clockwise would
+ * cull the faces that face the camera and draw the outline hull's near side.
+ *
+ * The picture is written to data_out/lit_cube_mirrored.png for a person to look at.
+ **/
+BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_under_the_mirrored_hand) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    drawLitCube(&headless, v3d::type::camera::Profile::Hand::DirectionCrossUp, VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        "data_out/lit_cube_mirrored.png");
+}
+
+/**
+ * A pass that turns depth writing off reaches only the pipelines that allow it. A near red cube
+ * is drawn first and a far green one after it, straight behind it, in a pass with depth writing
+ * off. Lit's pipelines write depth whatever the pass says, so the near cube still hides the far
+ * one and the centre is red. Were the pass to reach them, the far cube would pass the depth test
+ * against the clear value and draw over the near one.
+ *
+ * The two cubes are submitted from two registries, one after the other, so the near one is
+ * drawn first whatever order a registry walks its entities in.
+ **/
+BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        width, height, colourFormat, true);
+
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
+    MeshRegistry meshes(headless.logger, headless.context, assets);
+    const MeshHandle red = meshes.add("red", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
+    const MeshHandle green = meshes.add("green", cube(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)));
+
+    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
+        headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
+
+    v3d::type::camera::Isometric orbit;
+    orbit.target(glm::vec3(0.0f));
+    orbit.zoom(3.0f);
+    v3d::type::camera::Camera camera;
+    camera.profile().clipping(0.1f, 100.0f);
+    orbit.apply(&camera);
+    camera.createProjection();
+    camera.createView();
+
+    // the far cube is three units further along the view, so an orthographic camera draws it
+    // exactly behind the near one
+    entt::registry nearer;
+    entt::registry farther;
+    place(&nearer, red, glm::vec3(0.0f), glm::vec3(1.0f), false);
+    place(&farther, green, camera.profile().direction() * 3.0f, glm::vec3(1.0f), false);
+
+    LitSettings settings;
+    settings.outline = 0.0f;
+
+    Frame frame;
+    boost::shared_ptr<Pass> pass = frame.pass("lit");
+    pass->target(target);
+    pass->depth(true);
+    pass->depthWrite(false);
+    pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    pass->camera(camera.view(), camera.projection());
+    pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
+    v3d::render::realtime::meshes(nearer, 1.0f, meshes, lit, settings.outline, pass.get());
+    v3d::render::realtime::meshes(farther, 1.0f, meshes, lit, settings.outline, pass.get());
+
+    VkCommandBuffer commands = headless.context->ring()->begin();
+    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
+        headless.context->frameUniforms().get());
+    boost::shared_ptr<v3d::image::Image> picture = readBack(&headless, commands, target, "data_out/lit_unwritten_pass.png");
+    BOOST_REQUIRE(picture);
+    BOOST_CHECK(headless.silent());
+
+    const unsigned char* centre = picture->data() + (static_cast<std::size_t>(height / 2) * width + width / 2) * 4;
+    BOOST_TEST_MESSAGE("centre " << int(centre[0]) << "," << int(centre[1]) << "," << int(centre[2]));
+    BOOST_CHECK_GT(centre[0], 0);
+    BOOST_CHECK_EQUAL(centre[1], 0);
 }
 
 /**
@@ -397,76 +576,19 @@ BOOST_AUTO_TEST_CASE(a_released_mesh_is_not_walked) {
 }
 
 /**
- * A caster is drawn into a shadow map at the depth the light's matrix gives it. This is the
- * depth target's case again, with the quads standing in the world and drawn through Lit's
- * shadow pipeline and shadow::light. The depths are exact for the same reason: each front
- * face is a plane of one depth, at a quarter and three quarters of the light's range.
- *
- * A third entity that casts no shadow stands nearer the light over the right quad. If it were
- * drawn into the map, it would put its own depth there.
+ * A caster is drawn into a shadow map at the depth the light's matrix gives it, under the
+ * default hand: checkCasterDepths.
  **/
 BOOST_AUTO_TEST_CASE(a_caster_is_drawn_into_the_shadow_map_at_its_depth) {
-    const uint32_t size = 16;
-    v3d::test::Headless headless(colourFormat, size, size);
-    boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        size, size, VK_FORMAT_UNDEFINED, true, true);
-    if (map->depthFormat() != VK_FORMAT_D32_SFLOAT) {
-        BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
-        return;
-    }
+    checkCasterDepths(v3d::type::camera::Profile::Hand::UpCrossDirection, VK_FRONT_FACE_CLOCKWISE);
+}
 
-    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
-
-    v3d::asset::media::registerLoaders(*assets, headless.logger);
-    MeshRegistry meshes(headless.logger, headless.context, assets);
-    const MeshHandle block = meshes.add("block", cube(glm::vec4(1.0f)));
-    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-        headless.context->frameUniforms(), headless.context->textures(), colourFormat,
-        v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()), map->depthFormat());
-
-    // the light looks along +z from two units out, over a sphere of one. A face at z = -1 is
-    // therefore a quarter of the way into its range, and one at z = 1 three quarters. Each
-    // block is half a unit wide and spans the same rectangles as the depth target's two quads
-    entt::registry registry;
-    const glm::vec3 scale(0.5f, 1.0f, 1.0f);
-    place(&registry, block, glm::vec3(-0.5f, 0.0f, -0.5f), scale, true);
-    place(&registry, block, glm::vec3(0.5f, 0.0f, 1.5f), scale, true);
-    place(&registry, block, glm::vec3(0.5f, 0.0f, 0.5f), scale, false);
-
-    const glm::mat4 light = v3d::render::realtime::shadow::light(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f), 1.0f);
-
-    Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("shadow");
-    pass->target(map);
-    pass->depth(true);
-    pass->scene(lit.scene(v3d::render::realtime::pack(LitSettings(), light, 1.0f / size)));
-    // the pipeline is biased, so the pass names a bias - none, so that the depths stay exact
-    pass->depthBias(0.0f, 0.0f);
-    v3d::render::realtime::casters(registry, 1.0f, meshes, lit, pass.get());
-    BOOST_CHECK_EQUAL(pass->items().size(), 2U);
-
-    VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-        headless.context->frameUniforms().get());
-
-    Capture capture(headless.device, headless.logger);
-    Capture::Source source;
-    source.image = map->depthImage();
-    source.extent = map->extent();
-    source.format = map->depthFormat();
-    source.layout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
-    source.depth = true;
-    capture.record(commands, source);
-    headless.submitAndWait(commands);
-
-    BOOST_CHECK(headless.silent());
-    const std::vector<float> depths = capture.depth();
-    BOOST_REQUIRE_EQUAL(depths.size(), static_cast<std::size_t>(size) * size);
-    const auto at = [&depths, size](uint32_t x, uint32_t y) { return depths[static_cast<std::size_t>(y) * size + x]; };
-    BOOST_CHECK_EQUAL(at(4, 8), 0.25f);
-    BOOST_CHECK_EQUAL(at(11, 8), 0.75f);
-    BOOST_CHECK_EQUAL(at(8, 8), 1.0f);
-    BOOST_CHECK_EQUAL(at(0, 0), 1.0f);
+/**
+ * The same casters through a light built in the mirrored hand, by a Lit whose front face is
+ * counter clockwise. A shadow pipeline left at clockwise would store each block's far face.
+ **/
+BOOST_AUTO_TEST_CASE(a_caster_is_drawn_into_the_shadow_map_under_the_mirrored_hand) {
+    checkCasterDepths(v3d::type::camera::Profile::Hand::DirectionCrossUp, VK_FRONT_FACE_COUNTER_CLOCKWISE);
 }
 
 /**

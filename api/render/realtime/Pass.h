@@ -194,6 +194,26 @@ class Pass final {
     const std::optional<DepthBias>& depthBias() const noexcept;
 
     /**
+     * Whether the pipelines that allow it write depth in this pass.
+     *
+     * A pipeline built with depth writing dynamic, which the line and world quad pipelines are,
+     * writes depth in this pass if this is true and does not if it is false. Any other pipeline
+     * ignores it: a lit surface is opaque and always writes. Empty by default, which draws every
+     * pipeline as it was built.
+     *
+     * Translucent lines that share edges need it off, or the first line on an edge hides the
+     * second and draw order decides the colour.
+     *
+     * @param write the choice, or nothing to draw each pipeline as built
+     **/
+    void depthWrite(std::optional<bool> write) noexcept;
+
+    /**
+     * @return the pass's choice, or nothing when it makes none
+     **/
+    std::optional<bool> depthWrite() const noexcept;
+
+    /**
      * Record the pass's items in sort key order rather than in submission order.
      *
      * Off by default, because 2D content is painter ordered. The key sorts by pipeline and
@@ -253,6 +273,7 @@ class Pass final {
     std::vector<boost::shared_ptr<vulkan::frame::RenderTarget>> reads_;
     VkDescriptorSet scene_;
     std::optional<DepthBias> bias_;
+    std::optional<bool> write_;
     bool clears_;
     bool depth_;
     bool sorts_;

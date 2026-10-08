@@ -9,6 +9,7 @@ draw on a GPU.
 - [Writing a test](#writing-a-test)
 - [Checking that a new test fails first](#checking-that-a-new-test-fails-first)
 - [The render device suite](#the-render-device-suite)
+- [The render window suite](#the-render-window-suite)
 - [Reference images](#reference-images)
 - [Verifying a rendering change](#verifying-a-rendering-change)
 - [Traps](#traps)
@@ -44,6 +45,8 @@ pull request and on each push to `main`.
   `api/asset/media/tests/` and `render_offline` is in `api/render/offline/tests/`.
 - **One extra suite for the realtime renderer on a real device**, `render_device`, from
   `api/render/tests/device/`. See [The render device suite](#the-render-device-suite).
+- **One more for the frame loop on a real window**, `render_window`, from
+  `api/render/tests/window/`. See [The render window suite](#the-render-window-suite).
 - **One suite per app that has logic worth testing**: moya, odyssey, pong, tetris, vertical3d
   and voxel, each in `<app>/tests/`.
 
@@ -54,7 +57,8 @@ with a testable CPU-side part is expected to add test cases.
 
 These have no automated test:
 
-- `Feature::Window`, which opens the SDL window. A CI runner has no display.
+- `Feature::Window`, which opens an app's SDL window. The render window suite opens its windows
+  through `render::realtime::Window` and not through the feature.
 - `audio::Engine::initialize()`, which opens the audio device. The rest of `api/audio` is tested,
   but not whether a sound is audible. An engine with no device gives back no voice, so every
   case but one runs without a device. `audio_engine_lets_the_dispatcher_go_test` needs SDL's
@@ -89,8 +93,8 @@ target_link_libraries(v3dtest_image PRIVATE v3dlib_image)
 
 You link the library under test yourself, and every other library whose header the suite
 includes, rather than reaching it through the library under test. Each suite's `TestMain`
-defines `BOOST_TEST_MODULE` and nothing else. The exception is `render_device`, whose `main`
-checks for a device first.
+defines `BOOST_TEST_MODULE` and nothing else. The exceptions are `render_device`, whose `main`
+checks for a device first, and `render_window`, whose `main` checks for a window.
 
 A suite with fixture files copies a directory of them beside the executable in a `POST_BUILD`
 command, which the suite's `tests/CMakeLists.txt` writes. Most suites copy their `tests/data/`
@@ -129,13 +133,15 @@ See [Traps](#traps) for what the copy means when you add a fixture.
 ## Checking that a new test fails first
 
 A test that passes without the code it claims to test is a weak test.
-[scripts/failsfirst.ts](../../scripts/failsfirst.ts) checks the cases a changeset adds. Run it on
-a branch before review:
+[scripts/failsfirst.ts](../../scripts/failsfirst.ts) checks the cases a changeset adds. CI runs it
+on every pull request, and fails the pull request when a new case passes on the base or is not
+run. Run it on a branch before review, so that CI does not find it first:
 
 ```
 node scripts/failsfirst.ts                  # the branch, from its merge base with main
 node scripts/failsfirst.ts --commit <sha>   # one commit
 node scripts/failsfirst.ts --list           # list the new cases, build nothing
+node scripts/failsfirst.ts --build <dir>    # reuse a build other than out/build/x64-Debug
 ```
 
 The script finds the Boost.Test cases the changeset adds and the suite each one belongs to. It
@@ -143,7 +149,8 @@ builds those suites in a separate git worktree, with every file outside a `tests
 its base version, and runs each new case there. Each case should fail or fail to build. A case
 fails only when Boost.Test reports a failed check. A binary that cannot start, or that exits
 with an error and reports no failure, is "not run". A case that passes is a weak test, and the
-script exits with 1.
+script exits with 1. A case that was not run, or was skipped, leaves it unchecked, and the script
+exits with 2.
 
 A case can guard against a defect that only the change itself makes possible, such as a double
 release under a release rule the same change adds. That case passes on the base by design. Its
@@ -162,10 +169,11 @@ The script reports such a case as "passes, stated", prints the reason, and does 
 reason has to name what the change adds that makes the defect possible. A reviewer reads it,
 and a reason that does not name one makes the case a weak test.
 
-The worktree build is separate from `out/build/x64-Debug` and installs no packages. It reuses
-the packages that build installed. The script's header lists its limits. A `render_device` case
-needs a GPU, and is reported as skipped without one. A case that fails only because it reads a
-fixture the change added has to be read by hand.
+The worktree build is separate from `out/build/x64-Debug`, or the build `--build` names, and
+installs no packages. It reuses the packages that build installed, and its link job pool if it
+has one. The script's header lists its limits. A `render_device` case needs a Vulkan device, and
+a `render_window` case a window too. Without one the case is reported as skipped. A case that
+fails only because it reads a fixture the change added has to be read by hand.
 
 ## The render device suite
 
@@ -211,6 +219,22 @@ This is a separate executable from `v3dtest_render`, which tests the renderer's 
 so that `v3dtest_render` runs on any machine.
 
 Background: [ADR-0007](../adr/0007-ci-render-tests-on-software-vulkan.md)
+
+## The render window suite
+
+`v3dtest_render_window` tests what only a window can show: `Engine3D` acquiring, recording and
+presenting to a swapchain. Each case opens a small SDL window, builds an `Engine3D` on it, and
+closes both when it ends. Every case asserts validation silence, as the device suite's do.
+
+`main` opens one window before Boost.Test starts. When SDL cannot start, the window cannot be
+made, or no device can present to it, the executable exits with 77 and ctest reports the suite
+as `Skipped`. The reason is printed to the console.
+
+A window appears on the screen for each case while the suite runs.
+
+**In CI a skip is a failure here too.** The Windows runner opens a window, and lavapipe presents
+to it. A workflow step runs the executable again and fails the job on exit code 77, because a
+skip there means the window or the swapchain stopped working and no `Engine3D` case was checked.
 
 ## Reference images
 

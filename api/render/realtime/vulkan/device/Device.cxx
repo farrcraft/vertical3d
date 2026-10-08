@@ -143,6 +143,12 @@ VkQueue Device::presentQueue() const noexcept {
 
 /**
  **/
+const Device::Description& Device::description() const noexcept {
+    return description_;
+}
+
+/**
+ **/
 float Device::timestampPeriod() const noexcept {
     return timestampPeriod_;
 }
@@ -298,6 +304,12 @@ void Device::selectPhysical() {
     }
 
     timestampPeriod_ = selectedProperties.limits.timestampPeriod;
+    description_.name = selectedProperties.deviceName;
+    description_.apiMajor = VK_API_VERSION_MAJOR(selectedProperties.apiVersion);
+    description_.apiMinor = VK_API_VERSION_MINOR(selectedProperties.apiVersion);
+    description_.apiPatch = VK_API_VERSION_PATCH(selectedProperties.apiVersion);
+    description_.vendor = selectedProperties.vendorID;
+    description_.driver = selectedProperties.driverVersion;
     logger_->get()->info("Using vulkan device {}", std::string(selectedProperties.deviceName));
 }
 

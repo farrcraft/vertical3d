@@ -15,6 +15,8 @@ Pipeline::Pipeline() noexcept :
     pushStages(0),
     scene(false),
     biased(false),
+    writeDynamic(false),
+    depthWrite(false),
     depthFormat(VK_FORMAT_UNDEFINED) {
 }
 

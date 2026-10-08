@@ -2,7 +2,7 @@
 
 **Status**: amended
 **Date**: 2026-09-04
-**Amended by**: [ADR-0079](0079-assets-loaders-are-registered.md)
+**Amended by**: [ADR-0079](0079-assets-loaders-are-registered.md), [ADR-0084](0084-audio-events-and-parameters-behind-an-interface.md)
 **Documented in**: [api/engine/Audio.md](../api/engine/Audio.md)
 
 ## Context

@@ -114,6 +114,7 @@ than an imported target, so it never appears in a link line.
 | `V3D_ANALYZE` | `OFF` | MSVC `/analyze`. See [Linting.md](Linting.md) |
 | `V3D_CLANG_TIDY` | `OFF` | clang-tidy. See [Linting.md](Linting.md) |
 | `V3D_LIBRARIES` | `all` | Which api libraries to build. See [UsingTheApi.md](../api/UsingTheApi.md#selecting-libraries) |
+| `V3D_FMOD_ROOT` | empty | An FMOD Studio API install to build the FMOD audio event backend against. See [Dependencies.md](Dependencies.md#fmod-studio) |
 
 "Top level" means the value of `PROJECT_IS_TOP_LEVEL`. It is on for every build of this
 repository and off when another project nests it.

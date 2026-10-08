@@ -100,10 +100,10 @@ PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, V
         builder.blend(adding);
     }
 
-    // tests and does not write: the scene occludes a quad and a quad does not
-    // cut a hole in the one behind it where both are transparent
+    // tests and does not write unless the pass says otherwise: the scene occludes a quad and a
+    // quad does not cut a hole in the one behind it where both are transparent
     if (depth != VK_FORMAT_UNDEFINED) {
-        builder.depth(true, false).depthFormat(depth);
+        builder.depth(true, false).depthWriteDynamic(true).depthFormat(depth);
     }
     return resources_->add(builder.build(cache_));
 }

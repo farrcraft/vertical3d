@@ -121,16 +121,39 @@ std::string StatisticsOverlay::line(const Sample::Span& span) {
 
 /**
  **/
+void StatisticsOverlay::device(const std::string& name) {
+    device_ = name;
+}
+
+/**
+ **/
+const std::string& StatisticsOverlay::device() const noexcept {
+    return device_;
+}
+
+/**
+ **/
+std::vector<std::string> StatisticsOverlay::content(const Sample& sample) const {
+    std::vector<std::string> content;
+    if (!device_.empty()) {
+        content.push_back(device_);
+    }
+    const std::array<std::string, rows> frame = lines(sample);
+    content.insert(content.end(), frame.begin(), frame.end());
+    for (const Sample::Span& span : sample.spans) {
+        content.push_back(line(span));
+    }
+    return content;
+}
+
+/**
+ **/
 void StatisticsOverlay::draw(v3d::render::realtime::Canvas* canvas, const Sample& sample) {
     if (!visible_ || !canvas || !text_ || !text_->loaded()) {
         return;
     }
 
-    const std::array<std::string, rows> frame = lines(sample);
-    std::vector<std::string> content(frame.begin(), frame.end());
-    for (const Sample::Span& span : sample.spans) {
-        content.push_back(line(span));
-    }
+    const std::vector<std::string> content = this->content(sample);
 
     float widest = 0.0f;
     for (const std::string& line : content) {
