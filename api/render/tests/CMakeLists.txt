@@ -90,7 +90,8 @@ set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)
 v3d_add_test(render_window
 	"window/TestMain.cpp"
 	"window/Windowed.cpp"
-	"window/EngineCaptureTest.cpp")
+	"window/EngineCaptureTest.cpp"
+	"window/EngineAllocationsTest.cpp")
 
 target_link_libraries(v3dtest_render_window PRIVATE v3dlib_render v3dlib_image v3dlib_log Boost::filesystem ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
 set_tests_properties(render_window PROPERTIES SKIP_RETURN_CODE 77)

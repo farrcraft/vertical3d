@@ -57,7 +57,8 @@ built once the logical device exists.
 | `Direct` (default) | One `vkAllocateMemory` per resource. Every app in the tree uses it. |
 | `Suballocated` | Regions of larger blocks through the Vulkan Memory Allocator (VMA). For an app with per-frame resources, because `maxMemoryAllocationCount` is a real device limit. |
 
-A consumer chooses the kind in the `Device` constructor.
+A consumer chooses the kind in the `Device` constructor. `Engine3D` and `Context3D` take it too,
+and pass it to the device they build.
 
 - A resource holds a `memory::Allocation` (block, offset, size, VMA handle), not a
   `VkDeviceMemory`. A suballocated region starts part way into a shared block, so mapping and
