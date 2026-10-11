@@ -114,6 +114,9 @@ BOOST_AUTO_TEST_CASE(a_pan_after_a_rotate_follows_the_view) {
 /**
  * A held zoom in narrows the view by its speed for each second, and a held zoom out widens it by
  * the same amount. A controller with the two commands swapped would widen on a zoom in.
+ *
+ * Covers the base: 5fa4cebf added the controller. Checked by swapping zoomIn and zoomOut in
+ * simulate(), which fails this case.
  **/
 BOOST_AUTO_TEST_CASE(a_held_zoom_in_narrows_and_zoom_out_widens) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
@@ -137,6 +140,9 @@ BOOST_AUTO_TEST_CASE(a_held_zoom_in_narrows_and_zoom_out_widens) {
  * Each pan command moves the target along its own direction: left against right(), up along
  * forward() and down against it. A controller that read one command for two directions would
  * move one of these the wrong way.
+ *
+ * Covers the base: 5fa4cebf added the controller. Checked by swapping panUp and panDown in
+ * simulate(), which fails this case.
  **/
 BOOST_AUTO_TEST_CASE(each_pan_command_moves_its_own_way) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();

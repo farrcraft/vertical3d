@@ -169,6 +169,26 @@ The script reports such a case as "passes, stated", prints the reason, and does 
 reason has to name what the change adds that makes the defect possible. A reviewer reads it,
 and a reason that does not name one makes the case a weak test.
 
+A case can also be added for code that is already in the base, which the change does not touch.
+That case passes on the base too. Before adding the line, break the code by hand and watch the
+case fail; the script cannot do that check. Then the case's doc comment has a line that starts
+`Covers the base:`. It names the commit that brought the code, and says how the code was broken:
+
+```cpp
+/**
+ * Each pan command moves the target along its own direction.
+ *
+ * Covers the base: 5fa4cebf added the controller. Checked by swapping panUp and panDown in
+ * simulate(), which fails this case.
+ **/
+```
+
+The first run of seven or more hex digits in the line is the commit. When the base contains that
+commit, the script reports the case as "passes, covers the base", prints the line, and does not
+fail. A commit the base does not contain, including one the change made, does not count, and the
+case is a weak test. A reviewer reads how the code was broken. Breaking it has to fail the case
+for the reason the case is about, not by a crash.
+
 The worktree build is separate from `out/build/x64-Debug`, or the build `--build` names, and
 installs no packages. It reuses the packages that build installed, and its link job pool if it
 has one. The script's header lists its limits. A `render_device` case needs a Vulkan device, and

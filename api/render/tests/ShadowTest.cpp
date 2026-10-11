@@ -126,6 +126,9 @@ BOOST_AUTO_TEST_CASE(the_light_sees_as_a_camera_does) {
  * Under the mirrored hand the light still matches a camera of that hand. Its right is negated
  * and its up kept, so a face keeps the winding the camera gives it. A light that ignored the hand
  * would match only the case above.
+ *
+ * Covers the base: 7d680422 gave shadow::light() the hand. Checked by keeping the right for
+ * both hands, which fails this case.
  **/
 BOOST_AUTO_TEST_CASE(the_light_sees_as_a_mirrored_camera_does) {
     checkSeenAsCamera(v3d::type::camera::Profile::Hand::DirectionCrossUp);

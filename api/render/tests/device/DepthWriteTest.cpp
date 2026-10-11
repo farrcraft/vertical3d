@@ -168,6 +168,9 @@ BOOST_AUTO_TEST_CASE(a_pass_that_names_nothing_writes_line_depth) {
  * World quads are built without depth writes, and a pass that asks for them makes the first of
  * two coincident quads hide the second. Without the pass's choice reaching the quads' pipeline,
  * the green quad would draw.
+ *
+ * Covers the base: efd586c5 made depth writes a pass's choice. Checked by having the recorder
+ * set the pipeline's value whatever the pass names, which fails this case.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_with_depth_writes_makes_world_quads_write) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -178,6 +181,9 @@ BOOST_AUTO_TEST_CASE(a_pass_with_depth_writes_makes_world_quads_write) {
 /**
  * A pass that names nothing draws world quads as their pipeline was built, without depth
  * writes, so the second quad draws over the first.
+ *
+ * Covers the base: efd586c5 made depth writes a pass's choice. Checked by building world quads
+ * with depth writes on, which fails this case.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_that_names_nothing_leaves_world_quads_unwritten) {
     v3d::test::Headless headless(colourFormat, width, height);

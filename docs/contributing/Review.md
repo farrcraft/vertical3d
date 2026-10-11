@@ -65,8 +65,11 @@ reviewer reports them only when the tool missed one.
   case the words cover. A guarantee about a textured mesh needs a textured mesh in its test. A
   test of a defect that only the change itself makes possible passes before the change. Its doc
   comment then has a line that starts `Passes before the change:` and names what the change adds
-  that makes the defect possible. [Testing.md](Testing.md#checking-that-a-new-test-fails-first)
-  shows the form.
+  that makes the defect possible. A test added for code already in the base, which the change
+  does not touch, also passes before it. Its doc comment has a line that starts
+  `Covers the base:`, names the commit that brought the code, and says how the code was broken
+  by hand to make the test fail. [Testing.md](Testing.md#checking-that-a-new-test-fails-first)
+  shows both forms.
 - **State the rule once.** A fix that changes a rule updates the reference document that owns it
   and the comment beside the code, and adds no other copy.
 

@@ -58,7 +58,10 @@
 //                        rest are built and run.
 //     PASSES - weak      the case passes without the change. It does not test the change.
 //     passes, stated     the case passes without the change, and its doc comment says why.
-//     skipped            the binary found no Vulkan device, or render_window no window, and
+//     passes, covers the base
+//                        the case passes without the change, and its doc comment names the
+//                        commit in the base that brought the code it tests.
+//     skipped           the binary found no Vulkan device, or render_window no window, and
 //                        exited with 77.
 //     not run            the binary did not find the case, timed out, could not start, or
 //                        exited with an error and reported no failed check. A binary that
@@ -74,6 +77,18 @@
 // Such a case is reported as "passes, stated" with its reason, and does not make the run fail.
 // --list prints the reason too. A reviewer reads the reason: it has to name what the change
 // introduced that makes the defect possible.
+//
+// A case added for code that is already in the base also passes there, because the change does
+// not touch that code. Its doc comment says so in a line of this form, which may wrap the same way:
+//
+//     Covers the base: <the commit that brought the code> <what the case was checked against>
+//
+// The first run of seven or more hex digits in it is the commit. When that commit exists and the
+// base contains it, the case is reported as "passes, covers the base" and does not make the run
+// fail. A line that names no such commit, including one the change itself made, counts for
+// nothing, and the case is reported as weak. The harness cannot show that such a case would fail
+// without the code it tests, so the line also says how that was checked: by breaking the code by
+// hand and watching the case fail. A reviewer reads that part.
 //
 // The build environment is the one scripts\build.cmd enters: vcvars64.bat under Visual Studio 18
 // or 2022 Community, or the file V3D_VCVARS names. A cold build of a suite compiles every library
@@ -116,6 +131,7 @@ const FAILS = "fails";
 const FAILS_TO_BUILD = "fails to build";
 const PASSES = "PASSES - weak";
 const PASSES_STATED = "passes, stated";
+const PASSES_COVERS = "passes, covers the base";
 const SKIPPED = "skipped";
 const NOT_RUN = "not run";
 
@@ -151,6 +167,11 @@ const BOOST_FAILURE = /\*\*\* \d+ failures? (?:is|are) detected|\berror: in "|\b
 // The line in a case's doc comment that says why it passes without the change. It starts the
 // text of the comment line, after the comment marker and any space.
 const STATED = /^Passes before the change:\s*/;
+// The line in a case's doc comment that says the code it tests is already in the base, and names
+// the commit that brought it there.
+const COVERS = /^Covers the base:\s*/;
+// A commit named in a Covers the base: line.
+const COMMIT = /\b[0-9a-f]{7,40}\b/;
 const SOURCE_SUFFIXES = [".cpp", ".cxx", ".cc", ".c"];
 
 // The developer environment, as scripts\build.cmd enters it, followed by a dump of the
@@ -174,13 +195,15 @@ type ListedSource = { suite: string; directory: string; source: string };
 // A source dropped from a suite's list in the worktree, and whether the change added it.
 type Drop = { source: string; added: boolean };
 type Env = Record<string, string>;
-export type Found = { path: string; stated: string | null };
+export type Found = { path: string; stated: string | null; covers: string | null };
 
 type Case = {
     path: string;            // the --run_test path: suite names and the case name
     suite: string;           // the ctest suite, built as v3dtest_<suite>
     file: string;            // the test source, relative to the repository root
     stated: string | null;   // why the case passes without the change, from its doc comment
+    claim: string | null;    // the text of a Covers the base: line, as written
+    covers: string | null;   // the commit that line names, when it resolves and is in the base
     result: string | null;
     note: string;
 };
@@ -237,10 +260,11 @@ function changedFiles(base: string, head: string): Change[] {
     return changes;
 }
 
-// The reason a case's doc comment gives for passing without the change, or null. The doc
+// The text after the marker in a case's doc comment, or null when no line of it starts with the
+// marker. The text may wrap onto the lines that follow, up to the end of the paragraph. The doc
 // comment is the comment that ends just before the case's macro: one block comment, or a run
 // of // lines.
-function statedReason(text: string, at: number): string | null {
+function markedText(text: string, at: number, marker: RegExp): string | null {
     const before = text.slice(0, at).trimEnd();
     let comment: string;
     if (before.endsWith("*/")) {
@@ -259,11 +283,11 @@ function statedReason(text: string, at: number): string | null {
     }
     const lines = comment.split(/\r?\n/).map((line) => line.trim()
         .replace(/^\/\*+|^\/\/+|^\*+(?!\/)/, "").replace(/\*+\/$/, "").trim());
-    const first = lines.findIndex((line) => STATED.test(line));
+    const first = lines.findIndex((line) => marker.test(line));
     if (first < 0) {
         return null;
     }
-    const reason: string[] = [lines[first].replace(STATED, "")];
+    const reason: string[] = [lines[first].replace(marker, "")];
     for (const line of lines.slice(first + 1)) {
         if (line === "") {
             break;
@@ -274,8 +298,13 @@ function statedReason(text: string, at: number): string | null {
     return joined === "" ? null : joined;
 }
 
-// The --run_test path of every case in a test source, with the reason its doc comment gives
-// for passing without the change.
+// The commit a Covers the base: line names, or null when it names none.
+export function namedCommit(covers: string): string | null {
+    return covers.match(COMMIT)?.[0] ?? null;
+}
+
+// The --run_test path of every case in a test source, with what its doc comment says about
+// passing without the change.
 export function casesIn(text: string): Found[] {
     const found: Found[] = [];
     const suites: string[] = [];
@@ -294,7 +323,11 @@ export function casesIn(text: string): Found[] {
         if (macro.endsWith("_SUITE")) {
             suites.push(name);
         } else {
-            found.push({ path: [...suites, name].join("/"), stated: statedReason(text, match.index) });
+            found.push({
+                path: [...suites, name].join("/"),
+                stated: markedText(text, match.index, STATED),
+                covers: markedText(text, match.index, COVERS),
+            });
         }
     }
     return found;
@@ -346,13 +379,28 @@ function suiteMap(revision: string): Map<string, SuiteEntry> {
     return mapping;
 }
 
+// The commit a Covers the base: line names, in full, when it exists and the base contains it.
+// Null otherwise, so that a line naming a commit the change itself made does not excuse a case.
+export function inBase(covers: string, base: string): string | null {
+    const named = namedCommit(covers);
+    if (named === null) {
+        return null;
+    }
+    const found = git(["rev-parse", "--verify", "--quiet", named + "^{commit}"], ROOT, false);
+    if (found.code !== 0) {
+        return null;
+    }
+    const commit = found.stdout.trim();
+    return git(["merge-base", "--is-ancestor", commit, base], ROOT, false).code === 0 ? commit : null;
+}
+
 function findNewCases(base: string, head: string, changes: Change[]): { cases: Case[]; unregistered: string[] } {
     const headMap = suiteMap(head);
     const baseMap = suiteMap(base);
     const touched = [...new Set(changes.map((c) => c.file).filter((f) => isTestFile(f) && isSource(f)))].sort();
 
-    const collect = (revision: string, mapping: Map<string, SuiteEntry>): Map<string, Map<string, [string, string | null]>> => {
-        const bySuite = new Map<string, Map<string, [string, string | null]>>();
+    const collect = (revision: string, mapping: Map<string, SuiteEntry>): Map<string, Map<string, [string, Found]>> => {
+        const bySuite = new Map<string, Map<string, [string, Found]>>();
         for (const file of touched) {
             const entry = mapping.get(file);
             if (entry === undefined) {
@@ -365,8 +413,8 @@ function findNewCases(base: string, head: string, changes: Change[]): { cases: C
             if (!bySuite.has(entry.suite)) {
                 bySuite.set(entry.suite, new Map());
             }
-            for (const { path: name, stated } of casesIn(text)) {
-                bySuite.get(entry.suite)!.set(name, [file, stated]);
+            for (const found of casesIn(text)) {
+                bySuite.get(entry.suite)!.set(found.path, [file, found]);
             }
         }
         return bySuite;
@@ -376,9 +424,13 @@ function findNewCases(base: string, head: string, changes: Change[]): { cases: C
     const before = collect(base, baseMap);
     const cases: Case[] = [];
     for (const suite of [...now.keys()].sort()) {
-        for (const [name, [file, stated]] of now.get(suite)!) {
+        for (const [name, [file, found]] of now.get(suite)!) {
             if (!before.get(suite)?.has(name)) {
-                cases.push({ path: name, suite, file, stated, result: null, note: "" });
+                const claim = found.covers;
+                cases.push({
+                    path: name, suite, file, stated: found.stated, claim, covers: claim === null ? null : inBase(claim, base),
+                    result: null, note: "",
+                });
             }
         }
     }
@@ -420,16 +472,25 @@ function printTable(cases: Case[], withResult: boolean): void {
     process.stdout.write(out.join("\n") + "\n");
 }
 
-// The reason each case that states one gives for passing without the change.
+// The reason each case that states one gives for passing without the change, and what each case
+// that covers the base says it covers.
 function printStated(cases: Case[]): void {
     const stated = cases.filter((c) => c.stated !== null);
-    if (stated.length === 0) {
-        return;
+    if (stated.length > 0) {
+        console.log();
+        console.log("Stated to pass before the change:");
+        for (const c of stated) {
+            console.log(`  ${c.suite} ${c.path}: ${c.stated}`);
+        }
     }
-    console.log();
-    console.log("Stated to pass before the change:");
-    for (const c of stated) {
-        console.log(`  ${c.suite} ${c.path}: ${c.stated}`);
+    const covering = cases.filter((c) => c.stated === null && c.claim !== null);
+    if (covering.length > 0) {
+        console.log();
+        console.log("Stated to cover code already in the base:");
+        for (const c of covering) {
+            const commit = c.covers === null ? "names no commit the base contains" : c.covers.slice(0, 9);
+            console.log(`  ${c.suite} ${c.path} (${commit}): ${c.claim}`);
+        }
     }
 }
 
@@ -794,7 +855,16 @@ function classify(c: Case, done: Outcome, timeout: number): void {
     }
     const output = done.output;
     if (done.status === 0) {
-        c.result = c.stated === null ? PASSES : PASSES_STATED;
+        if (c.stated !== null) {
+            c.result = PASSES_STATED;
+        } else if (c.covers !== null) {
+            c.result = PASSES_COVERS;
+        } else {
+            c.result = PASSES;
+            if (c.claim !== null) {
+                c.note = "its Covers the base: line names no commit the base contains";
+            }
+        }
     } else if (done.status === SKIP_RETURN_CODE && SKIPPING_SUITES.has(c.suite)) {
         c.result = SKIPPED;
     } else if (/no test cases matching filter|test setup error/i.test(output)) {
