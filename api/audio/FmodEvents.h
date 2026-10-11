@@ -7,6 +7,8 @@
 
 #include <api/log/Logger.h>
 
+#include <functional>
+#include <set>
 #include <string>
 #include <string_view>
 
@@ -26,6 +28,10 @@ namespace v3d::audio {
  *
  * It owns one Studio system and the device FMOD opens for it, separate from the clip engine's.
  * Banks stay loaded until the backend is destroyed.
+ *
+ * An event no bank holds, and a global parameter FMOD will not set, are each logged once per
+ * name for the life of the backend. Every later call for that name still returns false. A
+ * caller that sets a parameter every frame therefore writes one warning, not one a frame.
  **/
 class FmodEvents final : public Events {
  public:
@@ -54,6 +60,11 @@ class FmodEvents final : public Events {
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;
     FMOD::Studio::System* system_;
+    /**< events already reported missing. Kept apart from the parameters, so an event and a
+     * parameter with the same name are each reported **/
+    std::set<std::string, std::less<>> missingEvents_;
+    /**< global parameters already reported as refused **/
+    std::set<std::string, std::less<>> refusedParameters_;
 };
 
 };  // namespace v3d::audio

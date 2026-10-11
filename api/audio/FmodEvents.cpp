@@ -77,7 +77,9 @@ bool FmodEvents::play(std::string_view event) {
     FMOD::Studio::EventDescription* description = nullptr;
     FMOD_RESULT result = system_->getEvent(path.c_str(), &description);
     if (result != FMOD_OK) {
-        logger_->get()->warn("FMOD has no event {}: {}", path, FMOD_ErrorString(result));
+        if (missingEvents_.insert(path).second) {
+            logger_->get()->warn("FMOD has no event {}: {}", path, FMOD_ErrorString(result));
+        }
         return false;
     }
     FMOD::Studio::EventInstance* instance = nullptr;
@@ -98,7 +100,9 @@ bool FmodEvents::parameter(std::string_view name, float value) {
     const std::string parameter(name);
     const FMOD_RESULT result = system_->setParameterByName(parameter.c_str(), value);
     if (result != FMOD_OK) {
-        logger_->get()->warn("FMOD could not set the global parameter {}: {}", parameter, FMOD_ErrorString(result));
+        if (refusedParameters_.insert(parameter).second) {
+            logger_->get()->warn("FMOD could not set the global parameter {}: {}", parameter, FMOD_ErrorString(result));
+        }
         return false;
     }
     return true;
