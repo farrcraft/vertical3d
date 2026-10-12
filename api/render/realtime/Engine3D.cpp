@@ -18,10 +18,11 @@ const char* const Engine3D::colourPass = "colour";
 /**
  **/
 Engine3D::Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
-    VkFormat preferred) :
+    VkFormat preferred, vulkan::memory::Allocator::Kind allocations) :
     Engine(logger, assetManager),
     clearColour_(0.06f, 0.07f, 0.10f, 1.0f),
-    preferred_(preferred) {
+    preferred_(preferred),
+    allocations_(allocations) {
 }
 
 /**
@@ -30,7 +31,7 @@ bool Engine3D::initialize(const boost::shared_ptr<Window>& window) {
     Engine::initialize(window);
 
     // the context can only be built once there is a created window to take a device from
-    context_ = boost::make_shared<Context3D>(logger(), window, preferred_);
+    context_ = boost::make_shared<Context3D>(logger(), window, preferred_, allocations_);
 
     frame_ = boost::make_shared<Frame>();
     frame_->pass(colourPass)->clearColour(clearColour_);

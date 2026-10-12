@@ -14,18 +14,18 @@ namespace v3d::render::realtime {
 /**
  **/
 boost::shared_ptr<vulkan::device::Device> Context3D::deviceFor(const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<Window>& window) {
+    const boost::shared_ptr<Window>& window, vulkan::memory::Allocator::Kind allocations) {
     if (!window || !window->instance() || !window->surface()) {
         throw std::runtime_error("A 3D context needs a created window to render to");
     }
-    return boost::make_shared<vulkan::device::Device>(logger, window->instance(), window->surface());
+    return boost::make_shared<vulkan::device::Device>(logger, window->instance(), window->surface(), allocations);
 }
 
 /**
  **/
 Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window,
-    VkFormat preferred) :
-    DeviceContext(logger, deviceFor(logger, window)),
+    VkFormat preferred, vulkan::memory::Allocator::Kind allocations) :
+    DeviceContext(logger, deviceFor(logger, window, allocations)),
     window_(window) {
     swapchain_ = boost::make_shared<vulkan::frame::Swapchain>(logger, device(), static_cast<uint32_t>(window_->width()),
         static_cast<uint32_t>(window_->height()), preferred);

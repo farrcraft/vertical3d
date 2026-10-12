@@ -206,11 +206,13 @@ a comment:
 - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 ```
 
-A tag can be moved to other code after it was reviewed, and a sha cannot. `review-gates.yml`
-fails on a `uses:` that names a tag or a branch. A local action, named by a path in this
-repository, is exempt. To find the sha for a release, read the commit its tag points at:
-`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`, followed by `git/tags/<sha>` when the tag is
-annotated. Updating an action means changing both the sha and the comment.
+A tag can be moved to other code after it was reviewed, and a sha cannot. `scripts/pinned.ts`
+reads every workflow in `.github/workflows` and every `action.yml` under `.github/actions`, with
+either the `.yml` or the `.yaml` extension. It fails on a `uses:` whose value is not a full
+lowercase sha, written in a block or a flow mapping, plain or quoted. A local action, named by a
+path in this repository, is exempt. To find the sha for a release, read the commit its tag
+points at: `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`, followed by `git/tags/<sha>` when
+the tag is annotated. Updating an action means changing both the sha and the comment.
 
 The workflow first runs the gates' own tests in `scripts/tests/`, which cover the C++ lexer the
 gates share in `scripts/lexer.ts`. Run them locally with `node --test "scripts/tests/*.test.ts"`
@@ -220,8 +222,10 @@ The fails-first gate, `scripts/failsfirst.ts`, runs in
 [.github/workflows/ctest.yml](../../.github/workflows/ctest.yml) instead, as that job's last step
 on each pull request. It needs the compiler, the packages and the software Vulkan driver, which
 that job already has. It compares against the branch the pull request merges into, and fails
-the job when a new case passes without the change or was not run. Run it locally as well, before
-review: see [Testing.md](Testing.md#checking-that-a-new-test-fails-first).
+the job when a new case passes without the change or was not run. Its scratch directory is under
+`RUNNER_TEMP`, which the job excludes from Defender. A link that a scan breaks would mark every new
+case as failing to build, and the gate would pass them. Run it locally as well, before review: see
+[Testing.md](Testing.md#checking-that-a-new-test-fails-first).
 
 ## The review gates' environment
 

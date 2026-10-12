@@ -9,6 +9,7 @@
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/Presenter.h>
 #include <api/render/realtime/vulkan/frame/Swapchain.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include "DeviceContext.h"
 #include "Window.h"
@@ -32,9 +33,11 @@ class Context3D : public DeviceContext {
      * @param preferred the colour format to present through - see Swapchain. The format
      *        chosen is swapchain()->format(), which the quad renderer and every other
      *        pipeline drawing into the chain are built against.
+     * @param allocations how the device finds memory for its buffers and images
      **/
     Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window,
-        VkFormat preferred = VK_FORMAT_UNDEFINED);
+        VkFormat preferred = VK_FORMAT_UNDEFINED,
+        vulkan::memory::Allocator::Kind allocations = vulkan::memory::Allocator::Kind::Direct);
 
     /**
      **/
@@ -66,7 +69,7 @@ class Context3D : public DeviceContext {
      * @throw std::runtime_error if the window has not been created
      **/
     static boost::shared_ptr<vulkan::device::Device> deviceFor(const boost::shared_ptr<v3d::log::Logger>& logger,
-        const boost::shared_ptr<Window>& window);
+        const boost::shared_ptr<Window>& window, vulkan::memory::Allocator::Kind allocations);
 
     boost::shared_ptr<Window> window_;
     boost::shared_ptr<vulkan::frame::Swapchain> swapchain_;

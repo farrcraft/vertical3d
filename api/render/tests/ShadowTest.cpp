@@ -35,6 +35,39 @@ glm::vec3 project(const glm::mat4& matrix, const glm::vec3& point) {
     return glm::vec3(clip) / clip.w;
 }
 
+/**
+ * Check shadow::light against the matrix a camera of the given hand builds at the light's eye,
+ * looking at the same centre through the same box.
+ **/
+void checkSeenAsCamera(v3d::type::camera::Profile::Hand hand) {
+    const glm::vec3 towards = glm::normalize(glm::vec3(-0.45f, 0.62f, 0.64f));
+    const glm::vec3 centre(3.0f, -1.0f, 7.0f);
+    const float radius = 5.0f;
+
+    v3d::type::camera::Camera camera;
+    v3d::type::camera::Profile& profile = camera.profile();
+    profile.hand(hand);
+    profile.orthographic(true);
+    profile.orthoZoom(radius);
+    profile.pixelAspect(1.0f);
+    profile.clipping(0.0f, radius * 4.0f);
+    profile.eye(centre + towards * (radius * 2.0f));
+    profile.up(glm::vec3(0.0f, 1.0f, 0.0f));
+    profile.lookat(centre);
+    camera.createProjection();
+    camera.createView();
+
+    const glm::mat4 expected = camera.projection() * camera.view();
+    const glm::mat4 light = shadow::light(towards, centre, radius, hand);
+    for (int column = 0; column < 4; column++) {
+        for (int row = 0; row < 4; row++) {
+            BOOST_TEST_CONTEXT("[" << column << "][" << row << "]") {
+                BOOST_CHECK_SMALL(light[column][row] - expected[column][row], 1e-5f);
+            }
+        }
+    }
+}
+
 void caster(entt::registry* registry, const glm::vec3& position, bool castsShadow) {
     const entt::entity entity = registry->create();
     Transform transform;
@@ -86,31 +119,19 @@ BOOST_AUTO_TEST_CASE(a_radius_out_is_the_edge_of_the_map) {
  * pass's winding. A camera built any other way can turn every face around on screen.
  **/
 BOOST_AUTO_TEST_CASE(the_light_sees_as_a_camera_does) {
-    const glm::vec3 towards = glm::normalize(glm::vec3(-0.45f, 0.62f, 0.64f));
-    const glm::vec3 centre(3.0f, -1.0f, 7.0f);
-    const float radius = 5.0f;
+    checkSeenAsCamera(v3d::type::camera::Profile::Hand::UpCrossDirection);
+}
 
-    v3d::type::camera::Camera camera;
-    v3d::type::camera::Profile& profile = camera.profile();
-    profile.orthographic(true);
-    profile.orthoZoom(radius);
-    profile.pixelAspect(1.0f);
-    profile.clipping(0.0f, radius * 4.0f);
-    profile.eye(centre + towards * (radius * 2.0f));
-    profile.up(glm::vec3(0.0f, 1.0f, 0.0f));
-    profile.lookat(centre);
-    camera.createProjection();
-    camera.createView();
-
-    const glm::mat4 expected = camera.projection() * camera.view();
-    const glm::mat4 light = shadow::light(towards, centre, radius);
-    for (int column = 0; column < 4; column++) {
-        for (int row = 0; row < 4; row++) {
-            BOOST_TEST_CONTEXT("[" << column << "][" << row << "]") {
-                BOOST_CHECK_SMALL(light[column][row] - expected[column][row], 1e-5f);
-            }
-        }
-    }
+/**
+ * Under the mirrored hand the light still matches a camera of that hand. Its right is negated
+ * and its up kept, so a face keeps the winding the camera gives it. A light that ignored the hand
+ * would match only the case above.
+ *
+ * Covers the base: 7d680422 gave shadow::light() the hand. Checked by keeping the right for
+ * both hands, which fails this case.
+ **/
+BOOST_AUTO_TEST_CASE(the_light_sees_as_a_mirrored_camera_does) {
+    checkSeenAsCamera(v3d::type::camera::Profile::Hand::DirectionCrossUp);
 }
 
 /**

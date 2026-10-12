@@ -409,7 +409,9 @@ jobs:
       # suites a second time, in a worktree with every file outside tests/ at the base, reusing
       # this job's packages and its link pool. It runs the render suites on lavapipe as the
       # Test step does. Only pull requests run it, because a push to main has already been
-      # checked as one.
+      # checked as one. Its worktree and its build go under RUNNER_TEMP, which Defender does not
+      # scan. A link that fails there would mark every new case as failing to build, which the
+      # harness counts as failing without the change.
       - name: The new test cases fail without the change
         if: github.event_name == 'pull_request'
         shell: pwsh
@@ -419,5 +421,5 @@ jobs:
           # for a Visual Studio edition the image does not have
           V3D_VCVARS: ${{ runner.temp }}\vcvars.bat
         run: |
-          node scripts/failsfirst.ts --build "$env:BUILD_DIR" --base "origin/${{ github.base_ref }}"
+          node scripts/failsfirst.ts --build "$env:BUILD_DIR" --scratch "$env:RUNNER_TEMP\failsfirst" --base "origin/${{ github.base_ref }}"
           if ($LASTEXITCODE -ne 0) { throw "the fails-first harness exited $LASTEXITCODE" }

@@ -1,9 +1,9 @@
 # Cases that need no window and no device. A pass collects draw items and a sort key orders them
 # without touching vulkan. The three canvases are cpu side too: batching, the transform stack, the
-# projection and the line geometry. The choice of swapchain format, the channel order of a
-# captured frame, the frame count after which a released resource is destroyed, and the scissor a
-# clip rectangle becomes are cpu side too. Everything else below the recorder needs a device, and
-# is in render_device below.
+# projection and the line geometry. The choice of swapchain format and the channel order of a
+# captured frame are cpu side too. The frame count after which a released resource is destroyed,
+# the scissor a clip rectangle becomes, and the colour formats a quad is decoded for are as well.
+# Everything else below the recorder needs a device, and is in render_device below.
 v3d_add_test(render
 	"TestMain.cpp"
 	"FrameTest.cpp"
@@ -23,6 +23,7 @@ v3d_add_test(render
 	"ShadowTest.cpp"
 	"GradeTest.cpp"
 	"CaptureConvertTest.cpp"
+	"QuadFormatTest.cpp"
 	"ResultTest.cpp")
 
 target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_ecs v3dlib_font v3dlib_image v3dlib_type EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
@@ -89,7 +90,8 @@ set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)
 v3d_add_test(render_window
 	"window/TestMain.cpp"
 	"window/Windowed.cpp"
-	"window/EngineCaptureTest.cpp")
+	"window/EngineCaptureTest.cpp"
+	"window/EngineAllocationsTest.cpp")
 
 target_link_libraries(v3dtest_render_window PRIVATE v3dlib_render v3dlib_image v3dlib_log Boost::filesystem ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
 set_tests_properties(render_window PROPERTIES SKIP_RETURN_CODE 77)

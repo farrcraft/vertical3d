@@ -7,6 +7,7 @@
 
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include <string>
 #include <string_view>
@@ -31,9 +32,13 @@ class Engine3D : public Engine {
      * @param preferred the colour format to present through. An app whose shaders write
      *        linear light names one here. Leaving it undefined selects the display space
      *        (UNORM) default every app in this tree presents through.
+     * @param allocations how the device finds memory for its buffers and images. An app with
+     *        per-frame resources asks for Suballocated, because maxMemoryAllocationCount is a
+     *        real device limit.
      **/
     Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
-        VkFormat preferred = VK_FORMAT_UNDEFINED);
+        VkFormat preferred = VK_FORMAT_UNDEFINED,
+        vulkan::memory::Allocator::Kind allocations = vulkan::memory::Allocator::Kind::Direct);
 
     /**
      **/
@@ -149,6 +154,8 @@ class Engine3D : public Engine {
     glm::vec4 clearColour_;
     /**< what initialize() requests from the chain; the chain decides what it gets **/
     VkFormat preferred_;
+    /**< what initialize() builds the device's allocator as **/
+    vulkan::memory::Allocator::Kind allocations_;
     /**< made by the first capture() and kept, so its readback buffer is reused **/
     boost::shared_ptr<vulkan::frame::Capture> capture_;
     /**< where the next presented frame is written, or empty when none is asked for **/

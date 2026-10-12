@@ -6,7 +6,8 @@ v3d_add_test(audio
 	"AudioClipTest.cpp"
 	"EngineTest.cpp"
 	"LoaderTest.cpp"
-	"EventsTest.cpp")
+	"EventsTest.cpp"
+	"EventsWithoutFmodTest.cpp")
 
 # SDL3: the mixer carries SDL3 with it, whether or not a device is ever opened.
 target_link_libraries(v3dtest_audio PRIVATE
@@ -21,7 +22,8 @@ target_link_libraries(v3dtest_audio PRIVATE
 # which builds without the SDK.
 if(V3D_FMOD_ROOT)
 	target_sources(v3dtest_audio PRIVATE "FmodEventsTest.cpp")
-	target_compile_definitions(v3dtest_audio PRIVATE
+	# V3D_AUDIO_FMOD leaves out the case that expects the null backend from events()
+	target_compile_definitions(v3dtest_audio PRIVATE V3D_AUDIO_FMOD
 		V3D_FMOD_EXAMPLE_BANKS="${V3D_FMOD_ROOT}/api/studio/examples/media")
 	add_custom_command(TARGET v3dtest_audio POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different

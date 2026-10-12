@@ -56,14 +56,7 @@ jobs:
     # checks it. A local action, named by a path in this repository, needs no sha.
     - name: Actions are pinned to a commit
       if: ${{ !cancelled() }}
-      shell: bash
-      run: |
-        if grep -nE '^\s*(-\s*)?uses:' .github/workflows/*.yml \
-            | grep -vE 'uses:\s*\./' \
-            | grep -vE 'uses:\s*[^@[:space:]]+@[0-9a-f]{40}(\s|$)'; then
-          echo "::error::Each uses: above names a tag or a branch. Pin it to the full commit sha the tag points at."
-          exit 1
-        fi
+      run: node scripts/pinned.ts
     - name: Prose
       if: ${{ !cancelled() }}
       run: node scripts/prose.ts --base "$GATE_BASE"

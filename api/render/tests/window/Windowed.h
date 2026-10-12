@@ -8,6 +8,7 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/Window.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include <boost/shared_ptr.hpp>
 
@@ -27,10 +28,12 @@ const int skipExitCode = 77;
  **/
 struct Windowed {
     /**
+     * @param allocations what the engine is asked to build its device's allocator as
      * @throw std::runtime_error when SDL cannot start, the window cannot be made, or no device
      *        can present to it
      **/
-    Windowed();
+    explicit Windowed(render::realtime::vulkan::memory::Allocator::Kind allocations =
+        render::realtime::vulkan::memory::Allocator::Kind::Direct);
 
     ~Windowed();
 

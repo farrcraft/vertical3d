@@ -22,6 +22,17 @@ All names are in `v3d::render::realtime` unless a namespace is given. `vulkan::`
 An app creates one `Engine3D` in its `start()` and calls `initialize(window())` on it. That
 builds everything else.
 
+The constructor takes two optional choices after the asset manager. The first is the colour
+format to present through, covered in [ColourAndPost.md](ColourAndPost.md). The second is how the
+device finds memory. It defaults to one allocation per resource. An app that creates resources
+every frame passes `vulkan::memory::Allocator::Kind::Suballocated`, because a device can make
+only `maxMemoryAllocationCount` allocations:
+
+```cpp
+renderer_ = boost::make_shared<Engine3D>(logger(), assets(), VK_FORMAT_UNDEFINED,
+    vulkan::memory::Allocator::Kind::Suballocated);
+```
+
 | Object | What it is to an app |
 |---|---|
 | `Engine3D` | The renderer. It holds the frame being built and draws it with `renderFrame()`. |

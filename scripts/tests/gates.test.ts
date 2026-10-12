@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 import { attachCode, check } from '../boundary.ts';
 import { supportedNode } from '../entry.ts';
-import { casesIn } from '../failsfirst.ts';
+import { casesIn, inBase, namedCommit } from '../failsfirst.ts';
 import { includesIn, usesIn } from '../linkrule.ts';
 import { checkLines } from '../prose.ts';
 
@@ -96,6 +96,35 @@ test('failsfirst finds a case after a CRLF-continued string and after a raw stri
         '',
     ].join('\r\n');
     assert.deepEqual(casesIn(text).map((c) => c.path), ['suite/after_continued', 'suite/after_raw']);
+});
+
+test('failsfirst reads a Covers the base: line, wrapped onto the next line', () => {
+    const text = [
+        '/**',
+        ' * Pans each way.',
+        ' *',
+        ' * Covers the base: 48412a1c merged the controller untested. Checked by swapping two',
+        ' * pan directions, which fails it.',
+        ' **/',
+        'BOOST_AUTO_TEST_CASE(pans) {}',
+        'BOOST_AUTO_TEST_CASE(plain) {}',
+        '',
+    ].join('\n');
+    const found = casesIn(text);
+    assert.equal(found[0].covers,
+        '48412a1c merged the controller untested. Checked by swapping two pan directions, which fails it.');
+    assert.equal(found[0].stated, null);
+    assert.equal(found[1].covers, null);
+    assert.equal(namedCommit(found[0].covers!), '48412a1c');
+    assert.equal(namedCommit('no commit named here'), null);
+});
+
+test('failsfirst accepts a covered commit only when the base contains it', () => {
+    // two commits on main: 957a7434 is the second parent of the merge 48412a1c
+    assert.equal(inBase('957a7434 brought it', '48412a1c'), '957a74343d34043c61315af330384508b6db4c97');
+    assert.equal(inBase('48412a1c brought it', '957a7434'), null);
+    assert.equal(inBase('deadbeefdeadbeef brought it', '48412a1c'), null);
+    assert.equal(inBase('no commit at all', '48412a1c'), null);
 });
 
 test('failsfirst skips a case inside a comment', () => {

@@ -64,6 +64,10 @@ events_->update();                                       // once a frame, in tic
 - **Every call says whether it did anything.** `bank()`, `play()` and `parameter()` return false
   for a bank that did not load, an event no loaded bank holds, or a parameter that does not
   exist, and always on the null backend. A game treats false as silence, not as an error.
+- **A missing event or parameter is logged once per name.** The FMOD backend warns the first time
+  an event is not found or a parameter cannot be set, and returns false without logging on every
+  later call for that name. A parameter set every frame writes one line, not one a frame. An
+  event and a parameter with the same name are each reported.
 - **Load the strings bank** beside the banks that hold events. FMOD looks an event's path up in
   it, so without it no event is found by name.
 - `play()` starts a one shot, which FMOD releases when it ends.
