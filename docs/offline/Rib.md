@@ -57,6 +57,9 @@ accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"s
   standard names, including `Option "trace"`'s `maxdepth` and `Option "searchpath"`'s `shader`
   and `texture`, and nothing else. A shader parameter outside that set needs `Declare` or an
   inline type, such as `"uniform float size" [0.5]`. Otherwise the shader runs with its default.
+- **The C interface reads a parameter's values by its declared type.** An `integer` parameter's
+  array holds `RtInt`s and a `string` parameter's holds `RtString`s. Every other type's holds
+  `RtFloat`s.
 - **A `Polygon` carries no vertex count.** The count is the length of `"P"`, which the reader
   divides out. A parameter list is therefore parsed before the count is known, and an
   unbracketed varying or vertex parameter ends the parse instead of being guessed at.

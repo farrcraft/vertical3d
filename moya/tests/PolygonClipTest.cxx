@@ -32,7 +32,88 @@ v3d::type::geometry::Plane zPlane() {
     return plane;
 }
 
+/**
+ * A plane and an edge on which the two plane tests disagree: classify() puts s on the cut side
+ * and p on the kept side, and intersectEdge() finds no meeting, because p is a hair past the
+ * plane and the parameter it computes for p comes out just above one.
+ **/
+v3d::type::geometry::Plane tiltedPlane() {
+    v3d::type::geometry::Plane plane;
+    plane.set(glm::vec3(-0.522197902f, 0.622982621f, 0.582410455f), 0.0900339484f);
+    return plane;
+}
+
+glm::vec3 cutEnd() {
+    return glm::vec3(1.35210562f, -1.14019823f, 2.00327873f);
+}
+
+glm::vec3 keptEnd() {
+    return glm::vec3(-3.20165992f, -0.251474023f, -2.44707513f);
+}
+
+/**
+ * A polygon whose split by one plane a test can call, which the renderer reaches only through
+ * the split into four.
+ **/
+class Splittable final : public v3d::moya::Polygon {
+ public:
+    using v3d::moya::Polygon::split;
+};
+
+/**
+ * A triangle with that edge, and a third corner well inside the kept half space.
+ **/
+boost::shared_ptr<Splittable> tiltedTriangle() {
+    const glm::vec3 inside = keptEnd() + glm::vec3(-0.522197902f, 0.622982621f, 0.582410455f) * 2.0f;
+    boost::shared_ptr<Splittable> polygon = boost::make_shared<Splittable>();
+    polygon->addVertex(vertex(cutEnd().x, cutEnd().y, cutEnd().z));
+    polygon->addVertex(vertex(keptEnd().x, keptEnd().y, keptEnd().z));
+    polygon->addVertex(vertex(inside.x, inside.y, inside.z));
+    return polygon;
+}
+
 };  // namespace
+
+/**
+ * An edge the two plane tests disagree on still crosses the plane, at its kept end. The vertex
+ * made for it is not the point left over from the edge clipped before it.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_clip_an_edge_that_ends_past_the_plane_test) {
+    const v3d::type::geometry::Plane plane = tiltedPlane();
+    BOOST_REQUIRE(plane.classify(cutEnd()) == v3d::type::geometry::Plane::NEGATIVE);
+    BOOST_REQUIRE(plane.classify(keptEnd()) == v3d::type::geometry::Plane::POSITIVE);
+    glm::vec3 hit;
+    BOOST_REQUIRE(!plane.intersectEdge(cutEnd(), keptEnd(), &hit));
+
+    boost::shared_ptr<Splittable> polygon = tiltedTriangle();
+    polygon->clip(plane);
+
+    // the crossing of the third edge, the crossing of this one, its kept end, the third corner
+    BOOST_REQUIRE_EQUAL(polygon->vertexCount(), 4u);
+    BOOST_TEST(glm::distance(polygon->vertex(1).point(), keptEnd()) < 1.0e-4f);
+}
+
+/**
+ * Split takes the same edge as a crossing too, rather than as an edge wholly on one side, so
+ * each piece holds only what is on its own side of the plane.
+ **/
+BOOST_AUTO_TEST_CASE(polygon_split_an_edge_that_ends_past_the_plane_test) {
+    const v3d::type::geometry::Plane plane = tiltedPlane();
+    boost::shared_ptr<Splittable> polygon = tiltedTriangle();
+    boost::shared_ptr<v3d::moya::Polygon> negative = boost::make_shared<v3d::moya::Polygon>();
+    boost::shared_ptr<v3d::moya::Polygon> positive = boost::make_shared<v3d::moya::Polygon>();
+
+    polygon->split(plane, negative, positive);
+
+    BOOST_TEST(negative->vertexCount() >= 3u);
+    BOOST_TEST(positive->vertexCount() >= 3u);
+    for (size_t i = 0; i < negative->vertexCount(); i++) {
+        BOOST_TEST(plane.signedDistance(negative->vertex(i).point()) <= 1.0e-4f);
+    }
+    for (size_t i = 0; i < positive->vertexCount(); i++) {
+        BOOST_TEST(plane.signedDistance(positive->vertex(i).point()) >= -1.0e-4f);
+    }
+}
 
 /**
  * The clip rewrites the polygon it is called on, so the polygon itself comes out clipped.

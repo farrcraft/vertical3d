@@ -156,8 +156,14 @@ bool Bindings::readDestination(const boost::json::object& mapping, Event* event)
     }
     const boost::json::value& param = destination->at("param");
     const std::optional<std::string> text = v3d::asset::readString(*destination, "param");
-    if (param.is_int64()) {
-        event->data(static_cast<int>(param.as_int64()));
+    if (param.is_int64() || param.is_uint64()) {
+        // an integer an int cannot hold would arrive as a different number
+        const std::optional<int> number = v3d::asset::readInt(*destination, "param");
+        if (!number) {
+            logger_->get()->error("The binding param for [{}] is beyond the range of an int", *name);
+            return false;
+        }
+        event->data(*number);
     } else if (param.is_bool()) {
         event->data(param.as_bool());
     } else if (text) {

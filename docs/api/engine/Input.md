@@ -106,7 +106,8 @@ The binding document is the config document of type `binding`, conventionally
 - `source.state` is optional. `pressed` or `down` binds the press only, `released` or `up` the
   release only, and anything else, including no state, binds both.
 - `destination.context` and `destination.name` name the command. `destination.param` is
-  optional and becomes the command's data. It may be a whole number, a boolean or a string.
+  optional and becomes the command's data. It may be a whole number an `int` can hold, a
+  boolean or a string.
 - A name no device can send is logged and bound anyway. It never fires.
 - Every `name`, `context` and `state` is a string. A malformed document, including one that
   gives any of them another type, is logged, and startup fails.

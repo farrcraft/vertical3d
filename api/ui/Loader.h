@@ -136,21 +136,21 @@ class Loader final {
     boost::shared_ptr<component::menu::Bar> loadMenuBar(const boost::json::object& entry);
     boost::shared_ptr<component::Toolbar> loadToolbar(const boost::json::object& entry);
     boost::shared_ptr<component::Button> loadButton(const boost::json::object& entry);
-    static boost::shared_ptr<component::Label> loadLabel(const boost::json::object& entry);
+    boost::shared_ptr<component::Label> loadLabel(const boost::json::object& entry);
     boost::shared_ptr<component::Icon> loadIcon(const boost::json::object& entry);
     static boost::shared_ptr<component::Panel> loadPanel(const boost::json::object& entry);
-    static boost::shared_ptr<component::Bar> loadBar(const boost::json::object& entry);
-    static boost::shared_ptr<component::Scrollbar> loadScrollbar(const boost::json::object& entry);
+    boost::shared_ptr<component::Bar> loadBar(const boost::json::object& entry);
+    boost::shared_ptr<component::Scrollbar> loadScrollbar(const boost::json::object& entry);
     boost::shared_ptr<component::Slider> loadSlider(const boost::json::object& entry);
     boost::shared_ptr<component::SelectList> loadSelectList(const boost::json::object& entry);
     boost::shared_ptr<component::TextBox> loadTextBox(const boost::json::object& entry);
-    static boost::shared_ptr<component::TabPage> loadTabPage(const boost::json::object& entry);
+    boost::shared_ptr<component::TabPage> loadTabPage(const boost::json::object& entry);
     boost::shared_ptr<component::RadioButton> loadRadioButton(const boost::json::object& entry);
 
     /**
      * Read a flow box, whose direction is the only thing the two kinds differ by.
      **/
-    static boost::shared_ptr<component::Box> loadFlowBox(const std::string& componentType,
+    boost::shared_ptr<component::Box> loadFlowBox(const std::string& componentType,
         const boost::json::object& entry);
 
     /**
@@ -163,7 +163,7 @@ class Loader final {
      * Read what a flow box carries beyond an ordinary component - the gap between its
      * children, and whether they are widened to it.
      **/
-    static void loadBox(const boost::json::object& entry, const boost::shared_ptr<component::Box>& box);
+    void loadBox(const boost::json::object& entry, const boost::shared_ptr<component::Box>& box);
 
     /**
      * Read one style and everything in it into a theme.
@@ -193,7 +193,7 @@ class Loader final {
      * it is drawn at all, whether it answers the cursor, and what it is drawn in front of.
      * Where it is and how big are loadLayout()'s, which a menu does not take.
      **/
-    static void loadAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component);
+    void loadAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component);
 
     /**
      * Read a component's box - "position" and "size" as two lengths each, and the corner of

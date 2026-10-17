@@ -140,6 +140,7 @@ Each checked read takes an object and a key:
 |---|---|---|
 | `readString(object, key)` | `std::optional<std::string>` | anything but a string |
 | `readNumber(object, key)` | `std::optional<double>` | anything but a number |
+| `readInt(object, key)` | `std::optional<int>` | anything but an integer an `int` can hold |
 | `readBool(object, key)` | `std::optional<bool>` | anything but `true` or `false` |
 | `readObject(object, key)` | `const boost::json::object*` | anything but an object |
 | `readArray(object, key)` | `const boost::json::array*` | anything but an array |
@@ -149,6 +150,8 @@ Each checked read takes an object and a key:
 - **A caller that reports the two cases differently tests `contains()` first**, then reads.
 - `readNumber` takes a signed integer, an unsigned integer or a double, and returns a double. An
   integer beyond 2^53 loses precision. The value is not tested for being finite.
+- `readInt` takes a signed or an unsigned integer an `int` can hold. It refuses a double, even a
+  whole one, and an integer beyond the range of an `int` rather than narrowing it.
 - `readBool` does not take a number as a bool.
 - `readObject` and `readArray` return a pointer into the object rather than a copy. The pointer
   is valid while the object is unchanged.

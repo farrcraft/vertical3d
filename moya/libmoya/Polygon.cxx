@@ -9,7 +9,6 @@
 #include <api/type/geometry/Plane.h>
 
 #include <cmath>
-#include <cassert>
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -24,6 +23,19 @@ namespace v3d::moya {
 namespace {
 
 Vertex crossing(const Vertex & a, const Vertex & b, const glm::vec3 & hit);
+
+/**
+ * Where an edge whose ends classify on opposite sides of a plane meets it. The two tests round
+ * differently, so intersectEdge can find no meeting for an edge that ends a hair past the
+ * plane. The edge then meets the plane at the end nearer to it.
+ **/
+glm::vec3 meeting(const v3d::type::geometry::Plane & plane, const glm::vec3 & a, const glm::vec3 & b) {
+    glm::vec3 hit;
+    if (plane.intersectEdge(a, b, &hit)) {
+        return hit;
+    }
+    return std::abs(plane.signedDistance(a)) <= std::abs(plane.signedDistance(b)) ? a : b;
+}
 
 /**
  * A piece is worth handing back only if it bounds something and is strictly smaller
@@ -98,7 +110,6 @@ void Polygon::clip(const v3d::type::geometry::Plane & plane) {
         return;
     }
     std::vector<Vertex> clipped;
-    glm::vec3 hit;
     Vertex s = vertices_[nverts - 1];  // start with last vertex
     for (size_t j = 0; j < nverts; j++) {
         const Vertex p = vertices_[j];
@@ -113,13 +124,11 @@ void Polygon::clip(const v3d::type::geometry::Plane & plane) {
         const bool sInside = plane.classify(s.point()) != v3d::type::geometry::Plane::NEGATIVE;
         if (pInside) {  // cases 1 & 4
             if (!sInside) {  // case 4
-                plane.intersectEdge(s.point(), p.point(), &hit);
-                clipped.push_back(crossing(s, p, hit));
+                clipped.push_back(crossing(s, p, meeting(plane, s.point(), p.point())));
             }
             clipped.push_back(p);
         } else if (sInside) {  // case 2
-            plane.intersectEdge(s.point(), p.point(), &hit);
-            clipped.push_back(crossing(s, p, hit));
+            clipped.push_back(crossing(s, p, meeting(plane, s.point(), p.point())));
         }
         // case 3: the entire edge is clipped
         s = p;
@@ -277,9 +286,11 @@ void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared
         const bool last = (i == (vcount - 1));
         if (plane.intersectEdge(a.point(), b.point(), &hit)) {
             addCrossingEdge(a, b, hit, side, first, last, p1, p2);
+        } else if (side != plane.classify(b.point())) {
+            // the two tests round differently, so an edge that ends a hair past the plane
+            // still crosses it
+            addCrossingEdge(a, b, meeting(plane, a.point(), b.point()), side, first, last, p1, p2);
         } else {
-            // since there was no intersection, B will be on the same side
-            assert(side == plane.classify(b.point()));
             addWholeEdge(a, b, side, first, last, p1, p2);
         }
     }

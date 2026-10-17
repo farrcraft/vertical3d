@@ -104,6 +104,28 @@ BOOST_FIXTURE_TEST_CASE(bindings_refuse_a_value_that_is_not_a_string_test, Fixtu
 }
 
 /**
+ * A param an int cannot hold is refused rather than narrowed to a different number, and one an
+ * int can hold arrives as the command's data.
+ **/
+BOOST_FIXTURE_TEST_CASE(bindings_refuse_a_param_beyond_an_int_test, Fixture) {
+    BOOST_TEST(!bindings.load(boost::json::parse(R"({"mappings": [
+        {"source": {"name": "w", "context": "keyboard"},
+         "destination": {"name": "up", "context": "game", "param": 4294967936}}
+    ]})").as_object()));
+    BOOST_TEST(!bindings.load(boost::json::parse(R"({"mappings": [
+        {"source": {"name": "w", "context": "keyboard"},
+         "destination": {"name": "up", "context": "game", "param": 18446744073709551615}}
+    ]})").as_object()));
+
+    BOOST_REQUIRE(bindings.load(boost::json::parse(R"({"mappings": [
+        {"source": {"name": "w", "context": "keyboard"},
+         "destination": {"name": "up", "context": "game", "param": -7}}
+    ]})").as_object()));
+    const std::vector<v3d::event::Event> sources = bindings.sources("game::up");
+    BOOST_REQUIRE_EQUAL(sources.size(), 1u);
+}
+
+/**
  * The commands are what the bindings send, each once however many sources it has, and none
  * before a document is loaded.
  **/

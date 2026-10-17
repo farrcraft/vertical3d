@@ -44,6 +44,7 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "Component.h"
@@ -75,6 +76,9 @@ T numbers(const boost::json::object& entry, const std::string& field, const T& f
     }
     T result = fallback;
     for (std::size_t index = 0; index < N; index++) {
+        if (!values[index].is_number()) {
+            return fallback;
+        }
         result[static_cast<int>(index)] = static_cast<float>(boost::json::value_to<double>(values[index]));
     }
     return result;
@@ -118,14 +122,15 @@ void lengths(const boost::json::object& entry, const std::string& field, Length*
 }
 
 /**
- * The alignment names a style property may carry. An unrecognised one is no
- * alignment rather than an error, which is the only sensible reading of a hint.
+ * The alignment names a style property may carry. An unrecognised one, or one that is not a
+ * string, is no alignment rather than an error, which is the only sensible reading of a hint.
  **/
 style::Property::Alignment alignment(const boost::json::object& entry) {
-    if (!entry.contains("align")) {
+    const std::optional<std::string> named = v3d::asset::readString(entry, "align");
+    if (!named) {
         return style::Property::NULL_ALIGNMENT;
     }
-    const std::string name = boost::json::value_to<std::string>(entry.at("align"));
+    const std::string& name = *named;
     if (name == "top") {
         return style::Property::TOP;
     }
@@ -157,6 +162,83 @@ style::Property::Alignment alignment(const boost::json::object& entry) {
 }
 
 /**
+ * An optional string member: its text, or nothing when it is absent. A member of another type
+ * is logged and read as absent, so the setting keeps its default.
+ **/
+std::optional<std::string> optionalString(const v3d::log::Logger& logger, const boost::json::object& entry,
+    std::string_view key) {
+    if (!entry.contains(key)) {
+        return std::nullopt;
+    }
+    std::optional<std::string> value = v3d::asset::readString(entry, key);
+    if (!value) {
+        logger.get()->warn("The ui member [{}] is not a string, so it is ignored", key);
+    }
+    return value;
+}
+
+/**
+ * An optional number member, which is absent, or a number a float can hold. Anything else is
+ * logged and read as absent.
+ **/
+std::optional<float> optionalNumber(const v3d::log::Logger& logger, const boost::json::object& entry,
+    std::string_view key) {
+    if (!entry.contains(key)) {
+        return std::nullopt;
+    }
+    const std::optional<double> value = v3d::asset::readNumber(entry, key);
+    if (!value || std::abs(*value) > static_cast<double>(std::numeric_limits<float>::max())) {
+        logger.get()->warn("The ui member [{}] is not a number, so it is ignored", key);
+        return std::nullopt;
+    }
+    return static_cast<float>(*value);
+}
+
+/**
+ * An optional whole number member no smaller than a minimum. Anything else is logged and read
+ * as absent.
+ **/
+std::optional<int> optionalInt(const v3d::log::Logger& logger, const boost::json::object& entry,
+    std::string_view key, int minimum) {
+    if (!entry.contains(key)) {
+        return std::nullopt;
+    }
+    const std::optional<int> value = v3d::asset::readInt(entry, key);
+    if (!value || *value < minimum) {
+        logger.get()->warn("The ui member [{}] is not a whole number from {} up, so it is ignored", key, minimum);
+        return std::nullopt;
+    }
+    return value;
+}
+
+/**
+ * A string member the document cannot do without. A missing one, or one of another type, is
+ * logged, and the caller refuses the document.
+ *
+ * @param what the thing that needs it, for the log
+ **/
+std::optional<std::string> requiredString(const v3d::log::Logger& logger, const boost::json::object& entry,
+    std::string_view key, std::string_view what) {
+    std::optional<std::string> value = v3d::asset::readString(entry, key);
+    if (!value) {
+        logger.get()->error("{} needs a string [{}]", what, key);
+    }
+    return value;
+}
+
+/**
+ * An array member the document cannot do without, logged as requiredString() is.
+ **/
+const boost::json::array* requiredArray(const v3d::log::Logger& logger, const boost::json::object& entry,
+    std::string_view key, std::string_view what) {
+    const boost::json::array* value = v3d::asset::readArray(entry, key);
+    if (value == nullptr) {
+        logger.get()->error("{} needs an array [{}]", what, key);
+    }
+    return value;
+}
+
+/**
  * @return whether the entry carries the field as a boolean, and what it holds
  **/
 bool flag(const boost::json::object& entry, const std::string& field, bool fallback) {
@@ -181,22 +263,17 @@ bool Loader::load(const boost::json::object& doc) {
         return false;
     }
 
-    auto const containersSection = doc.at("containers");
-    if (!containersSection.is_array()) {
-        logger_->get()->error("Missing containers in config");
+    const boost::json::array* containers = requiredArray(*logger_, doc, "containers", "A ui document");
+    if (containers == nullptr) {
         return false;
     }
-    auto const containers = containersSection.as_array();
-    for (const auto* it = containers.begin(); it != containers.end(); ++it) {
-        if (!it->is_object()) {
+    return std::ranges::all_of(*containers, [this](const boost::json::value& container) {
+        if (!container.is_object()) {
             logger_->get()->error("Unrecognized containers config");
             return false;
         }
-        if (!loadContainer(it->as_object())) {
-            return false;
-        }
-    }
-    return true;
+        return loadContainer(container.as_object());
+    });
 }
 
 std::vector<boost::shared_ptr<Container>>& Loader::containers() noexcept {
@@ -212,24 +289,26 @@ const std::string& Loader::active() const noexcept {
 }
 
 bool Loader::loadThemes(const boost::json::object& doc) {
-    auto const themesSection = doc.at("themes");
-    if (!themesSection.is_array()) {
-        logger_->get()->error("Missing themes in config");
+    const boost::json::array* themes = requiredArray(*logger_, doc, "themes", "A ui document");
+    if (themes == nullptr) {
         return false;
     }
-    auto const themes = themesSection.as_array();
-    for (const auto* it = themes.begin(); it != themes.end(); ++it) {
-        if (!it->is_object()) {
+    for (const boost::json::value& theme : *themes) {
+        if (!theme.is_object()) {
             logger_->get()->error("Unrecognized theme config");
             return false;
         }
-        if (!loadTheme(it->as_object())) {
+        if (!loadTheme(theme.as_object())) {
             return false;
         }
     }
 
     if (doc.contains("theme")) {
-        active_ = boost::json::value_to<std::string>(doc.at("theme"));
+        const std::optional<std::string> named = requiredString(*logger_, doc, "theme", "A ui document's active theme");
+        if (!named) {
+            return false;
+        }
+        active_ = *named;
         // named here and resolved by whoever takes the themes, so that a document naming a
         // theme it does not carry is refused rather than half loaded
         const bool known = std::any_of(themes_.begin(), themes_.end(),
@@ -243,7 +322,11 @@ bool Loader::loadThemes(const boost::json::object& doc) {
 }
 
 bool Loader::loadTheme(const boost::json::object& entry) {
-    std::string themeName = boost::json::value_to<std::string>(entry.at("name"));
+    const std::optional<std::string> named = requiredString(*logger_, entry, "name", "A theme");
+    if (!named) {
+        return false;
+    }
+    const std::string& themeName = *named;
     boost::shared_ptr<style::Theme> theme = boost::make_shared<style::Theme>(themeName);
 
     // a theme with no styles in it is legal and draws in the defaults
@@ -329,8 +412,13 @@ boost::shared_ptr<Component> Loader::buildComponent(const std::string& component
 }
 
 boost::shared_ptr<Component> Loader::loadComponent(const boost::json::object& entry) {
-    const std::string componentType = boost::json::value_to<std::string>(entry.at("type"));
-    const std::string componentName = boost::json::value_to<std::string>(entry.at("name"));
+    const std::optional<std::string> typed = requiredString(*logger_, entry, "type", "A component");
+    const std::optional<std::string> named = requiredString(*logger_, entry, "name", "A component");
+    if (!typed || !named) {
+        return nullptr;
+    }
+    const std::string& componentType = *typed;
+    const std::string& componentName = *named;
 
     boost::shared_ptr<Component> component = buildComponent(componentType, entry);
     if (!component) {
@@ -350,9 +438,10 @@ boost::shared_ptr<Component> Loader::loadComponent(const boost::json::object& en
     }
     // which tab is up is a place in the pages, so it can only be read once the pages the
     // children array named are there
-    if (type == component::Type::TabBar && entry.contains("selected")) {
-        boost::static_pointer_cast<component::TabBar>(component)->selected(
-            boost::json::value_to<int>(entry.at("selected")));
+    if (type == component::Type::TabBar) {
+        if (const std::optional<int> selected = optionalInt(*logger_, entry, "selected", 0)) {
+            boost::static_pointer_cast<component::TabBar>(component)->selected(*selected);
+        }
     }
     return component;
 }
@@ -382,49 +471,54 @@ bool Loader::loadChildren(const boost::json::object& entry, const boost::shared_
 }
 
 bool Loader::loadContainer(const boost::json::object& entry) {
-    std::string containerName = boost::json::value_to<std::string>(entry.at("name"));
-    bool visible = boost::json::value_to<bool>(entry.at("visible"));
-    boost::shared_ptr<Container> container = boost::make_shared<Container>(containerName, visible);
-    containers_.push_back(container);
-
-    // read components in this container
-    auto const componentsSection = entry.at("components");
-    if (!componentsSection.is_array()) {
-        logger_->get()->error("Missing components in config");
+    const std::optional<std::string> named = requiredString(*logger_, entry, "name", "A container");
+    if (!named) {
         return false;
     }
-    auto const components = componentsSection.as_array();
-    for (const auto* it = components.begin(); it != components.end(); ++it) {
-        if (!it->is_object()) {
+    const std::optional<bool> visible = v3d::asset::readBool(entry, "visible");
+    if (!visible) {
+        logger_->get()->error("The container [{}] needs visible to be true or false", *named);
+        return false;
+    }
+    const boost::json::array* components = requiredArray(*logger_, entry, "components", "A container");
+    if (components == nullptr) {
+        return false;
+    }
+    boost::shared_ptr<Container> container = boost::make_shared<Container>(*named, *visible);
+    containers_.push_back(container);
+
+    return std::ranges::all_of(*components, [this, &container](const boost::json::value& item) {
+        if (!item.is_object()) {
             logger_->get()->error("Unrecognized component config");
             return false;
         }
-        const boost::shared_ptr<Component> component = loadComponent(it->as_object());
+        const boost::shared_ptr<Component> component = loadComponent(item.as_object());
         if (!component) {
             return false;
         }
         container->add(component);
-    }
-    return true;
+        return true;
+    });
 }
 
 /**
  **/
 bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr<style::Theme>& theme) {
-    if (!entry.contains("class") || !entry.contains("name")) {
-        logger_->get()->error("A style needs both a class and a name");
+    const std::optional<std::string> classed = v3d::asset::readString(entry, "class");
+    const std::optional<std::string> named = v3d::asset::readString(entry, "name");
+    if (!classed || !named) {
+        logger_->get()->error("A style needs both a class and a name, each a string");
         return false;
     }
-    const std::string className = boost::json::value_to<std::string>(entry.at("class"));
-    const std::string styleName = boost::json::value_to<std::string>(entry.at("name"));
+    const std::string& className = *classed;
+    const std::string& styleName = *named;
 
     boost::shared_ptr<style::Style> target;
     if (className == "button") {
         // a button is drawn differently in each of its states, so its styles are told
         // apart by the state as well as by the name
         style::Button::State state = style::Button::State::Normal;
-        const std::string stateName = entry.contains("state")
-            ? boost::json::value_to<std::string>(entry.at("state")) : std::string("normal");
+        const std::string stateName = optionalString(*logger_, entry, "state").value_or("normal");
         if (stateName == "hover") {
             state = style::Button::State::Hover;
         } else if (stateName == "press") {
@@ -463,12 +557,14 @@ bool Loader::loadProperties(const boost::json::object& entry, const boost::share
         }
         auto const properties = entry.at(section).as_array();
         for (const auto* it = properties.begin(); it != properties.end(); ++it) {
-            if (!it->is_object() || !it->as_object().contains("name")) {
+            const std::optional<std::string> named = it->is_object()
+                ? v3d::asset::readString(it->as_object(), "name") : std::nullopt;
+            if (!named) {
                 logger_->get()->error("A style property needs a name");
                 return false;
             }
             auto const property = it->as_object();
-            const std::string name = boost::json::value_to<std::string>(property.at("name"));
+            const std::string& name = *named;
 
             std::string propertyClass;
             boost::shared_ptr<style::Property> loaded = loadProperty(section, property, name, &propertyClass);
@@ -502,40 +598,40 @@ boost::shared_ptr<style::Property> Loader::loadProperty(const std::string& secti
     }
     if (section == "fonts") {
         boost::shared_ptr<style::property::Font> font = boost::make_shared<style::property::Font>(name,
-            property.contains("source") ? boost::json::value_to<std::string>(property.at("source")) : std::string());
-        if (property.contains("face")) {
-            font->face(boost::json::value_to<std::string>(property.at("face")));
+            optionalString(*logger_, property, "source").value_or(std::string()));
+        if (const std::optional<std::string> face = optionalString(*logger_, property, "face")) {
+            font->face(*face);
         }
-        if (property.contains("size")) {
-            font->size(static_cast<unsigned int>(boost::json::value_to<double>(property.at("size"))));
+        if (const std::optional<int> size = optionalInt(*logger_, property, "size", 1)) {
+            font->size(static_cast<unsigned int>(*size));
         }
         font->bold(flag(property, "bold", false));
         font->italics(flag(property, "italics", false));
         *propertyClass = "font";
         return font;
     }
-    if (!property.contains("source")) {
+    const std::optional<std::string> source = v3d::asset::readString(property, "source");
+    if (!source) {
         logger_->get()->error("The style image [{}] names no source", name);
         return nullptr;
     }
     *propertyClass = "image";
-    return boost::make_shared<style::property::Image>(name,
-        boost::json::value_to<std::string>(property.at("source")));
+    return boost::make_shared<style::property::Image>(name, *source);
 }
 
 /**
  **/
 void Loader::loadAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component) {
-    if (entry.contains("style")) {
-        component->style(boost::json::value_to<std::string>(entry.at("style")));
+    if (const std::optional<std::string> value = optionalString(*logger_, entry, "style")) {
+        component->style(*value);
     }
     component->visible(flag(entry, "visible", component->visible()));
     component->enabled(flag(entry, "enabled", component->enabled()));
     component->pickable(flag(entry, "pickable", component->pickable()));
     component->focusable(flag(entry, "focusable", component->focusable()));
     component->clip(flag(entry, "clip", component->clip()));
-    if (entry.contains("depth")) {
-        component->depth(boost::json::value_to<unsigned int>(entry.at("depth")));
+    if (const std::optional<int> depth = optionalInt(*logger_, entry, "depth", 0)) {
+        component->depth(static_cast<unsigned int>(*depth));
     }
 }
 
@@ -544,10 +640,11 @@ void Loader::loadAttributes(const boost::json::object& entry, const boost::share
 void Loader::loadLayout(const boost::json::object& entry, Layout* layout) {
     lengths(entry, "position", &layout->x, &layout->y);
     lengths(entry, "size", &layout->width, &layout->height);
-    if (!entry.contains("anchor")) {
+    const std::optional<std::string> anchor = optionalString(*logger_, entry, "anchor");
+    if (!anchor) {
         return;
     }
-    const std::string name = boost::json::value_to<std::string>(entry.at("anchor"));
+    const std::string& name = *anchor;
     if (name == "top-right") {
         layout->anchor = Layout::Anchor::TopRight;
     } else if (name == "bottom-left") {
@@ -565,11 +662,11 @@ void Loader::loadLayout(const boost::json::object& entry, Layout* layout) {
  **/
 boost::shared_ptr<component::Button> Loader::loadButton(const boost::json::object& entry) {
     boost::shared_ptr<component::Button> button = boost::make_shared<component::Button>();
-    if (entry.contains("label")) {
-        button->label(boost::json::value_to<std::string>(entry.at("label")));
+    if (const std::optional<std::string> value = optionalString(*logger_, entry, "label")) {
+        button->label(*value);
     }
-    if (entry.contains("icon")) {
-        button->icon(boost::json::value_to<std::string>(entry.at("icon")));
+    if (const std::optional<std::string> value = optionalString(*logger_, entry, "icon")) {
+        button->icon(*value);
     }
     button->toggle(flag(entry, "toggle", false));
     const v3d::event::Event command = loadCommand(entry);
@@ -592,11 +689,10 @@ boost::shared_ptr<component::Panel> Loader::loadPanel(const boost::json::object&
  **/
 boost::shared_ptr<component::Bar> Loader::loadBar(const boost::json::object& entry) {
     boost::shared_ptr<component::Bar> bar = boost::make_shared<component::Bar>();
-    if (entry.contains("fraction")) {
-        bar->fraction(static_cast<float>(boost::json::value_to<double>(entry.at("fraction"))));
+    if (const std::optional<float> fraction = optionalNumber(*logger_, entry, "fraction")) {
+        bar->fraction(*fraction);
     }
-    if (entry.contains("direction")
-        && boost::json::value_to<std::string>(entry.at("direction")) == "vertical") {
+    if (optionalString(*logger_, entry, "direction") == "vertical") {
         bar->direction(component::Bar::Direction::Vertical);
     }
     return bar;
@@ -625,18 +721,18 @@ boost::shared_ptr<component::Slider> Loader::loadSlider(const boost::json::objec
  **/
 boost::shared_ptr<component::Scrollbar> Loader::loadScrollbar(const boost::json::object& entry) {
     boost::shared_ptr<component::Scrollbar> bar = boost::make_shared<component::Scrollbar>();
-    if (entry.contains("direction")
-        && boost::json::value_to<std::string>(entry.at("direction")) == "horizontal") {
+    if (optionalString(*logger_, entry, "direction") == "horizontal") {
         bar->direction(component::Scrollbar::Direction::Horizontal);
     }
     // what there is to scroll is written by whatever fills the thing being scrolled, so a
     // range in the config is a starting one rather than the truth
-    if (entry.contains("content") && entry.contains("page")) {
-        bar->range(static_cast<float>(boost::json::value_to<double>(entry.at("content"))),
-            static_cast<float>(boost::json::value_to<double>(entry.at("page"))));
+    const std::optional<float> content = optionalNumber(*logger_, entry, "content");
+    const std::optional<float> page = optionalNumber(*logger_, entry, "page");
+    if (content && page) {
+        bar->range(*content, *page);
     }
-    if (entry.contains("offset")) {
-        bar->offset(static_cast<float>(boost::json::value_to<double>(entry.at("offset"))));
+    if (const std::optional<float> offset = optionalNumber(*logger_, entry, "offset")) {
+        bar->offset(*offset);
     }
     return bar;
 }
@@ -653,14 +749,18 @@ boost::shared_ptr<component::SelectList> Loader::loadSelectList(const boost::jso
         }
         std::vector<std::string> rows;
         for (const auto& item : section.as_array()) {
-            rows.push_back(boost::json::value_to<std::string>(item));
+            if (!item.is_string()) {
+                logger_->get()->error("An item of a list is not a string");
+                return nullptr;
+            }
+            rows.emplace_back(item.as_string().c_str());
         }
         list->items(rows);
     }
     // the rows a list holds are usually its app's rather than its config's, so a config
     // that names none is a list something else fills
-    if (entry.contains("selected")) {
-        list->selected(boost::json::value_to<int>(entry.at("selected")));
+    if (const std::optional<int> selected = optionalInt(*logger_, entry, "selected", -1)) {
+        list->selected(*selected);
     }
     const v3d::event::Event command = loadCommand(entry);
     if (command.context()) {
@@ -673,14 +773,14 @@ boost::shared_ptr<component::SelectList> Loader::loadSelectList(const boost::jso
  **/
 boost::shared_ptr<component::TextBox> Loader::loadTextBox(const boost::json::object& entry) {
     boost::shared_ptr<component::TextBox> box = boost::make_shared<component::TextBox>();
-    if (entry.contains("text")) {
-        box->text(boost::json::value_to<std::string>(entry.at("text")));
+    if (const std::optional<std::string> value = optionalString(*logger_, entry, "text")) {
+        box->text(*value);
     }
-    if (entry.contains("placeholder")) {
-        box->placeholder(boost::json::value_to<std::string>(entry.at("placeholder")));
+    if (const std::optional<std::string> value = optionalString(*logger_, entry, "placeholder")) {
+        box->placeholder(*value);
     }
-    if (entry.contains("limit")) {
-        box->limit(static_cast<std::size_t>(boost::json::value_to<int>(entry.at("limit"))));
+    if (const std::optional<int> limit = optionalInt(*logger_, entry, "limit", 0)) {
+        box->limit(static_cast<std::size_t>(*limit));
     }
     const v3d::event::Event command = loadCommand(entry);
     if (command.context()) {
@@ -693,8 +793,8 @@ boost::shared_ptr<component::TextBox> Loader::loadTextBox(const boost::json::obj
  **/
 boost::shared_ptr<component::TabPage> Loader::loadTabPage(const boost::json::object& entry) {
     boost::shared_ptr<component::TabPage> page = boost::make_shared<component::TabPage>();
-    if (entry.contains("label")) {
-        page->label(boost::json::value_to<std::string>(entry.at("label")));
+    if (const std::optional<std::string> value = optionalString(*logger_, entry, "label")) {
+        page->label(*value);
     }
     return page;
 }
@@ -704,8 +804,8 @@ boost::shared_ptr<component::TabPage> Loader::loadTabPage(const boost::json::obj
 boost::shared_ptr<component::RadioButton> Loader::loadRadioButton(const boost::json::object& entry) {
     boost::shared_ptr<component::RadioButton> radio = boost::make_shared<component::RadioButton>();
     loadCheckBox(entry, radio);
-    if (entry.contains("group")) {
-        radio->group(boost::json::value_to<std::string>(entry.at("group")));
+    if (const std::optional<std::string> value = optionalString(*logger_, entry, "group")) {
+        radio->group(*value);
     }
     return radio;
 }
@@ -724,8 +824,8 @@ boost::shared_ptr<component::Box> Loader::loadFlowBox(const std::string& compone
 /**
  **/
 void Loader::loadCheckBox(const boost::json::object& entry, const boost::shared_ptr<component::CheckBox>& box) {
-    if (entry.contains("label")) {
-        box->label(boost::json::value_to<std::string>(entry.at("label")));
+    if (const std::optional<std::string> value = optionalString(*logger_, entry, "label")) {
+        box->label(*value);
     }
     // a mark in the config is the state the ui starts in; after that, whatever handles
     // the command sets it
@@ -739,8 +839,8 @@ void Loader::loadCheckBox(const boost::json::object& entry, const boost::shared_
 /**
  **/
 void Loader::loadBox(const boost::json::object& entry, const boost::shared_ptr<component::Box>& box) {
-    if (entry.contains("spacing")) {
-        box->spacing(static_cast<float>(boost::json::value_to<double>(entry.at("spacing"))));
+    if (const std::optional<float> spacing = optionalNumber(*logger_, entry, "spacing")) {
+        box->spacing(*spacing);
     }
     box->stretch(flag(entry, "stretch", box->stretch()));
     box->wrap(flag(entry, "wrap", box->wrap()));
@@ -750,8 +850,8 @@ void Loader::loadBox(const boost::json::object& entry, const boost::shared_ptr<c
  **/
 boost::shared_ptr<component::Label> Loader::loadLabel(const boost::json::object& entry) {
     boost::shared_ptr<component::Label> label = boost::make_shared<component::Label>();
-    if (entry.contains("label")) {
-        label->text(boost::json::value_to<std::string>(entry.at("label")));
+    if (const std::optional<std::string> value = optionalString(*logger_, entry, "label")) {
+        label->text(*value);
     }
     return label;
 }
@@ -759,11 +859,12 @@ boost::shared_ptr<component::Label> Loader::loadLabel(const boost::json::object&
 /**
  **/
 boost::shared_ptr<component::Icon> Loader::loadIcon(const boost::json::object& entry) {
-    if (!entry.contains("source")) {
+    const std::optional<std::string> source = v3d::asset::readString(entry, "source");
+    if (!source) {
         logger_->get()->error("An icon names no source");
         return nullptr;
     }
-    return boost::make_shared<component::Icon>(boost::json::value_to<std::string>(entry.at("source")));
+    return boost::make_shared<component::Icon>(*source);
 }
 
 /**
@@ -771,20 +872,21 @@ boost::shared_ptr<component::Icon> Loader::loadIcon(const boost::json::object& e
 boost::shared_ptr<component::menu::Bar> Loader::loadMenuBar(const boost::json::object& entry) {
     boost::shared_ptr<component::menu::Bar> bar = boost::make_shared<component::menu::Bar>();
 
-    auto const menusSection = entry.at("menus");
-    if (!menusSection.is_array()) {
-        logger_->get()->error("Missing menus in config");
+    const boost::json::array* menus = requiredArray(*logger_, entry, "menus", "A menu bar");
+    if (menus == nullptr) {
         return nullptr;
     }
-    auto const menus = menusSection.as_array();
-    const auto* menuIterator = menus.begin();
-    for (; menuIterator != menus.end(); ++menuIterator) {
-        if (!menuIterator->is_object()) {
+    for (const boost::json::value& item : *menus) {
+        if (!item.is_object()) {
             logger_->get()->error("Unrecognized menu config");
             return nullptr;
         }
-        auto const menuConfig = menuIterator->as_object();
-        std::string label = boost::json::value_to<std::string>(menuConfig.at("label"));
+        const boost::json::object& menuConfig = item.as_object();
+        const std::optional<std::string> labelled = requiredString(*logger_, menuConfig, "label", "A menu");
+        if (!labelled) {
+            return nullptr;
+        }
+        const std::string& label = *labelled;
         boost::shared_ptr<component::menu::Menu> menu = loadMenu(menuConfig);
         if (!menu) {
             return nullptr;
@@ -803,25 +905,25 @@ boost::shared_ptr<component::menu::Bar> Loader::loadMenuBar(const boost::json::o
 boost::shared_ptr<component::menu::Menu> Loader::loadMenu(const boost::json::object& entry) {
     boost::shared_ptr<component::menu::Menu> menu = boost::make_shared<component::menu::Menu>(dispatcher_);
 
-    auto const itemsSection = entry.at("items");
-    if (!itemsSection.is_array()) {
-        logger_->get()->error("Missing menu items in config");
+    const boost::json::array* items = requiredArray(*logger_, entry, "items", "A menu");
+    if (items == nullptr) {
         return nullptr;
     }
-    auto const items = itemsSection.as_array();
-    const auto* itemsIterator = items.begin();
-    for (; itemsIterator != items.end(); ++itemsIterator) {
-        if (!itemsIterator->is_object()) {
+    for (const boost::json::value& item : *items) {
+        if (!item.is_object()) {
             logger_->get()->error("Unrecognized menu item config");
             return nullptr;
         }
-        auto const menuItemConfig = itemsIterator->as_object();
-        std::string label = boost::json::value_to<std::string>(menuItemConfig.at("label"));
-        std::string itemType = boost::json::value_to<std::string>(menuItemConfig.at("type"));
+        const boost::json::object& menuItemConfig = item.as_object();
+        const std::optional<std::string> label = requiredString(*logger_, menuItemConfig, "label", "A menu item");
+        const std::optional<std::string> itemType = requiredString(*logger_, menuItemConfig, "type", "A menu item");
+        if (!label || !itemType) {
+            return nullptr;
+        }
 
         const v3d::event::Event command = loadCommand(menuItemConfig);
 
-        boost::shared_ptr<component::menu::Item> menuItem = boost::make_shared<component::menu::Item>(component::menu::stringToType(itemType), label);
+        boost::shared_ptr<component::menu::Item> menuItem = boost::make_shared<component::menu::Item>(component::menu::stringToType(*itemType), *label);
         // the owning menu has to be set before the submenu below, which reads it to find its parent
         menuItem->menu(menu);
         if (command.context()) {
@@ -845,14 +947,8 @@ boost::shared_ptr<component::menu::Menu> Loader::loadMenu(const boost::json::obj
 /**
  **/
 v3d::event::Event Loader::loadCommand(const boost::json::object& entry) {
-    std::string command;
-    std::string context;
-    if (entry.contains("command")) {
-        command = boost::json::value_to<std::string>(entry.at("command"));
-    }
-    if (entry.contains("context")) {
-        context = boost::json::value_to<std::string>(entry.at("context"));
-    }
+    const std::string command = optionalString(*logger_, entry, "command").value_or(std::string());
+    const std::string context = optionalString(*logger_, entry, "context").value_or(std::string());
     if (context.empty() || command.empty()) {
         return v3d::event::Event();
     }
@@ -862,10 +958,7 @@ v3d::event::Event Loader::loadCommand(const boost::json::object& entry) {
 /**
  **/
 boost::shared_ptr<component::Toolbar> Loader::loadToolbar(const boost::json::object& entry) {
-    std::string edgeName = "top";
-    if (entry.contains("edge")) {
-        edgeName = boost::json::value_to<std::string>(entry.at("edge"));
-    }
+    const std::string edgeName = optionalString(*logger_, entry, "edge").value_or("top");
     component::Toolbar::Edge edge = component::Toolbar::Edge::Top;
     if (edgeName == "left") {
         edge = component::Toolbar::Edge::Left;
@@ -876,14 +969,11 @@ boost::shared_ptr<component::Toolbar> Loader::loadToolbar(const boost::json::obj
 
     boost::shared_ptr<component::Toolbar> bar = boost::make_shared<component::Toolbar>(dispatcher_, edge);
 
-    auto const buttonsSection = entry.at("buttons");
-    if (!buttonsSection.is_array()) {
-        logger_->get()->error("Missing toolbar buttons in config");
+    const boost::json::array* buttons = requiredArray(*logger_, entry, "buttons", "A toolbar");
+    if (buttons == nullptr) {
         return nullptr;
     }
-    auto const buttons = buttonsSection.as_array();
-    const auto* buttonIterator = buttons.begin();
-    for (; buttonIterator != buttons.end(); ++buttonIterator) {
+    for (const auto* buttonIterator = buttons->begin(); buttonIterator != buttons->end(); ++buttonIterator) {
         if (!buttonIterator->is_object()) {
             logger_->get()->error("Unrecognized toolbar button config");
             return nullptr;

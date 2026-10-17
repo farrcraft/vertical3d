@@ -6,7 +6,8 @@ v3d_add_test(config
 	"ConfigTest.cpp"
 	"TypeTest.cpp"
 	"CameraProfilesTest.cpp"
-	"SpriteSheetsTest.cpp")
+	"SpriteSheetsTest.cpp"
+	"WindowSizeTest.cpp")
 
 target_link_libraries(v3dtest_config PRIVATE
 	v3dlib_config

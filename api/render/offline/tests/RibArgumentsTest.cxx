@@ -56,8 +56,24 @@ BOOST_AUTO_TEST_CASE(ribarguments_inline_declaration_test) {
 }
 
 /**
- * A string parameter's array is an array of pointers to characters, as RtString is. String
- * is the only type whose values are not floats.
+ * An integer parameter's array holds ints, as RtInt is. Each is read as an int and kept as the
+ * same number, not as its bit pattern.
+ **/
+BOOST_AUTO_TEST_CASE(ribarguments_integers_test) {
+    Declarations declarations;
+    const int samples[2] = { 3, -2 };
+    const char* tokens[] = { "uniform integer[2] samples" };
+    const void* values[] = { samples };
+
+    ParameterList list;
+    arguments(declarations, 1, tokens, values, 1, &list);
+    BOOST_REQUIRE_EQUAL(list.floats("samples").size(), 2u);
+    BOOST_CHECK_EQUAL(list.floats("samples")[0], 3.0f);
+    BOOST_CHECK_EQUAL(list.floats("samples")[1], -2.0f);
+}
+
+/**
+ * A string parameter's array is an array of pointers to characters, as RtString is.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_strings_test) {
     Declarations declarations;

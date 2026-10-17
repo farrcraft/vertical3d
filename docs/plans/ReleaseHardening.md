@@ -61,16 +61,23 @@ through `GameMenu::declare()`.
 
 ### Step 4 — Boundary input
 
-**Open.** [TODO.md](../TODO.md#boundary-input): the entries under "Boundary input". The tile
-size entry was fixed with the grid's corner in the StreamingWorlds plan.
+**Closed.** Each fix has a test that fails without it.
 
-- The editor's orthographic zoom clamps, as `Isometric::zoom` does.
-- `rib::Arguments` reads an `RtInt` array as integers.
-- `Polygon::clip` tests `intersectEdge`'s result, as `Polygon::split` does.
-- The ui `Loader` reads every document key through `api/asset/Json.h`.
-- `Bindings.cpp` and the window config check an integer's range before narrowing it to `int`.
-
-Each fix checks every sibling site of its pattern, as Review.md requires.
+- `Camera::zoom` stops at `Camera::MINIMUM_ZOOM`. The sibling site, the camera profile reader,
+  refuses a zoom below it.
+- `rib::Arguments` reads an `integer` parameter through `const int*`. It was the only reader of
+  the C interface's value arrays.
+- `Polygon::clip` and `Polygon::split` share `meeting()`, which takes the end nearer the plane
+  when `intersectEdge` finds no meeting on an edge that `classify` puts across it. The test edge
+  came from a search over random planes with the tree's own `Plane`. Before the fix the clip
+  put a vertex 5.5 units from the edge, and the split hit its assert.
+- The ui `Loader` reads every member through checked reads. A required member that is missing or
+  of the wrong type fails the load, and an optional one is logged and ignored. `doc.at()` on
+  `themes`, `containers`, `components`, `items`, `menus` and `buttons` threw on a missing key
+  as well, and is checked the same way. Before the fix, 32 checks in the new cases failed.
+- `asset::readInt` reads an integer an `int` can hold. The binding param and the window size go
+  through it, and the window size moved into `config::windowSize()` so a test reaches it
+  without a window.
 
 ### Step 5 — Contracts
 

@@ -6,6 +6,7 @@
 #include "Camera.h"
 
 #include <iostream>
+#include <algorithm>
 #include <cmath>
 
 #include <glm/gtc/quaternion.hpp>
@@ -267,7 +268,7 @@ void Camera::truck(float delta) {
     zoom - affects the camera lens to zoom in or out (dolly without moving camera)
 */
 void Camera::zoom(float z) {
-    profile_.orthoZoom(profile_.orthoZoom() + z);
+    profile_.orthoZoom(std::max(profile_.orthoZoom() + z, MINIMUM_ZOOM));
 }
 
 /*

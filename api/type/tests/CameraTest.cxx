@@ -65,6 +65,19 @@ BOOST_AUTO_TEST_CASE(camera_projection_test) {
     BOOST_CHECK_EQUAL(frustum[3][3], 0.0f);
 }
 
+/**
+ * One large zoom in leaves the half height at its floor rather than at zero or below, so the
+ * next drag, which is scaled by the half height, can still zoom back out.
+ **/
+BOOST_AUTO_TEST_CASE(camera_zoom_has_a_floor_test) {
+    v3d::type::camera::Camera camera;
+    camera.zoom(-50.0f);
+    BOOST_CHECK_CLOSE(camera.profile().orthoZoom(), v3d::type::camera::Camera::MINIMUM_ZOOM, 0.01f);
+
+    camera.zoom(1.0f);
+    BOOST_CHECK_CLOSE(camera.profile().orthoZoom(), v3d::type::camera::Camera::MINIMUM_ZOOM + 1.0f, 0.01f);
+}
+
 BOOST_AUTO_TEST_CASE(camera_depth_range_test) {
     // a point on the near plane lands at depth zero and one on the far plane at depth one,
     // which is the range vulkan clips against and what the engine clears depth to. The

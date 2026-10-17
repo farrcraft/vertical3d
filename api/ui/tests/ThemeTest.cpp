@@ -427,6 +427,73 @@ BOOST_AUTO_TEST_CASE(an_unknown_component_type_is_refused) {
 }
 
 /**
+ * A member the document cannot do without, missing or holding the wrong type, refuses the
+ * document rather than throwing out of the load.
+ **/
+BOOST_AUTO_TEST_CASE(a_required_member_of_the_wrong_type_is_refused) {
+    const char* const documents[] = {
+        R"({ "containers": [] })",
+        R"({ "themes": [] })",
+        R"({ "themes": 5, "containers": [] })",
+        R"({ "themes": [ { "name": 5 } ], "containers": [] })",
+        R"({ "themes": [], "theme": 5, "containers": [] })",
+        R"({ "themes": [ { "name": "a", "styles": [ { "class": 5, "name": "s" } ] } ], "containers": [] })",
+        R"({ "themes": [ { "name": "a", "styles": [ { "class": "c", "name": "s",
+            "numbers": [ { "name": 5, "value": 1 } ] } ] } ], "containers": [] })",
+        R"({ "themes": [], "containers": [ { "name": 5, "visible": true, "components": [] } ] })",
+        R"({ "themes": [], "containers": [ { "name": "c", "visible": "yes", "components": [] } ] })",
+        R"({ "themes": [], "containers": [ { "name": "c", "visible": true } ] })",
+        R"({ "themes": [], "containers": [ { "name": "c", "visible": true, "components": [
+            { "type": 5, "name": "b" } ] } ] })",
+        R"({ "themes": [], "containers": [ { "name": "c", "visible": true, "components": [
+            { "type": "button", "name": [] } ] } ] })",
+        R"({ "themes": [], "containers": [ { "name": "c", "visible": true, "components": [
+            { "type": "menu", "name": "m", "items": [ { "label": 5, "type": "action" } ] } ] } ] })",
+        R"({ "themes": [], "containers": [ { "name": "c", "visible": true, "components": [
+            { "type": "menubar", "name": "m" } ] } ] })",
+        R"({ "themes": [], "containers": [ { "name": "c", "visible": true, "components": [
+            { "type": "list", "name": "l", "items": [ "one", 2 ] } ] } ] })",
+        R"({ "themes": [], "containers": [ { "name": "c", "visible": true, "components": [
+            { "type": "icon", "name": "i", "source": 5 } ] } ] })"
+    };
+    for (const char* const document : documents) {
+        BOOST_TEST_CONTEXT(document) {
+            bool loaded = true;
+            BOOST_CHECK_NO_THROW(load(document, &loaded));
+            BOOST_CHECK(!loaded);
+        }
+    }
+}
+
+/**
+ * An optional member of the wrong type is logged and ignored, so the document loads and the
+ * setting keeps its default.
+ **/
+BOOST_AUTO_TEST_CASE(an_optional_member_of_the_wrong_type_is_ignored) {
+    bool loaded = false;
+    boost::shared_ptr<v3d::ui::Engine> ui;
+    BOOST_CHECK_NO_THROW(ui = load(R"({
+        "themes": [ { "name": "dark", "styles": [ { "class": "label", "name": "s", "state": 5,
+            "fonts": [ { "name": "f", "source": 5, "face": 5, "size": -12, "align": 5 } ] } ] } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "button", "name": "go", "label": 5, "icon": [], "style": 3, "depth": -1,
+              "anchor": 2, "command": 5, "context": "ui" },
+            { "type": "bar", "name": "health", "fraction": "full", "direction": 7 },
+            { "type": "textbox", "name": "entry", "text": 4, "limit": -3 },
+            { "type": "list", "name": "rows", "selected": "first" }
+        ] } ]
+    })", &loaded));
+    BOOST_REQUIRE(loaded);
+
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::dynamic_pointer_cast<v3d::ui::component::Button>(ui->container("hud")->get("go"));
+    BOOST_REQUIRE(button);
+    BOOST_CHECK(button->label().empty());
+    BOOST_CHECK(button->style().empty());
+    BOOST_CHECK(!button->event().context());
+}
+
+/**
  * A skinned button is nine quads against the images its style names, and it is drawn instead
  * of the flat highlight rather than under it. Only the two the style names are drawn.
  **/

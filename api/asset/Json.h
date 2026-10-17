@@ -40,6 +40,16 @@ std::optional<std::string> readString(const boost::json::object& object, std::st
 std::optional<double> readNumber(const boost::json::object& object, std::string_view key) noexcept;
 
 /**
+ * A member stored as a signed or an unsigned integer whose value an int can hold. A double is
+ * not read, even a whole one, so a document that writes a count as 2.0 is refused rather than
+ * rounded.
+ *
+ * @return the member's value, or nothing when it is absent, not an integer, or outside the
+ *         range of an int
+ **/
+std::optional<int> readInt(const boost::json::object& object, std::string_view key) noexcept;
+
+/**
  * @return the member's value, or nothing when it is absent or not true or false
  **/
 std::optional<bool> readBool(const boost::json::object& object, std::string_view key) noexcept;

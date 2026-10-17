@@ -336,31 +336,6 @@ does not report an entry again. Each entry names its class.
 [ReleaseHardening](plans/ReleaseHardening.md) fixes these, except the weak test, which
 [ToolingDebt](plans/ToolingDebt.md) takes.
 
-### Boundary input
-
-[] **The editor's orthographic zoom has no floor.** `Camera::zoom` scales the half height by a
-factor that one large drag takes to zero or below, and a zero never recovers. `Isometric::zoom`
-clamps; this does not.
-
-[] **The C interface reads an integer parameter as a float.** `rib::Arguments` reads every
-non-string value through `const float*`, so an `RtInt` array arrives as its bit pattern.
-
-[] **`Polygon::clip` ignores whether an edge met the plane.** `intersectEdge`'s result is dropped
-and the point it did not set is used. `Polygon::split` tests the result. When `intersectEdge`
-returns false, `split` asserts that `classify` puts both ends on one side, and the assert is
-compiled out of a release build. The two tests can disagree for an edge that touches the plane.
-
-[] **The ui `Loader` reads most document keys without testing their type.** Its other
-`boost::json::value_to` reads throw out of `ui::Engine::load` when a key holds the wrong type.
-Among them are a component's `type`, `name`, `style`, `depth` and `label`, a theme's `name`, a
-container's `visible` and a style property's `value`. The fix reads them through
-`api/asset/Json.h`.
-
-[] **Two config readers narrow a JSON integer to `int` without a range check.** `Bindings.cpp`
-casts a binding's integer `param` from `int64_t` to `int`. `Engine.cpp` does the same with the
-window config's `width` and `height`. A value outside the range of `int`, such as 2^32 + 640,
-becomes a different number with no warning.
-
 ### Contract
 
 [] **A held activation key repeats a ui command.** `Keys::press` takes every key-down, so a held

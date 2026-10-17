@@ -12,6 +12,7 @@
 
 using v3d::asset::readArray;
 using v3d::asset::readBool;
+using v3d::asset::readInt;
 using v3d::asset::readNumber;
 using v3d::asset::readObject;
 using v3d::asset::readString;
@@ -65,6 +66,31 @@ BOOST_AUTO_TEST_CASE(a_number_read_refuses_a_missing_member_and_every_other_type
     for (const char* key : {"text", "yes", "nothing", "inner", "list"}) {
         BOOST_TEST_CONTEXT(key) {
             BOOST_CHECK_NO_THROW(BOOST_CHECK(!readNumber(object, key).has_value()));
+        }
+    }
+}
+
+/**
+ * An integer is read when an int can hold it. One beyond that range is refused rather than
+ * wrapped, and so is a double, even a whole one.
+ **/
+BOOST_AUTO_TEST_CASE(an_int_read_takes_only_an_integer_an_int_can_hold) {
+    const boost::json::object object = boost::json::parse(R"({
+        "small": 640,
+        "negative": -2147483648,
+        "top": 2147483647,
+        "wrapped": 4294967936,
+        "below": -2147483649,
+        "unsigned": 18446744073709551615,
+        "whole": 2.0,
+        "text": "640"
+    })").as_object();
+    BOOST_CHECK(readInt(object, "small") == 640);
+    BOOST_CHECK(readInt(object, "negative") == -2147483647 - 1);
+    BOOST_CHECK(readInt(object, "top") == 2147483647);
+    for (const char* key : { "wrapped", "below", "unsigned", "whole", "text", "missing" }) {
+        BOOST_TEST_CONTEXT(key) {
+            BOOST_CHECK_NO_THROW(BOOST_CHECK(!readInt(object, key).has_value()));
         }
     }
 }

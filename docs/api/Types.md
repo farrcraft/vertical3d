@@ -170,7 +170,9 @@ The camera classes are in `v3d::type::camera` ([api/type/camera/](../../api/type
   `direction`), the rotation and the clipping distances. They are also the vertical field of
   view in degrees, the orthographic zoom, the pixel aspect ratio, the viewport size and the
   handedness.
-- `Camera` holds a profile and builds the projection and view matrices from it.
+- `Camera` holds a profile and builds the projection and view matrices from it. `zoom(z)` adds to
+  the orthographic half height and stops at `Camera::MINIMUM_ZOOM`. A drag scales its next
+  step by the half height, so one that reached zero could never zoom back out.
 - `Isometric` is an orbit around a target on the ground, snapped to four azimuths.
 - `ArcBall` turns a mouse drag into a rotation for `Camera::rotate()`.
 

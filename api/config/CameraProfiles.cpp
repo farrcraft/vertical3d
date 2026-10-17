@@ -6,6 +6,7 @@
 #include "CameraProfiles.h"
 
 #include <api/asset/Json.h>
+#include <api/type/camera/Camera.h>
 
 #include <optional>
 #include <string>
@@ -86,9 +87,18 @@ bool CameraProfiles::load(const boost::json::object& doc) {
         }
         const std::string& name = *named;
 
+        // a half height of zero or less draws nothing, and the editor's zoom drag cannot
+        // bring it back
+        const float zoom = number(entry, "zoom", 10.0f);
+        if (zoom < v3d::type::camera::Camera::MINIMUM_ZOOM) {
+            logger_->get()->error("Camera profile {} has a zoom of {}, which is below {}", name, zoom,
+                v3d::type::camera::Camera::MINIMUM_ZOOM);
+            return false;
+        }
+
         v3d::type::camera::Profile profile(name);
         profile.orthographic(flag(entry, "orthographic", true));
-        profile.orthoZoom(number(entry, "zoom", 10.0f));
+        profile.orthoZoom(zoom);
         profile.fov(number(entry, "fov", 60.0f));
         profile.pixelAspect(number(entry, "aspect", 1.33f));
         profile.clipping(number(entry, "near", 0.1f), number(entry, "far", 100.0f));

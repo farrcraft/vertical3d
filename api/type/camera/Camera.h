@@ -22,6 +22,13 @@ namespace v3d::type::camera {
  */
 class Camera {
  public:
+        /**
+         *	The smallest orthographic half height zoom() leaves, in world units. A drag
+         *	scales the next step by the half height, so one that reached zero could never
+         *	zoom back out.
+         */
+        static constexpr float MINIMUM_ZOOM = 0.01f;
+
         Camera();
         explicit Camera(const Profile & profile);
         virtual ~Camera();
@@ -127,6 +134,8 @@ class Camera {
         /**
          *	Zoom the camera.
          *	Affects the camera lens to zoom in or out (dolly without moving camera)
+         *	@param z what to add to the orthographic half height, which stays at or above
+         *	MINIMUM_ZOOM
          */
         void zoom(float z);
         /**

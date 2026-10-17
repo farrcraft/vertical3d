@@ -107,6 +107,9 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_rejects_test) {
     // a name or an adaptive setting that is not a string is refused rather than thrown
     BOOST_CHECK_NO_THROW(BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": 5}]}"))));
     BOOST_CHECK_NO_THROW(BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"adaptive\": 3}]}"))));
+    // a half height of zero or less draws nothing, and nothing could zoom it back out
+    BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"zoom\": 0.0}]}")));
+    BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"zoom\": -4.0}]}")));
 }
 
 /**
