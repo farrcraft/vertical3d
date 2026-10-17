@@ -20,8 +20,8 @@ Worker::Worker() :
 Worker::~Worker() {
     {
         const std::lock_guard<std::mutex> lock(mutex_);
+        // the thread tests this before it takes a task, so no queued task starts after it
         stopping_ = true;
-        tasks_.clear();
     }
     wake_.notify_all();
     thread_.join();

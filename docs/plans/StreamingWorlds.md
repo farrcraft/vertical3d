@@ -125,17 +125,26 @@ side runs on, exceptions both ways, a completion that posts again, and destructi
 
 #### Step 4 — Requests that complete later
 
-**Open.** Needs steps 2 and 3.
+**Closed for meshes.** `MeshRegistry::request(path)` returns a handle at once, which resolves to
+nothing until `poll(budget)` uploads it. A release before the upload drops the result, a
+`load()` of the path completes it at once, and a failed file is logged and abandoned. The
+default budget is 4 MiB, which is not yet measured against a real region. The device suite tests
+each case, including a registry destroyed before its requests finish.
+[TexturesAndMeshes.md](../api/rendering/TexturesAndMeshes.md#requesting-a-mesh) states the
+rules.
+
+A texture request is held. A texture handle that resolves before its image exists would need
+`pipeline::Resources` to swap the image behind a live handle and rewrite its descriptor set. A
+worker job that decodes the image, and a completion that registers it, already covers the need.
+It is due when a game wants a texture handle before its pixels arrive.
 
 - `MeshRegistry` gains a request for a path. It returns a handle at once. The handle resolves
   to nothing until the model is uploaded, so the draws skip it in the meantime.
-- Texture and sprite-sheet loads get the same request.
-- The registry's poll uploads finished results through `MeshRegistry::add` and
-  `TextureFactory::create`. It uploads no more than a byte budget per call, so a large region
-  spreads its uploads over several frames.
+- The registry's poll uploads finished results. It uploads no more than a byte budget per call,
+  so a large region spreads its uploads over several frames.
 - Releasing a handle before its load finishes drops the result when it arrives.
 - A second request for a path already in flight returns the same handle.
-- Test headless where possible. The device suite covers the upload half.
+- The device suite tests requests, because each one ends in an upload.
 
 ### Phase 2 — Uploads that do not drain the queue
 

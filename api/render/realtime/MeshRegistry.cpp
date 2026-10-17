@@ -6,17 +6,21 @@
 #include "MeshRegistry.h"
 
 #include <api/asset/Manager.h>
+#include <api/asset/Worker.h>
 #include <api/image/Image.h>
 #include <api/render/realtime/DeviceContext.h>
 
 #include <cstddef>
 #include <map>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/make_shared.hpp>
+#include <boost/weak_ptr.hpp>
 
 namespace v3d::render::realtime {
 
@@ -53,35 +57,135 @@ boost::shared_ptr<vulkan::memory::Mesh> device(const boost::shared_ptr<DeviceCon
         model.indices().data(), static_cast<uint32_t>(model.indices().size()));
 }
 
+/**
+ * What an exception says, for the line a failed request is reported on.
+ **/
+std::string describe(const std::exception_ptr& error) {
+    try {
+        std::rethrow_exception(error);
+    } catch (const std::exception& exception) {
+        return exception.what();
+    } catch (...) {
+        return "an error that is not a std::exception";
+    }
+}
+
+/**
+ * The bytes a decoded model puts on the device: its vertices, its indices, and each albedo it
+ * carries pixels for that is not already uploaded, once.
+ **/
+std::size_t bytes(const DecodedModel& decoded, const AlbedoUploaded& uploaded) {
+    std::size_t total = decoded.model->vertexBytes() + decoded.model->indices().size() * sizeof(std::uint32_t);
+    std::set<const image::Image*> counted;
+    for (const DecodedModel::Albedo& albedo : decoded.albedos) {
+        if (albedo.pixels && !uploaded(albedo.key) && counted.insert(albedo.pixels.get()).second) {
+            total += static_cast<std::size_t>(albedo.pixels->width()) * albedo.pixels->height() * albedo.pixels->bpp() / 8;
+        }
+    }
+    return total;
+}
+
 };  // namespace
 
 /**
  **/
 MeshRegistry::MeshRegistry(const boost::shared_ptr<log::Logger>& logger, const boost::shared_ptr<DeviceContext>& context,
-    const boost::shared_ptr<asset::Manager>& assets) :
+    const boost::shared_ptr<asset::Manager>& assets, const boost::shared_ptr<asset::Worker>& worker) :
     logger_(logger),
     context_(context),
-    assets_(assets) {
+    assets_(assets),
+    worker_(worker),
+    inbox_(boost::make_shared<Inbox>()) {
 }
 
 /**
  **/
 MeshHandle MeshRegistry::load(const std::string& path) {
-    const std::map<std::string, MeshHandle>::const_iterator found = keys_.find(path);
-    if (found != keys_.end()) {
-        return found->second;
+    const std::optional<std::pair<MeshHandle, bool>> known = registered(path);
+    if (known && !known->second) {
+        return known->first;
     }
 
-    return add(decodeModel(*assets_, path, [this](const std::string& key) { return uploaded(key); }));
+    const DecodedModel decoded = decodeModel(*assets_, path, [this](const std::string& key) { return uploaded(key); });
+    return upload(decoded.path, *decoded.model, decoded.albedos, known ? known->first : MeshHandle());
+}
+
+/**
+ **/
+MeshHandle MeshRegistry::request(const std::string& path) {
+    if (!worker_) {
+        throw std::logic_error("The mesh registry has no worker, so " + path + " cannot be requested");
+    }
+    const std::optional<std::pair<MeshHandle, bool>> known = registered(path);
+    if (known) {
+        return known->first;
+    }
+
+    Slot slot;
+    slot.key = path;
+    slot.pending = true;
+    const MeshHandle handle = meshes_.add(slot);
+    keys_[path] = handle;
+    pending_++;
+    try {
+        worker_->post([assets = assets_, path]() { return decodeModel(*assets, path); },
+            [inbox = boost::weak_ptr<Inbox>(inbox_), handle](std::expected<DecodedModel, std::exception_ptr> result) {
+                const boost::shared_ptr<Inbox> held = inbox.lock();
+                if (held) {
+                    held->push_back(Arrival{ handle, std::move(result) });
+                }
+            });
+    } catch (...) {
+        abandon(handle);
+        throw;
+    }
+    return handle;
+}
+
+/**
+ **/
+std::size_t MeshRegistry::poll(std::size_t budget) {
+    std::size_t count = 0;
+    std::size_t spent = 0;
+    while (!inbox_->empty() && (count == 0 || spent < budget)) {
+        Arrival arrival = std::move(inbox_->front());
+        inbox_->pop_front();
+
+        // a request released, or loaded at once, before its decoding finished has no slot to fill
+        const Slot* slot = meshes_.resolve(arrival.handle);
+        if (slot == nullptr || !slot->pending) {
+            continue;
+        }
+        const std::string key = slot->key;
+        if (!arrival.result) {
+            logger_->get()->error("The model {} could not be loaded: {}", key, describe(arrival.result.error()));
+            abandon(arrival.handle);
+            continue;
+        }
+
+        const DecodedModel& decoded = *arrival.result;
+        // counted before the upload, which makes every albedo it names an uploaded one
+        const std::size_t cost = bytes(decoded, [this](const std::string& albedo) { return uploaded(albedo); });
+        try {
+            upload(key, *decoded.model, decoded.albedos, arrival.handle);
+        } catch (const std::exception& error) {
+            logger_->get()->error("The model {} could not be uploaded: {}", key, error.what());
+            abandon(arrival.handle);
+            continue;
+        }
+        count++;
+        spent += cost;
+    }
+    return count;
 }
 
 /**
  **/
 MeshHandle MeshRegistry::add(const std::string& name, const type::Model& model,
     const std::vector<boost::shared_ptr<image::Image>>& albedos) {
-    const std::map<std::string, MeshHandle>::const_iterator found = keys_.find(name);
-    if (found != keys_.end()) {
-        return found->second;
+    const std::optional<std::pair<MeshHandle, bool>> known = registered(name);
+    if (known && !known->second) {
+        return known->first;
     }
 
     std::vector<DecodedModel::Albedo> sources(model.materials().size());
@@ -93,25 +197,26 @@ MeshHandle MeshRegistry::add(const std::string& name, const type::Model& model,
         }
     }
     decodeAlbedos(*assets_, &sources, [this](const std::string& key) { return uploaded(key); });
-    return upload(name, model, sources);
+    return upload(name, model, sources, known ? known->first : MeshHandle());
 }
 
 /**
  **/
 MeshHandle MeshRegistry::add(const DecodedModel& decoded) {
-    const std::map<std::string, MeshHandle>::const_iterator found = keys_.find(decoded.path);
-    if (found != keys_.end()) {
-        return found->second;
+    const std::optional<std::pair<MeshHandle, bool>> known = registered(decoded.path);
+    if (known && !known->second) {
+        return known->first;
     }
     if (!decoded.model) {
         throw std::runtime_error("The model " + decoded.path + " holds no geometry to upload");
     }
-    return upload(decoded.path, *decoded.model, decoded.albedos);
+    return upload(decoded.path, *decoded.model, decoded.albedos, known ? known->first : MeshHandle());
 }
 
 /**
  **/
-MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model, const std::vector<DecodedModel::Albedo>& albedos) {
+MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model, const std::vector<DecodedModel::Albedo>& albedos,
+    const MeshHandle& pending) {
     if (model.empty() || model.indices().empty()) {
         throw std::runtime_error("The model " + key + " holds no geometry to upload");
     }
@@ -138,7 +243,7 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
     if (!model.skeleton().empty()) {
         slot.entry.skin = boost::make_shared<const Skin>(Skin{ model.skeleton(), model.clips() });
     }
-    MeshHandle handle;
+    MeshHandle handle = pending;
     try {
         for (const type::Model::Part& source : model.parts()) {
             Part part;
@@ -148,7 +253,15 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
             slot.albedos.push_back(acquire(albedos[source.material], &part));
             slot.entry.parts.push_back(part);
         }
-        handle = meshes_.add(slot);
+        if (pending.valid()) {
+            Slot* requested = meshes_.resolve(pending);
+            if (requested == nullptr || !requested->pending) {
+                throw std::logic_error("The model " + key + " was to fill a request that is gone");
+            }
+            *requested = slot;
+        } else {
+            handle = meshes_.add(slot);
+        }
     } catch (...) {
         // an albedo can fail to load or upload part way through, and the ones acquired for the
         // earlier parts are given back, so a failed upload leaves no texture counted
@@ -158,6 +271,9 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
             }
         }
         throw;
+    }
+    if (pending.valid()) {
+        pending_--;
     }
     keys_[key] = handle;
     return handle;
@@ -210,6 +326,27 @@ bool MeshRegistry::uploaded(const std::string& key) const {
 
 /**
  **/
+std::optional<std::pair<MeshHandle, bool>> MeshRegistry::registered(const std::string& key) const {
+    const std::map<std::string, MeshHandle>::const_iterator found = keys_.find(key);
+    if (found == keys_.end()) {
+        return std::nullopt;
+    }
+    const Slot* slot = meshes_.resolve(found->second);
+    return std::make_pair(found->second, slot != nullptr && slot->pending);
+}
+
+/**
+ **/
+void MeshRegistry::abandon(const MeshHandle& handle) {
+    const std::optional<Slot> released = meshes_.release(handle);
+    if (released) {
+        keys_.erase(released->key);
+        pending_--;
+    }
+}
+
+/**
+ **/
 void MeshRegistry::drop(const std::string& key) {
     const std::map<std::string, Albedo>::iterator found = albedos_.find(key);
     if (found == albedos_.end()) {
@@ -231,6 +368,11 @@ bool MeshRegistry::release(const MeshHandle& handle) {
         return false;
     }
     keys_.erase(released->key);
+    if (released->pending) {
+        // nothing is on the device yet, and what the worker decodes for it is dropped
+        pending_--;
+        return true;
+    }
     for (const std::string& albedo : released->albedos) {
         drop(albedo);
     }
@@ -243,7 +385,14 @@ bool MeshRegistry::release(const MeshHandle& handle) {
  **/
 const MeshRegistry::Entry* MeshRegistry::resolve(const MeshHandle& handle) const {
     const Slot* slot = meshes_.resolve(handle);
-    return slot != nullptr ? &slot->entry : nullptr;
+    return slot != nullptr && !slot->pending ? &slot->entry : nullptr;
+}
+
+/**
+ **/
+bool MeshRegistry::pending(const MeshHandle& handle) const {
+    const Slot* slot = meshes_.resolve(handle);
+    return slot != nullptr && slot->pending;
 }
 
 /**
@@ -264,7 +413,13 @@ std::optional<uint32_t> MeshRegistry::clip(const MeshHandle& handle, const std::
 /**
  **/
 std::size_t MeshRegistry::count() const noexcept {
-    return keys_.size();
+    return keys_.size() - pending_;
+}
+
+/**
+ **/
+std::size_t MeshRegistry::pending() const noexcept {
+    return pending_;
 }
 
 };  // namespace v3d::render::realtime
