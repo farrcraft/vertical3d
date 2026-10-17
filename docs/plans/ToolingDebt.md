@@ -58,7 +58,7 @@ names it as the one Python file in the tree.
 
 ### Steps 5 to 17 — One check each
 
-**Steps 5 to 8 done; 9 to 17 open.**
+**Steps 5 to 9 done; 10 to 17 open.**
 
 - Steps 5 to 8 shared one discovery pass and one verification pass. Several files carried sites
   of more than one check.
@@ -68,6 +68,13 @@ names it as the one Python file in the tree.
   from `out/build/tidy` applies one check's fixes without rebuilding.
 - clang-tidy does not fix a site inside a macro argument, such as a `BOOST_CHECK_EQUAL`. The
   verification pass finds those, and they are fixed by hand.
+- Step 9 found 251 sites. Every one was fixed with a type, as decided when the step began.
+  The RenderMan entry points keep the standard's signatures and carry a NOLINTNEXTLINE each,
+  because cpplint cannot read a NOLINTBEGIN block that names another tool's check.
+- The usual fix is a struct of named fields, built at the call with designated initialisers.
+  A pair that is one value takes a glm vector, and an output pair becomes a returned struct.
+  Vulkan's own structs serve the pipeline builder, and audio's Voice became a scoped enum.
+- Signatures across api/ changed, so a consumer outside the tree has to follow them.
 
 Each step follows the same procedure:
 

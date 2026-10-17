@@ -113,7 +113,8 @@ class Engine final {
      *
      * @param clip the id the clip was filed under
      * @param how the bus, the looping, the fade and the gain
-     * @return the voice, or Voice::None when there is no device, no such clip, or no track to be had
+     * @return the voice, or Voice::None when there is no device, no such clip, or no track to
+     *         be had
      **/
     Voice play(const std::string_view & clip, const Play & how);
 

@@ -333,14 +333,14 @@ BOOST_AUTO_TEST_CASE(a_stream_holds_what_one_frame_asked_for) {
     const std::size_t frames = headless.context->ring()->framesInFlight();
 
     for (int frame = 0; frame < 12; ++frame) {
-        stream.claim(16, 8);
-        stream.claim(16, 8);
+        stream.claim({.vertexBytes = 16, .indexBytes = 8});
+        stream.claim({.vertexBytes = 16, .indexBytes = 8});
         idle(&headless);
     }
     BOOST_CHECK_EQUAL(stream.held(), 2 * frames);
 
     for (std::size_t frame = 0; frame < frames * 2; ++frame) {
-        const v3d::render::realtime::vulkan::frame::StreamRing::Geometry grown = stream.claim(1000, 8);
+        const v3d::render::realtime::vulkan::frame::StreamRing::Geometry grown = stream.claim({.vertexBytes = 1000, .indexBytes = 8});
         BOOST_CHECK_GE(grown.vertices->size(), 1000u);
         idle(&headless);
     }
@@ -381,8 +381,8 @@ BOOST_AUTO_TEST_CASE(a_skipped_frame_gives_its_claims_back) {
     v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), {.vertexBytes = 64, .indexBytes = 32});
 
     for (int frame = 0; frame < 12; ++frame) {
-        stream.claim(16, 8);
-        stream.claim(16, 8);
+        stream.claim({.vertexBytes = 16, .indexBytes = 8});
+        stream.claim({.vertexBytes = 16, .indexBytes = 8});
         headless.context->ring()->skip();
     }
     BOOST_CHECK_EQUAL(stream.held(), 2u);
@@ -399,17 +399,17 @@ BOOST_AUTO_TEST_CASE(a_frame_begun_again_restarts_its_claims) {
     v3d::test::Headless headless(colourFormat, width, height);
     v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), {.vertexBytes = 64, .indexBytes = 32});
 
-    stream.claim(16, 8);
+    stream.claim({.vertexBytes = 16, .indexBytes = 8});
     headless.context->ring()->begin();
 
-    stream.claim(16, 8);
+    stream.claim({.vertexBytes = 16, .indexBytes = 8});
     headless.context->ring()->begin();
 
-    stream.claim(16, 8);
+    stream.claim({.vertexBytes = 16, .indexBytes = 8});
     headless.submit(headless.context->ring()->begin());
     BOOST_CHECK_EQUAL(stream.held(), 1u);
 
-    const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim(16, 8);
+    const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim({.vertexBytes = 16, .indexBytes = 8});
     BOOST_CHECK(next.vertices != nullptr);
     BOOST_CHECK_EQUAL(stream.held(), 2u);
     headless.context->ring()->waitIdle();
@@ -426,13 +426,13 @@ BOOST_AUTO_TEST_CASE(a_claim_on_the_next_slot_starts_from_its_front) {
     v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), {.vertexBytes = 64, .indexBytes = 32});
 
     headless.context->ring()->begin();
-    stream.claim(16, 8);
+    stream.claim({.vertexBytes = 16, .indexBytes = 8});
 
     VkCommandBuffer commands = headless.context->ring()->begin();
-    stream.claim(16, 8);
+    stream.claim({.vertexBytes = 16, .indexBytes = 8});
     headless.submit(commands);
 
-    const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim(16, 8);
+    const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim({.vertexBytes = 16, .indexBytes = 8});
     BOOST_CHECK(next.vertices != nullptr);
     BOOST_CHECK_EQUAL(stream.held(), 2u);
     headless.context->ring()->waitIdle();

@@ -11,7 +11,7 @@ Every 2D thing — a rectangle, a sprite, a glyph, a UI panel — is a textured 
 
 ```cpp
 Canvas canvas;
-canvas.resize(width, height);    // the area drawn into, in pixels
+canvas.resize(glm::uvec2(width, height));    // the area drawn into, in pixels
 canvas.clear();                  // at the start of every frame
 
 canvas.rect(min, max, colour);                                  // untextured

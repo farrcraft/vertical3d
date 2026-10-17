@@ -25,6 +25,12 @@ GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspe
 
 /**
  **/
+GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend) :
+    GameMenu(engine, suspend, Names()) {
+}
+
+/**
+ **/
 void GameMenu::declare(v3d::event::Commands& commands, const boost::shared_ptr<GameMenu>& menu) {
     // a press handler ignores a held key's repeats, which would otherwise open and close the
     // menu at the repeat rate

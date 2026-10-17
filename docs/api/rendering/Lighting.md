@@ -50,7 +50,7 @@ be built in the camera's hand too: pass the hand to `lighting::shadowLight()`.
 
 ```cpp
 lighting::Settings settings;
-const glm::mat4 light = lighting::shadowLight(settings.light, bounds.centre, bounds.radius);
+const glm::mat4 light = lighting::shadowLight(settings.light, bounds);
 VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0f / mapSize),
     context->textures()->depthTexture(*map));
 
@@ -98,7 +98,7 @@ Rules:
 
 ### Fitting the shadow map
 
-`lighting::fitShadow(registry, alsoCover, margin, alpha)` returns a sphere around every shadow
+`lighting::fitShadow(registry, alsoCover, {.margin, .alpha})` returns a sphere around every shadow
 caster: the mean of their positions, and the farthest of them plus `margin`. The margin has to
 cover a caster's size and the length of its shadow. Things that cast nothing, such as the
 ground, stay out of the fit. `alsoCover` adds points that must be inside the map, such as where
@@ -121,7 +121,7 @@ matrix.
 - It returns nothing for a distance that is not finite and positive, a light direction that is
   zero or not finite, fewer than 4 texels, or a matrix that cannot be inverted.
 
-`lighting::shadowLight(towards, centre, radius, hand)` builds the matrix the shadow pass draws
+`lighting::shadowLight(towards, bounds, hand)` builds the matrix the shadow pass draws
 through: an orthographic box around the sphere, seen from the light. `hand` is the camera's
 `Profile::Hand`, and defaults to `UpCrossDirection`. A face is wound the same way under the
 light as under a camera of that hand, so the shadow pipeline culls the same faces the cel

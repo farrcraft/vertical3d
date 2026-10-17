@@ -304,7 +304,7 @@ factory.write("out.tga", picture);
 - `crop(source, x, y, width, height)` cuts a rectangle into a new image at the same depth. It
   returns null when the rectangle is empty or not wholly inside the source. Use it to cut a
   sprite back out of a packed sheet.
-- `swapRedBlue(from, to, pixels, channels)` swaps the first and third bytes of each pixel, for
+- `swapRedBlue(from, to, {.pixels, .channels})` swaps the first and third bytes of each pixel, for
   converting between RGB and the BGR order BMP and TGA store. The buffers may be the same.
 - `compare(a, b, tolerance)` compares two images channel by channel and returns a
   `Difference`. It records the worst pixel even when the images match. `description()` gives

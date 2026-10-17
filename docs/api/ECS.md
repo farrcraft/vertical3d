@@ -118,7 +118,7 @@ model's animation clips an entity is playing. Clips are identified by their inde
 model's `clips()`. It holds the clip, the time into it, its duration and whether it loops, plus
 the same for the clip being faded out of, and the fade's progress.
 
-- **`play(&playback, clip, duration, loops, fade)`** starts a clip from the beginning, fading
+- **`play(&playback, {.clip, .duration, .loops, .fade})`** starts a clip from the beginning, fading
   from whatever was playing over `fade` seconds. Asking for the clip already playing changes
   nothing, so a game can call it every step from whatever chooses its clip. A fade of zero, or
   nothing playing, cuts.

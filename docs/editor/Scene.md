@@ -39,7 +39,7 @@ yourself:
 | Function | Returns |
 |---|---|
 | `faceLoop(mesh, face)` | The half edges of a face in order, each at most once. A chain that never returns to the face's first edge yields the edges walked before it repeats one or ends, which is an open path rather than a ring |
-| `loopSegment(mesh, loop, entry, &from, &to)` | The two endpoints of one entry of a loop |
+| `loopSegment(mesh, loop, entry)` | The two endpoints of one entry of a loop, or nothing when either cannot be resolved |
 | `ownsEdge(mesh, edge)` | Whether this half edge represents its edge. The lower-numbered half of a pair owns it; an unpaired half edge owns itself |
 | `edgeSelected(mesh, edge)` | Whether either half of the edge is selected |
 | `center(mesh, face)` | The average of a face's vertices |

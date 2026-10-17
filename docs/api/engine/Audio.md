@@ -31,8 +31,9 @@ The sound document lists clips by id:
   `dispatcher()->trigger(v3d::event::kind::Sound("hit"))`. The audio engine listens for it. A
   second argument pans it: `Sound("hit", -0.5f)` sounds left of centre.
 - `playClip(id)` also plays a one-shot. `play(id, how)` returns a `Voice` for a sound you need
-  to control. `audio::Play` sets the bus, the loop count (-1 loops until stopped), a fade-in,
-  a gain and a pan.
+  to control. A `Voice` is a scoped enum, so it cannot be passed where a fade or a level goes.
+  `Voice::None` is no sound, which a failed `play()` returns. `audio::Play` sets the bus, the
+  loop count (-1 loops until stopped), a fade-in, a gain and a pan.
 - `stop(voice, fadeOutMs)`, `stopAll()`, `playing(voice)`, `gain(voice, level)` and
   `pan(voice, value)` control playing sounds. A voice that has finished is refused, never
   confused with a newer sound.

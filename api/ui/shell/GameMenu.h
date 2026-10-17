@@ -61,7 +61,12 @@ class GameMenu {
      * @param names the container that is shown and hidden, and the menu inside it that
      *        navigation drives
      **/
-    GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend, const Names& names = Names());
+    GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend, const Names& names);
+
+    /**
+     * The default container and menu names.
+     **/
+    GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend);
 
     /**
      * Register the menu's commands: "ui::showGameMenu" toggles it, and "ui::menuPrevious",

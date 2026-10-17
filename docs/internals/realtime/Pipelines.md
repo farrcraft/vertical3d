@@ -12,11 +12,12 @@ pipeline::Builder(device)
     .name("quad")
     .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
     .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
-    .vertexBinding(0, sizeof(Canvas::Vertex))
-    .vertexAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Canvas::Vertex, position))
+    .vertexBinding({.binding = 0, .stride = sizeof(Canvas::Vertex)})
+    .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT,
+        .offset = offsetof(Canvas::Vertex, position)})
     .set(uniforms->layout())     // set 0 first: sets are numbered in the order added
     .set(textures->layout())     // set 1
-    .push(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Push))
+    .push({.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .size = sizeof(Push)})
     .colourFormat(colour)
     .build(cache);
 ```

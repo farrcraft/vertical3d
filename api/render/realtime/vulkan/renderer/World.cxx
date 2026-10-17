@@ -120,7 +120,7 @@ void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blen
 
     const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(canvas::World::Vertex);
     const VkDeviceSize indexBytes = canvas.indices().size() * sizeof(uint32_t);
-    const frame::StreamRing::Geometry claimed = stream_->claim(vertexBytes, indexBytes);
+    const frame::StreamRing::Geometry claimed = stream_->claim({.vertexBytes = vertexBytes, .indexBytes = indexBytes});
     claimed.vertices->write(canvas.vertices().data(), vertexBytes);
     claimed.indices->write(canvas.indices().data(), indexBytes);
 

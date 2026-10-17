@@ -83,7 +83,7 @@ class TextureFactory final {
     };
 
     /**
-     * @param pixels what to upload
+     * @param source what to upload
      * @param encoding how a shader reads the colour back. A coverage mask is not a colour
      *        and ignores it
      * @param sampler how a shader reads the image. The default is linear and clamped to the
@@ -92,7 +92,7 @@ class TextureFactory final {
      * @return the created image and the sampler it is read through, for the caller to register
      * @throw std::runtime_error if any part of the creation or upload fails
      **/
-    pipeline::Texture create(const Pixels& pixels, Encoding encoding = Encoding::Display,
+    pipeline::Texture create(const Pixels& source, Encoding encoding = Encoding::Display,
         const pipeline::Sampler::Spec& sampler = pipeline::Sampler::Spec()) const;
 
     /**

@@ -28,8 +28,8 @@ struct Views {
  * Clear what is attached to transparent black and the far plane, with no draws.
  **/
 void clear(VkCommandBuffer commands, const Views& views, const VkExtent2D& extent) {
-    const VkImageView colour = views.colour;
-    const VkImageView depth = views.depth;
+    VkImageView colour = views.colour;
+    VkImageView depth = views.depth;
     VkRenderingAttachmentInfo colourAttachment{};
     colourAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     colourAttachment.imageView = colour;

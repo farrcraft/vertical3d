@@ -14,17 +14,16 @@ the ECS works is in [ECS.md](../ECS.md).
 
 | Component | Function | Draws into |
 |---|---|---|
-| `component::Sprite` | `entity::sprites(registry, alpha, right, up, depthAxis, &order)` | a `DepthOrder` |
-| `component::Particles` | `entity::particles(registry, alpha, right, up, depthAxis, &order)` | a `DepthOrder` |
+| `component::Sprite` | `entity::sprites(registry, alpha, billboard, &order)` | a `DepthOrder` |
+| `component::Particles` | `entity::particles(registry, alpha, billboard, &order)` | a `DepthOrder` |
 | `component::Mesh` | `entity::meshes(...)` and `entity::casters(...)` | a lit pass and a shadow pass |
 
 ```cpp
 DepthOrder order;
 order.clear();
-const glm::vec3 right = camera.profile().right();
-const glm::vec3 up = camera.profile().up();
-entity::sprites(registry, alpha(), right, up, depthAxis, &order);
-entity::particles(registry, alpha(), right, up, depthAxis, &order);
+const entity::Billboard billboard{.right = camera.profile().right(), .up = camera.profile().up(), .depthAxis = depthAxis};
+entity::sprites(registry, alpha(), billboard, &order);
+entity::particles(registry, alpha(), billboard, &order);
 world.clear();
 order.into(&world);
 renderer_->worldQuads()->submit(world, pass.get());

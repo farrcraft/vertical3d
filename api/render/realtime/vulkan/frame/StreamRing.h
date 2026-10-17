@@ -61,7 +61,7 @@ class StreamRing final {
      * Wait until the frame being recorded may write its buffers again, then take the next pair
      * of them, at least this large.
      **/
-    Geometry claim(VkDeviceSize vertexBytes, VkDeviceSize indexBytes);
+    Geometry claim(const Sizes& sizes);
 
     /**
      * @return how many sets of buffers are held across every frame in flight - as many as the

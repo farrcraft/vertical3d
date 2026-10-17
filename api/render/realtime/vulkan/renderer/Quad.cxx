@@ -142,7 +142,7 @@ void Quad::submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer) {
 
     const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(canvas::Canvas::Vertex);
     const VkDeviceSize indexBytes = canvas.indices().size() * sizeof(uint32_t);
-    const frame::StreamRing::Geometry claimed = stream_->claim(vertexBytes, indexBytes);
+    const frame::StreamRing::Geometry claimed = stream_->claim({.vertexBytes = vertexBytes, .indexBytes = indexBytes});
     const boost::shared_ptr<memory::Buffer>& vertices = claimed.vertices;
     const boost::shared_ptr<memory::Buffer>& indices = claimed.indices;
 

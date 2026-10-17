@@ -133,9 +133,9 @@ BOOST_AUTO_TEST_CASE(picker_face_test) {
     // the face hit is the one nearest the camera, so the ray enters through it
     const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*cube, hit.component);
     BOOST_CHECK_GE(loop.size(), 3u);
-    const std::optional<v3d::brep::Segment> segment = v3d::brep::loopSegment(*cube, loop, 0);
-    BOOST_REQUIRE(segment.has_value());
-    BOOST_CHECK_LT(segment->from[2], 0.0f);
+    const std::optional<v3d::brep::Segment> found = v3d::brep::loopSegment(*cube, loop, 0);
+    BOOST_REQUIRE(found.has_value());
+    BOOST_CHECK_LT(found.value_or(v3d::brep::Segment()).from[2], 0.0f);
 }
 
 BOOST_AUTO_TEST_CASE(picker_component_needs_an_object_test) {
@@ -198,10 +198,11 @@ BOOST_AUTO_TEST_CASE(picker_edge_test) {
 
     const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*cube, 0);
     BOOST_REQUIRE_GE(loop.size(), 3u);
-    const std::optional<v3d::brep::Segment> segment = v3d::brep::loopSegment(*cube, loop, 0);
-    BOOST_REQUIRE(segment.has_value());
-    const glm::vec3& from = segment->from;
-    const glm::vec3& to = segment->to;
+    const std::optional<v3d::brep::Segment> found = v3d::brep::loopSegment(*cube, loop, 0);
+    BOOST_REQUIRE(found.has_value());
+    const v3d::brep::Segment segment = found.value_or(v3d::brep::Segment());
+    const glm::vec3& from = segment.from;
+    const glm::vec3& to = segment.to;
 
     // the middle of an edge, the point furthest from either of its vertices
     v3d::editor::Picker::Hit hit = picker.pick(scene, *view, screen(view, (from + to) * 0.5f),

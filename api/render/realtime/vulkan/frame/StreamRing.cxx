@@ -24,7 +24,9 @@ StreamRing::StreamRing(const boost::shared_ptr<device::Device>& device, const bo
 
 /**
  **/
-StreamRing::Geometry StreamRing::claim(VkDeviceSize vertexBytes, VkDeviceSize indexBytes) {
+StreamRing::Geometry StreamRing::claim(const Sizes& sizes) {
+    const VkDeviceSize vertexBytes = sizes.vertexBytes;
+    const VkDeviceSize indexBytes = sizes.indexBytes;
     // the device may still be reading what this slot held framesInFlight frames ago
     ring_->waitFrame();
     // claims restart whenever the ring turns or moves to another slot. A frame that was

@@ -96,7 +96,7 @@ void Line::submit(const canvas::Line& canvas, Pass* pass, uint16_t layer) {
     }
 
     const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(canvas::Line::Vertex);
-    const boost::shared_ptr<memory::Buffer> vertices = stream_->claim(vertexBytes, 0).vertices;
+    const boost::shared_ptr<memory::Buffer> vertices = stream_->claim({.vertexBytes = vertexBytes, .indexBytes = 0}).vertices;
     vertices->write(canvas.vertices().data(), vertexBytes);
 
     // dynamic rendering matches a pipeline to the pass's attachments, so which of the two

@@ -123,10 +123,10 @@ A float read from a file, the command line or a caller is made into an integer t
 float that is outside an integer type's range is undefined behaviour, and NaN and infinity are
 outside every range.
 
-- `toCount(value, minimum, maximum)` returns a `std::optional<uint32_t>`. `toCount(value,
+- `toCount(value, {.minimum, .maximum})` returns a `std::optional<uint32_t>`. `toCount(value,
   maximum)` is the same with a minimum of zero.
-- `toInteger(value, minimum, maximum)` returns a `std::optional<int32_t>`, for an index, a frame
-  number or a handle.
+- `toInteger(value, {.minimum, .maximum})` returns a `std::optional<int32_t>`, for an index, a
+  frame number or a handle.
 
 Both follow the same rules:
 
