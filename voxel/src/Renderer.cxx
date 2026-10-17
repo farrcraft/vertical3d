@@ -5,6 +5,7 @@
 
 #include "Renderer.h"
 
+#include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/Material.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
@@ -19,9 +20,11 @@
 
 #include <cstddef>
 #include <cstring>
+#include <functional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Scene.h"
@@ -121,7 +124,9 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     createLayout();
     createUniforms();
     createPipeline();
-    meshes_ = boost::make_shared<ChunkMeshPool>();
+    meshes_ = boost::make_shared<ChunkMeshPool>([ring = context_->ring()](std::function<void()> destroy) {
+        ring->retire(std::move(destroy));
+    });
     builder_ = boost::make_shared<MeshBuilder>(scene_->chunks(),
         ChunkMeshBuilder(context_->device(), context_->uploader()));
 

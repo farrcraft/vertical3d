@@ -1,9 +1,11 @@
 # The meshing and terrain logic needs neither a window nor a device, so it is testable the
-# same way an api library is. The renderer needs a device and is not covered here.
+# same way an api library is. The mesh pool's hand-off of a replaced mesh is tested the same way.
+# The renderer needs a device and is not covered here.
 v3d_add_test(voxel
 	"TestMain.cxx"
 	"ChunkTest.cxx"
 	"ChunkCullingTest.cxx"
+	"ChunkMeshPoolTest.cxx"
 	"FaceCullingTest.cxx"
 	"MeshCacheTest.cxx"
 	"MortonCodeTest.cxx"
@@ -17,6 +19,7 @@ v3d_add_test(voxel
 	"../src/noise/noiseutils.cpp"
 	"../src/voxel/Chunk.cxx"
 	"../src/voxel/ChunkCulling.cxx"
+	"../src/voxel/ChunkMeshPool.cxx"
 	"../src/voxel/FaceCulling.cxx"
 	"../src/voxel/MeshCache.cxx"
 	"../src/voxel/TerrainMap.cxx"
@@ -38,3 +41,7 @@ target_link_directories(v3dtest_voxel PRIVATE "${V3D_ROOT}/vendor/libnoise/Debug
 target_link_libraries(v3dtest_voxel PRIVATE
 	v3dlib_type
 	"libnoise")
+
+# The mesh pool holds the render library's meshes. Its cases never make one, but they compile
+# its header.
+target_link_libraries(v3dtest_voxel PRIVATE v3dlib_render)

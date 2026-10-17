@@ -150,9 +150,10 @@ It is due when a game wants a texture handle before its pixels arrive.
 
 #### Step 5 — voxel retires its old meshes
 
-**Open.** A remeshed chunk's old mesh goes to `frame::Ring::retire`, which voxel reaches through
-its `DeviceContext`. The `ChunkMeshPool` comment changes to say so. Delete the TODO.md entry under
-"Voxel".
+**Closed.** `ChunkMeshPool` takes a retire function and hands it each replaced mesh. voxel's
+renderer passes one that retires through the context's ring. The voxel suite tests the hand-off
+without a device, and a run of voxel with validation on logs nothing. The TODO.md entry is
+deleted.
 
 #### Step 6 — The uploader waits on its own fence
 

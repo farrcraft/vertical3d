@@ -172,16 +172,6 @@ library. [StreamingWorlds](plans/StreamingWorlds.md) takes the first and third e
 
 ## Voxel
 
-[StreamingWorlds](plans/StreamingWorlds.md) takes the first entry.
-
-[] **A remeshed chunk destroys its old mesh too early once uploads become asynchronous.**
-
-- Today a remeshed chunk destroys its old mesh when the last reference goes. That is safe only
-  because `memory::Uploader` waits for the queue to go idle after every copy, as
-  [ChunkMeshPool.h](../voxel/src/voxel/ChunkMeshPool.h) says.
-- When uploads stop waiting for the queue (see [Loading](#loading)), the old mesh must be retired
-  through `frame::Ring::retire` instead.
-
 [] **Mouselook turns far too fast and rolls the view.**
 
 - Ten pixels of horizontal mouse motion turns the view most of the way round and tips it over.

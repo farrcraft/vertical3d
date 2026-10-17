@@ -5,9 +5,15 @@
 
 #include "ChunkMeshPool.h"
 
+#include <utility>
+
 ChunkMeshPool::Entry::Entry() :
     origin(0.0f, 0.0f, 0.0f),
     size(0.0f) {
+}
+
+ChunkMeshPool::ChunkMeshPool(Retire retire) :
+    retire_(std::move(retire)) {
 }
 
 void ChunkMeshPool::add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>& mesh, const glm::vec3& origin,
@@ -16,7 +22,15 @@ void ChunkMeshPool::add(size_t chunkId, const boost::shared_ptr<v3d::render::rea
     entry.mesh = mesh;
     entry.origin = origin;
     entry.size = size;
-    pool_[chunkId] = entry;
+
+    const EntryMap::iterator found = pool_.find(chunkId);
+    if (found == pool_.end()) {
+        pool_.emplace(chunkId, entry);
+        return;
+    }
+    boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> replaced = found->second.mesh;
+    found->second = entry;
+    retire_([replaced]() mutable { replaced.reset(); });
 }
 
 const ChunkMeshPool::EntryMap& ChunkMeshPool::entries() const {
