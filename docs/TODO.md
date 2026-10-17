@@ -286,20 +286,6 @@ matches the asset manager's path handling only because the manager passes cgltf 
 4 MiB, chosen without measuring a region's upload, because no game in the tree requests meshes.
 Due when one does.
 
-## Frames
-
-[ReleaseHardening](plans/ReleaseHardening.md) takes this entry.
-
-[] **A minimised window busy-loops and floods the log.**
-
-- When the window has no area, `Engine3D::beginFrame` presents an empty frame.
-- `Swapchain::create` is asked for a new swapchain on every frame, and logs
-  `Window has no area` at info level each time.
-- Nothing in the loop waits. Two seconds minimised wrote twelve thousand lines to pong's log.
-- Possible fixes: the loop waits for an event while the window is minimised, or the swapchain
-  logs only the change of state.
-- Background: [ShellAndShipping, step 6](plans/completed/ShellAndShipping.md#step-6--one-screen-and-four-apps-on-it).
-
 ## Audio
 
 `audio::Engine` plays a voice on a named bus, with a fade, a gain and a pan.

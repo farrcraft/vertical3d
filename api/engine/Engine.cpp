@@ -287,6 +287,15 @@ void Engine::handleEvent(const SDL_Event& event) {
     case SDL_EVENT_WINDOW_FOCUS_LOST:
         dispatcher_->trigger(v3d::event::kind::WindowFocus(false));
         break;
+    case SDL_EVENT_WINDOW_MINIMIZED:
+        minimized_ = true;
+        break;
+    // a window minimized from maximized comes back maximized, which SDL reports instead of a
+    // restore
+    case SDL_EVENT_WINDOW_RESTORED:
+    case SDL_EVENT_WINDOW_MAXIMIZED:
+        minimized_ = false;
+        break;
     default:
         break;
     }
@@ -299,6 +308,10 @@ bool Engine::eventLoop() {
     // nanoseconds, not SDL_GetTicks(): a whole millisecond cannot express 60 Hz, and a frame
     // faster than 1 ms measures as no elapsed time at all
     uint64_t lastTick = SDL_GetTicksNS();
+    // a window can be created minimized, and then sends no event saying so
+    if (window_ && window_->created()) {
+        minimized_ = (SDL_GetWindowFlags(window_->sdl()) & SDL_WINDOW_MINIMIZED) != 0;
+    }
     // Enter main game loop
     while (!quitting_) {
         // Handle events on queue
@@ -309,6 +322,15 @@ bool Engine::eventLoop() {
         // after this point runs on the frame that quit
         if (quitting_) {
             break;
+        }
+        // a minimized window shows nothing, so rather than present empty frames the loop
+        // sleeps until an event arrives. The wait is not a frame, so the clock restarts after it
+        if (minimized_) {
+            if (SDL_WaitEvent(&event)) {
+                route(event);
+            }
+            lastTick = SDL_GetTicksNS();
+            continue;
         }
         // tick the game, telling it how long the last frame took
         uint64_t now = SDL_GetTicksNS();

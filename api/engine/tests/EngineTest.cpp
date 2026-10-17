@@ -518,3 +518,84 @@ BOOST_AUTO_TEST_CASE(engine_a_release_that_throws_is_a_failure_test) {
     BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &throwing), EXIT_FAILURE);
     BOOST_CHECK_EQUAL(throwing.released, 1);
 }
+
+namespace {
+
+/**
+ * An engine with no features whose first tick minimizes its window. A timer restores the window
+ * later, from SDL's timer thread, and the first tick after the restore quits. Every tick is
+ * counted, and so is each one that ran while the window was minimized.
+ **/
+class MinimizedEngine final : public v3d::engine::Engine {
+ public:
+    explicit MinimizedEngine(const std::string& path) :
+        Engine(path) {
+    }
+
+    bool tick(unsigned int /* delta */) override {
+        ticks_++;
+        if (minimized_ && !restored_) {
+            ticksWhileMinimized_++;
+        }
+        if (ticks_ == 1) {
+            push(SDL_EVENT_WINDOW_MINIMIZED);
+        }
+        // a loop that never waits would spin until the restore, so it is stopped here
+        if (restored_ || ticksWhileMinimized_ > 1000) {
+            quit();
+        }
+        return true;
+    }
+
+    bool onEvent(const SDL_Event& event) override {
+        if (event.type == SDL_EVENT_WINDOW_MINIMIZED) {
+            minimized_ = true;
+            SDL_AddTimer(50, restore, nullptr);
+        } else if (event.type == SDL_EVENT_WINDOW_RESTORED) {
+            restored_ = true;
+        }
+        return false;
+    }
+
+    int ticks_ = 0;
+    int ticksWhileMinimized_ = 0;
+    bool minimized_ = false;
+    bool restored_ = false;
+
+ protected:
+    v3d::engine::Features features() const override {
+        return v3d::engine::Features();
+    }
+
+ private:
+    static void push(Uint32 type) {
+        SDL_Event event{};
+        event.type = type;
+        SDL_PushEvent(&event);
+    }
+
+    static Uint32 restore(void* /* user */, SDL_TimerID /* timer */, Uint32 /* interval */) {
+        push(SDL_EVENT_WINDOW_RESTORED);
+        return 0;
+    }
+};
+
+};  // namespace
+
+/**
+ * A minimized window shows nothing, so the loop sleeps until an event arrives rather than
+ * ticking and presenting empty frames. The game resumes when the window comes back.
+ **/
+BOOST_AUTO_TEST_CASE(engine_waits_while_the_window_is_minimized_test) {
+    BOOST_REQUIRE(SDL_InitSubSystem(SDL_INIT_EVENTS));
+    {
+        MinimizedEngine engine(appPath("good"));
+        BOOST_REQUIRE(engine.initialize());
+        BOOST_TEST(engine.eventLoop());
+
+        BOOST_TEST(engine.restored_);
+        BOOST_CHECK_EQUAL(engine.ticksWhileMinimized_, 0);
+        BOOST_CHECK_EQUAL(engine.ticks_, 2);
+    }
+    SDL_QuitSubSystem(SDL_INIT_EVENTS);
+}

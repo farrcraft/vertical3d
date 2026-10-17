@@ -17,6 +17,12 @@ What the engine calls each frame, and which call a piece of work belongs in.
 
 If `tick`, `simulate` or `render` returns false, the loop ends and the run fails.
 
+**While the window is minimised, the loop sleeps.** After step 1 it waits for the next event,
+routes it, and starts again. It does not tick, simulate or render. A minimised window shows
+nothing, so the game pauses there and resumes where it stopped, and the time spent minimised is
+not counted as a frame. The engine tracks the state from SDL's minimise, restore and maximise
+events, and from the window's flags when the loop starts. Sound keeps playing.
+
 ### tick and simulate
 
 The two virtual functions take different units on purpose:

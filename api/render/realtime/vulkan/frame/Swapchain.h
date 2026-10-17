@@ -161,6 +161,9 @@ class Swapchain final {
     VkFormat format_;
     VkExtent2D extent_;
     bool copyable_;
+    // whether the last create() found no area, so the change is logged once rather than on
+    // every rebuild while the window stays that way
+    bool arealess_ = false;
     std::vector<VkImage> images_;
     std::vector<VkImageView> views_;
 };

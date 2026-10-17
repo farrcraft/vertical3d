@@ -35,12 +35,11 @@ an asset is found there. It failed on both checks before the manifest.
 
 ### Step 2 — A minimised window waits
 
-**Open.** [TODO.md](../TODO.md#frames), "A minimised window busy-loops and floods the log".
-
-- While the window has no area, the loop waits for an event rather than presenting.
-- The swapchain logs the change of state once, not every frame.
-- This is a loop change, so it is checked by minimising pong and reading the log, as well as by any
-  headless test of the loop's wait.
+**Closed.** While the window is minimised, `eventLoop()` waits for the next event and neither ticks,
+simulates nor renders. The swapchain logs that the window has no area only when that changes.
+`engine_waits_while_the_window_is_minimized_test` minimises a windowless engine with a pushed
+event and restores it from a timer. Pong minimised for five seconds wrote one log line and used no
+CPU, where before two seconds wrote twelve thousand lines.
 
 ### Step 3 — Bindings to commands nothing handles
 

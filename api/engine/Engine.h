@@ -61,9 +61,14 @@ class Engine {
     bool initialize();
 
     /**
-     * The game loop entry point
-     * 
-     * @return bool
+     * The game loop: poll events, tick, simulate each fixed step that is due, and render,
+     * until quit() is called.
+     *
+     * While the window is minimized the loop sleeps until the next event, and neither ticks,
+     * simulates nor renders. A minimized window shows nothing, so a game pauses there and
+     * resumes where it stopped. The time spent minimized is not counted as a frame.
+     *
+     * @return false when tick(), simulate() or render() returned false
      **/
     bool eventLoop();
 
@@ -258,8 +263,8 @@ class Engine {
 
  private:
      /**
-      * Handle one event the input devices did not take: a quit, a resize or a focus
-      * change. eventLoop() decides when to poll for events; this decides what the engine
+      * Handle one event the input devices did not take: a quit, a resize, a focus change or
+      * a window minimized or restored. eventLoop() decides when to poll for events; this decides what the engine
       * does with one.
       **/
      void handleEvent(const SDL_Event& event);
@@ -307,6 +312,7 @@ class Engine {
      // after dispatcher_, so it disconnects before the dispatcher it points into can go
      entt::scoped_connection quitCommand_;
      bool quitting_;
+     bool minimized_ = false;
      boost::shared_ptr<v3d::input::Engine> inputEngine_;
 };
 

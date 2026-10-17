@@ -204,9 +204,13 @@ void Swapchain::create(uint32_t width, uint32_t height) {
         format_ = surfaceFormat.format;
         extent_ = extent;
         copyable_ = false;
-        logger_->get()->info("Window has no area, leaving the vulkan swapchain empty");
+        if (!arealess_) {
+            logger_->get()->info("Window has no area, leaving the vulkan swapchain empty");
+        }
+        arealess_ = true;
         return;
     }
+    arealess_ = false;
 
     // one more than the minimum, so we are not always waiting on the driver for an image
     uint32_t imageCount = support.capabilities.minImageCount + 1;
