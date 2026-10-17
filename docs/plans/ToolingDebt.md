@@ -9,8 +9,8 @@ deleted there. A check's row is deleted when the check is enabled.
 
 ## Decisions
 
-No step needs an ADR in advance. One question is left to the step that meets it, under
-[Open questions](#open-questions).
+No step needs an ADR in advance. The one open question, the Blender fixture generator, closed in
+step 4.
 
 ## What blocks what
 
@@ -49,11 +49,12 @@ lavapipe, so the first CI run on a PR checks it, alongside step 2.
 
 ### Step 4 — The glTF fixture generators in TypeScript
 
-**Open.** [TODO.md](../TODO.md#tests), "The glTF fixture generators are Python".
-
-- Port the five hand-written generators in `api/asset/tests/data/` to TypeScript run by Node.
-- Each port writes a fixture byte for byte identical to the committed one.
-- The Blender generator is the open question below.
+**Done.** The five hand-written generators are TypeScript, sharing `gltf_writer.ts`. Each writes
+its fixtures byte for byte identical to the committed ones, which the Python generators also
+reproduced before they were deleted. Python writes a whole float as `1.0` and JavaScript as `1`,
+so the writer marks which numbers are floats and writes them through `JSON.rawJSON`. The Blender
+generator stays, as the open question recommended. [Testing.md](../contributing/Testing.md)
+names it as the one Python file in the tree.
 
 ### Steps 5 to 17 — One check each
 
@@ -101,5 +102,5 @@ write the Outcome section, and move this plan to [completed/](completed/).
 
 - **The Blender fixture generator.** `make_blender_fixture.py` runs inside Blender, which scripts
   only in Python. Either keep it as the one Python file in the tree, or delete it and keep only the
-  fixture it wrote. Recommendation: keep it, because a fixture that cannot be regenerated cannot be
-  changed.
+  fixture it wrote. **Closed in step 4: kept**, because a fixture that cannot be regenerated cannot
+  be changed.

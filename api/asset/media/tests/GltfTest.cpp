@@ -33,20 +33,20 @@
 namespace {
 
 // three primitives, the third of them not indexed and all three sharing one material -
-// api/asset/tests/data/make_model_fixture.py generates it and says why it is shaped that way
+// api/asset/tests/data/make_model_fixture.ts generates it and says why it is shaped that way
 const char* FIXTURE = "three_primitives.glb";
 
 // one triangle whose base colour texture is a bufferView holding pixel.png, which is the
-// case the named-texture fixture cannot cover - api/asset/tests/data/make_embedded_fixture.py
+// case the named-texture fixture cannot cover - api/asset/tests/data/make_embedded_fixture.ts
 const char* EMBEDDED = "embedded_texture.glb";
 
 // two meshes under a turned parent, with three primitives over two materials -
-// api/asset/tests/data/make_parts_fixture.py, which also writes the same file with no scene
+// api/asset/tests/data/make_parts_fixture.ts, which also writes the same file with no scene
 const char* PARTS = "two_surfaces.glb";
 const char* SCENELESS = "two_surfaces_no_scene.glb";
 
 // a strip bound to a chain of three joints, and the same skin listed child first -
-// api/asset/tests/data/make_skin_fixture.py
+// api/asset/tests/data/make_skin_fixture.ts
 const char* SKINNED = "bending_strip.glb";
 const char* SHUFFLED = "bending_strip_shuffled.glb";
 
@@ -596,7 +596,7 @@ BOOST_AUTO_TEST_CASE(gltf_a_blender_clip_bends_the_rig_test) {
  * A triangle strip and a triangle fan become triangle lists, wound as glTF winds them, and a
  * primitive of lines or points is left out. Every triangle of the fixture faces +z, so a strip
  * that did not swap every other triangle shows up as one facing the other way.
- * api/asset/tests/data/make_modes_fixture.py generates it.
+ * api/asset/tests/data/make_modes_fixture.ts generates it.
  **/
 BOOST_AUTO_TEST_CASE(gltf_strips_and_fans_become_lists_test) {
     boost::shared_ptr<v3d::type::Model> model = load("primitive_modes.gltf");

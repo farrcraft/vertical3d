@@ -28,7 +28,7 @@ using v3d::type::animation::Pose;
 namespace {
 
 /**
- * The bending strip's skeleton, as api/asset/tests/data/make_skin_fixture.py writes it: root,
+ * The bending strip's skeleton, as api/asset/tests/data/make_skin_fixture.ts writes it: root,
  * middle and top in a chain a unit apart along +y, each bound where it stands.
  **/
 Skeleton strip() {

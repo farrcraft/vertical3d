@@ -302,14 +302,6 @@ Due when one does.
 ## Tests
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.
-[ToolingDebt](plans/ToolingDebt.md) takes the fixture generators.
-
-[] **The glTF fixture generators are Python.** The repository holds no Python, and committed
-scripts are TypeScript run by Node. Five generators in `api/asset/tests/data/` write glTF by hand
-and can move to TypeScript: `make_embedded_fixture.py`, `make_model_fixture.py`,
-`make_modes_fixture.py`, `make_parts_fixture.py` and `make_skin_fixture.py`.
-`make_blender_fixture.py` runs inside Blender, which scripts only in Python, so it needs a
-decision of its own: keep it as the one exception, or keep only the fixture it wrote.
 
 [] **Nothing tests a requested model that decodes and does not upload.** `MeshRegistry::poll`
 logs and abandons such a request, but no fixture decodes cleanly and then fails `upload()`'s

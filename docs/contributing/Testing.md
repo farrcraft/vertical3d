@@ -113,6 +113,13 @@ on the next build whether or not the suite relinks:
 
 See [Traps](#traps) for what the copy means when you add a fixture.
 
+The glTF fixtures in `api/asset/tests/data/` are written by generators beside them, and each
+generator's header says why its fixture is shaped as it is. A `make_*_fixture.ts` generator writes
+glTF by hand through `gltf_writer.ts`, and Node runs it from the root of the tree:
+`node api/asset/tests/data/make_skin_fixture.ts`. `make_blender_fixture.py` builds a rig in
+Blender and exports it with Blender's own exporter. Blender scripts only in Python, so it is the
+one Python file in the tree. Its header gives the command line.
+
 ### Patterns the suites use
 
 - **Test the decision, not the effect.** For example, the 2D clipping tests check the scissor
