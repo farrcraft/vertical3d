@@ -5,9 +5,9 @@
 
 #include "Bmp.h"
 
-#include <api/image/BmpFileHeader.h>
-#include <api/image/BmpInfoHeader.h>
-#include <api/image/BmpRgbQuad.h>
+#include <api/image/format/BmpFileHeader.h>
+#include <api/image/format/BmpInfoHeader.h>
+#include <api/image/format/BmpRgbQuad.h>
 #include <api/image/Channels.h>
 
 #include <cstring>
@@ -40,18 +40,18 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     if (file.fail())
         return false;
 
-    bmp_file_header fheader;
-    memset(&fheader, 0, sizeof(bmp_file_header));
+    format::bmp_file_header fheader;
+    memset(&fheader, 0, sizeof(format::bmp_file_header));
 
     fheader.type_ = 19778;
-    fheader.offset_ = sizeof(bmp_file_header) + sizeof(bmp_info_header) + shades * sizeof(bmp_rgb_quad);
+    fheader.offset_ = sizeof(format::bmp_file_header) + sizeof(format::bmp_info_header) + shades * sizeof(format::bmp_rgb_quad);
     // the total file size, filled in below once the padded data length is known
     fheader.size_ = fheader.offset_;
 
-    bmp_info_header iheader;
-    memset(&iheader, 0, sizeof(bmp_info_header));
+    format::bmp_info_header iheader;
+    memset(&iheader, 0, sizeof(format::bmp_info_header));
 
-    iheader.size_ = sizeof(bmp_info_header);
+    iheader.size_ = sizeof(format::bmp_info_header);
     iheader.width_ = img->width();
     iheader.height_ = img->height();
     iheader.bits_ = img->bpp();
@@ -80,15 +80,15 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     fheader.size_ = static_cast<uint32_t>(fheader.offset_ + size);
 
     // write the headers
-    file.write(reinterpret_cast<char*>(&fheader), sizeof(bmp_file_header));
-    file.write(reinterpret_cast<char*>(&iheader), sizeof(bmp_info_header));
+    file.write(reinterpret_cast<char*>(&fheader), sizeof(format::bmp_file_header));
+    file.write(reinterpret_cast<char*>(&iheader), sizeof(format::bmp_info_header));
 
     // the whole ramp, as many entries as the header says the file uses
     for (uint32_t shade = 0; shade < shades; ++shade) {
-        bmp_rgb_quad entry;
+        format::bmp_rgb_quad entry;
         entry.blue_ = entry.green_ = entry.red_ = static_cast<unsigned char>(shade);
         entry.reserved_ = 0;
-        file.write(reinterpret_cast<char*>(&entry), sizeof(bmp_rgb_quad));
+        file.write(reinterpret_cast<char*>(&entry), sizeof(format::bmp_rgb_quad));
     }
 
     std::vector<unsigned char> scratch(size);

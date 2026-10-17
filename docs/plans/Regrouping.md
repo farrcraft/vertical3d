@@ -8,7 +8,7 @@ one sweeps comments, and one updates the documents. No step changes behaviour.
 | 1 `realtime/entity` | landed | 5 `ui::component::menu` | open |
 | 2 `realtime/lighting` | landed | 6 `libmoya/reyes` | open |
 | 3 `realtime/canvas` | landed | 7 libmoya comments | open |
-| 4 `image/format` | open | 8 documents | open |
+| 4 `image/format` | landed | 8 documents | open |
 
 The rule is the one in [Conventions.md](../contributing/Conventions.md#directories): a directory
 splits when its files serve different purposes, not when it reaches a size. A class in a
@@ -171,6 +171,11 @@ image/format/   BmpFileHeader BmpInfoHeader BmpRgbQuad JpegError   v3d::image::f
 
 Eight includes change, all in `image/reader/` and `image/writer/`. The names keep their `Bmp`
 and `Jpeg` prefixes, because those name the format, not the directory.
+
+**Landed.** Build clean, 26 of 26 suites pass, cpplint clean. The three Bmp headers declare
+`bmp_file_header`, `bmp_info_header` and `bmp_rgb_quad`, not the names of their files, and
+`JpegError.h` also declares `jpegErrorExit`. The two Bmp codecs and the two Jpeg codecs name
+them as `format::` now. No document named them.
 
 ### Step 5 — `ui::component::menu`
 

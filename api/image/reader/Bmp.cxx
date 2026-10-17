@@ -5,9 +5,9 @@
 
 #include "Bmp.h"
 
-#include <api/image/BmpFileHeader.h>
-#include <api/image/BmpInfoHeader.h>
-#include <api/image/BmpRgbQuad.h>
+#include <api/image/format/BmpFileHeader.h>
+#include <api/image/format/BmpInfoHeader.h>
+#include <api/image/format/BmpRgbQuad.h>
 
 #include <bit>
 #include <cstddef>
@@ -25,8 +25,8 @@ Bmp::Bmp(const boost::shared_ptr<v3d::log::Logger>& logger) : Reader(logger) {
 
 namespace {
 
-void logHeaders(const boost::shared_ptr<v3d::log::Logger>& logger, const bmp_file_header& fheader,
-    const bmp_info_header& iheader, int num_colors) {
+void logHeaders(const boost::shared_ptr<v3d::log::Logger>& logger, const format::bmp_file_header& fheader,
+    const format::bmp_info_header& iheader, int num_colors) {
     logger->get()->debug("BMPReader::read - bmp type: {}", fheader.type_);
     logger->get()->debug("BMPReader::read - bmp size: {}", fheader.size_);
     logger->get()->debug("BMPReader::read - bmp reserved1: {}", fheader.reserved1_);
@@ -100,7 +100,7 @@ const uint32_t bitfields = 3;
  * Whether the reader has a conversion for this file: 8, 16, 24 or 32 bits, uncompressed or, at
  * 16 and 32 bits, packed by masks, and with pixels to read.
  **/
-bool supported(const bmp_info_header& header, const boost::shared_ptr<v3d::log::Logger>& logger) {
+bool supported(const format::bmp_info_header& header, const boost::shared_ptr<v3d::log::Logger>& logger) {
     const unsigned int bits = header.bits_;
     if (bits != 8 && bits != 16 && bits != 24 && bits != 32) {
         logger->get()->error("BMPReader::read - {} bit bmps are not supported", bits);
@@ -111,7 +111,7 @@ bool supported(const bmp_info_header& header, const boost::shared_ptr<v3d::log::
         logger->get()->error("BMPReader::read - compression {} is not supported", header.compression_);
         return false;
     }
-    if (header.width_ <= 0 || header.height_ == 0 || header.size_ < sizeof(bmp_info_header)) {
+    if (header.width_ <= 0 || header.height_ == 0 || header.size_ < sizeof(format::bmp_info_header)) {
         logger->get()->error("BMPReader::read - the bmp has no pixels, or a header too small to be one");
         return false;
     }
@@ -123,7 +123,7 @@ bool supported(const bmp_info_header& header, const boost::shared_ptr<v3d::log::
  * or the masks the file gives. A 40 byte header is followed by three masks, and a longer one
  * holds them and an alpha mask too.
  **/
-bool readMasks(const unsigned char* encoded, std::size_t length, const bmp_info_header& header, Masks* masks) {
+bool readMasks(const unsigned char* encoded, std::size_t length, const format::bmp_info_header& header, Masks* masks) {
     if (header.bits_ == 16) {
         // an uncompressed 16 bit file has five bits a channel
         *masks = Masks{0x7C00u, 0x03E0u, 0x001Fu, 0u};
@@ -133,8 +133,8 @@ bool readMasks(const unsigned char* encoded, std::size_t length, const bmp_info_
     if (header.compression_ != bitfields) {
         return true;
     }
-    const std::size_t held = sizeof(bmp_file_header) + sizeof(bmp_info_header);
-    const bool alpha = header.size_ >= sizeof(bmp_info_header) + 16;
+    const std::size_t held = sizeof(format::bmp_file_header) + sizeof(format::bmp_info_header);
+    const bool alpha = header.size_ >= sizeof(format::bmp_info_header) + 16;
     if (length < held + (alpha ? 16 : 12)) {
         return false;
     }
@@ -149,15 +149,15 @@ bool readMasks(const unsigned char* encoded, std::size_t length, const bmp_info_
  * An 8 bit file's colour table, which follows the info header whatever that header's length.
  * A file says how many entries it uses, and none means all of them.
  **/
-bool readPalette(const unsigned char* encoded, std::size_t length, const bmp_info_header& header,
-    std::vector<bmp_rgb_quad>* colors) {
-    const std::size_t at = sizeof(bmp_file_header) + header.size_;
+bool readPalette(const unsigned char* encoded, std::size_t length, const format::bmp_info_header& header,
+    std::vector<format::bmp_rgb_quad>* colors) {
+    const std::size_t at = sizeof(format::bmp_file_header) + header.size_;
     const std::size_t used = header.used_ == 0 || header.used_ > 256 ? 256 : header.used_;
-    const std::size_t table = sizeof(bmp_rgb_quad) * used;
+    const std::size_t table = sizeof(format::bmp_rgb_quad) * used;
     if (length < at || length - at < table) {
         return false;
     }
-    colors->assign(256, bmp_rgb_quad{});
+    colors->assign(256, format::bmp_rgb_quad{});
     memcpy(colors->data(), encoded + at, table);
     return true;
 }
@@ -168,9 +168,9 @@ bool readPalette(const unsigned char* encoded, std::size_t length, const bmp_inf
  * @return whether its alpha is anything but zero
  **/
 bool convertPixel(const unsigned char* src, uint64_t column, const Layout& layout, const Masks& masks,
-    const std::vector<bmp_rgb_quad>& colors, unsigned char* out) {
+    const std::vector<format::bmp_rgb_quad>& colors, unsigned char* out) {
     if (layout.bits == 8) {
-        const bmp_rgb_quad& entry = colors[src[column]];
+        const format::bmp_rgb_quad& entry = colors[src[column]];
         out[0] = entry.red_;
         out[1] = entry.green_;
         out[2] = entry.blue_;
@@ -202,7 +202,7 @@ bool convertPixel(const unsigned char* src, uint64_t column, const Layout& layou
  * everywhere did not use it, as most writers do not, and is made opaque rather than invisible.
  **/
 void convertRows(const unsigned char* pixels, const Layout& layout, const Masks& masks,
-    const std::vector<bmp_rgb_quad>& colors, unsigned char* data) {
+    const std::vector<format::bmp_rgb_quad>& colors, unsigned char* data) {
     bool anyAlpha = false;
     for (uint64_t row = 0; row < layout.rows; ++row) {
         const unsigned char* src = pixels + (layout.bottomUp ? layout.rows - 1 - row : row) * layout.pad;
@@ -229,16 +229,16 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
     }
 
     // the two headers come first, one after the other
-    bmp_file_header fheader;
-    memset(&fheader, 0, sizeof(bmp_file_header));
-    bmp_info_header iheader;
-    memset(&iheader, 0, sizeof(bmp_info_header));
-    if (length < sizeof(bmp_file_header) + sizeof(bmp_info_header)) {
+    format::bmp_file_header fheader;
+    memset(&fheader, 0, sizeof(format::bmp_file_header));
+    format::bmp_info_header iheader;
+    memset(&iheader, 0, sizeof(format::bmp_info_header));
+    if (length < sizeof(format::bmp_file_header) + sizeof(format::bmp_info_header)) {
         logger_->get()->error("BMPReader::read - error reading bmp headers!");
         return empty_ptr;
     }
-    memcpy(&fheader, encoded, sizeof(bmp_file_header));
-    memcpy(&iheader, encoded + sizeof(bmp_file_header), sizeof(bmp_info_header));
+    memcpy(&fheader, encoded, sizeof(format::bmp_file_header));
+    memcpy(&iheader, encoded + sizeof(format::bmp_file_header), sizeof(format::bmp_info_header));
 
     if (fheader.type_ != 19778) {
         logger_->get()->error("BMPReader::read - bad header magic number!");
@@ -256,7 +256,7 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
         logger_->get()->error("BMPReader::read - error reading bmp masks!");
         return empty_ptr;
     }
-    std::vector<bmp_rgb_quad> colors;
+    std::vector<format::bmp_rgb_quad> colors;
     if (iheader.bits_ == 8 && !readPalette(encoded, length, iheader, &colors)) {
         logger_->get()->error("BMPReader::read - error reading bmp colors!");
         return empty_ptr;

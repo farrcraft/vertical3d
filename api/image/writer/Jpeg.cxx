@@ -5,7 +5,7 @@
 
 #include "Jpeg.h"
 
-#include <api/image/JpegError.h>
+#include <api/image/format/JpegError.h>
 
 #include <cstdio>
 #include <string>
@@ -33,9 +33,9 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
     }
 
     struct jpeg_compress_struct cinfo;
-    JpegError jerr;
+    format::JpegError jerr;
     cinfo.err = jpeg_std_error(&jerr.pub);
-    jerr.pub.error_exit = jpegErrorExit;
+    jerr.pub.error_exit = format::jpegErrorExit;
 
     // a jpeg has no alpha, so an RGBA image goes out a row at a time with it dropped. The
     // row is declared here because longjmp destroys nothing constructed after the setjmp

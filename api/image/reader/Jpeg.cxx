@@ -5,7 +5,7 @@
 
 #include "Jpeg.h"
 
-#include <api/image/JpegError.h>
+#include <api/image/format/JpegError.h>
 
 #include <cstddef>
 #include <string>
@@ -24,10 +24,10 @@ boost::shared_ptr<Image> Jpeg::read(const unsigned char* encoded, std::size_t si
 
     struct jpeg_decompress_struct cinfo;
 
-    JpegError jerr;
+    format::JpegError jerr;
     // We set up the normal JPEG error routines, then override error_exit.
     cinfo.err = jpeg_std_error(&jerr.pub);
-    jerr.pub.error_exit = jpegErrorExit;
+    jerr.pub.error_exit = format::jpegErrorExit;
     // longjmp does not destroy anything constructed after the setjmp point, so every
     // object below that owns memory is declared above it. The decoder signals failure by
     // longjmping out of any of the jpeg_* calls that follow.

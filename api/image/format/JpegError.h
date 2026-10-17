@@ -10,7 +10,7 @@
 #include <setjmp.h>
 #include <jpeglib.h>
 
-namespace v3d::image {
+namespace v3d::image::format {
 
 // jmp_buf is over-aligned, so the struct is padded to suit it. That is the platform's
 // requirement rather than something to pack away, and nothing here is written to a file.
@@ -39,4 +39,4 @@ inline void jpegErrorExit(j_common_ptr cinfo) {
     longjmp(error->setjmp_buffer, 1);
 }
 
-};  // namespace v3d::image
+};  // namespace v3d::image::format

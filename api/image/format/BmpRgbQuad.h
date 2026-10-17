@@ -5,7 +5,7 @@
 
 #pragma once
 
-namespace v3d::image {
+namespace v3d::image::format {
 
 #pragma pack(push, 2)
 
@@ -18,4 +18,4 @@ struct bmp_rgb_quad {
 
 #pragma pack(pop)
 
-};  // namespace v3d::image
+};  // namespace v3d::image::format

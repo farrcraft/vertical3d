@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-namespace v3d::image {
+namespace v3d::image::format {
 
 #pragma pack(push, 2)
 
@@ -21,4 +21,4 @@ struct bmp_file_header {
 
 #pragma pack(pop)
 
-};  // namespace v3d::image
+};  // namespace v3d::image::format
