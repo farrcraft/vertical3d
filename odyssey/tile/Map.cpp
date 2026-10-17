@@ -10,6 +10,7 @@
 #include <api/grid/Unknown.h>
 
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -83,7 +84,7 @@ Map::Map(const boost::shared_ptr<v3d::log::Logger>& logger) :
 
 /**
  **/
-bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document) {
+bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document, const std::optional<glm::vec3>& corner) {
     if (!document) {
         logger_->get()->error("there is no map document to read");
         return false;
@@ -108,7 +109,7 @@ bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document) {
         lines.push_back(boost::json::value_to<std::string>(row));
     }
 
-    v3d::grid::Picture picture = v3d::grid::fromPicture(lines, legend());
+    v3d::grid::Picture picture = v3d::grid::fromPicture(lines, legend(), TILE_SIZE, corner);
     if (!picture.grid) {
         logger_->get()->error("the map cannot be read: {}", picture.error);
         return false;

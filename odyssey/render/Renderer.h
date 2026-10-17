@@ -6,17 +6,18 @@
 #pragma once
 
 #include <api/asset/Manager.h>
+#include <api/grid/TileCoord.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
 #include <odyssey/engine/Player.h>
-#include <odyssey/tile/Map.h>
-#include <odyssey/tile/Sight.h>
+#include <odyssey/tile/World.h>
 
 #include <string>
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
+#include <glm/vec4.hpp>
 
 namespace odyssey::render {
 /**
@@ -49,15 +50,11 @@ class Renderer final {
     void player(const boost::shared_ptr<odyssey::engine::Player>& player);
 
     /**
-     * The board to draw under everything else, or null to draw none.
+     * The world to draw under everything else, or null to draw none. Each loaded region is drawn
+     * with what the player can see of it: a tile out of sight is drawn from memory, and one never
+     * seen is not drawn at all.
      **/
-    void map(const boost::shared_ptr<odyssey::tile::Map>& map);
-
-    /**
-     * What the player can see, or null to draw the whole board lit. A tile out of sight is
-     * drawn from memory and one never seen is not drawn at all.
-     **/
-    void sight(const boost::shared_ptr<odyssey::tile::Sight>& sight);
+    void world(const boost::shared_ptr<odyssey::tile::World>& world);
 
     /**
      * Wait for everything in flight, before the window the device draws to goes away.
@@ -66,23 +63,32 @@ class Renderer final {
 
  private:
     /**
-     * The board, one untextured quad per tile. They are drawn first and the pass is in
-     * submission order, so everything else lands on top of them.
+     * The loaded regions, one untextured quad per tile on screen. They are drawn first and the
+     * pass is in submission order, so everything else lands on top of them.
      *
-     * A tile never seen is left undrawn rather than drawn black, so the clear colour is
-     * what unexplored ground looks like and one less quad reaches the device for it.
+     * A tile never seen is left undrawn rather than drawn black, so the clear colour is what
+     * unexplored ground, and a region not loaded yet, looks like.
      **/
-    void drawMap();
+    void drawWorld(v3d::grid::TileCoord view);
 
     /**
-     * The sprite, at the tile its entity's position names.
+     * One tile's quad, at a column and row of the screen, inset by a hairline on every side.
      **/
-    void drawPlayer();
+    void drawTile(int column, int row, const glm::vec4& colour);
+
+    /**
+     * The sprite, at the world tile its entity's position names.
+     **/
+    void drawPlayer(v3d::grid::TileCoord view);
+
+    /**
+     * @return the world tile at the screen's top left, which follows the player
+     **/
+    v3d::grid::TileCoord view() const;
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<odyssey::engine::Player> player_;
-    boost::shared_ptr<odyssey::tile::Map> map_;
-    boost::shared_ptr<odyssey::tile::Sight> sight_;
+    boost::shared_ptr<odyssey::tile::World> world_;
     entt::registry* registry_;
 
     v3d::render::realtime::Canvas canvas_;

@@ -10,11 +10,13 @@
 #include <api/grid/TileGrid.h>
 #include <api/log/Logger.h>
 
+#include <optional>
 #include <vector>
 
 #include "Tile.h"
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec3.hpp>
 
 namespace odyssey::tile {
 
@@ -39,6 +41,11 @@ namespace odyssey::tile {
 class Map final {
  public:
     /**
+     * A tile's edge in world units. One, so that a world position's whole part names its tile.
+     **/
+    static constexpr float TILE_SIZE = 1.0f;
+
+    /**
      * @param logger where a malformed document is reported
      **/
     explicit Map(const boost::shared_ptr<v3d::log::Logger>& logger);
@@ -50,9 +57,11 @@ class Map final {
      * no kind is rejected rather than patched: a map that loaded as something other than
      * what was written is worse than one that did not load.
      *
+     * @param corner where the grid's minimum corner is placed in the world, for a region; the
+     *        grid is centred on the origin without one
      * @return whether the document was understood
      **/
-    bool load(const boost::shared_ptr<v3d::asset::kind::Json>& document);
+    bool load(const boost::shared_ptr<v3d::asset::kind::Json>& document, const std::optional<glm::vec3>& corner = std::nullopt);
 
     /**
      * @return whether a map has been loaded, and so whether grid() may be dereferenced

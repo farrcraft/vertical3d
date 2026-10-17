@@ -15,6 +15,7 @@ add_executable(Odyssey
 	"tile/Map.h" "tile/Map.cpp"
 	"tile/Sight.h" "tile/Sight.cpp"
 	"tile/Tile.h" "tile/Size.h"
+	"tile/World.h" "tile/World.cpp"
 	"ui/Screen.h" "ui/Screen.cpp"
 )
 
@@ -29,6 +30,7 @@ target_link_libraries(Odyssey
 		"v3dlib_input"
 		"v3dlib_log"
 		"v3dlib_render"
+		"v3dlib_type"
 )
 
 v3d_add_app_data(Odyssey)

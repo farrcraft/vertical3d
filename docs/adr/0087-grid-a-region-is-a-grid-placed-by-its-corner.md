@@ -1,6 +1,6 @@
 # ADR-0087: Grid: a region is a grid placed by its corner
 
-**Status**: proposed
+**Status**: accepted
 **Date**: 2026-10-16
 **Documented in**: [docs/api/Grid.md](../api/Grid.md)
 

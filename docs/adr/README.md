@@ -112,7 +112,7 @@ content went. Numbers are never reused.
 | [0063](0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md) | ECS: draw from a transform plus a component per kind | accepted |
 | [0070](0070-animation-cpu-sampling-playback-on-the-fixed-step.md) | Animation: CPU sampling, playback on the fixed step | accepted |
 | [0072](0072-particles-an-emitter-component-owns-its-particles.md) | Particles: an emitter component owns its particles | accepted |
-| [0087](0087-grid-a-region-is-a-grid-placed-by-its-corner.md) | Grid: a region is a grid placed by its corner | proposed |
+| [0087](0087-grid-a-region-is-a-grid-placed-by-its-corner.md) | Grid: a region is a grid placed by its corner | accepted |
 
 ## Editor
 

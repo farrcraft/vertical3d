@@ -144,17 +144,15 @@ Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4
 
 `api/grid` is a library of its own, and odyssey uses it. The grid owns a map's picture and
 terrain legend; the rest of a map belongs to the game. [Grid.md](api/Grid.md) describes the
-library. [StreamingWorlds](plans/StreamingWorlds.md) takes the first entry below.
-
-[] **No game in the tree is made of regions.**
+library. 
+[] **A route and sight stop at a region's edge.**
 
 - A region is a grid placed by its corner, and [Grid.md](api/Grid.md#regions) states the rules.
-  No game uses one yet, so loading a region while the game runs, and crossing from one region to
-  the next, have never been exercised.
-- odyssey is the only game with a grid. Its player, sight and renderer work in one grid's tile
-  coordinates, so splitting its map would change how the game places and draws everything.
-- A route or a line of sight across regions is the game's to join. Nothing in the api does it.
-- Due when a game's world is larger than one board.
+  odyssey loads its regions as the player approaches and crosses between them by stepping.
+- `findPath` and `hasLineOfSight` each take one grid, so odyssey's clicked routes and its sight
+  stay within the region the player stands in. The next region is dark until the player crosses.
+- Joining them needs a search over several grids, or a game that stitches one together.
+- Due when a game needs a route, or sight, that crosses a seam.
 
 [] **Remembered sight belongs in `api/grid`.**
 

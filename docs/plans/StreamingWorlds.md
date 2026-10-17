@@ -203,7 +203,16 @@ fixes the known review finding beside it. [Grid.md](../api/Grid.md#regions) stat
 
 #### Step 9 — Two regions in odyssey
 
-**Open.** Needs steps 4 and 8.
+**Closed.** odyssey's world is `data/world.json`: two 20 × 12 regions side by side, joined by a
+doorway. `tile::World` loads the start region at once, loads another on an `asset::Worker` when
+the player comes within 4 tiles of it, and releases it beyond 10. A region keeps its remembered
+sight while released. A tile is one world unit, positions are world tiles, and the screen scrolls
+with the player. A key step crosses the seam once the next region is loaded. The odyssey suite
+tests loading, placement, release, a dropped load, a region that cannot be read, a world
+destroyed before its loads arrive, the view and the document's refusals. A run with input
+walked the player through the doorway into the east region, with validation on and nothing
+logged. Regions are textures and documents, not meshes, so step 4's mesh request is not used;
+the world posts its own jobs. [Games.md](../Games.md#odyssey) describes the world.
 
 - odyssey's map becomes two regions, each with its own map picture, grid and textures.
 - A region is requested when the player approaches it, and released when the player is far

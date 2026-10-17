@@ -212,8 +212,11 @@ case can be tested without a device.
 
 odyssey is the app that uses this library:
 
-- It reads its board from `data/map.json`, a list of rows with one character per tile, and
-  builds the grid with `fromPicture()`. Its own `tile::Kind` decides passability and cover.
+- Its world is two regions side by side. Each reads its board from a list of rows with one
+  character per tile, and builds a grid placed by its corner with `fromPicture()`. Its own
+  `tile::Kind` decides passability and cover.
+- A region is loaded on a worker as the player approaches it and released once the player is
+  far away. A step crosses the seam between two loaded regions.
 - A click routes the player with `findPath()`.
 - `tile::Sight` calls `hasLineOfSight()` to find what the player can see.
 - The map format, how far the player sees and what the player remembers are odyssey's own.
