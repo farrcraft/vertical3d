@@ -21,6 +21,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 | Plan | Area | What it delivers |
 |---|---|---|
 | [ReleaseHardening](ReleaseHardening.md) | Engine, ui, config, grid, rendering, docs | The defects a player of a released game could meet, and the known review findings |
+| [Regrouping](Regrouping.md) | Realtime rendering, image, UI, moya | `render/realtime`, `image` and `libmoya` split into directories by purpose, and every namespace following its directory |
 | [ToolingDebt](ToolingDebt.md) | All of the tree, tests | The thirteen disabled clang-tidy checks enabled, and the test gaps that need no new hardware |
 
 ## Completed plans
