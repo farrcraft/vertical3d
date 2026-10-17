@@ -77,8 +77,8 @@ PipelineHandle depthPipeline(v3d::test::Headless* headless, VkFormat depthFormat
     Builder builder(headless->device);
     builder.name(biased ? "biased-depth" : "depth")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .vertexBinding(0, sizeof(float) * 3)
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0)
+        .vertexBinding({.binding = 0, .stride = sizeof(float) * 3})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0})
         .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
         .depth(true, true)
         .depthBias(biased)
@@ -95,7 +95,7 @@ PipelineHandle depthPipeline(v3d::test::Headless* headless, VkFormat depthFormat
 std::vector<float> drawDepth(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& target,
     const std::optional<float>& bias) {
     const std::vector<float> vertices = quads();
-    Buffer buffer(headless->device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices.size() * sizeof(float));
+    Buffer buffer(headless->device, {.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, .bytes = vertices.size() * sizeof(float)});
     buffer.write(vertices.data(), vertices.size() * sizeof(float));
 
     Frame frame;
@@ -143,7 +143,7 @@ float at(const std::vector<float>& depths, uint32_t x, uint32_t y) {
 std::vector<float> drawBeside(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& target,
     bool depthFirst) {
     const std::vector<float> vertices = quads();
-    Buffer buffer(headless->device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices.size() * sizeof(float));
+    Buffer buffer(headless->device, {.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, .bytes = vertices.size() * sizeof(float)});
     buffer.write(vertices.data(), vertices.size() * sizeof(float));
 
     Frame frame;

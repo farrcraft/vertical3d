@@ -48,7 +48,7 @@ struct Fixture final {
         context(boost::make_shared<v3d::event::Context>("test")),
         renderer(&measured, [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
-        canvas.resize(800, 600);
+        canvas.resize(glm::uvec2(800, 600));
 
         ui = boost::make_shared<v3d::ui::Engine>(
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,

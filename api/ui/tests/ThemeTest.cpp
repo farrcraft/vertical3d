@@ -507,7 +507,7 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
     drawing.theme(ui->theme("dark"));
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
@@ -547,7 +547,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
     drawing.theme(ui->theme("dark"));
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
@@ -573,7 +573,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
 BOOST_AUTO_TEST_CASE(a_button_with_no_skin_is_drawn_flat) {
     v3d::ui::paint::ComponentRenderer drawing = renderer();
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
@@ -595,7 +595,7 @@ BOOST_AUTO_TEST_CASE(a_button_with_no_skin_is_drawn_flat) {
 BOOST_AUTO_TEST_CASE(an_icon_draws_the_texture_it_was_resolved_to) {
     v3d::ui::paint::ComponentRenderer drawing = renderer();
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::Icon> icon =
         boost::make_shared<v3d::ui::component::Icon>("skins/logo.tga");
@@ -644,7 +644,7 @@ BOOST_AUTO_TEST_CASE(an_image_resolved_to_part_of_a_sheet_draws_that_part) {
     BOOST_REQUIRE(icon);
     icon->size(glm::vec2(32.0f, 32.0f));
     v3d::render::realtime::canvas::Canvas iconCanvas;
-    iconCanvas.resize(800, 600);
+    iconCanvas.resize(glm::uvec2(800, 600));
     drawing.draw(&iconCanvas, icon);
     BOOST_REQUIRE_EQUAL(iconCanvas.vertices().size(), 4U);
     BOOST_CHECK_EQUAL(iconCanvas.batches().front().texture.id(), 9U);
@@ -657,7 +657,7 @@ BOOST_AUTO_TEST_CASE(an_image_resolved_to_part_of_a_sheet_draws_that_part) {
     BOOST_REQUIRE(button);
     button->size(glm::vec2(100.0f, 30.0f));
     v3d::render::realtime::canvas::Canvas buttonCanvas;
-    buttonCanvas.resize(800, 600);
+    buttonCanvas.resize(glm::uvec2(800, 600));
     drawing.draw(&buttonCanvas, button);
     BOOST_REQUIRE_EQUAL(buttonCanvas.vertices().size(), 2U * 4U);
     BOOST_CHECK(buttonCanvas.vertices()[0].uv == glm::vec2(0.5f, 0.5f));
@@ -770,7 +770,7 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
     drawing.dressing().iconSize = 20.0f;
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
     drawing.draw(&canvas, *ui);
 
     // the panel, the rule, and one icon per button - and not one label
@@ -805,7 +805,7 @@ BOOST_AUTO_TEST_CASE(an_unresolved_icon_leaves_the_label_drawn) {
         });
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
@@ -836,7 +836,7 @@ BOOST_AUTO_TEST_CASE(a_container_draws_its_labels_and_icons) {
 
     v3d::ui::paint::ComponentRenderer drawing = renderer();
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
     drawing.draw(&canvas, *ui);
 
     // the label is text, which is the app's to draw, and the hidden icon is nothing

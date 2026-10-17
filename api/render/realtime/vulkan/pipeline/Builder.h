@@ -73,17 +73,15 @@ class Builder final {
     Builder& shader(VkShaderStageFlagBits stage, const uint32_t* code, std::size_t bytes);
 
     /**
-     * Add a vertex buffer binding the pipeline reads from.
-     * @param binding which bound vertex buffer, matching the index a draw binds at
-     * @param stride the size of one vertex
+     * Add a vertex buffer binding the pipeline reads from. Its binding is the index a draw binds
+     * the buffer at, and its stride the size of one vertex. A rate left at zero is per vertex.
      **/
-    Builder& vertexBinding(uint32_t binding, uint32_t stride, VkVertexInputRate rate = VK_VERTEX_INPUT_RATE_VERTEX);
+    Builder& vertexBinding(const VkVertexInputBindingDescription & description);
 
     /**
-     * Add one attribute read out of a binding.
-     * @param location the location the vertex shader declares it at
+     * Add one attribute read out of a binding, at the location the vertex shader declares it.
      **/
-    Builder& vertexAttribute(uint32_t location, uint32_t binding, VkFormat format, uint32_t offset);
+    Builder& vertexAttribute(const VkVertexInputAttributeDescription & description);
 
     /**
      * Defaults to a triangle list.
@@ -164,11 +162,11 @@ class Builder final {
     Builder& set(VkDescriptorSetLayout layout);
 
     /**
-     * Declare the push constant block, which holds per object data.
-     * @param stages which stages read it
-     * @param bytes its size, at most DrawItem::pushCapacity for anything a draw item carries
+     * Declare the push constant block, which holds per object data: which stages read it, and
+     * its size, at most DrawItem::pushCapacity for anything a draw item carries. The block
+     * starts at offset zero, whatever the range says.
      **/
-    Builder& push(VkShaderStageFlags stages, uint32_t bytes);
+    Builder& push(const VkPushConstantRange & range);
 
     /**
      * Compile against a layout the caller already owns, rather than building one.

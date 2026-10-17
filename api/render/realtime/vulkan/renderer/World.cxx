@@ -51,8 +51,8 @@ World::World(const boost::shared_ptr<device::Device>& device,
     ring_(ring),
     uniforms_(uniforms),
     textures_(textures) {
-    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, initialVertexBytes, initialIndexBytes);
-    createPipelines(colour, depth);
+    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = initialIndexBytes});
+    createPipelines({.colour = colour, .depth = depth});
 }
 
 /**
@@ -64,24 +64,27 @@ World::~World() {
 
 /**
  **/
-void World::createPipelines(VkFormat colour, VkFormat depth) {
-    pipeline_ = createPipeline("world", colour, VK_FORMAT_UNDEFINED, Blend::Alpha);
-    depthPipeline_ = createPipeline("world-depth", colour, depth, Blend::Alpha);
-    additivePipeline_ = createPipeline("world-additive", colour, VK_FORMAT_UNDEFINED, Blend::Additive);
-    additiveDepthPipeline_ = createPipeline("world-additive-depth", colour, depth, Blend::Additive);
+void World::createPipelines(const pipeline::Formats & formats) {
+    const pipeline::Formats flat{.colour = formats.colour};
+    pipeline_ = createPipeline("world", flat, Blend::Alpha);
+    depthPipeline_ = createPipeline("world-depth", formats, Blend::Alpha);
+    additivePipeline_ = createPipeline("world-additive", flat, Blend::Additive);
+    additiveDepthPipeline_ = createPipeline("world-additive-depth", formats, Blend::Additive);
 }
 
 /**
  **/
-PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, VkFormat depth, Blend blend) {
+PipelineHandle World::createPipeline(const std::string& name, const pipeline::Formats & formats, Blend blend) {
+    const VkFormat colour = formats.colour;
+    const VkFormat depth = formats.depth;
     pipeline::Builder builder(device_);
     builder.name(name)
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
-        .vertexBinding(0, sizeof(canvas::World::Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(canvas::World::Vertex, position))
-        .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(canvas::World::Vertex, uv))
-        .vertexAttribute(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(canvas::World::Vertex, colour))
+        .vertexBinding({.binding = 0, .stride = sizeof(canvas::World::Vertex)})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(canvas::World::Vertex, position)})
+        .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(canvas::World::Vertex, uv)})
+        .vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(canvas::World::Vertex, colour)})
         // a quad standing in the world is seen from whichever side the camera is on, and a
         // tile highlight is seen from above and below
         .cull(VK_CULL_MODE_NONE)

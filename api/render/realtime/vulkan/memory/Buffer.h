@@ -16,6 +16,14 @@
 namespace v3d::render::realtime::vulkan::memory {
 
 /**
+ * What a buffer is bound as - vertex, index, uniform or transfer - and the size it starts at.
+ **/
+struct BufferSpec {
+    VkBufferUsageFlags usage = 0;
+    VkDeviceSize bytes = 0;
+};
+
+/**
  * A host visible buffer the CPU writes directly, kept mapped for its whole life.
  *
  * This is the buffer a frame's geometry is built in: a batcher rewrites the whole thing
@@ -30,10 +38,10 @@ class Buffer final {
  public:
     /**
      * @param device the device to allocate on
-     * @param usage what the buffer will be bound as - vertex, index or transfer source
-     * @param bytes the size to start at, which grow() raises as the content demands
+     * @param spec what the buffer is bound as, and the size to start at, which grow() raises
+     *        as the content demands
      **/
-    Buffer(const boost::shared_ptr<device::Device>& device, VkBufferUsageFlags usage, VkDeviceSize bytes);
+    Buffer(const boost::shared_ptr<device::Device>& device, const BufferSpec& spec);
 
     /**
      **/

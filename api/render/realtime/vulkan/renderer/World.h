@@ -16,6 +16,7 @@
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <vulkan/vulkan.h>
@@ -115,14 +116,14 @@ class World final {
      * of a quad hides it, and two blended quads do not cut holes in each other where their
      * transparent parts overlap.
      **/
-    void createPipelines(VkFormat colour, VkFormat depth);
+    void createPipelines(const pipeline::Formats & formats);
 
     /**
      * Compile one of the four.
      *
      * @param depth the depth format to test against, or undefined for a pass without one
      **/
-    PipelineHandle createPipeline(const std::string& name, VkFormat colour, VkFormat depth, Blend blend);
+    PipelineHandle createPipeline(const std::string& name, const pipeline::Formats & formats, Blend blend);
 
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<pipeline::Cache> cache_;

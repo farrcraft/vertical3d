@@ -56,7 +56,7 @@ Sprite sized(float width, float height, const TextureHandle& texture) {
 void draw(const entt::registry& registry, float alpha, const glm::vec3& across,
     const glm::vec3& rise, const glm::vec3& depthAxis, canvas::World* canvas) {
     DepthOrder order;
-    v3d::render::realtime::entity::sprites(registry, alpha, across, rise, depthAxis, &order);
+    v3d::render::realtime::entity::sprites(registry, alpha, {.right = across, .up = rise, .depthAxis = depthAxis}, &order);
     order.into(canvas);
 }
 
@@ -64,8 +64,21 @@ void draw(const entt::registry& registry, float alpha, const glm::vec3& across,
  * The corners of a billboard built by hand, for comparing against what sprites() emits: half
  * the width either side along right, the height along up, top-left first.
  **/
-canvas::World::Corners billboard(const glm::vec3& feet, float width, float height,
-    const glm::vec3& across, const glm::vec3& rise) {
+/** Where a billboard stands, its size, and the directions its width and height run in. **/
+struct Upright {
+    glm::vec3 feet{0.0f};
+    float width = 1.0f;
+    float height = 1.0f;
+    glm::vec3 across{1.0f, 0.0f, 0.0f};
+    glm::vec3 rise{0.0f, 1.0f, 0.0f};
+};
+
+canvas::World::Corners billboard(const Upright& upright) {
+    const glm::vec3& feet = upright.feet;
+    const float width = upright.width;
+    const float height = upright.height;
+    const glm::vec3& across = upright.across;
+    const glm::vec3& rise = upright.rise;
     const glm::vec3 half = across * (width * 0.5f);
     const glm::vec3 top = rise * height;
     return { feet - half + top, feet + half + top, feet + half, feet - half };
@@ -119,7 +132,7 @@ BOOST_AUTO_TEST_CASE(scale_stretches_and_rotation_does_not_turn) {
     draw(registry, 1.0f, right, up, away, &canvas);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4u);
-    checkQuad(canvas, 0, billboard(glm::vec3(0.0f), 2.0f, 4.0f, right, up));
+    checkQuad(canvas, 0, billboard({.feet = glm::vec3(0.0f), .width = 2.0f, .height = 4.0f, .across = right, .rise = up}));
 }
 
 /**
@@ -154,8 +167,8 @@ BOOST_AUTO_TEST_CASE(a_moving_sprite_is_drawn_between_steps) {
     draw(registry, 0.5f, right, up, away, &canvas);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8u);
-    checkQuad(canvas, 0, billboard(glm::vec3(2.0f, 0.0f, 0.0f), 1.0f, 1.0f, right, up));
-    checkQuad(canvas, 1, billboard(glm::vec3(0.0f, 0.0f, -10.0f), 1.0f, 1.0f, right, up));
+    checkQuad(canvas, 0, billboard({.feet = glm::vec3(2.0f, 0.0f, 0.0f), .width = 1.0f, .height = 1.0f, .across = right, .rise = up}));
+    checkQuad(canvas, 1, billboard({.feet = glm::vec3(0.0f, 0.0f, -10.0f), .width = 1.0f, .height = 1.0f, .across = right, .rise = up}));
 }
 
 /**
@@ -199,8 +212,8 @@ BOOST_AUTO_TEST_CASE(sprite_world_is_drawn_through_sprites) {
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8u);
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1u);
-    checkQuad(canvas, 0, billboard(player, 0.8f, 1.6f, profile.right(), profile.up()));
-    checkQuad(canvas, 1, billboard(acorn, 0.9f, 0.9f, profile.right(), profile.up()));
+    checkQuad(canvas, 0, billboard({.feet = player, .width = 0.8f, .height = 1.6f, .across = profile.right(), .rise = profile.up()}));
+    checkQuad(canvas, 1, billboard({.feet = acorn, .width = 0.9f, .height = 0.9f, .across = profile.right(), .rise = profile.up()}));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

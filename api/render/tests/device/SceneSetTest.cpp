@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
     DescriptorPool pool(headless.device, headless.context->ring(), std::vector<VkDescriptorSetLayoutBinding>{block}, 1, "scene");
 
     const glm::vec4 colour(0.0f, 1.0f, 1.0f, 1.0f);
-    Buffer uniform(headless.device, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(colour));
+    Buffer uniform(headless.device, {.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, .bytes = sizeof(colour)});
     uniform.write(&colour, sizeof(colour));
 
     VkDescriptorSet scene = pool.allocate();

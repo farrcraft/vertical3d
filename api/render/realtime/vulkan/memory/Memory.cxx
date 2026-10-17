@@ -11,7 +11,8 @@ namespace v3d::render::realtime::vulkan::memory {
 
 /**
  **/
-std::optional<uint32_t> memoryType(VkPhysicalDevice device, uint32_t bits, VkMemoryPropertyFlags properties) {
+std::optional<uint32_t> memoryType(VkPhysicalDevice device, const VkMemoryRequirements& requirements, VkMemoryPropertyFlags properties) {
+    const uint32_t bits = requirements.memoryTypeBits;
     VkPhysicalDeviceMemoryProperties available{};
     vkGetPhysicalDeviceMemoryProperties(device, &available);
 

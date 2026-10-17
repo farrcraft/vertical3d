@@ -45,13 +45,16 @@ pipeline::Texture TextureFactory::create(const boost::shared_ptr<v3d::image::Ima
     }
     // bpp really is bits per pixel here, whatever the name suggests: the loaders set it
     // to 24 or 32, and a glyph atlas of depth 1 to 8
-    return create(image->data(), image->width(), image->height(), image->bpp() / 8, encoding, sampler);
+    return create({.data = image->data(), .width = image->width(), .height = image->height(), .channels = static_cast<uint32_t>(image->bpp() / 8)}, encoding, sampler);
 }
 
 /**
  **/
-pipeline::Texture TextureFactory::create(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
-    Encoding encoding, const pipeline::Sampler::Spec& sampler) const {
+pipeline::Texture TextureFactory::create(const Pixels& source, Encoding encoding, const pipeline::Sampler::Spec& sampler) const {
+    const unsigned char* pixels = source.data;
+    const uint32_t width = source.width;
+    const uint32_t height = source.height;
+    const uint32_t channels = source.channels;
     if (pixels == nullptr || width == 0 || height == 0) {
         throw std::runtime_error("A vulkan texture needs pixels and a non-zero size");
     }
@@ -71,7 +74,7 @@ pipeline::Texture TextureFactory::create(const unsigned char* pixels, uint32_t w
     }
     const VkDeviceSize bytes = static_cast<VkDeviceSize>(width) * height * uploaded;
 
-    Buffer staging(device_, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, bytes);
+    Buffer staging(device_, {.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
     if (channels == 3) {
         // no device has to support a three channel format, so widen on the way in
         std::vector<unsigned char> widened(static_cast<std::size_t>(bytes));
@@ -116,7 +119,7 @@ pipeline::Texture TextureFactory::volume(const unsigned char* texels, uint32_t w
         throw std::runtime_error("A vulkan volume texture needs texels and a non-zero size");
     }
     const VkDeviceSize bytes = static_cast<VkDeviceSize>(width) * height * depth * 4;
-    Buffer staging(device_, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, bytes);
+    Buffer staging(device_, {.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
     staging.write(texels, bytes);
 
     Image::Spec spec;

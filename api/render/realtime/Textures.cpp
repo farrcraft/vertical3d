@@ -57,7 +57,7 @@ TextureHandle Textures::texture(const boost::shared_ptr<v3d::image::Image>& imag
  **/
 TextureHandle Textures::texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
     const vulkan::pipeline::Sampler::Spec& sampler) {
-    return resources_->add(factory_->create(pixels, width, height, channels,
+    return resources_->add(factory_->create({.data = pixels, .width = width, .height = height, .channels = channels},
         vulkan::memory::TextureFactory::Encoding::Display, sampler));
 }
 

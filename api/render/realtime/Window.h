@@ -14,6 +14,8 @@
 
 #include <string>
 
+#include <glm/vec2.hpp>
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime {
@@ -37,7 +39,7 @@ class Window final {
      * @throw std::runtime_error if the vulkan loader or SDL's extension list is missing
      * @return whether the window itself could be created
      **/
-    bool create(int width, int height);
+    bool create(const glm::ivec2& size);
 
     /**
      * @return whether create() has succeeded and destroy() has not been called since
@@ -69,7 +71,7 @@ class Window final {
      * what width() and height() report and does not change the window. To ask for a new
      * size, call request().
      **/
-    void resize(int width, int height) noexcept;
+    void resize(const glm::ivec2& size) noexcept;
 
     /**
      * Ask the window to become a size, for example to restore a remembered one.
@@ -78,7 +80,7 @@ class Window final {
      * calls resize() with it, so a size the window manager refused or adjusted is never
      * reported as the window's size.
      **/
-    void request(int width, int height);
+    void request(const glm::ivec2& size);
 
     /**
      **/

@@ -44,11 +44,15 @@ class StreamRing final {
     };
 
     /**
-     * @param vertexBytes what each vertex buffer starts at
-     * @param indexBytes what each index buffer starts at, or zero for geometry with none
+     * What each vertex buffer starts at, and what each index buffer starts at, which is zero for
+     * geometry with no indices.
      **/
-    StreamRing(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring,
-        VkDeviceSize vertexBytes, VkDeviceSize indexBytes);
+    struct Sizes {
+        VkDeviceSize vertexBytes = 0;
+        VkDeviceSize indexBytes = 0;
+    };
+
+    StreamRing(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring, const Sizes& sizes);
 
     StreamRing(const StreamRing&) = delete;
     StreamRing& operator=(const StreamRing&) = delete;
@@ -69,7 +73,7 @@ class StreamRing final {
     /**
      * Make a held buffer at least this large, replacing and retiring it when it is not.
      **/
-    void fit(boost::shared_ptr<memory::Buffer>* held, VkBufferUsageFlags usage, VkDeviceSize bytes);
+    void fit(boost::shared_ptr<memory::Buffer>* held, const memory::BufferSpec& spec);
 
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<Ring> ring_;

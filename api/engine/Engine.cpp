@@ -172,7 +172,7 @@ bool Engine::openWindow() {
             height = size->y;
         }
     }
-    return window_->create(width, height);
+    return window_->create(glm::ivec2(width, height));
 }
 
 /**
@@ -327,7 +327,7 @@ void Engine::handleEvent(const SDL_Event& event) {
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
         if (window_) {
-            window_->resize(event.window.data1, event.window.data2);
+            window_->resize(glm::ivec2(event.window.data1, event.window.data2));
         }
         dispatcher_->trigger(v3d::event::kind::WindowResize(event.window.data1, event.window.data2));
         break;

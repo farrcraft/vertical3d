@@ -28,7 +28,7 @@ VkResult allocate(VkDevice device, VkPhysicalDevice physical, const VkMemoryRequ
     VkMemoryPropertyFlags properties, Allocation* allocation) {
     // reported as the suballocator reports it, so that a caller that made a buffer or an image
     // destroys it on the way out whichever kind of allocator it was given
-    const std::optional<uint32_t> type = memoryType(physical, requirements.memoryTypeBits, properties);
+    const std::optional<uint32_t> type = memoryType(physical, requirements, properties);
     if (!type) {
         return VK_ERROR_FEATURE_NOT_PRESENT;
     }

@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(an_anchor_measures_from_the_corner_it_names) {
  **/
 BOOST_AUTO_TEST_CASE(a_percentage_is_of_the_box_around_it) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 200);
+    canvas.resize(glm::uvec2(400, 200));
 
     const boost::shared_ptr<v3d::ui::component::Panel> outer = panel("outer");
     outer->layout().width = v3d::ui::Length(50.0f, v3d::ui::Length::Unit::Percent);
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(a_percentage_is_of_the_box_around_it) {
  **/
 BOOST_AUTO_TEST_CASE(a_vertical_box_stacks_what_it_holds) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 200);
+    canvas.resize(glm::uvec2(400, 200));
 
     const boost::shared_ptr<v3d::ui::component::VerticalBox> box =
         boost::make_shared<v3d::ui::component::VerticalBox>();
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(a_vertical_box_stacks_what_it_holds) {
  **/
 BOOST_AUTO_TEST_CASE(a_hidden_row_closes_the_gap_behind_it) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 200);
+    canvas.resize(glm::uvec2(400, 200));
 
     const boost::shared_ptr<v3d::ui::component::VerticalBox> box =
         boost::make_shared<v3d::ui::component::VerticalBox>();
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(a_hidden_row_closes_the_gap_behind_it) {
  **/
 BOOST_AUTO_TEST_CASE(a_horizontal_box_runs_across) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 200);
+    canvas.resize(glm::uvec2(400, 200));
 
     const boost::shared_ptr<v3d::ui::component::HorizontalBox> box =
         boost::make_shared<v3d::ui::component::HorizontalBox>();
@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(a_null_component_is_left_out_of_the_draw_order) {
  **/
 BOOST_AUTO_TEST_CASE(a_point_is_picked_by_the_deepest_pickable_component) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 200);
+    canvas.resize(glm::uvec2(400, 200));
 
     const boost::shared_ptr<v3d::ui::component::Panel> backdrop = panel("backdrop");
     backdrop->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Percent);
@@ -300,7 +300,7 @@ BOOST_AUTO_TEST_CASE(a_point_is_picked_by_the_deepest_pickable_component) {
  **/
 BOOST_AUTO_TEST_CASE(a_nested_child_is_picked_in_the_order_it_was_drawn) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 200);
+    canvas.resize(glm::uvec2(400, 200));
 
     const boost::shared_ptr<v3d::ui::component::Panel> backdrop = panel("backdrop");
     backdrop->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Percent);
@@ -332,7 +332,7 @@ BOOST_AUTO_TEST_CASE(a_nested_child_is_picked_in_the_order_it_was_drawn) {
  **/
 BOOST_AUTO_TEST_CASE(a_bar_fills_a_fraction_of_its_track) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 200);
+    canvas.resize(glm::uvec2(400, 200));
 
     const boost::shared_ptr<v3d::ui::component::Bar> bar = boost::make_shared<v3d::ui::component::Bar>();
     bar->name("health");
@@ -365,7 +365,7 @@ BOOST_AUTO_TEST_CASE(a_bar_fills_a_fraction_of_its_track) {
  **/
 BOOST_AUTO_TEST_CASE(a_rounded_panel_is_bands_and_wedges_in_one_batch) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 200);
+    canvas.resize(glm::uvec2(400, 200));
 
     const boost::shared_ptr<v3d::ui::component::Panel> plate = panel("plate");
     plate->layout().width = v3d::ui::Length(80.0f, v3d::ui::Length::Unit::Pixels);
@@ -394,7 +394,7 @@ BOOST_AUTO_TEST_CASE(a_rounded_panel_is_bands_and_wedges_in_one_batch) {
  **/
 BOOST_AUTO_TEST_CASE(a_component_that_clips_cuts_its_children_to_its_box) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 200);
+    canvas.resize(glm::uvec2(400, 200));
 
     const boost::shared_ptr<v3d::ui::component::Panel> outer = panel("outer");
     outer->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
@@ -432,7 +432,7 @@ BOOST_AUTO_TEST_CASE(a_component_that_clips_cuts_its_children_to_its_box) {
  **/
 BOOST_AUTO_TEST_CASE(a_component_that_does_not_ask_is_not_clipped) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 200);
+    canvas.resize(glm::uvec2(400, 200));
 
     const boost::shared_ptr<v3d::ui::component::Panel> outer = panel("outer");
     outer->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);

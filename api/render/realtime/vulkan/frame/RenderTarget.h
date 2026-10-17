@@ -205,7 +205,7 @@ class RenderTarget final {
     /**
      * A colour image of the target's format.
      **/
-    boost::shared_ptr<memory::Image> createColour(uint32_t width, uint32_t height) const;
+    boost::shared_ptr<memory::Image> createColour(const VkExtent2D& extent) const;
 
     /**
      * Clear every slot and leave it in the layout a reader samples it in, as though a pass had

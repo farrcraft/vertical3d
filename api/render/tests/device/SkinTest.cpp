@@ -386,7 +386,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     registry.emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{handle, true});
 
     // the light looks along +z from two units out over a sphere of one, as the static case's
-    const glm::mat4 light = lighting::shadowLight(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f), 1.0f);
+    const glm::mat4 light = lighting::shadowLight(glm::vec3(0.0f, 0.0f, -1.0f), {.centre = glm::vec3(0.0f), .radius = 1.0f});
     const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
 
     Frame frame;

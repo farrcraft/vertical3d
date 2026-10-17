@@ -63,7 +63,7 @@ void checkSeenAsCamera(v3d::type::camera::Profile::Hand hand) {
     camera.createView();
 
     const glm::mat4 expected = camera.projection() * camera.view();
-    const glm::mat4 light = lighting::shadowLight(towards, centre, radius, hand);
+    const glm::mat4 light = lighting::shadowLight(towards, {.centre = centre, .radius = radius}, hand);
     for (int column = 0; column < 4; column++) {
         for (int row = 0; row < 4; row++) {
             BOOST_TEST_CONTEXT("[" << column << "][" << row << "]") {
@@ -88,10 +88,20 @@ glm::vec3 towards() {
     return glm::normalize(glm::vec3(-0.45f, 0.62f, 0.64f));
 }
 
+/** Where a camera is, the point it looks at, and how far it sees. **/
+struct Looking {
+    glm::vec3 eye{0.0f};
+    glm::vec3 at{0.0f};
+    float farPlane = 100.0f;
+};
+
 /**
  * A perspective camera's view projection, looking from an eye at a point.
  **/
-glm::mat4 perspective(const glm::vec3& eye, const glm::vec3& at, float farPlane) {
+glm::mat4 perspective(const Looking& looking) {
+    const glm::vec3& eye = looking.eye;
+    const glm::vec3& at = looking.at;
+    const float farPlane = looking.farPlane;
     v3d::type::camera::Camera camera;
     v3d::type::camera::Profile& profile = camera.profile();
     profile.orthographic(false);
@@ -136,7 +146,7 @@ BOOST_AUTO_TEST_SUITE(shadow_test)
  **/
 BOOST_AUTO_TEST_CASE(the_centre_is_the_middle_of_the_map_at_half_depth) {
     const glm::vec3 centre(3.0f, -1.0f, 7.0f);
-    const glm::mat4 light = lighting::shadowLight(glm::vec3(-0.45f, 0.62f, 0.64f), centre, 5.0f);
+    const glm::mat4 light = lighting::shadowLight(glm::vec3(-0.45f, 0.62f, 0.64f), {.centre = centre, .radius = 5.0f});
 
     const glm::vec3 at = project(light, centre);
     BOOST_CHECK_SMALL(at.x, 1e-5f);
@@ -153,7 +163,7 @@ BOOST_AUTO_TEST_CASE(a_radius_out_is_the_edge_of_the_map) {
     const glm::vec3 towards = glm::normalize(glm::vec3(-0.45f, 0.62f, 0.64f));
     const glm::vec3 centre(3.0f, -1.0f, 7.0f);
     const float radius = 5.0f;
-    const glm::mat4 light = lighting::shadowLight(towards, centre, radius);
+    const glm::mat4 light = lighting::shadowLight(towards, {.centre = centre, .radius = radius});
 
     // right is up crossed into the view, as type::camera::Profile::lookat takes it
     const glm::vec3 right = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), -towards));
@@ -190,7 +200,7 @@ BOOST_AUTO_TEST_CASE(the_light_sees_as_a_mirrored_camera_does) {
  **/
 BOOST_AUTO_TEST_CASE(a_light_overhead_takes_z_as_up) {
     const glm::vec3 centre(1.0f, 0.0f, 2.0f);
-    const glm::mat4 light = lighting::shadowLight(glm::vec3(0.0f, 3.0f, 0.0f), centre, 2.0f);
+    const glm::mat4 light = lighting::shadowLight(glm::vec3(0.0f, 3.0f, 0.0f), {.centre = centre, .radius = 2.0f});
 
     for (int column = 0; column < 4; column++) {
         for (int row = 0; row < 4; row++) {
@@ -216,9 +226,9 @@ BOOST_AUTO_TEST_CASE(the_fit_covers_the_casters_and_not_the_ground) {
     caster(&registry, glm::vec3(2.0f, 0.0f, 6.0f), true);
     caster(&registry, glm::vec3(100.0f, 0.0f, 100.0f), false);
 
-    const std::optional<lighting::ShadowBounds> fitted = lighting::fitShadow(registry, {}, 3.0f);
+    const std::optional<lighting::ShadowBounds> fitted = lighting::fitShadow(registry, {}, {.margin = 3.0f});
     const std::vector<glm::vec3> cover{glm::vec3(2.0f, 0.0f, -10.0f)};
-    const std::optional<lighting::ShadowBounds> covered = lighting::fitShadow(registry, cover, 3.0f);
+    const std::optional<lighting::ShadowBounds> covered = lighting::fitShadow(registry, cover, {.margin = 3.0f});
     if (!fitted || !covered) {
         BOOST_ERROR("three casters gave no fit");
         return;
@@ -240,8 +250,8 @@ BOOST_AUTO_TEST_CASE(one_caster_with_no_margin_fits_a_finite_light) {
     entt::registry registry;
     caster(&registry, glm::vec3(1.0f, 2.0f, 3.0f), true);
 
-    const std::optional<lighting::ShadowBounds> fitted = lighting::fitShadow(registry, {}, 0.0f);
-    const std::optional<lighting::ShadowBounds> shrunk = lighting::fitShadow(registry, {}, -1.0f);
+    const std::optional<lighting::ShadowBounds> fitted = lighting::fitShadow(registry, {}, {.margin = 0.0f});
+    const std::optional<lighting::ShadowBounds> shrunk = lighting::fitShadow(registry, {}, {.margin = -1.0f});
     if (!fitted || !shrunk) {
         BOOST_ERROR("one caster gave no fit");
         return;
@@ -249,7 +259,7 @@ BOOST_AUTO_TEST_CASE(one_caster_with_no_margin_fits_a_finite_light) {
     BOOST_CHECK_EQUAL(fitted->radius, lighting::minimumShadowRadius);
     BOOST_CHECK_EQUAL(shrunk->radius, lighting::minimumShadowRadius);
 
-    const glm::mat4 light = lighting::shadowLight(glm::vec3(-0.45f, 0.62f, 0.64f), fitted->centre, fitted->radius);
+    const glm::mat4 light = lighting::shadowLight(glm::vec3(-0.45f, 0.62f, 0.64f), *fitted);
     for (int column = 0; column < 4; column++) {
         for (int row = 0; row < 4; row++) {
             BOOST_CHECK(std::isfinite(light[column][row]));
@@ -266,8 +276,8 @@ BOOST_AUTO_TEST_CASE(nothing_casting_fits_nothing) {
     caster(&registry, glm::vec3(1.0f), false);
     const std::vector<glm::vec3> cover{glm::vec3(0.0f)};
 
-    BOOST_CHECK(!lighting::fitShadow(registry, cover, 3.0f));
-    BOOST_CHECK(!lighting::fitShadow(entt::registry(), {}, 3.0f));
+    BOOST_CHECK(!lighting::fitShadow(registry, cover, {.margin = 3.0f}));
+    BOOST_CHECK(!lighting::fitShadow(entt::registry(), {}, {.margin = 3.0f}));
 }
 
 /**
@@ -282,8 +292,8 @@ BOOST_AUTO_TEST_CASE(the_fit_reads_the_drawn_position) {
         transform.position = glm::vec3(10.0f, 0.0f, 0.0f);
     }
 
-    const std::optional<lighting::ShadowBounds> halfway = lighting::fitShadow(registry, {}, 1.0f, 0.5f);
-    const std::optional<lighting::ShadowBounds> current = lighting::fitShadow(registry, {}, 1.0f);
+    const std::optional<lighting::ShadowBounds> halfway = lighting::fitShadow(registry, {}, {.margin = 1.0f, .alpha = 0.5f});
+    const std::optional<lighting::ShadowBounds> current = lighting::fitShadow(registry, {}, {.margin = 1.0f});
     if (!halfway || !current) {
         BOOST_ERROR("a moving caster gave no fit");
         return;
@@ -297,7 +307,7 @@ BOOST_AUTO_TEST_CASE(the_fit_reads_the_drawn_position) {
  * plane when that is nearer.
  **/
 BOOST_AUTO_TEST_CASE(the_view_fit_encloses_what_the_camera_sees) {
-    const glm::mat4 camera = perspective(glm::vec3(3.0f, 10.0f, 12.0f), glm::vec3(0.0f), 200.0f);
+    const glm::mat4 camera = perspective({.eye = glm::vec3(3.0f, 10.0f, 12.0f), .at = glm::vec3(0.0f), .farPlane = 200.0f});
     const std::optional<lighting::ShadowBounds> fitted = lighting::fitShadowToView(camera, 30.0f, towards(), 1024);
     if (!fitted) {
         BOOST_ERROR("a view gave no fit");
@@ -309,7 +319,7 @@ BOOST_AUTO_TEST_CASE(the_view_fit_encloses_what_the_camera_sees) {
     }
 
     // a far plane nearer than the distance bounds the volume instead
-    const glm::mat4 shallow = perspective(glm::vec3(3.0f, 10.0f, 12.0f), glm::vec3(0.0f), 20.0f);
+    const glm::mat4 shallow = perspective({.eye = glm::vec3(3.0f, 10.0f, 12.0f), .at = glm::vec3(0.0f), .farPlane = 20.0f});
     const std::optional<lighting::ShadowBounds> cut = lighting::fitShadowToView(shallow, 30.0f, towards(), 1024);
     const std::optional<lighting::ShadowBounds> farther = lighting::fitShadowToView(camera, 300.0f, towards(), 1024);
     if (!cut || !farther) {
@@ -325,10 +335,10 @@ BOOST_AUTO_TEST_CASE(the_view_fit_encloses_what_the_camera_sees) {
  * size.
  **/
 BOOST_AUTO_TEST_CASE(the_view_fit_keeps_its_radius_as_the_camera_moves) {
-    const std::optional<lighting::ShadowBounds> here = lighting::fitShadowToView(perspective(glm::vec3(3.0f, 10.0f, 12.0f), glm::vec3(0.0f), 200.0f),
+    const std::optional<lighting::ShadowBounds> here = lighting::fitShadowToView(perspective({.eye = glm::vec3(3.0f, 10.0f, 12.0f), .at = glm::vec3(0.0f), .farPlane = 200.0f}),
         30.0f, towards(), 1024);
     const std::optional<lighting::ShadowBounds> moved = lighting::fitShadowToView(
-        perspective(glm::vec3(-40.0f, 13.0f, 7.0f), glm::vec3(-20.0f, 0.0f, 31.0f), 200.0f), 30.0f, towards(), 1024);
+        perspective({.eye = glm::vec3(-40.0f, 13.0f, 7.0f), .at = glm::vec3(-20.0f, 0.0f, 31.0f), .farPlane = 200.0f}), 30.0f, towards(), 1024);
     if (!here || !moved) {
         BOOST_ERROR("a view gave no fit");
         return;
@@ -348,13 +358,13 @@ BOOST_AUTO_TEST_CASE(the_view_fit_keeps_the_world_on_its_texels) {
         std::vector<glm::vec2> within;
         for (const float slide : {0.0f, 0.013f, 0.37f, 2.9f}) {
             const glm::vec3 offset(slide, 0.0f, slide * 0.5f);
-            const glm::mat4 camera = perspective(glm::vec3(3.0f, 10.0f, 12.0f) + offset, offset, 200.0f);
+            const glm::mat4 camera = perspective({.eye = glm::vec3(3.0f, 10.0f, 12.0f) + offset, .at = offset, .farPlane = 200.0f});
             const std::optional<lighting::ShadowBounds> fitted = lighting::fitShadowToView(camera, 30.0f, towards(), texels);
             if (!fitted) {
                 BOOST_ERROR("a view gave no fit");
                 return;
             }
-            const glm::vec3 clip = project(lighting::shadowLight(towards(), fitted->centre, fitted->radius, hand), point);
+            const glm::vec3 clip = project(lighting::shadowLight(towards(), *fitted, hand), point);
             const glm::vec2 texel = (glm::vec2(clip) + 1.0f) * 0.5f * static_cast<float>(texels);
             within.emplace_back(texel.x - std::floor(texel.x), texel.y - std::floor(texel.y));
         }
@@ -369,7 +379,7 @@ BOOST_AUTO_TEST_CASE(the_view_fit_keeps_the_world_on_its_texels) {
  * A distance, a direction, a map width or a matrix that cannot be fitted gives nothing.
  **/
 BOOST_AUTO_TEST_CASE(the_view_fit_refuses_what_it_cannot_fit) {
-    const glm::mat4 camera = perspective(glm::vec3(3.0f, 10.0f, 12.0f), glm::vec3(0.0f), 200.0f);
+    const glm::mat4 camera = perspective({.eye = glm::vec3(3.0f, 10.0f, 12.0f), .at = glm::vec3(0.0f), .farPlane = 200.0f});
     const float nan = std::numeric_limits<float>::quiet_NaN();
 
     BOOST_CHECK(!lighting::fitShadowToView(camera, 0.0f, towards(), 1024));

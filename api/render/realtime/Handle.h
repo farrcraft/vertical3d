@@ -30,10 +30,18 @@ class Handle final {
     }
 
     /**
-     * @param id the registry slot the handle refers to
-     * @param generation which occupant of that slot it refers to
+     * @param id the registry slot the handle refers to, at its first occupant
      **/
-    explicit Handle(uint32_t id, uint32_t generation = 0) noexcept : id_(id), generation_(generation) {
+    explicit Handle(uint32_t id) noexcept : id_(id), generation_(0) {
+    }
+
+    /** The registry slot a handle refers to, and which occupant of that slot. **/
+    struct Key {
+        uint32_t id = 0;
+        uint32_t generation = 0;
+    };
+
+    explicit Handle(const Key& key) noexcept : id_(key.id), generation_(key.generation) {
     }
 
     /**

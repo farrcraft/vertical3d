@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(a_circle_closes_in_the_plane_of_its_axes) {
     const glm::vec3 u(1.0f, 0.0f, 0.0f);
     const glm::vec3 v(0.0f, 0.0f, 1.0f);
 
-    canvas.circle(glm::vec3(0.0f), u, v, 2.0f, 8, white);
+    canvas.circle({.centre = glm::vec3(0.0f), .axisU = u, .axisV = v, .radius = 2.0f, .sides = 8}, white);
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 16);
 
     for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(a_circle_closes_in_the_plane_of_its_axes) {
  **/
 BOOST_AUTO_TEST_CASE(a_circle_of_fewer_than_three_sides_draws_nothing) {
     v3d::render::realtime::canvas::Line canvas;
-    canvas.circle(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 1.0f, 2, white);
+    canvas.circle({.centre = glm::vec3(0.0f), .axisU = glm::vec3(1.0f, 0.0f, 0.0f), .axisV = glm::vec3(0.0f, 0.0f, 1.0f), .radius = 1.0f, .sides = 2}, white);
 
     BOOST_CHECK(canvas.empty());
 }

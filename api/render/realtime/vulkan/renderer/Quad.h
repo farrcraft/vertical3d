@@ -18,6 +18,7 @@
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <vulkan/vulkan.h>
@@ -120,7 +121,7 @@ class Quad final {
      * Neither tests or writes depth - 2D is painter ordered either way, and a ui drawn
      * over a scene has to stay on top of it whatever the scene left in the buffer.
      **/
-    void createPipelines(VkFormat colour, VkFormat depth);
+    void createPipelines(const pipeline::Formats & formats);
 
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<pipeline::Cache> cache_;

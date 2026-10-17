@@ -42,7 +42,7 @@ struct Fixture final {
             [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
             [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
-        canvas.resize(800, 600);
+        canvas.resize(glm::uvec2(800, 600));
     }
 
     void receive(const v3d::event::Event& event) {

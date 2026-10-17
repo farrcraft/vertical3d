@@ -15,6 +15,7 @@
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <vulkan/vulkan.h>
@@ -92,7 +93,7 @@ class Line final {
      * depth tests and writes it, so a wireframe is occluded by the geometry in front of
      * it. Lines drawn over a scene rather than into it belong in a pass with no depth.
      **/
-    void createPipelines(VkFormat colour, VkFormat depth);
+    void createPipelines(const pipeline::Formats & formats);
 
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<pipeline::Cache> cache_;

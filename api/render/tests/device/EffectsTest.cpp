@@ -169,8 +169,8 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     const glm::vec3 ground = glm::normalize(glm::vec3(forward.x, 0.0f, forward.z));
 
     DepthOrder order;
-    v3d::render::realtime::entity::sprites(registry, alpha, right, up, ground, &order);
-    v3d::render::realtime::entity::particles(registry, alpha, right, up, ground, &order);
+    v3d::render::realtime::entity::sprites(registry, alpha, {.right = right, .up = up, .depthAxis = ground}, &order);
+    v3d::render::realtime::entity::particles(registry, alpha, {.right = right, .up = up, .depthAxis = ground}, &order);
     canvas::World canvas;
     // dusk
     canvas.tint(glm::vec4(1.0f, 0.75f, 0.55f, 1.0f));

@@ -52,8 +52,8 @@ Line::Line(const boost::shared_ptr<device::Device>& device,
     resources_(resources),
     ring_(ring),
     uniforms_(uniforms) {
-    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, initialVertexBytes, 0);
-    createPipelines(colour, depth);
+    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = 0});
+    createPipelines({.colour = colour, .depth = depth});
 }
 
 /**
@@ -65,14 +65,16 @@ Line::~Line() {
 
 /**
  **/
-void Line::createPipelines(VkFormat colour, VkFormat depth) {
+void Line::createPipelines(const pipeline::Formats & formats) {
+    const VkFormat colour = formats.colour;
+    const VkFormat depth = formats.depth;
     pipeline::Builder builder(device_);
     builder.name("line")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
-        .vertexBinding(0, sizeof(canvas::Line::Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(canvas::Line::Vertex, position))
-        .vertexAttribute(1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(canvas::Line::Vertex, colour))
+        .vertexBinding({.binding = 0, .stride = sizeof(canvas::Line::Vertex)})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(canvas::Line::Vertex, position)})
+        .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(canvas::Line::Vertex, colour)})
         .topology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
         // a line has no facing to cull by
         .cull(VK_CULL_MODE_NONE)

@@ -60,7 +60,7 @@ FrameUniforms::FrameUniforms(const boost::shared_ptr<device::Device>& device, co
 FrameUniforms::Slot FrameUniforms::addSlot() {
     Slot slot;
     slot.set = pool_->allocate();
-    slot.buffer = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(Camera));
+    slot.buffer = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, .bytes = sizeof(Camera)});
 
     VkDescriptorBufferInfo buffer{};
     buffer.buffer = slot.buffer->handle();

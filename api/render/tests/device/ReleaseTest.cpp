@@ -56,7 +56,7 @@ TextureHandle flat(v3d::test::Headless* headless, unsigned char r, unsigned char
 void draw(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& target,
     const TextureHandle& texture, Capture* capture) {
     Canvas canvas;
-    canvas.resize(width, height);
+    canvas.resize(glm::uvec2(width, height));
     canvas.clear();
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
         glm::vec4(1.0f), texture);
@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(a_sprite_whose_texture_is_released_after_it_is_queued_draws
 
     const TextureHandle texture = flat(&headless, 0xFF, 0x00, 0xFF);
     Canvas canvas;
-    canvas.resize(width, height);
+    canvas.resize(glm::uvec2(width, height));
     canvas.clear();
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
         glm::vec4(1.0f), texture);
@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE(the_white_texture_is_not_released) {
  **/
 BOOST_AUTO_TEST_CASE(a_stream_holds_what_one_frame_asked_for) {
     v3d::test::Headless headless(colourFormat, width, height);
-    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), 64, 32);
+    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), {.vertexBytes = 64, .indexBytes = 32});
     const std::size_t frames = headless.context->ring()->framesInFlight();
 
     for (int frame = 0; frame < 12; ++frame) {
@@ -378,7 +378,7 @@ BOOST_AUTO_TEST_CASE(a_target_registered_twice_has_one_handle) {
  **/
 BOOST_AUTO_TEST_CASE(a_skipped_frame_gives_its_claims_back) {
     v3d::test::Headless headless(colourFormat, width, height);
-    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), 64, 32);
+    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), {.vertexBytes = 64, .indexBytes = 32});
 
     for (int frame = 0; frame < 12; ++frame) {
         stream.claim(16, 8);
@@ -397,7 +397,7 @@ BOOST_AUTO_TEST_CASE(a_skipped_frame_gives_its_claims_back) {
  **/
 BOOST_AUTO_TEST_CASE(a_frame_begun_again_restarts_its_claims) {
     v3d::test::Headless headless(colourFormat, width, height);
-    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), 64, 32);
+    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), {.vertexBytes = 64, .indexBytes = 32});
 
     stream.claim(16, 8);
     headless.context->ring()->begin();
@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE(a_frame_begun_again_restarts_its_claims) {
  **/
 BOOST_AUTO_TEST_CASE(a_claim_on_the_next_slot_starts_from_its_front) {
     v3d::test::Headless headless(colourFormat, width, height);
-    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), 64, 32);
+    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), {.vertexBytes = 64, .indexBytes = 32});
 
     headless.context->ring()->begin();
     stream.claim(16, 8);
@@ -452,7 +452,7 @@ BOOST_AUTO_TEST_CASE(a_depth_texture_draws_on_a_canvas) {
     const TextureHandle depth = headless.context->textures()->depthTexture(*source);
 
     Canvas canvas;
-    canvas.resize(width, height);
+    canvas.resize(glm::uvec2(width, height));
     canvas.clear();
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
         glm::vec4(1.0f), depth);

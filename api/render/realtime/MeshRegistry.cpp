@@ -14,6 +14,7 @@
 #include <map>
 #include <optional>
 #include <set>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -43,18 +44,17 @@ namespace {
  **/
 boost::shared_ptr<vulkan::memory::Mesh> device(const boost::shared_ptr<DeviceContext>& context, const type::Model& model) {
     if (model.skeleton().empty()) {
-        return boost::make_shared<vulkan::memory::Mesh>(context->device(), context->uploader(), model.vertices().data(),
-            static_cast<VkDeviceSize>(model.vertexBytes()), static_cast<uint32_t>(model.vertices().size()),
-            model.indices().data(), static_cast<uint32_t>(model.indices().size()));
+        return boost::make_shared<vulkan::memory::Mesh>(context->device(), context->uploader(),
+            std::as_bytes(std::span(model.vertices())), static_cast<uint32_t>(model.vertices().size()),
+            std::span<const uint32_t>(model.indices()));
     }
     std::vector<MeshRegistry::SkinnedVertex> vertices(model.vertices().size());
     for (std::size_t index = 0; index < vertices.size(); index++) {
         vertices[index].vertex = model.vertices()[index];
         vertices[index].influence = model.influences()[index];
     }
-    return boost::make_shared<vulkan::memory::Mesh>(context->device(), context->uploader(), vertices.data(),
-        static_cast<VkDeviceSize>(vertices.size() * sizeof(MeshRegistry::SkinnedVertex)), static_cast<uint32_t>(vertices.size()),
-        model.indices().data(), static_cast<uint32_t>(model.indices().size()));
+    return boost::make_shared<vulkan::memory::Mesh>(context->device(), context->uploader(),
+        std::as_bytes(std::span(vertices)), static_cast<uint32_t>(vertices.size()), std::span<const uint32_t>(model.indices()));
 }
 
 /**

@@ -87,7 +87,7 @@ std::vector<unsigned char> greyQuad(VkFormat format, const std::string& path) {
     boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, format);
 
     Canvas canvas;
-    canvas.resize(width, height);
+    canvas.resize(glm::uvec2(width, height));
     canvas.clear();
     const float grey = 128.0f / 255.0f;
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)),
@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     Canvas canvas;
-    canvas.resize(width, height);
+    canvas.resize(glm::uvec2(width, height));
     canvas.clear();
     // a quarter of the target, away from every edge, so that a wrong transform shows up as a
     // pixel that should have been background and is not
@@ -266,7 +266,7 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     BOOST_REQUIRE(uploaded.valid());
 
     Canvas canvas;
-    canvas.resize(width, height);
+    canvas.resize(glm::uvec2(width, height));
     canvas.clear();
     // white, so the vertex colour multiplies the texel by one and the picture is the texture
     canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f),
@@ -368,7 +368,7 @@ BOOST_AUTO_TEST_CASE(a_clip_is_cut_to_the_pass_viewport) {
     // the canvas covers the region, and the clip is in the image's pixels: 0,0 to 24,12 overlaps
     // the region only from 16,8 to 24,12
     Canvas canvas;
-    canvas.resize(regionWidth, regionHeight);
+    canvas.resize(glm::uvec2(regionWidth, regionHeight));
     canvas.clear();
     canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(24.0f, 12.0f));
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(regionWidth), static_cast<float>(regionHeight)),

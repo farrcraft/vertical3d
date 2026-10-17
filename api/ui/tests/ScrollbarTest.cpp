@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_draws_its_track_alone) {
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::Scrollbar> empty =
         bar(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 200.0f));
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_with_nothing_to_scroll_draws_no_thumb) {
         [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
     renderer.draw(&canvas, component);
     const std::size_t track = canvas.indices().size();
 

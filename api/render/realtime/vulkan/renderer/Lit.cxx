@@ -77,15 +77,15 @@ void declare(pipeline::Builder* builder, VkDescriptorSetLayout camera, VkDescrip
 void vertex(pipeline::Builder* builder, bool skinned, bool positionOnly) {
     using Vertex = type::Model::Vertex;
     using Influence = type::Model::Influence;
-    builder->vertexBinding(0, skinned ? sizeof(Vertex) + sizeof(Influence) : sizeof(Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position));
+    builder->vertexBinding({.binding = 0, .stride = static_cast<uint32_t>(skinned ? sizeof(Vertex) + sizeof(Influence) : sizeof(Vertex))})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, position)});
     if (!positionOnly) {
-        builder->vertexAttribute(1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal))
-            .vertexAttribute(2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv));
+        builder->vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, normal)})
+            .vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(Vertex, uv)});
     }
     if (skinned) {
-        builder->vertexAttribute(3, 0, VK_FORMAT_R16G16B16A16_UINT, sizeof(Vertex) + offsetof(Influence, joints))
-            .vertexAttribute(4, 0, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(Vertex) + offsetof(Influence, weights));
+        builder->vertexAttribute({.location = 3, .binding = 0, .format = VK_FORMAT_R16G16B16A16_UINT, .offset = sizeof(Vertex) + offsetof(Influence, joints)})
+            .vertexAttribute({.location = 4, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = sizeof(Vertex) + offsetof(Influence, weights)});
     }
 }
 
@@ -270,7 +270,7 @@ Lit::Slot& Lit::slot() {
         return slot;
     }
 
-    slot.buffer = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(lighting::SceneUniforms));
+    slot.buffer = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, .bytes = sizeof(lighting::SceneUniforms)});
     slot.set = scenes_->allocate();
 
     VkDescriptorBufferInfo buffer{};
@@ -286,15 +286,17 @@ Lit::Slot& Lit::slot() {
     write.pBufferInfo = &buffer;
     // the set points at the buffer for good - a frame writes the buffer, not the descriptor
     vkUpdateDescriptorSets(device_->handle(), 1, &write, 0, nullptr);
-    reserve(&slot, &slot.palette, 2, initialJoints * sizeof(glm::mat4), 0);
-    reserve(&slot, &slot.objects, 3, initialObjects * sizeof(Object), 0);
+    reserve(&slot, &slot.palette, {.binding = 2, .needed = initialJoints * sizeof(glm::mat4), .kept = 0});
+    reserve(&slot, &slot.objects, {.binding = 3, .needed = initialObjects * sizeof(Object), .kept = 0});
     return slot;
 }
 
 /**
  **/
-void Lit::reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, uint32_t binding, VkDeviceSize needed,
-    VkDeviceSize kept) {
+void Lit::reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, const Reservation& reservation) {
+    const uint32_t binding = reservation.binding;
+    const VkDeviceSize needed = reservation.needed;
+    const VkDeviceSize kept = reservation.kept;
     if (*buffer && (*buffer)->size() >= needed) {
         return;
     }
@@ -302,7 +304,7 @@ void Lit::reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, uint32_
     while (size < needed) {
         size *= 2;
     }
-    boost::shared_ptr<memory::Buffer> grown = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, size);
+    boost::shared_ptr<memory::Buffer> grown = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, .bytes = size});
     if (*buffer) {
         if (kept > 0) {
             std::vector<unsigned char> bytes(static_cast<std::size_t>(kept));
@@ -341,7 +343,7 @@ VkDescriptorSet Lit::scene(const lighting::SceneUniforms& uniforms, const Textur
     written.buffer->write(&uniforms, sizeof(uniforms));
     if (!palette.empty()) {
         const VkDeviceSize bytes = static_cast<VkDeviceSize>(palette.size() * sizeof(glm::mat4));
-        reserve(&written, &written.palette, 2, bytes, 0);
+        reserve(&written, &written.palette, {.binding = 2, .needed = bytes, .kept = 0});
         written.palette->write(palette.data(), bytes);
     }
 
@@ -373,7 +375,7 @@ uint32_t Lit::object(const Object& object) {
     }
     const VkDeviceSize offset = static_cast<VkDeviceSize>(current_->count) * sizeof(Object);
     // growing keeps what the frame has added so far, which its draws already name by index
-    reserve(current_, &current_->objects, 3, offset + sizeof(Object), offset);
+    reserve(current_, &current_->objects, {.binding = 3, .needed = offset + sizeof(Object), .kept = offset});
     current_->objects->write(&object, sizeof(Object), offset);
     return current_->count++;
 }

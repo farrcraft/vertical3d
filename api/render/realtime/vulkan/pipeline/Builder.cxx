@@ -77,23 +77,14 @@ Builder& Builder::shader(VkShaderStageFlagBits stage, const uint32_t* code, std:
 
 /**
  **/
-Builder& Builder::vertexBinding(uint32_t binding, uint32_t stride, VkVertexInputRate rate) {
-    VkVertexInputBindingDescription description{};
-    description.binding = binding;
-    description.stride = stride;
-    description.inputRate = rate;
+Builder& Builder::vertexBinding(const VkVertexInputBindingDescription & description) {
     bindings_.push_back(description);
     return *this;
 }
 
 /**
  **/
-Builder& Builder::vertexAttribute(uint32_t location, uint32_t binding, VkFormat format, uint32_t offset) {
-    VkVertexInputAttributeDescription description{};
-    description.location = location;
-    description.binding = binding;
-    description.format = format;
-    description.offset = offset;
+Builder& Builder::vertexAttribute(const VkVertexInputAttributeDescription & description) {
     attributes_.push_back(description);
     return *this;
 }
@@ -167,9 +158,9 @@ Builder& Builder::set(VkDescriptorSetLayout layout) {
 
 /**
  **/
-Builder& Builder::push(VkShaderStageFlags stages, uint32_t bytes) {
-    pushStages_ = stages;
-    pushBytes_ = bytes;
+Builder& Builder::push(const VkPushConstantRange & range) {
+    pushStages_ = range.stageFlags;
+    pushBytes_ = range.size;
     return *this;
 }
 

@@ -26,7 +26,19 @@ namespace {
  * One of a skin's clips sampled over its rest pose, or the rest pose when the clip is none or
  * not one the skin has.
  **/
-type::animation::Pose sampled(const MeshRegistry::Skin& skin, uint32_t clip, float time, float duration, bool loops) {
+/** A clip, how far into it the playback is, how long it lasts, and whether it loops. **/
+struct Track {
+    uint32_t clip = 0;
+    float time = 0.0f;
+    float duration = 0.0f;
+    bool loops = false;
+};
+
+type::animation::Pose sampled(const MeshRegistry::Skin& skin, const Track& track) {
+    const uint32_t clip = track.clip;
+    const float time = track.time;
+    const float duration = track.duration;
+    const bool loops = track.loops;
     type::animation::Pose pose = type::animation::rest(skin.skeleton);
     if (clip < skin.clips.size()) {
         const type::animation::Clock clock(duration, loops);
@@ -39,12 +51,12 @@ type::animation::Pose sampled(const MeshRegistry::Skin& skin, uint32_t clip, flo
  * The pose a playback stands in, faded out of the clip it is leaving.
  **/
 type::animation::Pose posed(const MeshRegistry::Skin& skin, const ecs::component::Playback& playback) {
-    type::animation::Pose current = sampled(skin, playback.clip, playback.time, playback.duration, playback.loops);
+    type::animation::Pose current = sampled(skin, {.clip = playback.clip, .time = playback.time, .duration = playback.duration, .loops = playback.loops});
     if (playback.from == ecs::component::Playback::none || playback.fade >= 1.0f) {
         return current;
     }
     const type::animation::Pose leaving =
-        sampled(skin, playback.from, playback.fromTime, playback.fromDuration, playback.fromLoops);
+        sampled(skin, {.clip = playback.from, .time = playback.fromTime, .duration = playback.fromDuration, .loops = playback.fromLoops});
     return type::animation::blend(leaving, current, playback.fade);
 }
 

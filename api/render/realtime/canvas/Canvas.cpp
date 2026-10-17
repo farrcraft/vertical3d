@@ -45,9 +45,9 @@ void Canvas::clear() {
 
 /**
  **/
-void Canvas::resize(uint32_t width, uint32_t height) {
-    width_ = width;
-    height_ = height;
+void Canvas::resize(const glm::uvec2& size) {
+    width_ = size.x;
+    height_ = size.y;
 }
 
 /**
@@ -206,14 +206,15 @@ void Canvas::open(const TextureHandle& texture, bool text) {
 
 /**
  **/
-void Canvas::vertex(const glm::vec2& position, const glm::vec2& uv, const glm::vec4& colour) {
+void Canvas::vertex(const Vertex& untransformed) {
     const glm::mat4& transform = transforms_.top();
+    const glm::vec2& position = untransformed.position;
 
     Vertex added;
     added.position.x = (transform[0][0] * position.x) + (transform[1][0] * position.y) + transform[3][0];
     added.position.y = (transform[0][1] * position.x) + (transform[1][1] * position.y) + transform[3][1];
-    added.uv = uv;
-    added.colour = colour;
+    added.uv = untransformed.uv;
+    added.colour = untransformed.colour;
     vertices_.push_back(added);
 }
 
@@ -242,26 +243,31 @@ void Canvas::rect(const glm::vec2& min, const glm::vec2& max, const glm::vec2& u
     open(texture);
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
-    vertex(glm::vec2(min.x, min.y), glm::vec2(uv0.x, uv0.y), colour);
-    vertex(glm::vec2(min.x, max.y), glm::vec2(uv0.x, uv1.y), colour);
-    vertex(glm::vec2(max.x, max.y), glm::vec2(uv1.x, uv1.y), colour);
-    vertex(glm::vec2(max.x, min.y), glm::vec2(uv1.x, uv0.y), colour);
+    vertex({.position = glm::vec2(min.x, min.y), .uv = glm::vec2(uv0.x, uv0.y), .colour = colour});
+    vertex({.position = glm::vec2(min.x, max.y), .uv = glm::vec2(uv0.x, uv1.y), .colour = colour});
+    vertex({.position = glm::vec2(max.x, max.y), .uv = glm::vec2(uv1.x, uv1.y), .colour = colour});
+    vertex({.position = glm::vec2(max.x, min.y), .uv = glm::vec2(uv1.x, uv0.y), .colour = colour});
     quad(first);
 }
 
 /**
  **/
 void Canvas::circle(const glm::vec2& centre, float radius, unsigned int sides, const glm::vec4& colour) {
-    arc(centre, radius, sides, 0.0f, 6.283185307179586f, colour);
+    arc({.centre = centre, .radius = radius, .sides = sides, .start = 0.0f, .sweep = 6.283185307179586f}, colour);
 }
 
-void Canvas::ring(const glm::vec2& centre, float outer, float inner, unsigned int sides, float start,
-    float sweep, const glm::vec4& colour) {
+void Canvas::ring(const Ring& shape, const glm::vec4& colour) {
+    const glm::vec2& centre = shape.centre;
+    const float outer = shape.outer;
+    const float inner = shape.inner;
+    const unsigned int sides = shape.sides;
+    const float start = shape.start;
+    const float sweep = shape.sweep;
     if (sides < 1 || outer <= 0.0f) {
         return;
     }
     if (inner <= 0.0f) {
-        arc(centre, outer, sides, start, sweep, colour);
+        arc({.centre = centre, .radius = outer, .sides = sides, .start = start, .sweep = sweep}, colour);
         return;
     }
     open(TextureHandle());
@@ -271,8 +277,8 @@ void Canvas::ring(const glm::vec2& centre, float outer, float inner, unsigned in
     for (unsigned int side = 0; side <= sides; side++) {
         const float angle = start + (step * static_cast<float>(side));
         const glm::vec2 direction(std::cos(angle), std::sin(angle));
-        vertex(centre + direction * outer, glm::vec2(0.5f, 0.5f), colour);
-        vertex(centre + direction * inner, glm::vec2(0.5f, 0.5f), colour);
+        vertex({.position = centre + direction * outer, .uv = glm::vec2(0.5f, 0.5f), .colour = colour});
+        vertex({.position = centre + direction * inner, .uv = glm::vec2(0.5f, 0.5f), .colour = colour});
     }
 
     // two triangles per segment, over the pair of vertices at each end of it
@@ -288,20 +294,24 @@ void Canvas::ring(const glm::vec2& centre, float outer, float inner, unsigned in
     batches_.back().indices += sides * 6;
 }
 
-void Canvas::arc(const glm::vec2& centre, float radius, unsigned int sides, float start, float sweep,
-    const glm::vec4& colour) {
+void Canvas::arc(const Arc& shape, const glm::vec4& colour) {
+    const glm::vec2& centre = shape.centre;
+    const float radius = shape.radius;
+    const unsigned int sides = shape.sides;
+    const float start = shape.start;
+    const float sweep = shape.sweep;
     if (sides < 3) {
         return;
     }
     open(TextureHandle());
 
     const uint32_t centreIndex = static_cast<uint32_t>(vertices_.size());
-    vertex(centre, glm::vec2(0.5f, 0.5f), colour);
+    vertex({.position = centre, .uv = glm::vec2(0.5f, 0.5f), .colour = colour});
 
     const float step = sweep / static_cast<float>(sides);
     for (unsigned int side = 0; side <= sides; side++) {
         const float angle = start + (step * static_cast<float>(side));
-        vertex(centre + glm::vec2(std::cos(angle) * radius, std::sin(angle) * radius), glm::vec2(0.5f, 0.5f), colour);
+        vertex({.position = centre + glm::vec2(std::cos(angle) * radius, std::sin(angle) * radius), .uv = glm::vec2(0.5f, 0.5f), .colour = colour});
     }
 
     // a fan written out as triangles, so it batches with the quads around it. A full turn
@@ -336,7 +346,7 @@ void Canvas::text(const v3d::font::TextBuffer& text, const TextureHandle& atlas)
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
     for (std::size_t index = 0; index < positions.size(); index++) {
         // glyphs are laid out in three dimensions; a 2D canvas has no use for the third
-        vertex(glm::vec2(positions[index].x, positions[index].y), uvs[index], colours[index]);
+        vertex({.position = glm::vec2(positions[index].x, positions[index].y), .uv = uvs[index], .colour = colours[index]});
     }
 
     for (std::size_t index = 0; index < order.size(); index++) {

@@ -86,7 +86,18 @@ entt::entity stand(entt::registry* registry, const MeshHandle& mesh, const glm::
  * A strip laid on its back at a position on x, a quarter turn about x taking its length along
  * -z, and part way through its bend. The bend swings the strip's far end towards -x.
  **/
-void lay(entt::registry* registry, const MeshHandle& strip, float x, uint32_t bend, float duration, float through) {
+struct Laid {
+    float x = 0.0f;          /**< where it lies on x **/
+    uint32_t bend = 0;       /**< the clip it plays **/
+    float duration = 1.0f;   /**< how long the clip lasts **/
+    float through = 0.0f;    /**< how far into the clip it stands, as a fraction **/
+};
+
+void lay(entt::registry* registry, const MeshHandle& strip, const Laid& laid) {
+    const float x = laid.x;
+    const uint32_t bend = laid.bend;
+    const float duration = laid.duration;
+    const float through = laid.through;
     const entt::entity entity = registry->create();
     Transform transform;
     transform.position = glm::vec3(x, 0.0f, 0.0f);
@@ -213,12 +224,12 @@ BOOST_AUTO_TEST_CASE(every_entity_sharing_a_mesh_is_drawn_where_it_stands) {
     const v3d::type::camera::Camera view = camera(glm::vec3(0.0f), 6.0f);
     lighting::Settings settings;
     settings.outline = 0.05f;
-    const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, 2.0f);
+    const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, {.margin = 2.0f});
     if (!bounds) {
         BOOST_ERROR("a crowd that casts gave no fit");
         return;
     }
-    const glm::mat4 light = lighting::shadowLight(settings.light, bounds->centre, bounds->radius);
+    const glm::mat4 light = lighting::shadowLight(settings.light, *bounds);
     VkDescriptorSet scene = lit.scene(lighting::pack(settings, light, 1.0f / static_cast<float>(mapSize)),
         headless.context->textures()->depthTexture(*map));
 
@@ -282,12 +293,12 @@ BOOST_AUTO_TEST_CASE(each_skinned_entity_sharing_a_mesh_takes_its_own_pose) {
     const float duration = meshes.resolve(strip)->skin->clips[*bend].duration;
 
     entt::registry both;
-    lay(&both, strip, -3.0f, *bend, duration, 0.5f);
-    lay(&both, strip, 3.0f, *bend, duration, 0.25f);
+    lay(&both, strip, {.x = -3.0f, .bend = *bend, .duration = duration, .through = 0.5f});
+    lay(&both, strip, {.x = 3.0f, .bend = *bend, .duration = duration, .through = 0.25f});
     entt::registry left;
-    lay(&left, strip, -3.0f, *bend, duration, 0.5f);
+    lay(&left, strip, {.x = -3.0f, .bend = *bend, .duration = duration, .through = 0.5f});
     entt::registry right;
-    lay(&right, strip, 3.0f, *bend, duration, 0.25f);
+    lay(&right, strip, {.x = 3.0f, .bend = *bend, .duration = duration, .through = 0.25f});
 
     const boost::shared_ptr<v3d::image::Image> pair = drawStrips(&headless, both, meshes, &lit, target, "data_out/lit_crowd_strips.png");
     const boost::shared_ptr<v3d::image::Image> alone = drawStrips(&headless, left, meshes, &lit, target, "data_out/lit_crowd_strips_left.png");

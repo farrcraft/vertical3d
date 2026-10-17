@@ -47,7 +47,7 @@ bool AppEngine::render() {
         return true;
     }
     if (canvas_.width() != static_cast<uint32_t>(size.x) || canvas_.height() != static_cast<uint32_t>(size.y)) {
-        canvas_.resize(static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y));
+        canvas_.resize(glm::uvec2(static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y)));
     }
 
     canvas_.clear();

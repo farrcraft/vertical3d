@@ -10,7 +10,9 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <span>
 
 #include "DeviceBuffer.h"
 #include "Uploader.h"
@@ -45,14 +47,13 @@ class Mesh final {
      * @throw std::runtime_error if either buffer cannot be created or filled
      **/
     Mesh(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader,
-        const void* vertices, VkDeviceSize vertexBytes, uint32_t vertexCount,
-        const uint32_t* indices, uint32_t indexCount);
+        std::span<const std::byte> vertices, uint32_t vertexCount, std::span<const uint32_t> indices);
 
     /**
      * A mesh drawn straight out of its vertex buffer.
      **/
     Mesh(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader,
-        const void* vertices, VkDeviceSize vertexBytes, uint32_t vertexCount);
+        std::span<const std::byte> vertices, uint32_t vertexCount);
 
     /**
      **/

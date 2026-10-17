@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(the_rows_are_cut_off_at_the_list) {
     std::vector<Written> written;
     v3d::ui::paint::ComponentRenderer renderer = build(&written);
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(40, glm::vec2(120.0f, 100.0f));
     // a row is chosen so that something is drawn under the clip: the rest of a row is text,
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(an_offset_starts_the_rows_further_down) {
     std::vector<Written> written;
     v3d::ui::paint::ComponentRenderer renderer = build(&written);
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(40, glm::vec2(120.0f, 100.0f));
     v3d::ui::Container container("panel", true);
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(an_offset_starts_the_rows_further_down) {
 BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_the_box_does_not_show) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(10, glm::vec2(120.0f, 100.0f));
     v3d::ui::Container container("panel", true);
@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_the_box_does_not_show) {
 BOOST_AUTO_TEST_CASE(a_point_names_the_row_under_it) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::SelectList> undrawn = list(10, glm::vec2(120.0f, 100.0f));
     BOOST_CHECK_EQUAL(undrawn->at(glm::vec2(10.0f, 10.0f)), v3d::ui::component::SelectList::none);
@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE(the_chosen_row_is_drawn_differently) {
     std::vector<Written> written;
     v3d::ui::paint::ComponentRenderer renderer = build(&written);
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(4, glm::vec2(120.0f, 100.0f));
     v3d::ui::Container container("panel", true);

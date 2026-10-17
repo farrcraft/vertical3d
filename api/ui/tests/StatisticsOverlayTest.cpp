@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(nothing_is_drawn_without_a_text_renderer) {
     overlay.visible(true);
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(640, 480);
+    canvas.resize(glm::uvec2(640, 480));
     overlay.draw(&canvas, v3d::ui::shell::StatisticsOverlay::Sample());
 
     BOOST_CHECK(canvas.empty());

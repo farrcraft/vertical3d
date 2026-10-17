@@ -39,7 +39,7 @@ Windowed::Windowed(render::realtime::vulkan::memory::Allocator::Kind allocations
     }
     logger = boost::make_shared<v3d::log::Logger>();
     window = boost::make_shared<render::realtime::Window>(logger);
-    if (!window->create(windowWidth, windowHeight)) {
+    if (!window->create(glm::ivec2(windowWidth, windowHeight))) {
         SDL_Quit();
         throw std::runtime_error(std::string("SDL could not create a window: ") + SDL_GetError());
     }

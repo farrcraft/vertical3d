@@ -137,13 +137,19 @@ class Line final {
      * free to spin about it. The axes need be neither unit length nor perpendicular, so
      * an ellipse is expressible.
      *
-     * @param axisU where the ring starts, scaled by the radius
-     * @param axisV a quarter turn on from it, scaled by the radius
-     * @param sides how many segments to approximate it with - fewer than three draws
-     *        nothing
+     * axisU is where the ring starts, and axisV a quarter turn on from it, both scaled by the
+     * radius. The sides are how many segments approximate it, and fewer than three draws
+     * nothing.
      **/
-    void circle(const glm::vec3& centre, const glm::vec3& axisU, const glm::vec3& axisV, float radius,
-        unsigned int sides, const glm::vec4& colour);
+    struct Circle {
+        glm::vec3 centre{0.0f};
+        glm::vec3 axisU{1.0f, 0.0f, 0.0f};
+        glm::vec3 axisV{0.0f, 1.0f, 0.0f};
+        float radius = 1.0f;
+        unsigned int sides = 0;
+    };
+
+    void circle(const Circle& shape, const glm::vec4& colour);
 
     /**
      * @return the vertex stream, two vertices per segment, in the layout the line

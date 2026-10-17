@@ -10,6 +10,7 @@
 #include <vulkan/vulkan.h>
 
 #include "Allocation.h"
+#include "Buffer.h"
 #include "Uploader.h"
 
 #include <boost/shared_ptr.hpp>
@@ -74,7 +75,7 @@ class DeviceBuffer final {
  private:
     /**
      **/
-    void create(VkBufferUsageFlags usage, VkDeviceSize bytes);
+    void create(const BufferSpec& spec);
 
     /**
      **/

@@ -75,7 +75,7 @@ Emitter& emitting(entt::registry* registry, const std::vector<Particle>& made, c
 
 void draw(const entt::registry& registry, float alpha, canvas::World* canvas) {
     DepthOrder order;
-    v3d::render::realtime::entity::particles(registry, alpha, right, up, away, &order);
+    v3d::render::realtime::entity::particles(registry, alpha, {.right = right, .up = up, .depthAxis = away}, &order);
     order.into(canvas);
 }
 
@@ -152,8 +152,8 @@ BOOST_AUTO_TEST_CASE(particles_sort_among_sprites) {
     }
 
     DepthOrder order;
-    v3d::render::realtime::entity::particles(registry, 1.0f, right, up, away, &order);
-    v3d::render::realtime::entity::sprites(registry, 1.0f, right, up, away, &order);
+    v3d::render::realtime::entity::particles(registry, 1.0f, {.right = right, .up = up, .depthAxis = away}, &order);
+    v3d::render::realtime::entity::sprites(registry, 1.0f, {.right = right, .up = up, .depthAxis = away}, &order);
     canvas::World canvas;
     order.into(&canvas);
 

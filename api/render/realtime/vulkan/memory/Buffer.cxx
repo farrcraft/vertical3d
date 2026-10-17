@@ -17,13 +17,13 @@ namespace v3d::render::realtime::vulkan::memory {
 
 /**
  **/
-Buffer::Buffer(const boost::shared_ptr<device::Device>& device, VkBufferUsageFlags usage, VkDeviceSize bytes) :
+Buffer::Buffer(const boost::shared_ptr<device::Device>& device, const BufferSpec& spec) :
     device_(device),
-    usage_(usage),
+    usage_(spec.usage),
     buffer_(VK_NULL_HANDLE),
     size_(0),
     mapped_(nullptr) {
-    create(bytes > 0 ? bytes : 1);
+    create(spec.bytes > 0 ? spec.bytes : 1);
 }
 
 /**

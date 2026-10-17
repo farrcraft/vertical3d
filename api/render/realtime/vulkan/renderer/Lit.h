@@ -179,15 +179,23 @@ class Lit final {
     };
 
     /**
+     * Which storage binding a buffer is for, how many bytes it needs, and how many bytes of
+     * the buffer it replaces are copied into the new one.
+     **/
+    struct Reservation {
+        uint32_t binding = 0;
+        VkDeviceSize needed = 0;
+        VkDeviceSize kept = 0;
+    };
+
+    /**
      * Point one of a slot's storage bindings at a buffer of at least this many bytes,
      * replacing the one it has when that is smaller. A replacement starts with a copy of the
      * old buffer's first kept bytes.
      *
      * @param buffer the slot's buffer for the binding
-     * @param kept how many bytes of the old buffer are copied into the new one
      **/
-    void reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, uint32_t binding, VkDeviceSize needed,
-        VkDeviceSize kept);
+    void reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, const Reservation& reservation);
 
     /**
      * Compile the cel and outline pipelines against the colour and depth formats, and the

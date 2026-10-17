@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(an_unbalanced_pop_leaves_the_identity_transform) {
  **/
 BOOST_AUTO_TEST_CASE(clearing_keeps_the_size_and_resets_the_transform) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     canvas.push();
     canvas.translate(glm::vec2(50.0f, 50.0f));
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(clearing_keeps_the_size_and_resets_the_transform) {
  **/
 BOOST_AUTO_TEST_CASE(the_projection_puts_the_origin_at_the_top_left) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     const glm::vec2 topLeft = project(canvas, glm::vec2(0.0f, 0.0f));
     const glm::vec2 bottomRight = project(canvas, glm::vec2(800.0f, 600.0f));
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(a_ring_is_a_strip_between_two_radii) {
     v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white);
-    canvas.ring(glm::vec2(50.0f, 50.0f), 10.0f, 6.0f, 8, 0.0f, 6.283185307179586f, white);
+    canvas.ring({.centre = glm::vec2(50.0f, 50.0f), .outer = 10.0f, .inner = 6.0f, .sides = 8, .start = 0.0f, .sweep = 6.283185307179586f}, white);
 
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
     BOOST_CHECK_EQUAL(canvas.indices().size(), 6 + (8 * 6));
@@ -237,8 +237,8 @@ BOOST_AUTO_TEST_CASE(a_ring_with_no_hole_is_a_wedge) {
     v3d::render::realtime::canvas::Canvas canvas;
     v3d::render::realtime::canvas::Canvas wedge;
 
-    canvas.ring(glm::vec2(50.0f, 50.0f), 10.0f, 0.0f, 8, 0.0f, 1.5f, white);
-    wedge.arc(glm::vec2(50.0f, 50.0f), 10.0f, 8, 0.0f, 1.5f, white);
+    canvas.ring({.centre = glm::vec2(50.0f, 50.0f), .outer = 10.0f, .inner = 0.0f, .sides = 8, .start = 0.0f, .sweep = 1.5f}, white);
+    wedge.arc({.centre = glm::vec2(50.0f, 50.0f), .radius = 10.0f, .sides = 8, .start = 0.0f, .sweep = 1.5f}, white);
 
     BOOST_CHECK_EQUAL(canvas.indices().size(), wedge.indices().size());
     BOOST_CHECK_EQUAL(canvas.vertices().size(), wedge.vertices().size());
@@ -466,7 +466,7 @@ BOOST_AUTO_TEST_CASE(clearing_drops_what_is_clipped) {
  **/
 BOOST_AUTO_TEST_CASE(a_contained_space_is_centred_with_bars) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(1600, 900);
+    canvas.resize(glm::uvec2(1600, 900));
     canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
     const glm::vec4 area = canvas.viewport();
@@ -484,7 +484,7 @@ BOOST_AUTO_TEST_CASE(a_contained_space_is_centred_with_bars) {
     BOOST_CHECK_CLOSE(bottomRight.y, 1.0f, 0.001f);
 
     // and a resize moves the viewport, not the space
-    canvas.resize(800, 1200);
+    canvas.resize(glm::uvec2(800, 1200));
     BOOST_CHECK_SMALL(canvas.viewport().x, 0.001f);
     BOOST_CHECK_CLOSE(canvas.viewport().y, 300.0f, 0.001f);
     BOOST_CHECK_CLOSE(canvas.space().x, 800.0f, 0.001f);
@@ -495,7 +495,7 @@ BOOST_AUTO_TEST_CASE(a_contained_space_is_centred_with_bars) {
  **/
 BOOST_AUTO_TEST_CASE(a_stretched_space_fills_the_canvas) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(1600, 900);
+    canvas.resize(glm::uvec2(1600, 900));
     canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::canvas::Canvas::Fit::Stretch);
 
     const glm::vec2 topLeft = project(canvas, glm::vec2(0.0f, 0.0f));
@@ -511,7 +511,7 @@ BOOST_AUTO_TEST_CASE(a_stretched_space_fills_the_canvas) {
  **/
 BOOST_AUTO_TEST_CASE(a_pixel_maps_back_into_the_space) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(1600, 900);
+    canvas.resize(glm::uvec2(1600, 900));
     canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
     const glm::vec2 corner = canvas.toSpace(glm::vec2(200.0f, 0.0f));
@@ -532,9 +532,9 @@ BOOST_AUTO_TEST_CASE(a_pixel_maps_back_into_the_space) {
  **/
 BOOST_AUTO_TEST_CASE(a_canvas_without_a_space_projects_as_before) {
     v3d::render::realtime::canvas::Canvas plain;
-    plain.resize(800, 600);
+    plain.resize(glm::uvec2(800, 600));
     v3d::render::realtime::canvas::Canvas cleared;
-    cleared.resize(800, 600);
+    cleared.resize(glm::uvec2(800, 600));
     cleared.space(glm::vec2(320.0f, 200.0f), v3d::render::realtime::canvas::Canvas::Fit::Contain);
     cleared.space(glm::vec2(0.0f, 0.0f), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
@@ -550,7 +550,7 @@ BOOST_AUTO_TEST_CASE(a_canvas_without_a_space_projects_as_before) {
  **/
 BOOST_AUTO_TEST_CASE(a_clip_in_a_space_is_cut_in_pixels) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(1600, 900);
+    canvas.resize(glm::uvec2(1600, 900));
     canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
     canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(400.0f, 300.0f));
@@ -570,7 +570,7 @@ BOOST_AUTO_TEST_CASE(a_clip_in_a_space_is_cut_in_pixels) {
  **/
 BOOST_AUTO_TEST_CASE(a_space_survives_a_clear) {
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(1600, 900);
+    canvas.resize(glm::uvec2(1600, 900));
     canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::canvas::Canvas::Fit::Contain);
     canvas.clear();
     BOOST_CHECK_CLOSE(canvas.viewport().z, 1200.0f, 0.001f);

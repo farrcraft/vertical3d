@@ -164,8 +164,12 @@ void Line::box(const glm::vec3& min, const glm::vec3& max, const glm::vec4& colo
 
 /**
  **/
-void Line::circle(const glm::vec3& centre, const glm::vec3& axisU, const glm::vec3& axisV, float radius,
-    unsigned int sides, const glm::vec4& colour) {
+void Line::circle(const Circle& shape, const glm::vec4& colour) {
+    const glm::vec3& centre = shape.centre;
+    const glm::vec3& axisU = shape.axisU;
+    const glm::vec3& axisV = shape.axisV;
+    const float radius = shape.radius;
+    const unsigned int sides = shape.sides;
     if (sides < 3) {
         return;
     }

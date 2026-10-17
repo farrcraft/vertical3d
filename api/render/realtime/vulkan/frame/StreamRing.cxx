@@ -14,12 +14,11 @@ namespace v3d::render::realtime::vulkan::frame {
 
 /**
  **/
-StreamRing::StreamRing(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring,
-    VkDeviceSize vertexBytes, VkDeviceSize indexBytes) :
+StreamRing::StreamRing(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring, const Sizes& sizes) :
     device_(device),
     ring_(ring),
-    vertexBytes_(vertexBytes),
-    indexBytes_(indexBytes) {
+    vertexBytes_(sizes.vertexBytes),
+    indexBytes_(sizes.indexBytes) {
     slots_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 }
 
@@ -43,16 +42,16 @@ StreamRing::Geometry StreamRing::claim(VkDeviceSize vertexBytes, VkDeviceSize in
     cursor_ = std::min(cursor_, slot.size());
     if (cursor_ == slot.size()) {
         Geometry geometry;
-        geometry.vertices = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexBytes_);
+        geometry.vertices = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, .bytes = vertexBytes_});
         if (indexBytes_ > 0) {
-            geometry.indices = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexBytes_);
+            geometry.indices = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT, .bytes = indexBytes_});
         }
         slot.push_back(geometry);
     }
     Geometry& claimed = slot[cursor_++];
-    fit(&claimed.vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexBytes);
+    fit(&claimed.vertices, {.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, .bytes = vertexBytes});
     if (claimed.indices) {
-        fit(&claimed.indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexBytes);
+        fit(&claimed.indices, {.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT, .bytes = indexBytes});
     }
     return claimed;
 }
@@ -69,19 +68,19 @@ std::size_t StreamRing::held() const noexcept {
 
 /**
  **/
-void StreamRing::fit(boost::shared_ptr<memory::Buffer>* held, VkBufferUsageFlags usage, VkDeviceSize bytes) {
+void StreamRing::fit(boost::shared_ptr<memory::Buffer>* held, const memory::BufferSpec& spec) {
     const VkDeviceSize size = (*held)->size();
-    if (bytes <= size) {
+    if (spec.bytes <= size) {
         return;
     }
     VkDeviceSize target = size > 0 ? size : 1;
-    while (target < bytes) {
+    while (target < spec.bytes) {
         target *= 2;
     }
     // the old buffer is held by the retirement until no frame in flight can still read it
     const boost::shared_ptr<memory::Buffer> old = *held;
     ring_->retire([old]() {});
-    *held = boost::make_shared<memory::Buffer>(device_, usage, target);
+    *held = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = spec.usage, .bytes = target});
 }
 
 };  // namespace v3d::render::realtime::vulkan::frame

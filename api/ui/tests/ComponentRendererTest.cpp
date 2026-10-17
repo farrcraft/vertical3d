@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
         });
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     renderer.draw(&canvas, buildMenu({"One", "Two", "Three"}));
 
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
         });
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"One", "Two", "Three"});
     menu->next();
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_item_in_a_centred_menu_is_greyed) {
     renderer.dressing().disabledText = greyed;
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"Resume", "Load", "Quit"});
     (*menu)[1]->enabled(false);
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
         });
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"Options", "Quit"});
     boost::shared_ptr<v3d::ui::component::menu::Menu> submenu = buildMenu({"Rounds", "Keys"});
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     renderer.draw(&canvas, buildMenu({"a", "abcdefghij"}));
 
@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     v3d::ui::Container container("game-menu", false);
     container.add(buildMenu({"One"}));
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     renderer.draw(&canvas, buildMenu({}));
 
@@ -283,7 +283,7 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
         });
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     boost::shared_ptr<v3d::ui::component::Label> wrapped =
         boost::make_shared<v3d::ui::component::Label>();
@@ -320,7 +320,7 @@ BOOST_AUTO_TEST_CASE(a_focused_component_is_ringed) {
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
@@ -367,7 +367,7 @@ BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
     renderer.theme(theme);
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::TextBox> box =
         boost::make_shared<v3d::ui::component::TextBox>();
@@ -409,7 +409,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
     renderer.dressing().disabledText = greyed;
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
@@ -455,7 +455,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_box_greys_the_label_it_holds) {
     renderer.dressing().disabledText = greyed;
 
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(800, 600);
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::Panel> group =
         boost::make_shared<v3d::ui::component::Panel>();

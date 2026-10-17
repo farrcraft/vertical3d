@@ -52,8 +52,8 @@ const uint32_t flatShader[] =
 void describe(Builder* builder) {
     builder->name("depth-only")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .vertexBinding(0, sizeof(float) * 3)
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0);
+        .vertexBinding({.binding = 0, .stride = sizeof(float) * 3})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0});
 }
 
 /**
@@ -375,8 +375,8 @@ BOOST_AUTO_TEST_CASE(the_same_pipeline_is_compiled_into_the_cache_once) {
     Builder other(headless.device);
     other.name("flat")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, flatShader, sizeof(flatShader))
-        .vertexBinding(0, sizeof(float) * 3)
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0)
+        .vertexBinding({.binding = 0, .stride = sizeof(float) * 3})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0})
         .colourFormat(colourFormat);
     buildAndDestroy(headless, other, cache);
     BOOST_CHECK_GT(held(headless, *cache), once);

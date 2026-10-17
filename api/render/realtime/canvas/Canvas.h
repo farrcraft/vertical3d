@@ -89,7 +89,7 @@ class Canvas final {
     /**
      * Set the size of the area being drawn into. projection() maps from this size.
      **/
-    void resize(uint32_t width, uint32_t height);
+    void resize(const glm::uvec2& size);
 
     /**
      * @return the width the canvas was last sized to
@@ -208,12 +208,18 @@ class Canvas final {
      * Angles are radians and turn the way the canvas does, which is clockwise on screen
      * because y grows downwards: zero points right, a quarter turn points down.
      *
-     * @param sides how many segments to approximate the sweep with
-     * @param start where the wedge begins
-     * @param sweep how far round it goes
+     * The sides are how many segments approximate the sweep. The start is where the wedge
+     * begins, and the sweep how far round it goes.
      **/
-    void arc(const glm::vec2& centre, float radius, unsigned int sides, float start, float sweep,
-        const glm::vec4& colour);
+    struct Arc {
+        glm::vec2 centre{0.0f};
+        float radius = 0.0f;
+        unsigned int sides = 0;
+        float start = 0.0f;
+        float sweep = 0.0f;
+    };
+
+    void arc(const Arc& shape, const glm::vec4& colour);
 
     /**
      * A filled band between two radii, as a strip of triangles.
@@ -222,11 +228,19 @@ class Canvas final {
      * box needs no second shape and covers nothing inside it. Angles are as arc() takes
      * them. An inner radius of zero or less draws the same wedge as arc().
      *
-     * @param outer the radius the band ends at
-     * @param inner the radius it starts at, which is the hole it leaves
+     * The outer radius is where the band ends, and the inner radius where it starts, which is
+     * the hole it leaves.
      **/
-    void ring(const glm::vec2& centre, float outer, float inner, unsigned int sides, float start,
-        float sweep, const glm::vec4& colour);
+    struct Ring {
+        glm::vec2 centre{0.0f};
+        float outer = 0.0f;
+        float inner = 0.0f;
+        unsigned int sides = 0;
+        float start = 0.0f;
+        float sweep = 0.0f;
+    };
+
+    void ring(const Ring& shape, const glm::vec4& colour);
 
     /**
      * Append text that a font's text buffer has already laid out.
@@ -274,7 +288,7 @@ class Canvas final {
     /**
      * Add a vertex with the current transform applied.
      **/
-    void vertex(const glm::vec2& position, const glm::vec2& uv, const glm::vec4& colour);
+    void vertex(const Vertex& untransformed);
 
     /**
      * Two triangles over the last four vertices added, wound counter clockwise.

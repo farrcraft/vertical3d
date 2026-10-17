@@ -68,7 +68,7 @@ void TranslateManipulator::draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, 
         glm::vec3 first;
         glm::vec3 second;
         perpendiculars(unit, &first, &second);
-        canvas->circle(base, first, second, radius, headSides, tint);
+        canvas->circle({.centre = base, .axisU = first, .axisV = second, .radius = radius, .sides = headSides}, tint);
         for (unsigned int spoke = 0; spoke < headSpokes; spoke++) {
             const float angle = 2.0f * glm::pi<float>() * static_cast<float>(spoke) /
                 static_cast<float>(headSpokes);

@@ -208,9 +208,9 @@ void Renderer::createPipeline() {
     builder.name("voxel-terrain")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
-        .vertexBinding(0, sizeof(ChunkVertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ChunkVertex, position))
-        .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ChunkVertex, info))
+        .vertexBinding({.binding = 0, .stride = sizeof(ChunkVertex)})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(ChunkVertex, position)})
+        .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(ChunkVertex, info)})
         // a block face is wound counter clockwise seen from outside the block, and the
         // camera's projection flips y - so what reaches the rasterizer is clockwise
         .cull(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE)
@@ -219,7 +219,7 @@ void Renderer::createPipeline() {
         .blend(false)
         .set(context_->frameUniforms()->layout())
         .set(scenePool_->layout())
-        .push(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::vec4))
+        .push({.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .size = sizeof(glm::vec4)})
         .colourFormat(context_->colourFormat())
         .depthFormat(context_->depthFormat());
 

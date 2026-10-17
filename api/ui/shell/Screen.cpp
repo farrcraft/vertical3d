@@ -92,7 +92,7 @@ bool Screen::begin() {
     const auto width = static_cast<std::uint32_t>(frame.x);
     const auto height = static_cast<std::uint32_t>(frame.y);
     if (canvas_.width() != width || canvas_.height() != height) {
-        canvas_.resize(width, height);
+        canvas_.resize(glm::uvec2(width, height));
         resized_ = true;
     }
     canvas_.clear();

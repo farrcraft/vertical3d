@@ -53,7 +53,7 @@ void Capture::record(VkCommandBuffer commands, const Source& source) {
 
     const VkDeviceSize bytes = static_cast<VkDeviceSize>(width_) * height_ * 4;
     if (!readback_) {
-        readback_ = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_TRANSFER_DST_BIT, bytes);
+        readback_ = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT, .bytes = bytes});
     } else {
         readback_->grow(bytes);
     }

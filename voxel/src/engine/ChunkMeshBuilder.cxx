@@ -8,6 +8,7 @@
 #include <voxel/src/voxel/MeshCache.h>
 
 #include <cstdint>
+#include <span>
 #include <vector>
 
 #include "ChunkVertex.h"
@@ -64,7 +65,5 @@ boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> ChunkMeshBuilder:
     }
 
     return boost::make_shared<v3d::render::realtime::vulkan::memory::Mesh>(device_, uploader_,
-        vertices.data(), static_cast<VkDeviceSize>(vertices.size() * sizeof(ChunkVertex)),
-        static_cast<uint32_t>(vertices.size()),
-        indices.data(), static_cast<uint32_t>(indices.size()));
+        std::as_bytes(std::span(vertices)), static_cast<uint32_t>(vertices.size()), std::span<const uint32_t>(indices));
 }

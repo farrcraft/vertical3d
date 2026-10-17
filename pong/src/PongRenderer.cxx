@@ -81,7 +81,7 @@ void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statist
         return;
     }
     const v3d::render::realtime::canvas::Canvas& ui = screen_->canvas();
-    court_.resize(ui.width(), ui.height());
+    court_.resize(glm::uvec2(ui.width(), ui.height()));
     court_.clear();
 
     drawBoard();

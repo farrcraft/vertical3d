@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_SUITE(immediate_test)
 BOOST_AUTO_TEST_CASE(rows_stack_until_something_asks_to_stay_on_one) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
 
     ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(rows_stack_until_something_asks_to_stay_on_one) {
 BOOST_AUTO_TEST_CASE(a_button_answers_a_press_and_a_release_on_it) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 on(20.0f, 10.0f);
 
@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(a_button_answers_a_press_and_a_release_on_it) {
 BOOST_AUTO_TEST_CASE(a_release_off_the_button_is_not_a_click) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
 
     ui.begin(&canvas, hover(glm::vec2(20.0f, 10.0f)));
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(a_release_off_the_button_is_not_a_click) {
 BOOST_AUTO_TEST_CASE(a_disabled_widget_answers_nothing) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 on(20.0f, 10.0f);
 
@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_widget_answers_nothing) {
 BOOST_AUTO_TEST_CASE(pushid_tells_two_widgets_of_one_label_apart) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 onFirst(20.0f, 10.0f);
     const glm::vec2 onSecond(20.0f, 36.0f);
@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE(pushid_tells_two_widgets_of_one_label_apart) {
 BOOST_AUTO_TEST_CASE(a_window_holds_its_contents_and_folds_away) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 corner(50.0f, 40.0f);
     const glm::vec2 size(200.0f, 150.0f);
@@ -311,7 +311,7 @@ BOOST_AUTO_TEST_CASE(a_window_holds_its_contents_and_folds_away) {
 BOOST_AUTO_TEST_CASE(a_tab_strip_keeps_which_tab_is_selected) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
 
     ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
@@ -366,7 +366,7 @@ BOOST_AUTO_TEST_CASE(a_tab_strip_keeps_which_tab_is_selected) {
 BOOST_AUTO_TEST_CASE(a_table_puts_a_cell_in_its_column) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
 
     ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
@@ -409,7 +409,7 @@ BOOST_AUTO_TEST_CASE(wrapped_text_breaks_at_a_space) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
     // ten characters of room
-    canvas.resize(100, 300);
+    canvas.resize(glm::uvec2(100, 300));
     v3d::ui::Immediate ui = build(&written);
 
     ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
@@ -433,7 +433,7 @@ BOOST_AUTO_TEST_CASE(wrapped_text_breaks_at_a_space) {
 BOOST_AUTO_TEST_CASE(a_scrubbed_int_follows_the_cursor_within_its_range) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     int value = 10;
 
@@ -471,7 +471,7 @@ BOOST_AUTO_TEST_CASE(a_scrubbed_int_follows_the_cursor_within_its_range) {
 BOOST_AUTO_TEST_CASE(a_progress_bar_fills_what_it_was_given) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     ui.dressing().radius = 0.0f;
 
@@ -498,7 +498,7 @@ BOOST_AUTO_TEST_CASE(a_progress_bar_fills_what_it_was_given) {
 BOOST_AUTO_TEST_CASE(the_window_drawn_last_takes_the_cursor) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 shared(60.0f, 75.0f);
 
@@ -530,7 +530,7 @@ BOOST_AUTO_TEST_CASE(the_window_drawn_last_takes_the_cursor) {
 BOOST_AUTO_TEST_CASE(a_window_cuts_what_it_holds_off_at_its_edges) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 corner(50.0f, 40.0f);
     const glm::vec2 size(200.0f, 150.0f);
@@ -561,7 +561,7 @@ BOOST_AUTO_TEST_CASE(a_window_cuts_what_it_holds_off_at_its_edges) {
 BOOST_AUTO_TEST_CASE(a_window_scrolls_when_it_holds_more_than_it_shows) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 corner(20.0f, 20.0f);
     const glm::vec2 size(200.0f, 100.0f);
@@ -598,7 +598,7 @@ BOOST_AUTO_TEST_CASE(a_window_scrolls_when_it_holds_more_than_it_shows) {
 BOOST_AUTO_TEST_CASE(the_wheel_turns_only_the_window_under_the_cursor) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 size(120.0f, 80.0f);
     const glm::vec2 left(10.0f, 10.0f);
@@ -636,7 +636,7 @@ BOOST_AUTO_TEST_CASE(the_wheel_turns_only_the_window_under_the_cursor) {
 BOOST_AUTO_TEST_CASE(a_bar_appears_the_frame_after_a_window_overflows) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 corner(20.0f, 20.0f);
     const glm::vec2 size(200.0f, 100.0f);
@@ -675,7 +675,7 @@ BOOST_AUTO_TEST_CASE(what_stops_being_drawn_is_aged_out) {
     std::vector<Written> written;
     v3d::ui::Immediate ui = build(&written);
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
 
     // a new window every frame, which is the churn the bound is for
     for (unsigned int frame = 0; frame < 400; frame++) {
@@ -697,7 +697,7 @@ BOOST_AUTO_TEST_CASE(a_window_hidden_for_a_moment_keeps_what_it_held) {
     std::vector<Written> written;
     v3d::ui::Immediate ui = build(&written);
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
 
     const glm::vec2 corner(10.0f, 10.0f);
     const glm::vec2 size(200.0f, 100.0f);
@@ -738,7 +738,7 @@ BOOST_AUTO_TEST_CASE(a_window_hidden_for_a_moment_keeps_what_it_held) {
 BOOST_AUTO_TEST_CASE(a_widget_takes_the_width_it_was_given) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     int left = 1;
     int right = 2;
@@ -767,7 +767,7 @@ BOOST_AUTO_TEST_CASE(a_widget_takes_the_width_it_was_given) {
 BOOST_AUTO_TEST_CASE(a_given_width_is_spent_once) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     int narrow = 1;
     int wide = 2;
@@ -797,7 +797,7 @@ BOOST_AUTO_TEST_CASE(a_given_width_is_spent_once) {
 BOOST_AUTO_TEST_CASE(a_blocked_rectangle_captures_the_cursor_inside_it) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
 
     ui.begin(&canvas, hover(glm::vec2(200.0f, 150.0f)));
@@ -817,7 +817,7 @@ BOOST_AUTO_TEST_CASE(a_blocked_rectangle_captures_the_cursor_inside_it) {
 BOOST_AUTO_TEST_CASE(a_given_width_cannot_exceed_the_row) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(200, 300);
+    canvas.resize(glm::uvec2(200, 300));
     v3d::ui::Immediate ui = build(&written);
     float fraction = 0.5f;
 
@@ -839,7 +839,7 @@ BOOST_AUTO_TEST_CASE(a_given_width_cannot_exceed_the_row) {
 BOOST_AUTO_TEST_CASE(the_layer_says_when_it_wants_the_cursor) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
 
     // nothing has been drawn, so nothing is wanted
@@ -868,7 +868,7 @@ BOOST_AUTO_TEST_CASE(the_layer_says_when_it_wants_the_cursor) {
 BOOST_AUTO_TEST_CASE(the_layer_keeps_the_cursor_through_a_drag) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     int value = 5;
 
@@ -900,7 +900,7 @@ BOOST_AUTO_TEST_CASE(the_layer_keeps_the_cursor_through_a_drag) {
 BOOST_AUTO_TEST_CASE(a_press_that_travels_moves_the_window_instead_of_folding_it) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 corner(50.0f, 40.0f);
     const glm::vec2 size(200.0f, 150.0f);
@@ -948,7 +948,7 @@ BOOST_AUTO_TEST_CASE(a_press_that_travels_moves_the_window_instead_of_folding_it
 BOOST_AUTO_TEST_CASE(a_dragged_window_keeps_its_title_bar_on_the_canvas) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 corner(50.0f, 40.0f);
     const glm::vec2 size(200.0f, 150.0f);
@@ -991,7 +991,7 @@ BOOST_AUTO_TEST_CASE(a_dragged_window_keeps_its_title_bar_on_the_canvas) {
 BOOST_AUTO_TEST_CASE(a_table_given_a_height_keeps_its_header_above_its_rows) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 over(50.0f, 60.0f);
 
@@ -1037,7 +1037,7 @@ BOOST_AUTO_TEST_CASE(a_table_given_a_height_keeps_its_header_above_its_rows) {
 BOOST_AUTO_TEST_CASE(a_table_given_a_height_is_that_tall_whatever_it_holds) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
 
     const auto roster = [&ui](int rows) {
@@ -1076,7 +1076,7 @@ BOOST_AUTO_TEST_CASE(a_table_given_a_height_is_that_tall_whatever_it_holds) {
 BOOST_AUTO_TEST_CASE(the_wheel_turns_a_table_rather_than_the_window_holding_it) {
     std::vector<Written> written;
     v3d::render::realtime::canvas::Canvas canvas;
-    canvas.resize(400, 300);
+    canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec2 corner(20.0f, 20.0f);
     const glm::vec2 size(220.0f, 160.0f);

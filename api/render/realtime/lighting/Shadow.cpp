@@ -53,7 +53,9 @@ bool finite(const glm::vec3& value) {
 
 /**
  **/
-glm::mat4 shadowLight(const glm::vec3& towards, const glm::vec3& centre, float radius, type::camera::Profile::Hand hand) {
+glm::mat4 shadowLight(const glm::vec3& towards, const ShadowBounds& bounds, type::camera::Profile::Hand hand) {
+    const glm::vec3& centre = bounds.centre;
+    const float radius = bounds.radius;
     // the light looks from the light towards the centre
     const Basis axes = basis(towards);
     const glm::vec3 z = axes.along;
@@ -89,7 +91,9 @@ glm::mat4 shadowLight(const glm::vec3& towards, const glm::vec3& centre, float r
 
 /**
  **/
-std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<const glm::vec3> alsoCover, float margin, float alpha) {
+std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<const glm::vec3> alsoCover, const ShadowFit& fit) {
+    const float margin = fit.margin;
+    const float alpha = fit.alpha;
     std::vector<glm::vec3> points;
     auto view = registry.view<const ecs::component::Transform, const component::Mesh>();
     for (const entt::entity entity : view) {

@@ -175,7 +175,7 @@ void RotateManipulator::draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
         glm::vec3 first;
         glm::vec3 second;
         perpendiculars(direction(seat, handle), &first, &second);
-        canvas->circle(seat.origin, first, second, seat.size, ringSides, colour(handle));
+        canvas->circle({.centre = seat.origin, .axisU = first, .axisV = second, .radius = seat.size, .sides = ringSides}, colour(handle));
     }
 
     marker(canvas, seat, seat.origin, seat.size * centreSize, colour(Axis::None));

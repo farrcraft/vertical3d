@@ -73,7 +73,7 @@ std::vector<unsigned char> drawFrame(v3d::test::Headless* headless, const boost:
     const std::vector<TextureHandle>& handles, const boost::shared_ptr<RenderTarget>& output,
     const glm::vec4& colour, const std::string& path) {
     Canvas canvas;
-    canvas.resize(width, height);
+    canvas.resize(glm::uvec2(width, height));
     canvas.clear();
     canvas.rect(glm::vec2(0.0f), glm::vec2(width, height), glm::vec2(0.0f), glm::vec2(1.0f), glm::vec4(1.0f),
         handles[slots->previous()]);
@@ -201,12 +201,12 @@ BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
     Builder builder(headless.device);
     builder.name("rgba")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .vertexBinding(0, sizeof(float) * 3)
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0)
+        .vertexBinding({.binding = 0, .stride = sizeof(float) * 3})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0})
         .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
         .colourFormat(colourFormat);
     const std::vector<float> triangle{-1.0f, -1.0f, 0.5f, 3.0f, -1.0f, 0.5f, -1.0f, 3.0f, 0.5f};
-    Buffer buffer(headless.device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, triangle.size() * sizeof(float));
+    Buffer buffer(headless.device, {.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, .bytes = triangle.size() * sizeof(float)});
     buffer.write(triangle.data(), triangle.size() * sizeof(float));
 
     DrawItem item;

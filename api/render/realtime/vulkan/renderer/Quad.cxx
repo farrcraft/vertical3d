@@ -76,8 +76,8 @@ Quad::Quad(const boost::shared_ptr<device::Device>& device,
     ring_(ring),
     uniforms_(uniforms),
     textures_(textures) {
-    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, initialVertexBytes, initialIndexBytes);
-    createPipelines(colour, depth);
+    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = initialIndexBytes});
+    createPipelines({.colour = colour, .depth = depth});
 }
 
 /**
@@ -106,23 +106,25 @@ bool Quad::linearises(VkFormat colour) noexcept {
 
 /**
  **/
-void Quad::createPipelines(VkFormat colour, VkFormat depth) {
+void Quad::createPipelines(const pipeline::Formats & formats) {
+    const VkFormat colour = formats.colour;
+    const VkFormat depth = formats.depth;
     const bool linear = linearises(colour);
     pipeline::Builder builder(device_);
     builder.name("quad")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, linear ? linearFragmentShader : fragmentShader,
             linear ? sizeof(linearFragmentShader) : sizeof(fragmentShader))
-        .vertexBinding(0, sizeof(canvas::Canvas::Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(canvas::Canvas::Vertex, position))
-        .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(canvas::Canvas::Vertex, uv))
-        .vertexAttribute(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(canvas::Canvas::Vertex, colour))
+        .vertexBinding({.binding = 0, .stride = sizeof(canvas::Canvas::Vertex)})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(canvas::Canvas::Vertex, position)})
+        .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(canvas::Canvas::Vertex, uv)})
+        .vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(canvas::Canvas::Vertex, colour)})
         // nothing 2D has a back face worth culling, and not culling means a caller cannot
         // get a quad's winding wrong and have it silently disappear
         .cull(VK_CULL_MODE_NONE)
         .set(uniforms_->layout())
         .set(textures_->layout())
-        .push(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Push))
+        .push({.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .size = sizeof(Push)})
         .colourFormat(colour);
 
     pipeline_ = resources_->add(builder.build(cache_));

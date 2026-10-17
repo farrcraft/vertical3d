@@ -71,11 +71,19 @@ class TextureFactory final {
     TextureFactory& operator=(const TextureFactory&) = delete;
 
     /**
-     * @param pixels tightly packed rows of width * channels bytes
-     * @param width in pixels
-     * @param height in pixels
-     * @param channels 1 for a coverage mask, 3 or 4 for colour - 3 is widened to 4,
-     *        because a three channel format is not something a device has to support
+     * Pixels in tightly packed rows of width * channels bytes. The width and height are in
+     * pixels. The channels are 1 for a coverage mask, or 3 or 4 for colour. 3 is widened to 4,
+     * because a three channel format is not something a device has to support.
+     **/
+    struct Pixels {
+        const unsigned char* data = nullptr;
+        uint32_t width = 0;
+        uint32_t height = 0;
+        uint32_t channels = 4;
+    };
+
+    /**
+     * @param pixels what to upload
      * @param encoding how a shader reads the colour back. A coverage mask is not a colour
      *        and ignores it
      * @param sampler how a shader reads the image. The default is linear and clamped to the
@@ -84,8 +92,8 @@ class TextureFactory final {
      * @return the created image and the sampler it is read through, for the caller to register
      * @throw std::runtime_error if any part of the creation or upload fails
      **/
-    pipeline::Texture create(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
-        Encoding encoding = Encoding::Display, const pipeline::Sampler::Spec& sampler = pipeline::Sampler::Spec()) const;
+    pipeline::Texture create(const Pixels& pixels, Encoding encoding = Encoding::Display,
+        const pipeline::Sampler::Spec& sampler = pipeline::Sampler::Spec()) const;
 
     /**
      * @param image the image to upload, whose bpp decides the channel count

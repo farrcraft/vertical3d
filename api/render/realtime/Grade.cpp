@@ -59,17 +59,17 @@ const std::size_t TEXELS = static_cast<std::size_t>(Grade::SIZE) * Grade::SIZE *
 /**
  **/
 Grade::Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_ptr<DeviceContext>& context,
-    VkFormat colour, VkFormat depth, const boost::shared_ptr<image::Image>& strip) :
+    const vulkan::pipeline::Formats& formats, const boost::shared_ptr<image::Image>& strip) :
     logger_(logger),
     context_(context) {
-    const bool encodes = vulkan::renderer::Quad::linearises(colour);
+    const bool encodes = vulkan::renderer::Quad::linearises(formats.colour);
     const auto build = [&](const std::string& name, std::vector<uint32_t> fragment) {
         vulkan::renderer::FullScreen::Spec spec;
         spec.name = name;
         spec.fragment = std::move(fragment);
         spec.sources = 2;
-        spec.colour = colour;
-        spec.depth = depth;
+        spec.colour = formats.colour;
+        spec.depth = formats.depth;
         return boost::make_shared<vulkan::renderer::FullScreen>(context_->device(), context_->pipelineCache(),
             context_->resources(), context_->ring(), context_->frameUniforms(), spec);
     };

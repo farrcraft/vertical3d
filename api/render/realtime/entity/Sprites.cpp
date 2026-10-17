@@ -16,8 +16,10 @@ namespace v3d::render::realtime::entity {
 
 /**
  **/
-void sprites(const entt::registry& registry, float alpha, const glm::vec3& right,
-    const glm::vec3& up, const glm::vec3& depthAxis, canvas::DepthOrder* order) {
+void sprites(const entt::registry& registry, float alpha, const Billboard& billboard, canvas::DepthOrder* order) {
+    const glm::vec3& right = billboard.right;
+    const glm::vec3& up = billboard.up;
+    const glm::vec3& depthAxis = billboard.depthAxis;
     auto view = registry.view<const ecs::component::Transform, const component::Sprite>();
     for (const entt::entity entity : view) {
         const component::Sprite& sprite = view.get<const component::Sprite>(entity);

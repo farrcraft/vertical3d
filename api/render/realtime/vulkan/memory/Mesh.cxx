@@ -14,27 +14,27 @@ namespace v3d::render::realtime::vulkan::memory {
 /**
  **/
 Mesh::Mesh(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader,
-    const void* vertices, VkDeviceSize vertexBytes, uint32_t vertexCount) :
+    std::span<const std::byte> vertices, uint32_t vertexCount) :
     vertexCount_(vertexCount),
     indexCount_(0) {
-    if (vertices == nullptr || vertexBytes == 0) {
+    if (vertices.empty()) {
         throw std::runtime_error("A mesh needs vertices to be created from");
     }
-    vertices_ = boost::make_shared<DeviceBuffer>(device, uploader, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices, vertexBytes);
+    vertices_ = boost::make_shared<DeviceBuffer>(device, uploader, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices.data(),
+        static_cast<VkDeviceSize>(vertices.size()));
 }
 
 /**
  **/
 Mesh::Mesh(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader,
-    const void* vertices, VkDeviceSize vertexBytes, uint32_t vertexCount,
-    const uint32_t* indices, uint32_t indexCount) :
-    Mesh(device, uploader, vertices, vertexBytes, vertexCount) {
-    if (indices == nullptr || indexCount == 0) {
+    std::span<const std::byte> vertices, uint32_t vertexCount, std::span<const uint32_t> indices) :
+    Mesh(device, uploader, vertices, vertexCount) {
+    if (indices.empty()) {
         throw std::runtime_error("An indexed mesh needs indices to be created from");
     }
-    const VkDeviceSize bytes = static_cast<VkDeviceSize>(indexCount) * sizeof(uint32_t);
-    indices_ = boost::make_shared<DeviceBuffer>(device, uploader, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indices, bytes);
-    indexCount_ = indexCount;
+    const VkDeviceSize bytes = static_cast<VkDeviceSize>(indices.size_bytes());
+    indices_ = boost::make_shared<DeviceBuffer>(device, uploader, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indices.data(), bytes);
+    indexCount_ = static_cast<uint32_t>(indices.size());
 }
 
 /**

@@ -20,7 +20,7 @@ void settle(const v3d::test::Windowed& windowed) {
     int width = 0;
     int height = 0;
     SDL_GetWindowSizeInPixels(windowed.window->sdl(), &width, &height);
-    windowed.window->resize(width, height);
+    windowed.window->resize(glm::ivec2(width, height));
 }
 
 };  // namespace

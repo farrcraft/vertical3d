@@ -56,7 +56,7 @@ struct Fixture final {
                 written.push_back(line);
             }) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
-        canvas.resize(800, 600);
+        canvas.resize(glm::uvec2(800, 600));
     }
 
     void receive(const v3d::event::Event& event) {

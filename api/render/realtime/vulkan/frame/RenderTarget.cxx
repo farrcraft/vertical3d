@@ -18,10 +18,18 @@ namespace v3d::render::realtime::vulkan::frame {
 
 namespace {
 
+/** The colour and depth attachments of a target, either of which may be null. **/
+struct Views {
+    VkImageView colour = VK_NULL_HANDLE;
+    VkImageView depth = VK_NULL_HANDLE;
+};
+
 /**
  * Clear what is attached to transparent black and the far plane, with no draws.
  **/
-void clear(VkCommandBuffer commands, VkImageView colour, VkImageView depth, const VkExtent2D& extent) {
+void clear(VkCommandBuffer commands, const Views& views, const VkExtent2D& extent) {
+    const VkImageView colour = views.colour;
+    const VkImageView depth = views.depth;
     VkRenderingAttachmentInfo colourAttachment{};
     colourAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     colourAttachment.imageView = colour;
@@ -62,7 +70,7 @@ void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, V
     if (depth != VK_NULL_HANDLE) {
         memory::record(commands, {memory::depthForDrawing(depth)});
     }
-    clear(commands, colourView, depthView, extent);
+    clear(commands, {.colour = colourView, .depth = depthView}, extent);
     if (colour != VK_NULL_HANDLE) {
         memory::record(commands, {memory::colourAfterDrawing(colour, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
     }
@@ -122,7 +130,7 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
     std::vector<Slot> slots(images_);
     for (Slot& slot : slots) {
         if (format_ != VK_FORMAT_UNDEFINED) {
-            slot.image = createColour(width, height);
+            slot.image = createColour({.width = width, .height = height});
         }
         if (wantsDepth_) {
             // a target's depth is a DepthBuffer, the same class the swapchain passes use
@@ -154,10 +162,10 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
 
 /**
  **/
-boost::shared_ptr<memory::Image> RenderTarget::createColour(uint32_t width, uint32_t height) const {
+boost::shared_ptr<memory::Image> RenderTarget::createColour(const VkExtent2D& extent) const {
     memory::Image::Spec spec;
-    spec.width = width;
-    spec.height = height;
+    spec.width = extent.width;
+    spec.height = extent.height;
     spec.format = format_;
     // a pass draws into a target and a later pass reads it. TRANSFER_SRC lets frame::Capture
     // copy one out. It is always granted, as SAMPLED is, and its only cost is any compression

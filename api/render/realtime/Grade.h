@@ -9,6 +9,7 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
 
 #include <vulkan/vulkan.h>
 
@@ -62,7 +63,7 @@ class Grade final {
      * @throw std::runtime_error if the pipeline or the table cannot be made
      **/
     Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_ptr<DeviceContext>& context,
-        VkFormat colour, VkFormat depth, const boost::shared_ptr<image::Image>& strip = boost::shared_ptr<image::Image>());
+        const vulkan::pipeline::Formats& formats, const boost::shared_ptr<image::Image>& strip = boost::shared_ptr<image::Image>());
 
     /**
      * Release the table, and every source not yet released, through the ring, so a frame in

@@ -44,7 +44,7 @@ void box(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& first, 
  **/
 void turn(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& corner, const glm::vec2& towards,
     float radius, float width, float start, const glm::vec4& colour) {
-    canvas->ring(corner + towards * radius, radius, radius - width, cornerSides, start, quarterTurn, colour);
+    canvas->ring({.centre = corner + towards * radius, .outer = radius, .inner = radius - width, .sides = cornerSides, .start = start, .sweep = quarterTurn}, colour);
     // the turn fills a square of the radius; an outline thicker than that leaves the rest
     // of a square of its own width, which is two rectangles beside the turn
     if (width <= radius) {
@@ -76,10 +76,10 @@ void fillBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min
     canvas->rect(glm::vec2(min.x, min.y + corner), glm::vec2(min.x + corner, max.y - corner), colour);
     canvas->rect(glm::vec2(max.x - corner, min.y + corner), glm::vec2(max.x, max.y - corner), colour);
 
-    canvas->arc(glm::vec2(min.x + corner, min.y + corner), corner, cornerSides, quarterTurn * 2.0f, quarterTurn, colour);
-    canvas->arc(glm::vec2(max.x - corner, min.y + corner), corner, cornerSides, quarterTurn * 3.0f, quarterTurn, colour);
-    canvas->arc(glm::vec2(max.x - corner, max.y - corner), corner, cornerSides, 0.0f, quarterTurn, colour);
-    canvas->arc(glm::vec2(min.x + corner, max.y - corner), corner, cornerSides, quarterTurn, quarterTurn, colour);
+    canvas->arc({.centre = glm::vec2(min.x + corner, min.y + corner), .radius = corner, .sides = cornerSides, .start = quarterTurn * 2.0f, .sweep = quarterTurn}, colour);
+    canvas->arc({.centre = glm::vec2(max.x - corner, min.y + corner), .radius = corner, .sides = cornerSides, .start = quarterTurn * 3.0f, .sweep = quarterTurn}, colour);
+    canvas->arc({.centre = glm::vec2(max.x - corner, max.y - corner), .radius = corner, .sides = cornerSides, .start = 0.0f, .sweep = quarterTurn}, colour);
+    canvas->arc({.centre = glm::vec2(min.x + corner, max.y - corner), .radius = corner, .sides = cornerSides, .start = quarterTurn, .sweep = quarterTurn}, colour);
 }
 
 void strokeBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,

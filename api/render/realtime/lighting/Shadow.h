@@ -32,6 +32,16 @@ struct ShadowBounds final {
 };
 
 /**
+ * How fitShadow() reads the casters. The margin is added to the radius around them. alpha is
+ * Engine::alpha(), the fraction of a step elapsed since the last one. At one, the current step's
+ * positions are read.
+ **/
+struct ShadowFit final {
+    float margin = 0.0f;
+    float alpha = 1.0f;
+};
+
+/**
  * The matrix a directional light draws its shadow map through: an orthographic box around a
  * sphere, seen from the light.
  *
@@ -43,11 +53,11 @@ struct ShadowBounds final {
  *
  * @param towards the direction towards the light - Settings::light. It need not be
  *        normalised, and must not be zero
- * @param centre the middle of what should cast and receive shadows
- * @param radius how far from the centre that reaches, which must be above zero
+ * @param bounds the middle of what should cast and receive shadows, and how far from it that
+ *        reaches, which must be above zero
  * @param hand the hand of the camera the scene is drawn through
  **/
-glm::mat4 shadowLight(const glm::vec3& towards, const glm::vec3& centre, float radius,
+glm::mat4 shadowLight(const glm::vec3& towards, const ShadowBounds& bounds,
     type::camera::Profile::Hand hand = type::camera::Profile::Hand::UpCrossDirection);
 
 /**
@@ -66,11 +76,9 @@ glm::mat4 shadowLight(const glm::vec3& towards, const glm::vec3& centre, float r
  *
  * @param alsoCover points that should be inside the map whether or not anything stands there,
  *        such as where a character will walk to
- * @param alpha Engine::alpha(), the fraction of a step elapsed since the last one. At one, the
- *        current step's positions are read
  * @return nothing when no entity casts a shadow, so a caller keeps the bounds it had
  **/
-std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<const glm::vec3> alsoCover, float margin, float alpha = 1.0f);
+std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<const glm::vec3> alsoCover, const ShadowFit& fit);
 
 /**
  * A sphere around what a camera sees, for a shadow map that follows the camera.

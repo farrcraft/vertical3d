@@ -11,14 +11,20 @@ namespace v3d::render::realtime::vulkan::memory {
 
 namespace {
 
+/** The layout an image leaves, and the layout it enters. **/
+struct Transition {
+    VkImageLayout from = VK_IMAGE_LAYOUT_UNDEFINED;
+    VkImageLayout to = VK_IMAGE_LAYOUT_UNDEFINED;
+};
+
 /**
  * A barrier from one layout to another with no scopes yet, for the caller to fill in.
  **/
-VkImageMemoryBarrier2 barrier(VkImage image, VkImageAspectFlags aspect, VkImageLayout from, VkImageLayout to) {
+VkImageMemoryBarrier2 barrier(VkImage image, VkImageAspectFlags aspect, const Transition& transition) {
     VkImageMemoryBarrier2 barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    barrier.oldLayout = from;
-    barrier.newLayout = to;
+    barrier.oldLayout = transition.from;
+    barrier.newLayout = transition.to;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = image;
@@ -35,8 +41,7 @@ const VkPipelineStageFlags2 depthTests = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TEST
 /**
  **/
 VkImageMemoryBarrier2 colourForDrawing(VkImage image) {
-    VkImageMemoryBarrier2 into = barrier(image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkImageMemoryBarrier2 into = barrier(image, VK_IMAGE_ASPECT_COLOR_BIT, {.from = VK_IMAGE_LAYOUT_UNDEFINED, .to = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
     // two things have to have happened before the transition writes the image.
     //
     // COLOR_ATTACHMENT_OUTPUT is the stage the presenter waits the image-available
@@ -60,7 +65,7 @@ VkImageMemoryBarrier2 colourForDrawing(VkImage image) {
 /**
  **/
 VkImageMemoryBarrier2 colourAfterDrawing(VkImage image, VkImageLayout to) {
-    VkImageMemoryBarrier2 out = barrier(image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, to);
+    VkImageMemoryBarrier2 out = barrier(image, VK_IMAGE_ASPECT_COLOR_BIT, {.from = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, .to = to});
     out.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
     out.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
     if (to == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
@@ -80,8 +85,7 @@ VkImageMemoryBarrier2 colourAfterDrawing(VkImage image, VkImageLayout to) {
 /**
  **/
 VkImageMemoryBarrier2 depthForDrawing(VkImage image) {
-    VkImageMemoryBarrier2 into = barrier(image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+    VkImageMemoryBarrier2 into = barrier(image, VK_IMAGE_ASPECT_DEPTH_BIT, {.from = VK_IMAGE_LAYOUT_UNDEFINED, .to = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL});
     // one depth image serves every frame in flight, so this transition lands on top of the
     // last frame's storeOp. A layout transition is a write of its own, and the access bit is
     // what makes the earlier write available to it - a stage on its own orders nothing.
@@ -96,8 +100,7 @@ VkImageMemoryBarrier2 depthForDrawing(VkImage image) {
 /**
  **/
 VkImageMemoryBarrier2 depthForSampling(VkImage image) {
-    VkImageMemoryBarrier2 out = barrier(image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-        VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL);
+    VkImageMemoryBarrier2 out = barrier(image, VK_IMAGE_ASPECT_DEPTH_BIT, {.from = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, .to = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL});
     // the writes being waited on are the depth tests of the pass that just ran, and what
     // waits on them is a fragment shader sampling the result
     out.srcStageMask = depthTests;
@@ -110,8 +113,7 @@ VkImageMemoryBarrier2 depthForSampling(VkImage image) {
 /**
  **/
 VkImageMemoryBarrier2 forUpload(VkImage image) {
-    VkImageMemoryBarrier2 into = barrier(image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    VkImageMemoryBarrier2 into = barrier(image, VK_IMAGE_ASPECT_COLOR_BIT, {.from = VK_IMAGE_LAYOUT_UNDEFINED, .to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL});
     into.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
     into.srcAccessMask = VK_ACCESS_2_NONE;
     into.dstStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
@@ -122,8 +124,7 @@ VkImageMemoryBarrier2 forUpload(VkImage image) {
 /**
  **/
 VkImageMemoryBarrier2 uploadedForSampling(VkImage image) {
-    VkImageMemoryBarrier2 out = barrier(image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    VkImageMemoryBarrier2 out = barrier(image, VK_IMAGE_ASPECT_COLOR_BIT, {.from = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, .to = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
     out.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
     out.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
     out.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
@@ -134,7 +135,7 @@ VkImageMemoryBarrier2 uploadedForSampling(VkImage image) {
 /**
  **/
 VkImageMemoryBarrier2 forReadback(VkImage image, VkImageAspectFlags aspect, VkImageLayout from) {
-    VkImageMemoryBarrier2 into = barrier(image, aspect, from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    VkImageMemoryBarrier2 into = barrier(image, aspect, {.from = from, .to = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL});
     // ALL_COMMANDS rather than the stage that drew. This has to be ordered after whatever
     // transitioned the image into PRESENT_SRC, and a capture cannot tell which barrier that
     // was or which stage it named as its second scope. What has to be made visible is still
@@ -151,7 +152,7 @@ VkImageMemoryBarrier2 forReadback(VkImage image, VkImageAspectFlags aspect, VkIm
 /**
  **/
 VkImageMemoryBarrier2 afterReadback(VkImage image, VkImageAspectFlags aspect, VkImageLayout to) {
-    VkImageMemoryBarrier2 out = barrier(image, aspect, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to);
+    VkImageMemoryBarrier2 out = barrier(image, aspect, {.from = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, .to = to});
     // a transition is a write and the copy was a read, so what this needs is for the read
     // to have happened rather than to be visible
     out.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;

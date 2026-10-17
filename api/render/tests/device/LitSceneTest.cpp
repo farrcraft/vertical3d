@@ -110,7 +110,15 @@ struct Shading final {
     std::size_t otherwise = 0;
 };
 
-Shading compare(const boost::shared_ptr<v3d::image::Image>& without, const boost::shared_ptr<v3d::image::Image>& with) {
+/** The same scene drawn without a change and with it. **/
+struct Drawn {
+    boost::shared_ptr<v3d::image::Image> without;
+    boost::shared_ptr<v3d::image::Image> with;
+};
+
+Shading compare(const Drawn& drawn) {
+    const boost::shared_ptr<v3d::image::Image>& without = drawn.without;
+    const boost::shared_ptr<v3d::image::Image>& with = drawn.with;
     Shading shading;
     for (std::size_t texel = 0; texel < static_cast<std::size_t>(with->width()) * with->height(); texel++) {
         const unsigned char* before = without->data() + (texel * 4);
@@ -175,12 +183,12 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
     settings.shadowStrength = strength;
 
     const std::optional<lighting::ShadowBounds> bounds =
-        lighting::fitShadow(registry, {}, 2.0f);
+        lighting::fitShadow(registry, {}, {.margin = 2.0f});
     if (!bounds) {
         BOOST_ERROR("a cube that casts gave no fit");
         return boost::shared_ptr<v3d::image::Image>();
     }
-    const glm::mat4 light = lighting::shadowLight(settings.light, bounds->centre, bounds->radius);
+    const glm::mat4 light = lighting::shadowLight(settings.light, *bounds);
     VkDescriptorSet scene = lit.scene(lighting::pack(settings, light, 1.0f / mapSize),
         headless->context->textures()->depthTexture(*map));
 
@@ -359,7 +367,7 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     place(&registry, block, glm::vec3(0.5f, 0.0f, 1.5f), scale, true);
     place(&registry, block, glm::vec3(0.5f, 0.0f, 0.5f), scale, false);
 
-    const glm::mat4 light = lighting::shadowLight(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f), 1.0f, hand);
+    const glm::mat4 light = lighting::shadowLight(glm::vec3(0.0f, 0.0f, -1.0f), {.centre = glm::vec3(0.0f), .radius = 1.0f}, hand);
 
     Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("shadow");
@@ -576,7 +584,7 @@ BOOST_AUTO_TEST_CASE(a_shadow_falls_on_the_ground) {
     BOOST_REQUIRE(picture);
     BOOST_CHECK(headless.silent());
 
-    const Shading shading = compare(ignored, picture);
+    const Shading shading = compare({.without = ignored, .with = picture});
     BOOST_TEST_MESSAGE("ground darkened " << shading.darkened << ", anything else changed " << shading.otherwise);
     BOOST_CHECK_GT(shading.darkened, 0U);
     BOOST_CHECK_EQUAL(shading.otherwise, 0U);
@@ -625,7 +633,7 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
 
     Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
         headless.context->frameUniforms(), headless.context->textures(), swapchainFormat, scene->depthFormat(), map->depthFormat());
-    v3d::render::realtime::Grade grade(headless.logger, headless.context, swapchainFormat, VK_FORMAT_UNDEFINED);
+    v3d::render::realtime::Grade grade(headless.logger, headless.context, {.colour = swapchainFormat});
     const v3d::render::realtime::MaterialHandle graded = grade.source(*scene);
 
     entt::registry registry;
@@ -662,12 +670,12 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
 
     // the default settings, and three metres of margin for a figure's height and its shadow
     const lighting::Settings settings;
-    const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, 3.0f);
+    const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, {.margin = 3.0f});
     if (!bounds) {
         BOOST_ERROR("a scene with casters gave no fit");
         return;
     }
-    const glm::mat4 light = lighting::shadowLight(settings.light, bounds->centre, bounds->radius);
+    const glm::mat4 light = lighting::shadowLight(settings.light, *bounds);
     VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0f / static_cast<float>(mapSize)),
         headless.context->textures()->depthTexture(*map));
 
@@ -996,7 +1004,7 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
 
         v3d::render::realtime::canvas::DepthOrder order;
         const glm::vec3 forward = camera.profile().direction();
-        v3d::render::realtime::entity::particles(registry, 1.0f, camera.profile().right(), camera.profile().up(), forward, &order);
+        v3d::render::realtime::entity::particles(registry, 1.0f, {.right = camera.profile().right(), .up = camera.profile().up(), .depthAxis = forward}, &order);
         v3d::render::realtime::canvas::World drops;
         order.into(&drops);
 

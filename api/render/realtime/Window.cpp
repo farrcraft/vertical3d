@@ -26,12 +26,12 @@ Window::Window(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept :
 
 /**
 **/
-bool Window::create(int width, int height) {
-    if (width > 0) {
-        width_ = width;
+bool Window::create(const glm::ivec2& size) {
+    if (size.x > 0) {
+        width_ = size.x;
     }
-    if (height > 0) {
-        height_ = height;
+    if (size.y > 0) {
+        height_ = size.y;
     }
 
     // the loader has to be up before a window can be created with the vulkan flag
@@ -115,18 +115,18 @@ int Window::height() const noexcept {
 
 /**
  **/
-void Window::resize(int width, int height) noexcept {
-    width_ = width;
-    height_ = height;
+void Window::resize(const glm::ivec2& size) noexcept {
+    width_ = size.x;
+    height_ = size.y;
 }
 
 /**
  **/
-void Window::request(int width, int height) {
-    if (window_ == nullptr || width <= 0 || height <= 0) {
+void Window::request(const glm::ivec2& size) {
+    if (window_ == nullptr || size.x <= 0 || size.y <= 0) {
         return;
     }
-    SDL_SetWindowSize(window_, width, height);
+    SDL_SetWindowSize(window_, size.x, size.y);
 }
 
 /**

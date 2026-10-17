@@ -117,11 +117,11 @@ boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const 
         size, size, outputFormat);
     const TextureHandle uploaded = headless->context->textures()->texture(texels.data(), size, size, 4);
 
-    Grade graded(headless->logger, headless->context, outputFormat, VK_FORMAT_UNDEFINED, strip);
+    Grade graded(headless->logger, headless->context, {.colour = outputFormat}, strip);
     const MaterialHandle source = graded.source(*scene);
 
     Canvas canvas;
-    canvas.resize(size, size);
+    canvas.resize(glm::uvec2(size, size));
     canvas.clear();
     canvas.rect(glm::vec2(0.0f), glm::vec2(static_cast<float>(size)), glm::vec2(0.0f), glm::vec2(1.0f), glm::vec4(1.0f),
         uploaded);
@@ -157,7 +157,7 @@ VkCommandBuffer recordGrade(v3d::test::Headless* headless, const Grade& graded, 
     const boost::shared_ptr<RenderTarget>& scene, const boost::shared_ptr<RenderTarget>& output,
     const TextureHandle& sweepTexture, uint32_t size, Capture* capture) {
     Canvas canvas;
-    canvas.resize(size, size);
+    canvas.resize(glm::uvec2(size, size));
     canvas.clear();
     canvas.rect(glm::vec2(0.0f), glm::vec2(static_cast<float>(size)), glm::vec2(0.0f), glm::vec2(1.0f), glm::vec4(1.0f),
         sweepTexture);
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
 
     // the quad case's canvas, whose picture the reference holds
     Canvas canvas;
-    canvas.resize(width, height);
+    canvas.resize(glm::uvec2(width, height));
     canvas.clear();
     canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
@@ -462,7 +462,7 @@ BOOST_AUTO_TEST_CASE(a_replaced_table_regrades_its_sources) {
         size, size, colourFormat);
     const TextureHandle uploaded = headless.context->textures()->texture(texels.data(), size, size, 4);
 
-    Grade graded(headless.logger, headless.context, colourFormat, VK_FORMAT_UNDEFINED);
+    Grade graded(headless.logger, headless.context, {.colour = colourFormat});
     const MaterialHandle source = graded.source(*scene);
     BOOST_CHECK(!graded.replace(std::vector<uint8_t>(16)));
     BOOST_REQUIRE(graded.replace(Grade::table(invertingStrip())));
@@ -499,7 +499,7 @@ BOOST_AUTO_TEST_CASE(a_table_replaced_after_a_submit_keeps_the_frame_silent) {
         size, size, colourFormat);
     const TextureHandle uploaded = headless.context->textures()->texture(texels.data(), size, size, 4);
 
-    Grade graded(headless.logger, headless.context, colourFormat, VK_FORMAT_UNDEFINED);
+    Grade graded(headless.logger, headless.context, {.colour = colourFormat});
     const MaterialHandle source = graded.source(*scene);
 
     Capture before(headless.device, headless.logger);
@@ -536,7 +536,7 @@ BOOST_AUTO_TEST_CASE(a_destroyed_grade_releases_its_table_and_sources) {
     const std::size_t before = headless.context->resources()->textureCount();
 
     {
-        Grade graded(headless.logger, headless.context, colourFormat, VK_FORMAT_UNDEFINED);
+        Grade graded(headless.logger, headless.context, {.colour = colourFormat});
         BOOST_CHECK_EQUAL(headless.context->resources()->textureCount(), before + 1);
         BOOST_CHECK(graded.source(*scene).valid());
         BOOST_CHECK_EQUAL(headless.context->resources()->textureCount(), before + 2);
