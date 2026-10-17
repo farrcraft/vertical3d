@@ -64,8 +64,13 @@ and pass it to the device they build.
   `VkDeviceMemory`. A suballocated region starts part way into a shared block, so mapping and
   freeing go through the allocator.
 - **`Allocator::bind(buffer or image, properties, &allocation)` allocates and binds in one call.**
-  A resource never chooses a memory type itself. It throws when no memory type has the
-  properties, and returns the `VkResult` for an allocation that failed.
+  A resource never chooses a memory type itself. **It never throws.** When no memory type has
+  the properties it returns `VK_ERROR_FEATURE_NOT_PRESENT`, from either kind of allocator, and
+  for an allocation that failed it returns that `VkResult`. A resource that made a buffer or an
+  image destroys it when `bind()` fails, so nothing is left on the device.
+- **A constructor that makes several handles destroys the ones it made before it rethrows.**
+  Nothing runs the destructor of an object whose constructor threw. `Swapchain` and
+  `Presenter` do this.
 - `free()` on an allocation that names no memory does nothing, so a resource can free
   unconditionally.
 - VMA is a private dependency. `Allocator.h` and `Allocation.h` declare its handle types

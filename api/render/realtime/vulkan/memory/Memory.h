@@ -8,6 +8,7 @@
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <optional>
 
 namespace v3d::render::realtime::vulkan::memory {
 
@@ -21,9 +22,8 @@ namespace v3d::render::realtime::vulkan::memory {
  * @param device the physical device whose memory types are being chosen from
  * @param bits the memoryTypeBits a VkMemoryRequirements reported for the allocation
  * @param properties what the memory has to be - host visible, device local, and so on
- * @return the index of a type satisfying both
- * @throw std::runtime_error if the device offers no such type
+ * @return the index of a type satisfying both, or nothing when the device offers no such type
  **/
-uint32_t memoryType(VkPhysicalDevice device, uint32_t bits, VkMemoryPropertyFlags properties);
+std::optional<uint32_t> memoryType(VkPhysicalDevice device, uint32_t bits, VkMemoryPropertyFlags properties);
 
 };  // namespace v3d::render::realtime::vulkan::memory

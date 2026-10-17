@@ -5,14 +5,13 @@
 
 #include "Memory.h"
 
-#include <sstream>
-#include <stdexcept>
+#include <optional>
 
 namespace v3d::render::realtime::vulkan::memory {
 
 /**
  **/
-uint32_t memoryType(VkPhysicalDevice device, uint32_t bits, VkMemoryPropertyFlags properties) {
+std::optional<uint32_t> memoryType(VkPhysicalDevice device, uint32_t bits, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties available{};
     vkGetPhysicalDeviceMemoryProperties(device, &available);
 
@@ -23,10 +22,7 @@ uint32_t memoryType(VkPhysicalDevice device, uint32_t bits, VkMemoryPropertyFlag
             return index;
         }
     }
-
-    std::stringstream msg;
-    msg << "No vulkan memory type is both allowed by the allocation and has the properties 0x" << std::hex << properties;
-    throw std::runtime_error(msg.str());
+    return std::nullopt;
 }
 
 };  // namespace v3d::render::realtime::vulkan::memory

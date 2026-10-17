@@ -336,13 +336,6 @@ does not report an entry again. Each entry names its class.
 [ReleaseHardening](plans/ReleaseHardening.md) fixes these, except the weak test, which
 [ToolingDebt](plans/ToolingDebt.md) takes.
 
-### Cleanup
-
-[] **The direct allocator leaks a buffer or image when no memory type suits it.**
-`memoryType()` throws after the object is made, and the constructors clean up only a failed bind.
-
-[] **`Presenter` leaks its semaphores when its constructor throws part way.**
-
 ### Weak test
 
 [] **`a_frame_begun_again_restarts_its_claims` never claims on the slot it began twice.** It passes

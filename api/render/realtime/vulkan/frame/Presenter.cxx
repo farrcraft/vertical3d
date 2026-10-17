@@ -30,7 +30,14 @@ Presenter::Presenter(const boost::shared_ptr<v3d::log::Logger>& logger, const bo
     swapchain_(swapchain),
     ring_(ring),
     suboptimal_(false) {
-    createSync();
+    try {
+        createSync();
+    } catch (...) {
+        // nothing runs the destructor of an object whose constructor threw, so the semaphores
+        // made before the failure are destroyed here
+        destroySync();
+        throw;
+    }
 }
 
 /**
@@ -39,9 +46,13 @@ Presenter::~Presenter() {
     // nothing may be waiting on a semaphore when it is destroyed. The ring's fences are the
     // ring's to wait on, and it outlives this because this holds it
     ring_->waitIdleNoThrow();
+    destroySync();
+}
 
+/**
+ **/
+void Presenter::destroySync() noexcept {
     destroyImageSync();
-
     for (VkSemaphore semaphore : imageAvailable_) {
         vkDestroySemaphore(device_->handle(), semaphore, nullptr);
     }
@@ -68,7 +79,7 @@ void Presenter::createSync() {
 
 /**
  **/
-void Presenter::destroyImageSync() {
+void Presenter::destroyImageSync() noexcept {
     for (VkSemaphore semaphore : renderFinished_) {
         vkDestroySemaphore(device_->handle(), semaphore, nullptr);
     }

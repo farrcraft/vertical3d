@@ -103,7 +103,12 @@ class Presenter final {
 
     /**
      **/
-    void destroyImageSync();
+    void destroyImageSync() noexcept;
+
+    /**
+     * Destroy every semaphore this holds, for the destructor and for a constructor that threw.
+     **/
+    void destroySync() noexcept;
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<device::Device> device_;

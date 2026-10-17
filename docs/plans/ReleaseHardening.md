@@ -98,9 +98,16 @@ the section after the plan was drafted and is fixed here too.
 
 ### Step 6 — Cleanup on failure
 
-**Open.** [TODO.md](../TODO.md#cleanup): the direct allocator's leak when no memory type suits a
-buffer or image, and `Presenter`'s semaphores when its constructor throws part way. Both are fixed
-by owning each handle as soon as it is made.
+**Closed.**
+
+- `memoryType()` returns nothing rather than throwing, and the direct allocator reports that as
+  `VK_ERROR_FEATURE_NOT_PRESENT`, as the suballocator already did. Every caller of `bind()`
+  destroys its buffer or image on a failed result, so the existing cleanup now runs. A device
+  case binds a buffer to protected, host-visible memory, which no device offers, with both
+  allocators. Before the fix the direct one threw.
+- `Presenter`'s constructor destroys the semaphores it made before it rethrows, through the
+  `destroySync()` its destructor uses. No test covers it: nothing makes `vkCreateSemaphore`
+  fail part way through on a working device, and the tree has no seam for injecting a failure.
 
 ### Step 7 — Drift
 

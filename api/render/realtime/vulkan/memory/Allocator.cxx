@@ -9,6 +9,7 @@
 #include <vk_mem_alloc.h>
 #pragma warning(pop)
 
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 
@@ -25,10 +26,17 @@ namespace {
  **/
 VkResult allocate(VkDevice device, VkPhysicalDevice physical, const VkMemoryRequirements& requirements,
     VkMemoryPropertyFlags properties, Allocation* allocation) {
+    // reported as the suballocator reports it, so that a caller that made a buffer or an image
+    // destroys it on the way out whichever kind of allocator it was given
+    const std::optional<uint32_t> type = memoryType(physical, requirements.memoryTypeBits, properties);
+    if (!type) {
+        return VK_ERROR_FEATURE_NOT_PRESENT;
+    }
+
     VkMemoryAllocateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     info.allocationSize = requirements.size;
-    info.memoryTypeIndex = memoryType(physical, requirements.memoryTypeBits, properties);
+    info.memoryTypeIndex = *type;
 
     VkDeviceMemory memory = VK_NULL_HANDLE;
     const VkResult result = vkAllocateMemory(device, &info, nullptr, &memory);
@@ -48,7 +56,8 @@ VkResult allocate(VkDevice device, VkPhysicalDevice physical, const VkMemoryRequ
 VkResult Allocator::suballocate(VkBuffer buffer, VkImage image, VkMemoryPropertyFlags properties, Allocation* allocation) {
     VmaAllocationCreateInfo request{};
     // the properties the caller asked for are required rather than preferred, so a device
-    // that cannot offer them fails here the way the direct path's memoryType() does
+    // that cannot offer them fails here, with VK_ERROR_FEATURE_NOT_PRESENT, as the direct
+    // path does
     request.requiredFlags = properties;
     request.usage = VMA_MEMORY_USAGE_UNKNOWN;
 
