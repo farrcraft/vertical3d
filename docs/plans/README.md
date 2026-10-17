@@ -20,7 +20,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
-| [ReleaseHardening](ReleaseHardening.md) | Engine, ui, config, grid, rendering, docs | The defects a player of a released game could meet, and the known review findings |
 | [ToolingDebt](ToolingDebt.md) | All of the tree, tests | The thirteen disabled clang-tidy checks enabled, and the test gaps that need no new hardware |
 
 ## Completed plans
@@ -29,6 +28,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [ReleaseHardening](completed/ReleaseHardening.md) | Engine, input, ui, assets, rendering, moya, apps | 2026-10-17 | UTF-8 paths, a minimised window that waits, a command registry every app's bindings are checked against, and the known review findings fixed |
 | [LitScenesAtScale](completed/LitScenesAtScale.md) | Realtime rendering, audio, pong | 2026-10-17 | Lit objects in a storage buffer, instanced lit and shadow draws, a grade that reads its table as shown, and a panned voice |
 | [Regrouping](completed/Regrouping.md) | Realtime rendering, image, UI, moya | 2026-10-16 | `render/realtime`, `image` and `libmoya` split into directories by purpose, every namespace in `api/` following its directory, and a sweep of libmoya's comments |
 | [StreamingWorlds](completed/StreamingWorlds.md) | Assets, realtime rendering, grid, voxel, odyssey | 2026-10-16 | A worker thread for loading, mesh requests under an upload budget, uploads that do not drain the queue, grids placed as regions, odyssey as a world of two regions, and a shadow map fitted to the view |

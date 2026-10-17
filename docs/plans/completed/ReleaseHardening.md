@@ -1,21 +1,21 @@
 # Release Hardening — The Loose Ends a Player Would Meet
 
-Drafted 2026-10-16. This plan fixes the defects in [TODO.md](../TODO.md) that a player of a
+Drafted 2026-10-16. This plan fixes the defects in [TODO.md](../../TODO.md) that a player of a
 released game could meet, and the review findings already recorded as known debt. None of them
 waits on a feature. Each is small, and most are independent of the others.
 
 Each entry this plan takes stays in TODO.md until the step that fixes it lands, and is then
 deleted there. The known review findings stay listed because a reviewer reads that list first, as
-[Review.md](../contributing/Review.md) says. Each step fixes its defects with a test that fails
+[Review.md](../../contributing/Review.md) says. Each step fixes its defects with a test that fails
 first, as Review.md requires, or records why no such test can be written.
 
 ## Decisions
 
 | ADR | Decision | Step |
 |---|---|---|
-| [0089](../adr/0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md) | Paths: narrow strings are UTF-8, under a UTF-8 code page | 1 |
-| [0090](../adr/0090-input-commands-are-handled-through-one-registry.md) | Input: commands are handled through one registry | 3 |
-| **New** | Why SDL3 replaced SDL2, recorded after the fact | 7 |
+| [0089](../../adr/0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md) | Paths: narrow strings are UTF-8, under a UTF-8 code page | 1 |
+| [0090](../../adr/0090-input-commands-are-handled-through-one-registry.md) | Input: commands are handled through one registry | 3 |
+| [0091](../../adr/0091-platform-sdl3-replaces-sdl2.md) | Platform: SDL3 replaces SDL2 | 7 |
 
 ## What blocks what
 
@@ -111,15 +111,56 @@ the section after the plan was drafted and is fixed here too.
 
 ### Step 7 — Drift
 
-**Open.** The SDL3 record under [Documentation](../TODO.md#documentation) is left.
+**Closed.**
 
 - The ten stale sentences the drift entry listed are corrected, each against the code it
   describes. The fixture list in Testing.md also gained the five app suites step 3 gave a data
   copy.
-- The ADR recording why SDL3 replaced SDL2 waits on the reasons. Neither the upgrade commit nor
-  any document records them, and an ADR does not reconstruct a rationale from the code.
+- ADR-0091 records why SDL3 replaced SDL2. Neither the upgrade commit nor any document held the
+  reasons, so they came from the person who made the move rather than from the code.
 
 ### Step 8 — Close the plan
 
-**Open.** Confirm every entry this plan took is deleted from TODO.md, write the Outcome section, and
-move this plan to [completed/](completed/).
+**Closed.** Every entry this plan took is deleted from TODO.md. The weak test stays, for
+[ToolingDebt](../ToolingDebt.md).
+
+## Outcome
+
+Closed 2026-10-17. A released game opens its files under any directory name, sleeps while it is
+minimised, and has no key bound to a command that does nothing. The known review findings that a
+player could meet are fixed.
+
+**Delivered:**
+
+- A narrow path is UTF-8 everywhere, under a code page `v3dlib_log`'s manifest sets. ADR-0089.
+- A minimised window waits on events, and the swapchain logs a change of state once.
+- `event::Commands`, an engine-owned registry every app registers its commands in from its
+  constructor. Each game's suite checks its bindings against it, and `ui::fullscreen` gives F1 a
+  handler. ADR-0090.
+- Boundary input: a zoom floor, RIB integers read as ints, a clip and a split that agree on an
+  edge touching the plane, a ui loader that never throws on a wrong type, and integers
+  range-checked before they narrow.
+- Contracts: a held activation key sends once, a disabled menu item is greyed, a theme switch
+  resets what the new theme does not name, two views of one camera get two passes, and a fade
+  into no clip ends.
+- Cleanup: no memory type for a resource is a result rather than a throw, and `Presenter` frees
+  what a failed constructor made.
+- Ten stale comments and doc sentences corrected, and ADR-0091 recording the move to SDL3.
+
+**Different from the plan:**
+
+- Step 3 had no list of handled commands to test against. It became the command registry of
+  ADR-0090, and every app's input handling was ported to it.
+- The window size and the binding param share `asset::readInt`, and the window size moved into
+  `config::windowSize()` so a test reaches it without a window.
+- The polygon test needed an edge on which `classify` and `intersectEdge` disagree. It came
+  from a search over random planes run against the tree's own `Plane`.
+- The immediate layer had the theme overlay defect too, and shares the fix through
+  `style::Overlay`.
+- pong's missing `bounce` clip joined the known findings after the plan was drafted, and was
+  fixed with the contracts. It plays `hit.wav`.
+- The full-screen toggle could not be pressed in a running pong, because pong never took the
+  foreground. A windowed case switches a real window to full screen and back instead.
+
+**Left open:** `Presenter`'s cleanup has no test, because nothing makes `vkCreateSemaphore` fail
+on a working device. The weak frame test is ToolingDebt's.

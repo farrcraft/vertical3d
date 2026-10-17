@@ -26,7 +26,7 @@ installed into `out/build/<config>/vcpkg_installed/` during the first configure.
 | glm | |
 | libjpeg-turbo | |
 | libpng | |
-| sdl3 | **Must have its `vulkan` feature.** Without it SDL is built without Vulkan support, and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |
+| sdl3 | The window, input, events and platform paths. There is no SDL2 in the tree. **It must have its `vulkan` feature.** Without it SDL is built without Vulkan support, and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |
 | sdl3-mixer | `v3dlib_audio` plays sound through it. It needs SDL 3.4.0 or newer |
 | spdlog | |
 | vulkan | |
@@ -44,6 +44,7 @@ uses. Include `<boost/system/error_code.hpp>` and `<boost/system/system_error.hp
 There is no OpenGL, and no package for it.
 
 Background: [ADR-0021](../adr/0021-audio-use-sdl3-mixer.md),
+[ADR-0091](../adr/0091-platform-sdl3-replaces-sdl2.md),
 [ADR-0053](../adr/0053-memory-optional-vma-suballocation.md)
 
 ## The Vulkan SDK
