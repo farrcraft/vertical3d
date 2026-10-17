@@ -158,6 +158,41 @@ BOOST_AUTO_TEST_CASE(an_approached_region_loads_placed_by_its_corner) {
 }
 
 /**
+ * Crossing into the next region puts the one left behind out of sight. What was seen there stays
+ * remembered, and is no longer current.
+ **/
+BOOST_AUTO_TEST_CASE(crossing_a_seam_puts_the_old_region_out_of_sight) {
+    Fixture fixture("world_cross");
+    BOOST_REQUIRE(fixture.world->load(document(twoRegions)));
+    fixture.world->stream(at(5, 1));
+    BOOST_REQUIRE(fixture.drain());
+
+    fixture.world->look(at(5, 1));
+    BOOST_CHECK(fixture.world->sight(0).visible(at(4, 1)));
+
+    fixture.world->look(at(6, 1));
+    BOOST_CHECK(!fixture.world->sight(0).visible(at(4, 1)));
+    BOOST_CHECK(fixture.world->sight(0).remembered(at(4, 1)));
+    BOOST_CHECK(fixture.world->sight(1).visible(at(0, 1)));
+}
+
+/**
+ * A world loaded over another while a region of the old one is on the worker is not filled by
+ * that region when it arrives.
+ **/
+BOOST_AUTO_TEST_CASE(a_world_loaded_over_another_ignores_the_old_loads) {
+    Fixture fixture("world_reload");
+    BOOST_REQUIRE(fixture.world->load(document(twoRegions)));
+    fixture.world->stream(at(2, 1));
+    BOOST_REQUIRE(fixture.world->loading(1));
+
+    BOOST_REQUIRE(fixture.world->load(document(twoRegions)));
+    BOOST_REQUIRE(fixture.drain());
+    BOOST_CHECK(!fixture.world->loaded(1));
+    BOOST_CHECK(!fixture.world->loading(1));
+}
+
+/**
  * A region the player is far from is not asked for, and one it leaves behind is released. What
  * was seen of it is remembered when it is loaded again.
  **/

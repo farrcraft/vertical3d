@@ -144,7 +144,8 @@ class World final {
     void stream(v3d::grid::TileCoord player);
 
     /**
-     * Look from where the player stands, within the region it stands in.
+     * Look from where the player stands, within the region it stands in. Every other region is
+     * out of sight, and keeps only what it remembers.
      **/
     void look(v3d::grid::TileCoord player);
 

@@ -47,6 +47,11 @@ class Sight final {
     void look(const v3d::grid::TileGrid& grid, v3d::grid::TileCoord from);
 
     /**
+     * Put every tile out of sight, keeping what is remembered, for a board the viewer is not on.
+     **/
+    void blind();
+
+    /**
      * @return whether a tile is in sight from where the last look() was taken. False for a
      *         tile off the board, and for every tile before the first look
      **/

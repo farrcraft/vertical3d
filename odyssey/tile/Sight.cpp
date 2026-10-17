@@ -46,6 +46,12 @@ void Sight::look(const v3d::grid::TileGrid& grid, v3d::grid::TileCoord from) {
 
 /**
  **/
+void Sight::blind() {
+    std::ranges::fill(visible_, 0);
+}
+
+/**
+ **/
 bool Sight::visible(v3d::grid::TileCoord tile) const {
     const std::size_t at = index(tile);
     return at < visible_.size() && visible_[at] != 0;

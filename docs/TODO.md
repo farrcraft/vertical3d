@@ -144,7 +144,8 @@ Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4
 
 `api/grid` is a library of its own, and odyssey uses it. The grid owns a map's picture and
 terrain legend; the rest of a map belongs to the game. [Grid.md](api/Grid.md) describes the
-library. 
+library.
+
 [] **A route and sight stop at a region's edge.**
 
 - A region is a grid placed by its corner, and [Grid.md](api/Grid.md#regions) states the rules.

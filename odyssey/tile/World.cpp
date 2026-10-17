@@ -135,10 +135,8 @@ bool World::load(const boost::shared_ptr<v3d::asset::kind::Json>& document) {
         return false;
     }
 
-    // a world loaded over another drops whatever the worker still has for the old one
-    for (Region& old : *regions_) {
-        old.generation++;
-    }
+    // the old regions go with the old vector, so a completion still on the worker for one of
+    // them finds nothing to fill
     regions_ = boost::make_shared<std::vector<Region>>(std::move(regions));
     start_ = world(static_cast<std::size_t>(*first), home.map->start());
     min_ = regions_->front().corner;
@@ -340,6 +338,11 @@ void World::release(std::size_t index) {
  **/
 void World::look(v3d::grid::TileCoord player) {
     const std::optional<std::size_t> region = regionAt(player);
+    for (std::size_t index = 0; index < regions_->size(); index++) {
+        if (index != region) {
+            (*regions_)[index].sight.blind();
+        }
+    }
     if (!region || !(*regions_)[*region].map) {
         return;
     }
