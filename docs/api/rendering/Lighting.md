@@ -88,6 +88,10 @@ Rules:
 - With no shadow map passed to `scene()`, the white texture stands in and nothing is shadowed.
 - `meshes()` submits every entity's outline, then every entity's surface. Each entity is drawn
   between its last two simulation steps, using `alpha`.
+- Entities that draw the same registry entry are drawn together: one draw per part, with an
+  instance per entity. A scene's draw count follows how many distinct entries it shows, not how
+  many entities. A copy of a model registered under a second key is a second entry, and is not
+  grouped with the first.
 - `casters()` submits only entities whose `component::Mesh::castsShadow` is set.
 - An entity whose mesh handle was released is skipped.
 

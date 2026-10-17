@@ -126,20 +126,20 @@ index to `cel.frag` as a flat varying.
 
 #### Step 4 — Instanced draws
 
-**Open.**
+**Closed.** `meshes()` groups its entities by registry entry, in the order it meets them, and
+submits one draw per part per group with an instance per entity. A group's objects are added
+side by side. Skinned entities group the same way, each instance reading its own first joint.
+`casters()` uses the same gathering, still one draw per entity until step 5.
 
-- `meshes()` groups its entities by mesh entry, part and pipeline, and submits one item per
-  group, with `instances` set to the group's size. A group's objects are contiguous in the
-  buffer.
-- Skinned entities group the same way. Each instance reads its own first joint from its object.
-- An entry that does not resolve, and a skinned entity that `Poses` does not name, are still
-  skipped, before grouping.
-- A new case draws the step 1 crowd twice in one run. In one draw the entities share a mesh. In
-  the other, each entity's mesh is the same model registered under its own key, so nothing
-  groups. The pictures must match exactly, and the shared draw must have fewer items: six
-  entities sharing a two-part mesh make two surface items and two outline items. The item count
-  fails first against the ungrouped walk. Both draws run on one driver, so the case holds in CI.
-- The step 1 cases pass unchanged.
+- Six entities sharing a two-part model take four draws, and the same six under six keys take
+  24. Both draw the same picture byte for byte. Before the change, the shared crowd took 24.
+- The 576 cubes of step 3 are one draw.
+- All 53 baseline pictures still match byte for byte, and the step 1 cases pass.
+- [Lighting.md](../api/rendering/Lighting.md) states which entities are drawn together.
+
+Before this step, the analysis gates were found failing on 21 sites the streaming worlds work
+had added. They are fixed in a commit of their own, and the whole tree is clean under `/analyze`
+and clang-tidy again.
 
 #### Step 5 — Instanced shadow casters
 
@@ -155,8 +155,7 @@ index to `cel.frag` as a flat varying.
 **Open.**
 
 - Delete the TODO.md entry "There is no instanced drawing".
-- Update the documents for grouping: [Lighting.md](../api/rendering/Lighting.md) says what
-  `meshes()` and `casters()` submit, and the item counts it gives.
+- Update [Lighting.md](../api/rendering/Lighting.md) to say casters are grouped as well.
 - Update the roadmap's "What exists" section.
 
 ### Phase 2 — The grade

@@ -315,6 +315,77 @@ BOOST_AUTO_TEST_CASE(each_skinned_entity_sharing_a_mesh_takes_its_own_pose) {
 }
 
 /**
+ * Six entities sharing one model of two parts take one draw per part in each walk: two outline
+ * draws and two surface draws, each of six instances. The same six, each given its own copy of
+ * the model under its own key, take a draw per part per entity. Both draw the same picture, byte
+ * for byte, since an instance reads the same object a lone draw would.
+ *
+ * The pictures are written to data_out/lit_crowd_shared.png and data_out/lit_crowd_apart.png.
+ **/
+BOOST_AUTO_TEST_CASE(entities_sharing_a_mesh_are_drawn_in_one_draw_per_part) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        width, height, colourFormat, true);
+    MeshRegistry meshes(headless.logger, headless.context, assets(headless));
+    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
+        headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
+
+    std::vector<MeshHandle> shared;
+    std::vector<MeshHandle> apart;
+    for (int copy = 0; copy < 6; copy++) {
+        apart.push_back(meshes.add("pair " + std::to_string(copy), v3d::test::twoCubes()));
+        shared.push_back(copy == 0 ? meshes.add("pair", v3d::test::twoCubes()) : shared.front());
+    }
+
+    const v3d::type::camera::Camera view = camera(glm::vec3(0.0f), 6.0f);
+    lighting::Settings settings;
+    settings.outline = 0.05f;
+
+    const auto draw = [&](const std::vector<MeshHandle>& handles, const std::string& path, std::size_t* items) {
+        entt::registry registry;
+        std::size_t next = 0;
+        for (const float z : {-1.5f, 1.5f}) {
+            for (const float x : {-3.0f, 0.0f, 3.0f}) {
+                stand(&registry, handles[next++], glm::vec3(x, 0.5f, z), glm::vec3(1.0f), false);
+            }
+        }
+        Frame frame;
+        boost::shared_ptr<Pass> pass = frame.pass("lit");
+        pass->target(target);
+        pass->depth(true);
+        pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+        pass->camera(view.view(), view.projection());
+        pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
+        v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, pass.get());
+        *items = pass->items().size();
+
+        VkCommandBuffer commands = headless.context->ring()->begin();
+        Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
+            headless.context->frameUniforms().get());
+        return readBack(&headless, commands, target, path);
+    };
+
+    std::size_t sharedItems = 0;
+    std::size_t apartItems = 0;
+    const boost::shared_ptr<v3d::image::Image> together = draw(shared, "data_out/lit_crowd_shared.png", &sharedItems);
+    const boost::shared_ptr<v3d::image::Image> separately = draw(apart, "data_out/lit_crowd_apart.png", &apartItems);
+    BOOST_REQUIRE(together && separately);
+    BOOST_CHECK(headless.silent());
+
+    BOOST_CHECK_EQUAL(sharedItems, 4U);
+    BOOST_CHECK_EQUAL(apartItems, 24U);
+    std::size_t covered = 0;
+    std::size_t differing = 0;
+    for (std::size_t texel = 0; texel < static_cast<std::size_t>(width) * height; texel++) {
+        covered += clear(together->data() + texel * 4) ? 0 : 1;
+        differing += std::memcmp(together->data() + texel * 4, separately->data() + texel * 4, 4) == 0 ? 0 : 1;
+    }
+    BOOST_TEST_MESSAGE("covered " << covered << ", differing " << differing);
+    BOOST_CHECK_GT(covered, 1000U);
+    BOOST_CHECK_EQUAL(differing, 0U);
+}
+
+/**
  * A grid of 576 cubes, each one object, is more than the scene's object buffer starts with. It
  * is drawn in two frames, the first left in flight while the second is built, and the top of
  * every cube in the second shows red where the cube stands. The buffer grows part way through
@@ -358,7 +429,8 @@ BOOST_AUTO_TEST_CASE(a_crowd_larger_than_the_object_buffer_draws_every_object) {
         pass->camera(view.view(), view.projection());
         pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
         v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, pass.get());
-        BOOST_CHECK_EQUAL(pass->items().size(), places.size());
+        // every cube shares one mesh of one part, so the walk is one draw of every instance
+        BOOST_CHECK_EQUAL(pass->items().size(), 1U);
 
         VkCommandBuffer commands = headless.context->ring()->begin();
         Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),

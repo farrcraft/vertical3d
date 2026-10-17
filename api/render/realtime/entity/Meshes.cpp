@@ -12,34 +12,24 @@
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <unordered_map>
+#include <vector>
 
 namespace v3d::render::realtime::entity {
 
 namespace {
 
 /**
- * One draw of a part of an entry, its model matrix and base colour added to the scene as its
- * object, which the draw names as its first instance.
+ * An entity about to be drawn: its entry, where it stands, and where its palette starts.
  **/
-DrawItem item(const MeshRegistry::Entry& entry, const MeshRegistry::Part& part, PipelineHandle pipeline,
-    const glm::mat4& model, float outline, uint32_t firstJoint, vulkan::renderer::Lit* lit) {
-    vulkan::renderer::Lit::Object object;
-    object.model = model;
-    object.baseColour = part.baseColour;
-    object.outline = outline;
-    object.firstJoint = firstJoint;
-
-    DrawItem item;
-    item.pipeline = pipeline;
-    item.material = part.material;
-    entry.mesh->describe(&item);
-    item.firstIndex = part.firstIndex;
-    item.indices = part.indexCount;
-    item.firstInstance = lit->object(object);
-    return item;
-}
+struct Placed final {
+    const MeshRegistry::Entry* entry;
+    glm::mat4 model;
+    uint32_t firstJoint;
+};
 
 /**
  * Where an entity's palette starts: zero for a static entry, which reads none, and nothing for
@@ -53,53 +43,21 @@ std::optional<uint32_t> firstJoint(const MeshRegistry::Entry& entry, entt::entit
 }
 
 /**
- * One draw of every part of an entry.
+ * Every entity carrying a transform and a mesh, grouped by the entry it draws. Groups keep the
+ * order their first entities were met in, and so do the entities in a group. The draws a walk
+ * submits therefore do not depend on how a container hashes. An entity whose entry does not
+ * resolve, or a skinned one the poses do not name, is left out.
+ *
+ * @param castersOnly true to leave out an entity whose mesh casts no shadow
  **/
-void submit(const MeshRegistry::Entry& entry, PipelineHandle pipeline, const glm::mat4& model, float outline,
-    uint32_t firstJoint, vulkan::renderer::Lit* lit, Pass* pass) {
-    for (const MeshRegistry::Part& part : entry.parts) {
-        pass->submit(item(entry, part, pipeline, model, outline, firstJoint, lit));
-    }
-}
-
-};  // namespace
-
-/**
- **/
-void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
-    float outline, Pass* pass, const Poses& poses) {
-    auto view = registry.view<const ecs::component::Transform, const component::Mesh>();
-    const bool outlined = outline > 0.0f;
-
-    // two walks rather than one, so every hull is in the pass before any surface
-    for (int walk = outlined ? 0 : 1; walk < 2; walk++) {
-        const bool surfaces = walk == 1;
-        for (const entt::entity entity : view) {
-            const MeshRegistry::Entry* entry = meshes.resolve(view.get<const component::Mesh>(entity).mesh);
-            if (entry == nullptr) {
-                continue;
-            }
-            const std::optional<uint32_t> first = firstJoint(*entry, entity, poses);
-            if (!first) {
-                continue;
-            }
-            const bool skinned = static_cast<bool>(entry->skin);
-            const PipelineHandle surface = skinned ? lit->skinnedCel() : lit->cel();
-            const PipelineHandle hull = skinned ? lit->skinnedOutline() : lit->outline();
-            const glm::mat4 model = ecs::interpolated<ecs::component::Transform>(registry, entity, alpha).matrix();
-            submit(*entry, surfaces ? surface : hull, model, surfaces ? 0.0f : outline, *first, lit, pass);
-        }
-    }
-}
-
-/**
- **/
-void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
-    Pass* pass, const Poses& poses) {
+std::vector<std::vector<Placed>> gather(const entt::registry& registry, float alpha, const MeshRegistry& meshes,
+    const Poses& poses, bool castersOnly) {
+    std::vector<std::vector<Placed>> groups;
+    std::unordered_map<const MeshRegistry::Entry*, std::size_t> found;
     auto view = registry.view<const ecs::component::Transform, const component::Mesh>();
     for (const entt::entity entity : view) {
         const component::Mesh& mesh = view.get<const component::Mesh>(entity);
-        if (!mesh.castsShadow) {
+        if (castersOnly && !mesh.castsShadow) {
             continue;
         }
         const MeshRegistry::Entry* entry = meshes.resolve(mesh.mesh);
@@ -110,9 +68,77 @@ void casters(const entt::registry& registry, float alpha, const MeshRegistry& me
         if (!first) {
             continue;
         }
-        const PipelineHandle pipeline = entry->skin ? lit->skinnedShadow() : lit->shadow();
+        const auto [at, added] = found.try_emplace(entry, groups.size());
+        if (added) {
+            groups.emplace_back();
+        }
         const glm::mat4 model = ecs::interpolated<ecs::component::Transform>(registry, entity, alpha).matrix();
-        submit(*entry, pipeline, model, 0.0f, *first, lit, pass);
+        groups[at->second].push_back(Placed{entry, model, *first});
+    }
+    return groups;
+}
+
+/**
+ * One draw of each part of a group's entry, with an instance per entity. Each instance's object
+ * is added to the scene in turn, so a draw's objects lie side by side from its first instance.
+ **/
+void submit(const std::vector<Placed>& group, PipelineHandle pipeline, float outline, vulkan::renderer::Lit* lit,
+    Pass* pass) {
+    const MeshRegistry::Entry& entry = *group.front().entry;
+    for (const MeshRegistry::Part& part : entry.parts) {
+        DrawItem item;
+        item.pipeline = pipeline;
+        item.material = part.material;
+        entry.mesh->describe(&item);
+        item.firstIndex = part.firstIndex;
+        item.indices = part.indexCount;
+        item.instances = static_cast<uint32_t>(group.size());
+        for (std::size_t instance = 0; instance < group.size(); instance++) {
+            vulkan::renderer::Lit::Object object;
+            object.model = group[instance].model;
+            object.baseColour = part.baseColour;
+            object.outline = outline;
+            object.firstJoint = group[instance].firstJoint;
+            const uint32_t index = lit->object(object);
+            if (instance == 0) {
+                item.firstInstance = index;
+            }
+        }
+        pass->submit(item);
+    }
+}
+
+};  // namespace
+
+/**
+ **/
+void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
+    float outline, Pass* pass, const Poses& poses) {
+    const std::vector<std::vector<Placed>> groups = gather(registry, alpha, meshes, poses, false);
+    const bool outlined = outline > 0.0f;
+
+    // two walks rather than one, so every hull is in the pass before any surface
+    for (int walk = outlined ? 0 : 1; walk < 2; walk++) {
+        const bool surfaces = walk == 1;
+        for (const std::vector<Placed>& group : groups) {
+            const bool skinned = static_cast<bool>(group.front().entry->skin);
+            const PipelineHandle surface = skinned ? lit->skinnedCel() : lit->cel();
+            const PipelineHandle hull = skinned ? lit->skinnedOutline() : lit->outline();
+            submit(group, surfaces ? surface : hull, surfaces ? 0.0f : outline, lit, pass);
+        }
+    }
+}
+
+/**
+ **/
+void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
+    Pass* pass, const Poses& poses) {
+    for (const std::vector<Placed>& group : gather(registry, alpha, meshes, poses, true)) {
+        const PipelineHandle pipeline = group.front().entry->skin ? lit->skinnedShadow() : lit->shadow();
+        // a caster is drawn alone, an instance of one
+        for (const Placed& placed : group) {
+            submit({placed}, pipeline, 0.0f, lit, pass);
+        }
     }
 }
 
