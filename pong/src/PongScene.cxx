@@ -36,7 +36,7 @@ constexpr float MAX_RETURN_ANGLE = 0.8727f;
  **/
 v3d::type::geometry::Bound2D paddleReach(Paddle& paddle, float left, float right) {
     const float top = paddle.position() - (paddle.length() / 2.0f);
-    return v3d::type::geometry::Bound2D(left, top, right - left, paddle.length());
+    return v3d::type::geometry::Bound2D({.position = glm::vec2(left, top), .size = glm::vec2(right - left, paddle.length())});
 }
 
 /**
@@ -130,7 +130,7 @@ void PongScene::bouncePaddles(const glm::vec2& ballPosition) {
     // face bounces, and so does one fast enough to have passed it between two steps. A box
     // the paddle's own width would let that ball tunnel through
     const float ballSize = gameState_.ballSize();
-    const v3d::type::geometry::Bound2D ball(ballPosition - glm::vec2(ballSize / 2.0f), glm::vec2(ballSize));
+    const v3d::type::geometry::Bound2D ball({.position = ballPosition - glm::vec2(ballSize / 2.0f), .size = glm::vec2(ballSize)});
     const float court = width;
     const float paddleSize = left_.size();
     const glm::vec2 direction = ball_.direction();

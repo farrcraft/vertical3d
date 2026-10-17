@@ -9,7 +9,7 @@
 
 namespace v3d::ui::style {
 
-Menu::Menu(const std::string& str) : Style(str, "menu") {
+Menu::Menu(const std::string& str) : Style({.name = str, .className = "menu"}) {
 }
 
 Menu::~Menu() {

@@ -89,7 +89,7 @@ std::vector<unsigned char> sweep(uint32_t size) {
  **/
 boost::shared_ptr<v3d::image::Image> invertingStrip() {
     const uint32_t size = Grade::SIZE;
-    boost::shared_ptr<v3d::image::Image> strip = boost::make_shared<v3d::image::Image>(size * size, size, 24);
+    boost::shared_ptr<v3d::image::Image> strip = boost::make_shared<v3d::image::Image>(glm::uvec2(size * size, size), 24);
     for (uint32_t y = 0; y < size; y++) {
         for (uint32_t x = 0; x < size * size; x++) {
             unsigned char* at = strip->data() + (((static_cast<std::size_t>(y) * size * size) + x) * 3);

@@ -279,7 +279,7 @@ BOOST_AUTO_TEST_CASE(a_window_holds_its_contents_and_folds_away) {
     const glm::vec2 onTitle(60.0f, 45.0f);
 
     ui.begin(&canvas, hover(onTitle));
-    BOOST_CHECK(ui.window("Encounter", corner, size, 1.0f));
+    BOOST_CHECK(ui.window("Encounter", {.position = corner, .size = size}, 1.0f));
     ui.text("turn 3");
     ui.endWindow();
     ui.end();
@@ -291,13 +291,13 @@ BOOST_AUTO_TEST_CASE(a_window_holds_its_contents_and_folds_away) {
     BOOST_CHECK(written[1].pen.y > corner.y + ui.dressing().barHeight);
 
     ui.begin(&canvas, press(onTitle));
-    ui.window("Encounter", corner, size, 1.0f);
+    ui.window("Encounter", {.position = corner, .size = size}, 1.0f);
     ui.endWindow();
     ui.end();
 
     written.clear();
     ui.begin(&canvas, release(onTitle));
-    BOOST_CHECK(!ui.window("Encounter", corner, size, 1.0f));
+    BOOST_CHECK(!ui.window("Encounter", {.position = corner, .size = size}, 1.0f));
     ui.endWindow();
     ui.end();
     // folded: the title is still drawn and nothing else is
@@ -370,7 +370,7 @@ BOOST_AUTO_TEST_CASE(a_table_puts_a_cell_in_its_column) {
     v3d::ui::Immediate ui = build(&written);
 
     ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
-    BOOST_REQUIRE(ui.table("units", 2));
+    BOOST_REQUIRE(ui.table("units", {.columns = 2}));
     ui.column("Name", 120.0f);
     ui.column("HP", 60.0f);
     ui.headerRow();
@@ -504,19 +504,19 @@ BOOST_AUTO_TEST_CASE(the_window_drawn_last_takes_the_cursor) {
 
     for (int frame = 0; frame < 2; frame++) {
         ui.begin(&canvas, frame == 0 ? hover(shared) : press(shared));
-        ui.window("under", glm::vec2(40.0f, 40.0f), glm::vec2(200.0f, 200.0f), 1.0f);
+        ui.window("under", {.position = glm::vec2(40.0f, 40.0f), .size = glm::vec2(200.0f, 200.0f)}, 1.0f);
         ui.button("beneath");
         ui.endWindow();
-        ui.window("over", glm::vec2(50.0f, 50.0f), glm::vec2(200.0f, 200.0f), 1.0f);
+        ui.window("over", {.position = glm::vec2(50.0f, 50.0f), .size = glm::vec2(200.0f, 200.0f)}, 1.0f);
         ui.endWindow();
         ui.end();
     }
 
     ui.begin(&canvas, release(shared));
-    ui.window("under", glm::vec2(40.0f, 40.0f), glm::vec2(200.0f, 200.0f), 1.0f);
+    ui.window("under", {.position = glm::vec2(40.0f, 40.0f), .size = glm::vec2(200.0f, 200.0f)}, 1.0f);
     const bool beneath = ui.button("beneath");
     ui.endWindow();
-    ui.window("over", glm::vec2(50.0f, 50.0f), glm::vec2(200.0f, 200.0f), 1.0f);
+    ui.window("over", {.position = glm::vec2(50.0f, 50.0f), .size = glm::vec2(200.0f, 200.0f)}, 1.0f);
     ui.endWindow();
     ui.end();
 
@@ -536,7 +536,7 @@ BOOST_AUTO_TEST_CASE(a_window_cuts_what_it_holds_off_at_its_edges) {
     const glm::vec2 size(200.0f, 150.0f);
 
     ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
-    BOOST_REQUIRE(ui.window("Encounter", corner, size, 1.0f));
+    BOOST_REQUIRE(ui.window("Encounter", {.position = corner, .size = size}, 1.0f));
     ui.button("Go");
     ui.endWindow();
     ui.end();
@@ -569,7 +569,7 @@ BOOST_AUTO_TEST_CASE(a_window_scrolls_when_it_holds_more_than_it_shows) {
 
     // the frame that overflows, and turns the wheel
     ui.begin(&canvas, wheel(inside, -2.0f));
-    BOOST_REQUIRE(ui.window("Log", corner, size, 1.0f));
+    BOOST_REQUIRE(ui.window("Log", {.position = corner, .size = size}, 1.0f));
     for (int row = 0; row < 20; row++) {
         ui.text("row");
     }
@@ -580,7 +580,7 @@ BOOST_AUTO_TEST_CASE(a_window_scrolls_when_it_holds_more_than_it_shows) {
 
     written.clear();
     ui.begin(&canvas, hover(inside));
-    BOOST_REQUIRE(ui.window("Log", corner, size, 1.0f));
+    BOOST_REQUIRE(ui.window("Log", {.position = corner, .size = size}, 1.0f));
     for (int row = 0; row < 20; row++) {
         ui.text("row");
     }
@@ -608,12 +608,12 @@ BOOST_AUTO_TEST_CASE(the_wheel_turns_only_the_window_under_the_cursor) {
         written.clear();
         // the cursor is over the left window, and only the second frame has a bar to move
         ui.begin(&canvas, wheel(glm::vec2(40.0f, 60.0f), -1.0f));
-        BOOST_REQUIRE(ui.window("Left", left, size, 1.0f));
+        BOOST_REQUIRE(ui.window("Left", {.position = left, .size = size}, 1.0f));
         for (int row = 0; row < 12; row++) {
             ui.text("left");
         }
         ui.endWindow();
-        BOOST_REQUIRE(ui.window("Right", right, size, 1.0f));
+        BOOST_REQUIRE(ui.window("Right", {.position = right, .size = size}, 1.0f));
         for (int row = 0; row < 12; row++) {
             ui.text("right");
         }
@@ -643,7 +643,7 @@ BOOST_AUTO_TEST_CASE(a_bar_appears_the_frame_after_a_window_overflows) {
 
     // one long line, wrapped to whatever width the window leaves
     ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
-    BOOST_REQUIRE(ui.window("Log", corner, size, 1.0f));
+    BOOST_REQUIRE(ui.window("Log", {.position = corner, .size = size}, 1.0f));
     for (int row = 0; row < 20; row++) {
         ui.text("row");
     }
@@ -654,7 +654,7 @@ BOOST_AUTO_TEST_CASE(a_bar_appears_the_frame_after_a_window_overflows) {
     canvas.clear();
     written.clear();
     ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
-    BOOST_REQUIRE(ui.window("Log", corner, size, 1.0f));
+    BOOST_REQUIRE(ui.window("Log", {.position = corner, .size = size}, 1.0f));
     for (int row = 0; row < 20; row++) {
         ui.text("row");
     }
@@ -680,7 +680,7 @@ BOOST_AUTO_TEST_CASE(what_stops_being_drawn_is_aged_out) {
     // a new window every frame, which is the churn the bound is for
     for (unsigned int frame = 0; frame < 400; frame++) {
         ui.begin(&canvas, v3d::ui::Immediate::Input());
-        ui.window("panel " + std::to_string(frame), glm::vec2(10.0f, 10.0f), glm::vec2(200.0f, 100.0f), 1.0f);
+        ui.window("panel " + std::to_string(frame), {.position = glm::vec2(10.0f, 10.0f), .size = glm::vec2(200.0f, 100.0f)}, 1.0f);
         ui.endWindow();
         ui.end();
         canvas.clear();
@@ -708,7 +708,7 @@ BOOST_AUTO_TEST_CASE(a_window_hidden_for_a_moment_keeps_what_it_held) {
     bool folded = false;
     for (const v3d::ui::Immediate::Input& input : { hover(onBar), press(onBar), release(onBar) }) {
         ui.begin(&canvas, input);
-        folded = !ui.window("tools", corner, size, 1.0f);
+        folded = !ui.window("tools", {.position = corner, .size = size}, 1.0f);
         ui.endWindow();
         ui.end();
         canvas.clear();
@@ -723,7 +723,7 @@ BOOST_AUTO_TEST_CASE(a_window_hidden_for_a_moment_keeps_what_it_held) {
     }
 
     ui.begin(&canvas, v3d::ui::Immediate::Input());
-    const bool stillFolded = !ui.window("tools", corner, size, 1.0f);
+    const bool stillFolded = !ui.window("tools", {.position = corner, .size = size}, 1.0f);
     ui.endWindow();
     ui.end();
     BOOST_CHECK(stillFolded);
@@ -848,14 +848,14 @@ BOOST_AUTO_TEST_CASE(the_layer_says_when_it_wants_the_cursor) {
     // a frame with the cursor inside a window claims it for the next one, which is when an
     // app asks
     ui.begin(&canvas, hover(glm::vec2(50.0f, 30.0f)));
-    ui.window("panel", glm::vec2(10.0f, 10.0f), glm::vec2(200.0f, 100.0f), 1.0f);
+    ui.window("panel", {.position = glm::vec2(10.0f, 10.0f), .size = glm::vec2(200.0f, 100.0f)}, 1.0f);
     ui.endWindow();
     ui.end();
     BOOST_CHECK(ui.capturing());
 
     // and a frame with the cursor outside it gives it back
     ui.begin(&canvas, hover(glm::vec2(350.0f, 250.0f)));
-    ui.window("panel", glm::vec2(10.0f, 10.0f), glm::vec2(200.0f, 100.0f), 1.0f);
+    ui.window("panel", {.position = glm::vec2(10.0f, 10.0f), .size = glm::vec2(200.0f, 100.0f)}, 1.0f);
     ui.endWindow();
     ui.end();
     BOOST_CHECK(!ui.capturing());
@@ -909,17 +909,17 @@ BOOST_AUTO_TEST_CASE(a_press_that_travels_moves_the_window_instead_of_folding_it
 
     // the frame that finds the cursor, then the press that goes down on the bar
     ui.begin(&canvas, hover(onTitle));
-    ui.window("Encounter", corner, size, 1.0f);
+    ui.window("Encounter", {.position = corner, .size = size}, 1.0f);
     ui.endWindow();
     ui.end();
     ui.begin(&canvas, press(onTitle));
-    ui.window("Encounter", corner, size, 1.0f);
+    ui.window("Encounter", {.position = corner, .size = size}, 1.0f);
     ui.endWindow();
     ui.end();
 
     written.clear();
     ui.begin(&canvas, hold(onTitle + glm::vec2(travel, 0.0f)));
-    BOOST_REQUIRE(ui.window("Encounter", corner, size, 1.0f));
+    BOOST_REQUIRE(ui.window("Encounter", {.position = corner, .size = size}, 1.0f));
     ui.endWindow();
     ui.end();
 
@@ -932,7 +932,7 @@ BOOST_AUTO_TEST_CASE(a_press_that_travels_moves_the_window_instead_of_folding_it
     // and the release that ends the drag does not also fold it
     written.clear();
     ui.begin(&canvas, release(onTitle + glm::vec2(travel, 0.0f)));
-    BOOST_CHECK(ui.window("Encounter", corner, size, 1.0f));
+    BOOST_CHECK(ui.window("Encounter", {.position = corner, .size = size}, 1.0f));
     ui.endWindow();
     ui.end();
 
@@ -955,18 +955,18 @@ BOOST_AUTO_TEST_CASE(a_dragged_window_keeps_its_title_bar_on_the_canvas) {
     const glm::vec2 onTitle(60.0f, 45.0f);
 
     ui.begin(&canvas, hover(onTitle));
-    ui.window("Encounter", corner, size, 1.0f);
+    ui.window("Encounter", {.position = corner, .size = size}, 1.0f);
     ui.endWindow();
     ui.end();
     ui.begin(&canvas, press(onTitle));
-    ui.window("Encounter", corner, size, 1.0f);
+    ui.window("Encounter", {.position = corner, .size = size}, 1.0f);
     ui.endWindow();
     ui.end();
 
     // far past the top left corner, and then far past the bottom right
     written.clear();
     ui.begin(&canvas, hold(glm::vec2(-500.0f, -500.0f)));
-    ui.window("Encounter", corner, size, 1.0f);
+    ui.window("Encounter", {.position = corner, .size = size}, 1.0f);
     ui.endWindow();
     ui.end();
     BOOST_REQUIRE(!written.empty());
@@ -974,7 +974,7 @@ BOOST_AUTO_TEST_CASE(a_dragged_window_keeps_its_title_bar_on_the_canvas) {
 
     written.clear();
     ui.begin(&canvas, hold(glm::vec2(5000.0f, 5000.0f)));
-    ui.window("Encounter", corner, size, 1.0f);
+    ui.window("Encounter", {.position = corner, .size = size}, 1.0f);
     ui.endWindow();
     ui.end();
     BOOST_REQUIRE(!written.empty());
@@ -996,7 +996,7 @@ BOOST_AUTO_TEST_CASE(a_table_given_a_height_keeps_its_header_above_its_rows) {
     const glm::vec2 over(50.0f, 60.0f);
 
     const auto roster = [&ui]() {
-        BOOST_REQUIRE(ui.table("units", 2, 100.0f));
+        BOOST_REQUIRE(ui.table("units", {.columns = 2, .height = 100.0f}));
         ui.column("Name", 120.0f);
         ui.column("HP", 60.0f);
         ui.headerRow();
@@ -1041,7 +1041,7 @@ BOOST_AUTO_TEST_CASE(a_table_given_a_height_is_that_tall_whatever_it_holds) {
     v3d::ui::Immediate ui = build(&written);
 
     const auto roster = [&ui](int rows) {
-        BOOST_REQUIRE(ui.table("units", 1, 100.0f));
+        BOOST_REQUIRE(ui.table("units", {.columns = 1, .height = 100.0f}));
         ui.column("Name", 0.0f);
         ui.headerRow();
         for (int row = 0; row < rows; row++) {
@@ -1083,9 +1083,9 @@ BOOST_AUTO_TEST_CASE(the_wheel_turns_a_table_rather_than_the_window_holding_it) 
     const glm::vec2 overTable(60.0f, 100.0f);
 
     const auto panel = [&ui, &corner, &size]() {
-        BOOST_REQUIRE(ui.window("Roster", corner, size, 1.0f));
+        BOOST_REQUIRE(ui.window("Roster", {.position = corner, .size = size}, 1.0f));
         ui.text("above");
-        BOOST_REQUIRE(ui.table("units", 1, 80.0f));
+        BOOST_REQUIRE(ui.table("units", {.columns = 1, .height = 80.0f}));
         ui.column("Name", 0.0f);
         ui.headerRow();
         for (int row = 0; row < 20; row++) {

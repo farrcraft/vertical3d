@@ -138,7 +138,7 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
     channels = png_get_channels(png_ptr, info_ptr);
 
     // now we can allocate memory to store the image
-    img.reset(new Image(width, height, static_cast<uint8_t>(channels * bpp)));
+    img.reset(new Image(glm::uvec2(width, height), static_cast<uint8_t>(channels * bpp)));
     unsigned char* data = img->data();
 
     // set the individual row-pointers to point at the correct offsets. A png file stores

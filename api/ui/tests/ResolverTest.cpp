@@ -22,7 +22,7 @@ namespace {
 using v3d::ui::style::Resolver;
 
 boost::shared_ptr<v3d::ui::style::Style> style(const std::string& name, const std::string& className) {
-    return boost::make_shared<v3d::ui::style::Style>(name, className);
+    return boost::make_shared<v3d::ui::style::Style>(v3d::ui::style::Selector{.name = name, .className = className});
 }
 
 void colour(const boost::shared_ptr<v3d::ui::style::Style>& target, const std::string& name,

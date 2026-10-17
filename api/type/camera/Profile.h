@@ -38,12 +38,16 @@ class Profile {
         *	so a profile built this way is oriented by a later lookat() or rotation().
         *	@param name the profile name.
         *	@param eye the camera position.
-        *	@param up the camera up vector.
-        *	@param right the camera right vector.
-        *	@param direction the direction of view.
+        *	@param frame where the eye is, and its up, right and view directions.
         */
-        Profile(const std::string & name, const glm::vec3 & eye, const glm::vec3 & up,
-            const glm::vec3 & right, const glm::vec3 & direction);
+        struct Frame {
+            glm::vec3 eye{0.0f};
+            glm::vec3 up{0.0f, 1.0f, 0.0f};
+            glm::vec3 right{1.0f, 0.0f, 0.0f};
+            glm::vec3 direction{0.0f, 0.0f, -1.0f};
+        };
+
+        Profile(const std::string & name, const Frame & frame);
         virtual ~Profile();
 
         // get
@@ -77,7 +81,10 @@ class Profile {
 
         // set
         void name(const std::string & name);
-        void clipping(float near, float far);
+        /**
+        *	The near and far clipping planes, as x and y, as clipping() returns them.
+        */
+        void clipping(const glm::vec2 & planes);
         void fov(float fov);
         void orthoZoom(float zoom);
         void pixelAspect(float aspect);
@@ -123,7 +130,7 @@ class Profile {
         *	rotation cast back to a matrix once anything else has set it.
         */
         glm::mat4x4 orientation() const;
-        void size(unsigned int width, unsigned int height);
+        void size(const glm::uvec2 & size);
         /**
         *	Choose which basis lookat() builds. It changes nothing until lookat() runs,
         *	since the normals are state rather than a derivation, so set it before.

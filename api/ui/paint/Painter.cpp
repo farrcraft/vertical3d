@@ -120,7 +120,9 @@ void strokeBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
 }
 
 void plateBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
-    float radius, float width, const glm::vec4& inside, const glm::vec4& outline) {
+    float radius, float width, const Plate& colours) {
+    const glm::vec4& inside = colours.inside;
+    const glm::vec4& outline = colours.outline;
     if (width <= 0.0f || outline.a <= 0.0f) {
         fillBox(canvas, min, max, radius, inside);
         return;

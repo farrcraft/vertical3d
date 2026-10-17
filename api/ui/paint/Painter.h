@@ -49,9 +49,15 @@ void strokeBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
  * tint over the whole plate, and whatever the plate covers would not show through at all.
  *
  * @param width how thick the outline is; nothing is traced when it is zero
+ * @param colours what the box is filled with, and what its outline is
  **/
+struct Plate {
+    glm::vec4 inside{1.0f};
+    glm::vec4 outline{1.0f};
+};
+
 void plateBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
-    float radius, float width, const glm::vec4& inside, const glm::vec4& outline);
+    float radius, float width, const Plate& colours);
 
 /**
  * @return whether a point is inside a box, its top and left edges included

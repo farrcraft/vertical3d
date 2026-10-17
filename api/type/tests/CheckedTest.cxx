@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE(a_count_within_its_range_is_truncated) {
     BOOST_CHECK(toCount(7.0f, 10) == 7u);
     BOOST_CHECK(toCount(7.9f, 10) == 7u);
     BOOST_CHECK(toCount(10.0f, 10) == 10u);
-    BOOST_CHECK(toCount(1.0f, 1, 10) == 1u);
+    BOOST_CHECK(toCount(1.0f, {.minimum = 1, .maximum = 10}) == 1u);
 }
 
 BOOST_AUTO_TEST_CASE(a_count_that_is_not_finite_is_refused) {
@@ -43,8 +43,8 @@ BOOST_AUTO_TEST_CASE(a_count_outside_its_range_is_refused_before_truncation) {
     // truncation would make these 0 and 10, which are in range
     BOOST_CHECK(!toCount(-0.5f, 10).has_value());
     BOOST_CHECK(!toCount(10.5f, 10).has_value());
-    BOOST_CHECK(!toCount(0.5f, 1, 10).has_value());
-    BOOST_CHECK(!toCount(5.0f, 6, 4).has_value());
+    BOOST_CHECK(!toCount(0.5f, {.minimum = 1, .maximum = 10}).has_value());
+    BOOST_CHECK(!toCount(5.0f, {.minimum = 6, .maximum = 4}).has_value());
 }
 
 BOOST_AUTO_TEST_CASE(a_count_up_to_the_largest_unsigned_is_defined) {
@@ -56,28 +56,28 @@ BOOST_AUTO_TEST_CASE(a_count_up_to_the_largest_unsigned_is_defined) {
 }
 
 BOOST_AUTO_TEST_CASE(an_integer_within_its_range_is_truncated_toward_zero) {
-    BOOST_CHECK(toInteger(3.7f, -10, 10) == 3);
-    BOOST_CHECK(toInteger(-2.5f, -10, 10) == -2);
-    BOOST_CHECK(toInteger(-10.0f, -10, 10) == -10);
-    BOOST_CHECK(toInteger(10.0f, -10, 10) == 10);
+    BOOST_CHECK(toInteger(3.7f, {.minimum = -10, .maximum = 10}) == 3);
+    BOOST_CHECK(toInteger(-2.5f, {.minimum = -10, .maximum = 10}) == -2);
+    BOOST_CHECK(toInteger(-10.0f, {.minimum = -10, .maximum = 10}) == -10);
+    BOOST_CHECK(toInteger(10.0f, {.minimum = -10, .maximum = 10}) == 10);
 }
 
 BOOST_AUTO_TEST_CASE(an_integer_that_is_not_finite_or_out_of_range_is_refused) {
-    BOOST_CHECK(!toInteger(notANumber, -10, 10).has_value());
-    BOOST_CHECK(!toInteger(infinity, -10, 10).has_value());
-    BOOST_CHECK(!toInteger(-infinity, -10, 10).has_value());
-    BOOST_CHECK(!toInteger(10.5f, -10, 10).has_value());
-    BOOST_CHECK(!toInteger(-10.5f, -10, 10).has_value());
-    BOOST_CHECK(!toInteger(-0.5f, 0, 10).has_value());
+    BOOST_CHECK(!toInteger(notANumber, {.minimum = -10, .maximum = 10}).has_value());
+    BOOST_CHECK(!toInteger(infinity, {.minimum = -10, .maximum = 10}).has_value());
+    BOOST_CHECK(!toInteger(-infinity, {.minimum = -10, .maximum = 10}).has_value());
+    BOOST_CHECK(!toInteger(10.5f, {.minimum = -10, .maximum = 10}).has_value());
+    BOOST_CHECK(!toInteger(-10.5f, {.minimum = -10, .maximum = 10}).has_value());
+    BOOST_CHECK(!toInteger(-0.5f, {.minimum = 0, .maximum = 10}).has_value());
 }
 
 BOOST_AUTO_TEST_CASE(an_integer_up_to_the_largest_int_is_defined) {
     const int32_t most = std::numeric_limits<int32_t>::max();
     const int32_t least = std::numeric_limits<int32_t>::min();
-    BOOST_CHECK(toInteger(2147483520.0f, least, most) == 2147483520);
-    BOOST_CHECK(!toInteger(2147483648.0f, least, most).has_value());
-    BOOST_CHECK(toInteger(-2147483648.0f, least, most) == least);
-    BOOST_CHECK(!toInteger(-2147483904.0f, least, most).has_value());
+    BOOST_CHECK(toInteger(2147483520.0f, {.minimum = least, .maximum = most}) == 2147483520);
+    BOOST_CHECK(!toInteger(2147483648.0f, {.minimum = least, .maximum = most}).has_value());
+    BOOST_CHECK(toInteger(-2147483648.0f, {.minimum = least, .maximum = most}) == least);
+    BOOST_CHECK(!toInteger(-2147483904.0f, {.minimum = least, .maximum = most}).has_value());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

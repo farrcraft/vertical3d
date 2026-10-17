@@ -26,7 +26,7 @@ namespace {
  * largestLimit. Anything else is refused.
  **/
 std::optional<uint32_t> count(float value) {
-    return v3d::type::toCount(value, 1, RIBHandler::largestLimit);
+    return v3d::type::toCount(value, {.minimum = 1, .maximum = RIBHandler::largestLimit});
 }
 
 /**

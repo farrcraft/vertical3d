@@ -23,7 +23,7 @@ namespace {
  **/
 boost::shared_ptr<v3d::image::Image> identityStrip(uint8_t bits) {
     const uint32_t size = Grade::SIZE;
-    boost::shared_ptr<v3d::image::Image> strip = boost::make_shared<v3d::image::Image>(size * size, size, bits);
+    boost::shared_ptr<v3d::image::Image> strip = boost::make_shared<v3d::image::Image>(glm::uvec2(size * size, size), bits);
     const std::size_t channels = bits / 8;
     for (uint32_t y = 0; y < size; y++) {
         for (uint32_t x = 0; x < size * size; x++) {
@@ -78,8 +78,8 @@ BOOST_AUTO_TEST_CASE(a_strip_is_read_slice_by_slice) {
  **/
 BOOST_AUTO_TEST_CASE(a_strip_of_the_wrong_shape_is_no_table) {
     BOOST_CHECK(Grade::table(boost::shared_ptr<v3d::image::Image>()).empty());
-    BOOST_CHECK(Grade::table(boost::make_shared<v3d::image::Image>(16, 16, 24)).empty());
-    BOOST_CHECK(Grade::table(boost::make_shared<v3d::image::Image>(256, 16, 8)).empty());
+    BOOST_CHECK(Grade::table(boost::make_shared<v3d::image::Image>(glm::uvec2(16, 16), 24)).empty());
+    BOOST_CHECK(Grade::table(boost::make_shared<v3d::image::Image>(glm::uvec2(256, 16), 8)).empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

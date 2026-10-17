@@ -98,7 +98,7 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
         // one channel is one channel in either order, so there is nothing to swap
         memcpy(scratch.data(), data, size);
     } else {
-        swapRedBlue(data, scratch.data(), size / bytespp, bytespp);
+        swapRedBlue(data, scratch.data(), {.pixels = size / bytespp, .channels = bytespp});
     }
 
     file.write(reinterpret_cast<char*>(scratch.data()), size);

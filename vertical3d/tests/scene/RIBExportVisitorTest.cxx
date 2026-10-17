@@ -83,11 +83,11 @@ v3d::type::camera::Camera camera(bool orthographic) {
     profile.orthoZoom(2.0f);
     profile.pixelAspect(4.0f / 3.0f);
     profile.fov(50.0f);
-    profile.clipping(0.5f, 250.0f);
+    profile.clipping(glm::vec2(0.5f, 250.0f));
     profile.eye(glm::vec3(0.0f, 0.0f, -8.0f));
 
     v3d::type::camera::Camera result(profile);
-    result.profile().size(320, 240);
+    result.profile().size(glm::uvec2(320, 240));
     result.createProjection();
     result.createView();
     return result;

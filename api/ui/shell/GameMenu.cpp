@@ -16,12 +16,11 @@ const char* const GameMenu::toggleCommand = "showGameMenu";
 
 /**
  **/
-GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend,
-    const std::string& container, const std::string& menu) :
+GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend, const Names& names) :
     engine_(engine),
     suspend_(suspend),
-    containerName_(container),
-    menuName_(menu) {
+    containerName_(names.container),
+    menuName_(names.menu) {
 }
 
 /**

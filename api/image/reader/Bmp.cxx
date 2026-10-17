@@ -278,8 +278,7 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
         return empty_ptr;
     }
 
-    boost::shared_ptr<Image> image(new Image(static_cast<uint32_t>(layout.columns), static_cast<uint32_t>(layout.rows),
-        static_cast<uint8_t>(layout.channels * 8)));
+    boost::shared_ptr<Image> image(new Image(glm::uvec2(static_cast<uint32_t>(layout.columns), static_cast<uint32_t>(layout.rows)), static_cast<uint8_t>(layout.channels * 8)));
     convertRows(encoded + start, layout, masks, colors, image->data());
     return image;
 }

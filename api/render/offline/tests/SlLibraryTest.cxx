@@ -362,7 +362,7 @@ namespace {
  * Two by two texels: red and green across the top, blue and white across the bottom.
  **/
 v3d::render::offline::Texture quartered() {
-    v3d::image::Image image(2, 2, 24);
+    v3d::image::Image image(glm::uvec2(2, 2), 24);
     const unsigned char texels[12] = {
         255, 0, 0,   0, 255, 0,
         0, 0, 255,   255, 255, 255

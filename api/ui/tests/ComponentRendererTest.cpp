@@ -358,7 +358,7 @@ BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
     const boost::shared_ptr<v3d::ui::style::Style> field =
-        boost::make_shared<v3d::ui::style::Style>("default", "textbox");
+        boost::make_shared<v3d::ui::style::Style>(v3d::ui::style::Selector{.name = "default", .className = "textbox"});
     field->addProperty(boost::make_shared<v3d::ui::style::property::Color>("focus", ringColour), "color");
     field->addProperty(boost::make_shared<v3d::ui::style::property::Number>("focus-width", 2.0f), "number");
     theme->addStyle(field);

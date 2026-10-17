@@ -66,12 +66,17 @@ struct Fixture final {
     /**
      * An item bound to "test::<name>", or to nothing when the name is empty.
      **/
-    boost::shared_ptr<v3d::ui::component::menu::Item> item(v3d::ui::component::menu::ItemType type,
-        const std::string& label, const std::string& name) {
+    /** What an item shows, and the name of the command it is bound to. **/
+    struct Labelled {
+        std::string label;
+        std::string name;
+    };
+
+    boost::shared_ptr<v3d::ui::component::menu::Item> item(v3d::ui::component::menu::ItemType type, const Labelled& spec) {
         boost::shared_ptr<v3d::ui::component::menu::Item> made =
-            boost::make_shared<v3d::ui::component::menu::Item>(type, label);
-        if (!name.empty()) {
-            made->event(v3d::event::Event(name, context));
+            boost::make_shared<v3d::ui::component::menu::Item>(type, spec.label);
+        if (!spec.name.empty()) {
+            made->event(v3d::event::Event(spec.name, context));
         }
         return made;
     }
@@ -119,14 +124,14 @@ struct Fixture final {
  **/
 void build(Fixture* fixture) {
     boost::shared_ptr<v3d::ui::component::menu::Menu> file = fixture->menu();
-    file->addItem(fixture->item(v3d::ui::component::menu::ItemType::Action, "Open", "open"));
-    file->addItem(fixture->item(v3d::ui::component::menu::ItemType::Check, "Grid", "grid"));
+    file->addItem(fixture->item(v3d::ui::component::menu::ItemType::Action, {.label = "Open", .name = "open"}));
+    file->addItem(fixture->item(v3d::ui::component::menu::ItemType::Check, {.label = "Grid", .name = "grid"}));
 
     boost::shared_ptr<v3d::ui::component::menu::Menu> shading = fixture->menu();
-    shading->addItem(fixture->item(v3d::ui::component::menu::ItemType::Action, "Flat", "flat"));
+    shading->addItem(fixture->item(v3d::ui::component::menu::ItemType::Action, {.label = "Flat", .name = "flat"}));
 
     boost::shared_ptr<v3d::ui::component::menu::Item> deeper =
-        fixture->item(v3d::ui::component::menu::ItemType::Submenu, "Shading", "");
+        fixture->item(v3d::ui::component::menu::ItemType::Submenu, {.label = "Shading", .name = ""});
     boost::shared_ptr<v3d::ui::component::menu::Menu> view = fixture->menu();
     deeper->menu(view);
     deeper->submenu(shading);
@@ -378,9 +383,9 @@ BOOST_AUTO_TEST_CASE(a_disabled_item_sends_nothing) {
 BOOST_AUTO_TEST_CASE(a_disabled_submenu_item_disables_its_submenu) {
     Fixture fixture;
     boost::shared_ptr<v3d::ui::component::menu::Menu> shading = fixture.menu();
-    shading->addItem(fixture.item(v3d::ui::component::menu::ItemType::Action, "Flat", "flat"));
+    shading->addItem(fixture.item(v3d::ui::component::menu::ItemType::Action, {.label = "Flat", .name = "flat"}));
     boost::shared_ptr<v3d::ui::component::menu::Item> deeper =
-        fixture.item(v3d::ui::component::menu::ItemType::Submenu, "Shading", "");
+        fixture.item(v3d::ui::component::menu::ItemType::Submenu, {.label = "Shading", .name = ""});
     boost::shared_ptr<v3d::ui::component::menu::Menu> view = fixture.menu();
     deeper->menu(view);
     deeper->submenu(shading);
@@ -425,7 +430,7 @@ BOOST_AUTO_TEST_CASE(a_null_menu_is_not_added) {
 BOOST_AUTO_TEST_CASE(an_item_outlives_its_menu) {
     Fixture fixture;
     boost::shared_ptr<v3d::ui::component::menu::Item> kept =
-        fixture.item(v3d::ui::component::menu::ItemType::Action, "Open", "open");
+        fixture.item(v3d::ui::component::menu::ItemType::Action, {.label = "Open", .name = "open"});
     {
         boost::shared_ptr<v3d::ui::component::menu::Menu> menu = fixture.menu();
         menu->addItem(kept);
@@ -445,7 +450,7 @@ BOOST_AUTO_TEST_CASE(a_replaced_submenu_is_let_go) {
     boost::shared_ptr<v3d::ui::component::menu::Menu> second = fixture.menu();
     {
         boost::shared_ptr<v3d::ui::component::menu::Item> deeper =
-            fixture.item(v3d::ui::component::menu::ItemType::Submenu, "Shading", "");
+            fixture.item(v3d::ui::component::menu::ItemType::Submenu, {.label = "Shading", .name = ""});
         deeper->submenu(first);
         BOOST_TEST(static_cast<const v3d::ui::Component&>(*first).parent() == deeper.get());
         deeper->submenu(second);

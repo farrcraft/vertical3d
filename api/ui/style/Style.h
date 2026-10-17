@@ -25,9 +25,17 @@ class Property;
  * typed - a colour, a number, a font, an image - and are read back through the free
  * functions below rather than by casting at the call site.
  */
+/**
+ * What a style applies to: a component's own style name and its class, such as "button".
+ */
+struct Selector {
+    std::string name;
+    std::string className;
+};
+
 class Style {
  public:
-    Style(const std::string& str, const std::string& class_name);
+    explicit Style(const Selector& selector);
     virtual ~Style();
 
     /**

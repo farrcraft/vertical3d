@@ -75,7 +75,7 @@ boost::shared_ptr<Image> Jpeg::read(const unsigned char* encoded, std::size_t si
     // Adjust default decompression parameters by re-parsing the options
     (void)jpeg_start_decompress(&cinfo);
 
-    img.reset(new Image(cinfo.image_width, cinfo.image_height, 24));
+    img.reset(new Image(glm::uvec2(cinfo.image_width, cinfo.image_height), 24));
     unsigned char* data = img->data();
 
     // Process data. A jpeg stores its scanlines top down and so does Image, so scanline

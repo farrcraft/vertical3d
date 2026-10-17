@@ -51,7 +51,7 @@ std::optional<v3d::grid::TileCoord> readPair(const boost::json::object& object, 
         if (!number || !std::isfinite(*number) || std::floor(*number) != *number) {
             return std::nullopt;
         }
-        values[axis] = v3d::type::toInteger(static_cast<float>(*number), minimum, largest);
+        values[axis] = v3d::type::toInteger(static_cast<float>(*number), {.minimum = minimum, .maximum = largest});
         if (!values[axis]) {
             return std::nullopt;
         }
@@ -124,7 +124,7 @@ bool World::load(const boost::shared_ptr<v3d::asset::kind::Json>& document) {
 
     const std::optional<double> start = v3d::asset::readNumber(root, "start");
     const std::optional<int32_t> first = start && std::isfinite(*start) && std::floor(*start) == *start ?
-        v3d::type::toInteger(static_cast<float>(*start), 0, static_cast<int32_t>(regions.size()) - 1) : std::nullopt;
+        v3d::type::toInteger(static_cast<float>(*start), {.minimum = 0, .maximum = static_cast<int32_t>(regions.size()) - 1}) : std::nullopt;
     if (!first) {
         logger_->get()->error("the world's start is not the index of one of its regions");
         return false;

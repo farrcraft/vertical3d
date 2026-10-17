@@ -109,7 +109,7 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
             continue;
         }
         // rgb in memory, bgr on disk
-        swapRedBlue(src, dest, img->width(), channels);
+        swapRedBlue(src, dest, {.pixels = img->width(), .channels = channels});
     }
 
     // write image data

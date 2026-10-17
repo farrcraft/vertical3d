@@ -229,7 +229,7 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
         };
 
-        atlas_->region(region.x, region.y, 4, 4, data, 0);
+        atlas_->region(glm::ivec4(region.x, region.y, 4, 4), data, 0);
 
         float width = static_cast<float>(atlas_->width());
         float height = static_cast<float>(atlas_->height());
@@ -499,7 +499,7 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
         }
         unsigned int x = region.x;
         unsigned int y = region.y;
-        atlas_->region(x, y, w, h, rendered.bitmap.buffer, rendered.bitmap.pitch);
+        atlas_->region(glm::ivec4(x, y, w, h), rendered.bitmap.buffer, rendered.bitmap.pitch);
 
         boost::shared_ptr<Glyph> glyph = createGlyph();
         glyph->charcode_ = charcodes[i];

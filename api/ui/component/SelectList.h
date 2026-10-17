@@ -83,7 +83,13 @@ class SelectList : public Component {
      * @param measure a key naming the measure, which is never zero
      * @return the width, or a negative number when nothing has measured it with that key
      **/
-    void widest(float width, std::uint64_t measure) noexcept;
+    /** A width, and the key naming the measure it was taken with. **/
+    struct Measured {
+        float width = 0.0f;
+        std::uint64_t measure = 0;
+    };
+
+    void widest(const Measured& measured) noexcept;
     float widest(std::uint64_t measure) const noexcept;
 
     /**

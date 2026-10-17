@@ -101,7 +101,7 @@ bool CameraProfiles::load(const boost::json::object& doc) {
         profile.orthoZoom(zoom);
         profile.fov(number(entry, "fov", 60.0f));
         profile.pixelAspect(number(entry, "aspect", 1.33f));
-        profile.clipping(number(entry, "near", 0.1f), number(entry, "far", 100.0f));
+        profile.clipping(glm::vec2(number(entry, "near", 0.1f), number(entry, "far", 100.0f)));
 
         const std::string adaptive = adaptiveRead.value_or("none");
         profile.adaptiveProjection(adaptive == "both" || adaptive == "projection");

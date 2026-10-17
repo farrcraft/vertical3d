@@ -44,32 +44,55 @@ struct Recorder {
     std::vector<v3d::event::Event> source_;
 };
 
-SDL_Event buttonEvent(uint32_t type, uint8_t button, float x, float y) {
+/** An event type, the button, and where the cursor was. **/
+struct Click {
+    uint32_t type = SDL_EVENT_MOUSE_BUTTON_DOWN;
+    uint8_t button = SDL_BUTTON_LEFT;
+    float x = 0.0f;
+    float y = 0.0f;
+};
+
+SDL_Event buttonEvent(const Click& spec) {
     SDL_Event event{};
-    event.type = type;
-    event.button.button = button;
-    event.button.x = x;
-    event.button.y = y;
+    event.type = spec.type;
+    event.button.button = spec.button;
+    event.button.x = spec.x;
+    event.button.y = spec.y;
     return event;
 }
 
-SDL_Event wheelEvent(float notches, float x, float y) {
+/** How far the wheel turned, and where the cursor was. **/
+struct Wheel {
+    float notches = 0.0f;
+    float x = 0.0f;
+    float y = 0.0f;
+};
+
+SDL_Event wheelEvent(const Wheel& spec) {
     SDL_Event event{};
     event.type = SDL_EVENT_MOUSE_WHEEL;
     event.wheel.x = 0.0f;
-    event.wheel.y = notches;
-    event.wheel.mouse_x = x;
-    event.wheel.mouse_y = y;
+    event.wheel.y = spec.notches;
+    event.wheel.mouse_x = spec.x;
+    event.wheel.mouse_y = spec.y;
     return event;
 }
 
-SDL_Event motionEvent(float x, float y, float dx, float dy) {
+/** Where the cursor is, and how far it moved. **/
+struct Motion {
+    float x = 0.0f;
+    float y = 0.0f;
+    float dx = 0.0f;
+    float dy = 0.0f;
+};
+
+SDL_Event motionEvent(const Motion& spec) {
     SDL_Event event{};
     event.type = SDL_EVENT_MOUSE_MOTION;
-    event.motion.x = x;
-    event.motion.y = y;
-    event.motion.xrel = dx;
-    event.motion.yrel = dy;
+    event.motion.x = spec.x;
+    event.motion.y = spec.y;
+    event.motion.xrel = spec.dx;
+    event.motion.yrel = spec.dy;
     return event;
 }
 };  // namespace
@@ -83,7 +106,7 @@ BOOST_AUTO_TEST_CASE(mouse_button_test) {
     dispatcher->sink<v3d::event::kind::MouseButton>().connect<&Recorder::button>(recorder);
     dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
-    BOOST_CHECK_EQUAL(mouse.handleEvent(buttonEvent(SDL_EVENT_MOUSE_BUTTON_DOWN, SDL_BUTTON_LEFT, 10.0f, 20.0f)), true);
+    BOOST_CHECK_EQUAL(mouse.handleEvent(buttonEvent({.type = SDL_EVENT_MOUSE_BUTTON_DOWN, .button = SDL_BUTTON_LEFT, .x = 10.0f, .y = 20.0f})), true);
     BOOST_REQUIRE_EQUAL(recorder.buttons_.size(), 1u);
     BOOST_CHECK_EQUAL(recorder.buttons_[0].button(), "left");
     BOOST_CHECK_EQUAL(recorder.buttons_[0].pressed(), true);
@@ -104,7 +127,7 @@ BOOST_AUTO_TEST_CASE(mouse_button_test) {
     BOOST_CHECK(recorder.source_[0].state() == v3d::event::State::Pressed);
 
     // releasing is the other edge, and drops the hold
-    BOOST_CHECK_EQUAL(mouse.handleEvent(buttonEvent(SDL_EVENT_MOUSE_BUTTON_UP, SDL_BUTTON_LEFT, 12.0f, 22.0f)), true);
+    BOOST_CHECK_EQUAL(mouse.handleEvent(buttonEvent({.type = SDL_EVENT_MOUSE_BUTTON_UP, .button = SDL_BUTTON_LEFT, .x = 12.0f, .y = 22.0f})), true);
     BOOST_CHECK_EQUAL(mouse.state().held("left"), false);
     BOOST_REQUIRE_EQUAL(recorder.buttons_.size(), 2u);
     BOOST_CHECK_EQUAL(recorder.buttons_[1].position()[0], 12.0f);
@@ -113,14 +136,14 @@ BOOST_AUTO_TEST_CASE(mouse_button_test) {
     BOOST_CHECK(recorder.source_[1].state() == v3d::event::State::Released);
 
     // the other buttons have names too
-    mouse.handleEvent(buttonEvent(SDL_EVENT_MOUSE_BUTTON_DOWN, SDL_BUTTON_RIGHT, 0.0f, 0.0f));
-    mouse.handleEvent(buttonEvent(SDL_EVENT_MOUSE_BUTTON_DOWN, SDL_BUTTON_MIDDLE, 0.0f, 0.0f));
+    mouse.handleEvent(buttonEvent({.type = SDL_EVENT_MOUSE_BUTTON_DOWN, .button = SDL_BUTTON_RIGHT, .x = 0.0f, .y = 0.0f}));
+    mouse.handleEvent(buttonEvent({.type = SDL_EVENT_MOUSE_BUTTON_DOWN, .button = SDL_BUTTON_MIDDLE, .x = 0.0f, .y = 0.0f}));
     BOOST_REQUIRE_EQUAL(recorder.source_.size(), 4u);
     BOOST_CHECK_EQUAL(recorder.source_[2].name(), "right");
     BOOST_CHECK_EQUAL(recorder.source_[3].name(), "middle");
 
     // a button with no name is still the mouse's event, but nothing can bind to it
-    BOOST_CHECK_EQUAL(mouse.handleEvent(buttonEvent(SDL_EVENT_MOUSE_BUTTON_DOWN, 99, 0.0f, 0.0f)), true);
+    BOOST_CHECK_EQUAL(mouse.handleEvent(buttonEvent({.type = SDL_EVENT_MOUSE_BUTTON_DOWN, .button = 99, .x = 0.0f, .y = 0.0f})), true);
     BOOST_CHECK_EQUAL(recorder.source_.size(), 4u);
 }
 
@@ -133,7 +156,7 @@ BOOST_AUTO_TEST_CASE(mouse_motion_test) {
     dispatcher->sink<v3d::event::kind::MouseMotion>().connect<&Recorder::motion>(recorder);
     dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
-    BOOST_CHECK_EQUAL(mouse.handleEvent(motionEvent(3.0f, 0.0f, 3.0f, 0.0f)), true);
+    BOOST_CHECK_EQUAL(mouse.handleEvent(motionEvent({.x = 3.0f, .y = 0.0f, .dx = 3.0f, .dy = 0.0f})), true);
     BOOST_REQUIRE_EQUAL(recorder.motion_.size(), 1u);
     BOOST_CHECK_EQUAL(recorder.motion_[0].position()[0], 3.0f);
     BOOST_CHECK_EQUAL(recorder.motion_[0].position()[1], 0.0f);
@@ -221,7 +244,7 @@ BOOST_AUTO_TEST_CASE(mouse_wheel_test) {
     dispatcher->sink<v3d::event::kind::MouseWheel>().connect<&Recorder::wheel>(recorder);
     dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
-    BOOST_CHECK_EQUAL(mouse.handleEvent(wheelEvent(1.0f, 40.0f, 50.0f)), true);
+    BOOST_CHECK_EQUAL(mouse.handleEvent(wheelEvent({.notches = 1.0f, .x = 40.0f, .y = 50.0f})), true);
     BOOST_REQUIRE_EQUAL(recorder.wheel_.size(), 1u);
     BOOST_CHECK_EQUAL(recorder.wheel_[0].notches()[1], 1.0f);
 
@@ -230,19 +253,19 @@ BOOST_AUTO_TEST_CASE(mouse_wheel_test) {
     BOOST_CHECK_EQUAL(recorder.wheel_[0].position()[1], 50.0f);
 
     // a wheel sends one event per notch, so a flick that turned three reads as three
-    mouse.handleEvent(wheelEvent(1.0f, 40.0f, 50.0f));
-    mouse.handleEvent(wheelEvent(1.0f, 40.0f, 50.0f));
+    mouse.handleEvent(wheelEvent({.notches = 1.0f, .x = 40.0f, .y = 50.0f}));
+    mouse.handleEvent(wheelEvent({.notches = 1.0f, .x = 40.0f, .y = 50.0f}));
     BOOST_CHECK_EQUAL(mouse.state().wheel(), 3.0f);
 
     // turning it back subtracts, so a flick each way inside one frame comes to nothing
-    mouse.handleEvent(wheelEvent(-3.0f, 40.0f, 50.0f));
+    mouse.handleEvent(wheelEvent({.notches = -3.0f, .x = 40.0f, .y = 50.0f}));
     BOOST_CHECK_EQUAL(mouse.state().wheel(), 0.0f);
 
     // a turn has no discrete name, so nothing binds to one
     BOOST_CHECK_EQUAL(recorder.source_.size(), 0u);
 
     // a frame that reads it late reads nothing, the way a button edge does
-    mouse.handleEvent(wheelEvent(2.0f, 40.0f, 50.0f));
+    mouse.handleEvent(wheelEvent({.notches = 2.0f, .x = 40.0f, .y = 50.0f}));
     BOOST_CHECK_EQUAL(mouse.state().wheel(), 2.0f);
     mouse.flush();
     BOOST_CHECK_EQUAL(mouse.state().wheel(), 0.0f);

@@ -37,7 +37,7 @@ void Bar::add(const std::string& label, const boost::shared_ptr<Menu>& menu) {
     }
     labels_.push_back(label);
     // nothing is hit until a renderer has said where the label went
-    bounds_.push_back(v3d::type::geometry::Bound2D(0.0f, 0.0f, 0.0f, 0.0f));
+    bounds_.push_back(v3d::type::geometry::Bound2D({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(0.0f, 0.0f)}));
     adopt(*menu);
     menus_.push_back(menu);
 }
@@ -45,7 +45,7 @@ void Bar::add(const std::string& label, const boost::shared_ptr<Menu>& menu) {
 /**
  **/
 void Bar::place(std::size_t index, const glm::vec2& position, const glm::vec2& size) {
-    bounds_[index] = v3d::type::geometry::Bound2D(position, size);
+    bounds_[index] = v3d::type::geometry::Bound2D({.position = position, .size = size});
 }
 
 /**

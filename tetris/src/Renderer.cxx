@@ -100,7 +100,7 @@ void TetrisRenderer::loadPieces(const boost::shared_ptr<v3d::asset::Manager>& as
             logger_->get()->error("the piece atlas is too small to fit {}", name);
             continue;
         }
-        atlas.region(region.x, region.y, region.z, region.w, image->data(), image->width() * 3);
+        atlas.region(region, image->data(), image->width() * 3);
 
         // half a texel in on every side, so that filtering a block down to a cell samples
         // texel centres rather than the empty gutter the atlas packs around a region

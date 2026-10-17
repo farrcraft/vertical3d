@@ -532,7 +532,7 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
         }
         target = boost::make_shared<style::Button>(styleName, state);
     } else {
-        target = boost::make_shared<style::Style>(styleName, className);
+        target = boost::make_shared<style::Style>(style::Selector{.name = styleName, .className = className});
     }
 
     if (!loadProperties(entry, target)) {
@@ -597,8 +597,8 @@ boost::shared_ptr<style::Property> Loader::loadProperty(const std::string& secti
             static_cast<float>(boost::json::value_to<double>(property.at("value"))));
     }
     if (section == "fonts") {
-        boost::shared_ptr<style::property::Font> font = boost::make_shared<style::property::Font>(name,
-            optionalString(*logger_, property, "source").value_or(std::string()));
+        boost::shared_ptr<style::property::Font> font = boost::make_shared<style::property::Font>(
+            style::property::Font::Named{.name = name, .source = optionalString(*logger_, property, "source").value_or(std::string())});
         if (const std::optional<std::string> face = optionalString(*logger_, property, "face")) {
             font->face(*face);
         }
@@ -616,7 +616,7 @@ boost::shared_ptr<style::Property> Loader::loadProperty(const std::string& secti
         return nullptr;
     }
     *propertyClass = "image";
-    return boost::make_shared<style::property::Image>(name, *source);
+    return boost::make_shared<style::property::Image>(style::property::Image::Named{.name = name, .source = *source});
 }
 
 /**
@@ -708,7 +708,7 @@ boost::shared_ptr<component::Slider> Loader::loadSlider(const boost::json::objec
         const bool fits = value && std::abs(*value) <= static_cast<double>(std::numeric_limits<float>::max());
         return fits ? static_cast<float>(*value) : fallback;
     };
-    slider->range(number("minimum", 0.0f), number("maximum", 1.0f), number("step", 0.0f));
+    slider->range({.minimum = number("minimum", 0.0f), .maximum = number("maximum", 1.0f), .step = number("step", 0.0f)});
     slider->value(number("value", slider->minimum()));
     const v3d::event::Event command = loadCommand(entry);
     if (command.context()) {

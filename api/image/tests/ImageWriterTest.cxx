@@ -31,7 +31,7 @@ struct OutputDirectory {
 };  // namespace
 
 BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
-    boost::shared_ptr<v3d::image::Image> img24 = boost::make_shared<v3d::image::Image>(2, 2, 24);
+    boost::shared_ptr<v3d::image::Image> img24 = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 2), 24);
     for (unsigned int pixel = 0; pixel < 4; ++pixel) {
         (*img24)[(pixel * 3) + 0] = 0;
         (*img24)[(pixel * 3) + 1] = 0;
@@ -85,7 +85,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
  **/
 BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
     // two rows of one pixel: red on top, green below
-    boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(1, 2, 24);
+    boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(glm::uvec2(1, 2), 24);
     (*image)[0] = 0xff; (*image)[1] = 0; (*image)[2] = 0;
     (*image)[3] = 0; (*image)[4] = 0xff; (*image)[5] = 0;
 
@@ -124,7 +124,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
 BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
     const unsigned int side = 8;
     boost::shared_ptr<v3d::image::Image> image =
-        boost::make_shared<v3d::image::Image>(side, side, 24);
+        boost::make_shared<v3d::image::Image>(glm::uvec2(side, side), 24);
     for (unsigned int row = 0; row < side; ++row) {
         for (unsigned int column = 0; column < side; ++column) {
             const unsigned int pixel = ((row * side) + column) * 3;
@@ -289,7 +289,7 @@ BOOST_FIXTURE_TEST_CASE(imagereader_greyscale_jpeg_test, OutputDirectory) {
 BOOST_FIXTURE_TEST_CASE(imagewriter_grey_test, OutputDirectory) {
     const unsigned int side = 4;
     boost::shared_ptr<v3d::image::Image> grey =
-        boost::make_shared<v3d::image::Image>(side, side, 8);
+        boost::make_shared<v3d::image::Image>(glm::uvec2(side, side), 8);
     BOOST_REQUIRE((grey->format() == v3d::image::Image::Format::Grey));
     for (unsigned int i = 0; i < side * side; ++i) {
         (*grey)[i] = static_cast<unsigned char>(i * 16);
@@ -343,7 +343,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, Out
 
     // red at half opacity: a jpeg has nowhere to put the alpha, and libjpeg's default
     // handler would end the process rather than refuse four components under JCS_RGB
-    boost::shared_ptr<v3d::image::Image> rgba = boost::make_shared<v3d::image::Image>(2, 2, 32);
+    boost::shared_ptr<v3d::image::Image> rgba = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 2), 32);
     for (unsigned int pixel = 0; pixel < 4; ++pixel) {
         (*rgba)[(pixel * 4) + 0] = 0xff;
         (*rgba)[(pixel * 4) + 1] = 0;
@@ -370,7 +370,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, Out
  * reordered and the alpha is carried across rather than left as the zero a fresh buffer holds.
  **/
 BOOST_FIXTURE_TEST_CASE(imagewriter_tga_alpha_test, OutputDirectory) {
-    boost::shared_ptr<v3d::image::Image> img32 = boost::make_shared<v3d::image::Image>(2, 1, 32);
+    boost::shared_ptr<v3d::image::Image> img32 = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 1), 32);
     for (unsigned int pixel = 0; pixel < 2; ++pixel) {
         (*img32)[(pixel * 4) + 0] = 0x10;
         (*img32)[(pixel * 4) + 1] = 0x20;
@@ -397,13 +397,13 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_tga_too_wide_leaves_the_file_test, OutputDir
     v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
     const std::string filename = "data_out/too_wide.tga";
 
-    boost::shared_ptr<v3d::image::Image> small = boost::make_shared<v3d::image::Image>(2, 1, 8);
+    boost::shared_ptr<v3d::image::Image> small = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 1), 8);
     BOOST_REQUIRE(factory.write(filename, small));
     const boost::uintmax_t before = boost::filesystem::file_size(filename);
     BOOST_REQUIRE(before > 0u);
 
     // one row of one byte a pixel, so the picture is wide and still costs only 64 KiB
-    boost::shared_ptr<v3d::image::Image> wide = boost::make_shared<v3d::image::Image>(65536, 1, 8);
+    boost::shared_ptr<v3d::image::Image> wide = boost::make_shared<v3d::image::Image>(glm::uvec2(65536, 1), 8);
     BOOST_CHECK(!factory.write(filename, wide));
     BOOST_CHECK_EQUAL(boost::filesystem::file_size(filename), before);
 }

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/style/Style.h>
 
@@ -175,10 +176,11 @@ class Immediate {
      * Pair every call with endWindow() whatever it answered: a collapsed window returns
      * false and still has to be closed.
      *
+     * @param area where the window's top left corner is, and its size
      * @param alpha what the window's background is drawn at, 1 for opaque
      * @return whether what goes in it should be drawn, false for a collapsed window
      **/
-    bool window(const std::string& title, const glm::vec2& position, const glm::vec2& size, float alpha);
+    bool window(const std::string& title, const v3d::type::geometry::Bound2D::Area& area, float alpha);
     void endWindow();
 
     /**
@@ -330,9 +332,15 @@ class Immediate {
      * The room a bar would take is reserved whether or not there is anything to scroll,
      * so the columns of a table that gains a row do not re-flow.
      *
-     * @param height how tall the table is, or zero to be as tall as its rows
+     * The shape is how many columns the table has, and how tall it is, or zero to be as tall
+     * as its rows.
      **/
-    bool table(const std::string& id, unsigned int columns, float height = 0.0f);
+    struct TableShape {
+        unsigned int columns = 1;
+        float height = 0.0f;
+    };
+
+    bool table(const std::string& id, const TableShape& shape);
 
     /**
      * Name a column and say how wide it is. A width of zero shares out what the other
@@ -511,7 +519,18 @@ class Immediate {
      *
      * @param bodyMax the bottom right corner of the region, which the scrollbar runs down to
      **/
-    void closeScroll(Id id, Id scroll, float contentTop, const glm::vec2& bodyMax, Bar bar);
+    /**
+     * Whose scroll and content a region is, the id its scrollbar answers the cursor as, where
+     * its content would start if it were not scrolled, and the bottom right of its body.
+     **/
+    struct Scrolled {
+        Id id = 0;
+        Id scroll = 0;
+        float contentTop = 0.0f;
+        glm::vec2 bodyMax{0.0f};
+    };
+
+    void closeScroll(const Scrolled& region, Bar bar);
 
     /**
      * Draw the bar down the right of a region that has more content than it shows, and

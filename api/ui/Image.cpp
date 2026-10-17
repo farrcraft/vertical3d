@@ -14,8 +14,8 @@ Image::Image(const v3d::render::realtime::TextureHandle& tex) noexcept :
     texture(tex), uv0(0.0f, 0.0f), uv1(1.0f, 1.0f) {
 }
 
-Image::Image(const v3d::render::realtime::TextureHandle& tex, const glm::vec2& min, const glm::vec2& max) noexcept :
-    texture(tex), uv0(min), uv1(max) {
+Image::Image(const v3d::render::realtime::TextureHandle& tex, const Corners& corners) noexcept :
+    texture(tex), uv0(corners.min), uv1(corners.max) {
 }
 
 bool Image::valid() const noexcept {

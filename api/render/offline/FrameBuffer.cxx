@@ -55,7 +55,7 @@ boost::shared_ptr<v3d::image::Image> FrameBuffer::image(unsigned int channels) c
            channels == static_cast<unsigned int>(v3d::image::Image::Format::RGBA));
 
     auto bpp = static_cast<uint8_t>(channels * 8);
-    auto image = boost::make_shared<v3d::image::Image>(width_, height_, bpp);
+    auto image = boost::make_shared<v3d::image::Image>(glm::uvec2(width_, height_), bpp);
     unsigned char* data = image->data();
     for (unsigned int row = 0; row < height_; row++) {
         for (unsigned int column = 0; column < width_; column++) {

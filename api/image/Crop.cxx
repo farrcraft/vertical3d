@@ -22,7 +22,7 @@ boost::shared_ptr<Image> crop(const Image & source, unsigned int x, unsigned int
         return cut;
     }
 
-    cut.reset(new Image(width, height, source.bpp()));
+    cut.reset(new Image(glm::uvec2(width, height), source.bpp()));
     const unsigned int run = width * depth;
     for (unsigned int row = 0; row < height; ++row) {
         const unsigned int from = (((y + row) * source.width()) + x) * depth;

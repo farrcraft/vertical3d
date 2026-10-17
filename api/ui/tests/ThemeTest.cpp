@@ -100,7 +100,7 @@ struct Sheet final {
         if (found == regions.end()) {
             return v3d::ui::Image();
         }
-        return v3d::ui::Image(v3d::render::realtime::TextureHandle(9), found->second.first, found->second.second);
+        return v3d::ui::Image(v3d::render::realtime::TextureHandle(9), {.min = found->second.first, .max = found->second.second});
     }
 };
 

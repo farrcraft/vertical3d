@@ -25,7 +25,9 @@ Length::Unit Length::unit() const noexcept {
     return unit_;
 }
 
-float Length::resolve(float extent, float own) const noexcept {
+float Length::resolve(const Basis& basis) const noexcept {
+    const float extent = basis.extent;
+    const float own = basis.own;
     switch (unit_) {
         case Unit::Pixels:
             return value_;

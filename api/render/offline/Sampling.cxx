@@ -72,14 +72,14 @@ float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width) {
 }
 
 bool resolution(float side) {
-    return v3d::type::toCount(side, 1, largestResolution).has_value();
+    return v3d::type::toCount(side, {.minimum = 1, .maximum = largestResolution}).has_value();
 }
 
 std::optional<uint32_t> formatSide(float side) {
     if (side <= 0.0f && std::isfinite(side)) {
         return 0;
     }
-    return v3d::type::toCount(side, 1, largestResolution);
+    return v3d::type::toCount(side, {.minimum = 1, .maximum = largestResolution});
 }
 
 bool filterWidth(const glm::vec2 & width) {

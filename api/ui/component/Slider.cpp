@@ -27,7 +27,10 @@ Slider::Slider() :
 
 /**
  **/
-void Slider::range(float minimum, float maximum, float step) {
+void Slider::range(const Range& range) {
+    const float minimum = range.minimum;
+    const float maximum = range.maximum;
+    const float step = range.step;
     minimum_ = std::min(minimum, maximum);
     maximum_ = std::max(minimum, maximum);
     step_ = std::max(step, 0.0f);

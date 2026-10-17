@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+#include <glm/vec2.hpp>
+
 namespace v3d::image {
 /**
  * a simple image class. 
@@ -28,11 +30,10 @@ class Image {
         Image();
         /**
          * Constructor
-         * @param w image width
-         * @param h image height
+         * @param dimensions image width and height
          * @param b bits per pixel
          */
-        Image(uint32_t w, uint32_t h, uint8_t b);
+        Image(const glm::uvec2& dimensions, uint8_t b);
         virtual ~Image();
 
         /**

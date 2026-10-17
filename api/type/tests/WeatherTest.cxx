@@ -53,8 +53,14 @@ Weather shower() {
 /**
  * A region four by four on the ground and ten high, its corner at x.
  **/
-void run(const Emitter& emitter, Weather* weather, State* state, int steps, float x = 0.0f) {
-    for (int step = 0; step < steps; step++) {
+struct Steps {
+    int count = 1;     /**< how many steps to run **/
+    float x = 0.0f;    /**< where the region's corner is on x **/
+};
+
+void run(const Emitter& emitter, Weather* weather, State* state, const Steps& steps) {
+    const float x = steps.x;
+    for (int step = 0; step < steps.count; step++) {
         v3d::type::effect::fall(emitter, weather, state, glm::vec3(x, 0.0f, 0.0f),
             glm::vec3(x + 4.0f, 10.0f, 4.0f), sixtieth);
     }
@@ -74,7 +80,7 @@ BOOST_AUTO_TEST_CASE(weather_settles_at_its_rate_times_its_fall_test) {
     Weather weather = shower();
     State state(1);
 
-    run(emitter, &weather, &state, 600);
+    run(emitter, &weather, &state, {.count = 600});
     BOOST_CHECK(state.particles.size() >= 31u);
     BOOST_CHECK(state.particles.size() <= 34u);
 
@@ -95,19 +101,19 @@ BOOST_AUTO_TEST_CASE(weather_eases_to_its_target_test) {
     weather.ease = 0.5f;
     State state(1);
 
-    run(emitter, &weather, &state, 180);
+    run(emitter, &weather, &state, {.count = 180});
     weather.target = 0.0f;
-    run(emitter, &weather, &state, 60);
+    run(emitter, &weather, &state, {.count = 60});
     BOOST_CHECK_CLOSE(weather.intensity, 0.5f, 1e-3f);
     BOOST_CHECK(!state.particles.empty());
 
-    run(emitter, &weather, &state, 60);
+    run(emitter, &weather, &state, {.count = 60});
     BOOST_CHECK_SMALL(weather.intensity, 1e-5f);
     // the steps' easing sums to a hair short of the whole way in float, and the next step lands
     // on the target exactly rather than passing it
-    run(emitter, &weather, &state, 1);
+    run(emitter, &weather, &state, {.count = 1});
     BOOST_CHECK_EQUAL(weather.intensity, 0.0f);
-    run(emitter, &weather, &state, 130);
+    run(emitter, &weather, &state, {.count = 130});
     BOOST_CHECK(state.particles.empty());
 }
 
@@ -120,12 +126,12 @@ BOOST_AUTO_TEST_CASE(weather_follows_a_moving_region_test) {
     Weather weather = shower();
     State state(1);
 
-    run(emitter, &weather, &state, 120);
+    run(emitter, &weather, &state, {.count = 120});
     bool inside = true;
     bool steady = true;
     for (int step = 0; step < 300; step++) {
         const float x = 0.05f * static_cast<float>(step);
-        run(emitter, &weather, &state, 1, x);
+        run(emitter, &weather, &state, {.count = 1, .x = x});
         for (const Particle& particle : state.particles) {
             inside = inside && particle.position.x >= x && particle.position.x < x + 4.0f;
             inside = inside && particle.position.z >= 0.0f && particle.position.z < 4.0f;
@@ -146,7 +152,7 @@ BOOST_AUTO_TEST_CASE(weather_is_carried_by_the_wind_test) {
     weather.wind = glm::vec3(2.0f, 0.0f, 0.0f);
     State state(1);
 
-    run(emitter, &weather, &state, 90);
+    run(emitter, &weather, &state, {.count = 90});
     BOOST_REQUIRE(!state.particles.empty());
     bool carried = true;
     for (const Particle& particle : state.particles) {
@@ -165,12 +171,12 @@ BOOST_AUTO_TEST_CASE(weather_out_of_range_settings_are_held_in_range_test) {
     weather.intensity = 0.5f;
     weather.ease = -1.0f;
     State state(1);
-    run(emitter, &weather, &state, 10);
+    run(emitter, &weather, &state, {.count = 10});
     BOOST_CHECK_EQUAL(weather.intensity, 0.5f);
 
     weather.ease = 10.0f;
     weather.target = 4.0f;
-    run(emitter, &weather, &state, 10);
+    run(emitter, &weather, &state, {.count = 10});
     BOOST_CHECK_EQUAL(weather.intensity, 1.0f);
 }
 
@@ -184,10 +190,10 @@ BOOST_AUTO_TEST_CASE(weather_a_target_that_is_not_a_number_is_ignored_test) {
     weather.intensity = 0.5f;
     weather.target = std::nanf("");
     State state(1);
-    run(emitter, &weather, &state, 10);
+    run(emitter, &weather, &state, {.count = 10});
     BOOST_CHECK_EQUAL(weather.intensity, 0.5f);
     weather.target = 1.0f;
-    run(emitter, &weather, &state, 1000);
+    run(emitter, &weather, &state, {.count = 1000});
     BOOST_CHECK_EQUAL(weather.intensity, 1.0f);
 }
 

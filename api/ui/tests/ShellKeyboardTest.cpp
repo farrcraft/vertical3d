@@ -59,11 +59,17 @@ struct Fixture final {
  * A key going down, as SDL would report it. The modifiers ride on the event rather than
  * being polled, and the adapter reads them from there.
  **/
-SDL_Event keyDown(SDL_Keycode key, SDL_Keymod mod = SDL_KMOD_NONE) {
+/** A key, and the modifiers held with it. **/
+struct Press {
+    SDL_Keycode key = SDLK_UNKNOWN;
+    SDL_Keymod mod = SDL_KMOD_NONE;
+};
+
+SDL_Event keyDown(const Press& press) {
     SDL_Event event = {};
     event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = key;
-    event.key.mod = mod;
+    event.key.key = press.key;
+    event.key.mod = press.mod;
     return event;
 }
 
@@ -101,7 +107,7 @@ BOOST_AUTO_TEST_CASE(nothing_focused_takes_nothing) {
     Fixture fixture;
     fixture.container->add(box("abc"));  // present, but nothing has the focus
 
-    BOOST_CHECK(!fixture.seam->event(keyDown(SDLK_A)));
+    BOOST_CHECK(!fixture.seam->event(keyDown({.key = SDLK_A})));
     BOOST_CHECK(!fixture.seam->event(composed("a")));
 }
 
@@ -115,7 +121,7 @@ BOOST_AUTO_TEST_CASE(a_key_reaches_the_focused_box) {
     fixture.container->add(field);
     fixture.ui->focus(field);
 
-    BOOST_CHECK(fixture.seam->event(keyDown(SDLK_BACKSPACE)));
+    BOOST_CHECK(fixture.seam->event(keyDown({.key = SDLK_BACKSPACE})));
     BOOST_CHECK_EQUAL(std::string(field->text()), "ab");
 }
 
@@ -144,7 +150,7 @@ BOOST_AUTO_TEST_CASE(shift_rides_on_the_event) {
     fixture.ui->focus(field);
     field->caret(3);
 
-    BOOST_CHECK(fixture.seam->event(keyDown(SDLK_LEFT, SDL_KMOD_LSHIFT)));
+    BOOST_CHECK(fixture.seam->event(keyDown({.key = SDLK_LEFT, .mod = SDL_KMOD_LSHIFT})));
     BOOST_CHECK(field->selected());
     BOOST_CHECK_EQUAL(field->caret(), 2u);
     BOOST_CHECK_EQUAL(field->anchor(), 3u);
@@ -160,7 +166,7 @@ BOOST_AUTO_TEST_CASE(control_rides_on_the_event) {
     fixture.ui->focus(field);
     field->caret(0);
 
-    BOOST_CHECK(fixture.seam->event(keyDown(SDLK_A, SDL_KMOD_LCTRL)));
+    BOOST_CHECK(fixture.seam->event(keyDown({.key = SDLK_A, .mod = SDL_KMOD_LCTRL})));
     BOOST_CHECK(field->selected());
     BOOST_CHECK_EQUAL(field->caret(), 3u);
     BOOST_CHECK_EQUAL(field->anchor(), 0u);
@@ -190,7 +196,7 @@ BOOST_AUTO_TEST_CASE(an_unnamed_key_is_not_taken) {
     fixture.container->add(field);
     fixture.ui->focus(field);
 
-    BOOST_CHECK(!fixture.seam->event(keyDown(SDLK_PAUSE)));
+    BOOST_CHECK(!fixture.seam->event(keyDown({.key = SDLK_PAUSE})));
     BOOST_CHECK_EQUAL(std::string(field->text()), "abc");
 }
 
@@ -206,7 +212,7 @@ BOOST_AUTO_TEST_CASE(a_letter_at_a_button_reaches_the_bindings) {
     fixture.container->add(control);
     fixture.ui->focus(control);
 
-    BOOST_CHECK(!fixture.seam->event(keyDown(SDLK_W)));
+    BOOST_CHECK(!fixture.seam->event(keyDown({.key = SDLK_W})));
     BOOST_CHECK(!fixture.seam->event(composed("w")));
 }
 

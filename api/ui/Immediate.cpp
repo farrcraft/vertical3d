@@ -386,8 +386,9 @@ void Immediate::label(const std::string& line, const glm::vec2& min, const glm::
     write_(line, pen, colour);
 }
 
-bool Immediate::window(const std::string& title, const glm::vec2& position, const glm::vec2& size,
-    float alpha) {
+bool Immediate::window(const std::string& title, const v3d::type::geometry::Bound2D::Area& area, float alpha) {
+    const glm::vec2& position = area.position;
+    const glm::vec2& size = area.size;
     if (canvas_ == nullptr) {
         return false;
     }
@@ -422,7 +423,7 @@ bool Immediate::window(const std::string& title, const glm::vec2& position, cons
 
     glm::vec4 background = dressing_.panel;
     background.a *= std::clamp(alpha, 0.0f, 1.0f);
-    paint::plateBox(canvas_, min, max, dressing_.radius, dressing_.borderWidth, background, dressing_.border);
+    paint::plateBox(canvas_, min, max, dressing_.radius, dressing_.borderWidth, {.inside = background, .outline = dressing_.border});
     paint::fillBox(canvas_, min + glm::vec2(dressing_.borderWidth, dressing_.borderWidth),
         glm::vec2(barMax.x - dressing_.borderWidth, barMax.y), dressing_.radius, dressing_.titleBar);
     label(title, min + glm::vec2(dressing_.padding, 0.0f), glm::vec2(size.x, dressing_.barHeight), dressing_.text);
@@ -490,7 +491,7 @@ void Immediate::endWindow() {
         canvas_->unclip();
         window_.clipped = false;
 
-        closeScroll(window_.id, window_.scroll, window_.contentTop, window_.bodyMax,
+        closeScroll({.id = window_.id, .scroll = window_.scroll, .contentTop = window_.contentTop, .bodyMax = window_.bodyMax},
             window_.scrolls ? Bar::Always : Bar::Never);
     }
     row_.margin = window_.margin;
@@ -500,7 +501,11 @@ void Immediate::endWindow() {
     row_.sameLine = false;
 }
 
-void Immediate::closeScroll(Id id, Id scroll, float contentTop, const glm::vec2& bodyMax, Bar bar) {
+void Immediate::closeScroll(const Scrolled& region, Bar bar) {
+    const Id id = region.id;
+    const Id scroll = region.scroll;
+    const float contentTop = region.contentTop;
+    const glm::vec2& bodyMax = region.bodyMax;
     Retained& retained = retain(id);
     // how tall what was drawn came to. The pen has the scroll taken out of it and the gap
     // after the last row left in, so both go back before it is a height
@@ -541,7 +546,7 @@ void Immediate::scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, flo
         grip = dressing_.hover;
     }
 
-    const float start = component::thumbStart(track, length, *scroll, span);
+    const float start = component::thumbStart({.track = track, .length = length, .offset = *scroll, .span = span});
     paint::fillBox(canvas_, min, max, dressing_.radius, dressing_.widget);
     paint::fillBox(canvas_, glm::vec2(min.x, min.y + start), glm::vec2(max.x, min.y + start + length),
         dressing_.radius, grip);
@@ -761,7 +766,9 @@ void Immediate::endTabBar() {
     tabs_.open = false;
 }
 
-bool Immediate::table(const std::string& id, unsigned int columns, float height) {
+bool Immediate::table(const std::string& id, const TableShape& shape) {
+    const unsigned int columns = shape.columns;
+    const float height = shape.height;
     if (canvas_ == nullptr || columns == 0) {
         return false;
     }
@@ -892,7 +899,8 @@ void Immediate::endTable() {
         table_.clipped = false;
 
         const float bottom = table_.top + table_.height;
-        closeScroll(table_.id, table_.scroll, table_.contentTop, glm::vec2(table_.right, bottom), Bar::WhenNeeded);
+        closeScroll({.id = table_.id, .scroll = table_.scroll, .contentTop = table_.contentTop, .bodyMax = glm::vec2(table_.right, bottom)},
+            Bar::WhenNeeded);
         // what follows the table is under the region rather than under the rows, which are
         // as tall as they are however tall the table was asked to be
         row_.penY = bottom + dressing_.spacing;

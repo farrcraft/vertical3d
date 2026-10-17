@@ -12,8 +12,19 @@
 
 namespace {
 
-boost::shared_ptr<v3d::image::Image> solid(uint32_t width, uint32_t height, uint8_t bpp, unsigned char value) {
-    boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(width, height, bpp);
+/** An image's size and depth, and the value every byte of it holds. **/
+struct Solid {
+    glm::uvec2 size{1u};
+    uint8_t bpp = 24;
+    unsigned char value = 0;
+};
+
+boost::shared_ptr<v3d::image::Image> solid(const Solid& spec) {
+    const uint32_t width = spec.size.x;
+    const uint32_t height = spec.size.y;
+    const uint8_t bpp = spec.bpp;
+    const unsigned char value = spec.value;
+    boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(glm::uvec2(width, height), bpp);
     for (uint32_t i = 0; i < width * height * (bpp / 8u); i++) {
         (*image)[i] = value;
     }
@@ -23,8 +34,8 @@ boost::shared_ptr<v3d::image::Image> solid(uint32_t width, uint32_t height, uint
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(compare_identical_test) {
-    const boost::shared_ptr<v3d::image::Image> a = solid(2, 2, 24, 128);
-    const boost::shared_ptr<v3d::image::Image> b = solid(2, 2, 24, 128);
+    const boost::shared_ptr<v3d::image::Image> a = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 128});
+    const boost::shared_ptr<v3d::image::Image> b = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 128});
 
     v3d::image::Difference difference = v3d::image::compare(*a, *b, 0);
     BOOST_CHECK_EQUAL(difference.match, true);
@@ -33,8 +44,8 @@ BOOST_AUTO_TEST_CASE(compare_identical_test) {
 }
 
 BOOST_AUTO_TEST_CASE(compare_dimensions_test) {
-    const boost::shared_ptr<v3d::image::Image> a = solid(2, 2, 24, 0);
-    const boost::shared_ptr<v3d::image::Image> b = solid(2, 3, 24, 0);
+    const boost::shared_ptr<v3d::image::Image> a = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 0});
+    const boost::shared_ptr<v3d::image::Image> b = solid({.size = glm::uvec2(2, 3), .bpp = 24, .value = 0});
 
     v3d::image::Difference difference = v3d::image::compare(*a, *b, 255);
     // a tolerance wide enough to admit anything still does not admit a different picture
@@ -43,8 +54,8 @@ BOOST_AUTO_TEST_CASE(compare_dimensions_test) {
 }
 
 BOOST_AUTO_TEST_CASE(compare_format_test) {
-    const boost::shared_ptr<v3d::image::Image> a = solid(2, 2, 24, 0);
-    const boost::shared_ptr<v3d::image::Image> b = solid(2, 2, 32, 0);
+    const boost::shared_ptr<v3d::image::Image> a = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 0});
+    const boost::shared_ptr<v3d::image::Image> b = solid({.size = glm::uvec2(2, 2), .bpp = 32, .value = 0});
 
     v3d::image::Difference difference = v3d::image::compare(*a, *b, 255);
     BOOST_CHECK_EQUAL(difference.match, false);
@@ -52,8 +63,8 @@ BOOST_AUTO_TEST_CASE(compare_format_test) {
 }
 
 BOOST_AUTO_TEST_CASE(compare_tolerance_test) {
-    const boost::shared_ptr<v3d::image::Image> a = solid(2, 2, 24, 100);
-    const boost::shared_ptr<v3d::image::Image> b = solid(2, 2, 24, 100);
+    const boost::shared_ptr<v3d::image::Image> a = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 100});
+    const boost::shared_ptr<v3d::image::Image> b = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 100});
     // the third channel of the pixel at column 1, row 1
     (*b)[11] = 102;
 
@@ -67,8 +78,8 @@ BOOST_AUTO_TEST_CASE(compare_tolerance_test) {
 }
 
 BOOST_AUTO_TEST_CASE(compare_worst_pixel_test) {
-    const boost::shared_ptr<v3d::image::Image> a = solid(2, 2, 24, 100);
-    const boost::shared_ptr<v3d::image::Image> b = solid(2, 2, 24, 100);
+    const boost::shared_ptr<v3d::image::Image> a = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 100});
+    const boost::shared_ptr<v3d::image::Image> b = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 100});
     // two disagreements, so the report has to name the larger one
     (*b)[1] = 105;
     (*b)[10] = 60;

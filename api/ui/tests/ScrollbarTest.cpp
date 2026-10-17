@@ -23,12 +23,12 @@ namespace {
 /**
  * A vertical bar of a given box, already placed the way a draw would leave it.
  **/
-boost::shared_ptr<v3d::ui::component::Scrollbar> bar(const glm::vec2& position, const glm::vec2& size) {
+boost::shared_ptr<v3d::ui::component::Scrollbar> bar(const v3d::type::geometry::Bound2D::Area& box) {
     boost::shared_ptr<v3d::ui::component::Scrollbar> component =
         boost::make_shared<v3d::ui::component::Scrollbar>();
     component->name("scroll");
-    component->position(position);
-    component->size(size);
+    component->position(box.position);
+    component->size(box.size);
     return component;
 }
 
@@ -36,8 +36,17 @@ boost::shared_ptr<v3d::ui::component::Scrollbar> bar(const glm::vec2& position, 
  * A list of numbered rows, already placed and told how tall a row is drawn - both of which
  * a draw leaves on it.
  **/
-boost::shared_ptr<v3d::ui::component::SelectList> list(std::size_t rows, float rowHeight,
-    const glm::vec2& position, const glm::vec2& size) {
+/** How many rows a list holds, and how tall each is drawn. **/
+struct Rows {
+    std::size_t count = 0;
+    float height = 0.0f;
+};
+
+boost::shared_ptr<v3d::ui::component::SelectList> list(const Rows& shape, const v3d::type::geometry::Bound2D::Area& box) {
+    const std::size_t rows = shape.count;
+    const float rowHeight = shape.height;
+    const glm::vec2& position = box.position;
+    const glm::vec2& size = box.size;
     boost::shared_ptr<v3d::ui::component::SelectList> component =
         boost::make_shared<v3d::ui::component::SelectList>();
     component->name("list");
@@ -62,7 +71,7 @@ BOOST_AUTO_TEST_SUITE(scrollbar_test)
  **/
 BOOST_AUTO_TEST_CASE(a_page_that_shows_everything_does_not_scroll) {
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
-        bar(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 200.0f));
+        bar({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(10.0f, 200.0f)});
     component->range(150.0f, 200.0f);
 
     BOOST_CHECK(!component->scrollable());
@@ -77,7 +86,7 @@ BOOST_AUTO_TEST_CASE(a_page_that_shows_everything_does_not_scroll) {
  **/
 BOOST_AUTO_TEST_CASE(the_thumb_is_the_fraction_of_the_content_that_is_shown) {
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
-        bar(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 200.0f));
+        bar({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(10.0f, 200.0f)});
     component->range(400.0f, 200.0f);
 
     BOOST_CHECK(component->scrollable());
@@ -97,7 +106,7 @@ BOOST_AUTO_TEST_CASE(the_thumb_is_the_fraction_of_the_content_that_is_shown) {
  **/
 BOOST_AUTO_TEST_CASE(the_thumb_has_a_floor) {
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
-        bar(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 200.0f));
+        bar({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(10.0f, 200.0f)});
     component->range(100000.0f, 200.0f);
 
     BOOST_CHECK_CLOSE(component->thumb(), v3d::ui::component::Scrollbar::minimumThumb, 0.001f);
@@ -110,7 +119,7 @@ BOOST_AUTO_TEST_CASE(the_thumb_has_a_floor) {
  **/
 BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_there_is_to_scroll) {
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
-        bar(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 200.0f));
+        bar({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(10.0f, 200.0f)});
     component->range(400.0f, 200.0f);
 
     component->offset(1000.0f);
@@ -130,7 +139,7 @@ BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_there_is_to_scroll) {
  **/
 BOOST_AUTO_TEST_CASE(a_drag_puts_the_middle_of_the_thumb_under_the_cursor) {
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
-        bar(glm::vec2(300.0f, 100.0f), glm::vec2(10.0f, 200.0f));
+        bar({.position = glm::vec2(300.0f, 100.0f), .size = glm::vec2(10.0f, 200.0f)});
     component->range(400.0f, 200.0f);
 
     // the middle of a 100 pixel thumb on a 200 pixel track, which is the middle of the range
@@ -149,7 +158,7 @@ BOOST_AUTO_TEST_CASE(a_drag_puts_the_middle_of_the_thumb_under_the_cursor) {
  **/
 BOOST_AUTO_TEST_CASE(a_horizontal_bar_scrolls_across) {
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
-        bar(glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 10.0f));
+        bar({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(200.0f, 10.0f)});
     component->direction(v3d::ui::component::Scrollbar::Direction::Horizontal);
     component->range(400.0f, 200.0f);
 
@@ -165,7 +174,7 @@ BOOST_AUTO_TEST_CASE(a_horizontal_bar_scrolls_across) {
  **/
 BOOST_AUTO_TEST_CASE(a_bar_that_was_never_drawn_scrolls_nowhere) {
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
-        bar(glm::vec2(0.0f, 0.0f), glm::vec2(0.0f, 0.0f));
+        bar({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(0.0f, 0.0f)});
     component->range(400.0f, 200.0f);
 
     component->drag(glm::vec2(50.0f, 50.0f));
@@ -186,7 +195,7 @@ BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_draws_its_track_alone) {
     canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::Scrollbar> empty =
-        bar(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 200.0f));
+        bar({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(10.0f, 200.0f)});
     empty->range(100.0f, 200.0f);
     renderer.draw(&canvas, empty);
     const std::size_t track = canvas.indices().size();
@@ -194,7 +203,7 @@ BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_draws_its_track_alone) {
 
     canvas.clear();
     const boost::shared_ptr<v3d::ui::component::Scrollbar> scrolled =
-        bar(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 200.0f));
+        bar({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(10.0f, 200.0f)});
     scrolled->range(400.0f, 200.0f);
     renderer.draw(&canvas, scrolled);
 
@@ -207,9 +216,9 @@ BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_draws_its_track_alone) {
  **/
 BOOST_AUTO_TEST_CASE(a_bound_bar_reports_the_lists_range) {
     const boost::shared_ptr<v3d::ui::component::SelectList> rows =
-        list(20, 10.0f, glm::vec2(0.0f, 0.0f), glm::vec2(100.0f, 50.0f));
+        list({.count = 20, .height = 10.0f}, {.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(100.0f, 50.0f)});
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
-        bar(glm::vec2(100.0f, 0.0f), glm::vec2(10.0f, 50.0f));
+        bar({.position = glm::vec2(100.0f, 0.0f), .size = glm::vec2(10.0f, 50.0f)});
 
     // a range of its own first, so the binding can be seen to replace it
     component->range(1000.0f, 100.0f);
@@ -239,9 +248,9 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_reports_the_lists_range) {
  **/
 BOOST_AUTO_TEST_CASE(dragging_a_bound_bar_moves_the_list) {
     const boost::shared_ptr<v3d::ui::component::SelectList> rows =
-        list(20, 10.0f, glm::vec2(0.0f, 0.0f), glm::vec2(100.0f, 50.0f));
+        list({.count = 20, .height = 10.0f}, {.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(100.0f, 50.0f)});
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
-        bar(glm::vec2(100.0f, 0.0f), glm::vec2(10.0f, 50.0f));
+        bar({.position = glm::vec2(100.0f, 0.0f), .size = glm::vec2(10.0f, 50.0f)});
     component->scrolls(rows);
 
     // the far end of the track is the end of the list
@@ -263,9 +272,9 @@ BOOST_AUTO_TEST_CASE(dragging_a_bound_bar_moves_the_list) {
  **/
 BOOST_AUTO_TEST_CASE(a_bound_bar_with_nothing_to_scroll_draws_no_thumb) {
     const boost::shared_ptr<v3d::ui::component::SelectList> rows =
-        list(3, 10.0f, glm::vec2(0.0f, 0.0f), glm::vec2(100.0f, 50.0f));
+        list({.count = 3, .height = 10.0f}, {.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(100.0f, 50.0f)});
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
-        bar(glm::vec2(100.0f, 0.0f), glm::vec2(10.0f, 50.0f));
+        bar({.position = glm::vec2(100.0f, 0.0f), .size = glm::vec2(10.0f, 50.0f)});
     component->scrolls(rows);
 
     BOOST_CHECK(!component->scrollable());
@@ -282,7 +291,7 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_with_nothing_to_scroll_draws_no_thumb) {
     // and the same bar over a list with more rows than it shows draws the thumb as well
     canvas.clear();
     const boost::shared_ptr<v3d::ui::component::SelectList> many =
-        list(40, 10.0f, glm::vec2(0.0f, 0.0f), glm::vec2(100.0f, 50.0f));
+        list({.count = 40, .height = 10.0f}, {.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(100.0f, 50.0f)});
     component->scrolls(many);
     renderer.draw(&canvas, component);
     BOOST_CHECK(canvas.indices().size() > track);
@@ -294,11 +303,11 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_with_nothing_to_scroll_draws_no_thumb) {
  **/
 BOOST_AUTO_TEST_CASE(a_bar_whose_list_has_gone_does_not_crash) {
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
-        bar(glm::vec2(100.0f, 0.0f), glm::vec2(10.0f, 50.0f));
+        bar({.position = glm::vec2(100.0f, 0.0f), .size = glm::vec2(10.0f, 50.0f)});
     component->range(200.0f, 50.0f);
     {
         const boost::shared_ptr<v3d::ui::component::SelectList> rows =
-            list(40, 10.0f, glm::vec2(0.0f, 0.0f), glm::vec2(100.0f, 50.0f));
+            list({.count = 40, .height = 10.0f}, {.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(100.0f, 50.0f)});
         component->scrolls(rows);
         BOOST_CHECK_CLOSE(component->content(), 400.0f, 0.001f);
     }

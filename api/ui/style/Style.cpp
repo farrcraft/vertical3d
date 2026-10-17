@@ -17,7 +17,7 @@
 
 namespace v3d::ui::style {
 
-Style::Style(const std::string& str, const std::string& class_name) : name_(str), className_(class_name) {
+Style::Style(const Selector& selector) : name_(selector.name), className_(selector.className) {
 }
 
 Style::~Style() {

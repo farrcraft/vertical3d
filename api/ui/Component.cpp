@@ -163,7 +163,7 @@ void Component::enabled(bool on) {
 }
 
 v3d::type::geometry::Bound2D Component::bound() const {
-    v3d::type::geometry::Bound2D bound(position_, size_);
+    v3d::type::geometry::Bound2D bound({.position = position_, .size = size_});
     return bound;
 }
 

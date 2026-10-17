@@ -35,7 +35,7 @@ glm::mat4x4 volume() {
 v3d::type::camera::Camera camera(bool orthographic) {
     v3d::type::camera::Camera built;
     built.orthographic(orthographic);
-    built.profile().clipping(1.0f, 100.0f);
+    built.profile().clipping(glm::vec2(1.0f, 100.0f));
     built.profile().eye(glm::vec3(0.0f, 0.0f, 0.0f));
     built.createProjection();
     built.createView();

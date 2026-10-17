@@ -45,11 +45,16 @@ class TextureAtlas {
      * @return the usable rectangle, or x and y of -1 when the atlas has no room left
      **/
     glm::ivec4 region(unsigned int width, unsigned int height);
-    void region(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char * data, unsigned int stride);
+    /**
+     * Copy rows of pixels into a rectangle region() returned, x, y, width and height in turn.
+     *
+     * @param stride how many bytes apart the rows of the data are
+     **/
+    void region(const glm::ivec4 & area, unsigned char * data, unsigned int stride);
 
  protected:
     glm::ivec4 allocate(unsigned int width, unsigned int height);
-    int fit(unsigned int index, unsigned int width, unsigned int height);
+    int fit(unsigned int index, const glm::uvec2 & size);
     void merge();
 
  private:

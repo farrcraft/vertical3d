@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(a_plate_draws_its_interior_once) {
     const glm::vec2 inset(width, width);
 
     v3d::render::realtime::canvas::Canvas plate;
-    v3d::ui::paint::plateBox(&plate, low, high, 0.0f, width, translucent, white);
+    v3d::ui::paint::plateBox(&plate, low, high, 0.0f, width, {.inside = translucent, .outline = white});
 
     v3d::render::realtime::canvas::Canvas outline;
     v3d::ui::paint::strokeBox(&outline, low, high, 0.0f, width, white);
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(an_outline_thicker_than_the_box_is_the_box) {
     v3d::render::realtime::canvas::Canvas canvas;
     const glm::vec2 max(low.x + 40.0f, low.y + 20.0f);
 
-    v3d::ui::paint::plateBox(&canvas, low, max, 0.0f, 40.0f, translucent, white);
+    v3d::ui::paint::plateBox(&canvas, low, max, 0.0f, 40.0f, {.inside = translucent, .outline = white});
 
     // the outline took all of it, so there is no interior left to fill
     BOOST_CHECK_EQUAL(canvas.indices().size(), 2U * 6U);
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(an_outline_thicker_than_the_box_is_the_box) {
  **/
 BOOST_AUTO_TEST_CASE(a_plate_with_no_border_is_one_shape) {
     v3d::render::realtime::canvas::Canvas canvas;
-    v3d::ui::paint::plateBox(&canvas, low, high, 0.0f, 0.0f, translucent, white);
+    v3d::ui::paint::plateBox(&canvas, low, high, 0.0f, 0.0f, {.inside = translucent, .outline = white});
 
     BOOST_CHECK_EQUAL(canvas.indices().size(), 6U);
 }

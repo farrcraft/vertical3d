@@ -100,8 +100,8 @@ class TextRenderer {
      * @param charcodes the glyphs to pack
      * @param spread the distance field spread, or zero to pack coverage glyphs that only
      *        draw correctly at size
-     * @param atlasWidth the atlas to pack into, which has to hold every charcode at size
-     * @param atlasHeight likewise
+     * @param atlas the width and height of the atlas to pack into, which has to hold every
+     *        charcode at size
      **/
     TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetManager,
         const boost::shared_ptr<v3d::log::Logger>& logger,
@@ -110,8 +110,7 @@ class TextRenderer {
         const std::string& font = defaultFont,
         const wchar_t* charcodes = ascii,
         unsigned int spread = defaultSpread,
-        unsigned int atlasWidth = defaultAtlas,
-        unsigned int atlasHeight = defaultAtlas);
+        const glm::uvec2& atlas = glm::uvec2(defaultAtlas));
 
     TextRenderer(const TextRenderer&) = delete;
     TextRenderer& operator=(const TextRenderer&) = delete;

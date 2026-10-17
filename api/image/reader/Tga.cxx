@@ -59,12 +59,12 @@ boost::shared_ptr<Image> Tga::read(const unsigned char* data, std::size_t size) 
         return empty_ptr;
     }
 
-    boost::shared_ptr<Image> img(new Image(width, height, static_cast<uint8_t>(bpp)));
+    boost::shared_ptr<Image> img(new Image(glm::uvec2(width, height), static_cast<uint8_t>(bpp)));
     unsigned char* out = img->data();
     memcpy(out, data + headerSize, pixels);
 
     if (bytespp >= 3) {
-        swapRedBlue(out, out, pixels / bytespp, bytespp);
+        swapRedBlue(out, out, {.pixels = pixels / bytespp, .channels = bytespp});
     }
 
     // bit 5 of the image descriptor is the vertical origin, and it is clear far more

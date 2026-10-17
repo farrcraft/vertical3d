@@ -61,7 +61,7 @@ struct Fixture final {
      **/
     boost::shared_ptr<v3d::ui::component::Slider> placed() {
         boost::shared_ptr<v3d::ui::component::Slider> slider = boost::make_shared<v3d::ui::component::Slider>();
-        slider->range(0.0f, 10.0f, 1.0f);
+        slider->range({.minimum = 0.0f, .maximum = 10.0f, .step = 1.0f});
         slider->event(v3d::event::Event("volume", context));
         slider->layout().x = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
         slider->layout().y = v3d::ui::Length(50.0f, v3d::ui::Length::Unit::Pixels);
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_SUITE(slider_test)
  **/
 BOOST_AUTO_TEST_CASE(a_value_is_clamped_and_snapped) {
     v3d::ui::component::Slider slider;
-    slider.range(10.0f, 20.0f, 2.0f);
+    slider.range({.minimum = 10.0f, .maximum = 20.0f, .step = 2.0f});
     BOOST_CHECK_EQUAL(slider.value(), 10.0f);
 
     BOOST_CHECK(slider.value(13.2f));
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(a_value_is_clamped_and_snapped) {
     BOOST_CHECK_EQUAL(slider.value(), 10.0f);
 
     slider.value(18.0f);
-    slider.range(0.0f, 12.0f, 5.0f);
+    slider.range({.minimum = 0.0f, .maximum = 12.0f, .step = 5.0f});
     // 12 is past 10 and short of 15, and a step that does not divide the range stops at the end
     BOOST_CHECK_EQUAL(slider.value(), 12.0f);
 }
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(a_value_is_clamped_and_snapped) {
  **/
 BOOST_AUTO_TEST_CASE(a_continuous_slider_keeps_any_value) {
     v3d::ui::component::Slider slider;
-    slider.range(-1.0f, 1.0f, 0.0f);
+    slider.range({.minimum = -1.0f, .maximum = 1.0f, .step = 0.0f});
     slider.value(0.37f);
     BOOST_CHECK_CLOSE(slider.value(), 0.37f, 0.001f);
     BOOST_CHECK_CLOSE(slider.fraction(), 0.685f, 0.001f);
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(the_keys_move_a_slider) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Slider> slider = fixture.placed();
     // a step of one over a range of a hundred, so a page of ten differs from a line
-    slider->range(0.0f, 100.0f, 1.0f);
+    slider->range({.minimum = 0.0f, .maximum = 100.0f, .step = 1.0f});
     fixture.ui->focus(slider);
 
     BOOST_CHECK(!fixture.keys->press("arrow_left"));
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(a_slider_is_as_tall_as_its_mark) {
     const v3d::ui::Arranger arranger([](std::string_view text) { return static_cast<float>(text.size()); }, styles);
     v3d::ui::component::Slider slider;
     const glm::vec2 natural = arranger.natural(slider,
-        v3d::type::geometry::Bound2D(glm::vec2(0.0f, 0.0f), glm::vec2(320.0f, 200.0f)));
+        v3d::type::geometry::Bound2D({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(320.0f, 200.0f)}));
     BOOST_CHECK_CLOSE(natural.x, 320.0f, 0.001f);
     BOOST_CHECK_CLOSE(natural.y, styles.base().markSize, 0.001f);
 }
@@ -268,7 +268,7 @@ BOOST_AUTO_TEST_CASE(the_thumb_is_drawn_at_the_fraction) {
  **/
 BOOST_AUTO_TEST_CASE(a_press_on_the_thumb_keeps_the_value) {
     v3d::ui::component::Slider slider;
-    slider.range(0.0f, 1.0f, 0.0f);
+    slider.range({.minimum = 0.0f, .maximum = 1.0f, .step = 0.0f});
     slider.position(glm::vec2(100.0f, 50.0f));
     slider.size(glm::vec2(200.0f, 20.0f));
     for (const float value : {0.0f, 0.2f, 0.9f, 1.0f}) {

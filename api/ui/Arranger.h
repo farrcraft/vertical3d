@@ -153,7 +153,7 @@ class Arranger final {
      * Through a reference to the base, because a menu's own size() is its item count and
      * hides the one that means how big it is.
      **/
-    static void place(Component& component, const glm::vec2& position, const glm::vec2& size);
+    static void place(Component& component, const v3d::type::geometry::Bound2D::Area& area);
 
     /**
      * The size a component is drawn at: the box layout gave it, or its natural size when it

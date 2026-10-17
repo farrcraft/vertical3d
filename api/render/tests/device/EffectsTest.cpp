@@ -224,7 +224,7 @@ BOOST_AUTO_TEST_CASE(a_fire_is_drawn_among_sprites) {
     orbit.target(glm::vec3(0.0f, 0.5f, 0.0f));
     orbit.zoom(1.6f);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(0.1f, 100.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();

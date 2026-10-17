@@ -41,13 +41,12 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     const std::string& font,
     const wchar_t* charcodes,
     unsigned int spread,
-    unsigned int atlasWidth,
-    unsigned int atlasHeight) :
+    const glm::uvec2& atlas) :
     size_(size) {
     // a one channel atlas: the glyph's distance becomes its alpha, so text goes through the
     // quad shader. Subpixel (LCD) filtering would need dual source blending or a second
     // pass, and is not a distance field
-    cache_ = boost::make_shared<v3d::font::TextureFontCache>(atlasWidth, atlasHeight, 1, logger);
+    cache_ = boost::make_shared<v3d::font::TextureFontCache>(atlas.x, atlas.y, 1, logger);
     markup_.size_ = size_;
 
     // the face is opened here rather than loaded as an asset: what it is rasterized at is this

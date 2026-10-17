@@ -35,11 +35,18 @@ class Length final {
     Unit unit() const noexcept;
 
     /**
-     * @param extent the parent's extent in this axis, which a Percent is of
-     * @param own what the component makes of this axis itself, which Auto resolves to
+     * The parent's extent in an axis, which a Percent is of, and what the component makes of
+     * that axis itself, which Auto resolves to.
+     **/
+    struct Basis {
+        float extent = 0.0f;
+        float own = 0.0f;
+    };
+
+    /**
      * @return the length in pixels
      **/
-    float resolve(float extent, float own) const noexcept;
+    float resolve(const Basis& basis) const noexcept;
 
  private:
     float value_;

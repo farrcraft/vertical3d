@@ -45,10 +45,16 @@ boost::shared_ptr<v3d::ui::component::Panel> panel(const std::string& name) {
     return component;
 }
 
-boost::shared_ptr<v3d::ui::component::Label> label(const std::string& name, const std::string& text) {
+/** A label's name, and the text it shows. **/
+struct Labelled {
+    std::string name;
+    std::string text;
+};
+
+boost::shared_ptr<v3d::ui::component::Label> label(const Labelled& spec) {
     boost::shared_ptr<v3d::ui::component::Label> component = boost::make_shared<v3d::ui::component::Label>();
-    component->name(name);
-    component->text(text);
+    component->name(spec.name);
+    component->text(spec.text);
     return component;
 }
 
@@ -61,9 +67,9 @@ BOOST_AUTO_TEST_SUITE(layout_test)
  * whatever the component makes of the axis.
  **/
 BOOST_AUTO_TEST_CASE(a_length_resolves_against_an_extent) {
-    BOOST_CHECK_CLOSE(v3d::ui::Length(12.0f, v3d::ui::Length::Unit::Pixels).resolve(400.0f, 7.0f), 12.0f, 0.001f);
-    BOOST_CHECK_CLOSE(v3d::ui::Length(25.0f, v3d::ui::Length::Unit::Percent).resolve(400.0f, 7.0f), 100.0f, 0.001f);
-    BOOST_CHECK_CLOSE(v3d::ui::Length().resolve(400.0f, 7.0f), 7.0f, 0.001f);
+    BOOST_CHECK_CLOSE(v3d::ui::Length(12.0f, v3d::ui::Length::Unit::Pixels).resolve({.extent = 400.0f, .own = 7.0f}), 12.0f, 0.001f);
+    BOOST_CHECK_CLOSE(v3d::ui::Length(25.0f, v3d::ui::Length::Unit::Percent).resolve({.extent = 400.0f, .own = 7.0f}), 100.0f, 0.001f);
+    BOOST_CHECK_CLOSE(v3d::ui::Length().resolve({.extent = 400.0f, .own = 7.0f}), 7.0f, 0.001f);
 }
 
 /**
@@ -71,7 +77,7 @@ BOOST_AUTO_TEST_CASE(a_length_resolves_against_an_extent) {
  * always grows inwards from it.
  **/
 BOOST_AUTO_TEST_CASE(an_anchor_measures_from_the_corner_it_names) {
-    const v3d::type::geometry::Bound2D parent(glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 100.0f));
+    const v3d::type::geometry::Bound2D parent({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(200.0f, 100.0f)});
     v3d::ui::Layout layout;
     layout.x = v3d::ui::Length(10.0f, v3d::ui::Length::Unit::Pixels);
     layout.y = v3d::ui::Length(20.0f, v3d::ui::Length::Unit::Pixels);
@@ -144,7 +150,7 @@ BOOST_AUTO_TEST_CASE(a_vertical_box_stacks_what_it_holds) {
     box->stretch(true);
 
     for (int index = 0; index < 3; index++) {
-        box->add(label("row" + std::to_string(index), "ab"));
+        box->add(label({.name = "row" + std::to_string(index), .text = "ab"}));
     }
 
     v3d::ui::Container container("hud", true);
@@ -175,9 +181,9 @@ BOOST_AUTO_TEST_CASE(a_hidden_row_closes_the_gap_behind_it) {
         boost::make_shared<v3d::ui::component::VerticalBox>();
     box->layout().width = v3d::ui::Length(120.0f, v3d::ui::Length::Unit::Pixels);
     box->layout().height = v3d::ui::Length(90.0f, v3d::ui::Length::Unit::Pixels);
-    const boost::shared_ptr<v3d::ui::component::Label> first = label("first", "a");
-    const boost::shared_ptr<v3d::ui::component::Label> hidden = label("hidden", "b");
-    const boost::shared_ptr<v3d::ui::component::Label> last = label("last", "c");
+    const boost::shared_ptr<v3d::ui::component::Label> first = label({.name = "first", .text = "a"});
+    const boost::shared_ptr<v3d::ui::component::Label> hidden = label({.name = "hidden", .text = "b"});
+    const boost::shared_ptr<v3d::ui::component::Label> last = label({.name = "last", .text = "c"});
     hidden->visible(false);
     box->add(first);
     box->add(hidden);
@@ -204,8 +210,8 @@ BOOST_AUTO_TEST_CASE(a_horizontal_box_runs_across) {
     box->layout().width = v3d::ui::Length(300.0f, v3d::ui::Length::Unit::Pixels);
     box->layout().height = v3d::ui::Length(40.0f, v3d::ui::Length::Unit::Pixels);
     box->spacing(6.0f);
-    const boost::shared_ptr<v3d::ui::component::Label> first = label("first", "abc");
-    const boost::shared_ptr<v3d::ui::component::Label> second = label("second", "de");
+    const boost::shared_ptr<v3d::ui::component::Label> first = label({.name = "first", .text = "abc"});
+    const boost::shared_ptr<v3d::ui::component::Label> second = label({.name = "second", .text = "de"});
     box->add(first);
     box->add(second);
 

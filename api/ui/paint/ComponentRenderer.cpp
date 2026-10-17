@@ -287,8 +287,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         return;
     }
     // the box every root component is laid out against
-    const v3d::type::geometry::Bound2D area(glm::vec2(0.0f, 0.0f),
-        glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())));
+    const v3d::type::geometry::Bound2D area({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height()))});
 
     std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>> strips;
     std::vector<boost::shared_ptr<component::menu::Bar>> bars;
@@ -333,7 +332,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     }
     const std::string text(label->text());
     const glm::vec2 size = arranger_.drawn(*label);
-    Arranger::place(*label, label->position(), size);
+    Arranger::place(*label, {.position = label->position(), .size = size});
 
     glm::vec2 pen(label->position().x, label->position().y + (base().lineHeight * 0.75f));
     if (label->layout().width.unit() == Length::Unit::Auto) {
@@ -355,7 +354,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         return;
     }
     const glm::vec2 size = arranger_.drawn(*icon);
-    Arranger::place(*icon, icon->position(), size);
+    Arranger::place(*icon, {.position = icon->position(), .size = size});
 
     const v3d::ui::Image& picture = icon->image();
     canvas->rect(icon->position(), icon->position() + size, picture.uv0, picture.uv1,
@@ -372,7 +371,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     const glm::vec2 size = arranger_.drawn(*button);
     const glm::vec2 min = button->position();
-    Arranger::place(*button, min, size);
+    Arranger::place(*button, {.position = min, .size = size});
 
     // a button that cannot be used is never lit, whatever the cursor last left on it. A
     // checked toggle keeps its highlight whether or not the cursor is on it, so a strip
@@ -406,7 +405,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     }
     const Dressing& dress = styles_.resolve(style::Resolver::Class::Panel, panel->style());
     const glm::vec2 min = panel->position();
-    plateBox(canvas, min, min + panel->size(), dress.radius, dress.borderWidth, dress.panel, dress.border);
+    plateBox(canvas, min, min + panel->size(), dress.radius, dress.borderWidth, {.inside = dress.panel, .outline = dress.border});
 }
 
 /**
@@ -419,7 +418,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     const glm::vec2 min = bar->position();
     const glm::vec2 max = min + bar->size();
-    plateBox(canvas, min, max, dress.radius, dress.borderWidth, dress.track, dress.border);
+    plateBox(canvas, min, max, dress.radius, dress.borderWidth, {.inside = dress.track, .outline = dress.border});
     if (bar->fraction() <= 0.0f) {
         return;
     }
@@ -448,7 +447,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     const glm::vec2 min = bar->position();
     const glm::vec2 max = min + bar->size();
-    plateBox(canvas, min, max, dress.radius, dress.borderWidth, dress.track, dress.border);
+    plateBox(canvas, min, max, dress.radius, dress.borderWidth, {.inside = dress.track, .outline = dress.border});
     if (!bar->scrollable()) {
         // a page showing all of its content has a thumb the length of the track, which
         // would read as a bar scrolled nowhere rather than as one with nowhere to go
@@ -479,7 +478,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     const glm::vec2 min = slider->position();
     const glm::vec2 max = min + slider->size();
-    plateBox(canvas, min, max, dress.radius, dress.borderWidth, dress.track, dress.border);
+    plateBox(canvas, min, max, dress.radius, dress.borderWidth, {.inside = dress.track, .outline = dress.border});
 
     // the thumb is a square as tall as the track, and its centre runs between the two ends
     // less half of it, so it never hangs off either
@@ -503,7 +502,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     const glm::vec2 size = arranger_.drawn(*box);
     const glm::vec2 min = box->position();
-    Arranger::place(*box, min, size);
+    Arranger::place(*box, {.position = min, .size = size});
 
     const Dressing& dress = styles_.resolve(
         round ? style::Resolver::Class::Radio : style::Resolver::Class::CheckBox, box->style());
@@ -520,8 +519,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
             canvas->circle(centre, side * markFill * 0.5f, markSides, dress.mark);
         }
     } else {
-        plateBox(canvas, corner, corner + glm::vec2(side, side), dress.radius, dress.borderWidth,
-            dress.track, dress.border);
+        plateBox(canvas, corner, corner + glm::vec2(side, side), dress.radius, dress.borderWidth, {.inside = dress.track, .outline = dress.border});
         if (box->checked()) {
             const float inset = side * (1.0f - markFill) * 0.5f;
             fillBox(canvas, corner + glm::vec2(inset, inset), corner + glm::vec2(side - inset, side - inset),
@@ -544,13 +542,13 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     }
     const glm::vec2 size = arranger_.drawn(*list);
     const glm::vec2 min = list->position();
-    Arranger::place(*list, min, size);
+    Arranger::place(*list, {.position = min, .size = size});
 
     const Dressing& dress = styles_.resolve(style::Resolver::Class::List, list->style());
     const float width = dress.borderWidth;
     const float row = dress.lineHeight;
 
-    plateBox(canvas, min, min + size, dress.radius, width, dress.panel, dress.border);
+    plateBox(canvas, min, min + size, dress.radius, width, {.inside = dress.panel, .outline = dress.border});
 
     // the row height comes from the style, and the list needs it to find the row under a
     // point, so it is stored on the list while drawing, like a box
@@ -590,11 +588,11 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     }
     const glm::vec2 size = arranger_.drawn(*box);
     const glm::vec2 min = box->position();
-    Arranger::place(*box, min, size);
+    Arranger::place(*box, {.position = min, .size = size});
 
     const Dressing& dress = styles_.resolve(style::Resolver::Class::TextBox, box->style());
     const float width = dress.borderWidth;
-    plateBox(canvas, min, min + size, dress.radius, width, dress.panel, dress.border);
+    plateBox(canvas, min, min + size, dress.radius, width, {.inside = dress.panel, .outline = dress.border});
 
     const glm::vec2 low(min.x + width + (dress.padding * 0.5f), min.y + width);
     const glm::vec2 high(min.x + size.x - width, min.y + size.y - width);
@@ -651,7 +649,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     }
     const glm::vec2 size = arranger_.drawn(*bar);
     const glm::vec2 min = bar->position();
-    Arranger::place(*bar, min, size);
+    Arranger::place(*bar, {.position = min, .size = size});
 
     const Dressing& dress = styles_.resolve(style::Resolver::Class::Tabs, bar->style());
     const float height = dress.barHeight;
@@ -666,7 +664,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         const float width = measure_(label) + dress.padding;
         const glm::vec2 corner(pen, min.y);
         const glm::vec2 extent(width, height);
-        boxes.push_back(v3d::type::geometry::Bound2D(corner, extent));
+        boxes.push_back(v3d::type::geometry::Bound2D({.position = corner, .size = extent}));
 
         const bool picked = static_cast<int>(index) == bar->selected();
         fillBox(canvas, corner, corner + extent, dress.radius, picked ? dress.highlight : dress.tab);
@@ -822,7 +820,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     }
 
     const float width = static_cast<float>(canvas->width());
-    Arranger::place(*bar, glm::vec2(0.0f, 0.0f), glm::vec2(width, base().barHeight));
+    Arranger::place(*bar, {.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(width, base().barHeight)});
 
     canvas->rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, base().barHeight), base().panel);
     // a rule along the bottom edge, so the strip reads as something over the scene rather

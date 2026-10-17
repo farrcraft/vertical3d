@@ -345,7 +345,7 @@ Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, H
         if (!number(lexer, &a)) {
             return Result::Failed;
         }
-        const std::optional<int32_t> frame = v3d::type::toInteger(a, -2000000000, 2000000000);
+        const std::optional<int32_t> frame = v3d::type::toInteger(a, {.minimum = -2000000000, .maximum = 2000000000});
         if (!frame) {
             logger_->get()->warn("RIB FrameBegin {} is not a frame number and was skipped", a);
             return Result::Handled;
@@ -632,7 +632,7 @@ bool Reader::handle(Lexer * lexer, std::string * value) {
     const Token token = lexer->peek();
     if (token.kind() == Kind::NUMBER) {
         lexer->next();
-        const std::optional<int32_t> number = v3d::type::toInteger(token.value(), -2000000000, 2000000000);
+        const std::optional<int32_t> number = v3d::type::toInteger(token.value(), {.minimum = -2000000000, .maximum = 2000000000});
         if (!number) {
             return fail("expected a light handle", token);
         }

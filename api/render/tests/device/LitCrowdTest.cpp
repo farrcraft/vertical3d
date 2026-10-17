@@ -116,7 +116,7 @@ v3d::type::camera::Camera camera(const glm::vec3& target, float zoom) {
     orbit.zoom(zoom);
     orbit.elevation(1.0471976f);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(0.1f, 100.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();

@@ -18,8 +18,10 @@ namespace {
  * An image whose every byte is a different value, so a crop that reads the wrong row or
  * the wrong column cannot land on the right answer by coincidence.
  **/
-boost::shared_ptr<v3d::image::Image> painted(unsigned int width, unsigned int height, unsigned char seed) {
-    boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(width, height, 24);
+boost::shared_ptr<v3d::image::Image> painted(const glm::uvec2& size, unsigned char seed) {
+    const unsigned int width = size.x;
+    const unsigned int height = size.y;
+    boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(glm::uvec2(width, height), 24);
     for (unsigned int i = 0; i < width * height * 3; ++i) {
         (*image)[i] = static_cast<unsigned char>(seed + i);
     }
@@ -33,7 +35,7 @@ boost::shared_ptr<v3d::log::Logger> logger() {
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(crop_cuts_the_rectangle_asked_for) {
-    const boost::shared_ptr<v3d::image::Image> source = painted(4, 4, 0);
+    const boost::shared_ptr<v3d::image::Image> source = painted(glm::uvec2(4, 4), 0);
     const boost::shared_ptr<v3d::image::Image> cut = v3d::image::crop(*source, 1, 1, 2, 2);
 
     BOOST_REQUIRE(cut);
@@ -51,7 +53,7 @@ BOOST_AUTO_TEST_CASE(crop_cuts_the_rectangle_asked_for) {
 }
 
 BOOST_AUTO_TEST_CASE(crop_of_the_whole_image_is_the_image) {
-    const boost::shared_ptr<v3d::image::Image> source = painted(5, 3, 40);
+    const boost::shared_ptr<v3d::image::Image> source = painted(glm::uvec2(5, 3), 40);
     const boost::shared_ptr<v3d::image::Image> cut = v3d::image::crop(*source, 0, 0, 5, 3);
 
     BOOST_REQUIRE(cut);
@@ -64,7 +66,7 @@ BOOST_AUTO_TEST_CASE(crop_of_the_whole_image_is_the_image) {
  * rather than an error. Clamping would return an image of a size nobody requested.
  **/
 BOOST_AUTO_TEST_CASE(crop_refuses_what_it_cannot_cut) {
-    const boost::shared_ptr<v3d::image::Image> source = painted(4, 4, 0);
+    const boost::shared_ptr<v3d::image::Image> source = painted(glm::uvec2(4, 4), 0);
 
     BOOST_CHECK(!v3d::image::crop(*source, 3, 0, 2, 1));
     BOOST_CHECK(!v3d::image::crop(*source, 0, 3, 1, 2));
@@ -83,11 +85,11 @@ BOOST_AUTO_TEST_CASE(crop_refuses_what_it_cannot_cut) {
  **/
 BOOST_AUTO_TEST_CASE(crop_is_the_inverse_of_an_atlas_blit) {
     v3d::image::TextureAtlas atlas(64, 64, 3, logger());
-    const boost::shared_ptr<v3d::image::Image> sprite = painted(8, 6, 17);
+    const boost::shared_ptr<v3d::image::Image> sprite = painted(glm::uvec2(8, 6), 17);
 
     const glm::ivec4 region = atlas.region(8, 6);
     BOOST_REQUIRE(region.x >= 0);
-    atlas.region(region.x, region.y, 8, 6, sprite->data(), 8 * 3);
+    atlas.region(region, sprite->data(), 8 * 3);
 
     const boost::shared_ptr<v3d::image::Image> back =
         v3d::image::crop(*atlas.image(), region.x, region.y, 8, 6);

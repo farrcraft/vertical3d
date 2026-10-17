@@ -24,7 +24,7 @@ const int VIEWPORT_HEIGHT = 600;
 v3d::type::camera::Camera applied(const v3d::type::camera::Isometric& orbit) {
     v3d::type::camera::Camera camera;
     camera.profile().pixelAspect(static_cast<float>(VIEWPORT_WIDTH) / static_cast<float>(VIEWPORT_HEIGHT));
-    camera.profile().clipping(0.1f, 200.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 200.0f));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(isometriccamera_apply_writes_the_profile_test) {
 
     v3d::type::camera::Camera camera;
     camera.orthographic(false);
-    camera.profile().clipping(0.1f, 200.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 200.0f));
     orbit.apply(&camera);
 
     BOOST_CHECK_EQUAL(camera.orthographic(), true);

@@ -158,9 +158,19 @@ class Scrollbar : public Component {
 float thumbLength(float track, float shown, float whole) noexcept;
 
 /**
+ * A scrollbar's track and its thumb's length, and the offset into the span it shows.
+ **/
+struct Thumb {
+    float track = 0.0f;
+    float length = 0.0f;
+    float offset = 0.0f;
+    float span = 0.0f;
+};
+
+/**
  * Where along the track a thumb of that length starts, for an offset into a span.
  **/
-float thumbStart(float track, float length, float offset, float span) noexcept;
+float thumbStart(const Thumb& thumb) noexcept;
 
 /**
  * The offset a drag to a point along the track asks for. The cursor holds the middle of the

@@ -265,9 +265,17 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_orientation) {
         put16(out, value);
         put16(out, value >> 16);
     };
+    // a palette, which may be empty, and the bytes of the top and bottom rows' one pixel
+    struct Pixels {
+        std::vector<unsigned char> palette;
+        std::vector<unsigned char> top;
+        std::vector<unsigned char> bottom;
+    };
     // one pixel wide and two high, so every row is a single pixel padded to four bytes
-    const auto file = [&](int bits, bool bottomUp, const std::vector<unsigned char>& palette,
-        const std::vector<unsigned char>& top, const std::vector<unsigned char>& bottom) {
+    const auto file = [&](int bits, bool bottomUp, const Pixels& pixels) {
+        const std::vector<unsigned char>& palette = pixels.palette;
+        const std::vector<unsigned char>& top = pixels.top;
+        const std::vector<unsigned char>& bottom = pixels.bottom;
         std::vector<unsigned char> out;
         const uint32_t offset = 14 + 40 + static_cast<uint32_t>(palette.size());
         put16(&out, 19778);
@@ -301,8 +309,8 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_orientation) {
         for (const int bits : { 24, 8 }) {
             BOOST_TEST_CONTEXT((bottomUp ? "bottom up" : "top down") << " at " << bits << " bits") {
                 const std::vector<unsigned char> bytes = bits == 24
-                    ? file(24, bottomUp, {}, red24, green24)
-                    : file(8, bottomUp, palette, { 0 }, { 1 });
+                    ? file(24, bottomUp, {.palette = {}, .top = red24, .bottom = green24})
+                    : file(8, bottomUp, {.palette = palette, .top = { 0 }, .bottom = { 1 }});
                 const boost::shared_ptr<v3d::image::Image> image = factory.read(bytes.data(), bytes.size(), "bmp");
                 BOOST_REQUIRE(image);
                 BOOST_CHECK_EQUAL((*image)[0], 0xFF);

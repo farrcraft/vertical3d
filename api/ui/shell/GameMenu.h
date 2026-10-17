@@ -49,14 +49,19 @@ class GameMenu {
     static const char* const defaultContainer;
     static const char* const defaultMenu;
 
+    /** The container that is shown and hidden, and the menu inside it that navigation drives. **/
+    struct Names {
+        std::string container = defaultContainer;
+        std::string menu = defaultMenu;
+    };
+
     /**
      * @param engine the ui the container is looked up in
      * @param suspend what to do to the game as the menu opens and closes
-     * @param container the name of the container that is shown and hidden
-     * @param menu the name of the menu inside it that navigation drives
+     * @param names the container that is shown and hidden, and the menu inside it that
+     *        navigation drives
      **/
-    GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend,
-        const std::string& container = defaultContainer, const std::string& menu = defaultMenu);
+    GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend, const Names& names = Names());
 
     /**
      * Register the menu's commands: "ui::showGameMenu" toggles it, and "ui::menuPrevious",

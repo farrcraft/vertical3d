@@ -519,7 +519,7 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
     v3d::test::Headless headless(colourFormat, width, height);
     const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
 
-    const boost::shared_ptr<v3d::image::Image> albedo = boost::make_shared<v3d::image::Image>(4, 4, 32);
+    const boost::shared_ptr<v3d::image::Image> albedo = boost::make_shared<v3d::image::Image>(glm::uvec2(4, 4), 32);
     for (std::size_t texel = 0; texel < std::size_t{16}; texel++) {
         unsigned char* at = albedo->data() + (texel * 4);
         at[0] = 0xFF;

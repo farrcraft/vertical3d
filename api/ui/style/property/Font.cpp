@@ -9,7 +9,7 @@
 
 namespace v3d::ui::style::property {
 
-Font::Font(const std::string& name, const std::string& src) : Property(name), source_(src), italics_(false), bold_(false), size_(0) {
+Font::Font(const Named& named) : Property(named.name), source_(named.source), italics_(false), bold_(false), size_(0) {
 }
 
 Font::~Font() {

@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(camera_depth_range_test) {
     // camera looks along +z, so both points are in front of it
     v3d::type::camera::Camera perspective;
     perspective.orthographic(false);
-    perspective.profile().clipping(1.0f, 100.0f);
+    perspective.profile().clipping(glm::vec2(1.0f, 100.0f));
     perspective.profile().eye(glm::vec3(0.0f, 0.0f, 0.0f));
     perspective.createProjection();
     perspective.createView();
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(camera_depth_range_test) {
     BOOST_CHECK_CLOSE(far[2] / far[3], 1.0f, 0.01f);
 
     v3d::type::camera::Camera ortho;
-    ortho.profile().clipping(1.0f, 100.0f);
+    ortho.profile().clipping(glm::vec2(1.0f, 100.0f));
     ortho.profile().eye(glm::vec3(0.0f, 0.0f, 0.0f));
     ortho.createProjection();
     ortho.createView();
@@ -386,7 +386,7 @@ BOOST_AUTO_TEST_CASE(camera_ortho_factor_test) {
     BOOST_CHECK_EQUAL(camera.orthoFactorHorizontal(), 0.0f);
     BOOST_CHECK_EQUAL(camera.orthoFactorVertical(), 0.0f);
 
-    camera.profile().size(640, 480);
+    camera.profile().size(glm::uvec2(640, 480));
 
     // the horizontal factor carries the pixel aspect ratio and the vertical one does not
     BOOST_CHECK_CLOSE(camera.orthoFactorHorizontal(), (1.0f * 2.0f * 1.33f) / 640.0f, 0.01f);

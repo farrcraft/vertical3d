@@ -35,8 +35,9 @@ void SelectList::items(const std::vector<std::string>& rows) {
     offset(offset_);
 }
 
-void SelectList::widest(float width, std::uint64_t measure) noexcept {
-    widest_ = width;
+void SelectList::widest(const Measured& measured) noexcept {
+    const std::uint64_t measure = measured.measure;
+    widest_ = measured.width;
     measured_ = measure;
 }
 

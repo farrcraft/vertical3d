@@ -24,7 +24,7 @@ namespace {
  * Two by two texels: red and green across the top, blue and white across the bottom.
  **/
 v3d::render::offline::Texture quartered() {
-    v3d::image::Image image(2, 2, 24);
+    v3d::image::Image image(glm::uvec2(2, 2), 24);
     const unsigned char texels[12] = {
         255, 0, 0,   0, 255, 0,
         0, 0, 255,   255, 255, 255
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(texture_periodic_wrap_test) {
  * A grey image is the same value in all three channels.
  **/
 BOOST_AUTO_TEST_CASE(texture_grey_test) {
-    v3d::image::Image image(1, 1, 8);
+    v3d::image::Image image(glm::uvec2(1, 1), 8);
     image[0] = 51;
     const v3d::render::offline::Texture texture(image);
     same(texture.sample(0.5f, 0.5f), glm::vec3(0.2f));

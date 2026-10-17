@@ -63,7 +63,7 @@ void Arranger::walk(v3d::render::realtime::canvas::Canvas* canvas, const boost::
     if (!component || !component->visible()) {
         return;
     }
-    place(*component, bounds.position(), bounds.size());
+    place(*component, {.position = bounds.position(), .size = bounds.size()});
 
     if (paint) {
         paint(canvas, component);
@@ -125,7 +125,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
             if (component.layout().width.unit() == Length::Unit::Auto) {
                 return glm::vec2(line, styles_.base().lineHeight);
             }
-            const float width = component.layout().width.resolve(room.size().x, line);
+            const float width = component.layout().width.resolve({.extent = room.size().x, .own = line});
             const std::size_t rows = paint::wrap(label->text(), width, measure_).size();
             return glm::vec2(line,
                 styles_.base().lineHeight * static_cast<float>(std::max<std::size_t>(rows, 1)));
@@ -174,7 +174,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
                 for (const std::string& item : list->items()) {
                     widest = std::max(widest, measure_(item));
                 }
-                list->widest(widest, serial_);
+                list->widest({.width = widest, .measure = serial_});
             }
             return glm::vec2(
                 widest + styles_.resolve(style::Resolver::Class::List, component.style()).padding,
@@ -241,7 +241,7 @@ void Arranger::arrange(const component::Box& box, const v3d::type::geometry::Bou
         if (!child || !child->visible()) {
             // a hidden row leaves no gap behind it, so a list of however many rows there are
             // reads as one
-            boxes->push_back(v3d::type::geometry::Bound2D(bounds.position(), glm::vec2(0.0f, 0.0f)));
+            boxes->push_back(v3d::type::geometry::Bound2D({.position = bounds.position(), .size = glm::vec2(0.0f, 0.0f)}));
             continue;
         }
         const Layout& layout = child->layout();
@@ -251,16 +251,16 @@ void Arranger::arrange(const component::Box& box, const v3d::type::geometry::Bou
             if (box.stretch()) {
                 size.x = extent.x;
             }
-            corner = glm::vec2(bounds.position().x + layout.x.resolve(extent.x, 0.0f), pen);
+            corner = glm::vec2(bounds.position().x + layout.x.resolve({.extent = extent.x, .own = 0.0f}), pen);
             pen += size.y + box.spacing();
         } else {
             if (box.stretch()) {
                 size.y = extent.y;
             }
-            corner = glm::vec2(pen, bounds.position().y + layout.y.resolve(extent.y, 0.0f));
+            corner = glm::vec2(pen, bounds.position().y + layout.y.resolve({.extent = extent.y, .own = 0.0f}));
             pen += size.x + box.spacing();
         }
-        boxes->push_back(v3d::type::geometry::Bound2D(corner, size));
+        boxes->push_back(v3d::type::geometry::Bound2D({.position = corner, .size = size}));
     }
 }
 
@@ -275,9 +275,9 @@ glm::vec2 Arranger::box(const Component& component, const v3d::type::geometry::B
     }
     const bool vertical = component.type() == component::Type::VerticalBox;
     const Layout& layout = component.layout();
-    const glm::vec2 line(layout.width.resolve(room.size().x, room.size().x),
-        layout.height.resolve(room.size().y, room.size().y));
-    const float across = wrapped(*flow, v3d::type::geometry::Bound2D(room.position(), line), nullptr);
+    const glm::vec2 line(layout.width.resolve({.extent = room.size().x, .own = room.size().x}),
+        layout.height.resolve({.extent = room.size().y, .own = room.size().y}));
+    const float across = wrapped(*flow, v3d::type::geometry::Bound2D({.position = room.position(), .size = line}), nullptr);
     return vertical ? glm::vec2(across, line.y) : glm::vec2(line.x, across);
 }
 
@@ -302,7 +302,7 @@ float Arranger::wrapped(const component::Box& box, const v3d::type::geometry::Bo
     for (const boost::shared_ptr<Component>& child : box.children()) {
         if (!child || !child->visible()) {
             if (boxes != nullptr) {
-                boxes->push_back(v3d::type::geometry::Bound2D(bounds.position(), glm::vec2(0.0f, 0.0f)));
+                boxes->push_back(v3d::type::geometry::Bound2D({.position = bounds.position(), .size = glm::vec2(0.0f, 0.0f)}));
             }
             continue;
         }
@@ -318,7 +318,7 @@ float Arranger::wrapped(const component::Box& box, const v3d::type::geometry::Bo
         corner[along] = pen;
         corner[across] = line;
         if (boxes != nullptr) {
-            boxes->push_back(v3d::type::geometry::Bound2D(corner, size));
+            boxes->push_back(v3d::type::geometry::Bound2D({.position = corner, .size = size}));
         }
         pen += size[along] + box.spacing();
         deepest = std::max(deepest, size[across]);
@@ -386,8 +386,7 @@ v3d::type::geometry::Bound2D Arranger::page(const component::TabBar& bar) const 
     const float height = styles_.resolve(style::Resolver::Class::Tabs, bar.style()).barHeight;
     const glm::vec2 min = bar.position();
     const glm::vec2 size = bar.size();
-    return v3d::type::geometry::Bound2D(glm::vec2(min.x, min.y + height + ruleWidth),
-        glm::vec2(size.x, std::max(size.y - height - ruleWidth, 0.0f)));
+    return v3d::type::geometry::Bound2D({.position = glm::vec2(min.x, min.y + height + ruleWidth), .size = glm::vec2(size.x, std::max(size.y - height - ruleWidth, 0.0f))});
 }
 
 /**
@@ -416,7 +415,9 @@ float Arranger::widest(const component::Toolbar& bar) const {
 
 /**
  **/
-void Arranger::place(Component& component, const glm::vec2& position, const glm::vec2& size) {
+void Arranger::place(Component& component, const v3d::type::geometry::Bound2D::Area& area) {
+    const glm::vec2& position = area.position;
+    const glm::vec2& size = area.size;
     component.position(position);
     component.size(size);
 }
@@ -440,7 +441,7 @@ void Arranger::strip(component::Toolbar& bar, const glm::vec2& corner, const glm
     const glm::vec2 size = row
         ? glm::vec2(room.x - corner.x, styles_.base().barHeight)
         : glm::vec2(widest(bar) + styles_.base().padding, room.y - corner.y);
-    place(bar, corner, size);
+    place(bar, {.position = corner, .size = size});
 
     glm::vec2 pen = corner;
     for (std::size_t index = 0; index < bar.count(); index++) {
@@ -455,7 +456,7 @@ void Arranger::strip(component::Toolbar& bar, const glm::vec2& corner, const glm
         const glm::vec2 box = row
             ? glm::vec2(extent(*button) + styles_.base().padding, size.y)
             : glm::vec2(size.x, styles_.base().lineHeight);
-        place(*button, pen, box);
+        place(*button, {.position = pen, .size = box});
         pen += row ? glm::vec2(box.x, 0.0f) : glm::vec2(0.0f, box.y);
     }
 }
@@ -484,13 +485,13 @@ void Arranger::panel(component::menu::Menu& menu, const glm::vec2& origin, const
     // so the flyouts of a bar's last menu stay inside the window
     glm::vec2 corner(std::min(origin.x, room.x - size.x), std::min(origin.y, room.y - size.y));
     corner = glm::vec2(std::max(corner.x, 0.0f), std::max(corner.y, 0.0f));
-    place(menu, corner, size);
+    place(menu, {.position = corner, .size = size});
 
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = menu[index];
         if (item) {
             const float top = corner.y + base.panelPadding + (base.lineHeight * static_cast<float>(index));
-            place(*item, glm::vec2(corner.x, top), glm::vec2(size.x, base.lineHeight));
+            place(*item, {.position = glm::vec2(corner.x, top), .size = glm::vec2(size.x, base.lineHeight)});
         }
     }
 }
@@ -511,13 +512,13 @@ void Arranger::centred(component::menu::Menu& level, const glm::vec2& room) cons
     const glm::vec2 size(widest + (base.padding * 2.0f),
         (base.lineHeight * static_cast<float>(count)) + (base.padding * 2.0f));
     const glm::vec2 corner((room - size) * 0.5f);
-    place(level, corner, size);
+    place(level, {.position = corner, .size = size});
 
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = level[index];
         if (item) {
             const float top = corner.y + base.padding + (base.lineHeight * static_cast<float>(index));
-            place(*item, glm::vec2(corner.x, top), glm::vec2(size.x, base.lineHeight));
+            place(*item, {.position = glm::vec2(corner.x, top), .size = glm::vec2(size.x, base.lineHeight)});
         }
     }
 }
@@ -530,7 +531,7 @@ v3d::type::geometry::Bound2D Arranger::lineRoom(bool vertical, const v3d::type::
     // itself asks for nothing. Across the line each is offered the whole of it, which
     // stretch() then enforces
     const glm::vec2 extent = bounds.size();
-    return v3d::type::geometry::Bound2D(bounds.position(), vertical ? glm::vec2(extent.x, 0.0f) : glm::vec2(0.0f, extent.y));
+    return v3d::type::geometry::Bound2D({.position = bounds.position(), .size = vertical ? glm::vec2(extent.x, 0.0f) : glm::vec2(0.0f, extent.y)});
 }
 
 /**
@@ -538,7 +539,7 @@ v3d::type::geometry::Bound2D Arranger::lineRoom(bool vertical, const v3d::type::
 glm::vec2 Arranger::childSize(Component& child, const v3d::type::geometry::Bound2D& room, const glm::vec2& extent) const {
     const glm::vec2 own = natural(child, room);
     const Layout& layout = child.layout();
-    return glm::vec2(layout.width.resolve(extent.x, own.x), layout.height.resolve(extent.y, own.y));
+    return glm::vec2(layout.width.resolve({.extent = extent.x, .own = own.x}), layout.height.resolve({.extent = extent.y, .own = own.y}));
 }
 
 };  // namespace v3d::ui

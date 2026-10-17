@@ -281,7 +281,7 @@ void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statis
     layer->begin(&screen_->canvas(), tools);
     // a line more for each span of the frame that was timed
     const float tall = 154.0f + (26.0f * static_cast<float>(statistics.spans.size()));
-    if (layer->window(debugTitle, glm::vec2(20.0f, 20.0f), glm::vec2(260.0f, tall), 0.85f)) {
+    if (layer->window(debugTitle, {.position = glm::vec2(20.0f, 20.0f), .size = glm::vec2(260.0f, tall)}, 0.85f)) {
         layer->text(std::string("Voxel ") + VOXEL_VERSION);
         // the loop already keeps a rolling mean, so nothing here averages anything
         layer->text(std::to_string(statistics.mean / 1000000U) + " ms");

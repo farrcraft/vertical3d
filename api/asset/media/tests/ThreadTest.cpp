@@ -39,7 +39,7 @@ const char* const ROOT = "data_out/threads";
  **/
 boost::shared_ptr<v3d::image::Image> gradient() {
     const uint32_t size = 256;
-    boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(size, size, 24);
+    boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(glm::uvec2(size, size), 24);
     unsigned char* pixels = image->data();
     for (uint32_t y = 0; y < size; y++) {
         for (uint32_t x = 0; x < size; x++) {

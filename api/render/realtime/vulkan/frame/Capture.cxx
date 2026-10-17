@@ -125,7 +125,7 @@ std::vector<float> Capture::depth() const {
  **/
 boost::shared_ptr<image::Image> Capture::convert(const unsigned char* pixels, uint32_t width, uint32_t height,
     VkFormat format) {
-    boost::shared_ptr<image::Image> img = boost::make_shared<image::Image>(width, height, 32);
+    boost::shared_ptr<image::Image> img = boost::make_shared<image::Image>(glm::uvec2(width, height), 32);
 
     const bool swizzle = format == VK_FORMAT_B8G8R8A8_UNORM || format == VK_FORMAT_B8G8R8A8_SRGB;
 

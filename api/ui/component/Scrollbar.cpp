@@ -100,7 +100,7 @@ float Scrollbar::thumb() const noexcept {
 }
 
 float Scrollbar::thumbStart() const noexcept {
-    return component::thumbStart(track(), thumb(), offset(), maximum());
+    return component::thumbStart({.track = track(), .length = thumb(), .offset = offset(), .span = maximum()});
 }
 
 void Scrollbar::drag(const glm::vec2& point) {
@@ -119,7 +119,11 @@ float thumbLength(float track, float shown, float whole) noexcept {
     return std::clamp(track * (shown / whole), std::min(Scrollbar::minimumThumb, track), track);
 }
 
-float thumbStart(float track, float length, float offset, float span) noexcept {
+float thumbStart(const Thumb& thumb) noexcept {
+    const float track = thumb.track;
+    const float length = thumb.length;
+    const float offset = thumb.offset;
+    const float span = thumb.span;
     const float room = track - length;
     if (room <= 0.0f || span <= 0.0f) {
         return 0.0f;

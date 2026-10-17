@@ -30,9 +30,18 @@ class Slider : public Component {
 
     /**
      * The values the slider runs between, and the step it moves in. A step of zero or less is
-     * continuous. The value is clamped and snapped to the new range.
+     * continuous.
      **/
-    void range(float minimum, float maximum, float step);
+    struct Range {
+        float minimum = 0.0f;
+        float maximum = 1.0f;
+        float step = 0.0f;
+    };
+
+    /**
+     * The value is clamped and snapped to the new range.
+     **/
+    void range(const Range& range);
     float minimum() const noexcept;
     float maximum() const noexcept;
     float step() const noexcept;

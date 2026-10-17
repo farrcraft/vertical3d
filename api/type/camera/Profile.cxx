@@ -26,20 +26,19 @@ Profile::Profile(const std::string& name) :
     far_(100.0f),
     fov_(60.0f),
     options_(OPTION_ORTHOGRAPHIC),
-size_{ 0, 0 },
+    size_(),
     // glm leaves the quaternion uninitialized, and Camera::createView casts it before
     // anything else has a chance to set it
 rotation_(1.0f, 0.0f, 0.0f, 0.0f),
 basisValid_(false) {
 }
 
-Profile::Profile(const std::string& name, const glm::vec3& eye, const glm::vec3& up,
-    const glm::vec3& right, const glm::vec3& direction) :
+Profile::Profile(const std::string& name, const Frame& frame) :
     name_(name),
-    eye_(eye),
-    direction_(direction),
-    right_(right),
-    up_(up),
+    eye_(frame.eye),
+    direction_(frame.direction),
+    right_(frame.right),
+    up_(frame.up),
     hand_(Hand::UpCrossDirection),
     orthoZoom_(1.0f),
     pixelAspect_(1.33f),
@@ -47,7 +46,7 @@ Profile::Profile(const std::string& name, const glm::vec3& eye, const glm::vec3&
     far_(100.0f),
     fov_(60.0f),
     options_(OPTION_ORTHOGRAPHIC),
-size_{ 0, 0 },
+    size_(),
     rotation_(1.0f, 0.0f, 0.0f, 0.0f),
     basisValid_(false) {
 }
@@ -115,9 +114,9 @@ void Profile::name(const std::string& name) {
     name_ = name;
 }
 
-void Profile::clipping(float near, float far) {
-    near_ = near;
-    far_ = far;
+void Profile::clipping(const glm::vec2& planes) {
+    near_ = planes.x;
+    far_ = planes.y;
 }
 
 void Profile::fov(float fov) {
@@ -194,9 +193,9 @@ glm::mat4x4 Profile::orientation() const {
     return basisValid_ ? basis_ : glm::mat4_cast(rotation_);
 }
 
-void Profile::size(unsigned int width, unsigned int height) {
-    size_[0] = width;
-    size_[1] = height;
+void Profile::size(const glm::uvec2& size) {
+    size_[0] = size.x;
+    size_[1] = size.y;
 }
 
 void Profile::lookat(const glm::vec3& center) {

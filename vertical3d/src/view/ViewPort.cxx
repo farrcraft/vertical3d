@@ -42,7 +42,7 @@ void ViewPort::resize(const glm::vec4& region) {
 
     const unsigned int width = static_cast<unsigned int>(region.z > 0.0f ? region.z : 0.0f);
     const unsigned int height = static_cast<unsigned int>(region.w > 0.0f ? region.w : 0.0f);
-    camera_->profile().size(width, height);
+    camera_->profile().size(glm::uvec2(width, height));
     if (height > 0) {
         camera_->profile().pixelAspect(static_cast<float>(width) / static_cast<float>(height));
     }

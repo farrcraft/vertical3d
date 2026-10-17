@@ -52,14 +52,20 @@ struct Fixture final {
     /**
      * A button labelled and bound to "test::<name>", or to nothing when the name is empty.
      **/
-    boost::shared_ptr<v3d::ui::component::Button> button(const std::string& label, const std::string& name,
-        bool toggle) {
+    /** What a button shows, the name of the command it is bound to, and whether it toggles. **/
+    struct Labelled {
+        std::string label;
+        std::string name;
+        bool toggle = false;
+    };
+
+    boost::shared_ptr<v3d::ui::component::Button> button(const Labelled& spec) {
         boost::shared_ptr<v3d::ui::component::Button> made =
             boost::make_shared<v3d::ui::component::Button>();
-        made->label(label);
-        made->toggle(toggle);
-        if (!name.empty()) {
-            made->event(v3d::event::Event(name, context));
+        made->label(spec.label);
+        made->toggle(spec.toggle);
+        if (!spec.name.empty()) {
+            made->event(v3d::event::Event(spec.name, context));
         }
         return made;
     }
@@ -70,9 +76,9 @@ struct Fixture final {
     boost::shared_ptr<v3d::ui::component::Toolbar> bar(v3d::ui::component::Toolbar::Edge edge) {
         boost::shared_ptr<v3d::ui::component::Toolbar> made =
             boost::make_shared<v3d::ui::component::Toolbar>(dispatcher, edge);
-        made->add(button("Object", "object", true));
-        made->add(button("Translate", "translate", true));
-        made->add(button("Go", "", false));
+        made->add(button({.label = "Object", .name = "object", .toggle = true}));
+        made->add(button({.label = "Translate", .name = "translate", .toggle = true}));
+        made->add(button({.label = "Go", .name = "", .toggle = false}));
         return made;
     }
 

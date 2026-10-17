@@ -11,10 +11,10 @@
 #include <boost/test/unit_test.hpp>
 
 BOOST_AUTO_TEST_CASE(image_test) {
-    v3d::image::Image img24(2, 4, 24);
+    v3d::image::Image img24(glm::uvec2(2, 4), 24);
     BOOST_CHECK_EQUAL((img24.format() == v3d::image::Image::Format::RGB), true);
 
-    v3d::image::Image img32(1, 5, 32);
+    v3d::image::Image img32(glm::uvec2(1, 5), 32);
     BOOST_CHECK_EQUAL((img32.format() == v3d::image::Image::Format::RGBA), true);
 
     BOOST_CHECK_EQUAL(img24.width(), 2u);
@@ -22,7 +22,7 @@ BOOST_AUTO_TEST_CASE(image_test) {
     BOOST_CHECK_EQUAL(img24.bpp(), 24u);
 
     // an image's shape is what it was made with, since the buffer was sized for it
-    v3d::image::Image img(2, 2, 24);
+    v3d::image::Image img(glm::uvec2(2, 2), 24);
 
     // pixel data starts zeroed
     BOOST_CHECK_EQUAL(img[3], 0);
@@ -51,12 +51,12 @@ static_assert(!std::is_copy_assignable<v3d::image::Image>::value,
  **/
 BOOST_AUTO_TEST_CASE(image_format_follows_depth_test) {
     // a texture atlas packed at depth 1 is this
-    const v3d::image::Image grey(4, 4, 8);
+    const v3d::image::Image grey(glm::uvec2(4, 4), 8);
     BOOST_CHECK((grey.format() == v3d::image::Image::Format::Grey));
 
-    const v3d::image::Image colour(2, 2, 24);
+    const v3d::image::Image colour(glm::uvec2(2, 2), 24);
     BOOST_CHECK((colour.format() == v3d::image::Image::Format::RGB));
-    const v3d::image::Image alpha(2, 2, 32);
+    const v3d::image::Image alpha(glm::uvec2(2, 2), 32);
     BOOST_CHECK((alpha.format() == v3d::image::Image::Format::RGBA));
 }
 
@@ -67,12 +67,12 @@ BOOST_AUTO_TEST_CASE(image_format_follows_depth_test) {
 BOOST_AUTO_TEST_CASE(image_swap_red_blue_test) {
     const unsigned char pixels[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
     unsigned char swapped[8] = {};
-    v3d::image::swapRedBlue(pixels, swapped, 2, 4);
+    v3d::image::swapRedBlue(pixels, swapped, {.pixels = 2, .channels = 4});
     const unsigned char expected[8] = { 3, 2, 1, 4, 7, 6, 5, 8 };
     BOOST_CHECK_EQUAL_COLLECTIONS(swapped, swapped + 8, expected, expected + 8);
 
     unsigned char inPlace[6] = { 1, 2, 3, 4, 5, 6 };
-    v3d::image::swapRedBlue(inPlace, inPlace, 2, 3);
+    v3d::image::swapRedBlue(inPlace, inPlace, {.pixels = 2, .channels = 3});
     const unsigned char turned[6] = { 3, 2, 1, 6, 5, 4 };
     BOOST_CHECK_EQUAL_COLLECTIONS(inPlace, inPlace + 6, turned, turned + 6);
 }

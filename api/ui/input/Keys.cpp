@@ -24,6 +24,12 @@ namespace v3d::ui::input {
 
 namespace {
 
+/** The key that steps towards the end, and the one that steps towards the start. **/
+struct Arrows {
+    std::string_view along;
+    std::string_view back;
+};
+
 /**
  * Where a key moves a cursor through count things, starting from where.
  *
@@ -32,10 +38,11 @@ namespace {
  * tabs laid out across. Neither wraps - running off the end of a list is how a keyboard
  * reaches the end of it, and a wrap would take the user back to the top instead.
  *
- * @param along the key that steps towards the end, and back the one that steps towards the start
  * @return where to move to, or `where` when the key moves nothing
  **/
-int step(std::string_view key, int where, int count, std::string_view along, std::string_view back) {
+int step(std::string_view key, int where, int count, const Arrows& arrows) {
+    const std::string_view along = arrows.along;
+    const std::string_view back = arrows.back;
     if (count <= 0) {
         return where;
     }
@@ -259,7 +266,7 @@ bool Keys::choose(const boost::shared_ptr<component::SelectList>& list, std::str
     }
 
     const int was = list->selected();
-    const int now = step(key, was, static_cast<int>(list->items().size()), "arrow_down", "arrow_up");
+    const int now = step(key, was, static_cast<int>(list->items().size()), {.along = "arrow_down", .back = "arrow_up"});
     if (now == was) {
         return false;
     }
@@ -275,7 +282,7 @@ bool Keys::turn(const boost::shared_ptr<component::TabBar>& bar, std::string_vie
         return false;
     }
     const int was = bar->selected();
-    const int now = step(key, was, static_cast<int>(bar->pages().size()), "arrow_right", "arrow_left");
+    const int now = step(key, was, static_cast<int>(bar->pages().size()), {.along = "arrow_right", .back = "arrow_left"});
     if (now == was) {
         // a bar carries no command, so a return on one has nothing to send and nothing to
         // take - which leaves the return for whatever the page holds

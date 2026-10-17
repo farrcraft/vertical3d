@@ -11,11 +11,20 @@
 namespace v3d::type {
 
 /**
+ * The least and greatest values a conversion accepts, both inclusive.
+ **/
+template <typename T>
+struct Range {
+    T minimum{};
+    T maximum{};
+};
+
+/**
  * Makes a float read from a file, the command line or a caller into an unsigned count.
  *
  * The value is refused when it is NaN, when it is infinite, and when it lies below minimum or
  * above maximum. The range is tested on the value as given, before its fraction is dropped, so
- * 2.5 is refused when maximum is 2. A value that passes is truncated toward zero. A range with
+ * 2.5 is refused when the maximum is 2. A value that passes is truncated toward zero. A range with
  * minimum above maximum refuses every value.
  *
  * Converting a float outside an integer type's range is undefined behaviour. Every value this
@@ -23,10 +32,10 @@ namespace v3d::type {
  *
  * @return the count, or nothing when the value is refused
  **/
-std::optional<uint32_t> toCount(float value, uint32_t minimum, uint32_t maximum) noexcept;
+std::optional<uint32_t> toCount(float value, const Range<uint32_t>& range) noexcept;
 
 /**
- * The same as toCount(value, 0, maximum).
+ * The same as toCount() with a minimum of 0.
  **/
 std::optional<uint32_t> toCount(float value, uint32_t maximum) noexcept;
 
@@ -40,6 +49,6 @@ std::optional<uint32_t> toCount(float value, uint32_t maximum) noexcept;
  *
  * @return the integer, or nothing when the value is refused
  **/
-std::optional<int32_t> toInteger(float value, int32_t minimum, int32_t maximum) noexcept;
+std::optional<int32_t> toInteger(float value, const Range<int32_t>& range) noexcept;
 
 };  // namespace v3d::type

@@ -41,7 +41,7 @@ TextureAtlas::TextureAtlas(unsigned int width, unsigned int height, unsigned int
     // 1 pixel border
     nodes_.push_back(glm::ivec3(1, 1, width - 2));
 
-    image_.reset(new Image(width, height, static_cast<uint8_t>(depth * 8)));
+    image_.reset(new Image(glm::uvec2(width, height), static_cast<uint8_t>(depth * 8)));
 }
 
 void TextureAtlas::write(const std::string& filename) {
@@ -83,7 +83,7 @@ glm::ivec4 TextureAtlas::allocate(unsigned int width, unsigned int height) {
     int bestIndex = -1;
     glm::ivec4 region(0, 0, width, height);
     for (unsigned int i = 0; i < nodes_.size(); ++i) {
-        int y = fit(i, width, height);
+        int y = fit(i, glm::uvec2(width, height));
         if (y >= 0) {
             node = nodes_[i];
             if (((y + static_cast<int>(height)) < bestHeight) ||
@@ -135,7 +135,9 @@ glm::ivec4 TextureAtlas::allocate(unsigned int width, unsigned int height) {
 
 /**
  **/
-int TextureAtlas::fit(unsigned int index, unsigned int width, unsigned int height) {
+int TextureAtlas::fit(unsigned int index, const glm::uvec2& size) {
+    const unsigned int width = size.x;
+    const unsigned int height = size.y;
     glm::ivec3 node = nodes_[index];
     int x = node.x;
     if ((x + width) > (width_ - 1)) {
@@ -166,7 +168,11 @@ void TextureAtlas::merge() {
     }
 }
 
-void TextureAtlas::region(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char* data, unsigned int stride) {
+void TextureAtlas::region(const glm::ivec4& area, unsigned char* data, unsigned int stride) {
+    const unsigned int x = static_cast<unsigned int>(area.x);
+    const unsigned int y = static_cast<unsigned int>(area.y);
+    const unsigned int width = static_cast<unsigned int>(area.z);
+    const unsigned int height = static_cast<unsigned int>(area.w);
     assert(x > 0);
     assert(y > 0);
     assert(x < (width_ - 1));

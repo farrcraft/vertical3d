@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(textureatlas_regions_do_not_touch) {
     for (unsigned int i = 0; i < 12; ++i) {
         const glm::ivec4 region = atlas.region(side, side);
         BOOST_REQUIRE(region.x >= 0);
-        atlas.region(region.x, region.y, side, side, filled.data(), side);
+        atlas.region(region, filled.data(), side);
         placed.push_back(region);
     }
 

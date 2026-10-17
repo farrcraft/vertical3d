@@ -173,7 +173,7 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
     orbit.target(glm::vec3(0.0f));
     orbit.zoom(3.0f);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(0.1f, 100.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
@@ -263,7 +263,7 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
     orbit.elevation(1.0471976f);
     orbit.hand(hand);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(0.1f, 100.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
@@ -464,7 +464,7 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
     orbit.target(glm::vec3(0.0f));
     orbit.zoom(3.0f);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(0.1f, 100.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
@@ -662,7 +662,7 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
     orbit.target(glm::vec3(0.0f));
     orbit.zoom(6.0f);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(0.1f, 100.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
     camera.profile().pixelAspect(static_cast<float>(frameWidth) / static_cast<float>(frameHeight));
     orbit.apply(&camera);
     camera.createProjection();
@@ -757,7 +757,7 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
     orbit.zoom(2.5f);
     orbit.elevation(1.0471976f);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(0.1f, 100.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
@@ -833,7 +833,7 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
     orbit.zoom(1.5f);
     orbit.elevation(1.0471976f);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(0.1f, 100.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
@@ -893,7 +893,7 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
     orbit.zoom(1.5f);
     orbit.elevation(1.0471976f);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(0.1f, 100.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
@@ -956,7 +956,7 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
     orbit.target(glm::vec3(0.0f));
     orbit.zoom(3.0f);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(0.1f, 100.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();

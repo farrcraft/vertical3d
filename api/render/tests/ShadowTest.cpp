@@ -55,7 +55,7 @@ void checkSeenAsCamera(v3d::type::camera::Profile::Hand hand) {
     profile.orthographic(true);
     profile.orthoZoom(radius);
     profile.pixelAspect(1.0f);
-    profile.clipping(0.0f, radius * 4.0f);
+    profile.clipping(glm::vec2(0.0f, radius * 4.0f));
     profile.eye(centre + towards * (radius * 2.0f));
     profile.up(glm::vec3(0.0f, 1.0f, 0.0f));
     profile.lookat(centre);
@@ -107,7 +107,7 @@ glm::mat4 perspective(const Looking& looking) {
     profile.orthographic(false);
     profile.fov(60.0f);
     profile.pixelAspect(1.0f);
-    profile.clipping(0.5f, farPlane);
+    profile.clipping(glm::vec2(0.5f, farPlane));
     profile.eye(eye);
     profile.up(glm::vec3(0.0f, 1.0f, 0.0f));
     profile.lookat(at);

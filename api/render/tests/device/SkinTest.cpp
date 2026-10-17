@@ -112,7 +112,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     orbit.zoom(4.0f);
     orbit.elevation(1.0471976f);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(0.1f, 100.0f);
+    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();

@@ -38,7 +38,7 @@ boost::shared_ptr<v3d::asset::Manager> root(const std::string& name, bool withAl
     boost::filesystem::copy_file(boost::filesystem::path(V3D_ASSET_FIXTURES) / "embedded_texture.glb",
         directory / "embedded_texture.glb");
     if (withAlbedo) {
-        const boost::shared_ptr<v3d::image::Image> pixel = boost::make_shared<v3d::image::Image>(2, 2, 24);
+        const boost::shared_ptr<v3d::image::Image> pixel = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 2), 24);
         v3d::image::Factory factory(logger);
         BOOST_REQUIRE(factory.write((directory / "models" / "albedo.png").string(), pixel));
     }

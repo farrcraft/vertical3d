@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE(cameraprofile_test) {
 
     // clipping planes reach the projection, which maps them onto the [0, 1] depth range
     // vulkan clips against
-    profile.clipping(1.0f, 3.0f);
+    profile.clipping(glm::vec2(1.0f, 3.0f));
     v3d::type::camera::Camera clipped(profile);
     clipped.createProjection();
     BOOST_CHECK_CLOSE(clipped.projection()[2][2], 1.0f / (3.0f - 1.0f), 0.01f);
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(cameraprofile_accessor_test) {
     BOOST_CHECK_EQUAL(profile.size()[1], 0u);
 
     profile.name("front");
-    profile.clipping(0.5f, 50.0f);
+    profile.clipping(glm::vec2(0.5f, 50.0f));
     profile.fov(45.0f);
     profile.orthoZoom(10.0f);
     profile.pixelAspect(1.6f);
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(cameraprofile_accessor_test) {
     profile.right(glm::vec3(1.0f, 0.0f, 0.0f));
     profile.direction(glm::vec3(0.0f, -1.0f, 0.0f));
     profile.rotation(glm::quat(0.5f, 0.5f, 0.5f, 0.5f));
-    profile.size(1024, 768);
+    profile.size(glm::uvec2(1024, 768));
 
     BOOST_CHECK_EQUAL(profile.name(), "front");
     BOOST_CHECK_CLOSE(profile.clipping()[0], 0.5f, 0.01f);
@@ -121,11 +121,11 @@ BOOST_AUTO_TEST_CASE(cameraprofile_accessor_test) {
 
 BOOST_AUTO_TEST_CASE(cameraprofile_basis_test) {
     // name plus the four basis vectors, with every other field left at its default
-    v3d::type::camera::Profile profile("Top",
-        glm::vec3(0.0f, 10.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, -1.0f, 0.0f));
+    v3d::type::camera::Profile profile("Top", {
+        .eye = glm::vec3(0.0f, 10.0f, 0.0f),
+        .up = glm::vec3(0.0f, 0.0f, 1.0f),
+        .right = glm::vec3(1.0f, 0.0f, 0.0f),
+        .direction = glm::vec3(0.0f, -1.0f, 0.0f)});
 
     BOOST_CHECK_EQUAL(profile.name(), "Top");
     BOOST_CHECK_CLOSE(profile.eye()[1], 10.0f, 0.01f);
