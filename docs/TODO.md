@@ -241,7 +241,7 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Lit scenes
 
-[LitScenesAtScale](plans/LitScenesAtScale.md) takes the grade and instancing entries.
+[LitScenesAtScale](plans/LitScenesAtScale.md) takes the grade entry.
 [ToolingDebt](plans/ToolingDebt.md) takes the grade tolerance.
 
 [] **There are no cascaded shadow maps.**
@@ -271,16 +271,6 @@ matches the asset manager's path handling only because the manager passes cgltf 
 - If CI shows lavapipe is exact too, reduce the tolerance to zero. If it is not, add a comment
   beside the case saying lavapipe is the reason.
 - Background: [LitScene, step 10](plans/completed/LitScene.md#step-10--the-chain-after-the-scene).
-
-[] **There is no instanced drawing.**
-
-- `meshes()` and `casters()` submit one draw item per part per entity. A scene with a dozen
-  characters and a few dozen props is a few hundred draws.
-- Instancing would move `Lit::Object` from the push constant block into a per-frame storage
-  buffer, read by `gl_InstanceIndex`, beside the joint palette at set 2. Draw items would be
-  grouped by mesh entry and part. The recorder can already draw instances.
-- Due when a scene's object count or a profile of recording time needs it.
-- Background: [SkeletalAnimation, step 8](plans/completed/SkeletalAnimation.md#step-8--instancing-held).
 
 ## Loading
 

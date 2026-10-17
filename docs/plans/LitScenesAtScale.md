@@ -150,10 +150,9 @@ baseline pictures still match byte for byte.
 
 #### Step 6 — Close phase 1
 
-**Open.**
-
-- Delete the TODO.md entry "There is no instanced drawing".
-- Update the roadmap's "What exists" section.
+**Closed.** The TODO.md entry "There is no instanced drawing" is deleted. The roadmap describes
+the lit renderer as it now is. [Lighting.md](../api/rendering/Lighting.md) and the internals
+documents were updated by the steps that moved them.
 
 ### Phase 2 — The grade
 

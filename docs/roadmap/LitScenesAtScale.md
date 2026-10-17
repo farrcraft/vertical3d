@@ -17,10 +17,9 @@ The [LitScenesAtScale plan](../plans/LitScenesAtScale.md) takes all five steps.
   scene set carries every joint palette drawn in the frame in one storage buffer.
 - **Each object's data is an entry in a storage buffer** at set 2, `Lit::Object`, read by
   instance index. It holds the object's transform, its base colour, its outline width and where
-  its joint palette starts. Each draw still names one object.
-- **`meshes()` and `casters()` submit one draw item per part per entity.** A dozen characters and
-  a few dozen props make a few hundred draws in each of the lit pass and the shadow pass.
-- **The recorder can already draw instances.** Nothing above it asks for more than one.
+  its joint palette starts.
+- **`meshes()` and `casters()` draw instances.** Entities that share a registry entry take one
+  draw per part, with an instance per entity, in both the lit pass and the shadow pass.
 - **[`Grade`](../../api/render/realtime/Grade.h)** looks each pixel up in a 16 by 16 by 16 table
   stored as UNORM, indexed by the scene's linear colour. A strip authored for display grades
   wrongly, and 16 entries over linear light leave little resolution in the shadows.
