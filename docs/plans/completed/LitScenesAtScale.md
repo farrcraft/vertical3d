@@ -1,14 +1,14 @@
 # Lit Scenes at Scale — Instanced Draws, a Display Grade and a Panned Voice
 
-Drafted 2026-10-16 from [the Lit Scenes at Scale roadmap](../roadmap/LitScenesAtScale.md). The
+Drafted 2026-10-16 from [the Lit Scenes at Scale roadmap](../../roadmap/completed/LitScenesAtScale.md). The
 goal is a lit scene that costs a draw per distinct part rather than per object. It also covers
 a colour grade that matches the strip an image editor shows, and a voice that can sound from one
 side. It
 covers all five of the roadmap's steps. Cascaded shadow maps stay in
-[TODO.md](../TODO.md#lit-scenes), behind their own trigger.
+[TODO.md](../../TODO.md#lit-scenes), behind their own trigger.
 
 Each step starts with a test that fails first, or records why none can be written. A step that
-deletes or changes a [TODO.md](../TODO.md) entry does so when it lands.
+deletes or changes a [TODO.md](../../TODO.md) entry does so when it lands.
 
 ## What the code shows
 
@@ -19,7 +19,7 @@ Reading the code for this plan corrected three things the roadmap assumed.
   `SkinTest.cpp`. A layout change migrates no app. It still changes every replacement shader
   passed through `Lit::Shaders`, and anything built against `Lit::sceneLayout()`.
 - **No lit case can have a reference picture.** A committed reference may hold only output the
-  Vulkan specification fixes exactly ([Testing.md](../contributing/Testing.md#realtime-references)),
+  Vulkan specification fixes exactly ([Testing.md](../../contributing/Testing.md#realtime-references)),
   and a lit, shadowed, perspective scene is outside that. The lit cases check chosen pixels, item
   counts and a silent validation log. "The existing lit cases pass unchanged" therefore does not
   show that no picture changed. Two things stand in for a reference: a baseline of every picture
@@ -56,7 +56,7 @@ Facts the plan relies on:
 | **New** | Lit: where per-object data lives. Amends ADR-0008 and ADR-0071, both of which name this as their revisit trigger | 2 |
 
 The pan law is not an ADR. It is the behaviour of one call, stated in
-[Audio.md](../api/engine/Audio.md) when step 8 lands.
+[Audio.md](../../api/engine/Audio.md) when step 8 lands.
 
 ## What blocks what
 
@@ -75,7 +75,7 @@ Phase 3 — the panned voice (no order against phases 1 and 2)
 
 - Step 1 must land before step 3. Without the baseline, step 3 has nothing that would show it
   changed a picture.
-- Step 7 should land after [ToolingDebt](ToolingDebt.md) step 2, which settles the grade tests'
+- Step 7 should land after [ToolingDebt](../ToolingDebt.md) step 2, which settles the grade tests'
   tolerance. If it lands first, step 7 re-reads that tolerance against its own results.
 
 ## Steps
@@ -119,9 +119,9 @@ index to `cel.frag` as a flat varying.
 - A grid of 576 cubes outgrows the buffer over two frames, and every cube is drawn where it
   stands. Without the copy on grow, 235 of 576 are. An object added before any scene is
   refused.
-- [Lighting.md](../api/rendering/Lighting.md), [Pipelines.md](../internals/realtime/Pipelines.md),
-  [Renderers.md](../internals/realtime/Renderers.md) and the
-  [internals README](../internals/realtime/README.md) state the new layout and the rule that the
+- [Lighting.md](../../api/rendering/Lighting.md), [Pipelines.md](../../internals/realtime/Pipelines.md),
+  [Renderers.md](../../internals/realtime/Renderers.md) and the
+  [internals README](../../internals/realtime/README.md) state the new layout and the rule that the
   walks run after `scene()`.
 
 #### Step 4 — Instanced draws
@@ -135,7 +135,7 @@ side by side. Skinned entities group the same way, each instance reading its own
   24. Both draw the same picture byte for byte. Before the change, the shared crowd took 24.
 - The 576 cubes of step 3 are one draw.
 - All 53 baseline pictures still match byte for byte, and the step 1 cases pass.
-- [Lighting.md](../api/rendering/Lighting.md) states which entities are drawn together.
+- [Lighting.md](../../api/rendering/Lighting.md) states which entities are drawn together.
 
 Before this step, the analysis gates were found failing on 21 sites the streaming worlds work
 had added. They are fixed in a commit of their own, and the whole tree is clean under `/analyze`
@@ -151,7 +151,7 @@ baseline pictures still match byte for byte.
 #### Step 6 — Close phase 1
 
 **Closed.** The TODO.md entry "There is no instanced drawing" is deleted. The roadmap describes
-the lit renderer as it now is. [Lighting.md](../api/rendering/Lighting.md) and the internals
+the lit renderer as it now is. [Lighting.md](../../api/rendering/Lighting.md) and the internals
 documents were updated by the steps that moved them.
 
 ### Phase 2 — The grade
@@ -172,8 +172,8 @@ target, which already holds display values. Both ends depend on a format instead
   target and into a UNORM one. Before the change it gave the complement of the light. The
   identity strip leaves an sRGB scene as it was. Every grade case is exact on the local GPU, and
   every baseline picture still matches.
-- [ColourAndPost.md](../api/rendering/ColourAndPost.md#grade) states the rule, and the TODO.md
-  entry is deleted. The tolerance entry, which [ToolingDebt](ToolingDebt.md) takes, now covers
+- [ColourAndPost.md](../../api/rendering/ColourAndPost.md#grade) states the rule, and the TODO.md
+  entry is deleted. The tolerance entry, which [ToolingDebt](../ToolingDebt.md) takes, now covers
   the sRGB cases as well.
 
 A table larger than 16 entries a side is held. It is due only if a strip shows banding.
@@ -190,34 +190,56 @@ sound would otherwise keep its old gains. Any other pan calls `MIX_SetTrackStere
 
 - `PanTest.cpp` tests the gains at both ends, the centre, between, past the ends and for a pan
   that is not finite. It also tests `pan()` on an engine with no device.
-- [Audio.md](../api/engine/Audio.md) states the call and the pan law.
+- [Audio.md](../../api/engine/Audio.md) states the call and the pan law.
 - The sound itself is checked by ear in step 9.
 
 #### Step 9 — pong pans its sounds
 
-**Open: the listening check.** The code has landed. `event::kind::Sound` takes an optional pan,
-and `audio::Engine` plays the clip with it. pong pans its hit, score and bounce sounds by the
-ball's x across the court, from -1 at the left edge to 1 at the right. The scene test checks
-that a hit and a point on each side carry a pan towards that side.
-
-Left to do: run pong and listen for a hit off each paddle coming from that paddle's side. The
-bounce sound has no clip, which is a known finding in TODO.md, so it is silent either way.
+**Closed.** `event::kind::Sound` takes an optional pan, and `audio::Engine` plays the clip with
+it. pong pans its hit, score and bounce sounds by the ball's x across the court, from -1 at the
+left edge to 1 at the right. The scene test checks that a hit and a point on each side carry a
+pan towards that side. A run of pong was listened to, and a hit off each paddle sounds from that
+paddle's side. The bounce sound has no clip, which is a known finding in TODO.md.
 
 #### Step 10 — Close phase 3
 
-**Open.** Delete the TODO.md entry "A voice has no pan". A listener with a position and distance
-attenuation stays in TODO.md, rewritten to say that `MIX_SetTrack3DPosition` exists and fixes
-the listener at the origin. It is due when a game needs sound in a 3D scene.
+**Closed.** The TODO.md entry "A voice has no pan" is deleted. The entry "A voice has no position"
+replaces it, and says that `MIX_SetTrack3DPosition` exists and fixes the listener at the origin.
 
 ### Step 11 — Close the plan
 
-**Open.** Confirm every entry this plan took is deleted from TODO.md, write the Outcome section,
-move this plan to [completed/](completed/), and move the roadmap to
-[roadmap/completed/](../roadmap/completed/).
+**Closed.** Every entry this plan took is deleted from TODO.md. This plan moved to
+[completed/](./), and the roadmap to [roadmap/completed/](../../roadmap/completed/).
 
-## Open questions
+## Outcome
 
-- **Where the outline width lives.** `meshes()` takes one outline width for every entity, yet
-  each object carries its own. Once per-object data is in a buffer, it could move to the scene
-  uniform. Recommendation: leave it in the object, because a game may want a width per entity,
-  and the cost is four bytes.
+Closed 2026-10-17. A lit scene costs a draw per distinct part rather than per entity, a colour
+grade matches the strip an image editor shows, and a voice can sound from one side.
+
+**Delivered:**
+
+- Each lit object is an entry in a storage buffer at set 2, read by instance index, and lit
+  pipelines push nothing. ADR-0088 records the choice and amends ADR-0008 and ADR-0071.
+- `meshes()` and `casters()` group entities by registry entry, and submit one instanced draw
+  per part per group.
+- The grade maps a colour as it is shown to the colour it is shown as, from and into either an
+  `_SRGB` or a `UNORM` target.
+- `Play::pan`, `Engine::pan()` and a pan on `event::kind::Sound`, with pong as the first user.
+- Crowd cases that guard per-object placement, per-entity poses, buffer growth and grouping,
+  each checked by breaking the code it guards.
+
+**Different from the plan:**
+
+- A lit scene cannot have a committed reference picture, so step 1 kept a local baseline of the
+  device suite's pictures instead. Every step of phase 1 matched it byte for byte.
+- The walks take `Lit` by pointer, as the tree passes a mutable argument, and `mesh.vert` hands
+  `cel.frag` the instance index as a flat varying.
+- Encoding before the lookup would have been wrong for a `UNORM` scene, so the grade picks a
+  pipeline per source by the scene's format.
+- The analysis gates were found failing on 21 sites from the streaming worlds work. They were
+  fixed in a commit of their own, and the whole tree is clean again.
+- The outline width stayed in each object, as recommended, so a game can give each entity its
+  own.
+
+**Left open,** each in TODO.md with its trigger: a voice with no position, cascaded shadow maps,
+and the grade tests' one-step tolerance, which [ToolingDebt](../ToolingDebt.md) takes.

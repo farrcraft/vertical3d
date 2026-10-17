@@ -21,7 +21,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 | Plan | Area | What it delivers |
 |---|---|---|
 | [ReleaseHardening](ReleaseHardening.md) | Engine, ui, config, grid, rendering, docs | The defects a player of a released game could meet, and the known review findings |
-| [LitScenesAtScale](LitScenesAtScale.md) | Realtime rendering, audio, pong | Instanced lit and shadow draws, a grade authored for display, and a panned voice |
 | [ToolingDebt](ToolingDebt.md) | All of the tree, tests | The thirteen disabled clang-tidy checks enabled, and the test gaps that need no new hardware |
 
 ## Completed plans
@@ -30,6 +29,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [LitScenesAtScale](completed/LitScenesAtScale.md) | Realtime rendering, audio, pong | 2026-10-17 | Lit objects in a storage buffer, instanced lit and shadow draws, a grade that reads its table as shown, and a panned voice |
 | [Regrouping](completed/Regrouping.md) | Realtime rendering, image, UI, moya | 2026-10-16 | `render/realtime`, `image` and `libmoya` split into directories by purpose, every namespace in `api/` following its directory, and a sweep of libmoya's comments |
 | [StreamingWorlds](completed/StreamingWorlds.md) | Assets, realtime rendering, grid, voxel, odyssey | 2026-10-16 | A worker thread for loading, mesh requests under an upload budget, uploads that do not drain the queue, grids placed as regions, odyssey as a world of two regions, and a shadow map fitted to the view |
 | [RetconUpstream](completed/RetconUpstream.md) | Realtime rendering, UI, ECS, engine, audio | 2026-10-08 | Frame capture on `Engine3D`, four renderer seams a game on the other camera hand or an sRGB chain needs, five small helpers, and audio events behind an interface |

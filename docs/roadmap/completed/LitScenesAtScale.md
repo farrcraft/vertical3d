@@ -4,15 +4,15 @@ What the lit renderer needs for a scene with many objects, a colour grade author
 tree, and sound placed in the scene. Today each object is its own draw, the grade's table is
 indexed by linear colour, and a voice has no position.
 
-The gaps are each described in [TODO.md](../TODO.md#lit-scenes) and
-[TODO.md](../TODO.md#audio). This roadmap orders them. Only the instancing steps depend on each
+The gaps are each described in [TODO.md](../../TODO.md#lit-scenes) and
+[TODO.md](../../TODO.md#audio). This roadmap orders them. Only the instancing steps depend on each
 other. The grade and the panned voice are here because they are due with the same kind of scene.
 
-The [LitScenesAtScale plan](../plans/LitScenesAtScale.md) takes all five steps.
+The [LitScenesAtScale plan](../../plans/completed/LitScenesAtScale.md) takes all five steps.
 
 ## What exists
 
-- **[`Lit`](../../api/render/realtime/vulkan/renderer/Lit.h)** draws a mesh in a cel pass and an
+- **[`Lit`](../../../api/render/realtime/vulkan/renderer/Lit.h)** draws a mesh in a cel pass and an
   outline pass. Both bind the camera at set 0, the albedo at set 1 and the scene at set 2. The
   scene set carries every joint palette drawn in the frame in one storage buffer.
 - **Each object's data is an entry in a storage buffer** at set 2, `Lit::Object`, read by
@@ -20,11 +20,11 @@ The [LitScenesAtScale plan](../plans/LitScenesAtScale.md) takes all five steps.
   its joint palette starts.
 - **`meshes()` and `casters()` draw instances.** Entities that share a registry entry take one
   draw per part, with an instance per entity, in both the lit pass and the shadow pass.
-- **[`Grade`](../../api/render/realtime/Grade.h)** looks each pixel up in a 16 by 16 by 16 table
+- **[`Grade`](../../../api/render/realtime/Grade.h)** looks each pixel up in a 16 by 16 by 16 table
   by the colour it is shown as, so a strip authored for display grades as it looked when it was
   authored.
-- **[`audio::Engine`](../../api/audio/Engine.h)** plays a voice on a named bus with a fade and a
-  gain. A voice has no pan and no position.
+- **[`audio::Engine`](../../../api/audio/Engine.h)** plays a voice on a named bus with a fade, a
+  gain and a pan. A voice has no position.
 
 ## What it needs
 

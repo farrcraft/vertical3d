@@ -316,18 +316,16 @@ Due when one does.
 
 ## Audio
 
-`audio::Engine` plays a voice on a named bus, with a fade and a gain. Nothing gives a voice a
-position. [LitScenesAtScale](plans/LitScenesAtScale.md) takes the entry below.
+`audio::Engine` plays a voice on a named bus, with a fade, a gain and a pan.
 
-[] **A voice has no pan.**
+[] **A voice has no position.**
 
-- A footstep on the left of a fixed camera's screen should sound from the left.
-- The caller converts a position to a pan, because in a flat world under a fixed camera that
-  mapping belongs to the game.
-- `Play` would gain a pan value, and the engine a `pan(voice, value)` call, using whatever
-  SDL_mixer 3 offers for a track.
-- Due when a game needs positional sound.
-- Background: [Effects, step 10](plans/completed/Effects.md#step-10--a-panned-voice-held).
+- A pan places a sound between the speakers. Nothing places it in a 3D scene, or makes it
+  quieter with distance.
+- SDL_mixer 3.2's `MIX_SetTrack3DPosition` places a track and attenuates it by distance, with
+  the listener fixed at the origin. A caller would give each position relative to its listener.
+- Due when a game needs sound in a 3D scene.
+- Background: [LitScenesAtScale, step 10](plans/completed/LitScenesAtScale.md#step-10--close-phase-3).
 
 ## Tests
 

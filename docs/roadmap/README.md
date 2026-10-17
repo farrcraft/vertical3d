@@ -35,12 +35,12 @@ roadmap has none of these. It is not a schedule and it has no dates.
 |---|---|
 | [OfflineShading.md](OfflineShading.md) | Offline rendering: verified transformations, an acceleration structure, area lights, reyes opacity, displacement and bump mapping |
 | [EditorModelling.md](EditorModelling.md) | The editor: a dirty flag, multiple selection, modelling operations, the missing command handlers and resizable panes |
-| [LitScenesAtScale.md](LitScenesAtScale.md) | Realtime, audio: instanced lit and shadow draws, a grade authored for display, and a panned voice |
 
 ## Completed roadmaps
 
 | Roadmap | What it covered | Done by |
 |---|---|---|
+| [LitScenesAtScale.md](completed/LitScenesAtScale.md) | Instanced lit and shadow draws, a grade authored for display, and a panned voice. A voice with no position is in [TODO.md](../TODO.md#audio) | [LitScenesAtScale](../plans/completed/LitScenesAtScale.md), 2026-10-17 |
 | [StreamingWorlds.md](completed/StreamingWorlds.md) | Loading while a game runs: a worker thread, uploads that do not drain the queue, regions, the movement filter and a shadow map that follows the camera. Remembered sight in `api/grid` is in [TODO.md](../TODO.md#tile-grids) | [StreamingWorlds](../plans/completed/StreamingWorlds.md), 2026-10-16 |
 | [OfflineRendering.md](completed/OfflineRendering.md) | Offline rendering: a RIB reader, a shading language, sampling through one film, recursive ray tracing, textures, and one ray tracer. Area lights, displacement and acceleration are in [TODO.md](../TODO.md#offline-rendering) | Three phase plans and [OfflineRenderingPhases4To6](../plans/completed/OfflineRenderingPhases4To6.md), 2026-09-05 to 2026-10-04 |
 | [GameEngine.md](completed/GameEngine.md) | The realtime api, made suitable for games rather than demos. It indexes the seven milestones below; what each left open is in [TODO.md](../TODO.md) | The seven plans below, 2026-10-03 to 2026-10-04 |
