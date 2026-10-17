@@ -46,9 +46,9 @@ A depth image is bound in `DEPTH_READ_ONLY_OPTIMAL`. A source must be released b
 `FullScreen` goes, since the set belongs to its pool. `Grade` keeps a map from the handle a caller
 holds to the current material; `replace()` creates a new table, rebinds every source to new
 materials, and retires the old table and materials through the ring. `replace()` uploads through
-`Uploader::oneShot`, which waits for the queue to go idle. `Grade`'s destructor releases its table
-and every source still in the map, before its `FullScreen` goes. `source()` releases the scene's
-registration if binding the material throws.
+`Uploader::oneShot`, which waits for that upload and not for frames in flight. `Grade`'s
+destructor releases its table and every source still in the map, before its `FullScreen` goes.
+`source()` releases the scene's registration if binding the material throws.
 
 Background: [ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md),
 [ADR-0011](../../adr/0011-rendering-lines-as-a-world-space-primitive.md),

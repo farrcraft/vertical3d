@@ -87,11 +87,13 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
 - `Buffer::grow(bytes)` doubles until large enough and **replaces the allocation**, invalidating
   `handle()`. It waits for the device first. `Buffer::read()` is slow (coherent, not cached), so
   use it for one-off readback only.
-- `DeviceBuffer::upload()` waits for the copy, so nothing may be in flight against the buffer.
-- `memory::Uploader::oneShot(record)` records, submits on the graphics queue and waits. Because it
-  waits, a staging allocation never outlives the function that made it. It reuses one command
-  buffer. It is for load-time work; uploading during play would need a transfer queue and a
-  fence, which do not exist.
+- `DeviceBuffer::upload()` waits for the copy and not for frames in flight, so no frame may be
+  reading the buffer. The constructors are its only callers, and fill a buffer nothing has read.
+- `memory::Uploader::oneShot(record)` records, submits on the graphics queue, and waits on a fence
+  for that submission alone. Because it waits, a staging allocation never outlives the function
+  that made it. Frames in flight go on running, so an upload during play does not stall them,
+  and an upload does not mean any frame has finished. An object a frame may still read is
+  retired through the ring. It reuses one command buffer and one fence.
 - `Mesh` is filled once. Changing geometry means building a new mesh, because a refill would have
   to wait for every frame still drawing the old one. `Mesh::describe(&item)` fills an item's
   buffers, index type and counts.

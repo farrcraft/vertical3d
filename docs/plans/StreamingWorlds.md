@@ -157,7 +157,12 @@ deleted.
 
 #### Step 6 — The uploader waits on its own fence
 
-**Open.** Needs step 5.
+**Closed.** `Uploader::oneShot` submits with a fence of its own and waits on it, so frames in
+flight keep running. An audit of every device object destroyed outside the ring found nothing
+that relied on the drain: each is destroyed after an explicit device wait, or before any frame
+used it. The comments in `Uploader.h`, `DeviceBuffer.h` and `TextureFactory.h`, and
+[Memory.md](../internals/realtime/Memory.md), state the new rule. The suites pass, and pong,
+tetris, odyssey, voxel and the editor each run with validation on and log nothing.
 
 - `Uploader::oneShot` submits with a fence and waits on that fence, not on the queue. Frames in
   flight keep running.

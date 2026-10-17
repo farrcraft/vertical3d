@@ -31,8 +31,9 @@ class Buffer;
  * Turns pixels into a sampled image the shaders can read.
  *
  * Every texture is uploaded through a staging buffer and a one-shot command buffer that
- * the factory waits on before returning - see Uploader. Textures are built at load time,
- * so nothing needs an upload that overlaps the frames being drawn.
+ * the factory waits on before returning - see Uploader. The wait is for the upload alone, so
+ * a texture can be made while frames are in flight. The image is new, so no frame is reading
+ * it.
  *
  * A single channel image is given a view that swizzles its one channel into alpha and
  * ones into rgb. A glyph atlas therefore samples as white-with-coverage, and the quad

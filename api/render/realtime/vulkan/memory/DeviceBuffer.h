@@ -25,8 +25,9 @@ namespace v3d::render::realtime::vulkan::memory {
  * its whole content every frame should use Buffer instead.
  *
  * The buffer is not mapped and cannot be written to directly - upload() is the only way
- * anything reaches it, and it waits for the copy, so nothing may be in flight against
- * the buffer when it is called.
+ * anything reaches it. It waits for the copy and not for frames in flight, so no frame may be
+ * reading the buffer when it is called. The constructors upload into a buffer nothing has
+ * read yet.
  **/
 class DeviceBuffer final {
  public:
