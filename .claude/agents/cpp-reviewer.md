@@ -136,6 +136,13 @@ From `docs/sdlc.md`:
   alternative, it is hard to reverse or constrains other code, and its reasons cannot be read
   from the code. If the diff makes such a choice and `docs/adr/` did not move, that is a
   finding. A bug fix or one class's behaviour is not such a choice.
+- **A comment that is now false.** This is the most important comment finding. Check the claims
+  a diff's comments make, and the comments beside code the diff changed. A comment that names
+  something removed, says nothing reads a value that something now reads, or describes behaviour
+  the code no longer has is a finding. `.claude/skills/code-comments/SKILL.md` covers how to
+  check them; read it when a diff adds or changes more than a line or two of comment.
+- **A comment that counts things kept elsewhere** ("the three call sites"), or temporary code
+  that does not name the condition that ends it.
 - **A comment that cites an ADR, a document, a plan or a milestone.** A comment states the
   rule itself. "per ADR-00NN" is a finding whether or not the sentence makes sense without it.
 - **A comment carrying something that will expire.** Provenance from a deleted tree

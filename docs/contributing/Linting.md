@@ -175,6 +175,29 @@ Each finding prints as `path:line: rule: detail | sentence`, and the script exit
 there is one. `--all FILE...` checks whole files instead of a change. The tree is not clean at
 `--all`, so use it to try a rule, not as a gate.
 
+## Comments only
+
+[scripts/commentsonly.ts](../../scripts/commentsonly.ts) checks that a change moved nothing but
+comments and whitespace. Run it after a change that is meant to touch only comments, such as a
+sweep of a directory's comments:
+
+```
+node scripts/commentsonly.ts
+```
+
+It compares each changed C++, GLSL and CMake file in the working tree with `HEAD`. `--base REF`
+compares with another commit, so `--base HEAD~1` checks a sweep that is already committed. It
+removes the comments from both versions, collapses whitespace outside literals, drops blank
+lines, and reports:
+
+- the first code line that differs, with its text at the base and now;
+- a block comment's closing marker left in code, which is usually a comment that closed early;
+- a line comment that ends with a backslash, because the compiler joins the next line to it;
+- a checked file that the change adds or removes.
+
+Other files are not read. It is not a CI gate, because most changes move code. A comment change
+can still break the build in a way the script does not see, so build and run the tests as well.
+
 ## CI
 
 [.github/workflows/cpplint.yml](../../.github/workflows/cpplint.yml) installs cpplint with pip on

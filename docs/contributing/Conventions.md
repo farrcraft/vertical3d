@@ -131,6 +131,15 @@ the commit, or describe a later phase.
 - **A test says what it checks**, not the history of the bug it guards against.
 - **Write a shared rule once**, on the function or type that owns it. Do not paste the same
   sentence into every caller.
+- **Do not count things kept elsewhere.** "The three call sites" or "twelve commands" turns
+  false when one is added, and nothing fails to compile. Write "every" or "each", or state the
+  rule they all follow.
+- **Temporary code says what ends it.** Name the condition, not a date or a plan: "Draws the
+  whole texture until the resolver can answer with a region." The work itself is listed in
+  [TODO.md](../TODO.md) or an open plan, not tagged `TODO:` in the code.
+- **A comment that is now false is worse than none.** A change to code also checks the comments
+  beside it, and a comment that names something removed, or says nothing reads a value that
+  something now reads, is fixed in the same change.
 - Doc comments are `/** **/` blocks, often left empty above trivial members.
 
 ## Documents
