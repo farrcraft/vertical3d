@@ -65,13 +65,13 @@ void trace(TileCoord from, TileCoord to, OnStep onStep) {
     const std::int64_t ady = std::abs(to.y - from.y);
 
     auto at = [from, sx, sy](std::int64_t i, std::int64_t j) {
-        return TileCoord{ from.x + sx * static_cast<int>(i), from.y + sy * static_cast<int>(j) };
+        return TileCoord{ from.x + (sx * static_cast<int>(i)), from.y + (sy * static_cast<int>(j)) };
     };
 
     std::int64_t i = 0;
     std::int64_t j = 0;
     while (i != adx || j != ady) {
-        const std::int64_t boundary = ady * (2 * i + 1) - adx * (2 * j + 1);
+        const std::int64_t boundary = (ady * ((2 * i) + 1)) - (adx * ((2 * j) + 1));
 
         Step step;
         if (boundary == 0) {

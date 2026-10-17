@@ -76,8 +76,8 @@ TextureHandle puffs(v3d::test::Headless* headless) {
             const float radius = 7.5f - (static_cast<float>(puff) * 1.5f);
             const float dx = static_cast<float>(x % frame) - 7.5f;
             const float dy = static_cast<float>(y) - 7.5f;
-            const float inside = std::clamp(1.0f - std::sqrt((dx * dx) + (dy * dy)) / radius, 0.0f, 1.0f);
-            unsigned char* at = pixels.data() + (static_cast<std::size_t>(y) * frame * 4 + x) * 4;
+            const float inside = std::clamp(1.0f - (std::sqrt((dx * dx) + (dy * dy)) / radius), 0.0f, 1.0f);
+            unsigned char* at = pixels.data() + (((static_cast<std::size_t>(y) * frame * 4) + x) * 4);
             at[0] = 255;
             at[1] = 255;
             at[2] = 255;

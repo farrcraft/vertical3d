@@ -49,7 +49,7 @@ bool within(const glm::vec2& min, const glm::vec2& max, float radius, const glm:
         point.x < min.x + radius ? min.x + radius : std::min(point.x, max.x - radius),
         point.y < min.y + radius ? min.y + radius : std::min(point.y, max.y - radius));
     const glm::vec2 offset = point - centre;
-    return std::sqrt(offset.x * offset.x + offset.y * offset.y) < radius - tolerance;
+    return std::sqrt((offset.x * offset.x) + (offset.y * offset.y)) < radius - tolerance;
 }
 
 /**

@@ -335,7 +335,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     const glm::vec2 size = arranger_.drawn(*label);
     Arranger::place(*label, label->position(), size);
 
-    glm::vec2 pen(label->position().x, label->position().y + base().lineHeight * 0.75f);
+    glm::vec2 pen(label->position().x, label->position().y + (base().lineHeight * 0.75f));
     if (label->layout().width.unit() == Length::Unit::Auto) {
         write_(text, pen, ink(*label, base(), base().text));
         return;
@@ -394,7 +394,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         return;
     }
 
-    const glm::vec2 baseline(min.x + (size.x - measure_(label)) * 0.5f, min.y + size.y * 0.7f);
+    const glm::vec2 baseline(min.x + ((size.x - measure_(label)) * 0.5f), min.y + (size.y * 0.7f));
     write_(label, baseline, ink(*button, base(), lit ? base().activeText : base().text));
 }
 
@@ -430,10 +430,10 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     glm::vec2 low = min + inset;
     glm::vec2 high = max - inset;
     if (bar->direction() == component::Bar::Direction::Horizontal) {
-        high.x = low.x + (high.x - low.x) * bar->fraction();
+        high.x = low.x + ((high.x - low.x) * bar->fraction());
     } else {
         // a vertical bar fills from the bottom, which is the way one is read
-        low.y = high.y - (high.y - low.y) * bar->fraction();
+        low.y = high.y - ((high.y - low.y) * bar->fraction());
     }
     fillBox(canvas, low, high, std::max(0.0f, dress.radius - dress.borderWidth), dress.fill);
 }
@@ -485,9 +485,9 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     // less half of it, so it never hangs off either
     const float side = slider->size().y;
     const float travel = std::max(0.0f, slider->size().x - side);
-    const float left = min.x + travel * slider->fraction();
+    const float left = min.x + (travel * slider->fraction());
     const glm::vec2 inset(dress.borderWidth, dress.borderWidth);
-    fillBox(canvas, min + inset, glm::vec2(left + side * 0.5f, max.y - inset.y),
+    fillBox(canvas, min + inset, glm::vec2(left + (side * 0.5f), max.y - inset.y),
         std::max(0.0f, dress.radius - dress.borderWidth), dress.fill);
     fillBox(canvas, glm::vec2(left, min.y), glm::vec2(left + side, max.y), dress.radius, dress.thumb);
 }
@@ -511,11 +511,11 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     // the mark is centred in the row rather than sitting on its top edge, because the
     // label beside it is centred too
-    const glm::vec2 corner(min.x, min.y + (size.y - side) * 0.5f);
+    const glm::vec2 corner(min.x, min.y + ((size.y - side) * 0.5f));
     if (round) {
         const glm::vec2 centre = corner + glm::vec2(side, side) * 0.5f;
         canvas->circle(centre, side * 0.5f, markSides, dress.border);
-        canvas->circle(centre, side * 0.5f - dress.borderWidth, markSides, dress.track);
+        canvas->circle(centre, (side * 0.5f) - dress.borderWidth, markSides, dress.track);
         if (box->checked()) {
             canvas->circle(centre, side * markFill * 0.5f, markSides, dress.mark);
         }
@@ -532,7 +532,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     if (text.empty()) {
         return;
     }
-    write_(text, glm::vec2(min.x + side + dress.padding * 0.5f, min.y + size.y * 0.7f),
+    write_(text, glm::vec2(min.x + side + (dress.padding * 0.5f), min.y + (size.y * 0.7f)),
         ink(*box, dress, dress.text));
 }
 
@@ -570,12 +570,12 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         first + static_cast<std::size_t>(size.y / row) + 2U);
 
     for (std::size_t index = first; index < last; index++) {
-        const float top = min.y + static_cast<float>(index) * row - scrolled;
+        const float top = min.y + (static_cast<float>(index) * row) - scrolled;
         const bool picked = static_cast<int>(index) == list->selected();
         if (picked) {
             fillBox(canvas, glm::vec2(low.x, top), glm::vec2(high.x, top + row), 0.0f, dress.highlight);
         }
-        write_(list->items()[index], glm::vec2(low.x + dress.padding * 0.5f, top + row * 0.7f),
+        write_(list->items()[index], glm::vec2(low.x + (dress.padding * 0.5f), top + (row * 0.7f)),
             ink(*list, dress, picked ? dress.activeText : dress.text));
     }
 
@@ -596,7 +596,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     const float width = dress.borderWidth;
     plateBox(canvas, min, min + size, dress.radius, width, dress.panel, dress.border);
 
-    const glm::vec2 low(min.x + width + dress.padding * 0.5f, min.y + width);
+    const glm::vec2 low(min.x + width + (dress.padding * 0.5f), min.y + width);
     const glm::vec2 high(min.x + size.x - width, min.y + size.y - width);
     if (high.x <= low.x) {
         return;
@@ -608,7 +608,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         // the placeholder says what the box is for and is not what it holds, so it is
         // dropped the moment there is something to type into
         box->pen(low.x);
-        write_(box->placeholder(), glm::vec2(low.x, min.y + size.y * 0.7f), dress.placeholder);
+        write_(box->placeholder(), glm::vec2(low.x, min.y + (size.y * 0.7f)), dress.placeholder);
         canvas->unclip();
         return;
     }
@@ -619,7 +619,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     const float room = high.x - low.x;
     const float slid = caret > room ? caret - room : 0.0f;
 
-    const glm::vec2 pen(low.x - slid, min.y + size.y * 0.7f);
+    const glm::vec2 pen(low.x - slid, min.y + (size.y * 0.7f));
     // left on the box so that a press can find the character under it, the way a list is
     // left holding the height of a row
     box->pen(pen.x);
@@ -670,7 +670,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
         const bool picked = static_cast<int>(index) == bar->selected();
         fillBox(canvas, corner, corner + extent, dress.radius, picked ? dress.highlight : dress.tab);
-        write_(label, glm::vec2(corner.x + dress.padding * 0.5f, corner.y + height * 0.7f),
+        write_(label, glm::vec2(corner.x + (dress.padding * 0.5f), corner.y + (height * 0.7f)),
             ink(*bar, dress, picked ? dress.activeText : dress.text));
         pen += width + dress.borderWidth;
     }
@@ -796,19 +796,19 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     const boost::shared_ptr<component::menu::Item> active = level->active();
 
     for (std::size_t index = 0; index < count; index++) {
-        const float top = origin.y + base().padding + base().lineHeight * static_cast<float>(index);
+        const float top = origin.y + base().padding + (base().lineHeight * static_cast<float>(index));
         const bool selected = active && (*level)[index] == active;
 
         if (selected) {
             canvas->rect(
-                glm::vec2(origin.x + base().padding * 0.5f, top),
-                glm::vec2(origin.x + width - base().padding * 0.5f, top + base().lineHeight),
+                glm::vec2(origin.x + (base().padding * 0.5f), top),
+                glm::vec2(origin.x + width - (base().padding * 0.5f), top + base().lineHeight),
                 base().highlight);
         }
 
         // the pen sits on the baseline, which is most of the way down the line box - the
         // remainder is where descenders go
-        const glm::vec2 pen(origin.x + base().padding, top + base().lineHeight * 0.75f);
+        const glm::vec2 pen(origin.x + base().padding, top + (base().lineHeight * 0.75f));
         const boost::shared_ptr<component::menu::Item>& item = (*level)[index];
         write_(item ? item->text() : std::string(), pen, itemInk(item, base(), selected));
     }
@@ -845,7 +845,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         if (lit) {
             canvas->rect(glm::vec2(pen, 0.0f), glm::vec2(pen + extent, base().barHeight), base().highlight);
         }
-        write_(label, glm::vec2(pen + base().padding * 0.5f, base().barHeight * 0.7f), lit ? base().activeText : base().text);
+        write_(label, glm::vec2(pen + (base().padding * 0.5f), base().barHeight * 0.7f), lit ? base().activeText : base().text);
         pen += extent;
     }
 
@@ -916,7 +916,7 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
 
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = (*menu)[index];
-        const float top = corner.y + base().panelPadding + base().lineHeight * static_cast<float>(index);
+        const float top = corner.y + base().panelPadding + (base().lineHeight * static_cast<float>(index));
         const bool selected = active && item == active;
 
         if (selected) {
@@ -924,7 +924,7 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
         }
 
         if (item && item->checked()) {
-            const glm::vec2 centre(corner.x + column * 0.5f, top + base().lineHeight * 0.5f);
+            const glm::vec2 centre(corner.x + (column * 0.5f), top + (base().lineHeight * 0.5f));
             const float mark = base().lineHeight * 0.15f;
             canvas->rect(centre - glm::vec2(mark, mark), centre + glm::vec2(mark, mark), base().activeText);
         }
@@ -932,11 +932,11 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
         if (item && item->itemType() == component::menu::ItemType::Submenu) {
             // a three sided circle is a triangle with a vertex at zero degrees, which
             // points along +x
-            canvas->circle(glm::vec2(corner.x + size.x - column * 0.5f, top + base().lineHeight * 0.5f),
+            canvas->circle(glm::vec2(corner.x + size.x - (column * 0.5f), top + (base().lineHeight * 0.5f)),
                 base().lineHeight * 0.18f, 3, selected ? base().activeText : base().text);
         }
 
-        const glm::vec2 pen(corner.x + column, top + base().lineHeight * 0.75f);
+        const glm::vec2 pen(corner.x + column, top + (base().lineHeight * 0.75f));
         write_(item ? item->text() : std::string(), pen, itemInk(item, base(), selected));
     }
 }

@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(a_circle_closes_in_the_plane_of_its_axes) {
 
     for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
         BOOST_CHECK_SMALL(vertex.position.y, 0.001f);
-        const float radius = std::sqrt(vertex.position.x * vertex.position.x + vertex.position.z * vertex.position.z);
+        const float radius = std::sqrt((vertex.position.x * vertex.position.x) + (vertex.position.z * vertex.position.z));
         BOOST_CHECK_CLOSE(radius, 2.0f, 0.01f);
     }
 

@@ -43,8 +43,8 @@ boost::shared_ptr<Image> Tga::read(const unsigned char* data, std::size_t size) 
     // the six useful bytes after the signature
     const unsigned char* header = data + sizeof(rgbTGAheader);
 
-    unsigned int width = header[1] * 256 + header[0];  // Determine The TGA Width (highbyte*256+lowbyte)
-    unsigned int height = header[3] * 256 + header[2];  // Determine The TGA Height (highbyte*256+lowbyte)
+    unsigned int width = (header[1] * 256) + header[0];  // Determine The TGA Width (highbyte*256+lowbyte)
+    unsigned int height = (header[3] * 256) + header[2];  // Determine The TGA Height (highbyte*256+lowbyte)
     unsigned int bpp = header[4];  // Grab The TGA's Bits Per Pixel (24 or 32)
 
     if (width == 0 ||  // Is The Width Zero
@@ -75,8 +75,8 @@ boost::shared_ptr<Image> Tga::read(const unsigned char* data, std::size_t size) 
         const unsigned int stride = width * bytespp;
         std::vector<unsigned char> row(stride);
         for (unsigned int i = 0; i < height / 2; ++i) {
-            unsigned char* top = out + static_cast<std::size_t>(i) * stride;
-            unsigned char* bottom = out + static_cast<std::size_t>(height - 1 - i) * stride;
+            unsigned char* top = out + (static_cast<std::size_t>(i) * stride);
+            unsigned char* bottom = out + (static_cast<std::size_t>(height - 1 - i) * stride);
             memcpy(row.data(), top, stride);
             memcpy(top, bottom, stride);
             memcpy(bottom, row.data(), stride);

@@ -27,7 +27,7 @@ std::size_t mismatches(const boost::shared_ptr<v3d::image::Image>& image, unsign
     std::size_t count = 0;
     const std::size_t texels = static_cast<std::size_t>(image->width()) * image->height();
     for (std::size_t i = 0; i < texels; ++i) {
-        const unsigned char* texel = pixels + i * 4;
+        const unsigned char* texel = pixels + (i * 4);
         if (texel[0] != r || texel[1] != g || texel[2] != b || texel[3] != a) {
             ++count;
         }

@@ -219,7 +219,7 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
             if (glm::distance(start + (end - start) * along, cursor_) > tolerance_) {
                 continue;
             }
-            offer(mesh->id(), loop[index], startDepth + (endDepth - startDepth) * along);
+            offer(mesh->id(), loop[index], startDepth + ((endDepth - startDepth) * along));
         }
     }
 }

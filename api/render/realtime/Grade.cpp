@@ -230,7 +230,7 @@ std::vector<uint8_t> Grade::table(const boost::shared_ptr<image::Image>& strip) 
     for (uint32_t blue = 0; blue < SIZE; blue++) {
         for (uint32_t green = 0; green < SIZE; green++) {
             for (uint32_t red = 0; red < SIZE; red++) {
-                const std::size_t at = (static_cast<std::size_t>(green) * strip->width() + static_cast<std::size_t>(blue) * SIZE + red) * channels;
+                const std::size_t at = ((static_cast<std::size_t>(green) * strip->width()) + (static_cast<std::size_t>(blue) * SIZE) + red) * channels;
                 texels.insert(texels.end(), {pixels[at], pixels[at + 1], pixels[at + 2], 255});
             }
         }

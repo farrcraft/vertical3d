@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE(a_press_on_the_thumb_keeps_the_value) {
     slider.size(glm::vec2(200.0f, 20.0f));
     for (const float value : {0.0f, 0.2f, 0.9f, 1.0f}) {
         slider.value(value);
-        const float centre = 100.0f + 10.0f + 180.0f * slider.fraction();
+        const float centre = 100.0f + 10.0f + (180.0f * slider.fraction());
         slider.drag(glm::vec2(centre, 60.0f));
         BOOST_CHECK_CLOSE(slider.value() + 1.0f, value + 1.0f, 0.001f);
     }

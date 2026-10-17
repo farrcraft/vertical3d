@@ -82,9 +82,9 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
         JSAMPROW line = data;
         if (alpha) {
             for (unsigned int column = 0; column < img->width(); ++column) {
-                row[column * 3 + 0] = data[column * 4 + 0];
-                row[column * 3 + 1] = data[column * 4 + 1];
-                row[column * 3 + 2] = data[column * 4 + 2];
+                row[(column * 3) + 0] = data[(column * 4) + 0];
+                row[(column * 3) + 1] = data[(column * 4) + 1];
+                row[(column * 3) + 2] = data[(column * 4) + 2];
             }
             line = row.data();
         }

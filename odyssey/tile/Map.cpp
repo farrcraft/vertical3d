@@ -176,7 +176,7 @@ Kind Map::kind(v3d::grid::TileCoord tile) const {
     if (!grid_ || !grid_->contains(tile)) {
         return Kind::Wall;
     }
-    return kinds_[static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(grid_->width()) +
+    return kinds_[(static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(grid_->width())) +
         static_cast<std::size_t>(tile.x)];
 }
 

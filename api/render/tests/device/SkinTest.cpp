@@ -157,7 +157,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
 std::size_t covered(v3d::image::Image& picture) {
     std::size_t count = 0;
     for (std::size_t texel = 0; texel < static_cast<std::size_t>(picture.width()) * picture.height(); texel++) {
-        const unsigned char* at = picture.data() + texel * 4;
+        const unsigned char* at = picture.data() + (texel * 4);
         if (at[0] != 0 || at[1] != 0 || at[2] != 255) {
             count++;
         }
@@ -168,7 +168,7 @@ std::size_t covered(v3d::image::Image& picture) {
 std::size_t differing(v3d::image::Image& a, v3d::image::Image& b) {
     std::size_t count = 0;
     for (std::size_t texel = 0; texel < static_cast<std::size_t>(a.width()) * a.height(); texel++) {
-        if (std::memcmp(a.data() + texel * 4, b.data() + texel * 4, 4) != 0) {
+        if (std::memcmp(a.data() + (texel * 4), b.data() + (texel * 4), 4) != 0) {
             count++;
         }
     }
@@ -415,7 +415,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     BOOST_CHECK(headless.silent());
     const std::vector<float> depths = capture.depth();
     BOOST_REQUIRE_EQUAL(depths.size(), static_cast<std::size_t>(size) * size);
-    BOOST_CHECK_EQUAL(depths[static_cast<std::size_t>(8) * size + 8], 0.375f);
+    BOOST_CHECK_EQUAL(depths[(static_cast<std::size_t>(8) * size) + 8], 0.375f);
     BOOST_CHECK_EQUAL(depths[0], 1.0f);
 }
 

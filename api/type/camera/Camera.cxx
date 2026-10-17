@@ -38,9 +38,9 @@ and returns the world space coordinate
 glm::vec3 Camera::unproject(const glm::vec3& point, const int viewport[4]) const {
     glm::vec4 p;
     // normalize point to range [-1, 1]
-    p[0] = (point[0] - static_cast<float>(viewport[0])) * 2.0f / static_cast<float>(viewport[2]) - 1.0f;
+    p[0] = ((point[0] - static_cast<float>(viewport[0])) * 2.0f / static_cast<float>(viewport[2])) - 1.0f;
     // clip space points y downward, the same way a screen coordinate does
-    p[1] = (point[1] - static_cast<float>(viewport[1])) * 2.0f / static_cast<float>(viewport[3]) - 1.0f;
+    p[1] = ((point[1] - static_cast<float>(viewport[1])) * 2.0f / static_cast<float>(viewport[3])) - 1.0f;
     // depth is already the [0, 1] the projection wrote
     p[2] = point[2];
     p[3] = 1.0f;
@@ -50,7 +50,7 @@ glm::vec3 Camera::unproject(const glm::vec3& point, const int viewport[4]) const
     glm::mat4x4 inv;
     m = projection() * view();
     inv = glm::inverse(m);
-    float w = inv[0][3] * p[0] + inv[1][3] * p[1] + inv[2][3] * p[2] + inv[3][3];
+    float w = (inv[0][3] * p[0]) + (inv[1][3] * p[1]) + (inv[2][3] * p[2]) + inv[3][3];
 
     return ((inv * p) / w);
 }
@@ -70,9 +70,9 @@ glm::vec3 Camera::project(const glm::vec3& point, const int viewport[4]) const {
         p /= p[3];
     }
 
-    p[0] = static_cast<float>(viewport[0]) + (1.0f + p[0]) * static_cast<float>(viewport[2]) / 2.0f;
+    p[0] = static_cast<float>(viewport[0]) + ((1.0f + p[0]) * static_cast<float>(viewport[2]) / 2.0f);
     // clip space y already points down, so this is a screen coordinate
-    p[1] = static_cast<float>(viewport[1]) + (1.0f + p[1]) * static_cast<float>(viewport[3]) / 2.0f;
+    p[1] = static_cast<float>(viewport[1]) + ((1.0f + p[1]) * static_cast<float>(viewport[3]) / 2.0f);
 
     return p;
 }

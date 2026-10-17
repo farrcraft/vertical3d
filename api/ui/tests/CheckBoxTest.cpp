@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
 
     const v3d::ui::paint::Dressing& style = build(nullptr).dressing();
     BOOST_CHECK_CLOSE(box->size().x,
-        style.markSize + style.padding * 0.5f + 7.0f * characterWidth, 0.001f);
+        style.markSize + (style.padding * 0.5f) + (7.0f * characterWidth), 0.001f);
     BOOST_CHECK_CLOSE(box->size().y, std::max(style.markSize, style.lineHeight), 0.001f);
 
     // the label is written past the mark rather than over it

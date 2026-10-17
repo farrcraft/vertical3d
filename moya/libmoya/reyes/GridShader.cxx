@@ -159,7 +159,7 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
 
     for (unsigned int i = 0; i < size; i++) {
         for (unsigned int j = 0; j < size; j++) {
-            const unsigned int lane = i * size + j;
+            const unsigned int lane = (i * size) + j;
             const Vertex vert = grid->vertex(i, j);
             v3d::render::offline::sl::Point point;
             point.position = vert.point();
@@ -195,7 +195,7 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     for (unsigned int i = 0; i < size; i++) {
         for (unsigned int j = 0; j < size; j++) {
             Vertex vert = grid->vertex(i, j);
-            vert.color(held.globals.colour(held.machine, i * size + j, vert.color()));
+            vert.color(held.globals.colour(held.machine, (i * size) + j, vert.color()));
             grid->addVertex(vert, i, j);
         }
     }

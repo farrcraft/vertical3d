@@ -43,7 +43,7 @@ boost::shared_ptr<v3d::image::Image> gradient() {
     unsigned char* pixels = image->data();
     for (uint32_t y = 0; y < size; y++) {
         for (uint32_t x = 0; x < size; x++) {
-            unsigned char* pixel = pixels + (static_cast<std::size_t>(y) * size + x) * 3;
+            unsigned char* pixel = pixels + (((static_cast<std::size_t>(y) * size) + x) * 3);
             pixel[0] = static_cast<unsigned char>(x);
             pixel[1] = static_cast<unsigned char>(y);
             pixel[2] = static_cast<unsigned char>((x * y) & 0xFFU);

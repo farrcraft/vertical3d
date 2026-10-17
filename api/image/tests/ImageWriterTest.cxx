@@ -33,9 +33,9 @@ struct OutputDirectory {
 BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
     boost::shared_ptr<v3d::image::Image> img24 = boost::make_shared<v3d::image::Image>(2, 2, 24);
     for (unsigned int pixel = 0; pixel < 4; ++pixel) {
-        (*img24)[pixel * 3 + 0] = 0;
-        (*img24)[pixel * 3 + 1] = 0;
-        (*img24)[pixel * 3 + 2] = 0xff;
+        (*img24)[(pixel * 3) + 0] = 0;
+        (*img24)[(pixel * 3) + 1] = 0;
+        (*img24)[(pixel * 3) + 2] = 0xff;
     }
 
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
@@ -127,7 +127,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
         boost::make_shared<v3d::image::Image>(side, side, 24);
     for (unsigned int row = 0; row < side; ++row) {
         for (unsigned int column = 0; column < side; ++column) {
-            const unsigned int pixel = (row * side + column) * 3;
+            const unsigned int pixel = ((row * side) + column) * 3;
             // red over the top half, green over the bottom
             (*image)[pixel + 0] = static_cast<unsigned char>(row < side / 2 ? 0xff : 0);
             (*image)[pixel + 1] = static_cast<unsigned char>(row < side / 2 ? 0 : 0xff);
@@ -190,9 +190,9 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
         while (cinfo.next_scanline < cinfo.image_height) {
             const bool top = cinfo.next_scanline < side / 2;
             for (unsigned int column = 0; column < side; ++column) {
-                scanline[column * 3 + 0] = static_cast<unsigned char>(top ? 0xff : 0);
-                scanline[column * 3 + 1] = static_cast<unsigned char>(top ? 0 : 0xff);
-                scanline[column * 3 + 2] = 0;
+                scanline[(column * 3) + 0] = static_cast<unsigned char>(top ? 0xff : 0);
+                scanline[(column * 3) + 1] = static_cast<unsigned char>(top ? 0 : 0xff);
+                scanline[(column * 3) + 2] = 0;
             }
             unsigned char* rows[1] = { scanline.data() };
             jpeg_write_scanlines(&cinfo, rows, 1);
@@ -266,8 +266,8 @@ BOOST_FIXTURE_TEST_CASE(imagereader_greyscale_jpeg_test, OutputDirectory) {
     // grey replicated into all three channels, for every pixel including the last of a row
     for (unsigned int pixel = 0; pixel < side * side; ++pixel) {
         BOOST_TEST_CONTEXT("pixel " << pixel) {
-            BOOST_CHECK_EQUAL((*read)[pixel * 3 + 0], (*read)[pixel * 3 + 1]);
-            BOOST_CHECK_EQUAL((*read)[pixel * 3 + 1], (*read)[pixel * 3 + 2]);
+            BOOST_CHECK_EQUAL((*read)[(pixel * 3) + 0], (*read)[(pixel * 3) + 1]);
+            BOOST_CHECK_EQUAL((*read)[(pixel * 3) + 1], (*read)[(pixel * 3) + 2]);
         }
     }
 }
@@ -322,7 +322,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_grey_test, OutputDirectory) {
         const unsigned int channels = static_cast<unsigned int>(back->format());
         for (unsigned int pixel = 0; pixel < side * side; ++pixel) {
             for (unsigned int channel = 0; channel < channels && channel < 3; ++channel) {
-                BOOST_CHECK_EQUAL(static_cast<int>((*back)[pixel * channels + channel]),
+                BOOST_CHECK_EQUAL(static_cast<int>((*back)[(pixel * channels) + channel]),
                     static_cast<int>((*grey)[pixel]));
             }
         }
@@ -345,10 +345,10 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, Out
     // handler would end the process rather than refuse four components under JCS_RGB
     boost::shared_ptr<v3d::image::Image> rgba = boost::make_shared<v3d::image::Image>(2, 2, 32);
     for (unsigned int pixel = 0; pixel < 4; ++pixel) {
-        (*rgba)[pixel * 4 + 0] = 0xff;
-        (*rgba)[pixel * 4 + 1] = 0;
-        (*rgba)[pixel * 4 + 2] = 0;
-        (*rgba)[pixel * 4 + 3] = 0x80;
+        (*rgba)[(pixel * 4) + 0] = 0xff;
+        (*rgba)[(pixel * 4) + 1] = 0;
+        (*rgba)[(pixel * 4) + 2] = 0;
+        (*rgba)[(pixel * 4) + 3] = 0x80;
     }
 
     const char* names[] = { "data_out/test_rgba.jpg", "data_out/test_rgba.JPEG" };
@@ -372,10 +372,10 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, Out
 BOOST_FIXTURE_TEST_CASE(imagewriter_tga_alpha_test, OutputDirectory) {
     boost::shared_ptr<v3d::image::Image> img32 = boost::make_shared<v3d::image::Image>(2, 1, 32);
     for (unsigned int pixel = 0; pixel < 2; ++pixel) {
-        (*img32)[pixel * 4 + 0] = 0x10;
-        (*img32)[pixel * 4 + 1] = 0x20;
-        (*img32)[pixel * 4 + 2] = 0x30;
-        (*img32)[pixel * 4 + 3] = 0x80;
+        (*img32)[(pixel * 4) + 0] = 0x10;
+        (*img32)[(pixel * 4) + 1] = 0x20;
+        (*img32)[(pixel * 4) + 2] = 0x30;
+        (*img32)[(pixel * 4) + 3] = 0x80;
     }
     v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(factory.write("data_out/alpha.tga", img32));

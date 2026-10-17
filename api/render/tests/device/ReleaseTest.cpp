@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(a_sprite_whose_texture_is_released_after_it_is_queued_draws
     BOOST_REQUIRE(picture);
     const unsigned char* pixels = picture->data();
     for (uint32_t texel = 0; texel < width * height; texel++) {
-        const unsigned char* at = pixels + static_cast<std::size_t>(texel) * 4;
+        const unsigned char* at = pixels + (static_cast<std::size_t>(texel) * 4);
         if (at[0] != 0xFF || at[1] != 0x00 || at[2] != 0xFF || at[3] != 0xFF) {
             BOOST_ERROR("texel " << texel << " is not the released sprite's texture");
             return;
@@ -257,7 +257,7 @@ BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
     BOOST_REQUIRE(picture);
     const unsigned char* pixels = picture->data();
     for (uint32_t texel = 0; texel < width * height; texel++) {
-        const unsigned char* at = pixels + static_cast<std::size_t>(texel) * 4;
+        const unsigned char* at = pixels + (static_cast<std::size_t>(texel) * 4);
         if (at[0] != 0x00 || at[1] != 0xFF || at[2] != 0x00 || at[3] != 0xFF) {
             BOOST_ERROR("texel " << texel << " is not the texture now in the slot");
             return;

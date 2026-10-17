@@ -137,7 +137,7 @@ class Placement {
         if (radius_ <= 0.0f) {
             return point;
         }
-        const glm::vec2 shift = lens * radius_ * (1.0f - point.z / focus_);
+        const glm::vec2 shift = lens * radius_ * (1.0f - (point.z / focus_));
         return glm::vec3(point.x - shift.x, point.y - shift.y, point.z);
     }
 
@@ -175,7 +175,7 @@ class Placement {
         stride_ = 0.0f;
         Corners previous;
         for (unsigned int i = 0; i <= STEPS; i++) {
-            const float time = shutter_.x + (shutter_.y - shutter_.x) * static_cast<float>(i) / STEPS;
+            const float time = shutter_.x + ((shutter_.y - shutter_.x) * static_cast<float>(i) / STEPS);
             const glm::mat4x4 moving = delta(time);
             stepMin_[i] = glm::vec3(std::numeric_limits<float>::max());
             stepMax_[i] = glm::vec3(-std::numeric_limits<float>::max());
@@ -247,8 +247,8 @@ class Motions {
     }
 
     const glm::mat4x4 & at(int column, int row, unsigned int index, float time) {
-        const std::size_t slot = (static_cast<std::size_t>(row - top_) * static_cast<std::size_t>(width_) +
-            static_cast<std::size_t>(column - left_)) * perPixel_ + index;
+        const std::size_t slot = (((static_cast<std::size_t>(row - top_) * static_cast<std::size_t>(width_)) +
+            static_cast<std::size_t>(column - left_)) * perPixel_) + index;
         if (!known_[slot]) {
             values_[slot] = placement_.delta(time);
             known_[slot] = true;

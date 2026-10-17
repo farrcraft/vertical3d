@@ -64,7 +64,7 @@ unsigned char channel(uint32_t pixel, uint32_t mask) {
         return static_cast<unsigned char>(value >> (width - 8));
     }
     const uint32_t most = (1u << width) - 1u;
-    return static_cast<unsigned char>((value * 255u + most / 2) / most);
+    return static_cast<unsigned char>(((value * 255u) + (most / 2)) / most);
 }
 
 /**
@@ -178,12 +178,12 @@ bool convertPixel(const unsigned char* src, uint64_t column, const Layout& layou
     }
     if (layout.bits == 24) {
         // bgr on disk, rgb in memory
-        out[0] = src[column * 3 + 2];
-        out[1] = src[column * 3 + 1];
+        out[0] = src[(column * 3) + 2];
+        out[1] = src[(column * 3) + 1];
         out[2] = src[column * 3];
         return false;
     }
-    const unsigned char* packed = src + column * (layout.bits / 8);
+    const unsigned char* packed = src + (column * (layout.bits / 8));
     const uint32_t pixel = layout.bits == 16
         ? static_cast<uint32_t>(packed[0]) | (static_cast<uint32_t>(packed[1]) << 8)
         : readWord(packed);
@@ -205,15 +205,15 @@ void convertRows(const unsigned char* pixels, const Layout& layout, const Masks&
     const std::vector<format::bmp_rgb_quad>& colors, unsigned char* data) {
     bool anyAlpha = false;
     for (uint64_t row = 0; row < layout.rows; ++row) {
-        const unsigned char* src = pixels + (layout.bottomUp ? layout.rows - 1 - row : row) * layout.pad;
-        unsigned char* dest = data + row * layout.columns * layout.channels;
+        const unsigned char* src = pixels + ((layout.bottomUp ? layout.rows - 1 - row : row) * layout.pad);
+        unsigned char* dest = data + (row * layout.columns * layout.channels);
         for (uint64_t column = 0; column < layout.columns; ++column) {
-            anyAlpha = convertPixel(src, column, layout, masks, colors, dest + column * layout.channels) || anyAlpha;
+            anyAlpha = convertPixel(src, column, layout, masks, colors, dest + (column * layout.channels)) || anyAlpha;
         }
     }
     if (layout.channels == 4 && !anyAlpha) {
         for (uint64_t pixel = 0; pixel < layout.columns * layout.rows; ++pixel) {
-            data[pixel * 4 + 3] = 0xFF;
+            data[(pixel * 4) + 3] = 0xFF;
         }
     }
 }
@@ -265,7 +265,7 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
     Layout layout;
     layout.bits = iheader.bits_;
     layout.columns = static_cast<uint64_t>(iheader.width_);
-    layout.pad = (layout.columns * (layout.bits / 8) + 3) / 4 * 4;
+    layout.pad = ((layout.columns * (layout.bits / 8)) + 3) / 4 * 4;
     layout.bottomUp = iheader.height_ > 0;
     layout.rows = static_cast<uint64_t>(layout.bottomUp ? iheader.height_ : -static_cast<int64_t>(iheader.height_));
     // 32 bits keeps its alpha; everything else comes back as rgb

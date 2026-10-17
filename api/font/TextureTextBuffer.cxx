@@ -92,7 +92,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     }
 
     if (lines && markup.strikethrough_) {
-        glm::vec2 xy0(pen->x, pen->y + ascender * .33f);
+        glm::vec2 xy0(pen->x, pen->y + (ascender * .33f));
         glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.strikethroughColor_, markup.gamma_);
@@ -106,7 +106,8 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     // bearing - and the top is one bitmap height above that
     const float glyphWidth = static_cast<float>(glyph->width_) * scale;
     const float glyphHeight = static_cast<float>(glyph->height_) * scale;
-    glm::vec2 xy0(pen->x + static_cast<float>(glyph->offset_.x) * scale, static_cast<float>(static_cast<int>(pen->y + glyphHeight - static_cast<float>(glyph->offset_.y) * scale)));
+    const float bottom = pen->y + glyphHeight - (static_cast<float>(glyph->offset_.y) * scale);
+    glm::vec2 xy0(pen->x + (static_cast<float>(glyph->offset_.x) * scale), static_cast<float>(static_cast<int>(bottom)));
     glm::vec2 xy1(xy0.x + glyphWidth, static_cast<float>(static_cast<int>(xy0.y - glyphHeight)));
 
     addQuad(xy0, xy1, glyph->st_[0], glyph->st_[1], markup.foregroundColor_, markup.gamma_);

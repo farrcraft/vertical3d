@@ -100,7 +100,7 @@ void Timings::read(Slot* slot) {
     for (std::size_t index = 0; index < slot->names.size(); ++index) {
         // masked, because a queue writing fewer than 64 bits wraps, and a span across the
         // wrap is still the difference of the two
-        const uint64_t ticks = (stamps[index * 2 + 1] - stamps[index * 2]) & mask_;
+        const uint64_t ticks = (stamps[(index * 2) + 1] - stamps[index * 2]) & mask_;
         last_.push_back(Timing{ slot->names[index], static_cast<double>(ticks) * period_ / 1.0e6 });
     }
 }
@@ -132,7 +132,7 @@ void Timings::close(VkCommandBuffer commands) {
         return;
     }
     slot.open = false;
-    const auto query = static_cast<uint32_t>(slot.names.size() * 2 - 1);
+    const auto query = static_cast<uint32_t>((slot.names.size() * 2) - 1);
     vkCmdWriteTimestamp2(commands, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, slot.pool, query);
 }
 

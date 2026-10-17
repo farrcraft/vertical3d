@@ -64,7 +64,7 @@ boost::shared_ptr<v3d::image::Image> written(const boost::shared_ptr<v3d::log::L
  **/
 std::vector<unsigned char> texel(const boost::shared_ptr<v3d::image::Image>& image, uint32_t x, uint32_t y) {
     const unsigned char* pixels = image->data();
-    const std::size_t at = (static_cast<std::size_t>(y) * image->width() + x) * 4;
+    const std::size_t at = ((static_cast<std::size_t>(y) * image->width()) + x) * 4;
     return std::vector<unsigned char>(pixels + at, pixels + at + 4);
 }
 
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
         for (uint32_t x = 0; x < textureWidth; x++) {
             const bool right = x >= textureWidth / 2;
             const bool lower = y >= textureHeight / 2;
-            const std::size_t at = (static_cast<std::size_t>(y) * textureWidth + x) * 4;
+            const std::size_t at = ((static_cast<std::size_t>(y) * textureWidth) + x) * 4;
             texels[at + 0] = static_cast<unsigned char>(right && !lower ? 0 : 255);
             texels[at + 1] = static_cast<unsigned char>(lower ? 255 : 0);
             texels[at + 2] = static_cast<unsigned char>(right ? 255 : 0);

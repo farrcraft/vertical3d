@@ -39,11 +39,11 @@ const std::array<int, 512> & permutation() {
 }
 
 float fade(float t) {
-    return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f);
+    return t * t * t * ((t * ((t * 6.0f) - 15.0f)) + 10.0f);
 }
 
 float lerp(float t, float a, float b) {
-    return a + t * (b - a);
+    return a + (t * (b - a));
 }
 
 /**
@@ -103,7 +103,7 @@ float noise(const glm::vec3 & point) {
                 gradient(at(bb + 1), x - 1.0f, y - 1.0f, z - 1.0f))));
     // the improved noise's range is about [-1, 1]; its extremes reach a little past it, and
     // SL's noise never leaves [0, 1]
-    return std::clamp(0.5f + 0.5f * value, 0.0f, 1.0f);
+    return std::clamp(0.5f + (0.5f * value), 0.0f, 1.0f);
 }
 
 };  // namespace v3d::render::offline

@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(moya_two_lights_test) {
     v3d::moya::reyes::MicroPolygonGrid both = facing(normal, glm::vec3(1.0f));
     rc.shader().shade(rc.shading(), &both);
     BOOST_CHECK_CLOSE(both.vertex(0, 0).color().r, cosine, 0.1f);
-    BOOST_CHECK_CLOSE(both.vertex(0, 0).color().g, cosine + 0.5f * cosine, 0.1f);
+    BOOST_CHECK_CLOSE(both.vertex(0, 0).color().g, cosine + (0.5f * cosine), 0.1f);
 
     rc.illuminate("fill", false);
     v3d::moya::reyes::MicroPolygonGrid one = facing(normal, glm::vec3(1.0f));
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(moya_two_lights_test) {
     rc.illuminate("fill", true);
     v3d::moya::reyes::MicroPolygonGrid back = facing(normal, glm::vec3(1.0f));
     rc.shader().shade(rc.shading(), &back);
-    BOOST_CHECK_CLOSE(back.vertex(0, 0).color().g, cosine + 0.5f * cosine, 0.1f);
+    BOOST_CHECK_CLOSE(back.vertex(0, 0).color().g, cosine + (0.5f * cosine), 0.1f);
 }
 
 /**

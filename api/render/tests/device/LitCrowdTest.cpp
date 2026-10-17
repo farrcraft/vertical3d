@@ -135,10 +135,10 @@ boost::shared_ptr<v3d::image::Image> readBack(v3d::test::Headless* headless, VkC
 const unsigned char* at(v3d::image::Image& picture, const v3d::type::camera::Camera& camera, const glm::vec3& point) {
     const glm::vec4 clip = camera.projection() * camera.view() * glm::vec4(point, 1.0f);
     const glm::vec2 ndc = glm::vec2(clip) / clip.w;
-    const int x = static_cast<int>((ndc.x * 0.5f + 0.5f) * static_cast<float>(picture.width()));
-    const int y = static_cast<int>((ndc.y * 0.5f + 0.5f) * static_cast<float>(picture.height()));
+    const int x = static_cast<int>(((ndc.x * 0.5f) + 0.5f) * static_cast<float>(picture.width()));
+    const int y = static_cast<int>(((ndc.y * 0.5f) + 0.5f) * static_cast<float>(picture.height()));
     BOOST_REQUIRE(x >= 0 && x < static_cast<int>(picture.width()) && y >= 0 && y < static_cast<int>(picture.height()));
-    return picture.data() + (static_cast<std::size_t>(y) * picture.width() + static_cast<std::size_t>(x)) * 4;
+    return picture.data() + (((static_cast<std::size_t>(y) * picture.width()) + static_cast<std::size_t>(x)) * 4);
 }
 
 /**
@@ -299,12 +299,12 @@ BOOST_AUTO_TEST_CASE(each_skinned_entity_sharing_a_mesh_takes_its_own_pose) {
     std::size_t rightCovered = 0;
     std::size_t differing = 0;
     for (std::size_t texel = 0; texel < static_cast<std::size_t>(width) * height; texel++) {
-        const unsigned char* fromLeft = alone->data() + texel * 4;
-        const unsigned char* fromRight = other->data() + texel * 4;
+        const unsigned char* fromLeft = alone->data() + (texel * 4);
+        const unsigned char* fromRight = other->data() + (texel * 4);
         leftCovered += clear(fromLeft) ? 0 : 1;
         rightCovered += clear(fromRight) ? 0 : 1;
         const unsigned char* expected = clear(fromLeft) ? fromRight : fromLeft;
-        if (std::memcmp(pair->data() + texel * 4, expected, 4) != 0) {
+        if (std::memcmp(pair->data() + (texel * 4), expected, 4) != 0) {
             differing++;
         }
     }
@@ -377,8 +377,8 @@ BOOST_AUTO_TEST_CASE(entities_sharing_a_mesh_are_drawn_in_one_draw_per_part) {
     std::size_t covered = 0;
     std::size_t differing = 0;
     for (std::size_t texel = 0; texel < static_cast<std::size_t>(width) * height; texel++) {
-        covered += clear(together->data() + texel * 4) ? 0 : 1;
-        differing += std::memcmp(together->data() + texel * 4, separately->data() + texel * 4, 4) == 0 ? 0 : 1;
+        covered += clear(together->data() + (texel * 4)) ? 0 : 1;
+        differing += std::memcmp(together->data() + (texel * 4), separately->data() + (texel * 4), 4) == 0 ? 0 : 1;
     }
     BOOST_TEST_MESSAGE("covered " << covered << ", differing " << differing);
     BOOST_CHECK_GT(covered, 1000U);

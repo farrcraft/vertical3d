@@ -132,7 +132,7 @@ float dragOffset(float track, float length, float along, float span) noexcept {
     if (room <= 0.0f) {
         return 0.0f;
     }
-    return span * std::clamp((along - length * 0.5f) / room, 0.0f, 1.0f);
+    return span * std::clamp((along - (length * 0.5f)) / room, 0.0f, 1.0f);
 }
 
 };  // namespace v3d::ui::component

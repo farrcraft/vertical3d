@@ -103,7 +103,7 @@ boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, cons
  * @return the texel at a column of the picture, in its middle row
  **/
 glm::ivec4 at(v3d::image::Image* picture, uint32_t x) {
-    const unsigned char* texel = picture->data() + (static_cast<std::size_t>(height / 2) * width + x) * 4;
+    const unsigned char* texel = picture->data() + (((static_cast<std::size_t>(height / 2) * width) + x) * 4);
     return glm::ivec4(texel[0], texel[1], texel[2], texel[3]);
 }
 

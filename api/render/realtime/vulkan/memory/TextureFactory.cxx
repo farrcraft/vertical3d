@@ -77,10 +77,10 @@ pipeline::Texture TextureFactory::create(const unsigned char* pixels, uint32_t w
         std::vector<unsigned char> widened(static_cast<std::size_t>(bytes));
         const std::size_t count = static_cast<std::size_t>(width) * height;
         for (std::size_t pixel = 0; pixel < count; pixel++) {
-            widened[pixel * 4 + 0] = pixels[pixel * 3 + 0];
-            widened[pixel * 4 + 1] = pixels[pixel * 3 + 1];
-            widened[pixel * 4 + 2] = pixels[pixel * 3 + 2];
-            widened[pixel * 4 + 3] = 0xFF;
+            widened[(pixel * 4) + 0] = pixels[(pixel * 3) + 0];
+            widened[(pixel * 4) + 1] = pixels[(pixel * 3) + 1];
+            widened[(pixel * 4) + 2] = pixels[(pixel * 3) + 2];
+            widened[(pixel * 4) + 3] = 0xFF;
         }
         staging.write(widened.data(), bytes);
     } else {

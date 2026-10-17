@@ -256,7 +256,7 @@ int DistanceField::cost(TileCoord tile) const {
     }
 
     const std::size_t index =
-        static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(width_) + static_cast<std::size_t>(tile.x);
+        (static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(width_)) + static_cast<std::size_t>(tile.x);
 
     return index < costs_.size() ? costs_[index] : UNREACHABLE;
 }

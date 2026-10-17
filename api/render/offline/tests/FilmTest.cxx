@@ -271,7 +271,7 @@ BOOST_AUTO_TEST_CASE(film_sampler_is_stratified_test) {
         const unsigned int i = static_cast<unsigned int>((s.raster.x - 10.0f) * 3.0f);
         const unsigned int j = static_cast<unsigned int>((s.raster.y - 20.0f) * 2.0f);
         BOOST_REQUIRE(i < 3 && j < 2);
-        cells[j * 3 + i]++;
+        cells[(j * 3) + i]++;
     }
     for (unsigned int count : cells) {
         BOOST_CHECK_EQUAL(count, 1u);

@@ -521,7 +521,7 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
 
     const boost::shared_ptr<v3d::image::Image> albedo = boost::make_shared<v3d::image::Image>(4, 4, 32);
     for (std::size_t texel = 0; texel < std::size_t{16}; texel++) {
-        unsigned char* at = albedo->data() + texel * 4;
+        unsigned char* at = albedo->data() + (texel * 4);
         at[0] = 0xFF;
         at[1] = 0x00;
         at[2] = 0xFF;
@@ -594,7 +594,7 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
     BOOST_REQUIRE(picture);
     const unsigned char* pixels = picture->data();
     for (uint32_t texel = 0; texel < width * height; texel++) {
-        const unsigned char* at = pixels + static_cast<std::size_t>(texel) * 4;
+        const unsigned char* at = pixels + (static_cast<std::size_t>(texel) * 4);
         if (at[0] != 0xFF || at[1] != 0x00 || at[2] != 0xFF || at[3] != 0xFF) {
             BOOST_ERROR("texel " << texel << " is not the albedo of the released mesh");
             return;

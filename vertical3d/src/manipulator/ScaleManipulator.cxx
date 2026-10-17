@@ -82,10 +82,10 @@ void ScaleManipulator::apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
         // one gesture scales all three axes: dragging right or up grows the object, as
         // dragging a corner handle outward would
         const glm::vec2 delta = to - from;
-        const float factor = 1.0f + (delta.x - delta.y) / handlePixels;
+        const float factor = 1.0f + ((delta.x - delta.y) / handlePixels);
         scale *= factor;
     } else {
-        const float factor = 1.0f + along(view, seat, axis(), from, to) / seat.size;
+        const float factor = 1.0f + (along(view, seat, axis(), from, to) / seat.size);
         switch (axis()) {
         case Axis::X:
             scale.x *= factor;

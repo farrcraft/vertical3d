@@ -165,7 +165,7 @@ void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     // the box goes on before the glyphs do: the canvas is drawn in the order it is filled,
     // so a background added after the text it backs would cover it
     canvas->rect(glm::vec2(margin, margin),
-        glm::vec2(margin + widest + padding * 2.0f, margin + lineHeight * static_cast<float>(content.size()) + padding * 2.0f),
+        glm::vec2(margin + widest + (padding * 2.0f), margin + (lineHeight * static_cast<float>(content.size())) + (padding * 2.0f)),
         background);
 
     // the pen is the baseline of the line, which sits one font size below the top of it

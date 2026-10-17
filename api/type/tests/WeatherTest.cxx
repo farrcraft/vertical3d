@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(weather_follows_a_moving_region_test) {
         for (const Particle& particle : state.particles) {
             inside = inside && particle.position.x >= x && particle.position.x < x + 4.0f;
             inside = inside && particle.position.z >= 0.0f && particle.position.z < 4.0f;
-            steady = steady && glm::length(particle.position - particle.previous) <= 5.0f * sixtieth + 1e-4f;
+            steady = steady && glm::length(particle.position - particle.previous) <= (5.0f * sixtieth) + 1e-4f;
         }
     }
     BOOST_CHECK(inside);

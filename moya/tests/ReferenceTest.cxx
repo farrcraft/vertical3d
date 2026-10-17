@@ -923,13 +923,13 @@ BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
             // red counts the block across and green the block down, and blue is the same in each
             for (unsigned int across = 0; across < 4; across++) {
                 for (unsigned int down = 0; down < 4; down++) {
-                    const unsigned int column = 20 + 8 * across;
-                    const unsigned int row = 12 + 8 * down;
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, column, row) - 85.0f * across / 255.0f,
+                    const unsigned int column = 20 + (8 * across);
+                    const unsigned int row = 12 + (8 * down);
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, column, row) - (85.0f * across / 255.0f),
                         1.0f / 255.0f);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, column, row) - 85.0f * down / 255.0f,
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, column, row) - (85.0f * down / 255.0f),
                         1.0f / 255.0f);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, column, row) - 128.0f / 255.0f,
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, column, row) - (128.0f / 255.0f),
                         1.0f / 255.0f);
                 }
             }

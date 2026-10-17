@@ -32,7 +32,7 @@ float unrolled(const Playback& earlier, const Playback& later) {
         return earlier.time;
     }
     const float loops = std::ceil((earlier.time - later.time) / later.duration);
-    return earlier.time - loops * later.duration;
+    return earlier.time - (loops * later.duration);
 }
 
 };  // namespace
@@ -71,7 +71,7 @@ void advance(Playback* playback, float step) {
     }
     const type::animation::Clock fading(playback->fromDuration, playback->fromLoops);
     playback->fromTime = fading.sample(fading.advance(playback->fromTime, step));
-    playback->fade = playback->fadeDuration > 0.0f ? std::min(1.0f, playback->fade + step / playback->fadeDuration) : 1.0f;
+    playback->fade = playback->fadeDuration > 0.0f ? std::min(1.0f, playback->fade + (step / playback->fadeDuration)) : 1.0f;
     if (playback->fade >= 1.0f) {
         playback->from = Playback::none;
     }

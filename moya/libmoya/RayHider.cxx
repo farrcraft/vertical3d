@@ -74,17 +74,17 @@ glm::vec3 RayHider::unproject(const glm::vec2 & raster, float z) const {
     // range makes those terms as badly conditioned as a float allows, so the whole matrix is
     // not inverted
     const glm::mat4x4 & m = camera_.toRaster;
-    const float a = m[0][0] - raster.x * m[0][3];
-    const float b = m[1][0] - raster.x * m[1][3];
-    const float c = m[0][1] - raster.y * m[0][3];
-    const float d = m[1][1] - raster.y * m[1][3];
-    const float e = raster.x * (m[2][3] * z + m[3][3]) - (m[2][0] * z + m[3][0]);
-    const float f = raster.y * (m[2][3] * z + m[3][3]) - (m[2][1] * z + m[3][1]);
-    const float determinant = a * d - b * c;
+    const float a = m[0][0] - (raster.x * m[0][3]);
+    const float b = m[1][0] - (raster.x * m[1][3]);
+    const float c = m[0][1] - (raster.y * m[0][3]);
+    const float d = m[1][1] - (raster.y * m[1][3]);
+    const float e = (raster.x * ((m[2][3] * z) + m[3][3])) - ((m[2][0] * z) + m[3][0]);
+    const float f = (raster.y * ((m[2][3] * z) + m[3][3])) - ((m[2][1] * z) + m[3][1]);
+    const float determinant = (a * d) - (b * c);
     if (determinant == 0.0f) {
         return glm::vec3(0.0f, 0.0f, z);
     }
-    return glm::vec3((e * d - b * f) / determinant, (a * f - e * c) / determinant, z);
+    return glm::vec3(((e * d) - (b * f)) / determinant, ((a * f) - (e * c)) / determinant, z);
 }
 
 v3d::type::geometry::Ray RayHider::ray(const glm::vec2 & raster, const glm::vec2 & lens,
@@ -169,7 +169,7 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
                     break;
                 }
             }
-            taken_[static_cast<std::size_t>(row) * width + column] = taken;
+            taken_[(static_cast<std::size_t>(row) * width) + column] = taken;
         }
     }
     film.resolve(planes, colour, coverage, static_cast<int>(depth));
@@ -179,7 +179,7 @@ unsigned int RayHider::samplesTaken(unsigned int column, unsigned int row) const
     if (column >= camera_.width || row >= camera_.height || taken_.empty()) {
         return 0;
     }
-    return taken_[static_cast<std::size_t>(row) * camera_.width + column];
+    return taken_[(static_cast<std::size_t>(row) * camera_.width) + column];
 }
 
 };  // namespace v3d::moya

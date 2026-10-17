@@ -27,7 +27,7 @@ namespace {
  * Twice the signed area of the triangle a, b, p in x and y.
  **/
 float edge(const glm::vec3 & a, const glm::vec3 & b, const glm::vec2 & p) {
-    return (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+    return ((b.x - a.x) * (p.y - a.y)) - ((b.y - a.y) * (p.x - a.x));
 }
 
 bool triangle(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c, const glm::vec2 & p, float * depth) {
@@ -44,7 +44,7 @@ bool triangle(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c, con
     if (wa < 0.0f || wb < 0.0f || wc < 0.0f) {
         return false;
     }
-    *depth = wa * a.z + wb * b.z + wc * c.z;
+    *depth = (wa * a.z) + (wb * b.z) + (wc * c.z);
     return true;
 }
 

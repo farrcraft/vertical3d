@@ -82,7 +82,7 @@ bool Characters::quoted(bool lineEnds, std::string* text) {
                 if (octal(escape)) {
                     int value = escape - '0';
                     for (int i = 1; i < 3 && octal(look()); i++) {
-                        value = value * 8 + (get() - '0');
+                        value = (value * 8) + (get() - '0');
                     }
                     *text += static_cast<char>(value);
                 } else {

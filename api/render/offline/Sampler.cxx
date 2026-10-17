@@ -33,7 +33,7 @@ glm::vec2 disc(const glm::vec2 & square) {
         angle = (pi / 4.0f) * (centred.y / centred.x);
     } else {
         radius = centred.y;
-        angle = (pi / 2.0f) - (pi / 4.0f) * (centred.x / centred.y);
+        angle = (pi / 2.0f) - ((pi / 4.0f) * (centred.x / centred.y));
     }
     return glm::vec2(radius * std::cos(angle), radius * std::sin(angle));
 }
@@ -65,10 +65,10 @@ std::vector<Sampler::Sample> Sampler::pixel(unsigned int column, unsigned int ro
     std::vector<Sample> samples(count);
     for (unsigned int j = 0; j < ny; j++) {
         for (unsigned int i = 0; i < nx; i++) {
-            Sample & sample = samples[j * nx + i];
+            Sample & sample = samples[(j * nx) + i];
             sample.raster = glm::vec2(
-                static_cast<float>(column) + (static_cast<float>(i) + jitter(nx, &random)) / static_cast<float>(nx),
-                static_cast<float>(row) + (static_cast<float>(j) + jitter(ny, &random)) / static_cast<float>(ny));
+                static_cast<float>(column) + ((static_cast<float>(i) + jitter(nx, &random)) / static_cast<float>(nx)),
+                static_cast<float>(row) + ((static_cast<float>(j) + jitter(ny, &random)) / static_cast<float>(ny)));
         }
     }
 
@@ -88,7 +88,7 @@ std::vector<Sampler::Sample> Sampler::pixel(unsigned int column, unsigned int ro
     const float close = sampling_.shutter.y;
     for (unsigned int k = 0; k < count; k++) {
         const float t = (static_cast<float>(times[k]) + jitter(count, &random)) / static_cast<float>(count);
-        samples[k].time = open + (close - open) * t;
+        samples[k].time = open + ((close - open) * t);
         const unsigned int across = lenses[k] % nx;
         const unsigned int down = lenses[k] / nx;
         const glm::vec2 square(

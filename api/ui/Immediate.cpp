@@ -382,7 +382,7 @@ void Immediate::label(const std::string& line, const glm::vec2& min, const glm::
     const glm::vec4& colour) const {
     // the baseline sits three quarters of the way down a row, which is where a font with
     // ordinary descenders looks centred
-    const glm::vec2 pen(min.x, min.y + (size.y + dressing_.lineHeight * 0.5f) * 0.5f);
+    const glm::vec2 pen(min.x, min.y + ((size.y + (dressing_.lineHeight * 0.5f)) * 0.5f));
     write_(line, pen, colour);
 }
 
@@ -514,7 +514,7 @@ void Immediate::closeScroll(Id id, Id scroll, float contentTop, const glm::vec2&
     }
     if (wheeled_ == id && input_.wheel != 0.0f) {
         // a notch away from the reader shows what is above, which is a smaller offset
-        retained.scroll = std::clamp(retained.scroll - input_.wheel * dressing_.lineHeight * wheelRows, 0.0f, span);
+        retained.scroll = std::clamp(retained.scroll - (input_.wheel * dressing_.lineHeight * wheelRows), 0.0f, span);
     }
 }
 
@@ -579,7 +579,7 @@ void Immediate::bulletText(const std::string& line) {
     const glm::vec2 size(dressing_.indent + measure_(line), dressing_.lineHeight);
     const glm::vec2 corner = place(size);
     const float radius = dressing_.lineHeight * bulletScale * 0.5f;
-    canvas_->circle(glm::vec2(corner.x + dressing_.indent * 0.5f, corner.y + dressing_.lineHeight * 0.5f),
+    canvas_->circle(glm::vec2(corner.x + (dressing_.indent * 0.5f), corner.y + (dressing_.lineHeight * 0.5f)),
         radius, bulletSides, ink(dressing_.text));
     label(line, corner + glm::vec2(dressing_.indent, 0.0f), glm::vec2(size.x, size.y), ink(dressing_.text));
 }
@@ -588,7 +588,7 @@ bool Immediate::button(const std::string& label) {
     if (canvas_ == nullptr) {
         return false;
     }
-    const glm::vec2 size(measure_(label) + dressing_.padding * 2.0f, dressing_.barHeight);
+    const glm::vec2 size(measure_(label) + (dressing_.padding * 2.0f), dressing_.barHeight);
     const glm::vec2 min = place(size);
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
@@ -670,10 +670,10 @@ void Immediate::progressBar(float fraction, const std::string& overlay) {
     paint::fillBox(canvas_, min, max, dressing_.radius, dressing_.widget);
     const float part = std::clamp(fraction, 0.0f, 1.0f);
     if (part > 0.0f) {
-        paint::fillBox(canvas_, min, glm::vec2(min.x + size.x * part, max.y), dressing_.radius, ink(dressing_.fill));
+        paint::fillBox(canvas_, min, glm::vec2(min.x + (size.x * part), max.y), dressing_.radius, ink(dressing_.fill));
     }
     if (!overlay.empty()) {
-        const glm::vec2 corner(min.x + (size.x - measure_(overlay)) * 0.5f, min.y);
+        const glm::vec2 corner(min.x + ((size.x - measure_(overlay)) * 0.5f), min.y);
         label(overlay, corner, size, ink(dressing_.activeText));
     }
 }
@@ -684,7 +684,7 @@ void Immediate::separator() {
     }
     const glm::vec2 size(row_.right - row_.margin, ruleWidth + dressing_.spacing);
     const glm::vec2 min = place(size);
-    const float middle = min.y + dressing_.spacing * 0.5f;
+    const float middle = min.y + (dressing_.spacing * 0.5f);
     canvas_->rect(glm::vec2(min.x, middle), glm::vec2(min.x + size.x, middle + ruleWidth), dressing_.rule);
 }
 
@@ -728,7 +728,7 @@ bool Immediate::tab(const std::string& label) {
     }
     Retained& retained = retain(tabs_.id);
     const unsigned int index = tabs_.index++;
-    const glm::vec2 size(measure_(label) + dressing_.padding * 2.0f, dressing_.barHeight);
+    const glm::vec2 size(measure_(label) + (dressing_.padding * 2.0f), dressing_.barHeight);
     const glm::vec2 min(tabs_.pen, tabs_.top);
     tabs_.pen += size.x + dressing_.spacing;
 
@@ -853,7 +853,7 @@ void Immediate::headerRow() {
     const glm::vec2 max(table_.right, row_.penY + dressing_.lineHeight);
     paint::fillBox(canvas_, min, max, 0.0f, dressing_.titleBar);
     for (std::size_t index = 0; index < table_.headers.size(); index++) {
-        const glm::vec2 corner(columnStart(static_cast<unsigned int>(index)) + dressing_.padding * 0.5f, min.y);
+        const glm::vec2 corner(columnStart(static_cast<unsigned int>(index)) + (dressing_.padding * 0.5f), min.y);
         label(table_.headers[index], corner, glm::vec2(0.0f, dressing_.lineHeight), dressing_.dimText);
     }
     row_.penY = max.y + dressing_.spacing;

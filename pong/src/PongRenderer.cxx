@@ -112,7 +112,7 @@ void PongRenderer::drawBoard() {
     court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, height), courtColour);
 
     // centre line
-    court_.rect(glm::vec2(width * 0.5f - half, 0.0f), glm::vec2(width * 0.5f + half, height), boardColour);
+    court_.rect(glm::vec2((width * 0.5f) - half, 0.0f), glm::vec2((width * 0.5f) + half, height), boardColour);
     // top and bottom walls
     court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, wall), boardColour);
     court_.rect(glm::vec2(0.0f, height - wall), glm::vec2(width, height), boardColour);
@@ -143,7 +143,7 @@ void PongRenderer::drawBall(float alpha) {
 void PongRenderer::drawPaddle(const Paddle& paddle, float alpha) {
     court_.push();
     // the paddle's position is the centre of its travel; its rectangle is drawn from the corner
-    court_.translate(glm::vec2(paddle.offset(), paddle.drawn(alpha) - paddle.length() / 2.0f));
+    court_.translate(glm::vec2(paddle.offset(), paddle.drawn(alpha) - (paddle.length() / 2.0f)));
     const glm::vec3 colour = paddle.color();
     court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(paddle.size(), paddle.length()), glm::vec4(colour, 1.0f));
     court_.pop();

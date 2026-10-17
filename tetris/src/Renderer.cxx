@@ -151,9 +151,9 @@ TetrisRenderer::Layout TetrisRenderer::layout() const {
 
     Layout metrics;
     // the well has to fit vertically, and the well plus its panel horizontally
-    metrics.cell = std::max(1.0f, std::min((height - 2.0f * margin) / rows, (width - 2.0f * margin) / (columns + panelCells)));
+    metrics.cell = std::max(1.0f, std::min((height - (2.0f * margin)) / rows, (width - (2.0f * margin)) / (columns + panelCells)));
     const float total = metrics.cell * (columns + panelCells);
-    metrics.origin = glm::vec2((width - total) * 0.5f, (height - metrics.cell * rows) * 0.5f);
+    metrics.origin = glm::vec2((width - total) * 0.5f, (height - (metrics.cell * rows)) * 0.5f);
     return metrics;
 }
 

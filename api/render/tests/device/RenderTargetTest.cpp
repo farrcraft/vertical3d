@@ -58,7 +58,7 @@ std::vector<unsigned char> centre(v3d::test::Headless* headless, Capture* captur
     if (!picture) {
         return std::vector<unsigned char>();
     }
-    const unsigned char* at = picture->data() + (static_cast<std::size_t>(height / 2) * width + width / 2) * 4;
+    const unsigned char* at = picture->data() + (((static_cast<std::size_t>(height / 2) * width) + (width / 2)) * 4);
     return std::vector<unsigned char>(at, at + 4);
 }
 

@@ -27,7 +27,7 @@ boost::shared_ptr<v3d::image::Image> identityStrip(uint8_t bits) {
     const std::size_t channels = bits / 8;
     for (uint32_t y = 0; y < size; y++) {
         for (uint32_t x = 0; x < size * size; x++) {
-            unsigned char* at = strip->data() + (static_cast<std::size_t>(y) * size * size + x) * channels;
+            unsigned char* at = strip->data() + (((static_cast<std::size_t>(y) * size * size) + x) * channels);
             at[0] = static_cast<unsigned char>((x % size) * 17);
             at[1] = static_cast<unsigned char>(y * 17);
             at[2] = static_cast<unsigned char>((x / size) * 17);
@@ -44,7 +44,7 @@ boost::shared_ptr<v3d::image::Image> identityStrip(uint8_t bits) {
  **/
 std::vector<uint8_t> entry(const std::vector<uint8_t>& table, std::size_t index) {
     return std::vector<uint8_t>(table.begin() + static_cast<std::ptrdiff_t>(index * 4),
-        table.begin() + static_cast<std::ptrdiff_t>(index * 4 + 4));
+        table.begin() + static_cast<std::ptrdiff_t>((index * 4) + 4));
 }
 
 };  // namespace
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(the_identity_is_each_entry_at_its_own_position) {
     BOOST_CHECK(entry(table, 0) == (std::vector<uint8_t>{0, 0, 0, 255}));
     BOOST_CHECK(entry(table, 15) == (std::vector<uint8_t>{255, 0, 0, 255}));
     BOOST_CHECK(entry(table, 16) == (std::vector<uint8_t>{0, 17, 0, 255}));
-    BOOST_CHECK(entry(table, 16 * 16 * 16 - 1) == (std::vector<uint8_t>{255, 255, 255, 255}));
+    BOOST_CHECK(entry(table, (16 * 16 * 16) - 1) == (std::vector<uint8_t>{255, 255, 255, 255}));
 }
 
 /**

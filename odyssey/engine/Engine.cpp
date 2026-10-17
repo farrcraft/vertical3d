@@ -95,8 +95,8 @@ void Engine::walkToCursor() {
     const v3d::grid::TileCoord view = world_->view(from, v3d::grid::TileCoord{unit::screen_tile_width, unit::screen_tile_height});
     // a cursor is never left of or above the window, so a pixel divides down to its tile
     const v3d::grid::TileCoord goal{
-        view.x + static_cast<int>(cursor_.x) / unit::tile_width,
-        view.y + static_cast<int>(cursor_.y) / unit::tile_height};
+        view.x + (static_cast<int>(cursor_.x) / unit::tile_width),
+        view.y + (static_cast<int>(cursor_.y) / unit::tile_height)};
     // a route stays within the region the player stands in
     const std::optional<std::size_t> region = world_->regionAt(from);
     if (!region || world_->regionAt(goal) != region || !world_->passable(goal)) {

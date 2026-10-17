@@ -70,7 +70,7 @@ std::size_t Sight::index(v3d::grid::TileCoord tile) const {
     if (tile.x < 0 || tile.y < 0 || tile.x >= width_ || tile.y >= height_) {
         return visible_.size();
     }
-    return static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(width_) + static_cast<std::size_t>(tile.x);
+    return (static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(width_)) + static_cast<std::size_t>(tile.x);
 }
 
 };  // namespace odyssey::tile

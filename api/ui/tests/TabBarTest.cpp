@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
     BOOST_REQUIRE_EQUAL(panels->tabs().size(), 2U);
     const v3d::type::geometry::Bound2D& first = panels->tabs()[0];
     const v3d::type::geometry::Bound2D& second = panels->tabs()[1];
-    BOOST_CHECK_CLOSE(first.size().x, 4.0f * characterWidth + renderer.dressing().padding, 0.001f);
+    BOOST_CHECK_CLOSE(first.size().x, (4.0f * characterWidth) + renderer.dressing().padding, 0.001f);
     BOOST_CHECK(second.position().x > first.position().x + first.size().x - 1.0f);
 
     BOOST_CHECK_EQUAL(panels->at(first.position() + first.size() * 0.5f), 0);

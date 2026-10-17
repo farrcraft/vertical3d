@@ -369,7 +369,7 @@ BOOST_AUTO_TEST_CASE(sllighting_two_lights_test) {
     // the white light overhead, at 45 degrees
     BOOST_CHECK_CLOSE(lit.colour(0).r, 0.70710678f, 0.1f);
     // the white one plus the green one, each at 45 degrees
-    BOOST_CHECK_CLOSE(lit.colour(0).g, 0.70710678f + 0.25f * 0.70710678f, 0.1f);
+    BOOST_CHECK_CLOSE(lit.colour(0).g, 0.70710678f + (0.25f * 0.70710678f), 0.1f);
 }
 
 /**

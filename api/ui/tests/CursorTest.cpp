@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(a_list_chooses_the_row_under_the_cursor) {
     const float row = list->rowHeight();
     BOOST_REQUIRE_GT(row, 0.0f);
     // the middle of the second row
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(60.0f, 20.0f + row * 1.5f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(60.0f, 20.0f + (row * 1.5f))));
     BOOST_CHECK_EQUAL(list->selected(), 1);
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
     BOOST_CHECK_EQUAL(fixture.sent.front(), "test::load");

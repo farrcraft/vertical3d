@@ -49,7 +49,7 @@ float Value::component(unsigned int point, unsigned int index) const {
     if (wide == 0 || index >= wide) {
         return 0.0f;
     }
-    return numbers_[static_cast<std::size_t>(lane(point)) * wide + index];
+    return numbers_[(static_cast<std::size_t>(lane(point)) * wide) + index];
 }
 
 void Value::component(unsigned int point, unsigned int index, float value) {
@@ -57,7 +57,7 @@ void Value::component(unsigned int point, unsigned int index, float value) {
     if (wide == 0 || index >= wide) {
         return;
     }
-    numbers_[static_cast<std::size_t>(lane(point)) * wide + index] = value;
+    numbers_[(static_cast<std::size_t>(lane(point)) * wide) + index] = value;
 }
 
 float Value::number(unsigned int point) const {
@@ -90,7 +90,7 @@ glm::mat4x4 Value::matrix(unsigned int point) const {
     glm::mat4x4 value(1.0f);
     for (int column = 0; column < 4; column++) {
         for (int row = 0; row < 4; row++) {
-            value[column][row] = component(point, static_cast<unsigned int>(column * 4 + row));
+            value[column][row] = component(point, static_cast<unsigned int>((column * 4) + row));
         }
     }
     return value;
@@ -102,7 +102,7 @@ void Value::matrix(unsigned int point, const glm::mat4x4 & value) {
     }
     for (int column = 0; column < 4; column++) {
         for (int row = 0; row < 4; row++) {
-            component(point, static_cast<unsigned int>(column * 4 + row), value[column][row]);
+            component(point, static_cast<unsigned int>((column * 4) + row), value[column][row]);
         }
     }
 }

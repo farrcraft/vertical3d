@@ -69,7 +69,7 @@ unsigned int TextureAtlas::id() const {
 }
 
 glm::ivec4 TextureAtlas::region(unsigned int width, unsigned int height) {
-    const glm::ivec4 cell = allocate(width + gutter * 2, height + gutter * 2);
+    const glm::ivec4 cell = allocate(width + (gutter * 2), height + (gutter * 2));
     if (cell.x < 0) {
         return cell;
     }
@@ -177,8 +177,8 @@ void TextureAtlas::region(unsigned int x, unsigned int y, unsigned int width, un
     size_t charsize = sizeof(char);
     unsigned char* imgData = image_->data();
     for (unsigned int i = 0; i < height; ++i) {
-        memcpy(imgData + (static_cast<size_t>(y + i) * width_ + x) * charsize * depth_,
-            data + (static_cast<size_t>(i) * stride) * charsize, width * charsize * depth_);
+        memcpy(imgData + (((static_cast<size_t>(y + i) * width_) + x) * charsize * depth_),
+            data + ((static_cast<size_t>(i) * stride) * charsize), width * charsize * depth_);
     }
 }
 

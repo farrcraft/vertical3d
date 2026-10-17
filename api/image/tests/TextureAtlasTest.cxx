@@ -17,7 +17,7 @@ namespace {
 const unsigned int size = 64;
 
 unsigned char texel(v3d::image::TextureAtlas* atlas, int x, int y) {
-    return atlas->image()->data()[static_cast<size_t>(y) * size + x];
+    return atlas->image()->data()[(static_cast<size_t>(y) * size) + x];
 }
 
 };  // namespace

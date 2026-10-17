@@ -43,8 +43,8 @@ BOOST_AUTO_TEST_CASE(crop_cuts_the_rectangle_asked_for) {
 
     for (unsigned int row = 0; row < 2; ++row) {
         for (unsigned int byte = 0; byte < 2 * 3; ++byte) {
-            const unsigned int from = ((1 + row) * 4 + 1) * 3 + byte;
-            BOOST_CHECK_EQUAL(static_cast<int>((*cut)[row * 2 * 3 + byte]),
+            const unsigned int from = ((((1 + row) * 4) + 1) * 3) + byte;
+            BOOST_CHECK_EQUAL(static_cast<int>((*cut)[(row * 2 * 3) + byte]),
                 static_cast<int>((*source)[from]));
         }
     }

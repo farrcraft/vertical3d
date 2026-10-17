@@ -135,7 +135,7 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     png_bytep data = img->data();
     // both the file and Image are top down, so the rows go out in the order they are in
     for (k = 0; k < height; k++) {
-        row_pointers[k] = data + static_cast<size_t>(k) * width * bytes_per_pixel;
+        row_pointers[k] = data + (static_cast<size_t>(k) * width * bytes_per_pixel);
     }
 
     png_write_image(png_ptr, row_pointers);

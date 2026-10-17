@@ -130,7 +130,7 @@ std::string drawCoincident(v3d::test::Headless* headless, Drawn drawn, std::opti
     if (!picture) {
         return "nothing read";
     }
-    const unsigned char* at = picture->data() + (static_cast<std::size_t>(16) * width + 32) * 4;
+    const unsigned char* at = picture->data() + (((static_cast<std::size_t>(16) * width) + 32) * 4);
     if (at[0] == 255 && at[1] == 0 && at[2] == 0) {
         return "red";
     }

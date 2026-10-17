@@ -25,7 +25,7 @@ boost::shared_ptr<Image> crop(const Image & source, unsigned int x, unsigned int
     cut.reset(new Image(width, height, source.bpp()));
     const unsigned int run = width * depth;
     for (unsigned int row = 0; row < height; ++row) {
-        const unsigned int from = ((y + row) * source.width() + x) * depth;
+        const unsigned int from = (((y + row) * source.width()) + x) * depth;
         const unsigned int to = row * run;
         for (unsigned int byte = 0; byte < run; ++byte) {
             (*cut)[to + byte] = source[from + byte];

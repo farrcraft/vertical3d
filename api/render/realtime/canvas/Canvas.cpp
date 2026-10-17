@@ -128,8 +128,8 @@ glm::mat4 Canvas::projection() const {
     // the space into its viewport's pixels, then those pixels to clip space as above
     projection[0][0] = 2.0f * area.z / (space_.x * width);
     projection[1][1] = 2.0f * area.w / (space_.y * height);
-    projection[3][0] = 2.0f * area.x / width - 1.0f;
-    projection[3][1] = 2.0f * area.y / height - 1.0f;
+    projection[3][0] = (2.0f * area.x / width) - 1.0f;
+    projection[3][1] = (2.0f * area.y / height) - 1.0f;
     return projection;
 }
 
@@ -168,11 +168,11 @@ void Canvas::scale(const glm::vec2& factor) {
 void Canvas::clip(const glm::vec2& min, const glm::vec2& max) {
     const glm::mat4& transform = transforms_.top();
     const glm::vec2 first = toPixels(glm::vec2(
-        transform[0][0] * min.x + transform[1][0] * min.y + transform[3][0],
-        transform[0][1] * min.x + transform[1][1] * min.y + transform[3][1]));
+        (transform[0][0] * min.x) + (transform[1][0] * min.y) + transform[3][0],
+        (transform[0][1] * min.x) + (transform[1][1] * min.y) + transform[3][1]));
     const glm::vec2 second = toPixels(glm::vec2(
-        transform[0][0] * max.x + transform[1][0] * max.y + transform[3][0],
-        transform[0][1] * max.x + transform[1][1] * max.y + transform[3][1]));
+        (transform[0][0] * max.x) + (transform[1][0] * max.y) + transform[3][0],
+        (transform[0][1] * max.x) + (transform[1][1] * max.y) + transform[3][1]));
 
     // a negative scale swaps the corners, so the stack orders them after the transform
     clips_.push(first, second);
@@ -210,8 +210,8 @@ void Canvas::vertex(const glm::vec2& position, const glm::vec2& uv, const glm::v
     const glm::mat4& transform = transforms_.top();
 
     Vertex added;
-    added.position.x = transform[0][0] * position.x + transform[1][0] * position.y + transform[3][0];
-    added.position.y = transform[0][1] * position.x + transform[1][1] * position.y + transform[3][1];
+    added.position.x = (transform[0][0] * position.x) + (transform[1][0] * position.y) + transform[3][0];
+    added.position.y = (transform[0][1] * position.x) + (transform[1][1] * position.y) + transform[3][1];
     added.uv = uv;
     added.colour = colour;
     vertices_.push_back(added);
@@ -269,7 +269,7 @@ void Canvas::ring(const glm::vec2& centre, float outer, float inner, unsigned in
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
     const float step = sweep / static_cast<float>(sides);
     for (unsigned int side = 0; side <= sides; side++) {
-        const float angle = start + step * static_cast<float>(side);
+        const float angle = start + (step * static_cast<float>(side));
         const glm::vec2 direction(std::cos(angle), std::sin(angle));
         vertex(centre + direction * outer, glm::vec2(0.5f, 0.5f), colour);
         vertex(centre + direction * inner, glm::vec2(0.5f, 0.5f), colour);
@@ -277,7 +277,7 @@ void Canvas::ring(const glm::vec2& centre, float outer, float inner, unsigned in
 
     // two triangles per segment, over the pair of vertices at each end of it
     for (unsigned int side = 0; side < sides; side++) {
-        const uint32_t edge = first + side * 2;
+        const uint32_t edge = first + (side * 2);
         indices_.push_back(edge);
         indices_.push_back(edge + 2);
         indices_.push_back(edge + 1);
@@ -300,7 +300,7 @@ void Canvas::arc(const glm::vec2& centre, float radius, unsigned int sides, floa
 
     const float step = sweep / static_cast<float>(sides);
     for (unsigned int side = 0; side <= sides; side++) {
-        const float angle = start + step * static_cast<float>(side);
+        const float angle = start + (step * static_cast<float>(side));
         vertex(centre + glm::vec2(std::cos(angle) * radius, std::sin(angle) * radius), glm::vec2(0.5f, 0.5f), colour);
     }
 

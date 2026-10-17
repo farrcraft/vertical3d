@@ -240,9 +240,9 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_reads_32_bits_through_its_masks) {
     for (unsigned int pixel = 0; pixel < 4; ++pixel) {
         BOOST_TEST_CONTEXT("pixel " << pixel) {
             BOOST_CHECK_EQUAL((*image)[pixel * 4], 0);
-            BOOST_CHECK_EQUAL((*image)[pixel * 4 + 1], 0xFF);
-            BOOST_CHECK_EQUAL((*image)[pixel * 4 + 2], 0);
-            BOOST_CHECK_EQUAL((*image)[pixel * 4 + 3], 0xFF);
+            BOOST_CHECK_EQUAL((*image)[(pixel * 4) + 1], 0xFF);
+            BOOST_CHECK_EQUAL((*image)[(pixel * 4) + 2], 0);
+            BOOST_CHECK_EQUAL((*image)[(pixel * 4) + 3], 0xFF);
         }
     }
 }
@@ -333,9 +333,9 @@ std::vector<unsigned char> bitmap(int width, int bits, const std::vector<uint32_
         put16(value >> 16);
     };
     const uint32_t pad = (static_cast<uint32_t>(width * bits / 8) + 3) / 4 * 4;
-    const uint32_t offset = 14 + 40 + static_cast<uint32_t>(masks.size()) * 4;
+    const uint32_t offset = 14 + 40 + (static_cast<uint32_t>(masks.size()) * 4);
     put16(19778);
-    put32(offset + pad * static_cast<uint32_t>(rows.size()));
+    put32(offset + (pad * static_cast<uint32_t>(rows.size())));
     put32(0);
     put32(offset);
     put32(40);
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_rows_wider_than_a_pixel) {
     std::vector<std::vector<unsigned char>> rows(2);
     for (unsigned int row = 0; row < 2; ++row) {
         for (unsigned int column = 0; column < 3; ++column) {
-            const unsigned char base = static_cast<unsigned char>((row * 3 + column) * 10);
+            const unsigned char base = static_cast<unsigned char>(((row * 3) + column) * 10);
             rows[row].push_back(static_cast<unsigned char>(base + 3));
             rows[row].push_back(static_cast<unsigned char>(base + 2));
             rows[row].push_back(static_cast<unsigned char>(base + 1));
@@ -431,9 +431,9 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_rows_wider_than_a_pixel) {
     BOOST_REQUIRE(image);
     for (unsigned int pixel = 0; pixel < 6; ++pixel) {
         BOOST_TEST_CONTEXT("pixel " << pixel) {
-            BOOST_CHECK_EQUAL((*image)[pixel * 3], pixel * 10 + 1);
-            BOOST_CHECK_EQUAL((*image)[pixel * 3 + 1], pixel * 10 + 2);
-            BOOST_CHECK_EQUAL((*image)[pixel * 3 + 2], pixel * 10 + 3);
+            BOOST_CHECK_EQUAL((*image)[pixel * 3], (pixel * 10) + 1);
+            BOOST_CHECK_EQUAL((*image)[(pixel * 3) + 1], (pixel * 10) + 2);
+            BOOST_CHECK_EQUAL((*image)[(pixel * 3) + 2], (pixel * 10) + 3);
         }
     }
 }

@@ -155,7 +155,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
                     ? style::Resolver::Class::Radio : style::Resolver::Class::CheckBox,
                 component.style());
             const float text = box->label().empty() ? 0.0f
-                : dress.padding * 0.5f + measure_(box->label());
+                : (dress.padding * 0.5f) + measure_(box->label());
             return glm::vec2(dress.markSize + text, std::max(dress.markSize, dress.lineHeight));
         }
         case component::Type::SelectList: {
@@ -477,8 +477,8 @@ void Arranger::panel(component::menu::Menu& menu, const glm::vec2& origin, const
     // right. Both are there whether or not this menu uses them, so that every label in one
     // panel starts at the same place
     const float column = base.lineHeight * markColumn;
-    const glm::vec2 size(widest + column * 2.0f + base.padding * 0.5f,
-        base.lineHeight * static_cast<float>(count) + base.panelPadding * 2.0f);
+    const glm::vec2 size(widest + (column * 2.0f) + (base.padding * 0.5f),
+        (base.lineHeight * static_cast<float>(count)) + (base.panelPadding * 2.0f));
 
     // a panel that would hang off an edge is moved back onto the canvas rather than clipped,
     // so the flyouts of a bar's last menu stay inside the window
@@ -489,7 +489,7 @@ void Arranger::panel(component::menu::Menu& menu, const glm::vec2& origin, const
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = menu[index];
         if (item) {
-            const float top = corner.y + base.panelPadding + base.lineHeight * static_cast<float>(index);
+            const float top = corner.y + base.panelPadding + (base.lineHeight * static_cast<float>(index));
             place(*item, glm::vec2(corner.x, top), glm::vec2(size.x, base.lineHeight));
         }
     }
@@ -508,15 +508,15 @@ void Arranger::centred(component::menu::Menu& level, const glm::vec2& room) cons
         widest = std::max(widest, item ? measure_(item->text()) : 0.0f);
     }
     const paint::Dressing& base = styles_.base();
-    const glm::vec2 size(widest + base.padding * 2.0f,
-        base.lineHeight * static_cast<float>(count) + base.padding * 2.0f);
+    const glm::vec2 size(widest + (base.padding * 2.0f),
+        (base.lineHeight * static_cast<float>(count)) + (base.padding * 2.0f));
     const glm::vec2 corner((room - size) * 0.5f);
     place(level, corner, size);
 
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = level[index];
         if (item) {
-            const float top = corner.y + base.padding + base.lineHeight * static_cast<float>(index);
+            const float top = corner.y + base.padding + (base.lineHeight * static_cast<float>(index));
             place(*item, glm::vec2(corner.x, top), glm::vec2(size.x, base.lineHeight));
         }
     }

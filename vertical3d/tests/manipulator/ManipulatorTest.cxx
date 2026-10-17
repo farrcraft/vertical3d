@@ -140,11 +140,11 @@ BOOST_AUTO_TEST_CASE(manipulator_rotate_grab_test) {
     // a ring is grabbed anywhere along it and not only where it is drawn through a point:
     // the arc between two of those is wider than the tolerance
     BOOST_CHECK_EQUAL(manipulator.grab(cube, *view,
-        glm::vec2(centre.x + radius * 0.7071f, centre.y - radius * 0.7071f), &axis), true);
+        glm::vec2(centre.x + (radius * 0.7071f), centre.y - (radius * 0.7071f)), &axis), true);
     BOOST_CHECK(axis == v3d::editor::Manipulator::Axis::Z);
 
     // inside the ring and away from the centre handle is nothing
-    BOOST_CHECK_EQUAL(manipulator.grab(cube, *view, glm::vec2(centre.x + radius * 0.5f, centre.y), &axis), false);
+    BOOST_CHECK_EQUAL(manipulator.grab(cube, *view, glm::vec2(centre.x + (radius * 0.5f), centre.y), &axis), false);
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_rotate_test) {
@@ -200,6 +200,6 @@ BOOST_AUTO_TEST_CASE(manipulator_scale_test) {
 
     // a drag far enough to run the scale past zero stops short of it: an inside out object
     // has no handle left to drag back
-    manipulator.apply(cube, *view, centre, glm::vec2(centre.x - handle * 20.0f, centre.y));
+    manipulator.apply(cube, *view, centre, glm::vec2(centre.x - (handle * 20.0f), centre.y));
     BOOST_CHECK_GT(cube->scale().x, 0.0f);
 }

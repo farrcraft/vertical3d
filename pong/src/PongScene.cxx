@@ -35,7 +35,7 @@ constexpr float MAX_RETURN_ANGLE = 0.8727f;
  * horizontally, which the caller sets from the paddle's face to beyond the court's edge.
  **/
 v3d::type::geometry::Bound2D paddleReach(Paddle& paddle, float left, float right) {
-    const float top = paddle.position() - paddle.length() / 2.0f;
+    const float top = paddle.position() - (paddle.length() / 2.0f);
     return v3d::type::geometry::Bound2D(left, top, right - left, paddle.length());
 }
 
@@ -44,7 +44,7 @@ v3d::type::geometry::Bound2D paddleReach(Paddle& paddle, float left, float right
  * with x running left to right across the window, so left on the court is left on screen.
  **/
 float across(float x) {
-    return x / PongScene::width * 2.0f - 1.0f;
+    return (x / PongScene::width * 2.0f) - 1.0f;
 }
 
 };  // namespace
@@ -147,7 +147,7 @@ void PongScene::bouncePaddles(const glm::vec2& ballPosition) {
 void PongScene::returnBall(Paddle& paddle, const glm::vec2& ballPosition, float away) {
     // where along the paddle the ball met it, from -1 at the top end to 1 at the bottom. The
     // ball's own half size is included, so a ball clipping the very end counts as the end
-    const float reach = paddle.length() / 2.0f + gameState_.ballSize() / 2.0f;
+    const float reach = (paddle.length() / 2.0f) + (gameState_.ballSize() / 2.0f);
     const float along = std::clamp((ballPosition.y - paddle.position()) / reach, -1.0f, 1.0f);
 
     const float angle = along * MAX_RETURN_ANGLE;
@@ -230,7 +230,7 @@ void PongScene::movePaddles(float step) {
     // a paddle stops with its end against a wall, however far a step would have taken it
     const float travel = PADDLE_SPEED * step;
     for (Paddle * paddle : { &left_, &right_ }) {
-        const float top = wall + paddle->length() / 2.0f;
+        const float top = wall + (paddle->length() / 2.0f);
         const float bottom = height - top;
         if (paddle->up()) {
             paddle->position(std::clamp(paddle->position() - travel, top, bottom));

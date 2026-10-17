@@ -64,12 +64,12 @@ void outlineGrid(const TileGrid& grid, const glm::vec4& interior, const glm::vec
     const float spanZ = static_cast<float>(grid.height()) * tileSize;
 
     for (int x = 0; x <= grid.width(); ++x) {
-        const float at = origin.x + static_cast<float>(x) * tileSize;
+        const float at = origin.x + (static_cast<float>(x) * tileSize);
         const bool outer = x == 0 || x == grid.width();
         sink(glm::vec3(at, lift, origin.z), glm::vec3(at, lift, origin.z + spanZ), outer ? border : interior);
     }
     for (int y = 0; y <= grid.height(); ++y) {
-        const float at = origin.z + static_cast<float>(y) * tileSize;
+        const float at = origin.z + (static_cast<float>(y) * tileSize);
         const bool outer = y == 0 || y == grid.height();
         sink(glm::vec3(origin.x, lift, at), glm::vec3(origin.x + spanX, lift, at), outer ? border : interior);
     }

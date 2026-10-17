@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(an_offset_starts_the_rows_further_down) {
 
     BOOST_REQUIRE(!written.empty());
     BOOST_CHECK_EQUAL(written.front().text, "row 5");
-    BOOST_CHECK_CLOSE(written.front().pen.y, saves->position().y + renderer.dressing().lineHeight * 0.7f, 0.001f);
+    BOOST_CHECK_CLOSE(written.front().pen.y, saves->position().y + (renderer.dressing().lineHeight * 0.7f), 0.001f);
 }
 
 /**
@@ -167,13 +167,13 @@ BOOST_AUTO_TEST_CASE(a_point_names_the_row_under_it) {
     renderer.draw(&canvas, container);
 
     const float row = saves->rowHeight();
-    BOOST_CHECK_EQUAL(saves->at(glm::vec2(30.0f, 30.0f + row * 0.5f)), 0);
-    BOOST_CHECK_EQUAL(saves->at(glm::vec2(30.0f, 30.0f + row * 2.5f)), 2);
+    BOOST_CHECK_EQUAL(saves->at(glm::vec2(30.0f, 30.0f + (row * 0.5f))), 0);
+    BOOST_CHECK_EQUAL(saves->at(glm::vec2(30.0f, 30.0f + (row * 2.5f))), 2);
     // outside the box, and past the last row that fits
     BOOST_CHECK_EQUAL(saves->at(glm::vec2(300.0f, 40.0f)), v3d::ui::component::SelectList::none);
 
     saves->offset(row * 5.0f);
-    BOOST_CHECK_EQUAL(saves->at(glm::vec2(30.0f, 30.0f + row * 0.5f)), 5);
+    BOOST_CHECK_EQUAL(saves->at(glm::vec2(30.0f, 30.0f + (row * 0.5f))), 5);
 }
 
 /**

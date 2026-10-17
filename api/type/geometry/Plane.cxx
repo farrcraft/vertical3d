@@ -24,7 +24,7 @@ Plane::~Plane() {
 
 void Plane::normalize(void) {
     float mag;
-    mag = std::sqrt(equation_[0] * equation_[0] + equation_[1] * equation_[1] + equation_[2] * equation_[2]);
+    mag = std::sqrt((equation_[0] * equation_[0]) + (equation_[1] * equation_[1]) + (equation_[2] * equation_[2]));
     equation_[0] /= mag;
     equation_[1] /= mag;
     equation_[2] /= mag;
@@ -75,7 +75,7 @@ void Plane::calculate(const glm::vec3 & normal, const glm::vec3 & point) {
 }
 
 float Plane::signedDistance(const glm::vec3 & point) const {
-    return equation_[0] * point[0] + equation_[1] * point[1] + equation_[2] * point[2] + equation_[3];
+    return (equation_[0] * point[0]) + (equation_[1] * point[1]) + (equation_[2] * point[2]) + equation_[3];
 }
 
 // classifies whether a point is on either side of the plane or on the plane itself.

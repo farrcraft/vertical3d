@@ -131,7 +131,7 @@ std::vector<float> drawDepth(v3d::test::Headless* headless, const boost::shared_
 }
 
 float at(const std::vector<float>& depths, uint32_t x, uint32_t y) {
-    return depths[static_cast<std::size_t>(y) * width + x];
+    return depths[(static_cast<std::size_t>(y) * width) + x];
 }
 
 /**

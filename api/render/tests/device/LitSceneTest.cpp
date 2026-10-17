@@ -113,8 +113,8 @@ struct Shading final {
 Shading compare(const boost::shared_ptr<v3d::image::Image>& without, const boost::shared_ptr<v3d::image::Image>& with) {
     Shading shading;
     for (std::size_t texel = 0; texel < static_cast<std::size_t>(with->width()) * with->height(); texel++) {
-        const unsigned char* before = without->data() + texel * 4;
-        const unsigned char* after = with->data() + texel * 4;
+        const unsigned char* before = without->data() + (texel * 4);
+        const unsigned char* after = with->data() + (texel * 4);
         if (before[0] == after[0] && before[1] == after[1] && before[2] == after[2]) {
             continue;
         }
@@ -297,7 +297,7 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
     v3d::image::reader::Png png(headless->logger);
     boost::shared_ptr<v3d::image::Image> picture = png.read(path);
     BOOST_REQUIRE(picture);
-    const unsigned char* centre = picture->data() + (static_cast<std::size_t>(height / 2) * width + width / 2) * 4;
+    const unsigned char* centre = picture->data() + (((static_cast<std::size_t>(height / 2) * width) + (width / 2)) * 4);
     BOOST_TEST_MESSAGE("centre " << int(centre[0]) << "," << int(centre[1]) << "," << int(centre[2]));
     BOOST_CHECK_GT(centre[0], 200);
     BOOST_CHECK_LT(centre[1], 10);
@@ -306,7 +306,7 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
     // the outline is black and nothing else in the picture is, so a black pixel is one
     std::size_t outlined = 0;
     for (std::size_t texel = 0; texel < static_cast<std::size_t>(width) * height; texel++) {
-        const unsigned char* at = picture->data() + texel * 4;
+        const unsigned char* at = picture->data() + (texel * 4);
         if (at[0] == 0 && at[1] == 0 && at[2] == 0) {
             outlined++;
         }
@@ -389,7 +389,7 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     BOOST_CHECK(headless.silent());
     const std::vector<float> depths = capture.depth();
     BOOST_REQUIRE_EQUAL(depths.size(), static_cast<std::size_t>(size) * size);
-    const auto at = [&depths, size](uint32_t x, uint32_t y) { return depths[static_cast<std::size_t>(y) * size + x]; };
+    const auto at = [&depths, size](uint32_t x, uint32_t y) { return depths[(static_cast<std::size_t>(y) * size) + x]; };
     // the mirrored hand mirrors the map, so the two blocks change sides
     const bool mirrored = hand == v3d::type::camera::Profile::Hand::DirectionCrossUp;
     BOOST_CHECK_EQUAL(at(mirrored ? 11 : 4, 8), 0.25f);
@@ -489,7 +489,7 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
     BOOST_REQUIRE(picture);
     BOOST_CHECK(headless.silent());
 
-    const unsigned char* centre = picture->data() + (static_cast<std::size_t>(height / 2) * width + width / 2) * 4;
+    const unsigned char* centre = picture->data() + (((static_cast<std::size_t>(height / 2) * width) + (width / 2)) * 4);
     BOOST_TEST_MESSAGE("centre " << int(centre[0]) << "," << int(centre[1]) << "," << int(centre[2]));
     BOOST_CHECK_GT(centre[0], 0);
     BOOST_CHECK_EQUAL(centre[1], 0);
@@ -711,7 +711,7 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
     const unsigned char* first = picture->data();
     std::size_t differing = 0;
     for (std::size_t texel = 0; texel < static_cast<std::size_t>(frameWidth) * frameHeight; texel++) {
-        const unsigned char* at = picture->data() + texel * 4;
+        const unsigned char* at = picture->data() + (texel * 4);
         if (at[0] != first[0] || at[1] != first[1] || at[2] != first[2]) {
             differing++;
         }
@@ -777,7 +777,7 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
     std::size_t red = 0;
     std::size_t green = 0;
     for (std::size_t texel = 0; texel < static_cast<std::size_t>(width) * height; texel++) {
-        const unsigned char* at = picture->data() + texel * 4;
+        const unsigned char* at = picture->data() + (texel * 4);
         if (at[0] > 200 && at[1] < 10 && at[2] < 10) {
             red++;
         }
@@ -854,12 +854,12 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
 
     BOOST_CHECK(headless.silent());
     BOOST_REQUIRE(picture);
-    const unsigned char* centre = picture->data() + (static_cast<std::size_t>(height / 2) * width + width / 2) * 4;
+    const unsigned char* centre = picture->data() + (((static_cast<std::size_t>(height / 2) * width) + (width / 2)) * 4);
     BOOST_TEST_MESSAGE("centre " << int(centre[0]) << "," << int(centre[1]) << "," << int(centre[2]));
     BOOST_CHECK_GT(centre[0], 200);
     BOOST_CHECK_LT(centre[1], 10);
 
-    const unsigned char* corner = picture->data() + (static_cast<std::size_t>(4) * width + 4) * 4;
+    const unsigned char* corner = picture->data() + (((static_cast<std::size_t>(4) * width) + 4) * 4);
     BOOST_TEST_MESSAGE("corner " << int(corner[0]) << "," << int(corner[1]) << "," << int(corner[2]));
     BOOST_CHECK_LT(corner[0], 10);
     BOOST_CHECK_GT(corner[1], 200);
@@ -915,7 +915,7 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
         const boost::shared_ptr<v3d::image::Image> picture = readBack(&headless, commands, target, "data_out/lit_coloured.png");
         BOOST_REQUIRE(picture);
 
-        const unsigned char* centre = picture->data() + (static_cast<std::size_t>(height / 2) * width + width / 2) * 4;
+        const unsigned char* centre = picture->data() + (((static_cast<std::size_t>(height / 2) * width) + (width / 2)) * 4);
         BOOST_TEST_MESSAGE("centre " << int(centre[0]) << "," << int(centre[1]) << "," << int(centre[2]));
         BOOST_CHECK_EQUAL(static_cast<int>(centre[0]), 255);
         BOOST_CHECK_EQUAL(static_cast<int>(centre[1]), colour.g > 0.0f ? 255 : 0);

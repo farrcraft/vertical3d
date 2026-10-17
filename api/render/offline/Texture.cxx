@@ -45,7 +45,7 @@ unsigned int Texture::height() const {
 }
 
 const glm::vec3 & Texture::texel(int column, int row) const {
-    return texels_[static_cast<std::size_t>(wrap(row, height_)) * width_ +
+    return texels_[(static_cast<std::size_t>(wrap(row, height_)) * width_) +
         static_cast<std::size_t>(wrap(column, width_))];
 }
 
@@ -59,8 +59,8 @@ glm::vec3 Texture::sample(float s, float t) const {
     s -= std::floor(s);
     t -= std::floor(t);
     // texel centres are at half a texel in, so a position is measured from the first one
-    const float x = s * static_cast<float>(width_) - 0.5f;
-    const float y = t * static_cast<float>(height_) - 0.5f;
+    const float x = (s * static_cast<float>(width_)) - 0.5f;
+    const float y = (t * static_cast<float>(height_)) - 0.5f;
     const float left = std::floor(x);
     const float top = std::floor(y);
     const float across = x - left;

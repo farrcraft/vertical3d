@@ -63,9 +63,9 @@ void Line::transform(const glm::mat4& transform) {
  **/
 void Line::translate(const glm::vec3& offset) {
     glm::mat4& current = transforms_.top();
-    current[3][0] += current[0][0] * offset.x + current[1][0] * offset.y + current[2][0] * offset.z;
-    current[3][1] += current[0][1] * offset.x + current[1][1] * offset.y + current[2][1] * offset.z;
-    current[3][2] += current[0][2] * offset.x + current[1][2] * offset.y + current[2][2] * offset.z;
+    current[3][0] += (current[0][0] * offset.x) + (current[1][0] * offset.y) + (current[2][0] * offset.z);
+    current[3][1] += (current[0][1] * offset.x) + (current[1][1] * offset.y) + (current[2][1] * offset.z);
+    current[3][2] += (current[0][2] * offset.x) + (current[1][2] * offset.y) + (current[2][2] * offset.z);
 }
 
 /**
@@ -108,9 +108,9 @@ void Line::vertex(const glm::vec3& position, const glm::vec4& colour) {
     const glm::mat4& current = transforms_.top();
 
     Vertex added;
-    added.position.x = current[0][0] * position.x + current[1][0] * position.y + current[2][0] * position.z + current[3][0];
-    added.position.y = current[0][1] * position.x + current[1][1] * position.y + current[2][1] * position.z + current[3][1];
-    added.position.z = current[0][2] * position.x + current[1][2] * position.y + current[2][2] * position.z + current[3][2];
+    added.position.x = (current[0][0] * position.x) + (current[1][0] * position.y) + (current[2][0] * position.z) + current[3][0];
+    added.position.y = (current[0][1] * position.x) + (current[1][1] * position.y) + (current[2][1] * position.z) + current[3][1];
+    added.position.z = (current[0][2] * position.x) + (current[1][2] * position.y) + (current[2][2] * position.z) + current[3][2];
     added.colour = colour;
     vertices_.push_back(added);
 }

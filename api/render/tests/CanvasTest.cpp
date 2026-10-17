@@ -25,8 +25,8 @@ constexpr glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
 glm::vec2 project(const v3d::render::realtime::canvas::Canvas& canvas, const glm::vec2& point) {
     const glm::mat4 projection = canvas.projection();
     return glm::vec2(
-        projection[0][0] * point.x + projection[3][0],
-        projection[1][1] * point.y + projection[3][1]);
+        (projection[0][0] * point.x) + projection[3][0],
+        (projection[1][1] * point.y) + projection[3][1]);
 }
 
 };  // namespace
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(a_circle_is_a_fan_that_batches_with_untextured_quads) {
     canvas.circle(glm::vec2(50.0f, 50.0f), 10.0f, 8, white);
 
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
-    BOOST_CHECK_EQUAL(canvas.indices().size(), 6 + 8 * 3);
+    BOOST_CHECK_EQUAL(canvas.indices().size(), 6 + (8 * 3));
     // the centre, one vertex per side, and a repeat of the first so the wrap needs no case
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 4 + 1 + 9);
 }
@@ -218,14 +218,14 @@ BOOST_AUTO_TEST_CASE(a_ring_is_a_strip_between_two_radii) {
     canvas.ring(glm::vec2(50.0f, 50.0f), 10.0f, 6.0f, 8, 0.0f, 6.283185307179586f, white);
 
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
-    BOOST_CHECK_EQUAL(canvas.indices().size(), 6 + 8 * 6);
+    BOOST_CHECK_EQUAL(canvas.indices().size(), 6 + (8 * 6));
     // a pair per side, and a repeat of the first pair so the wrap needs no case
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4 + 9 * 2);
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4 + (9 * 2));
 
     // nothing lands in the hole the ring leaves
     for (std::size_t index = 4; index < canvas.vertices().size(); index++) {
         const glm::vec2 offset = glm::vec2(canvas.vertices()[index].position) - glm::vec2(50.0f, 50.0f);
-        BOOST_CHECK_GE(std::sqrt(offset.x * offset.x + offset.y * offset.y), 6.0f - 0.001f);
+        BOOST_CHECK_GE(std::sqrt((offset.x * offset.x) + (offset.y * offset.y)), 6.0f - 0.001f);
     }
 }
 

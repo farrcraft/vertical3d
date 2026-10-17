@@ -75,7 +75,7 @@ std::string describe(const std::exception_ptr& error) {
  * carries pixels for that is not already uploaded, once.
  **/
 std::size_t bytes(const DecodedModel& decoded, const AlbedoUploaded& uploaded) {
-    std::size_t total = decoded.model->vertexBytes() + decoded.model->indices().size() * sizeof(std::uint32_t);
+    std::size_t total = decoded.model->vertexBytes() + (decoded.model->indices().size() * sizeof(std::uint32_t));
     std::set<const image::Image*> counted;
     for (const DecodedModel::Albedo& albedo : decoded.albedos) {
         if (albedo.pixels && !uploaded(albedo.key) && counted.insert(albedo.pixels.get()).second) {

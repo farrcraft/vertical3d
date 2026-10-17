@@ -23,7 +23,7 @@ namespace {
  * The value of key `key` - the middle of three for a cubic spline.
  **/
 glm::vec4 valueAt(const Channel& channel, std::size_t key) {
-    return channel.interpolation == Channel::Interpolation::CubicSpline ? channel.values[key * 3 + 1] : channel.values[key];
+    return channel.interpolation == Channel::Interpolation::CubicSpline ? channel.values[(key * 3) + 1] : channel.values[key];
 }
 
 glm::quat asQuat(const glm::vec4& value) {
@@ -38,11 +38,11 @@ glm::quat asQuat(const glm::vec4& value) {
 glm::vec4 hermite(const Channel& channel, std::size_t key, float u, float span) {
     const float u2 = u * u;
     const float u3 = u2 * u;
-    const glm::vec4 from = channel.values[key * 3 + 1];
-    const glm::vec4 out = channel.values[key * 3 + 2] * span;
+    const glm::vec4 from = channel.values[(key * 3) + 1];
+    const glm::vec4 out = channel.values[(key * 3) + 2] * span;
     const glm::vec4 in = channel.values[(key + 1) * 3] * span;
-    const glm::vec4 to = channel.values[(key + 1) * 3 + 1];
-    return (2.0f * u3 - 3.0f * u2 + 1.0f) * from + (u3 - 2.0f * u2 + u) * out + (-2.0f * u3 + 3.0f * u2) * to +
+    const glm::vec4 to = channel.values[((key + 1) * 3) + 1];
+    return ((2.0f * u3) - (3.0f * u2) + 1.0f) * from + (u3 - (2.0f * u2) + u) * out + ((-2.0f * u3) + (3.0f * u2)) * to +
         (u3 - u2) * in;
 }
 

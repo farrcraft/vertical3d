@@ -45,7 +45,7 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     memset(&fheader, 0, sizeof(format::bmp_file_header));
 
     fheader.type_ = 19778;
-    fheader.offset_ = sizeof(format::bmp_file_header) + sizeof(format::bmp_info_header) + shades * sizeof(format::bmp_rgb_quad);
+    fheader.offset_ = sizeof(format::bmp_file_header) + sizeof(format::bmp_info_header) + (shades * sizeof(format::bmp_rgb_quad));
     // the total file size, filled in below once the padded data length is known
     fheader.size_ = fheader.offset_;
 
@@ -101,8 +101,8 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     // each. The height is written positive, which means the rows are stored bottom up, so
     // the image's top row goes last
     for (uint64_t row = 0; row < rows; ++row) {
-        unsigned char* dest = data + (rows - 1 - row) * pad;
-        const unsigned char* src = temp + row * rowBytes;
+        unsigned char* dest = data + ((rows - 1 - row) * pad);
+        const unsigned char* src = temp + (row * rowBytes);
         if (grey) {
             // an index is one byte and has no channel order to correct
             memcpy(dest, src, static_cast<size_t>(rowBytes));

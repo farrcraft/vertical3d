@@ -60,7 +60,7 @@ float smoothstep(float low, float high, float value) {
         return value < low ? 0.0f : 1.0f;
     }
     const float t = clamp((value - low) / (high - low), 0.0f, 1.0f);
-    return t * t * (3.0f - 2.0f * t);
+    return t * t * (3.0f - (2.0f * t));
 }
 
 /**
@@ -119,7 +119,7 @@ float number(Body body, const float* given, std::size_t count) {
         case Body::MOD:
             // RI's mod takes the sign of the divisor rather than of the dividend, so that
             // mod(-1, 3) is 2 and a value decreasing past zero stays inside the period
-            return given[1] == 0.0f ? 0.0f : given[0] - given[1] * std::floor(given[0] / given[1]);
+            return given[1] == 0.0f ? 0.0f : given[0] - (given[1] * std::floor(given[0] / given[1]));
         case Body::POW:
             return std::pow(given[0], given[1]);
         case Body::MIN:
@@ -129,7 +129,7 @@ float number(Body body, const float* given, std::size_t count) {
         case Body::CLAMP:
             return clamp(given[0], given[1], given[2]);
         case Body::MIX:
-            return given[0] + (given[1] - given[0]) * given[2];
+            return given[0] + ((given[1] - given[0]) * given[2]);
         case Body::STEP:
             return given[1] < given[0] ? 0.0f : 1.0f;
         case Body::SMOOTHSTEP:
@@ -157,9 +157,9 @@ glm::vec3 faceforward(const glm::vec3 & normal, const glm::vec3 & incident,
 
 glm::vec3 refract(const glm::vec3 & incident, const glm::vec3 & normal, float eta) {
     const float cosine = glm::dot(incident, normal);
-    const float k = 1.0f - eta * eta * (1.0f - cosine * cosine);
+    const float k = 1.0f - (eta * eta * (1.0f - (cosine * cosine)));
     // a negative discriminant is total internal reflection, where nothing is refracted
-    return k < 0.0f ? glm::vec3(0.0f) : eta * incident - (eta * cosine + std::sqrt(k)) * normal;
+    return k < 0.0f ? glm::vec3(0.0f) : eta * incident - ((eta * cosine) + std::sqrt(k)) * normal;
 }
 
 /**
@@ -208,13 +208,13 @@ void fresnel(const Site & site, unsigned int point) {
     const glm::vec3 normal = unit(site.argument(1).triple(point));
     const float eta = site.argument(2).number(point);
     const float cosine = std::fabs(glm::dot(incident, normal));
-    const float k = 1.0f - eta * eta * (1.0f - cosine * cosine);
+    const float k = 1.0f - (eta * eta * (1.0f - (cosine * cosine)));
     float reflected = 1.0f;
     if (k > 0.0f) {
         const float through = std::sqrt(k);
-        const float across = (eta * cosine - through) / (eta * cosine + through);
-        const float along = (cosine - eta * through) / (cosine + eta * through);
-        reflected = 0.5f * (across * across + along * along);
+        const float across = ((eta * cosine) - through) / ((eta * cosine) + through);
+        const float along = (cosine - (eta * through)) / (cosine + (eta * through));
+        reflected = 0.5f * ((across * across) + (along * along));
     }
     const std::vector<Value*> & outputs = *site.outputs;
     outputs[0]->number(point, reflected);

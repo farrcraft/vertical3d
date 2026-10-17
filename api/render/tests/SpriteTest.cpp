@@ -73,7 +73,7 @@ canvas::World::Corners billboard(const glm::vec3& feet, float width, float heigh
 
 void checkQuad(const canvas::World& canvas, std::size_t n, const canvas::World::Corners& corners) {
     for (std::size_t corner = 0; corner < 4; ++corner) {
-        BOOST_TEST(same(canvas.vertices()[n * 4 + corner].position, corners[corner]));
+        BOOST_TEST(same(canvas.vertices()[(n * 4) + corner].position, corners[corner]));
     }
 }
 

@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(toolbar_row_layout) {
         BOOST_TEST(button->position().x == pen);
         BOOST_TEST(button->position().y == 30.0f);
         BOOST_TEST(button->size().y == style.barHeight);
-        pen += static_cast<float>(button->label().size()) * characterWidth + style.padding;
+        pen += (static_cast<float>(button->label().size()) * characterWidth) + style.padding;
     }
 }
 
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(toolbar_column_layout) {
 
     const v3d::ui::Component& strip = *bar;
     // "Translate" is the widest of the three
-    const float width = 9.0f * characterWidth + style.padding;
+    const float width = (9.0f * characterWidth) + style.padding;
     BOOST_TEST(strip.size().x == width);
     BOOST_TEST(strip.size().y == static_cast<float>(fixture.canvas.height()) - 30.0f);
 
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(toolbar_column_layout) {
         const boost::shared_ptr<v3d::ui::component::Button> button = bar->button(index);
         BOOST_TEST(button->size().x == width);
         BOOST_TEST(button->size().y == style.lineHeight);
-        BOOST_TEST(button->position().y == 30.0f + style.lineHeight * static_cast<float>(index));
+        BOOST_TEST(button->position().y == 30.0f + (style.lineHeight * static_cast<float>(index)));
     }
 }
 
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
     const glm::vec2 insets = fixture.renderer.insets(container);
     const float band = style.barHeight + 1.0f;
     BOOST_TEST(insets.y == band * 2.0f);
-    BOOST_TEST(insets.x == 9.0f * characterWidth + style.padding + 1.0f);
+    BOOST_TEST(insets.x == (9.0f * characterWidth) + style.padding + 1.0f);
 
     fixture.renderer.draw(&fixture.canvas, container);
 

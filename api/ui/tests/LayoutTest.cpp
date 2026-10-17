@@ -157,7 +157,7 @@ BOOST_AUTO_TEST_CASE(a_vertical_box_stacks_what_it_holds) {
         const boost::shared_ptr<v3d::ui::Component> row = container.get("row" + std::to_string(index));
         BOOST_REQUIRE(row);
         BOOST_CHECK_CLOSE(row->position().x, 20.0f, 0.001f);
-        BOOST_CHECK_CLOSE(row->position().y, 30.0f + static_cast<float>(index) * (rowHeight + 4.0f), 0.001f);
+        BOOST_CHECK_CLOSE(row->position().y, 30.0f + (static_cast<float>(index) * (rowHeight + 4.0f)), 0.001f);
         // stretched across the box, rather than as wide as the two characters it holds
         BOOST_CHECK_CLOSE(row->size().x, 120.0f, 0.001f);
     }
@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE(a_horizontal_box_runs_across) {
     build().draw(&canvas, container);
 
     BOOST_CHECK_CLOSE(first->size().x, 3.0f * characterWidth, 0.001f);
-    BOOST_CHECK_CLOSE(second->position().x, 3.0f * characterWidth + 6.0f, 0.001f);
+    BOOST_CHECK_CLOSE(second->position().x, (3.0f * characterWidth) + 6.0f, 0.001f);
 }
 
 /**
@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE(a_rounded_panel_is_bands_and_wedges_in_one_batch) {
     canvas.clear();
     renderer.draw(&canvas, container);
     // three quads and four six segment wedges
-    BOOST_CHECK_EQUAL(canvas.indices().size(), 3U * 6U + 4U * 6U * 3U);
+    BOOST_CHECK_EQUAL(canvas.indices().size(), (3U * 6U) + (4U * 6U * 3U));
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1U);
 }
 

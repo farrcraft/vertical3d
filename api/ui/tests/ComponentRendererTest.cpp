@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
     BOOST_REQUIRE(canvas.vertices().size() >= 8);
     // vertices 4..7 are the panel, drawn over the border: min at [4], max at [6]
     const float padding = renderer.dressing().padding;
-    const float expectedWidth = 10.0f * characterWidth + padding * 2.0f;
+    const float expectedWidth = (10.0f * characterWidth) + (padding * 2.0f);
     const float left = canvas.vertices()[4].position.x;
     const float right = canvas.vertices()[6].position.x;
 

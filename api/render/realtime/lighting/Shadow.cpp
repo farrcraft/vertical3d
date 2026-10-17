@@ -169,7 +169,7 @@ std::optional<ShadowBounds> fitShadowToView(const glm::mat4& viewProjection, flo
     const float texel = 2.0f * bounds.radius / static_cast<float>(texels);
     const float across = glm::dot(bounds.centre, axes.right);
     const float up = glm::dot(bounds.centre, axes.up);
-    bounds.centre += axes.right * (std::floor(across / texel) * texel - across) + axes.up * (std::floor(up / texel) * texel - up);
+    bounds.centre += axes.right * ((std::floor(across / texel) * texel) - across) + axes.up * ((std::floor(up / texel) * texel) - up);
     return bounds;
 }
 

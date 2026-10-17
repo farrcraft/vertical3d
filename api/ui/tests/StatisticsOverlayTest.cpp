@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_SUITE(statistics_overlay_test)
  **/
 BOOST_AUTO_TEST_CASE(a_frame_reads_as_milliseconds_and_a_rate) {
     v3d::ui::shell::StatisticsOverlay::Sample sample;
-    sample.mean = 16 * millisecond + 667000;
+    sample.mean = (16 * millisecond) + 667000;
     sample.last = 17 * millisecond;
     sample.steps = 1;
 
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(nothing_is_drawn_without_a_text_renderer) {
 BOOST_AUTO_TEST_CASE(a_span_reads_as_its_name_and_milliseconds) {
     v3d::ui::shell::StatisticsOverlay::Sample::Span span;
     span.name = "terrain";
-    span.nanoseconds = 2 * millisecond + 500000;
+    span.nanoseconds = (2 * millisecond) + 500000;
     BOOST_CHECK_EQUAL(v3d::ui::shell::StatisticsOverlay::line(span), "terrain 2.5 ms");
 }
 

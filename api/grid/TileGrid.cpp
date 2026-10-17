@@ -73,8 +73,8 @@ bool TileGrid::contains(TileCoord tile) const {
 
 glm::vec3 TileGrid::tileToWorld(TileCoord tile) const {
     const glm::vec3 corner = worldMin();
-    return glm::vec3(corner.x + (static_cast<float>(tile.x) + 0.5f) * tileSize_, 0.0f,
-        corner.z + (static_cast<float>(tile.y) + 0.5f) * tileSize_);
+    return glm::vec3(corner.x + ((static_cast<float>(tile.x) + 0.5f) * tileSize_), 0.0f,
+        corner.z + ((static_cast<float>(tile.y) + 0.5f) * tileSize_));
 }
 
 TileCoord TileGrid::worldToTile(const glm::vec3& position) const {
@@ -127,7 +127,7 @@ void TileGrid::setCover(TileCoord tile, Cover cover) {
 }
 
 std::size_t TileGrid::index(TileCoord tile) const {
-    return static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(width_) + static_cast<std::size_t>(tile.x);
+    return (static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(width_)) + static_cast<std::size_t>(tile.x);
 }
 
 };  // namespace v3d::grid

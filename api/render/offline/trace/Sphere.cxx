@@ -44,8 +44,8 @@ bool Sphere::intersects(const glm::vec3 & origin, const glm::vec3 & direction, f
     const glm::vec3 d = glm::mat3(toObject_) * direction;
     const float a = glm::dot(d, d);
     const float b = 2.0f * glm::dot(o, d);
-    const float c = glm::dot(o, o) - radius_ * radius_;
-    const float discriminant = b * b - 4.0f * a * c;
+    const float c = glm::dot(o, o) - (radius_ * radius_);
+    const float discriminant = (b * b) - (4.0f * a * c);
     if (a <= 0.0f || discriminant < 0.0f) {
         return false;
     }

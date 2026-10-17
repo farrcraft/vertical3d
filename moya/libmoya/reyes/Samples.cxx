@@ -45,7 +45,7 @@ unsigned int Samples::perPixel() const {
 
 Samples::Sample & Samples::at(unsigned int column, unsigned int row, unsigned int index) {
     assert(column < width_ && row < height_ && index < perPixel_);
-    return samples_[(static_cast<std::size_t>(row) * width_ + column) * perPixel_ + index];
+    return samples_[(((static_cast<std::size_t>(row) * width_) + column) * perPixel_) + index];
 }
 
 void Samples::resolve(v3d::render::offline::FrameBuffer * planes, unsigned int red, unsigned int coverage,

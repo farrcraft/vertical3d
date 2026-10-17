@@ -86,9 +86,9 @@ bool Slider::drag(const glm::vec2& point) {
     const float side = size().y;
     const float travel = size().x - side;
     const float along = travel > 0.0f
-        ? std::clamp((point.x - position().x - side * 0.5f) / travel, 0.0f, 1.0f)
+        ? std::clamp((point.x - position().x - (side * 0.5f)) / travel, 0.0f, 1.0f)
         : std::clamp((point.x - position().x) / size().x, 0.0f, 1.0f);
-    return value(minimum_ + along * (maximum_ - minimum_));
+    return value(minimum_ + (along * (maximum_ - minimum_)));
 }
 
 /**
@@ -114,7 +114,7 @@ float Slider::snapped(float set) const noexcept {
     }
     float clamped = std::max(set, minimum_);
     if (step_ > 0.0f) {
-        clamped = std::min(minimum_ + std::round((clamped - minimum_) / step_) * step_, maximum_);
+        clamped = std::min(minimum_ + (std::round((clamped - minimum_) / step_) * step_), maximum_);
     }
     return clamped;
 }

@@ -74,10 +74,10 @@ std::vector<unsigned char> sweep(uint32_t size) {
     std::vector<unsigned char> texels(static_cast<std::size_t>(size) * size * 4);
     for (uint32_t y = 0; y < size; y++) {
         for (uint32_t x = 0; x < size; x++) {
-            unsigned char* at = texels.data() + (static_cast<std::size_t>(y) * size + x) * 4;
-            at[0] = static_cast<unsigned char>(x * 4 + (y & 3));
-            at[1] = static_cast<unsigned char>(y * 4 + (x & 3));
-            at[2] = static_cast<unsigned char>((x + y * size) & 255);
+            unsigned char* at = texels.data() + (((static_cast<std::size_t>(y) * size) + x) * 4);
+            at[0] = static_cast<unsigned char>((x * 4) + (y & 3));
+            at[1] = static_cast<unsigned char>((y * 4) + (x & 3));
+            at[2] = static_cast<unsigned char>((x + (y * size)) & 255);
             at[3] = 255;
         }
     }
@@ -92,10 +92,10 @@ boost::shared_ptr<v3d::image::Image> invertingStrip() {
     boost::shared_ptr<v3d::image::Image> strip = boost::make_shared<v3d::image::Image>(size * size, size, 24);
     for (uint32_t y = 0; y < size; y++) {
         for (uint32_t x = 0; x < size * size; x++) {
-            unsigned char* at = strip->data() + (static_cast<std::size_t>(y) * size * size + x) * 3;
-            at[0] = static_cast<unsigned char>(255 - (x % size) * 17);
-            at[1] = static_cast<unsigned char>(255 - y * 17);
-            at[2] = static_cast<unsigned char>(255 - (x / size) * 17);
+            unsigned char* at = strip->data() + (((static_cast<std::size_t>(y) * size * size) + x) * 3);
+            at[0] = static_cast<unsigned char>(255 - ((x % size) * 17));
+            at[1] = static_cast<unsigned char>(255 - (y * 17));
+            at[2] = static_cast<unsigned char>(255 - ((x / size) * 17));
         }
     }
     return strip;
@@ -348,7 +348,7 @@ BOOST_AUTO_TEST_CASE(a_pass_destroyed_after_its_source_is_queued_draws_it) {
     BOOST_REQUIRE(picture);
     const unsigned char* pixels = picture->data();
     for (uint32_t texel = 0; texel < size * size; texel++) {
-        const unsigned char* at = pixels + static_cast<std::size_t>(texel) * 4;
+        const unsigned char* at = pixels + (static_cast<std::size_t>(texel) * 4);
         if (at[0] != 0x00 || at[1] != 0xFF || at[2] != 0xFF || at[3] != 0xFF) {
             BOOST_ERROR("texel " << texel << " is not the queued source");
             return;

@@ -251,8 +251,8 @@ v3d::grid::TileCoord World::max() const noexcept {
 v3d::grid::TileCoord World::view(v3d::grid::TileCoord player, v3d::grid::TileCoord screen) const {
     // centred on the player, then held inside the world, then at its least tile when the world
     // is the smaller of the two
-    const int x = std::max(std::min(player.x - screen.x / 2, max_.x - screen.x), min_.x);
-    const int y = std::max(std::min(player.y - screen.y / 2, max_.y - screen.y), min_.y);
+    const int x = std::max(std::min(player.x - (screen.x / 2), max_.x - screen.x), min_.x);
+    const int y = std::max(std::min(player.y - (screen.y / 2), max_.y - screen.y), min_.y);
     return v3d::grid::TileCoord{x, y};
 }
 

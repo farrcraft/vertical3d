@@ -33,7 +33,7 @@ const Film::Pixel & Film::at(unsigned int column, unsigned int row) const {
     if (column >= width_ || row >= height_) {
         throw std::out_of_range("a pixel outside the film");
     }
-    return pixels_[static_cast<std::size_t>(row) * width_ + column];
+    return pixels_[(static_cast<std::size_t>(row) * width_) + column];
 }
 
 void Film::add(const Sample & sample) {
@@ -60,7 +60,7 @@ void Film::add(const Sample & sample) {
             const glm::vec2 offset = sample.raster -
                 glm::vec2(static_cast<float>(column) + 0.5f, static_cast<float>(row) + 0.5f);
             const double weight = filter(filter_, offset, filterWidth_);
-            Pixel & pixel = pixels_[static_cast<std::size_t>(row) * width_ + static_cast<std::size_t>(column)];
+            Pixel & pixel = pixels_[(static_cast<std::size_t>(row) * width_) + static_cast<std::size_t>(column)];
             pixel.weight += weight;
             pixel.colour += glm::dvec3(sample.colour) * weight;
             pixel.opacity += glm::dvec3(sample.opacity) * weight;
@@ -76,7 +76,7 @@ void Film::add(const Sample & sample) {
     if (!sample.hit || !column || !row || *column >= width_ || *row >= height_) {
         return;
     }
-    Pixel & pixel = pixels_[static_cast<std::size_t>(*row) * width_ + *column];
+    Pixel & pixel = pixels_[(static_cast<std::size_t>(*row) * width_) + *column];
     if (!pixel.hit || sample.depth < pixel.depth) {
         pixel.depth = sample.depth;
         pixel.hit = true;

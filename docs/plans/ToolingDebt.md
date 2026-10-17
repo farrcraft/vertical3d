@@ -58,7 +58,18 @@ names it as the one Python file in the tree.
 
 ### Steps 5 to 17 — One check each
 
-**Open.** Each step follows the same procedure:
+**Steps 5 to 8 done; 9 to 17 open.**
+
+- Steps 5 to 8 shared one discovery pass and one verification pass. Several files carried sites
+  of more than one check.
+- They found 51, 89, 31 and 435 sites, not the counts in the table. The table's counts for steps
+  9 to 17 are likely off by as much, so a step's own discovery pass gives its real count.
+- clang-tidy's own fix applied step 8. `run-clang-tidy -fix` over a compile database exported
+  from `out/build/tidy` applies one check's fixes without rebuilding.
+- clang-tidy does not fix a site inside a macro argument, such as a `BOOST_CHECK_EQUAL`. The
+  verification pass finds those, and they are fixed by hand.
+
+Each step follows the same procedure:
 
 - Discover the sites with `.clang-tidy` narrowed to the one check and warnings not treated as
   errors. [Linting.md](../contributing/Linting.md#clang-tidy) describes how to turn clang-tidy on.

@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE(lineofsight_stays_symmetric_with_a_blocker_test) {
     // an extra blocker with a shape of its own, so the sweep is not just re-testing the
     // grid's cover under another name
     const SightBlocker smoke = [](TileCoord tile) {
-        return (tile.x * 3 + tile.y * 5) % 7 == 0;
+        return ((tile.x * 3) + (tile.y * 5)) % 7 == 0;
     };
 
     std::string asymmetric;
