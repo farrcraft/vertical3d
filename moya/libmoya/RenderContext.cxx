@@ -290,10 +290,10 @@ float RenderContext::hither() const {
     return near_;
 }
 
-bool RenderContext::imageResolution(int xres, int yres, float aspect) {
+bool RenderContext::imageResolution(const glm::ivec2 & resolution, float aspect) {
     // RI reads a side of zero or less as the device's default for that side
-    const unsigned int width = xres > 0 ? static_cast<unsigned int>(xres) : defaultWidth;
-    const unsigned int height = yres > 0 ? static_cast<unsigned int>(yres) : defaultHeight;
+    const unsigned int width = resolution.x > 0 ? static_cast<unsigned int>(resolution.x) : defaultWidth;
+    const unsigned int height = resolution.y > 0 ? static_cast<unsigned int>(resolution.y) : defaultHeight;
     if (width > v3d::render::offline::largestResolution || height > v3d::render::offline::largestResolution) {
         return false;
     }
@@ -316,24 +316,24 @@ void RenderContext::frameAspectRatio(float aspect) {
     // the RI default: the shorter side spans [-1, 1] and the longer spans [-a, a], so that
     // a frame which is not square does not stretch a square window across itself
     if (frameAspect_ >= 1.0f) {
-        screenWindow(-frameAspect_, frameAspect_, -1.0f, 1.0f);
+        screenWindow({.left = -frameAspect_, .right = frameAspect_, .bottom = -1.0f, .top = 1.0f});
     } else {
-        screenWindow(-1.0f, 1.0f, -1.0f / frameAspect_, 1.0f / frameAspect_);
+        screenWindow({.left = -1.0f, .right = 1.0f, .bottom = -1.0f / frameAspect_, .top = 1.0f / frameAspect_});
     }
     screenNamed_ = false;
 }
 
-void RenderContext::screenWindow(float left, float right, float bottom, float top) {
-    screen_[0] = left;
-    screen_[1] = right;
-    screen_[2] = bottom;
-    screen_[3] = top;
+void RenderContext::screenWindow(const v3d::render::offline::rib::ScreenWindow & window) {
+    screen_[0] = window.left;
+    screen_[1] = window.right;
+    screen_[2] = window.bottom;
+    screen_[3] = window.top;
     screenNamed_ = true;
 }
 
-void RenderContext::clipping(float near, float far) {
-    near_ = near;
-    far_ = far;
+void RenderContext::clipping(const v3d::render::offline::rib::Clipping & planes) {
+    near_ = planes.hither;
+    far_ = planes.yon;
 }
 
 void RenderContext::pushTransform(void) {
@@ -461,8 +461,8 @@ void RenderContext::translate(float dx, float dy, float dz) {
 }
 
 // RiRotate takes its angle in degrees and glm takes radians
-void RenderContext::rotate(float angle, float dx, float dy, float dz) {
-    transform_.concat(glm::rotate(glm::mat4x4(1.0f), glm::radians(angle), glm::vec3(dx, dy, dz)));
+void RenderContext::rotate(float angle, const glm::vec3 & axis) {
+    transform_.concat(glm::rotate(glm::mat4x4(1.0f), glm::radians(angle), axis));
 }
 
 void RenderContext::scale(float sx, float sy, float sz) {
@@ -547,11 +547,11 @@ void RenderContext::surface(const std::string & name,
     surfacePlacement_ = coordinateSystems_["camera"] * transform_.reference();
 }
 
-void RenderContext::lightSource(const std::string & name, const std::string & handle,
+void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & request,
     const v3d::render::offline::rib::ParameterList & parameters) {
     LightSource light;
-    light.handle = handle;
-    light.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::LIGHT, parameters);
+    light.handle = request.handle;
+    light.shader = shaders_->instance(request.shader, v3d::render::offline::sl::ShaderType::LIGHT, parameters);
     light.placement = coordinateSystems_["camera"] * transform_.reference();
     if (!light.shader) {
         // the library has already logged why. The light is left out, not replaced by a
@@ -560,7 +560,7 @@ void RenderContext::lightSource(const std::string & name, const std::string & ha
     }
     lights_.push_back(light);
     // RiLightSource switches the light it creates on
-    illuminate(handle, true);
+    illuminate(request.handle, true);
 }
 
 void RenderContext::illuminate(const std::string & handle, bool on) {
@@ -658,17 +658,16 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
     const Vertex first = poly.vertex(0);
     for (std::size_t i = 1; i + 1 < poly.vertexCount(); i++) {
         const Vertex corners[3] = { first, poly.vertex(i), poly.vertex(i + 1) };
-        glm::vec3 points[3];
-        for (int k = 0; k < 3; k++) {
+        v3d::render::offline::trace::Triangle::Corners points;
+        v3d::render::offline::trace::Triangle::Corners normals;
+        for (std::size_t k = 0; k < 3; k++) {
             points[k] = glm::vec3(toWorld * glm::vec4(corners[k].point(), 1.0f));
+            normals[k] = corners[k].hasNormal() ? glm::normalize(toWorldNormal * corners[k].normal()) : glm::vec3(0.0f);
         }
-        const bool normals = corners[0].hasNormal() && corners[1].hasNormal() && corners[2].hasNormal();
-        v3d::render::offline::trace::Triangle triangle = normals ?
-            v3d::render::offline::trace::Triangle(points[0], points[1], points[2], color_,
-                glm::normalize(toWorldNormal * corners[0].normal()),
-                glm::normalize(toWorldNormal * corners[1].normal()),
-                glm::normalize(toWorldNormal * corners[2].normal())) :
-            v3d::render::offline::trace::Triangle(points[0], points[1], points[2], color_);
+        const bool shaded = corners[0].hasNormal() && corners[1].hasNormal() && corners[2].hasNormal();
+        v3d::render::offline::trace::Triangle triangle = shaded ?
+            v3d::render::offline::trace::Triangle(points, color_, normals) :
+            v3d::render::offline::trace::Triangle(points, color_);
         if (corners[0].hasTexCoord() && corners[1].hasTexCoord() && corners[2].hasTexCoord()) {
             triangle.st(corners[0].st(), corners[1].st(), corners[2].st());
         }
@@ -690,19 +689,19 @@ void RenderContext::shade(v3d::render::offline::trace::Primitive* primitive, con
     primitive->lights(tracedLights(state));
 }
 
-bool RenderContext::addSphere(float radius, float zmin, float zmax, float thetamax) {
+bool RenderContext::addSphere(const v3d::render::offline::rib::Sphere & shape) {
     if (!hider_->traces()) {
         return false;
     }
-    if (!(radius > 0.0f)) {
-        logger_->get()->warn("a sphere of radius {} is not drawn", radius);
+    if (!(shape.radius > 0.0f)) {
+        logger_->get()->warn("a sphere of radius {} is not drawn", shape.radius);
         return true;
     }
     if (flatMotion()) {
         return true;
     }
     // placed by the reference end of its motion, as a polygon's points are
-    v3d::render::offline::trace::Sphere sphere(radius, zmin, zmax, thetamax, transform_.reference(), color_);
+    v3d::render::offline::trace::Sphere sphere(shape, transform_.reference(), color_);
     shade(&sphere, shading());
     traced_.add(sphere, transform_);
     return true;
@@ -856,10 +855,10 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     frameBuffer_->addPrimitive(poly, bound);
 }
 
-void RenderContext::display(const std::string & name, const std::string & type, const std::string & mode) {
-    displayName_ = name;
-    displayType_ = type;
-    displayMode_ = mode;
+void RenderContext::display(const v3d::render::offline::rib::Display & display) {
+    displayName_ = display.name;
+    displayType_ = display.type;
+    displayMode_ = display.mode;
 }
 
 const std::string & RenderContext::displayName() const {

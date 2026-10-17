@@ -14,9 +14,12 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::render::offline::rib {
 
@@ -253,10 +256,10 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
         if (!text(lexer, &first) || !text(lexer, &second)) {
             return Result::Failed;
         }
-        if (!declarations_.declare(first, second)) {
+        if (!declarations_.declare({.name = first, .type = second})) {
             logger_->get()->warn("RIB declaration of '{}' does not name a type", first);
         }
-        handler->declare(first, second);
+        handler->declare({.name = first, .type = second});
         return Result::Handled;
     }
     if (name == "Format") {
@@ -272,7 +275,7 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
             logger_->get()->warn("RIB Format {} {} {} is not a picture size and was skipped", a, b, c);
             return Result::Handled;
         }
-        handler->format(*width, *height, c > 0.0f && std::isfinite(c) ? c : 1.0f);
+        handler->format({.width = *width, .height = *height, .pixelAspect = c > 0.0f && std::isfinite(c) ? c : 1.0f});
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -298,21 +301,21 @@ Reader::Result Reader::cameraRequest(const std::string & name, Lexer * lexer, Ha
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c) || !number(lexer, &d)) {
             return Result::Failed;
         }
-        handler->screenWindow(a, b, c, d);
+        handler->screenWindow({.left = a, .right = b, .bottom = c, .top = d});
         return Result::Handled;
     }
     if (name == "CropWindow") {
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c) || !number(lexer, &d)) {
             return Result::Failed;
         }
-        handler->cropWindow(a, b, c, d);
+        handler->cropWindow({.xmin = a, .xmax = b, .ymin = c, .ymax = d});
         return Result::Handled;
     }
     if (name == "Clipping") {
         if (!number(lexer, &a) || !number(lexer, &b)) {
             return Result::Failed;
         }
-        handler->clipping(a, b);
+        handler->clipping({.hither = a, .yon = b});
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -335,7 +338,7 @@ Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, H
         if (!parameters(lexer, 1, &list)) {
             return Result::Failed;
         }
-        handler->display(first, second, third, list);
+        handler->display({.name = first, .type = second, .mode = third}, list);
         return Result::Handled;
     }
     if (name == "FrameBegin") {
@@ -368,20 +371,20 @@ Reader::Result Reader::lensRequest(const std::string & name, Lexer * lexer, Hand
     if (name == "DepthOfField") {
         // the form with no arguments sets a pinhole
         if (lexer->peek().kind() != Kind::NUMBER) {
-            handler->depthOfField(std::numeric_limits<float>::infinity(), 0.0f, 0.0f);
+            handler->depthOfField({.fstop = std::numeric_limits<float>::infinity(), .focalLength = 0.0f, .focalDistance = 0.0f});
             return Result::Handled;
         }
         if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c)) {
             return Result::Failed;
         }
-        handler->depthOfField(a, b, c);
+        handler->depthOfField({.fstop = a, .focalLength = b, .focalDistance = c});
         return Result::Handled;
     }
     if (name == "Shutter") {
         if (!number(lexer, &a) || !number(lexer, &b)) {
             return Result::Failed;
         }
-        handler->shutter(a, b);
+        handler->shutter({.open = a, .close = b});
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -399,7 +402,7 @@ Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Ha
         if (!number(lexer, &a) || !number(lexer, &b)) {
             return Result::Failed;
         }
-        handler->pixelSamples(sampleCount(a), sampleCount(b));
+        handler->pixelSamples(glm::uvec2(sampleCount(a), sampleCount(b)));
         return Result::Handled;
     }
     if (name == "PixelFilter") {
@@ -502,7 +505,7 @@ Reader::Result Reader::transformRequest(const std::string & name, Lexer * lexer,
         if (!numbers(lexer, 4, &triple)) {
             return Result::Failed;
         }
-        handler->rotate(triple[0], triple[1], triple[2], triple[3]);
+        handler->rotate(triple[0], glm::vec3(triple[1], triple[2], triple[3]));
         return Result::Handled;
     }
     if (name == "Scale") {
@@ -594,9 +597,9 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
             return Result::Failed;
         }
         if (name == "AreaLightSource") {
-            handler->areaLightSource(first, second, list);
+            handler->areaLightSource({.shader = first, .handle = second}, list);
         } else {
-            handler->lightSource(first, second, list);
+            handler->lightSource({.shader = first, .handle = second}, list);
         }
         return Result::Handled;
     }
@@ -618,7 +621,7 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
             !text(lexer, &filter) || !number(lexer, &swidth) || !number(lexer, &twidth) || !parameters(lexer, 1, &list)) {
             return Result::Failed;
         }
-        handler->makeTexture(first, second, swrap, twrap, filter, swidth, twidth, list);
+        handler->makeTexture({.picture = first, .texture = second, .swrap = swrap, .twrap = twrap, .filter = filter, .swidth = swidth, .twidth = twidth}, list);
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -670,7 +673,7 @@ Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer,
         if (!counts(lexer, &perPolygon) || !counts(lexer, &indices) || !parameters(lexer, 0, &list)) {
             return Result::Failed;
         }
-        handler->pointsPolygons(perPolygon, indices, list);
+        handler->pointsPolygons({.counts = std::move(perPolygon), .indices = std::move(indices)}, list);
         return Result::Handled;
     }
     if (name == "Sphere") {
@@ -680,7 +683,7 @@ Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer,
         if (!parameters(lexer, 1, &list)) {
             return Result::Failed;
         }
-        handler->sphere(a, b, c, d, list);
+        handler->sphere({.radius = a, .zmin = b, .zmax = c, .thetamax = d}, list);
         return Result::Handled;
     }
     return Result::Unhandled;

@@ -45,9 +45,9 @@ Ray::Ray() :
 
 /**
  **/
-Ray::Ray(const glm::vec3& origin, const glm::vec3& direction) :
-    origin_(origin),
-    direction_(direction) {
+Ray::Ray(const Line& line) :
+    origin_(line.origin),
+    direction_(line.direction) {
     const float length = glm::length(direction_);
     if (length > epsilon) {
         direction_ /= length;
@@ -126,11 +126,11 @@ bool Ray::intersects(const AABBox& box, float* distance) const {
 /**
  **/
 bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance) const {
-    return intersects(a, b, c, distance, nullptr, nullptr);
+    return intersects(a, b, c, distance, nullptr);
 }
 
 bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance,
-    float* u, float* v) const {
+    glm::vec2* weights) const {
     if (!finite(origin_, direction_)) {
         return false;
     }
@@ -166,11 +166,8 @@ bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c,
     if (distance != nullptr) {
         *distance = hit;
     }
-    if (u != nullptr) {
-        *u = weightB;
-    }
-    if (v != nullptr) {
-        *v = weightC;
+    if (weights != nullptr) {
+        *weights = glm::vec2(weightB, weightC);
     }
     return true;
 }

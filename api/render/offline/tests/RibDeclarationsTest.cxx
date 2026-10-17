@@ -112,13 +112,13 @@ BOOST_AUTO_TEST_CASE(ribdeclarations_declare_then_use_test) {
     std::string name;
     Declaration declaration;
 
-    BOOST_REQUIRE(declarations.declare("d", "uniform point"));
+    BOOST_REQUIRE(declarations.declare({.name = "d", .type = "uniform point"}));
     BOOST_REQUIRE(declarations.resolve("d", &name, &declaration));
     BOOST_CHECK_EQUAL(name, "d");
     BOOST_CHECK_EQUAL(declaration.floats(), 3u);
 
     // a declaration that does not parse leaves the table alone
-    BOOST_CHECK(!declarations.declare("e", "uniform nonsense"));
+    BOOST_CHECK(!declarations.declare({.name = "e", .type = "uniform nonsense"}));
     BOOST_CHECK(!declarations.resolve("e", &name, &declaration));
 }
 

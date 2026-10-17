@@ -15,7 +15,7 @@ BOOST_AUTO_TEST_CASE(renderer_active_context_test) {
     v3d::moya::Renderer renderer;
     renderer.createRenderContext("default context");
 
-    renderer.activeRenderContext().imageResolution(1280, 960, 1.0f);
+    renderer.activeRenderContext().imageResolution({1280, 960}, 1.0f);
 
     BOOST_TEST(renderer.activeRenderContext().imageWidth() == 1280u);
 }
@@ -28,10 +28,10 @@ BOOST_AUTO_TEST_CASE(renderer_context_stack_test) {
     v3d::moya::Renderer renderer;
 
     renderer.createRenderContext("outer");
-    renderer.activeRenderContext().imageResolution(800, 600, 1.0f);
+    renderer.activeRenderContext().imageResolution({800, 600}, 1.0f);
 
     renderer.createRenderContext("inner");
-    renderer.activeRenderContext().imageResolution(1280, 960, 1.0f);
+    renderer.activeRenderContext().imageResolution({1280, 960}, 1.0f);
     BOOST_TEST(renderer.activeRenderContext().imageWidth() == 1280u);
 
     renderer.destroyActiveRenderContext();
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(renderer_implicit_context_test) {
 
     BOOST_TEST(renderer.activeRenderContext().imageWidth() == 320u);
 
-    renderer.activeRenderContext().imageResolution(1280, 960, 1.0f);
+    renderer.activeRenderContext().imageResolution({1280, 960}, 1.0f);
     renderer.destroyActiveRenderContext();
 
     BOOST_TEST(renderer.activeRenderContext().imageWidth() == 320u);

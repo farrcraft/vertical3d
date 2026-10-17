@@ -26,16 +26,16 @@ glm::vec3 plane(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c) {
 
 };  // namespace
 
-Triangle::Triangle(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c, const glm::vec3 & colour) :
-    Primitive(colour), a_(a), b_(b), c_(c), geometric_(plane(a, b, c)) {
+Triangle::Triangle(const Corners & corners, const glm::vec3 & colour) :
+    Primitive(colour), a_(corners[0]), b_(corners[1]), c_(corners[2]), geometric_(plane(a_, b_, c_)) {
     na_ = geometric_;
     nb_ = geometric_;
     nc_ = geometric_;
 }
 
-Triangle::Triangle(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c, const glm::vec3 & colour,
-    const glm::vec3 & na, const glm::vec3 & nb, const glm::vec3 & nc) :
-    Primitive(colour), a_(a), b_(b), c_(c), na_(na), nb_(nb), nc_(nc), geometric_(plane(a, b, c)) {
+Triangle::Triangle(const Corners & corners, const glm::vec3 & colour, const Corners & normals) :
+    Primitive(colour), a_(corners[0]), b_(corners[1]), c_(corners[2]), na_(normals[0]), nb_(normals[1]), nc_(normals[2]),
+    geometric_(plane(a_, b_, c_)) {
 }
 
 const glm::vec3 & Triangle::a() const {
@@ -89,12 +89,10 @@ glm::vec3 Triangle::colour(float u, float v) const {
 bool Triangle::intersect(const v3d::type::geometry::Ray & ray, float from, const Pose & pose,
     Intersection* found) const {
     const v3d::type::geometry::Ray local = pose.backward == nullptr ? ray :
-        v3d::type::geometry::Ray(glm::vec3(*pose.backward * glm::vec4(ray.origin(), 1.0f)),
-            glm::mat3(*pose.backward) * ray.direction());
+        v3d::type::geometry::Ray({.origin = glm::vec3(*pose.backward * glm::vec4(ray.origin(), 1.0f)), .direction = glm::mat3(*pose.backward) * ray.direction()});
     float distance = 0.0f;
-    float u = 0.0f;
-    float v = 0.0f;
-    if (!local.intersects(a_, b_, c_, &distance, &u, &v)) {
+    glm::vec2 weights(0.0f);
+    if (!local.intersects(a_, b_, c_, &distance, &weights)) {
         return false;
     }
     if (pose.ahead != nullptr) {
@@ -107,8 +105,8 @@ bool Triangle::intersect(const v3d::type::geometry::Ray & ray, float from, const
         return false;
     }
     found->distance = distance;
-    found->u = u;
-    found->v = v;
+    found->u = weights.x;
+    found->v = weights.y;
     return true;
 }
 

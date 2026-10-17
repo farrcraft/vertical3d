@@ -110,8 +110,7 @@ v3d::type::geometry::Ray RayHider::ray(const glm::vec2 & raster, const glm::vec2
         origin = unproject(raster, camera_.hither);
         direction = glm::vec3(0.0f, 0.0f, 1.0f);
     }
-    return v3d::type::geometry::Ray(glm::vec3(toWorld_ * glm::vec4(origin, 1.0f)),
-        glm::vec3(toWorld_ * glm::vec4(direction, 0.0f)));
+    return v3d::type::geometry::Ray({.origin = glm::vec3(toWorld_ * glm::vec4(origin, 1.0f)), .direction = glm::vec3(toWorld_ * glm::vec4(direction, 0.0f))});
 }
 
 void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer* planes) {

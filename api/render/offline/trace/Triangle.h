@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <array>
+
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
@@ -19,10 +21,13 @@ namespace v3d::render::offline::trace {
  **/
 class Triangle final : public Primitive {
  public:
+    /** Three values, one for each corner, in the order a, b, c. **/
+    using Corners = std::array<glm::vec3, 3>;
+
     /**
      * A triangle whose shading normal is its plane, for a scene that gives no normals.
      **/
-    Triangle(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c, const glm::vec3 & colour);
+    Triangle(const Corners & corners, const glm::vec3 & colour);
 
     /**
      * A triangle carrying a shading normal per corner, from a scene's varying "N".
@@ -30,8 +35,7 @@ class Triangle final : public Primitive {
      * The geometric normal stays its plane either way: SL's Ng and N are separate, and
      * faceforward() and calculatenormal() are defined in terms of both.
      **/
-    Triangle(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c, const glm::vec3 & colour,
-        const glm::vec3 & na, const glm::vec3 & nb, const glm::vec3 & nc);
+    Triangle(const Corners & corners, const glm::vec3 & colour, const Corners & normals);
 
     const glm::vec3 & a() const;
     const glm::vec3 & b() const;

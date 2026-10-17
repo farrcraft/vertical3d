@@ -10,6 +10,7 @@
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
 #include <api/render/offline/rib/Declarations.h>
+#include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
@@ -71,13 +72,13 @@ class RenderContext {
 
         /**
          * maps to RiFormat(xres, yres, aspect)
-         * Sets the pixel resolution and pixel aspect ratio of the image.
+         * Sets the pixel resolution, x then y, and pixel aspect ratio of the image.
          * A side of zero or less takes the default for that side, defaultWidth or
          * defaultHeight. A side above largestResolution is refused, and the context keeps
          * the size it had. An aspect that is not a positive finite number is square pixels.
          * @return false when a side is refused
          **/
-        bool imageResolution(int xres, int yres, float aspect);
+        bool imageResolution(const glm::ivec2 & resolution, float aspect);
         /**
          * maps to RiFrameAspectRatio(aspect)
          * The ratio of the width of the whole image to its height. imageResolution() sets it
@@ -90,12 +91,12 @@ class RenderContext {
          * follows the frame aspect a: [-a, a] by [-1, 1] when a is at least 1, and
          * [-1, 1] by [-1/a, 1/a] otherwise.
          **/
-        void screenWindow(float left, float right, float bottom, float top);
+        void screenWindow(const v3d::render::offline::rib::ScreenWindow & window);
         /**
          * maps to RiClipping(hither, yon)
          * Sets the eye space depth of the near and far clipping planes.
          **/
-        void clipping(float near, float far);
+        void clipping(const v3d::render::offline::rib::Clipping & planes);
 
         /**
          * maps to RiProjection()
@@ -138,7 +139,7 @@ class RenderContext {
          * through image::Factory, which picks the format from the name's extension. An
          * empty name or any other type writes nothing. The mode is stored and not read.
          **/
-        void display(const std::string & name, const std::string & type, const std::string & mode);
+        void display(const v3d::render::offline::rib::Display & display);
         const std::string & displayName() const;
 
         /**
@@ -179,7 +180,7 @@ class RenderContext {
         void concatTransform(const glm::mat4x4 & trans);
 
         void translate(float dx, float dy, float dz);
-        void rotate(float angle, float dx, float dy, float dz);
+        void rotate(float angle, const glm::vec3 & axis);
         void scale(float sx, float sy, float sz);
 
         /**
@@ -220,7 +221,7 @@ class RenderContext {
          * an AttributeBegin block is local to that block. A light that does not compile is
          * left out.
          **/
-        void lightSource(const std::string & name, const std::string & handle,
+        void lightSource(const v3d::render::offline::rib::LightSource & request,
             const v3d::render::offline::rib::ParameterList & parameters);
         /**
          * maps to RiIlluminate()
@@ -279,7 +280,7 @@ class RenderContext {
          *
          * @return false when the hider cannot draw spheres
          **/
-        bool addSphere(float radius, float zmin, float zmax, float thetamax);
+        bool addSphere(const v3d::render::offline::rib::Sphere & shape);
 
         /**
          * The matrix of a named coordinate system. A name that is neither predefined nor

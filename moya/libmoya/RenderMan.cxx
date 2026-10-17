@@ -188,7 +188,8 @@ RtBasis RiBezierBasis,
 
 RtInt RiLastError;
 
-// RI subroutines
+// RI subroutines. The RenderMan Interface sets every signature below, including the order of
+// parameters that share a type, so each that the swappable parameter check reports is marked.
 RtFloat RiGaussianFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
     return v3d::render::offline::filter(v3d::render::offline::Filter::Gaussian, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
@@ -209,12 +210,15 @@ RtFloat RiSincFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
     return v3d::render::offline::filter(v3d::render::offline::Filter::Sinc, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiErrorIgnore(RtInt code, RtInt severity, char *msg) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiErrorPrint(RtInt code, RtInt severity, char *msg) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiErrorAbort(RtInt code, RtInt severity, char *msg) {
 }
 
@@ -240,7 +244,7 @@ RtToken RiDeclare(char * name, char * declaration) {
     if (name == nullptr || declaration == nullptr) {
         return 0;
     }
-    renderer().activeRenderContext().declarations().declare(name, declaration);
+    renderer().activeRenderContext().declarations().declare({.name = name, .type = declaration});
     // RI returns the token the name now stands for. In this renderer the token is the name
     return name;
 }
@@ -281,7 +285,7 @@ RtVoid RiWorldEnd(void) {
 
 RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
     // the context takes a side of zero or less as its default, and refuses one that is too large
-    renderer().activeRenderContext().imageResolution(xres, yres, aspect);
+    renderer().activeRenderContext().imageResolution(glm::ivec2(xres, yres), aspect);
 }
 
 RtVoid RiFrameAspectRatio(RtFloat aspect) {
@@ -289,9 +293,10 @@ RtVoid RiFrameAspectRatio(RtFloat aspect) {
 }
 
 RtVoid RiScreenWindow(RtFloat left, RtFloat right, RtFloat bot, RtFloat top) {
-    renderer().activeRenderContext().screenWindow(left, right, bot, top);
+    renderer().activeRenderContext().screenWindow({.left = left, .right = right, .bottom = bot, .top = top});
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax) {
 }
 
@@ -324,12 +329,14 @@ RtVoid RiProjectionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
 }
 
 RtVoid RiClipping(RtFloat hither, RtFloat yon) {
-    renderer().activeRenderContext().clipping(hither, yon);
+    renderer().activeRenderContext().clipping({.hither = hither, .yon = yon});
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiClippingPlane(RtFloat x, RtFloat y, RtFloat z, RtFloat nx, RtFloat ny, RtFloat nz) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDepthOfField(RtFloat fstop, RtFloat focallength, RtFloat focaldistance) {
     v3d::render::offline::Sampling & sampling = renderer().activeRenderContext().sampling();
     sampling.fstop = fstop;
@@ -376,6 +383,7 @@ RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
     sampling.width = glm::vec2(xwidth, ywidth);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiExposure(RtFloat gain, RtFloat gamma) {
 }
 
@@ -399,18 +407,20 @@ RtVoid RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
     rc.imager(name, list);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl) {
 }
 
 // the parameter list is not read. A null name, type or mode reaches the context as an
 // empty string
 RtVoid RiDisplay(char *name, RtToken type, RtToken mode, ...) {
-    renderer().activeRenderContext().display(
-        name != nullptr ? name : "",
-        type != nullptr ? type : "",
-        mode != nullptr ? mode : "");
+    renderer().activeRenderContext().display({
+        .name = name != nullptr ? name : "",
+        .type = type != nullptr ? type : "",
+        .mode = mode != nullptr ? mode : ""});
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDisplayV(char *name, RtToken type, RtToken mode, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
@@ -426,6 +436,7 @@ RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
     renderer().activeRenderContext().hider(type != nullptr ? type : "");
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) {
 }
 
@@ -454,6 +465,7 @@ RtVoid RiOpacity(RtColor color) {
     renderer().activeRenderContext().opacity(glm::vec3(color[0], color[1], color[2]));
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2, RtFloat s3, RtFloat t3, RtFloat s4, RtFloat t4) {
 }
 
@@ -482,7 +494,7 @@ RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer 
     const std::string handle = std::to_string(made++);
     v3d::render::offline::rib::ParameterList list;
     parameters(rc, n, tokens, parms, &list);
-    rc.lightSource(name, handle, list);
+    rc.lightSource({.shader = name, .handle = handle}, list);
     return keep(handle);
 }
 
@@ -565,6 +577,7 @@ RtVoid RiBound(RtBound bound) {
 RtVoid RiDetail(RtBound bound) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis) {
 }
 
@@ -614,13 +627,14 @@ RtVoid RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz) {
 
 // angle is in degrees
 RtVoid RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) {
-    renderer().activeRenderContext().rotate(angle, dx, dy, dz);
+    renderer().activeRenderContext().rotate(angle, glm::vec3(dx, dy, dz));
 }
 
 RtVoid RiScale(RtFloat sx, RtFloat sy, RtFloat sz) {
     renderer().activeRenderContext().scale(sx, sy, sz);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1, RtFloat dx2, RtFloat dy2, RtFloat dz2) {
 }
 
@@ -697,6 +711,7 @@ RtVoid RiPolygon(RtInt nverts, ...) {
     renderer().activeRenderContext().addPolygon(poly);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
@@ -712,9 +727,11 @@ RtVoid RiPointsPolygons(RtInt npolys, RtInt nverts[], RtInt verts[], ...) {
 RtVoid RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
@@ -733,61 +750,79 @@ RtVoid RiPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwra
 RtVoid RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax,
     RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[], RtFloat knot[], RtFloat min[], RtFloat max[], RtInt n[], RtFloat u[], RtFloat v[], RtFloat w[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCone(RtFloat height, RtFloat radius, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
 RtVoid RiHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDisk(RtFloat height, RtFloat radius, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiBlobby(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt[], RtInt nstr, RtToken str[], ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiBlobbyV(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt[], RtInt nstr, RtToken str[], RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
@@ -800,13 +835,16 @@ RtVoid RiCurvesV(RtToken type, RtInt nvcurves, RtInt nvertices[], RtToken wrap, 
 RtVoid RiPoints(RtInt nverts, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiPointsV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSubdivisionMesh(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags, RtToken tags[], RtInt numargs[], RtInt intargs[],
     RtFloat floatargs[], ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags, RtToken tags[], RtInt numargs[], RtInt intargs[],
     RtFloat floatargs[], RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
@@ -856,37 +894,48 @@ RtVoid RiMotionEnd(void) {
     renderer().activeRenderContext().motionEnd();
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeTexture(char *pic, char *tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeTextureV(char *pic, char *tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeBump(char *pic, char *tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeBumpV(char *pic, char *tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeLatLongEnvironment(char *pic, char *tex, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeLatLongEnvironmentV(char *pic, char *tex, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeCubeFaceEnvironment(char *px, char *nx, char *py, char *ny, char *pz, char *nz, char *tex, RtFloat fov, RtFilterFunc filterfunc, RtFloat swidth, RtFloat ywidth, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeCubeFaceEnvironmentV(char *px, char *nx, char *py, char *ny, char *pz, char *nz, char *tex, RtFloat fov, RtFilterFunc filterfunc, RtFloat swidth, RtFloat ywidth,
     RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeShadow(char *pic, char *tex, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeShadowV(char *pic, char *tex, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiArchiveRecord(RtToken type, char *format, ...) {
 }
 

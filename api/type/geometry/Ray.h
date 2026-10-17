@@ -6,9 +6,11 @@
 #pragma once
 
 #include "AABBox.h"
+#include "Line.h"
 #include "Plane.h"
 
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::type::geometry {
@@ -31,10 +33,10 @@ class Ray final {
     Ray();
 
     /**
-     * @param origin where the ray starts
-     * @param direction which way it goes - normalised, unless it is zero length
+     * @param line where the ray starts, and which way it goes. The direction is normalised,
+     *        unless it is zero length.
      **/
-    Ray(const glm::vec3& origin, const glm::vec3& direction);
+    explicit Ray(const Line& line);
 
     /**
      **/
@@ -89,12 +91,11 @@ class Ray final {
      * 1 - u - v.
      *
      * @param distance where the hit is, if there is one - may be null
-     * @param u the weight of b, if there is a hit - may be null
-     * @param v the weight of c, if there is a hit - may be null
+     * @param weights the weights of b and then c, if there is a hit - may be null
      * @return whether the ray meets the triangle at a non negative distance
      **/
     bool intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance,
-        float* u, float* v) const;
+        glm::vec2* weights) const;
 
     /**
      * Where this ray crosses a plane.

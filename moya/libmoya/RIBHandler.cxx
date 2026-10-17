@@ -148,9 +148,8 @@ void RIBHandler::surface(const std::string & name, const ParameterList & paramet
     context().surface(name, parameters);
 }
 
-void RIBHandler::lightSource(const std::string & name, const std::string & handle,
-    const ParameterList & parameters) {
-    context().lightSource(name, handle, parameters);
+void RIBHandler::lightSource(const v3d::render::offline::rib::LightSource & request, const ParameterList & parameters) {
+    context().lightSource(request, parameters);
 }
 
 void RIBHandler::illuminate(const std::string & handle, bool on) {
@@ -161,42 +160,44 @@ void RIBHandler::imager(const std::string & name, const ParameterList & paramete
     context().imager(name, parameters);
 }
 
-void RIBHandler::format(unsigned int width, unsigned int height, float pixelAspect) {
+void RIBHandler::format(const v3d::render::offline::rib::Format & request) {
+    unsigned int width = request.width;
+    unsigned int height = request.height;
     if (width_ > 0 && height_ > 0) {
         width = width_;
         height = height_;
     }
-    context().imageResolution(side(width), side(height), pixelAspect);
+    context().imageResolution(glm::ivec2(side(width), side(height)), request.pixelAspect);
 }
 
 void RIBHandler::frameAspectRatio(float aspect) {
     context().frameAspectRatio(aspect);
 }
 
-void RIBHandler::screenWindow(float left, float right, float bottom, float top) {
-    context().screenWindow(left, right, bottom, top);
+void RIBHandler::screenWindow(const v3d::render::offline::rib::ScreenWindow & request) {
+    context().screenWindow(request);
 }
 
 void RIBHandler::projection(const std::string & name, const ParameterList & parameters) {
     context().projection(name, parameters.number("fov", 90.0f));
 }
 
-void RIBHandler::clipping(float hither, float yon) {
-    context().clipping(hither, yon);
+void RIBHandler::clipping(const v3d::render::offline::rib::Clipping & request) {
+    context().clipping(request);
 }
 
-void RIBHandler::depthOfField(float fstop, float focalLength, float focalDistance) {
-    context().sampling().fstop = fstop;
-    context().sampling().focalLength = focalLength;
-    context().sampling().focalDistance = focalDistance;
+void RIBHandler::depthOfField(const v3d::render::offline::rib::DepthOfField & request) {
+    context().sampling().fstop = request.fstop;
+    context().sampling().focalLength = request.focalLength;
+    context().sampling().focalDistance = request.focalDistance;
 }
 
-void RIBHandler::shutter(float open, float close) {
-    context().sampling().shutter = glm::vec2(open, close);
+void RIBHandler::shutter(const v3d::render::offline::rib::Shutter & request) {
+    context().sampling().shutter = glm::vec2(request.open, request.close);
 }
 
-void RIBHandler::pixelSamples(unsigned int x, unsigned int y) {
-    context().sampling().samples = glm::uvec2(x, y);
+void RIBHandler::pixelSamples(const glm::uvec2 & samples) {
+    context().sampling().samples = samples;
 }
 
 void RIBHandler::pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) {
@@ -210,12 +211,12 @@ void RIBHandler::pixelVariance(float variation) {
 
 void RIBHandler::output(const std::string & name) {
     output_ = name;
-    context().display(name, "file", "rgb");
+    context().display({.name = name, .type = "file", .mode = "rgb"});
 }
 
 bool RIBHandler::resolution(int width, int height) {
     // the context reads a side of zero or less as its default, so such a side is refused here
-    if (width < 1 || height < 1 || !context().imageResolution(width, height, 1.0f)) {
+    if (width < 1 || height < 1 || !context().imageResolution(glm::ivec2(width, height), 1.0f)) {
         return false;
     }
     width_ = static_cast<unsigned int>(width);
@@ -223,14 +224,13 @@ bool RIBHandler::resolution(int width, int height) {
     return true;
 }
 
-void RIBHandler::display(const std::string & name, const std::string & type, const std::string & mode,
-    const ParameterList & parameters) {
+void RIBHandler::display(const v3d::render::offline::rib::Display & request, const ParameterList & parameters) {
     (void)parameters;
     if (!output_.empty()) {
-        context().display(output_, "file", mode);
+        context().display({.name = output_, .type = "file", .mode = request.mode});
         return;
     }
-    context().display(name, type, mode);
+    context().display(request);
 }
 
 void RIBHandler::worldBegin() {
@@ -273,8 +273,8 @@ void RIBHandler::translate(float dx, float dy, float dz) {
     context().translate(dx, dy, dz);
 }
 
-void RIBHandler::rotate(float angle, float dx, float dy, float dz) {
-    context().rotate(angle, dx, dy, dz);
+void RIBHandler::rotate(float angle, const glm::vec3 & axis) {
+    context().rotate(angle, axis);
 }
 
 void RIBHandler::scale(float sx, float sy, float sz) {
@@ -316,22 +316,22 @@ void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters
     context().addPolygon(build(points, colors, normals, st, indices));
 }
 
-void RIBHandler::sphere(float radius, float zmin, float zmax, float thetamax, const ParameterList & parameters) {
+void RIBHandler::sphere(const v3d::render::offline::rib::Sphere & request, const ParameterList & parameters) {
     (void)parameters;
-    if (!context().addSphere(radius, zmin, zmax, thetamax) && !spheres_) {
+    if (!context().addSphere(request) && !spheres_) {
         spheres_ = true;
         context().logger()->get()->warn("the reyes hider does not dice spheres, so this scene renders without them");
     }
 }
 
-void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
-    const ParameterList & parameters) {
+void RIBHandler::pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request, const ParameterList & parameters) {
+    const std::vector<unsigned int> & indices = request.indices;
     const std::vector<glm::vec3> points = parameters.points("P");
     const std::vector<glm::vec3> colors = parameters.points("Cs");
     const std::vector<glm::vec3> normals = parameters.points("N");
     const std::vector<float> & st = parameters.floats("st");
     std::size_t offset = 0;
-    for (unsigned int count : counts) {
+    for (unsigned int count : request.counts) {
         if (offset + count > indices.size()) {
             return;
         }

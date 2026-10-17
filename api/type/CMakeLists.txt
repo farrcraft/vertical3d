@@ -23,6 +23,7 @@ v3d_add_api_library(type
 "geometry/Bound2D.h" "geometry/Bound2D.cxx"
 "geometry/Frustum.h" "geometry/Frustum.cxx"
 "geometry/Plane.h" "geometry/Plane.cxx"
+"geometry/Line.h"
 "geometry/Ray.h" "geometry/Ray.cxx"
 )
 

@@ -27,8 +27,8 @@ typedef v3d::render::offline::rib::ParameterList ParameterList;
  * A context with a camera and nothing in it, ready for a shader and some lights.
  **/
 void prepare(v3d::moya::RenderContext* rc) {
-    rc->imageResolution(64, 48, 1.0f);
-    rc->clipping(1.0f, 100.0f);
+    rc->imageResolution({64, 48}, 1.0f);
+    rc->clipping({.hither = 1.0f, .yon = 100.0f});
     rc->prepareWorld();
 }
 
@@ -72,7 +72,7 @@ v3d::moya::reyes::MicroPolygonGrid facing(const glm::vec3 & normal, const glm::v
 BOOST_AUTO_TEST_CASE(moya_matte_under_one_light_test) {
     v3d::moya::RenderContext rc;
     prepare(&rc);
-    rc.lightSource("distantlight", "key", ParameterList());
+    rc.lightSource({.shader = "distantlight", .handle = "key"}, ParameterList());
     rc.surface("matte", ParameterList());
     const v3d::moya::Shading shading = rc.shading();
     BOOST_REQUIRE_EQUAL(shading.lights.size(), 1u);
@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(moya_a_light_behind_the_surface_test) {
     ParameterList behind;
     // aimed back toward the camera, so it shines on the far side of a surface facing it
     add(&behind, "to", Declaration::Type::POINT, { 0.0f, 0.0f, -1.0f });
-    rc.lightSource("distantlight", "back", behind);
+    rc.lightSource({.shader = "distantlight", .handle = "back"}, behind);
     rc.surface("matte", ParameterList());
 
     v3d::moya::reyes::MicroPolygonGrid grid = facing(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f));
@@ -153,14 +153,14 @@ BOOST_AUTO_TEST_CASE(moya_constant_is_the_flat_colour_test) {
 BOOST_AUTO_TEST_CASE(moya_two_lights_test) {
     v3d::moya::RenderContext rc;
     prepare(&rc);
-    rc.lightSource("distantlight", "key", ParameterList());
+    rc.lightSource({.shader = "distantlight", .handle = "key"}, ParameterList());
 
     ParameterList fill;
     // aimed along negative x, so L - which points at the light - is along positive x
     add(&fill, "to", Declaration::Type::POINT, { -1.0f, 0.0f, 0.0f });
     add(&fill, "intensity", Declaration::Type::FLOAT, { 0.5f });
     add(&fill, "lightcolor", Declaration::Type::COLOR, { 0.0f, 1.0f, 0.0f });
-    rc.lightSource("distantlight", "fill", fill);
+    rc.lightSource({.shader = "distantlight", .handle = "fill"}, fill);
     rc.surface("matte", ParameterList());
 
     // halfway between the two, so each is at forty five degrees
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(moya_two_lights_test) {
 BOOST_AUTO_TEST_CASE(moya_illuminate_is_an_attribute_test) {
     v3d::moya::RenderContext rc;
     prepare(&rc);
-    rc.lightSource("distantlight", "key", ParameterList());
+    rc.lightSource({.shader = "distantlight", .handle = "key"}, ParameterList());
     rc.surface("matte", ParameterList());
 
     rc.attributeBegin();
@@ -213,7 +213,7 @@ BOOST_AUTO_TEST_CASE(moya_a_light_is_placed_test) {
     prepare(&rc);
     // two units in front of the surface, on the camera's side of it
     rc.translate(0.0f, 0.0f, 3.0f);
-    rc.lightSource("pointlight", "bulb", ParameterList());
+    rc.lightSource({.shader = "pointlight", .handle = "bulb"}, ParameterList());
     rc.surface("matte", ParameterList());
 
     v3d::moya::reyes::MicroPolygonGrid grid = facing(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f));
@@ -237,7 +237,7 @@ BOOST_AUTO_TEST_CASE(moya_a_light_runs_in_its_own_space_test) {
     prepare(&rc);
     rc.attributeBegin();
     rc.translate(0.0f, 0.0f, 3.0f);
-    rc.lightSource("pointlight", "bulb", ParameterList());
+    rc.lightSource({.shader = "pointlight", .handle = "bulb"}, ParameterList());
     rc.attributeEnd();
     // whether a light is on is an attribute, so the block's end switched it off again
     rc.illuminate("bulb", true);

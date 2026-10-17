@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include <api/render/offline/rib/Requests.h>
+#include <api/type/geometry/Line.h>
+
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -27,12 +30,11 @@ namespace v3d::render::offline::trace {
 class Sphere final : public Primitive {
  public:
     /**
-     * @param zmin, zmax the slab it is cut to, clamped to the radius
-     * @param thetamax the sweep about z, in degrees
+     * @param shape its radius, the slab it is cut to, which is clamped to the radius, and its
+     *        sweep about z in degrees
      * @param placement object to world, at the reference end of its motion
      **/
-    Sphere(float radius, float zmin, float zmax, float thetamax, const glm::mat4x4 & placement,
-        const glm::vec3 & colour);
+    Sphere(const v3d::render::offline::rib::Sphere & shape, const glm::mat4x4 & placement, const glm::vec3 & colour);
 
     /**
      * Where a line meets the sphere, as a parameter along it, nearest past `from`.
@@ -43,8 +45,7 @@ class Sphere final : public Primitive {
      * @param point the hit in the sphere's own space, where the normal and the surface
      *        parameters are read off
      **/
-    bool intersects(const glm::vec3 & origin, const glm::vec3 & direction, float from,
-        float* along, glm::vec3* point) const;
+    bool intersects(const v3d::type::geometry::Line & line, float from, float* along, glm::vec3* point) const;
 
     /** The outward normal at a point on the sphere in its own space, in world space. **/
     glm::vec3 normal(const glm::vec3 & point) const;

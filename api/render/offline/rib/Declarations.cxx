@@ -67,12 +67,12 @@ Declarations::Declarations() {
     declarations_["texture"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
 }
 
-bool Declarations::declare(const std::string & name, const std::string & text) {
+bool Declarations::declare(const Declare & request) {
     Declaration declaration;
-    if (!Declaration::parse(text, &declaration)) {
+    if (!Declaration::parse(request.type, &declaration)) {
         return false;
     }
-    declarations_[name] = declaration;
+    declarations_[request.name] = declaration;
     return true;
 }
 

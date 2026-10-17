@@ -22,26 +22,24 @@ const float PI = 3.14159265358979323846f;
 
 };  // namespace
 
-Sphere::Sphere(float radius, float zmin, float zmax, float thetamax, const glm::mat4x4 & placement,
-    const glm::vec3 & colour) :
-    Primitive(colour), radius_(radius),
+Sphere::Sphere(const v3d::render::offline::rib::Sphere & shape, const glm::mat4x4 & placement, const glm::vec3 & colour) :
+    Primitive(colour), radius_(shape.radius),
     // clamped by the size of the radius, so a negative one is still a valid range; such a
     // sphere is never hit anyway
-    zmin_(std::clamp(std::min(zmin, zmax), -std::fabs(radius), std::fabs(radius))),
-    zmax_(std::clamp(std::max(zmin, zmax), -std::fabs(radius), std::fabs(radius))),
-    thetamax_(std::clamp(thetamax, 0.0f, 360.0f) * PI / 180.0f),
+    zmin_(std::clamp(std::min(shape.zmin, shape.zmax), -std::fabs(shape.radius), std::fabs(shape.radius))),
+    zmax_(std::clamp(std::max(shape.zmin, shape.zmax), -std::fabs(shape.radius), std::fabs(shape.radius))),
+    thetamax_(std::clamp(shape.thetamax, 0.0f, 360.0f) * PI / 180.0f),
     toObject_(glm::inverse(placement)) {
 }
 
-bool Sphere::intersects(const glm::vec3 & origin, const glm::vec3 & direction, float from,
-    float* along, glm::vec3* point) const {
+bool Sphere::intersects(const v3d::type::geometry::Line & line, float from, float* along, glm::vec3* point) const {
     if (!(radius_ > 0.0f)) {
         return false;
     }
     // an affine map keeps a line's parameter, so a root here is a distance in the caller's
     // units without being carried back
-    const glm::vec3 o(toObject_ * glm::vec4(origin, 1.0f));
-    const glm::vec3 d = glm::mat3(toObject_) * direction;
+    const glm::vec3 o(toObject_ * glm::vec4(line.origin, 1.0f));
+    const glm::vec3 d = glm::mat3(toObject_) * line.direction;
     const float a = glm::dot(d, d);
     const float b = 2.0f * glm::dot(o, d);
     const float c = glm::dot(o, o) - (radius_ * radius_);
@@ -98,7 +96,7 @@ bool Sphere::intersect(const v3d::type::geometry::Ray & ray, float from, const P
     const glm::vec3 origin = pose.backward == nullptr ? ray.origin() :
         glm::vec3(*pose.backward * glm::vec4(ray.origin(), 1.0f));
     const glm::vec3 direction = pose.backward == nullptr ? ray.direction() : glm::mat3(*pose.backward) * ray.direction();
-    return intersects(origin, direction, from, &found->distance, &found->point);
+    return intersects({.origin = origin, .direction = direction}, from, &found->distance, &found->point);
 }
 
 void Sphere::describe(const Intersection & found, Hit* hit) const {

@@ -11,8 +11,10 @@
 #include <vector>
 
 #include "Parameters.h"
+#include "Requests.h"
 
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::render::offline::rib {
@@ -33,10 +35,7 @@ class Handler {
     virtual ~Handler() { }
 
     virtual void version(float number) { (void)number; }
-    virtual void declare(const std::string & name, const std::string & declaration) {
-        (void)name;
-        (void)declaration;
-    }
+    virtual void declare(const Declare & request) { (void)request; }
     virtual void option(const std::string & name, const ParameterList & parameters) {
         (void)name;
         (void)parameters;
@@ -51,66 +50,31 @@ class Handler {
     }
 
     // the camera
-    /**
-     * RiFormat. RI reads a side of zero or less as the renderer's default for that side, and
-     * such a side arrives as 0. Every other side is from 1 to largestResolution.
-     **/
-    virtual void format(unsigned int width, unsigned int height, float pixelAspect) {
-        (void)width;
-        (void)height;
-        (void)pixelAspect;
-    }
+    virtual void format(const Format & request) { (void)request; }
     virtual void frameAspectRatio(float aspect) { (void)aspect; }
-    virtual void screenWindow(float left, float right, float bottom, float top) {
-        (void)left;
-        (void)right;
-        (void)bottom;
-        (void)top;
-    }
-    virtual void cropWindow(float xmin, float xmax, float ymin, float ymax) {
-        (void)xmin;
-        (void)xmax;
-        (void)ymin;
-        (void)ymax;
-    }
+    virtual void screenWindow(const ScreenWindow & request) { (void)request; }
+    virtual void cropWindow(const CropWindow & request) { (void)request; }
     virtual void projection(const std::string & name, const ParameterList & parameters) {
         (void)name;
         (void)parameters;
     }
-    virtual void clipping(float hither, float yon) {
-        (void)hither;
-        (void)yon;
-    }
+    virtual void clipping(const Clipping & request) { (void)request; }
     /**
-     * @param fstop an infinite one is a pinhole; RIB's DepthOfField with no arguments also
-     *        sets a pinhole
+     * RIB's DepthOfField with no arguments sets a pinhole, which arrives as an infinite fstop.
      **/
-    virtual void depthOfField(float fstop, float focalLength, float focalDistance) {
-        (void)fstop;
-        (void)focalLength;
-        (void)focalDistance;
-    }
-    virtual void shutter(float open, float close) {
-        (void)open;
-        (void)close;
-    }
+    virtual void depthOfField(const DepthOfField & request) { (void)request; }
+    virtual void shutter(const Shutter & request) { (void)request; }
 
     // how a pixel is sampled
-    virtual void pixelSamples(unsigned int x, unsigned int y) {
-        (void)x;
-        (void)y;
-    }
+    virtual void pixelSamples(const glm::uvec2 & samples) { (void)samples; }
     virtual void pixelFilter(Filter filter, float xwidth, float ywidth) {
         (void)filter;
         (void)xwidth;
         (void)ywidth;
     }
     virtual void pixelVariance(float variation) { (void)variation; }
-    virtual void display(const std::string & name, const std::string & type, const std::string & mode,
-        const ParameterList & parameters) {
-        (void)name;
-        (void)type;
-        (void)mode;
+    virtual void display(const Display & request, const ParameterList & parameters) {
+        (void)request;
         (void)parameters;
     }
 
@@ -133,11 +97,12 @@ class Handler {
         (void)dy;
         (void)dz;
     }
-    virtual void rotate(float angle, float dx, float dy, float dz) {
+    /**
+     * @param angle in degrees, counter clockwise about the axis
+     **/
+    virtual void rotate(float angle, const glm::vec3 & axis) {
         (void)angle;
-        (void)dx;
-        (void)dy;
-        (void)dz;
+        (void)axis;
     }
     virtual void scale(float sx, float sy, float sz) {
         (void)sx;
@@ -164,17 +129,8 @@ class Handler {
         (void)name;
         (void)parameters;
     }
-    /**
-     * @param handle what a later Illuminate names this light by
-     *
-     * RIB 3.03 writes the handle as a sequence number and later RIB writes a string. Both
-     * are read and it is a string here either way, so a renderer keying a map on it does
-     * not need to handle both forms.
-     **/
-    virtual void lightSource(const std::string & name, const std::string & handle,
-        const ParameterList & parameters) {
-        (void)name;
-        (void)handle;
+    virtual void lightSource(const LightSource & request, const ParameterList & parameters) {
+        (void)request;
         (void)parameters;
     }
     /**
@@ -182,9 +138,8 @@ class Handler {
      * cannot sample a light's area treats it as an ordinary light. The default body does
      * this, so a scene that uses one is still lit.
      **/
-    virtual void areaLightSource(const std::string & name, const std::string & handle,
-        const ParameterList & parameters) {
-        lightSource(name, handle, parameters);
+    virtual void areaLightSource(const LightSource & request, const ParameterList & parameters) {
+        lightSource(request, parameters);
     }
     /**
      * Turn a light on or off in the current attribute state.
@@ -197,19 +152,9 @@ class Handler {
      * Make a texture file from an image. Nothing by default: a renderer that reads the image
      * a scene names as the texture has nothing to make, and the request is still understood
      * rather than unrecognised.
-     *
-     * @param filter the name of the filter the texture is made with
      **/
-    virtual void makeTexture(const std::string & picture, const std::string & texture, const std::string & swrap,
-        const std::string & twrap, const std::string & filter, float swidth, float twidth,
-        const ParameterList & parameters) {
-        (void)picture;
-        (void)texture;
-        (void)swrap;
-        (void)twrap;
-        (void)filter;
-        (void)swidth;
-        (void)twidth;
+    virtual void makeTexture(const MakeTexture & request, const ParameterList & parameters) {
+        (void)request;
         (void)parameters;
     }
     /**
@@ -238,21 +183,12 @@ class Handler {
         (void)vertices;
         (void)parameters;
     }
-    /**
-     * @param counts how many vertices each polygon has
-     * @param indices the vertices of every polygon in turn, indexing the "P" array
-     **/
-    virtual void pointsPolygons(const std::vector<unsigned int> & counts,
-        const std::vector<unsigned int> & indices, const ParameterList & parameters) {
-        (void)counts;
-        (void)indices;
+    virtual void pointsPolygons(const PointsPolygons & request, const ParameterList & parameters) {
+        (void)request;
         (void)parameters;
     }
-    virtual void sphere(float radius, float zmin, float zmax, float thetamax, const ParameterList & parameters) {
-        (void)radius;
-        (void)zmin;
-        (void)zmax;
-        (void)thetamax;
+    virtual void sphere(const Sphere & request, const ParameterList & parameters) {
+        (void)request;
         (void)parameters;
     }
 };

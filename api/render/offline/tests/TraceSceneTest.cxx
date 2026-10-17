@@ -63,11 +63,7 @@ BOOST_AUTO_TEST_CASE(scene_test) {
     scene.background(glm::vec3(0.0f, 0.0f, 1.0f));
     BOOST_CHECK_EQUAL(scene.background().b, 1.0f);
 
-    v3d::render::offline::trace::Triangle triangle(
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(1.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 1.0f, 1.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f));
+    v3d::render::offline::trace::Triangle triangle({glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 1.0f)}, glm::vec3(1.0f, 0.0f, 0.0f));
     scene.add(triangle);
 
     BOOST_REQUIRE_EQUAL(scene.all<v3d::render::offline::trace::Triangle>().size(), 1u);
@@ -85,29 +81,20 @@ BOOST_AUTO_TEST_CASE(scene_test) {
  * shades with.
  **/
 BOOST_AUTO_TEST_CASE(triangle_geometric_normal_test) {
-    v3d::render::offline::trace::Triangle triangle(
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f),
-        glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle triangle({glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)}, glm::vec3(1.0f));
 
     BOOST_TEST((triangle.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
     BOOST_TEST((triangle.shadingNormal(0.0f, 0.0f) == glm::vec3(0.0f, 0.0f, 1.0f)));
     BOOST_TEST((triangle.shadingNormal(0.3f, 0.3f) == glm::vec3(0.0f, 0.0f, 1.0f)));
 
     // the winding decides which way it faces
-    v3d::render::offline::trace::Triangle reversed(
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle reversed({glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)}, glm::vec3(1.0f));
 
     BOOST_TEST((reversed.geometricNormal() == glm::vec3(0.0f, 0.0f, -1.0f)));
 
     // a triangle with no area lies in no plane and returns zero rather than normalising a
     // zero vector
-    v3d::render::offline::trace::Triangle degenerate(
-        glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle degenerate({glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(2.0f, 0.0f, 0.0f)}, glm::vec3(1.0f));
 
     BOOST_TEST((degenerate.geometricNormal() == glm::vec3(0.0f)));
 }
@@ -118,14 +105,8 @@ BOOST_AUTO_TEST_CASE(triangle_geometric_normal_test) {
  **/
 BOOST_AUTO_TEST_CASE(triangle_shading_normal_test) {
     const glm::vec3 leaning = glm::normalize(glm::vec3(1.0f, 0.0f, 1.0f));
-    v3d::render::offline::trace::Triangle triangle(
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f),
-        glm::vec3(1.0f),
-        leaning,
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f));
+    v3d::render::offline::trace::Triangle triangle({glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)},
+        glm::vec3(1.0f), {leaning, glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f)});
 
     BOOST_TEST((triangle.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
 
@@ -149,7 +130,7 @@ namespace {
 
 /** Whether a ray straight down the negative z axis from z = 10 meets the scene, and where. **/
 bool downward(const v3d::render::offline::trace::Scene & scene, float x, float y, v3d::render::offline::trace::Hit* hit) {
-    return scene.nearest(v3d::type::geometry::Ray(glm::vec3(x, y, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
+    return scene.nearest(v3d::type::geometry::Ray({.origin = glm::vec3(x, y, 10.0f), .direction = glm::vec3(0.0f, 0.0f, -1.0f)}),
         0.0f, hit);
 }
 
@@ -163,7 +144,7 @@ bool downward(const v3d::render::offline::trace::Scene & scene, float x, float y
 BOOST_AUTO_TEST_CASE(scene_sphere_silhouette_test) {
     v3d::render::offline::trace::Scene scene;
     const glm::mat4x4 placed = glm::translate(glm::mat4x4(1.0f), glm::vec3(2.0f, 1.0f, 0.0f));
-    scene.add(v3d::render::offline::trace::Sphere(1.5f, -1.5f, 1.5f, 360.0f, placed, glm::vec3(1.0f)),
+    scene.add(v3d::render::offline::trace::Sphere({.radius = 1.5f, .zmin = -1.5f, .zmax = 1.5f, .thetamax = 360.0f}, placed, glm::vec3(1.0f)),
         v3d::render::offline::MovingTransform(placed));
     BOOST_REQUIRE_EQUAL(scene.all<v3d::render::offline::trace::Sphere>().size(), 1u);
 
@@ -186,7 +167,7 @@ BOOST_AUTO_TEST_CASE(scene_sphere_silhouette_test) {
  **/
 BOOST_AUTO_TEST_CASE(scene_sphere_cut_test) {
     v3d::render::offline::trace::Scene scene;
-    scene.add(v3d::render::offline::trace::Sphere(1.0f, -1.0f, 0.5f, 180.0f, glm::mat4x4(1.0f), glm::vec3(1.0f)),
+    scene.add(v3d::render::offline::trace::Sphere({.radius = 1.0f, .zmin = -1.0f, .zmax = 0.5f, .thetamax = 180.0f}, glm::mat4x4(1.0f), glm::vec3(1.0f)),
         v3d::render::offline::MovingTransform());
 
     v3d::render::offline::trace::Hit hit;
@@ -203,8 +184,7 @@ BOOST_AUTO_TEST_CASE(scene_sphere_cut_test) {
  * are, and one given none is hit with the colour it was built with.
  **/
 BOOST_AUTO_TEST_CASE(triangle_corner_colours_test) {
-    v3d::render::offline::trace::Triangle graded(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle graded({glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)}, glm::vec3(1.0f));
     graded.colours(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     v3d::render::offline::trace::Scene scene;
     scene.add(graded);
@@ -216,8 +196,7 @@ BOOST_AUTO_TEST_CASE(triangle_corner_colours_test) {
     BOOST_CHECK_CLOSE(hit.colour.b, 0.5f, 0.01f);
 
     v3d::render::offline::trace::Scene flat;
-    flat.add(v3d::render::offline::trace::Triangle(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.5f, 0.25f, 0.125f)));
+    flat.add(v3d::render::offline::trace::Triangle({glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)}, glm::vec3(0.5f, 0.25f, 0.125f)));
     BOOST_REQUIRE(downward(flat, 0.25f, 0.5f, &hit));
     BOOST_CHECK_CLOSE(hit.colour.g, 0.25f, 0.01f);
 }
@@ -227,10 +206,10 @@ BOOST_AUTO_TEST_CASE(triangle_corner_colours_test) {
  **/
 BOOST_AUTO_TEST_CASE(scene_sphere_with_no_size_test) {
     v3d::render::offline::trace::Scene scene;
-    scene.add(v3d::render::offline::trace::Sphere(-1.0f, -1.0f, 1.0f, 360.0f, glm::mat4x4(1.0f), glm::vec3(1.0f)),
+    scene.add(v3d::render::offline::trace::Sphere({.radius = -1.0f, .zmin = -1.0f, .zmax = 1.0f, .thetamax = 360.0f}, glm::mat4x4(1.0f), glm::vec3(1.0f)),
         v3d::render::offline::MovingTransform());
-    scene.add(v3d::render::offline::trace::Sphere(std::nanf(""), -1.0f, 1.0f, 360.0f, glm::mat4x4(1.0f),
-        glm::vec3(1.0f)), v3d::render::offline::MovingTransform());
+    scene.add(v3d::render::offline::trace::Sphere({.radius = std::nanf(""), .zmin = -1.0f, .zmax = 1.0f, .thetamax = 360.0f}, glm::mat4x4(1.0f), glm::vec3(1.0f)),
+        v3d::render::offline::MovingTransform());
 
     v3d::render::offline::trace::Hit hit;
     BOOST_CHECK(!downward(scene, 0.0f, 0.0f, &hit));
@@ -244,11 +223,10 @@ BOOST_AUTO_TEST_CASE(scene_any_primitive_test) {
     v3d::render::offline::trace::Scene scene;
     const boost::shared_ptr<Floor> floor = boost::make_shared<Floor>();
     scene.add(floor, v3d::render::offline::MovingTransform());
-    scene.add(v3d::render::offline::trace::Triangle(glm::vec3(-1.0f, -1.0f, -2.0f), glm::vec3(1.0f, -1.0f, -2.0f),
-        glm::vec3(0.0f, 1.0f, -2.0f), glm::vec3(1.0f)));
+    scene.add(v3d::render::offline::trace::Triangle({glm::vec3(-1.0f, -1.0f, -2.0f), glm::vec3(1.0f, -1.0f, -2.0f), glm::vec3(0.0f, 1.0f, -2.0f)}, glm::vec3(1.0f)));
 
     v3d::render::offline::trace::Hit hit;
-    BOOST_REQUIRE(scene.nearest(v3d::type::geometry::Ray(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, -1.0f)), 0.0f, &hit));
+    BOOST_REQUIRE(scene.nearest(v3d::type::geometry::Ray({.origin = glm::vec3(0.0f, 0.0f, 5.0f), .direction = glm::vec3(0.0f, 0.0f, -1.0f)}), 0.0f, &hit));
     BOOST_CHECK(hit.primitive == floor.get());
     BOOST_CHECK_CLOSE(hit.distance, 5.0f, 0.001f);
     BOOST_CHECK_EQUAL(hit.normal.z, 1.0f);
@@ -256,6 +234,6 @@ BOOST_AUTO_TEST_CASE(scene_any_primitive_test) {
     BOOST_CHECK_EQUAL(scene.all<v3d::render::offline::trace::Triangle>().size(), 1u);
 
     // past it, the triangle behind
-    BOOST_REQUIRE(scene.nearest(v3d::type::geometry::Ray(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, -1.0f)), 5.0f, &hit));
+    BOOST_REQUIRE(scene.nearest(v3d::type::geometry::Ray({.origin = glm::vec3(0.0f, 0.0f, 5.0f), .direction = glm::vec3(0.0f, 0.0f, -1.0f)}), 5.0f, &hit));
     BOOST_CHECK(hit.primitive == scene.all<v3d::render::offline::trace::Triangle>()[0]);
 }

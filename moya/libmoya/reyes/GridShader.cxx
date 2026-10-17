@@ -93,7 +93,7 @@ bool GridShader::transmission(const Value & from, const Value & to, Value* fract
     for (unsigned int point = 0; point < batch_; point++) {
         const glm::vec3 source(toWorld_ * glm::vec4(from.triple(point), 1.0f));
         const glm::vec3 target(toWorld_ * glm::vec4(to.triple(point), 1.0f));
-        fraction->triple(point, tracer_.transmitted(source, target,
+        fraction->triple(point, tracer_.transmitted({.origin = source, .direction = target - source},
             point < planes_.size() ? planes_[point] : glm::vec3(0.0f)));
     }
     return true;
@@ -103,7 +103,7 @@ bool GridShader::trace(const Value & origin, const Value & direction, Value* col
     for (unsigned int point = 0; point < batch_; point++) {
         const glm::vec3 start(toWorld_ * glm::vec4(origin.triple(point), 1.0f));
         const glm::vec3 along = glm::mat3(toWorld_) * direction.triple(point);
-        colour->triple(point, tracer_.traced(start, along,
+        colour->triple(point, tracer_.traced({.origin = start, .direction = along},
             point < planes_.size() ? planes_[point] : glm::vec3(0.0f)));
     }
     return true;

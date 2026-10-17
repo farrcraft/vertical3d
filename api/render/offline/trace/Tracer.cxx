@@ -61,8 +61,8 @@ void Tracer::time(float when) {
     }
 }
 
-glm::vec3 Tracer::transmitted(const glm::vec3 & from, const glm::vec3 & to, const glm::vec3 & geometric) {
-    const glm::vec3 along = to - from;
+glm::vec3 Tracer::transmitted(const v3d::type::geometry::Line & path, const glm::vec3 & geometric) {
+    const glm::vec3 & along = path.direction;
     const float span = glm::length(along);
     if (scene_ == nullptr || span <= 0.0f) {
         return glm::vec3(1.0f);
@@ -75,7 +75,7 @@ glm::vec3 Tracer::transmitted(const glm::vec3 & from, const glm::vec3 & to, cons
         start inside it.
     */
     const float side = glm::dot(geometric, along) < 0.0f ? -1.0f : 1.0f;
-    const v3d::type::geometry::Ray ray(from + geometric * (side * EPSILON), along / span);
+    const v3d::type::geometry::Ray ray({.origin = path.origin + (geometric * (side * EPSILON)), .direction = along / span});
 
     /*
         Everything between here and the light takes its share, and nothing beyond the light
@@ -96,7 +96,8 @@ glm::vec3 Tracer::transmitted(const glm::vec3 & from, const glm::vec3 & to, cons
     return through;
 }
 
-glm::vec3 Tracer::traced(const glm::vec3 & origin, const glm::vec3 & direction, const glm::vec3 & geometric) {
+glm::vec3 Tracer::traced(const v3d::type::geometry::Line & path, const glm::vec3 & geometric) {
+    const glm::vec3 & direction = path.direction;
     if (scene_ == nullptr) {
         return glm::vec3(0.0f);
     }
@@ -106,10 +107,10 @@ glm::vec3 Tracer::traced(const glm::vec3 & origin, const glm::vec3 & direction, 
         return scene_->background();
     }
     const float side = glm::dot(geometric, direction) < 0.0f ? -1.0f : 1.0f;
-    const glm::vec3 start = origin + geometric * (side * EPSILON);
+    const glm::vec3 start = path.origin + (geometric * (side * EPSILON));
 
     depth_++;
-    const Seen seen = see(v3d::type::geometry::Ray(start, direction / span));
+    const Seen seen = see(v3d::type::geometry::Ray({.origin = start, .direction = direction / span}));
     depth_--;
     return seen.colour;
 }

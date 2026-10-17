@@ -110,11 +110,11 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
     purpose. Any other change to the picture fails the test.
 */
 void scene(v3d::moya::RenderContext & rc) {
-    rc.imageResolution(64, 48, 1.0f);
+    rc.imageResolution({64, 48}, 1.0f);
     pixelCentres(rc);
     // the defaults are RI_EPSILON and RI_INFINITY, which leave the orthographic depth
     // scale at about 2e-38 and collapse every z onto the near plane
-    rc.clipping(1.0f, 100.0f);
+    rc.clipping({.hither = 1.0f, .yon = 100.0f});
     rc.prepareWorld();
     // the shader that means no shading, built rather than defaulted to, so that this
     // picture goes through the language by both routes
@@ -169,21 +169,21 @@ void put(v3d::render::offline::rib::ParameterList* list, const std::string & nam
     the RI defaults unless the caller says otherwise.
 */
 void shadedScene(v3d::moya::RenderContext & rc) {
-    rc.imageResolution(64, 48, 1.0f);
-    rc.clipping(1.0f, 100.0f);
+    rc.imageResolution({64, 48}, 1.0f);
+    rc.clipping({.hither = 1.0f, .yon = 100.0f});
     rc.prepareWorld();
 
     typedef v3d::render::offline::rib::Declaration Declaration;
     v3d::render::offline::rib::ParameterList distant;
     put(&distant, "intensity", Declaration::Type::FLOAT, { 0.8f });
     put(&distant, "to", Declaration::Type::POINT, { 0.6f, -0.4f, 1.0f });
-    rc.lightSource("distantlight", "1", distant);
+    rc.lightSource({.shader = "distantlight", .handle = "1"}, distant);
 
     v3d::render::offline::rib::ParameterList bulb;
     put(&bulb, "intensity", Declaration::Type::FLOAT, { 4.0f });
     rc.pushTransform();
     rc.translate(-1.0f, 1.0f, 2.0f);
-    rc.lightSource("pointlight", "2", bulb);
+    rc.lightSource({.shader = "pointlight", .handle = "2"}, bulb);
     rc.popTransform();
 
     const glm::vec3 tilted(-0.9f, 0.0f, -0.436f);
@@ -211,7 +211,7 @@ void shadedScene(v3d::moya::RenderContext & rc) {
     or a pinhole.
 */
 void focusScene(v3d::moya::RenderContext & rc, bool lens) {
-    rc.imageResolution(64, 48, 1.0f);
+    rc.imageResolution({64, 48}, 1.0f);
     rc.sampling().samples = glm::uvec2(4, 4);
     if (lens) {
         rc.sampling().fstop = 1.0f;
@@ -219,7 +219,7 @@ void focusScene(v3d::moya::RenderContext & rc, bool lens) {
         rc.sampling().focalDistance = 4.0f;
     }
     rc.projection("perspective", 40.0f);
-    rc.clipping(0.1f, 100.0f);
+    rc.clipping({.hither = 0.1f, .yon = 100.0f});
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 
@@ -275,10 +275,10 @@ float largest(const v3d::render::offline::FrameBuffer & a, const v3d::render::of
  * The orthographic camera of the other references, with the shutter open from 0 to 1.
  **/
 void motionCamera(v3d::moya::RenderContext & rc) {
-    rc.imageResolution(64, 48, 1.0f);
+    rc.imageResolution({64, 48}, 1.0f);
     rc.sampling().samples = glm::uvec2(4, 4);
     rc.sampling().shutter = glm::vec2(0.0f, 1.0f);
-    rc.clipping(0.1f, 100.0f);
+    rc.clipping({.hither = 0.1f, .yon = 100.0f});
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 }
@@ -314,8 +314,8 @@ void motionScene(v3d::moya::RenderContext & rc) {
     rc.attributeBegin();
     rc.translate(0.6f, -0.4f, 5.0f);
     rc.motionBegin({ 0.0f, 1.0f });
-    rc.rotate(0.0f, 0.0f, 0.0f, 1.0f);
-    rc.rotate(90.0f, 0.0f, 0.0f, 1.0f);
+    rc.rotate(0.0f, {0.0f, 0.0f, 1.0f});
+    rc.rotate(90.0f, {0.0f, 0.0f, 1.0f});
     rc.motionEnd();
     rc.color(glm::vec3(0.2f, 0.7f, 0.9f));
     const glm::vec3 turned[4] = {
@@ -396,8 +396,8 @@ boost::shared_ptr<v3d::image::Image> picture(const v3d::moya::RenderContext & rc
  **/
 void raytraceCamera(v3d::moya::RenderContext & rc) {
     rc.hider("raytrace");
-    rc.imageResolution(64, 48, 1.0f);
-    rc.clipping(0.001f, 100.0f);
+    rc.imageResolution({64, 48}, 1.0f);
+    rc.clipping({.hither = 0.001f, .yon = 100.0f});
     rc.projection("orthographic");
     rc.setTransform(glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
 }
@@ -439,16 +439,16 @@ void raytraceShadedScene(v3d::moya::RenderContext & rc) {
 
     v3d::render::offline::rib::ParameterList fill;
     put(&fill, "intensity", Declaration::Type::FLOAT, { 0.18f });
-    rc.lightSource("ambientlight", "0", fill);
+    rc.lightSource({.shader = "ambientlight", .handle = "0"}, fill);
     v3d::render::offline::rib::ParameterList distant;
     put(&distant, "intensity", Declaration::Type::FLOAT, { 0.9f });
     put(&distant, "to", Declaration::Type::POINT, { 0.7f, -0.7f, 1.0f });
-    rc.lightSource("distantlight", "1", distant);
+    rc.lightSource({.shader = "distantlight", .handle = "1"}, distant);
     v3d::render::offline::rib::ParameterList lamp;
     put(&lamp, "intensity", Declaration::Type::FLOAT, { 1.2f });
     rc.pushTransform();
     rc.translate(-0.6f, 0.5f, 1.2f);
-    rc.lightSource("pointlight", "2", lamp);
+    rc.lightSource({.shader = "pointlight", .handle = "2"}, lamp);
     rc.popTransform();
 
     rc.attributeBegin();
@@ -483,8 +483,8 @@ void raytraceShadedScene(v3d::moya::RenderContext & rc) {
 void spheresScene(v3d::moya::RenderContext & rc) {
     typedef v3d::render::offline::rib::Declaration Declaration;
     rc.hider("raytrace");
-    rc.imageResolution(64, 48, 1.0f);
-    rc.clipping(0.1f, 100.0f);
+    rc.imageResolution({64, 48}, 1.0f);
+    rc.clipping({.hither = 0.1f, .yon = 100.0f});
     rc.projection("perspective", 40.0f);
     // the floor's shader is a fixture beside the scene rather than one of the standard ones
     rc.searchpath("data:&");
@@ -492,11 +492,11 @@ void spheresScene(v3d::moya::RenderContext & rc) {
 
     v3d::render::offline::rib::ParameterList fill;
     put(&fill, "intensity", Declaration::Type::FLOAT, { 0.2f });
-    rc.lightSource("ambientlight", "0", fill);
+    rc.lightSource({.shader = "ambientlight", .handle = "0"}, fill);
     v3d::render::offline::rib::ParameterList distant;
     put(&distant, "intensity", Declaration::Type::FLOAT, { 0.9f });
     put(&distant, "to", Declaration::Type::POINT, { 0.4f, -1.0f, 0.6f });
-    rc.lightSource("distantlight", "1", distant);
+    rc.lightSource({.shader = "distantlight", .handle = "1"}, distant);
 
     rc.attributeBegin();
     rc.color(glm::vec3(0.85f, 0.8f, 0.7f));
@@ -528,7 +528,7 @@ void spheresScene(v3d::moya::RenderContext & rc) {
     put(&mirror, "Kr", Declaration::Type::FLOAT, { 0.8f });
     rc.surface("shinymetal", mirror);
     rc.translate(-1.1f, -0.28f, 6.0f);
-    BOOST_REQUIRE(rc.addSphere(0.7f, -0.7f, 0.7f, 360.0f));
+    BOOST_REQUIRE(rc.addSphere({.radius = 0.7f, .zmin = -0.7f, .zmax = 0.7f, .thetamax = 360.0f}));
     rc.attributeEnd();
 
     rc.attributeBegin();
@@ -536,7 +536,7 @@ void spheresScene(v3d::moya::RenderContext & rc) {
     rc.opacity(glm::vec3(0.3f));
     rc.surface("glass", v3d::render::offline::rib::ParameterList());
     rc.translate(1.1f, -0.28f, 5.5f);
-    BOOST_REQUIRE(rc.addSphere(0.7f, -0.7f, 0.7f, 360.0f));
+    BOOST_REQUIRE(rc.addSphere({.radius = 0.7f, .zmin = -0.7f, .zmax = 0.7f, .thetamax = 360.0f}));
     rc.attributeEnd();
 }
 
@@ -545,12 +545,12 @@ void spheresScene(v3d::moya::RenderContext & rc) {
  * box, which is twelve pixels at this frame.
  **/
 void slidingQuad(v3d::moya::RenderContext & rc) {
-    rc.imageResolution(64, 48, 1.0f);
+    rc.imageResolution({64, 48}, 1.0f);
     rc.sampling().samples = glm::uvec2(8, 8);
     rc.sampling().filter = v3d::render::offline::Filter::Box;
     rc.sampling().width = glm::vec2(1.0f);
     rc.sampling().shutter = glm::vec2(0.0f, 1.0f);
-    rc.clipping(0.1f, 100.0f);
+    rc.clipping({.hither = 0.1f, .yon = 100.0f});
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 
@@ -666,7 +666,7 @@ BOOST_AUTO_TEST_CASE(moya_display_writes_a_file_test) {
 
     v3d::moya::RenderContext rc;
     scene(rc);
-    rc.display(output, "file", "rgb");
+    rc.display({.name = output, .type = "file", .mode = "rgb"});
     rc.render();
 
     BOOST_TEST(boost::filesystem::exists(output));

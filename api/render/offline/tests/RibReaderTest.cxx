@@ -26,9 +26,8 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         version_ = number;
         counts_["version"]++;
     }
-    void declare(const std::string & name, const std::string & declaration) override {
-        (void)declaration;
-        declared_.push_back(name);
+    void declare(const v3d::render::offline::rib::Declare & request) override {
+        declared_.push_back(request.name);
         counts_["Declare"]++;
     }
     void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
@@ -44,10 +43,10 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         hider_ = name;
         counts_["Hider"]++;
     }
-    void format(unsigned int width, unsigned int height, float pixelAspect) override {
-        width_ = width;
-        height_ = height;
-        pixelAspect_ = pixelAspect;
+    void format(const v3d::render::offline::rib::Format & request) override {
+        width_ = request.width;
+        height_ = request.height;
+        pixelAspect_ = request.pixelAspect;
         counts_["Format"]++;
     }
     void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
@@ -55,27 +54,26 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         fov_ = parameters.number("fov", 90.0f);
         counts_["Projection"]++;
     }
-    void clipping(float hither, float yon) override {
-        hither_ = hither;
-        yon_ = yon;
+    void clipping(const v3d::render::offline::rib::Clipping & request) override {
+        hither_ = request.hither;
+        yon_ = request.yon;
         counts_["Clipping"]++;
     }
-    void display(const std::string & name, const std::string & type, const std::string & mode,
-        const v3d::render::offline::rib::ParameterList & parameters) override {
+    void display(const v3d::render::offline::rib::Display & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
-        display_ = name + "|" + type + "|" + mode;
+        display_ = request.name + "|" + request.type + "|" + request.mode;
         counts_["Display"]++;
     }
-    void depthOfField(float fstop, float focalLength, float focalDistance) override {
-        lens_ = glm::vec3(fstop, focalLength, focalDistance);
+    void depthOfField(const v3d::render::offline::rib::DepthOfField & request) override {
+        lens_ = glm::vec3(request.fstop, request.focalLength, request.focalDistance);
         counts_["DepthOfField"]++;
     }
-    void shutter(float open, float close) override {
-        shutter_ = glm::vec2(open, close);
+    void shutter(const v3d::render::offline::rib::Shutter & request) override {
+        shutter_ = glm::vec2(request.open, request.close);
         counts_["Shutter"]++;
     }
-    void pixelSamples(unsigned int x, unsigned int y) override {
-        samples_ = glm::uvec2(x, y);
+    void pixelSamples(const glm::uvec2 & samples) override {
+        samples_ = samples;
         counts_["PixelSamples"]++;
     }
     void pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) override {
@@ -122,9 +120,8 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         roughness_ = parameters.number("roughness", -1.0f);
         counts_["Surface"]++;
     }
-    void lightSource(const std::string & name, const std::string & handle,
-        const v3d::render::offline::rib::ParameterList & parameters) override {
-        lights_.push_back(name + "|" + handle + "|" +
+    void lightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+        lights_.push_back(request.shader + "|" + request.handle + "|" +
             std::to_string(parameters.number("intensity", -1.0f)));
         counts_["LightSource"]++;
     }
@@ -148,20 +145,15 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         colors_ = parameters.points("Cs");
         counts_["Polygon"]++;
     }
-    void pointsPolygons(const std::vector<unsigned int> & perPolygon, const std::vector<unsigned int> & indices,
-        const v3d::render::offline::rib::ParameterList & parameters) override {
-        perPolygon_ = perPolygon;
-        indices_ = indices;
+    void pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+        perPolygon_ = request.counts;
+        indices_ = request.indices;
         points_ = parameters.points("P");
         counts_["PointsPolygons"]++;
     }
-    void sphere(float radius, float zmin, float zmax, float thetamax,
-        const v3d::render::offline::rib::ParameterList & parameters) override {
-        (void)zmin;
-        (void)zmax;
-        (void)thetamax;
+    void sphere(const v3d::render::offline::rib::Sphere & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
-        radius_ = radius;
+        radius_ = request.radius;
         counts_["Sphere"]++;
     }
 
@@ -673,24 +665,19 @@ namespace {
  **/
 class CapableHandler final : public v3d::render::offline::rib::Handler {
  public:
-    void areaLightSource(const std::string & name, const std::string & handle,
-        const v3d::render::offline::rib::ParameterList & parameters) override {
+    void areaLightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
-        area_ = name + "|" + handle;
+        area_ = request.shader + "|" + request.handle;
     }
-    void lightSource(const std::string & name, const std::string & handle,
-        const v3d::render::offline::rib::ParameterList & parameters) override {
-        (void)name;
-        (void)handle;
+    void lightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)request;
         (void)parameters;
         lights_++;
     }
-    void makeTexture(const std::string & picture, const std::string & texture, const std::string & swrap,
-        const std::string & twrap, const std::string & filter, float swidth, float twidth,
-        const v3d::render::offline::rib::ParameterList & parameters) override {
+    void makeTexture(const v3d::render::offline::rib::MakeTexture & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
-        made_ = picture + "|" + texture + "|" + swrap + "|" + twrap + "|" + filter + "|" +
-            std::to_string(static_cast<int>(swidth)) + "|" + std::to_string(static_cast<int>(twidth));
+        made_ = request.picture + "|" + request.texture + "|" + request.swrap + "|" + request.twrap + "|" + request.filter + "|" +
+            std::to_string(static_cast<int>(request.swidth)) + "|" + std::to_string(static_cast<int>(request.twidth));
     }
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;

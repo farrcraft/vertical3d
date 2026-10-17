@@ -9,6 +9,7 @@
 #include <string>
 
 #include "Declaration.h"
+#include "Requests.h"
 
 namespace v3d::render::offline::rib {
 
@@ -29,7 +30,7 @@ class Declarations final {
      *
      * @return false when the declaration text does not parse, leaving the table alone
      **/
-    bool declare(const std::string & name, const std::string & text);
+    bool declare(const Declare & request);
 
     /**
      * Resolve a parameter name.

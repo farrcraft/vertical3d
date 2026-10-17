@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(render_context_defaults_test) {
 BOOST_AUTO_TEST_CASE(render_context_image_resolution_test) {
     v3d::moya::RenderContext rc;
 
-    rc.imageResolution(1024, 768, 1.3f);
+    rc.imageResolution({1024, 768}, 1.3f);
 
     BOOST_TEST(rc.imageWidth() == 1024u);
     BOOST_TEST(rc.imageHeight() == 768u);
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(render_context_rotate_test) {
     v3d::moya::RenderContext rc;
 
     rc.setIdentityTransform();
-    rc.rotate(90.0f, 0.0f, 0.0f, 1.0f);
+    rc.rotate(90.0f, {0.0f, 0.0f, 1.0f});
     rc.saveCoordinateSystem("object");
 
     // the angle is in degrees, as RiRotate takes it
@@ -366,8 +366,8 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
  **/
 BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
     v3d::moya::RenderContext rc;
-    rc.imageResolution(64, 48, 1.0f);
-    rc.clipping(1.0f, 100.0f);
+    rc.imageResolution({64, 48}, 1.0f);
+    rc.clipping({.hither = 1.0f, .yon = 100.0f});
     rc.prepareWorld();
 
     v3d::render::offline::rib::ParameterList list;

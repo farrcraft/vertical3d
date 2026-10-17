@@ -105,7 +105,7 @@ geometry::Ray Camera::ray(const glm::vec2& point, const int viewport[4]) const {
     // plane and one is the far one
     const glm::vec3 from = unproject(glm::vec3(point.x, point.y, 0.0f), viewport);
     const glm::vec3 to = unproject(glm::vec3(point.x, point.y, 1.0f), viewport);
-    return geometry::Ray(from, to - from);
+    return geometry::Ray({.origin = from, .direction = to - from});
 }
 
 /*

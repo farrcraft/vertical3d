@@ -25,24 +25,21 @@ namespace {
  **/
 class ImportHandler final : public v3d::render::offline::rib::Handler {
  public:
-    void format(unsigned int width, unsigned int height, float pixelAspect) override {
-        (void)pixelAspect;
-        width_ = width;
-        height_ = height;
+    void format(const v3d::render::offline::rib::Format & request) override {
+        width_ = request.width;
+        height_ = request.height;
     }
     void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)parameters;
         projection_ = name;
     }
-    void screenWindow(float left, float right, float bottom, float top) override {
-        (void)left;
-        (void)bottom;
-        right_ = right;
-        top_ = top;
+    void screenWindow(const v3d::render::offline::rib::ScreenWindow & request) override {
+        right_ = request.right;
+        top_ = request.top;
     }
-    void clipping(float hither, float yon) override {
-        hither_ = hither;
-        yon_ = yon;
+    void clipping(const v3d::render::offline::rib::Clipping & request) override {
+        hither_ = request.hither;
+        yon_ = request.yon;
     }
     void transform(const glm::mat4x4 & matrix) override {  // NOLINT(build/include_what_you_use)
         camera_ = matrix;

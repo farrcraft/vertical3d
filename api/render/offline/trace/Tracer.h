@@ -9,6 +9,7 @@
 #include <api/render/offline/sl/Globals.h>
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/runtime/Machine.h>
+#include <api/type/geometry/Line.h>
 #include <api/type/geometry/Ray.h>
 
 #include <map>
@@ -77,11 +78,13 @@ class Tracer final {
      * transmission() and trace() in world space, for a hit in this scene and for a renderer
      * whose shading point is not a hit, such as moya's grids.
      *
+     * @param path for transmitted(), from the shading point to the light: its direction ends at
+     *        the light. For traced(), where the ray starts and which way it goes.
      * @param geometric the plane of the surface the ray leaves, which it is started off so
      *        that it does not meet that surface again; zero starts it where it is
      **/
-    glm::vec3 transmitted(const glm::vec3 & from, const glm::vec3 & to, const glm::vec3 & geometric);
-    glm::vec3 traced(const glm::vec3 & origin, const glm::vec3 & direction, const glm::vec3 & geometric);
+    glm::vec3 transmitted(const v3d::type::geometry::Line & path, const glm::vec3 & geometric);
+    glm::vec3 traced(const v3d::type::geometry::Line & path, const glm::vec3 & geometric);
 
     const Scene* scene() const;
     v3d::render::offline::Textures* textures() const;

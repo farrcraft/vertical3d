@@ -80,7 +80,7 @@ bool HitShader::transmission(const Value & from, const Value & to, Value* fracti
     if (tracer_->scene() == nullptr || fraction == nullptr) {
         return false;
     }
-    fraction->triple(0, tracer_->transmitted(from.triple(0), to.triple(0), hit_.geometric));
+    fraction->triple(0, tracer_->transmitted({.origin = from.triple(0), .direction = to.triple(0) - from.triple(0)}, hit_.geometric));
     return true;
 }
 
@@ -88,7 +88,7 @@ bool HitShader::trace(const Value & origin, const Value & direction, Value* colo
     if (tracer_->scene() == nullptr || colour == nullptr) {
         return false;
     }
-    colour->triple(0, tracer_->traced(origin.triple(0), direction.triple(0), hit_.geometric));
+    colour->triple(0, tracer_->traced({.origin = origin.triple(0), .direction = direction.triple(0)}, hit_.geometric));
     return true;
 }
 

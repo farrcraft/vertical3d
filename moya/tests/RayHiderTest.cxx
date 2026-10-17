@@ -33,8 +33,8 @@ const unsigned int SIZE = 16;
 
 void frame(v3d::moya::RenderContext & rc) {
     rc.hider("raytrace");
-    rc.imageResolution(SIZE, SIZE, 1.0f);
-    rc.clipping(0.001f, 100.0f);
+    rc.imageResolution({SIZE, SIZE}, 1.0f);
+    rc.clipping({.hither = 0.001f, .yon = 100.0f});
     rc.projection("orthographic");
     rc.setTransform(glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
     // a sample at each pixel centre, given back exactly, so a pixel is what its centre hit
@@ -429,7 +429,7 @@ BOOST_AUTO_TEST_CASE(rayhider_sphere_test) {
     BOOST_CHECK_CLOSE(scene.all<v3d::render::offline::trace::Sphere>()[0]->opacity().r, 0.5f, 0.001f);
 
     v3d::render::offline::trace::Hit hit;
-    BOOST_REQUIRE(scene.nearest(v3d::type::geometry::Ray(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)), 0.0f, &hit));
+    BOOST_REQUIRE(scene.nearest(v3d::type::geometry::Ray({.origin = glm::vec3(0.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)}), 0.0f, &hit));
     BOOST_CHECK_CLOSE(hit.distance, 4.0f, 0.001f);
 }
 
@@ -469,9 +469,9 @@ BOOST_AUTO_TEST_CASE(rayhider_lights_per_primitive_test) {
  **/
 BOOST_AUTO_TEST_CASE(rayhider_inverts_the_projection_test) {
     v3d::moya::RenderContext rc;
-    rc.imageResolution(32, 16, 1.0f);
-    rc.screenWindow(-0.5f, 1.5f, -1.0f, 1.0f);
-    rc.clipping(0.1f, 100.0f);
+    rc.imageResolution({32, 16}, 1.0f);
+    rc.screenWindow({.left = -0.5f, .right = 1.5f, .bottom = -1.0f, .top = 1.0f});
+    rc.clipping({.hither = 0.1f, .yon = 100.0f});
     rc.projection("perspective", 60.0f);
 
     v3d::moya::RayHider::Camera camera;
