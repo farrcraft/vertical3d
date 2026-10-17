@@ -217,7 +217,10 @@ its own region.
 
 #### Step 10 — The movement filter, measured
 
-**Open.** Needs step 8.
+**Closed.** On a 256 by 256 board with walls, in an optimised build, an always-true filter adds
+about 3% to `findPath` and 3 to 6% to `reachableTiles`. That is not worth a template parameter
+on every search, so `TileFilter` stays a `std::function`. [Grid.md](../api/Grid.md) states the
+cost, and the TODO.md entry is deleted.
 
 - Time `findPath` and `reachableTiles` on a 256 by 256 grid, with a filter and without one.
 - If the filter's call is a measurable share of the time, make `TileFilter` a template parameter.

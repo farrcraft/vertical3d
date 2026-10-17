@@ -144,7 +144,7 @@ Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4
 
 `api/grid` is a library of its own, and odyssey uses it. The grid owns a map's picture and
 terrain legend; the rest of a map belongs to the game. [Grid.md](api/Grid.md) describes the
-library. [StreamingWorlds](plans/StreamingWorlds.md) takes the first and third entries below.
+library. [StreamingWorlds](plans/StreamingWorlds.md) takes the first entry below.
 
 [] **A world cannot be made of regions.**
 
@@ -162,13 +162,6 @@ library. [StreamingWorlds](plans/StreamingWorlds.md) takes the first and third e
   [tile/Sight.h](../odyssey/tile/Sight.h), but nothing about it is specific to odyssey.
 - Move it to `api/grid` when a second game needs it.
 - Background: [LargeWorlds, step 8](plans/completed/LargeWorlds.md#step-8--remembered-sight).
-
-[] **`TileFilter` is a `std::function`.**
-
-- It is called for every neighbour of every visited tile.
-- Make it a template parameter if a board becomes large enough for the cost to show. A
-  region-sized board is the most likely case, so this waits for regions.
-- Background: [LargeWorlds, step 9](plans/completed/LargeWorlds.md#step-9--the-movement-filter-as-a-template).
 
 ## Voxel
 

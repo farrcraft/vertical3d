@@ -22,7 +22,9 @@ needs to know about occupants, the caller passes a predicate:
 
 - `TileFilter` (`std::function<bool(TileCoord)>`) says whether a tile may be entered, on top of
   the grid's own passability. Close it over whatever the app tracks: occupancy, ownership, a
-  zone a unit will not cross.
+  zone a unit will not cross. A search calls it for every neighbour it visits. On a 256 by 256
+  board, in an optimised build, that adds a few percent to a search, so it is a function object
+  rather than a template parameter.
 - `SightBlocker` (`std::function<bool(TileCoord)>`) says whether a tile stops sight, on top of
   the grid's own cover. Use it for smoke or a closed shutter.
 
