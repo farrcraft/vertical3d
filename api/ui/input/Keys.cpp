@@ -75,7 +75,7 @@ Keys::Keys(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::di
     clipboard_(clipboard) {
 }
 
-bool Keys::press(std::string_view key, bool shifted, bool controlled) {
+bool Keys::press(std::string_view key, bool shifted, bool controlled, bool repeat) {
     if (!ui_ || key.empty()) {
         return false;
     }
@@ -106,6 +106,11 @@ bool Keys::press(std::string_view key, bool shifted, bool controlled) {
         // to the app's bindings the way one reaching an unfocused ui does. Tab and escape
         // are above this, so the focus is never stuck on one
         return false;
+    }
+    if (repeat && activates(key)) {
+        // a held activation key would otherwise send its command at the key repeat rate. The
+        // repeat is still taken, so it reaches no binding either
+        return true;
     }
     return act(focused, key, shifted, controlled);
 }

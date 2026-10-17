@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/ui/paint/Dressing.h>
+#include <api/ui/style/Style.h>
 
 #include <array>
 #include <cstddef>
@@ -142,6 +143,8 @@ class Resolver final {
 
     boost::shared_ptr<Theme> theme_;
     paint::Dressing base_;
+    // what the current theme wrote over base_
+    Overlay<paint::Dressing> overlay_;
 
     // keyed by the style name a component gave, which is usually empty. std::less<> so
     // that a string_view finds an entry without building a string to look it up with

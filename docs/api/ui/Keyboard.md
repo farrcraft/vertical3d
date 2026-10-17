@@ -63,7 +63,7 @@ The ui receives two kinds of keyboard input:
 
 | Call | Receives | Example |
 |---|---|---|
-| `Keys::press(key, shifted, controlled)` | a key name from `api/input`, and whether shift and control are held | `"backspace"`, `"arrow_left"`, `"return"`, `"tab"` |
+| `Keys::press(key, shifted, controlled, repeat)` | a key name from `api/input`, whether shift and control are held, and whether the key is repeating | `"backspace"`, `"arrow_left"`, `"return"`, `"tab"` |
 | `Keys::text(utf8)` | characters the platform composed, as UTF-8 | `"e"`, `"É"` |
 
 Characters arrive with shift already applied. A dead key and the key after it arrive as one
@@ -77,12 +77,17 @@ keyboard state.
 
 | Focused | Keys it takes |
 |---|---|
-| `Button`, `CheckBox`, `RadioButton` | `return` and `space` send its command |
+| `Button`, `CheckBox`, `RadioButton` | `return` and `space` send its command, once however long the key is held |
 | `SelectList` | `arrow_down`, `arrow_up`, `home`, `end` move the chosen row and send the command |
 | `TabBar` | `arrow_right`, `arrow_left`, `home`, `end` change the page |
 | `Scrollbar` | arrows along its direction move it by a line; `pageup` and `pagedown` by a page; `home` and `end` to the ends |
 | `Slider` | `arrow_right`, `arrow_left` by one step; `pageup`, `pagedown` by a tenth of the range; `home`, `end` to the ends; sends its command when the value changes |
 | `TextBox` | editing keys, and every key that types a character; see [Editing text](#editing-text-in-a-textbox) |
+
+**A held `return` or `space` sends its command once.** `Keys::press` takes the key's `repeat`
+flag, which `shell::Keyboard` passes from SDL. A repeat of an activation key is taken, so it
+reaches no binding, and does nothing. Every other key acts on each repeat, so a held arrow keeps
+moving through a list.
 
 Rules:
 

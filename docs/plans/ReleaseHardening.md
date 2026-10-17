@@ -81,13 +81,20 @@ through `GameMenu::declare()`.
 
 ### Step 5 — Contracts
 
-**Open.** [TODO.md](../TODO.md#contract): the five entries under "Contract".
+**Closed.** Each fix has a test that fails without it. A sixth entry, pong's `bounce` clip, joined
+the section after the plan was drafted and is fixed here too.
 
-- A held activation key sends a ui command once, not at the key repeat rate.
-- The centred game menu draws a disabled item greyed.
-- A theme switch resets what the new theme does not name. A null theme resets everything.
-- Two views of one camera profile get two passes.
-- Playing no clip with a fade fades the old pose out.
+- `Keys::press` takes the key's `repeat` flag, and a repeat of `return` or `space` is taken and
+  does nothing.
+- The centred menu and the dropped panel share one colour rule for an item, `itemInk()`.
+- `style::Overlay` records what a theme wrote over a dressing, and the next theme puts it back
+  first. The immediate layer's theme had the same defect and uses it too.
+- `ViewLayout` names a profile's second view "Perspective 2" and so on, and each view's pass is
+  named after the view.
+- `Playback::advance` runs the fade when the clip is `none`.
+- pong's sounds document files `bounce` under `hit.wav`. pong has never had a sound of its own
+  for a wall. A scene test plays a hit, a bounce, a point and a win, and checks the document holds
+  every clip it heard.
 
 ### Step 6 — Cleanup on failure
 

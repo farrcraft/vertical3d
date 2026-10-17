@@ -126,7 +126,8 @@ the same for the clip being faded out of, and the fade's progress.
   `simulate()`, after the snapshot.
 - **`crossed(previous, current, marker)`** counts how many times a step passed a marker time in
   the clip, such as a footstep. It is zero for a step that changed clip.
-- **`Playback::none`** as the clip draws the skeleton's rest pose.
+- **`Playback::none`** as the clip draws the skeleton's rest pose. Playing it with a fade fades
+  the old clip out into the rest pose over the fade, as any other clip would.
 - It holds no pose. The renderer samples the pose from the interpolated playback each frame.
 - Across a step that changed clip there is no halfway point, so interpolation gives the later
   step. The fade smooths the change.

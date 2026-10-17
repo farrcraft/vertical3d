@@ -97,6 +97,26 @@ BOOST_AUTO_TEST_CASE(playback_a_fade_runs_its_length_test) {
 }
 
 /**
+ * Playing no clip with a fade fades the old clip out into the rest pose, and the fade ends
+ * rather than holding the old clip at weight zero.
+ **/
+BOOST_AUTO_TEST_CASE(playback_fades_out_into_no_clip_test) {
+    Playback playback = walking();
+    v3d::ecs::component::play(&playback, Playback::none, 0.0f, false, 0.5f);
+    BOOST_CHECK_EQUAL(playback.clip, Playback::none);
+    BOOST_CHECK_EQUAL(playback.from, walk);
+
+    v3d::ecs::component::advance(&playback, 0.25f);
+    BOOST_CHECK_EQUAL(playback.fade, 0.5f);
+    BOOST_CHECK_EQUAL(playback.fromTime, 1.25f);
+
+    v3d::ecs::component::advance(&playback, 0.25f);
+    BOOST_CHECK_EQUAL(playback.fade, 1.0f);
+    BOOST_CHECK_EQUAL(playback.from, Playback::none);
+    BOOST_CHECK_EQUAL(playback.time, 0.0f);
+}
+
+/**
  * With nothing to fade from, or no fade asked for, a clip cuts in.
  **/
 BOOST_AUTO_TEST_CASE(playback_cuts_with_nothing_to_fade_from_test) {

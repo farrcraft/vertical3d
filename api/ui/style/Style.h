@@ -84,4 +84,60 @@ void readColour(const boost::shared_ptr<Style>& target, const std::string& name,
  **/
 void readMetric(const boost::shared_ptr<Style>& target, const std::string& name, float* into);
 
+/**
+ * The values a theme wrote over a dressing, and what each held before.
+ *
+ * A theme names only some values. The next theme starts from what was there before any theme
+ * rather than from what the last one left, so a value the new theme is silent on goes back to
+ * its default, and no theme at all puts every value back.
+ *
+ * It records the field rather than its address, so a dressing that is copied keeps working.
+ * A value written over a themed one by the app is put back with it.
+ *
+ * @param D the dressing the values are in
+ **/
+template <typename D>
+class Overlay final {
+ public:
+    /**
+     * Read a colour as readColour() does, and remember what it replaced.
+     **/
+    void colour(const boost::shared_ptr<Style>& target, const std::string& name, D* dressing, glm::vec4 D::* field) {
+        const glm::vec4 was = dressing->*field;
+        readColour(target, name, &(dressing->*field));
+        if (dressing->*field != was) {
+            colours_.emplace_back(field, was);
+        }
+    }
+
+    /**
+     * Read a number as readMetric() does, and remember what it replaced.
+     **/
+    void metric(const boost::shared_ptr<Style>& target, const std::string& name, D* dressing, float D::* field) {
+        const float was = dressing->*field;
+        readMetric(target, name, &(dressing->*field));
+        if (dressing->*field != was) {
+            metrics_.emplace_back(field, was);
+        }
+    }
+
+    /**
+     * Put back every value read since the last restore, and forget them.
+     **/
+    void restore(D* dressing) {
+        for (auto it = colours_.rbegin(); it != colours_.rend(); ++it) {
+            dressing->*(it->first) = it->second;
+        }
+        for (auto it = metrics_.rbegin(); it != metrics_.rend(); ++it) {
+            dressing->*(it->first) = it->second;
+        }
+        colours_.clear();
+        metrics_.clear();
+    }
+
+ private:
+    std::vector<std::pair<glm::vec4 D::*, glm::vec4>> colours_;
+    std::vector<std::pair<float D::*, float>> metrics_;
+};
+
 };  // namespace v3d::ui::style

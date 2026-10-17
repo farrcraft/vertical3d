@@ -302,4 +302,65 @@ BOOST_AUTO_TEST_CASE(a_theme_that_dresses_one_side_leaves_the_other_alone) {
     BOOST_CHECK_CLOSE(ui.dressing().lineHeight, before, 0.001f);
 }
 
+/**
+ * A theme switch starts from what was there before any theme. A value the new theme is silent
+ * on goes back to its default rather than keeping the last theme's, and no theme puts every
+ * value back. A default the app wrote itself, and no theme names, survives both.
+ **/
+BOOST_AUTO_TEST_CASE(a_theme_switch_resets_what_the_new_theme_does_not_name) {
+    const boost::shared_ptr<v3d::ui::style::Theme> first = boost::make_shared<v3d::ui::style::Theme>("first");
+    const boost::shared_ptr<v3d::ui::style::Style> loud = style("default", Resolver::chromeClass);
+    colour(loud, "text", red);
+    metric(loud, "line-height", 34.0f);
+    first->addStyle(loud);
+
+    const boost::shared_ptr<v3d::ui::style::Theme> second = boost::make_shared<v3d::ui::style::Theme>("second");
+    const boost::shared_ptr<v3d::ui::style::Style> quiet = style("default", Resolver::chromeClass);
+    colour(quiet, "highlight", green);
+    second->addStyle(quiet);
+
+    Resolver resolver;
+    const glm::vec4 text = resolver.base().text;
+    const float lineHeight = resolver.base().lineHeight;
+    const glm::vec4 highlight = resolver.base().highlight;
+    const glm::vec4 own(0.2f, 0.4f, 0.6f, 1.0f);
+    resolver.base().focus = own;
+
+    resolver.theme(first);
+    BOOST_CHECK(resolver.base().text == red);
+    BOOST_CHECK_CLOSE(resolver.base().lineHeight, 34.0f, 0.001f);
+
+    resolver.theme(second);
+    BOOST_CHECK(resolver.base().text == text);
+    BOOST_CHECK_CLOSE(resolver.base().lineHeight, lineHeight, 0.001f);
+    BOOST_CHECK(resolver.base().highlight == green);
+
+    resolver.theme(boost::shared_ptr<v3d::ui::style::Theme>());
+    BOOST_CHECK(resolver.base().highlight == highlight);
+    BOOST_CHECK(resolver.base().focus == own);
+}
+
+/**
+ * The immediate layer's theme switch follows the same rule for its own style class.
+ **/
+BOOST_AUTO_TEST_CASE(the_immediate_layer_resets_what_the_new_theme_does_not_name) {
+    const boost::shared_ptr<v3d::ui::style::Theme> first = boost::make_shared<v3d::ui::style::Theme>("first");
+    const boost::shared_ptr<v3d::ui::style::Style> loud = style("default", Resolver::tools);
+    colour(loud, "text", red);
+    first->addStyle(loud);
+
+    v3d::ui::Immediate ui(
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    const glm::vec4 text = ui.dressing().text;
+
+    ui.theme(first);
+    BOOST_CHECK(ui.dressing().text == red);
+    ui.theme(boost::make_shared<v3d::ui::style::Theme>("second"));
+    BOOST_CHECK(ui.dressing().text == text);
+    ui.theme(first);
+    ui.theme(boost::shared_ptr<v3d::ui::style::Theme>());
+    BOOST_CHECK(ui.dressing().text == text);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

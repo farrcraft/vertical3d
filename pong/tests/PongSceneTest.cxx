@@ -12,9 +12,12 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 
+#include <boost/json.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 
@@ -451,6 +454,50 @@ BOOST_AUTO_TEST_CASE(pong_scene_victory_test) {
     BOOST_TEST(fixture.scene_.left().score() == 0);
     BOOST_TEST(fixture.scene_.right().score() == 0);
     BOOST_TEST(fixture.sounds_.has("victory"));
+}
+
+/**
+ * Every clip the scene plays is one pong's sounds document holds, so no hit, bounce, point or
+ * win is silent and logged as a clip that cannot be played.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_plays_only_clips_its_sounds_document_holds_test) {
+    std::ifstream file("data/sounds.json");
+    BOOST_REQUIRE(file.is_open());
+    std::stringstream text;
+    text << file.rdbuf();
+    const boost::json::object document = boost::json::parse(text.str()).as_object();
+    std::vector<std::string> held;
+    for (const boost::json::value& sound : document.at("sounds").as_array()) {
+        held.emplace_back(sound.as_object().at("clip_id").as_string().c_str());
+    }
+
+    Fixture fixture;
+    // a paddle hit
+    fixture.scene_.ball().position(glm::vec2(20.0f, 300.0f));
+    fixture.scene_.ball().direction(glm::vec2(-60.0f, 0.0f));
+    fixture.scene_.tick(STEP);
+    // a wall bounce
+    fixture.scene_.ball().position(glm::vec2(400.0f, 10.0f));
+    fixture.scene_.ball().direction(glm::vec2(60.0f, -120.0f));
+    fixture.scene_.tick(STEP);
+    // a point
+    fixture.scene_.ball().position(glm::vec2(5.0f, 100.0f));
+    fixture.scene_.ball().direction(glm::vec2(-60.0f, 0.0f));
+    fixture.scene_.tick(STEP);
+    // a win
+    fixture.scene_.left().score(fixture.scene_.state().maxScore());
+    fixture.scene_.tick(STEP);
+
+    for (const char* clip : { "hit", "bounce", "score", "victory" }) {
+        BOOST_TEST_CONTEXT(clip) {
+            BOOST_CHECK(fixture.sounds_.has(clip));
+        }
+    }
+    for (const std::string& clip : fixture.sounds_.clips_) {
+        BOOST_TEST_CONTEXT(clip) {
+            BOOST_CHECK(std::ranges::find(held, clip) != held.end());
+        }
+    }
 }
 
 /**

@@ -68,6 +68,24 @@ BOOST_AUTO_TEST_CASE(viewlayout_quad_test) {
     BOOST_CHECK_EQUAL(layout.views()[3].region.y, 384.0f);
 }
 
+/**
+ * A layout may show one camera profile in two views. Each view is named for its own pass, so
+ * the second one is not drawn over the first.
+ **/
+BOOST_AUTO_TEST_CASE(viewlayout_names_each_view_of_one_profile_apart_test) {
+    v3d::editor::ViewLayout layout(logger());
+    BOOST_REQUIRE(layout.load(config(
+        "{\"layout\": {\"root\": {\"split\": \"vertical\", \"children\": ["
+        "{\"camera\": \"Perspective\"}, {\"camera\": \"Top\"}, {\"camera\": \"Perspective\"}"
+        "]}}}")));
+
+    BOOST_REQUIRE_EQUAL(layout.views().size(), 3u);
+    BOOST_CHECK_EQUAL(layout.views()[0].name, "Perspective");
+    BOOST_CHECK_EQUAL(layout.views()[1].name, "Top");
+    BOOST_CHECK_EQUAL(layout.views()[2].name, "Perspective 2");
+    BOOST_CHECK_EQUAL(layout.views()[2].camera, "Perspective");
+}
+
 BOOST_AUTO_TEST_CASE(viewlayout_covers_the_window_test) {
     v3d::editor::ViewLayout layout(logger());
     BOOST_REQUIRE(layout.load(config(quad)));

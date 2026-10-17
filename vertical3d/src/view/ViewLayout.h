@@ -35,6 +35,11 @@ class ViewLayout final {
         View();
 
         std::string camera;  /**< the profile name, which CameraProfiles resolves **/
+        /**
+         * What the view is called, which is also its pass name, so no two views share one.
+         * It is the profile name, with " 2", " 3" and so on after the profile's later views.
+         **/
+        std::string name;
         glm::vec4 region;    /**< x, y, width, height in pixels, filled in by resize() **/
     };
 

@@ -150,6 +150,33 @@ BOOST_AUTO_TEST_CASE(a_return_and_a_space_activate_a_button) {
 }
 
 /**
+ * A held return or space sends a button's command once. Its repeats are taken, so they reach
+ * no binding, and send nothing. A held arrow still moves through a list at the repeat rate.
+ **/
+BOOST_AUTO_TEST_CASE(a_held_activation_key_sends_its_command_once) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> start = button(&fixture, "start");
+    fixture.container->add(start);
+    fixture.ui->focus(start);
+
+    BOOST_CHECK(fixture.keys->press("return"));
+    BOOST_CHECK(fixture.keys->press("return", false, false, true));
+    BOOST_CHECK(fixture.keys->press("return", false, false, true));
+    BOOST_CHECK(fixture.keys->press("space", false, false, true));
+    BOOST_CHECK_EQUAL(fixture.sent.size(), 1U);
+
+    const boost::shared_ptr<v3d::ui::component::SelectList> list =
+        boost::make_shared<v3d::ui::component::SelectList>();
+    list->items({"red", "green", "blue"});
+    list->event(v3d::event::Event("chose", fixture.context));
+    fixture.container->add(list);
+    fixture.ui->focus(list);
+    BOOST_CHECK(fixture.keys->press("arrow_down"));
+    BOOST_CHECK(fixture.keys->press("arrow_down", false, false, true));
+    BOOST_CHECK_EQUAL(list->selected(), 1);
+}
+
+/**
  * A letter reaching a focused button is not being typed, so it goes on to the app's bindings.
  *
  * The opposite of a text box, which takes every key that composes text so that typing "w"

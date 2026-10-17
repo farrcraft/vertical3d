@@ -57,6 +57,18 @@ glm::vec4 ink(const Component& component, const Dressing& dress, const glm::vec4
 }
 
 /**
+ * The colour a menu item's label is written in, in a centred menu and in a dropped panel
+ * alike. An item that cannot be used, or one in a menu that cannot be, is written in the
+ * disabled colour even while it is the active one, because navigation refuses to activate it.
+ **/
+glm::vec4 itemInk(const boost::shared_ptr<component::menu::Item>& item, const Dressing& dress, bool selected) {
+    if (!item || !usable(*item)) {
+        return dress.disabledText;
+    }
+    return selected ? dress.activeText : dress.text;
+}
+
+/**
  * Which of a theme's button styles a button is dressed by. A button that cannot be used
  * takes the disabled one whatever the cursor last wrote on it.
  **/
@@ -798,7 +810,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         // remainder is where descenders go
         const glm::vec2 pen(origin.x + base().padding, top + base().lineHeight * 0.75f);
         const boost::shared_ptr<component::menu::Item>& item = (*level)[index];
-        write_(item ? item->text() : std::string(), pen, selected ? base().activeText : base().text);
+        write_(item ? item->text() : std::string(), pen, itemInk(item, base(), selected));
     }
 }
 
@@ -925,13 +937,7 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
         }
 
         const glm::vec2 pen(corner.x + column, top + base().lineHeight * 0.75f);
-        // a disabled item - or one in a disabled menu - is drawn as one, as a button is
-        const bool live = item && usable(*item);
-        glm::vec4 colour = selected ? base().activeText : base().text;
-        if (!live) {
-            colour = base().disabledText;
-        }
-        write_(item ? item->text() : std::string(), pen, colour);
+        write_(item ? item->text() : std::string(), pen, itemInk(item, base(), selected));
     }
 }
 

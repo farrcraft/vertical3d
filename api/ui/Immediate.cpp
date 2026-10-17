@@ -195,6 +195,9 @@ Immediate::Dressing& Immediate::dressing() noexcept {
 }
 
 void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
+    // the new theme starts from what was there before any theme, so where it is silent the
+    // last theme's value does not linger
+    overlay_.restore(&dressing_);
     theme_ = theme;
     if (!theme_) {
         return;
@@ -205,25 +208,25 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
         return;
     }
 
-    style::readColour(chrome, "panel", &dressing_.panel);
-    style::readColour(chrome, "border", &dressing_.border);
-    style::readColour(chrome, "title-bar", &dressing_.titleBar);
-    style::readColour(chrome, "text", &dressing_.text);
-    style::readColour(chrome, "active-text", &dressing_.activeText);
-    style::readColour(chrome, "dim-text", &dressing_.dimText);
-    style::readColour(chrome, "widget", &dressing_.widget);
-    style::readColour(chrome, "highlight", &dressing_.highlight);
-    style::readColour(chrome, "hover", &dressing_.hover);
-    style::readColour(chrome, "fill", &dressing_.fill);
-    style::readColour(chrome, "rule", &dressing_.rule);
+    overlay_.colour(chrome, "panel", &dressing_, &Dressing::panel);
+    overlay_.colour(chrome, "border", &dressing_, &Dressing::border);
+    overlay_.colour(chrome, "title-bar", &dressing_, &Dressing::titleBar);
+    overlay_.colour(chrome, "text", &dressing_, &Dressing::text);
+    overlay_.colour(chrome, "active-text", &dressing_, &Dressing::activeText);
+    overlay_.colour(chrome, "dim-text", &dressing_, &Dressing::dimText);
+    overlay_.colour(chrome, "widget", &dressing_, &Dressing::widget);
+    overlay_.colour(chrome, "highlight", &dressing_, &Dressing::highlight);
+    overlay_.colour(chrome, "hover", &dressing_, &Dressing::hover);
+    overlay_.colour(chrome, "fill", &dressing_, &Dressing::fill);
+    overlay_.colour(chrome, "rule", &dressing_, &Dressing::rule);
 
-    style::readMetric(chrome, "line-height", &dressing_.lineHeight);
-    style::readMetric(chrome, "padding", &dressing_.padding);
-    style::readMetric(chrome, "spacing", &dressing_.spacing);
-    style::readMetric(chrome, "bar-height", &dressing_.barHeight);
-    style::readMetric(chrome, "border-width", &dressing_.borderWidth);
-    style::readMetric(chrome, "radius", &dressing_.radius);
-    style::readMetric(chrome, "scrollbar-width", &dressing_.scrollbarWidth);
+    overlay_.metric(chrome, "line-height", &dressing_, &Dressing::lineHeight);
+    overlay_.metric(chrome, "padding", &dressing_, &Dressing::padding);
+    overlay_.metric(chrome, "spacing", &dressing_, &Dressing::spacing);
+    overlay_.metric(chrome, "bar-height", &dressing_, &Dressing::barHeight);
+    overlay_.metric(chrome, "border-width", &dressing_, &Dressing::borderWidth);
+    overlay_.metric(chrome, "radius", &dressing_, &Dressing::radius);
+    overlay_.metric(chrome, "scrollbar-width", &dressing_, &Dressing::scrollbarWidth);
 }
 
 void Immediate::begin(v3d::render::realtime::canvas::Canvas* canvas, const Input& input) {

@@ -95,9 +95,12 @@ class Keys final {
      * @param controlled whether a control key is held, which names the four chords a text
      *        box answers - cut, copy, paste and select all. Every other chord goes on to
      *        the app, so a ctrl-s still saves while somebody is typing
+     * @param repeat whether this is the key repeating while it is held. A held return or
+     *        space sends its command once: its repeats are taken and do nothing. Every other
+     *        key repeats as it is pressed, so a held arrow keeps moving through a list
      * @return whether the ui took it, in which case it does not reach the app's bindings
      **/
-    bool press(std::string_view key, bool shifted = false, bool controlled = false);
+    bool press(std::string_view key, bool shifted = false, bool controlled = false, bool repeat = false);
 
     /**
      * Characters the platform composed.

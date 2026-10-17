@@ -7,6 +7,7 @@
 
 #include <api/asset/Json.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -84,6 +85,10 @@ bool ViewLayout::loadNode(const boost::json::object& entry, Node* into) {
         }
         View view;
         view.camera = *camera;
+        // a layout may show one profile twice, and each view draws in a pass of its own
+        const std::size_t shown = static_cast<std::size_t>(std::ranges::count_if(views_,
+            [&camera](const View& earlier) { return earlier.camera == *camera; }));
+        view.name = shown == 0 ? *camera : *camera + " " + std::to_string(shown + 1);
         into->view = views_.size();
         views_.push_back(view);
         return true;

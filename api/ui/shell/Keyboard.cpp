@@ -97,7 +97,7 @@ bool Keyboard::event(const SDL_Event& event) {
         // because what a key meant is what was down as it arrived
         const bool shifted = (event.key.mod & SDL_KMOD_SHIFT) != 0;
         const bool controlled = (event.key.mod & SDL_KMOD_CTRL) != 0;
-        return keys_.press(name, shifted, controlled);
+        return keys_.press(name, shifted, controlled, event.key.repeat);
     }
     default:
         // a release is never taken: a key held as a box took the focus still has to be seen

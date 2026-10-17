@@ -5,6 +5,10 @@
       "file": "hit.wav"
     },
     {
+      "clip_id": "bounce",
+      "file": "hit.wav"
+    },
+    {
       "clip_id": "score",
       "file": "score.wav"
     },

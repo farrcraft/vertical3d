@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/ui/paint/Text.h>
+#include <api/ui/style/Style.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -559,6 +560,8 @@ class Immediate {
     paint::Measure measure_;
     paint::Write write_;
     Dressing dressing_;
+    // what the current theme wrote over dressing_
+    style::Overlay<Dressing> overlay_;
     boost::shared_ptr<style::Theme> theme_;
 
     v3d::render::realtime::canvas::Canvas* canvas_;

@@ -129,6 +129,37 @@ BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
 }
 
 /**
+ * A disabled item in the centred game menu is written in the disabled colour, as it is in a
+ * dropped panel, so it does not look like a choice the menu then refuses.
+ **/
+BOOST_AUTO_TEST_CASE(a_disabled_item_in_a_centred_menu_is_greyed) {
+    std::vector<Written> written;
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            Written line;
+            line.text = text;
+            line.pen = pen;
+            line.colour = colour;
+            written.push_back(line);
+        });
+    const glm::vec4 greyed(0.3f, 0.3f, 0.3f, 1.0f);
+    renderer.dressing().disabledText = greyed;
+
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(800, 600);
+
+    boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"Resume", "Load", "Quit"});
+    (*menu)[1]->enabled(false);
+    renderer.draw(&canvas, menu);
+
+    BOOST_REQUIRE_EQUAL(written.size(), 3U);
+    BOOST_CHECK(written[0].colour != greyed);
+    BOOST_CHECK(written[1].colour == greyed);
+    BOOST_CHECK(written[2].colour != greyed);
+}
+
+/**
  * Descending into a submenu replaces what is on screen with the submenu's items, because the
  * menu draws the level navigation is on rather than the menu it was reached through.
  **/

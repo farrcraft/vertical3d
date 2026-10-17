@@ -56,13 +56,14 @@ void play(Playback* playback, uint32_t clip, float duration, bool loops, float f
 }
 
 void advance(Playback* playback, float step) {
-    if (playback->clip == Playback::none) {
-        return;
-    }
-    const type::animation::Clock clock(playback->duration, playback->loops);
-    playback->time = clock.advance(playback->time, step);
-    if (playback->loops && playback->time >= rebaseAfter) {
-        playback->time = clock.sample(playback->time);
+    // the rest pose has no clock of its own, but a fade into it still runs below, or the old
+    // clip would be blended in at weight zero for ever
+    if (playback->clip != Playback::none) {
+        const type::animation::Clock clock(playback->duration, playback->loops);
+        playback->time = clock.advance(playback->time, step);
+        if (playback->loops && playback->time >= rebaseAfter) {
+            playback->time = clock.sample(playback->time);
+        }
     }
 
     if (playback->from == Playback::none) {

@@ -336,28 +336,6 @@ does not report an entry again. Each entry names its class.
 [ReleaseHardening](plans/ReleaseHardening.md) fixes these, except the weak test, which
 [ToolingDebt](plans/ToolingDebt.md) takes.
 
-### Contract
-
-[] **A held activation key repeats a ui command.** `Keys::press` takes every key-down, so a held
-space or return on a button, check box or list sends its command at the key repeat rate.
-
-[] **The centred game menu draws a disabled item as live.** `ComponentRenderer` greys a disabled
-item in a panel and not in the centred menu, which refuses to activate it.
-
-[] **A theme overlays the one before it.** `Resolver::chrome` writes only what the new theme names,
-so a switch keeps the old theme's values where the new one is silent, and a null theme keeps all
-of them.
-
-[] **Two views of one camera share one pass.** A layout may name a camera profile twice, and the
-pass is named after the profile, so the second view overwrites the first.
-
-[] **Playing no clip with a fade freezes the old pose.** `Playback::advance` returns before the
-fade code when the clip is `none`, so the old clip is blended at weight zero for ever.
-
-[] **pong plays a clip its sounds document does not hold.** `PongScene::bounceWalls` triggers
-`Sound("bounce")`, and `pong/data/sounds.json` names only `hit`, `score` and `victory`. Every
-wall bounce is silent and logs `unable to play clip: bounce` at error level.
-
 ### Cleanup
 
 [] **The direct allocator leaks a buffer or image when no memory type suits it.**

@@ -124,7 +124,7 @@ bool Controller::buildViews() {
             logger()->get()->error("The layout names a camera profile that does not exist: {}", view.camera);
             return false;
         }
-        views_.push_back(boost::make_shared<ViewPort>(view.camera, profiles_->get(view.camera)));
+        views_.push_back(boost::make_shared<ViewPort>(view.name, profiles_->get(view.camera)));
     }
     if (!views_.empty()) {
         activeView_ = views_.front();
