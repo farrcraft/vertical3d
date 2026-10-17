@@ -33,12 +33,13 @@ namespace v3d::render::realtime::vulkan::renderer {
  * The device side of a lit scene. It holds the cel and outline pipelines a registered model is
  * drawn with, the shadow pipeline it casts with, and a skinned variant of each. It also holds
  * the scene set both passes bind at set 2. The scene set carries every joint palette drawn in
- * the frame in one storage buffer, so a skinned model casts the pose it is drawn in.
+ * the frame in one storage buffer, so a skinned model casts the pose it is drawn in. It
+ * carries every object drawn in the frame in another, which a shader reads by its instance
+ * index, so a draw names where its objects start as its first instance and pushes nothing.
  *
  * Every pipeline here declares the camera at set 0, the albedo at set 1 in the Textures
- * material layout, and the scene at set 2, with one push block for the object. What they
- * draw is linear light, so the target they draw into must be an sRGB one, which encodes on
- * store.
+ * material layout, and the scene at set 2, and no push constants. What they draw is linear
+ * light, so the target they draw into must be an sRGB one, which encodes on store.
  *
  * Front faces are clockwise, because a model is wound counter clockwise seen from outside and
  * the cameras in api/type flip y into Vulkan's clip space.
@@ -46,22 +47,28 @@ namespace v3d::render::realtime::vulkan::renderer {
 class Lit final {
  public:
     /**
-     * The push block, laid out as shaders/lit/lit.glsl declares the Object block.
+     * One object's entry in the scene's object buffer, laid out as shaders/lit/lit.glsl
+     * declares the Object struct. An array of it in a std430 buffer has a stride of 96 bytes,
+     * because the matrix aligns each entry to 16.
      **/
     struct Object final {
         glm::mat4 model;
         glm::vec4 baseColour;
         float outline;        /**< how far the outline hull is pushed out, and zero for the cel pass **/
         uint32_t firstJoint;  /**< where the object's palette starts, for a skinned pipeline **/
+        float padding[2] = {0.0f, 0.0f};
     };
+    static_assert(sizeof(Object) == 96, "Lit::Object must match the std430 stride of lit.glsl's Object");
 
     /**
      * The SPIR-V each pipeline is built from. The defaults are the api's own, embedded at
      * build time. A game that loads its own shaders from disk passes in what it loaded.
      *
-     * A replacement must declare the same descriptor sets and push constant block as the
-     * defaults, which including shaders/lit/lit.glsl provides. A missing or extra binding
-     * fails at pipeline creation; a block with its members reordered is not detected.
+     * A replacement must declare the same descriptor sets as the defaults and no push
+     * constants, which including shaders/lit/lit.glsl provides. A vertex stage reads its object
+     * at its instance index, and a fragment stage at an index its vertex stage hands it. A
+     * missing or extra binding fails at pipeline creation; a block with its members reordered
+     * is not detected.
      **/
     struct Shaders final {
         std::vector<uint32_t> mesh;             /**< the cel pass's vertex stage **/
@@ -133,9 +140,10 @@ class Lit final {
      * Write this frame's scene and return the set a lit pass names as its scene.
      *
      * One scene a frame: the set is the frame's own, so a second call in the same frame
-     * replaces what the first wrote. It waits for the frame it writes to have finished its last
-     * submission, the way renderer::Quad does before writing its geometry. It is therefore
-     * called while the frame is built and before the ring begins it.
+     * replaces what the first wrote, and empties the frame's objects. It waits for the frame it
+     * writes to have finished its last submission, the way renderer::Quad does before writing
+     * its geometry. It is therefore called while the frame is built and before the ring begins
+     * it, and before any object() of the frame.
      *
      * @param shadowMap the depth a shadow pass drew, or an unset handle for no shadow
      * @param palette every joint matrix drawn this frame - entity::Poses::palette()
@@ -144,25 +152,42 @@ class Lit final {
         const std::vector<glm::mat4>& palette = {});
 
     /**
+     * Add an object to the scene the last call to scene() wrote. A draw of it names the index
+     * returned as its first instance.
+     *
+     * @return the object's index in the frame's object buffer
+     * @throw std::runtime_error if scene() has not been called
+     **/
+    uint32_t object(const Object& object);
+
+    /**
      * @return set 2's layout, for a pipeline of a game's own that reads the same scene
      **/
     VkDescriptorSetLayout sceneLayout() const noexcept;
 
  private:
     /**
-     * A frame's scene: the uniform buffer, the palettes, and the set pointing at both.
+     * A frame's scene: the uniform buffer, the palettes, the objects, and the set pointing at
+     * all three.
      **/
     struct Slot final {
         boost::shared_ptr<memory::Buffer> buffer;
         boost::shared_ptr<memory::Buffer> palette;
+        boost::shared_ptr<memory::Buffer> objects;
+        uint32_t count = 0;   /**< the objects added since the frame's scene was written **/
         VkDescriptorSet set = VK_NULL_HANDLE;
     };
 
     /**
-     * Point a slot's set at a palette buffer large enough for this many matrices, replacing the
-     * one it has when that is smaller.
+     * Point one of a slot's storage bindings at a buffer of at least this many bytes,
+     * replacing the one it has when that is smaller. A replacement starts with a copy of the
+     * old buffer's first kept bytes.
+     *
+     * @param buffer the slot's buffer for the binding
+     * @param kept how many bytes of the old buffer are copied into the new one
      **/
-    void reserve(Slot* slot, std::size_t joints);
+    void reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, uint32_t binding, VkDeviceSize needed,
+        VkDeviceSize kept);
 
     /**
      * Compile the cel and outline pipelines against the colour and depth formats, and the
@@ -183,6 +208,7 @@ class Lit final {
     boost::shared_ptr<Textures> textures_;
     boost::shared_ptr<pipeline::DescriptorPool> scenes_;
     std::vector<Slot> slots_;
+    Slot* current_ = nullptr;   /**< the slot the last scene() wrote **/
     PipelineHandle cel_;
     PipelineHandle outline_;
     PipelineHandle shadow_;

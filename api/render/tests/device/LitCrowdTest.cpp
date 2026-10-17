@@ -19,6 +19,7 @@
 #include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
+#include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/renderer/Lit.h>
@@ -28,6 +29,7 @@
 #include <cstddef>
 #include <cstring>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -157,7 +159,7 @@ boost::shared_ptr<v3d::image::Image> drawStrips(v3d::test::Headless* headless, c
     pass->camera(view.view(), view.projection());
     pass->scene(lit->scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f),
         v3d::render::realtime::TextureHandle(), poses.palette()));
-    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, *lit, settings.outline, pass.get(), poses);
+    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get(), poses);
 
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
@@ -212,7 +214,10 @@ BOOST_AUTO_TEST_CASE(every_entity_sharing_a_mesh_is_drawn_where_it_stands) {
     lighting::Settings settings;
     settings.outline = 0.05f;
     const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, 2.0f);
-    BOOST_REQUIRE(bounds);
+    if (!bounds) {
+        BOOST_ERROR("a crowd that casts gave no fit");
+        return;
+    }
     const glm::mat4 light = lighting::shadowLight(settings.light, bounds->centre, bounds->radius);
     VkDescriptorSet scene = lit.scene(lighting::pack(settings, light, 1.0f / static_cast<float>(mapSize)),
         headless.context->textures()->depthTexture(*map));
@@ -224,7 +229,7 @@ BOOST_AUTO_TEST_CASE(every_entity_sharing_a_mesh_is_drawn_where_it_stands) {
     casting->depth(true);
     casting->scene(scene);
     casting->depthBias(settings.constantBias, settings.slopeBias);
-    v3d::render::realtime::entity::casters(registry, 1.0f, meshes, lit, casting.get());
+    v3d::render::realtime::entity::casters(registry, 1.0f, meshes, &lit, casting.get());
 
     drawn->reads(map);
     drawn->target(target);
@@ -232,7 +237,7 @@ BOOST_AUTO_TEST_CASE(every_entity_sharing_a_mesh_is_drawn_where_it_stands) {
     drawn->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     drawn->camera(view.view(), view.projection());
     drawn->scene(scene);
-    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, drawn.get());
+    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, drawn.get());
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
@@ -307,6 +312,88 @@ BOOST_AUTO_TEST_CASE(each_skinned_entity_sharing_a_mesh_takes_its_own_pose) {
     BOOST_CHECK_GT(leftCovered, 500U);
     BOOST_CHECK_GT(rightCovered, 500U);
     BOOST_CHECK_EQUAL(differing, 0U);
+}
+
+/**
+ * A grid of 576 cubes, each one object, is more than the scene's object buffer starts with. It
+ * is drawn in two frames, the first left in flight while the second is built, and the top of
+ * every cube in the second shows red where the cube stands. The buffer grows part way through
+ * the walk, and the objects added before that must reach the bigger buffer.
+ *
+ * The picture is written to data_out/lit_crowd_grown.png.
+ *
+ * Passes before the change: each draw pushed its own object, so there was no buffer to outgrow.
+ **/
+BOOST_AUTO_TEST_CASE(a_crowd_larger_than_the_object_buffer_draws_every_object) {
+    const uint32_t size = 512;
+    const int side = 24;
+    v3d::test::Headless headless(colourFormat, size, size);
+    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+        size, size, colourFormat, true);
+    MeshRegistry meshes(headless.logger, headless.context, assets(headless));
+    const MeshHandle crate = meshes.add("crate", v3d::test::cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
+    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
+        headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
+
+    entt::registry registry;
+    std::vector<glm::vec3> places;
+    for (int row = 0; row < side; row++) {
+        for (int column = 0; column < side; column++) {
+            places.emplace_back(static_cast<float>(column) - 11.5f, 0.3f, static_cast<float>(row) - 11.5f);
+            stand(&registry, crate, places.back(), glm::vec3(0.6f), false);
+        }
+    }
+
+    const v3d::type::camera::Camera view = camera(glm::vec3(0.0f), 13.0f);
+    lighting::Settings settings;
+    settings.outline = 0.0f;
+
+    boost::shared_ptr<v3d::image::Image> picture;
+    for (int drawn = 1; drawn <= 2; drawn++) {
+        Frame frame;
+        boost::shared_ptr<Pass> pass = frame.pass("lit");
+        pass->target(target);
+        pass->depth(true);
+        pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+        pass->camera(view.view(), view.projection());
+        pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
+        v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, pass.get());
+        BOOST_CHECK_EQUAL(pass->items().size(), places.size());
+
+        VkCommandBuffer commands = headless.context->ring()->begin();
+        Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
+            headless.context->frameUniforms().get());
+        if (drawn == 2) {
+            picture = readBack(&headless, commands, target, "data_out/lit_crowd_grown.png");
+        } else {
+            headless.submit(commands);
+        }
+    }
+    BOOST_REQUIRE(picture);
+    BOOST_CHECK(headless.silent());
+
+    std::size_t red = 0;
+    for (const glm::vec3& place : places) {
+        const unsigned char* top = at(*picture, view, place + glm::vec3(0.0f, 0.3f, 0.0f));
+        if (top[0] > 200 && top[1] < 10 && top[2] < 10) {
+            red++;
+        }
+    }
+    BOOST_TEST_MESSAGE("red tops " << red << " of " << places.size());
+    BOOST_CHECK_EQUAL(red, places.size());
+}
+
+/**
+ * An object added before any scene is written is refused, since there is no frame for it to
+ * belong to.
+ **/
+BOOST_AUTO_TEST_CASE(an_object_added_before_any_scene_is_refused) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
+        headless.context->frameUniforms(), headless.context->textures(), colourFormat,
+        v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()), VK_FORMAT_UNDEFINED);
+    BOOST_CHECK_THROW(lit.object(Lit::Object()), std::runtime_error);
+    BOOST_CHECK(headless.silent());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

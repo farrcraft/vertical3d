@@ -60,14 +60,14 @@ casting->target(map);
 casting->depth(true);
 casting->scene(sceneSet);
 casting->depthBias(settings.constantBias, settings.slopeBias);
-entity::casters(registry, alpha(), meshes, lit, casting.get());
+entity::casters(registry, alpha(), meshes, &lit, casting.get());
 
 pass->target(scene);
 pass->depth(true);
 pass->reads(map);                                         // records the shadow pass first
 pass->camera(camera.view(), camera.projection());
 pass->scene(sceneSet);
-entity::meshes(registry, alpha(), meshes, lit, settings.outline, pass.get());
+entity::meshes(registry, alpha(), meshes, &lit, settings.outline, pass.get());
 ```
 
 (`entity::meshes()` is the free function in `api/render/realtime/entity/`, and `meshes` the
@@ -77,6 +77,10 @@ Rules:
 
 - **Call `Lit::scene()` once per frame, while building the frame**, before `renderFrame()`. A
   second call in the same frame replaces the first.
+- **Call `scene()` before `casters()` and `meshes()`.** Each draw's object (its model matrix,
+  base colour, outline and first joint) is added to the frame's scene, and the draw names it by
+  index. A walk before any `scene()` throws. A walk before this frame's `scene()` adds to the
+  scene of a frame that may still be drawing.
 - **Both passes name the same scene set.** A pass that draws a lit pipeline without a scene set
   throws when the frame is recorded.
 - **The shadow pass names a depth bias.** The shadow pipeline is built with depth bias, and a
@@ -131,8 +135,8 @@ frame and pass the same `Poses` to all three:
 const entity::Poses poses = entity::poses(registry, alpha(), meshes);
 VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0f / mapSize),
     context->textures()->depthTexture(*map), poses.palette());
-entity::casters(registry, alpha(), meshes, lit, casting.get(), poses);
-entity::meshes(registry, alpha(), meshes, lit, settings.outline, pass.get(), poses);
+entity::casters(registry, alpha(), meshes, &lit, casting.get(), poses);
+entity::meshes(registry, alpha(), meshes, &lit, settings.outline, pass.get(), poses);
 ```
 
 - `poses()` samples each skinned entity's `ecs::component::Playback`, blending out of the clip
@@ -200,7 +204,7 @@ shaders.cel = loadSpirv("shaders/my_cel.frag.spv");
 vulkan::renderer::Lit lit(..., scene->format(), scene->depthFormat(), map->depthFormat(), shaders);
 ```
 
-A replacement must declare the same sets and push block as the built-in shaders:
+A replacement must declare the same sets as the built-in shaders, and no push constants:
 
 | Binding | Holds |
 |---|---|
@@ -209,12 +213,17 @@ A replacement must declare the same sets and push block as the built-in shaders:
 | set 2, binding 0 | The scene (`Scene` block, laid out as `SceneUniforms`) |
 | set 2, binding 1 | The shadow map |
 | set 2, binding 2 | The joint palette, a read-only storage buffer (skinned shaders) |
-| push constant | `Lit::Object`: model matrix, base colour, outline, first joint (88 bytes) |
+| set 2, binding 3 | The objects, a read-only storage buffer of `Lit::Object`: model matrix, base colour, outline, first joint (96 bytes each) |
+
+A vertex stage reads its object at `gl_InstanceIndex`, because a draw names its object as its
+first instance. A fragment stage has no instance index, so its vertex stage passes the index
+down as a flat output. The built-in `mesh.vert` passes it at location 3, and `cel.frag` reads
+it there.
 
 Front faces are clockwise. Include
 [`api/render/shaders/lit/lit.glsl`](../../../api/render/shaders/lit/lit.glsl) to get the shared
-blocks rather than copying them. A replacement that declares a binding the layout lacks fails
-when the pipeline is built. One that only reorders block members fails silently and draws the
-wrong picture.
+blocks rather than copying them. In a vertex stage it also defines `object` as the stage's own
+entry. A replacement that declares a binding the layout lacks fails when the pipeline is built.
+One that only reorders block members fails silently and draws the wrong picture.
 
 `Lit::sceneLayout()` returns set 2's layout, for a pipeline of your own that reads the same scene.

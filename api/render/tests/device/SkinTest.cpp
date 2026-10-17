@@ -129,7 +129,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     pass->camera(camera.view(), camera.projection());
     pass->scene(lit->scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f),
         v3d::render::realtime::TextureHandle(), poses.palette()));
-    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, *lit, settings.outline, pass.get(), poses);
+    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get(), poses);
 
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
@@ -396,7 +396,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     pass->scene(lit.scene(lighting::pack(lighting::Settings(), light, 1.0f / size),
         v3d::render::realtime::TextureHandle(), poses.palette()));
     pass->depthBias(0.0f, 0.0f);
-    v3d::render::realtime::entity::casters(registry, 1.0f, meshes, lit, pass.get(), poses);
+    v3d::render::realtime::entity::casters(registry, 1.0f, meshes, &lit, pass.get(), poses);
     BOOST_CHECK_EQUAL(pass->items().size(), 1U);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
@@ -439,7 +439,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_mesh_released_in_flight_outlives_its_frame) {
     pass->depth(true);
     pass->scene(lit.scene(lighting::pack(lighting::Settings(), glm::mat4(1.0f), 0.0f),
         v3d::render::realtime::TextureHandle(), poses.palette()));
-    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, 0.0f, pass.get(), poses);
+    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, 0.0f, pass.get(), poses);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),

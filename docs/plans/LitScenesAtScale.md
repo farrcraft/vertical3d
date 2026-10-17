@@ -99,40 +99,30 @@ suite to make it again.
 
 #### Step 2 — The ADR
 
-**Open.** The ADR records where per-object data lives and who writes it.
-
-- **Recommended:** a read-only storage buffer at set 2, binding 3, one per frame in flight. A
-  shader reads its object as `objects[gl_InstanceIndex]`, and an item names its first object
-  through `firstInstance`. The push block is gone.
-- **Rival: a push constant holding an index**, as ADR-0008 proposed. An instanced draw needs a
-  per-instance index anyway, so for a group of instances the push constant carries nothing
-  `firstInstance` does not.
-- **Rival: per-instance vertex attributes.** This is the classic form, and needs no descriptor.
-  A matrix takes four attribute locations, the skinned pipelines already use locations 3 and 4,
-  and every replacement shader would change its vertex input as well as its sets.
-- **Who writes the buffer.** `meshes()` and `casters()` take `Lit` by const reference today.
-  The ADR settles whether they append objects into the frame's slot as they submit, or whether a
-  walk fills a value type that the caller hands to `Lit`, as `Poses` does for palettes. Either
-  way, the outline walk and the surface walk read the same objects, and the shadow walk may add
-  its own.
+**Closed.** ADR-0088 puts each object in a storage buffer at set 2, binding 3, read by instance
+index, and amends ADR-0008 and ADR-0071. `Lit` owns the buffer in its frame slot, and the walks
+add each object as they submit. The rivals it weighs are a push constant holding an index,
+per-instance vertex attributes, and a value the caller builds and passes as palettes are.
 
 #### Step 3 — Per-object data in a storage buffer
 
-**Open.**
+**Closed.** `Lit::object()` adds an object to the slot the last `scene()` wrote and returns its
+index, which the draw names as its first instance. The walks take `Lit` by pointer. The object
+buffer grows by doubling and keeps the objects already added. `Lit::Object` is padded to 96
+bytes, the std430 stride, and lit pipelines push nothing. `lit.glsl` defines `object` as the
+vertex stage's own entry, so every vertex shader compiled unchanged. `mesh.vert` passes the
+index to `cel.frag` as a flat varying.
 
-- `Lit::Object` moves into the buffer the ADR chose. It grows the way the palette does: by
-  doubling, retiring the old buffer through the ring, and rewriting the binding.
-- `lit.glsl` declares the buffer and an accessor for the current object. `skin.glsl` reads the
-  first joint through it. Every lit shader, plain and skinned, changes together with its C++
-  struct.
-- Each item still draws one instance, at its own object. The item's push size is zero.
-- Every lit and skin case passes unchanged, and every picture the device suite writes matches
-  the step 1 baseline byte for byte. That is the test that nothing moved. Compare on the GPU that
-  made the baseline.
-- A new case draws more objects than the buffer starts with, across two frames in flight, and
-  stays silent. It fails first against a buffer that does not grow.
-- Update the comments in `Lit.h`, `lit.glsl`, `skin.glsl`, `DrawItem.h` (the 88-byte note),
-  `Meshes.h` and `Poses.h`.
+- Every lit and skin case passes, and all 53 pictures the device suite writes match the step 1
+  baseline byte for byte.
+- `a_released_mesh_is_not_walked` now writes its scene before walking, as the new rule requires.
+- A grid of 576 cubes outgrows the buffer over two frames, and every cube is drawn where it
+  stands. Without the copy on grow, 235 of 576 are. An object added before any scene is
+  refused.
+- [Lighting.md](../api/rendering/Lighting.md), [Pipelines.md](../internals/realtime/Pipelines.md),
+  [Renderers.md](../internals/realtime/Renderers.md) and the
+  [internals README](../internals/realtime/README.md) state the new layout and the rule that the
+  walks run after `scene()`.
 
 #### Step 4 — Instanced draws
 
@@ -165,17 +155,8 @@ suite to make it again.
 **Open.**
 
 - Delete the TODO.md entry "There is no instanced drawing".
-- Update the documents that state the old layout:
-  - [Lighting.md](../api/rendering/Lighting.md#replacing-the-lit-shaders): the binding table and
-    the push constant row.
-  - [Pipelines.md](../internals/realtime/Pipelines.md#descriptor-sets-and-push-constants): the
-    set table, the rule that per-object data goes in push constants, the push block table and
-    the shader notes.
-  - [Renderers.md](../internals/realtime/Renderers.md): what a `Lit` slot holds, and the rule
-    that a static item pushes `firstJoint = 0`.
-  - [internals/realtime/README.md](../internals/realtime/README.md): the two rules that name
-    push constants and `Lit::Object`.
-- Set the ADR's status, and mark ADR-0008 and ADR-0071 as amended by it.
+- Update the documents for grouping: [Lighting.md](../api/rendering/Lighting.md) says what
+  `meshes()` and `casters()` submit, and the item counts it gives.
 - Update the roadmap's "What exists" section.
 
 ### Phase 2 — The grade

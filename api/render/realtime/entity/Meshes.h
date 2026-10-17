@@ -30,13 +30,14 @@ namespace v3d::render::realtime::entity {
  * surface that might cover it. An entity whose handle has been released is skipped.
  *
  * The pass is the caller's, and has to name the scene Lit::scene() returned for this frame.
+ * Each draw's object is added to that scene, so scene() is called first.
  *
  * @param alpha Engine::alpha(), the fraction of a step elapsed since the last one
  * @param outline how far the outline hull is pushed out - lighting::Settings::outline. Zero
  *        submits no outlines
  * @param poses this frame's, whose palette the scene the pass names was written with
  **/
-void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, const vulkan::renderer::Lit& lit,
+void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
     float outline, Pass* pass, const Poses& poses = Poses());
 
 /**
@@ -45,10 +46,11 @@ void meshes(const entt::registry& registry, float alpha, const MeshRegistry& mes
  * and poses it, so a shadow follows what casts it between steps.
  *
  * The pass is the caller's. It draws into a target with sampled depth and no colour, and names
- * the scene Lit::scene() returned for this frame and a depth bias. The lit pass names the
- * target in Pass::reads(), so the frame records this one first.
+ * the scene Lit::scene() returned for this frame and a depth bias, and scene() is called first,
+ * as for meshes(). The lit pass names the target in Pass::reads(), so the frame records this
+ * one first.
  **/
-void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, const vulkan::renderer::Lit& lit,
+void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
     Pass* pass, const Poses& poses = Poses());
 
 };  // namespace v3d::render::realtime::entity

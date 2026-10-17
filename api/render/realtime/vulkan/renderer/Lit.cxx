@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <iterator>
+#include <stdexcept>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -59,15 +60,14 @@ std::vector<uint32_t> words(const uint32_t (&code)[N]) {
 }
 
 /**
- * Sets 0 to 2 and the push block, which every lit pipeline declares alike so that the sets a
- * pass binds stay bound across a switch between them.
+ * Sets 0 to 2, which every lit pipeline declares alike so that the sets a pass binds stay bound
+ * across a switch between them.
  **/
 void declare(pipeline::Builder* builder, VkDescriptorSetLayout camera, VkDescriptorSetLayout material,
     VkDescriptorSetLayout scene) {
     builder->set(camera)
         .set(material)
-        .set(scene)
-        .push(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Lit::Object));
+        .set(scene);
 }
 
 /**
@@ -94,6 +94,11 @@ void vertex(pipeline::Builder* builder, bool skinned, bool positionOnly) {
  * first grow.
  **/
 const std::size_t initialJoints = 256;
+
+/**
+ * The object buffer's starting room: a scene of a few hundred objects before the first grow.
+ **/
+const std::size_t initialObjects = 256;
 
 };  // namespace
 
@@ -143,9 +148,17 @@ Lit::Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_pt
     palette.descriptorCount = 1;
     palette.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+    // the vertex stage reads the model matrix and the outline, and the cel pass's fragment stage
+    // the base colour
+    VkDescriptorSetLayoutBinding objects{};
+    objects.binding = 3;
+    objects.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    objects.descriptorCount = 1;
+    objects.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
     // a set per frame in flight, which is all a scene ever needs
     scenes_ = boost::make_shared<pipeline::DescriptorPool>(device_, ring_,
-        std::vector<VkDescriptorSetLayoutBinding>{block, map, palette}, ring_->framesInFlight(), "scene");
+        std::vector<VkDescriptorSetLayoutBinding>{block, map, palette, objects}, ring_->framesInFlight(), "scene");
     slots_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 
     createPipelines(shaders, colour, depth, shadow, front);
@@ -273,40 +286,47 @@ Lit::Slot& Lit::slot() {
     write.pBufferInfo = &buffer;
     // the set points at the buffer for good - a frame writes the buffer, not the descriptor
     vkUpdateDescriptorSets(device_->handle(), 1, &write, 0, nullptr);
-    reserve(&slot, initialJoints);
+    reserve(&slot, &slot.palette, 2, initialJoints * sizeof(glm::mat4), 0);
+    reserve(&slot, &slot.objects, 3, initialObjects * sizeof(Object), 0);
     return slot;
 }
 
 /**
  **/
-void Lit::reserve(Slot* slot, std::size_t joints) {
-    const VkDeviceSize needed = static_cast<VkDeviceSize>(joints) * sizeof(glm::mat4);
-    if (slot->palette && slot->palette->size() >= needed) {
+void Lit::reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, uint32_t binding, VkDeviceSize needed,
+    VkDeviceSize kept) {
+    if (*buffer && (*buffer)->size() >= needed) {
         return;
     }
-    VkDeviceSize size = slot->palette ? slot->palette->size() : sizeof(glm::mat4);
+    VkDeviceSize size = *buffer ? (*buffer)->size() : sizeof(glm::mat4);
     while (size < needed) {
         size *= 2;
     }
-    if (slot->palette) {
+    boost::shared_ptr<memory::Buffer> grown = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, size);
+    if (*buffer) {
+        if (kept > 0) {
+            std::vector<unsigned char> bytes(static_cast<std::size_t>(kept));
+            (*buffer)->read(bytes.data(), kept);
+            grown->write(bytes.data(), kept);
+        }
         // the frame that last read it should have finished, since the slot is only written
         // after waiting for it. It is still released through the ring, which destroys it only
         // once no frame in flight can read it
-        ring_->retire([old = slot->palette]() mutable { old.reset(); });
+        ring_->retire([old = *buffer]() mutable { old.reset(); });
     }
-    slot->palette = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, size);
+    *buffer = grown;
 
-    VkDescriptorBufferInfo buffer{};
-    buffer.buffer = slot->palette->handle();
-    buffer.range = VK_WHOLE_SIZE;
+    VkDescriptorBufferInfo info{};
+    info.buffer = grown->handle();
+    info.range = VK_WHOLE_SIZE;
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.dstSet = slot->set;
-    write.dstBinding = 2;
+    write.dstBinding = binding;
     write.descriptorCount = 1;
     write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    write.pBufferInfo = &buffer;
+    write.pBufferInfo = &info;
     vkUpdateDescriptorSets(device_->handle(), 1, &write, 0, nullptr);
 }
 
@@ -316,10 +336,13 @@ VkDescriptorSet Lit::scene(const lighting::SceneUniforms& uniforms, const Textur
     // the slot about to be written was last read by the frame that used it a ring ago
     ring_->waitFrame();
     Slot& written = slot();
+    current_ = &written;
+    written.count = 0;
     written.buffer->write(&uniforms, sizeof(uniforms));
     if (!palette.empty()) {
-        reserve(&written, palette.size());
-        written.palette->write(palette.data(), static_cast<VkDeviceSize>(palette.size() * sizeof(glm::mat4)));
+        const VkDeviceSize bytes = static_cast<VkDeviceSize>(palette.size() * sizeof(glm::mat4));
+        reserve(&written, &written.palette, 2, bytes, 0);
+        written.palette->write(palette.data(), bytes);
     }
 
     const pipeline::Texture* texture = resources_->texture(shadowMap);
@@ -340,6 +363,19 @@ VkDescriptorSet Lit::scene(const lighting::SceneUniforms& uniforms, const Textur
     // another created can share a handle while the descriptor still names the one destroyed
     vkUpdateDescriptorSets(device_->handle(), 1, &write, 0, nullptr);
     return written.set;
+}
+
+/**
+ **/
+uint32_t Lit::object(const Object& object) {
+    if (current_ == nullptr) {
+        throw std::runtime_error("Lit::object before any scene: a frame writes its scene first");
+    }
+    const VkDeviceSize offset = static_cast<VkDeviceSize>(current_->count) * sizeof(Object);
+    // growing keeps what the frame has added so far, which its draws already name by index
+    reserve(current_, &current_->objects, 3, offset + sizeof(Object), offset);
+    current_->objects->write(&object, sizeof(Object), offset);
+    return current_->count++;
 }
 
 };  // namespace v3d::render::realtime::vulkan::renderer

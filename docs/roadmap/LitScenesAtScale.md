@@ -15,8 +15,9 @@ The [LitScenesAtScale plan](../plans/LitScenesAtScale.md) takes all five steps.
 - **[`Lit`](../../api/render/realtime/vulkan/renderer/Lit.h)** draws a mesh in a cel pass and an
   outline pass. Both bind the camera at set 0, the albedo at set 1 and the scene at set 2. The
   scene set carries every joint palette drawn in the frame in one storage buffer.
-- **Each object's data is a push constant block**, `Lit::Object`. It holds the object's
-  transform, its base colour, its outline width and where its joint palette starts.
+- **Each object's data is an entry in a storage buffer** at set 2, `Lit::Object`, read by
+  instance index. It holds the object's transform, its base colour, its outline width and where
+  its joint palette starts. Each draw still names one object.
 - **`meshes()` and `casters()` submit one draw item per part per entity.** A dozen characters and
   a few dozen props make a few hundred draws in each of the lit pass and the shadow pass.
 - **The recorder can already draw instances.** Nothing above it asks for more than one.

@@ -1,8 +1,9 @@
 # ADR-0071: Skinning: joint matrices in one storage buffer
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-10-03
 **Amends**: [ADR-0064](0064-lighting-lit-passes-use-the-shared-recorder.md)
+**Amended by**: [ADR-0088](0088-lit-per-object-data-in-a-storage-buffer.md)
 **Documented in**: [internals/realtime/Pipelines.md](../internals/realtime/Pipelines.md)
 
 ## Context

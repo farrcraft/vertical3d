@@ -26,7 +26,7 @@ content went. Numbers are never reused.
 | [0003](0003-rendering-one-engine-for-2d-and-3d.md) | Rendering: one engine for 2D and 3D | accepted |
 | [0004](0004-rendering-submit-draw-items-as-data.md) | Rendering: submit draw items as data | accepted |
 | [0005](0005-2d-one-batched-quad-pipeline.md) | 2D: one batched quad pipeline | amended by 0036, 0042 |
-| [0008](0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency | amended by 0064 |
+| [0008](0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency | amended by 0064, 0088 |
 | [0009](0009-colour-display-space-unorm-swapchain.md) | Colour: display space, UNORM swapchain | amended by 0049, 0066 |
 | [0010](0010-meshes-owned-by-the-app-that-built-them.md) | Meshes: owned by the app that built them | amended by 0061; superseded by 0065 |
 | [0011](0011-rendering-lines-as-a-world-space-primitive.md) | Rendering: lines as a world-space primitive | accepted |
@@ -48,10 +48,11 @@ content went. Numbers are never reused.
 | [0066](0066-lighting-light-in-linear-draw-to-srgb.md) | Lighting: light in linear, draw to sRGB | accepted |
 | 0067 | *Not a decision. Now in docs/api/rendering/Lighting.md and vulkan/renderer/Lit.h* | removed |
 | [0068](0068-rendering-order-passes-by-what-they-read.md) | Rendering: order passes by what they read | accepted |
-| [0071](0071-skinning-joint-matrices-in-one-storage-buffer.md) | Skinning: joint matrices in one storage buffer | accepted |
+| [0071](0071-skinning-joint-matrices-in-one-storage-buffer.md) | Skinning: joint matrices in one storage buffer | amended by 0088 |
 | [0075](0075-2d-a-canvas-may-have-its-own-coordinate-space.md) | 2D: a canvas may have its own coordinate space | accepted |
 | [0082](0082-textures-owned-by-the-device-context.md) | Textures: owned by the device context | accepted |
 | [0085](0085-rendering-a-pass-chooses-whether-depth-is-written.md) | Rendering: a pass chooses whether depth is written | accepted |
+| [0088](0088-lit-per-object-data-in-a-storage-buffer.md) | Lit: per-object data in a storage buffer | accepted |
 
 ## Offline rendering
 

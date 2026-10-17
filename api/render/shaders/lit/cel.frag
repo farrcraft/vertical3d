@@ -14,6 +14,7 @@
 layout(location = 0) in vec3 worldNormal;
 layout(location = 1) in vec2 fragmentUv;
 layout(location = 2) in vec3 worldPosition;
+layout(location = 3) flat in uint instance;
 
 layout(set = 1, binding = 0) uniform sampler2D albedo;
 layout(set = 2, binding = 1) uniform sampler2D shadowMap;
@@ -66,6 +67,6 @@ void main() {
     const vec3 shade = mix(bands[band], bands[max(band - 1, 0)], occlusion(worldPosition, n));
 
     // an untextured model samples a white albedo, so the base colour alone tints it
-    const vec4 base = texture(albedo, fragmentUv) * object.baseColour;
+    const vec4 base = texture(albedo, fragmentUv) * objects.entries[instance].baseColour;
     colour = vec4(base.rgb * shade, base.a);
 }

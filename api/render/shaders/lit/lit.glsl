@@ -1,7 +1,7 @@
 /**
  * The blocks every lit shader shares. A shader includes this rather than declaring its own, so
  * a member added here is added everywhere at once. A replacement shader handed to renderer::Lit
- * must declare the same sets and push constant block, and can include this file to do so.
+ * must declare the same sets, and can include this file to do so.
  *
  * Set 0 is the camera every pipeline in the engine declares, set 1 the albedo, and set 2 the
  * scene a lit pass binds once for itself.
@@ -27,11 +27,20 @@ layout(std140, set = 2, binding = 0) uniform Scene {
     vec4 shadowColour;          // xyz the shadow band's colour
 } scene;
 
-// per object, laid out as renderer::Lit::Object. Declared whole in every stage so that one
-// push range covers them all
-layout(push_constant) uniform Object {
+// one object's data, laid out as renderer::Lit::Object
+struct Object {
     mat4 model;
     vec4 baseColour;
     float outline;
     uint firstJoint;            // where the object's palette starts in skin.glsl's joint buffer
-} object;
+};
+
+// set 2 - every object drawn this frame. A draw's first instance is where its objects start, so
+// an instance's own object is the entry at its instance index
+layout(std430, set = 2, binding = 3) readonly buffer Objects {
+    Object entries[];
+} objects;
+
+// the object a vertex stage is drawing. A fragment stage has no instance index, so it is handed
+// the index by its vertex stage and reads objects.entries itself
+#define object objects.entries[gl_InstanceIndex]

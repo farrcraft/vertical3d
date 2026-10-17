@@ -13,7 +13,6 @@
 #include <api/ecs/component/Transform.h>
 
 #include <cstdint>
-#include <cstring>
 #include <optional>
 
 namespace v3d::render::realtime::entity {
@@ -21,10 +20,11 @@ namespace v3d::render::realtime::entity {
 namespace {
 
 /**
- * One draw of a part of an entry, with its model matrix and base colour pushed.
+ * One draw of a part of an entry, its model matrix and base colour added to the scene as its
+ * object, which the draw names as its first instance.
  **/
 DrawItem item(const MeshRegistry::Entry& entry, const MeshRegistry::Part& part, PipelineHandle pipeline,
-    const glm::mat4& model, float outline, uint32_t firstJoint) {
+    const glm::mat4& model, float outline, uint32_t firstJoint, vulkan::renderer::Lit* lit) {
     vulkan::renderer::Lit::Object object;
     object.model = model;
     object.baseColour = part.baseColour;
@@ -37,8 +37,7 @@ DrawItem item(const MeshRegistry::Entry& entry, const MeshRegistry::Part& part, 
     entry.mesh->describe(&item);
     item.firstIndex = part.firstIndex;
     item.indices = part.indexCount;
-    std::memcpy(item.push.data(), &object, sizeof(object));
-    item.pushSize = sizeof(object);
+    item.firstInstance = lit->object(object);
     return item;
 }
 
@@ -57,9 +56,9 @@ std::optional<uint32_t> firstJoint(const MeshRegistry::Entry& entry, entt::entit
  * One draw of every part of an entry.
  **/
 void submit(const MeshRegistry::Entry& entry, PipelineHandle pipeline, const glm::mat4& model, float outline,
-    uint32_t firstJoint, Pass* pass) {
+    uint32_t firstJoint, vulkan::renderer::Lit* lit, Pass* pass) {
     for (const MeshRegistry::Part& part : entry.parts) {
-        pass->submit(item(entry, part, pipeline, model, outline, firstJoint));
+        pass->submit(item(entry, part, pipeline, model, outline, firstJoint, lit));
     }
 }
 
@@ -67,7 +66,7 @@ void submit(const MeshRegistry::Entry& entry, PipelineHandle pipeline, const glm
 
 /**
  **/
-void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, const vulkan::renderer::Lit& lit,
+void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
     float outline, Pass* pass, const Poses& poses) {
     auto view = registry.view<const ecs::component::Transform, const component::Mesh>();
     const bool outlined = outline > 0.0f;
@@ -85,17 +84,17 @@ void meshes(const entt::registry& registry, float alpha, const MeshRegistry& mes
                 continue;
             }
             const bool skinned = static_cast<bool>(entry->skin);
-            const PipelineHandle surface = skinned ? lit.skinnedCel() : lit.cel();
-            const PipelineHandle hull = skinned ? lit.skinnedOutline() : lit.outline();
+            const PipelineHandle surface = skinned ? lit->skinnedCel() : lit->cel();
+            const PipelineHandle hull = skinned ? lit->skinnedOutline() : lit->outline();
             const glm::mat4 model = ecs::interpolated<ecs::component::Transform>(registry, entity, alpha).matrix();
-            submit(*entry, surfaces ? surface : hull, model, surfaces ? 0.0f : outline, *first, pass);
+            submit(*entry, surfaces ? surface : hull, model, surfaces ? 0.0f : outline, *first, lit, pass);
         }
     }
 }
 
 /**
  **/
-void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, const vulkan::renderer::Lit& lit,
+void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
     Pass* pass, const Poses& poses) {
     auto view = registry.view<const ecs::component::Transform, const component::Mesh>();
     for (const entt::entity entity : view) {
@@ -111,9 +110,9 @@ void casters(const entt::registry& registry, float alpha, const MeshRegistry& me
         if (!first) {
             continue;
         }
-        const PipelineHandle pipeline = entry->skin ? lit.skinnedShadow() : lit.shadow();
+        const PipelineHandle pipeline = entry->skin ? lit->skinnedShadow() : lit->shadow();
         const glm::mat4 model = ecs::interpolated<ecs::component::Transform>(registry, entity, alpha).matrix();
-        submit(*entry, pipeline, model, 0.0f, *first, pass);
+        submit(*entry, pipeline, model, 0.0f, *first, lit, pass);
     }
 }
 

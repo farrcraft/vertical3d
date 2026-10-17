@@ -33,10 +33,13 @@ takes the front face as its last constructor argument. All six pipelines cull by
 given, so faces wind the same under the light and the shadow pipeline culls as the cel one does.
 
 **`Lit::scene()`** writes the frame's slot: a uniform buffer (`SceneUniforms`, std140, matching
-the `Scene` block in `lit.glsl`), the shadow map binding, and the palette storage buffer. It waits
-on `Ring::waitFrame()` first, so it is called while the frame is built and before the ring begins
-it. The palette buffer is one per frame in flight, grows by doubling, and retires an outgrown
-buffer through the ring. A static item pushes `firstJoint = 0` and its pipeline ignores it.
+the `Scene` block in `lit.glsl`), the shadow map binding, and the palette storage buffer, and
+empties the slot's objects. It waits on `Ring::waitFrame()` first, so it is called while the
+frame is built and before the ring begins it. It also makes that slot the one `Lit::object()`
+adds to, so the walks run after it. The palette and object buffers are one per frame in flight,
+grow by doubling, and retire an outgrown buffer through the ring. An object buffer that grows
+copies the objects already added, because the frame's draws name them by index. A static
+object has `firstJoint = 0`, and its pipeline ignores it.
 
 **Skinned vertex.** `MeshRegistry::SkinnedVertex` is `type::Model::Vertex` (32 bytes) followed by
 `type::Model::Influence`: four joints as unsigned shorts and four float weights, 56 bytes in all.
