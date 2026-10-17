@@ -5,10 +5,11 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
 namespace v3d::config {
-enum class Type {
+enum class Type : std::uint8_t {
     Unknown,
     Window,
     Binding,

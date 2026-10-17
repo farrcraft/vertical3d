@@ -8,6 +8,7 @@
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
@@ -31,7 +32,7 @@ namespace v3d::ui::shell {
  **/
 class FileChooser final {
  public:
-    enum class Mode {
+    enum class Mode : std::uint8_t {
         Open,  /**< choose a file that is there **/
         Save   /**< name a file, asking once before replacing one that is there **/
     };

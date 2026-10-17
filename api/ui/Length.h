@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace v3d::ui {
 
 /**
@@ -18,7 +20,7 @@ namespace v3d::ui {
  **/
 class Length final {
  public:
-    enum class Unit {
+    enum class Unit : std::uint8_t {
         Auto,
         Pixels,
         Percent

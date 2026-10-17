@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 #include "Expression.h"
@@ -18,7 +19,7 @@ namespace v3d::render::offline::sl::syntax {
  **/
 class Lighting final : public Statement {
  public:
-    enum class Construct {
+    enum class Construct : std::uint8_t {
         ILLUMINANCE,
         ILLUMINATE,
         SOLAR

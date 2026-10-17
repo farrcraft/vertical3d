@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <utility>
 
 #include "Aligned.h"
@@ -18,7 +19,7 @@
  */
 class Camera : public Aligned<16> {
  public:
-    typedef enum CameraBehavior {
+    typedef enum CameraBehavior : std::uint8_t {
         CAMERA_BEHAVIOR_FIRST_PERSON,
         CAMERA_BEHAVIOR_FLIGHT
     } CameraBehavior;

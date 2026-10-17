@@ -7,6 +7,8 @@
 
 #include <api/render/offline/Position.h>
 
+#include <cstdint>
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::offline::sl::syntax {
@@ -16,7 +18,7 @@ namespace v3d::render::offline::sl::syntax {
  **/
 class Statement {
  public:
-    enum class Kind {
+    enum class Kind : std::uint8_t {
         BLOCK,
         DECLARATION,
         ASSIGNMENT,

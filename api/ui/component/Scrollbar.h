@@ -7,6 +7,8 @@
 
 #include <api/ui/Component.h>
 
+#include <cstdint>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
@@ -31,7 +33,7 @@ class SelectList;
  **/
 class Scrollbar : public Component {
  public:
-    enum class Direction {
+    enum class Direction : std::uint8_t {
         Vertical,
         Horizontal
     };

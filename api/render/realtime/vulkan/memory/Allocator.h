@@ -9,6 +9,8 @@
 
 #include "Allocation.h"
 
+#include <cstdint>
+
 // the allocator's own handle, declared rather than included: vk_mem_alloc.h is large and
 // this header is included by most of the renderer. Repeating the library's own typedef keeps
 // that header in the one translation unit that implements it - VmaImpl.cxx
@@ -33,7 +35,7 @@ class Allocator final {
     /**
      * How the memory behind a resource is found.
      **/
-    enum class Kind {
+    enum class Kind : std::uint8_t {
         /**< one device allocation per resource, which is every app in this tree **/
         Direct,
         /**< regions of larger blocks, through the Vulkan Memory Allocator **/

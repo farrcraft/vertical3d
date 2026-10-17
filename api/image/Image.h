@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+#include <cstdint>
+
 #include <glm/vec2.hpp>
 
 namespace v3d::image {
@@ -21,7 +23,7 @@ class Image {
          * The value is the channel count. A writer divides bpp by it to get the bits in a
          * channel. Grey is one channel; a texture atlas packed at depth 1 produces it.
          */
-        enum class Format {
+        enum class Format : std::uint8_t {
             Grey = 1,
             RGB = 3,
             RGBA = 4

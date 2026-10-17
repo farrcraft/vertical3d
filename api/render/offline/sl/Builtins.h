@@ -7,6 +7,7 @@
 
 #include <api/render/offline/sl/syntax/Function.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -28,7 +29,7 @@ class Signature final {
      * What runs a call, named where the signature is declared so that a function cannot be
      * declared without saying what it does.
      **/
-    enum class Body {
+    enum class Body : std::uint8_t {
         /**
          * Written in the language - see sources() - and inlined by the compiler, so a call
          * never reaches the machine.
@@ -64,7 +65,7 @@ class Signature final {
      * What a parameter accepts. The last three are the families: a function that takes any
      * position or direction, one that takes any number-like value, and printf's tail.
      **/
-    enum class Argument {
+    enum class Argument : std::uint8_t {
         FLOAT,
         POINT,
         VECTOR,

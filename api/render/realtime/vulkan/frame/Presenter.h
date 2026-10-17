@@ -38,7 +38,7 @@ class Presenter final {
     /**
      * What acquire() left the caller with.
      **/
-    enum class Status {
+    enum class Status : std::uint8_t {
         Ready,       /**< there is an image to draw into **/
         Skip,        /**< there is nothing to draw into and nothing to be done about it - a minimized window **/
         OutOfDate    /**< the chain no longer matches the surface and has to be rebuilt **/

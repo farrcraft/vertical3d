@@ -360,6 +360,11 @@ change locally by running an app and reading its log.
   copy the file by hand into the directory the suite copies to, beside the executable.
   [Writing a test](#writing-a-test) lists which directory each suite copies. A fresh CI
   checkout always relinks.
+- **Boost.Test prints a one-byte enum as a character.** An unscoped enum with a `std::uint8_t`
+  or `std::int8_t` base reaches the stream as a `char`, so a failed `BOOST_CHECK_EQUAL(a, b)` or
+  `BOOST_TEST(a == b)` reports unreadable bytes. Compare such enums with `BOOST_CHECK(a == b)`,
+  or wrap the comparison in a second pair of parentheses, `BOOST_TEST((a == b))`. Neither
+  prints the operands. A scoped enum does not compile in either printing form.
 - **voxel's suite must link libnoise**, even for cases that generate no noise. `Chunk` is built
   against a `TerrainMap`, and the vtable of the flat map a test supplies refers to the Perlin
   implementation. See [Dependencies.md](Dependencies.md#building-libnoise).

@@ -5,10 +5,11 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
 namespace v3d::ui::component::menu {
-enum class ItemType {
+enum class ItemType : std::uint8_t {
     Unknown,
     Action,
     Submenu,

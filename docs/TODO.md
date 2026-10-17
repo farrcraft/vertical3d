@@ -22,10 +22,10 @@ and its section names the plan or roadmap that orders it.
 ## The clang-tidy backlog
 
 [.clang-tidy](../.clang-tidy) enables the bugprone, performance, misc and readability families
-and disables 15 checks by name. The tree is clean at the 191 checks left enabled.
+and disables 14 checks by name. The tree is clean at the 192 checks left enabled.
 
 Seven of the disabled checks are disabled for good, and `.clang-tidy` says why; they are not
-listed here. The other eight are in the table below, with the number of distinct sites each
+listed here. The other seven are in the table below, with the number of distinct sites each
 reports over a full `-DV3D_CLANG_TIDY=ON` build.
 [ToolingDebt](plans/ToolingDebt.md) clears them in order.
 
@@ -35,7 +35,6 @@ reports over a full `-DV3D_CLANG_TIDY=ON` build.
 
 | Check | Sites |
 |---|---|
-| `performance-enum-size` | 303 |
 | `misc-use-internal-linkage` | 526 |
 | `misc-const-correctness` | 939 |
 | `misc-non-private-member-variables-in-classes` | 1303 |

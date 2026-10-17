@@ -43,9 +43,9 @@ BOOST_AUTO_TEST_CASE(plane_representation_test) {
 BOOST_AUTO_TEST_CASE(plane_from_three_points_test) {
     v3d::type::geometry::Plane plane(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(1.0f, 0.0f, 2.0f), glm::vec3(1.0f, 1.0f, 2.0f));
 
-    BOOST_TEST(plane.classify(glm::vec3(0.0f, 0.0f, 5.0f)) == v3d::type::geometry::Plane::POSITIVE);
-    BOOST_TEST(plane.classify(glm::vec3(0.0f, 0.0f, 0.0f)) == v3d::type::geometry::Plane::NEGATIVE);
-    BOOST_TEST(plane.classify(glm::vec3(4.0f, 4.0f, 2.0f)) == v3d::type::geometry::Plane::ON_PLANE);
+    BOOST_TEST((plane.classify(glm::vec3(0.0f, 0.0f, 5.0f)) == v3d::type::geometry::Plane::POSITIVE));
+    BOOST_TEST((plane.classify(glm::vec3(0.0f, 0.0f, 0.0f)) == v3d::type::geometry::Plane::NEGATIVE));
+    BOOST_TEST((plane.classify(glm::vec3(4.0f, 4.0f, 2.0f)) == v3d::type::geometry::Plane::ON_PLANE));
 }
 
 /**
@@ -74,17 +74,17 @@ BOOST_AUTO_TEST_CASE(plane_classify_box_test) {
     v3d::type::geometry::AABBox above;
     above.min(glm::vec3(-1.0f, -1.0f, 1.0f));
     above.max(glm::vec3(1.0f, 1.0f, 2.0f));
-    BOOST_TEST(plane.classify(above) == v3d::type::geometry::Plane::INSIDE);
+    BOOST_TEST((plane.classify(above) == v3d::type::geometry::Plane::INSIDE));
 
     v3d::type::geometry::AABBox below;
     below.min(glm::vec3(-1.0f, -1.0f, -2.0f));
     below.max(glm::vec3(1.0f, 1.0f, -1.0f));
-    BOOST_TEST(plane.classify(below) == v3d::type::geometry::Plane::OUTSIDE);
+    BOOST_TEST((plane.classify(below) == v3d::type::geometry::Plane::OUTSIDE));
 
     v3d::type::geometry::AABBox straddling;
     straddling.min(glm::vec3(-1.0f, -1.0f, -1.0f));
     straddling.max(glm::vec3(1.0f, 1.0f, 1.0f));
-    BOOST_TEST(plane.classify(straddling) == v3d::type::geometry::Plane::CROSSING);
+    BOOST_TEST((plane.classify(straddling) == v3d::type::geometry::Plane::CROSSING));
 }
 
 /**

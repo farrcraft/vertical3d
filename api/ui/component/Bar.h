@@ -7,6 +7,8 @@
 
 #include <api/ui/Component.h>
 
+#include <cstdint>
+
 namespace v3d::ui::component {
 
 /**
@@ -20,7 +22,7 @@ namespace v3d::ui::component {
  **/
 class Bar : public Component {
  public:
-    enum class Direction {
+    enum class Direction : std::uint8_t {
         Horizontal,
         Vertical
     };

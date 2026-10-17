@@ -16,7 +16,7 @@ namespace v3d::render::offline {
 /**
  * The five pixel filters RI names.
  **/
-enum class Filter {
+enum class Filter : std::uint8_t {
     Box,
     Triangle,
     CatmullRom,

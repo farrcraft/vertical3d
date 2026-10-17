@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <utility>  // for std::pair
 
@@ -20,14 +21,14 @@ class Tetrad {
             std::string color_;  // texture name
         };
 
-        typedef enum {
+        typedef enum : std::uint8_t {
             OFFSET_X = 0,
             OFFSET_Y = 1,
             OFFSET_COL = 1,
             OFFSET_ROW = 0
         } OffsetAxis;
 
-        typedef enum {
+        typedef enum : std::uint8_t {
             CLOCKWISE,
             COUNTERCLOCKWISE
         } RotationDirection;

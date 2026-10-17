@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include <glm/glm.hpp>
 
 namespace v3d::moya {
@@ -13,7 +15,7 @@ class Vertex {
     Vertex();
     ~Vertex();
 
-    enum Bits {
+    enum Bits : std::uint8_t {
         HAS_COLOR = (1 << 1),
         HAS_NORMAL = (1 << 2),
         HAS_TEX_COORD = (1 << 3)

@@ -7,6 +7,7 @@
 
 #include <api/log/Logger.h>
 
+#include <cstdint>
 #include <iosfwd>
 #include <set>
 #include <string>
@@ -71,7 +72,7 @@ class Reader final {
      * Unhandled is not a failure: it means the name belongs to another group, and the next
      * group is tried. Only the last group's Unhandled is a request this reader does not recognise.
      **/
-    enum class Result {
+    enum class Result : std::uint8_t {
         Unhandled,
         Handled,
         Failed

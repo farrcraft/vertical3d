@@ -6,6 +6,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 
 #include <glm/mat4x4.hpp>
 
@@ -27,12 +28,12 @@ class Frustum final {
      * The depth range of the clip space the matrix builds, which decides where its near
      * plane is.
      **/
-    enum class Depth {
+    enum class Depth : std::uint8_t {
         ZeroToOne,      // depth from 0 to 1, as Vulkan clips and every camera in api/type builds
         MinusOneToOne   // depth from -1 to 1, as glm::perspective and glm::ortho build by default
     };
 
-    enum HitClassification {
+    enum HitClassification : std::int8_t {
         OUTSIDE = -1,
         CROSSING =  0,
         INSIDE =  1

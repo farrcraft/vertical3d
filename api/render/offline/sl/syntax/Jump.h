@@ -8,11 +8,13 @@
 #include "Expression.h"
 #include "Statement.h"
 
+#include <cstdint>
+
 namespace v3d::render::offline::sl::syntax {
 
 class Jump final : public Statement {
  public:
-    enum class Where {
+    enum class Where : std::uint8_t {
         BREAK,
         CONTINUE,
         RETURN

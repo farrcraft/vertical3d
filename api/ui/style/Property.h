@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 namespace v3d::ui::style {
@@ -17,7 +18,7 @@ class Property {
     explicit Property(const std::string& str);
     virtual ~Property();
 
-    typedef enum {
+    typedef enum : std::uint8_t {
         TOP,
         BOTTOM,
         LEFT,

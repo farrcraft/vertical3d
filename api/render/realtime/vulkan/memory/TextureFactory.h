@@ -48,7 +48,7 @@ class TextureFactory final {
     /**
      * How the bytes of a colour image are read back by a shader.
      **/
-    enum class Encoding {
+    enum class Encoding : std::uint8_t {
         /**< as they were authored, as every texture drawn unlit is **/
         Display,
         /**< decoded from sRGB to linear when sampled, as a lit albedo is **/

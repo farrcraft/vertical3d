@@ -5,10 +5,12 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace v3d::asset {
 /**
  **/
-enum class Type {
+enum class Type : std::uint8_t {
     Undefined = 0,
     ImagePng = 1,
     ImageJpeg = 2,

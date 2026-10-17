@@ -7,12 +7,13 @@
 
 #include <api/render/offline/Lexeme.h>
 
+#include <cstdint>
 #include <string>
 
 namespace v3d::render::offline::rib {
 
 /** What kind of thing a Token is. **/
-enum class TokenKind {
+enum class TokenKind : std::uint8_t {
     END,
     IDENTIFIER,
     STRING,

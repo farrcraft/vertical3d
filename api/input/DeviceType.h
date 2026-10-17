@@ -10,7 +10,7 @@
 #include <cstdint>
 
 namespace v3d::input {
-enum class DeviceType : uint32_t {
+enum class DeviceType : std::uint8_t {
     Mouse = (1 << 0),
     Keyboard = (1 << 1)
 };

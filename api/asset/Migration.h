@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <span>
 
@@ -22,7 +23,7 @@ typedef std::function<bool(boost::json::object&)> Migration;
 /**
  * What reading a document forward found. The caller decides what to do about each.
  **/
-enum class Reading {
+enum class Reading : std::uint8_t {
     Current,    // already at this build's version, and untouched
     Migrated,   // migrated forward to this build's version
     Newer,      // a later build wrote it, so it is untouched and must not be overwritten

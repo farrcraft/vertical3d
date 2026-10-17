@@ -8,6 +8,7 @@
 #include <api/image/TextureAtlas.h>
 #include <api/log/Logger.h>
 
+#include <cstdint>
 #include <vector>
 #include <string>
 
@@ -18,7 +19,7 @@ namespace v3d::font {
 
 class TextureFont {
  public:
-    typedef enum {
+    typedef enum : std::uint8_t {
         OUTLINE_TYPE_NONE = 0,
         OUTLINE_TYPE_LINE = 1,
         OUTLINE_TYPE_INNER = 2,

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 #include "Types.h"
@@ -20,7 +21,7 @@ namespace v3d::render::offline::sl {
  **/
 class Symbol final {
  public:
-    enum class Role {
+    enum class Role : std::uint8_t {
         /** A shader global: P, N, Ci and the rest, decided by the shader type. **/
         GLOBAL,
         /** A shader parameter, which a scene may bind. **/

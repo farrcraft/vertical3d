@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include <utility>
 
@@ -21,7 +22,7 @@ class Player {
  public:
     explicit Player(const glm::vec3 & pos);
 
-    typedef enum Movement {
+    typedef enum Movement : std::uint8_t {
         MOVE_UP = 2,
         MOVE_DOWN = 4,
         MOVE_LEFT = 8,
@@ -30,7 +31,7 @@ class Player {
         MOVE_BACKWARD = 64
     } Movement;
 
-    typedef enum Look {
+    typedef enum Look : std::uint8_t {
         LOOK_UP = 2,
         LOOK_DOWN = 4,
         LOOK_LEFT = 8,

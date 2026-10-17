@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 namespace v3d::render::offline::rib {
@@ -18,14 +19,14 @@ namespace v3d::render::offline::rib {
  **/
 class Declaration final {
  public:
-    enum class Storage {
+    enum class Storage : std::uint8_t {
         CONSTANT,
         UNIFORM,
         VARYING,
         VERTEX
     };
 
-    enum class Type {
+    enum class Type : std::uint8_t {
         FLOAT,
         INTEGER,
         STRING,

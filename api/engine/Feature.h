@@ -13,7 +13,7 @@ namespace v3d::engine {
 /**
  * The portions of the engine an app opts into.
  **/
-enum class Feature : uint32_t {
+enum class Feature : std::uint8_t {
     Window = (1 << 0),
     Config = (1 << 1),
     MouseInput = (1 << 2),

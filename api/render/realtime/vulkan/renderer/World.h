@@ -53,7 +53,7 @@ class World final {
     /**
      * How a canvas's quads combine with what is already drawn.
      **/
-    enum class Blend {
+    enum class Blend : std::uint8_t {
         /**
          * Straight alpha over what is there: smoke, a sprite, a tinted fog.
          **/

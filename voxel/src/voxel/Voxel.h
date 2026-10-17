@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include <glm/glm.hpp>
 
 #include <boost/shared_ptr.hpp>
@@ -15,7 +17,7 @@
  */
 class Voxel {
  public:
-    typedef enum {
+    typedef enum : std::uint8_t {
         BLOCK_TYPE_AIR,
         BLOCK_TYPE_DIRT,
         BLOCK_TYPE_GRASS,
@@ -35,7 +37,7 @@ class Voxel {
         BLOCK_TYPE_SNOW
     } BlockType;
 
-    typedef enum {
+    typedef enum : std::uint16_t {
         BLOCK_FACE_FRONT = 2,
         BLOCK_FACE_LEFT = 4,
         BLOCK_FACE_RIGHT = 8,

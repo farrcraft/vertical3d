@@ -283,12 +283,12 @@ BOOST_AUTO_TEST_CASE(a_button_in_a_tree_is_hovered_under_the_cursor) {
 
     BOOST_CHECK(fixture.cursor->motion(glm::vec2(160.0f, 65.0f)));
     BOOST_CHECK_EQUAL(fixture.cursor->hovered(), button);
-    BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_HOVER);
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_HOVER);
 
     // and it goes back to normal the moment the cursor leaves it
     BOOST_CHECK(!fixture.cursor->motion(glm::vec2(400.0f, 400.0f)));
     BOOST_CHECK(!fixture.cursor->hovered());
-    BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_NORMAL);
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_NORMAL);
 }
 
 /**
@@ -306,11 +306,11 @@ BOOST_AUTO_TEST_CASE(the_hover_follows_the_component_a_press_would_land_on) {
     fixture.draw();
 
     fixture.cursor->motion(glm::vec2(20.0f, 20.0f));
-    BOOST_CHECK_EQUAL(under->state(), v3d::ui::component::Button::STATE_HOVER);
+    BOOST_CHECK(under->state() == v3d::ui::component::Button::STATE_HOVER);
 
     fixture.cursor->motion(glm::vec2(100.0f, 100.0f));
-    BOOST_CHECK_EQUAL(over->state(), v3d::ui::component::Button::STATE_HOVER);
-    BOOST_CHECK_EQUAL(under->state(), v3d::ui::component::Button::STATE_NORMAL);
+    BOOST_CHECK(over->state() == v3d::ui::component::Button::STATE_HOVER);
+    BOOST_CHECK(under->state() == v3d::ui::component::Button::STATE_NORMAL);
 }
 
 /**
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE(a_component_that_is_not_pickable_is_not_hovered) {
 
     BOOST_CHECK(!fixture.cursor->motion(glm::vec2(100.0f, 100.0f)));
     BOOST_CHECK(!fixture.cursor->hovered());
-    BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_NORMAL);
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_NORMAL);
 }
 
 /**
@@ -436,7 +436,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_neither_picked_nor_lit) {
 
     BOOST_CHECK(!fixture.cursor->motion(glm::vec2(160.0f, 65.0f)));
     BOOST_CHECK(!fixture.cursor->hovered());
-    BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_NORMAL);
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_NORMAL);
 
     BOOST_CHECK(!fixture.cursor->press(glm::vec2(160.0f, 65.0f)));
     BOOST_CHECK(fixture.sent.empty());
@@ -525,7 +525,7 @@ BOOST_AUTO_TEST_CASE(a_strip_that_is_not_pickable_lets_a_press_through) {
 
     const glm::vec2 onButton = go->position() + go->size() * 0.5f;
     BOOST_CHECK(fixture.cursor->motion(onButton));
-    BOOST_CHECK_EQUAL(go->state(), v3d::ui::component::Button::STATE_NORMAL);
+    BOOST_CHECK(go->state() == v3d::ui::component::Button::STATE_NORMAL);
 
     BOOST_CHECK(fixture.cursor->press(glm::vec2(700.0f, 4.0f)));
     BOOST_CHECK(fixture.cursor->press(onButton));

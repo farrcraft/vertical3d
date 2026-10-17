@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
 namespace v3d::ui::component {
@@ -15,7 +16,7 @@ namespace v3d::ui::component {
  * Every one of these has a loader and a draw path. A type is not listed here until it has
  * both.
  **/
-enum class Type {
+enum class Type : std::uint8_t {
     Undefined,
     Bar,
     Button,

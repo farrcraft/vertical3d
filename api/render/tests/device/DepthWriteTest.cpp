@@ -16,6 +16,7 @@
 #include <api/render/realtime/vulkan/renderer/World.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -59,7 +60,7 @@ glm::mat4x4 pixels() {
 /**
  * What a case draws twice at the same depth.
  **/
-enum class Drawn {
+enum class Drawn : std::uint8_t {
     Lines,
     WorldQuads
 };

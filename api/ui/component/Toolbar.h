@@ -8,6 +8,7 @@
 #include <api/ui/Component.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -37,7 +38,7 @@ class Toolbar : public Component {
     /**
      * Which edge of the window the strip runs along.
      **/
-    enum class Edge {
+    enum class Edge : std::uint8_t {
         Top,
         Left
     };

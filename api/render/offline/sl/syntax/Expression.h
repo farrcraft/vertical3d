@@ -8,6 +8,8 @@
 #include <api/render/offline/Position.h>
 #include <api/render/offline/sl/Types.h>
 
+#include <cstdint>
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::offline::sl::syntax {
@@ -21,7 +23,7 @@ namespace v3d::render::offline::sl::syntax {
  **/
 class Expression {
  public:
-    enum class Kind {
+    enum class Kind : std::uint8_t {
         NUMBER,
         STRING,
         VARIABLE,

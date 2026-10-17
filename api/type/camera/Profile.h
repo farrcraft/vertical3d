@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 #include <glm/glm.hpp>
@@ -26,7 +27,7 @@ class Profile {
         *	geometry was authored against glm::lookAt, so that it can use this camera
         *	without changing its renderer.
         */
-        enum class Hand {
+        enum class Hand : std::uint8_t {
                 UpCrossDirection,       /**< right = up x direction **/
                 DirectionCrossUp        /**< right = direction x up, which glm::lookAt builds **/
         };
@@ -160,7 +161,7 @@ class Profile {
         Profile & operator = (const Profile & p);
 
  private:
-        typedef enum CameraOptions {
+        typedef enum CameraOptions : std::uint8_t {
             OPTION_ORTHOGRAPHIC = (1 << 1),
             OPTION_ADAPTIVE_PROJECTION = (1 << 2),
             OPTION_ADAPTIVE_POSITION = (1 << 3)

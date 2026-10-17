@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
 namespace v3d::event {
@@ -17,7 +18,7 @@ namespace v3d::event {
  * that triggered it, so a handler can tell the two edges apart without needing a
  * separate binding for each.
  **/
-enum class State {
+enum class State : std::uint8_t {
     Any,
     Pressed,
     Released

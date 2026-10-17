@@ -12,6 +12,7 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <cstdint>
 #include <string>
 
 #include "Tool.h"
@@ -37,7 +38,7 @@ class TransformTool final : public Tool {
     /**
      * Which manipulator the selection carries.
      **/
-    enum class Mode {
+    enum class Mode : std::uint8_t {
         None,
         Translate,
         Rotate,

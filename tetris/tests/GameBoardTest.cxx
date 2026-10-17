@@ -99,8 +99,8 @@ BOOST_AUTO_TEST_CASE(gameboard_row_clear_test) {
     BOOST_CHECK_EQUAL(game->score(), 100u);
     // the completed row is gone rather than merely emptied, so what was two rows above the
     // gap is now one row above the floor
-    BOOST_CHECK_EQUAL(game->piece(0, bottom).color(), Piece::COLOR_EMPTY);
-    BOOST_CHECK_EQUAL(game->piece(0, bottom - 1).color(), Piece::COLOR_PURPLE);
+    BOOST_CHECK(game->piece(0, bottom).color() == Piece::COLOR_EMPTY);
+    BOOST_CHECK(game->piece(0, bottom - 1).color() == Piece::COLOR_PURPLE);
     BOOST_CHECK_EQUAL(game->over(), false);
 }
 
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(gameboard_incomplete_row_test) {
     }
 
     BOOST_CHECK_EQUAL(game->score(), 0u);
-    BOOST_CHECK_EQUAL(game->piece(0, bottom).color(), Piece::COLOR_GREEN);
+    BOOST_CHECK(game->piece(0, bottom).color() == Piece::COLOR_GREEN);
 }
 
 BOOST_AUTO_TEST_CASE(gameboard_game_over_test) {

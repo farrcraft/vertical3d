@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "AABBox.h"
 
 #include <glm/vec3.hpp>
@@ -22,7 +24,7 @@ class Plane {
     Plane(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 & C);
     ~Plane();
 
-    enum HalfSpace {
+    enum HalfSpace : std::int8_t {
         NEGATIVE = -1,
         OUTSIDE = -1,
         ON_PLANE = 0,
@@ -30,7 +32,7 @@ class Plane {
         POSITIVE = 1,
         INSIDE = 1
     };
-    enum EquationIndex {
+    enum EquationIndex : std::uint8_t {
         A = 0,
         B = 1,
         C = 2,

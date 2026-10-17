@@ -47,7 +47,7 @@ class Canvas final {
     /**
      * How a space is fitted into the canvas.
      **/
-    enum class Fit {
+    enum class Fit : std::uint8_t {
         Stretch,  /**< fill the canvas, stretching the space where the aspects differ **/
         Contain   /**< keep the space's aspect, as large as fits, centred with bars either side **/
     };

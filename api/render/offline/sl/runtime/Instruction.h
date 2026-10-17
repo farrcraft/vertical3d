@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 namespace v3d::render::offline::sl::runtime {
@@ -16,7 +17,7 @@ namespace v3d::render::offline::sl::runtime {
  * reasons: the mask handling below needs jump targets, and a tree traversal over a batch
  * allocates at every node.
  **/
-enum class Opcode {
+enum class Opcode : std::uint8_t {
     /** target = left, converting as the two registers' types call for. **/
     MOVE,
     /**

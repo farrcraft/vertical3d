@@ -9,6 +9,7 @@
 #include <api/ui/Component.h>
 #include <api/ui/Image.h>
 
+#include <cstdint>
 #include <string>
 
 namespace v3d::ui::component {
@@ -33,7 +34,7 @@ class Button : public Component {
     /**
         * button state enumeration
         */
-    typedef enum {
+    typedef enum : std::uint8_t {
         STATE_NORMAL,  /**< Normal Button State **/
         STATE_HOVER,   /**< Mouse is hovering over button **/
         STATE_PRESS    /**< Button is being clicked **/

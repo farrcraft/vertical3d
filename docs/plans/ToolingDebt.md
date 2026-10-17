@@ -58,7 +58,7 @@ names it as the one Python file in the tree.
 
 ### Steps 5 to 17 — One check each
 
-**Steps 5 to 9 done; 10 to 17 open.**
+**Steps 5 to 10 done; 11 to 17 open.**
 
 - Steps 5 to 8 shared one discovery pass and one verification pass. Several files carried sites
   of more than one check.
@@ -75,6 +75,17 @@ names it as the one Python file in the tree.
   A pair that is one value takes a glm vector, and an output pair becomes a returned struct.
   Vulkan's own structs serve the pipeline builder, and audio's Voice became a scoped enum.
 - Signatures across api/ changed, so a consumer outside the tree has to follow them.
+- Step 10 found 76 distinct enums. The table's 303 counted each header once per source that
+  included it. Each enum took the base clang-tidy suggested, 72 of them `std::uint8_t`.
+  clang-tidy has no fix for this check, so a script applied it.
+- The check also reports a named base that is wider than needed. `Feature` and `DeviceType`
+  narrowed to `std::uint8_t`. `audio::Voice` is an id whose values come from a counter rather
+  than from its one enumerator, so it keeps `uint32_t` under a NOLINTNEXTLINE.
+- No enum was in a GPU-visible struct, written as raw bytes, or declared ahead of its
+  definition, so the smaller size changed no layout.
+- Boost.Test streams a one-byte unscoped enum as a character. The 35 assertions that would
+  have printed one now compare without printing their operands, and
+  [Testing.md](../contributing/Testing.md#traps) records the trap.
 
 Each step follows the same procedure:
 

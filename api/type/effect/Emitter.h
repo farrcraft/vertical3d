@@ -28,7 +28,7 @@ struct Emitter final {
     /**
      * Where a particle is born, about the emitter's origin.
      **/
-    enum class Shape {
+    enum class Shape : std::uint8_t {
         Point,
         Sphere,   /**< anywhere inside a ball of radius extent.x **/
         Box       /**< anywhere inside a box of half size extent **/

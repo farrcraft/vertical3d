@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <string>
@@ -49,7 +50,7 @@ class Resolver final {
      * it keys a per-frame lookup and the set is closed: each class is one this library
      * reads named properties from.
      **/
-    enum class Class {
+    enum class Class : std::uint8_t {
         Panel,
         Bar,
         Scrollbar,

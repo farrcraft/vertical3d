@@ -511,7 +511,7 @@ class Immediate {
      * Whether a scrolled region puts up its scrollbar: a window decides at its start, from
      * what it drew last frame, and a table whenever there is more than it shows.
      **/
-    enum class Bar { Never, Always, WhenNeeded };
+    enum class Bar : std::uint8_t { Never, Always, WhenNeeded };
 
     /**
      * Close a scrolled region - a window's body or a table: measure what was drawn into it,

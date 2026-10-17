@@ -6,6 +6,9 @@
 #pragma once
 
 #include <api/type/geometry/Bound2D.h>
+
+#include <cstdint>
+
 #include "Length.h"
 
 #include <glm/vec2.hpp>
@@ -29,7 +32,7 @@ namespace v3d::ui {
  * width is.
  **/
 struct Layout final {
-    enum class Anchor {
+    enum class Anchor : std::uint8_t {
         TopLeft,
         TopRight,
         BottomLeft,

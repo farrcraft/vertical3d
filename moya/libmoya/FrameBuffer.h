@@ -8,6 +8,7 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <moya/libmoya/reyes/Bucket.h>
 
+#include <cstdint>
 #include <vector>
 
 #include <glm/vec2.hpp>
@@ -24,7 +25,7 @@ class FrameBuffer {
      * channels from the leading planes. DEPTH follows them and is not an alpha channel, so
      * the picture is written with CHANNELS planes and never four.
      */
-    enum Plane {
+    enum Plane : std::uint8_t {
         RED = 0,
         GREEN = 1,
         BLUE = 2,

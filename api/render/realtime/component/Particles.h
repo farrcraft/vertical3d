@@ -8,6 +8,8 @@
 #include <api/render/realtime/Handle.h>
 #include <api/type/animation/SpriteClip.h>
 
+#include <cstdint>
+
 #include <boost/shared_ptr.hpp>
 
 #include <glm/vec2.hpp>
@@ -26,7 +28,7 @@ struct Particles final {
     /**
      * Which way a particle's quad lies.
      **/
-    enum class Facing {
+    enum class Facing : std::uint8_t {
         Camera,   /**< square to the camera, spanned by its right and up **/
         Velocity  /**< stretched along the particle's velocity as the camera sees it: rain, sparks **/
     };

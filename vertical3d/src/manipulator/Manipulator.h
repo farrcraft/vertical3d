@@ -9,6 +9,8 @@
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <cstdint>
+
 #include <boost/shared_ptr.hpp>
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/vec2.hpp>
@@ -41,7 +43,7 @@ class Manipulator {
      * Which handle a drag is constrained to. None is the centre handle, which moves in
      * the plane of the screen rather than along an axis.
      **/
-    enum class Axis {
+    enum class Axis : std::uint8_t {
         None,
         X,
         Y,
@@ -51,7 +53,7 @@ class Manipulator {
     /**
      * Whether the handles line up with the world axes or with the object's own.
      **/
-    enum class Space {
+    enum class Space : std::uint8_t {
         Global,
         Local
     };

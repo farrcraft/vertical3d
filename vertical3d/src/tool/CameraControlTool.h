@@ -8,6 +8,7 @@
 #include <api/type/camera/ArcBall.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <cstdint>
 #include <string>
 
 #include "Tool.h"
@@ -27,7 +28,7 @@ class CameraControlTool final : public Tool {
  public:
     CameraControlTool();
 
-    typedef enum CameraMode {
+    typedef enum CameraMode : std::uint8_t {
         CAMERA_MODE_ZOOM,
         CAMERA_MODE_TRUCK,
         CAMERA_MODE_PAN,

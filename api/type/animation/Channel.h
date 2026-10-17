@@ -17,13 +17,13 @@ namespace v3d::type::animation {
  * the file gave it.
  **/
 struct Channel final {
-    enum class Path {
+    enum class Path : std::uint8_t {
         Translation,
         Rotation,
         Scale
     };
 
-    enum class Interpolation {
+    enum class Interpolation : std::uint8_t {
         Step,         /**< each key held until the next **/
         Linear,       /**< lerped, or slerped the short way round for a rotation **/
         CubicSpline   /**< Hermite, with an in and an out tangent a key **/

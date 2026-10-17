@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
@@ -17,7 +19,7 @@ namespace v3d::render::offline::sl {
  *
  * SL has no integer type: a count, an index and a colour component are all floats.
  **/
-enum class Type {
+enum class Type : std::uint8_t {
     VOID,
     FLOAT,
     POINT,
@@ -33,7 +35,7 @@ enum class Type {
  * neither carries UNSPECIFIED, and the compiler's varying inference turns it into one of
  * the other two.
  **/
-enum class Storage {
+enum class Storage : std::uint8_t {
     UNSPECIFIED,
     UNIFORM,
     VARYING
@@ -42,7 +44,7 @@ enum class Storage {
 /**
  * The five shader types. All five parse; only surface, light and imager shaders run.
  **/
-enum class ShaderType {
+enum class ShaderType : std::uint8_t {
     SURFACE,
     LIGHT,
     DISPLACEMENT,

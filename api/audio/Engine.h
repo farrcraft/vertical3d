@@ -35,8 +35,10 @@ namespace v3d::audio {
  *
  * An id rather than a pointer, so that a handle to a sound that has since finished is
  * refused rather than being a pointer to a track the engine has recycled underneath it.
- * None is no sound at all, which a failed play() returns.
+ * None is no sound at all, which a failed play() returns. Every other value is a count that
+ * play() makes, so the base is as wide as that count, not as wide as None.
  **/
+// NOLINTNEXTLINE(performance-enum-size)
 enum class Voice : uint32_t { None = 0 };
 
 /**

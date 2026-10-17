@@ -9,6 +9,7 @@
 #include <api/type/camera/Camera.h>
 #include <vertical3d/src/scene/Scene.h>
 
+#include <cstdint>
 #include <string>
 
 #include "ConstructionPlane.h"
@@ -35,7 +36,7 @@ class ViewPort final {
      * Bit flags, ORed together into showFlags_ - each value has to own a bit of
      * its own or toggling one decoration hides another.
      **/
-    typedef enum VisibleFilter {
+    typedef enum VisibleFilter : std::uint8_t {
         SHOW_GRID = (1 << 0),
         SHOW_CAMERA = (1 << 1),
         SHOW_HANDLE = (1 << 2),

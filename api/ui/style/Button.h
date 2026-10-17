@@ -7,6 +7,7 @@
 
 #include <api/ui/style/Style.h>
 
+#include <cstdint>
 #include <string>
 
 namespace v3d::ui::style {
@@ -23,7 +24,7 @@ class Button : public Style {
      * state the cursor writes. The fourth is a disabled component, which the cursor never
      * changes.
      */
-    enum class State {
+    enum class State : std::uint8_t {
         Normal,
         Hover,
         Press,

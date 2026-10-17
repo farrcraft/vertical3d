@@ -168,6 +168,14 @@ so adding an enumerator fails the build at every switch that does not handle it.
 - Where an enum is parsed from text, the parser's upper bound is the last enumerator. Keep the
   bound and the enum in step, and keep a test that checks the round trip.
 
+**An enum names its base type, the smallest that holds its enumerators.** That is usually
+`std::uint8_t`, from `<cstdint>`. clang-tidy's `performance-enum-size` reports a base wider
+than the enumerators need, whether it is the implicit `int` or a type that was named.
+
+- A set of bits takes a wider base when a bit is added that needs one.
+- An enum used as an id, such as `audio::Voice`, takes values the enumerators do not list. Its
+  base is as wide as the ids, and a `NOLINTNEXTLINE(performance-enum-size)` says so.
+
 ## Boundary input
 
 A value from a file, the command line or a caller goes through the checked helpers before it is
