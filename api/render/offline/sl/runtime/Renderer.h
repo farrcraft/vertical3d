@@ -41,7 +41,7 @@ class Renderer {
      * - "current" is the identity.
      * - "shader" is the inverse of the shader's placement. The placement maps the shader's own
      *   space into current space, as the transformation in force when the scene instanced the
-     *   shader running now. While a light runs, it is the light's placement.
+     *   shader running now. While a light runs, it is the inverse of the light's placement.
      * - "object" is the inverse of the primitive's placement, which maps its object space into
      *   current space.
      * - "world" and "camera" are the scene's world and camera spaces.

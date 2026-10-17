@@ -104,6 +104,13 @@ to `data/`. Three copy something else:
 - `asset_media` copies the asset suite's `api/asset/tests/data/` to `data/`.
 - `render_device` copies `api/render/tests/device/data/` to `data/`.
 
+Some suites take data through the build rule an app uses instead, which copies an edited file
+on the next build whether or not the suite relinks:
+
+- `font` and `ui` take the shared font through `v3d_add_shared_data`.
+- `pong`, `tetris`, `voxel`, `odyssey` and `vertical3d` take their app's `data/` through
+  `v3d_copy_data`, to check the bindings it ships. pong's suite also checks its sounds document.
+
 See [Traps](#traps) for what the copy means when you add a fixture.
 
 ### Patterns the suites use

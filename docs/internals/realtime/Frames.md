@@ -116,7 +116,9 @@ quads sharing a texture costs one bind.
 
 **Scissor.** An item with `scissored` set gets a dynamic scissor clamped to the pass region. An
 item without one gets the pass region back. A clip rectangle off the top or left of the image is
-cut; one turned inside out cuts the draw to nothing (`renderer/Clip.h`).
+cut; one turned inside out cuts the draw to nothing. A NaN left or top edge is taken as the
+image's edge, and a NaN right or bottom edge cuts the draw to nothing. Every edge is held within
+2^24 pixels, far past any image, so each converts to an integer exactly (`renderer/Clip.h`).
 
 **`Recorder::check(pass, pipeline, into)`** runs each time a pipeline is bound. It throws,
 naming the pass, when:

@@ -92,8 +92,9 @@ include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dApiLibraries.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dDependencies.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dHelpers.cmake")
 
-# The apps name every api library between them, and every tests directory is one library's,
-# so either of those needs all of them. A consumer that narrows the selection and leaves the
+# Every tests directory is one library's, so the tests need the whole api. So do the apps: they
+# name every api library but font between them, and ui and render link font. Either needs all
+# of them. A consumer that narrows the selection and leaves the
 # apps or tests on has asked for two things that contradict, and configure fails.
 if(V3D_BUILD_APPS OR V3D_BUILD_TESTS)
 	if(NOT V3D_LIBRARIES STREQUAL "all")

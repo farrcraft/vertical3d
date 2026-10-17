@@ -36,7 +36,7 @@ VkImageMemoryBarrier2 colourAfterDrawing(VkImage image, VkImageLayout to);
  *
  * This and depthForSampling() name only the depth aspect, because their layouts are depth-only
  * and naming the stencil aspect with them is an error. For a format that also has stencil, that
- * relies on the device enabling separateDepthStencilLayouts.
+ * relies on the device enabling separateDepthStencilLayouts, as a depth readback does.
  **/
 VkImageMemoryBarrier2 depthForDrawing(VkImage image);
 
@@ -62,6 +62,10 @@ VkImageMemoryBarrier2 uploadedForSampling(VkImage image);
 
 /**
  * Into TRANSFER_SRC for a readback to copy out of, from whatever layout the frame left it in.
+ *
+ * A depth readback names only the depth aspect. For a format that also has stencil, moving one
+ * aspect alone relies on the device enabling separateDepthStencilLayouts.
+ *
  * @param aspect colour or depth, which decides what writes are waited on
  **/
 VkImageMemoryBarrier2 forReadback(VkImage image, VkImageAspectFlags aspect, VkImageLayout from);

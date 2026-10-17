@@ -18,10 +18,11 @@ tests depth shares this one image.
 `DEPTH_STENCIL_ATTACHMENT`. With `sampled` true it also requires `SAMPLED_IMAGE`, which can give a
 different answer: a device may draw depth into a format without letting a shader sample it.
 `stencil()` says whether the format has a stencil aspect. Nothing uses the stencil aspect, and
-every depth barrier names only the depth aspect, in `DEPTH_ATTACHMENT_OPTIMAL` or
-`DEPTH_READ_ONLY_OPTIMAL`. For a combined format that is valid only because the device enables
-`separateDepthStencilLayouts`. Naming the stencil aspect as well would be an error, because
-those two layouts are depth-only.
+every depth barrier names only the depth aspect: into `DEPTH_ATTACHMENT_OPTIMAL` or
+`DEPTH_READ_ONLY_OPTIMAL`, and into and out of `TRANSFER_SRC_OPTIMAL` for a readback. For a
+combined format each of those is valid only because the device enables
+`separateDepthStencilLayouts`. Naming the stencil aspect with the first two would be an error,
+because those layouts are depth-only.
 
 **Sampled depth** is chosen at construction and cannot be switched on later, because it can
 change the format. A sampled buffer:

@@ -38,7 +38,8 @@ class Menu : public Component {
         * Make the previous item in the menu active.
         * If the first item in the menu is already active, it will wrap around
         * to the last item.
-        * @return false on wrap around
+        * @return false when a capture has the input, the menu is empty, or no item was active,
+        *         in which case the first one becomes active. A wrap returns true, unlike next()
         */
     bool previous();
     /**

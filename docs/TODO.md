@@ -341,27 +341,6 @@ does not report an entry again. Each entry names its class.
 [] **`a_frame_begun_again_restarts_its_claims` never claims on the slot it began twice.** It passes
 without the turn counter it was written for. Its sibling test does fail without it.
 
-### Drift
-
-[] **Stale comments and doc sentences.**
-
-- `Cursor.h` and `docs/api/ui/Mouse.md` say a release sends nothing; a slider can send its command
-  on release.
-- `Menu.h` says `previous()` returns false on a wrap; it returns true.
-- `Manipulator.h` says the profile's normals do not follow its rotation; they do now.
-- `ProfileTest.cxx` says "looking down -z" of a camera that looks along +z.
-- `Retirement.h` documents its tag as the frames begun; it is the last frame that may name the
-  object.
-- `docs/internals/realtime/Memory.md` and `Barriers.h` list two depth-only layouts and leave out
-  the readback barrier, which needs the same feature.
-- `Renderer.h` and `docs/offline/ShadingLanguage.md` call "shader" space the light's placement; it
-  is the inverse.
-- `docs/internals/realtime/Frames.md` does not state the scissor's rules for an edge that is not a
-  number or is past 2^24.
-- The root `CMakeLists.txt` says the apps name every api library between them; none names font.
-- `docs/contributing/Testing.md`'s fixture list leaves out the font and ui suites, which take the
-  shared font through a build rule.
-
 ## Documentation
 
 [ReleaseHardening](plans/ReleaseHardening.md) takes this entry.

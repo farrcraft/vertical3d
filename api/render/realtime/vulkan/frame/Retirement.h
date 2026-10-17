@@ -39,17 +39,17 @@ class Retirement final {
 
     /**
      * Hold a destruction back.
-     * @param begun how many frames had begun when the thing was released
-     * @param destroy what to run once those frames have finished
+     * @param last the last frame that may name the thing released, counted as frames are
+     *        counted when they begin
+     * @param destroy what to run once that frame has finished
      **/
-    void retire(uint64_t begun, std::function<void()> destroy);
+    void retire(uint64_t last, std::function<void()> destroy);
 
     /**
      * Run every destruction whose frames have finished.
      *
-     * A frame that had begun when something was released has finished by the time framesInFlight
-     * more frames have begun, because beginning a frame waits on the fence of the one that used
-     * its slot last.
+     * An entry's last frame has finished by the time framesInFlight more frames have begun,
+     * because beginning a frame waits on the fence of the one that used its slot last.
      *
      * @param begun how many frames have begun, counting the one just begun
      **/
@@ -67,7 +67,7 @@ class Retirement final {
 
  private:
     struct Entry {
-        uint64_t begun;
+        uint64_t last;
         std::function<void()> destroy;
     };
 

@@ -190,8 +190,8 @@ class Manipulator {
     static float unitsPerPixel(const ViewPort& view, const glm::vec3& at);
 
     /**
-     * The camera's axes in world space, read out of the view matrix rather than off the
-     * profile - the profile's normals do not follow its rotation.
+     * The camera's axes in world space, read out of the view matrix the view draws with, so
+     * the handles line up with what is on screen.
      * @param forward the direction into the screen - may be null
      **/
     static void basis(const ViewPort& view, glm::vec3* right, glm::vec3* up, glm::vec3* forward);

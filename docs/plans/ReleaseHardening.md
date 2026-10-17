@@ -111,11 +111,13 @@ the section after the plan was drafted and is fixed here too.
 
 ### Step 7 — Drift
 
-**Open.** [TODO.md](../TODO.md#drift), and the missing SDL3 record under
-[Documentation](../TODO.md#documentation).
+**Open.** The SDL3 record under [Documentation](../TODO.md#documentation) is left.
 
-- Correct each stale comment and document sentence the drift entry lists.
-- Write the ADR recording why SDL3 replaced SDL2, and add it to the index.
+- The ten stale sentences the drift entry listed are corrected, each against the code it
+  describes. The fixture list in Testing.md also gained the five app suites step 3 gave a data
+  copy.
+- The ADR recording why SDL3 replaced SDL2 waits on the reasons. Neither the upgrade commit nor
+  any document records them, and an ADR does not reconstruct a rationale from the code.
 
 ### Step 8 — Close the plan
 

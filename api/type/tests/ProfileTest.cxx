@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(cameraprofile_test) {
     BOOST_CHECK_CLOSE(copied.view()[3][1], -5.0f, 0.01f);
     BOOST_CHECK_CLOSE(copied.view()[3][2], -6.0f, 0.01f);
 
-    // lookat orients the camera at a target: looking down -z from the origin leaves the
+    // lookat orients the camera at a target: looking along +z from the origin leaves the
     // rotation alone, so the view matrix stays a pure translation
     v3d::type::camera::Profile facing("facing");
     facing.eye(glm::vec3(0.0f, 0.0f, 0.0f));

@@ -20,7 +20,9 @@ if (!taken) {
 
 - `motion(point)` moves the hover highlight, and follows a held press.
 - `press(point)` offers the point to the ui and sends a command if it lands on a control.
-- `release(point)` ends a held press. It sends nothing.
+- `release(point)` ends a held press. The held control follows the point first, as on
+  `motion()`, so a slider whose value changes there sends its command. Nothing else sends a
+  command on a release.
 
 The `Measure` argument is optional. It places the caret when a `TextBox` is clicked. Pass the
 same `Measure` the renderer drawing the ui was given, so the two agree on where each

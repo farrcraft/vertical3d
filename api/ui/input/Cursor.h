@@ -76,8 +76,10 @@ class Cursor final {
     bool press(const glm::vec2& point);
 
     /**
-     * The primary button came up, ending a drag. Nothing is dispatched here -
-     * a command is sent as the press lands, the way a strip's is.
+     * The primary button came up, ending a held press. The held component follows the cursor
+     * to where the button came up, as it would on a motion(), so a slider whose value changes
+     * there sends its command. Nothing else is sent: a command is sent as the press lands, the
+     * way a strip's is.
      * @return whether the ui took it
      **/
     bool release(const glm::vec2& point);
