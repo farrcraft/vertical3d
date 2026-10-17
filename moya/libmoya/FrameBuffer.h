@@ -10,6 +10,8 @@
 
 #include <vector>
 
+#include <glm/vec2.hpp>
+
 namespace v3d::moya {
 /**
  * The image divided into a grid of tiles, called buckets, and the stack of float image
@@ -39,7 +41,13 @@ class FrameBuffer {
      */
     static const unsigned int CHANNELS = 3;
 
-    FrameBuffer(unsigned int bucketSize[2], unsigned int imageSize[2]);
+    /** The size of a bucket and of the whole image, in pixels. **/
+    struct Sizes {
+        glm::uvec2 bucket{0u};
+        glm::uvec2 image{0u};
+    };
+
+    explicit FrameBuffer(const Sizes & sizes);
     ~FrameBuffer();
 
     unsigned int * bucketSize(void) const;

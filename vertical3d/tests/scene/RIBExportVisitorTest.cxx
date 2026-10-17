@@ -52,7 +52,7 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
     void attributeBegin() override { blocks_++; }
     void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)name;
-        names_.push_back(parameters.string("name", ""));
+        names_.push_back(parameters.string("name"));
     }
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
         faces_++;

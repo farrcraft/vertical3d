@@ -90,7 +90,7 @@ Token Lexer::fail(const std::string & message, unsigned int line, unsigned int c
     if (error_.empty()) {
         error_ = message + Characters::position(line, column);
     }
-    return Token(Token::Kind::END, line, column);
+    return Token(Token::Kind::END, {.line = line, .column = column});
 }
 
 Token Lexer::scanString(unsigned int line, unsigned int column) {
@@ -99,7 +99,7 @@ Token Lexer::scanString(unsigned int line, unsigned int column) {
     if (!in_.quoted(true, &text)) {
         return fail("unterminated string starting", line, column);
     }
-    return Token(Token::Kind::STRING, text, line, column);
+    return Token(Token::Kind::STRING, text, {.line = line, .column = column});
 }
 
 Token Lexer::scanNumber(unsigned int line, unsigned int column) {
@@ -130,7 +130,7 @@ Token Lexer::scanNumber(unsigned int line, unsigned int column) {
     if (!digits) {
         return fail("'" + text + "' is not a number", line, column);
     }
-    return Token(std::strtof(text.c_str(), nullptr), line, column);
+    return Token(std::strtof(text.c_str(), nullptr), {.line = line, .column = column});
 }
 
 Token Lexer::scanName(unsigned int line, unsigned int column) {
@@ -139,7 +139,7 @@ Token Lexer::scanName(unsigned int line, unsigned int column) {
         text += static_cast<char>(in_.get());
     }
     const Token::Kind kind = keyword(text) ? Token::Kind::KEYWORD : Token::Kind::IDENTIFIER;
-    return Token(kind, text, line, column);
+    return Token(kind, text, {.line = line, .column = column});
 }
 
 Token Lexer::scanOperator(unsigned int line, unsigned int column) {
@@ -154,27 +154,27 @@ Token Lexer::scanOperator(unsigned int line, unsigned int column) {
     const bool doubled = (first == '&' || first == '|') && second == first;
     if (assigns || doubled) {
         text += static_cast<char>(in_.get());
-        return Token(Token::Kind::OPERATOR, text, line, column);
+        return Token(Token::Kind::OPERATOR, text, {.line = line, .column = column});
     }
     if (first == '&' || first == '|') {
         return fail("'" + text + "' is not an operator - '" + text + text + "' is", line, column);
     }
-    return Token(Token::Kind::OPERATOR, text, line, column);
+    return Token(Token::Kind::OPERATOR, text, {.line = line, .column = column});
 }
 
 Token Lexer::scan() {
     if (!error_.empty()) {
-        return Token(Token::Kind::END, in_.line(), in_.column());
+        return Token(Token::Kind::END, {.line = in_.line(), .column = in_.column()});
     }
     if (!skipSpace()) {
-        return Token(Token::Kind::END, in_.line(), in_.column());
+        return Token(Token::Kind::END, {.line = in_.line(), .column = in_.column()});
     }
 
     const unsigned int line = in_.line();
     const unsigned int column = in_.column() + 1;
     const int c = in_.look();
     if (c == Characters::END) {
-        return Token(Token::Kind::END, line, column);
+        return Token(Token::Kind::END, {.line = line, .column = column});
     }
     if (c == '#') {
         // '#' has no other meaning in SL, so wherever one is, it came from a directive this
@@ -196,14 +196,14 @@ Token Lexer::scan() {
             in_.unget('.');
             return scanNumber(line, column);
         }
-        return Token(Token::Kind::OPERATOR, ".", line, column);
+        return Token(Token::Kind::OPERATOR, ".", {.line = line, .column = column});
     }
     if (Characters::alpha(c)) {
         return scanName(line, column);
     }
     if (punctuation(c)) {
         in_.get();
-        return Token(Token::Kind::PUNCTUATION, std::string(1, static_cast<char>(c)), line, column);
+        return Token(Token::Kind::PUNCTUATION, std::string(1, static_cast<char>(c)), {.line = line, .column = column});
     }
     if (c == '+' || c == '-' || c == '*' || c == '/' || c == '^' || c == '=' || c == '!' ||
         c == '<' || c == '>' || c == '&' || c == '|' || c == '?' || c == ':') {

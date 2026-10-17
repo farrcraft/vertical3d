@@ -10,6 +10,7 @@
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/RenderMan.h>
 
+#include <array>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -43,11 +44,10 @@ void frame(v3d::moya::RenderContext & rc) {
     rc.sampling().width = glm::vec2(1.0f, 1.0f);
 }
 
-void triangle(v3d::moya::RenderContext & rc, const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c,
-    const glm::vec3 & colour) {
+void triangle(v3d::moya::RenderContext & rc, const std::array<glm::vec3, 3> & corners, const glm::vec3 & colour) {
     rc.color(colour);
     boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    for (const glm::vec3 & corner : { a, b, c }) {
+    for (const glm::vec3 & corner : corners) {
         v3d::moya::Vertex vertex;
         vertex.point(corner);
         polygon->addVertex(vertex);
@@ -60,8 +60,7 @@ void triangle(v3d::moya::RenderContext & rc, const glm::vec3 & a, const glm::vec
  * pixel either side of each edge is half a pixel away from it.
  **/
 void rightTriangle(v3d::moya::RenderContext & rc, float edge = 0.5f) {
-    triangle(rc, glm::vec3(-1.5f, -0.5f, 1.0f), glm::vec3(edge, -0.5f, 1.0f), glm::vec3(edge, 1.5f, 1.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f));
+    triangle(rc, {glm::vec3(-1.5f, -0.5f, 1.0f), glm::vec3(edge, -0.5f, 1.0f), glm::vec3(edge, 1.5f, 1.0f)}, glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
 void checkPixel(const v3d::render::offline::FrameBuffer & planes,
@@ -181,8 +180,8 @@ BOOST_AUTO_TEST_CASE(rayhider_nearest_hit_test) {
     const glm::vec3 closer(1.0f, 0.0f, 0.0f);
     const glm::vec3 further(0.0f, 1.0f, 0.0f);
     // two triangles over the same pixel, the first one further from the camera
-    triangle(rc, glm::vec3(-1.0f, -1.0f, 5.0f), glm::vec3(1.0f, -1.0f, 5.0f), glm::vec3(0.0f, 1.0f, 5.0f), further);
-    triangle(rc, glm::vec3(-1.0f, -1.0f, 2.0f), glm::vec3(1.0f, -1.0f, 2.0f), glm::vec3(0.0f, 1.0f, 2.0f), closer);
+    triangle(rc, {glm::vec3(-1.0f, -1.0f, 5.0f), glm::vec3(1.0f, -1.0f, 5.0f), glm::vec3(0.0f, 1.0f, 5.0f)}, further);
+    triangle(rc, {glm::vec3(-1.0f, -1.0f, 2.0f), glm::vec3(1.0f, -1.0f, 2.0f), glm::vec3(0.0f, 1.0f, 2.0f)}, closer);
     rc.render();
 
     // the nearer one wins whichever order they were given in
@@ -202,8 +201,7 @@ BOOST_AUTO_TEST_CASE(rayhider_depth_matches_reyes_test) {
         rc.hider(hiders[i]);
         rc.prepareWorld();
         rc.surface("constant", v3d::render::offline::rib::ParameterList());
-        triangle(rc, glm::vec3(-1.0f, -1.0f, 5.0f), glm::vec3(1.0f, -1.0f, 5.0f), glm::vec3(0.0f, 1.0f, 5.0f),
-            glm::vec3(1.0f));
+        triangle(rc, {glm::vec3(-1.0f, -1.0f, 5.0f), glm::vec3(1.0f, -1.0f, 5.0f), glm::vec3(0.0f, 1.0f, 5.0f)}, glm::vec3(1.0f));
         rc.render();
         depth[i] = rc.framebuffer()->planes()->value(Planes::DEPTH, 8, 8);
     }
@@ -240,17 +238,17 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_sampling_test) {
     adaptive(rc);
     rc.render();
 
-    BOOST_CHECK_EQUAL(rc.samplesTaken(5, 8), 4u);
-    BOOST_CHECK_EQUAL(rc.samplesTaken(14, 8), 4u);
-    BOOST_CHECK_GT(rc.samplesTaken(12, 8), 4u);
-    BOOST_CHECK_LE(rc.samplesTaken(12, 8), 16u);
+    BOOST_CHECK_EQUAL(rc.samplesTaken({5, 8}), 4u);
+    BOOST_CHECK_EQUAL(rc.samplesTaken({14, 8}), 4u);
+    BOOST_CHECK_GT(rc.samplesTaken({12, 8}), 4u);
+    BOOST_CHECK_LE(rc.samplesTaken({12, 8}), 16u);
 
     // and a variance of zero, the default, takes the first set everywhere
     v3d::moya::RenderContext plain;
     adaptive(plain);
     plain.sampling().variance = 0.0f;
     plain.render();
-    BOOST_CHECK_EQUAL(plain.samplesTaken(12, 8), 4u);
+    BOOST_CHECK_EQUAL(plain.samplesTaken({12, 8}), 4u);
 }
 
 /**
@@ -484,7 +482,7 @@ BOOST_AUTO_TEST_CASE(rayhider_inverts_the_projection_test) {
     hider.camera(camera);
 
     for (const glm::vec2 & raster : { glm::vec2(3.5f, 2.5f), glm::vec2(30.0f, 14.0f), glm::vec2(16.0f, 8.0f) }) {
-        const v3d::type::geometry::Ray ray = hider.ray(raster, glm::vec2(0.0f), rc.sampling());
+        const v3d::type::geometry::Ray ray = hider.ray({.raster = raster, .lens = glm::vec2(0.0f)}, rc.sampling());
         BOOST_CHECK_CLOSE(ray.origin().z, 0.1f, 0.01f);
         const glm::vec3 projected = v3d::moya::project(camera.toRaster, ray.origin() + ray.direction() * 5.0f);
         BOOST_CHECK_CLOSE(projected.x, raster.x, 0.01f);

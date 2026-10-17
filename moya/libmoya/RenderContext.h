@@ -326,7 +326,7 @@ class RenderContext {
          * How many samples a pixel took in the last render under the ray hider, or
          * zero under the reyes hider, which takes what PixelSamples names.
          **/
-        unsigned int samplesTaken(unsigned int column, unsigned int row) const;
+        unsigned int samplesTaken(const glm::uvec2 & pixel) const;
 
  protected:
         void initialize();

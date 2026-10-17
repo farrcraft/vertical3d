@@ -8,8 +8,8 @@
 namespace v3d::render::offline::sl::syntax {
 
 ExpressionStatement::ExpressionStatement(const ExpressionPtr & expression,
-    unsigned int line, unsigned int column) :
-    Statement(Kind::EXPRESSION, line, column),
+    const v3d::render::offline::Position & at) :
+    Statement(Kind::EXPRESSION, at),
     expression(expression) {
 }
 

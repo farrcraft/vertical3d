@@ -191,7 +191,7 @@ syntax::ShaderPtr Parser::parseShader() {
     expect(Token::Kind::PUNCTUATION, ")");
 
     const Token brace = expect(Token::Kind::PUNCTUATION, "{");
-    shader->body = boost::make_shared<syntax::Block>(brace.line(), brace.column());
+    shader->body = boost::make_shared<syntax::Block>(brace.position());
     while (!at(Token::Kind::PUNCTUATION, "}")) {
         if (peek().kind() == Token::Kind::END) {
             throw fail("expected '}' but found end of source", peek());
@@ -326,7 +326,7 @@ Storage Parser::parseStorage() {
 
 syntax::BlockPtr Parser::parseBlock() {
     const Token brace = expect(Token::Kind::PUNCTUATION, "{");
-    syntax::BlockPtr block = boost::make_shared<syntax::Block>(brace.line(), brace.column());
+    syntax::BlockPtr block = boost::make_shared<syntax::Block>(brace.position());
     while (!at(Token::Kind::PUNCTUATION, "}")) {
         if (peek().kind() == Token::Kind::END) {
             throw fail("expected '}' but found end of source", peek());
@@ -344,7 +344,7 @@ syntax::StatementPtr Parser::parseStatement() {
     }
     if (accept(Token::Kind::PUNCTUATION, ";")) {
         // an empty statement is parsed as an empty block, which has the same effect
-        return boost::make_shared<syntax::Block>(token.line(), token.column());
+        return boost::make_shared<syntax::Block>(token.position());
     }
     if (token.kind() == Token::Kind::KEYWORD) {
         return parseKeywordStatement(token);
@@ -394,8 +394,8 @@ syntax::StatementPtr Parser::parseConditional() {
     if (accept(Token::Kind::KEYWORD, "else")) {
         whenFalse = parseStatement();
     }
-    return boost::make_shared<syntax::Conditional>(condition, whenTrue, whenFalse,
-        keyword.line(), keyword.column());
+    return boost::make_shared<syntax::Conditional>(condition,
+        syntax::Conditional::Branches{.whenTrue = whenTrue, .whenFalse = whenFalse}, keyword.position());
 }
 
 syntax::StatementPtr Parser::parseWhile() {
@@ -403,12 +403,12 @@ syntax::StatementPtr Parser::parseWhile() {
     expect(Token::Kind::PUNCTUATION, "(");
     syntax::ExpressionPtr condition = parseExpression();
     expect(Token::Kind::PUNCTUATION, ")");
-    return boost::make_shared<syntax::While>(condition, parseStatement(), keyword.line(), keyword.column());
+    return boost::make_shared<syntax::While>(condition, parseStatement(), keyword.position());
 }
 
 syntax::StatementPtr Parser::parseFor() {
     const Token keyword = expect(Token::Kind::KEYWORD, "for");
-    boost::shared_ptr<syntax::For> loop = boost::make_shared<syntax::For>(keyword.line(), keyword.column());
+    boost::shared_ptr<syntax::For> loop = boost::make_shared<syntax::For>(keyword.position());
     expect(Token::Kind::PUNCTUATION, "(");
     // any of the three heads may be empty, and an empty one is null on the node
     if (!at(Token::Kind::PUNCTUATION, ";")) {
@@ -439,7 +439,7 @@ syntax::StatementPtr Parser::parseJump() {
         value = parseExpression();
     }
     expect(Token::Kind::PUNCTUATION, ";");
-    return boost::make_shared<syntax::Jump>(where, value, keyword.line(), keyword.column());
+    return boost::make_shared<syntax::Jump>(where, value, keyword.position());
 }
 
 syntax::StatementPtr Parser::parseLocalDeclaration() {
@@ -460,7 +460,7 @@ syntax::StatementPtr Parser::parseLocalDeclaration() {
 
 syntax::StatementPtr Parser::parseDeclaration(Storage storage, Type type, const Token & first) {
     boost::shared_ptr<syntax::Declaration> declaration =
-        boost::make_shared<syntax::Declaration>(storage, type, first.line(), first.column());
+        boost::make_shared<syntax::Declaration>(storage, type, first.position());
     Token name = first;
     for (;;) {
         syntax::Declarator declarator;
@@ -482,17 +482,18 @@ syntax::StatementPtr Parser::parseSimpleStatement() {
     const Token opening = peek();
     syntax::ExpressionPtr expression = parseExpression();
     if (!assignment(peek())) {
-        return boost::make_shared<syntax::ExpressionStatement>(expression, opening.line(), opening.column());
+        return boost::make_shared<syntax::ExpressionStatement>(expression, opening.position());
     }
     const Token op = next();
     syntax::ExpressionPtr value = parseExpression();
-    return boost::make_shared<syntax::Assignment>(op.text(), expression, value, opening.line(), opening.column());
+    return boost::make_shared<syntax::Assignment>(op.text(), syntax::Assignment::Sides{.target = expression, .value = value},
+        opening.position());
 }
 
 syntax::StatementPtr Parser::parseLighting(syntax::Lighting::Construct construct) {
     const Token keyword = next();
     boost::shared_ptr<syntax::Lighting> lighting =
-        boost::make_shared<syntax::Lighting>(construct, keyword.line(), keyword.column());
+        boost::make_shared<syntax::Lighting>(construct, keyword.position());
     expect(Token::Kind::PUNCTUATION, "(");
     if (!at(Token::Kind::PUNCTUATION, ")")) {
         lighting->arguments.push_back(parseExpression());
@@ -519,7 +520,8 @@ syntax::ExpressionPtr Parser::parseTernary() {
     syntax::ExpressionPtr whenTrue = parseTernary();
     expect(Token::Kind::OPERATOR, ":");
     syntax::ExpressionPtr whenFalse = parseTernary();
-    return boost::make_shared<syntax::Ternary>(condition, whenTrue, whenFalse, question.line(), question.column());
+    return boost::make_shared<syntax::Ternary>(
+        syntax::Ternary::Branches{.condition = condition, .whenTrue = whenTrue, .whenFalse = whenFalse}, question.position());
 }
 
 syntax::ExpressionPtr Parser::parseLogicalOr() {
@@ -529,7 +531,7 @@ syntax::ExpressionPtr Parser::parseLogicalOr() {
         if (!accept(Token::Kind::OPERATOR, "||")) {
             return left;
         }
-        left = boost::make_shared<syntax::Binary>(op.text(), left, parseLogicalAnd(), op.line(), op.column());
+        left = boost::make_shared<syntax::Binary>(op.text(), syntax::Binary::Operands{.left = left, .right = parseLogicalAnd()}, op.position());
     }
 }
 
@@ -540,7 +542,7 @@ syntax::ExpressionPtr Parser::parseLogicalAnd() {
         if (!accept(Token::Kind::OPERATOR, "&&")) {
             return left;
         }
-        left = boost::make_shared<syntax::Binary>(op.text(), left, parseEquality(), op.line(), op.column());
+        left = boost::make_shared<syntax::Binary>(op.text(), syntax::Binary::Operands{.left = left, .right = parseEquality()}, op.position());
     }
 }
 
@@ -552,7 +554,7 @@ syntax::ExpressionPtr Parser::parseEquality() {
             return left;
         }
         next();
-        left = boost::make_shared<syntax::Binary>(op.text(), left, parseComparison(), op.line(), op.column());
+        left = boost::make_shared<syntax::Binary>(op.text(), syntax::Binary::Operands{.left = left, .right = parseComparison()}, op.position());
     }
 }
 
@@ -566,7 +568,7 @@ syntax::ExpressionPtr Parser::parseComparison() {
             return left;
         }
         next();
-        left = boost::make_shared<syntax::Binary>(op.text(), left, parseAdditive(), op.line(), op.column());
+        left = boost::make_shared<syntax::Binary>(op.text(), syntax::Binary::Operands{.left = left, .right = parseAdditive()}, op.position());
     }
 }
 
@@ -579,7 +581,7 @@ syntax::ExpressionPtr Parser::parseAdditive() {
             return left;
         }
         next();
-        left = boost::make_shared<syntax::Binary>(op.text(), left, parseMultiplicative(), op.line(), op.column());
+        left = boost::make_shared<syntax::Binary>(op.text(), syntax::Binary::Operands{.left = left, .right = parseMultiplicative()}, op.position());
     }
 }
 
@@ -592,7 +594,7 @@ syntax::ExpressionPtr Parser::parseMultiplicative() {
             return left;
         }
         next();
-        left = boost::make_shared<syntax::Binary>(op.text(), left, parseProduct(), op.line(), op.column());
+        left = boost::make_shared<syntax::Binary>(op.text(), syntax::Binary::Operands{.left = left, .right = parseProduct()}, op.position());
     }
 }
 
@@ -605,7 +607,7 @@ syntax::ExpressionPtr Parser::parseProduct() {
             return left;
         }
         next();
-        left = boost::make_shared<syntax::Binary>(op.text(), left, parseUnary(), op.line(), op.column());
+        left = boost::make_shared<syntax::Binary>(op.text(), syntax::Binary::Operands{.left = left, .right = parseUnary()}, op.position());
     }
 }
 
@@ -613,7 +615,7 @@ syntax::ExpressionPtr Parser::parseUnary() {
     const Token token = peek();
     if (token.kind() == Token::Kind::OPERATOR && (token.text() == "-" || token.text() == "!")) {
         next();
-        return boost::make_shared<syntax::Unary>(token.text(), parseUnary(), token.line(), token.column());
+        return boost::make_shared<syntax::Unary>(token.text(), parseUnary(), token.position());
     }
     Type type = Type::FLOAT;
     if (parseType(&type)) {
@@ -623,7 +625,7 @@ syntax::ExpressionPtr Parser::parseUnary() {
         if (peek().kind() == Token::Kind::STRING) {
             space = next().text();
         }
-        return boost::make_shared<syntax::Cast>(type, space, parseUnary(), token.line(), token.column());
+        return boost::make_shared<syntax::Cast>(type, space, parseUnary(), token.position());
     }
     return parsePostfix();
 }
@@ -637,7 +639,7 @@ syntax::ExpressionPtr Parser::parsePostfix() {
         }
         syntax::ExpressionPtr index = parseExpression();
         expect(Token::Kind::PUNCTUATION, "]");
-        expression = boost::make_shared<syntax::Index>(expression, index, bracket.line(), bracket.column());
+        expression = boost::make_shared<syntax::Index>(syntax::Index::Parts{.array = expression, .index = index}, bracket.position());
     }
 }
 
@@ -645,19 +647,19 @@ syntax::ExpressionPtr Parser::parsePrimary() {
     const Token token = peek();
     if (token.kind() == Token::Kind::NUMBER) {
         next();
-        return boost::make_shared<syntax::Number>(token.value(), token.line(), token.column());
+        return boost::make_shared<syntax::Number>(token.value(), token.position());
     }
     if (token.kind() == Token::Kind::STRING) {
         next();
-        return boost::make_shared<syntax::String>(token.text(), token.line(), token.column());
+        return boost::make_shared<syntax::String>(token.text(), token.position());
     }
     if (token.kind() == Token::Kind::IDENTIFIER) {
         next();
         if (!at(Token::Kind::PUNCTUATION, "(")) {
-            return boost::make_shared<syntax::Variable>(token.text(), token.line(), token.column());
+            return boost::make_shared<syntax::Variable>(token.text(), token.position());
         }
         boost::shared_ptr<syntax::Call> call =
-            boost::make_shared<syntax::Call>(token.text(), token.line(), token.column());
+            boost::make_shared<syntax::Call>(token.text(), token.position());
         expect(Token::Kind::PUNCTUATION, "(");
         if (!at(Token::Kind::PUNCTUATION, ")")) {
             call->arguments.push_back(parseExpression());
@@ -681,7 +683,7 @@ syntax::ExpressionPtr Parser::parseParenthesised() {
         expect(Token::Kind::PUNCTUATION, ")");
         return first;
     }
-    boost::shared_ptr<syntax::Tuple> tuple = boost::make_shared<syntax::Tuple>(opening.line(), opening.column());
+    boost::shared_ptr<syntax::Tuple> tuple = boost::make_shared<syntax::Tuple>(opening.position());
     tuple->elements.push_back(first);
     while (accept(Token::Kind::PUNCTUATION, ",")) {
         tuple->elements.push_back(parseExpression());

@@ -24,11 +24,17 @@ float weight(Filter kind, float x, float y, float width) {
     return v3d::render::offline::filter(kind, glm::vec2(x, y), glm::vec2(width));
 }
 
-v3d::render::offline::Sampling box(unsigned int samples, float width) {
+/** How many samples a box filter takes along each axis, and how wide it is. **/
+struct Box {
+    unsigned int samples = 1;
+    float width = 1.0f;
+};
+
+v3d::render::offline::Sampling box(const Box & filter) {
     v3d::render::offline::Sampling sampling;
-    sampling.samples = glm::uvec2(samples);
+    sampling.samples = glm::uvec2(filter.samples);
     sampling.filter = Filter::Box;
-    sampling.width = glm::vec2(width);
+    sampling.width = glm::vec2(filter.width);
     return sampling;
 }
 
@@ -108,7 +114,7 @@ BOOST_AUTO_TEST_CASE(film_uniform_test) {
  * coverage plane holds. A black miss weighs in, so the colour is premultiplied.
  **/
 BOOST_AUTO_TEST_CASE(film_half_coverage_test) {
-    const v3d::render::offline::Sampling sampling = box(2, 1.0f);
+    const v3d::render::offline::Sampling sampling = box({.samples = 2, .width = 1.0f});
     v3d::render::offline::Sampler sampler(sampling);
     v3d::render::offline::Film film(1, 1, sampling);
 
@@ -131,7 +137,7 @@ BOOST_AUTO_TEST_CASE(film_half_coverage_test) {
  * sample is at the pixel's centre.
  **/
 BOOST_AUTO_TEST_CASE(film_one_sample_is_exact_test) {
-    const v3d::render::offline::Sampling sampling = box(1, 1.0f);
+    const v3d::render::offline::Sampling sampling = box({.samples = 1, .width = 1.0f});
     v3d::render::offline::Sampler sampler(sampling);
     v3d::render::offline::Film film(3, 2, sampling);
 
@@ -155,7 +161,7 @@ BOOST_AUTO_TEST_CASE(film_one_sample_is_exact_test) {
     }
 
     v3d::render::offline::FrameBuffer frame(3, 2, 5);
-    frame.clear(3, 99.0f);
+    frame.clear({.plane = 3, .value = 99.0f});
     film.resolve(&frame, 0, 4, 3);
 
     BOOST_CHECK_EQUAL(frame.value(0, 2, 1), 0.1f * 2.0f);
@@ -174,7 +180,7 @@ BOOST_AUTO_TEST_CASE(film_one_sample_is_exact_test) {
  * reaches no pixel: it adds no colour, no coverage and no depth.
  **/
 BOOST_AUTO_TEST_CASE(film_sample_off_the_film_reaches_no_pixel_test) {
-    const v3d::render::offline::Sampling sampling = box(1, 2.0f);
+    const v3d::render::offline::Sampling sampling = box({.samples = 1, .width = 2.0f});
     v3d::render::offline::Film film(3, 2, sampling);
     const float nan = std::numeric_limits<float>::quiet_NaN();
     const float infinity = std::numeric_limits<float>::infinity();
@@ -205,7 +211,7 @@ BOOST_AUTO_TEST_CASE(film_sample_off_the_film_reaches_no_pixel_test) {
  * its depth in the pixel it lies in.
  **/
 BOOST_AUTO_TEST_CASE(film_nan_filter_width_reaches_no_pixel_test) {
-    const v3d::render::offline::Sampling sampling = box(1, std::numeric_limits<float>::quiet_NaN());
+    const v3d::render::offline::Sampling sampling = box({.samples = 1, .width = std::numeric_limits<float>::quiet_NaN()});
     v3d::render::offline::Film film(3, 2, sampling);
     v3d::render::offline::Film::Sample sample;
     sample.raster = glm::vec2(1.5f, 0.5f);

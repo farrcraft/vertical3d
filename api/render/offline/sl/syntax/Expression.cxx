@@ -7,10 +7,10 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Expression::Expression(Kind kind, unsigned int line, unsigned int column) :
+Expression::Expression(Kind kind, const v3d::render::offline::Position & at) :
     kind(kind),
-    line(line),
-    column(column) {
+    line(at.line),
+    column(at.column) {
 }
 
 Expression::~Expression() {

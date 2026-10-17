@@ -39,10 +39,16 @@ class FrameBuffer final {
     float value(unsigned int plane, unsigned int column, unsigned int row) const;
     void value(unsigned int plane, unsigned int column, unsigned int row, float v);
 
+    /** A plane, and the value every pixel of it is set to. **/
+    struct Fill {
+        unsigned int plane = 0;
+        float value = 0.0f;
+    };
+
     /**
      * Fill a whole plane with one value.
      **/
-    void clear(unsigned int plane, float v);
+    void clear(const Fill & fill);
 
     /**
      * The leading planes as an image, row 0 at the top.

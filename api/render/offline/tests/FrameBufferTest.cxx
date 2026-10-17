@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(framebuffer_plane_test) {
     BOOST_CHECK_EQUAL(buffer.value(2, 2, 2), 0.0f);
     BOOST_CHECK_EQUAL(buffer.value(2, 3, 1), 0.0f);
 
-    buffer.clear(3, 1.0f);
+    buffer.clear({.plane = 3, .value = 1.0f});
     BOOST_CHECK_EQUAL(buffer.value(3, 0, 0), 1.0f);
     BOOST_CHECK_EQUAL(buffer.value(3, 3, 2), 1.0f);
     BOOST_CHECK_EQUAL(buffer.value(2, 0, 0), 0.0f);

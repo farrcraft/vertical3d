@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/render/offline/Position.h>
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::offline::sl::syntax {
@@ -28,7 +30,7 @@ class Statement {
         LIGHTING
     };
 
-    Statement(Kind kind, unsigned int line, unsigned int column);
+    Statement(Kind kind, const v3d::render::offline::Position & at);
     virtual ~Statement();
 
     Kind kind;

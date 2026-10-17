@@ -140,7 +140,7 @@ void Instance::bind(const rib::ParameterList & parameters) {
         }
         held->bound = true;
         if (held->type == Type::STRING) {
-            held->text = parameters.string(given, std::string());
+            held->text = parameters.string(given);
             continue;
         }
         const std::vector<float> & values = parameters.floats(given);

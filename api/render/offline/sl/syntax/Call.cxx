@@ -9,8 +9,8 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Call::Call(const std::string & name, unsigned int line, unsigned int column) :
-    Expression(Kind::CALL, line, column),
+Call::Call(const std::string & name, const v3d::render::offline::Position & at) :
+    Expression(Kind::CALL, at),
     name(name) {
 }
 

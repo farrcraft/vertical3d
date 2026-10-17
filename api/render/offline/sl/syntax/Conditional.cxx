@@ -7,12 +7,11 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Conditional::Conditional(const ExpressionPtr & condition, const StatementPtr & whenTrue,
-    const StatementPtr & whenFalse, unsigned int line, unsigned int column) :
-    Statement(Kind::CONDITIONAL, line, column),
+Conditional::Conditional(const ExpressionPtr & condition, const Branches & branches, const v3d::render::offline::Position & at) :
+    Statement(Kind::CONDITIONAL, at),
     condition(condition),
-    whenTrue(whenTrue),
-    whenFalse(whenFalse) {
+    whenTrue(branches.whenTrue),
+    whenFalse(branches.whenFalse) {
 }
 
 };  // namespace v3d::render::offline::sl::syntax

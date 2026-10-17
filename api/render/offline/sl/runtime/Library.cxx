@@ -44,11 +44,21 @@ float sign(float value) {
     return value > 0.0f ? 1.0f : 0.0f;
 }
 
-float clamp(float value, float low, float high) {
-    if (value < low) {
-        return low;
+/** The bounds a value is clamped to. **/
+struct Range {
+    float low = 0.0f;
+    float high = 1.0f;
+};
+
+/**
+ * A value held to a range. Unlike std::clamp, a range whose low end is above its high end is
+ * not an error: a shader may pass one, and the low end wins.
+ **/
+float clamp(float value, const Range & range) {
+    if (value < range.low) {
+        return range.low;
     }
-    return value > high ? high : value;
+    return value > range.high ? range.high : value;
 }
 
 /**
@@ -59,7 +69,7 @@ float smoothstep(float low, float high, float value) {
     if (high == low) {
         return value < low ? 0.0f : 1.0f;
     }
-    const float t = clamp((value - low) / (high - low), 0.0f, 1.0f);
+    const float t = clamp((value - low) / (high - low), {.low = 0.0f, .high = 1.0f});
     return t * t * (3.0f - (2.0f * t));
 }
 
@@ -98,9 +108,9 @@ float once(Body body, float x) {
         case Body::TAN:
             return std::tan(x);
         case Body::ASIN:
-            return std::asin(clamp(x, -1.0f, 1.0f));
+            return std::asin(clamp(x, {.low = -1.0f, .high = 1.0f}));
         case Body::ACOS:
-            return std::acos(clamp(x, -1.0f, 1.0f));
+            return std::acos(clamp(x, {.low = -1.0f, .high = 1.0f}));
         default:
             return std::atan(x);
     }
@@ -127,7 +137,7 @@ float number(Body body, const float* given, std::size_t count) {
         case Body::MAX:
             return given[0] > given[1] ? given[0] : given[1];
         case Body::CLAMP:
-            return clamp(given[0], given[1], given[2]);
+            return clamp(given[0], {.low = given[1], .high = given[2]});
         case Body::MIX:
             return given[0] + ((given[1] - given[0]) * given[2]);
         case Body::STEP:
@@ -562,7 +572,10 @@ void Machine::builtin(const Instruction & instruction) {
     } else if (body == Body::DEPTH) {
         site.matrix = space("NDC");
     } else if (body == Body::TEXTURE) {
-        site.texture = texture(given, &site.s, &site.t);
+        Coordinates coordinates;
+        site.texture = texture(given, &coordinates);
+        site.s = coordinates.s;
+        site.t = coordinates.t;
     } else if (body == Body::CTRANSFORM) {
         colourSpaces(given);
     }
@@ -592,13 +605,13 @@ std::vector<Value*> Machine::written(const Instruction & instruction, int first)
     return outputs;
 }
 
-const Texture* Machine::texture(const std::vector<const Value*> & given, const Value** s, const Value** t) {
+const Texture* Machine::texture(const std::vector<const Value*> & given, Coordinates* coordinates) {
     if (given.size() == 3) {
-        *s = given[1];
-        *t = given[2];
+        coordinates->s = given[1];
+        coordinates->t = given[2];
     } else {
-        *s = s_ < 0 ? nullptr : &file_[static_cast<std::size_t>(s_)];
-        *t = t_ < 0 ? nullptr : &file_[static_cast<std::size_t>(t_)];
+        coordinates->s = s_ < 0 ? nullptr : &file_[static_cast<std::size_t>(s_)];
+        coordinates->t = t_ < 0 ? nullptr : &file_[static_cast<std::size_t>(t_)];
     }
     // a name is uniform, so the image is found once for the batch
     const std::string & name = given[0]->text();

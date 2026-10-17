@@ -59,7 +59,7 @@ Token Lexer::fail(const std::string & message, unsigned int line, unsigned int c
     if (error_.empty()) {
         error_ = message + Characters::position(line, column);
     }
-    return Token(Token::Kind::END, line, column);
+    return Token(Token::Kind::END, {.line = line, .column = column});
 }
 
 Token Lexer::scanString(unsigned int line, unsigned int column) {
@@ -68,7 +68,7 @@ Token Lexer::scanString(unsigned int line, unsigned int column) {
     if (!in_.quoted(false, &text)) {
         return fail("unterminated string starting", line, column);
     }
-    return Token(Token::Kind::STRING, text, line, column);
+    return Token(Token::Kind::STRING, text, {.line = line, .column = column});
 }
 
 Token Lexer::scanNumber(unsigned int line, unsigned int column) {
@@ -100,7 +100,7 @@ Token Lexer::scanNumber(unsigned int line, unsigned int column) {
     if (!digits) {
         return fail("'" + text + "' is not a number", line, column);
     }
-    return Token(std::strtof(text.c_str(), nullptr), line, column);
+    return Token(std::strtof(text.c_str(), nullptr), {.line = line, .column = column});
 }
 
 Token Lexer::scanIdentifier(unsigned int line, unsigned int column) {
@@ -108,12 +108,12 @@ Token Lexer::scanIdentifier(unsigned int line, unsigned int column) {
     while (Characters::alpha(in_.look()) || Characters::digit(in_.look())) {
         text += static_cast<char>(in_.get());
     }
-    return Token(Token::Kind::IDENTIFIER, text, line, column);
+    return Token(Token::Kind::IDENTIFIER, text, {.line = line, .column = column});
 }
 
 Token Lexer::scan() {
     if (!error_.empty()) {
-        return Token(Token::Kind::END, in_.line(), in_.column());
+        return Token(Token::Kind::END, {.line = in_.line(), .column = in_.column()});
     }
     skipSpace();
 
@@ -121,15 +121,15 @@ Token Lexer::scan() {
     const unsigned int column = in_.column() + 1;
     const int c = in_.look();
     if (c == Characters::END) {
-        return Token(Token::Kind::END, line, column);
+        return Token(Token::Kind::END, {.line = line, .column = column});
     }
     if (c == '[') {
         in_.get();
-        return Token(Token::Kind::ARRAY_BEGIN, line, column);
+        return Token(Token::Kind::ARRAY_BEGIN, {.line = line, .column = column});
     }
     if (c == ']') {
         in_.get();
-        return Token(Token::Kind::ARRAY_END, line, column);
+        return Token(Token::Kind::ARRAY_END, {.line = line, .column = column});
     }
     if (c == '"') {
         return scanString(line, column);

@@ -51,14 +51,14 @@ float lerp(float t, float a, float b) {
  * the low four bits of the hash. Four of the directions repeat, so the choice is a mask
  * rather than a division.
  **/
-float gradient(int hash, float x, float y, float z) {
+float gradient(int hash, const glm::vec3 & offset) {
     const int h = hash & 15;
-    const float u = h < 8 ? x : y;
-    float v = z;
+    const float u = h < 8 ? offset.x : offset.y;
+    float v = offset.z;
     if (h < 4) {
-        v = y;
+        v = offset.y;
     } else if (h == 12 || h == 14) {
-        v = x;
+        v = offset.x;
     }
     return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
 }
@@ -96,11 +96,11 @@ float noise(const glm::vec3 & point) {
     const int bb = at(b + 1) + cz;
 
     const float value = lerp(w,
-        lerp(v, lerp(u, gradient(at(aa), x, y, z), gradient(at(ba), x - 1.0f, y, z)),
-            lerp(u, gradient(at(ab), x, y - 1.0f, z), gradient(at(bb), x - 1.0f, y - 1.0f, z))),
-        lerp(v, lerp(u, gradient(at(aa + 1), x, y, z - 1.0f), gradient(at(ba + 1), x - 1.0f, y, z - 1.0f)),
-            lerp(u, gradient(at(ab + 1), x, y - 1.0f, z - 1.0f),
-                gradient(at(bb + 1), x - 1.0f, y - 1.0f, z - 1.0f))));
+        lerp(v, lerp(u, gradient(at(aa), {x, y, z}), gradient(at(ba), {x - 1.0f, y, z})),
+            lerp(u, gradient(at(ab), {x, y - 1.0f, z}), gradient(at(bb), {x - 1.0f, y - 1.0f, z}))),
+        lerp(v, lerp(u, gradient(at(aa + 1), {x, y, z - 1.0f}), gradient(at(ba + 1), {x - 1.0f, y, z - 1.0f})),
+            lerp(u, gradient(at(ab + 1), {x, y - 1.0f, z - 1.0f}),
+                gradient(at(bb + 1), {x - 1.0f, y - 1.0f, z - 1.0f}))));
     // the improved noise's range is about [-1, 1]; its extremes reach a little past it, and
     // SL's noise never leaves [0, 1]
     return std::clamp(0.5f + (0.5f * value), 0.0f, 1.0f);

@@ -14,11 +14,11 @@
 
 namespace v3d::moya {
 
-FrameBuffer::FrameBuffer(unsigned int bucketSize[2], unsigned int imageSize[2]) {
-    bucketSize_[0] = bucketSize[0];
-    bucketSize_[1] = bucketSize[1];
-    imageSize_[0] = imageSize[0];
-    imageSize_[1] = imageSize[1];
+FrameBuffer::FrameBuffer(const Sizes & sizes) {
+    bucketSize_[0] = sizes.bucket.x;
+    bucketSize_[1] = sizes.bucket.y;
+    imageSize_[0] = sizes.image.x;
+    imageSize_[1] = sizes.image.y;
 
     allocate();
 }
@@ -46,7 +46,7 @@ void FrameBuffer::allocate() {
     planes_.reset(new v3d::render::offline::FrameBuffer(imageSize_[0], imageSize_[1], COVERAGE + 1));
     // the film writes a depth only into a pixel some sample hit, so a pixel nothing hit
     // keeps this one and reads as further away than anything drawn
-    planes_->clear(DEPTH, std::numeric_limits<float>::max());
+    planes_->clear({.plane = DEPTH, .value = std::numeric_limits<float>::max()});
 }
 
 boost::shared_ptr<v3d::render::offline::FrameBuffer> FrameBuffer::planes() const {

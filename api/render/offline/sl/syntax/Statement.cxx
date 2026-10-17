@@ -7,10 +7,10 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Statement::Statement(Kind kind, unsigned int line, unsigned int column) :
+Statement::Statement(Kind kind, const v3d::render::offline::Position & at) :
     kind(kind),
-    line(line),
-    column(column) {
+    line(at.line),
+    column(at.column) {
 }
 
 Statement::~Statement() {

@@ -71,12 +71,19 @@ int constant(Program* program, float value) {
     return static_cast<int>(program->registers.size()) - 1;
 }
 
-int put(Program* program, Opcode opcode, int target, int left, int right = -1) {
+/** The registers an instruction writes and reads. -1 is none. **/
+struct Operands {
+    int target = -1;
+    int left = -1;
+    int right = -1;
+};
+
+int put(Program* program, Opcode opcode, const Operands & operands) {
     Instruction instruction;
     instruction.opcode = opcode;
-    instruction.target = target;
-    instruction.left = left;
-    instruction.right = right;
+    instruction.target = operands.target;
+    instruction.left = operands.left;
+    instruction.right = operands.right;
     program->instructions.push_back(instruction);
     return static_cast<int>(program->instructions.size()) - 1;
 }
@@ -109,8 +116,8 @@ BOOST_AUTO_TEST_CASE(slmachine_batch_of_one_test) {
     const int offset = constant(&program, 1.0f);
     const int scaled = add(&program, Type::FLOAT, Storage::VARYING);
     const int result = add(&program, Type::FLOAT, Storage::VARYING, "result");
-    put(&program, Opcode::MULTIPLY, scaled, x, scale);
-    put(&program, Opcode::ADD, result, scaled, offset);
+    put(&program, Opcode::MULTIPLY, {.target = scaled, .left = x, .right = scale});
+    put(&program, Opcode::ADD, {.target = result, .left = scaled, .right = offset});
     program.symbols = program.registers.size();
 
     v3d::render::offline::sl::runtime::Machine wide;
@@ -140,7 +147,7 @@ BOOST_AUTO_TEST_CASE(slmachine_uniform_is_one_element_test) {
     Program program;
     const int once = add(&program, Type::FLOAT, Storage::UNIFORM, "once");
     const int each = add(&program, Type::FLOAT, Storage::VARYING, "each");
-    put(&program, Opcode::MOVE, each, once);
+    put(&program, Opcode::MOVE, {.target = each, .left = once});
     program.symbols = program.registers.size();
 
     v3d::render::offline::sl::runtime::Machine machine;
@@ -163,7 +170,7 @@ BOOST_AUTO_TEST_CASE(slmachine_promotion_test) {
     const int colour = add(&program, Type::COLOR, Storage::VARYING, "colour");
     const int half = constant(&program, 0.5f);
     const int dimmed = add(&program, Type::COLOR, Storage::VARYING, "dimmed");
-    put(&program, Opcode::MULTIPLY, dimmed, colour, half);
+    put(&program, Opcode::MULTIPLY, {.target = dimmed, .left = colour, .right = half});
     program.symbols = program.registers.size();
 
     v3d::render::offline::sl::runtime::Machine machine;

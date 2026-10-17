@@ -103,8 +103,8 @@ const v3d::render::offline::Sampling & RenderContext::sampling() const {
     return sampling_;
 }
 
-unsigned int RenderContext::samplesTaken(unsigned int column, unsigned int row) const {
-    return hider_->samplesTaken(column, row);
+unsigned int RenderContext::samplesTaken(const glm::uvec2 & pixel) const {
+    return hider_->samplesTaken(pixel);
 }
 
 void RenderContext::prepareWorld() {
@@ -141,14 +141,7 @@ void RenderContext::prepareWorld() {
 
     coordinateSystems_["raster"] = raster;
 
-    unsigned int screen[2];
-    screen[0] = xres_;
-    screen[1] = yres_;
-    unsigned int bucket[2];
-    bucket[0] = bucketWidth_;
-    bucket[1] = bucketHeight_;
-
-    frameBuffer_.reset(new FrameBuffer(bucket, screen));
+    frameBuffer_.reset(new FrameBuffer({.bucket = glm::uvec2(bucketWidth_, bucketHeight_), .image = glm::uvec2(xres_, yres_)}));
 }
 
 unsigned int RenderContext::imageWidth() const {
@@ -471,6 +464,12 @@ void RenderContext::scale(float sx, float sy, float sz) {
 
 namespace {
 
+/** An axis aligned box, by its least and greatest corners. **/
+struct Bound {
+    glm::vec3 min{0.0f};
+    glm::vec3 max{0.0f};
+};
+
 /**
  * One of the eight corners of a box. Bit 0 of the index picks x, bit 1 picks y and bit 2
  * picks z, each from max when set and from min when clear.
@@ -487,32 +486,28 @@ glm::vec3 boxCorner(const glm::vec3 & min, const glm::vec3 & max, int index) {
  * All eight corners go through the matrix. Under a rotation any corner can hold the extreme
  * on an axis, so the two diagonal corners alone can leave part of the box outside.
  **/
-void transformBound(const glm::mat4x4 & m, const glm::vec3 & objectMin, const glm::vec3 & objectMax,
-    glm::vec3* min, glm::vec3* max) {
-    *min = glm::vec3(std::numeric_limits<float>::max());
-    *max = glm::vec3(std::numeric_limits<float>::lowest());
+Bound transformBound(const glm::mat4x4 & m, const Bound & object) {
+    Bound bound{.min = glm::vec3(std::numeric_limits<float>::max()), .max = glm::vec3(std::numeric_limits<float>::lowest())};
     for (int k = 0; k < 8; k++) {
-        const glm::vec3 corner(m * glm::vec4(boxCorner(objectMin, objectMax, k), 1.0f));
-        *min = glm::min(*min, corner);
-        *max = glm::max(*max, corner);
+        const glm::vec3 corner(m * glm::vec4(boxCorner(object.min, object.max, k), 1.0f));
+        bound.min = glm::min(bound.min, corner);
+        bound.max = glm::max(bound.max, corner);
     }
+    return bound;
 }
 
 /**
  * Grow an eye space bound to cover where a moving primitive is at both ends of the shutter,
  * from its object space bound. A still primitive's bound is left as it is.
  **/
-void sweep(const v3d::render::offline::MovingTransform & motion, const glm::vec3 & objectMin,
-    const glm::vec3 & objectMax, glm::vec3* min, glm::vec3* max) {
+void sweep(const v3d::render::offline::MovingTransform & motion, const Bound & object, Bound* swept) {
     if (!motion.moving()) {
         return;
     }
     for (const glm::mat4x4* end : { &motion.open(), &motion.close() }) {
-        glm::vec3 endMin;
-        glm::vec3 endMax;
-        transformBound(*end, objectMin, objectMax, &endMin, &endMax);
-        *min = glm::min(*min, endMin);
-        *max = glm::max(*max, endMax);
+        const Bound at = transformBound(*end, object);
+        swept->min = glm::min(swept->min, at.min);
+        swept->max = glm::max(swept->max, at.max);
     }
 }
 
@@ -752,16 +747,18 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         transformation. It applies as it stands, with no transpose or inverse.
     */
     const glm::mat4x4 toEye = poly->placement();
-    const glm::vec3 objectMin = bound_min;
-    const glm::vec3 objectMax = bound_max;
-    transformBound(toEye, objectMin, objectMax, &bound_min, &bound_max);
+    const Bound object{.min = bound_min, .max = bound_max};
+    const Bound eye = transformBound(toEye, object);
+    bound_min = eye.min;
+    bound_max = eye.max;
 
     // a moving primitive is culled by where it is at both ends of the shutter, as well as by
     // where it is stored. The size test below reads where it is stored, because a split
     // shrinks a primitive and never the distance it travels
-    glm::vec3 swept_min = bound_min;
-    glm::vec3 swept_max = bound_max;
-    sweep(poly->motion(), objectMin, objectMax, &swept_min, &swept_max);
+    Bound swept = eye;
+    sweep(poly->motion(), object, &swept);
+    const glm::vec3 & swept_min = swept.min;
+    const glm::vec3 & swept_max = swept.max;
 
     // hither-yon cull
     if ((swept_max[2] > far_ && swept_min[2] > far_)  // the bound is wholly beyond the far plane
@@ -866,7 +863,7 @@ const std::string & RenderContext::displayName() const {
 }
 
 void RenderContext::bucket(v3d::render::offline::FrameBuffer* planes) {
-    samples_ = boost::make_shared<reyes::Samples>(planes->width(), planes->height(), sampling_);
+    samples_ = boost::make_shared<reyes::Samples>(glm::uvec2(planes->width(), planes->height()), sampling_);
     frameBuffer_->render(*this);
     samples_->resolve(planes, FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
 }

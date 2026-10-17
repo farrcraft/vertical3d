@@ -9,8 +9,8 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Unary::Unary(const std::string & op, const ExpressionPtr & operand, unsigned int line, unsigned int column) :
-    Expression(Kind::UNARY, line, column),
+Unary::Unary(const std::string & op, const ExpressionPtr & operand, const v3d::render::offline::Position & at) :
+    Expression(Kind::UNARY, at),
     op(op),
     operand(operand) {
 }

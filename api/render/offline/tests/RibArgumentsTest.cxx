@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(ribarguments_strings_test) {
 
     ParameterList list;
     arguments(declarations, 1, tokens, values, 1, &list);
-    BOOST_CHECK_EQUAL(list.string("name", ""), "myball");
+    BOOST_CHECK_EQUAL(list.string("name"), "myball");
 }
 
 /**

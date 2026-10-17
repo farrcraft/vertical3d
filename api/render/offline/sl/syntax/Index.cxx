@@ -7,11 +7,10 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Index::Index(const ExpressionPtr & array, const ExpressionPtr & index,
-    unsigned int line, unsigned int column) :
-    Expression(Kind::INDEX, line, column),
-    array(array),
-    index(index) {
+Index::Index(const Parts & parts, const v3d::render::offline::Position & at) :
+    Expression(Kind::INDEX, at),
+    array(parts.array),
+    index(parts.index) {
 }
 
 };  // namespace v3d::render::offline::sl::syntax

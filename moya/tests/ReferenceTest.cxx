@@ -243,11 +243,17 @@ void focusScene(v3d::moya::RenderContext & rc, bool lens) {
 /**
  * How many pixels along a row are partly covered. That count is the width of an edge.
  **/
-unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage,
-    unsigned int row, unsigned int from, unsigned int to) {
+/** A row, and the columns along it from the first to the last, inclusive. **/
+struct Run {
+    unsigned int row = 0;
+    unsigned int from = 0;
+    unsigned int to = 0;
+};
+
+unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, const Run & run) {
     unsigned int count = 0;
-    for (unsigned int column = from; column <= to; column++) {
-        const float value = planes.value(coverage, column, row);
+    for (unsigned int column = run.from; column <= run.to; column++) {
+        const float value = planes.value(coverage, column, run.row);
         if (value > 0.02f && value < 0.98f) {
             count++;
         }
@@ -258,12 +264,18 @@ unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned 
 /**
  * The largest difference between two frames over every plane of a block of columns.
  **/
+/** The first and last columns of a block, inclusive. **/
+struct Columns {
+    unsigned int from = 0;
+    unsigned int to = 0;
+};
+
 float largest(const v3d::render::offline::FrameBuffer & a, const v3d::render::offline::FrameBuffer & b,
-    unsigned int from, unsigned int to) {
+    const Columns & columns) {
     float worst = 0.0f;
     for (unsigned int plane = 0; plane < a.planes(); plane++) {
         for (unsigned int row = 0; row < a.height(); row++) {
-            for (unsigned int column = from; column <= to; column++) {
+            for (unsigned int column = columns.from; column <= columns.to; column++) {
                 worst = std::max(worst, std::fabs(a.value(plane, column, row) - b.value(plane, column, row)));
             }
         }
@@ -373,14 +385,20 @@ void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* re
 /**
  * A frame read from a file, under the hider the file names unless the caller names one first.
  **/
-boost::shared_ptr<v3d::render::offline::FrameBuffer> read(const char* scene, const char* hider = nullptr) {
+/** A scene file, and the hider to render it under, or null for the one the file names. **/
+struct Scene {
+    const char* file = nullptr;
+    const char* hider = nullptr;
+};
+
+boost::shared_ptr<v3d::render::offline::FrameBuffer> read(const Scene & scene) {
     v3d::moya::Renderer renderer;
     v3d::moya::RIBHandler handler(&renderer);
-    if (hider != nullptr) {
-        handler.context().hider(hider);
+    if (scene.hider != nullptr) {
+        handler.context().hider(scene.hider);
     }
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
-    BOOST_REQUIRE(reader.read(scene, &handler));
+    BOOST_REQUIRE(reader.read(scene.file, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
     return handler.context().framebuffer()->planes();
 }
@@ -826,7 +844,7 @@ BOOST_AUTO_TEST_CASE(moya_in_focus_is_sharp_test) {
             focusScene(lens, true);
             lens.render();
 
-            BOOST_CHECK_SMALL(largest(*pinhole.framebuffer()->planes(), *lens.framebuffer()->planes(), 0, 30),
+            BOOST_CHECK_SMALL(largest(*pinhole.framebuffer()->planes(), *lens.framebuffer()->planes(), {.from = 0, .to = 30}),
                 1.0f / 255.0f);
         }
     }
@@ -856,8 +874,8 @@ BOOST_AUTO_TEST_CASE(moya_out_of_focus_spreads_test) {
             lens.render();
 
             const unsigned int coverage = v3d::moya::FrameBuffer::COVERAGE;
-            const unsigned int sharp = partial(*pinhole.framebuffer()->planes(), coverage, 24, 30, 45);
-            const unsigned int blurred = partial(*lens.framebuffer()->planes(), coverage, 24, 30, 45);
+            const unsigned int sharp = partial(*pinhole.framebuffer()->planes(), coverage, {.row = 24, .from = 30, .to = 45});
+            const unsigned int blurred = partial(*lens.framebuffer()->planes(), coverage, {.row = 24, .from = 30, .to = 45});
             BOOST_CHECK_LE(sharp, 2u);
             BOOST_CHECK_GE(blurred, 4u);
             BOOST_CHECK_LE(blurred, 7u);
@@ -918,7 +936,7 @@ BOOST_AUTO_TEST_CASE(moya_motion_spreads_linearly_test) {
 BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
     for (const char* hider : HIDERS) {
         BOOST_TEST_CONTEXT("hider " << hider) {
-            boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read("data/textured.rib", hider);
+            boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/textured.rib", .hider = hider});
 
             // red counts the block across and green the block down, and blue is the same in each
             for (unsigned int across = 0; across < 4; across++) {
@@ -944,7 +962,7 @@ BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
  * traced through the same scene the ray hider uses, so it falls where the ray hider's does.
  **/
 BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read(SHADOW_SCENE);
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = SHADOW_SCENE});
     check(planes->image(v3d::moya::FrameBuffer::CHANNELS), SHADOW, SHADOW_RIB_RENDERED);
 
     /*
@@ -953,7 +971,7 @@ BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
         light's shadow alone, a region lit by both, and the imager's background. An edge moves
         by up to a micropolygon, so only the insides are pinned.
     */
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> traced = read(SHADOW_SCENE, "raytrace");
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> traced = read({.file = SHADOW_SCENE, .hider = "raytrace"});
     const unsigned int pixels[][2] = { { 40, 30 }, { 24, 40 }, { 56, 26 }, { 8, 8 }, { 2, 2 } };
     for (const auto & pixel : pixels) {
         BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
@@ -975,7 +993,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_triangle_reference_test) {
     triangleScene(rc);
     rc.render();
     check(picture(rc), TRIANGLE, TRIANGLE_RENDERED);
-    check(read(TRIANGLE_SCENE)->image(v3d::moya::FrameBuffer::CHANNELS), TRIANGLE, TRIANGLE_RIB_RENDERED);
+    check(read({.file = TRIANGLE_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRIANGLE, TRIANGLE_RIB_RENDERED);
 }
 
 /**
@@ -992,7 +1010,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_shaded_reference_test) {
     pixelCentres(rc);
     rc.render();
     check(picture(rc), TRACED_SHADED, TRACED_SHADED_RENDERED);
-    check(read(TRACED_SHADED_SCENE)->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_SHADED,
+    check(read({.file = TRACED_SHADED_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_SHADED,
         TRACED_SHADED_RIB_RENDERED);
 }
 
@@ -1004,7 +1022,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_sampled_reference_test) {
     raytraceShadedScene(rc);
     rc.render();
     check(picture(rc), TRACED_SAMPLED, TRACED_SAMPLED_RENDERED);
-    check(read(TRACED_SAMPLED_SCENE)->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_SAMPLED,
+    check(read({.file = TRACED_SAMPLED_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_SAMPLED,
         TRACED_SAMPLED_RIB_RENDERED);
 }
 
@@ -1029,7 +1047,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_focus_reference_test) {
     focusScene(rc, true);
     rc.render();
     check(picture(rc), TRACED_FOCUS, TRACED_FOCUS_RENDERED);
-    check(read(TRACED_FOCUS_SCENE)->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_FOCUS,
+    check(read({.file = TRACED_FOCUS_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_FOCUS,
         TRACED_FOCUS_RIB_RENDERED);
 }
 
@@ -1039,7 +1057,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_motion_reference_test) {
     motionScene(rc);
     rc.render();
     check(picture(rc), TRACED_MOTION, TRACED_MOTION_RENDERED);
-    check(read(TRACED_MOTION_SCENE)->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_MOTION,
+    check(read({.file = TRACED_MOTION_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_MOTION,
         TRACED_MOTION_RIB_RENDERED);
 }
 
@@ -1052,7 +1070,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_spheres_reference_test) {
     spheresScene(rc);
     rc.render();
     check(picture(rc), SPHERES, SPHERES_RENDERED);
-    check(read(SPHERES_SCENE)->image(v3d::moya::FrameBuffer::CHANNELS), SPHERES, SPHERES_RIB_RENDERED);
+    check(read({.file = SPHERES_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), SPHERES, SPHERES_RIB_RENDERED);
 }
 
 /**
@@ -1060,7 +1078,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_spheres_reference_test) {
  * cosine of that - a value neither the geometry's colour nor no shading could produce.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_lit_quad_test) {
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read("data/raytrace-lit-quad.rib");
+    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/raytrace-lit-quad.rib"});
 
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.70710678f, 0.5f);
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 0.70710678f, 0.5f);
@@ -1084,5 +1102,5 @@ BOOST_AUTO_TEST_CASE(reference_motion_without_a_cache_test) {
 
     const v3d::render::offline::FrameBuffer & a = *cached.framebuffer()->planes();
     const v3d::render::offline::FrameBuffer & b = *uncached.framebuffer()->planes();
-    BOOST_CHECK_EQUAL(largest(a, b, 0, a.width() - 1), 0.0f);
+    BOOST_CHECK_EQUAL(largest(a, b, {.from = 0, .to = a.width() - 1}), 0.0f);
 }

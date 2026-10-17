@@ -66,8 +66,13 @@ class ShaderLibrary final {
      * primitives is one report and one attempt.
      **/
     ProgramPtr program(const std::string & name);
-    ProgramPtr compile(const std::string & name, const std::string & source,
-        const std::string & where);
+    /** A shader's source, and where it came from for the messages about it. **/
+    struct Source {
+        std::string text;
+        std::string where;
+    };
+
+    ProgramPtr compile(const std::string & name, const Source & source);
     /** The source of a `.sl` file on the search path, or empty when there is none. **/
     std::string file(const std::string & name, std::string* where) const;
 

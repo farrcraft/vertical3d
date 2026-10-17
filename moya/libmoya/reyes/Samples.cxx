@@ -13,8 +13,10 @@
 
 namespace v3d::moya::reyes {
 
-Samples::Samples(unsigned int width, unsigned int height, const v3d::render::offline::Sampling & sampling) :
-    width_(width), height_(height), perPixel_(0), sampling_(sampling) {
+Samples::Samples(const glm::uvec2 & size, const v3d::render::offline::Sampling & sampling) :
+    width_(size.x), height_(size.y), perPixel_(0), sampling_(sampling) {
+    const unsigned int width = size.x;
+    const unsigned int height = size.y;
     const v3d::render::offline::Sampler sampler(sampling);
     for (unsigned int row = 0; row < height; row++) {
         for (unsigned int column = 0; column < width; column++) {

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/render/offline/Position.h>
 #include <api/render/offline/sl/Types.h>
 
 #include <boost/shared_ptr.hpp>
@@ -35,7 +36,7 @@ class Expression {
         INDEX
     };
 
-    Expression(Kind kind, unsigned int line, unsigned int column);
+    Expression(Kind kind, const v3d::render::offline::Position & at);
     virtual ~Expression();
 
     Kind kind;

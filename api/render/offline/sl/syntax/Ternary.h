@@ -11,8 +11,14 @@ namespace v3d::render::offline::sl::syntax {
 
 class Ternary final : public Expression {
  public:
-    Ternary(const ExpressionPtr & condition, const ExpressionPtr & whenTrue,
-        const ExpressionPtr & whenFalse, unsigned int line, unsigned int column);
+    /** The condition, and the values when it holds and when it does not. **/
+    struct Branches {
+        ExpressionPtr condition;
+        ExpressionPtr whenTrue;
+        ExpressionPtr whenFalse;
+    };
+
+    Ternary(const Branches & branches, const v3d::render::offline::Position & at);
 
     ExpressionPtr condition;
     ExpressionPtr whenTrue;

@@ -519,7 +519,7 @@ bool Machine::initialise() {
         error_ = "the machine was run before it was prepared";
         return false;
     }
-    return execute(*program_, 0, program_->prologue);
+    return execute(*program_, {.from = 0, .until = program_->prologue});
 }
 
 bool Machine::run() {
@@ -528,7 +528,7 @@ bool Machine::run() {
         report(error_);
         return false;
     }
-    if (!execute(*program_, program_->prologue, program_->instructions.size())) {
+    if (!execute(*program_, {.from = program_->prologue, .until = program_->instructions.size()})) {
         // reported here, so no renderer has to log a failed run itself; initialise() does not
         // report, because Instance::write reports it with the shader's name
         report(error_);
@@ -537,7 +537,9 @@ bool Machine::run() {
     return true;
 }
 
-bool Machine::execute(const Program & program, std::size_t from, std::size_t until) {
+bool Machine::execute(const Program & program, const Range & range) {
+    const std::size_t from = range.from;
+    const std::size_t until = range.until;
     error_.clear();
     printed_.clear();
     masks_.assign(1, std::vector<char>(batch_, 1));

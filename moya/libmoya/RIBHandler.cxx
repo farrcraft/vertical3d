@@ -95,10 +95,10 @@ void RIBHandler::option(const std::string & name, const ParameterList & paramete
         // RI writes it as Option "searchpath" "shader" ["./shaders:&"]. The renderer looks
         // up shaders and textures only, so every other path is ignored
         if (parameters.has("shader")) {
-            context().searchpath(parameters.string("shader", std::string()));
+            context().searchpath(parameters.string("shader"));
         }
         if (parameters.has("texture")) {
-            context().textures().searchpath(parameters.string("texture", std::string()));
+            context().textures().searchpath(parameters.string("texture"));
         }
         return;
     }

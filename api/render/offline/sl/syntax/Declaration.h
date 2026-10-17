@@ -16,7 +16,7 @@ namespace v3d::render::offline::sl::syntax {
 
 class Declaration final : public Statement {
  public:
-    Declaration(Storage storage, Type type, unsigned int line, unsigned int column);
+    Declaration(Storage storage, Type type, const v3d::render::offline::Position & at);
 
     Storage storage = Storage::UNSPECIFIED;
     Type type = Type::FLOAT;

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/Sampler.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
 #include <api/render/offline/trace/Scene.h>
@@ -63,7 +64,7 @@ class RayHider final : public Hider {
      * How many samples a pixel took in the last render: PixelSamples' count, or more where a
      * PixelVariance asked for them.
      **/
-    unsigned int samplesTaken(unsigned int column, unsigned int row) const override;
+    unsigned int samplesTaken(const glm::uvec2 & pixel) const override;
 
     /**
      * Look through a camera, for the rays render() casts.
@@ -74,7 +75,7 @@ class RayHider final : public Hider {
      * The primary ray through a raster position, in world space, from a point on the unit
      * lens disc. An orthographic camera has no lens to move.
      **/
-    v3d::type::geometry::Ray ray(const glm::vec2 & raster, const glm::vec2 & lens,
+    v3d::type::geometry::Ray ray(const v3d::render::offline::Sampler::Sample & at,
         const v3d::render::offline::Sampling & sampling) const;
 
  private:

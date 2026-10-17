@@ -198,9 +198,9 @@ std::string ShaderLibrary::file(const std::string & name, std::string* where) co
     return std::string();
 }
 
-ProgramPtr ShaderLibrary::compile(const std::string & name, const std::string & source,
-    const std::string & where) {
-    std::istringstream stream(source);
+ProgramPtr ShaderLibrary::compile(const std::string & name, const Source & source) {
+    const std::string & where = source.where;
+    std::istringstream stream(source.text);
     Parser parser(stream);
     const syntax::ShaderPtr shader = find(parser.parse(), name);
     if (!shader) {
@@ -243,7 +243,7 @@ ProgramPtr ShaderLibrary::program(const std::string & name) {
         where = "the standard shaders";
         source = STANDARD;
     }
-    ProgramPtr compiled = compile(name, source, where);
+    ProgramPtr compiled = compile(name, {.text = source, .where = where});
     programs_[name] = compiled;
     return compiled;
 }

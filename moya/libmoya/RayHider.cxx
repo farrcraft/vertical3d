@@ -87,8 +87,10 @@ glm::vec3 RayHider::unproject(const glm::vec2 & raster, float z) const {
     return glm::vec3(((e * d) - (b * f)) / determinant, ((a * f) - (e * c)) / determinant, z);
 }
 
-v3d::type::geometry::Ray RayHider::ray(const glm::vec2 & raster, const glm::vec2 & lens,
+v3d::type::geometry::Ray RayHider::ray(const v3d::render::offline::Sampler::Sample & at,
     const v3d::render::offline::Sampling & sampling) const {
+    const glm::vec2 & raster = at.raster;
+    const glm::vec2 & lens = at.lens;
     glm::vec3 origin;
     glm::vec3 direction;
     if (camera_.perspective) {
@@ -145,7 +147,7 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
             for (unsigned int pass = 0;; pass++) {
                 const std::vector<v3d::render::offline::Sampler::Sample> set = sampler.pixel(column, row, pass);
                 for (const v3d::render::offline::Sampler::Sample & at : set) {
-                    const v3d::type::geometry::Ray traced = ray(at.raster, at.lens, sampling);
+                    const v3d::type::geometry::Ray traced = ray(at, sampling);
                     tracer.time(at.time);
                     const v3d::render::offline::trace::Tracer::Seen seen = tracer.see(traced);
 
@@ -174,11 +176,11 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
     film.resolve(planes, colour, coverage, static_cast<int>(depth));
 }
 
-unsigned int RayHider::samplesTaken(unsigned int column, unsigned int row) const {
-    if (column >= camera_.width || row >= camera_.height || taken_.empty()) {
+unsigned int RayHider::samplesTaken(const glm::uvec2 & pixel) const {
+    if (pixel.x >= camera_.width || pixel.y >= camera_.height || taken_.empty()) {
         return 0;
     }
-    return taken_[(static_cast<std::size_t>(row) * camera_.width) + column];
+    return taken_[(static_cast<std::size_t>(pixel.y) * camera_.width) + pixel.x];
 }
 
 };  // namespace v3d::moya

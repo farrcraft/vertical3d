@@ -76,9 +76,9 @@ float ParameterList::number(const std::string & name, float fallback) const {
     return values.empty() ? fallback : values[0];
 }
 
-std::string ParameterList::string(const std::string & name, const std::string & fallback) const {
+std::string ParameterList::string(const std::string & name) const {
     const std::vector<std::string> & values = strings(name);
-    return values.empty() ? fallback : values[0];
+    return values.empty() ? std::string() : values[0];
 }
 
 glm::mat4x4 ParameterList::matrix(const std::string & name) const {

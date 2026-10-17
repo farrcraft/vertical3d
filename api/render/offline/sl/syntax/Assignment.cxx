@@ -9,12 +9,11 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Assignment::Assignment(const std::string & op, const ExpressionPtr & target,
-    const ExpressionPtr & value, unsigned int line, unsigned int column) :
-    Statement(Kind::ASSIGNMENT, line, column),
+Assignment::Assignment(const std::string & op, const Sides & sides, const v3d::render::offline::Position & at) :
+    Statement(Kind::ASSIGNMENT, at),
     op(op),
-    target(target),
-    value(value) {
+    target(sides.target),
+    value(sides.value) {
 }
 
 };  // namespace v3d::render::offline::sl::syntax

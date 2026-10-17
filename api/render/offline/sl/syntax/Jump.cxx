@@ -7,8 +7,8 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Jump::Jump(Where where, const ExpressionPtr & value, unsigned int line, unsigned int column) :
-    Statement(Kind::JUMP, line, column),
+Jump::Jump(Where where, const ExpressionPtr & value, const v3d::render::offline::Position & at) :
+    Statement(Kind::JUMP, at),
     where(where),
     value(value) {
 }

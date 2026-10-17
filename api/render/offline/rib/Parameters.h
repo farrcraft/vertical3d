@@ -60,7 +60,10 @@ class ParameterList final {
      * The first value, or the fallback when the parameter is absent or empty.
      **/
     float number(const std::string & name, float fallback) const;
-    std::string string(const std::string & name, const std::string & fallback) const;
+    /**
+     * The first value, or an empty string when the parameter is absent or empty.
+     **/
+    std::string string(const std::string & name) const;
 
     /**
      * Sixteen floats as a matrix, or the identity. RIB writes a matrix in row major

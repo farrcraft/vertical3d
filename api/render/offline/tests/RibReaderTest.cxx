@@ -34,7 +34,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         (void)name;
         bucket_ = parameters.floats("bucketsize");
         if (parameters.has("texture")) {
-            texturePath_ = parameters.string("texture", std::string());
+            texturePath_ = parameters.string("texture");
         }
         counts_["Option"]++;
     }
@@ -136,7 +136,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     }
     void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)name;
-        identifier_ = parameters.string("name", "");
+        identifier_ = parameters.string("name");
         counts_["Attribute"]++;
     }
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {

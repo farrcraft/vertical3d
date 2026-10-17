@@ -7,6 +7,8 @@
 
 #include <api/render/offline/FrameBuffer.h>
 
+#include <glm/vec2.hpp>
+
 namespace v3d::moya {
 
 class RenderContext;
@@ -37,9 +39,8 @@ class Hider {
      * How many samples a pixel took in the last render, or zero for a hider that takes what
      * PixelSamples names.
      **/
-    virtual unsigned int samplesTaken(unsigned int column, unsigned int row) const {
-        (void)column;
-        (void)row;
+    virtual unsigned int samplesTaken(const glm::uvec2 & pixel) const {
+        (void)pixel;
         return 0;
     }
 };

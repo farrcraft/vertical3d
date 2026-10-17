@@ -14,7 +14,7 @@ namespace v3d::render::offline::sl::syntax {
 
 class Call final : public Expression {
  public:
-    Call(const std::string & name, unsigned int line, unsigned int column);
+    Call(const std::string & name, const v3d::render::offline::Position & at);
 
     std::string name;
     std::vector<ExpressionPtr> arguments;

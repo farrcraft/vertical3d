@@ -25,9 +25,7 @@ v3d::type::geometry::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
  * An image that is a whole number of buckets across gets exactly that many.
  **/
 BOOST_AUTO_TEST_CASE(framebuffer_bucket_grid_test) {
-    unsigned int bucket[2] = { 16, 16 };
-    unsigned int image[2] = { 320, 240 };
-    v3d::moya::FrameBuffer buffer(bucket, image);
+    v3d::moya::FrameBuffer buffer({.bucket = glm::uvec2(16, 16), .image = glm::uvec2(320, 240)});
 
     BOOST_TEST(buffer.bucketColumns() == 20u);
     BOOST_TEST(buffer.bucketRows() == 15u);
@@ -38,9 +36,7 @@ BOOST_AUTO_TEST_CASE(framebuffer_bucket_grid_test) {
  * as an integer division of the two sizes would.
  **/
 BOOST_AUTO_TEST_CASE(framebuffer_partial_bucket_test) {
-    unsigned int bucket[2] = { 16, 16 };
-    unsigned int image[2] = { 330, 250 };
-    v3d::moya::FrameBuffer buffer(bucket, image);
+    v3d::moya::FrameBuffer buffer({.bucket = glm::uvec2(16, 16), .image = glm::uvec2(330, 250)});
 
     BOOST_TEST(buffer.bucketColumns() == 21u);
     BOOST_TEST(buffer.bucketRows() == 16u);
@@ -52,9 +48,7 @@ BOOST_AUTO_TEST_CASE(framebuffer_partial_bucket_test) {
  * belongs to the first bucket on that axis.
  **/
 BOOST_AUTO_TEST_CASE(framebuffer_negative_bound_test) {
-    unsigned int bucket[2] = { 16, 16 };
-    unsigned int image[2] = { 320, 240 };
-    v3d::moya::FrameBuffer buffer(bucket, image);
+    v3d::moya::FrameBuffer buffer({.bucket = glm::uvec2(16, 16), .image = glm::uvec2(320, 240)});
 
     boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     buffer.addPrimitive(polygon, box(glm::vec3(-40.0f, -12.0f, 0.0f), glm::vec3(10.0f, 10.0f, 0.0f)));

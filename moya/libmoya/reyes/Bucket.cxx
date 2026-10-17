@@ -46,9 +46,15 @@ typedef std::array<glm::vec3, 4> Corners;
  */
 class Placement {
  public:
-    Placement(const glm::mat4x4 & toRaster, float radius, float focus,
+    /** The lens a micropolygon is seen through: its radius, and the distance it focuses at. **/
+    struct Lens {
+        float radius = 0.0f;
+        float focus = 0.0f;
+    };
+
+    Placement(const glm::mat4x4 & toRaster, const Lens & lens,
         const v3d::render::offline::MovingTransform & motion, const glm::vec2 & shutter) :
-        toRaster_(toRaster), radius_(radius), focus_(focus), motion_(motion), shutter_(shutter),
+        toRaster_(toRaster), radius_(lens.radius), focus_(lens.focus), motion_(motion), shutter_(shutter),
         fromReference_(glm::inverse(motion.reference())) {
     }
 
@@ -239,14 +245,29 @@ class Placement {
  */
 class Motions {
  public:
-    Motions(const Placement & placement, unsigned int perPixel, int left, int top, int right, int bottom) :
-        placement_(placement), perPixel_(perPixel), left_(left), top_(top),
-        width_(std::max(0, right - left + 1)), height_(std::max(0, bottom - top + 1)),
+    /**
+     * @param region the pixels it covers, as left, top, right and bottom, each inclusive
+     **/
+    Motions(const Placement & placement, unsigned int perPixel, const std::array<int, 4> & region) :
+        placement_(placement), perPixel_(perPixel), left_(region[0]), top_(region[1]),
+        width_(std::max(0, region[2] - region[0] + 1)), height_(std::max(0, region[3] - region[1] + 1)),
         values_(static_cast<std::size_t>(width_) * static_cast<std::size_t>(height_) * perPixel),
         known_(values_.size(), false) {
     }
 
-    const glm::mat4x4 & at(int column, int row, unsigned int index, float time) {
+    /** One sample of one pixel, and when it was taken. **/
+    struct Key {
+        int column = 0;
+        int row = 0;
+        unsigned int index = 0;
+        float time = 0.0f;
+    };
+
+    const glm::mat4x4 & at(const Key & key) {
+        const int column = key.column;
+        const int row = key.row;
+        const unsigned int index = key.index;
+        const float time = key.time;
         const std::size_t slot = (((static_cast<std::size_t>(row - top_) * static_cast<std::size_t>(width_)) +
             static_cast<std::size_t>(column - left_)) * perPixel_) + index;
         if (!known_[slot]) {
@@ -291,7 +312,7 @@ void hide(const Placement & placement, const glm::vec3 & color, Samples * sample
                     continue;
                 }
                 const Corners corners = motions == nullptr ? placement.at(sample) :
-                    placement.at(sample, motions->at(column, row, k, sample.time));
+                    placement.at(sample, motions->at({.column = column, .row = row, .index = k, .time = sample.time}));
                 float depth = 0.0f;
                 if (!covers(corners, sample.raster, &depth) || (sample.hit && depth >= sample.depth)) {
                     continue;
@@ -315,7 +336,8 @@ void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & 
     const glm::mat4x4 toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
     // an orthographic camera has no lens to blur through
     const float radius = rc.perspective() ? rc.sampling().lensRadius() : 0.0f;
-    Placement placement(toRaster, radius, rc.sampling().focalDistance, primitive.motion(), rc.sampling().shutter);
+    Placement placement(toRaster, {.radius = radius, .focus = rc.sampling().focalDistance}, primitive.motion(),
+        rc.sampling().shutter);
     Samples & samples = rc.samples();
 
     const auto corners = [&grid](unsigned int i, unsigned int j) {
@@ -347,8 +369,7 @@ void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & 
         // context's motionCache() entries, each micropolygon works out its own motions instead,
         // which is slower and needs no memory
         if (entries <= rc.motionCache()) {
-            motions = boost::make_shared<Motions>(placement, samples.perPixel(), region[0], region[1], region[2],
-                region[3]);
+            motions = boost::make_shared<Motions>(placement, samples.perPixel(), region);
         }
     }
 

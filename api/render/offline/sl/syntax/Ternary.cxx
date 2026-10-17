@@ -7,12 +7,11 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Ternary::Ternary(const ExpressionPtr & condition, const ExpressionPtr & whenTrue,
-    const ExpressionPtr & whenFalse, unsigned int line, unsigned int column) :
-    Expression(Kind::TERNARY, line, column),
-    condition(condition),
-    whenTrue(whenTrue),
-    whenFalse(whenFalse) {
+Ternary::Ternary(const Branches & branches, const v3d::render::offline::Position & at) :
+    Expression(Kind::TERNARY, at),
+    condition(branches.condition),
+    whenTrue(branches.whenTrue),
+    whenFalse(branches.whenFalse) {
 }
 
 };  // namespace v3d::render::offline::sl::syntax

@@ -42,7 +42,7 @@ class Samples final {
     /**
      * Places every pixel's samples where offline::Sampler puts them, with nothing hidden yet.
      **/
-    Samples(unsigned int width, unsigned int height, const v3d::render::offline::Sampling & sampling);
+    Samples(const glm::uvec2 & size, const v3d::render::offline::Sampling & sampling);
 
     unsigned int width() const;
     unsigned int height() const;

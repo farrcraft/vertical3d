@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(parameterlist_reads_back_typed_test) {
     BOOST_CHECK_EQUAL(points[1].x, 3.0f);
     BOOST_CHECK_EQUAL(points[1].z, 5.0f);
 
-    BOOST_CHECK_EQUAL(parameters.string("texturename", ""), "wood.tif");
+    BOOST_CHECK_EQUAL(parameters.string("texturename"), "wood.tif");
 
     // an absent name is the fallback rather than a throw
     BOOST_CHECK_EQUAL(parameters.number("roughness", 0.5f), 0.5f);

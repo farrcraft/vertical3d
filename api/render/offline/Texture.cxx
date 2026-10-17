@@ -12,10 +12,16 @@ namespace v3d::render::offline {
 
 namespace {
 
+/** A texel index along one axis, and how many texels the axis has. **/
+struct Axis {
+    int index = 0;
+    unsigned int size = 1;
+};
+
 /** A texel index wrapped into [0, size), negative ones included. **/
-int wrap(int index, unsigned int size) {
-    const int span = static_cast<int>(size);
-    const int wrapped = index % span;
+int wrap(const Axis & axis) {
+    const int span = static_cast<int>(axis.size);
+    const int wrapped = axis.index % span;
     return wrapped < 0 ? wrapped + span : wrapped;
 }
 
@@ -45,8 +51,8 @@ unsigned int Texture::height() const {
 }
 
 const glm::vec3 & Texture::texel(int column, int row) const {
-    return texels_[(static_cast<std::size_t>(wrap(row, height_)) * width_) +
-        static_cast<std::size_t>(wrap(column, width_))];
+    return texels_[(static_cast<std::size_t>(wrap({.index = row, .size = height_})) * width_) +
+        static_cast<std::size_t>(wrap({.index = column, .size = width_}))];
 }
 
 glm::vec3 Texture::sample(float s, float t) const {

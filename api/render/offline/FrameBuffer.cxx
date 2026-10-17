@@ -42,10 +42,10 @@ void FrameBuffer::value(unsigned int plane, unsigned int column, unsigned int ro
     planes_[plane][row][column] = v;
 }
 
-void FrameBuffer::clear(unsigned int plane, float v) {
-    assert(plane < planes());
-    for (auto & row : planes_[plane]) {
-        std::fill(row.begin(), row.end(), v);
+void FrameBuffer::clear(const Fill & fill) {
+    assert(fill.plane < planes());
+    for (auto & row : planes_[fill.plane]) {
+        std::fill(row.begin(), row.end(), fill.value);
     }
 }
 

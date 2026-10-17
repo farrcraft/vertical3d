@@ -44,12 +44,12 @@ class Token final : public v3d::render::offline::Lexeme<TokenKind> {
     typedef TokenKind Kind;
 
     Token() = default;
-    Token(Kind kind, unsigned int line, unsigned int column) : Lexeme(kind, line, column) {
+    Token(Kind kind, const v3d::render::offline::Position & at) : Lexeme(kind, at) {
     }
-    Token(Kind kind, const std::string & text, unsigned int line, unsigned int column) :
-        Lexeme(kind, text, line, column) {
+    Token(Kind kind, const std::string & text, const v3d::render::offline::Position & at) :
+        Lexeme(kind, text, at) {
     }
-    Token(float value, unsigned int line, unsigned int column) : Lexeme(Kind::NUMBER, value, line, column) {
+    Token(float value, const v3d::render::offline::Position & at) : Lexeme(Kind::NUMBER, value, at) {
     }
 };
 

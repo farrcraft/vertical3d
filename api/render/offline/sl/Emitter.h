@@ -51,7 +51,14 @@ class Emitter final {
     int string(const std::string & text);
     /** Where the next instruction will go, for a jump that is patched afterwards. **/
     int here() const;
-    int put(runtime::Opcode opcode, int target, int left, int right, const syntax::ExpressionPtr & where);
+    /** The registers an instruction writes and reads. -1 is none. **/
+    struct Operands {
+        int target = -1;
+        int left = -1;
+        int right = -1;
+    };
+
+    int put(runtime::Opcode opcode, const Operands & operands, const syntax::ExpressionPtr & where);
     void patch(int instruction, int target);
 
     void emitBlock(const syntax::BlockPtr & block);

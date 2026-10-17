@@ -7,8 +7,8 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Block::Block(unsigned int line, unsigned int column) :
-    Statement(Kind::BLOCK, line, column) {
+Block::Block(const v3d::render::offline::Position & at) :
+    Statement(Kind::BLOCK, at) {
 }
 
 };  // namespace v3d::render::offline::sl::syntax

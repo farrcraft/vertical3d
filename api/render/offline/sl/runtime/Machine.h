@@ -156,8 +156,14 @@ class Machine final {
         std::vector<int> arguments;
     };
 
+    /** A run of instructions, from the first to one before the last. **/
+    struct Range {
+        std::size_t from = 0;
+        std::size_t until = 0;
+    };
+
     /** One pass over a range of the instructions, used by both run() and initialise(). **/
-    bool execute(const Program & program, std::size_t from, std::size_t until);
+    bool execute(const Program & program, const Range & range);
 
     bool live(unsigned int point) const;
     bool anyLive() const;
@@ -194,7 +200,13 @@ class Machine final {
      * the shader's s and t when it was given only the name. Null, and reported once, when the
      * renderer cannot read it.
      **/
-    const Texture* texture(const std::vector<const Value*> & given, const Value** s, const Value** t);
+    /** The registers a texture lookup reads s and t from. **/
+    struct Coordinates {
+        const Value* s = nullptr;
+        const Value* t = nullptr;
+    };
+
+    const Texture* texture(const std::vector<const Value*> & given, Coordinates* coordinates);
     /**
      * transmission and trace, the two calls the renderer computes along a line between two
      * points. When the renderer cannot do them, all the light gets through, nothing is
