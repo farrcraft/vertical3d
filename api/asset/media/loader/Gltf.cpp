@@ -400,8 +400,15 @@ v3d::type::Model::Influence influenceOf(const Attributes& attributes, cgltf_size
  * swaps its first two corners, so that all of them face the same way. Every triangle of a fan
  * shares the fan's first vertex.
  **/
-void appendIndices(const cgltf_primitive& primitive, std::size_t baseVertex, cgltf_size count,
-    std::vector<std::uint32_t>* indices) {
+/** Where a primitive's vertices start in the model, and how many it has. **/
+struct Span {
+    std::size_t baseVertex = 0;
+    cgltf_size count = 0;
+};
+
+void appendIndices(const cgltf_primitive& primitive, const Span& span, std::vector<std::uint32_t>* indices) {
+    const std::size_t baseVertex = span.baseVertex;
+    const cgltf_size count = span.count;
     std::vector<std::uint32_t> order;
     if (primitive.indices != nullptr) {
         order.resize(primitive.indices->count);
@@ -472,7 +479,7 @@ void appendPrimitive(const Placed& placed, const Rig& rig, v3d::type::Model* mod
         }
     }
 
-    appendIndices(primitive, baseVertex, count, &model->indices());
+    appendIndices(primitive, {.baseVertex = baseVertex, .count = count}, &model->indices());
 }
 
 /**

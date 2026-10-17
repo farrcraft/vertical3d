@@ -70,7 +70,7 @@ class Renderer {
     /**
      * Resize the frame
      */
-    void resize(int width, int height);
+    void resize(const glm::ivec2& size);
 
     void tick(unsigned int delta);
 

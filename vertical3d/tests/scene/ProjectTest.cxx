@@ -33,9 +33,15 @@ std::string scratch(const char* name) {
     return (boost::filesystem::temp_directory_path() / name).string();
 }
 
-void put(const std::string& path, const std::string& text) {
-    std::ofstream file(path, std::ios::binary | std::ios::trunc);
-    file.write(text.data(), static_cast<std::streamsize>(text.size()));
+/** A file, and what to write into it. **/
+struct Written {
+    std::string path;
+    std::string text;
+};
+
+void put(const Written& written) {
+    std::ofstream file(written.path, std::ios::binary | std::ios::trunc);
+    file.write(written.text.data(), static_cast<std::streamsize>(written.text.size()));
 }
 
 std::string get(const std::string& path) {
@@ -240,25 +246,25 @@ BOOST_AUTO_TEST_CASE(project_rejects_malformed_test) {
     scene->add(v3d::editor::create_poly_cube());
     v3d::editor::Project project(logger());
 
-    put(path, "{ this is not json");
+    put({.path = path, .text = "{ this is not json"});
     BOOST_CHECK_EQUAL(project.read(path, scene), false);
 
     // a document of another version is refused rather than read as far as it goes
-    put(path, "{\"version\": 2, \"name\": \"later\", \"meshes\": []}");
+    put({.path = path, .text = "{\"version\": 2, \"name\": \"later\", \"meshes\": []}"});
     BOOST_CHECK_EQUAL(project.read(path, scene), false);
 
-    put(path, "{\"name\": \"no version\", \"meshes\": []}");
+    put({.path = path, .text = "{\"name\": \"no version\", \"meshes\": []}"});
     BOOST_CHECK_EQUAL(project.read(path, scene), false);
 
-    put(path, "{\"version\": 1, \"name\": \"no meshes\"}");
+    put({.path = path, .text = "{\"version\": 1, \"name\": \"no meshes\"}"});
     BOOST_CHECK_EQUAL(project.read(path, scene), false);
 
     // a mesh missing one of its three arrays
-    put(path, "{\"version\": 1, \"meshes\": [{\"vertices\": [], \"edges\": []}]}");
+    put({.path = path, .text = "{\"version\": 1, \"meshes\": [{\"vertices\": [], \"edges\": []}]}"});
     BOOST_CHECK_EQUAL(project.read(path, scene), false);
 
     // a vertex that is not three numbers
-    put(path, "{\"version\": 1, \"meshes\": [{\"vertices\": [[0, 1]], \"edges\": [], \"faces\": []}]}");
+    put({.path = path, .text = "{\"version\": 1, \"meshes\": [{\"vertices\": [[0, 1]], \"edges\": [], \"faces\": []}]}"});
     BOOST_CHECK_EQUAL(project.read(path, scene), false);
 
     BOOST_CHECK_EQUAL(scene->count(), 1u);
@@ -273,29 +279,26 @@ BOOST_AUTO_TEST_CASE(project_rejects_dangling_reference_test) {
 
     // one vertex and an edge naming a second that is not there. The wireframe and the picker
     // would index past the end of the mesh, so the read refuses it
-    put(path,
-        "{\"version\": 1, \"meshes\": [{"
+    put({.path = path, .text = "{\"version\": 1, \"meshes\": [{"
         "\"vertices\": [[0, 0, 0]],"
         "\"edges\": [{\"vertex\": 1, \"face\": 2147483648, \"pair\": 2147483648, \"next\": 0}],"
-        "\"faces\": []}]}");
+        "\"faces\": []}]}"});
     BOOST_CHECK_EQUAL(project.read(path, scene), false);
     BOOST_CHECK_EQUAL(scene->count(), 0u);
 
     // a face naming an edge the mesh does not hold
-    put(path,
-        "{\"version\": 1, \"meshes\": [{"
+    put({.path = path, .text = "{\"version\": 1, \"meshes\": [{"
         "\"vertices\": [[0, 0, 0]],"
         "\"edges\": [{\"vertex\": 0, \"face\": 0, \"pair\": 2147483648, \"next\": 0}],"
-        "\"faces\": [{\"normal\": [0, 0, 1], \"edge\": 3}]}]}");
+        "\"faces\": [{\"normal\": [0, 0, 1], \"edge\": 3}]}]}"});
     BOOST_CHECK_EQUAL(project.read(path, scene), false);
 
     // the same mesh with valid references is read, so the two failures above come from the
     // reference check rather than from the parse
-    put(path,
-        "{\"version\": 1, \"meshes\": [{"
+    put({.path = path, .text = "{\"version\": 1, \"meshes\": [{"
         "\"vertices\": [[0, 0, 0]],"
         "\"edges\": [{\"vertex\": 0, \"face\": 0, \"pair\": 2147483648, \"next\": 0}],"
-        "\"faces\": [{\"normal\": [0, 0, 1], \"edge\": 0}]}]}");
+        "\"faces\": [{\"normal\": [0, 0, 1], \"edge\": 0}]}]}"});
     BOOST_CHECK_EQUAL(project.read(path, scene), true);
     BOOST_CHECK_EQUAL(scene->count(), 1u);
 
@@ -312,7 +315,7 @@ BOOST_AUTO_TEST_CASE(project_default_transform_test) {
     v3d::editor::Project project(logger());
 
     // a hand written mesh with no placement sits at the origin, unturned and unscaled
-    put(path, "{\"version\": 1, \"meshes\": [{\"vertices\": [], \"edges\": [], \"faces\": []}]}");
+    put({.path = path, .text = "{\"version\": 1, \"meshes\": [{\"vertices\": [], \"edges\": [], \"faces\": []}]}"});
     BOOST_REQUIRE_EQUAL(project.read(path, scene), true);
     BOOST_REQUIRE_EQUAL(scene->count(), 1u);
 

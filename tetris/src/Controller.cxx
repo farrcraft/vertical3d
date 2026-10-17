@@ -112,7 +112,7 @@ void Controller::slide(int columns) {
     Tetrad& piece = board->currentTetrad();
     const Tetrad::PositionType position = piece.position();
 
-    if (board->fits(piece, static_cast<int>(position.first) + columns, static_cast<int>(position.second))) {
+    if (board->fits(piece, glm::ivec2(static_cast<int>(position.first) + columns, static_cast<int>(position.second)))) {
         piece.move(columns, 0);
     }
 }
@@ -134,7 +134,7 @@ void Controller::rotate(Tetrad::RotationDirection direction) {
     const int column = static_cast<int>(position.first);
     const int kicks[] = { 0, -1, 1, -2, 2 };
     for (int kick : kicks) {
-        if (board->fits(turned, column + kick, row)) {
+        if (board->fits(turned, glm::ivec2(column + kick, row))) {
             turned.position(Tetrad::PositionType(static_cast<unsigned int>(column + kick), position.second));
             piece = turned;
             return;

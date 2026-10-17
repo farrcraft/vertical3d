@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 #include <glm/vec3.hpp>
@@ -31,6 +32,12 @@ namespace v3d::brep {
  **/
 std::vector<Index> faceLoop(const BRep & mesh, Index face);
 
+/** Where an edge starts and where it ends. **/
+struct Segment {
+    glm::vec3 from{0.0f};
+    glm::vec3 to{0.0f};
+};
+
 /**
  * The segment one entry of a face loop draws.
  *
@@ -39,11 +46,9 @@ std::vector<Index> faceLoop(const BRep & mesh, Index face);
  *
  * @param loop what faceLoop() returned
  * @param entry which entry of it
- * @param from where the segment starts - may be null
- * @param to where it ends - may be null
- * @return whether both endpoints could be resolved
+ * @return where the segment starts and ends, or nothing when either endpoint cannot be resolved
  **/
-bool loopSegment(const BRep & mesh, const std::vector<Index> & loop, std::size_t entry, glm::vec3* from, glm::vec3* to);
+std::optional<Segment> loopSegment(const BRep & mesh, const std::vector<Index> & loop, std::size_t entry);
 
 /**
  * Whether a half edge is the one of its pair that stands for the edge.

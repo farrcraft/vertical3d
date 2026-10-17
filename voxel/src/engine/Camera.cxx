@@ -87,10 +87,13 @@ void Camera::dirty(bool status) {
 }
 
 void Camera::lookAt(const glm::vec3 &target) {
-    lookAt(eye_, target, yAxis_);
+    lookAt({.eye = eye_, .target = target, .up = yAxis_});
 }
 
-void Camera::lookAt(const glm::vec3 &eye, const glm::vec3 &target, const glm::vec3 &up) {
+void Camera::lookAt(const Aim& aim) {
+    const glm::vec3& eye = aim.eye;
+    const glm::vec3& target = aim.target;
+    const glm::vec3& up = aim.up;
     eye_ = eye;
 
     zAxis_ = glm::normalize(eye - target);
@@ -163,7 +166,11 @@ void Camera::move(const glm::vec3 &direction, const glm::vec3 &amount) {
     updateViewMatrix(false);
 }
 
-void Camera::perspective(float fovx, float aspect, float znear, float zfar) {
+void Camera::perspective(const Lens& lens) {
+    const float fovx = lens.fovx;
+    const float aspect = lens.aspect;
+    const float znear = lens.znear;
+    const float zfar = lens.zfar;
     // Construct a projection matrix based on the horizontal field of view
     // 'fovx' rather than the more traditional vertical field of view 'fovy'.
 
@@ -288,7 +295,7 @@ void Camera::behavior(CameraBehavior newBehavior) {
         // Moving from flight-simulator mode to first-person.
         // Need to ignore camera roll, but retain existing pitch and heading.
 
-        lookAt(eye_, eye_ - zAxis_, glm::vec3(0.0f, 1.0f, 0.0f));
+        lookAt({.eye = eye_, .target = eye_ - zAxis_, .up = glm::vec3(0.0f, 1.0f, 0.0f)});
     }
 
     behavior_ = newBehavior;
@@ -377,7 +384,21 @@ namespace {
  * driven decelerates toward zero and stops there rather than crossing it. The deceleration
  * has two signs for this reason.
  **/
-float axisVelocity(float current, float direction, float acceleration, float limit, float elapsed) {
+/** One axis's velocity, which way it is driven, how fast it changes, its limit, and the time. **/
+struct Axis {
+    float current = 0.0f;
+    float direction = 0.0f;
+    float acceleration = 0.0f;
+    float limit = 0.0f;
+    float elapsed = 0.0f;
+};
+
+float axisVelocity(const Axis& axis) {
+    float current = axis.current;
+    const float direction = axis.direction;
+    const float acceleration = axis.acceleration;
+    const float limit = axis.limit;
+    const float elapsed = axis.elapsed;
     if (direction != 0.0f) {
         current += direction * acceleration * elapsed;
         if (current > limit) {
@@ -403,8 +424,8 @@ void Camera::updateVelocity(const glm::vec3 &direction, float elapsedTimeSec) {
     // and the elapsed time (since this method was last called). The movement
     // direction is in the range [-1,1]. The three axes are independent of each other.
     for (glm::length_t axis = 0; axis < 3; axis++) {
-        currentVelocity_[axis] = axisVelocity(currentVelocity_[axis], direction[axis],
-            acceleration_[axis], velocity_[axis], elapsedTimeSec);
+        currentVelocity_[axis] = axisVelocity({.current = currentVelocity_[axis], .direction = direction[axis],
+            .acceleration = acceleration_[axis], .limit = velocity_[axis], .elapsed = elapsedTimeSec});
     }
 }
 

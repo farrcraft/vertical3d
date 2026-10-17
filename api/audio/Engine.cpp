@@ -82,7 +82,7 @@ bool Engine::initialize() {
 void Engine::soundEvent(const v3d::event::kind::Sound& sound) {
     Play how;
     how.pan = sound.pan();
-    if (play(sound.clip(), how) == 0) {
+    if (play(sound.clip(), how) == Voice::None) {
         logger_->get()->error("unable to play clip: {}", sound.clip());
     }
 }
@@ -153,7 +153,7 @@ bool Engine::has(const std::string_view & clip) const {
 bool Engine::playClip(const std::string_view & clip) {
     // a one shot nobody holds is still a track underneath, so that it can be stopped by
     // stopAll() and mixed on whatever the master gain is
-    return play(clip, Play()) != 0;
+    return play(clip, Play()) != Voice::None;
 }
 
 void Engine::reap() {
@@ -202,24 +202,24 @@ MIX_Track* Engine::claim() {
 Voice Engine::play(const std::string_view & clip, const Play & how) {
     // an engine whose initialize() opened no device has nothing to play into
     if (mixer_ == nullptr) {
-        return 0;
+        return Voice::None;
     }
     const std::string clipId(clip);
     const std::map<std::string, boost::shared_ptr<AudioClip>>::const_iterator found = sounds_.find(clipId);
     if (found == sounds_.end()) {
-        return 0;
+        return Voice::None;
     }
 
     reap();
     MIX_Track* track = claim();
     if (track == nullptr) {
         logger_->get()->error("no track to play clip [{}] on: {}", clipId, SDL_GetError());
-        return 0;
+        return Voice::None;
     }
     if (!MIX_SetTrackAudio(track, found->second->audio())) {
         logger_->get()->error("unable to put clip [{}] on a track: {}", clipId, SDL_GetError());
         free_.push_back(track);
-        return 0;
+        return Voice::None;
     }
 
     if (!how.bus.empty()) {
@@ -249,10 +249,10 @@ Voice Engine::play(const std::string_view & clip, const Play & how) {
             MIX_UntagTrack(track, how.bus.c_str());
         }
         free_.push_back(track);
-        return 0;
+        return Voice::None;
     }
 
-    const Voice voice = nextVoice_++;
+    const Voice voice = static_cast<Voice>(nextVoice_++);
     Playing playing;
     playing.track = track;
     playing.bus = how.bus;

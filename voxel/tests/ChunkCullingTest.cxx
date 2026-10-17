@@ -22,7 +22,7 @@ const float chunkSize = 16.0f;
  **/
 Frustum view() {
     Camera camera;
-    camera.perspective(90.0f, 1.0f, 0.1f, 1000.0f);
+    camera.perspective({.fovx = 90.0f, .aspect = 1.0f, .znear = 0.1f, .zfar = 1000.0f});
     return Frustum(camera.projection() * camera.view());
 }
 

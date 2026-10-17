@@ -85,13 +85,12 @@ void RIBExportVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         // one before them ended - taking each segment's start walks the face once
         std::vector<glm::vec3> points;
         for (std::size_t index = 0; index < loop.size(); index++) {
-            glm::vec3 from(0.0f);
-            glm::vec3 to(0.0f);
-            if (!v3d::brep::loopSegment(*mesh, loop, index, &from, &to)) {
+            const std::optional<v3d::brep::Segment> segment = v3d::brep::loopSegment(*mesh, loop, index);
+            if (!segment) {
                 points.clear();
                 break;
             }
-            points.push_back(from);
+            points.push_back(segment->from);
         }
         if (points.size() < 3) {
             continue;

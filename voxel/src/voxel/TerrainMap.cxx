@@ -12,7 +12,7 @@
 class TerrainMap::Noise {
  public:
         void generate();
-        float height(unsigned int x, unsigned int y);
+        float height(const glm::uvec2& column);
 
  private:
         noise::utils::Image image_;
@@ -43,7 +43,9 @@ void TerrainMap::Noise::generate() {
 }
 
 
-float TerrainMap::Noise::height(unsigned int x, unsigned int y) {
+float TerrainMap::Noise::height(const glm::uvec2& column) {
+    const unsigned int x = column.x;
+    const unsigned int y = column.y;
     noise::utils::Color color;
     color = image_.GetValue(static_cast<int>(x), static_cast<int>(y));
 
@@ -57,6 +59,6 @@ void TerrainMap::generate() {
     noise_->generate();
 }
 
-float TerrainMap::height(unsigned int x, unsigned int z) {
-    return noise_->height(x, z);
+float TerrainMap::height(const glm::uvec2& column) {
+    return noise_->height(column);
 }

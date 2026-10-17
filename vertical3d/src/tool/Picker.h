@@ -108,7 +108,14 @@ class Picker final : public SceneVisitor {
      * Take the hit if it is nearer than the best so far.
      * @param distance along the ray, or the depth for a screen space pick
      **/
-    void offer(unsigned int mesh, unsigned int component, float distance);
+    /** A mesh, a component of it, and how far away the pick found it. **/
+    struct Candidate {
+        unsigned int mesh = 0;
+        unsigned int component = 0;
+        float distance = 0.0f;
+    };
+
+    void offer(const Candidate& candidate);
 
     float tolerance_;
 

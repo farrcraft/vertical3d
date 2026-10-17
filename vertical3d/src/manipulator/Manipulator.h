@@ -191,10 +191,16 @@ class Manipulator {
 
     /**
      * The camera's axes in world space, read out of the view matrix the view draws with, so
-     * the handles line up with what is on screen.
-     * @param forward the direction into the screen - may be null
+     * the handles line up with what is on screen. A view with no camera gives the world's
+     * axes, with forward along +z.
      **/
-    static void basis(const ViewPort& view, glm::vec3* right, glm::vec3* up, glm::vec3* forward);
+    struct Basis {
+        glm::vec3 right{1.0f, 0.0f, 0.0f};
+        glm::vec3 up{0.0f, 1.0f, 0.0f};
+        glm::vec3 forward{0.0f, 0.0f, 1.0f};  /**< into the screen **/
+    };
+
+    static Basis basis(const ViewPort& view);
 
     /**
      * Two unit vectors spanning the plane a direction is normal to, for drawing a ring

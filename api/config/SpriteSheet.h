@@ -39,7 +39,14 @@ class SpriteSheet final {
      * against it. A sheet built this way therefore refuses exactly what a sheet read from a
      * document refuses, and a tool cannot emit a region the reader will drop.
      **/
-    SpriteSheet(const std::string& name, const std::string& image, int width, int height);
+    struct Spec {
+        std::string name;
+        std::string image;   /**< the image the sprites are cut from **/
+        int width = 0;
+        int height = 0;
+    };
+
+    explicit SpriteSheet(const Spec& spec);
 
     /**
      * @return what the sheet is called, as whatever names one names it

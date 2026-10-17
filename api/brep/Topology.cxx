@@ -36,27 +36,21 @@ std::vector<Index> faceLoop(const BRep & mesh, Index face) {
     return edges;
 }
 
-bool loopSegment(const BRep & mesh, const std::vector<Index> & loop, std::size_t entry, glm::vec3* from, glm::vec3* to) {
+std::optional<Segment> loopSegment(const BRep & mesh, const std::vector<Index> & loop, std::size_t entry) {
     if (loop.empty() || entry >= loop.size()) {
-        return false;
+        return std::nullopt;
     }
     const HalfEdge* edge = mesh.edge(loop[entry]);
     const HalfEdge* before = mesh.edge(loop[(entry + loop.size() - 1) % loop.size()]);
     if (edge == nullptr || before == nullptr) {
-        return false;
+        return std::nullopt;
     }
     const Vertex* start = mesh.vertex(before->vertex());
     const Vertex* end = mesh.vertex(edge->vertex());
     if (start == nullptr || end == nullptr) {
-        return false;
+        return std::nullopt;
     }
-    if (from != nullptr) {
-        *from = start->point();
-    }
-    if (to != nullptr) {
-        *to = end->point();
-    }
-    return true;
+    return Segment{.from = start->point(), .to = end->point()};
 }
 
 bool ownsEdge(const BRep & mesh, Index edge) {

@@ -138,10 +138,10 @@ const boost::json::value* Settings::find(const std::string& key) const {
 
 /**
  **/
-std::string Settings::text(const std::string& key, const std::string& fallback) const {
+std::optional<std::string> Settings::text(const std::string& key) const {
     const boost::json::value* value = find(key);
     if (value == nullptr || !value->is_string()) {
-        return fallback;
+        return std::nullopt;
     }
     return boost::json::value_to<std::string>(*value);
 }

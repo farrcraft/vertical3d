@@ -7,6 +7,7 @@
 
 #include <api/log/Logger.h>
 
+#include <optional>
 #include <string>
 
 #include <boost/json.hpp>
@@ -84,7 +85,10 @@ class Settings final {
      * something of another kind, so a hand-edited document cannot make an app read a string
      * as a volume.
      **/
-    std::string text(const std::string& key, const std::string& fallback) const;
+    /**
+     * @return the string, or nothing when the key is absent or holds something else
+     **/
+    std::optional<std::string> text(const std::string& key) const;
 
     /**
      **/

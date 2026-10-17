@@ -26,7 +26,13 @@ class MouseWheel final : public Event {
     /**
      **/
     // not noexcept: the base takes the event name as a std::string, which allocates
-    MouseWheel(const glm::vec2& notches, const glm::vec2& position, const boost::shared_ptr<Context>& context);
+    /** How far the wheel turned on each axis, and where the cursor was. **/
+    struct Turned {
+        glm::vec2 notches{0.0f};
+        glm::vec2 position{0.0f};
+    };
+
+    MouseWheel(const Turned& turned, const boost::shared_ptr<Context>& context);
 
     /**
      * @return how far it turned - y is the wheel itself, x a horizontal one where there

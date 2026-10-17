@@ -14,7 +14,14 @@ class Voxel;
 
 class MeshCache {
  public:
-    MeshCache(size_t vertices, size_t tris, size_t faces);
+    /** How many vertices, triangles and faces the cache starts with room for. **/
+    struct Capacity {
+        size_t vertices = 0;
+        size_t tris = 0;
+        size_t faces = 0;
+    };
+
+    explicit MeshCache(const Capacity& capacity);
     ~MeshCache();
 
     void reset();
@@ -31,7 +38,17 @@ class MeshCache {
      *        is chunk local and the chunk's position stays a push constant
      */
     void extract(const boost::shared_ptr<Voxel> & voxel, unsigned int faces, const glm::vec3 & origin);
-    void createFace(unsigned int type, unsigned int drawFaces, unsigned int inFaces, const glm::vec3 & v0, const glm::vec3 & v1, const glm::vec3 & v2, const glm::vec3 & v3);
+    /**
+     * A block type, the faces of the block that are drawn, and the one face this is. A face
+     * not among those drawn is skipped.
+     */
+    struct Facing {
+        unsigned int type = 0;
+        unsigned int drawFaces = 0;
+        unsigned int inFaces = 0;
+    };
+
+    void createFace(const Facing & facing, const glm::vec3 & v0, const glm::vec3 & v1, const glm::vec3 & v2, const glm::vec3 & v3);
 
     glm::vec3 * vertices();
     glm::ivec3 * tris();

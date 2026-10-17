@@ -56,17 +56,14 @@ unsigned int ConstructionPlane::lines() const noexcept {
 
 /**
  **/
-void ConstructionPlane::axes(const v3d::type::camera::Camera& camera, glm::vec3* right, glm::vec3* up) {
+ConstructionPlane::Axes ConstructionPlane::axes(const v3d::type::camera::Camera& camera) {
     if (camera.orthographic()) {
         // an orthographic view looks straight down an axis, so the grid lies in the plane of
         // the camera's own right and up, as in a drafting elevation
-        *right = camera.profile().right();
-        *up = camera.profile().up();
-        return;
+        return {.right = camera.profile().right(), .up = camera.profile().up()};
     }
     // a perspective view gets the ground plane, which is xz with y up
-    *right = glm::vec3(1.0f, 0.0f, 0.0f);
-    *up = glm::vec3(0.0f, 0.0f, 1.0f);
+    return {.right = glm::vec3(1.0f, 0.0f, 0.0f), .up = glm::vec3(0.0f, 0.0f, 1.0f)};
 }
 
 /**
@@ -76,9 +73,9 @@ void ConstructionPlane::draw(const v3d::type::camera::Camera& camera, v3d::rende
         return;
     }
 
-    glm::vec3 right(1.0f, 0.0f, 0.0f);
-    glm::vec3 up(0.0f, 0.0f, 1.0f);
-    axes(camera, &right, &up);
+    const Axes plane = axes(camera);
+    const glm::vec3& right = plane.right;
+    const glm::vec3& up = plane.up;
 
     const float extent = static_cast<float>(lines_) * spacing_ / 2.0f;
 

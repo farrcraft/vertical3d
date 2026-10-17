@@ -207,7 +207,7 @@ void PongEngine::rebindPaddleKey(const v3d::event::Event& event) {
  **/
 void PongEngine::applyStoredBindings() {
     for (const auto& binding : PADDLE_COMMANDS) {
-        const std::string key = settings_->text(std::string(binding.first), std::string());
+        const std::string key = settings_->text(std::string(binding.first)).value_or(std::string());
         if (key.empty()) {  // untouched, so it keeps tracking whatever the config binds
             continue;
         }

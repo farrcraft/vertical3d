@@ -17,7 +17,7 @@ namespace {
  * Room for one block with every face cut - six quads.
  **/
 boost::shared_ptr<MeshCache> cache() {
-    return boost::make_shared<MeshCache>(24, 12, 6);
+    return boost::make_shared<MeshCache>(MeshCache::Capacity{.vertices = 24, .tris = 12, .faces = 6});
 }
 
 boost::shared_ptr<Voxel> block(const glm::vec3& position) {

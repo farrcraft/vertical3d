@@ -212,14 +212,14 @@ BOOST_AUTO_TEST_CASE(audio_engine_play_without_a_device_test) {
     bed.loops = -1;
     bed.fadeInMs = 500;
     bed.gain = 0.4f;
-    BOOST_CHECK_EQUAL(sound->play("hit", bed), 0u);
+    BOOST_CHECK(sound->play("hit", bed) == v3d::audio::Voice::None);
     BOOST_TEST(!sound->playClip("hit"));
 
     // and a voice nobody was given is not playing, cannot be stopped and takes no gain
-    BOOST_TEST(!sound->playing(0));
-    BOOST_TEST(!sound->playing(1));
-    BOOST_TEST(!sound->stop(1));
-    BOOST_TEST(!sound->gain(1, 0.5f));
+    BOOST_TEST(!sound->playing(v3d::audio::Voice::None));
+    BOOST_TEST(!sound->playing(v3d::audio::Voice{1}));
+    BOOST_TEST(!sound->stop(v3d::audio::Voice{1}));
+    BOOST_TEST(!sound->gain(v3d::audio::Voice{1}, 0.5f));
 
     // a bus volume without a device is a false return rather than a crash, so a settings
     // screen on a machine with no sound card still works
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_twice_after_a_play_without_a_device_t
     boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
     BOOST_REQUIRE(clip->load("hit.wav"));
     BOOST_TEST(sound->addClip(clip, "hit"));
-    BOOST_CHECK_EQUAL(sound->play("hit", v3d::audio::Play()), 0u);
+    BOOST_CHECK(sound->play("hit", v3d::audio::Play()) == v3d::audio::Voice::None);
 
     BOOST_CHECK_NO_THROW(sound->shutdown());
     BOOST_CHECK_NO_THROW(sound->shutdown());

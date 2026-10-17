@@ -97,9 +97,9 @@ void TranslateManipulator::apply(const boost::shared_ptr<v3d::brep::BRep>& mesh,
         // the centre handle: both components of the gesture move the object, in the
         // plane of the screen. Screen y points down, so a downward drag runs against
         // the camera's up
-        glm::vec3 right(1.0f, 0.0f, 0.0f);
-        glm::vec3 up(0.0f, 1.0f, 0.0f);
-        basis(view, &right, &up, nullptr);
+        const Basis axes = basis(view);
+        const glm::vec3& right = axes.right;
+        const glm::vec3& up = axes.up;
         const float scale = unitsPerPixel(view, seat.origin);
         const glm::vec2 delta = to - from;
         offset = right * (delta.x * scale) - up * (delta.y * scale);

@@ -20,7 +20,13 @@ class MouseMotion final : public Event {
     /**
      **/
     // not noexcept: the base takes the event name as a std::string, which allocates
-    MouseMotion(const glm::vec2& position, const glm::vec2& motion, const boost::shared_ptr<Context>& context);
+    /** Where the cursor is, and how far it moved. **/
+    struct Moved {
+        glm::vec2 position{0.0f};
+        glm::vec2 motion{0.0f};
+    };
+
+    MouseMotion(const Moved& moved, const boost::shared_ptr<Context>& context);
 
     /**
      * @return the cursor position the move ended at

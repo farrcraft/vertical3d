@@ -105,7 +105,7 @@ void lay(entt::registry* registry, const MeshHandle& strip, const Laid& laid) {
     registry->emplace<Transform>(entity, transform);
     registry->emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{strip, false});
     Playback playback;
-    v3d::ecs::component::play(&playback, bend, duration, false, 0.0f);
+    v3d::ecs::component::play(&playback, {.clip = bend, .duration = duration, .loops = false, .fade = 0.0f});
     v3d::ecs::component::advance(&playback, duration * through);
     registry->emplace<Playback>(entity, playback);
 }

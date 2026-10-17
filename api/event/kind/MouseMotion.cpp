@@ -8,10 +8,10 @@
 namespace v3d::event::kind {
 /**
  **/
-MouseMotion::MouseMotion(const glm::vec2& position, const glm::vec2& motion, const boost::shared_ptr<Context>& context) :
+MouseMotion::MouseMotion(const Moved& moved, const boost::shared_ptr<Context>& context) :
     Event("motion", context),
-    position_(position),
-    motion_(motion) {
+    position_(moved.position),
+    motion_(moved.motion) {
 }
 
 /**

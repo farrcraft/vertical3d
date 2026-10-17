@@ -14,6 +14,7 @@
 #include "Tetrad.h"
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec2.hpp>
 
 /**
  * Tetris game board
@@ -127,7 +128,7 @@ class GameBoard {
          * @param column the leftmost column of its 4x4 layout
          * @param row the topmost row of its 4x4 layout
          */
-        bool fits(const Tetrad & tetrad, int column, int row) const;
+        bool fits(const Tetrad & tetrad, const glm::ivec2 & cell) const;
 
  protected:
         void spawnTetrad();

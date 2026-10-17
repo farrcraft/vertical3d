@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(transform_command_test) {
 
     BOOST_CHECK(!before.same(after));
 
-    v3d::editor::TransformCommand command(cube, before, after, "translate");
+    v3d::editor::TransformCommand command(cube, {.before = before, .after = after}, "translate");
     BOOST_CHECK_EQUAL(command.name(), "translate");
 
     // a gesture is undone by restoring the whole placement, not only the part that moved

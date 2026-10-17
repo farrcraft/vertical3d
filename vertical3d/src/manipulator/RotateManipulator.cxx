@@ -131,8 +131,7 @@ bool RotateManipulator::grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
 
     // a ring is not one segment, so it is tested as the run of segments it is drawn as,
     // each with the base class's segment test
-    glm::vec3 forward(0.0f, 0.0f, 1.0f);  // NOLINT(build/include_what_you_use) - the direction, not std::forward
-    basis(view, nullptr, nullptr, &forward);
+    const glm::vec3 forward = basis(view).forward;
 
     const Axis axes[3] = { Axis::X, Axis::Y, Axis::Z };
     bool found = false;
@@ -199,8 +198,7 @@ float RotateManipulator::swept(const ViewPort& view, const Placement& placement,
 
     const float angle = wrap(std::atan2(after.y, after.x) - std::atan2(before.y, before.x));
 
-    glm::vec3 forward(0.0f, 0.0f, 1.0f);  // NOLINT(build/include_what_you_use) - the direction, not std::forward
-    basis(view, nullptr, nullptr, &forward);
+    const glm::vec3 forward = basis(view).forward;
     return glm::dot(direction(placement, axis), forward) > 0.0f ? -angle : angle;
 }
 
@@ -218,9 +216,9 @@ void RotateManipulator::apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, co
 
     glm::quat turn(1.0f, 0.0f, 0.0f, 0.0f);
     if (axis() == Axis::None) {
-        glm::vec3 right(1.0f, 0.0f, 0.0f);
-        glm::vec3 up(0.0f, 1.0f, 0.0f);
-        basis(view, &right, &up, nullptr);
+        const Basis axes = basis(view);
+        const glm::vec3& right = axes.right;
+        const glm::vec3& up = axes.up;
         // negated, so the face nearest the viewer follows the cursor: a positive turn
         // about the camera's up carries the far side of the object toward the right
         const glm::vec2 delta = to - from;

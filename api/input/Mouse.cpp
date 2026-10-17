@@ -72,7 +72,7 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         glm::vec2 position(event.motion.x, event.motion.y);
         state_(position);
         dispatcher_->trigger<v3d::event::kind::MouseMotion>(
-            v3d::event::kind::MouseMotion(position, glm::vec2(event.motion.xrel, event.motion.yrel), context_));
+            v3d::event::kind::MouseMotion({.position = position, .motion = glm::vec2(event.motion.xrel, event.motion.yrel)}, context_));
         return true;  // motion is not a bindable source event - it has no discrete name
     }
     case SDL_EVENT_MOUSE_WHEEL: {
@@ -81,7 +81,7 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         const glm::vec2 notches(event.wheel.x, event.wheel.y);
         state_.wheel(notches.y);
         dispatcher_->trigger<v3d::event::kind::MouseWheel>(
-            v3d::event::kind::MouseWheel(notches, glm::vec2(event.wheel.mouse_x, event.wheel.mouse_y), context_));
+            v3d::event::kind::MouseWheel({.notches = notches, .position = glm::vec2(event.wheel.mouse_x, event.wheel.mouse_y)}, context_));
         return true;  // a turn has no discrete name either, so nothing binds to one
     }
     default:

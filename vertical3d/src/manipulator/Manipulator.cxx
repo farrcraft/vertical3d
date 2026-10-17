@@ -213,23 +213,19 @@ float Manipulator::unitsPerPixel(const ViewPort& view, const glm::vec3& at) {
 
 /**
  **/
-void Manipulator::basis(const ViewPort& view, glm::vec3* right, glm::vec3* up, glm::vec3* forward) {
+Manipulator::Basis Manipulator::basis(const ViewPort& view) {
     boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     if (!camera) {
-        return;
+        return Basis();
     }
     // the view matrix rotates the world into the camera's axes, so its rows are those
     // axes in world space
     const glm::mat4 matrix = camera->view();
-    if (right != nullptr) {
-        *right = glm::vec3(matrix[0][0], matrix[1][0], matrix[2][0]);
-    }
-    if (up != nullptr) {
-        *up = glm::vec3(matrix[0][1], matrix[1][1], matrix[2][1]);
-    }
-    if (forward != nullptr) {
-        *forward = glm::vec3(matrix[0][2], matrix[1][2], matrix[2][2]);
-    }
+    return {
+        .right = glm::vec3(matrix[0][0], matrix[1][0], matrix[2][0]),
+        .up = glm::vec3(matrix[0][1], matrix[1][1], matrix[2][1]),
+        .forward = glm::vec3(matrix[0][2], matrix[1][2], matrix[2][2]),
+    };
 }
 
 /**

@@ -35,9 +35,9 @@ namespace v3d::audio {
  *
  * An id rather than a pointer, so that a handle to a sound that has since finished is
  * refused rather than being a pointer to a track the engine has recycled underneath it.
- * Zero is no sound at all, which a failed play() returns.
+ * None is no sound at all, which a failed play() returns.
  **/
-typedef uint32_t Voice;
+enum class Voice : uint32_t { None = 0 };
 
 /**
  * An Audio / Sound processing engine
@@ -113,7 +113,7 @@ class Engine final {
      *
      * @param clip the id the clip was filed under
      * @param how the bus, the looping, the fade and the gain
-     * @return the voice, or 0 when there is no device, no such clip, or no track to be had
+     * @return the voice, or Voice::None when there is no device, no such clip, or no track to be had
      **/
     Voice play(const std::string_view & clip, const Play & how);
 
@@ -212,7 +212,7 @@ class Engine final {
     std::map<std::string, boost::shared_ptr<AudioClip>> sounds_;
     std::map<Voice, Playing> voices_;
     std::vector<MIX_Track*> free_;   /**< reaped tracks, waiting to be played again **/
-    Voice nextVoice_ = 1;            /**< never reused, so a stale handle stays stale **/
+    uint32_t nextVoice_ = 1;         /**< never reused, so a stale handle stays stale **/
     // after dispatcher_, so it disconnects before the dispatcher it points into can go
     entt::scoped_connection sound_;
 };

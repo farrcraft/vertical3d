@@ -54,26 +54,26 @@ BOOST_AUTO_TEST_CASE(gameboard_fits_test) {
     boost::shared_ptr<GameBoard> game = board();
     Tetrad piece(bar());
 
-    BOOST_CHECK_EQUAL(game->fits(piece, 0, 0), true);
+    BOOST_CHECK_EQUAL(game->fits(piece, glm::ivec2(0, 0)), true);
     // hard against either wall is still inside it
-    BOOST_CHECK_EQUAL(game->fits(piece, static_cast<int>(game->columns()) - 2, 0), true);
+    BOOST_CHECK_EQUAL(game->fits(piece, glm::ivec2(static_cast<int>(game->columns()) - 2, 0)), true);
     // one cell further is not
-    BOOST_CHECK_EQUAL(game->fits(piece, static_cast<int>(game->columns()) - 1, 0), false);
-    BOOST_CHECK_EQUAL(game->fits(piece, -1, 0), false);
+    BOOST_CHECK_EQUAL(game->fits(piece, glm::ivec2(static_cast<int>(game->columns()) - 1, 0)), false);
+    BOOST_CHECK_EQUAL(game->fits(piece, glm::ivec2(-1, 0)), false);
     // the floor
-    BOOST_CHECK_EQUAL(game->fits(piece, 0, static_cast<int>(game->rows()) - 1), true);
-    BOOST_CHECK_EQUAL(game->fits(piece, 0, static_cast<int>(game->rows())), false);
+    BOOST_CHECK_EQUAL(game->fits(piece, glm::ivec2(0, static_cast<int>(game->rows()) - 1)), true);
+    BOOST_CHECK_EQUAL(game->fits(piece, glm::ivec2(0, static_cast<int>(game->rows()))), false);
 
     // a block already on the board, which the two cell bar overlaps from either side
     game->piece(4, 5, Piece(Piece::COLOR_GREEN));
-    BOOST_CHECK_EQUAL(game->fits(piece, 2, 5), true);
-    BOOST_CHECK_EQUAL(game->fits(piece, 3, 5), false);
-    BOOST_CHECK_EQUAL(game->fits(piece, 4, 5), false);
+    BOOST_CHECK_EQUAL(game->fits(piece, glm::ivec2(2, 5)), true);
+    BOOST_CHECK_EQUAL(game->fits(piece, glm::ivec2(3, 5)), false);
+    BOOST_CHECK_EQUAL(game->fits(piece, glm::ivec2(4, 5)), false);
     // the row below it is still clear
-    BOOST_CHECK_EQUAL(game->fits(piece, 3, 6), true);
+    BOOST_CHECK_EQUAL(game->fits(piece, glm::ivec2(3, 6)), true);
 
     // an uninitialized tetrad is nowhere
-    BOOST_CHECK_EQUAL(game->fits(Tetrad(), 0, 0), false);
+    BOOST_CHECK_EQUAL(game->fits(Tetrad(), glm::ivec2(0, 0)), false);
 }
 
 BOOST_AUTO_TEST_CASE(gameboard_row_clear_test) {

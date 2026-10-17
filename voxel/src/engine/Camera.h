@@ -26,13 +26,28 @@ class Camera : public Aligned<16> {
     Camera();
 
     void lookAt(const glm::vec3 &target);
-    void lookAt(const glm::vec3 &eye, const glm::vec3 &target, const glm::vec3 &up);
+    /** Where the eye is, the point it looks at, and which way is up. **/
+    struct Aim {
+        glm::vec3 eye{0.0f};
+        glm::vec3 target{0.0f, 0.0f, -1.0f};
+        glm::vec3 up{0.0f, 1.0f, 0.0f};
+    };
+
+    void lookAt(const Aim& aim);
 
     void move(float dx, float dy, float dz);
     glm::vec3 calculateMovement(const glm::vec3 & delta);
 
     void move(const glm::vec3 &direction, const glm::vec3 &amount);
-    void perspective(float fovx, float aspect, float znear, float zfar);
+    /** The horizontal field of view in degrees, the aspect, and the near and far planes. **/
+    struct Lens {
+        float fovx = 90.0f;
+        float aspect = 1.0f;
+        float znear = 0.1f;
+        float zfar = 1000.0f;
+    };
+
+    void perspective(const Lens& lens);
     void rotate(float headingDegrees, float pitchDegrees, float rollDegrees);
 
     void updatePosition(const glm::vec3 &direction, float elapsedTimeSec);

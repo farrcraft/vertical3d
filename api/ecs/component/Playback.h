@@ -48,10 +48,16 @@ struct Playback final {
  * Asking for the clip already playing changes nothing, so a game can call this every step from
  * whatever decides its clip. A fade of zero, or nothing playing to fade from, cuts.
  *
- * @param duration the clip's, in seconds
- * @param fade how long the fade lasts, in seconds
+ * The clip's duration and the fade are in seconds.
  **/
-void play(Playback* playback, uint32_t clip, float duration, bool loops, float fade);
+struct Start {
+    uint32_t clip = Playback::none;
+    float duration = 0.0f;
+    bool loops = false;
+    float fade = 0.0f;
+};
+
+void play(Playback* playback, const Start& start);
 
 /**
  * Move one playback on by a step: its clip, the clip it is fading from, and the fade.

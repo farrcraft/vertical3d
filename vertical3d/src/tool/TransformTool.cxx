@@ -178,7 +178,7 @@ void TransformTool::commit() {
     if (after.same(before_)) {
         return;
     }
-    commands_->push(boost::make_shared<TransformCommand>(mesh, before_, after, modeName(mode_)));
+    commands_->push(boost::make_shared<TransformCommand>(mesh, TransformCommand::Change{.before = before_, .after = after}, modeName(mode_)));
 }
 
 /**

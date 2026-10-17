@@ -329,7 +329,7 @@ void Engine::handleEvent(const SDL_Event& event) {
         if (window_) {
             window_->resize(glm::ivec2(event.window.data1, event.window.data2));
         }
-        dispatcher_->trigger(v3d::event::kind::WindowResize(event.window.data1, event.window.data2));
+        dispatcher_->trigger(v3d::event::kind::WindowResize(glm::ivec2(event.window.data1, event.window.data2)));
         break;
     // a key released while the window is unfocused never arrives, so an app that drops
     // held input on focus loss is told when focus goes rather than polling for it
@@ -393,7 +393,7 @@ bool Engine::eventLoop() {
         }
         // advance the simulation by each whole fixed step now due. The accumulator clamps
         // the frame and carries the remainder forward
-        statistics_.frame(elapsed, accumulator_.accumulate(elapsed));
+        statistics_.frame(std::chrono::nanoseconds(elapsed), accumulator_.accumulate(elapsed));
         while (accumulator_.drain()) {
             if (!simulate(Accumulator::seconds)) {
                 return false;

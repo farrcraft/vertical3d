@@ -150,18 +150,18 @@ void Picker::surface(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
 
         // a fan from the loop's first vertex is correct only for a planar convex
         // face, which is all the primitives and the modelling operations produce
-        glm::vec3 first;
-        glm::vec3 second;
-        glm::vec3 third;
-        if (!v3d::brep::loopSegment(*mesh, loop, 0, &first, nullptr)) {
+        const std::optional<v3d::brep::Segment> opening = v3d::brep::loopSegment(*mesh, loop, 0);
+        if (!opening) {
             continue;
         }
+        const glm::vec3& first = opening->from;
         for (std::size_t index = 1; index + 1 < loop.size(); index++) {
-            if (!v3d::brep::loopSegment(*mesh, loop, index, &second, &third)) {
+            const std::optional<v3d::brep::Segment> edge = v3d::brep::loopSegment(*mesh, loop, index);
+            if (!edge) {
                 continue;
             }
-            if (local.intersects(first, second, third, &distance)) {
-                offer(mesh->id(), face, distance);
+            if (local.intersects(first, edge->from, edge->to, &distance)) {
+                offer({.mesh = mesh->id(), .component = face, .distance = distance});
             }
         }
     }
@@ -184,7 +184,7 @@ void Picker::vertices(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         if (glm::distance(position, cursor_) > tolerance_) {
             continue;
         }
-        offer(mesh->id(), index, depth);
+        offer({.mesh = mesh->id(), .component = index, .distance = depth});
     }
 }
 
@@ -201,11 +201,12 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
                 continue;
             }
 
-            glm::vec3 from;
-            glm::vec3 to;
-            if (!v3d::brep::loopSegment(*mesh, loop, index, &from, &to)) {
+            const std::optional<v3d::brep::Segment> segment = v3d::brep::loopSegment(*mesh, loop, index);
+            if (!segment) {
                 continue;
             }
+            const glm::vec3& from = segment->from;
+            const glm::vec3& to = segment->to;
 
             glm::vec2 start;
             glm::vec2 end;
@@ -219,7 +220,7 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
             if (glm::distance(start + (end - start) * along, cursor_) > tolerance_) {
                 continue;
             }
-            offer(mesh->id(), loop[index], startDepth + ((endDepth - startDepth) * along));
+            offer({.mesh = mesh->id(), .component = loop[index], .distance = startDepth + ((endDepth - startDepth) * along)});
         }
     }
 }
@@ -248,14 +249,14 @@ bool Picker::screen(const glm::vec3& point, glm::vec2* position, float* depth) c
 
 /**
  **/
-void Picker::offer(unsigned int mesh, unsigned int component, float distance) {
-    if (hit_.valid && distance >= nearest_) {
+void Picker::offer(const Candidate& candidate) {
+    if (hit_.valid && candidate.distance >= nearest_) {
         return;
     }
-    nearest_ = distance;
+    nearest_ = candidate.distance;
     hit_.valid = true;
-    hit_.mesh = mesh;
-    hit_.component = component;
+    hit_.mesh = candidate.mesh;
+    hit_.component = candidate.component;
 }
 
 };  // namespace v3d::editor

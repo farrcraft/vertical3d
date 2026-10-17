@@ -90,11 +90,12 @@ void WireframeVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
                 continue;
             }
 
-            glm::vec3 from;
-            glm::vec3 to;
-            if (!v3d::brep::loopSegment(*mesh, loop, entry, &from, &to)) {
+            const std::optional<v3d::brep::Segment> segment = v3d::brep::loopSegment(*mesh, loop, entry);
+            if (!segment) {
                 continue;
             }
+            const glm::vec3& from = segment->from;
+            const glm::vec3& to = segment->to;
 
             const v3d::brep::Index pair = mesh->edge(current)->pair();
             const bool selected = faceSelected(current) || (pair != v3d::brep::INVALID_ID && faceSelected(pair)) ||

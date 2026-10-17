@@ -6,6 +6,7 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -70,10 +71,10 @@ class Statistics final {
     /**
      * Record one frame.
      *
-     * @param frame nanoseconds the frame took, before the accumulator clamps it
+     * @param took how long the frame took, before the accumulator clamps it
      * @param steps simulation steps due in that frame
      **/
-    void frame(std::uint64_t frame, unsigned int steps) noexcept;
+    void frame(std::chrono::nanoseconds took, unsigned int steps) noexcept;
 
     /**
      * Time what happens until the scope ends, under a name. Two scopes of one name in a frame

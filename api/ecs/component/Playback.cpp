@@ -37,7 +37,11 @@ float unrolled(const Playback& earlier, const Playback& later) {
 
 };  // namespace
 
-void play(Playback* playback, uint32_t clip, float duration, bool loops, float fade) {
+void play(Playback* playback, const Start& start) {
+    const uint32_t clip = start.clip;
+    const float duration = start.duration;
+    const bool loops = start.loops;
+    const float fade = start.fade;
     if (playback->clip == clip) {
         return;
     }

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec2.hpp>
 
 /**
  * The world's heightmap - libnoise perlin over a 256x256 plane, read back per column.
@@ -24,7 +25,7 @@ class TerrainMap {
     /**
      * @return the height of a column, in the range zero to 255
      **/
-    virtual float height(unsigned int x, unsigned int z);
+    virtual float height(const glm::uvec2& column);
 
  private:
     // pimpl

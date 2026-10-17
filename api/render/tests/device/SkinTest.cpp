@@ -287,7 +287,7 @@ BOOST_AUTO_TEST_CASE(a_bent_strip_is_drawn_and_silent) {
     const boost::shared_ptr<v3d::image::Image> rested = draw(&headless, registry, meshes, &lit, target, "data_out/skinned_rest.png");
 
     Playback playback;
-    v3d::ecs::component::play(&playback, *bend, meshes.resolve(strip)->skin->clips[*bend].duration, false, 0.0f);
+    v3d::ecs::component::play(&playback, {.clip = *bend, .duration = meshes.resolve(strip)->skin->clips[*bend].duration, .loops = false, .fade = 0.0f});
     v3d::ecs::component::advance(&playback, 0.5f);
     registry.emplace<Playback>(entity, playback);
     const boost::shared_ptr<v3d::image::Image> bent = draw(&headless, registry, meshes, &lit, target, "data_out/skinned_bend.png");
@@ -319,7 +319,7 @@ BOOST_AUTO_TEST_CASE(an_exported_rig_is_drawn_mid_clip) {
     entt::registry registry;
     const entt::entity entity = lay(&registry, rig);
     Playback playback;
-    v3d::ecs::component::play(&playback, *bend, duration, false, 0.0f);
+    v3d::ecs::component::play(&playback, {.clip = *bend, .duration = duration, .loops = false, .fade = 0.0f});
     registry.emplace<Playback>(entity, playback);
 
     std::vector<boost::shared_ptr<v3d::image::Image>> pictures;

@@ -160,19 +160,24 @@ BOOST_AUTO_TEST_CASE(pong_scene_right_paddle_collision_test) {
  * point at the left edge sound from the left, and the same on the right from the right.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_pans_each_sound_to_its_side_test) {
-    const auto heard = [](const glm::vec2& at, const glm::vec2& heading, const std::string& clip) {
+    // where the ball is, and which way it is going
+    struct Ball {
+        glm::vec2 at{0.0f};
+        glm::vec2 heading{0.0f};
+    };
+    const auto heard = [](const Ball& ball, const std::string& clip) {
         Fixture fixture;
-        fixture.scene_.ball().position(at);
-        fixture.scene_.ball().direction(heading);
+        fixture.scene_.ball().position(ball.at);
+        fixture.scene_.ball().direction(ball.heading);
         fixture.scene_.tick(STEP);
         BOOST_TEST_REQUIRE(fixture.sounds_.has(clip));
         return fixture.sounds_.pan(clip);
     };
 
-    BOOST_TEST(heard(glm::vec2(20.0f, 300.0f), glm::vec2(-60.0f, 0.0f), "hit") < -0.9f);
-    BOOST_TEST(heard(glm::vec2(780.0f, 300.0f), glm::vec2(60.0f, 0.0f), "hit") > 0.9f);
-    BOOST_TEST(heard(glm::vec2(5.0f, 100.0f), glm::vec2(-60.0f, 0.0f), "score") < -0.9f);
-    BOOST_TEST(heard(glm::vec2(795.0f, 100.0f), glm::vec2(60.0f, 0.0f), "score") > 0.9f);
+    BOOST_TEST(heard({.at = glm::vec2(20.0f, 300.0f), .heading = glm::vec2(-60.0f, 0.0f)}, "hit") < -0.9f);
+    BOOST_TEST(heard({.at = glm::vec2(780.0f, 300.0f), .heading = glm::vec2(60.0f, 0.0f)}, "hit") > 0.9f);
+    BOOST_TEST(heard({.at = glm::vec2(5.0f, 100.0f), .heading = glm::vec2(-60.0f, 0.0f)}, "score") < -0.9f);
+    BOOST_TEST(heard({.at = glm::vec2(795.0f, 100.0f), .heading = glm::vec2(60.0f, 0.0f)}, "score") > 0.9f);
 }
 
 /**

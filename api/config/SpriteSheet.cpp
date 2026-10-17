@@ -20,11 +20,11 @@ height_(0) {
 
 /**
  **/
-SpriteSheet::SpriteSheet(const std::string& name, const std::string& image, int width, int height) :
-name_(name),
-image_(image),
-width_(width),
-height_(height) {
+SpriteSheet::SpriteSheet(const Spec& spec) :
+name_(spec.name),
+image_(spec.image),
+width_(spec.width),
+height_(spec.height) {
 }
 
 /**

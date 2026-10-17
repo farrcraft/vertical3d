@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(settings_missing_document_test) {
 
     BOOST_CHECK_EQUAL(settings.load(), false);
     BOOST_CHECK_EQUAL(settings.writable(), true);
-    BOOST_CHECK_EQUAL(settings.text("paddle1up", "w"), "w");
+    BOOST_CHECK_EQUAL(settings.text("paddle1up").value_or("w"), "w");
     BOOST_CHECK_EQUAL(settings.integer("window.width", 1280), 1280);
     BOOST_CHECK_EQUAL(settings.number("volume.music", 0.8), 0.8);
     BOOST_CHECK_EQUAL(settings.flag("fullscreen", false), false);
@@ -73,20 +73,20 @@ BOOST_AUTO_TEST_CASE(settings_round_trip_test) {
 
     v3d::engine::Settings reread("vertical3d_tests", "roundtrip", logger());
     BOOST_REQUIRE_EQUAL(reread.load(), true);
-    BOOST_CHECK_EQUAL(reread.text("paddle1up", "w"), "q");
+    BOOST_CHECK_EQUAL(reread.text("paddle1up").value_or("w"), "q");
     BOOST_CHECK_EQUAL(reread.integer("window.width", 1280), 1920);
     BOOST_CHECK_EQUAL(reread.number("volume.music", 0.8), 0.25);
     BOOST_CHECK_EQUAL(reread.flag("fullscreen", false), true);
 
     // a key nobody stored is still the caller's default
-    BOOST_CHECK_EQUAL(reread.text("paddle2up", "up"), "up");
+    BOOST_CHECK_EQUAL(reread.text("paddle2up").value_or("up"), "up");
 
     // and clearing one puts it back to tracking the build
     reread.clear("paddle1up");
     BOOST_REQUIRE_EQUAL(reread.save(), true);
     v3d::engine::Settings cleared("vertical3d_tests", "roundtrip", logger());
     BOOST_REQUIRE_EQUAL(cleared.load(), true);
-    BOOST_CHECK_EQUAL(cleared.text("paddle1up", "w"), "w");
+    BOOST_CHECK_EQUAL(cleared.text("paddle1up").value_or("w"), "w");
 
     boost::filesystem::remove(settings.path());
 }
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE(settings_unknown_key_survives_test) {
     v3d::engine::Settings reread("vertical3d_tests", "unknown", logger());
     BOOST_REQUIRE_EQUAL(reread.load(), true);
     BOOST_CHECK_EQUAL(reread.integer("known", 0), 2);
-    BOOST_CHECK_EQUAL(reread.text("fromlater", ""), "kept");
+    BOOST_CHECK_EQUAL(reread.text("fromlater").value_or(""), "kept");
 
     boost::filesystem::remove(settings.path());
 }
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(settings_future_version_test) {
 
     BOOST_CHECK_EQUAL(settings.load(), false);
     BOOST_CHECK_EQUAL(settings.writable(), false);
-    BOOST_CHECK_EQUAL(settings.text("paddle1up", "w"), "w");
+    BOOST_CHECK_EQUAL(settings.text("paddle1up").value_or("w"), "w");
 
     settings.set("paddle1up", "x");
     BOOST_CHECK_EQUAL(settings.save(), false);
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(settings_malformed_document_test) {
     put(settings, "{ \"version\": 1, \"settings\": { \"paddle1up\": ");
 
     BOOST_CHECK_EQUAL(settings.load(), false);
-    BOOST_CHECK_EQUAL(settings.text("paddle1up", "w"), "w");
+    BOOST_CHECK_EQUAL(settings.text("paddle1up").value_or("w"), "w");
 
     // unlike a future document, this one is replaceable - there is nothing in it to keep
     BOOST_CHECK_EQUAL(settings.writable(), true);
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE(settings_malformed_document_test) {
 
     v3d::engine::Settings reread("vertical3d_tests", "malformed", logger());
     BOOST_REQUIRE_EQUAL(reread.load(), true);
-    BOOST_CHECK_EQUAL(reread.text("paddle1up", "w"), "e");
+    BOOST_CHECK_EQUAL(reread.text("paddle1up").value_or("w"), "e");
 
     boost::filesystem::remove(settings.path());
 }
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(settings_wrong_type_test) {
 
     BOOST_REQUIRE_EQUAL(settings.load(), true);
     BOOST_CHECK_EQUAL(settings.number("volume", 0.5), 0.5);
-    BOOST_CHECK_EQUAL(settings.text("name", "player"), "player");
+    BOOST_CHECK_EQUAL(settings.text("name").value_or("player"), "player");
     BOOST_CHECK_EQUAL(settings.flag("fullscreen", false), false);
     BOOST_CHECK_EQUAL(settings.integer("width", 1280), 1280);
 
@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(settings_unreadable_version_test) {
         put(settings, document);
 
         BOOST_CHECK_EQUAL(settings.load(), false);
-        BOOST_CHECK_EQUAL(settings.text("paddle1up", "w"), "w");
+        BOOST_CHECK_EQUAL(settings.text("paddle1up").value_or("w"), "w");
         BOOST_CHECK_EQUAL(settings.writable(), true);
         boost::filesystem::remove(settings.path());
     }

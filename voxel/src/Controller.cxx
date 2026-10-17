@@ -81,7 +81,7 @@ bool Controller::start() {
     renderer_->ui(vgui_);
 
     // set the scene size according to the window canvas
-    renderer_->resize(window()->width(), window()->height());
+    renderer_->resize(glm::ivec2(window()->width(), window()->height()));
 
     return true;
 }

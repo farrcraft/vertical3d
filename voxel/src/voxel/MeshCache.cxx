@@ -9,24 +9,24 @@
 
 #include <stdexcept>
 
-MeshCache::MeshCache(size_t vertices, size_t tris, size_t faces) :
+MeshCache::MeshCache(const Capacity& capacity) :
     vertices_(0),
     tris_(0),
     faces_(0),
     vertexCount_(0),
     triCount_(0),
     faceCount_(0),
-    maxVertices_(vertices),
-    maxTris_(tris),
-    maxFaces_(faces) {
-    if (vertices > 0) {
-        vertices_ = new glm::vec3[vertices];
+    maxVertices_(capacity.vertices),
+    maxTris_(capacity.tris),
+    maxFaces_(capacity.faces) {
+    if (capacity.vertices > 0) {
+        vertices_ = new glm::vec3[capacity.vertices];
     }
-    if (tris > 0) {
-        tris_ = new glm::ivec3[tris];
+    if (capacity.tris > 0) {
+        tris_ = new glm::ivec3[capacity.tris];
     }
-    if (faces > 0) {
-        faces_ = new glm::ivec4[faces];
+    if (capacity.faces > 0) {
+        faces_ = new glm::ivec4[capacity.faces];
     }
 }
 
@@ -118,17 +118,19 @@ void MeshCache::extract(const boost::shared_ptr<Voxel> & voxel, unsigned int fac
     glm::vec3 p6 = glm::vec3(1.0f, 1.0f, 0.0f) + position;
     glm::vec3 p7 = glm::vec3(0.0f, 1.0f, 0.0f) + position;
 
-    createFace(type, faces, Voxel::BLOCK_FACE_FRONT,  p0, p1, p2, p3);
-    createFace(type, faces, Voxel::BLOCK_FACE_RIGHT,  p1, p5, p6, p2);
-    createFace(type, faces, Voxel::BLOCK_FACE_TOP,    p2, p6, p7, p3);
-    createFace(type, faces, Voxel::BLOCK_FACE_LEFT,   p4, p0, p3, p7);
-    createFace(type, faces, Voxel::BLOCK_FACE_BOTTOM, p4, p5, p1, p0);
-    createFace(type, faces, Voxel::BLOCK_FACE_BACK,   p5, p4, p7, p6);
+    createFace({.type = type, .drawFaces = faces, .inFaces = Voxel::BLOCK_FACE_FRONT},  p0, p1, p2, p3);
+    createFace({.type = type, .drawFaces = faces, .inFaces = Voxel::BLOCK_FACE_RIGHT},  p1, p5, p6, p2);
+    createFace({.type = type, .drawFaces = faces, .inFaces = Voxel::BLOCK_FACE_TOP},    p2, p6, p7, p3);
+    createFace({.type = type, .drawFaces = faces, .inFaces = Voxel::BLOCK_FACE_LEFT},   p4, p0, p3, p7);
+    createFace({.type = type, .drawFaces = faces, .inFaces = Voxel::BLOCK_FACE_BOTTOM}, p4, p5, p1, p0);
+    createFace({.type = type, .drawFaces = faces, .inFaces = Voxel::BLOCK_FACE_BACK},   p5, p4, p7, p6);
 }
 
-void MeshCache::createFace(unsigned int type, unsigned int drawFaces, unsigned int inFaces,
+void MeshCache::createFace(const Facing & facing,
     const glm::vec3 & v0, const glm::vec3 & v1, const glm::vec3 & v2, const glm::vec3 & v3) {
-    if ((drawFaces & inFaces) == 0) {
+    const unsigned int type = facing.type;
+    const unsigned int inFaces = facing.inFaces;
+    if ((facing.drawFaces & facing.inFaces) == 0) {
         return;
     }
 

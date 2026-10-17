@@ -18,7 +18,7 @@ MeshBuilder::MeshBuilder(const boost::unordered_map<unsigned int, boost::shared_
     const size_t vertices = 32768;
     const size_t tris = 49152;
     const size_t faces = 24576;
-    cache_.reset(new MeshCache(vertices, tris, faces));
+    cache_.reset(new MeshCache({.vertices = vertices, .tris = tris, .faces = faces}));
 }
 
 void MeshBuilder::build(const boost::shared_ptr<ChunkMeshPool> & pool, size_t limit) {

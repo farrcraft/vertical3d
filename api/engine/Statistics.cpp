@@ -20,7 +20,8 @@ Statistics::Statistics() :
     }) {
 }
 
-void Statistics::frame(std::uint64_t frame, unsigned int steps) noexcept {
+void Statistics::frame(std::chrono::nanoseconds took, unsigned int steps) noexcept {
+    const std::uint64_t frame = static_cast<std::uint64_t>(took.count());
     last_ = frame;
     steps_ = steps;
     // the slot being overwritten leaves the window, so the running total loses it rather

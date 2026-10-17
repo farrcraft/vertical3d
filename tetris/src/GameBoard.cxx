@@ -168,7 +168,9 @@ Tetrad & GameBoard::currentTetrad() {
     return currentTetrad_;
 }
 
-bool GameBoard::fits(const Tetrad & tetrad, int column, int row) const {
+bool GameBoard::fits(const Tetrad & tetrad, const glm::ivec2 & cell) const {
+    const int column = cell.x;
+    const int row = cell.y;
     if (!tetrad.initialized()) {
         return false;
     }
@@ -228,7 +230,7 @@ void GameBoard::spawnTetrad() {
     currentTetrad_.position(position);
 
     // nowhere left to put it: the stack has reached the top
-    if (!fits(currentTetrad_, static_cast<int>(position.first), static_cast<int>(position.second))) {
+    if (!fits(currentTetrad_, glm::ivec2(static_cast<int>(position.first), static_cast<int>(position.second)))) {
         over_ = true;
     }
 }
@@ -271,7 +273,7 @@ void GameBoard::update(float step) {
     nextMove_ = fastFall_ ? (fallRate_ / static_cast<float>(fastFallMultiplier_)) : fallRate_;
 
     const Tetrad::PositionType position = currentTetrad_.position();
-    if (fits(currentTetrad_, static_cast<int>(position.first), static_cast<int>(position.second + 1))) {
+    if (fits(currentTetrad_, glm::ivec2(static_cast<int>(position.first), static_cast<int>(position.second + 1)))) {
         currentTetrad_.move(0, 1);
         return;
     }

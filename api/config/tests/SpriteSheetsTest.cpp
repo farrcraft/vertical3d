@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_round_trip_test) {
  * a packer cannot emit a region the reader would drop on the way back in.
  **/
 BOOST_AUTO_TEST_CASE(sprite_sheets_build_a_document_test) {
-    v3d::config::SpriteSheet packed("hud", "art/hud.png", 128, 64);
+    v3d::config::SpriteSheet packed({.name = "hud", .image = "art/hud.png", .width = 128, .height = 64});
     BOOST_CHECK(packed.place("heart", v3d::config::SpriteRegion()) == false);
 
     v3d::config::SpriteRegion heart;
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_add_replaces_one_sheet_test) {
     BOOST_REQUIRE_EQUAL(loaded.load(config(sheets)), true);
     BOOST_REQUIRE_EQUAL(loaded.names().size(), 2u);
 
-    v3d::config::SpriteSheet repacked("terrain", "terrain.png", 512, 512);
+    v3d::config::SpriteSheet repacked({.name = "terrain", .image = "terrain.png", .width = 512, .height = 512});
     v3d::config::SpriteRegion grass;
     grass.x = 0;
     grass.y = 0;
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_add_replaces_one_sheet_test) {
 
     // a sheet that could not be read back is not one that can be put in
     BOOST_CHECK(!loaded.add(v3d::config::SpriteSheet()));
-    BOOST_CHECK(!loaded.add(v3d::config::SpriteSheet("sizeless", "sizeless.png", 0, 0)));
+    BOOST_CHECK(!loaded.add(v3d::config::SpriteSheet({.name = "sizeless", .image = "sizeless.png", .width = 0, .height = 0})));
     BOOST_CHECK_EQUAL(loaded.names().size(), 2u);
 }
 

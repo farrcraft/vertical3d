@@ -7,7 +7,7 @@
 
 namespace v3d::event::kind {
 
-WindowResize::WindowResize(int width, int height) noexcept : width_(width), height_(height) {
+WindowResize::WindowResize(const glm::ivec2& size) noexcept : width_(size.x), height_(size.y) {
 }
 
 int WindowResize::width() const noexcept {

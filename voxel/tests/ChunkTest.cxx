@@ -19,9 +19,8 @@ class FlatTerrain final : public TerrainMap {
     explicit FlatTerrain(float height) : height_(height) {
     }
 
-    float height(unsigned int x, unsigned int z) override {
-        static_cast<void>(x);
-        static_cast<void>(z);
+    float height(const glm::uvec2& column) override {
+        static_cast<void>(column);
         return height_;
     }
 

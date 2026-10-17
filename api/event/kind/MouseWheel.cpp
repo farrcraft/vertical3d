@@ -8,10 +8,10 @@
 namespace v3d::event::kind {
 /**
  **/
-MouseWheel::MouseWheel(const glm::vec2& notches, const glm::vec2& position, const boost::shared_ptr<Context>& context) :
+MouseWheel::MouseWheel(const Turned& turned, const boost::shared_ptr<Context>& context) :
     Event("wheel", context),
-    notches_(notches),
-    position_(position) {
+    notches_(turned.notches),
+    position_(turned.position) {
 }
 
 /**

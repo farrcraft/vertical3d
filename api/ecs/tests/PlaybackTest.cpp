@@ -24,7 +24,7 @@ const uint32_t run = 1;
  **/
 Playback walking() {
     Playback playback;
-    v3d::ecs::component::play(&playback, walk, 2.0f, true, 0.0f);
+    v3d::ecs::component::play(&playback, {.clip = walk, .duration = 2.0f, .loops = true, .fade = 0.0f});
     v3d::ecs::component::advance(&playback, 1.0f);
     return playback;
 }
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(playback_advances_by_the_step_test) {
  **/
 BOOST_AUTO_TEST_CASE(playback_a_clamped_clip_stops_test) {
     Playback playback;
-    v3d::ecs::component::play(&playback, run, 1.0f, false, 0.0f);
+    v3d::ecs::component::play(&playback, {.clip = run, .duration = 1.0f, .loops = false, .fade = 0.0f});
     v3d::ecs::component::advance(&playback, 0.75f);
     v3d::ecs::component::advance(&playback, 0.75f);
     BOOST_CHECK_EQUAL(playback.time, 1.0f);
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(playback_a_clamped_clip_stops_test) {
  **/
 BOOST_AUTO_TEST_CASE(playback_asking_again_changes_nothing_test) {
     Playback playback = walking();
-    v3d::ecs::component::play(&playback, walk, 2.0f, true, 0.25f);
+    v3d::ecs::component::play(&playback, {.clip = walk, .duration = 2.0f, .loops = true, .fade = 0.25f});
     BOOST_CHECK_EQUAL(playback.time, 1.0f);
     BOOST_CHECK_EQUAL(playback.from, Playback::none);
 }
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(playback_asking_again_changes_nothing_test) {
  **/
 BOOST_AUTO_TEST_CASE(playback_a_fade_runs_its_length_test) {
     Playback playback = walking();
-    v3d::ecs::component::play(&playback, run, 1.0f, true, 0.5f);
+    v3d::ecs::component::play(&playback, {.clip = run, .duration = 1.0f, .loops = true, .fade = 0.5f});
     BOOST_CHECK_EQUAL(playback.clip, run);
     BOOST_CHECK_EQUAL(playback.time, 0.0f);
     BOOST_CHECK_EQUAL(playback.from, walk);
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(playback_a_fade_runs_its_length_test) {
  **/
 BOOST_AUTO_TEST_CASE(playback_fades_out_into_no_clip_test) {
     Playback playback = walking();
-    v3d::ecs::component::play(&playback, Playback::none, 0.0f, false, 0.5f);
+    v3d::ecs::component::play(&playback, {.clip = Playback::none, .duration = 0.0f, .loops = false, .fade = 0.5f});
     BOOST_CHECK_EQUAL(playback.clip, Playback::none);
     BOOST_CHECK_EQUAL(playback.from, walk);
 
@@ -121,11 +121,11 @@ BOOST_AUTO_TEST_CASE(playback_fades_out_into_no_clip_test) {
  **/
 BOOST_AUTO_TEST_CASE(playback_cuts_with_nothing_to_fade_from_test) {
     Playback playback;
-    v3d::ecs::component::play(&playback, walk, 2.0f, true, 0.5f);
+    v3d::ecs::component::play(&playback, {.clip = walk, .duration = 2.0f, .loops = true, .fade = 0.5f});
     BOOST_CHECK_EQUAL(playback.from, Playback::none);
     BOOST_CHECK_EQUAL(playback.fade, 1.0f);
 
-    v3d::ecs::component::play(&playback, run, 1.0f, true, 0.0f);
+    v3d::ecs::component::play(&playback, {.clip = run, .duration = 1.0f, .loops = true, .fade = 0.0f});
     BOOST_CHECK_EQUAL(playback.from, Playback::none);
 }
 
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(playback_interpolating_across_a_wrap_runs_forwards_test) {
 BOOST_AUTO_TEST_CASE(playback_interpolating_across_a_change_of_clip_test) {
     const Playback before = walking();
     Playback after = before;
-    v3d::ecs::component::play(&after, run, 1.0f, true, 0.5f);
+    v3d::ecs::component::play(&after, {.clip = run, .duration = 1.0f, .loops = true, .fade = 0.5f});
     v3d::ecs::component::advance(&after, 0.25f);
 
     const Playback drawn = v3d::ecs::component::interpolate(before, after, 0.5f);
@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE(playback_interpolating_across_a_change_of_clip_test) {
  **/
 BOOST_AUTO_TEST_CASE(playback_interpolating_a_fade_test) {
     Playback before = walking();
-    v3d::ecs::component::play(&before, run, 1.0f, true, 1.0f);
+    v3d::ecs::component::play(&before, {.clip = run, .duration = 1.0f, .loops = true, .fade = 1.0f});
     v3d::ecs::component::advance(&before, 0.25f);
     Playback after = before;
     v3d::ecs::component::advance(&after, 0.25f);
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(playback_interpolating_a_fade_test) {
  **/
 BOOST_AUTO_TEST_CASE(playback_a_long_loop_is_rebased_test) {
     Playback before;
-    v3d::ecs::component::play(&before, walk, 2.0f, true, 0.0f);
+    v3d::ecs::component::play(&before, {.clip = walk, .duration = 2.0f, .loops = true, .fade = 0.0f});
     before.time = 4095.5f;
     Playback after = before;
     v3d::ecs::component::advance(&after, 1.0f);
@@ -201,7 +201,7 @@ BOOST_AUTO_TEST_CASE(playback_markers_test) {
     BOOST_CHECK_EQUAL(v3d::ecs::component::crossed(before, after, 0.25f), 0u);
 
     Playback changed = before;
-    v3d::ecs::component::play(&changed, run, 1.0f, true, 0.0f);
+    v3d::ecs::component::play(&changed, {.clip = run, .duration = 1.0f, .loops = true, .fade = 0.0f});
     v3d::ecs::component::advance(&changed, 0.5f);
     BOOST_CHECK_EQUAL(v3d::ecs::component::crossed(before, changed, 0.25f), 0u);
 }

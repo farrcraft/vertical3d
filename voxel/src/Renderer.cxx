@@ -307,7 +307,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     }
     v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
     if (screen_->resized()) {
-        resize(static_cast<int>(canvas.width()), static_cast<int>(canvas.height()));
+        resize(glm::ivec2(static_cast<int>(canvas.width()), static_cast<int>(canvas.height())));
     }
 
     boost::shared_ptr<v3d::render::realtime::Pass> terrain = engine_.frame()->pass(terrainPass);
@@ -350,15 +350,13 @@ void Renderer::tick(unsigned int /* delta */) {
 
 /**
  **/
-void Renderer::resize(int width, int height) {
+void Renderer::resize(const glm::ivec2& size) {
+    const int width = size.x;
+    const int height = size.y;
     const float w = static_cast<float>(width);
     const float h = static_cast<float>(height);
 
-    scene_->camera()->perspective(
-        90.0f,  // x fov
-        w / h,  // aspect
-        0.1f,  // near
-        1000.0f);  // far
+    scene_->camera()->perspective({.fovx = 90.0f, .aspect = w / h, .znear = 0.1f, .zfar = 1000.0f});
 }
 
 /**
