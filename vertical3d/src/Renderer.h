@@ -7,9 +7,9 @@
 
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 #include <api/render/realtime/Window.h>
 #include <api/ui/Engine.h>
 #include <api/ui/paint/TextRenderer.h>
@@ -136,9 +136,9 @@ class Renderer final {
     std::vector<boost::shared_ptr<ViewPort>> views_;
     // one canvas per view rather than one shared: a canvas becomes a single draw item,
     // and each is filled before any of them is submitted
-    std::vector<v3d::render::realtime::LineCanvas> canvases_;
+    std::vector<v3d::render::realtime::canvas::Line> canvases_;
     // and one more per view for the handles, which are drawn in a pass of their own
-    std::vector<v3d::render::realtime::LineCanvas> overlays_;
+    std::vector<v3d::render::realtime::canvas::Line> overlays_;
 
     boost::shared_ptr<v3d::ui::Engine> ui_;
     // built after the engine is initialized, because its atlas is uploaded through it

@@ -5,16 +5,17 @@
 
 #pragma once
 
+#include <api/render/realtime/Handle.h>
+
 #include <cstddef>
 #include <vector>
 
-#include "Handle.h"
-#include "WorldCanvas.h"
+#include "World.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 
 /**
  * World quads collected with a depth key and handed to a canvas furthest first.
@@ -25,7 +26,7 @@ namespace v3d::render::realtime {
  * caller that needs fewer batch cuts quantises its key - to a tile row, say - and lets the
  * tie-break merge them. A key that is not a number is drawn last.
  *
- * WorldCanvas itself still draws in submission order. This is one way of choosing that order.
+ * World itself still draws in submission order. This is one way of choosing that order.
  **/
 class DepthOrder final {
  public:
@@ -38,20 +39,20 @@ class DepthOrder final {
      * An untextured quad, drawn against the renderer's white texture.
      * @param key how far away the quad is, in whatever measure the caller sorts by
      **/
-    void quad(float key, const WorldCanvas::Corners& corners, const glm::vec4& colour);
+    void quad(float key, const World::Corners& corners, const glm::vec4& colour);
 
     /**
-     * A quad sampling a region of a texture, with WorldCanvas::quad's meaning for the rest.
+     * A quad sampling a region of a texture, with World::quad's meaning for the rest.
      * @param key how far away the quad is, in whatever measure the caller sorts by
      **/
-    void quad(float key, const WorldCanvas::Corners& corners, const glm::vec2& uv0,
+    void quad(float key, const World::Corners& corners, const glm::vec2& uv0,
         const glm::vec2& uv1, const glm::vec4& colour, const TextureHandle& texture);
 
     /**
      * Add everything collected to a canvas, furthest first. The canvas's current transform
      * applies to it as it would to quads added directly.
      **/
-    void into(WorldCanvas* canvas) const;
+    void into(World* canvas) const;
 
     /**
      * @return how many quads have been collected
@@ -61,7 +62,7 @@ class DepthOrder final {
  private:
     struct Entry {
         float key;
-        WorldCanvas::Corners corners;
+        World::Corners corners;
         glm::vec2 uv0;
         glm::vec2 uv1;
         glm::vec4 colour;
@@ -71,4 +72,4 @@ class DepthOrder final {
     std::vector<Entry> entries_;
 };
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas

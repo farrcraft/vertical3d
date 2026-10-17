@@ -5,7 +5,7 @@
 
 #include "Arranger.h"
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/DrawOrder.h>
 #include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
@@ -58,7 +58,7 @@ Arranger::Arranger(const paint::Measure& measure, const style::Resolver& styles)
 
 /**
  **/
-void Arranger::walk(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<Component>& component,
+void Arranger::walk(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<Component>& component,
     const v3d::type::geometry::Bound2D& bounds, const Paint& paint) const {
     if (!component || !component->visible()) {
         return;

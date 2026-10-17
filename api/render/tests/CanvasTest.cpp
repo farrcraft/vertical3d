@@ -4,7 +4,7 @@
  **/
 
 #include <api/font/TextBuffer.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 
 #include <cmath>
 #include <cstddef>
@@ -22,7 +22,7 @@ constexpr glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
  * The point one corner of the canvas maps to, for checking the projection without
  * pulling glm's matrix multiply into the expectation.
  **/
-glm::vec2 project(const v3d::render::realtime::Canvas& canvas, const glm::vec2& point) {
+glm::vec2 project(const v3d::render::realtime::canvas::Canvas& canvas, const glm::vec2& point) {
     const glm::mat4 projection = canvas.projection();
     return glm::vec2(
         projection[0][0] * point.x + projection[3][0],
@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_SUITE(canvas_test)
  * costs neither an upload nor a batch.
  **/
 BOOST_AUTO_TEST_CASE(an_empty_canvas_has_nothing_to_draw) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     BOOST_CHECK(canvas.empty());
     BOOST_CHECK_EQUAL(canvas.batches().size(), 0);
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(an_empty_canvas_has_nothing_to_draw) {
  * A rectangle is four vertices and two triangles.
  **/
 BOOST_AUTO_TEST_CASE(a_rectangle_is_two_triangles) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.rect(glm::vec2(10.0f, 20.0f), glm::vec2(30.0f, 50.0f), white);
 
     BOOST_CHECK(!canvas.empty());
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(a_rectangle_is_two_triangles) {
  * an atlas is one draw.
  **/
 BOOST_AUTO_TEST_CASE(batches_are_cut_only_where_the_texture_changes) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     const v3d::render::realtime::TextureHandle first(3);
     const v3d::render::realtime::TextureHandle second(7);
 
@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE(batches_are_cut_only_where_the_texture_changes) {
  * top. Painter order takes priority over batch count.
  **/
 BOOST_AUTO_TEST_CASE(returning_to_a_texture_does_not_reopen_its_batch) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     const v3d::render::realtime::TextureHandle atlas(1);
 
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white, atlas);
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(returning_to_a_texture_does_not_reopen_its_batch) {
  * and a pop puts it back.
  **/
 BOOST_AUTO_TEST_CASE(the_transform_stack_offsets_what_is_drawn_under_it) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.push();
     canvas.translate(glm::vec2(100.0f, 200.0f));
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(the_transform_stack_offsets_what_is_drawn_under_it) {
  * the stack - an unbalanced pop in one caller must not corrupt every draw after it.
  **/
 BOOST_AUTO_TEST_CASE(an_unbalanced_pop_leaves_the_identity_transform) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.pop();
     canvas.pop();
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(an_unbalanced_pop_leaves_the_identity_transform) {
  * refilled every frame and resized only when the window is.
  **/
 BOOST_AUTO_TEST_CASE(clearing_keeps_the_size_and_resets_the_transform) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     canvas.push();
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(clearing_keeps_the_size_and_resets_the_transform) {
  * bottom right. Getting the y direction wrong draws the whole frame upside down.
  **/
 BOOST_AUTO_TEST_CASE(the_projection_puts_the_origin_at_the_top_left) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     const glm::vec2 topLeft = project(canvas, glm::vec2(0.0f, 0.0f));
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(the_projection_puts_the_origin_at_the_top_left) {
  * by zero - a window can report no area before the first resize.
  **/
 BOOST_AUTO_TEST_CASE(an_unsized_canvas_has_a_finite_projection) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     const glm::mat4 projection = canvas.projection();
 
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(an_unsized_canvas_has_a_finite_projection) {
  * A circle is a fan of triangles, and it batches with the untextured quads around it.
  **/
 BOOST_AUTO_TEST_CASE(a_circle_is_a_fan_that_batches_with_untextured_quads) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white);
     canvas.circle(glm::vec2(50.0f, 50.0f), 10.0f, 8, white);
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(a_circle_is_a_fan_that_batches_with_untextured_quads) {
  * each end of it - and it batches with the untextured quads around it.
  **/
 BOOST_AUTO_TEST_CASE(a_ring_is_a_strip_between_two_radii) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white);
     canvas.ring(glm::vec2(50.0f, 50.0f), 10.0f, 6.0f, 8, 0.0f, 6.283185307179586f, white);
@@ -234,8 +234,8 @@ BOOST_AUTO_TEST_CASE(a_ring_is_a_strip_between_two_radii) {
  * was given before asking for a band.
  **/
 BOOST_AUTO_TEST_CASE(a_ring_with_no_hole_is_a_wedge) {
-    v3d::render::realtime::Canvas canvas;
-    v3d::render::realtime::Canvas wedge;
+    v3d::render::realtime::canvas::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas wedge;
 
     canvas.ring(glm::vec2(50.0f, 50.0f), 10.0f, 0.0f, 8, 0.0f, 1.5f, white);
     wedge.arc(glm::vec2(50.0f, 50.0f), 10.0f, 8, 0.0f, 1.5f, white);
@@ -248,7 +248,7 @@ BOOST_AUTO_TEST_CASE(a_ring_with_no_hole_is_a_wedge) {
  * Too few sides to be a shape draws nothing rather than emitting degenerate triangles.
  **/
 BOOST_AUTO_TEST_CASE(a_circle_of_fewer_than_three_sides_draws_nothing) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.circle(glm::vec2(0.0f, 0.0f), 10.0f, 2, white);
 
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE(a_circle_of_fewer_than_three_sides_draws_nothing) {
  * the buffer's indices rebased onto the canvas's own vertex stream.
  **/
 BOOST_AUTO_TEST_CASE(text_is_appended_against_its_atlas_and_reindexed) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     const v3d::render::realtime::TextureHandle atlas(4);
 
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white);
@@ -292,7 +292,7 @@ BOOST_AUTO_TEST_CASE(text_is_appended_against_its_atlas_and_reindexed) {
  * string does not cut the batch a caller is in the middle of.
  **/
 BOOST_AUTO_TEST_CASE(empty_text_adds_no_batch) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white);
     v3d::font::TextBuffer buffer;
@@ -306,7 +306,7 @@ BOOST_AUTO_TEST_CASE(empty_text_adds_no_batch) {
  * one size can then be drawn at another without scaling its own numbers.
  **/
 BOOST_AUTO_TEST_CASE(a_scale_multiplies_what_is_drawn_under_it) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.push();
     canvas.translate(glm::vec2(10.0f, 20.0f));
@@ -332,7 +332,7 @@ BOOST_AUTO_TEST_CASE(a_scale_multiplies_what_is_drawn_under_it) {
  * inside the clip is still four vertices.
  **/
 BOOST_AUTO_TEST_CASE(a_clip_cuts_the_batch_and_carries_its_rectangle) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 10.0f), white);
     canvas.clip(glm::vec2(4.0f, 5.0f), glm::vec2(20.0f, 30.0f));
@@ -357,7 +357,7 @@ BOOST_AUTO_TEST_CASE(a_clip_cuts_the_batch_and_carries_its_rectangle) {
  * same way it applies to a vertex.
  **/
 BOOST_AUTO_TEST_CASE(a_clip_is_transformed_like_a_vertex) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.push();
     canvas.translate(glm::vec2(100.0f, 200.0f));
@@ -378,7 +378,7 @@ BOOST_AUTO_TEST_CASE(a_clip_is_transformed_like_a_vertex) {
  * against its own box without knowing what is around it.
  **/
 BOOST_AUTO_TEST_CASE(a_nested_clip_can_only_take_room_away) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.clip(glm::vec2(10.0f, 10.0f), glm::vec2(50.0f, 50.0f));
     canvas.clip(glm::vec2(0.0f, 20.0f), glm::vec2(100.0f, 30.0f));
@@ -400,7 +400,7 @@ BOOST_AUTO_TEST_CASE(a_nested_clip_can_only_take_room_away) {
  * inverted rectangle would be a validation error once it reached a scissor.
  **/
 BOOST_AUTO_TEST_CASE(clips_that_miss_each_other_leave_an_empty_rectangle) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 10.0f));
     canvas.clip(glm::vec2(40.0f, 40.0f), glm::vec2(50.0f, 50.0f));
@@ -417,7 +417,7 @@ BOOST_AUTO_TEST_CASE(clips_that_miss_each_other_leave_an_empty_rectangle) {
  * one parent is one draw however many of them there are.
  **/
 BOOST_AUTO_TEST_CASE(drawing_under_one_clip_stays_in_one_batch) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 10.0f));
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white);
@@ -434,7 +434,7 @@ BOOST_AUTO_TEST_CASE(drawing_under_one_clip_stays_in_one_batch) {
  * way an unbalanced pop leaves the identity transform.
  **/
 BOOST_AUTO_TEST_CASE(an_unbalanced_unclip_leaves_the_canvas_uncut) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.unclip();
     canvas.unclip();
@@ -449,7 +449,7 @@ BOOST_AUTO_TEST_CASE(an_unbalanced_unclip_leaves_the_canvas_uncut) {
  * clip and its unclip does not cut the next one.
  **/
 BOOST_AUTO_TEST_CASE(clearing_drops_what_is_clipped) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 10.0f));
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white);
@@ -465,9 +465,9 @@ BOOST_AUTO_TEST_CASE(clearing_drops_what_is_clipped) {
  * and its corners project to the viewport's.
  **/
 BOOST_AUTO_TEST_CASE(a_contained_space_is_centred_with_bars) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(1600, 900);
-    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::Canvas::Fit::Contain);
+    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
     const glm::vec4 area = canvas.viewport();
     BOOST_CHECK_CLOSE(area.x, 200.0f, 0.001f);
@@ -494,9 +494,9 @@ BOOST_AUTO_TEST_CASE(a_contained_space_is_centred_with_bars) {
  * A stretched space fills the canvas whatever its aspect.
  **/
 BOOST_AUTO_TEST_CASE(a_stretched_space_fills_the_canvas) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(1600, 900);
-    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::Canvas::Fit::Stretch);
+    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::canvas::Canvas::Fit::Stretch);
 
     const glm::vec2 topLeft = project(canvas, glm::vec2(0.0f, 0.0f));
     const glm::vec2 bottomRight = project(canvas, glm::vec2(800.0f, 600.0f));
@@ -510,9 +510,9 @@ BOOST_AUTO_TEST_CASE(a_stretched_space_fills_the_canvas) {
  * centre, and outside the viewport it lands outside the space.
  **/
 BOOST_AUTO_TEST_CASE(a_pixel_maps_back_into_the_space) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(1600, 900);
-    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::Canvas::Fit::Contain);
+    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
     const glm::vec2 corner = canvas.toSpace(glm::vec2(200.0f, 0.0f));
     BOOST_CHECK_SMALL(corner.x, 0.001f);
@@ -531,12 +531,12 @@ BOOST_AUTO_TEST_CASE(a_pixel_maps_back_into_the_space) {
  * whose space was removed again.
  **/
 BOOST_AUTO_TEST_CASE(a_canvas_without_a_space_projects_as_before) {
-    v3d::render::realtime::Canvas plain;
+    v3d::render::realtime::canvas::Canvas plain;
     plain.resize(800, 600);
-    v3d::render::realtime::Canvas cleared;
+    v3d::render::realtime::canvas::Canvas cleared;
     cleared.resize(800, 600);
-    cleared.space(glm::vec2(320.0f, 200.0f), v3d::render::realtime::Canvas::Fit::Contain);
-    cleared.space(glm::vec2(0.0f, 0.0f), v3d::render::realtime::Canvas::Fit::Contain);
+    cleared.space(glm::vec2(320.0f, 200.0f), v3d::render::realtime::canvas::Canvas::Fit::Contain);
+    cleared.space(glm::vec2(0.0f, 0.0f), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
     BOOST_CHECK(plain.projection() == cleared.projection());
     BOOST_CHECK(cleared.toSpace(glm::vec2(12.0f, 34.0f)) == glm::vec2(12.0f, 34.0f));
@@ -549,9 +549,9 @@ BOOST_AUTO_TEST_CASE(a_canvas_without_a_space_projects_as_before) {
  * carries is the one the viewport puts it at.
  **/
 BOOST_AUTO_TEST_CASE(a_clip_in_a_space_is_cut_in_pixels) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(1600, 900);
-    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::Canvas::Fit::Contain);
+    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
     canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(400.0f, 300.0f));
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 10.0f), white);
@@ -569,9 +569,9 @@ BOOST_AUTO_TEST_CASE(a_clip_in_a_space_is_cut_in_pixels) {
  * A space survives the clear at the start of every frame, as the canvas's size does.
  **/
 BOOST_AUTO_TEST_CASE(a_space_survives_a_clear) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(1600, 900);
-    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::Canvas::Fit::Contain);
+    canvas.space(glm::vec2(800.0f, 600.0f), v3d::render::realtime::canvas::Canvas::Fit::Contain);
     canvas.clear();
     BOOST_CHECK_CLOSE(canvas.viewport().z, 1200.0f, 0.001f);
 }

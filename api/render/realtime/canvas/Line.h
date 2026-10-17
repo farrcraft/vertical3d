@@ -8,14 +8,14 @@
 #include <cstdint>
 #include <vector>
 
-#include "CanvasStacks.h"
+#include "Stacks.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 
 /**
  * Everything the engine draws as lines, accumulated as one stream of segments.
@@ -31,7 +31,7 @@ namespace v3d::render::realtime {
  * its pass carries at set 0, so a pass whose camera was never set draws it in clip
  * space.
  **/
-class LineCanvas final {
+class Line final {
  public:
     /**
      * One vertex of the stream, in the layout the line pipeline declares.
@@ -59,7 +59,7 @@ class LineCanvas final {
 
     /**
      **/
-    LineCanvas();
+    Line();
 
     /**
      * Drop everything accumulated and reset the transform stack, keeping the capacity.
@@ -97,10 +97,9 @@ class LineCanvas final {
      * Cut everything drawn until the matching unclip() to a rectangle.
      *
      * The rectangle is in the pixels of the image being drawn into, and the modelview
-     * stack does not apply to it. Canvas resolves its clip through the transform because
-     * a canvas draws in the pixels a scissor is measured in; a line canvas draws in world
-     * space through a camera, so there is no transform here that would carry a rectangle
-     * to the screen.
+     * stack does not apply to it. Canvas resolves its clip through the transform, because
+     * it draws in the pixels a scissor is measured in. This canvas draws in world space
+     * through a camera, so no transform here carries a rectangle to the screen.
      *
      * It is intersected with whatever is already clipped, so an inner clip can only take
      * room away. Clipping is per batch: a segment crossing the edge is drawn whole and
@@ -182,4 +181,4 @@ class LineCanvas final {
     std::vector<Batch> batches_;
 };
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas

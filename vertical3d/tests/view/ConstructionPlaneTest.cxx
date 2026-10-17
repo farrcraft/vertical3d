@@ -12,7 +12,7 @@
 BOOST_AUTO_TEST_CASE(constructionplane_geometry_test) {
     v3d::editor::ConstructionPlane grid;
     v3d::type::camera::Camera camera;
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     grid.lines(4);
     grid.spacing(1.0f);
@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_geometry_test) {
 BOOST_AUTO_TEST_CASE(constructionplane_extent_test) {
     v3d::editor::ConstructionPlane grid;
     v3d::type::camera::Camera camera;
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     // the grid is centred on the origin, so a grid four lines across at unit spacing runs
     // from -2 to 2 in both directions
@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_extent_test) {
     float maxU = 0.0f;
     float minV = 0.0f;
     float maxV = 0.0f;
-    for (const v3d::render::realtime::LineCanvas::Vertex& vertex : canvas.vertices()) {
+    for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
         minU = std::min(minU, vertex.position.x);
         maxU = std::max(maxU, vertex.position.x);
         minV = std::min(minV, vertex.position.y);
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_extent_test) {
 BOOST_AUTO_TEST_CASE(constructionplane_perspective_plane_test) {
     v3d::editor::ConstructionPlane grid;
     v3d::type::camera::Camera camera;
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     // a perspective view gets the ground plane instead, so nothing leaves y = 0
     camera.orthographic(false);
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_perspective_plane_test) {
     grid.draw(camera, &canvas);
 
     BOOST_REQUIRE(!canvas.empty());
-    for (const v3d::render::realtime::LineCanvas::Vertex& vertex : canvas.vertices()) {
+    for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
         BOOST_CHECK_SMALL(vertex.position.y, 0.001f);
     }
 }
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_perspective_plane_test) {
 BOOST_AUTO_TEST_CASE(constructionplane_emphasis_test) {
     v3d::editor::ConstructionPlane grid;
     v3d::type::camera::Camera camera;
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     // the two lines through the origin are drawn in the origin colour, the ones on a major
     // interval in the major colour, and everything else in the minor one
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_emphasis_test) {
 
     unsigned int distinct = 0;
     glm::vec4 seen(-1.0f);
-    for (const v3d::render::realtime::LineCanvas::Vertex& vertex : canvas.vertices()) {
+    for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
         if (vertex.colour != seen) {
             distinct++;
             seen = vertex.colour;
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_emphasis_test) {
 BOOST_AUTO_TEST_CASE(constructionplane_degenerate_test) {
     v3d::editor::ConstructionPlane grid;
     v3d::type::camera::Camera camera;
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     // a grid of no lines, or one whose lines are zero apart, is nothing rather than an
     // infinite loop or a single overdrawn line

@@ -8,12 +8,12 @@
 #include <api/image/Compare.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
-#include <api/render/realtime/DepthOrder.h>
+#include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/entity/Particles.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/entity/Sprites.h>
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/component/Particles.h>
 #include <api/render/realtime/component/Sprite.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
@@ -42,11 +42,10 @@
 
 using v3d::ecs::component::Emitter;
 using v3d::ecs::component::Transform;
-using v3d::render::realtime::DepthOrder;
+using v3d::render::realtime::canvas::DepthOrder;
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::TextureHandle;
-using v3d::render::realtime::WorldCanvas;
 using v3d::render::realtime::component::Particles;
 using v3d::render::realtime::component::Sprite;
 using v3d::render::realtime::vulkan::frame::Capture;
@@ -54,6 +53,8 @@ using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
 using v3d::type::animation::SpriteClip;
 using v3d::type::animation::Track;
+
+namespace canvas = v3d::render::realtime::canvas;
 
 namespace {
 
@@ -170,7 +171,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     DepthOrder order;
     v3d::render::realtime::entity::sprites(registry, alpha, right, up, ground, &order);
     v3d::render::realtime::entity::particles(registry, alpha, right, up, ground, &order);
-    WorldCanvas canvas;
+    canvas::World canvas;
     // dusk
     canvas.tint(glm::vec4(1.0f, 0.75f, 0.55f, 1.0f));
     order.into(&canvas);

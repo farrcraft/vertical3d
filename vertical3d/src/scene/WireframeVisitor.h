@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 
 #include "SceneVisitor.h"
 
@@ -30,7 +30,7 @@ class WireframeVisitor final : public SceneVisitor {
     /**
      * @param canvas where the segments are appended - nothing is cleared
      **/
-    explicit WireframeVisitor(v3d::render::realtime::LineCanvas* canvas);
+    explicit WireframeVisitor(v3d::render::realtime::canvas::Line* canvas);
 
     /**
      * Append one mesh's wireframe.
@@ -43,7 +43,7 @@ class WireframeVisitor final : public SceneVisitor {
      **/
     void markers(const boost::shared_ptr<v3d::brep::BRep>& mesh);
 
-    v3d::render::realtime::LineCanvas* canvas_;
+    v3d::render::realtime::canvas::Line* canvas_;
     glm::vec4 wire_;
     glm::vec4 object_;
     glm::vec4 component_;

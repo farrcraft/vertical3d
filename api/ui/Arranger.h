@@ -16,9 +16,9 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 class Canvas;
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas
 
 namespace v3d::ui {
 
@@ -59,7 +59,7 @@ class Arranger final {
      * as with text, so the layout pass names no renderer and a test can watch it place a
      * tree without drawing one.
      **/
-    typedef std::function<void(v3d::render::realtime::Canvas*, const boost::shared_ptr<Component>&)> Paint;
+    typedef std::function<void(v3d::render::realtime::canvas::Canvas*, const boost::shared_ptr<Component>&)> Paint;
 
     /**
      * How thick the rule along a strip's far edge is, and the gap it puts between one
@@ -85,7 +85,7 @@ class Arranger final {
      * @param bounds where this component goes, which its parent worked out
      * @param paint what fills each box as it is written, or empty to place and not draw
      **/
-    void walk(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<Component>& component,
+    void walk(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<Component>& component,
         const v3d::type::geometry::Bound2D& bounds, const Paint& paint) const;
 
     /**

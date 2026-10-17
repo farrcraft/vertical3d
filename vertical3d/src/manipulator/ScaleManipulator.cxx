@@ -45,7 +45,7 @@ Manipulator::Space ScaleManipulator::effective() const noexcept {
 /**
  **/
 void ScaleManipulator::draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
-    v3d::render::realtime::LineCanvas* canvas) const {
+    v3d::render::realtime::canvas::Line* canvas) const {
     if (canvas == nullptr) {
         return;
     }

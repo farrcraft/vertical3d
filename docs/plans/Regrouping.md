@@ -7,7 +7,7 @@ one sweeps comments, and one updates the documents. No step changes behaviour.
 |---|---|---|---|
 | 1 `realtime/entity` | landed | 5 `ui::component::menu` | open |
 | 2 `realtime/lighting` | landed | 6 `libmoya/reyes` | open |
-| 3 `realtime/canvas` | open | 7 libmoya comments | open |
+| 3 `realtime/canvas` | landed | 7 libmoya comments | open |
 | 4 `image/format` | open | 8 documents | open |
 
 The rule is the one in [Conventions.md](../contributing/Conventions.md#directories): a directory
@@ -83,12 +83,12 @@ Step 7 waits for step 6, so that the sweep sees the final paths and the move com
 pure move. Step 8 records every step that landed.
 
 ```
-1 entity ─┐
-2 lighting ┤
-3 canvas ─┤
-4 format ─┼──> 8 documents
-5 menu ───┤
-6 reyes ──┴──> 7 libmoya comments ──> 8
+1 entity ───┐
+2 lighting ─┤
+3 canvas ───┤
+4 format ───┼──> 8 documents
+5 menu ─────┤
+6 reyes ────┴──> 7 libmoya comments ──> 8
 ```
 
 ## Steps
@@ -148,6 +148,20 @@ noun.
 which draw them. Code that names both writes the namespace.
 
 `examples/starter` changes in the same commit. Cozy changes when it next updates its submodule.
+
+**Landed.** 94 files changed. Build clean, 26 of 26 suites pass, cpplint clean over the tree,
+and `examples/starter` builds. Outside the render library every use was already qualified, so
+the rewrite there was mechanical. The forward declarations of `Canvas` in `api/ui` moved into
+`canvas`.
+
+A `using` for `canvas::Line` or `canvas::World` would collide with `renderer::Line` and
+`renderer::World` in a test that names both. The tests that had one name the namespace through
+an alias, `namespace canvas = ...`, instead. A renderer's `submit()` reads
+`submit(const canvas::Line& canvas, ...)`, which compiles because a qualified name ignores the
+parameter.
+
+`prose.ts` diffs with renames off, so it read each moved file whole and found four long
+sentences that predate the move. They are split. CI runs the same gate on a pull request.
 
 ### Step 4 — `image/format/`
 

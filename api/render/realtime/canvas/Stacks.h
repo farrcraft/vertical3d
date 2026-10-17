@@ -11,7 +11,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 
 /**
  * A canvas's modelview stack. The identity at the bottom is the canvas's own, so a pop with
@@ -85,4 +85,4 @@ class ClipStack final {
     std::deque<glm::vec4> clips_;
 };
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas

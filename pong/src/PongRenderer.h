@@ -7,7 +7,7 @@
 
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
 #include <api/ui/Engine.h>
 #include <api/ui/shell/Screen.h>
@@ -67,7 +67,7 @@ class PongRenderer final {
 
     v3d::render::realtime::Engine3D engine_;
     // the court, in its own units, under the screen's canvas
-    v3d::render::realtime::Canvas court_;
+    v3d::render::realtime::canvas::Canvas court_;
 
     // built after the engine is initialized, because its atlas is uploaded through it
     boost::shared_ptr<v3d::ui::shell::Screen> screen_;

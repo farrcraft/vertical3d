@@ -151,7 +151,7 @@ void Screen::draw(const Engine* ui, const StatisticsOverlay::Sample& statistics)
 
 /**
  **/
-v3d::render::realtime::Canvas& Screen::canvas() noexcept {
+v3d::render::realtime::canvas::Canvas& Screen::canvas() noexcept {
     return canvas_;
 }
 

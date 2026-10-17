@@ -39,7 +39,7 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window
     engine_.clearColour(barColour);
 
     // the rules are written in the court's units, and the court is fitted to the window
-    court_.space(glm::vec2(PongScene::width, PongScene::height), v3d::render::realtime::Canvas::Fit::Contain);
+    court_.space(glm::vec2(PongScene::width, PongScene::height), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
     v3d::ui::shell::Screen::Options options;
     options.size = fontSize;
@@ -80,7 +80,7 @@ void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statist
     if (!screen_->begin()) {
         return;
     }
-    const v3d::render::realtime::Canvas& ui = screen_->canvas();
+    const v3d::render::realtime::canvas::Canvas& ui = screen_->canvas();
     court_.resize(ui.width(), ui.height());
     court_.clear();
 

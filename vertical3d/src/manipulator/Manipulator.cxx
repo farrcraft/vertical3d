@@ -292,7 +292,7 @@ float Manipulator::along(const ViewPort& view, const Placement& placement, Axis 
 
 /**
  **/
-void Manipulator::marker(v3d::render::realtime::LineCanvas* canvas, const Placement& placement,
+void Manipulator::marker(v3d::render::realtime::canvas::Line* canvas, const Placement& placement,
     const glm::vec3& at, float size, const glm::vec4& colour) {
     const glm::vec3 corner(size, size, size);
     canvas->push();

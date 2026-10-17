@@ -8,7 +8,7 @@
 #include <api/asset/Manager.h>
 #include <api/grid/TileCoord.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
 #include <odyssey/engine/Player.h>
 #include <odyssey/tile/World.h>
@@ -91,7 +91,7 @@ class Renderer final {
     boost::shared_ptr<odyssey::tile::World> world_;
     entt::registry* registry_;
 
-    v3d::render::realtime::Canvas canvas_;
+    v3d::render::realtime::canvas::Canvas canvas_;
     v3d::render::realtime::Engine3D engine_;
 
     v3d::render::realtime::TextureHandle sprite_;

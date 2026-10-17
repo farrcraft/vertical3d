@@ -43,7 +43,7 @@ void region(const component::Particles& look, const type::effect::Particle& part
  * The four corners of a particle's quad around its centre, top-left first so that uv0 lands
  * there. Along is the quad's length and side its width, both unit vectors in the camera's plane.
  **/
-WorldCanvas::Corners corners(const glm::vec3& centre, const glm::vec3& along, float length,
+canvas::World::Corners corners(const glm::vec3& centre, const glm::vec3& along, float length,
     const glm::vec3& side, float width) {
     const glm::vec3 head = centre + (along * (length * 0.5f));
     const glm::vec3 tail = centre - (along * (length * 0.5f));
@@ -54,7 +54,7 @@ WorldCanvas::Corners corners(const glm::vec3& centre, const glm::vec3& along, fl
 };  // namespace
 
 void particles(const entt::registry& registry, float alpha, const glm::vec3& right,
-    const glm::vec3& up, const glm::vec3& depthAxis, DepthOrder* order) {
+    const glm::vec3& up, const glm::vec3& depthAxis, canvas::DepthOrder* order) {
     auto view = registry.view<const ecs::component::Emitter, const component::Particles>();
     for (const entt::entity entity : view) {
         const type::effect::Emitter& description = view.get<const ecs::component::Emitter>(entity).description;

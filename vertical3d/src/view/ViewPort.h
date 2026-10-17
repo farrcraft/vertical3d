@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -24,7 +24,7 @@ class Manipulator;
  * One view of the scene: a camera, the region of the window it draws into, and what it
  * decorates the scene with.
  *
- * A viewport is not a window and owns no device state. It fills a LineCanvas during a
+ * A viewport is not a window and owns no device state. It fills a canvas::Line during a
  * tick, and the renderer turns that into a pass with this viewport's camera at set 0 and
  * this viewport's region as its scissor. Four views of one scene are therefore four
  * passes against one device.
@@ -118,8 +118,8 @@ class ViewPort final {
      * @param canvas where the view's geometry goes
      * @param handles where the manipulator's geometry goes - may be null
      **/
-    void draw(const Scene& scene, const Manipulator* manipulator, v3d::render::realtime::LineCanvas* canvas,
-        v3d::render::realtime::LineCanvas* handles);
+    void draw(const Scene& scene, const Manipulator* manipulator, v3d::render::realtime::canvas::Line* canvas,
+        v3d::render::realtime::canvas::Line* handles);
 
  private:
     std::string name_;

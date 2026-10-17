@@ -1,7 +1,8 @@
 # The 2D canvas
 
 `Canvas` collects 2D quads and text for one pass. It is what a game's sprites, a HUD and the
-user interface draw onto.
+user interface draw onto. It is `realtime::canvas::Canvas`, in `api/render/realtime/canvas/`, beside
+the world space canvases in [LinesAndWorldQuads.md](LinesAndWorldQuads.md).
 
 ## 2D: the quad canvas
 

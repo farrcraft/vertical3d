@@ -78,10 +78,10 @@ PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, V
     builder.name(name)
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
-        .vertexBinding(0, sizeof(WorldCanvas::Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(WorldCanvas::Vertex, position))
-        .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(WorldCanvas::Vertex, uv))
-        .vertexAttribute(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(WorldCanvas::Vertex, colour))
+        .vertexBinding(0, sizeof(canvas::World::Vertex))
+        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(canvas::World::Vertex, position))
+        .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(canvas::World::Vertex, uv))
+        .vertexAttribute(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(canvas::World::Vertex, colour))
         // a quad standing in the world is seen from whichever side the camera is on, and a
         // tile highlight is seen from above and below
         .cull(VK_CULL_MODE_NONE)
@@ -110,12 +110,12 @@ PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, V
 
 /**
  **/
-void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer, Blend blend) {
+void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blend blend) {
     if (pass == nullptr || canvas.empty() || !textures_) {
         return;
     }
 
-    const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(WorldCanvas::Vertex);
+    const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(canvas::World::Vertex);
     const VkDeviceSize indexBytes = canvas.indices().size() * sizeof(uint32_t);
     const frame::StreamRing::Geometry claimed = stream_->claim(vertexBytes, indexBytes);
     claimed.vertices->write(canvas.vertices().data(), vertexBytes);
@@ -128,7 +128,7 @@ void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer, Blend 
         handle = pass->depth() ? additiveDepthPipeline_ : additivePipeline_;
     }
 
-    for (const WorldCanvas::Batch& batch : canvas.batches()) {
+    for (const canvas::World::Batch& batch : canvas.batches()) {
         if (batch.indices == 0) {
             continue;
         }

@@ -46,7 +46,7 @@ constexpr float markerScale = 0.04f;
 
 /**
  **/
-WireframeVisitor::WireframeVisitor(v3d::render::realtime::LineCanvas* canvas) :
+WireframeVisitor::WireframeVisitor(v3d::render::realtime::canvas::Line* canvas) :
     canvas_(canvas),
     wire_(wire),
     object_(object),

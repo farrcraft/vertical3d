@@ -11,7 +11,7 @@
 #include <numeric>
 #include <vector>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 
 /**
  **/
@@ -21,21 +21,21 @@ void DepthOrder::clear() {
 
 /**
  **/
-void DepthOrder::quad(float key, const WorldCanvas::Corners& corners, const glm::vec4& colour) {
-    // what WorldCanvas does with an untextured quad, so the two draw it the same way
+void DepthOrder::quad(float key, const World::Corners& corners, const glm::vec4& colour) {
+    // what World does with an untextured quad, so the two draw it the same way
     quad(key, corners, glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), colour, TextureHandle());
 }
 
 /**
  **/
-void DepthOrder::quad(float key, const WorldCanvas::Corners& corners, const glm::vec2& uv0,
+void DepthOrder::quad(float key, const World::Corners& corners, const glm::vec2& uv0,
     const glm::vec2& uv1, const glm::vec4& colour, const TextureHandle& texture) {
     entries_.push_back(Entry{key, corners, uv0, uv1, colour, texture});
 }
 
 /**
  **/
-void DepthOrder::into(WorldCanvas* canvas) const {
+void DepthOrder::into(World* canvas) const {
     // an order over indices rather than over the entries, so the collection is left as it was
     // added and a caller can hand it to a second canvas
     std::vector<std::size_t> order(entries_.size());
@@ -68,4 +68,4 @@ std::size_t DepthOrder::size() const noexcept {
     return entries_.size();
 }
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas

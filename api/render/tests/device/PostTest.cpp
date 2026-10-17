@@ -5,7 +5,7 @@
 
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Grade.h>
 #include <api/render/realtime/Pass.h>
@@ -28,7 +28,7 @@
 #include "Headless.h"
 #include "Reference.h"
 
-using v3d::render::realtime::Canvas;
+using v3d::render::realtime::canvas::Canvas;
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Grade;
 using v3d::render::realtime::MaterialHandle;

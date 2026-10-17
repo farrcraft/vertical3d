@@ -113,10 +113,10 @@ void Quad::createPipelines(VkFormat colour, VkFormat depth) {
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, linear ? linearFragmentShader : fragmentShader,
             linear ? sizeof(linearFragmentShader) : sizeof(fragmentShader))
-        .vertexBinding(0, sizeof(Canvas::Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Canvas::Vertex, position))
-        .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Canvas::Vertex, uv))
-        .vertexAttribute(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Canvas::Vertex, colour))
+        .vertexBinding(0, sizeof(canvas::Canvas::Vertex))
+        .vertexAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(canvas::Canvas::Vertex, position))
+        .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(canvas::Canvas::Vertex, uv))
+        .vertexAttribute(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(canvas::Canvas::Vertex, colour))
         // nothing 2D has a back face worth culling, and not culling means a caller cannot
         // get a quad's winding wrong and have it silently disappear
         .cull(VK_CULL_MODE_NONE)
@@ -133,12 +133,12 @@ void Quad::createPipelines(VkFormat colour, VkFormat depth) {
 
 /**
  **/
-void Quad::submit(const Canvas& canvas, Pass* pass, uint16_t layer) {
+void Quad::submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer) {
     if (pass == nullptr || canvas.empty()) {
         return;
     }
 
-    const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(Canvas::Vertex);
+    const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(canvas::Canvas::Vertex);
     const VkDeviceSize indexBytes = canvas.indices().size() * sizeof(uint32_t);
     const frame::StreamRing::Geometry claimed = stream_->claim(vertexBytes, indexBytes);
     const boost::shared_ptr<memory::Buffer>& vertices = claimed.vertices;
@@ -153,7 +153,7 @@ void Quad::submit(const Canvas& canvas, Pass* pass, uint16_t layer) {
     // is drawn with follows from whether the pass has a depth buffer
     const PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
     const pipeline::Pipeline* pipeline = resources_->pipeline(handle);
-    for (const Canvas::Batch& batch : canvas.batches()) {
+    for (const canvas::Canvas::Batch& batch : canvas.batches()) {
         if (batch.indices == 0) {
             continue;
         }

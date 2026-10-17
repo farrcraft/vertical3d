@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/Textures.h>
@@ -46,7 +46,7 @@ namespace v3d::render::realtime::vulkan::renderer {
  * There is one pipeline here and every 2D thing in the engine draws with it: a rectangle,
  * a sprite and a glyph differ only in which texture is bound and what the vertex colour is.
  *
- * A Canvas is filled on the CPU during a tick and handed here. This uploads its geometry
+ * A canvas::Canvas is filled on the CPU during a tick and handed here. This uploads its geometry
  * into buffers belonging to the frame about to be recorded, and turns each of its batches
  * into a draw item on a pass. The buffers are per frame in flight, because the device may
  * still be reading the previous frame's out of the previous slot.
@@ -97,7 +97,7 @@ class Quad final {
      *        that sorts; an unsorted pass records in submission order, and within one
      *        canvas submission order decides what is on top
      **/
-    void submit(const Canvas& canvas, Pass* pass, uint16_t layer = 0);
+    void submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer = 0);
 
     /**
      * Whether a quad drawn into this format is decoded to linear before it is written.

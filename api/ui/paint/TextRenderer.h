@@ -11,7 +11,7 @@
 #include <api/font/TextureTextBuffer.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 
 #include <cstddef>
 #include <functional>
@@ -160,7 +160,7 @@ class TextRenderer {
      * @param pen where the baseline of the first glyph goes
      * @param size the size to draw at, defaulting to the one the atlas holds
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour,
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour,
         float size = 0.0f);
 
     /**
@@ -178,7 +178,7 @@ class TextRenderer {
      * with each string. A ui at one size and a heading at another are two callback pairs
      * from one TextRenderer, and one atlas serves both.
      **/
-    Write write(v3d::render::realtime::Canvas* canvas, float size = 0.0f);
+    Write write(v3d::render::realtime::canvas::Canvas* canvas, float size = 0.0f);
 
  private:
     /**

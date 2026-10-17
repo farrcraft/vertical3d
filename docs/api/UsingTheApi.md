@@ -256,7 +256,7 @@ the `<api/...>` includes go above `<string>` and the other C++ standard headers.
 
 1. Call `renderer_->beginFrame(&size)`. It returns false while the window has no area, such as
    when it is minimized. The renderer has already presented an empty frame, so skip drawing.
-2. Fill a `v3d::render::realtime::Canvas` with rectangles.
+2. Fill a `v3d::render::realtime::canvas::Canvas` with rectangles.
 3. Submit it with `renderer_->quads()->submit(canvas_, pass.get())`.
 4. Call `renderer_->renderFrame()`.
 

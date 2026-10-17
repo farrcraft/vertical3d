@@ -25,7 +25,7 @@ const float quarterTurn = 1.5707963267948966f;
 /**
  * A rectangle between two corners in any order, and nothing at all when they make no box.
  **/
-void box(v3d::render::realtime::Canvas* canvas, const glm::vec2& first, const glm::vec2& second,
+void box(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& first, const glm::vec2& second,
     const glm::vec4& colour) {
     const glm::vec2 low(std::min(first.x, second.x), std::min(first.y, second.y));
     const glm::vec2 high(std::max(first.x, second.x), std::max(first.y, second.y));
@@ -42,7 +42,7 @@ void box(v3d::render::realtime::Canvas* canvas, const glm::vec2& first, const gl
  * @param towards which way inwards is, each component 1 or -1
  * @param start where the quarter turn begins, as arc() takes it
  **/
-void turn(v3d::render::realtime::Canvas* canvas, const glm::vec2& corner, const glm::vec2& towards,
+void turn(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& corner, const glm::vec2& towards,
     float radius, float width, float start, const glm::vec4& colour) {
     canvas->ring(corner + towards * radius, radius, radius - width, cornerSides, start, quarterTurn, colour);
     // the turn fills a square of the radius; an outline thicker than that leaves the rest
@@ -57,7 +57,7 @@ void turn(v3d::render::realtime::Canvas* canvas, const glm::vec2& corner, const 
 
 };  // namespace
 
-void fillBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+void fillBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, const glm::vec4& colour) {
     const glm::vec2 size = max - min;
     if (canvas == nullptr || size.x <= 0.0f || size.y <= 0.0f || colour.a <= 0.0f) {
@@ -82,7 +82,7 @@ void fillBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const 
     canvas->arc(glm::vec2(min.x + corner, max.y - corner), corner, cornerSides, quarterTurn, quarterTurn, colour);
 }
 
-void strokeBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+void strokeBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, float width, const glm::vec4& colour) {
     const glm::vec2 size = max - min;
     if (canvas == nullptr || size.x <= 0.0f || size.y <= 0.0f || width <= 0.0f || colour.a <= 0.0f) {
@@ -119,7 +119,7 @@ void strokeBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, cons
     turn(canvas, glm::vec2(min.x, max.y), glm::vec2(1.0f, -1.0f), corner, thickness, quarterTurn, colour);
 }
 
-void plateBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+void plateBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, float width, const glm::vec4& inside, const glm::vec4& outline) {
     if (width <= 0.0f || outline.a <= 0.0f) {
         fillBox(canvas, min, max, radius, inside);

@@ -3,8 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/DepthOrder.h>
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/canvas/DepthOrder.h>
+#include <api/render/realtime/canvas/World.h>
 
 #include <cstddef>
 
@@ -16,9 +16,10 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-using v3d::render::realtime::DepthOrder;
+using v3d::render::realtime::canvas::DepthOrder;
 using v3d::render::realtime::TextureHandle;
-using v3d::render::realtime::WorldCanvas;
+
+namespace canvas = v3d::render::realtime::canvas;
 
 namespace {
 
@@ -27,7 +28,7 @@ constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 /**
  * A unit square on the ground plane, so the first vertex a quad writes says which quad it was.
  **/
-WorldCanvas::Corners tile(float x, float z) {
+canvas::World::Corners tile(float x, float z) {
     return {
         glm::vec3(x, 0.0f, z),
         glm::vec3(x + 1.0f, 0.0f, z),
@@ -39,7 +40,7 @@ WorldCanvas::Corners tile(float x, float z) {
 /**
  * @return the x of the first corner of the nth quad the canvas holds
  **/
-float quadAt(const WorldCanvas& canvas, std::size_t n) {
+float quadAt(const canvas::World& canvas, std::size_t n) {
     return canvas.vertices()[n * 4].position.x;
 }
 
@@ -56,7 +57,7 @@ BOOST_AUTO_TEST_CASE(quads_come_out_furthest_first) {
     order.quad(2.0f, tile(1.0f, 0.0f), white);
     order.quad(3.0f, tile(2.0f, 0.0f), white);
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     order.into(&canvas);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 12u);
@@ -78,7 +79,7 @@ BOOST_AUTO_TEST_CASE(equal_keys_are_grouped_by_texture) {
     order.quad(5.0f, tile(2.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, a);
     order.quad(5.0f, tile(3.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, b);
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     order.into(&canvas);
 
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2u);
@@ -96,7 +97,7 @@ BOOST_AUTO_TEST_CASE(exact_equals_keep_their_submission_order) {
     order.quad(1.0f, tile(1.0f, 0.0f), white);
     order.quad(1.0f, tile(2.0f, 0.0f), white);
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     order.into(&canvas);
 
     BOOST_CHECK_EQUAL(quadAt(canvas, 0), 0.0f);
@@ -113,7 +114,7 @@ BOOST_AUTO_TEST_CASE(the_canvas_transform_applies) {
     DepthOrder order;
     order.quad(1.0f, tile(0.0f, 0.0f), white);
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     canvas.translate(glm::vec3(10.0f, 0.0f, 0.0f));
     order.into(&canvas);
 
@@ -128,7 +129,7 @@ BOOST_AUTO_TEST_CASE(an_order_handed_to_a_tinted_canvas_is_tinted) {
     DepthOrder order;
     order.quad(1.0f, tile(0.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     canvas.tint(glm::vec4(0.25f, 0.5f, 1.0f, 1.0f));
     order.into(&canvas);
 
@@ -146,7 +147,7 @@ BOOST_AUTO_TEST_CASE(a_key_that_is_not_a_number_is_drawn_last) {
     order.quad(std::nanf(""), tile(2.0f, 0.0f), white);
     order.quad(2.0f, tile(3.0f, 0.0f), white);
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     order.into(&canvas);
 
     BOOST_CHECK_EQUAL(quadAt(canvas, 0), 3.0f);

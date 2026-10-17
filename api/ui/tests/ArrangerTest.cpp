@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(the_paint_is_called_once_per_component_parent_first) {
     std::vector<std::string> painted;
     arranger.walk(nullptr, box,
         box->layout().resolve(canvasArea(400.0f, 200.0f), arranger.natural(*box, canvasArea(400.0f, 200.0f))),
-        [&painted](v3d::render::realtime::Canvas*, const boost::shared_ptr<v3d::ui::Component>& each) {
+        [&painted](v3d::render::realtime::canvas::Canvas*, const boost::shared_ptr<v3d::ui::Component>& each) {
             painted.push_back(std::string(each->name()));
         });
 
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE(a_hidden_component_is_not_walked) {
 
     unsigned int painted = 0;
     arranger.walk(nullptr, plate, canvasArea(400.0f, 200.0f),
-        [&painted](v3d::render::realtime::Canvas*, const boost::shared_ptr<v3d::ui::Component>&) {
+        [&painted](v3d::render::realtime::canvas::Canvas*, const boost::shared_ptr<v3d::ui::Component>&) {
             painted++;
         });
 

@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/engine/Engine.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
 
 #include <string>
@@ -31,5 +31,5 @@ class AppEngine final : public v3d::engine::Engine {
 
  private:
     boost::shared_ptr<v3d::render::realtime::Engine3D> renderer_;
-    v3d::render::realtime::Canvas canvas_;
+    v3d::render::realtime::canvas::Canvas canvas_;
 };

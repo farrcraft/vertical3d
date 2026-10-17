@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/paint/TextRenderer.h>
 
 #include <array>
@@ -93,7 +93,7 @@ class StatisticsOverlay final {
     /**
      * Append the overlay to a canvas, or nothing at all while it is hidden.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const Sample& sample);
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample);
 
     /**
      * The lines that are drawn, top to bottom.

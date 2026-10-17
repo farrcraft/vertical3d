@@ -4,7 +4,7 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
 #include <api/ui/component/menu/Menu.h>
@@ -107,7 +107,7 @@ struct Fixture final {
     boost::shared_ptr<entt::dispatcher> dispatcher;
     boost::shared_ptr<v3d::event::Context> context;
     boost::shared_ptr<v3d::ui::component::MenuBar> bar;
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     std::vector<Written> written;
     std::vector<std::string> sent;
     v3d::ui::paint::ComponentRenderer renderer;

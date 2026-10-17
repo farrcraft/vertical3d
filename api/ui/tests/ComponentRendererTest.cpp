@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Button.h>
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
             written.push_back(line);
         });
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     renderer.draw(&canvas, buildMenu({"One", "Two", "Three"}));
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
             written.push_back(line);
         });
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     boost::shared_ptr<v3d::ui::component::Menu> menu = buildMenu({"One", "Two", "Three"});
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
             written.push_back(line);
         });
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     boost::shared_ptr<v3d::ui::component::Menu> menu = buildMenu({"Options", "Quit"});
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     renderer.draw(&canvas, buildMenu({"a", "abcdefghij"}));
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     v3d::ui::Container container("game-menu", false);
@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     renderer.draw(&canvas, buildMenu({}));
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
             written.push_back(line);
         });
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     boost::shared_ptr<v3d::ui::component::Label> wrapped =
@@ -288,7 +288,7 @@ BOOST_AUTO_TEST_CASE(a_focused_component_is_ringed) {
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
@@ -335,7 +335,7 @@ BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
     renderer.dressing().focus = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
     renderer.theme(theme);
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     const boost::shared_ptr<v3d::ui::component::TextBox> box =
@@ -377,7 +377,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
     renderer.dressing().text = ordinary;
     renderer.dressing().disabledText = greyed;
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_box_greys_the_label_it_holds) {
     renderer.dressing().text = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
     renderer.dressing().disabledText = greyed;
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     const boost::shared_ptr<v3d::ui::component::Panel> group =

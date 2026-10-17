@@ -4,7 +4,7 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
 #include <api/ui/Container.h>
@@ -79,7 +79,7 @@ struct Fixture final {
 
     boost::shared_ptr<entt::dispatcher> dispatcher;
     boost::shared_ptr<v3d::event::Context> context;
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     std::vector<std::string> sent;
     v3d::ui::paint::ComponentRenderer renderer;
     boost::shared_ptr<v3d::ui::Engine> ui;
@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE(the_thumb_is_drawn_at_the_fraction) {
     slider->value(5.0f);
     fixture.draw();
 
-    const std::vector<v3d::render::realtime::Canvas::Vertex>& vertices = fixture.canvas.vertices();
+    const std::vector<v3d::render::realtime::canvas::Canvas::Vertex>& vertices = fixture.canvas.vertices();
     BOOST_REQUIRE(vertices.size() >= 4);
     float left = vertices[vertices.size() - 4].position.x;
     float right = left;

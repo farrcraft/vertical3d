@@ -17,7 +17,7 @@ namespace v3d::render::realtime::entity {
 /**
  **/
 void sprites(const entt::registry& registry, float alpha, const glm::vec3& right,
-    const glm::vec3& up, const glm::vec3& depthAxis, DepthOrder* order) {
+    const glm::vec3& up, const glm::vec3& depthAxis, canvas::DepthOrder* order) {
     auto view = registry.view<const ecs::component::Transform, const component::Sprite>();
     for (const entt::entity entity : view) {
         const component::Sprite& sprite = view.get<const component::Sprite>(entity);
@@ -28,7 +28,7 @@ void sprites(const entt::registry& registry, float alpha, const glm::vec3& right
         const glm::vec3 rise = up * (sprite.size.y * transform.scale.y);
 
         // around the perimeter from the top-left, so uv0 lands on corners[0]
-        const WorldCanvas::Corners corners = {
+        const canvas::World::Corners corners = {
             feet - across + rise,
             feet + across + rise,
             feet + across,

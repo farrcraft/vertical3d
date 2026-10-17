@@ -17,7 +17,7 @@ library works inside is in [internals/UserInterface.md](../../internals/UserInte
 
 ## Two ways to write a ui
 
-`api/ui` offers two models. Both draw onto the same `realtime::Canvas`, use the same box
+`api/ui` offers two models. Both draw onto the same `realtime::canvas::Canvas`, use the same box
 drawing and the same text callbacks, so they look like one ui on screen.
 
 **Retained mode** is a tree of components. `v3d::ui::Engine` builds the tree once from a JSON

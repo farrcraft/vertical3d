@@ -17,9 +17,9 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 class Canvas;
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas
 
 namespace v3d::ui {
 
@@ -131,7 +131,7 @@ class Immediate {
     /**
      * Start a frame. Everything drawn until end() goes onto this canvas.
      **/
-    void begin(v3d::render::realtime::Canvas* canvas, const Input& input);
+    void begin(v3d::render::realtime::canvas::Canvas* canvas, const Input& input);
 
     /**
      * Finish a frame: settle who has the cursor for the next one, and age out what nothing
@@ -561,7 +561,7 @@ class Immediate {
     Dressing dressing_;
     boost::shared_ptr<style::Theme> theme_;
 
-    v3d::render::realtime::Canvas* canvas_;
+    v3d::render::realtime::canvas::Canvas* canvas_;
     Input input_;
     glm::vec2 previousCursor_;
     glm::vec2 drag_;

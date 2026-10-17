@@ -176,7 +176,7 @@ boost::shared_ptr<style::Theme> ComponentRenderer::theme() const noexcept {
 
 /**
  **/
-void ComponentRenderer::paint(v3d::render::realtime::Canvas* canvas,
+void ComponentRenderer::paint(v3d::render::realtime::canvas::Canvas* canvas,
     const boost::shared_ptr<Component>& component) const {
     switch (component->type()) {
         case component::Type::Panel:
@@ -232,7 +232,7 @@ void ComponentRenderer::paint(v3d::render::realtime::Canvas* canvas,
 
 /**
  **/
-void ComponentRenderer::ring(v3d::render::realtime::Canvas* canvas,
+void ComponentRenderer::ring(v3d::render::realtime::canvas::Canvas* canvas,
     const boost::shared_ptr<Component>& component) const {
     // a component disabled while it held the focus draws no ring
     if (canvas == nullptr || !component->focused() || !usable(*component)) {
@@ -260,7 +260,7 @@ void ComponentRenderer::ring(v3d::render::realtime::Canvas* canvas,
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Engine& ui) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const Engine& ui) const {
     for (const boost::shared_ptr<Container>& container : ui.containers()) {
         if (container && container->visible()) {
             draw(canvas, *container);
@@ -270,7 +270,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Engine
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Container& container) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const Container& container) const {
     if (canvas == nullptr) {
         return;
     }
@@ -297,7 +297,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Contai
             // holds is laid out against it
             arranger_.walk(canvas, component,
                 component->layout().resolve(area, arranger_.natural(*component, area)),
-                [this](v3d::render::realtime::Canvas* target, const boost::shared_ptr<Component>& each) {
+                [this](v3d::render::realtime::canvas::Canvas* target, const boost::shared_ptr<Component>& each) {
                     paint(target, each);
                 });
         }
@@ -315,7 +315,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const Contai
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Label>& label) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Label>& label) const {
     if (canvas == nullptr || !label) {
         return;
     }
@@ -338,7 +338,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Icon>& icon) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Icon>& icon) const {
     if (canvas == nullptr || !icon || !icon->image().valid()) {
         return;
     }
@@ -352,7 +352,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Button>& button) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Button>& button) const {
     if (canvas == nullptr || !button) {
         return;
     }
@@ -388,7 +388,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Panel>& panel) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Panel>& panel) const {
     if (canvas == nullptr || !panel) {
         return;
     }
@@ -399,7 +399,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Bar>& bar) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Bar>& bar) const {
     if (canvas == nullptr || !bar) {
         return;
     }
@@ -428,7 +428,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Scrollbar>& bar) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Scrollbar>& bar) const {
     if (canvas == nullptr || !bar) {
         return;
     }
@@ -459,7 +459,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Slider>& slider) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Slider>& slider) const {
     if (canvas == nullptr || !slider) {
         return;
     }
@@ -482,7 +482,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::CheckBox>& box) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::CheckBox>& box) const {
     if (canvas == nullptr || !box) {
         return;
     }
@@ -526,7 +526,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::SelectList>& list) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::SelectList>& list) const {
     if (canvas == nullptr || !list) {
         return;
     }
@@ -572,7 +572,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::TextBox>& box) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::TextBox>& box) const {
     if (canvas == nullptr || !box) {
         return;
     }
@@ -633,7 +633,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::TabBar>& bar) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::TabBar>& bar) const {
     if (canvas == nullptr || !bar) {
         return;
     }
@@ -679,7 +679,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-bool ComponentRenderer::skin(v3d::render::realtime::Canvas* canvas, const component::Button& button,
+bool ComponentRenderer::skin(v3d::render::realtime::canvas::Canvas* canvas, const component::Button& button,
     const glm::vec2& min, const glm::vec2& max) const {
     const boost::shared_ptr<style::Theme> theme = styles_.theme();
     if (!theme) {
@@ -758,7 +758,7 @@ glm::vec2 ComponentRenderer::insets(const Container& container) const {
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu) const {
     if (canvas == nullptr || !menu) {
         return;
     }
@@ -804,7 +804,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::MenuBar>& bar) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::MenuBar>& bar) const {
     if (canvas == nullptr || !bar) {
         return;
     }
@@ -856,7 +856,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Toolbar>& bar,
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Toolbar>& bar,
     const glm::vec2& corner) const {
     if (canvas == nullptr || !bar) {
         return;
@@ -885,7 +885,7 @@ void ComponentRenderer::draw(v3d::render::realtime::Canvas* canvas, const boost:
 
 /**
  **/
-void ComponentRenderer::panel(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu,
+void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu,
     const glm::vec2& origin) const {
     const std::size_t count = menu->count();
     if (count == 0) {

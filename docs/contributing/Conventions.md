@@ -27,7 +27,7 @@ editing.**
 ### Includes
 
 - **Include a header from another directory by its path from the repository root, in angle
-  brackets.** For example, `#include <api/render/realtime/Canvas.h>`, or
+  brackets.** For example, `#include <api/render/realtime/canvas/Canvas.h>`, or
   `#include <vertical3d/src/scene/Node.h>` for an app's own header in another directory.
 - **A subdirectory counts as another directory.** From `api/ui`, write
   `<api/ui/component/Bar.h>`, not `"component/Bar.h"`.

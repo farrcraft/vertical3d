@@ -7,7 +7,7 @@
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
@@ -27,11 +27,12 @@
 
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
-using v3d::render::realtime::WorldCanvas;
 using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
 using v3d::render::realtime::vulkan::renderer::World;
+
+namespace canvas = v3d::render::realtime::canvas;
 
 namespace {
 
@@ -52,8 +53,8 @@ glm::mat4x4 pixels() {
     return projection;
 }
 
-WorldCanvas::Corners rect(float minX, float maxX) {
-    return WorldCanvas::Corners{
+canvas::World::Corners rect(float minX, float maxX) {
+    return canvas::World::Corners{
         glm::vec3(minX, 0.0f, 0.5f),
         glm::vec3(maxX, 0.0f, 0.5f),
         glm::vec3(maxX, static_cast<float>(height), 0.5f),
@@ -65,7 +66,7 @@ WorldCanvas::Corners rect(float minX, float maxX) {
  * Clear to a colour every channel of which is a whole number of 8-bit steps, draw a canvas over
  * it with a blend, and read the picture back.
  **/
-boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, const WorldCanvas& canvas,
+boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, const canvas::World& canvas,
     World::Blend blend, const std::string& name) {
     boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
         headless->device, headless->context->ring(), width, height, colourFormat, false);
@@ -121,7 +122,7 @@ BOOST_AUTO_TEST_SUITE(world_blend_test)
 BOOST_AUTO_TEST_CASE(an_additive_quad_adds_to_what_is_there) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     canvas.quad(rect(0.0f, 16.0f), glm::vec4(0.4f, 0.4f, 0.8f, 1.0f));
     canvas.quad(rect(16.0f, 32.0f), glm::vec4(0.4f, 0.4f, 0.8f, 0.5f));
 

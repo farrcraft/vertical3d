@@ -5,9 +5,9 @@
 
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
-#include <api/render/realtime/DepthOrder.h>
+#include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/entity/Sprites.h>
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/component/Sprite.h>
 #include <api/type/camera/Profile.h>
 
@@ -21,10 +21,11 @@
 #include <glm/vec3.hpp>
 
 using v3d::ecs::component::Transform;
-using v3d::render::realtime::DepthOrder;
+using v3d::render::realtime::canvas::DepthOrder;
 using v3d::render::realtime::TextureHandle;
-using v3d::render::realtime::WorldCanvas;
 using v3d::render::realtime::component::Sprite;
+
+namespace canvas = v3d::render::realtime::canvas;
 
 namespace {
 
@@ -53,7 +54,7 @@ Sprite sized(float width, float height, const TextureHandle& texture) {
 }
 
 void draw(const entt::registry& registry, float alpha, const glm::vec3& across,
-    const glm::vec3& rise, const glm::vec3& depthAxis, WorldCanvas* canvas) {
+    const glm::vec3& rise, const glm::vec3& depthAxis, canvas::World* canvas) {
     DepthOrder order;
     v3d::render::realtime::entity::sprites(registry, alpha, across, rise, depthAxis, &order);
     order.into(canvas);
@@ -63,14 +64,14 @@ void draw(const entt::registry& registry, float alpha, const glm::vec3& across,
  * The corners of a billboard built by hand, for comparing against what sprites() emits: half
  * the width either side along right, the height along up, top-left first.
  **/
-WorldCanvas::Corners billboard(const glm::vec3& feet, float width, float height,
+canvas::World::Corners billboard(const glm::vec3& feet, float width, float height,
     const glm::vec3& across, const glm::vec3& rise) {
     const glm::vec3 half = across * (width * 0.5f);
     const glm::vec3 top = rise * height;
     return { feet - half + top, feet + half + top, feet + half, feet - half };
 }
 
-void checkQuad(const WorldCanvas& canvas, std::size_t n, const WorldCanvas::Corners& corners) {
+void checkQuad(const canvas::World& canvas, std::size_t n, const canvas::World::Corners& corners) {
     for (std::size_t corner = 0; corner < 4; ++corner) {
         BOOST_TEST(same(canvas.vertices()[n * 4 + corner].position, corners[corner]));
     }
@@ -91,7 +92,7 @@ BOOST_AUTO_TEST_CASE(a_sprite_stands_on_its_feet) {
     sprite.uv1 = glm::vec2(0.75f, 1.0f);
     place(&registry, glm::vec3(0.0f), sprite);
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     draw(registry, 1.0f, right, up, away, &canvas);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4u);
@@ -114,7 +115,7 @@ BOOST_AUTO_TEST_CASE(scale_stretches_and_rotation_does_not_turn) {
     transform.scale = glm::vec3(2.0f, 4.0f, 1.0f);
     transform.rotation = v3d::ecs::component::aboutY(1.0f);
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     draw(registry, 1.0f, right, up, away, &canvas);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4u);
@@ -130,7 +131,7 @@ BOOST_AUTO_TEST_CASE(sprites_are_keyed_along_the_axis) {
     place(&registry, glm::vec3(0.0f, 0.0f, 1.0f), sized(1.0f, 1.0f, TextureHandle(1)));
     place(&registry, glm::vec3(5.0f, 0.0f, 9.0f), sized(1.0f, 1.0f, TextureHandle(1)));
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     draw(registry, 1.0f, right, up, away, &canvas);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8u);
@@ -149,7 +150,7 @@ BOOST_AUTO_TEST_CASE(a_moving_sprite_is_drawn_between_steps) {
     registry.get<Transform>(moving).position = glm::vec3(4.0f, 0.0f, 0.0f);
     place(&registry, glm::vec3(0.0f, 0.0f, -10.0f), sized(1.0f, 1.0f, TextureHandle(1)));
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     draw(registry, 0.5f, right, up, away, &canvas);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8u);
@@ -164,7 +165,7 @@ BOOST_AUTO_TEST_CASE(a_sprite_without_a_transform_is_not_drawn) {
     entt::registry registry;
     registry.emplace<Sprite>(registry.create(), sized(1.0f, 1.0f, TextureHandle(1)));
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     draw(registry, 1.0f, right, up, away, &canvas);
 
     BOOST_CHECK(canvas.empty());
@@ -193,7 +194,7 @@ BOOST_AUTO_TEST_CASE(sprite_world_is_drawn_through_sprites) {
     place(&registry, player, sized(0.8f, 1.6f, sheet));
     place(&registry, acorn, sized(0.9f, 0.9f, sheet));
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     draw(registry, 1.0f, profile.right(), profile.up(), ground, &canvas);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8u);

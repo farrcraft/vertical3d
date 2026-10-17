@@ -4,7 +4,7 @@
  **/
 
 #include <api/event/Engine.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Length.h>
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_SUITE(select_list_test)
 BOOST_AUTO_TEST_CASE(the_rows_are_cut_off_at_the_list) {
     std::vector<Written> written;
     v3d::ui::paint::ComponentRenderer renderer = build(&written);
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 300);
 
     const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(40, glm::vec2(120.0f, 100.0f));
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(the_rows_are_cut_off_at_the_list) {
     BOOST_CHECK_CLOSE(saves->rowHeight(), renderer.dressing().lineHeight, 0.001f);
     BOOST_CHECK_CLOSE(saves->content(), renderer.dressing().lineHeight * 40.0f, 0.001f);
 
-    const v3d::render::realtime::Canvas::Batch& rows = canvas.batches().back();
+    const v3d::render::realtime::canvas::Canvas::Batch& rows = canvas.batches().back();
     BOOST_REQUIRE(rows.clipped);
     BOOST_CHECK_CLOSE(rows.clip.w, saves->position().y + 100.0f - renderer.dressing().borderWidth, 0.001f);
 
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(the_rows_are_cut_off_at_the_list) {
 BOOST_AUTO_TEST_CASE(an_offset_starts_the_rows_further_down) {
     std::vector<Written> written;
     v3d::ui::paint::ComponentRenderer renderer = build(&written);
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 300);
 
     const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(40, glm::vec2(120.0f, 100.0f));
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(an_offset_starts_the_rows_further_down) {
  **/
 BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_the_box_does_not_show) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 300);
 
     const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(10, glm::vec2(120.0f, 100.0f));
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_the_box_does_not_show) {
  **/
 BOOST_AUTO_TEST_CASE(a_point_names_the_row_under_it) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 300);
 
     const boost::shared_ptr<v3d::ui::component::SelectList> undrawn = list(10, glm::vec2(120.0f, 100.0f));
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(replacing_the_rows_keeps_a_choice_that_survives) {
 BOOST_AUTO_TEST_CASE(the_chosen_row_is_drawn_differently) {
     std::vector<Written> written;
     v3d::ui::paint::ComponentRenderer renderer = build(&written);
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 300);
 
     const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(4, glm::vec2(120.0f, 100.0f));

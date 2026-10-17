@@ -209,7 +209,7 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
     // the overlay draws onto the same canvas, so this runs for it whether or not there is
     // a ui to draw as well
     screen_->draw(ui_.get(), statistics);
-    v3d::render::realtime::Canvas& canvas = screen_->canvas();
+    v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
     if (canvas.empty()) {
         return;
     }

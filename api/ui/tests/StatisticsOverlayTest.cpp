@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/shell/StatisticsOverlay.h>
 
 #include <array>
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(nothing_is_drawn_without_a_text_renderer) {
     v3d::ui::shell::StatisticsOverlay overlay(text);
     overlay.visible(true);
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(640, 480);
     overlay.draw(&canvas, v3d::ui::shell::StatisticsOverlay::Sample());
 

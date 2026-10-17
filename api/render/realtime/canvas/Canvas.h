@@ -5,11 +5,12 @@
 
 #pragma once
 
+#include <api/render/realtime/Handle.h>
+
 #include <cstdint>
 #include <vector>
 
-#include "CanvasStacks.h"
-#include "Handle.h"
+#include "Stacks.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -19,7 +20,7 @@ namespace v3d::font {
 class TextBuffer;
 };  // namespace v3d::font
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 
 /**
  * Everything 2D the engine draws, accumulated as one stream of textured quads.
@@ -161,11 +162,10 @@ class Canvas final {
     /**
      * Cut everything drawn until the matching unclip() to a rectangle.
      *
-     * The rectangle is in the coordinates being drawn in - the current transform applies
-     * to it the same way it applies to a vertex, and it is resolved once, here, so
-     * translating afterwards moves what is drawn rather than what it is cut to. It is
-     * intersected with whatever is already clipped, so an inner clip can only take room
-     * away.
+     * The rectangle is in the coordinates being drawn in. The current transform applies
+     * to it the same way it applies to a vertex. It is resolved once, here, so translating
+     * afterwards moves what is drawn and not what it is cut to. It is intersected with
+     * whatever is already clipped, so an inner clip can only take room away.
      *
      * Clipping is per batch and not per vertex. The stream cuts where the rectangle
      * changes and the device scissors the draw. A quad straddling the edge is drawn whole,
@@ -264,10 +264,10 @@ class Canvas final {
     /**
      * Start a batch, or extend the open one when it already draws the same way.
      *
-     * The texture, the text flag and the clip rectangle all have to match: the fragment
+     * The texture, the text flag and the clip rectangle all have to match. The fragment
      * shader treats a text batch's texels as distances, so merging one with a run of
-     * sprites would threshold the sprites, and a scissor belongs to a whole draw, so two
-     * runs cut differently cannot be one.
+     * sprites would threshold the sprites. A scissor belongs to a whole draw, so two runs
+     * cut differently cannot be one.
      **/
     void open(const TextureHandle& texture, bool text = false);
 
@@ -297,4 +297,4 @@ class Canvas final {
     std::vector<Batch> batches_;
 };
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas

@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/brep/BRep.h>
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <boost/shared_ptr.hpp>
@@ -26,7 +26,7 @@ namespace v3d::editor {
  * the point the handles show.
  *
  * Handles are picked by testing each one against the cursor on the CPU, and drawn
- * through LineCanvas. They are sized in world
+ * through canvas::Line. They are sized in world
  * units taken from the view, so a handle keeps roughly the same length on screen
  * however far away the object is.
  *
@@ -137,7 +137,7 @@ class Manipulator {
      * selection.
      **/
     virtual void draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
-        v3d::render::realtime::LineCanvas* canvas) const = 0;
+        v3d::render::realtime::canvas::Line* canvas) const = 0;
 
     /**
      * Apply one motion event's worth of drag along the constrained axis.
@@ -227,7 +227,7 @@ class Manipulator {
      * The box drawn at the centre handle and at the tip of a scale handle, oriented
      * with the placement.
      **/
-    static void marker(v3d::render::realtime::LineCanvas* canvas, const Placement& placement,
+    static void marker(v3d::render::realtime::canvas::Line* canvas, const Placement& placement,
         const glm::vec3& at, float size, const glm::vec4& colour);
 
  private:

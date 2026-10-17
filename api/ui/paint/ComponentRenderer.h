@@ -20,9 +20,9 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 class Canvas;
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas
 
 namespace v3d::ui {
 
@@ -123,47 +123,47 @@ class ComponentRenderer {
     /**
      * Draw a label - one line of text at the position it holds.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Label>& label) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Label>& label) const;
 
     /**
      * Draw an icon - the texture something resolved its source to, at the size the
      * component was given. An icon whose source was never resolved draws nothing.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Icon>& icon) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Icon>& icon) const;
 
     /**
      * Draw a button at the position and size it holds, which a button in a
      * container carries and what a toolbar writes on the ones in the strip.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Button>& button) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Button>& button) const;
 
     /**
      * Draw a panel - a filled box with a border, rounded by however much its style asks
      * for, at the box it holds.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Panel>& panel) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Panel>& panel) const;
 
     /**
      * Draw a bar - the track it holds, and the fraction of it that is filled.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Bar>& bar) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Bar>& bar) const;
 
     /**
      * Draw a scrollbar - its track, and the thumb over the part of the content its page
      * shows. A bar with nothing to scroll draws the track alone.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Scrollbar>& bar) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Scrollbar>& bar) const;
 
     /**
      * A slider's track, the fill up to its value, and its thumb.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Slider>& slider) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Slider>& slider) const;
 
     /**
      * Draw a check box - the box, the mark when it is checked, and the label beside it.
      * A radio button is the same call: the mark is round and the style class is its own.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::CheckBox>& box) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::CheckBox>& box) const;
 
     /**
      * Draw a select list - its plate, and as many of its rows as its box shows, with the
@@ -173,7 +173,7 @@ class ComponentRenderer {
      * the style resolved to is stored on the list so that it can say which row a point is
      * on.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::SelectList>& list) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::SelectList>& list) const;
 
     /**
      * Draw a text box - its plate, the line it holds, and the caret when it has the
@@ -183,7 +183,7 @@ class ComponentRenderer {
      * edge, so a box goes on being typed into once it is full. Whether the caret is drawn
      * is the component's focused() flag, which Engine::focus() wrote.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::TextBox>& box) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::TextBox>& box) const;
 
     /**
      * Draw a tab bar - the strip of tabs across the top of its box, and the page the
@@ -192,17 +192,17 @@ class ComponentRenderer {
      * Only the chosen page is drawn, so nothing in the others is laid out or picked, and
      * where each tab ended up is left on the bar for the cursor to be tested against.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::TabBar>& bar) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::TabBar>& bar) const;
 
     /**
      * Draw every visible container of a ui engine.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const Engine& ui) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const Engine& ui) const;
 
     /**
      * Draw every visible component of one container.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const Container& container) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const Container& container) const;
 
     /**
      * Draw the active level of a menu, centred on the canvas.
@@ -210,14 +210,14 @@ class ComponentRenderer {
      * It is the active level rather than the menu itself that is drawn: descending into
      * a submenu replaces what is on screen, and the parent stays where it was.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu) const;
 
     /**
      * Draw a menu bar - the strip across the top, and the open menu with any flyout the
      * cursor has descended into drawn under it. It takes the top of the canvas, which is
      * where its panels are dropped from.
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::MenuBar>& bar) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::MenuBar>& bar) const;
 
     /**
      * Draw a toolbar - a row of buttons across the canvas, or a column down its side.
@@ -225,7 +225,7 @@ class ComponentRenderer {
      * @param corner the strip's top left, which is where the edge it runs along has
      *      room for it once the strips before it have taken theirs
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Toolbar>& bar,
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Toolbar>& bar,
         const glm::vec2& corner) const;
 
     /**
@@ -249,21 +249,21 @@ class ComponentRenderer {
      * @param origin where the panel's top left corner would go, before it is moved to
      *      keep it on the canvas
      **/
-    void panel(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu,
+    void panel(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu,
         const glm::vec2& origin) const;
 
     /**
      * Draw one component into the box the layout pass has just written onto it. This is
      * the switch on component type that the Arranger calls back.
      **/
-    void paint(v3d::render::realtime::Canvas* canvas,
+    void paint(v3d::render::realtime::canvas::Canvas* canvas,
         const boost::shared_ptr<Component>& component) const;
 
     /**
      * Trace the ring that says where the keyboard is, over a component that has just been
      * drawn. Nothing is traced for a component that is not focused.
      **/
-    void ring(v3d::render::realtime::Canvas* canvas,
+    void ring(v3d::render::realtime::canvas::Canvas* canvas,
         const boost::shared_ptr<Component>& component) const;
 
     /**
@@ -273,7 +273,7 @@ class ComponentRenderer {
      * @return false when the theme names no image for that button in that state, and a
      *      flat button is drawn instead
      **/
-    bool skin(v3d::render::realtime::Canvas* canvas, const component::Button& button,
+    bool skin(v3d::render::realtime::canvas::Canvas* canvas, const component::Button& button,
         const glm::vec2& min, const glm::vec2& max) const;
 
     /**

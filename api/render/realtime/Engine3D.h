@@ -119,7 +119,7 @@ class Engine3D : public Engine {
     boost::shared_ptr<Textures> textures() const;
 
     /**
-     * The world space line primitive. An app fills a LineCanvas during its tick and hands
+     * The world space line primitive. An app fills a canvas::Line during its tick and hands
      * both to this.
      *
      * Built on the first call rather than at startup, so an app that draws no lines pays
@@ -128,7 +128,7 @@ class Engine3D : public Engine {
     boost::shared_ptr<vulkan::renderer::Line> lines();
 
     /**
-     * The world space quad primitive. An app fills a WorldCanvas during its tick and hands
+     * The world space quad primitive. An app fills a canvas::World during its tick and hands
      * both to this.
      *
      * Built on the first call rather than at startup, so an app that draws none pays

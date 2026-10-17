@@ -305,7 +305,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     if (!screen_->begin()) {
         return;
     }
-    v3d::render::realtime::Canvas& canvas = screen_->canvas();
+    v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
     if (screen_->resized()) {
         resize(static_cast<int>(canvas.width()), static_cast<int>(canvas.height()));
     }

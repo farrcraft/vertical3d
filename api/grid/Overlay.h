@@ -41,7 +41,7 @@ typedef std::function<void(const glm::vec3& from, const glm::vec3& to, const glm
  *
  * The counterpart of LineSink for the renderer's world-space quad, for the same reason:
  * nothing in this library names a renderer. The corners arrive in the order tileCorners()
- * returns them, which is also the order realtime::WorldCanvas expects.
+ * returns them, which is also the order realtime::canvas::World expects.
  **/
 typedef std::function<void(const std::array<glm::vec3, 4>& corners, const glm::vec4& colour)> QuadSink;
 

@@ -5,10 +5,10 @@
 
 #include <api/ecs/component/Emitter.h>
 #include <api/ecs/component/Transform.h>
-#include <api/render/realtime/DepthOrder.h>
+#include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/entity/Particles.h>
 #include <api/render/realtime/entity/Sprites.h>
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/component/Particles.h>
 #include <api/render/realtime/component/Sprite.h>
 #include <api/type/animation/SpriteClip.h>
@@ -29,13 +29,14 @@
 #include <glm/vec4.hpp>
 
 using v3d::ecs::component::Emitter;
-using v3d::render::realtime::DepthOrder;
+using v3d::render::realtime::canvas::DepthOrder;
 using v3d::render::realtime::TextureHandle;
-using v3d::render::realtime::WorldCanvas;
 using v3d::render::realtime::component::Particles;
 using v3d::type::animation::SpriteClip;
 using v3d::type::animation::Track;
 using v3d::type::effect::Particle;
+
+namespace canvas = v3d::render::realtime::canvas;
 
 namespace {
 
@@ -72,7 +73,7 @@ Emitter& emitting(entt::registry* registry, const std::vector<Particle>& made, c
     return emitter;
 }
 
-void draw(const entt::registry& registry, float alpha, WorldCanvas* canvas) {
+void draw(const entt::registry& registry, float alpha, canvas::World* canvas) {
     DepthOrder order;
     v3d::render::realtime::entity::particles(registry, alpha, right, up, away, &order);
     order.into(canvas);
@@ -93,7 +94,7 @@ BOOST_AUTO_TEST_CASE(a_particle_is_drawn_between_steps) {
     // a quarter of the way through its life, a track from 2 to 6 gives 3
     emitter.description.size = Track<float>({{0.0f, 2.0f}, {1.0f, 6.0f}});
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     draw(registry, 0.25f, &canvas);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4u);
@@ -123,7 +124,7 @@ BOOST_AUTO_TEST_CASE(a_particle_takes_its_colour_and_frame) {
     emitter.description.colour = Track<glm::vec4>({{0.0f, glm::vec4(1.0f)}, {1.0f, glm::vec4(1.0f, 1.0f, 1.0f, 0.0f)}});
 
     // a second in, by age, the clip is in its second frame
-    WorldCanvas byAge;
+    canvas::World byAge;
     draw(registry, 1.0f, &byAge);
     BOOST_REQUIRE_EQUAL(byAge.vertices().size(), 4u);
     BOOST_TEST((byAge.vertices()[0].uv == glm::vec2(0.5f, 0.0f)));
@@ -132,7 +133,7 @@ BOOST_AUTO_TEST_CASE(a_particle_takes_its_colour_and_frame) {
 
     // a quarter of the way through its life, over a clip of a second and a half, is the first
     registry.get<Particles>(registry.view<Particles>().front()).overLife = true;
-    WorldCanvas byLife;
+    canvas::World byLife;
     draw(registry, 1.0f, &byLife);
     BOOST_TEST((byLife.vertices()[0].uv == glm::vec2(0.0f, 0.0f)));
 }
@@ -153,7 +154,7 @@ BOOST_AUTO_TEST_CASE(particles_sort_among_sprites) {
     DepthOrder order;
     v3d::render::realtime::entity::particles(registry, 1.0f, right, up, away, &order);
     v3d::render::realtime::entity::sprites(registry, 1.0f, right, up, away, &order);
-    WorldCanvas canvas;
+    canvas::World canvas;
     order.into(&canvas);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 12u);
@@ -177,7 +178,7 @@ BOOST_AUTO_TEST_CASE(a_stretched_particle_lies_along_its_velocity) {
         {particle(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(6.0f, -8.0f, 3.0f))}, look);
     emitter.description.size = Track<float>(0.5f);
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     draw(registry, 1.0f, &canvas);
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4u);
 
@@ -190,7 +191,7 @@ BOOST_AUTO_TEST_CASE(a_stretched_particle_lies_along_its_velocity) {
 
     // and one too slow to outrun its width is square
     emitter.state.particles[0].velocity = glm::vec3(0.0f, 0.1f, 0.0f);
-    WorldCanvas slow;
+    canvas::World slow;
     draw(registry, 1.0f, &slow);
     BOOST_TEST(glm::length(slow.vertices()[0].position - slow.vertices()[3].position) == 0.5f,
         boost::test_tools::tolerance(1e-5f));
@@ -209,7 +210,7 @@ BOOST_AUTO_TEST_CASE(a_swaying_particle_drifts_where_it_is_drawn) {
     emitter.description.sway = 0.5f;
     emitter.description.swayRate = 1.0f;
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     draw(registry, 1.0f, &canvas);
     // a quarter turn in is the far right of the sway
     BOOST_TEST(same(canvas.vertices()[0].position, glm::vec3(0.5f - 0.5f, 0.5f, 0.0f)));
@@ -224,7 +225,7 @@ BOOST_AUTO_TEST_CASE(an_emitter_without_a_look_is_not_drawn) {
     Emitter& emitter = registry.emplace<Emitter>(registry.create());
     emitter.state.particles.push_back(particle(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f)));
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     draw(registry, 1.0f, &canvas);
     BOOST_TEST(canvas.empty());
 }

@@ -240,8 +240,8 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 - **Sort key** — the value a pass sorts its draw items by when sorting is on: layer, then
   pipeline, then material, then depth. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
 - **Canvas** — a buffer of 2D quads an app fills during the tick and submits to a pass.
-  `realtime::Canvas` is in screen space; `WorldCanvas` and `LineCanvas` are in world space. See
-  [rendering/Canvas.md](rendering/Canvas.md).
+  `realtime::canvas::Canvas` is in screen space; `canvas::World` and `canvas::Line` are in world
+  space. See [rendering/Canvas.md](rendering/Canvas.md).
 - **Render target** — an offscreen image a pass draws into instead of the window. Another pass
   can then read it as a texture. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
 - **Handle** — a small id that names a renderer resource such as a texture or pipeline. It

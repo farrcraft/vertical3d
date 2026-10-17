@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "CanvasStacks.h"
+#include "Stacks.h"
 
 #include <algorithm>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 
 /**
  **/
@@ -95,4 +95,4 @@ glm::vec4 ClipStack::top() const noexcept {
     return clips_.empty() ? glm::vec4(0.0f) : clips_.back();
 }
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas

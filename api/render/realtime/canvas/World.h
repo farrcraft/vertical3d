@@ -5,26 +5,27 @@
 
 #pragma once
 
+#include <api/render/realtime/Handle.h>
+
 #include <array>
 #include <cstdint>
 #include <vector>
 
-#include "CanvasStacks.h"
-#include "Handle.h"
+#include "Stacks.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 
 /**
  * Everything the engine draws as textured quads standing in the world, accumulated as one
  * stream.
  *
  * The CPU side of the world space quad primitive. It draws the same quads as Canvas, but in
- * world space as LineCanvas does. A quad here has four world corners and is drawn through
+ * world space as Line does. A quad here has four world corners and is drawn through
  * the camera its pass carries at set 0, so a pass whose camera was never set draws it in
  * clip space.
  *
@@ -39,7 +40,7 @@ namespace v3d::render::realtime {
  * Batching follows Canvas: the stream cuts where the bound texture changes, and an
  * untextured quad names no texture and is drawn against the renderer's 1x1 white one.
  **/
-class WorldCanvas final {
+class World final {
  public:
     /**
      * One vertex of the stream, in the layout the world quad pipeline declares.
@@ -70,7 +71,7 @@ class WorldCanvas final {
 
     /**
      **/
-    WorldCanvas();
+    World();
 
     /**
      * Drop everything accumulated and reset the transform stack and the tint, keeping the
@@ -178,4 +179,4 @@ class WorldCanvas final {
     std::vector<Batch> batches_;
 };
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas

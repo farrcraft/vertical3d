@@ -200,13 +200,13 @@ case can be tested without a device.
 - A `LineSink` receives `(from, to, colour)`. Forward it to the renderer's world-space line
   primitive.
 - A `QuadSink` receives four corners and a colour. The corners arrive in the order
-  `realtime::WorldCanvas` expects. The colour's alpha arrives unchanged, so a translucent fill
+  `realtime::canvas::World` expects. The colour's alpha arrives unchanged, so a translucent fill
   blends if the pass blends.
 - Everything is lifted `OVERLAY_LIFT` (0.01 world units) above the ground so it does not
   z-fight with ground drawn at `y = 0`. Draw every layer of one overlay with the same lift.
 - A tile off the board emits nothing.
 
-[rendering/](rendering/README.md) covers the line primitive and `WorldCanvas`.
+[rendering/](rendering/README.md) covers the line primitive and `canvas::World`.
 
 ## An example: odyssey
 

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
 
 #include <glm/vec3.hpp>
@@ -24,7 +24,7 @@ namespace v3d::editor {
  * one axis, so the grid lies in the plane of the other two and the view reads as a
  * drafting elevation; a perspective view gets the ground plane.
  *
- * This belongs to the editor rather than to the api: LineCanvas offers primitives, and
+ * This belongs to the editor rather than to the api: canvas::Line offers primitives, and
  * how big a grid is, how far apart its lines are and which way it faces are all policy.
  **/
 class ConstructionPlane final {
@@ -69,7 +69,7 @@ class ConstructionPlane final {
      * @param camera the view the grid is being drawn for, which decides its plane
      * @param canvas where the segments are appended - nothing is cleared
      **/
-    void draw(const v3d::type::camera::Camera& camera, v3d::render::realtime::LineCanvas* canvas) const;
+    void draw(const v3d::type::camera::Camera& camera, v3d::render::realtime::canvas::Line* canvas) const;
 
  private:
     /**

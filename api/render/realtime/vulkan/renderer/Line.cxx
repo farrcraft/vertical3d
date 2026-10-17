@@ -70,9 +70,9 @@ void Line::createPipelines(VkFormat colour, VkFormat depth) {
     builder.name("line")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
-        .vertexBinding(0, sizeof(LineCanvas::Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(LineCanvas::Vertex, position))
-        .vertexAttribute(1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(LineCanvas::Vertex, colour))
+        .vertexBinding(0, sizeof(canvas::Line::Vertex))
+        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(canvas::Line::Vertex, position))
+        .vertexAttribute(1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(canvas::Line::Vertex, colour))
         .topology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
         // a line has no facing to cull by
         .cull(VK_CULL_MODE_NONE)
@@ -88,12 +88,12 @@ void Line::createPipelines(VkFormat colour, VkFormat depth) {
 
 /**
  **/
-void Line::submit(const LineCanvas& canvas, Pass* pass, uint16_t layer) {
+void Line::submit(const canvas::Line& canvas, Pass* pass, uint16_t layer) {
     if (pass == nullptr || canvas.empty()) {
         return;
     }
 
-    const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(LineCanvas::Vertex);
+    const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(canvas::Line::Vertex);
     const boost::shared_ptr<memory::Buffer> vertices = stream_->claim(vertexBytes, 0).vertices;
     vertices->write(canvas.vertices().data(), vertexBytes);
 
@@ -101,7 +101,7 @@ void Line::submit(const LineCanvas& canvas, Pass* pass, uint16_t layer) {
     // is drawn with follows from whether the pass has a depth buffer
     const PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
 
-    for (const LineCanvas::Batch& batch : canvas.batches()) {
+    for (const canvas::Line::Batch& batch : canvas.batches()) {
         if (batch.vertices == 0) {
             continue;
         }

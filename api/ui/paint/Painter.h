@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
@@ -26,7 +26,7 @@ namespace v3d::ui::paint {
  * A radius past half the shorter side is clamped to it, so it makes a fully rounded
  * end rather than a folded one.
  **/
-void fillBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+void fillBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, const glm::vec4& colour);
 
 /**
@@ -38,7 +38,7 @@ void fillBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const 
  *
  * @param width how thick the outline is, clamped to half the shorter side
  **/
-void strokeBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+void strokeBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, float width, const glm::vec4& colour);
 
 /**
@@ -50,7 +50,7 @@ void strokeBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, cons
  *
  * @param width how thick the outline is; nothing is traced when it is zero
  **/
-void plateBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+void plateBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, float width, const glm::vec4& inside, const glm::vec4& outline);
 
 /**

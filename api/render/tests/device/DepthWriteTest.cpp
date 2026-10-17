@@ -6,9 +6,9 @@
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/Frame.h>
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
@@ -30,12 +30,12 @@
 #include "Headless.h"
 
 using v3d::render::realtime::Frame;
-using v3d::render::realtime::LineCanvas;
 using v3d::render::realtime::Pass;
-using v3d::render::realtime::WorldCanvas;
 using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
+
+namespace canvas = v3d::render::realtime::canvas;
 
 namespace {
 
@@ -90,14 +90,14 @@ std::string drawCoincident(v3d::test::Headless* headless, Drawn drawn, std::opti
     pass->depthWrite(write);
     pass->camera(glm::mat4x4(1.0f), pixels());
 
-    LineCanvas lines;
-    WorldCanvas quads;
+    canvas::Line lines;
+    canvas::World quads;
     if (drawn == Drawn::Lines) {
         lines.line(glm::vec3(0.0f, 16.5f, 0.5f), glm::vec3(64.0f, 16.5f, 0.5f), red);
         lines.line(glm::vec3(0.0f, 16.5f, 0.5f), glm::vec3(64.0f, 16.5f, 0.5f), green);
         headless->context->lines()->submit(lines, pass.get());
     } else {
-        const WorldCanvas::Corners band{
+        const canvas::World::Corners band{
             glm::vec3(0.0f, 8.0f, 0.5f),
             glm::vec3(64.0f, 8.0f, 0.5f),
             glm::vec3(64.0f, 24.0f, 0.5f),

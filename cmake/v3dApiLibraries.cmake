@@ -232,7 +232,7 @@ function(v3d_api_verify_manifest)
 endfunction()
 
 # Which api library owns a path under api/: the one whose PATH is the longest prefix of it, so
-# render/offline/Film.h is render_offline's and render/realtime/Canvas.h is render's. Sets
+# render/offline/Film.h is render_offline's and render/realtime/canvas/Canvas.h is render's. Sets
 # out_var to the library, or to nothing for a path no library owns.
 function(v3d_api_owner relative out_var)
 	set(owner)

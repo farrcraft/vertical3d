@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/canvas/World.h>
 
 #include <array>
 #include <cstddef>
@@ -22,7 +22,7 @@ constexpr glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
 /**
  * A unit square lying on the ground plane, in the perimeter order grid::tileCorners uses.
  **/
-v3d::render::realtime::WorldCanvas::Corners tile(float x, float z) {
+v3d::render::realtime::canvas::World::Corners tile(float x, float z) {
     return {
         glm::vec3(x, 0.0f, z),
         glm::vec3(x + 1.0f, 0.0f, z),
@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_SUITE(worldcanvas_test)
  * in it costs neither an upload nor an item.
  **/
 BOOST_AUTO_TEST_CASE(an_empty_canvas_has_nothing_to_draw) {
-    v3d::render::realtime::WorldCanvas canvas;
+    v3d::render::realtime::canvas::World canvas;
 
     BOOST_CHECK(canvas.empty());
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 0);
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(an_empty_canvas_has_nothing_to_draw) {
  * come out in the order they were given.
  **/
 BOOST_AUTO_TEST_CASE(a_quad_is_four_world_vertices_and_two_triangles) {
-    v3d::render::realtime::WorldCanvas canvas;
+    v3d::render::realtime::canvas::World canvas;
     canvas.quad(tile(0.0f, 0.0f), white);
 
     BOOST_CHECK(!canvas.empty());
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(a_quad_is_four_world_vertices_and_two_triangles) {
  * into an atlas comes out the right way up.
  **/
 BOOST_AUTO_TEST_CASE(the_uv_rectangle_follows_the_corner_order) {
-    v3d::render::realtime::WorldCanvas canvas;
+    v3d::render::realtime::canvas::World canvas;
     canvas.quad(tile(0.0f, 0.0f), glm::vec2(0.25f, 0.5f), glm::vec2(0.75f, 1.0f), white, handle(3));
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4);
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(the_uv_rectangle_follows_the_corner_order) {
  * sheet of sprites drawn from one atlas is one draw however many there are.
  **/
 BOOST_AUTO_TEST_CASE(the_stream_cuts_where_the_texture_changes) {
-    v3d::render::realtime::WorldCanvas canvas;
+    v3d::render::realtime::canvas::World canvas;
     canvas.quad(tile(0.0f, 0.0f), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white, handle(1));
     canvas.quad(tile(1.0f, 0.0f), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white, handle(1));
     canvas.quad(tile(2.0f, 0.0f), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white, handle(1));
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(the_stream_cuts_where_the_texture_changes) {
  * the camera.
  **/
 BOOST_AUTO_TEST_CASE(quads_are_drawn_in_the_order_they_were_added) {
-    v3d::render::realtime::WorldCanvas canvas;
+    v3d::render::realtime::canvas::World canvas;
     canvas.quad(tile(0.0f, 8.0f), white);   // far up the ground plane, added first
     canvas.quad(tile(0.0f, 0.0f), red);     // near the camera, added second
 
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(quads_are_drawn_in_the_order_they_were_added) {
  * unlike Canvas's, which only moves a point in a plane.
  **/
 BOOST_AUTO_TEST_CASE(the_transform_stack_places_geometry) {
-    v3d::render::realtime::WorldCanvas canvas;
+    v3d::render::realtime::canvas::World canvas;
 
     canvas.push();
     canvas.translate(glm::vec3(10.0f, 2.0f, -3.0f));
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(the_transform_stack_places_geometry) {
  * transform a caller forgot to pop.
  **/
 BOOST_AUTO_TEST_CASE(clearing_drops_the_stream_and_the_stack) {
-    v3d::render::realtime::WorldCanvas canvas;
+    v3d::render::realtime::canvas::World canvas;
     canvas.push();
     canvas.translate(glm::vec3(5.0f, 5.0f, 5.0f));
     canvas.quad(tile(0.0f, 0.0f), white);
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(clearing_drops_the_stream_and_the_stack) {
  * before keeps its own.
  **/
 BOOST_AUTO_TEST_CASE(a_tint_multiplies_the_quads_after_it) {
-    v3d::render::realtime::WorldCanvas canvas;
+    v3d::render::realtime::canvas::World canvas;
     const glm::vec4 dusk(1.0f, 0.5f, 0.25f, 1.0f);
     canvas.quad(tile(0.0f, 0.0f), red);
     canvas.tint(dusk);
@@ -216,7 +216,7 @@ BOOST_AUTO_TEST_CASE(a_tint_multiplies_the_quads_after_it) {
  * frame that sets no tint draws the world as it is.
  **/
 BOOST_AUTO_TEST_CASE(clearing_returns_the_tint_to_white) {
-    v3d::render::realtime::WorldCanvas canvas;
+    v3d::render::realtime::canvas::World canvas;
     canvas.tint(glm::vec4(0.2f, 0.2f, 0.6f, 1.0f));
     canvas.clear();
 

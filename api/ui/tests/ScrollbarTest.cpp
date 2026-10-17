@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_draws_its_track_alone) {
         [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 300);
 
     const boost::shared_ptr<v3d::ui::component::Scrollbar> empty =
@@ -274,7 +274,7 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_with_nothing_to_scroll_draws_no_thumb) {
     v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
     renderer.draw(&canvas, component);
     const std::size_t track = canvas.indices().size();

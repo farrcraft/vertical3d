@@ -4,8 +4,11 @@ These pages are for someone changing `api/render/realtime`. How an app uses the 
 [api/rendering/](../../api/rendering/README.md), and these pages do not repeat it.
 
 Names are in `v3d::render::realtime`; `vulkan::` is `v3d::render::realtime::vulkan`. The code is
-in [api/render/realtime](../../../api/render/realtime), split into `vulkan/device`,
-`vulkan/frame`, `vulkan/memory`, `vulkan/pipeline` and `vulkan/renderer`.
+in [api/render/realtime](../../../api/render/realtime). The root holds the contexts, the frame
+and what a context owns. `canvas/` holds the canvases an app fills on the CPU, `entity/` the
+functions that draw ECS entities, and `lighting/` the lit pass's settings and shadow fitting.
+The Vulkan side is split into `vulkan/device`, `vulkan/frame`, `vulkan/memory`, `vulkan/pipeline`
+and `vulkan/renderer`.
 
 | Page | Read it to |
 |---|---|

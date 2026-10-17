@@ -5,7 +5,7 @@
 
 #include "Immediate.h"
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/style/Resolver.h>
@@ -226,7 +226,7 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
     style::readMetric(chrome, "scrollbar-width", &dressing_.scrollbarWidth);
 }
 
-void Immediate::begin(v3d::render::realtime::Canvas* canvas, const Input& input) {
+void Immediate::begin(v3d::render::realtime::canvas::Canvas* canvas, const Input& input) {
     canvas_ = canvas;
     input_ = input;
     frame_++;

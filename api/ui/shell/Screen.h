@@ -7,7 +7,7 @@
 
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/paint/ComponentRenderer.h>
@@ -118,7 +118,7 @@ class Screen final {
      **/
     void draw(const Engine* ui, const StatisticsOverlay::Sample& statistics);
 
-    v3d::render::realtime::Canvas& canvas() noexcept;
+    v3d::render::realtime::canvas::Canvas& canvas() noexcept;
     const boost::shared_ptr<paint::TextRenderer>& text() const noexcept;
     paint::ComponentRenderer& components() noexcept;
 
@@ -142,7 +142,7 @@ class Screen final {
     Options options_;
     float scale_;
     bool resized_;
-    v3d::render::realtime::Canvas canvas_;
+    v3d::render::realtime::canvas::Canvas canvas_;
     boost::shared_ptr<paint::TextRenderer> text_;
     boost::shared_ptr<paint::ComponentRenderer> components_;
     boost::shared_ptr<StatisticsOverlay> statistics_;

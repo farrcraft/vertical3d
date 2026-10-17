@@ -12,7 +12,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 
 /**
  **/
@@ -369,4 +369,4 @@ bool Canvas::empty() const noexcept {
     return indices_.empty();
 }
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas

@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/asset/Manager.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
 #include <api/ui/Engine.h>
 #include <api/ui/shell/Screen.h>

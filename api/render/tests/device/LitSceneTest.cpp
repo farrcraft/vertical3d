@@ -10,7 +10,7 @@
 #include <api/image/Compare.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
-#include <api/render/realtime/DepthOrder.h>
+#include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Grade.h>
 #include <api/render/realtime/lighting/Settings.h>
@@ -20,7 +20,7 @@
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/lighting/SceneUniforms.h>
 #include <api/render/realtime/lighting/Shadow.h>
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/component/Particles.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
@@ -882,7 +882,7 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
     lighting::Settings settings;
     settings.outline = 0.0f;
 
-    v3d::render::realtime::WorldCanvas ground;
+    v3d::render::realtime::canvas::World ground;
     ground.quad({glm::vec3(-8.0f, -1.0f, -8.0f), glm::vec3(8.0f, -1.0f, -8.0f), glm::vec3(8.0f, -1.0f, 8.0f),
         glm::vec3(-8.0f, -1.0f, 8.0f)}, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 
@@ -1043,10 +1043,10 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
             headless.context->ring(), headless.context->frameUniforms(), headless.context->textures(), colourFormat,
             target->depthFormat());
 
-        v3d::render::realtime::DepthOrder order;
+        v3d::render::realtime::canvas::DepthOrder order;
         const glm::vec3 forward = camera.profile().direction();
         v3d::render::realtime::entity::particles(registry, 1.0f, camera.profile().right(), camera.profile().up(), forward, &order);
-        v3d::render::realtime::WorldCanvas drops;
+        v3d::render::realtime::canvas::World drops;
         order.into(&drops);
 
         Frame frame;

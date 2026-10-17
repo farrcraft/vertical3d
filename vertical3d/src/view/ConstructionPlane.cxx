@@ -71,7 +71,7 @@ void ConstructionPlane::axes(const v3d::type::camera::Camera& camera, glm::vec3*
 
 /**
  **/
-void ConstructionPlane::draw(const v3d::type::camera::Camera& camera, v3d::render::realtime::LineCanvas* canvas) const {
+void ConstructionPlane::draw(const v3d::type::camera::Camera& camera, v3d::render::realtime::canvas::Line* canvas) const {
     if (canvas == nullptr || lines_ == 0 || spacing_ <= 0.0f) {
         return;
     }

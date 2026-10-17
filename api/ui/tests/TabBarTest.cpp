@@ -4,7 +4,7 @@
  **/
 
 #include <api/event/Engine.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_SUITE(tab_bar_test)
 BOOST_AUTO_TEST_CASE(only_the_chosen_page_is_drawn) {
     std::vector<Written> written;
     v3d::ui::paint::ComponentRenderer renderer = build(&written);
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 300);
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels = bar();
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(only_the_chosen_page_is_drawn) {
  **/
 BOOST_AUTO_TEST_CASE(the_page_is_laid_out_under_the_strip) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 300);
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels = bar();
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(the_page_is_laid_out_under_the_strip) {
  **/
 BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 300);
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels = bar();
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
  **/
 BOOST_AUTO_TEST_CASE(a_bar_with_no_pages_shows_nothing) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 300);
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels =

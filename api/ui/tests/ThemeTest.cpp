@@ -4,7 +4,7 @@
  **/
 
 #include <api/event/Engine.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
@@ -439,7 +439,7 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
     v3d::ui::paint::ComponentRenderer drawing = renderer();
     drawing.theme(ui->theme("dark"));
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
@@ -479,7 +479,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
     v3d::ui::paint::ComponentRenderer drawing = renderer();
     drawing.theme(ui->theme("dark"));
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
@@ -505,7 +505,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
  **/
 BOOST_AUTO_TEST_CASE(a_button_with_no_skin_is_drawn_flat) {
     v3d::ui::paint::ComponentRenderer drawing = renderer();
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
@@ -527,7 +527,7 @@ BOOST_AUTO_TEST_CASE(a_button_with_no_skin_is_drawn_flat) {
  **/
 BOOST_AUTO_TEST_CASE(an_icon_draws_the_texture_it_was_resolved_to) {
     v3d::ui::paint::ComponentRenderer drawing = renderer();
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     const boost::shared_ptr<v3d::ui::component::Icon> icon =
@@ -576,7 +576,7 @@ BOOST_AUTO_TEST_CASE(an_image_resolved_to_part_of_a_sheet_draws_that_part) {
         boost::dynamic_pointer_cast<v3d::ui::component::Icon>(ui->container("hud")->get("slot"));
     BOOST_REQUIRE(icon);
     icon->size(glm::vec2(32.0f, 32.0f));
-    v3d::render::realtime::Canvas iconCanvas;
+    v3d::render::realtime::canvas::Canvas iconCanvas;
     iconCanvas.resize(800, 600);
     drawing.draw(&iconCanvas, icon);
     BOOST_REQUIRE_EQUAL(iconCanvas.vertices().size(), 4U);
@@ -589,7 +589,7 @@ BOOST_AUTO_TEST_CASE(an_image_resolved_to_part_of_a_sheet_draws_that_part) {
         boost::dynamic_pointer_cast<v3d::ui::component::Button>(ui->container("hud")->get("use"));
     BOOST_REQUIRE(button);
     button->size(glm::vec2(100.0f, 30.0f));
-    v3d::render::realtime::Canvas buttonCanvas;
+    v3d::render::realtime::canvas::Canvas buttonCanvas;
     buttonCanvas.resize(800, 600);
     drawing.draw(&buttonCanvas, button);
     BOOST_REQUIRE_EQUAL(buttonCanvas.vertices().size(), 2U * 4U);
@@ -702,7 +702,7 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
         });
     drawing.dressing().iconSize = 20.0f;
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
     drawing.draw(&canvas, *ui);
 
@@ -737,7 +737,7 @@ BOOST_AUTO_TEST_CASE(an_unresolved_icon_leaves_the_label_drawn) {
             written.push_back(Written{ std::string(text), pen, colour });
         });
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
@@ -768,7 +768,7 @@ BOOST_AUTO_TEST_CASE(a_container_draws_its_labels_and_icons) {
     ui->resolveImages([](const std::string&) { return v3d::render::realtime::TextureHandle(2); });
 
     v3d::ui::paint::ComponentRenderer drawing = renderer();
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
     drawing.draw(&canvas, *ui);
 

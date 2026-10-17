@@ -31,7 +31,7 @@ boost::shared_ptr<v3d::brep::BRep> quad() {
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(wireframe_single_face_test) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
     wireframe.visit(quad());
@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(wireframe_single_face_test) {
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_pairs_drawn_once_test) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
     boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(wireframe_pairs_drawn_once_test) {
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_transform_test) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
     boost::shared_ptr<v3d::brep::BRep> mesh = quad();
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(wireframe_transform_test) {
 
     // the mesh is drawn through its own transform, so its geometry stays about its origin
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8u);
-    for (const v3d::render::realtime::LineCanvas::Vertex& vertex : canvas.vertices()) {
+    for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
         BOOST_CHECK(vertex.position.x >= 9.9f);
         BOOST_CHECK(vertex.position.x <= 11.1f);
     }
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(wireframe_transform_test) {
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
     boost::shared_ptr<v3d::brep::BRep> mesh = quad();
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
 
     // one edge selected out of four, and the other three keep the unselected colour
     unsigned int highlighted = 0;
-    for (const v3d::render::realtime::LineCanvas::Vertex& vertex : canvas.vertices()) {
+    for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
         if (vertex.colour != unselected) {
             highlighted++;
         }
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
  * draws.
  **/
 BOOST_AUTO_TEST_CASE(wireframe_selected_face_is_outlined_test) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
     boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(wireframe_selected_face_is_outlined_test) {
         cube->face(face)->selected(false);
 
         unsigned int highlighted = 0;
-        for (const v3d::render::realtime::LineCanvas::Vertex& vertex : canvas.vertices()) {
+        for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
             if (vertex.colour != unselected) {
                 highlighted++;
             }
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(wireframe_selected_face_is_outlined_test) {
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_scene_test) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
     v3d::editor::Scene scene;

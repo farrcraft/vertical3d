@@ -4,7 +4,7 @@
  **/
 
 #include <api/event/Engine.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/CheckBox.h>
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_SUITE(check_box_test)
 BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
     std::vector<Written> written;
     v3d::ui::paint::ComponentRenderer renderer = build(&written);
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 300);
 
     const boost::shared_ptr<v3d::ui::component::CheckBox> box =
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
  **/
 BOOST_AUTO_TEST_CASE(the_mark_is_drawn_only_when_the_box_is_checked) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 300);
 
     const boost::shared_ptr<v3d::ui::component::CheckBox> box =
@@ -125,8 +125,8 @@ BOOST_AUTO_TEST_CASE(the_mark_is_drawn_only_when_the_box_is_checked) {
  **/
 BOOST_AUTO_TEST_CASE(a_radio_button_is_a_check_box_with_a_round_mark) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
-    v3d::render::realtime::Canvas square;
-    v3d::render::realtime::Canvas round;
+    v3d::render::realtime::canvas::Canvas square;
+    v3d::render::realtime::canvas::Canvas round;
     square.resize(400, 300);
     round.resize(400, 300);
 

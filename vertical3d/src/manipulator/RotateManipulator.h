@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/brep/BRep.h>
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 
 #include "Manipulator.h"
 
@@ -29,7 +29,7 @@ class RotateManipulator final : public Manipulator {
     bool grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
         const glm::vec2& cursor, Axis* axis) const override;
     void draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
-        v3d::render::realtime::LineCanvas* canvas) const override;
+        v3d::render::realtime::canvas::Line* canvas) const override;
     void apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
         const glm::vec2& from, const glm::vec2& to) const override;
 

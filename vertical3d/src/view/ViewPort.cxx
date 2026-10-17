@@ -91,7 +91,7 @@ ConstructionPlane& ViewPort::grid() noexcept {
 /**
  **/
 void ViewPort::draw(const Scene& scene, const Manipulator* manipulator,
-    v3d::render::realtime::LineCanvas* canvas, v3d::render::realtime::LineCanvas* handles) {
+    v3d::render::realtime::canvas::Line* canvas, v3d::render::realtime::canvas::Line* handles) {
     if (canvas == nullptr) {
         return;
     }

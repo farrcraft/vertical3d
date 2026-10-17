@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_SUITE(linecanvas_test)
  * costs neither an upload nor an item.
  **/
 BOOST_AUTO_TEST_CASE(an_empty_canvas_has_nothing_to_draw) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     BOOST_CHECK(canvas.empty());
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 0);
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(an_empty_canvas_has_nothing_to_draw) {
  * A line list carries two vertices per segment and no indices.
  **/
 BOOST_AUTO_TEST_CASE(a_segment_is_two_vertices) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
     canvas.line(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 2.0f, 3.0f), red);
 
     BOOST_CHECK(!canvas.empty());
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(a_segment_is_two_vertices) {
  * both from nothing.
  **/
 BOOST_AUTO_TEST_CASE(clearing_drops_the_stream) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
     canvas.push();
     canvas.translate(glm::vec3(5.0f, 0.0f, 0.0f));
     canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(clearing_drops_the_stream) {
  * not a line and draws nothing.
  **/
 BOOST_AUTO_TEST_CASE(a_polyline_joins_its_points_in_order) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     std::vector<glm::vec3> lone;
     lone.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -110,11 +110,11 @@ BOOST_AUTO_TEST_CASE(a_polyline_joins_its_points_in_order) {
  * it is a corner.
  **/
 BOOST_AUTO_TEST_CASE(a_box_is_twelve_edges_between_its_corners) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
     canvas.box(glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f), white);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 24);
-    for (const v3d::render::realtime::LineCanvas::Vertex& vertex : canvas.vertices()) {
+    for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
         BOOST_CHECK_EQUAL(std::abs(vertex.position.x), 1.0f);
         BOOST_CHECK_EQUAL(std::abs(vertex.position.y), 1.0f);
         BOOST_CHECK_EQUAL(std::abs(vertex.position.z), 1.0f);
@@ -126,14 +126,14 @@ BOOST_AUTO_TEST_CASE(a_box_is_twelve_edges_between_its_corners) {
  * segment lands back on the first point.
  **/
 BOOST_AUTO_TEST_CASE(a_circle_closes_in_the_plane_of_its_axes) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
     const glm::vec3 u(1.0f, 0.0f, 0.0f);
     const glm::vec3 v(0.0f, 0.0f, 1.0f);
 
     canvas.circle(glm::vec3(0.0f), u, v, 2.0f, 8, white);
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 16);
 
-    for (const v3d::render::realtime::LineCanvas::Vertex& vertex : canvas.vertices()) {
+    for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
         BOOST_CHECK_SMALL(vertex.position.y, 0.001f);
         const float radius = std::sqrt(vertex.position.x * vertex.position.x + vertex.position.z * vertex.position.z);
         BOOST_CHECK_CLOSE(radius, 2.0f, 0.01f);
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE(a_circle_closes_in_the_plane_of_its_axes) {
  * Fewer than three sides is not a ring.
  **/
 BOOST_AUTO_TEST_CASE(a_circle_of_fewer_than_three_sides_draws_nothing) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
     canvas.circle(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 1.0f, 2, white);
 
     BOOST_CHECK(canvas.empty());
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(a_circle_of_fewer_than_three_sides_draws_nothing) {
  * the origin and placed where it is drawn.
  **/
 BOOST_AUTO_TEST_CASE(the_transform_stack_places_what_is_drawn_under_it) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     canvas.translate(glm::vec3(10.0f, 0.0f, 0.0f));
     canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(the_transform_stack_places_what_is_drawn_under_it) {
  * under a rotation moves along the rotated axis.
  **/
 BOOST_AUTO_TEST_CASE(a_translation_follows_the_transform_it_is_applied_under) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     canvas.transform(quarterTurn());
     canvas.translate(glm::vec3(2.0f, 0.0f, 0.0f));
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(a_translation_follows_the_transform_it_is_applied_under) {
  * the canvas usable rather than reading off the end of the stack.
  **/
 BOOST_AUTO_TEST_CASE(popping_past_the_bottom_of_the_stack_is_harmless) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     canvas.pop();
     canvas.pop();
@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE(popping_past_the_bottom_of_the_stack_is_harmless) {
  * is a single draw.
  **/
 BOOST_AUTO_TEST_CASE(an_uncut_stream_is_one_batch) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     canvas.box(glm::vec3(0.0f), glm::vec3(1.0f), white);
 
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE(an_uncut_stream_is_one_batch) {
  * inside the clip is still two vertices.
  **/
 BOOST_AUTO_TEST_CASE(a_clip_cuts_the_batch_and_carries_its_rectangle) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
     canvas.clip(glm::vec2(4.0f, 5.0f), glm::vec2(20.0f, 30.0f));
@@ -263,7 +263,7 @@ BOOST_AUTO_TEST_CASE(a_clip_cuts_the_batch_and_carries_its_rectangle) {
  * not one a screen rectangle could go through.
  **/
 BOOST_AUTO_TEST_CASE(a_clip_is_not_moved_by_the_transform) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     canvas.translate(glm::vec3(100.0f, 100.0f, 0.0f));
     canvas.clip(glm::vec2(4.0f, 5.0f), glm::vec2(20.0f, 30.0f));
@@ -281,7 +281,7 @@ BOOST_AUTO_TEST_CASE(a_clip_is_not_moved_by_the_transform) {
  * clipped box never draws outside the outer one.
  **/
 BOOST_AUTO_TEST_CASE(an_inner_clip_only_takes_room_away) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     canvas.clip(glm::vec2(10.0f, 10.0f), glm::vec2(50.0f, 50.0f));
     canvas.clip(glm::vec2(0.0f, 20.0f), glm::vec2(100.0f, 30.0f));
@@ -300,7 +300,7 @@ BOOST_AUTO_TEST_CASE(an_inner_clip_only_takes_room_away) {
  * nothing.
  **/
 BOOST_AUTO_TEST_CASE(clips_that_miss_leave_nothing_rather_than_an_inverted_rectangle) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 10.0f));
     canvas.clip(glm::vec2(40.0f, 40.0f), glm::vec2(50.0f, 50.0f));
@@ -317,7 +317,7 @@ BOOST_AUTO_TEST_CASE(clips_that_miss_leave_nothing_rather_than_an_inverted_recta
  * stream is rebuilt every frame and the stack is part of it.
  **/
 BOOST_AUTO_TEST_CASE(clearing_drops_the_clip_stack_with_the_stream) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     canvas.clip(glm::vec2(4.0f, 5.0f), glm::vec2(20.0f, 30.0f));
     canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);

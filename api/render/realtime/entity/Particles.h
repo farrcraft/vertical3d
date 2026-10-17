@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/DepthOrder.h>
+#include <api/render/realtime/canvas/DepthOrder.h>
 
 #include <entt/entt.hpp>
 #include <glm/vec3.hpp>
@@ -26,6 +26,6 @@ namespace v3d::render::realtime::entity {
  * @param depthAxis the direction the key measures distance along
  **/
 void particles(const entt::registry& registry, float alpha, const glm::vec3& right,
-    const glm::vec3& up, const glm::vec3& depthAxis, DepthOrder* order);
+    const glm::vec3& up, const glm::vec3& depthAxis, canvas::DepthOrder* order);
 
 };  // namespace v3d::render::realtime::entity

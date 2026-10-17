@@ -8,7 +8,7 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
@@ -103,7 +103,7 @@ class World final {
      * @param blend how the canvas's quads combine with what the pass has already drawn. A
      *        canvas is one blend, so a game fills a canvas of smoke and another of flame
      **/
-    void submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer = 0, Blend blend = Blend::Alpha);
+    void submit(const canvas::World& canvas, Pass* pass, uint16_t layer = 0, Blend blend = Blend::Alpha);
 
  private:
     /**

@@ -1,5 +1,5 @@
 # The ui is testable without a window or a device: ComponentRenderer draws onto a
-# realtime::Canvas, which is cpu side, and takes text measuring and writing as callbacks.
+# realtime::canvas::Canvas, which is cpu side, and takes text measuring and writing as callbacks.
 v3d_add_test(ui
 	"TestMain.cpp"
 	"ArrangerTest.cpp"

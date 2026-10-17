@@ -7,7 +7,7 @@
 
 #include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
@@ -80,7 +80,7 @@ class Line final {
      * @param layer the layer the item's sort key carries, which only has an effect in a pass
      *        that sorts
      **/
-    void submit(const LineCanvas& canvas, Pass* pass, uint16_t layer = 0);
+    void submit(const canvas::Line& canvas, Pass* pass, uint16_t layer = 0);
 
  private:
     /**

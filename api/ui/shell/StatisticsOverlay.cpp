@@ -5,7 +5,7 @@
 
 #include "StatisticsOverlay.h"
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 
 #include <algorithm>
 #include <array>
@@ -148,7 +148,7 @@ std::vector<std::string> StatisticsOverlay::content(const Sample& sample) const 
 
 /**
  **/
-void StatisticsOverlay::draw(v3d::render::realtime::Canvas* canvas, const Sample& sample) {
+void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample) {
     if (!visible_ || !canvas || !text_ || !text_->loaded()) {
         return;
     }

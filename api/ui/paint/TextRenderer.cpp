@@ -187,7 +187,7 @@ float TextRenderer::width(std::string_view text, float size) const {
 
 /**
  **/
-void TextRenderer::draw(v3d::render::realtime::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour,
+void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour,
     float size) {
     if (text.empty() || !canvas || !loaded()) {
         return;
@@ -225,7 +225,7 @@ Measure TextRenderer::measure(float size) const {
 
 /**
  **/
-Write TextRenderer::write(v3d::render::realtime::Canvas* canvas, float size) {
+Write TextRenderer::write(v3d::render::realtime::canvas::Canvas* canvas, float size) {
     return [this, canvas, size](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
         draw(canvas, text, pen, colour, size);
     };

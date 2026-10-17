@@ -109,7 +109,7 @@ See [Traps](#traps) for what the copy means when you add a fixture.
 ### Patterns the suites use
 
 - **Test the decision, not the effect.** For example, the 2D clipping tests check the scissor
-  rectangle that a batch carries out of `Canvas`, `LineCanvas` or a UI draw. The
+  rectangle that a batch carries out of `Canvas`, `canvas::Line` or a UI draw. The
   `vkCmdSetScissor` call that applies it needs a device.
 - **Replace a platform dependency with a callback.** `ComponentRenderer` takes text measuring and
   text drawing as callbacks. `TextBoxTest` measures every character as ten pixels and keeps its

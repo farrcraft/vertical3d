@@ -6,7 +6,7 @@
 #include <api/asset/Manager.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/paint/TextRenderer.h>
 
 #include <string>
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(a_character_that_is_not_packed_measures_and_draws_nothing) 
     BOOST_CHECK_EQUAL(text->width(eAcute), 0.0f);
     BOOST_CHECK_CLOSE(text->width(std::string("a") + eAcute), a, 0.01f);
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(640, 480);
     text->draw(&canvas, eAcute, glm::vec2(10.0f, 100.0f), glm::vec4(1.0f));
     BOOST_CHECK(canvas.empty());
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(a_multibyte_character_is_one_glyph) {
     BOOST_REQUIRE(one > 0.0f);
     BOOST_CHECK_CLOSE(text->width(std::string(eAcute) + eAcute), one * 2.0f, 0.01f);
 
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(640, 480);
     text->draw(&canvas, eAcute, glm::vec2(10.0f, 100.0f), glm::vec4(1.0f));
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 4u);

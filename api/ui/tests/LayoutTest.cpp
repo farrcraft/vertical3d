@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
 #include <api/ui/Length.h>
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(an_anchor_measures_from_the_corner_it_names) {
  * A percentage is of the parent's box, not of the canvas, so a child of a child compounds.
  **/
 BOOST_AUTO_TEST_CASE(a_percentage_is_of_the_box_around_it) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 200);
 
     const boost::shared_ptr<v3d::ui::component::Panel> outer = panel("outer");
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(a_percentage_is_of_the_box_around_it) {
  * them, and widens them to itself when it stretches.
  **/
 BOOST_AUTO_TEST_CASE(a_vertical_box_stacks_what_it_holds) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 200);
 
     const boost::shared_ptr<v3d::ui::component::VerticalBox> box =
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(a_vertical_box_stacks_what_it_holds) {
  * what is in it.
  **/
 BOOST_AUTO_TEST_CASE(a_hidden_row_closes_the_gap_behind_it) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 200);
 
     const boost::shared_ptr<v3d::ui::component::VerticalBox> box =
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(a_hidden_row_closes_the_gap_behind_it) {
  * for nothing.
  **/
 BOOST_AUTO_TEST_CASE(a_horizontal_box_runs_across) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 200);
 
     const boost::shared_ptr<v3d::ui::component::HorizontalBox> box =
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE(a_null_component_is_left_out_of_the_draw_order) {
  * point, and a child is offered it before the component holding it.
  **/
 BOOST_AUTO_TEST_CASE(a_point_is_picked_by_the_deepest_pickable_component) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 200);
 
     const boost::shared_ptr<v3d::ui::component::Panel> backdrop = panel("backdrop");
@@ -299,7 +299,7 @@ BOOST_AUTO_TEST_CASE(a_point_is_picked_by_the_deepest_pickable_component) {
  * where it was drawn rather than where it was added.
  **/
 BOOST_AUTO_TEST_CASE(a_nested_child_is_picked_in_the_order_it_was_drawn) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 200);
 
     const boost::shared_ptr<v3d::ui::component::Panel> backdrop = panel("backdrop");
@@ -331,7 +331,7 @@ BOOST_AUTO_TEST_CASE(a_nested_child_is_picked_in_the_order_it_was_drawn) {
  * one quad of track, and one more for the fill; an empty one draws no fill at all.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_fills_a_fraction_of_its_track) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 200);
 
     const boost::shared_ptr<v3d::ui::component::Bar> bar = boost::make_shared<v3d::ui::component::Bar>();
@@ -364,7 +364,7 @@ BOOST_AUTO_TEST_CASE(a_bar_fills_a_fraction_of_its_track) {
  * the one untextured batch.
  **/
 BOOST_AUTO_TEST_CASE(a_rounded_panel_is_bands_and_wedges_in_one_batch) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 200);
 
     const boost::shared_ptr<v3d::ui::component::Panel> plate = panel("plate");
@@ -393,7 +393,7 @@ BOOST_AUTO_TEST_CASE(a_rounded_panel_is_bands_and_wedges_in_one_batch) {
  * parent's own quads are not cut: a panel draws inside itself already.
  **/
 BOOST_AUTO_TEST_CASE(a_component_that_clips_cuts_its_children_to_its_box) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 200);
 
     const boost::shared_ptr<v3d::ui::component::Panel> outer = panel("outer");
@@ -415,7 +415,7 @@ BOOST_AUTO_TEST_CASE(a_component_that_clips_cuts_its_children_to_its_box) {
     // the parent's plate, then the child's under the clip
     BOOST_REQUIRE(canvas.batches().size() >= 2U);
     BOOST_CHECK(!canvas.batches().front().clipped);
-    const v3d::render::realtime::Canvas::Batch& cut = canvas.batches().back();
+    const v3d::render::realtime::canvas::Canvas::Batch& cut = canvas.batches().back();
     BOOST_REQUIRE(cut.clipped);
     BOOST_CHECK_CLOSE(cut.clip.x, 20.0f, 0.001f);
     BOOST_CHECK_CLOSE(cut.clip.y, 30.0f, 0.001f);
@@ -431,7 +431,7 @@ BOOST_AUTO_TEST_CASE(a_component_that_clips_cuts_its_children_to_its_box) {
  * out of the strip it came from and a badge sits half outside its plate.
  **/
 BOOST_AUTO_TEST_CASE(a_component_that_does_not_ask_is_not_clipped) {
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(400, 200);
 
     const boost::shared_ptr<v3d::ui::component::Panel> outer = panel("outer");
@@ -444,7 +444,7 @@ BOOST_AUTO_TEST_CASE(a_component_that_does_not_ask_is_not_clipped) {
     build().draw(&canvas, container);
 
     BOOST_REQUIRE(!canvas.batches().empty());
-    for (const v3d::render::realtime::Canvas::Batch& batch : canvas.batches()) {
+    for (const v3d::render::realtime::canvas::Canvas::Batch& batch : canvas.batches()) {
         BOOST_CHECK(!batch.clipped);
     }
 }

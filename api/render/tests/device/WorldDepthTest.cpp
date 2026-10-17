@@ -8,7 +8,7 @@
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
@@ -27,10 +27,11 @@
 
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
-using v3d::render::realtime::WorldCanvas;
 using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
+
+namespace canvas = v3d::render::realtime::canvas;
 
 namespace {
 
@@ -58,8 +59,8 @@ glm::mat4x4 pixels() {
 /**
  * An axis aligned quad at one depth, in the pixel measured space above.
  **/
-WorldCanvas::Corners rect(float minX, float minY, float maxX, float maxY, float depth) {
-    return WorldCanvas::Corners{
+canvas::World::Corners rect(float minX, float minY, float maxX, float maxY, float depth) {
+    return canvas::World::Corners{
         glm::vec3(minX, minY, depth),
         glm::vec3(maxX, minY, depth),
         glm::vec3(maxX, maxY, depth),
@@ -76,7 +77,7 @@ constexpr glm::vec4 FAR_COLOUR(0.0f, 0.0f, 1.0f, 1.0f);
  * The nearer one is at a quarter of the depth range and the farther at three quarters, so
  * rounding cannot change which one is in front.
  **/
-void overlapping(WorldCanvas* canvas, bool nearFirst) {
+void overlapping(canvas::World* canvas, bool nearFirst) {
     canvas->clear();
     if (nearFirst) {
         canvas->quad(rect(8.0f, 4.0f, 40.0f, 20.0f, 0.25f), NEAR_COLOUR);
@@ -96,7 +97,7 @@ void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::stri
         headless->device, headless->context->ring(), width, height, colourFormat, true);
     BOOST_REQUIRE(target->depthView() != VK_NULL_HANDLE);
 
-    WorldCanvas canvas;
+    canvas::World canvas;
     overlapping(&canvas, nearFirst);
 
     Frame frame;
