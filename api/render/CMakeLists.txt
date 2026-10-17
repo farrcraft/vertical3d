@@ -101,6 +101,12 @@ v3d_add_shader(v3dlib_render "shaders/lit/shadow.vert" OUTPUT "skinned_shadow.ve
 # The pass over a whole target, and the colour grade drawn with it.
 v3d_add_shader(v3dlib_render "shaders/fullscreen.vert")
 v3d_add_shader(v3dlib_render "shaders/grade.frag")
+# The grade compiled for each pairing of what it reads and what it draws into. LINEAR_SCENE reads
+# a scene from an _SRGB target, which arrives decoded, and LINEAR_TARGET draws into one, which
+# encodes on store - see shaders/grade.frag
+v3d_add_shader(v3dlib_render "shaders/grade.frag" OUTPUT "grade_linear_scene.frag" DEFINES LINEAR_SCENE)
+v3d_add_shader(v3dlib_render "shaders/grade.frag" OUTPUT "grade_linear_target.frag" DEFINES LINEAR_TARGET)
+v3d_add_shader(v3dlib_render "shaders/grade.frag" OUTPUT "grade_linear.frag" DEFINES LINEAR_SCENE LINEAR_TARGET)
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_image: Grade.h takes the image::Image a colour grade is built from.

@@ -241,7 +241,6 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Lit scenes
 
-[LitScenesAtScale](plans/LitScenesAtScale.md) takes the grade entry.
 [ToolingDebt](plans/ToolingDebt.md) takes the grade tolerance.
 
 [] **There are no cascaded shadow maps.**
@@ -255,18 +254,11 @@ matches the asset manager's path handling only because the manager passes cgltf 
 - Due when a game's view is long enough for near shadows to look coarse.
 - Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
 
-[] **The colour grade's table is sampled by linear colour.**
-
-- `Grade` stores a 16-entry cube as UNORM and indexes it by the scene's linear colour. A strip
-  authored for display, as most are, grades wrongly, and 16 entries over linear light leave
-  little resolution in the shadows.
-- The fix encodes the lookup coordinate to sRGB before sampling, or stores a larger table.
-- Due when a game uses a grade authored outside the tree.
-
 [] **The grade tests allow a one-step tolerance that may not be needed.**
 
-- The identity grade and the inverting grade were exact on the authoring GPU (a Radeon), but
-  [PostTest.cpp](../api/render/tests/device/PostTest.cpp) allows a difference of one step,
+- The identity grade and the inverting grade were exact on the authoring GPU (a Radeon), from a
+  UNORM scene and from an sRGB one.
+- [PostTest.cpp](../api/render/tests/device/PostTest.cpp) still allows a difference of one step,
   because lavapipe, the software Vulkan driver CI uses, had not been checked.
 - If CI shows lavapipe is exact too, reduce the tolerance to zero. If it is not, add a comment
   beside the case saying lavapipe is the reason.

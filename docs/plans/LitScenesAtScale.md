@@ -158,21 +158,25 @@ documents were updated by the steps that moved them.
 
 #### Step 7 — A grade authored for display
 
-**Open.**
+**Closed.** The table maps a colour as it is shown to the colour it is shown as. The plan's
+first idea, always encoding before the lookup, would have been wrong for a scene in a UNORM
+target, which already holds display values. Both ends depend on a format instead:
 
-- `grade.frag` encodes the scene's linear colour to sRGB before the lookup, and decodes the
-  table's result back to linear before writing. The table keeps 16 entries a side, and the strip
-  format does not change.
-- The identity strip still grades within the tolerance the identity case allows.
-- A new case grades known colours through a strip authored for display, such as one that halves
-  each display value, and checks the display value of the result. It fails first against the
-  linear lookup.
-- Update [ColourAndPost.md](../api/rendering/ColourAndPost.md#grade), the comment in
-  `grade.frag`, and `Grade.h`. Delete the TODO.md entry "The colour grade's table is sampled by
-  linear colour".
+- `grade.frag` is compiled four ways. `LINEAR_SCENE` encodes a scene read from an `_SRGB`
+  target before the lookup. `LINEAR_TARGET` decodes the result before an `_SRGB` target stores
+  it.
+- `Grade` holds a `FullScreen` for each kind of scene, built for its own target's format, and
+  each source belongs to the one that matches its scene. Its interface is unchanged.
+- The sRGB decode and encode moved to `shaders/srgb.glsl`, which `quad.frag` includes too.
+- The inverting strip gives the complement of the value shown for an sRGB scene, into an sRGB
+  target and into a UNORM one. Before the change it gave the complement of the light. The
+  identity strip leaves an sRGB scene as it was. Every grade case is exact on the local GPU, and
+  every baseline picture still matches.
+- [ColourAndPost.md](../api/rendering/ColourAndPost.md#grade) states the rule, and the TODO.md
+  entry is deleted. The tolerance entry, which [ToolingDebt](ToolingDebt.md) takes, now covers
+  the sRGB cases as well.
 
-A table larger than 16 entries a side is held. Encoding to sRGB is what puts the resolution back
-in the shadows, and a larger table is due only if a strip shows banding.
+A table larger than 16 entries a side is held. It is due only if a strip shows banding.
 
 ### Phase 3 — The panned voice
 

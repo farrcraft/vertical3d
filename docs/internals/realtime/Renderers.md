@@ -46,7 +46,10 @@ object has `firstJoint = 0`, and its pipeline ignores it.
 
 **`FullScreen` sources** are allocated from its own `DescriptorPool`, one binding per source.
 A depth image is bound in `DEPTH_READ_ONLY_OPTIMAL`. A source must be released before the
-`FullScreen` goes, since the set belongs to its pool. `Grade` keeps a map from the handle a caller
+`FullScreen` goes, since the set belongs to its pool. `Grade` holds two `FullScreen`s, one for a
+scene that holds display values and one for an `_SRGB` scene, which is read decoded. Both are built
+for the grade's target, so they decode the result before an `_SRGB` target stores it. A source
+belongs to the one that matches its scene's format. `Grade` keeps a map from the handle a caller
 holds to the current material; `replace()` creates a new table, rebinds every source to new
 materials, and retires the old table and materials through the ring. `replace()` uploads through
 `Uploader::oneShot`, which waits for that upload and not for frames in flight. `Grade`'s

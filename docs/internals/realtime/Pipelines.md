@@ -176,8 +176,12 @@ that wants to replace them.
 | `line.vert`, `line.frag` | `Line` |
 | `world.vert`, `world.frag` | `World` |
 | `fullscreen.vert`, `grade.frag` | `FullScreen`, `Grade` |
+| `grade_linear_scene.frag`, `grade_linear_target.frag`, `grade_linear.frag` | `Grade`: `grade.frag` compiled with `LINEAR_SCENE` for an `_SRGB` scene, `LINEAR_TARGET` for an `_SRGB` target, or both |
 | `lit/mesh.vert`, `lit/cel.frag`, `lit/outline.vert`, `lit/outline.frag`, `lit/shadow.vert` | `Lit` |
 | `skinned_mesh.vert`, `skinned_outline.vert`, `skinned_shadow.vert` | `Lit`, the three lit vertex stages compiled with `SKINNED` |
+
+`srgb.glsl` holds the sRGB decode and encode. `quad.frag` and `grade.frag` include it, so the
+two agree to the bit.
 
 The lit shaders share their blocks through includes:
 

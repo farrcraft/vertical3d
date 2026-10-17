@@ -21,8 +21,8 @@ The [LitScenesAtScale plan](../plans/LitScenesAtScale.md) takes all five steps.
 - **`meshes()` and `casters()` draw instances.** Entities that share a registry entry take one
   draw per part, with an instance per entity, in both the lit pass and the shadow pass.
 - **[`Grade`](../../api/render/realtime/Grade.h)** looks each pixel up in a 16 by 16 by 16 table
-  stored as UNORM, indexed by the scene's linear colour. A strip authored for display grades
-  wrongly, and 16 entries over linear light leave little resolution in the shadows.
+  by the colour it is shown as, so a strip authored for display grades as it looked when it was
+  authored.
 - **[`audio::Engine`](../../api/audio/Engine.h)** plays a voice on a named bus with a fade and a
   gain. A voice has no pan and no position.
 

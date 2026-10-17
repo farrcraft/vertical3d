@@ -1,4 +1,5 @@
 #version 450
+#extension GL_GOOGLE_include_directive : require
 
 /**
  * The fragment stage of the batched quad primitive.
@@ -32,12 +33,8 @@ layout(push_constant) uniform Push {
 } push;
 
 #ifdef LINEARISE
-// the sRGB decode, per channel, which the target's encode on store undoes
-vec3 linear(vec3 display) {
-    vec3 low = display / 12.92;
-    vec3 high = pow((display + 0.055) / 1.055, vec3(2.4));
-    return mix(high, low, lessThanEqual(display, vec3(0.04045)));
-}
+// the decode, which the target's encode on store undoes
+#include "srgb.glsl"
 #endif
 
 void main() {

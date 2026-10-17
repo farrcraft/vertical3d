@@ -40,8 +40,10 @@ class FullScreen;
  *
  * The table comes from a strip, 256 by 16: sixteen slices of blue side by side, red across
  * each and green down it. With no strip, or one of the wrong size, the table is the identity
- * and the pass copies the scene. The table is indexed by linear colour, so a lit scene drawn
- * into an sRGB target is graded as the light it holds, and a strip must be baked for that.
+ * and the pass copies the scene. The table maps a colour as it is shown to the colour it is
+ * shown as, so a strip graded in an image editor grades a frame as it looked there. A scene in
+ * an sRGB target is encoded before the lookup, and a result drawn into one is decoded before it
+ * is stored, so neither encoding changes what the table means.
  *
  * The scene is read nearest, a texel per pixel, so the pass draws into a target the scene's
  * size. The pass the grade is drawn in must name the scene target in Pass::reads().
@@ -132,7 +134,13 @@ class Grade final {
     struct Source final {
         TextureHandle scene;
         MaterialHandle current;
+        bool decoded;   /**< the scene is an _SRGB target, read as linear **/
     };
+
+    /**
+     * @return the pass a source's material belongs to
+     **/
+    vulkan::renderer::FullScreen& pass(const Source& source) const;
 
     /**
      * Register a table's texels as a texture, uploaded into an image of its own.
@@ -141,7 +149,8 @@ class Grade final {
 
     boost::shared_ptr<log::Logger> logger_;
     boost::shared_ptr<DeviceContext> context_;
-    boost::shared_ptr<vulkan::renderer::FullScreen> pass_;
+    boost::shared_ptr<vulkan::renderer::FullScreen> shown_;     /**< for a scene that holds display values **/
+    boost::shared_ptr<vulkan::renderer::FullScreen> decoded_;   /**< for an _SRGB scene, read as linear **/
     boost::shared_ptr<vulkan::pipeline::Sampler> nearest_;
     TextureHandle tableTexture_;
     std::map<MaterialHandle, Source> sources_;

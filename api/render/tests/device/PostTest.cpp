@@ -103,16 +103,21 @@ boost::shared_ptr<v3d::image::Image> invertingStrip() {
 
 /**
  * Draw the sweep into a scene a texel per pixel, grade it, and read back the graded picture.
+ *
+ * @param sceneFormat the scene's format, which must be the one the headless context was made
+ *        with, since its quads draw the sweep. A quad keeps its display value in either
+ * @param outputFormat what the grade draws into
  **/
 boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const boost::shared_ptr<v3d::image::Image>& strip,
-    const std::vector<unsigned char>& texels, uint32_t size, const std::string& path) {
+    const std::vector<unsigned char>& texels, uint32_t size, const std::string& path, VkFormat sceneFormat = colourFormat,
+    VkFormat outputFormat = colourFormat) {
     boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
-        size, size, colourFormat);
+        size, size, sceneFormat);
     boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
-        size, size, colourFormat);
+        size, size, outputFormat);
     const TextureHandle uploaded = headless->context->textures()->texture(texels.data(), size, size, 4);
 
-    Grade graded(headless->logger, headless->context, colourFormat, VK_FORMAT_UNDEFINED, strip);
+    Grade graded(headless->logger, headless->context, outputFormat, VK_FORMAT_UNDEFINED, strip);
     const MaterialHandle source = graded.source(*scene);
 
     Canvas canvas;
@@ -394,6 +399,51 @@ BOOST_AUTO_TEST_CASE(a_strip_grades_the_scene) {
     }
     const int most = largest(picture, inverted);
     BOOST_TEST_MESSAGE("the inverting grade missed the complement by at most " << most);
+    BOOST_CHECK_LE(most, 1);
+}
+
+/**
+ * A strip grades a scene in an sRGB target as the scene looks, not as the light it holds. The
+ * inverting strip gives the complement of every value shown, whether the grade draws into an
+ * sRGB target or a UNORM one. A table indexed by linear light would give the complement of the
+ * light instead, which is a much brighter picture.
+ **/
+BOOST_AUTO_TEST_CASE(a_strip_grades_an_srgb_scene_as_it_looks) {
+    const uint32_t size = 64;
+    const VkFormat srgb = VK_FORMAT_R8G8B8A8_SRGB;
+    v3d::test::Headless headless(srgb, size, size);
+    const std::vector<unsigned char> texels = sweep(size);
+
+    for (const VkFormat output : {srgb, colourFormat}) {
+        const std::string path = output == srgb ? "data_out/grade_srgb_inverted.png" : "data_out/grade_srgb_to_unorm_inverted.png";
+        boost::shared_ptr<v3d::image::Image> picture = grade(&headless, invertingStrip(), texels, size, path, srgb, output);
+        BOOST_REQUIRE(picture);
+        const int most = largest(picture, complement(texels));
+        BOOST_TEST_MESSAGE(path << " missed the complement by at most " << most);
+        BOOST_CHECK_LE(most, 1);
+    }
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * The identity table leaves a scene in an sRGB target as it was, drawn into an sRGB target: the
+ * encode before the lookup and the decode after it cancel.
+ *
+ * Passes before the change: the grade read and wrote linear light, so nothing was encoded or
+ * decoded that could fail to cancel.
+ **/
+BOOST_AUTO_TEST_CASE(the_identity_grade_leaves_an_srgb_scene_within_a_step) {
+    const uint32_t size = 64;
+    const VkFormat srgb = VK_FORMAT_R8G8B8A8_SRGB;
+    v3d::test::Headless headless(srgb, size, size);
+    const std::vector<unsigned char> texels = sweep(size);
+
+    boost::shared_ptr<v3d::image::Image> picture =
+        grade(&headless, boost::shared_ptr<v3d::image::Image>(), texels, size, "data_out/grade_srgb_identity.png", srgb, srgb);
+    BOOST_REQUIRE(picture);
+    BOOST_CHECK(headless.silent());
+    const int most = largest(picture, texels);
+    BOOST_TEST_MESSAGE("the identity grade moved an sRGB channel by at most " << most);
     BOOST_CHECK_LE(most, 1);
 }
 
