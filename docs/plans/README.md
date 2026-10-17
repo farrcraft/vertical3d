@@ -18,7 +18,10 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 ## Open plans
 
-None.
+| Plan | Area | What it delivers |
+|---|---|---|
+| [ReleaseHardening](ReleaseHardening.md) | Engine, ui, config, grid, rendering, docs | The defects a player of a released game could meet, and the known review findings |
+| [ToolingDebt](ToolingDebt.md) | All of the tree, tests | The thirteen disabled clang-tidy checks enabled, and the test gaps that need no new hardware |
 
 ## Completed plans
 

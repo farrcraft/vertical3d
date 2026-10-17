@@ -1,0 +1,93 @@
+# Release Hardening — The Loose Ends a Player Would Meet
+
+Drafted 2026-10-16. This plan fixes the defects in [TODO.md](../TODO.md) that a player of a
+released game could meet, and the review findings already recorded as known debt. None of them
+waits on a feature. Each is small, and most are independent of the others.
+
+Each entry this plan takes stays in TODO.md until the step that fixes it lands, and is then
+deleted there. The known review findings stay listed because a reviewer reads that list first, as
+[Review.md](../contributing/Review.md) says. Each step fixes its defects with a test that fails
+first, as Review.md requires, or records why no such test can be written.
+
+## Decisions
+
+| ADR | Decision | Step |
+|---|---|---|
+| **New** | How a path reaches the logger and the asset manager: as `boost::filesystem::path` or UTF-8 through every layer, or as narrow strings under a UTF-8 code page set by each app's manifest | 1 |
+| **New** | Why SDL3 replaced SDL2, recorded after the fact | 7 |
+
+## What blocks what
+
+- Step 1 is the only step with a decision, so it starts with the ADR.
+- Step 4's `Loader` fix reads through `api/asset/Json.h`. Step 4's two config readers use the same
+  helpers, so they land together.
+- Every other step is independent and can land in any order.
+
+## Steps
+
+### Step 1 — Paths outside the ANSI code page
+
+**Open.** [TODO.md](../TODO.md#loading), "A path outside the ANSI code page cannot be opened".
+
+- `engine::appPath()`, the logger and `asset::Manager` carry the path in the form the ADR chooses.
+- The test runs a suite from a directory whose name the ANSI code page cannot hold. The log file
+  is written there, and an asset is found there.
+
+### Step 2 — A minimised window waits
+
+**Open.** [TODO.md](../TODO.md#frames), "A minimised window busy-loops and floods the log".
+
+- While the window has no area, the loop waits for an event rather than presenting.
+- The swapchain logs the change of state once, not every frame.
+- This is a loop change, so it is checked by minimising pong and reading the log, as well as by any
+  headless test of the loop's wait.
+
+### Step 3 — Bindings to commands nothing handles
+
+**Open.** [TODO.md](../TODO.md#games), "Three bindings name commands nothing handles".
+
+Each binding gets a handler or is removed. A full-screen toggle in the shell is the likely handler
+for pong's and tetris's F1, because the shell around a game belongs to the api. A test checks that
+every app's bindings name registered commands.
+
+### Step 4 — Boundary input
+
+**Open.** [TODO.md](../TODO.md#boundary-input): the six entries under "Boundary input".
+
+- `TileGrid` refuses a tile size that is not a finite positive number.
+- The editor's orthographic zoom clamps, as `Isometric::zoom` does.
+- `rib::Arguments` reads an `RtInt` array as integers.
+- `Polygon::clip` tests `intersectEdge`'s result, as `Polygon::split` does.
+- The ui `Loader` reads every document key through `api/asset/Json.h`.
+- `Bindings.cpp` and the window config check an integer's range before narrowing it to `int`.
+
+Each fix checks every sibling site of its pattern, as Review.md requires.
+
+### Step 5 — Contracts
+
+**Open.** [TODO.md](../TODO.md#contract): the five entries under "Contract".
+
+- A held activation key sends a ui command once, not at the key repeat rate.
+- The centred game menu draws a disabled item greyed.
+- A theme switch resets what the new theme does not name. A null theme resets everything.
+- Two views of one camera profile get two passes.
+- Playing no clip with a fade fades the old pose out.
+
+### Step 6 — Cleanup on failure
+
+**Open.** [TODO.md](../TODO.md#cleanup): the direct allocator's leak when no memory type suits a
+buffer or image, and `Presenter`'s semaphores when its constructor throws part way. Both are fixed
+by owning each handle as soon as it is made.
+
+### Step 7 — Drift
+
+**Open.** [TODO.md](../TODO.md#drift), and the missing SDL3 record under
+[Documentation](../TODO.md#documentation).
+
+- Correct each stale comment and document sentence the drift entry lists.
+- Write the ADR recording why SDL3 replaced SDL2, and add it to the index.
+
+### Step 8 — Close the plan
+
+**Open.** Confirm every entry this plan took is deleted from TODO.md, write the Outcome section, and
+move this plan to [completed/](completed/).

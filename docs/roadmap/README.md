@@ -33,7 +33,10 @@ roadmap has none of these. It is not a schedule and it has no dates.
 
 | Roadmap | Area |
 |---|---|
-| — | No roadmap is open. |
+| [StreamingWorlds.md](StreamingWorlds.md) | Realtime, grid, voxel: loading on a worker thread, uploads that do not wait, regions, and a shadow map that follows the camera |
+| [OfflineShading.md](OfflineShading.md) | Offline rendering: verified transformations, an acceleration structure, area lights, reyes opacity, displacement and bump mapping |
+| [EditorModelling.md](EditorModelling.md) | The editor: a dirty flag, multiple selection, modelling operations, the missing command handlers and resizable panes |
+| [LitScenesAtScale.md](LitScenesAtScale.md) | Realtime, audio: instanced lit and shadow draws, a grade authored for display, and a panned voice |
 
 ## Completed roadmaps
 

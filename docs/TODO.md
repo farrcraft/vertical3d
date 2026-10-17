@@ -16,6 +16,9 @@ Two kinds of item do not belong here:
 Each entry states the gap in the code, not who is waiting for it. An entry may name a trigger:
 the condition that makes the work due.
 
+An open plan or roadmap may order entries from here. The entry stays here until the work lands,
+and its section names the plan or roadmap that orders it.
+
 ## The clang-tidy backlog
 
 [.clang-tidy](../.clang-tidy) enables the bugprone, performance, misc and readability families
@@ -24,6 +27,7 @@ and disables 20 checks by name. The tree is clean at the 186 checks left enabled
 Seven of the disabled checks are disabled for good, and `.clang-tidy` says why; they are not
 listed here. The other thirteen are in the table below, with the number of distinct sites each
 reports over a full `-DV3D_CLANG_TIDY=ON` build.
+[ToolingDebt](plans/ToolingDebt.md) clears them in order.
 
 - To remove a row, fix every site it reports. Never widen an exclusion instead.
 - `voxel/src/noise` is not counted. It is vendored code, kept unchanged, and is skipped by
@@ -62,7 +66,8 @@ Background: [OfflineRenderingPhase3](plans/completed/OfflineRenderingPhase3.md#o
 
 ## Offline rendering
 
-Each of these waits until a scene needs it.
+Each of these waits until a scene needs it. [OfflineShading](roadmap/OfflineShading.md) orders
+them, along with RiRotate's sign above.
 
 [] **A transform into a projected space does not divide by w.** `ptransform` drops w, so
 `transform("screen", P)`, `"raster"`, `"NDC"` and `depth()` are right under an orthographic
@@ -139,7 +144,7 @@ Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4
 
 `api/grid` is a library of its own, and odyssey uses it. The grid owns a map's picture and
 terrain legend; the rest of a map belongs to the game. [Grid.md](api/Grid.md) describes the
-library.
+library. [StreamingWorlds](roadmap/StreamingWorlds.md) orders the entries below.
 
 [] **A world cannot be made of regions.**
 
@@ -166,6 +171,8 @@ library.
 - Background: [LargeWorlds, step 9](plans/completed/LargeWorlds.md#step-9--the-movement-filter-as-a-template).
 
 ## Voxel
+
+[StreamingWorlds](roadmap/StreamingWorlds.md) orders the first entry with asynchronous loading.
 
 [] **A remeshed chunk destroys its old mesh too early once uploads become asynchronous.**
 
@@ -209,6 +216,10 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Lit scenes
 
+[StreamingWorlds](roadmap/StreamingWorlds.md) orders the shadow map entry.
+[LitScenesAtScale](roadmap/LitScenesAtScale.md) orders the grade and instancing entries.
+[ToolingDebt](plans/ToolingDebt.md) takes the grade tolerance.
+
 [] **A shadow map covers only a fixed sphere.**
 
 - `shadow::fit` fits the shadow map to its casters once. Anything that moves out of that sphere
@@ -249,6 +260,9 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Loading
 
+[StreamingWorlds](roadmap/StreamingWorlds.md) orders the first entry.
+[ReleaseHardening](plans/ReleaseHardening.md) takes the second.
+
 [] **Every load runs on the main thread**, so each load is a frame hitch the size of the load.
 
 - First piece: decode on a worker thread through its own `asset::Manager`, because the manager's
@@ -274,6 +288,8 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Frames
 
+[ReleaseHardening](plans/ReleaseHardening.md) takes this entry.
+
 [] **A minimised window busy-loops and floods the log.**
 
 - When the window has no area, `Engine3D::beginFrame` presents an empty frame.
@@ -287,7 +303,7 @@ matches the asset manager's path handling only because the manager passes cgltf 
 ## Audio
 
 `audio::Engine` plays a voice on a named bus, with a fade and a gain. Nothing gives a voice a
-position.
+position. [LitScenesAtScale](roadmap/LitScenesAtScale.md) orders the entry below.
 
 [] **A voice has no pan.**
 
@@ -302,6 +318,7 @@ position.
 ## Tests
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.
+[ToolingDebt](plans/ToolingDebt.md) takes the fixture generators and the pipeline cache.
 
 [] **The glTF fixture generators are Python.** The repository holds no Python, and committed
 scripts are TypeScript run by Node. Five generators in `api/asset/tests/data/` write glTF by hand
@@ -328,6 +345,8 @@ more strongly needs a second Vulkan implementation to compare against, and this 
 Defects a review found that the change under review did not introduce.
 [Review.md](contributing/Review.md) says how this list is used: a reviewer reads it first and
 does not report an entry again. Each entry names its class.
+[ReleaseHardening](plans/ReleaseHardening.md) fixes these, except the weak test, which
+[ToolingDebt](plans/ToolingDebt.md) takes.
 
 ### Boundary input
 
@@ -410,10 +429,14 @@ without the turn counter it was written for. Its sibling test does fail without 
 
 ## Documentation
 
+[ReleaseHardening](plans/ReleaseHardening.md) takes this entry.
+
 [] **The reasons for moving to SDL3 are not recorded.** No ADR records why SDL3 replaced
 SDL2.
 
 ## Games
+
+[ReleaseHardening](plans/ReleaseHardening.md) takes this entry.
 
 [] **Three bindings name commands nothing handles:** F1 → `pong::toggleFS`,
 F1 → `tetris::toggleFS` and Space → `odyssey::moveUp`.
@@ -421,7 +444,7 @@ F1 → `tetris::toggleFS` and Space → `odyssey::moveUp`.
 ## Editor
 
 Open work for when the editor app itself moves forward. [editor/](editor/README.md) describes the
-editor.
+editor. [EditorModelling](roadmap/EditorModelling.md) orders these.
 
 [] 55 of the menu's 77 commands have no handler, and only log themselves when chosen.
 
