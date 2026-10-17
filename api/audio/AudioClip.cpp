@@ -16,7 +16,7 @@ AudioClip::~AudioClip() {
 }
 
 void AudioClip::destroy() {
-    if (!audio_) {
+    if (audio_ == nullptr) {
         return;
     }
     MIX_DestroyAudio(audio_);
@@ -37,7 +37,7 @@ bool AudioClip::load(const std::string_view & filename) {
     // manager before an app has opened one. Predecoded because these are short effects
     // played from a game tick, where a decode is a stall
     audio_ = MIX_LoadAudio(nullptr, str.c_str(), true);
-    if (!audio_) {
+    if (audio_ == nullptr) {
         MIX_Quit();
         return false;
     }

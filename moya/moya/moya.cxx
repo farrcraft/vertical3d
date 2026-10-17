@@ -42,7 +42,7 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::RIBH
     // the command line sets the grid and bucket sizes before the scene is read, so a scene
     // that names its own with Option "limits" replaces them
     const unsigned int largest = v3d::moya::RIBHandler::largestLimit;
-    if (var_map.count("grid")) {
+    if (var_map.count("grid") != 0) {
         const int grid = var_map["grid"].as<int>();
         if (grid < 1 || static_cast<unsigned int>(grid) > largest) {
             std::cout << "--grid has to be between 1 and " << largest << ", so the default is used" << "\n";
@@ -50,7 +50,7 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::RIBH
             handler->context().gridSize(static_cast<unsigned int>(grid));
         }
     }
-    if (var_map.count("bucket")) {
+    if (var_map.count("bucket") != 0) {
         const int bucket = var_map["bucket"].as<int>();
         if (bucket < 1 || static_cast<unsigned int>(bucket) > largest) {
             std::cout << "--bucket has to be between 1 and " << largest << ", so the default is used" << "\n";
@@ -82,12 +82,12 @@ int run(int argc, char *argv[]) {
     boost::program_options::notify(var_map);
 
     // process options
-    if (var_map.count("help")) {
+    if (var_map.count("help") != 0) {
         std::cout << opts_desc << "\n";
         exit(EXIT_SUCCESS);
     }
 
-    if (var_map.count("version")) {
+    if (var_map.count("version") != 0) {
         std::cout << "Moya v0.0.1" << "\n";
         std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << "\n" <<
                      "Copyright 1988, 1989, Pixar" << "\n" <<
@@ -99,10 +99,10 @@ int run(int argc, char *argv[]) {
     std::string infile;
     std::string outfile;
 
-    if (var_map.count("file")) {
+    if (var_map.count("file") != 0) {
         infile = var_map["file"].as<std::string>();
     }
-    if (var_map.count("output")) {
+    if (var_map.count("output") != 0) {
         outfile = var_map["output"].as<std::string>();
     }
 
@@ -124,7 +124,7 @@ int run(int argc, char *argv[]) {
 
     // flushed rather than left to the buffer: the render that follows takes the rest of the
     // run, and the progress line has to appear before it starts
-    if (!var_map.count("silent")) {
+    if (var_map.count("silent") == 0) {
         std::cout << "Rendering scene file: " << infile << "\n" << std::flush;
     }
 

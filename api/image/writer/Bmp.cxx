@@ -37,8 +37,9 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     std::fstream file;
     file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
 
-    if (file.fail())
+    if (file.fail()) {
         return false;
+    }
 
     format::bmp_file_header fheader;
     memset(&fheader, 0, sizeof(format::bmp_file_header));
@@ -52,8 +53,8 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     memset(&iheader, 0, sizeof(format::bmp_info_header));
 
     iheader.size_ = sizeof(format::bmp_info_header);
-    iheader.width_ = img->width();
-    iheader.height_ = img->height();
+    iheader.width_ = static_cast<int32_t>(img->width());
+    iheader.height_ = static_cast<int32_t>(img->height());
     iheader.bits_ = img->bpp();
     iheader.compression_ = 0;
     // a reader takes the table's length from the count of colours used, so the count is
@@ -112,7 +113,7 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     }
 
     // write image data
-    file.write(reinterpret_cast<char*>(data), size);
+    file.write(reinterpret_cast<char*>(data), static_cast<std::streamsize>(size));
 
     // done reading in file
     file.close();

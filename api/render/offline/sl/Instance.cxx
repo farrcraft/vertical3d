@@ -192,7 +192,7 @@ bool Instance::write(runtime::Machine* machine, const glm::mat4x4 & placement) c
         for (unsigned int point = 0; point < value.width(); point++) {
             for (unsigned int component = 0; component < held.values.size(); component++) {
                 value.component(point, component,
-                    triple ? place[component] : held.values[component]);
+                    triple ? place[static_cast<glm::length_t>(component)] : held.values[component]);
             }
         }
     }

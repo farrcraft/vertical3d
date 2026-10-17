@@ -134,8 +134,8 @@ void RenderContext::prepareWorld() {
         y is negated because raster space has its origin at the upper left corner and
         counts downward. image::Image stores its rows in the same order, top row first.
     */
-    float x = xres_ / 2.0f;
-    float y = yres_ / 2.0f;
+    float x = static_cast<float>(xres_) / 2.0f;
+    float y = static_cast<float>(yres_) / 2.0f;
     raster = glm::scale(raster, glm::vec3(x, -y, 1.0f));
     raster = glm::translate(raster, glm::vec3(1.0f, -1.0f, 1.0f));
 
@@ -301,7 +301,7 @@ bool RenderContext::imageResolution(int xres, int yres, float aspect) {
     yres_ = height;
     pixelAspect_ = aspect > 0.0f && std::isfinite(aspect) ? aspect : 1.0f;
     if (!frameAspectNamed_) {
-        frameAspectRatio(xres_ * pixelAspect_ / yres_);
+        frameAspectRatio(static_cast<float>(xres_) * pixelAspect_ / static_cast<float>(yres_));
         frameAspectNamed_ = false;
     }
     return true;
@@ -476,9 +476,9 @@ namespace {
  * picks z, each from max when set and from min when clear.
  **/
 glm::vec3 boxCorner(const glm::vec3 & min, const glm::vec3 & max, int index) {
-    return glm::vec3((index & 1) ? max.x : min.x,
-                     (index & 2) ? max.y : min.y,
-                     (index & 4) ? max.z : min.z);
+    return glm::vec3((index & 1) != 0 ? max.x : min.x,
+                     (index & 2) != 0 ? max.y : min.y,
+                     (index & 4) != 0 ? max.z : min.z);
 }
 
 /**

@@ -88,8 +88,8 @@ glm::ivec4 TextureAtlas::allocate(unsigned int width, unsigned int height) {
             node = nodes_[i];
             if (((y + static_cast<int>(height)) < bestHeight) ||
                 (((y + static_cast<int>(height)) == bestHeight) && (node.z < bestWidth))) {
-                bestHeight = y + height;
-                bestIndex = i;
+                bestHeight = y + static_cast<int>(height);
+                bestIndex = static_cast<int>(i);
                 bestWidth = node.z;
                 region.x = node.x;
                 region.y = y;
@@ -106,8 +106,8 @@ glm::ivec4 TextureAtlas::allocate(unsigned int width, unsigned int height) {
     }
 
     node.x = region.x;
-    node.y = region.y + height;
-    node.z = width;
+    node.y = region.y + static_cast<int>(height);
+    node.z = static_cast<int>(width);
     nodes_.insert(nodes_.begin() + bestIndex, node);
 
     glm::ivec3 prev;
@@ -142,7 +142,7 @@ int TextureAtlas::fit(unsigned int index, unsigned int width, unsigned int heigh
         return -1;
     }
     int y = node.y;
-    int widthLeft = width;
+    int widthLeft = static_cast<int>(width);
     unsigned int i = index;
     while (widthLeft > 0) {
         node = nodes_[i];

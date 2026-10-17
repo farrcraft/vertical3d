@@ -305,7 +305,7 @@ RtVoid RiProjection(RtToken name, ...) {
     float fov = 90.;
     if (name == RI_NULL) {
         renderer().activeRenderContext().projection("");
-    } else if (!strncmp(name, RI_PERSPECTIVE, 11)) {
+    } else if (strncmp(name, RI_PERSPECTIVE, 11) == 0) {
         // perspective takes an optional fov parameter
         if (param != RI_NULL) {
             token = va_arg(ap, RtToken);
@@ -406,16 +406,16 @@ RtVoid RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl) {
 // empty string
 RtVoid RiDisplay(char *name, RtToken type, RtToken mode, ...) {
     renderer().activeRenderContext().display(
-        name ? name : "",
-        type ? type : "",
-        mode ? mode : "");
+        name != nullptr ? name : "",
+        type != nullptr ? type : "",
+        mode != nullptr ? mode : "");
 }
 
 RtVoid RiDisplayV(char *name, RtToken type, RtToken mode, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
 RtVoid RiHider(RtToken type, ...) {
-    renderer().activeRenderContext().hider(type ? type : "");
+    renderer().activeRenderContext().hider(type != nullptr ? type : "");
 }
 
 RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
@@ -423,7 +423,7 @@ RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
     (void)n;
     (void)tokens;
     (void)parms;
-    renderer().activeRenderContext().hider(type ? type : "");
+    renderer().activeRenderContext().hider(type != nullptr ? type : "");
 }
 
 RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) {

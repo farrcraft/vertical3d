@@ -27,7 +27,7 @@ std::vector<Token> lex(const std::string & source, std::string * error = nullptr
         }
         tokens.push_back(token);
     }
-    if (error) {
+    if (error != nullptr) {
         *error = lexer.error();
     }
     return tokens;

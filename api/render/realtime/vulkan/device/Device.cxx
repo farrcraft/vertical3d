@@ -166,7 +166,7 @@ Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
     }
 
     for (uint32_t index = 0; index < count; index++) {
-        if (!families.hasGraphics && (properties[index].queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
+        if (!families.hasGraphics && (properties[index].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
             families.graphics = index;
             families.hasGraphics = true;
             families.timestampBits = properties[index].timestampValidBits;

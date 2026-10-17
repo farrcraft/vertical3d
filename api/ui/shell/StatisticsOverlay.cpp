@@ -149,7 +149,7 @@ std::vector<std::string> StatisticsOverlay::content(const Sample& sample) const 
 /**
  **/
 void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample) {
-    if (!visible_ || !canvas || !text_ || !text_->loaded()) {
+    if (!visible_ || canvas == nullptr || !text_ || !text_->loaded()) {
         return;
     }
 

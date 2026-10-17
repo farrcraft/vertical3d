@@ -57,7 +57,7 @@ bool Controller::start() {
         scene_->pause(suspended);
     });
     const boost::json::object* ui = document(v3d::config::Type::Ui);
-    if (ui && !vgui_->load(*ui)) {
+    if (ui != nullptr && !vgui_->load(*ui)) {
         return false;
     }
 

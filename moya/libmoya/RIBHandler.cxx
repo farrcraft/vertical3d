@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -335,7 +336,7 @@ void RIBHandler::pointsPolygons(const std::vector<unsigned int> & counts, const 
             return;
         }
         if (count >= 3) {
-            const std::vector<unsigned int> face(indices.begin() + offset, indices.begin() + offset + count);
+            const std::vector<unsigned int> face(indices.begin() + static_cast<std::ptrdiff_t>(offset), indices.begin() + static_cast<std::ptrdiff_t>(offset + count));
             context().addPolygon(build(points, colors, normals, st, face));
         }
         offset += count;

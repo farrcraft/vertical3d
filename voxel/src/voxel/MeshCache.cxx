@@ -96,11 +96,11 @@ size_t MeshCache::addVertex(const glm::vec3 & vertex) {
 }
 
 void MeshCache::extract(const boost::shared_ptr<Voxel> & voxel, unsigned int faces, const glm::vec3 & origin) {
-    if (!voxel->active() || (faces & Voxel::BLOCK_FACE_NONE)) {
+    if (!voxel->active() || (faces & Voxel::BLOCK_FACE_NONE) != 0) {
         return;
     }
 
-    if (faces & Voxel::BLOCK_FACE_ALL) {
+    if ((faces & Voxel::BLOCK_FACE_ALL) != 0) {
         faces = Voxel::BLOCK_FACE_FRONT|Voxel::BLOCK_FACE_BACK|Voxel::BLOCK_FACE_LEFT|Voxel::BLOCK_FACE_RIGHT|Voxel::BLOCK_FACE_TOP|Voxel::BLOCK_FACE_BOTTOM;
     }
 
@@ -128,7 +128,7 @@ void MeshCache::extract(const boost::shared_ptr<Voxel> & voxel, unsigned int fac
 
 void MeshCache::createFace(unsigned int type, unsigned int drawFaces, unsigned int inFaces,
     const glm::vec3 & v0, const glm::vec3 & v1, const glm::vec3 & v2, const glm::vec3 & v3) {
-    if (!(drawFaces & inFaces)) {
+    if ((drawFaces & inFaces) == 0) {
         return;
     }
 

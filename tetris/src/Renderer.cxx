@@ -106,8 +106,8 @@ void TetrisRenderer::loadPieces(const boost::shared_ptr<v3d::asset::Manager>& as
         // texel centres rather than the empty gutter the atlas packs around a region
         const float size = static_cast<float>(atlasSize);
         Sprite sprite;
-        sprite.uv0 = glm::vec2((region.x + 0.5f) / size, (region.y + 0.5f) / size);
-        sprite.uv1 = glm::vec2((region.x + region.z - 0.5f) / size, (region.y + region.w - 0.5f) / size);
+        sprite.uv0 = glm::vec2((static_cast<float>(region.x) + 0.5f) / size, (static_cast<float>(region.y) + 0.5f) / size);
+        sprite.uv1 = glm::vec2((static_cast<float>(region.x + region.z) - 0.5f) / size, (static_cast<float>(region.y + region.w) - 0.5f) / size);
         sprites_[colour] = sprite;
     }
 
@@ -191,7 +191,7 @@ void TetrisRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& stati
 void TetrisRenderer::drawWell(const Layout& metrics) {
     const GameBoard* board = scene_->board();
     const glm::vec2 min = metrics.origin;
-    const glm::vec2 max = min + glm::vec2(metrics.cell * board->columns(), metrics.cell * board->rows());
+    const glm::vec2 max = min + glm::vec2(metrics.cell * static_cast<float>(board->columns()), metrics.cell * static_cast<float>(board->rows()));
     const float border = 2.0f;
 
     screen_->canvas().rect(min - glm::vec2(border, border), max + glm::vec2(border, border), borderColour);
@@ -208,7 +208,7 @@ void TetrisRenderer::drawBlocks(const Layout& metrics) {
             if (piece.color() == Piece::COLOR_EMPTY) {
                 continue;
             }
-            const glm::vec2 min = metrics.origin + glm::vec2(column * metrics.cell, row * metrics.cell);
+            const glm::vec2 min = metrics.origin + glm::vec2(static_cast<float>(column) * metrics.cell, static_cast<float>(row) * metrics.cell);
             drawBlock(piece.str(), min, metrics.cell);
         }
     }
@@ -221,7 +221,7 @@ void TetrisRenderer::drawFalling(const Layout& metrics) {
     const Tetrad::PositionType position = tetrad.position();
     // a tetrad's position is the cell its 4x4 layout starts at, not the cell its first
     // filled block is in
-    const glm::vec2 origin = metrics.origin + glm::vec2(position.first * metrics.cell, position.second * metrics.cell);
+    const glm::vec2 origin = metrics.origin + glm::vec2(static_cast<float>(position.first) * metrics.cell, static_cast<float>(position.second) * metrics.cell);
     drawTetrad(tetrad, origin, metrics.cell);
 }
 
@@ -239,7 +239,7 @@ void TetrisRenderer::drawTetrad(const Tetrad& tetrad, const glm::vec2& origin, f
             if (shape.layout_[row][column] == 0) {
                 continue;
             }
-            drawBlock(shape.color_, origin + glm::vec2(column * cell, row * cell), cell);
+            drawBlock(shape.color_, origin + glm::vec2(static_cast<float>(column) * cell, static_cast<float>(row) * cell), cell);
         }
     }
 }
@@ -259,7 +259,7 @@ void TetrisRenderer::drawBlock(const std::string& colour, const glm::vec2& min, 
 void TetrisRenderer::drawPanel(const Layout& metrics) {
     const GameBoard* board = scene_->board();
     const float line = fontSize * 1.4f;
-    const glm::vec2 panel = metrics.origin + glm::vec2(metrics.cell * (board->columns() + 1.0f), line);
+    const glm::vec2 panel = metrics.origin + glm::vec2(metrics.cell * (static_cast<float>(board->columns()) + 1.0f), line);
 
     screen_->text()->draw(&screen_->canvas(), "SCORE", panel, textColour, fontSize);
     screen_->text()->draw(&screen_->canvas(), boost::lexical_cast<std::string>(scene_->score()), panel + glm::vec2(0.0f, line), textColour, fontSize);

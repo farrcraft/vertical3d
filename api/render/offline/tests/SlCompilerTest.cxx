@@ -32,7 +32,7 @@ std::string compile(const std::string & source, std::vector<Symbol>* symbols = n
     }
     v3d::render::offline::sl::Compiler compiler(shaders[0]);
     const bool compiled = compiler.compile();
-    if (symbols) {
+    if (symbols != nullptr) {
         *symbols = compiler.symbols();
     }
     if (compiled) {

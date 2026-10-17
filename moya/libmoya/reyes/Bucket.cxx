@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <limits>
 #include <vector>
 
@@ -395,7 +396,7 @@ bool Bucket::render(RenderContext & rc) {
             // the first pass buckets each piece and decides whether it is diceable, so the
             // original is erased whether or not split() submitted anything
             prim->split(rc);
-            primitives_.erase(primitives_.begin() + i);
+            primitives_.erase(primitives_.begin() + static_cast<std::ptrdiff_t>(i));
             i--;
             split = true;
         }

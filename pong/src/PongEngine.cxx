@@ -79,7 +79,7 @@ PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
     commands().add("ui::setMaxScore", [this](const v3d::event::Event& event) {
         boost::optional<v3d::event::EventData> data = event.data();
         if (data && std::holds_alternative<int>(data.get())) {
-            scene_->state().maxScore(static_cast<unsigned int>(std::get<int>(data.get())));
+            scene_->state().maxScore(std::get<int>(data.get()));
         }
     });
     for (const auto& binding : PADDLE_COMMANDS) {
@@ -112,11 +112,11 @@ bool PongEngine::start() {
     });
 
     const boost::json::object* sounds = document(v3d::config::Type::Sound);
-    if (sounds) {
+    if (sounds != nullptr) {
         soundEngine_->load(*sounds, *assets());
     }
     const boost::json::object* ui = document(v3d::config::Type::Ui);
-    if (ui && !vgui_->load(*ui)) {
+    if (ui != nullptr && !vgui_->load(*ui)) {
         return false;
     }
     boost::shared_ptr<v3d::render::realtime::Window> win = window();

@@ -9,6 +9,7 @@
 #include <api/type/geometry/Plane.h>
 
 #include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -75,7 +76,7 @@ Vertex Polygon::vertex(size_t idx) const {
 
 void Polygon::removeVertex(size_t idx) {
     assert(idx < vertices_.size());
-    vertices_.erase(vertices_.begin() + idx);
+    vertices_.erase(vertices_.begin() + static_cast<std::ptrdiff_t>(idx));
 }
 
 void Polygon::clear(void) {

@@ -55,10 +55,10 @@ void Player::move(Movement direction, bool held) {
             }
             glm::vec3 velocity = camera_->currentVelocity();
             if (held) {
-                velocity[possibleMoves[i].axis_] = possibleMoves[i].magnitude_;
+                velocity[static_cast<glm::length_t>(possibleMoves[i].axis_)] = possibleMoves[i].magnitude_;
                 movement_ |= direction;
             } else {
-                velocity[possibleMoves[i].axis_] = 0.0f;
+                velocity[static_cast<glm::length_t>(possibleMoves[i].axis_)] = 0.0f;
                 movement_ &= ~direction;
             }
             camera_->currentVelocity(velocity.x, velocity.y, velocity.z);
@@ -80,8 +80,8 @@ void Player::tick(float step) {
     // update player position based on current movement flags
     glm::vec3 dir(0.0f, 0.0f, 0.0f);
     for (unsigned int i = 0; i < 6; i++) {
-        if (movement_ & possibleMoves[i].move_) {
-            dir[possibleMoves[i].axis_] = possibleMoves[i].magnitude_;
+        if ((movement_ & possibleMoves[i].move_) != 0) {
+            dir[static_cast<glm::length_t>(possibleMoves[i].axis_)] = possibleMoves[i].magnitude_;
         }
     }
     glm::vec3 displacement = camera_->calculateDisplacement(dir, step);

@@ -67,7 +67,7 @@ int run(int argc, char *argv[]) {
     boost::program_options::notify(var_map);
 
     // process options
-    if (var_map.count("help")) {
+    if (var_map.count("help") != 0) {
         std::cout << opts_desc << "\n";
         exit(EXIT_SUCCESS);
     }
@@ -77,16 +77,16 @@ int run(int argc, char *argv[]) {
     std::string infile;
     std::string outfile;
 
-    if (var_map.count("info")) {
+    if (var_map.count("info") != 0) {
         info = true;
     }
-    if (var_map.count("silent")) {
+    if (var_map.count("silent") != 0) {
         silent = true;
     }
-    if (var_map.count("file")) {
+    if (var_map.count("file") != 0) {
         infile = var_map["file"].as<std::string>();
     }
-    if (var_map.count("outfile")) {
+    if (var_map.count("outfile") != 0) {
         outfile = var_map["outfile"].as<std::string>();
     }
 

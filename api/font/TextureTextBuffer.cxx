@@ -104,9 +104,9 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     // actual glyph. y grows downwards and the pen sits on the baseline, so the bottom of
     // the quad is however far the bitmap reaches below the baseline - its height less the
     // bearing - and the top is one bitmap height above that
-    const float glyphWidth = glyph->width_ * scale;
-    const float glyphHeight = glyph->height_ * scale;
-    glm::vec2 xy0(pen->x + glyph->offset_.x * scale, static_cast<float>(static_cast<int>(pen->y + glyphHeight - glyph->offset_.y * scale)));
+    const float glyphWidth = static_cast<float>(glyph->width_) * scale;
+    const float glyphHeight = static_cast<float>(glyph->height_) * scale;
+    glm::vec2 xy0(pen->x + static_cast<float>(glyph->offset_.x) * scale, static_cast<float>(static_cast<int>(pen->y + glyphHeight - static_cast<float>(glyph->offset_.y) * scale)));
     glm::vec2 xy1(xy0.x + glyphWidth, static_cast<float>(static_cast<int>(xy0.y - glyphHeight)));
 
     addQuad(xy0, xy1, glyph->st_[0], glyph->st_[1], markup.foregroundColor_, markup.gamma_);
@@ -122,10 +122,10 @@ void TextureTextBuffer::addQuad(const glm::vec2& xy0, const glm::vec2& xy1, cons
     const unsigned int vcount = static_cast<unsigned int>(vertices().size());
 
     // uv[0,1].t are flipped so y(0) can be top of screen (otherwise texture is upside down)
-    addVertex(glm::vec3(xy0.x, xy0.y, 0.0f), glm::vec2(uv0.s, uv1.t), color, xy0.x - (static_cast<int>(xy0.x)), gamma);
-    addVertex(glm::vec3(xy0.x, xy1.y, 0.0f), glm::vec2(uv0.s, uv0.t), color, xy0.x - (static_cast<int>(xy0.x)), gamma);
-    addVertex(glm::vec3(xy1.x, xy1.y, 0.0f), glm::vec2(uv1.s, uv0.t), color, xy1.x - (static_cast<int>(xy1.x)), gamma);
-    addVertex(glm::vec3(xy1.x, xy0.y, 0.0f), glm::vec2(uv1.s, uv1.t), color, xy1.x - (static_cast<int>(xy1.x)), gamma);
+    addVertex(glm::vec3(xy0.x, xy0.y, 0.0f), glm::vec2(uv0.s, uv1.t), color, xy0.x - static_cast<float>(static_cast<int>(xy0.x)), gamma);
+    addVertex(glm::vec3(xy0.x, xy1.y, 0.0f), glm::vec2(uv0.s, uv0.t), color, xy0.x - static_cast<float>(static_cast<int>(xy0.x)), gamma);
+    addVertex(glm::vec3(xy1.x, xy1.y, 0.0f), glm::vec2(uv1.s, uv0.t), color, xy1.x - static_cast<float>(static_cast<int>(xy1.x)), gamma);
+    addVertex(glm::vec3(xy1.x, xy0.y, 0.0f), glm::vec2(uv1.s, uv1.t), color, xy1.x - static_cast<float>(static_cast<int>(xy1.x)), gamma);
 
     // Use CCW winding so that the ortho matrix can put y(0) at the top of the screen
     // CW winding tri indices would be (0, 1, 2), (0, 2, 3)

@@ -39,8 +39,9 @@ boost::shared_ptr<Property> Style::property(const std::string& name, const std::
     boost::shared_ptr<Property> prop;
     std::pair<std::string, std::string> key(name, class_name);
     std::map<std::pair<std::string, std::string>, boost::shared_ptr<Property> >::const_iterator iter = properties_.find(key);
-    if (iter != properties_.end())
+    if (iter != properties_.end()) {
         prop = iter->second;
+    }
     return prop;
 }
 
@@ -53,8 +54,9 @@ std::vector< boost::shared_ptr<Property>  > Style::getPropertySet(const std::str
     std::map<std::pair<std::string, std::string>, boost::shared_ptr<Property> >::const_iterator iter = properties_.begin();
     std::vector< boost::shared_ptr<Property> > props;
     for (; iter != properties_.end(); iter++) {
-        if ((name.empty() || (*iter).first.first == name) && (class_name.empty() || (*iter).first.second == class_name))
+        if ((name.empty() || (*iter).first.first == name) && (class_name.empty() || (*iter).first.second == class_name)) {
             props.push_back((*iter).second);
+        }
     }
     return props;
 }

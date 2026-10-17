@@ -147,19 +147,19 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
 
     // 64 * 64 because of 26.6 encoding AND the transform matrix used
     // in texture_font_load_face (hres = 64)
-    underlinePosition_ = freetype_->face_->underline_position / (64.0f * 64.0f) * size_;
+    underlinePosition_ = static_cast<float>(freetype_->face_->underline_position) / (64.0f * 64.0f) * size_;
     underlinePosition_ = underlinePosition_ < 0.0f ? std::ceil(underlinePosition_ - 0.5f) : std::floor(underlinePosition_ + 0.5f);
     underlinePosition_ = std::min(underlinePosition_, -2.0f);
 
-    underlineThickness_ = freetype_->face_->underline_thickness / (64.0f * 64.0f) * size_;
+    underlineThickness_ = static_cast<float>(freetype_->face_->underline_thickness) / (64.0f * 64.0f) * size_;
     underlineThickness_ = underlineThickness_ < 0.0f ? std::ceil(underlineThickness_ - 0.5f) : std::floor(underlineThickness_ + 0.5f);
     underlineThickness_ = std::max(underlineThickness_, 1.0f);
 
     // metrics are 26.6 fixed point, which already carries fractional pixels
     FT_Size_Metrics metrics = freetype_->face_->size->metrics;
-    ascender_ = metrics.ascender / 64.0f;
-    descender_ = metrics.descender / 64.0f;
-    height_ = metrics.height / 64.0f;
+    ascender_ = static_cast<float>(metrics.ascender) / 64.0f;
+    descender_ = static_cast<float>(metrics.descender) / 64.0f;
+    height_ = static_cast<float>(metrics.height) / 64.0f;
     linegap_ = height_ - ascender_ + descender_;
 
     freetype_->release();
@@ -236,10 +236,10 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
 
         glyph->charcode_ = lineCode;
 
-        glyph->st_[0].s = (region.x + 2) / width;
-        glyph->st_[0].t = (region.y + 2) / height;
-        glyph->st_[1].s = (region.x + 3) / width;
-        glyph->st_[1].t = (region.y + 3) / height;
+        glyph->st_[0].s = static_cast<float>(region.x + 2) / width;
+        glyph->st_[0].t = static_cast<float>(region.y + 2) / height;
+        glyph->st_[1].s = static_cast<float>(region.x + 3) / width;
+        glyph->st_[1].t = static_cast<float>(region.y + 3) / height;
 
         glyphs_.push_back(glyph);
 
@@ -407,7 +407,7 @@ bool strokeGlyph(FT_Library library, FT_Face face, TextureFont::OutlineType outl
     } else if (outline == TextureFont::OUTLINE_TYPE_OUTER) {
         error = FT_Glyph_StrokeBorder(glyph, stroker.get(), 1, 1);
     }
-    if (error) {
+    if (error != 0) {
         logger->get()->error("Error setting glyph stroke border!");
         return false;
     }
@@ -420,8 +420,8 @@ bool strokeGlyph(FT_Library library, FT_Face face, TextureFont::OutlineType outl
 
     FT_BitmapGlyph bitmapGlyph = (FT_BitmapGlyph)*glyph;
     out->bitmap = bitmapGlyph->bitmap;
-    out->width = bitmapGlyph->bitmap.width;
-    out->rows = bitmapGlyph->bitmap.rows;
+    out->width = static_cast<int>(bitmapGlyph->bitmap.width);
+    out->rows = static_cast<int>(bitmapGlyph->bitmap.rows);
     out->top = bitmapGlyph->top;
     out->left = bitmapGlyph->left;
     return true;
@@ -480,8 +480,8 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
                 }
             }
             rendered.bitmap = loaded->bitmap;
-            rendered.width = loaded->bitmap.width;
-            rendered.rows = loaded->bitmap.rows;
+            rendered.width = static_cast<int>(loaded->bitmap.width);
+            rendered.rows = static_cast<int>(loaded->bitmap.rows);
             rendered.top = loaded->bitmap_top;
             rendered.left = loaded->bitmap_left;
         } else if (!strokeGlyph(freetype_->library_, freetype_->face_, outline_, outlineThickness_,
@@ -511,16 +511,16 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
         glyph->offset_.y = rendered.top;
         size_t width = atlas_->width();
         size_t height = atlas_->height();
-        glyph->st_[0].s = x / static_cast<float>(width);
-        glyph->st_[0].t = y / static_cast<float>(height);
-        glyph->st_[1].s = (x + glyph->width_) / static_cast<float>(width);
-        glyph->st_[1].t = (y + glyph->height_) / static_cast<float>(height);
+        glyph->st_[0].s = static_cast<float>(x) / static_cast<float>(width);
+        glyph->st_[0].t = static_cast<float>(y) / static_cast<float>(height);
+        glyph->st_[1].s = static_cast<float>(x + glyph->width_) / static_cast<float>(width);
+        glyph->st_[1].t = static_cast<float>(y + glyph->height_) / static_cast<float>(height);
 
         // Discard hinting to get advance
         FT_Load_Glyph(freetype_->face_, glyphIndex, FT_LOAD_RENDER | FT_LOAD_NO_HINTING);
         FT_GlyphSlot advanced = freetype_->face_->glyph;
-        glyph->advance_.x = advanced->advance.x / 64.0f;
-        glyph->advance_.y = advanced->advance.y / 64.0f;
+        glyph->advance_.x = static_cast<float>(advanced->advance.x) / 64.0f;
+        glyph->advance_.y = static_cast<float>(advanced->advance.y) / 64.0f;
 
         glyphs_.push_back(glyph);
     }

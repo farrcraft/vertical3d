@@ -75,15 +75,15 @@ unsigned int MortonCode::encode(const glm::ivec3 & vec) {
 
 glm::ivec2 MortonCode::decode2(unsigned int code) {
     glm::ivec2 vec;
-    vec.x = DecodeMorton2X(code);
-    vec.y = DecodeMorton2Y(code);
+    vec.x = static_cast<int>(DecodeMorton2X(code));
+    vec.y = static_cast<int>(DecodeMorton2Y(code));
     return vec;
 }
 
 glm::ivec3 MortonCode::decode3(unsigned int code) {
     glm::ivec3 vec;
-    vec.x = DecodeMorton3X(code);
-    vec.y = DecodeMorton3Y(code);
-    vec.z = DecodeMorton3Z(code);
+    vec.x = static_cast<int>(DecodeMorton3X(code));
+    vec.y = static_cast<int>(DecodeMorton3Y(code));
+    vec.z = static_cast<int>(DecodeMorton3Z(code));
     return vec;
 }

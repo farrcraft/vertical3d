@@ -189,7 +189,7 @@ float TextRenderer::width(std::string_view text, float size) const {
  **/
 void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour,
     float size) {
-    if (text.empty() || !canvas || !loaded()) {
+    if (text.empty() || canvas == nullptr || !loaded()) {
         return;
     }
     buffer_->clear();

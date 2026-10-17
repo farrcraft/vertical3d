@@ -123,8 +123,9 @@ unsigned int Tetrad::offset(OffsetAxis dir) const {
             }
         }
     }
-    if (dir == OFFSET_X)
+    if (dir == OFFSET_X) {
         return x;
+    }
     return y;
 }
 

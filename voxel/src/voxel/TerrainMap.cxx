@@ -45,7 +45,7 @@ void TerrainMap::Noise::generate() {
 
 float TerrainMap::Noise::height(unsigned int x, unsigned int y) {
     noise::utils::Color color;
-    color = image_.GetValue(x, y);
+    color = image_.GetValue(static_cast<int>(x), static_cast<int>(y));
 
     // r,g,b should be all equal for a greyscale image so any one will work
     return static_cast<float>(color.blue);

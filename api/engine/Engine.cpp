@@ -367,7 +367,7 @@ bool Engine::eventLoop() {
     // Enter main game loop
     while (!quitting_) {
         // Handle events on queue
-        while (SDL_PollEvent(&event) != 0 && !quitting_) {
+        while (SDL_PollEvent(&event) && !quitting_) {
             route(event);
         }
         // an event handler may have asked to stop, and its window may be gone, so nothing

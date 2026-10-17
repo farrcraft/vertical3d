@@ -67,13 +67,13 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
 
     png_structp png_ptr = 0;
     png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
-    if (!png_ptr) {
+    if (png_ptr == nullptr) {
         return empty_ptr;
     }
 
     png_infop info_ptr = 0;
     info_ptr = png_create_info_struct(png_ptr);
-    if (!info_ptr) {
+    if (info_ptr == nullptr) {
         png_destroy_read_struct(&png_ptr, NULL, NULL);
         return empty_ptr;
     }
@@ -109,16 +109,21 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bpp, &colors, 0, 0, 0);
 
     // convert to 3x8 RGB if necessary
-    if (bpp == 16)
+    if (bpp == 16) {
         png_set_strip_16(png_ptr);
-    if (colors == PNG_COLOR_TYPE_PALETTE)
+    }
+    if (colors == PNG_COLOR_TYPE_PALETTE) {
         png_set_expand(png_ptr);
-    if (bpp < 8)
+    }
+    if (bpp < 8) {
         png_set_expand(png_ptr);
-    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+    }
+    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS) != 0) {
         png_set_expand(png_ptr);
-    if (colors == PNG_COLOR_TYPE_GRAY || colors == PNG_COLOR_TYPE_GRAY_ALPHA)
+    }
+    if (colors == PNG_COLOR_TYPE_GRAY || colors == PNG_COLOR_TYPE_GRAY_ALPHA) {
         png_set_gray_to_rgb(png_ptr);
+    }
 
     // after the transformations have been registered update info_ptr data
     png_read_update_info(png_ptr, info_ptr);

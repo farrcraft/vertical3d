@@ -62,7 +62,7 @@ bool Controller::start() {
 
     profiles_ = boost::make_shared<v3d::config::CameraProfiles>(logger());
     const boost::json::object* cameras = document(v3d::config::Type::Camera);
-    if (!cameras) {
+    if (cameras == nullptr) {
         logger()->get()->error("The editor has no camera config, so its views would have no cameras");
         return false;
     }
@@ -136,7 +136,7 @@ bool Controller::buildViews() {
  **/
 bool Controller::buildUi() {
     const boost::json::object* config = document(v3d::config::Type::Ui);
-    if (!config) {
+    if (config == nullptr) {
         logger()->get()->error("The editor has no ui config, so it would have no menus");
         return false;
     }

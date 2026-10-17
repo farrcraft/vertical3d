@@ -25,8 +25,9 @@ BRep::~BRep() {
 Index BRep::addVertex(const glm::vec3& v) {
     Index index = 0;
     for (; index < static_cast<Index>(vertices_.size()); index++) {
-        if (vertices_[index] == v)
+        if (vertices_[index] == v) {
             return index;
+        }
     }
     Vertex vert(v);
     vertices_.push_back(vert);
@@ -102,10 +103,11 @@ void BRep::addFace(const std::vector<glm::vec3>& vertices, const glm::vec3& norm
         assert(ep != 0);
         ep->face(face);
         Index next;
-        if (index != static_cast<Index>(edges.size()) - 1)
+        if (index != static_cast<Index>(edges.size()) - 1) {
             next = edges[index + 1];
-        else
+        } else {
             next = edges[0];
+        }
         ep->next(next);
     }
 
@@ -113,10 +115,11 @@ void BRep::addFace(const std::vector<glm::vec3>& vertices, const glm::vec3& norm
         ep = edge(edges[index]);
         assert(ep != 0);
         Index pair = INVALID_ID;
-        if (index != 0)
+        if (index != 0) {
             pair = findPair(edges[index], edges[index - 1]);
-        else
+        } else {
             pair = findPair(edges[index], edges[static_cast<Index>(edges.size()) - 1]);
+        }
         //  assert(pair != INVALID_ID);
         if (pair != INVALID_ID) {
             ep->pair(pair);
@@ -144,8 +147,9 @@ Index BRep::findPair(Index edge, Index prevEdge) {
                 pair_prev = edges_[pair_prev].next();
             }
             if (pair_prev < edges_.size() && edges_[pair_prev].next() == index &&
-                edges_[pair_prev].vertex() == edges_[edge].vertex())
+                edges_[pair_prev].vertex() == edges_[edge].vertex()) {
                 return index;
+            }
         }
         /* #2
             if (_edges[index].face() != face &&
@@ -173,20 +177,23 @@ Index BRep::findPair(Index edge, Index prevEdge) {
 }
 
 HalfEdge* BRep::edge(Index edge) {
-    if (edge < edges_.size())
+    if (edge < edges_.size()) {
         return &edges_[edge];
+    }
     return 0;
 }
 
 Face* BRep::face(Index face) {
-    if (face < faces_.size())
+    if (face < faces_.size()) {
         return &faces_[face];
+    }
     return 0;
 }
 
 Vertex* BRep::vertex(Index vert) {
-    if (vert < vertices_.size())
+    if (vert < vertices_.size()) {
         return &vertices_[vert];
+    }
     return 0;
 }
 
@@ -289,8 +296,9 @@ void BRep::deselectComponents(void) noexcept {
 // calculate object-space bounds of mesh
 v3d::type::geometry::AABBox BRep::bound(void) const {
     v3d::type::geometry::AABBox extents;
-    if (vertices_.empty())
+    if (vertices_.empty()) {
         return extents;
+    }
     glm::vec3 min;
     glm::vec3 max;
     min = vertices_[0].point();

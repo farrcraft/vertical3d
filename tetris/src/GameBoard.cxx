@@ -228,7 +228,7 @@ void GameBoard::spawnTetrad() {
     currentTetrad_.position(position);
 
     // nowhere left to put it: the stack has reached the top
-    if (!fits(currentTetrad_, position.first, position.second)) {
+    if (!fits(currentTetrad_, static_cast<int>(position.first), static_cast<int>(position.second))) {
         over_ = true;
     }
 }
@@ -271,7 +271,7 @@ void GameBoard::update(float step) {
     nextMove_ = fastFall_ ? (fallRate_ / static_cast<float>(fastFallMultiplier_)) : fallRate_;
 
     const Tetrad::PositionType position = currentTetrad_.position();
-    if (fits(currentTetrad_, position.first, position.second + 1)) {
+    if (fits(currentTetrad_, static_cast<int>(position.first), static_cast<int>(position.second + 1))) {
         currentTetrad_.move(0, 1);
         return;
     }

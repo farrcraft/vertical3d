@@ -45,7 +45,7 @@ void Engine::shutdown() {
     }
     free_.clear();
     sounds_.clear();
-    if (mixer_) {
+    if (mixer_ != nullptr) {
         MIX_DestroyMixer(mixer_);
         mixer_ = nullptr;
         // the references initialize() took
@@ -69,7 +69,7 @@ bool Engine::initialize() {
     }
     // the default playback device, in whatever format it prefers
     mixer_ = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
-    if (!mixer_) {
+    if (mixer_ == nullptr) {
         logger_->get()->error("could not open an audio device: {}", SDL_GetError());
         MIX_Quit();
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
@@ -136,7 +136,7 @@ bool Engine::load(const boost::json::object& config, v3d::asset::Manager& assets
 bool Engine::addClip(const boost::shared_ptr<AudioClip>& clip, const std::string_view& key) {
     // playClip hands the audio to the mixer, so a clip that never read its file is
     // refused here rather than reaching it as a null
-    if (!clip || !clip->audio()) {
+    if (!clip || clip->audio() == nullptr) {
         return false;
     }
     const std::string clipId(key);
@@ -201,7 +201,7 @@ MIX_Track* Engine::claim() {
 
 Voice Engine::play(const std::string_view & clip, const Play & how) {
     // an engine whose initialize() opened no device has nothing to play into
-    if (!mixer_) {
+    if (mixer_ == nullptr) {
         return 0;
     }
     const std::string clipId(clip);
@@ -271,7 +271,7 @@ bool Engine::stop(Voice voice, int fadeOutMs) {
 }
 
 void Engine::stopAll(int fadeOutMs) {
-    if (!mixer_) {
+    if (mixer_ == nullptr) {
         return;
     }
     MIX_StopAllTracks(mixer_, fadeOutMs > 0 ? fadeOutMs : 0);
@@ -310,7 +310,7 @@ bool Engine::place(MIX_Track* track, float pan) {
 }
 
 bool Engine::busGain(const std::string & bus, float level) {
-    if (!mixer_ || bus.empty()) {
+    if (mixer_ == nullptr || bus.empty()) {
         return false;
     }
     return MIX_SetTagGain(mixer_, bus.c_str(), level);

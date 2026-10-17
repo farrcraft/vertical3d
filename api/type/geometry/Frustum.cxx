@@ -19,8 +19,8 @@ namespace {
  **/
 Plane rowPlane(const glm::mat4& m, unsigned int row, float wWeight, float rowWeight) {
     Plane plane;
-    for (unsigned int k = 0; k < 4; k++) {
-        plane[k] = wWeight * m[k][3] + rowWeight * m[k][row];
+    for (glm::length_t k = 0; k < 4; k++) {
+        plane[k] = wWeight * m[k][3] + rowWeight * m[k][static_cast<glm::length_t>(row)];
     }
     return plane;
 }

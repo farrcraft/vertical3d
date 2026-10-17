@@ -17,10 +17,12 @@ void
 pngtest_warning(png_structp png_ptr, png_const_charp message) {
     PNG_CONST char *name = "UNKNOWN (ERROR!)";
     png_voidp error_ptr = NULL;
-    if (png_ptr != NULL)
+    if (png_ptr != NULL) {
         error_ptr = png_get_error_ptr(png_ptr);
-    if (error_ptr != NULL)
+    }
+    if (error_ptr != NULL) {
         name = reinterpret_cast<char*>(error_ptr);
+    }
     std::cout << name << ": libpng warning: " << message << "\n";
 }
 
@@ -126,8 +128,9 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     png_byte** row_pointers = 0;
     row_pointers = new png_bytep[height];
 
-    if (height > PNG_UINT_32_MAX / sizeof(png_bytep))
+    if (height > PNG_UINT_32_MAX / sizeof(png_bytep)) {
         png_error(png_ptr, "Image is too tall to process in memory");
+    }
 
     png_bytep data = img->data();
     // both the file and Image are top down, so the rows go out in the order they are in

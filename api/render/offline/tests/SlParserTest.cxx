@@ -34,7 +34,7 @@ std::vector<v3d::render::offline::sl::syntax::ShaderPtr> parse(const std::string
     std::istringstream stream(source);
     v3d::render::offline::sl::Parser parser(stream);
     std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
-    if (error) {
+    if (error != nullptr) {
         *error = parser.error();
     }
     return shaders;

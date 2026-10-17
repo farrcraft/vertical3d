@@ -38,9 +38,9 @@ and returns the world space coordinate
 glm::vec3 Camera::unproject(const glm::vec3& point, const int viewport[4]) const {
     glm::vec4 p;
     // normalize point to range [-1, 1]
-    p[0] = (point[0] - viewport[0]) * 2.0f / viewport[2] - 1.0f;
+    p[0] = (point[0] - static_cast<float>(viewport[0])) * 2.0f / static_cast<float>(viewport[2]) - 1.0f;
     // clip space points y downward, the same way a screen coordinate does
-    p[1] = (point[1] - viewport[1]) * 2.0f / viewport[3] - 1.0f;
+    p[1] = (point[1] - static_cast<float>(viewport[1])) * 2.0f / static_cast<float>(viewport[3]) - 1.0f;
     // depth is already the [0, 1] the projection wrote
     p[2] = point[2];
     p[3] = 1.0f;
@@ -70,9 +70,9 @@ glm::vec3 Camera::project(const glm::vec3& point, const int viewport[4]) const {
         p /= p[3];
     }
 
-    p[0] = viewport[0] + (1.0f + p[0]) * viewport[2] / 2.0f;
+    p[0] = static_cast<float>(viewport[0]) + (1.0f + p[0]) * static_cast<float>(viewport[2]) / 2.0f;
     // clip space y already points down, so this is a screen coordinate
-    p[1] = viewport[1] + (1.0f + p[1]) * viewport[3] / 2.0f;
+    p[1] = static_cast<float>(viewport[1]) + (1.0f + p[1]) * static_cast<float>(viewport[3]) / 2.0f;
 
     return p;
 }
@@ -299,14 +299,14 @@ float Camera::orthoFactorHorizontal() const {
     if (profile_.size()[0] == 0) {
         return 0.0f;
     }
-    return (profile_.orthoZoom() * 2.0f * profile_.pixelAspect()) / profile_.size()[0];
+    return (profile_.orthoZoom() * 2.0f * profile_.pixelAspect()) / static_cast<float>(profile_.size()[0]);
 }
 
 float Camera::orthoFactorVertical() const {
     if (profile_.size()[1] == 0) {
         return 0.0f;
     }
-    return (profile_.orthoZoom() * 2.0f) / profile_.size()[1];
+    return (profile_.orthoZoom() * 2.0f) / static_cast<float>(profile_.size()[1]);
 }
 
 void Camera::rotate(const glm::quat& new_rot) {
