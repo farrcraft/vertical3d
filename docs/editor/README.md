@@ -50,7 +50,7 @@ Ctrl is also the truck modifier. Save As and RIB export are on the Project menu 
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui |
 | `src/view/` | `ViewLayout`, `ViewPort`, `ConstructionPlane` |
 | `src/scene/` | `Scene`, `SceneVisitor`, the primitives in `CreatePoly`, `WireframeVisitor`, `RIBExportVisitor`, `Project` |
-| `src/command/` | `Command`, `CommandStack`, `CreateCommand`, `TransformCommand`, `Placement`, `CommandDirectory` |
+| `src/command/` | `Command`, `CommandStack`, `CreateCommand`, `TransformCommand`, `Placement` |
 | `src/tool/` | `Tool`, `CameraControlTool`, `SelectTool`, `TransformTool`, `Picker`, `SelectMask` |
 | `src/manipulator/` | `Manipulator` and its translate, rotate and scale subclasses |
 | `data/` | Config documents: bindings, ui, window, camera profiles, layout |

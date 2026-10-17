@@ -66,6 +66,30 @@ std::string_view paddleCommand(std::string_view item) {
 
 
 PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
+    // the paddles follow the keys held now, which simulate() reads
+    for (const std::string_view command : PongScene::paddleCommands) {
+        commands().addHeld("pong::" + std::string(command));
+    }
+    v3d::ui::shell::GameMenu::declare(commands(), menu_);
+    commands().addPress("pong::toggleStatistics", [this]() {
+        renderer_->statistics()->toggle();
+    });
+
+    // what the menu's items send
+    commands().add("ui::setMaxScore", [this](const v3d::event::Event& event) {
+        boost::optional<v3d::event::EventData> data = event.data();
+        if (data && std::holds_alternative<int>(data.get())) {
+            scene_->state().maxScore(static_cast<unsigned int>(std::get<int>(data.get())));
+        }
+    });
+    for (const auto& binding : PADDLE_COMMANDS) {
+        commands().add("ui::" + std::string(binding.first), [this](const v3d::event::Event& event) {
+            rebindPaddleKey(event);
+        });
+    }
+    commands().addPress("ui::setSingleplayerMode", [this]() { mode(false); });
+    commands().addPress("ui::setMultiplayerMode", [this]() { mode(false); });
+    commands().addPress("ui::setCoopMode", [this]() { mode(true); });
 }
 
 bool PongEngine::start() {
@@ -101,8 +125,7 @@ bool PongEngine::start() {
     renderer_->scene(scene_);
     renderer_->ui(vgui_);
 
-    // register game commands
-    events_ = dispatcher()->sink<v3d::event::Event>().connect<&PongEngine::handleEvent>(*this);
+    // a key captured for a rebinding is taken before it reaches the bindings
     sources_ = dispatcher()->sink<v3d::event::Source>().connect<&PongEngine::handleSource>(*this);
 
     // reset scene & game state
@@ -149,42 +172,11 @@ bool PongEngine::release() {
     return true;
 }
 
-void PongEngine::handlePlayEvent(const v3d::event::Event& event) {
-    // a paddle command is read held in simulate() rather than taken as an event
-    for (const std::string_view command : PongScene::paddleCommands) {
-        if (event.name() == command) {
-            return;
-        }
-    }
-    if (event.repeat()) {
-        // the rest toggle, and a held key would flick them on and off at the repeat rate
-        return;
-    }
-    if (event.name() == "showGameMenu") {
-        menu_->toggle();
-    } else if (event.name() == "toggleStatistics") {
-        renderer_->statistics()->toggle();
-    }
-}
-
-void PongEngine::handleUiEvent(const v3d::event::Event& event) {
-    if (event.name() == "setMaxScore") {
-        boost::optional<v3d::event::EventData> data = event.data();
-        if (data) {
-            unsigned int maxScore = std::get<int>(data.get());
-            scene_->state().maxScore(maxScore);
-        }
-    } else if (event.name() == "setLeftPaddleUpKey" || event.name() == "setLeftPaddleDownKey" ||
-               event.name() == "setRightPaddleUpKey" || event.name() == "setRightPaddleDownKey") {
-        rebindPaddleKey(event);
-    } else if (event.name() == "setSingleplayerMode" || event.name() == "setMultiplayerMode") {
-        // coop is the only mode that differs; the second paddle is the same opponent
-        scene_->coop(false);
-        scene_->reset();
-    } else if (event.name() == "setCoopMode") {
-        scene_->coop(true);
-        scene_->reset();
-    }
+/**
+ **/
+void PongEngine::mode(bool coop) {
+    scene_->coop(coop);
+    scene_->reset();
 }
 
 /**
@@ -245,14 +237,4 @@ void PongEngine::handleSource(const v3d::event::Source& source) {
     // to, so the key is consumed and its bindings do not fire
     menu_->capture(std::string(source.name()));
     source.consume();
-}
-
-void PongEngine::handleEvent(const v3d::event::Event& event) {
-    if (event.context()->name() == "pong") {
-        handlePlayEvent(event);
-        return;
-    }
-    if (event.context()->name() == "ui") {
-        handleUiEvent(event);
-    }
 }

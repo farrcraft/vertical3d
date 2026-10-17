@@ -423,13 +423,6 @@ without the turn counter it was written for. Its sibling test does fail without 
 [] **The reasons for moving to SDL3 are not recorded.** No ADR records why SDL3 replaced
 SDL2.
 
-## Games
-
-[ReleaseHardening](plans/ReleaseHardening.md) takes this entry.
-
-[] **Three bindings name commands nothing handles:** F1 → `pong::toggleFS`,
-F1 → `tetris::toggleFS` and Space → `odyssey::moveUp`.
-
 ## Editor
 
 Open work for when the editor app itself moves forward. [editor/](editor/README.md) describes the

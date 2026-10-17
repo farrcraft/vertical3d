@@ -14,6 +14,7 @@ first, as Review.md requires, or records why no such test can be written.
 | ADR | Decision | Step |
 |---|---|---|
 | [0089](../adr/0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md) | Paths: narrow strings are UTF-8, under a UTF-8 code page | 1 |
+| [0090](../adr/0090-input-commands-are-handled-through-one-registry.md) | Input: commands are handled through one registry | 3 |
 | **New** | Why SDL3 replaced SDL2, recorded after the fact | 7 |
 
 ## What blocks what
@@ -43,11 +44,20 @@ CPU, where before two seconds wrote twelve thousand lines.
 
 ### Step 3 — Bindings to commands nothing handles
 
-**Open.** [TODO.md](../TODO.md#games), "Three bindings name commands nothing handles".
+**Closed.** No list of handled commands existed to test the bindings against, so the step took a
+decision first. ADR-0090 moves the editor's command directory into the api as `event::Commands`.
+The engine owns one and runs the handler each command names, and every app registers its commands
+in its constructor, including the ones it reads with `held()`. The game menu registers its own
+through `GameMenu::declare()`.
 
-Each binding gets a handler or is removed. A full-screen toggle in the shell is the likely handler
-for pong's and tetris's F1, because the shell around a game belongs to the api. A test checks that
-every app's bindings name registered commands.
+- pong's and tetris's F1 send `ui::fullscreen`, which the engine handles. pong's escape sends
+  `ui::showGameMenu`, as tetris's and voxel's do.
+  `Window::fullscreen()` does the switch, and a windowed case in the render suite switches a
+  window to full screen and back with the frame loop drawing clean through both.
+- odyssey's Space binding is removed, because odyssey moves on a flat grid.
+- Each game's suite builds its engine without a window and checks `data/mappings.json` with
+  `Engine::unhandled(document)`. Put back, the old bindings fail pong's, tetris's and odyssey's.
+- After `start()` the engine logs every binding that nothing handles.
 
 ### Step 4 — Boundary input
 

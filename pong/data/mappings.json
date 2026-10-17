@@ -47,7 +47,7 @@
         "state": "pressed"
       },
       "destination": {
-        "context": "pong",
+        "context": "ui",
         "name": "showGameMenu"
       }
     },
@@ -91,8 +91,8 @@
         "state": "pressed"
       },
       "destination": {
-        "context": "pong",
-        "name": "toggleFS"
+        "context": "ui",
+        "name": "fullscreen"
       }
     },
     {

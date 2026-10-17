@@ -102,3 +102,17 @@ BOOST_FIXTURE_TEST_CASE(bindings_refuse_a_value_that_is_not_a_string_test, Fixtu
     BOOST_TEST(bindings.rebind("ui::quit", "escape"));
     BOOST_TEST(bindings.sources("game::up").size() == 2u);
 }
+
+/**
+ * The commands are what the bindings send, each once however many sources it has, and none
+ * before a document is loaded.
+ **/
+BOOST_FIXTURE_TEST_CASE(bindings_list_their_commands_test, Fixture) {
+    BOOST_TEST(bindings.commands().empty());
+
+    BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
+    const std::vector<std::string> commands = bindings.commands();
+    BOOST_REQUIRE_EQUAL(commands.size(), 2u);
+    BOOST_TEST(commands[0] == "game::up");
+    BOOST_TEST(commands[1] == "ui::quit");
+}

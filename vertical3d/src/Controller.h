@@ -16,7 +16,6 @@
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/Bar.h>
-#include <vertical3d/src/command/CommandDirectory.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -63,12 +62,6 @@ class Controller final : public v3d::engine::Engine {
      * did not take - so the cursor is routed from a mapped command.
      **/
     bool onEvent(const SDL_Event& event) override;
-
-    /**
-     * A mapped event. Its identity is a command name, so this is a lookup in the
-     * directory and nothing else.
-     **/
-    void handleEvent(const v3d::event::Event& event);
 
     /**
      * The cursor moved. The view under the cursor decides which camera a drag drives, so
@@ -120,8 +113,9 @@ class Controller final : public v3d::engine::Engine {
     bool uiPress(const glm::vec2& cursor);
 
     /**
-     * Register a handler for every command the editor supports. A menu item naming a
-     * command that is not registered here logs a warning when it is invoked.
+     * Register a handler for every command the editor supports, from the constructor. A
+     * menu item naming a command that is not registered here logs a warning when it is
+     * invoked. Each handler reads the editor's state back into the ui after it runs.
      **/
     void registerCommands();
 
@@ -205,8 +199,7 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<Project> project_;
     // the document Save writes to
     boost::filesystem::path projectPath_;
-    CommandDirectory directory_;
-    boost::shared_ptr<CommandStack> commands_;
+    boost::shared_ptr<CommandStack> history_;
     boost::shared_ptr<v3d::config::CameraProfiles> profiles_;
     boost::shared_ptr<ViewLayout> layout_;
     std::vector<boost::shared_ptr<ViewPort>> views_;
@@ -221,8 +214,10 @@ class Controller final : public v3d::engine::Engine {
     // whether the ui took the press, so that the release that ends it does not reach
     // the tools that never saw the press
     bool uiGrab_;
+    // names registered a second time, whose handlers would never run. The logger does not
+    // exist while the constructor registers, so start() reports them
+    std::vector<std::string> refused_;
     // the dispatcher holds a delegate to this object; these let it go when the object does
-    entt::scoped_connection events_;
     entt::scoped_connection motion_;
     entt::scoped_connection resize_;
 };

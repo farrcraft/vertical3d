@@ -5,6 +5,7 @@
 
 #include "Mapper.h"
 
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -51,6 +52,16 @@ std::vector<Event> Mapper::sources(std::string_view destination) const {
         }
     }
     return found;
+}
+
+/**
+ **/
+std::vector<std::string> Mapper::destinations() const {
+    std::set<std::string> names;
+    for (const std::pair<const Event, Event>& mapping : mappings_) {
+        names.insert(mapping.second.str());
+    }
+    return std::vector<std::string>(names.begin(), names.end());
 }
 
 };  // namespace v3d::event

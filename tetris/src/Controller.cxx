@@ -16,6 +16,37 @@
 #include <boost/make_shared.hpp>
 
 Controller::Controller(const std::string& path) : v3d::engine::Engine(path) {
+    v3d::ui::shell::GameMenu::declare(commands(), menu_);
+    commands().addPress("tetris::toggleStatistics", [this]() {
+        renderer_->statistics()->toggle();
+    });
+    commands().addPress("tetris::debugMode", [this]() {
+        scene_->debug(!scene_->debug());
+        scene_->board()->debug(scene_->debug());
+    });
+
+    // a play command takes a held key's repeats, so a piece keeps sliding while its key is
+    // down. The board only takes play commands while it is running
+    auto play = [this](const std::string& name, const v3d::event::Commands::Handler& action) {
+        commands().add(name, [this, action](const v3d::event::Event& event) {
+            if (!scene_->paused() && !scene_->board()->over()) {
+                action(event);
+            }
+        });
+    };
+    play("tetris::movePieceLeft", [this](const v3d::event::Event&) { slide(-1); });
+    play("tetris::movePieceRight", [this](const v3d::event::Event&) { slide(1); });
+    play("tetris::rotatePieceCW", [this](const v3d::event::Event&) { rotate(Tetrad::CLOCKWISE); });
+    play("tetris::rotatePieceCCW", [this](const v3d::event::Event&) { rotate(Tetrad::COUNTERCLOCKWISE); });
+    play("tetris::dropPiece", [this](const v3d::event::Event& event) {
+        scene_->board()->dropTetrad(event.repeat());
+    });
+
+    // what the menu's items send
+    commands().addPress("ui::newGame", [this]() {
+        scene_->reset();
+        menu_->toggle();
+    });
 }
 
 bool Controller::start() {
@@ -39,9 +70,6 @@ bool Controller::start() {
     renderer_ = boost::make_shared<TetrisRenderer>(win, logger(), assets());
     renderer_->scene(scene_);
     renderer_->ui(vgui_);
-
-    // register game commands
-    events_ = dispatcher()->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
 
     // set the scene size according to the window canvas
     renderer_->resize(window()->width(), window()->height());
@@ -110,49 +138,6 @@ void Controller::rotate(Tetrad::RotationDirection direction) {
             turned.position(Tetrad::PositionType(static_cast<unsigned int>(column + kick), position.second));
             piece = turned;
             return;
-        }
-    }
-}
-
-void Controller::handleEvent(const v3d::event::Event& event) {
-    if (event.context()->name() == "tetris") {
-        if (event.name() == "toggleStatistics") {
-            // a toggle, so a held key's repeats are ignored rather than flicking it on and off
-            if (!event.repeat()) {
-                renderer_->statistics()->toggle();
-            }
-            return;
-        }
-        if (event.name() == "debugMode") {
-            if (event.repeat()) {
-                return;
-            }
-            scene_->debug(!scene_->debug());
-            scene_->board()->debug(scene_->debug());
-            return;
-        }
-        // the board only takes play commands while it is running
-        if (scene_->paused() || scene_->board()->over()) {
-            return;
-        }
-        if (event.name() == "movePieceLeft") {
-            slide(-1);
-        } else if (event.name() == "movePieceRight") {
-            slide(1);
-        } else if (event.name() == "rotatePieceCW") {
-            rotate(Tetrad::CLOCKWISE);
-        } else if (event.name() == "rotatePieceCCW") {
-            rotate(Tetrad::COUNTERCLOCKWISE);
-        } else if (event.name() == "dropPiece") {
-            scene_->board()->dropTetrad(event.repeat());
-        }
-        return;
-    }
-
-    if (event.context()->name() == "ui") {
-        if (event.name() == "newGame") {
-            scene_->reset();
-            menu_->toggle();
         }
     }
 }

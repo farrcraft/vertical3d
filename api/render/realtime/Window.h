@@ -106,6 +106,19 @@ class Window final {
     bool focused() const;
 
     /**
+     * Fill the display the window is on, or go back to a window.
+     *
+     * The display keeps its own mode, so the change is a resize as far as the swapchain is
+     * concerned, and arrives as one.
+     * @return false when the window does not exist or SDL refused, which is logged
+     **/
+    bool fullscreen(bool on);
+
+    /**
+     **/
+    bool fullscreen() const;
+
+    /**
      * Start or stop the platform composing text. SDL_EVENT_TEXT_INPUT arrives only while
      * it is on.
      *

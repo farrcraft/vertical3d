@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Commands.h>
 #include <api/event/Engine.h>
 #include <api/ui/Engine.h>
 #include <api/ui/shell/GameMenu.h>
@@ -309,36 +310,41 @@ BOOST_AUTO_TEST_CASE(a_toggle_during_a_capture_abandons_it) {
 }
 
 /**
- * The menu answers its own commands off the ui's dispatcher, so an app's handler does not
- * route the toggle and the navigation to it - and a command of another context is not its.
+ * The menu registers its own commands, so an app's handlers do not route the toggle and the
+ * navigation to it, and a command of another context is not its. Each command is registered
+ * before the menu exists and does nothing until the app holds one.
  **/
-BOOST_AUTO_TEST_CASE(the_menu_answers_its_own_commands) {
+BOOST_AUTO_TEST_CASE(the_menu_declares_its_own_commands) {
     boost::shared_ptr<v3d::ui::Engine> ui = load(document);
-    v3d::ui::shell::GameMenu menu(ui, [](bool) {});
     boost::shared_ptr<v3d::event::Engine> events = boost::make_shared<v3d::event::Engine>(ui->dispatcher());
+    boost::shared_ptr<v3d::ui::shell::GameMenu> menu;
+    v3d::event::Commands commands;
+    v3d::ui::shell::GameMenu::declare(commands, menu);
 
-    auto send = [&](const std::string& context, const std::string& name) {
+    auto send = [&](const std::string& context, const std::string& name, bool repeat) {
         v3d::event::Event command(name, events->resolveContext(context));
         command.type(v3d::event::Type::Destination);
-        ui->dispatcher()->trigger(command);
+        command.state(v3d::event::State::Pressed);
+        command.repeat(repeat);
+        return commands.invoke(command);
     };
 
-    send("game", v3d::ui::shell::GameMenu::toggleCommand);
-    BOOST_TEST(!menu.visible());
+    BOOST_TEST(send("ui", v3d::ui::shell::GameMenu::toggleCommand, false));
 
-    send("ui", v3d::ui::shell::GameMenu::toggleCommand);
-    BOOST_TEST(menu.visible());
+    menu = boost::make_shared<v3d::ui::shell::GameMenu>(ui, [](bool) {});
+    BOOST_TEST(!send("game", v3d::ui::shell::GameMenu::toggleCommand, false));
+    BOOST_TEST(!menu->visible());
+
+    BOOST_TEST(send("ui", v3d::ui::shell::GameMenu::toggleCommand, false));
+    BOOST_TEST(menu->visible());
 
     const std::string before = active(ui);
-    send("ui", "menuNext");
+    BOOST_TEST(send("ui", "menuNext", false));
     BOOST_TEST(active(ui) != before);
 
     // a held key's repeats do not flick the menu shut
-    v3d::event::Event repeated(v3d::ui::shell::GameMenu::toggleCommand, events->resolveContext("ui"));
-    repeated.type(v3d::event::Type::Destination);
-    repeated.repeat(true);
-    ui->dispatcher()->trigger(repeated);
-    BOOST_TEST(menu.visible());
+    BOOST_TEST(send("ui", v3d::ui::shell::GameMenu::toggleCommand, true));
+    BOOST_TEST(menu->visible());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

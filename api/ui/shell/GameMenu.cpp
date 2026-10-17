@@ -22,25 +22,25 @@ GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspe
     suspend_(suspend),
     containerName_(container),
     menuName_(menu) {
-    if (engine_ && engine_->dispatcher()) {
-        commands_ = engine_->dispatcher()->sink<v3d::event::Event>().connect<&GameMenu::command>(*this);
-    }
 }
 
 /**
  **/
-void GameMenu::command(const v3d::event::Event& event) {
-    if (!event.context() || event.context()->name() != "ui") {
-        return;
-    }
-    if (event.name() == toggleCommand) {
-        // a held key would otherwise open and close the menu at the repeat rate
-        if (!event.repeat()) {
-            toggle();
+void GameMenu::declare(v3d::event::Commands& commands, const boost::shared_ptr<GameMenu>& menu) {
+    // a press handler ignores a held key's repeats, which would otherwise open and close the
+    // menu at the repeat rate
+    commands.addPress(std::string("ui::") + toggleCommand, [&menu]() {
+        if (menu) {
+            menu->toggle();
         }
-        return;
+    });
+    for (const char* const name : { "menuPrevious", "menuNext", "selectMenu" }) {
+        commands.addPress(std::string("ui::") + name, [&menu, name]() {
+            if (menu) {
+                menu->navigate(name);
+            }
+        });
     }
-    navigate(event.name());
 }
 
 /**

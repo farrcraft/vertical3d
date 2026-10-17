@@ -8,6 +8,7 @@
 #include <api/asset/Manager.h>
 #include <api/config/Config.h>
 #include <api/event/Bindings.h>
+#include <api/event/Commands.h>
 #include <api/event/Engine.h>
 #include <api/input/Engine.h>
 #include <api/log/Logger.h>
@@ -16,6 +17,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "Accumulator.h"
 #include "Feature.h"
@@ -192,6 +194,37 @@ class Engine {
      **/
     bool held(std::string_view command) const;
 
+    /**
+     * Every command the app handles, by "context::name". The engine runs the handler each
+     * command event names, and handles nothing any other way.
+     *
+     * An app registers its commands in its constructor, including the ones it reads with
+     * held(), so that a test can build the app without a window and check its bindings. A
+     * handler runs only once the loop has started, so it may use what start() builds. The
+     * engine registers "ui::quit" and "ui::fullscreen" itself.
+     **/
+    v3d::event::Commands& commands() noexcept;
+    const v3d::event::Commands& commands() const noexcept;
+
+    /**
+     * The commands a binding sends that nothing has registered, in name order. initialize()
+     * logs each one as an error once start() has run.
+     *
+     * @return none before the bindings are loaded, or without Feature::Config
+     **/
+    std::vector<std::string> unhandled() const;
+
+    /**
+     * The commands a binding document sends that nothing has registered, in name order. It
+     * needs no window and no initialize(), so a test can build an app and check the bindings
+     * it ships with.
+     *
+     * @param document a binding document, as data/mappings.json holds
+     * @return the one entry "mappings" when the document cannot be read, which is logged, so a
+     *         caller that expects none sees a failure rather than an empty list
+     **/
+    std::vector<std::string> unhandled(const boost::json::object& document) const;
+
  protected:
     /**
      * What the engine sets up before start(). All four by default; an app that needs fewer
@@ -264,14 +297,13 @@ class Engine {
  private:
      /**
       * Handle one event the input devices did not take: a quit, a resize, a focus change or
-      * a window minimized or restored. eventLoop() decides when to poll for events; this decides what the engine
-      * does with one.
+      * a window minimized or restored. eventLoop() decides when to poll for events; this
+      * decides what the engine does with one.
       **/
      void handleEvent(const SDL_Event& event);
 
      /**
-      * Handle "ui::quit", which a menu's quit item and a quit key both send. It ends the
-      * loop as a closed window does.
+      * Run the handler a command event names. An event nothing handles is logged.
       **/
      void command(const v3d::event::Event& event);
 
@@ -310,7 +342,8 @@ class Engine {
      bool needShutdown_;
      bool released_ = false;
      // after dispatcher_, so it disconnects before the dispatcher it points into can go
-     entt::scoped_connection quitCommand_;
+     entt::scoped_connection commandListener_;
+     v3d::event::Commands commands_;
      bool quitting_;
      bool minimized_ = false;
      boost::shared_ptr<v3d::input::Engine> inputEngine_;

@@ -9,12 +9,14 @@
 #include <api/engine/Engine.h>
 #include <api/engine/Feature.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
+#include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
 namespace {
@@ -433,6 +435,80 @@ BOOST_AUTO_TEST_CASE(engine_answers_ui_quit_test) {
     quit.type(v3d::event::Type::Destination);
     engine.dispatcher()->trigger(quit);
     BOOST_TEST(engine.quitting());
+}
+
+/**
+ * A command event runs the handler the app registered for it, and nothing else does.
+ **/
+BOOST_AUTO_TEST_CASE(engine_runs_a_registered_command_test) {
+    TestEngine engine(appPath("good"), configFeature);
+    int jumps = 0;
+    BOOST_REQUIRE(engine.commands().addPress("game::jump", [&jumps]() { jumps++; }));
+    BOOST_REQUIRE(engine.initialize());
+
+    v3d::event::Event jump("jump", engine.events()->resolveContext("game"));
+    jump.type(v3d::event::Type::Destination);
+    jump.state(v3d::event::State::Pressed);
+    engine.dispatcher()->trigger(jump);
+    BOOST_CHECK_EQUAL(jumps, 1);
+}
+
+/**
+ * A binding to a command nothing registered is one that does nothing when its key is
+ * pressed. The engine lists those, and a command the app reads with held() counts as handled
+ * once it is registered.
+ **/
+BOOST_AUTO_TEST_CASE(engine_reports_bindings_nothing_handles_test) {
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_TEST(engine.unhandled().empty());
+    BOOST_REQUIRE(engine.initialize());
+
+    std::vector<std::string> unhandled = engine.unhandled();
+    BOOST_CHECK(std::ranges::find(unhandled, "pong::leftPaddleUp") != unhandled.end());
+    BOOST_CHECK(std::ranges::find(unhandled, "ui::quit") == unhandled.end());
+
+    BOOST_REQUIRE(engine.commands().addHeld("pong::leftPaddleUp"));
+    unhandled = engine.unhandled();
+    BOOST_CHECK(std::ranges::find(unhandled, "pong::leftPaddleUp") == unhandled.end());
+}
+
+/**
+ * An app's shipped bindings are checked without a window or initialize(): the document is
+ * read against what the constructor registered. A document that cannot be read is not an empty
+ * list.
+ **/
+BOOST_AUTO_TEST_CASE(engine_checks_a_binding_document_test) {
+    TestEngine engine(appPath("good"));
+    engine.commands().addPress("game::jump", []() { });
+
+    const boost::json::object document = boost::json::parse(R"({"mappings": [
+        {"source": {"name": "space", "context": "keyboard"}, "destination": {"name": "jump", "context": "game"}},
+        {"source": {"name": "f1", "context": "keyboard"}, "destination": {"name": "toggleFS", "context": "game"}},
+        {"source": {"name": "escape", "context": "keyboard"}, "destination": {"name": "quit", "context": "ui"}}
+    ]})").as_object();
+    const std::vector<std::string> unhandled = engine.unhandled(document);
+    BOOST_REQUIRE_EQUAL(unhandled.size(), 1u);
+    BOOST_CHECK_EQUAL(unhandled[0], "game::toggleFS");
+
+    const std::vector<std::string> unread = engine.unhandled(boost::json::parse(R"({"bindings": []})").as_object());
+    BOOST_REQUIRE_EQUAL(unread.size(), 1u);
+    BOOST_CHECK_EQUAL(unread[0], "mappings");
+}
+
+/**
+ * Full screen is a shell command like quit, so the engine handles it and no app writes the
+ * handler. Without a window it does nothing.
+ **/
+BOOST_AUTO_TEST_CASE(engine_answers_ui_fullscreen_test) {
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
+    BOOST_TEST(engine.commands().has("ui::fullscreen"));
+
+    v3d::event::Event fullscreen("fullscreen", engine.events()->resolveContext("ui"));
+    fullscreen.type(v3d::event::Type::Destination);
+    fullscreen.state(v3d::event::State::Pressed);
+    engine.dispatcher()->trigger(fullscreen);
+    BOOST_TEST(!engine.quitting());
 }
 
 template <typename T>

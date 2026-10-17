@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/event/Commands.h>
 #include <api/event/Event.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
@@ -15,7 +16,6 @@
 #include <string_view>
 
 #include <boost/shared_ptr.hpp>
-#include <entt/entt.hpp>
 
 namespace v3d::ui::shell {
 
@@ -29,8 +29,9 @@ namespace v3d::ui::shell {
  * call here doing nothing rather than failing - a game whose config names no menu still
  * runs, without one.
  *
- * It answers its own commands. "ui::showGameMenu" toggles it and the navigation commands
- * navigate() names drive it, so an app's handler has only the commands that are its game's.
+ * declare() registers its commands. "ui::showGameMenu" toggles it and the navigation commands
+ * navigate() names drive it, so an app's own handlers are only for the commands that are its
+ * game's.
  **/
 class GameMenu {
  public:
@@ -57,10 +58,17 @@ class GameMenu {
     GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend,
         const std::string& container = defaultContainer, const std::string& menu = defaultMenu);
 
-    // the dispatcher holds a delegate to this object, which a copy would leave pointing at
-    // the original
-    GameMenu(const GameMenu&) = delete;
-    GameMenu& operator=(const GameMenu&) = delete;
+    /**
+     * Register the menu's commands: "ui::showGameMenu" toggles it, and "ui::menuPrevious",
+     * "ui::menuNext" and "ui::selectMenu" navigate it. A held key's repeats toggle nothing.
+     *
+     * An app calls this from its constructor, before the menu exists, and passes the member it
+     * will hold the menu in. Each command does nothing while that member is empty.
+     *
+     * @param commands the app's commands
+     * @param menu the member the app holds its menu in, which must outlive the commands
+     **/
+    static void declare(v3d::event::Commands& commands, const boost::shared_ptr<GameMenu>& menu);
 
     /**
      * The command a game's escape key and its menu's back item send, which toggles the menu.
@@ -112,13 +120,11 @@ class GameMenu {
  private:
     boost::shared_ptr<Container> container() const;
     boost::shared_ptr<component::menu::Menu> menu() const;
-    void command(const v3d::event::Event& event);
 
     boost::shared_ptr<Engine> engine_;
     Suspend suspend_;
     std::string containerName_;
     std::string menuName_;
-    entt::scoped_connection commands_;
 };
 
 };  // namespace v3d::ui::shell

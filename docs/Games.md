@@ -56,11 +56,10 @@ Sources are in `pong/src/`.
 |---|---|---|
 | W, S | `pong::leftPaddleUp`, `pong::leftPaddleDown` | Move player 1's paddle while held |
 | Up, Down | `pong::rightPaddleUp`, `pong::rightPaddleDown` | Move player 2's paddle while held (co-op only) |
-| Escape | `pong::showGameMenu` | Show or hide the menu, which pauses the game |
+| Escape | `ui::showGameMenu` | Show or hide the menu, which pauses the game |
 | Up, Down, Return | `ui::menuPrevious`, `ui::menuNext`, `ui::selectMenu` | Navigate the menu |
 | F3 | `pong::toggleStatistics` | Show or hide the frame statistics |
-
-F1 is bound to `pong::toggleFS`, which nothing handles.
+| F1 | `ui::fullscreen` | Switch between full screen and a window |
 
 **Game modes.** The game starts in co-op mode, with both paddles controlled by players. The
 menu offers Singleplayer, Co-op and Multiplayer. In Singleplayer the right paddle is steered by
@@ -127,8 +126,7 @@ Falling tetrads on a board. Sources are in `tetris/src/`.
 | Up, Down, Return | `ui::menuPrevious`, `ui::menuNext`, `ui::selectMenu` | Navigate the menu |
 | F2 | `tetris::debugMode` | Show the current piece's position and size |
 | F3 | `tetris::toggleStatistics` | Show or hide the frame statistics |
-
-F1 is bound to `tetris::toggleFS`, which nothing handles.
+| F1 | `ui::fullscreen` | Switch between full screen and a window |
 
 A rotation that does not fit tries the same rotation shifted 1 and then 2 columns either way
 before giving up. Play commands are ignored while the game is paused or over.
@@ -205,8 +203,7 @@ written yet. Sources are in `odyssey/`.
 | Left click | `odyssey::use` | Walk to the clicked tile along the shortest path, within the region the player stands in |
 | Escape | `ui::quit` | Quit |
 
-Space is bound to `odyssey::moveUp`, which nothing handles. A walk moves one tile every 0.15
-seconds.
+A walk moves one tile every 0.15 seconds.
 
 **The world.** `data/world.json` lists the regions and names the one the player starts in:
 

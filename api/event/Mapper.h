@@ -47,6 +47,12 @@ class Mapper {
      **/
     std::vector<Event> sources(std::string_view destination) const;
 
+    /**
+     * @return every destination this mapper sends, as "context::name", each once and in name
+     *         order
+     **/
+    std::vector<std::string> destinations() const;
+
  private:
     std::multimap<Event, Event> mappings_;
     std::string name_;

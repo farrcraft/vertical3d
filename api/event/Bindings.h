@@ -71,6 +71,11 @@ class Bindings final {
      **/
     std::vector<Event> sources(std::string_view command) const;
 
+    /**
+     * @return every command a binding sends, as "context::name", each once and in name order
+     **/
+    std::vector<std::string> commands() const;
+
  private:
     bool build();
     bool readSource(const boost::json::object& mapping, Event* event);

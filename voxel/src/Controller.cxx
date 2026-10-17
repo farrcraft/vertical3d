@@ -29,11 +29,29 @@ namespace {
  **/
 const char* const primaryButton = "left";
 
+/**
+ * The movement commands, which simulate() reads by whether their keys are held now.
+ **/
+const std::pair<const char*, Player::Movement> MOVES[] = {
+    { "voxel::moveForward", Player::MOVE_FORWARD }, { "voxel::moveBackward", Player::MOVE_BACKWARD },
+    { "voxel::moveLeft", Player::MOVE_LEFT }, { "voxel::moveRight", Player::MOVE_RIGHT },
+    { "voxel::moveUp", Player::MOVE_UP }, { "voxel::moveDown", Player::MOVE_DOWN }
+};
+
 };  // namespace
 
 Controller::Controller(const std::string& appPath) :
     v3d::engine::Engine(appPath),
     debug_(false) {
+    for (const auto& [command, direction] : MOVES) {
+        commands().addHeld(command);
+    }
+    v3d::ui::shell::GameMenu::declare(commands(), menu_);
+    // the debug overlay is readable whether or not the world is running
+    commands().addPress("voxel::debug", [this]() {
+        debug_ = !debug_;
+        renderer_->debug(debug_);
+    });
 }
 
 
@@ -52,8 +70,6 @@ bool Controller::start() {
         return false;
     }
 
-    // register game commands
-    events_ = dispatcher()->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
     // this is actually the game controller
     // maybe we need a separate player controller class to intercept mouse events?
     motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
@@ -92,12 +108,7 @@ bool Controller::simulate(float step) {
     if (!scene_->state()->paused()) {
         // movement follows the keys held now rather than counting presses, so a key let go
         // while the menu was up is not still moving the player when the menu closes
-        const std::pair<const char*, Player::Movement> moves[] = {
-            { "voxel::moveForward", Player::MOVE_FORWARD }, { "voxel::moveBackward", Player::MOVE_BACKWARD },
-            { "voxel::moveLeft", Player::MOVE_LEFT }, { "voxel::moveRight", Player::MOVE_RIGHT },
-            { "voxel::moveUp", Player::MOVE_UP }, { "voxel::moveDown", Player::MOVE_DOWN }
-        };
-        for (const auto& [command, direction] : moves) {
+        for (const auto& [command, direction] : MOVES) {
             scene_->player()->move(direction, held(command));
         }
         scene_->tick(step);
@@ -157,19 +168,6 @@ void Controller::suspend(bool suspended) {
     scene_->state()->pause(suspended);
     // the menu needs a pointer, and leaving relative mode shows one
     window()->relativeMouse(!suspended);
-}
-
-void Controller::handleEvent(const v3d::event::Event& event) {
-    if (event.context()->name() != "voxel") {
-        return;
-    }
-
-    // the debug overlay is readable whether or not the world is running. It is a toggle, so a
-    // held key's repeats are ignored
-    if (event.name() == "debug" && !event.repeat()) {
-        debug_ = !debug_;
-        renderer_->debug(debug_);
-    }
 }
 
 void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {

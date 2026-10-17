@@ -35,7 +35,6 @@ class PongEngine final : public v3d::engine::Engine {
      **/
     bool render() override;
 
-    void handleEvent(const v3d::event::Event& event);
     void handleSource(const v3d::event::Source& source);
 
  protected:
@@ -51,11 +50,10 @@ class PongEngine final : public v3d::engine::Engine {
 
  private:
     /**
-     * The two contexts an event reaches this engine from: the game's own commands,
-     * and the menu's.
+     * Change the game's mode from the menu. Coop is the only mode that differs: in the others
+     * the second paddle is the same opponent.
      **/
-    void handlePlayEvent(const v3d::event::Event& event);
-    void handleUiEvent(const v3d::event::Event& event);
+    void mode(bool coop);
 
     /**
      * Point one of the four paddle commands at the key an Options item captured, and store
@@ -75,7 +73,6 @@ class PongEngine final : public v3d::engine::Engine {
     boost::shared_ptr<PongRenderer> renderer_;
     boost::shared_ptr<v3d::ui::Engine> vgui_;
     boost::shared_ptr<v3d::ui::shell::GameMenu> menu_;
-    // the dispatcher holds a delegate to this object; these let it go when the object does
-    entt::scoped_connection events_;
+    // the dispatcher holds a delegate to this object; this lets it go when the object does
     entt::scoped_connection sources_;
 };

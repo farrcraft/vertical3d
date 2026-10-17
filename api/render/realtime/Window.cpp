@@ -147,6 +147,28 @@ bool Window::focused() const {
 
 /**
  **/
+bool Window::fullscreen(bool on) {
+    if (window_ == nullptr) {
+        return false;
+    }
+    if (!SDL_SetWindowFullscreen(window_, on)) {
+        logger_->get()->error("The window could not {} full screen: {}", on ? "go" : "leave", SDL_GetError());
+        return false;
+    }
+    return true;
+}
+
+/**
+ **/
+bool Window::fullscreen() const {
+    if (window_ == nullptr) {
+        return false;
+    }
+    return (SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN) != 0;
+}
+
+/**
+ **/
 bool Window::textInput(bool on) {
     if (window_ == nullptr) {
         return false;

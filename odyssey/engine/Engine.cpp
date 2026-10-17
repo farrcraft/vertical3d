@@ -14,6 +14,7 @@
 #include "Unit.h"
 
 #include <cstddef>
+#include <functional>
 #include <optional>
 #include <string>
 #include <utility>
@@ -28,6 +29,21 @@ namespace odyssey::engine {
  **/
 Engine::Engine(const std::string& appPath) :
     v3d::engine::Engine(appPath) {
+    // the bindings name no state, so both edges arrive and only the press is a move - a
+    // release would otherwise take a second step off every key. A held key's repeats each
+    // take a step, so holding a key walks
+    auto press = [this](const std::string& name, const std::function<void()>& action) {
+        commands().add(name, [action](const v3d::event::Event& event) {
+            if (event.state() != v3d::event::State::Released) {
+                action();
+            }
+        });
+    };
+    press("odyssey::use", [this]() { walkToCursor(); });
+    press("odyssey::moveForward", [this]() { step(0, -1); });
+    press("odyssey::moveBackward", [this]() { step(0, 1); });
+    press("odyssey::moveLeft", [this]() { step(-1, 0); });
+    press("odyssey::moveRight", [this]() { step(1, 0); });
 }
 
 /**
@@ -55,36 +71,9 @@ bool Engine::start() {
     renderer_->player(player_);
     renderer_->world(world_);
 
-    // one sink for every mapped event: a device event is resolved to an action by the
-    // bindings before it gets here, so nothing subscribes to a key
-    events_ = dispatcher()->sink<v3d::event::Event>().connect<&Engine::handleEvent>(*this);
     motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Engine::handleMotion>(*this);
 
     return true;
-}
-
-/**
- **/
-void Engine::handleEvent(const v3d::event::Event& event) {
-    if (event.context()->name() != "odyssey") {
-        return;
-    }
-    // the movement bindings name no state, so both edges arrive here and only the press
-    // is a move - a release would otherwise take a second step off every key
-    if (event.state() == v3d::event::State::Released) {
-        return;
-    }
-    if (event.name() == "use") {
-        walkToCursor();
-    } else if (event.name() == "moveForward") {
-        step(0, -1);
-    } else if (event.name() == "moveBackward") {
-        step(0, 1);
-    } else if (event.name() == "moveLeft") {
-        step(-1, 0);
-    } else if (event.name() == "moveRight") {
-        step(1, 0);
-    }
 }
 
 /**

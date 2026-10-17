@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <map>
 #include <string>
+#include <vector>
 
 #include "Feature.h"
 
@@ -31,6 +32,14 @@ Engine::Engine(const std::string& appPath) :
     appPath_(appPath),
     needShutdown_(false),
     quitting_(false) {
+    // the two commands every app shares. A menu's quit item and a quit key both send
+    // "ui::quit", which ends the loop as a closed window does
+    commands_.addPress("ui::quit", [this]() { quit(); });
+    commands_.addPress("ui::fullscreen", [this]() {
+        if (window_) {
+            window_->fullscreen(!window_->fullscreen());
+        }
+    });
 }
 
 /**
@@ -65,7 +74,7 @@ bool Engine::initialize() {
 
     dispatcher_ = boost::make_shared<entt::dispatcher>();
     eventEngine_ = boost::make_shared<v3d::event::Engine>(dispatcher_);
-    quitCommand_ = dispatcher_->sink<v3d::event::Event>().connect<&Engine::command>(*this);
+    commandListener_ = dispatcher_->sink<v3d::event::Event>().connect<&Engine::command>(*this);
 
     if (features_.has(Feature::Config) && !loadConfig()) {
         return false;
@@ -74,7 +83,15 @@ bool Engine::initialize() {
     if (features_.has(Feature::Window) && !openWindow()) {
         return false;
     }
-    return start();
+    if (!start()) {
+        return false;
+    }
+    // a key bound to a command nothing handles does nothing when pressed, and says nothing
+    // either, so each one is reported here
+    for (const std::string& command : unhandled()) {
+        logger_->get()->error("{} is bound to a key, but nothing handles it", command);
+    }
+    return true;
 }
 
 /**
@@ -231,9 +248,43 @@ bool Engine::shutdown() {
 /**
  **/
 void Engine::command(const v3d::event::Event& event) {
-    if (event.str() == "ui::quit") {
-        quit();
+    if (!commands_.invoke(event)) {
+        logger_->get()->warn("nothing handles {}", event.str());
     }
+}
+
+/**
+ **/
+v3d::event::Commands& Engine::commands() noexcept {
+    return commands_;
+}
+
+/**
+ **/
+const v3d::event::Commands& Engine::commands() const noexcept {
+    return commands_;
+}
+
+/**
+ **/
+std::vector<std::string> Engine::unhandled() const {
+    if (!bindings_) {
+        return std::vector<std::string>();
+    }
+    return commands_.unhandled(bindings_->commands());
+}
+
+/**
+ **/
+std::vector<std::string> Engine::unhandled(const boost::json::object& document) const {
+    // the bindings install what they read into an event engine, so they are given one of
+    // their own rather than the one the loop routes through
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    v3d::event::Bindings bindings(boost::make_shared<v3d::event::Engine>(dispatcher), boost::make_shared<v3d::log::Logger>());
+    if (!bindings.load(document)) {
+        return std::vector<std::string>{ "mappings" };
+    }
+    return commands_.unhandled(bindings.commands());
 }
 
 /**

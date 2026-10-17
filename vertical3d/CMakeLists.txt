@@ -15,7 +15,6 @@ add_executable("vertical3d"
 	"src/scene/Project.h" "src/scene/Project.cxx"
 
 	"src/command/Command.h"
-	"src/command/CommandDirectory.h" "src/command/CommandDirectory.cxx"
 	"src/command/CommandStack.h" "src/command/CommandStack.cxx"
 	"src/command/CreateCommand.h" "src/command/CreateCommand.cxx"
 	"src/command/Placement.h" "src/command/Placement.cxx"

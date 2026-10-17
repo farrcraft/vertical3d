@@ -49,6 +49,13 @@ std::vector<Event> Bindings::sources(std::string_view command) const {
     return mapper_->sources(command);
 }
 
+std::vector<std::string> Bindings::commands() const {
+    if (!mapper_) {
+        return std::vector<std::string>();
+    }
+    return mapper_->destinations();
+}
+
 bool Bindings::build() {
     // every member is read through the checked reads, which return nothing for a member that is
     // missing or of the wrong type. A document this does not understand has to come back as a

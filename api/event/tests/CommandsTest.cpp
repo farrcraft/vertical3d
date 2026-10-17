@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Commands.h>
 #include <api/event/Context.h>
 #include <api/event/Event.h>
 #include <api/event/State.h>
-#include <vertical3d/src/command/CommandDirectory.h>
 
 #include <string>
 #include <vector>
@@ -28,13 +28,13 @@ v3d::event::Event command(const std::string& context, const std::string& name, v
 
 };  // namespace
 
-BOOST_AUTO_TEST_SUITE(commanddirectory_test)
+BOOST_AUTO_TEST_SUITE(commands_test)
 
 /**
  * A handler is found by the event's identity, which is its context and name together.
  **/
-BOOST_AUTO_TEST_CASE(commanddirectory_invokes_by_identity) {
-    v3d::editor::CommandDirectory directory;
+BOOST_AUTO_TEST_CASE(commands_invokes_by_identity) {
+    v3d::event::Commands directory;
     int ran = 0;
 
     BOOST_CHECK(directory.add("create::poly::cube", [&ran](const v3d::event::Event&) { ran++; }));
@@ -48,8 +48,8 @@ BOOST_AUTO_TEST_CASE(commanddirectory_invokes_by_identity) {
 /**
  * The context is part of the name, so the same leaf in two contexts is two commands.
  **/
-BOOST_AUTO_TEST_CASE(commanddirectory_separates_contexts) {
-    v3d::editor::CommandDirectory directory;
+BOOST_AUTO_TEST_CASE(commands_separates_contexts) {
+    v3d::event::Commands directory;
     int edit = 0;
     int view = 0;
 
@@ -65,8 +65,8 @@ BOOST_AUTO_TEST_CASE(commanddirectory_separates_contexts) {
  * An unknown command runs nothing and invoke() returns false, so a menu item naming an
  * unregistered command can be reported rather than failing silently.
  **/
-BOOST_AUTO_TEST_CASE(commanddirectory_reports_an_unknown_command) {
-    v3d::editor::CommandDirectory directory;
+BOOST_AUTO_TEST_CASE(commands_reports_an_unknown_command) {
+    v3d::event::Commands directory;
     directory.add("create::poly::cube", [](const v3d::event::Event&) { });
 
     BOOST_CHECK(!directory.invoke(command("timeline", "playback::play", v3d::event::State::Pressed)));
@@ -78,8 +78,8 @@ BOOST_AUTO_TEST_CASE(commanddirectory_reports_an_unknown_command) {
  * two handlers for one command is a failure at startup rather than one of them silently
  * never running.
  **/
-BOOST_AUTO_TEST_CASE(commanddirectory_refuses_a_duplicate) {
-    v3d::editor::CommandDirectory directory;
+BOOST_AUTO_TEST_CASE(commands_refuses_a_duplicate) {
+    v3d::event::Commands directory;
     int first = 0;
     int second = 0;
 
@@ -96,20 +96,20 @@ BOOST_AUTO_TEST_CASE(commanddirectory_refuses_a_duplicate) {
 /**
  * An empty name and an empty handler are both refused.
  **/
-BOOST_AUTO_TEST_CASE(commanddirectory_refuses_nothing_to_register) {
-    v3d::editor::CommandDirectory directory;
+BOOST_AUTO_TEST_CASE(commands_refuses_nothing_to_register) {
+    v3d::event::Commands directory;
 
     BOOST_CHECK(!directory.add("", [](const v3d::event::Event&) { }));
-    BOOST_CHECK(!directory.add("ui::quit", v3d::editor::CommandDirectory::Handler()));
-    BOOST_CHECK(!directory.addPress("ui::quit", v3d::editor::CommandDirectory::PressHandler()));
+    BOOST_CHECK(!directory.add("ui::quit", v3d::event::Commands::Handler()));
+    BOOST_CHECK(!directory.addPress("ui::quit", v3d::event::Commands::PressHandler()));
     BOOST_CHECK_EQUAL(directory.size(), 0U);
 }
 
 /**
  * A handler sees the state, so a command bound to both edges of a key can tell them apart.
  **/
-BOOST_AUTO_TEST_CASE(commanddirectory_passes_the_state_through) {
-    v3d::editor::CommandDirectory directory;
+BOOST_AUTO_TEST_CASE(commands_passes_the_state_through) {
+    v3d::event::Commands directory;
     int held = 0;
 
     directory.add("view::camera::zoom", [&held](const v3d::event::Event& event) {
@@ -127,8 +127,8 @@ BOOST_AUTO_TEST_CASE(commanddirectory_passes_the_state_through) {
  * the release or on a held key's repeat. Those are still handled, so the command does not
  * report as unknown.
  **/
-BOOST_AUTO_TEST_CASE(commanddirectory_ignores_a_release_of_a_press_command) {
-    v3d::editor::CommandDirectory directory;
+BOOST_AUTO_TEST_CASE(commands_ignores_a_release_of_a_press_command) {
+    v3d::event::Commands directory;
     int ran = 0;
 
     directory.addPress("create::poly::cube", [&ran]() { ran++; });
@@ -153,8 +153,8 @@ BOOST_AUTO_TEST_CASE(commanddirectory_ignores_a_release_of_a_press_command) {
  * The directory lists every registered command, so a menu definition can be checked
  * against it.
  **/
-BOOST_AUTO_TEST_CASE(commanddirectory_lists_its_names_in_order) {
-    v3d::editor::CommandDirectory directory;
+BOOST_AUTO_TEST_CASE(commands_lists_its_names_in_order) {
+    v3d::event::Commands directory;
     directory.addPress("view::show::grid", []() { });
     directory.addPress("create::poly::cube", []() { });
     directory.addPress("edit::undo", []() { });
@@ -167,11 +167,11 @@ BOOST_AUTO_TEST_CASE(commanddirectory_lists_its_names_in_order) {
 }
 
 /**
- * An event with no context is named by its leaf alone. Nothing the editor binds arrives
- * that way, but the directory still keys on the event's identity.
+ * An event with no context is named by its leaf alone. Nothing a binding sends arrives that
+ * way, but the registry still keys on the event's identity.
  **/
-BOOST_AUTO_TEST_CASE(commanddirectory_invokes_a_contextless_event) {
-    v3d::editor::CommandDirectory directory;
+BOOST_AUTO_TEST_CASE(commands_invokes_a_contextless_event) {
+    v3d::event::Commands directory;
     int ran = 0;
     directory.addPress("quit", [&ran]() { ran++; });
 
@@ -179,6 +179,49 @@ BOOST_AUTO_TEST_CASE(commanddirectory_invokes_a_contextless_event) {
     event.state(v3d::event::State::Pressed);
     BOOST_CHECK(directory.invoke(event));
     BOOST_CHECK_EQUAL(ran, 1);
+}
+
+/**
+ * A command read by asking whether its key is held is registered with no handler. Its event
+ * is handled and runs nothing, so it does not report as unknown.
+ **/
+BOOST_AUTO_TEST_CASE(commands_handles_a_held_command) {
+    v3d::event::Commands directory;
+
+    BOOST_CHECK(directory.addHeld("pong::leftPaddleUp"));
+    BOOST_CHECK(directory.has("pong::leftPaddleUp"));
+    BOOST_CHECK(directory.invoke(command("pong", "leftPaddleUp", v3d::event::State::Pressed)));
+    BOOST_CHECK(!directory.addHeld("pong::leftPaddleUp"));
+}
+
+/**
+ * A removed command is no longer handled, and its handler does not run.
+ **/
+BOOST_AUTO_TEST_CASE(commands_forgets_a_removed_command) {
+    v3d::event::Commands directory;
+    int ran = 0;
+    directory.addPress("ui::menuNext", [&ran]() { ran++; });
+
+    BOOST_CHECK(directory.remove("ui::menuNext"));
+    BOOST_CHECK(!directory.invoke(command("ui", "menuNext", v3d::event::State::Pressed)));
+    BOOST_CHECK_EQUAL(ran, 0);
+    BOOST_CHECK(!directory.remove("ui::menuNext"));
+}
+
+/**
+ * The commands nothing handles are the ones in the list that are not registered, in the
+ * list's order.
+ **/
+BOOST_AUTO_TEST_CASE(commands_lists_what_nothing_handles) {
+    v3d::event::Commands directory;
+    directory.addPress("ui::quit", []() { });
+    directory.addHeld("odyssey::moveForward");
+
+    const std::vector<std::string> missing =
+        directory.unhandled({ "odyssey::moveUp", "ui::quit", "pong::toggleFS", "odyssey::moveForward" });
+    BOOST_REQUIRE_EQUAL(missing.size(), 2U);
+    BOOST_CHECK_EQUAL(missing[0], "odyssey::moveUp");
+    BOOST_CHECK_EQUAL(missing[1], "pong::toggleFS");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -75,11 +75,6 @@ class Engine final : public v3d::engine::Engine {
 
  private:
     /**
-     * Handle a mapped event, one of the destinations named in data/mappings.json.
-     **/
-    void handleEvent(const v3d::event::Event& event);
-
-    /**
      * Track the cursor. A click carries no position of its own, so the last motion is
      * where the click happened.
      **/
@@ -111,8 +106,7 @@ class Engine final : public v3d::engine::Engine {
     glm::vec2 cursor_{0.0f, 0.0f};
     boost::shared_ptr<odyssey::render::Renderer> renderer_;
     boost::shared_ptr<odyssey::system::Movement> movementSystem_;
-    // the dispatcher holds a delegate to this object; these let it go when the object does
-    entt::scoped_connection events_;
+    // the dispatcher holds a delegate to this object; this lets it go when the object does
     entt::scoped_connection motion_;
 };
 

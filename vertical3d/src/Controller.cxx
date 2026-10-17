@@ -43,6 +43,7 @@ Controller::Controller(const std::string& path) :
     projectPath_(boost::filesystem::path(path) / "project.json"),
     cursor_(0.0f, 0.0f),
     uiGrab_(false) {
+    registerCommands();
 }
 
 /**
@@ -57,7 +58,7 @@ bool Controller::start() {
 
     scene_ = boost::make_shared<Scene>();
     project_ = boost::make_shared<Project>(logger());
-    commands_ = boost::make_shared<CommandStack>();
+    history_ = boost::make_shared<CommandStack>();
 
     profiles_ = boost::make_shared<v3d::config::CameraProfiles>(logger());
     const boost::json::object* cameras = document(v3d::config::Type::Camera);
@@ -81,9 +82,8 @@ bool Controller::start() {
     cameraTool_ = boost::make_shared<CameraControlTool>();
     selectTool_ = boost::make_shared<SelectTool>(scene_, logger());
     transformTool_ = boost::make_shared<TransformTool>(scene_, logger());
-    transformTool_->commands(commands_);
+    transformTool_->commands(history_);
 
-    events_ = dispatcher()->sink<v3d::event::Event>().connect<&Controller::handleEvent>(*this);
     motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
     resize_ = dispatcher()->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
 
@@ -97,8 +97,16 @@ bool Controller::start() {
     }
     renderer_->ui(vgui_);
 
-    // after the tools and the renderer, because every handler closes over one of them
-    registerCommands();
+    for (const std::string& name : refused_) {
+        logger()->get()->error("{} is registered twice", name);
+    }
+    std::size_t named = 0;
+    for (const std::string& name : commands().names()) {
+        if (menu_ && menu_->find(name)) {
+            named++;
+        }
+    }
+    logger()->get()->info("{} commands registered, {} of them on a menu", commands().size(), named);
 
     layoutViews(window()->width(), window()->height());
     syncUi();
@@ -210,16 +218,24 @@ void Controller::syncUi() {
 /**
  **/
 void Controller::registerCommands() {
-    // a refused registration means the name is already taken and the second handler
-    // would never run, so it is logged as an error
-    auto press = [this](const std::string& name, const CommandDirectory::PressHandler& handler) {
-        if (!directory_.addPress(name, handler)) {
-            logger()->get()->error("{} is registered twice", name);
+    // a check item shows what the editor holds rather than remembering its own state, so
+    // whatever a command changed is read back after it runs
+    auto press = [this](const std::string& name, const v3d::event::Commands::PressHandler& handler) {
+        const bool added = commands().addPress(name, [this, handler]() {
+            handler();
+            syncUi();
+        });
+        if (!added) {
+            refused_.push_back(name);
         }
     };
-    auto hold = [this](const std::string& name, const CommandDirectory::Handler& handler) {
-        if (!directory_.add(name, handler)) {
-            logger()->get()->error("{} is registered twice", name);
+    auto hold = [this](const std::string& name, const v3d::event::Commands::Handler& handler) {
+        const bool added = commands().add(name, [this, handler](const v3d::event::Event& event) {
+            handler(event);
+            syncUi();
+        });
+        if (!added) {
+            refused_.push_back(name);
         }
     };
 
@@ -275,19 +291,6 @@ void Controller::registerCommands() {
 
     press("edit::undo", [this]() { history("undo"); });
     press("edit::redo", [this]() { history("redo"); });
-
-    // ui is the context every app in the repository puts its application level commands in
-    press("ui::quit", [this]() {
-        quit();
-    });
-
-    std::size_t named = 0;
-    for (const std::string& name : directory_.names()) {
-        if (menu_ && menu_->find(name)) {
-            named++;
-        }
-    }
-    logger()->get()->info("{} commands registered, {} of them on a menu", directory_.size(), named);
 }
 
 /**
@@ -309,7 +312,7 @@ void Controller::createPoly(const std::string& name) {
     // the command does the creating, so making a mesh and redoing one run the same code
     boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, mesh, name);
     command->redo();
-    commands_->push(command);
+    history_->push(command);
     logger()->get()->info("created a {} - {} meshes", name, scene_->count());
 }
 
@@ -318,9 +321,9 @@ void Controller::createPoly(const std::string& name) {
 void Controller::history(const std::string& name) {
     boost::shared_ptr<Command> command;
     if (name == "undo") {
-        command = commands_->undo();
+        command = history_->undo();
     } else if (name == "redo") {
-        command = commands_->redo();
+        command = history_->redo();
     } else {
         return;
     }
@@ -374,7 +377,7 @@ void Controller::openProject() {
             projectPath_ = chosen;
             // the history describes the scene that was replaced, so none of it can be
             // undone against the new one
-            commands_->clear();
+            history_->clear();
         });
 }
 
@@ -559,18 +562,6 @@ void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
     if (selectTool_) {
         selectTool_->motion(cursor_);
     }
-}
-
-/**
- **/
-void Controller::handleEvent(const v3d::event::Event& event) {
-    if (!directory_.invoke(event)) {
-        logger()->get()->warn("no command is registered as {}", event.str());
-        return;
-    }
-    // a check item shows what the editor holds rather than remembering its own state, so
-    // whatever the command changed is read back here
-    syncUi();
 }
 
 };  // namespace v3d::editor
