@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -29,6 +30,15 @@ namespace {
 struct Sounds final {
     void heard(const v3d::event::kind::Sound& sound) {
         clips_.push_back(std::string(sound.clip()));
+        pans_.push_back(sound.pan());
+    }
+
+    /**
+     * @return the pan the first sound of a clip was played at, or 0 when none was
+     **/
+    float pan(const std::string& clip) const {
+        const auto found = std::ranges::find(clips_, clip);
+        return found == clips_.end() ? 0.0f : pans_[static_cast<std::size_t>(found - clips_.begin())];
     }
 
     bool has(const std::string& clip) const {
@@ -36,6 +46,7 @@ struct Sounds final {
     }
 
     std::vector<std::string> clips_;
+    std::vector<float> pans_;
 };
 
 /**
@@ -139,6 +150,26 @@ BOOST_AUTO_TEST_CASE(pong_scene_right_paddle_collision_test) {
 
     BOOST_TEST((fixture.scene_.ball().direction() == glm::vec2(-60.0f, 0.0f)));
     BOOST_TEST(fixture.sounds_.has("hit"));
+}
+
+/**
+ * A sound is panned to the side of the court it happens on. A hit off the left paddle and a
+ * point at the left edge sound from the left, and the same on the right from the right.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_pans_each_sound_to_its_side_test) {
+    const auto heard = [](const glm::vec2& at, const glm::vec2& heading, const std::string& clip) {
+        Fixture fixture;
+        fixture.scene_.ball().position(at);
+        fixture.scene_.ball().direction(heading);
+        fixture.scene_.tick(STEP);
+        BOOST_TEST_REQUIRE(fixture.sounds_.has(clip));
+        return fixture.sounds_.pan(clip);
+    };
+
+    BOOST_TEST(heard(glm::vec2(20.0f, 300.0f), glm::vec2(-60.0f, 0.0f), "hit") < -0.9f);
+    BOOST_TEST(heard(glm::vec2(780.0f, 300.0f), glm::vec2(60.0f, 0.0f), "hit") > 0.9f);
+    BOOST_TEST(heard(glm::vec2(5.0f, 100.0f), glm::vec2(-60.0f, 0.0f), "score") < -0.9f);
+    BOOST_TEST(heard(glm::vec2(795.0f, 100.0f), glm::vec2(60.0f, 0.0f), "score") > 0.9f);
 }
 
 /**

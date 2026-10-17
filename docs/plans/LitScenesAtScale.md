@@ -195,13 +195,13 @@ sound would otherwise keep its old gains. Any other pan calls `MIX_SetTrackStere
 
 #### Step 9 — pong pans its sounds
 
-**Open.**
+**Open: the listening check.** The code has landed. `event::kind::Sound` takes an optional pan,
+and `audio::Engine` plays the clip with it. pong pans its hit, score and bounce sounds by the
+ball's x across the court, from -1 at the left edge to 1 at the right. The scene test checks
+that a hit and a point on each side carry a pan towards that side.
 
-- `event::kind::Sound` gains an optional pan, and `audio::Engine`'s handler passes it to `Play`.
-- pong pans its paddle hit and its score by the side of the screen they happen on. The caller
-  converts the position, because pong's camera decides where left is.
-- pong's scene test checks the pan each event carries.
-- Run pong and listen. The log stays free of validation and audio messages.
+Left to do: run pong and listen for a hit off each paddle coming from that paddle's side. The
+bounce sound has no clip, which is a known finding in TODO.md, so it is silent either way.
 
 #### Step 10 — Close phase 3
 

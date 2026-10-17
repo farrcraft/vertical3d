@@ -28,7 +28,8 @@ The sound document lists clips by id:
   asset. The manager must have had `audio::registerLoaders()` called on it. A clip whose source
   is not a file can be loaded with the overload of `load()` that takes a `Resolve` callback.
 - To play a one-shot from anywhere, publish a sound event:
-  `dispatcher()->trigger(v3d::event::kind::Sound("hit"))`. The audio engine listens for it.
+  `dispatcher()->trigger(v3d::event::kind::Sound("hit"))`. The audio engine listens for it. A
+  second argument pans it: `Sound("hit", -0.5f)` sounds left of centre.
 - `playClip(id)` also plays a one-shot. `play(id, how)` returns a `Voice` for a sound you need
   to control. `audio::Play` sets the bus, the loop count (-1 loops until stopped), a fade-in,
   a gain and a pan.

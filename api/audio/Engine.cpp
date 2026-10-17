@@ -80,7 +80,9 @@ bool Engine::initialize() {
 }
 
 void Engine::soundEvent(const v3d::event::kind::Sound& sound) {
-    if (!playClip(sound.clip())) {
+    Play how;
+    how.pan = sound.pan();
+    if (play(sound.clip(), how) == 0) {
         logger_->get()->error("unable to play clip: {}", sound.clip());
     }
 }

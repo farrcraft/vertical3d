@@ -39,6 +39,14 @@ v3d::type::geometry::Bound2D paddleReach(Paddle& paddle, float left, float right
     return v3d::type::geometry::Bound2D(left, top, right - left, paddle.length());
 }
 
+/**
+ * The pan of a point on the court: -1 at the left edge, 1 at the right. The court is drawn
+ * with x running left to right across the window, so left on the court is left on screen.
+ **/
+float across(float x) {
+    return x / PongScene::width * 2.0f - 1.0f;
+}
+
 };  // namespace
 
 PongScene::PongScene(entt::registry* registry, const boost::shared_ptr<entt::dispatcher>& dispatcher) :
@@ -160,7 +168,7 @@ void PongScene::returnBall(Paddle& paddle, const glm::vec2& ballPosition, float 
     }
 
     ball_.direction(returned);
-    dispatcher_->trigger(v3d::event::kind::Sound("hit"));
+    dispatcher_->trigger(v3d::event::kind::Sound("hit", across(ballPosition.x)));
 }
 
 void PongScene::scorePoint(const glm::vec2& ballPosition) {
@@ -172,12 +180,12 @@ void PongScene::scorePoint(const glm::vec2& ballPosition) {
         right_.score(right_.score() + 1);
         victor = -1.0f;
         reset_ball = true;
-        dispatcher_->trigger(v3d::event::kind::Sound("score"));
+        dispatcher_->trigger(v3d::event::kind::Sound("score", across(ballPosition[0])));
     } else if (ballPosition[0] >= (width - (gameState_.ballSize() / 2.0f))) {
         left_.score(left_.score() + 1);
         victor = 1.0f;
         reset_ball = true;
-        dispatcher_->trigger(v3d::event::kind::Sound("score"));
+        dispatcher_->trigger(v3d::event::kind::Sound("score", across(ballPosition[0])));
     }
     if (!reset_ball) {
         return;
@@ -215,7 +223,7 @@ void PongScene::bounceWalls(const glm::vec2& ballPosition) {
     }
     direction.y = -direction.y;
     ball_.direction(direction);
-    dispatcher_->trigger(v3d::event::kind::Sound("bounce"));
+    dispatcher_->trigger(v3d::event::kind::Sound("bounce", across(ballPosition.x)));
 }
 
 void PongScene::movePaddles(float step) {
