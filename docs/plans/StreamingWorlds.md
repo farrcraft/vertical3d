@@ -108,7 +108,10 @@ states the split.
 
 #### Step 3 — The worker
 
-**Open.** Needs step 1.
+**Closed.** `asset::Worker` runs jobs on one thread in posting order, and hands each result or
+exception to a completion that runs in `poll()`. The asset suite tests the order, the thread each
+side runs on, exceptions both ways, a completion that posts again, and destruction.
+[Assets.md](../api/Assets.md#loading-on-a-worker-thread) states the rules.
 
 - A worker runs jobs on one thread and holds each result until the main thread polls.
 - `poll()` runs on the main thread. It hands back each finished result and runs its completion

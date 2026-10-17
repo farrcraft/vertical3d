@@ -6,6 +6,7 @@ v3d_add_api_library(asset
 	"Manager.h" "Manager.cpp"
 	"Migration.h" "Migration.cpp"
 	"Type.h"
+	"Worker.h" "Worker.cpp"
 	"Writer.h" "Writer.cpp"
 	"kind/Json.h" "kind/Json.cpp"
 	"kind/Text.h" "kind/Text.cpp"

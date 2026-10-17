@@ -43,6 +43,44 @@ auto model = assets()->load<v3d::asset::media::kind::Model>("knight.glb");
 To load from somewhere else, build a second manager on that directory, for example on
 `engine::userPath()` for a saved game. Register the loaders it needs on it first.
 
+## Loading on a worker thread
+
+`asset::Worker` ([api/asset/Worker.h](../../api/asset/Worker.h)) runs jobs on one thread of its
+own, in the order they are posted. Each job's result comes back to the thread that polls it.
+
+```cpp
+worker_.post(
+    [assets = assets(), name]() { return assets->load<v3d::asset::media::kind::Image>(name); },
+    [this, name](std::expected<boost::shared_ptr<v3d::asset::media::kind::Image>, std::exception_ptr> result) {
+        if (result && *result) {
+            upload(name, *result);
+        }
+    });
+
+void MyApp::tick(unsigned int delta) {
+    worker_.poll();  // runs every finished job's completion, here
+}
+```
+
+- **A job runs on the worker thread.** It may read and decode files, through the app's manager
+  or another. It must not call Vulkan, change an ECS registry, or use a realtime registry such
+  as `MeshRegistry`, because the main thread uses all of those unguarded.
+- **A completion runs inside `poll()`**, on the thread that calls it, in the order the jobs were
+  posted. It receives a `std::expected` holding the job's result, or the exception the job
+  threw. A job returns a value; it cannot return `void`.
+- **Poll once a frame, from `tick()`.** A result therefore arrives at least one frame after its
+  job is posted. `outstanding()` counts the jobs whose completions have not run, for a loading
+  screen.
+- **A completion that throws** stops the poll, and the exception reaches the caller. The
+  completions after it run on the next poll.
+- **Destroying a worker** drops the jobs that have not started and the completions that have not
+  run. The job that is running finishes, and the thread is joined, so a long job delays the
+  destructor.
+- Whatever a job captures must outlive it. A job that captures `this` is unsafe unless the
+  worker is destroyed before the object.
+
+Background: [ADR-0086](../adr/0086-loading-one-worker-thread-polled-from-the-main-thread.md)
+
 ## Loaders
 
 A manager loads only file types that have a loader registered on it. Each loader is registered

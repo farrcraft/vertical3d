@@ -9,7 +9,8 @@ v3d_add_test(asset
 	"JsonReadTest.cpp"
 	"WriterTest.cpp"
 	"MigrationTest.cpp"
-	"TextTest.cpp")
+	"TextTest.cpp"
+	"WorkerTest.cpp")
 
 target_link_libraries(v3dtest_asset PRIVATE v3dlib_asset v3dlib_log ${Boost_LIBRARIES})
 
