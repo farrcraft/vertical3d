@@ -146,15 +146,15 @@ Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4
 terrain legend; the rest of a map belongs to the game. [Grid.md](api/Grid.md) describes the
 library. [StreamingWorlds](plans/StreamingWorlds.md) takes the first entry below.
 
-[] **A world cannot be made of regions.**
+[] **No game in the tree is made of regions.**
 
-- A `TileGrid` is one rectangle centred on the world origin.
-- A world of regions needs each region offset in the world, and loaded and released with its
-  sprite sheets. There is no way to place a grid like that.
-- A region could be a grid with an origin, a grid of grids, or a game's list of grids. The first
-  game with regions decides. A world origin on `TileGrid` is the most likely answer, and it
-  changes every conversion between world and tile coordinates.
-- Background: [LargeWorlds, step 7](plans/completed/LargeWorlds.md#step-7--regions).
+- A region is a grid placed by its corner, and [Grid.md](api/Grid.md#regions) states the rules.
+  No game uses one yet, so loading a region while the game runs, and crossing from one region to
+  the next, have never been exercised.
+- odyssey is the only game with a grid. Its player, sight and renderer work in one grid's tile
+  coordinates, so splitting its map would change how the game places and draws everything.
+- A route or a line of sight across regions is the game's to join. Nothing in the api does it.
+- Due when a game's world is larger than one board.
 
 [] **Remembered sight belongs in `api/grid`.**
 

@@ -5,7 +5,9 @@
 
 #include "TileGrid.h"
 
+#include <algorithm>
 #include <cmath>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -43,17 +45,9 @@ TileGrid::TileGrid(int width, int height, float tileSize, const glm::vec3& corne
     height_(height),
     tileSize_(tileSize),
     corner_(corner.x, 0.0f, corner.z) {
-    if (width <= 0 || height <= 0) {
-        throw std::invalid_argument("TileGrid dimensions must be positive, got " +
-            std::to_string(width) + "x" + std::to_string(height));
-    }
-    // a NaN fails every comparison, so the test is written to fail it
-    if (!(tileSize > 0.0f) || !std::isfinite(tileSize)) {
-        throw std::invalid_argument("TileGrid tile size must be a finite positive number, got " + std::to_string(tileSize));
-    }
-    if (!std::isfinite(corner.x) || !std::isfinite(corner.z)) {
-        throw std::invalid_argument("TileGrid corner must be finite, got " + std::to_string(corner.x) + ", " +
-            std::to_string(corner.z));
+    const std::optional<std::string> refused = refusal(width, height, tileSize, corner);
+    if (refused) {
+        throw std::invalid_argument("TileGrid " + *refused);
     }
 
     const std::size_t tiles = static_cast<std::size_t>(width) * static_cast<std::size_t>(height);
@@ -87,6 +81,23 @@ TileCoord TileGrid::worldToTile(const glm::vec3& position) const {
     const glm::vec3 corner = worldMin();
     return TileCoord{ static_cast<int>(std::floor((position.x - corner.x) / tileSize_)),
         static_cast<int>(std::floor((position.z - corner.z) / tileSize_)) };
+}
+
+std::optional<std::string> TileGrid::refusal(int width, int height, float tileSize, const glm::vec3& corner) {
+    if (width <= 0 || height <= 0) {
+        return "dimensions must be positive, got " + std::to_string(width) + "x" + std::to_string(height);
+    }
+    // a NaN fails every comparison, so the test is written to fail it
+    if (!(tileSize > 0.0f) || !std::isfinite(tileSize)) {
+        return "tile size must be a finite positive number, got " + std::to_string(tileSize);
+    }
+    if (!std::isfinite(static_cast<float>(std::max(width, height)) * tileSize)) {
+        return "tile size " + std::to_string(tileSize) + " makes a side too long to hold";
+    }
+    if (!std::isfinite(corner.x) || !std::isfinite(corner.z)) {
+        return "corner must be finite, got " + std::to_string(corner.x) + ", " + std::to_string(corner.z);
+    }
+    return std::nullopt;
 }
 
 glm::vec3 TileGrid::worldMin() const {

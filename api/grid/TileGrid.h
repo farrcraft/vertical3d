@@ -9,6 +9,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -71,8 +73,7 @@ class TileGrid {
      * @param width tiles along world +X
      * @param height tiles along world +Z
      * @param tileSize tile edge length in world units
-     * @throws std::invalid_argument if any dimension is not positive, or the tile size is not a
-     *         finite positive number
+     * @throws std::invalid_argument with the reason refusal() gives
      **/
     TileGrid(int width, int height, float tileSize = DEFAULT_TILE_SIZE);
 
@@ -82,10 +83,20 @@ class TileGrid {
      *
      * @param corner the corner's world position. Its y is ignored, because the grid lies on the
      *        Y = 0 plane
-     * @throws std::invalid_argument for what the other constructor refuses, or a corner whose x
-     *         or z is not finite
+     * @throws std::invalid_argument with the reason refusal() gives
      **/
     TileGrid(int width, int height, float tileSize, const glm::vec3& corner);
+
+    /**
+     * Why a grid cannot be made of these, or nothing when it can.
+     *
+     * A grid is refused for a dimension that is not positive, or a tile size that is not a finite
+     * positive number. It is also refused for a tile size that makes a side too long to hold in a
+     * float, or a corner whose x or z is not finite.
+     *
+     * @param corner the corner a placed grid is given; a centred grid passes the origin
+     **/
+    static std::optional<std::string> refusal(int width, int height, float tileSize, const glm::vec3& corner);
 
     int width() const;
     int height() const;

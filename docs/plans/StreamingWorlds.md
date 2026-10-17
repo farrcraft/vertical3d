@@ -240,8 +240,9 @@ case. No app in the tree draws a shadowed scene, so no screenshot was taken.
 [Lighting.md](../api/rendering/Lighting.md) states the rules, and the TODO.md entry keeps only
 cascaded shadow maps.
 
-- Add a fit to the part of the ground the camera sees, out to a shadow distance the caller
-  gives. It uses `type::Frustum`.
+- Add a fit to the camera's view volume, out to a shadow distance the caller gives. It encloses
+  the whole volume rather than the ground within it, and un-projects the camera's matrix rather
+  than reading `type::Frustum`, which does not give its corners.
 - Snap the fitted centre to the shadow map's texel grid. Without the snap, shadow edges shimmer
   as the camera moves.
 - The existing fit reads each caster's drawn position, interpolated between steps, rather than its

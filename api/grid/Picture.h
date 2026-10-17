@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+#include <glm/vec3.hpp>
+
 namespace v3d::grid {
 
 /**
@@ -42,10 +44,12 @@ struct Picture final {
  * @param rows the picture, row y of it being tile row y, all the same length
  * @param legend what each glyph is made of
  * @param tileSize the grid's tile edge length in world units
- * @return the grid, or no grid and the reason when the tile size is not positive, there are
- *         no rows, a row is empty, or the rows differ in length. It never throws for these.
+ * @param corner where the grid's minimum corner is placed, for a region; the grid is centred on
+ *        the origin without one
+ * @return the grid, or no grid and the reason when there are no rows, a row is empty, the rows
+ *         differ in length, or TileGrid::refusal() refuses the grid. It never throws for these.
  **/
 Picture fromPicture(const std::vector<std::string>& rows, const std::map<char, Terrain>& legend,
-    float tileSize = TileGrid::DEFAULT_TILE_SIZE);
+    float tileSize = TileGrid::DEFAULT_TILE_SIZE, const std::optional<glm::vec3>& corner = std::nullopt);
 
 };  // namespace v3d::grid

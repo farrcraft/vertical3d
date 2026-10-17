@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
+#include <glm/vec3.hpp>
 
 using v3d::grid::Cover;
 using v3d::grid::Terrain;
@@ -102,16 +103,38 @@ BOOST_AUTO_TEST_CASE(a_picture_that_is_not_a_rectangle_is_refused) {
 }
 
 /**
- * A tile size that is zero, negative or NaN is refused with a reason rather than thrown.
+ * A tile size that is zero, negative, not a number, infinite, or too large for the grid's sides
+ * is refused with a reason rather than thrown.
  **/
 BOOST_AUTO_TEST_CASE(a_tile_size_that_is_not_positive_is_refused) {
-    const float sizes[] = {0.0f, -1.0f, std::numeric_limits<float>::quiet_NaN()};
+    const float sizes[] = {0.0f, -1.0f, std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(),
+        std::numeric_limits<float>::max()};
     for (const float size : sizes) {
         v3d::grid::Picture picture;
-        BOOST_CHECK_NO_THROW(picture = v3d::grid::fromPicture({"."}, legend(), size));
+        // two tiles wide, so the largest float makes a side too long to hold
+        BOOST_CHECK_NO_THROW(picture = v3d::grid::fromPicture({".."}, legend(), size));
         BOOST_CHECK(!picture.grid.has_value());
         BOOST_CHECK(!picture.error.empty());
     }
+}
+
+/**
+ * A picture given a corner is placed by it, and a corner that is not finite is refused rather
+ * than thrown.
+ **/
+BOOST_AUTO_TEST_CASE(a_picture_is_placed_by_its_corner) {
+    const v3d::grid::Picture placed = v3d::grid::fromPicture({"..", ".."}, legend(), 1.0f, glm::vec3(20.0f, 0.0f, -4.0f));
+    if (!placed.grid) {
+        BOOST_ERROR("the picture was refused: " << placed.error);
+        return;
+    }
+    BOOST_CHECK(placed.grid->worldMin() == glm::vec3(20.0f, 0.0f, -4.0f));
+
+    v3d::grid::Picture refused;
+    BOOST_CHECK_NO_THROW(refused = v3d::grid::fromPicture({"."}, legend(), 1.0f,
+        glm::vec3(std::numeric_limits<float>::infinity(), 0.0f, 0.0f)));
+    BOOST_CHECK(!refused.grid.has_value());
+    BOOST_CHECK(!refused.error.empty());
 }
 
 /**

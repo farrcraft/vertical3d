@@ -329,24 +329,27 @@ BOOST_AUTO_TEST_CASE(the_view_fit_keeps_its_radius_as_the_camera_moves) {
 
 /**
  * A point fixed in the world falls at the same place within its texel however far the camera
- * slides, so a shadow's edge does not crawl.
+ * slides, so a shadow's edge does not crawl. The light may be built in either hand.
  **/
 BOOST_AUTO_TEST_CASE(the_view_fit_keeps_the_world_on_its_texels) {
     const uint32_t texels = 1024;
     const glm::vec3 point(1.3f, 0.0f, -2.7f);
-    std::vector<glm::vec2> within;
-    for (const float slide : {0.0f, 0.013f, 0.37f, 2.9f}) {
-        const glm::vec3 offset(slide, 0.0f, slide * 0.5f);
-        const glm::mat4 camera = perspective(glm::vec3(3.0f, 10.0f, 12.0f) + offset, offset, 200.0f);
-        const std::optional<shadow::Bounds> fitted = shadow::fitView(camera, 30.0f, towards(), texels);
-        BOOST_REQUIRE(fitted);
-        const glm::vec3 clip = project(shadow::light(towards(), fitted->centre, fitted->radius), point);
-        const glm::vec2 texel = (glm::vec2(clip) + 1.0f) * 0.5f * static_cast<float>(texels);
-        within.emplace_back(texel.x - std::floor(texel.x), texel.y - std::floor(texel.y));
-    }
-    for (const glm::vec2& fraction : within) {
-        BOOST_CHECK_SMALL(fraction.x - within.front().x, 2e-2f);
-        BOOST_CHECK_SMALL(fraction.y - within.front().y, 2e-2f);
+    for (const v3d::type::camera::Profile::Hand hand :
+        {v3d::type::camera::Profile::Hand::UpCrossDirection, v3d::type::camera::Profile::Hand::DirectionCrossUp}) {
+        std::vector<glm::vec2> within;
+        for (const float slide : {0.0f, 0.013f, 0.37f, 2.9f}) {
+            const glm::vec3 offset(slide, 0.0f, slide * 0.5f);
+            const glm::mat4 camera = perspective(glm::vec3(3.0f, 10.0f, 12.0f) + offset, offset, 200.0f);
+            const std::optional<shadow::Bounds> fitted = shadow::fitView(camera, 30.0f, towards(), texels);
+            BOOST_REQUIRE(fitted);
+            const glm::vec3 clip = project(shadow::light(towards(), fitted->centre, fitted->radius, hand), point);
+            const glm::vec2 texel = (glm::vec2(clip) + 1.0f) * 0.5f * static_cast<float>(texels);
+            within.emplace_back(texel.x - std::floor(texel.x), texel.y - std::floor(texel.y));
+        }
+        for (const glm::vec2& fraction : within) {
+            BOOST_CHECK_SMALL(fraction.x - within.front().x, 2e-2f);
+            BOOST_CHECK_SMALL(fraction.y - within.front().y, 2e-2f);
+        }
     }
 }
 

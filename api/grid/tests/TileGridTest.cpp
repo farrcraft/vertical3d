@@ -7,7 +7,9 @@
 #include <api/grid/TileGrid.h>
 
 #include <limits>
+#include <optional>
 #include <stdexcept>
+#include <string>
 
 #include <boost/test/unit_test.hpp>
 
@@ -287,4 +289,18 @@ BOOST_AUTO_TEST_CASE(tilegrid_refuses_what_is_not_finite_test) {
     BOOST_CHECK_THROW(TileGrid(4, 4, 1.0f, glm::vec3(0.0f, 0.0f, -infinity)), std::invalid_argument);
     // the y the grid ignores may be anything
     BOOST_CHECK_NO_THROW(TileGrid(4, 4, 1.0f, glm::vec3(0.0f, nan, 0.0f)));
+}
+
+/**
+ * A tile size large enough that a side of the grid overflows a float is refused for its size,
+ * not for the corner a centred grid works out from it.
+ **/
+BOOST_AUTO_TEST_CASE(tilegrid_refuses_a_side_too_long_to_hold_test) {
+    const float huge = std::numeric_limits<float>::max() / 2.0f;
+
+    const std::optional<std::string> refused = TileGrid::refusal(10, 1, huge, glm::vec3(0.0f));
+    BOOST_REQUIRE(refused);
+    BOOST_CHECK(refused->find("tile size") != std::string::npos);
+    BOOST_CHECK_THROW(TileGrid(10, 1, huge), std::invalid_argument);
+    BOOST_CHECK(!TileGrid::refusal(10, 1, 1.0f, glm::vec3(0.0f)));
 }
