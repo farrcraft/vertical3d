@@ -76,6 +76,10 @@ add_custom_command(TARGET v3dtest_render_device POST_BUILD
 # renderers' shaders belong to v3dlib_render
 v3d_add_shader(v3dtest_render_device "shaders/depth.vert")
 
+# a second vertex stage that differs from depth.vert only in its code, so the pipeline cache case
+# has two pipelines that differ in one field
+v3d_add_shader(v3dtest_render_device "shaders/flat.vert")
+
 # a pipeline that declares a scene set at set 2 and reads nothing else, so the case that binds
 # one can show the set reached the draw
 v3d_add_shader(v3dtest_render_device "shaders/scene.vert")

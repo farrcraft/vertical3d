@@ -215,7 +215,8 @@ back with `vulkan::frame::Capture`. Every case asserts two things:
   hand.
 
 Some cases build a pipeline rather than drawing, because only a device can reject a pipeline
-shape that no renderer in the tree uses.
+shape that no renderer in the tree uses. One of them reads how much the pipeline cache holds after
+each build. It shows that a pipeline asked for twice is compiled once.
 
 Cases that cannot be checked exactly, such as a lit and shadowed scene, a skinned mesh mid-clip,
 or a particle effect, assert validation silence and a few properties. They write what they drew to

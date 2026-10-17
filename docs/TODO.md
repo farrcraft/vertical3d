@@ -302,7 +302,7 @@ Due when one does.
 ## Tests
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.
-[ToolingDebt](plans/ToolingDebt.md) takes the fixture generators and the pipeline cache.
+[ToolingDebt](plans/ToolingDebt.md) takes the fixture generators.
 
 [] **The glTF fixture generators are Python.** The repository holds no Python, and committed
 scripts are TypeScript run by Node. Five generators in `api/asset/tests/data/` write glTF by hand
@@ -314,10 +314,6 @@ decision of its own: keep it as the one exception, or keep only the fixture it w
 [] **Nothing tests a requested model that decodes and does not upload.** `MeshRegistry::poll`
 logs and abandons such a request, but no fixture decodes cleanly and then fails `upload()`'s
 checks, so the branch never runs in a test.
-
-[] **Nothing asserts the pipeline cache.** The device suite covers everything below the
-recorder in `api/render` except the pipeline cache. A test for it would count what was compiled,
-not compare a picture.
 
 [] **Two things need a window or a sound device to test:** `Feature::Window` and
 `audio::Engine::initialize()`. A software Vulkan driver does not help with either.

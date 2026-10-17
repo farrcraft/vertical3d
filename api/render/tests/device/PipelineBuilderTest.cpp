@@ -8,6 +8,7 @@
 #include <api/render/realtime/vulkan/pipeline/Pipeline.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
@@ -37,6 +38,14 @@ const uint32_t vertexShader[] =
 ;  // NOLINT(whitespace/semicolon) - the initialiser it terminates is the include above
 
 /**
+ * The same vertex stage with a different body, for a pipeline that differs from the one
+ * describe() gives in its stage alone.
+ **/
+const uint32_t flatShader[] =
+#include "shaders/flat.vert.inc"
+;  // NOLINT(whitespace/semicolon) - the initialiser it terminates is the include above
+
+/**
  * A builder carrying the one stage and one attribute the shader declares, named so that a
  * failure says which pipeline it was.
  **/
@@ -45,6 +54,28 @@ void describe(Builder* builder) {
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .vertexBinding(0, sizeof(float) * 3)
         .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0);
+}
+
+/**
+ * How many bytes the cache would write out, which grows by an entry each time a build
+ * compiles something the cache did not already hold.
+ **/
+std::size_t held(const v3d::test::Headless& headless, const Cache& cache) {
+    std::size_t bytes = 0;
+    const VkResult result = vkGetPipelineCacheData(headless.device->handle(), cache.handle(), &bytes, nullptr);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Unable to read the size of the pipeline cache");
+    }
+    return bytes;
+}
+
+/**
+ * Build a pipeline against the cache and destroy it, leaving only what the cache kept.
+ **/
+void buildAndDestroy(const v3d::test::Headless& headless, const Builder& builder, const boost::shared_ptr<Cache>& cache) {
+    const Pipeline built = builder.build(cache);
+    vkDestroyPipeline(headless.device->handle(), built.pipeline, nullptr);
+    vkDestroyPipelineLayout(headless.device->handle(), built.layout, nullptr);
 }
 
 };  // namespace
@@ -307,6 +338,50 @@ BOOST_AUTO_TEST_CASE(a_builder_given_no_layout_still_builds_its_own) {
     vkDestroyPipeline(headless.device->handle(), two.pipeline, nullptr);
     vkDestroyPipelineLayout(headless.device->handle(), one.layout, nullptr);
     vkDestroyPipelineLayout(headless.device->handle(), two.layout, nullptr);
+}
+
+/**
+ * A pipeline is compiled into the cache it is built against. Asked for a second time, it adds
+ * nothing to the cache, and a pipeline that differs from it in one field adds an entry of its
+ * own. The case compares no picture. It reads how much the cache holds after each build.
+ *
+ * The field that differs is the vertex stage. A different stage needs a new compile on any
+ * implementation that caches at all. Whether fixed function state such as the cull mode is part
+ * of the cache's key is left to the implementation.
+ *
+ * Covers the base: 3dd24da7 brought the builder's cache argument. Checked by passing a null
+ * cache to vkCreateGraphicsPipelines in build(), which leaves the cache empty and fails this
+ * case.
+ **/
+BOOST_AUTO_TEST_CASE(the_same_pipeline_is_compiled_into_the_cache_once) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
+    const std::size_t empty = held(headless, *cache);
+
+    Builder first(headless.device);
+    describe(&first);
+    first.colourFormat(colourFormat);
+    buildAndDestroy(headless, first, cache);
+    const std::size_t once = held(headless, *cache);
+    BOOST_CHECK_GT(once, empty);
+
+    Builder again(headless.device);
+    describe(&again);
+    again.colourFormat(colourFormat);
+    buildAndDestroy(headless, again, cache);
+    BOOST_CHECK_EQUAL(held(headless, *cache), once);
+
+    Builder other(headless.device);
+    other.name("flat")
+        .shader(VK_SHADER_STAGE_VERTEX_BIT, flatShader, sizeof(flatShader))
+        .vertexBinding(0, sizeof(float) * 3)
+        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0)
+        .colourFormat(colourFormat);
+    buildAndDestroy(headless, other, cache);
+    BOOST_CHECK_GT(held(headless, *cache), once);
+
+    BOOST_CHECK(headless.silent());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

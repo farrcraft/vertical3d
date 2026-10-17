@@ -40,9 +40,12 @@ tolerance to zero. If it is not, say beside the case that lavapipe is the reason
 
 ### Step 3 — A pipeline cache test
 
-**Open.** [TODO.md](../TODO.md#tests), "Nothing asserts the pipeline cache". The test counts what
-was compiled when the same pipeline is asked for twice and when two pipelines differ in one
-field. It compares no picture.
+**Done.** `the_same_pipeline_is_compiled_into_the_cache_once` reads the cache's data size after
+each build. The field that differs is the vertex stage, through a second test shader,
+`flat.vert`. On the authoring GPU, a different cull mode, depth compare, topology or colour
+format also added an entry. Whether lavapipe keys on fixed function state is up to it, so the
+case does not rely on that. The case fails when `build()` passes no cache. It has not yet run on
+lavapipe, so the first CI run on a PR checks it, alongside step 2.
 
 ### Step 4 — The glTF fixture generators in TypeScript
 
