@@ -427,6 +427,10 @@ pass is named after the profile, so the second view overwrites the first.
 [] **Playing no clip with a fade freezes the old pose.** `Playback::advance` returns before the
 fade code when the clip is `none`, so the old clip is blended at weight zero for ever.
 
+[] **pong plays a clip its sounds document does not hold.** `PongScene::bounceWalls` triggers
+`Sound("bounce")`, and `pong/data/sounds.json` names only `hit`, `score` and `victory`. Every
+wall bounce is silent and logs `unable to play clip: bounce` at error level.
+
 ### Cleanup
 
 [] **The direct allocator leaks a buffer or image when no memory type suits it.**
