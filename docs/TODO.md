@@ -203,12 +203,12 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 [] **There are no cascaded shadow maps.**
 
-- `shadow::fitView` fits one map to the camera's view out to a distance. Over a long view, one
-  map spreads its texels thinly, and near shadows lose detail.
+- `lighting::fitShadowToView` fits one map to the camera's view out to a distance. Over a long
+  view, one map spreads its texels thinly, and near shadows lose detail.
 - Cascades split the view into slices by distance, each with its own map, and the lit shader
   picks the slice a fragment falls in.
-- `shadow::fit` covers each caster's position and a margin, not its extent or scale. A caller
-  with large casters passes a margin big enough for them.
+- `lighting::fitShadow` covers each caster's position and a margin, not its extent or scale. A
+  caller with large casters passes a margin big enough for them.
 - Due when a game's view is long enough for near shadows to look coarse.
 - Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
 

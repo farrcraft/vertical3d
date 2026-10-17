@@ -191,7 +191,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
             continue;
         }
         // depth alone, so no fragment stage and no colour. Culled as the cel pass is, which
-        // shadow::light keeps right by winding a face the way a camera does
+        // lighting::shadowLight keeps right by winding a face the way a camera does
         const std::vector<uint32_t>& shadowVertex = skinned ? shaders.skinnedShadow : shaders.shadow;
         pipeline::Builder caster(device_);
         caster.name(skinned ? "lit-shadow-skinned" : "lit-shadow")
@@ -257,12 +257,12 @@ Lit::Slot& Lit::slot() {
         return slot;
     }
 
-    slot.buffer = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(SceneUniforms));
+    slot.buffer = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(lighting::SceneUniforms));
     slot.set = scenes_->allocate();
 
     VkDescriptorBufferInfo buffer{};
     buffer.buffer = slot.buffer->handle();
-    buffer.range = sizeof(SceneUniforms);
+    buffer.range = sizeof(lighting::SceneUniforms);
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -312,7 +312,7 @@ void Lit::reserve(Slot* slot, std::size_t joints) {
 
 /**
  **/
-VkDescriptorSet Lit::scene(const SceneUniforms& uniforms, const TextureHandle& shadowMap, const std::vector<glm::mat4>& palette) {
+VkDescriptorSet Lit::scene(const lighting::SceneUniforms& uniforms, const TextureHandle& shadowMap, const std::vector<glm::mat4>& palette) {
     // the slot about to be written was last read by the frame that used it a ring ago
     ring_->waitFrame();
     Slot& written = slot();

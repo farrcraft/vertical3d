@@ -7,7 +7,7 @@
 
 #include <glm/vec3.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::lighting {
 
 /**
  * How a lit scene looks, as opposed to what is in it: the light, the cel bands, the outline
@@ -17,7 +17,7 @@ namespace v3d::render::realtime {
  * The defaults give three cel bands under a white key light from above and to one side, with
  * a thin outline and full strength shadows.
  **/
-struct LitSettings final {
+struct Settings final {
     /**
      * Towards the key light, in world space - it need not be normalised. Keep it well off the
      * camera's axis, or every surface the camera sees lands in the top band and reads flat.
@@ -79,4 +79,4 @@ struct LitSettings final {
     float shadowStrength = 1.0f;
 };
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::lighting

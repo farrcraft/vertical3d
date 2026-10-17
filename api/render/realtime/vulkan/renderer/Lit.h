@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/render/realtime/Handle.h>
-#include <api/render/realtime/SceneUniforms.h>
+#include <api/render/realtime/lighting/SceneUniforms.h>
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
@@ -90,7 +90,7 @@ class Lit final {
      *        is right for a camera on type::camera::Profile::Hand::UpCrossDirection, and
      *        counter clockwise for one on DirectionCrossUp, which mirrors the image. The cel,
      *        outline and shadow pipelines all cull by it, so the light's matrix is built in the
-     *        camera's hand too: see shadow::light.
+     *        camera's hand too: see lighting::shadowLight.
      * @throw std::runtime_error if a pipeline or the scene layout cannot be created
      **/
     Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<pipeline::Cache>& cache,
@@ -114,7 +114,7 @@ class Lit final {
 
     /**
      * The pipeline a caster is drawn into a shadow map with. It is built with depth bias, so
-     * the pass it is drawn in names one - LitSettings::constantBias and slopeBias.
+     * the pass it is drawn in names one - lighting::Settings::constantBias and slopeBias.
      *
      * @return the pipeline, or an unset handle when this was built with no shadow format
      **/
@@ -140,7 +140,7 @@ class Lit final {
      * @param shadowMap the depth a shadow pass drew, or an unset handle for no shadow
      * @param palette every joint matrix drawn this frame - entity::Poses::palette()
      **/
-    VkDescriptorSet scene(const SceneUniforms& uniforms, const TextureHandle& shadowMap = TextureHandle(),
+    VkDescriptorSet scene(const lighting::SceneUniforms& uniforms, const TextureHandle& shadowMap = TextureHandle(),
         const std::vector<glm::mat4>& palette = {});
 
     /**

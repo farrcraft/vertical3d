@@ -32,8 +32,8 @@ namespace v3d::render::realtime::entity {
  * The pass is the caller's, and has to name the scene Lit::scene() returned for this frame.
  *
  * @param alpha Engine::alpha(), the fraction of a step elapsed since the last one
- * @param outline how far the outline hull is pushed out - LitSettings::outline. Zero submits no
- *        outlines
+ * @param outline how far the outline hull is pushed out - lighting::Settings::outline. Zero
+ *        submits no outlines
  * @param poses this frame's, whose palette the scene the pass names was written with
  **/
 void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, const vulkan::renderer::Lit& lit,

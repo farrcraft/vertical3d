@@ -5,12 +5,12 @@
 
 #pragma once
 
-#include "LitSettings.h"
+#include "Settings.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::lighting {
 
 /**
  * Set 2, binding 0, laid out as shaders/lit/lit.glsl declares the Scene block. std140 puts
@@ -33,6 +33,6 @@ struct SceneUniforms final {
  *        strength of zero when there is no shadow
  * @param texel the size of one shadow map texel in uv, which the shadow lookup steps by
  **/
-SceneUniforms pack(const LitSettings& settings, const glm::mat4& lightViewProjection, float texel);
+SceneUniforms pack(const Settings& settings, const glm::mat4& lightViewProjection, float texel);
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::lighting

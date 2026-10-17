@@ -6,7 +6,7 @@ one sweeps comments, and one updates the documents. No step changes behaviour.
 | Step | | Step | |
 |---|---|---|---|
 | 1 `realtime/entity` | landed | 5 `ui::component::menu` | open |
-| 2 `realtime/lit` | open | 6 `libmoya/reyes` | open |
+| 2 `realtime/lighting` | landed | 6 `libmoya/reyes` | open |
 | 3 `realtime/canvas` | open | 7 libmoya comments | open |
 | 4 `image/format` | open | 8 documents | open |
 
@@ -84,7 +84,7 @@ pure move. Step 8 records every step that landed.
 
 ```
 1 entity ─┐
-2 lit ────┤
+2 lighting ┤
 3 canvas ─┤
 4 format ─┼──> 8 documents
 5 menu ───┤
@@ -109,24 +109,29 @@ correctly.
 **Landed.** Build clean, 26 of 26 suites pass, cpplint clean. No app called these functions;
 only the render tests did. Entities.md, Lighting.md and ECS.md name them as `entity::` now.
 
-### Step 2 — `realtime/lit/`
+### Step 2 — `realtime/lighting/`
 
 ```
-realtime/lit/   Settings SceneUniforms pack() + the shadow functions   v3d::render::realtime::lit
+realtime/lighting/   Settings SceneUniforms pack() + the shadow functions   v3d::render::realtime::lighting
 ```
 
-- `LitSettings` becomes `lit::Settings`, by the rule that drops the directory's name.
+- `LitSettings` becomes `lighting::Settings`, by the rule that drops the directory's name.
 - `SceneUniforms` keeps its name, because it mirrors the `Scene` block in `lit.glsl`.
 - `Shadow.h` moves, and its nested `shadow` namespace goes. Its names take the word instead:
-  `shadow::Bounds` becomes `lit::ShadowBounds`, and `fit`, `fitView`, `light` and
-  `minimumRadius` become `lit::fitShadow`, `lit::fitShadowToView`, `lit::shadowLight` and
-  `lit::minimumShadowRadius`.
+  `shadow::Bounds` becomes `lighting::ShadowBounds`, and `fit`, `fitView`, `light` and
+  `minimumRadius` become `lighting::fitShadow`, `lighting::fitShadowToView`,
+  `lighting::shadowLight` and `lighting::minimumShadowRadius`.
 
 `Grade` stays at the root. It is a colour pass, and a directory of one file is not worth
 making.
 
-`lit` is also the name of `vulkan::renderer::Lit`. That is deliberate: `lit::Settings` is how
-`renderer::Lit` draws.
+**Landed, as `lighting/` rather than `lit/`.** Apps and tests name their `renderer::Lit` `lit`,
+so `lit.scene(lit::pack(settings, ...))` would compile and read badly. `lighting::` also
+matches Lighting.md. Build clean, 26 of 26 suites pass, cpplint clean.
+
+No app named these; the render tests and `renderer::Lit` did. Cozy does not use them either.
+The tests name the namespace through an alias, `namespace lighting = ...`, as ShadowTest
+already did for `shadow`. voxel has its own `SceneUniforms`, which is unrelated and unchanged.
 
 ### Step 3 — `realtime/canvas/`
 

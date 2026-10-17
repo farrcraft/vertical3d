@@ -12,13 +12,13 @@
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/Frame.h>
-#include <api/render/realtime/LitSettings.h>
+#include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/entity/Meshes.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/entity/Poses.h>
-#include <api/render/realtime/SceneUniforms.h>
-#include <api/render/realtime/Shadow.h>
+#include <api/render/realtime/lighting/SceneUniforms.h>
+#include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
@@ -46,7 +46,6 @@
 using v3d::ecs::component::Playback;
 using v3d::ecs::component::Transform;
 using v3d::render::realtime::Frame;
-using v3d::render::realtime::LitSettings;
 using v3d::render::realtime::MeshHandle;
 using v3d::render::realtime::MeshRegistry;
 using v3d::render::realtime::Pass;
@@ -55,6 +54,8 @@ using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
 using v3d::render::realtime::vulkan::renderer::Lit;
+
+namespace lighting = v3d::render::realtime::lighting;
 
 namespace {
 
@@ -116,7 +117,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     camera.createProjection();
     camera.createView();
 
-    LitSettings settings;
+    lighting::Settings settings;
     settings.outline = 0.05f;
 
     const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
@@ -126,7 +127,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     pass->depth(true);
     pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     pass->camera(camera.view(), camera.projection());
-    pass->scene(lit->scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f),
+    pass->scene(lit->scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f),
         v3d::render::realtime::TextureHandle(), poses.palette()));
     v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, *lit, settings.outline, pass.get(), poses);
 
@@ -385,14 +386,14 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     registry.emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{handle, true});
 
     // the light looks along +z from two units out over a sphere of one, as the static case's
-    const glm::mat4 light = v3d::render::realtime::shadow::light(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f), 1.0f);
+    const glm::mat4 light = lighting::shadowLight(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f), 1.0f);
     const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
 
     Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("shadow");
     pass->target(map);
     pass->depth(true);
-    pass->scene(lit.scene(v3d::render::realtime::pack(LitSettings(), light, 1.0f / size),
+    pass->scene(lit.scene(lighting::pack(lighting::Settings(), light, 1.0f / size),
         v3d::render::realtime::TextureHandle(), poses.palette()));
     pass->depthBias(0.0f, 0.0f);
     v3d::render::realtime::entity::casters(registry, 1.0f, meshes, lit, pass.get(), poses);
@@ -436,7 +437,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_mesh_released_in_flight_outlives_its_frame) {
     boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
-    pass->scene(lit.scene(v3d::render::realtime::pack(LitSettings(), glm::mat4(1.0f), 0.0f),
+    pass->scene(lit.scene(lighting::pack(lighting::Settings(), glm::mat4(1.0f), 0.0f),
         v3d::render::realtime::TextureHandle(), poses.palette()));
     v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, 0.0f, pass.get(), poses);
 

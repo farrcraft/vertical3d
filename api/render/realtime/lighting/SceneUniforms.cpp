@@ -9,7 +9,7 @@
 
 #include <glm/geometric.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::lighting {
 
 // the offsets lit.glsl's std140 Scene block puts each member at, which nothing at runtime checks
 static_assert(offsetof(SceneUniforms, light) == 0, "light is at offset 0");
@@ -23,7 +23,7 @@ static_assert(sizeof(SceneUniforms) == 160, "the Scene block is 160 bytes");
 
 /**
  **/
-SceneUniforms pack(const LitSettings& settings, const glm::mat4& lightViewProjection, float texel) {
+SceneUniforms pack(const Settings& settings, const glm::mat4& lightViewProjection, float texel) {
     SceneUniforms uniforms;
     uniforms.light = glm::vec4(glm::normalize(settings.light), settings.fill);
     uniforms.thresholds = glm::vec4(settings.shadowThreshold, settings.litThreshold, 0.0f, 0.0f);
@@ -35,4 +35,4 @@ SceneUniforms pack(const LitSettings& settings, const glm::mat4& lightViewProjec
     return uniforms;
 }
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::lighting

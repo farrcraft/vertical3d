@@ -15,7 +15,8 @@ layout(std140, set = 0, binding = 0) uniform Camera {
     vec4 viewport;
 } camera;
 
-// set 2 - the light, the cel bands and the shadow terms, laid out as realtime::SceneUniforms
+// set 2 - the light, the cel bands and the shadow terms, laid out as
+// realtime::lighting::SceneUniforms
 layout(std140, set = 2, binding = 0) uniform Scene {
     vec4 light;                 // xyz towards the key light, normalised; w the fill
     vec4 thresholds;            // x shadow to mid, y mid to lit

@@ -20,7 +20,7 @@
 #include <glm/matrix.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime::shadow {
+namespace v3d::render::realtime::lighting {
 
 namespace {
 
@@ -53,7 +53,7 @@ bool finite(const glm::vec3& value) {
 
 /**
  **/
-glm::mat4 light(const glm::vec3& towards, const glm::vec3& centre, float radius, type::camera::Profile::Hand hand) {
+glm::mat4 shadowLight(const glm::vec3& towards, const glm::vec3& centre, float radius, type::camera::Profile::Hand hand) {
     // the light looks from the light towards the centre
     const Basis axes = basis(towards);
     const glm::vec3 z = axes.along;
@@ -89,7 +89,7 @@ glm::mat4 light(const glm::vec3& towards, const glm::vec3& centre, float radius,
 
 /**
  **/
-std::optional<Bounds> fit(const entt::registry& registry, std::span<const glm::vec3> alsoCover, float margin, float alpha) {
+std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<const glm::vec3> alsoCover, float margin, float alpha) {
     std::vector<glm::vec3> points;
     auto view = registry.view<const ecs::component::Transform, const component::Mesh>();
     for (const entt::entity entity : view) {
@@ -102,7 +102,7 @@ std::optional<Bounds> fit(const entt::registry& registry, std::span<const glm::v
     }
     points.insert(points.end(), alsoCover.begin(), alsoCover.end());
 
-    Bounds bounds;
+    ShadowBounds bounds;
     for (const glm::vec3& point : points) {
         bounds.centre += point;
     }
@@ -112,13 +112,13 @@ std::optional<Bounds> fit(const entt::registry& registry, std::span<const glm::v
     for (const glm::vec3& point : points) {
         spread = std::max(spread, glm::length(point - bounds.centre));
     }
-    bounds.radius = std::max(spread + margin, minimumRadius);
+    bounds.radius = std::max(spread + margin, minimumShadowRadius);
     return bounds;
 }
 
 /**
  **/
-std::optional<Bounds> fitView(const glm::mat4& viewProjection, float distance, const glm::vec3& towards, uint32_t texels) {
+std::optional<ShadowBounds> fitShadowToView(const glm::mat4& viewProjection, float distance, const glm::vec3& towards, uint32_t texels) {
     // a NaN fails every comparison, so each test is written to fail it
     if (!(distance > 0.0f) || !std::isfinite(distance) || !finite(towards) || !(glm::length(towards) > 0.0f) || texels < 4) {
         return std::nullopt;
@@ -146,7 +146,7 @@ std::optional<Bounds> fitView(const glm::mat4& viewProjection, float distance, c
         }
     }
 
-    Bounds bounds;
+    ShadowBounds bounds;
     for (const glm::vec3& corner : corners) {
         bounds.centre += corner;
     }
@@ -163,7 +163,7 @@ std::optional<Bounds> fitView(const glm::mat4& viewProjection, float distance, c
     // radius grows by the diagonal of a texel. A texel is two radii over the map's width, which
     // makes the radius spread / (1 - 2 * sqrt(2) / texels)
     const float slack = 2.0f * std::sqrt(2.0f) / static_cast<float>(texels);
-    bounds.radius = std::max(spread / (1.0f - slack), minimumRadius);
+    bounds.radius = std::max(spread / (1.0f - slack), minimumShadowRadius);
 
     const Basis axes = basis(towards);
     const float texel = 2.0f * bounds.radius / static_cast<float>(texels);
@@ -173,4 +173,4 @@ std::optional<Bounds> fitView(const glm::mat4& viewProjection, float distance, c
     return bounds;
 }
 
-};  // namespace v3d::render::realtime::shadow
+};  // namespace v3d::render::realtime::lighting

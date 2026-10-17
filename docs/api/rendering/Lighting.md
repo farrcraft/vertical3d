@@ -1,7 +1,8 @@
 # Lighting
 
 The lit pass draws meshes with lights, shadows and skinning. Meshes come from the mesh
-registry described in [TexturesAndMeshes.md](TexturesAndMeshes.md).
+registry described in [TexturesAndMeshes.md](TexturesAndMeshes.md). The lighting settings and
+the shadow functions are in `realtime::lighting`, in `api/render/realtime/lighting/`.
 
 ## The lit pass
 
@@ -43,14 +44,14 @@ vulkan::renderer::Lit lit(context->device(), context->pipelineCache(), context->
 ```
 
 The cel, outline and shadow pipelines all cull by this face. The light's matrix therefore has to
-be built in the camera's hand too: pass the hand to `shadow::light()`.
+be built in the camera's hand too: pass the hand to `lighting::shadowLight()`.
 
 ### Each frame
 
 ```cpp
-LitSettings settings;
-const glm::mat4 light = shadow::light(settings.light, bounds.centre, bounds.radius);
-VkDescriptorSet sceneSet = lit.scene(pack(settings, light, 1.0f / mapSize),
+lighting::Settings settings;
+const glm::mat4 light = lighting::shadowLight(settings.light, bounds.centre, bounds.radius);
+VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0f / mapSize),
     context->textures()->depthTexture(*map));
 
 boost::shared_ptr<Pass> pass = frame->pass("lit");       // may be created first
@@ -88,17 +89,18 @@ Rules:
 
 ### Fitting the shadow map
 
-`shadow::fit(registry, alsoCover, margin, alpha)` returns a sphere around every shadow caster:
-the mean of their positions, and the farthest of them plus `margin`. The margin has to cover a
-caster's size and the length of its shadow. Things that cast nothing, such as the ground, stay
-out of the fit. `alsoCover` adds points that must be inside the map, such as where a character
-is walking to. `fit` returns nothing when no entity casts. The radius is never below
-`shadow::minimumRadius` (0.01), so one caster with no margin still gives a usable matrix. Each
-caster is read where it is drawn, `alpha` of the way from its previous step, as the lit pass
-draws it. Pass `Engine::alpha()`; the default of one reads the current step.
+`lighting::fitShadow(registry, alsoCover, margin, alpha)` returns a sphere around every shadow
+caster: the mean of their positions, and the farthest of them plus `margin`. The margin has to
+cover a caster's size and the length of its shadow. Things that cast nothing, such as the
+ground, stay out of the fit. `alsoCover` adds points that must be inside the map, such as where
+a character is walking to. `fitShadow` returns nothing when no entity casts. The radius is never
+below `lighting::minimumShadowRadius` (0.01), so one caster with no margin still gives a usable
+matrix. Each caster is read where it is drawn, `alpha` of the way from its previous step, as the
+lit pass draws it. Pass `Engine::alpha()`; the default of one reads the current step.
 
-`shadow::fitView(viewProjection, distance, towards, texels)` fits the map to what the camera sees
-instead, for a world larger than one view. Call it every frame with the camera's matrix.
+`lighting::fitShadowToView(viewProjection, distance, towards, texels)` fits the map to what the
+camera sees instead, for a world larger than one view. Call it every frame with the camera's
+matrix.
 
 - The sphere encloses the camera's view volume from the near plane out to `distance` along each
   edge, or to the far plane where that is nearer. Shadows beyond `distance` are not drawn.
@@ -110,14 +112,15 @@ instead, for a world larger than one view. Call it every frame with the camera's
 - It returns nothing for a distance that is not finite and positive, a light direction that is
   zero or not finite, fewer than 4 texels, or a matrix that cannot be inverted.
 
-`shadow::light(towards, centre, radius, hand)` builds the matrix the shadow pass draws through:
-an orthographic box around the sphere, seen from the light. `hand` is the camera's
+`lighting::shadowLight(towards, centre, radius, hand)` builds the matrix the shadow pass draws
+through: an orthographic box around the sphere, seen from the light. `hand` is the camera's
 `Profile::Hand`, and defaults to `UpCrossDirection`. A face is wound the same way under the
 light as under a camera of that hand, so the shadow pipeline culls the same faces the cel
 pipeline does. A light built in the other hand stores each caster's far side in the map.
 
-**A map fitted by `fit` does not follow the casters.** Fit it at scene load, or when the casters
-move somewhere new. A map fitted by `fitView` every frame follows the camera instead.
+**A map fitted by `fitShadow` does not follow the casters.** Fit it at scene load, or when the
+casters move somewhere new. A map fitted by `fitShadowToView` every frame follows the camera
+instead.
 
 ### Skinned models
 
@@ -126,7 +129,7 @@ frame and pass the same `Poses` to all three:
 
 ```cpp
 const entity::Poses poses = entity::poses(registry, alpha(), meshes);
-VkDescriptorSet sceneSet = lit.scene(pack(settings, light, 1.0f / mapSize),
+VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0f / mapSize),
     context->textures()->depthTexture(*map), poses.palette());
 entity::casters(registry, alpha(), meshes, lit, casting.get(), poses);
 entity::meshes(registry, alpha(), meshes, lit, settings.outline, pass.get(), poses);
@@ -140,9 +143,9 @@ entity::meshes(registry, alpha(), meshes, lit, settings.outline, pass.get(), pos
   models only.
 - A shadow is cast in the same pose that is drawn.
 
-### LitSettings
+### Settings
 
-`LitSettings` is plain data with no GPU in it, so a game can read its look from a file.
+`lighting::Settings` is plain data with no GPU in it, so a game can read its look from a file.
 
 | Field | Meaning |
 |---|---|
@@ -156,9 +159,9 @@ entity::meshes(registry, alpha(), meshes, lit, settings.outline, pass.get(), pos
 | `normalBias` | How far a lookup moves along the normal before reading the shadow map. |
 | `shadowStrength` | How much of a band a shadow removes. Zero still draws the shadow pass but ignores it. |
 
-`pack(settings, lightViewProjection, texel)` turns the settings into the `SceneUniforms` that
-`scene()` takes. Changing `colour` and `shadowColour` over time is how a scene's light changes
-through a day.
+`lighting::pack(settings, lightViewProjection, texel)` turns the settings into the
+`SceneUniforms` that `scene()` takes. Changing `colour` and `shadowColour` over time is how a
+scene's light changes through a day.
 
 ### The outline
 

@@ -13,13 +13,13 @@
 #include <api/render/realtime/DepthOrder.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Grade.h>
-#include <api/render/realtime/LitSettings.h>
+#include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/entity/Particles.h>
 #include <api/render/realtime/entity/Meshes.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/SceneUniforms.h>
-#include <api/render/realtime/Shadow.h>
+#include <api/render/realtime/lighting/SceneUniforms.h>
+#include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/WorldCanvas.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/component/Particles.h>
@@ -48,7 +48,6 @@
 
 using v3d::ecs::component::Transform;
 using v3d::render::realtime::Frame;
-using v3d::render::realtime::LitSettings;
 using v3d::render::realtime::MeshHandle;
 using v3d::render::realtime::MeshRegistry;
 using v3d::render::realtime::Pass;
@@ -57,6 +56,8 @@ using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
 using v3d::render::realtime::vulkan::renderer::Lit;
 using v3d::render::realtime::vulkan::renderer::World;
+
+namespace lighting = v3d::render::realtime::lighting;
 
 namespace {
 
@@ -183,7 +184,7 @@ Shading compare(const boost::shared_ptr<v3d::image::Image>& without, const boost
 /**
  * A white ground and a red cube standing on it, drawn after a shadow pass, and the picture.
  *
- * @param strength LitSettings::shadowStrength, so a case can draw the same frame with the
+ * @param strength lighting::Settings::shadowStrength, so a case can draw the same frame with the
  *        shadow ignored
  * @param frames how many frames to draw into the same shadow map. Every frame but the last is
  *        submitted without waiting, as a presented frame is, so two of them are in flight at once
@@ -221,18 +222,18 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
     camera.createProjection();
     camera.createView();
 
-    LitSettings settings;
+    lighting::Settings settings;
     settings.outline = 0.0f;
     settings.shadowStrength = strength;
 
-    const std::optional<v3d::render::realtime::shadow::Bounds> bounds =
-        v3d::render::realtime::shadow::fit(registry, {}, 2.0f);
+    const std::optional<lighting::ShadowBounds> bounds =
+        lighting::fitShadow(registry, {}, 2.0f);
     if (!bounds) {
         BOOST_ERROR("a cube that casts gave no fit");
         return boost::shared_ptr<v3d::image::Image>();
     }
-    const glm::mat4 light = v3d::render::realtime::shadow::light(settings.light, bounds->centre, bounds->radius);
-    VkDescriptorSet scene = lit.scene(v3d::render::realtime::pack(settings, light, 1.0f / mapSize),
+    const glm::mat4 light = lighting::shadowLight(settings.light, bounds->centre, bounds->radius);
+    VkDescriptorSet scene = lit.scene(lighting::pack(settings, light, 1.0f / mapSize),
         headless->context->textures()->depthTexture(*map));
 
     for (int drawn = 1; ; drawn++) {
@@ -313,7 +314,7 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
 
     // thicker than the default, which at this zoom is under a pixel and can cover no pixel
     // centre at all
-    LitSettings settings;
+    lighting::Settings settings;
     settings.outline = 0.1f;
 
     // the frame is built before it is begun, as an engine builds one during its tick. A scene
@@ -325,7 +326,7 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
     pass->depth(true);
     pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     pass->camera(camera.view(), camera.projection());
-    pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
+    pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
     v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
 
     VkCommandBuffer commands = headless->context->ring()->begin();
@@ -369,7 +370,7 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
 /**
  * A caster is drawn into a shadow map at the depth the light's matrix gives it. This is the
  * depth target's case again, with the quads standing in the world and drawn through Lit's
- * shadow pipeline and shadow::light. The depths are exact for the same reason: each front
+ * shadow pipeline and lighting::shadowLight. The depths are exact for the same reason: each front
  * face is a plane of one depth, at a quarter and three quarters of the light's range.
  *
  * A third entity that casts no shadow stands nearer the light over the right quad. If it were
@@ -410,13 +411,13 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     place(&registry, block, glm::vec3(0.5f, 0.0f, 1.5f), scale, true);
     place(&registry, block, glm::vec3(0.5f, 0.0f, 0.5f), scale, false);
 
-    const glm::mat4 light = v3d::render::realtime::shadow::light(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f), 1.0f, hand);
+    const glm::mat4 light = lighting::shadowLight(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f), 1.0f, hand);
 
     Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("shadow");
     pass->target(map);
     pass->depth(true);
-    pass->scene(lit.scene(v3d::render::realtime::pack(LitSettings(), light, 1.0f / size)));
+    pass->scene(lit.scene(lighting::pack(lighting::Settings(), light, 1.0f / size)));
     // the pipeline is biased, so the pass names a bias - none, so that the depths stay exact
     pass->depthBias(0.0f, 0.0f);
     v3d::render::realtime::entity::casters(registry, 1.0f, meshes, lit, pass.get());
@@ -518,7 +519,7 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
     place(&nearer, red, glm::vec3(0.0f), glm::vec3(1.0f), false);
     place(&farther, green, camera.profile().direction() * 3.0f, glm::vec3(1.0f), false);
 
-    LitSettings settings;
+    lighting::Settings settings;
     settings.outline = 0.0f;
 
     Frame frame;
@@ -528,7 +529,7 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
     pass->depthWrite(false);
     pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     pass->camera(camera.view(), camera.projection());
-    pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
+    pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
     v3d::render::realtime::entity::meshes(nearer, 1.0f, meshes, lit, settings.outline, pass.get());
     v3d::render::realtime::entity::meshes(farther, 1.0f, meshes, lit, settings.outline, pass.get());
 
@@ -632,10 +633,10 @@ BOOST_AUTO_TEST_CASE(a_shadow_falls_on_the_ground) {
 
 /**
  * A full-size lit game scene built from this tree's fixtures. It holds a ground that casts
- * nothing, two upright figures and ten props at set yaws, under one key light at LitSettings'
- * defaults. It is seen through an orthographic camera at 45 degrees at 1280 by 720. The frame
- * is a shadow pass, the lit scene into an sRGB target, and a grade into a target in an sRGB
- * swapchain format. The grade uses the identity table.
+ * nothing, two upright figures and ten props at set yaws, under one key light at the defaults of
+ * lighting::Settings. It is seen through an orthographic camera at 45 degrees at 1280 by 720.
+ * The frame is a shadow pass, the lit scene into an sRGB target, and a grade into a target in
+ * an sRGB swapchain format. The grade uses the identity table.
  *
  * The passes are created in the opposite order, grade first, as an engine creates its colour
  * pass before a game adds anything. Each pass names what it reads, so the frame must record a
@@ -709,14 +710,14 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
     camera.createView();
 
     // the default settings, and three metres of margin for a figure's height and its shadow
-    const LitSettings settings;
-    const std::optional<v3d::render::realtime::shadow::Bounds> bounds = v3d::render::realtime::shadow::fit(registry, {}, 3.0f);
+    const lighting::Settings settings;
+    const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, 3.0f);
     if (!bounds) {
         BOOST_ERROR("a scene with casters gave no fit");
         return;
     }
-    const glm::mat4 light = v3d::render::realtime::shadow::light(settings.light, bounds->centre, bounds->radius);
-    VkDescriptorSet sceneSet = lit.scene(v3d::render::realtime::pack(settings, light, 1.0f / static_cast<float>(mapSize)),
+    const glm::mat4 light = lighting::shadowLight(settings.light, bounds->centre, bounds->radius);
+    VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0f / static_cast<float>(mapSize)),
         headless.context->textures()->depthTexture(*map));
 
     Frame frame;
@@ -802,7 +803,7 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
     camera.createProjection();
     camera.createView();
 
-    LitSettings settings;
+    lighting::Settings settings;
     settings.outline = 0.0f;
 
     Frame frame;
@@ -811,7 +812,7 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
     pass->depth(true);
     pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     pass->camera(camera.view(), camera.projection());
-    pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
+    pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
     v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
 
     VkCommandBuffer commands = headless.context->ring()->begin();
@@ -878,7 +879,7 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
     camera.createProjection();
     camera.createView();
 
-    LitSettings settings;
+    lighting::Settings settings;
     settings.outline = 0.0f;
 
     v3d::render::realtime::WorldCanvas ground;
@@ -891,7 +892,7 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
     pass->depth(true);
     pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     pass->camera(camera.view(), camera.projection());
-    pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
+    pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
     v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
     world.submit(ground, pass.get());
 
@@ -944,7 +945,7 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
         Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
             headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
 
-        LitSettings settings;
+        lighting::Settings settings;
         settings.outline = 0.0f;
         settings.colour = colour;
 
@@ -954,7 +955,7 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
         pass->depth(true);
         pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
         pass->camera(camera.view(), camera.projection());
-        pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
+        pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
         v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
 
         VkCommandBuffer commands = headless.context->ring()->begin();
@@ -1001,7 +1002,7 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
     camera.createProjection();
     camera.createView();
 
-    LitSettings settings;
+    lighting::Settings settings;
     settings.outline = 0.0f;
     settings.colour = glm::vec3(0.45f, 0.55f, 0.9f);
     settings.shadowColour = glm::vec3(0.3f, 0.3f, 0.6f);
@@ -1054,7 +1055,7 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
         pass->depth(true);
         pass->clearColour(glm::vec4(0.02f, 0.02f, 0.05f, 1.0f));
         pass->camera(camera.view(), camera.projection());
-        pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
+        pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
         v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
         world.submit(drops, pass.get(), 0, World::Blend::Additive);
 

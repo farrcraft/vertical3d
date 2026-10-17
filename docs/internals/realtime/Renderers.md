@@ -29,8 +29,8 @@ one-pixel edge at any scale. Other batches return `colour * texel`.
 outside, and the cameras in `api/type` flip y into Vulkan clip space. A camera on
 `Profile::Hand::DirectionCrossUp` also mirrors x, which reverses the winding again, so `Lit`
 takes the front face as its last constructor argument. All six pipelines cull by it.
-`shadow::light()` builds its view the way `type::camera::Camera` does in the hand it is given,
-so faces wind the same under the light and the shadow pipeline culls as the cel one does.
+`lighting::shadowLight()` builds its view the way `type::camera::Camera` does in the hand it is
+given, so faces wind the same under the light and the shadow pipeline culls as the cel one does.
 
 **`Lit::scene()`** writes the frame's slot: a uniform buffer (`SceneUniforms`, std140, matching
 the `Scene` block in `lit.glsl`), the shadow map binding, and the palette storage buffer. It waits
