@@ -1,32 +1,27 @@
 # Streaming Worlds
 
 What the realtime api needs for a game whose world is loaded and released piece by piece while
-it is played. Today every load runs on the main thread, a tile grid is one rectangle at the world
-origin, and a shadow map covers one fixed sphere. Each of those holds for a world that is one
-board. None holds for a world of regions.
+it is played. A model can be loaded on a worker thread and uploaded while frames are in flight.
+A tile grid is still one rectangle at the world origin, and a shadow map covers one fixed sphere.
+Each of those holds for a world that is one board. Neither holds for a world of regions.
 
 The gaps are each described in [TODO.md](../TODO.md). This roadmap orders them, because most of
 them block the next.
 
-**Steps 1 to 6 are taken up by [the StreamingWorlds plan](../plans/StreamingWorlds.md).** Step 7
-is held behind its trigger.
+**Steps 1 to 6 are taken up by [the StreamingWorlds plan](../plans/StreamingWorlds.md).** Steps 1
+to 3 are done by it. Step 7 is held behind its trigger.
 
 ## What exists
 
-- **Every load runs on the main thread.** `asset::Manager` decodes, and
-  [`MeshRegistry`](../../api/render/realtime/MeshRegistry.h) and
-  [`TextureFactory`](../../api/render/realtime/vulkan/memory/TextureFactory.h) upload. A load is a
-  frame hitch the size of the load. Whether one manager can be used from two threads is not
-  established.
-- **`MeshRegistry::acquire` decodes a glTF file's textures during the upload.** Decoding and
-  uploading are one call, so they cannot run on different threads.
-- **[`memory::Uploader`](../../api/render/realtime/vulkan/memory/Uploader.h) waits for the queue to
-  go idle after every copy.** Other code relies on that wait. voxel's
-  [`ChunkMeshPool`](../../voxel/src/voxel/ChunkMeshPool.h) destroys a remeshed chunk's old mesh
-  when its last reference goes, which is safe only because no frame can still be reading it.
-- **[`frame::Ring::retire`](../../api/render/realtime/vulkan/frame/Ring.h)** holds an object until
-  every frame that may name it has finished. A mesh released from `MeshRegistry` and a handle
-  released from `pipeline::Resources` already go through it.
+- **[`asset::Worker`](../../api/asset/Worker.h)** decodes on one thread and hands results back
+  in a poll on the main thread. One `asset::Manager` loads correctly from several threads.
+- **[`MeshRegistry::request`](../../api/render/realtime/MeshRegistry.h)** decodes a model on a
+  worker, and `poll()` uploads it under a byte budget. A texture has no request of its own; a
+  worker job decodes it and its completion registers it.
+- **[`memory::Uploader`](../../api/render/realtime/vulkan/memory/Uploader.h) waits for its own
+  upload**, not for frames in flight. Every object a frame may still read is retired through
+  [`frame::Ring::retire`](../../api/render/realtime/vulkan/frame/Ring.h), voxel's replaced chunk
+  meshes among them.
 - **[`TileGrid`](../../api/grid/TileGrid.h)** is one rectangle of tiles centred on the world
   origin. Every conversion between world and tile coordinates goes through `worldMin()`, which
   assumes that origin.

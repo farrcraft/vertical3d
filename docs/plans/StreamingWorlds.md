@@ -178,9 +178,11 @@ held. It is due when a profile shows the fence wait itself.
 
 #### Step 7 — Close phases 1 and 2
 
-**Open.** Delete the TODO.md entry "Every load runs on the main thread". Update
-[Assets.md](../api/Assets.md) and the realtime reference documents to state the request, the poll
-and the budget.
+**Closed.** The TODO.md entry "Every load runs on the main thread" is deleted.
+[Assets.md](../api/Assets.md) states the worker,
+[TexturesAndMeshes.md](../api/rendering/TexturesAndMeshes.md) the request, the poll and the
+budget, and [Memory.md](../internals/realtime/Memory.md) the uploader's wait. The roadmap
+describes the tree as it now is.
 
 ### Phase 3 — Regions
 

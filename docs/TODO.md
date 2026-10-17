@@ -250,17 +250,7 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Loading
 
-[StreamingWorlds](plans/StreamingWorlds.md) takes the first entry.
-[ReleaseHardening](plans/ReleaseHardening.md) takes the second.
-
-[] **Every load runs on the main thread**, so each load is a frame hitch the size of the load.
-
-- First piece: decode on a worker thread through the app's `asset::Manager`, which loads
-  correctly from several threads at once. The main thread polls once a frame and uploads what is
-  ready through `TextureFactory::create(image)` and `MeshRegistry::add(name, model, albedos)`.
-- This would be the first thread in `api/`, which needs an ADR of its own.
-- Due when a game streams regions, or any load is long enough for a player to see.
-- Background: [ShellAndShipping, step 12](plans/completed/ShellAndShipping.md#step-12--asynchronous-loading-held).
+[ReleaseHardening](plans/ReleaseHardening.md) takes this entry.
 
 [] **A path outside the ANSI code page cannot be opened.**
 
