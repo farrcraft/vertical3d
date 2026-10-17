@@ -59,17 +59,18 @@ casting->target(map);
 casting->depth(true);
 casting->scene(sceneSet);
 casting->depthBias(settings.constantBias, settings.slopeBias);
-casters(registry, alpha(), meshes, lit, casting.get());
+entity::casters(registry, alpha(), meshes, lit, casting.get());
 
 pass->target(scene);
 pass->depth(true);
 pass->reads(map);                                         // records the shadow pass first
 pass->camera(camera.view(), camera.projection());
 pass->scene(sceneSet);
-meshes(registry, alpha(), meshes, lit, settings.outline, pass.get());
+entity::meshes(registry, alpha(), meshes, lit, settings.outline, pass.get());
 ```
 
-(`meshes()` here is the free function `realtime::meshes`, and `meshes` the registry.)
+(`entity::meshes()` is the free function in `api/render/realtime/entity/`, and `meshes` the
+registry.)
 
 Rules:
 
@@ -124,11 +125,11 @@ Skinned models are drawn by the same calls with one more argument. Compute the p
 frame and pass the same `Poses` to all three:
 
 ```cpp
-const Poses poses = realtime::poses(registry, alpha(), meshes);
+const entity::Poses poses = entity::poses(registry, alpha(), meshes);
 VkDescriptorSet sceneSet = lit.scene(pack(settings, light, 1.0f / mapSize),
     context->textures()->depthTexture(*map), poses.palette());
-casters(registry, alpha(), meshes, lit, casting.get(), poses);
-meshes(registry, alpha(), meshes, lit, settings.outline, pass.get(), poses);
+entity::casters(registry, alpha(), meshes, lit, casting.get(), poses);
+entity::meshes(registry, alpha(), meshes, lit, settings.outline, pass.get(), poses);
 ```
 
 - `poses()` samples each skinned entity's `ecs::component::Playback`, blending out of the clip

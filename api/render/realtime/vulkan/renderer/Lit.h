@@ -138,7 +138,7 @@ class Lit final {
      * called while the frame is built and before the ring begins it.
      *
      * @param shadowMap the depth a shadow pass drew, or an unset handle for no shadow
-     * @param palette every joint matrix drawn this frame - realtime::Poses::palette()
+     * @param palette every joint matrix drawn this frame - entity::Poses::palette()
      **/
     VkDescriptorSet scene(const SceneUniforms& uniforms, const TextureHandle& shadowMap = TextureHandle(),
         const std::vector<glm::mat4>& palette = {});

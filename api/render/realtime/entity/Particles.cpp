@@ -20,7 +20,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::entity {
 
 namespace {
 
@@ -91,4 +91,4 @@ void particles(const entt::registry& registry, float alpha, const glm::vec3& rig
     }
 }
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::entity

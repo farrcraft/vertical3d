@@ -10,9 +10,9 @@
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/DepthOrder.h>
 #include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Particles.h>
+#include <api/render/realtime/entity/Particles.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Sprites.h>
+#include <api/render/realtime/entity/Sprites.h>
 #include <api/render/realtime/WorldCanvas.h>
 #include <api/render/realtime/component/Particles.h>
 #include <api/render/realtime/component/Sprite.h>
@@ -168,8 +168,8 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     const glm::vec3 ground = glm::normalize(glm::vec3(forward.x, 0.0f, forward.z));
 
     DepthOrder order;
-    v3d::render::realtime::sprites(registry, alpha, right, up, ground, &order);
-    v3d::render::realtime::particles(registry, alpha, right, up, ground, &order);
+    v3d::render::realtime::entity::sprites(registry, alpha, right, up, ground, &order);
+    v3d::render::realtime::entity::particles(registry, alpha, right, up, ground, &order);
     WorldCanvas canvas;
     // dusk
     canvas.tint(glm::vec4(1.0f, 0.75f, 0.55f, 1.0f));

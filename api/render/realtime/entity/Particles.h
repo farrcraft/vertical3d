@@ -5,12 +5,12 @@
 
 #pragma once
 
-#include "DepthOrder.h"
+#include <api/render/realtime/DepthOrder.h>
 
 #include <entt/entt.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::entity {
 
 /**
  * The particles of every entity carrying both an ecs::component::Emitter and a
@@ -28,4 +28,4 @@ namespace v3d::render::realtime {
 void particles(const entt::registry& registry, float alpha, const glm::vec3& right,
     const glm::vec3& up, const glm::vec3& depthAxis, DepthOrder* order);
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::entity

@@ -5,7 +5,7 @@ one sweeps comments, and one updates the documents. No step changes behaviour.
 
 | Step | | Step | |
 |---|---|---|---|
-| 1 `realtime/entity` | open | 5 `ui::component::menu` | open |
+| 1 `realtime/entity` | landed | 5 `ui::component::menu` | open |
 | 2 `realtime/lit` | open | 6 `libmoya/reyes` | open |
 | 3 `realtime/canvas` | open | 7 libmoya comments | open |
 | 4 `image/format` | open | 8 documents | open |
@@ -106,6 +106,9 @@ correctly.
 `realtime/component/` stays where it is. It holds the ECS components, and apps name them as
 `realtime::component::Sprite` beside `ecs::component::Transform`.
 
+**Landed.** Build clean, 26 of 26 suites pass, cpplint clean. No app called these functions;
+only the render tests did. Entities.md, Lighting.md and ECS.md name them as `entity::` now.
+
 ### Step 2 — `realtime/lit/`
 
 ```
@@ -189,6 +192,9 @@ to be wrong:
 `RenderMan.h` keeps its Pixar copyright notice.
 
 ### Step 8 — The documents
+
+Each step updates the reference documents that name what it moved, in the same commit. This
+step checks the documents that describe the shape of the tree:
 
 - [api/README.md](../api/README.md) for the shape of `api/`.
 - [api/rendering/](../api/rendering/README.md) and

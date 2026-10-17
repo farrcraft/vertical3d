@@ -5,17 +5,18 @@
 
 #pragma once
 
-#include "MeshRegistry.h"
-#include "Pass.h"
+#include <api/render/realtime/MeshRegistry.h>
+#include <api/render/realtime/Pass.h>
+
 #include "Poses.h"
 
 #include <entt/entt.hpp>
 
-namespace v3d::render::realtime {
-
-namespace vulkan::renderer {
+namespace v3d::render::realtime::vulkan::renderer {
 class Lit;
-};  // namespace vulkan::renderer
+};  // namespace v3d::render::realtime::vulkan::renderer
+
+namespace v3d::render::realtime::entity {
 
 /**
  * Every entity carrying both an ecs::component::Transform and a component::Mesh, submitted to a
@@ -50,4 +51,4 @@ void meshes(const entt::registry& registry, float alpha, const MeshRegistry& mes
 void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, const vulkan::renderer::Lit& lit,
     Pass* pass, const Poses& poses = Poses());
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::entity

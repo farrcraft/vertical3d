@@ -15,8 +15,8 @@
 #include <api/render/realtime/Grade.h>
 #include <api/render/realtime/LitSettings.h>
 #include <api/render/realtime/MeshRegistry.h>
-#include <api/render/realtime/Particles.h>
-#include <api/render/realtime/Meshes.h>
+#include <api/render/realtime/entity/Particles.h>
+#include <api/render/realtime/entity/Meshes.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/SceneUniforms.h>
 #include <api/render/realtime/Shadow.h>
@@ -245,7 +245,7 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
         casting->depth(true);
         casting->scene(scene);
         casting->depthBias(settings.constantBias, settings.slopeBias);
-        v3d::render::realtime::casters(registry, 1.0f, meshes, lit, casting.get());
+        v3d::render::realtime::entity::casters(registry, 1.0f, meshes, lit, casting.get());
 
         pass->reads(map);
         pass->target(target);
@@ -253,7 +253,7 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
         pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
         pass->camera(camera.view(), camera.projection());
         pass->scene(scene);
-        v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
+        v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
 
         VkCommandBuffer commands = headless->context->ring()->begin();
         Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
@@ -326,7 +326,7 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
     pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     pass->camera(camera.view(), camera.projection());
     pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
-    v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
+    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
 
     VkCommandBuffer commands = headless->context->ring()->begin();
     // the pass names its own target, so the frame is given no image
@@ -419,7 +419,7 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     pass->scene(lit.scene(v3d::render::realtime::pack(LitSettings(), light, 1.0f / size)));
     // the pipeline is biased, so the pass names a bias - none, so that the depths stay exact
     pass->depthBias(0.0f, 0.0f);
-    v3d::render::realtime::casters(registry, 1.0f, meshes, lit, pass.get());
+    v3d::render::realtime::entity::casters(registry, 1.0f, meshes, lit, pass.get());
     BOOST_CHECK_EQUAL(pass->items().size(), 2U);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
@@ -529,8 +529,8 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
     pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     pass->camera(camera.view(), camera.projection());
     pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
-    v3d::render::realtime::meshes(nearer, 1.0f, meshes, lit, settings.outline, pass.get());
-    v3d::render::realtime::meshes(farther, 1.0f, meshes, lit, settings.outline, pass.get());
+    v3d::render::realtime::entity::meshes(nearer, 1.0f, meshes, lit, settings.outline, pass.get());
+    v3d::render::realtime::entity::meshes(farther, 1.0f, meshes, lit, settings.outline, pass.get());
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
@@ -569,7 +569,7 @@ BOOST_AUTO_TEST_CASE(a_released_mesh_is_not_walked) {
     BOOST_REQUIRE(meshes.release(released));
 
     Pass pass("lit");
-    v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, 0.1f, &pass);
+    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, 0.1f, &pass);
 
     // an outline and a surface for the one that is left
     BOOST_CHECK_EQUAL(pass.items().size(), 2U);
@@ -732,14 +732,14 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
     drawn->clearColour(glm::vec4(0.25f, 0.3f, 0.35f, 1.0f));
     drawn->camera(camera.view(), camera.projection());
     drawn->scene(sceneSet);
-    v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, drawn.get());
+    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, drawn.get());
 
     boost::shared_ptr<Pass> casting = frame.pass("shadow");
     casting->target(map);
     casting->depth(true);
     casting->scene(sceneSet);
     casting->depthBias(settings.constantBias, settings.slopeBias);
-    v3d::render::realtime::casters(registry, 1.0f, meshes, lit, casting.get());
+    v3d::render::realtime::entity::casters(registry, 1.0f, meshes, lit, casting.get());
 
     const std::vector<boost::shared_ptr<Pass>> ordered = frame.ordered();
     BOOST_REQUIRE_EQUAL(ordered.size(), 3U);
@@ -812,7 +812,7 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
     pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     pass->camera(camera.view(), camera.projection());
     pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
-    v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
+    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
@@ -892,7 +892,7 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
     pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     pass->camera(camera.view(), camera.projection());
     pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
-    v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
+    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
     world.submit(ground, pass.get());
 
     VkCommandBuffer commands = headless.context->ring()->begin();
@@ -955,7 +955,7 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
         pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
         pass->camera(camera.view(), camera.projection());
         pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
-        v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
+        v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
 
         VkCommandBuffer commands = headless.context->ring()->begin();
         Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
@@ -1044,7 +1044,7 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
 
         v3d::render::realtime::DepthOrder order;
         const glm::vec3 forward = camera.profile().direction();
-        v3d::render::realtime::particles(registry, 1.0f, camera.profile().right(), camera.profile().up(), forward, &order);
+        v3d::render::realtime::entity::particles(registry, 1.0f, camera.profile().right(), camera.profile().up(), forward, &order);
         v3d::render::realtime::WorldCanvas drops;
         order.into(&drops);
 
@@ -1055,7 +1055,7 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
         pass->clearColour(glm::vec4(0.02f, 0.02f, 0.05f, 1.0f));
         pass->camera(camera.view(), camera.projection());
         pass->scene(lit.scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f)));
-        v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
+        v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get());
         world.submit(drops, pass.get(), 0, World::Blend::Additive);
 
         VkCommandBuffer commands = headless.context->ring()->begin();

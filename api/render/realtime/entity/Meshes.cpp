@@ -16,7 +16,7 @@
 #include <cstring>
 #include <optional>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::entity {
 
 namespace {
 
@@ -117,4 +117,4 @@ void casters(const entt::registry& registry, float alpha, const MeshRegistry& me
     }
 }
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::entity

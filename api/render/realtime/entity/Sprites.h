@@ -5,12 +5,12 @@
 
 #pragma once
 
-#include "DepthOrder.h"
+#include <api/render/realtime/DepthOrder.h>
 
 #include <entt/entt.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::entity {
 
 /**
  * Every entity carrying both an ecs::component::Transform and a component::Sprite, added to a
@@ -32,4 +32,4 @@ namespace v3d::render::realtime {
 void sprites(const entt::registry& registry, float alpha, const glm::vec3& right,
     const glm::vec3& up, const glm::vec3& depthAxis, DepthOrder* order);
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::entity

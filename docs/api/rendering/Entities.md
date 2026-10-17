@@ -7,23 +7,24 @@ in [ECS.md](../ECS.md); this page covers the functions that draw them.
 
 An entity is drawn from an `ecs::component::Transform` plus a component for the kind of drawing.
 The drawing components are in `api/render/realtime/component/`. The api provides a function per
-kind that walks the registry and submits the draws. Each reads the transform between the last two
+kind that walks the registry and submits the draws. The functions are in `realtime::entity`, in
+`api/render/realtime/entity/`. Each reads the transform between the last two
 simulation steps, using `Engine::alpha()`, for any entity whose game keeps a previous step. How
 the ECS works is in [ECS.md](../ECS.md).
 
 | Component | Function | Draws into |
 |---|---|---|
-| `component::Sprite` | `sprites(registry, alpha, right, up, depthAxis, &order)` | a `DepthOrder` |
-| `component::Particles` | `particles(registry, alpha, right, up, depthAxis, &order)` | a `DepthOrder` |
-| `component::Mesh` | `meshes(...)` and `casters(...)` | a lit pass and a shadow pass |
+| `component::Sprite` | `entity::sprites(registry, alpha, right, up, depthAxis, &order)` | a `DepthOrder` |
+| `component::Particles` | `entity::particles(registry, alpha, right, up, depthAxis, &order)` | a `DepthOrder` |
+| `component::Mesh` | `entity::meshes(...)` and `entity::casters(...)` | a lit pass and a shadow pass |
 
 ```cpp
 DepthOrder order;
 order.clear();
 const glm::vec3 right = camera.profile().right();
 const glm::vec3 up = camera.profile().up();
-sprites(registry, alpha(), right, up, depthAxis, &order);
-particles(registry, alpha(), right, up, depthAxis, &order);
+entity::sprites(registry, alpha(), right, up, depthAxis, &order);
+entity::particles(registry, alpha(), right, up, depthAxis, &order);
 world.clear();
 order.into(&world);
 renderer_->worldQuads()->submit(world, pass.get());

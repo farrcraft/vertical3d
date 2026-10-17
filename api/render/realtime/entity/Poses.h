@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "MeshRegistry.h"
+#include <api/render/realtime/MeshRegistry.h>
 
 #include <cstdint>
 #include <optional>
@@ -15,7 +15,7 @@
 #include <entt/entt.hpp>
 #include <glm/mat4x4.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::entity {
 
 /**
  * Every skinned entity's palette for one frame, end to end in one storage buffer, and where
@@ -66,4 +66,4 @@ class Poses final {
  **/
 Poses poses(const entt::registry& registry, float alpha, const MeshRegistry& meshes);
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::entity

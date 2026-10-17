@@ -6,7 +6,7 @@
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
 #include <api/render/realtime/DepthOrder.h>
-#include <api/render/realtime/Sprites.h>
+#include <api/render/realtime/entity/Sprites.h>
 #include <api/render/realtime/WorldCanvas.h>
 #include <api/render/realtime/component/Sprite.h>
 #include <api/type/camera/Profile.h>
@@ -55,7 +55,7 @@ Sprite sized(float width, float height, const TextureHandle& texture) {
 void draw(const entt::registry& registry, float alpha, const glm::vec3& across,
     const glm::vec3& rise, const glm::vec3& depthAxis, WorldCanvas* canvas) {
     DepthOrder order;
-    v3d::render::realtime::sprites(registry, alpha, across, rise, depthAxis, &order);
+    v3d::render::realtime::entity::sprites(registry, alpha, across, rise, depthAxis, &order);
     order.into(canvas);
 }
 

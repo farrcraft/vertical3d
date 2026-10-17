@@ -6,8 +6,8 @@
 #include <api/ecs/component/Emitter.h>
 #include <api/ecs/component/Transform.h>
 #include <api/render/realtime/DepthOrder.h>
-#include <api/render/realtime/Particles.h>
-#include <api/render/realtime/Sprites.h>
+#include <api/render/realtime/entity/Particles.h>
+#include <api/render/realtime/entity/Sprites.h>
 #include <api/render/realtime/WorldCanvas.h>
 #include <api/render/realtime/component/Particles.h>
 #include <api/render/realtime/component/Sprite.h>
@@ -74,7 +74,7 @@ Emitter& emitting(entt::registry* registry, const std::vector<Particle>& made, c
 
 void draw(const entt::registry& registry, float alpha, WorldCanvas* canvas) {
     DepthOrder order;
-    v3d::render::realtime::particles(registry, alpha, right, up, away, &order);
+    v3d::render::realtime::entity::particles(registry, alpha, right, up, away, &order);
     order.into(canvas);
 }
 
@@ -151,8 +151,8 @@ BOOST_AUTO_TEST_CASE(particles_sort_among_sprites) {
     }
 
     DepthOrder order;
-    v3d::render::realtime::particles(registry, 1.0f, right, up, away, &order);
-    v3d::render::realtime::sprites(registry, 1.0f, right, up, away, &order);
+    v3d::render::realtime::entity::particles(registry, 1.0f, right, up, away, &order);
+    v3d::render::realtime::entity::sprites(registry, 1.0f, right, up, away, &order);
     WorldCanvas canvas;
     order.into(&canvas);
 

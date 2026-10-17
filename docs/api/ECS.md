@@ -221,10 +221,10 @@ components live in `api/render/realtime/component/`, beside the renderer handles
 | `realtime::component::Mesh` | A model from a `MeshRegistry`, lit and optionally casting a shadow. |
 | `realtime::component::Particles` | The particles of the entity's `ecs::component::Emitter`. |
 
-The api provides the functions that find these entities and draw them: `realtime::sprites()`,
-`realtime::particles()`, `realtime::meshes()` and `realtime::casters()`. Each takes the registry
-and `alpha()`, and reads `Transform` through `interpolated<Transform>`. An entity whose game
-snapshots `Transform` is therefore drawn between steps with no further work.
+The api provides the functions that find these entities and draw them, in `realtime::entity`:
+`sprites()`, `particles()`, `meshes()` and `casters()`. Each takes the registry and `alpha()`,
+and reads `Transform` through `interpolated<Transform>`. An entity whose game snapshots
+`Transform` is therefore drawn between steps with no further work.
 
 A sprite ignores its transform's rotation, because a billboard faces the camera. A game shows
 which way a sprite faces by choosing its region. A `Sprite` holds the region's texture

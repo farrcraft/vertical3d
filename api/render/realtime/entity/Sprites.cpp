@@ -12,7 +12,7 @@
 
 #include <glm/geometric.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::entity {
 
 /**
  **/
@@ -38,4 +38,4 @@ void sprites(const entt::registry& registry, float alpha, const glm::vec3& right
     }
 }
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::entity

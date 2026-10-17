@@ -14,9 +14,9 @@
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/LitSettings.h>
 #include <api/render/realtime/MeshRegistry.h>
-#include <api/render/realtime/Meshes.h>
+#include <api/render/realtime/entity/Meshes.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Poses.h>
+#include <api/render/realtime/entity/Poses.h>
 #include <api/render/realtime/SceneUniforms.h>
 #include <api/render/realtime/Shadow.h>
 #include <api/render/realtime/component/Mesh.h>
@@ -50,7 +50,7 @@ using v3d::render::realtime::LitSettings;
 using v3d::render::realtime::MeshHandle;
 using v3d::render::realtime::MeshRegistry;
 using v3d::render::realtime::Pass;
-using v3d::render::realtime::Poses;
+using v3d::render::realtime::entity::Poses;
 using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
@@ -119,7 +119,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     LitSettings settings;
     settings.outline = 0.05f;
 
-    const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
+    const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
     Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
@@ -128,7 +128,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     pass->camera(camera.view(), camera.projection());
     pass->scene(lit->scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f),
         v3d::render::realtime::TextureHandle(), poses.palette()));
-    v3d::render::realtime::meshes(registry, 1.0f, meshes, *lit, settings.outline, pass.get(), poses);
+    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, *lit, settings.outline, pass.get(), poses);
 
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
@@ -199,7 +199,7 @@ BOOST_AUTO_TEST_CASE(poses_are_laid_end_to_end) {
     const entt::entity second = lay(&registry, strip);
     const entt::entity unskinned = lay(&registry, still);
 
-    const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
+    const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
     BOOST_CHECK_EQUAL(poses.palette().size(), 6U);
     BOOST_REQUIRE(poses.firstJoint(first) && poses.firstJoint(second));
     BOOST_CHECK_EQUAL(*poses.firstJoint(first) + *poses.firstJoint(second), 3U);
@@ -225,7 +225,7 @@ BOOST_AUTO_TEST_CASE(an_entity_with_nothing_playing_stands_at_rest) {
     const entt::entity released = lay(&registry, doomed);
     BOOST_REQUIRE(meshes.release(doomed));
 
-    const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
+    const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
     BOOST_CHECK(!poses.firstJoint(released));
     BOOST_REQUIRE_EQUAL(poses.palette().size(), 6U);
     for (const glm::mat4& matrix : poses.palette()) {
@@ -386,7 +386,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
 
     // the light looks along +z from two units out over a sphere of one, as the static case's
     const glm::mat4 light = v3d::render::realtime::shadow::light(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f), 1.0f);
-    const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
+    const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
 
     Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("shadow");
@@ -395,7 +395,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     pass->scene(lit.scene(v3d::render::realtime::pack(LitSettings(), light, 1.0f / size),
         v3d::render::realtime::TextureHandle(), poses.palette()));
     pass->depthBias(0.0f, 0.0f);
-    v3d::render::realtime::casters(registry, 1.0f, meshes, lit, pass.get(), poses);
+    v3d::render::realtime::entity::casters(registry, 1.0f, meshes, lit, pass.get(), poses);
     BOOST_CHECK_EQUAL(pass->items().size(), 1U);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
@@ -431,14 +431,14 @@ BOOST_AUTO_TEST_CASE(a_skinned_mesh_released_in_flight_outlives_its_frame) {
 
     entt::registry registry;
     lay(&registry, strip);
-    const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
+    const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
     Frame frame;
     boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
     pass->scene(lit.scene(v3d::render::realtime::pack(LitSettings(), glm::mat4(1.0f), 0.0f),
         v3d::render::realtime::TextureHandle(), poses.palette()));
-    v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, 0.0f, pass.get(), poses);
+    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, 0.0f, pass.get(), poses);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),

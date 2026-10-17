@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::entity {
 
 namespace {
 
@@ -95,4 +95,4 @@ Poses poses(const entt::registry& registry, float alpha, const MeshRegistry& mes
     return result;
 }
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::entity
