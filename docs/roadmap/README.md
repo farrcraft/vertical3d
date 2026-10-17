@@ -33,7 +33,6 @@ roadmap has none of these. It is not a schedule and it has no dates.
 
 | Roadmap | Area |
 |---|---|
-| [StreamingWorlds.md](StreamingWorlds.md) | Realtime, grid, voxel: loading on a worker thread, uploads that do not wait, regions, and a shadow map that follows the camera |
 | [OfflineShading.md](OfflineShading.md) | Offline rendering: verified transformations, an acceleration structure, area lights, reyes opacity, displacement and bump mapping |
 | [EditorModelling.md](EditorModelling.md) | The editor: a dirty flag, multiple selection, modelling operations, the missing command handlers and resizable panes |
 | [LitScenesAtScale.md](LitScenesAtScale.md) | Realtime, audio: instanced lit and shadow draws, a grade authored for display, and a panned voice |
@@ -42,9 +41,10 @@ roadmap has none of these. It is not a schedule and it has no dates.
 
 | Roadmap | What it covered | Done by |
 |---|---|---|
+| [StreamingWorlds.md](completed/StreamingWorlds.md) | Loading while a game runs: a worker thread, uploads that do not drain the queue, regions, the movement filter and a shadow map that follows the camera. Remembered sight in `api/grid` is in [TODO.md](../TODO.md#tile-grids) | [StreamingWorlds](../plans/completed/StreamingWorlds.md), 2026-10-16 |
 | [OfflineRendering.md](completed/OfflineRendering.md) | Offline rendering: a RIB reader, a shading language, sampling through one film, recursive ray tracing, textures, and one ray tracer. Area lights, displacement and acceleration are in [TODO.md](../TODO.md#offline-rendering) | Three phase plans and [OfflineRenderingPhases4To6](../plans/completed/OfflineRenderingPhases4To6.md), 2026-09-05 to 2026-10-04 |
 | [GameEngine.md](completed/GameEngine.md) | The realtime api, made suitable for games rather than demos. It indexes the seven milestones below; what each left open is in [TODO.md](../TODO.md) | The seven plans below, 2026-10-03 to 2026-10-04 |
-| [m7-ShellAndShipping.md](completed/m7-ShellAndShipping.md) | Milestone 7: strips that respect `pickable()`, held commands, relative mouse mode, document migration, one shared screen for the UI renderers, a canvas with its own coordinate space, wrapping text boxes, a file chooser, pass timings and a slider. Asynchronous loading is done by [StreamingWorlds](../plans/StreamingWorlds.md) | [ShellAndShipping](../plans/completed/ShellAndShipping.md), 2026-10-04 |
+| [m7-ShellAndShipping.md](completed/m7-ShellAndShipping.md) | Milestone 7: strips that respect `pickable()`, held commands, relative mouse mode, document migration, one shared screen for the UI renderers, a canvas with its own coordinate space, wrapping text boxes, a file chooser, pass timings and a slider. Asynchronous loading is done by [StreamingWorlds](../plans/completed/StreamingWorlds.md) | [ShellAndShipping](../plans/completed/ShellAndShipping.md), 2026-10-04 |
 | [m6-Effects.md](completed/m6-Effects.md) | Milestone 6: sprite clips, a seeded random source, particles on the fixed step, weather, a world tint, and a lit scene's colour over time. The panned voice is in [TODO.md](../TODO.md#audio) | [Effects](../plans/completed/Effects.md), 2026-10-04 |
 | [m5-SkeletalAnimation.md](completed/m5-SkeletalAnimation.md) | Milestone 5: models in parts, skins and clips from glTF, playback on the fixed step, and skinning in both lit passes. Instancing is in [TODO.md](../TODO.md#lit-scenes) | [SkeletalAnimation](../plans/completed/SkeletalAnimation.md), 2026-10-03 |
 | [m4-LitScene.md](completed/m4-LitScene.md) | Milestone 4: images and samplers, models on the device, a lit pass, shadows and a post-processing chain. A shadow fit that follows the camera is in [TODO.md](../TODO.md#lit-scenes) | [LitScene](../plans/completed/LitScene.md), 2026-10-03 |

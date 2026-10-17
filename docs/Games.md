@@ -229,8 +229,8 @@ seconds.
   A region whose map cannot be read is asked for again only after the player has gone away.
 - A step from one region's edge onto the next region's first tile crosses between them, once the
   next one is loaded. A clicked route and the player's sight stay within the region the player
-  stands in, so the next region is dark until the player crosses into it, and the region left
-  behind is drawn from memory.
+  stands in. The next region is dark until the player crosses into it, and the region left behind
+  is drawn from memory.
 - The screen shows 20 × 12 tiles and scrolls to keep the player near its middle, inside the
   world's edges.
 

@@ -1,12 +1,12 @@
 # Streaming Worlds — Loading While the Game Runs
 
-Drafted 2026-10-16 from [the Streaming Worlds roadmap](../roadmap/StreamingWorlds.md). The goal is
+Drafted 2026-10-16 from [the Streaming Worlds roadmap](../../roadmap/completed/StreamingWorlds.md). The goal is
 that a game can load and release parts of its world while frames are drawn, without a frame
 hitch the size of the load. It covers the roadmap's steps 1 to 6. Remembered sight and cascaded
 shadow maps are held, each behind its own trigger.
 
 Each step starts with a test that fails first, or records why none can be written. A step that
-deletes or changes a [TODO.md](../TODO.md) entry does so when it lands.
+deletes or changes a [TODO.md](../../TODO.md) entry does so when it lands.
 
 ## What the code shows
 
@@ -31,7 +31,7 @@ Three facts the plan relies on:
   a frame may be reading, so an upload never overwrites data in use.
 - **`memory::Uploader::oneShot` ends in `vkQueueWaitIdle` on the graphics queue.** That drains
   every frame in flight, not only the copy. voxel's
-  [ChunkMeshPool](../../voxel/src/voxel/ChunkMeshPool.h) relies on the drain to destroy a
+  [ChunkMeshPool](../../../voxel/src/voxel/ChunkMeshPool.h) relies on the drain to destroy a
   replaced mesh at once.
 
 ## Decisions
@@ -74,7 +74,7 @@ Phase 4 — shadows
 **Closed.** The loaders are safe to share. `ThreadTest.cpp` in the
 asset media suite loads a PNG, a JPEG and three glTF files on eight threads through one manager,
 and every load matches the same load on one thread. A PNG reader that shares one buffer between
-calls fails it. [Assets.md](../api/Assets.md#the-asset-manager) states the rule, and the TODO.md
+calls fails it. [Assets.md](../../api/Assets.md#the-asset-manager) states the rule, and the TODO.md
 entry under "Loading" is corrected. ADR-0086 records the worker's design.
 
 - Write a test that loads the same PNG, JPEG and glTF files from one manager on several threads
@@ -93,7 +93,7 @@ MSVC has no thread sanitiser. The ADR says how a threaded test is made determini
 **Closed.** `realtime::DecodedModel` and `decodeModel()` read a model and its albedos with no
 device call. `MeshRegistry::add(decoded)` uploads one, and `acquire()` no longer reads files. The
 headless render suite tests decoding, and the device suite's registry cases pass unchanged.
-[TexturesAndMeshes.md](../api/rendering/TexturesAndMeshes.md#meshes-and-the-mesh-registry)
+[TexturesAndMeshes.md](../../api/rendering/TexturesAndMeshes.md#meshes-and-the-mesh-registry)
 states the split.
 
 - Add a value type holding a decoded glTF model and the pixels of every albedo it names. Add a
@@ -111,7 +111,7 @@ states the split.
 **Closed.** `asset::Worker` runs jobs on one thread in posting order, and hands each result or
 exception to a completion that runs in `poll()`. The asset suite tests the order, the thread each
 side runs on, exceptions both ways, a completion that posts again, and destruction.
-[Assets.md](../api/Assets.md#loading-on-a-worker-thread) states the rules.
+[Assets.md](../../api/Assets.md#loading-on-a-worker-thread) states the rules.
 
 - A worker runs jobs on one thread and holds each result until the main thread polls.
 - `poll()` runs on the main thread. It hands back each finished result and runs its completion
@@ -130,7 +130,7 @@ nothing until `poll(budget)` uploads it. A release before the upload drops the r
 `load()` of the path completes it at once, and a failed file is logged and abandoned. The
 default budget is 4 MiB, which is not yet measured against a real region. The device suite tests
 each case, including a registry destroyed before its requests finish.
-[TexturesAndMeshes.md](../api/rendering/TexturesAndMeshes.md#requesting-a-mesh) states the
+[TexturesAndMeshes.md](../../api/rendering/TexturesAndMeshes.md#requesting-a-mesh) states the
 rules.
 
 A texture request is held. A texture handle that resolves before its image exists would need
@@ -161,7 +161,7 @@ deleted.
 flight keep running. An audit of every device object destroyed outside the ring found nothing
 that relied on the drain: each is destroyed after an explicit device wait, or before any frame
 used it. The comments in `Uploader.h`, `DeviceBuffer.h` and `TextureFactory.h`, and
-[Memory.md](../internals/realtime/Memory.md), state the new rule. The suites pass, and pong,
+[Memory.md](../../internals/realtime/Memory.md), state the new rule. The suites pass, and pong,
 tetris, odyssey, voxel and the editor each run with validation on and log nothing.
 
 - `Uploader::oneShot` submits with a fence and waits on that fence, not on the queue. Frames in
@@ -179,9 +179,9 @@ held. It is due when a profile shows the fence wait itself.
 #### Step 7 — Close phases 1 and 2
 
 **Closed.** The TODO.md entry "Every load runs on the main thread" is deleted.
-[Assets.md](../api/Assets.md) states the worker,
-[TexturesAndMeshes.md](../api/rendering/TexturesAndMeshes.md) the request, the poll and the
-budget, and [Memory.md](../internals/realtime/Memory.md) the uploader's wait. The roadmap
+[Assets.md](../../api/Assets.md) states the worker,
+[TexturesAndMeshes.md](../../api/rendering/TexturesAndMeshes.md) the request, the poll and the
+budget, and [Memory.md](../../internals/realtime/Memory.md) the uploader's wait. The roadmap
 describes the tree as it now is.
 
 ### Phase 3 — Regions
@@ -192,14 +192,14 @@ describes the tree as it now is.
 corner as an optional constructor argument and returns it from `worldMin()`, so every conversion
 follows. The grid suite tests a placed grid, two grids agreeing on their seam, round trips at a
 negative corner, and the refusal of a tile size or corner that is not finite. The tile size check
-fixes the known review finding beside it. [Grid.md](../api/Grid.md#regions) states the rules.
+fixes the known review finding beside it. [Grid.md](../../api/Grid.md#regions) states the rules.
 
 - `TileGrid` takes an optional world position for its minimum corner. Without it, the grid is
   centred on the origin as it is now, so no existing caller changes.
 - `worldMin()` returns the stored corner. Every conversion follows from it.
 - Test that two grids placed side by side agree on their shared edge. A point on the boundary
   belongs to the higher tile in both. Test round trips at negative origins.
-- Update [Grid.md](../api/Grid.md).
+- Update [Grid.md](../../api/Grid.md).
 
 #### Step 9 — Two regions in odyssey
 
@@ -212,7 +212,7 @@ tests loading, placement, release, a dropped load, a region that cannot be read,
 destroyed before its loads arrive, the view and the document's refusals. A run with input
 walked the player through the doorway into the east region, with validation on and nothing
 logged. Regions are textures and documents, not meshes, so step 4's mesh request is not used;
-the world posts its own jobs. [Games.md](../Games.md#odyssey) describes the world.
+the world posts its own jobs. [Games.md](../../Games.md#odyssey) describes the world.
 
 - odyssey's map becomes two regions, each with its own map picture, grid and textures.
 - A region is requested when the player approaches it, and released when the player is far
@@ -228,12 +228,12 @@ its own region.
 
 **Closed.** On a 256 by 256 board with walls, in an optimised build, an always-true filter adds
 about 3% to `findPath` and 3 to 6% to `reachableTiles`. That is not worth a template parameter
-on every search, so `TileFilter` stays a `std::function`. [Grid.md](../api/Grid.md) states the
+on every search, so `TileFilter` stays a `std::function`. [Grid.md](../../api/Grid.md) states the
 cost, and the TODO.md entry is deleted.
 
 - Time `findPath` and `reachableTiles` on a 256 by 256 grid, with a filter and without one.
 - If the filter's call is a measurable share of the time, make `TileFilter` a template parameter.
-  If it is not, state the measurement in [Grid.md](../api/Grid.md).
+  If it is not, state the measurement in [Grid.md](../../api/Grid.md).
 - Either way, delete the TODO.md entry "`TileFilter` is a `std::function`".
 
 ### Phase 4 — Shadows
@@ -246,7 +246,7 @@ each caster where it is drawn, through an `alpha` that defaults to the current s
 suite tests the enclosure, the cut at the distance, the radius under a moving camera, a world
 point keeping its place within its texel, and the refusals. Removing the snap fails the texel
 case. No app in the tree draws a shadowed scene, so no screenshot was taken.
-[Lighting.md](../api/rendering/Lighting.md) states the rules, and the TODO.md entry keeps only
+[Lighting.md](../../api/rendering/Lighting.md) states the rules, and the TODO.md entry keeps only
 cascaded shadow maps.
 
 - Add a fit to the camera's view volume, out to a shadow distance the caller gives. It encloses
@@ -262,17 +262,54 @@ cascaded shadow maps.
 
 #### Step 12 — Close the plan
 
-**Open.** Write the Outcome section. Move what was held to TODO.md: remembered sight in
-`api/grid`, cascaded shadow maps, a path across regions and uploads that return before the copy
-runs. Move the roadmap and this plan to their `completed/` directories.
+**Closed.** The Outcome section is below. What was held is in TODO.md: remembered sight in
+`api/grid`, cascaded shadow maps, a route and sight across regions, a texture request, uploads
+that return before the copy runs, the upload budget's default, and a test of a model that
+decodes and does not upload. The roadmap and this plan are in their `completed/` directories.
 
 ## Open questions
 
-- **Is odyssey the right place to show regions?** It is the only game in the tree with a grid, and
-  a demonstration in the tree is the only way this tree verifies a feature. Recommendation: yes,
-  with two regions only.
-- **Does a caster's extent come from its model?** `type::Model` keeps no bound. Step 11 either adds
-  one at upload, or leaves the extent to the caller's margin as now. Recommendation: leave it to
-  the margin until a game's casters vary widely in size.
-- **The upload budget's default.** Step 4 picks one by measuring a region's upload in voxel or
-  odyssey, and lets the app change it.
+- **Is odyssey the right place to show regions?** Answered yes, with two regions. It meant
+  rewriting how odyssey places its player, draws its map and tracks sight, because it had worked
+  in one grid's tile coordinates.
+- **Does a caster's extent come from its model?** Answered no. The extent is still the caller's
+  margin, and the TODO.md entry for cascaded shadow maps says so.
+- **The upload budget's default.** Left at 4 MiB and not measured, because neither voxel nor
+  odyssey requests meshes. A TODO.md entry holds it.
+
+## Outcome
+
+Closed 2026-10-16. A game can load and release parts of its world while frames are drawn.
+
+**Delivered:**
+
+- One `asset::Manager` loads correctly on several threads, and `asset::Worker` runs jobs on one
+  thread and hands results back in `poll()`. ADR-0086 records the design.
+- `realtime::DecodedModel` separates reading a model from uploading it, and
+  `MeshRegistry::request` loads one on a worker and uploads it under a byte budget.
+- `memory::Uploader` waits on its own fence, so an upload no longer stalls frames in flight.
+  voxel retires a replaced chunk mesh through the frame ring.
+- A `TileGrid` can be placed by its corner, and a region is a grid placed that way. ADR-0087
+  records it. `TileGrid::refusal()` is the one test of what a grid may be made of.
+- odyssey is a world of two regions, loaded and released as the player moves, with a scrolling
+  view and a step across the seam.
+- `shadow::fitView` fits a shadow map to the camera's view, snapped to its texels, and
+  `shadow::fit` reads where a caster is drawn.
+
+**Different from the plan:**
+
+- The loaders turned out to be safe to share, so no worker needs its own manager.
+- A texture has no request of its own. A worker job and a completion cover it, and building one
+  would mean swapping the image behind a live handle.
+- odyssey's regions are documents and colours, not meshes, so `tile::World` posts its own jobs
+  rather than using `MeshRegistry::request`.
+- The movement filter was measured at a few percent and left a `std::function`.
+- The view fit encloses the whole view volume, and un-projects the camera's matrix because
+  `type::Frustum` does not give its corners.
+- Each review found defects in the steps before it, and each was fixed with a test: a missing
+  size check on a decoded model, an infinite tile size let through `fromPicture`, and a region
+  left behind drawn as if still in sight.
+
+**Left open,** each in TODO.md with its trigger: remembered sight in `api/grid`, cascaded shadow
+maps, a route and sight across regions, a texture request, uploads that return before the copy
+runs, the upload budget's default, and a test of a model that decodes and does not upload.

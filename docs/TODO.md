@@ -241,7 +241,27 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Loading
 
-[ReleaseHardening](plans/ReleaseHardening.md) takes this entry.
+[ReleaseHardening](plans/ReleaseHardening.md) takes the last entry.
+
+[] **A texture has no request of its own.**
+
+- `MeshRegistry::request` returns a mesh handle at once and fills it later. A texture handle
+  cannot do the same, because `pipeline::Resources` would have to swap the image behind a live
+  handle and rewrite its descriptor set.
+- A worker job that decodes the image, and a completion that calls `Textures::texture(image)`,
+  covers the need meanwhile.
+- Due when a game wants a texture handle before its pixels arrive.
+
+[] **An upload still waits for its copy.**
+
+- `memory::Uploader::oneShot` waits on its own fence, so the caller can free its staging buffer
+  when it returns. Frames in flight keep running, and the main thread waits only for the copy.
+- An upload that returned at once would retire its staging buffer through the frame ring.
+- Due when a profile shows the fence wait itself.
+
+[] **The upload budget's default is not measured.** `MeshRegistry::DEFAULT_UPLOAD_BUDGET` is
+4 MiB, chosen without measuring a region's upload, because no game in the tree requests meshes.
+Due when one does.
 
 [] **A path outside the ANSI code page cannot be opened.**
 
@@ -295,6 +315,10 @@ and can move to TypeScript: `make_embedded_fixture.py`, `make_model_fixture.py`,
 `make_modes_fixture.py`, `make_parts_fixture.py` and `make_skin_fixture.py`.
 `make_blender_fixture.py` runs inside Blender, which scripts only in Python, so it needs a
 decision of its own: keep it as the one exception, or keep only the fixture it wrote.
+
+[] **Nothing tests a requested model that decodes and does not upload.** `MeshRegistry::poll`
+logs and abandons such a request, but no fixture decodes cleanly and then fails `upload()`'s
+checks, so the branch never runs in a test.
 
 [] **Nothing asserts the pipeline cache.** The device suite covers everything below the
 recorder in `api/render` except the pipeline cache. A test for it would count what was compiled,

@@ -5,30 +5,31 @@ it is played. A model can be loaded on a worker thread and uploaded while frames
 A tile grid is still one rectangle at the world origin, and a shadow map covers one fixed sphere.
 Each of those holds for a world that is one board. Neither holds for a world of regions.
 
-The gaps are each described in [TODO.md](../TODO.md). This roadmap orders them, because most of
+The gaps are each described in [TODO.md](../../TODO.md). This roadmap orders them, because most of
 them block the next.
 
-**Steps 1 to 6 are taken up by [the StreamingWorlds plan](../plans/StreamingWorlds.md).** Steps 1
-to 3 are done by it. Step 7 is held behind its trigger.
+**Steps 1 to 6 are done by [the StreamingWorlds plan](../../plans/completed/StreamingWorlds.md)**,
+closed 2026-10-16. Step 7 is held in [TODO.md](../../TODO.md#tile-grids) behind its trigger, and
+what the plan left open is there too. What follows is the reasoning the plan was drafted from.
 
 ## What exists
 
-- **[`asset::Worker`](../../api/asset/Worker.h)** decodes on one thread and hands results back
+- **[`asset::Worker`](../../../api/asset/Worker.h)** decodes on one thread and hands results back
   in a poll on the main thread. One `asset::Manager` loads correctly from several threads.
-- **[`MeshRegistry::request`](../../api/render/realtime/MeshRegistry.h)** decodes a model on a
+- **[`MeshRegistry::request`](../../../api/render/realtime/MeshRegistry.h)** decodes a model on a
   worker, and `poll()` uploads it under a byte budget. A texture has no request of its own; a
   worker job decodes it and its completion registers it.
-- **[`memory::Uploader`](../../api/render/realtime/vulkan/memory/Uploader.h) waits for its own
+- **[`memory::Uploader`](../../../api/render/realtime/vulkan/memory/Uploader.h) waits for its own
   upload**, not for frames in flight. Every object a frame may still read is retired through
-  [`frame::Ring::retire`](../../api/render/realtime/vulkan/frame/Ring.h), voxel's replaced chunk
+  [`frame::Ring::retire`](../../../api/render/realtime/vulkan/frame/Ring.h), voxel's replaced chunk
   meshes among them.
-- **[`TileGrid`](../../api/grid/TileGrid.h)** is one rectangle of tiles centred on the world
+- **[`TileGrid`](../../../api/grid/TileGrid.h)** is one rectangle of tiles centred on the world
   origin. Every conversion between world and tile coordinates goes through `worldMin()`, which
   assumes that origin.
 - **`TileFilter` is a `std::function`**, called for every neighbour of every visited tile.
-- **Remembered sight** is in odyssey's [tile/Sight.h](../../odyssey/tile/Sight.h). Nothing in it
+- **Remembered sight** is in odyssey's [tile/Sight.h](../../../odyssey/tile/Sight.h). Nothing in it
   is specific to odyssey.
-- **[`shadow::fit`](../../api/render/realtime/Shadow.h)** fits the shadow map once, to a sphere
+- **[`shadow::fit`](../../../api/render/realtime/Shadow.h)** fits the shadow map once, to a sphere
   around the casters' positions plus a caller's margin.
 
 ## What it needs
@@ -79,7 +80,7 @@ changing it.
 
 ### 7. Remembered sight in `api/grid`
 
-Move [tile/Sight.h](../../odyssey/tile/Sight.h) into `api/grid` when a second game needs fog of war.
+Move [tile/Sight.h](../../../odyssey/tile/Sight.h) into `api/grid` when a second game needs fog of war.
 With regions, remembered sight is kept per region and released with it.
 
 ## The ordering

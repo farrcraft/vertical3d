@@ -20,7 +20,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
-| [StreamingWorlds](StreamingWorlds.md) | Realtime, asset, grid, voxel, odyssey | Loading on a worker thread, uploads that do not drain the queue, regions in odyssey, and a shadow map fitted to the view |
 | [ReleaseHardening](ReleaseHardening.md) | Engine, ui, config, grid, rendering, docs | The defects a player of a released game could meet, and the known review findings |
 | [ToolingDebt](ToolingDebt.md) | All of the tree, tests | The thirteen disabled clang-tidy checks enabled, and the test gaps that need no new hardware |
 
@@ -30,6 +29,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [StreamingWorlds](completed/StreamingWorlds.md) | Assets, realtime rendering, grid, voxel, odyssey | 2026-10-16 | A worker thread for loading, mesh requests under an upload budget, uploads that do not drain the queue, grids placed as regions, odyssey as a world of two regions, and a shadow map fitted to the view |
 | [RetconUpstream](completed/RetconUpstream.md) | Realtime rendering, UI, ECS, engine, audio | 2026-10-08 | Frame capture on `Engine3D`, four renderer seams a game on the other camera hand or an sRGB chain needs, five small helpers, and audio events behind an interface |
 | [ReviewGates](completed/ReviewGates.md) | Process, CI | 2026-10-07 | A changeset reviews clean: a finding is what the change introduced, and four classes a tool can find are gated in CI |
 | [ReviewFixes](completed/ReviewFixes.md) | All of `api/`, moya, pong, voxel, docs | 2026-10-05 | Fixed the findings of a code review of `feat/motion-and-queries`, each with a test that failed first, and recorded the four that were not defects |
