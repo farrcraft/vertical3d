@@ -144,6 +144,13 @@ class Engine final {
     bool gain(Voice voice, float level);
 
     /**
+     * Move one sound between the speakers, as Play::pan places it when it starts.
+     *
+     * @return false for a voice that is not playing
+     **/
+    bool pan(Voice voice, float value);
+
+    /**
      * Set a bus's volume, which every sound started on it is multiplied by.
      *
      * The bus need not exist yet: a settings screen writes the volumes before anything has
@@ -163,6 +170,13 @@ class Engine final {
         MIX_Track* track;
         std::string bus;
     };
+
+    /**
+     * Give a track the gains of a pan. A centred pan clears the track's gains rather than
+     * setting both to one, so a track handed back from a panned sound plays the next one
+     * exactly as the mixer would unpanned.
+     **/
+    static bool place(MIX_Track* track, float pan);
 
     /**
      * Take the tracks of every finished sound back, so a game that starts one shots does

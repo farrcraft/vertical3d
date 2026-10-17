@@ -224,6 +224,7 @@ Voice Engine::play(const std::string_view & clip, const Play & how) {
         MIX_TagTrack(track, how.bus.c_str());
     }
     MIX_SetTrackGain(track, how.gain);
+    place(track, how.pan);
 
     // the properties are the only way to name a loop count or a fade, and the id belongs to
     // this call rather than to the track
@@ -287,6 +288,23 @@ bool Engine::gain(Voice voice, float level) {
         return false;
     }
     return MIX_SetTrackGain(found->second.track, level);
+}
+
+bool Engine::pan(Voice voice, float value) {
+    const std::map<Voice, Playing>::iterator found = live(voice);
+    if (found == voices_.end()) {
+        return false;
+    }
+    return place(found->second.track, value);
+}
+
+bool Engine::place(MIX_Track* track, float pan) {
+    const Stereo gains = stereo(pan);
+    if (gains.left == 1.0f && gains.right == 1.0f) {
+        return MIX_SetTrackStereo(track, nullptr);
+    }
+    const MIX_StereoGains mixed{gains.left, gains.right};
+    return MIX_SetTrackStereo(track, &mixed);
 }
 
 bool Engine::busGain(const std::string & bus, float level) {

@@ -182,20 +182,16 @@ A table larger than 16 entries a side is held. It is due only if a strip shows b
 
 #### Step 8 — Pan on a voice
 
-**Open.**
+**Closed.** `Play::pan` places a sound between the speakers, and `Engine::pan(voice, value)`
+moves a playing one. `audio::stereo(pan)` gives the gains by a balance law, so a centred sound
+is exactly an unpanned one. A pan past either end is held there, and one that is not finite is
+centred. A centred pan clears a track's stereo gains, because a track handed back from a panned
+sound would otherwise keep its old gains. Any other pan calls `MIX_SetTrackStereo`.
 
-- `Play` gains a `pan` from -1, left, to 1, right, with 0 the default. `Engine` gains
-  `pan(voice, value)`.
-- A free function converts a pan to a left and right gain. It is a balance law: the side
-  being panned towards stays at full gain, and the other falls linearly to zero. A pan of 0 is
-  therefore exactly an unpanned voice.
-- A pan of 0 clears the track's stereo gains, so an unpanned voice is left exactly as SDL_mixer
-  plays it. Any other pan calls `MIX_SetTrackStereo`. A value outside -1 to 1 is clamped.
-- Headless tests cover the conversion at both ends, the centre and a clamped value. A case
-  beside `audio_engine_play_without_a_device_test` covers `pan()` on an engine with no device and
-  on a voice that does not exist.
-- The sound itself cannot be tested without a device. It is checked by ear in step 9.
-- Update [Audio.md](../api/engine/Audio.md) with the call and the pan law.
+- `PanTest.cpp` tests the gains at both ends, the centre, between, past the ends and for a pan
+  that is not finite. It also tests `pan()` on an engine with no device.
+- [Audio.md](../api/engine/Audio.md) states the call and the pan law.
+- The sound itself is checked by ear in step 9.
 
 #### Step 9 — pong pans its sounds
 

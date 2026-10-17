@@ -38,6 +38,29 @@ struct Play final {
      * The sound's own volume, multiplied by its bus's. 1 is unchanged.
      **/
     float gain;
+
+    /**
+     * Where the sound sits between the speakers: -1 is left, 0 the centre and 1 right. The
+     * game converts a position to a pan, because which way is left depends on its camera.
+     * stereo() gives the gains a pan becomes.
+     **/
+    float pan;
 };
+
+/**
+ * The gain of each side of a panned sound.
+ **/
+struct Stereo final {
+    float left;
+    float right;
+};
+
+/**
+ * The gains a pan gives each side. The side the sound is panned towards stays at full gain. The
+ * other falls in a straight line to silence at the end of the range, so a centred sound is
+ * exactly an unpanned one. A pan past either end is held there, and one that is not finite is
+ * the centre.
+ **/
+Stereo stereo(float pan) noexcept;
 
 };  // namespace v3d::audio
