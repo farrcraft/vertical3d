@@ -140,6 +140,7 @@ BOOST_AUTO_TEST_CASE(thread_one_manager_loads_on_many_threads_test) {
     std::latch start(static_cast<std::ptrdiff_t>(threads));
     std::atomic<std::size_t> mismatches{ 0 };
     std::vector<std::thread> workers;
+    workers.reserve(threads);
     for (std::size_t worker = 0; worker < threads; worker++) {
         workers.emplace_back([&, worker]() {
             start.arrive_and_wait();

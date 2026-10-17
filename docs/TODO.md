@@ -49,18 +49,6 @@ reports over a full `-DV3D_CLANG_TIDY=ON` build.
 | `misc-include-cleaner` | 3346 |
 | `readability-uppercase-literal-suffix` | 4156 |
 
-[] **Three sites fail checks that are enabled.** The worker and the mesh request came after the
-last full gated build, and fail it:
-
-- `MeshRegistry.h:106`: `DEFAULT_UPLOAD_BUDGET` multiplies in `int` and widens to `std::size_t`
-  (`bugprone-implicit-widening-of-multiplication-result`).
-- `Worker.h:63` and `MeshRegistry.cpp:131`: a lambda's implicit move constructor may throw
-  (`bugprone-exception-escape`). Under MSVC's debug library, moving a captured `std::string` or
-  container allocates a proxy, which can throw `bad_array_new_length`. The fix has to choose
-  between captures that cannot throw on move and a suppression that says why.
-- Each fails `v3dlib_render` and `v3dlib_asset` in `out/build/verify`, and so blocks every target
-  that links them.
-
 ## RiRotate's sign
 
 [] The sign of `RiRotate` is unverified.

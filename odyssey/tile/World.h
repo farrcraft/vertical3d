@@ -206,8 +206,8 @@ class World final {
      **/
     static int distance(const Region& region, v3d::grid::TileCoord tile);
 
-    void request(std::size_t region);
-    void release(std::size_t region);
+    void request(std::size_t index);
+    void release(std::size_t index);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::asset::Manager> assets_;

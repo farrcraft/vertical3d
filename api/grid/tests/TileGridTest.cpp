@@ -299,7 +299,10 @@ BOOST_AUTO_TEST_CASE(tilegrid_refuses_a_side_too_long_to_hold_test) {
     const float huge = std::numeric_limits<float>::max() / 2.0f;
 
     const std::optional<std::string> refused = TileGrid::refusal(10, 1, huge, glm::vec3(0.0f));
-    BOOST_REQUIRE(refused);
+    if (!refused) {
+        BOOST_ERROR("a side too long to hold was not refused");
+        return;
+    }
     BOOST_CHECK(refused->find("tile size") != std::string::npos);
     BOOST_CHECK_THROW(TileGrid(10, 1, huge), std::invalid_argument);
     BOOST_CHECK(!TileGrid::refusal(10, 1, 1.0f, glm::vec3(0.0f)));

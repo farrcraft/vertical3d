@@ -103,7 +103,7 @@ class MeshRegistry final {
     /**
      * The most bytes poll() uploads by default before it leaves the rest for the next call.
      **/
-    static constexpr std::size_t DEFAULT_UPLOAD_BUDGET = 4 * 1024 * 1024;
+    static constexpr std::size_t DEFAULT_UPLOAD_BUDGET = std::size_t{4} * 1024 * 1024;
 
     /**
      * @param logger where a texture that could not be found is reported

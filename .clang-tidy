@@ -84,3 +84,9 @@ CheckOptions:
   # author wrote: a straight run of assertions with no branch in it reaches 37. Nothing in this
   # tree's own macros branches, so counting them buys nothing anywhere else either.
   readability-function-cognitive-complexity.IgnoreMacros: 'true'
+  # The check already ignores std::bad_alloc, since running out of memory is not a defect in the
+  # function that allocates. MSVC's debug library throws std::bad_array_new_length, a kind of
+  # bad_alloc, from the size check of every allocation, including the proxy that moving a string
+  # or a container allocates. The check matches the exact type, so without this every lambda that
+  # captures a string has a move constructor that may throw.
+  bugprone-exception-escape.IgnoredExceptions: 'bad_array_new_length'

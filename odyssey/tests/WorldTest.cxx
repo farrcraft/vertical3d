@@ -308,11 +308,13 @@ BOOST_AUTO_TEST_CASE(the_view_follows_the_player_inside_the_world) {
  **/
 BOOST_AUTO_TEST_CASE(a_world_that_cannot_be_read_is_refused) {
     Fixture fixture("world_refused");
-    const char* const refused[] = {
+    const char* const overlapping =
         "{\"regions\": ["
         "{\"file\": \"west.json\", \"corner\": {\"x\": 0, \"y\": 0}, \"size\": {\"x\": 6, \"y\": 4}},"
         "{\"file\": \"east.json\", \"corner\": {\"x\": 5, \"y\": 0}, \"size\": {\"x\": 6, \"y\": 4}}"
-        "], \"start\": 0}",
+        "], \"start\": 0}";
+    const char* const refused[] = {
+        overlapping,
         "{\"regions\": [{\"file\": \"west.json\", \"corner\": {\"x\": 0, \"y\": 0}, \"size\": {\"x\": 7, \"y\": 4}}], \"start\": 0}",
         "{\"regions\": [{\"file\": \"west.json\", \"corner\": {\"x\": 0.5, \"y\": 0}, \"size\": {\"x\": 6, \"y\": 4}}], \"start\": 0}",
         "{\"regions\": [{\"file\": \"west.json\", \"corner\": {\"x\": 0, \"y\": 0}, \"size\": {\"x\": 6, \"y\": 4}}], \"start\": 1}",

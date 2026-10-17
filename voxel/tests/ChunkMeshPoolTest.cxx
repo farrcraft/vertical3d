@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(a_replaced_mesh_is_retired_not_destroyed) {
  **/
 BOOST_AUTO_TEST_CASE(a_new_chunk_retires_nothing) {
     std::size_t retired = 0;
-    ChunkMeshPool pool([&retired](std::function<void()>) { retired++; });
+    ChunkMeshPool pool([&retired](const std::function<void()>&) { retired++; });
 
     const boost::shared_ptr<int> owner = boost::make_shared<int>(1);
     pool.add(1, watched(owner), glm::vec3(0.0f), 16.0f);

@@ -284,8 +284,10 @@ BOOST_AUTO_TEST_CASE(the_fit_reads_the_drawn_position) {
 
     const std::optional<lighting::ShadowBounds> halfway = lighting::fitShadow(registry, {}, 1.0f, 0.5f);
     const std::optional<lighting::ShadowBounds> current = lighting::fitShadow(registry, {}, 1.0f);
-    BOOST_REQUIRE(halfway);
-    BOOST_REQUIRE(current);
+    if (!halfway || !current) {
+        BOOST_ERROR("a moving caster gave no fit");
+        return;
+    }
     BOOST_CHECK_CLOSE(halfway->centre.x, 5.0f, 1e-3f);
     BOOST_CHECK_CLOSE(current->centre.x, 10.0f, 1e-3f);
 }
@@ -297,7 +299,10 @@ BOOST_AUTO_TEST_CASE(the_fit_reads_the_drawn_position) {
 BOOST_AUTO_TEST_CASE(the_view_fit_encloses_what_the_camera_sees) {
     const glm::mat4 camera = perspective(glm::vec3(3.0f, 10.0f, 12.0f), glm::vec3(0.0f), 200.0f);
     const std::optional<lighting::ShadowBounds> fitted = lighting::fitShadowToView(camera, 30.0f, towards(), 1024);
-    BOOST_REQUIRE(fitted);
+    if (!fitted) {
+        BOOST_ERROR("a view gave no fit");
+        return;
+    }
 
     for (const glm::vec3& corner : viewCorners(camera, 30.0f)) {
         BOOST_CHECK_LE(glm::length(corner - fitted->centre), fitted->radius);
@@ -307,8 +312,10 @@ BOOST_AUTO_TEST_CASE(the_view_fit_encloses_what_the_camera_sees) {
     const glm::mat4 shallow = perspective(glm::vec3(3.0f, 10.0f, 12.0f), glm::vec3(0.0f), 20.0f);
     const std::optional<lighting::ShadowBounds> cut = lighting::fitShadowToView(shallow, 30.0f, towards(), 1024);
     const std::optional<lighting::ShadowBounds> farther = lighting::fitShadowToView(camera, 300.0f, towards(), 1024);
-    BOOST_REQUIRE(cut);
-    BOOST_REQUIRE(farther);
+    if (!cut || !farther) {
+        BOOST_ERROR("a view gave no fit");
+        return;
+    }
     BOOST_CHECK_LT(cut->radius, fitted->radius);
     BOOST_CHECK_GT(farther->radius, fitted->radius);
 }
@@ -322,8 +329,10 @@ BOOST_AUTO_TEST_CASE(the_view_fit_keeps_its_radius_as_the_camera_moves) {
         30.0f, towards(), 1024);
     const std::optional<lighting::ShadowBounds> moved = lighting::fitShadowToView(
         perspective(glm::vec3(-40.0f, 13.0f, 7.0f), glm::vec3(-20.0f, 0.0f, 31.0f), 200.0f), 30.0f, towards(), 1024);
-    BOOST_REQUIRE(here);
-    BOOST_REQUIRE(moved);
+    if (!here || !moved) {
+        BOOST_ERROR("a view gave no fit");
+        return;
+    }
     BOOST_CHECK_CLOSE(here->radius, moved->radius, 1e-2f);
 }
 
@@ -341,7 +350,10 @@ BOOST_AUTO_TEST_CASE(the_view_fit_keeps_the_world_on_its_texels) {
             const glm::vec3 offset(slide, 0.0f, slide * 0.5f);
             const glm::mat4 camera = perspective(glm::vec3(3.0f, 10.0f, 12.0f) + offset, offset, 200.0f);
             const std::optional<lighting::ShadowBounds> fitted = lighting::fitShadowToView(camera, 30.0f, towards(), texels);
-            BOOST_REQUIRE(fitted);
+            if (!fitted) {
+                BOOST_ERROR("a view gave no fit");
+                return;
+            }
             const glm::vec3 clip = project(lighting::shadowLight(towards(), fitted->centre, fitted->radius, hand), point);
             const glm::vec2 texel = (glm::vec2(clip) + 1.0f) * 0.5f * static_cast<float>(texels);
             within.emplace_back(texel.x - std::floor(texel.x), texel.y - std::floor(texel.y));
