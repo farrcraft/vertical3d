@@ -328,9 +328,6 @@ does not report an entry again. Each entry names its class.
 
 ### Boundary input
 
-[] **`TileGrid` lets a tile size that is not a number through.** `TileGrid.cpp` tests
-`tileSize <= 0`, which NaN and infinity pass; its header says a size that is not positive throws.
-
 [] **The editor's orthographic zoom has no floor.** `Camera::zoom` scales the half height by a
 factor that one large drag takes to zero or below, and a zero never recovers. `Isometric::zoom`
 clamps; this does not.

@@ -188,7 +188,11 @@ describes the tree as it now is.
 
 #### Step 8 — A world origin on TileGrid
 
-**Open.** Write the ADR first.
+**Closed.** ADR-0087 places a region as a grid by its minimum corner. `TileGrid` takes the
+corner as an optional constructor argument and returns it from `worldMin()`, so every conversion
+follows. The grid suite tests a placed grid, two grids agreeing on their seam, round trips at a
+negative corner, and the refusal of a tile size or corner that is not finite. The tile size check
+fixes the known review finding beside it. [Grid.md](../api/Grid.md#regions) states the rules.
 
 - `TileGrid` takes an optional world position for its minimum corner. Without it, the grid is
   centred on the origin as it is now, so no existing caller changes.

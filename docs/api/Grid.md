@@ -32,11 +32,14 @@ occupants, the same type serves map generation, which has none, and a running ga
 ## The board and its coordinates
 
 `TileGrid` ([api/grid/TileGrid.h](../../api/grid/TileGrid.h)) is a rectangle of tiles lying flat
-on the `y = 0` plane, centred on the world origin.
+on the `y = 0` plane, centred on the world origin unless it is placed by its corner.
 
-- `TileGrid(width, height, tileSize)` throws `std::invalid_argument` if any value is not
-  positive. The default tile size, `TileGrid::DEFAULT_TILE_SIZE`, is 1.5 world units, which
-  suits a figure about 1.8 units tall.
+- `TileGrid(width, height, tileSize)` throws `std::invalid_argument` if a dimension is not
+  positive, or the tile size is not a finite positive number. The default tile size,
+  `TileGrid::DEFAULT_TILE_SIZE`, is 1.5 world units, which suits a figure about 1.8 units tall.
+- `TileGrid(width, height, tileSize, corner)` places the grid's minimum corner, the outer corner
+  of tile (0, 0), at a world position. The corner's `y` is ignored. A corner whose `x` or `z` is
+  not finite throws `std::invalid_argument`. `worldMin()` returns the corner either way.
 - A `TileCoord` is `{x, y}`. **`x` runs along world `+X` and `y` along world `+Z`**, so the
   second axis is depth, not height.
 - `tileToWorld(tile)` gives the centre of a tile on the ground. `worldToTile(position)` gives the
@@ -59,6 +62,19 @@ doorway (passable, `None`), a crate or low wall (impassable, `Half`) and a solid
 (impassable, `Full`). Placing a wall means setting both.
 
 Reading off the board is allowed. **Writing off the board throws `std::out_of_range`.**
+
+### Regions
+
+A world larger than one board is made of regions, and **a region is a grid placed by its
+corner**. The game loads and releases each region, and decides which one a point is in. Two
+grids placed side by side share a seam. A point on the seam belongs to the higher tile, which is
+the first column or row of the grid beyond it. The grid before the seam puts the point just off
+its board.
+
+Pathfinding, line of sight and the overlay each work within one grid. A route or a line that
+crosses regions is the game's to join. Two grids placed so that they overlap are not detected.
+
+Background: [ADR-0087](../adr/0087-grid-a-region-is-a-grid-placed-by-its-corner.md)
 
 ## Movement
 

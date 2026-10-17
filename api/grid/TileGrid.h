@@ -51,7 +51,9 @@ std::string_view toString(Cover cover);
  * separately as a predicate, so this type serves map generation and a running simulation
  * alike.
  *
- * The grid is centred on the world origin.
+ * The grid is centred on the world origin unless it is given the world position of its minimum
+ * corner. A region of a larger world is a grid placed by its corner. A grid holds no reference
+ * to other regions, and two grids placed to overlap are not detected.
  **/
 class TileGrid {
  public:
@@ -69,9 +71,21 @@ class TileGrid {
      * @param width tiles along world +X
      * @param height tiles along world +Z
      * @param tileSize tile edge length in world units
-     * @throws std::invalid_argument if any dimension or the tile size is not positive
+     * @throws std::invalid_argument if any dimension is not positive, or the tile size is not a
+     *         finite positive number
      **/
     TileGrid(int width, int height, float tileSize = DEFAULT_TILE_SIZE);
+
+    /**
+     * A grid placed in the world by its minimum corner, the corner of tile (0, 0) nearest the
+     * origin of world X and Z.
+     *
+     * @param corner the corner's world position. Its y is ignored, because the grid lies on the
+     *        Y = 0 plane
+     * @throws std::invalid_argument for what the other constructor refuses, or a corner whose x
+     *         or z is not finite
+     **/
+    TileGrid(int width, int height, float tileSize, const glm::vec3& corner);
 
     int width() const;
     int height() const;
@@ -147,6 +161,7 @@ class TileGrid {
     int width_{0};
     int height_{0};
     float tileSize_{DEFAULT_TILE_SIZE};
+    glm::vec3 corner_{0.0f};  /**< the world position of the minimum corner, on Y = 0 **/
 
     /**
      * Row major, y * width + x. A byte per tile rather than std::vector<bool>, whose proxy

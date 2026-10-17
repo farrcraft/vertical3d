@@ -52,9 +52,9 @@ every app's bindings name registered commands.
 
 ### Step 4 — Boundary input
 
-**Open.** [TODO.md](../TODO.md#boundary-input): the six entries under "Boundary input".
+**Open.** [TODO.md](../TODO.md#boundary-input): the entries under "Boundary input". The tile
+size entry was fixed with the grid's corner in the StreamingWorlds plan.
 
-- `TileGrid` refuses a tile size that is not a finite positive number.
 - The editor's orthographic zoom clamps, as `Isometric::zoom` does.
 - `rib::Arguments` reads an `RtInt` array as integers.
 - `Polygon::clip` tests `intersectEdge`'s result, as `Polygon::split` does.
