@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace v3d::moya {
+namespace v3d::moya::reyes {
 
 std::array<int, 4> footprint(const glm::vec3 & min, const glm::vec3 & max, int columns, int rows) {
     const std::array<int, 4> none = { 0, 0, -1, -1 };
@@ -45,4 +45,4 @@ unsigned int shutterSlice(float time, const glm::vec2 & shutter, unsigned int sl
     return static_cast<unsigned int>(held);  // checked: held is in [0, slices - 1]
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes

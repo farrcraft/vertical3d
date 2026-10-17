@@ -5,6 +5,8 @@
 
 #include "GridShader.h"
 
+#include <moya/libmoya/RenderContext.h>
+
 #include <string>
 #include <vector>
 
@@ -15,9 +17,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-#include "RenderContext.h"
-
-namespace v3d::moya {
+namespace v3d::moya::reyes {
 
 namespace {
 
@@ -204,4 +204,4 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     shading_ = nullptr;
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes

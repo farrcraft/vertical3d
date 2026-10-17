@@ -13,7 +13,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::reyes {
 
 /**
  * Every sample of the frame, and the nearest micropolygon hidden at each so far.
@@ -69,4 +69,4 @@ class Samples final {
     std::vector<Sample> samples_;
 };
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes

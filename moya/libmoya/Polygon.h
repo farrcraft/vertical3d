@@ -5,9 +5,10 @@
 
 #pragma once
 
+#include <moya/libmoya/reyes/Primitive.h>
+
 #include <vector>
 
-#include "ReyesPrimitive.h"
 #include "Vertex.h"
 // #include "RenderContext.h"
 
@@ -21,7 +22,7 @@ class Plane;
 namespace v3d::moya {
 class RenderContext;
 
-class Polygon : public ReyesPrimitive {
+class Polygon : public reyes::Primitive {
  public:
     Polygon();
     virtual ~Polygon();
@@ -70,7 +71,7 @@ class Polygon : public ReyesPrimitive {
     // virtual bool diceable(void) const;
     virtual v3d::type::geometry::AABBox bound(void) const;
     virtual void split(RenderContext & rc);
-    virtual bool dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & rc);
+    virtual bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc);
 
  protected:
     void split(const v3d::type::geometry::Plane & plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2);

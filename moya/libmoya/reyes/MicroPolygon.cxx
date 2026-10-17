@@ -8,7 +8,7 @@
 
 #include "MicroPolygon.h"
 
-namespace v3d::moya {
+namespace v3d::moya::reyes {
 
 MicroPolygon::MicroPolygon() {
 }
@@ -54,4 +54,4 @@ bool covers(const std::array<glm::vec3, 4> & corners, const glm::vec2 & point, f
     return triangle(corners[0], corners[1], corners[2], point, depth) ||
         triangle(corners[0], corners[2], corners[3], point, depth);
 }
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes

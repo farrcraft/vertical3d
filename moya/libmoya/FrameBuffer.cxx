@@ -5,12 +5,12 @@
 
 #include "FrameBuffer.h"
 
+#include <moya/libmoya/reyes/Primitive.h>
+
 #include <algorithm>
 #include <cassert>
 #include <limits>
 #include <vector>
-
-#include "ReyesPrimitive.h"
 
 namespace v3d::moya {
 
@@ -35,9 +35,9 @@ void FrameBuffer::allocate() {
     bucketRows_ = (imageSize_[1] + bucketSize_[1] - 1) / bucketSize_[1];
 
     for (unsigned int i = 0; i < bucketColumns_; i++) {
-        std::vector<Bucket> vb;
+        std::vector<reyes::Bucket> vb;
         for (unsigned int j = 0; j < bucketRows_; j++) {
-            Bucket b;
+            reyes::Bucket b;
             vb.push_back(b);
         }
         buckets_.push_back(vb);
@@ -79,7 +79,7 @@ unsigned int * FrameBuffer::imageSize() const {
     return const_cast<unsigned int*>(imageSize_);
 }
 
-void FrameBuffer::addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::geometry::AABBox & bound) {
+void FrameBuffer::addPrimitive(const boost::shared_ptr<reyes::Primitive> & primitive, const v3d::type::geometry::AABBox & bound) {
     assert(bucketColumns_ > 0 && bucketRows_ > 0);
 
     // bound should be in raster space

@@ -4,7 +4,7 @@
  **/
 
 #include <moya/libmoya/Polygon.h>
-#include <moya/libmoya/ReyesPrimitive.h>
+#include <moya/libmoya/reyes/Primitive.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -16,13 +16,13 @@
  * it.
  **/
 BOOST_AUTO_TEST_CASE(reyes_primitive_default_diceable_test) {
-    v3d::moya::ReyesPrimitive primitive;
+    v3d::moya::reyes::Primitive primitive;
 
     BOOST_TEST(!primitive.diceable());
 }
 
 BOOST_AUTO_TEST_CASE(reyes_primitive_diceable_test) {
-    v3d::moya::ReyesPrimitive primitive;
+    v3d::moya::reyes::Primitive primitive;
 
     primitive.diceable(true);
     BOOST_TEST(primitive.diceable());
@@ -35,8 +35,8 @@ BOOST_AUTO_TEST_CASE(reyes_primitive_diceable_test) {
  * The flag is per primitive, so splitting one does not decide for its neighbours.
  **/
 BOOST_AUTO_TEST_CASE(reyes_primitive_flag_is_per_instance_test) {
-    v3d::moya::ReyesPrimitive first;
-    v3d::moya::ReyesPrimitive second;
+    v3d::moya::reyes::Primitive first;
+    v3d::moya::reyes::Primitive second;
 
     first.diceable(true);
     second.diceable(false);
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(reyes_primitive_polygon_is_a_primitive_test) {
     vertex.point(glm::vec3(2.0f, 3.0f, 4.0f));
     polygon.addVertex(vertex);
 
-    v3d::moya::ReyesPrimitive* primitive = &polygon;
+    v3d::moya::reyes::Primitive* primitive = &polygon;
 
     primitive->diceable(true);
     BOOST_TEST(primitive->diceable());
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(reyes_primitive_polygon_is_a_primitive_test) {
  * in. Nothing has placed a fresh one, and its normal names no plane until something does.
  **/
 BOOST_AUTO_TEST_CASE(reyes_primitive_place_test) {
-    v3d::moya::ReyesPrimitive primitive;
+    v3d::moya::reyes::Primitive primitive;
 
     BOOST_TEST(!primitive.placed());
     BOOST_TEST((primitive.normal() == glm::vec3(0.0f)));

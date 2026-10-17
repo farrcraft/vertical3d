@@ -6,8 +6,7 @@
 #pragma once
 
 #include <api/render/offline/FrameBuffer.h>
-
-#include "Bucket.h"
+#include <moya/libmoya/reyes/Bucket.h>
 
 #include <vector>
 
@@ -61,10 +60,10 @@ class FrameBuffer {
      * The image planes the film resolves the frame's samples into, indexed by Plane.
      */
     boost::shared_ptr<v3d::render::offline::FrameBuffer> planes(void) const;
-    void addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::geometry::AABBox & bound);
+    void addPrimitive(const boost::shared_ptr<reyes::Primitive> & primitive, const v3d::type::geometry::AABBox & bound);
     void render(RenderContext & rc);
 
-    typedef std::vector< std::vector<Bucket> > BucketGrid;
+    typedef std::vector< std::vector<reyes::Bucket> > BucketGrid;
 
  protected:
     void allocate(void);

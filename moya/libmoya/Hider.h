@@ -44,14 +44,4 @@ class Hider {
     }
 };
 
-/**
- * `Hider "hidden"`, RI's default: every primitive diced into micropolygon grids, shaded, and
- * hidden into the samples of the buckets it reaches.
- **/
-class ReyesHider final : public Hider {
- public:
-    bool traces() const override;
-    void render(RenderContext* context, v3d::render::offline::FrameBuffer* planes) override;
-};
-
 };  // namespace v3d::moya

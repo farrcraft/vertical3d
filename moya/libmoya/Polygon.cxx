@@ -410,7 +410,7 @@ void Polygon::split(RenderContext & rc) {
     dicing is done in eye space, so the grid is built in x, y, z and projected only when
     the hider needs raster coordinates
 */
-bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & rc) {
+bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc) {
     // one grid covers the whole polygon at this sampling, so the call after the first is
     // the end of the sequence rather than another grid
     if (diced_ || vertices_.size() < 3) {
@@ -423,7 +423,7 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
         raster bound is larger than that, so one grid is enough for what reaches here.
     */
     unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));
-    grid.reset(new MicroPolygonGrid(across + 1));
+    grid.reset(new reyes::MicroPolygonGrid(across + 1));
 
     /*
         bilinear interpolation over the polygon's first four vertices. A triangle's fourth

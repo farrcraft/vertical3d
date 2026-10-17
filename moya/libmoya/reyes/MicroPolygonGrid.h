@@ -9,7 +9,7 @@
 
 #include "MicroPolygon.h"
 
-namespace v3d::moya {
+namespace v3d::moya::reyes {
 // a grid of micropolygons
 // micropolygon vertices are shared
 class MicroPolygonGrid {
@@ -34,4 +34,4 @@ class MicroPolygonGrid {
  private:
     std::vector< std::vector<Vertex> > grid_;
 };
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes

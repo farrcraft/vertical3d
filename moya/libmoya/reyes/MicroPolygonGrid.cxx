@@ -8,7 +8,7 @@
 #include <cassert>
 #include <vector>
 
-namespace v3d::moya {
+namespace v3d::moya::reyes {
 
 MicroPolygonGrid::MicroPolygonGrid(unsigned int size) : grid_(size, std::vector<Vertex>(size)) {
 }
@@ -49,4 +49,4 @@ void MicroPolygonGrid::addVertex(const Vertex & vert, unsigned int i, unsigned i
     grid_[i][j] = vert;
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes

@@ -309,7 +309,7 @@ BOOST_AUTO_TEST_CASE(render_context_dice_interpolates_normal_test) {
     rc.addPolygon(polygon);
     BOOST_REQUIRE(polygon->diceable());
 
-    boost::shared_ptr<v3d::moya::MicroPolygonGrid> grid;
+    boost::shared_ptr<v3d::moya::reyes::MicroPolygonGrid> grid;
     BOOST_REQUIRE(polygon->dice(grid, rc));
     BOOST_REQUIRE(grid);
 

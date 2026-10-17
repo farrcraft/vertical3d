@@ -236,7 +236,7 @@ Rules:
   from. Where a cut crosses an edge, the new vertex's normal is interpolated along the edge and
   renormalised, so a surface large enough to split is smooth rather than faceted per piece. A
   vertex with no normal of its own, or on an edge with an end that has none, takes the
-  primitive's plane, which each piece is given through `ReyesPrimitive::place()`. That plane is
+  primitive's plane, which each piece is given through `reyes::Primitive::place()`. That plane is
   also every piece's `Ng`.
 - **`trace::Triangle` has one constructor per case**: with and without per-corner normals.
   `shadingNormal(u, v)` interpolates over the barycentric coordinates `type::Ray::intersects`

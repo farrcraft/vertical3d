@@ -11,7 +11,7 @@
 #include <cassert>
 #include <vector>
 
-namespace v3d::moya {
+namespace v3d::moya::reyes {
 
 Samples::Samples(unsigned int width, unsigned int height, const v3d::render::offline::Sampling & sampling) :
     width_(width), height_(height), perPixel_(0), sampling_(sampling) {
@@ -65,4 +65,4 @@ void Samples::resolve(v3d::render::offline::FrameBuffer * planes, unsigned int r
     film.resolve(planes, red, coverage, static_cast<int>(depth));
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes

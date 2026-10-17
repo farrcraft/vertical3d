@@ -10,7 +10,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::reyes {
 
 /**
  * The pixels a raster space bound touches, clipped to a frame of columns by rows: left, top,
@@ -32,4 +32,4 @@ std::array<int, 4> footprint(const glm::vec3 & min, const glm::vec3 & max, int c
  */
 unsigned int shutterSlice(float time, const glm::vec2 & shutter, unsigned int slices);
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes

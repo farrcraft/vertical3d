@@ -7,11 +7,11 @@
 
 #include <vector>
 
-#include "ReyesPrimitive.h"
+#include "Primitive.h"
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::reyes {
 /*
     the screen space to be rendered is broken down into a grid of tiles (buckets).
     as geometry is converted to micropolygon grids it is placed in the appropriate 
@@ -26,7 +26,7 @@ class Bucket final {
     Bucket();
     ~Bucket();
 
-    void addPrimitive(const boost::shared_ptr<ReyesPrimitive>& primitive);
+    void addPrimitive(const boost::shared_ptr<Primitive>& primitive);
     /**
      * Render every primitive in the bucket: dice it into micropolygon grids, shade
      * them and hide them into the frame's samples. A primitive too large to
@@ -42,6 +42,6 @@ class Bucket final {
  private:
     unsigned int left_ = 0;  // left edge of this bucket in pixel coordinates
     unsigned int top_ = 0;  // top edge of this bucket in pixel coordinates
-    std::vector<boost::shared_ptr<ReyesPrimitive> > primitives_;  // list of primitives in this bucket
+    std::vector<boost::shared_ptr<Primitive> > primitives_;  // list of primitives in this bucket
 };
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes

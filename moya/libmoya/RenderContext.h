@@ -13,10 +13,10 @@
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
+#include <moya/libmoya/reyes/Samples.h>
 
 #include "Polygon.h"
 #include "FrameBuffer.h"
-#include "Samples.h"
 #include "Shading.h"
 
 #include <cstddef>
@@ -26,7 +26,10 @@
 
 namespace v3d::moya {
 
+namespace reyes {
 class GridShader;
+};  // namespace reyes
+
 class Hider;
 
 /**
@@ -248,7 +251,7 @@ class RenderContext {
             *	Kept for the render rather than made per grid, because it holds the
             *	register files that later grids reuse.
             */
-        GridShader & shader();
+        reyes::GridShader & shader();
 
         /**
             *	The scene a shader's trace() and transmission() calls are traced
@@ -299,7 +302,7 @@ class RenderContext {
             *	The frame's samples, which the hider writes into during render(). Placed
             *	when render() begins, from sampling() as it stands then.
             */
-        Samples & samples();
+        reyes::Samples & samples();
 
         unsigned int bucketWidth() const;
         unsigned int bucketHeight() const;
@@ -388,7 +391,7 @@ class RenderContext {
         bool flatMotion();
         boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
         boost::shared_ptr<v3d::render::offline::Textures> textures_;
-        boost::shared_ptr<GridShader> shader_;
+        boost::shared_ptr<reyes::GridShader> shader_;
         std::vector<LightSource> lights_;
         v3d::render::offline::sl::InstancePtr surface_;
         glm::mat4x4 surfacePlacement_ = glm::mat4x4(1.0f);
@@ -400,7 +403,7 @@ class RenderContext {
         std::size_t tracedLightsFor_ = 0;
         v3d::render::offline::sl::InstancePtr imager_;
         boost::shared_ptr<FrameBuffer> frameBuffer_;
-        boost::shared_ptr<Samples> samples_;
+        boost::shared_ptr<reyes::Samples> samples_;
         // camera options
         unsigned int xres_ = defaultWidth;
         unsigned int yres_ = defaultHeight;
@@ -432,7 +435,6 @@ class RenderContext {
         float near_ = 1.0e-10f;  // near clipping plane
         float far_ = 1.0e38f;  // far clipping plane
         v3d::render::offline::Sampling sampling_;
-
 
         /*
             the framebuffer is divided up into buckets of n-by-m size

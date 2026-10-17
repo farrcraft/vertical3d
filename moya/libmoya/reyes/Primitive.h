@@ -7,9 +7,9 @@
 
 #include <api/render/offline/MovingTransform.h>
 #include <api/type/geometry/AABBox.h>
+#include <moya/libmoya/Shading.h>
 
 #include "MicroPolygonGrid.h"
-#include "Shading.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
@@ -18,11 +18,14 @@
 
 namespace v3d::moya {
 class RenderContext;
+};  // namespace v3d::moya
 
-class ReyesPrimitive {
+namespace v3d::moya::reyes {
+
+class Primitive {
  public:
-        ReyesPrimitive();
-        virtual ~ReyesPrimitive();
+        Primitive();
+        virtual ~Primitive();
 
         virtual bool diceable(void) const;
         virtual v3d::type::geometry::AABBox bound(void) const;
@@ -45,9 +48,10 @@ class ReyesPrimitive {
         virtual void diceable(bool status);
 
         /**
-         * The graphics state this primitive was submitted under: the object to eye
+         * The graphics state this primitive was submitted under. It is the object to eye
          * transformation the first pass measured it with, the colour that was current, and
-         * the geometric normal of the plane it lies in, all in the space its vertices are.
+         * the geometric normal of the plane it lies in. All three are in the space its
+         * vertices are in.
          *
          * A primitive keeps them because splitting resubmits its pieces through that pass
          * during the second one, when none of that state is current any more. Without them,
@@ -91,4 +95,4 @@ class ReyesPrimitive {
         */
         bool diceable_ = false;
 };
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes

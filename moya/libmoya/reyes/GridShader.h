@@ -10,6 +10,7 @@
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/trace/Tracer.h>
+#include <moya/libmoya/Shading.h>
 
 #include <map>
 #include <string>
@@ -18,11 +19,12 @@
 #include <glm/mat4x4.hpp>
 
 #include "MicroPolygonGrid.h"
-#include "Shading.h"
 
 namespace v3d::moya {
-
 class RenderContext;
+};  // namespace v3d::moya
+
+namespace v3d::moya::reyes {
 
 /**
  * Runs a surface shader over a micropolygon grid as one batch of shading points.
@@ -106,4 +108,4 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
     std::vector<glm::vec3> planes_;
 };
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes

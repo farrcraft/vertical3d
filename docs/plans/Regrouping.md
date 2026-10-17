@@ -6,7 +6,7 @@ one sweeps comments, and one updates the documents. No step changes behaviour.
 | Step | | Step | |
 |---|---|---|---|
 | 1 `realtime/entity` | landed | 5 `ui::component::menu` | landed |
-| 2 `realtime/lighting` | landed | 6 `libmoya/reyes` | open |
+| 2 `realtime/lighting` | landed | 6 `libmoya/reyes` | landed |
 | 3 `realtime/canvas` | landed | 7 libmoya comments | open |
 | 4 `image/format` | landed | 8 documents | open |
 
@@ -197,19 +197,30 @@ Cozy names the canvas and menu classes 23 times, and follows on its next submodu
 
 ```
 libmoya/         RenderMan RIBHandler Renderer RenderContext Shading FrameBuffer Hider RayHider
-libmoya/reyes/   Hider Primitive Bucket Polygon MicroPolygon MicroPolygonGrid GridShader
-                 Vertex Footprint Samples                               v3d::moya::reyes
+                 Polygon Vertex
+libmoya/reyes/   Hider Primitive Bucket MicroPolygon MicroPolygonGrid GridShader Footprint
+                 Samples                                                v3d::moya::reyes
                  <- ReyesHider leaves Hider.h; ReyesPrimitive becomes Primitive
 ```
 
 `reyes::Hider` derives from `moya::Hider`. That is the same shape as `asset::Loader` above
 `asset::loader::Json`: a base class above its implementations.
 
-The root still includes the pipeline, because `RenderContext` holds a `Polygon` list and a
-`Samples`. A Reyes file that includes the front end does so for `Shading` or `RenderContext`.
-Both directions are expected.
+The root includes the pipeline, because `FrameBuffer` holds the buckets and `RenderContext`
+holds the samples. A Reyes file that includes the front end does so for `Shading` or
+`RenderContext`. Both directions are expected.
 
-`moya/tests` stays flat, and its includes change.
+**Landed, with `Polygon` and `Vertex` at the root.** The plan put them in `reyes/`. The front
+end builds them whichever hider is active, and `RenderContext::trace()` hands a `Polygon` to
+the ray tracer, so they belong to both hiders. `Polygon` derives from `reyes::Primitive`, so
+it can be diced. The ray path uses nothing else in `reyes/`.
+
+Build clean, 26 of 26 suites pass, cpplint clean. `Footprint.h` and `MicroPolygon.h` also
+declare `footprint()`, `shutterSlice()` and `covers()`, which the tests call as `reyes::` now.
+`ReyesPrimitive.h` and `GridShader.h` forward-declared `RenderContext` inside their namespace
+block. That declaration stays in `moya`. `RenderContext.h` declares `GridShader` inside
+`reyes`. `moya/tests` stays flat. Reyes.md, RayTracing.md, ShadingLanguage.md, the offline
+README and RunningAndTesting.md name the classes by their new names.
 
 ### Step 7 — libmoya's comments
 

@@ -11,6 +11,8 @@
 #include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>
 #include <api/type/geometry/Frustum.h>
+#include <moya/libmoya/reyes/GridShader.h>
+#include <moya/libmoya/reyes/Hider.h>
 
 #include <algorithm>
 #include <cassert>
@@ -27,7 +29,6 @@
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 
-#include "GridShader.h"
 #include "Hider.h"
 #include "RayHider.h"
 
@@ -55,7 +56,7 @@ RenderContext::~RenderContext() {
 void RenderContext::initialize() {
     logger_ = boost::make_shared<v3d::log::Logger>();
     // RI's default hider
-    hider_ = boost::make_shared<ReyesHider>();
+    hider_ = boost::make_shared<reyes::Hider>();
     shaders_ = boost::make_shared<v3d::render::offline::sl::ShaderLibrary>(logger_);
     textures_ = boost::make_shared<v3d::render::offline::Textures>(logger_);
 
@@ -67,7 +68,6 @@ void RenderContext::initialize() {
     coordinateSystems_["screen"] = def;
     coordinateSystems_["raster"] = def;
     coordinateSystems_["NDC"] = def;
-
 
     // initialize the z buffer
 
@@ -94,7 +94,7 @@ float RenderContext::shadingRate() const {
     return shadingRate_;
 }
 
-Samples & RenderContext::samples() {
+reyes::Samples & RenderContext::samples() {
     assert(samples_);
     return *samples_;
 }
@@ -311,7 +311,7 @@ glm::mat4x4 RenderContext::projectionMatrix() const {
 
 void RenderContext::hider(const std::string & name) {
     if (name == "hidden") {
-        hider_ = boost::make_shared<ReyesHider>();
+        hider_ = boost::make_shared<reyes::Hider>();
     } else if (name == "raytrace") {
         hider_ = boost::make_shared<RayHider>();
     } else {
@@ -677,9 +677,9 @@ const boost::shared_ptr<v3d::log::Logger> & RenderContext::logger() const {
     return logger_;
 }
 
-GridShader & RenderContext::shader() {
+reyes::GridShader & RenderContext::shader() {
     if (!shader_) {
-        shader_ = boost::make_shared<GridShader>(this);
+        shader_ = boost::make_shared<reyes::GridShader>(this);
     }
     return *shader_;
 }
@@ -793,7 +793,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         the polygon's vertices are in object space, so its bound is too. The placement
         carries both into eye space, where every later calculation on the polygon happens.
     */
-    // a primitive carries the state it was submitted under - see ReyesPrimitive::place().
+    // a primitive carries the state it was submitted under - see reyes::Primitive::place().
     // A piece handed back by a split is already placed and keeps its parent's
     if (hider_->traces()) {
         // the ray hider sees the traced scene and nothing else, so nothing is bucketed
@@ -1001,7 +1001,7 @@ const std::string & RenderContext::displayName() const {
 }
 
 void RenderContext::bucket(v3d::render::offline::FrameBuffer* planes) {
-    samples_ = boost::make_shared<Samples>(planes->width(), planes->height(), sampling_);
+    samples_ = boost::make_shared<reyes::Samples>(planes->width(), planes->height(), sampling_);
     frameBuffer_->render(*this);
     samples_->resolve(planes, FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
 }

@@ -5,14 +5,14 @@
 
 #pragma once
 
-#include <array>
+#include <moya/libmoya/Vertex.h>
 
-#include "Vertex.h"
+#include <array>
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::reyes {
 // a flat shaded quadrilateral with an area of about 1/4 of a pixel
 class MicroPolygon {
  public:
@@ -36,4 +36,4 @@ class MicroPolygon {
  * @param depth set to the corners' depths interpolated across the triangle the point is in
  **/
 bool covers(const std::array<glm::vec3, 4> & corners, const glm::vec2 & point, float * depth);
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes

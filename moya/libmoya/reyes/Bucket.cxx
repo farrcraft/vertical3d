@@ -5,6 +5,9 @@
 
 #include "Bucket.h"
 
+#include <moya/libmoya/FrameBuffer.h>
+#include <moya/libmoya/RenderContext.h>
+
 #include <algorithm>
 #include <array>
 #include <limits>
@@ -13,11 +16,9 @@
 #include <boost/make_shared.hpp>
 
 #include "Footprint.h"
-#include "FrameBuffer.h"
 #include "GridShader.h"
-#include "RenderContext.h"
 
-namespace v3d::moya {
+namespace v3d::moya::reyes {
 
 namespace {
 
@@ -305,7 +306,7 @@ void hide(const Placement & placement, const glm::vec3 & color, Samples * sample
     Every micropolygon of a grid into the frame's samples. The film filters the samples
     into pixels once every bucket is done.
 */
-void hide(MicroPolygonGrid & grid, const ReyesPrimitive & primitive, RenderContext & rc) {
+void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & rc) {
     // eye space to raster is the projection and then the scale into pixels, in that
     // order - a matrix applies to what is on its right
     const glm::mat4x4 toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
@@ -364,7 +365,7 @@ Bucket::Bucket() {
 Bucket::~Bucket() {
 }
 
-void Bucket::addPrimitive(const boost::shared_ptr<ReyesPrimitive>& primitive) {
+void Bucket::addPrimitive(const boost::shared_ptr<Primitive>& primitive) {
     primitives_.push_back(primitive);
 }
 
@@ -379,7 +380,7 @@ bool Bucket::render(RenderContext & rc) {
     // bucket, so the loop reads the size each time around rather than caching it
     for (size_t i = 0; i < primitives_.size(); i++) {
         // a copy, because the entry it came from is erased below while it is still in use
-        boost::shared_ptr<ReyesPrimitive> prim = primitives_[i];
+        boost::shared_ptr<Primitive> prim = primitives_[i];
         if (prim->diceable()) {
             boost::shared_ptr<MicroPolygonGrid> grid;
             while (prim->dice(grid, rc)) {
@@ -402,4 +403,4 @@ bool Bucket::render(RenderContext & rc) {
     return split;
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::reyes
