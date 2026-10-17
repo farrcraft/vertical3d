@@ -3,31 +3,31 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "MenuItem.h"
+#include "Item.h"
 #include "Menu.h"
 
 #include <string>
 #include <type_traits>
 #include <variant>
 
-namespace v3d::ui::component {
+namespace v3d::ui::component::menu {
 
-MenuItem::MenuItem(menu::ItemType type, const std::string& label) :
+Item::Item(menu::ItemType type, const std::string& label) :
     Component(component::Type::MenuItem),
     label_(label), type_(type), checked_(false), hasValue_(false) {
 }
 
-MenuItem::~MenuItem() {
+Item::~Item() {
     if (submenu_) {
         disown(*submenu_);
     }
 }
 
-void MenuItem::label(const std::string& str) {
+void Item::label(const std::string& str) {
     label_ = str;
 }
 
-void MenuItem::submenu(const boost::shared_ptr<Menu>& sub) {
+void Item::submenu(const boost::shared_ptr<Menu>& sub) {
     // a submenu this replaces may still be held by the app, and must not name this item
     if (submenu_) {
         disown(*submenu_);
@@ -42,13 +42,13 @@ void MenuItem::submenu(const boost::shared_ptr<Menu>& sub) {
     adopt(*sub);
 }
 
-std::string_view MenuItem::label() const {
+std::string_view Item::label() const {
     return label_;
 }
 
 /**
  **/
-std::string MenuItem::text() const {
+std::string Item::text() const {
     if (!hasValue_) {
         return label_;
     }
@@ -67,55 +67,55 @@ std::string MenuItem::text() const {
 
 /**
  **/
-void MenuItem::value(const v3d::event::EventData& v) {
+void Item::value(const v3d::event::EventData& v) {
     value_ = v;
     hasValue_ = true;
 }
 
 /**
  **/
-boost::optional<v3d::event::EventData> MenuItem::value() const {
+boost::optional<v3d::event::EventData> Item::value() const {
     if (!hasValue_) {
         return boost::none;
     }
     return value_;
 }
 
-boost::shared_ptr<Menu> MenuItem::submenu(void) const {
+boost::shared_ptr<Menu> Item::submenu(void) const {
     return submenu_;
 }
 
-void MenuItem::event(const v3d::event::Event &destination) {
+void Item::event(const v3d::event::Event &destination) {
     event_ = destination;
     event_.type(v3d::event::Type::Destination);
 }
 
-v3d::event::Event MenuItem::event() const {
+v3d::event::Event Item::event() const {
     return event_;
 }
 
-void MenuItem::menu(const boost::weak_ptr<Menu>& m) {
+void Item::menu(const boost::weak_ptr<Menu>& m) {
     menu_ = m;
 }
 
-boost::weak_ptr<Menu> MenuItem::menu() {
+boost::weak_ptr<Menu> Item::menu() {
     return menu_;
 }
 
-menu::ItemType MenuItem::itemType() const {
+menu::ItemType Item::itemType() const {
     return type_;
 }
 
 /**
  **/
-void MenuItem::checked(bool on) {
+void Item::checked(bool on) {
     checked_ = on;
 }
 
 /**
  **/
-bool MenuItem::checked() const {
+bool Item::checked() const {
     return checked_;
 }
 
-};  // namespace v3d::ui::component
+};  // namespace v3d::ui::component::menu

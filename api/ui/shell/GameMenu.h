@@ -111,7 +111,7 @@ class GameMenu {
 
  private:
     boost::shared_ptr<Container> container() const;
-    boost::shared_ptr<component::Menu> menu() const;
+    boost::shared_ptr<component::menu::Menu> menu() const;
     void command(const v3d::event::Event& event);
 
     boost::shared_ptr<Engine> engine_;

@@ -3,7 +3,7 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "MenuBar.h"
+#include "Bar.h"
 
 #include <api/ui/component/Type.h>
 
@@ -11,18 +11,18 @@
 #include <string>
 #include <vector>
 
-namespace v3d::ui::component {
+namespace v3d::ui::component::menu {
 
 /**
  **/
-MenuBar::MenuBar() : Component(component::Type::MenuBar), hover_(-1), open_(-1) {
+Bar::Bar() : Component(component::Type::MenuBar), hover_(-1), open_(-1) {
     // a strip is a control unless a document says it is scenery, which lets a press through
     pickable(true);
 }
 
 /**
  **/
-MenuBar::~MenuBar() {
+Bar::~Bar() {
     for (const boost::shared_ptr<Menu>& menu : menus_) {
         disown(*menu);
     }
@@ -30,7 +30,7 @@ MenuBar::~MenuBar() {
 
 /**
  **/
-void MenuBar::add(const std::string& label, const boost::shared_ptr<Menu>& menu) {
+void Bar::add(const std::string& label, const boost::shared_ptr<Menu>& menu) {
     // opening a label shows its menu, so a label without one is not added
     if (!menu) {
         return;
@@ -44,49 +44,49 @@ void MenuBar::add(const std::string& label, const boost::shared_ptr<Menu>& menu)
 
 /**
  **/
-void MenuBar::place(std::size_t index, const glm::vec2& position, const glm::vec2& size) {
+void Bar::place(std::size_t index, const glm::vec2& position, const glm::vec2& size) {
     bounds_[index] = v3d::type::geometry::Bound2D(position, size);
 }
 
 /**
  **/
-v3d::type::geometry::Bound2D MenuBar::bound(std::size_t index) const {
+v3d::type::geometry::Bound2D Bar::bound(std::size_t index) const {
     return bounds_[index];
 }
 
 /**
  **/
-std::size_t MenuBar::count() const noexcept {
+std::size_t Bar::count() const noexcept {
     return menus_.size();
 }
 
 /**
  **/
-const std::string& MenuBar::label(std::size_t index) const {
+const std::string& Bar::label(std::size_t index) const {
     return labels_[index];
 }
 
 /**
  **/
-boost::shared_ptr<Menu> MenuBar::menu(std::size_t index) const {
+boost::shared_ptr<Menu> Bar::menu(std::size_t index) const {
     return menus_[index];
 }
 
 /**
  **/
-int MenuBar::hover() const noexcept {
+int Bar::hover() const noexcept {
     return hover_;
 }
 
 /**
  **/
-int MenuBar::open() const noexcept {
+int Bar::open() const noexcept {
     return open_;
 }
 
 /**
  **/
-void MenuBar::open(int index) {
+void Bar::open(int index) {
     panels_.clear();
     if (index < 0 || static_cast<std::size_t>(index) >= menus_.size()) {
         open_ = -1;
@@ -101,32 +101,32 @@ void MenuBar::open(int index) {
 
 /**
  **/
-void MenuBar::close() {
+void Bar::close() {
     open(-1);
 }
 
 /**
  **/
-bool MenuBar::active() const noexcept {
+bool Bar::active() const noexcept {
     return open_ >= 0;
 }
 
 /**
  **/
-const std::vector<boost::shared_ptr<Menu>>& MenuBar::panels() const noexcept {
+const std::vector<boost::shared_ptr<Menu>>& Bar::panels() const noexcept {
     return panels_;
 }
 
 /**
  **/
-bool MenuBar::within(const Component& component, const glm::vec2& cursor) {
+bool Bar::within(const Component& component, const glm::vec2& cursor) {
     v3d::type::geometry::Bound2D bound = component.bound();
     return bound.contains(cursor);
 }
 
 /**
  **/
-int MenuBar::labelAt(const glm::vec2& cursor) const {
+int Bar::labelAt(const glm::vec2& cursor) const {
     for (std::size_t index = 0; index < bounds_.size(); index++) {
         v3d::type::geometry::Bound2D bound = bounds_[index];
         if (bound.contains(cursor)) {
@@ -138,9 +138,9 @@ int MenuBar::labelAt(const glm::vec2& cursor) const {
 
 /**
  **/
-int MenuBar::itemAt(const boost::shared_ptr<Menu>& panel, const glm::vec2& cursor) {
+int Bar::itemAt(const boost::shared_ptr<Menu>& panel, const glm::vec2& cursor) {
     for (std::size_t index = 0; index < panel->count(); index++) {
-        const boost::shared_ptr<MenuItem>& item = (*panel)[index];
+        const boost::shared_ptr<Item>& item = (*panel)[index];
         // an item that cannot be used is not offered the cursor, like a disabled strip button
         if (item && usable(*item) && within(*item, cursor)) {
             return static_cast<int>(index);
@@ -151,7 +151,7 @@ int MenuBar::itemAt(const boost::shared_ptr<Menu>& panel, const glm::vec2& curso
 
 /**
  **/
-void MenuBar::truncate(std::size_t depth) {
+void Bar::truncate(std::size_t depth) {
     while (panels_.size() > depth) {
         panels_.back()->active(-1);
         panels_.pop_back();
@@ -160,7 +160,7 @@ void MenuBar::truncate(std::size_t depth) {
 
 /**
  **/
-void MenuBar::descend(std::size_t depth, const boost::shared_ptr<MenuItem>& item) {
+void Bar::descend(std::size_t depth, const boost::shared_ptr<Item>& item) {
     truncate(depth + 1);
     if (item->itemType() != menu::ItemType::Submenu || !item->submenu()) {
         return;
@@ -171,7 +171,7 @@ void MenuBar::descend(std::size_t depth, const boost::shared_ptr<MenuItem>& item
 
 /**
  **/
-bool MenuBar::motion(const glm::vec2& cursor) {
+bool Bar::motion(const glm::vec2& cursor) {
     // deepest first, because a flyout is drawn over the panel it came out of and so takes
     // the cursor where the two overlap
     for (std::size_t depth = panels_.size(); depth > 0; depth--) {
@@ -206,7 +206,7 @@ bool MenuBar::motion(const glm::vec2& cursor) {
 
 /**
  **/
-bool MenuBar::press(const glm::vec2& cursor) {
+bool Bar::press(const glm::vec2& cursor) {
     for (std::size_t depth = panels_.size(); depth > 0; depth--) {
         const boost::shared_ptr<Menu>& panel = panels_[depth - 1];
         if (!within(*panel, cursor)) {
@@ -216,7 +216,7 @@ bool MenuBar::press(const glm::vec2& cursor) {
         if (index < 0) {  // the panel's own padding, which dismisses nothing
             return true;
         }
-        const boost::shared_ptr<MenuItem> item = (*panel)[static_cast<std::size_t>(index)];
+        const boost::shared_ptr<Item> item = (*panel)[static_cast<std::size_t>(index)];
         // a press can arrive without a motion having crossed the item first, so the
         // highlight and the flyout's placement are set here rather than assumed
         panel->active(index);
@@ -246,9 +246,9 @@ bool MenuBar::press(const glm::vec2& cursor) {
 
 /**
  **/
-boost::shared_ptr<MenuItem> MenuBar::find(const boost::shared_ptr<Menu>& menu, const std::string& command) {
+boost::shared_ptr<Item> Bar::find(const boost::shared_ptr<Menu>& menu, const std::string& command) {
     for (std::size_t index = 0; index < menu->count(); index++) {
-        const boost::shared_ptr<MenuItem>& item = (*menu)[index];
+        const boost::shared_ptr<Item>& item = (*menu)[index];
         if (!item) {
             continue;
         }
@@ -259,7 +259,7 @@ boost::shared_ptr<MenuItem> MenuBar::find(const boost::shared_ptr<Menu>& menu, c
             return item;
         }
         if (item->submenu()) {
-            boost::shared_ptr<MenuItem> found = find(item->submenu(), command);
+            boost::shared_ptr<Item> found = find(item->submenu(), command);
             if (found) {
                 return found;
             }
@@ -270,9 +270,9 @@ boost::shared_ptr<MenuItem> MenuBar::find(const boost::shared_ptr<Menu>& menu, c
 
 /**
  **/
-boost::shared_ptr<MenuItem> MenuBar::find(const std::string& command) const {
+boost::shared_ptr<Item> Bar::find(const std::string& command) const {
     for (const boost::shared_ptr<Menu>& menu : menus_) {
-        boost::shared_ptr<MenuItem> found = find(menu, command);
+        boost::shared_ptr<Item> found = find(menu, command);
         if (found) {
             return found;
         }
@@ -280,4 +280,4 @@ boost::shared_ptr<MenuItem> MenuBar::find(const std::string& command) const {
     return nullptr;
 }
 
-};  // namespace v3d::ui::component
+};  // namespace v3d::ui::component::menu

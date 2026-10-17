@@ -20,8 +20,8 @@
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/Type.h>
 #include <api/ui/component/menu/Menu.h>
-#include <api/ui/component/menu/MenuBar.h>
-#include <api/ui/component/menu/MenuItem.h>
+#include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Item.h>
 #include <api/ui/style/Resolver.h>
 
 #include <algorithm>
@@ -331,7 +331,7 @@ float Arranger::wrapped(const component::Box& box, const v3d::type::geometry::Bo
  **/
 glm::vec2 Arranger::stack(const Container& container,
     std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>>* strips,
-    std::vector<boost::shared_ptr<component::MenuBar>>* bars) const {
+    std::vector<boost::shared_ptr<component::menu::Bar>>* bars) const {
     const float row = styles_.base().barHeight + ruleWidth;
     std::vector<boost::shared_ptr<component::Toolbar>> shown;
     // a menu bar is drawn at the top of the canvas, so every menu bar comes first. The top
@@ -345,7 +345,7 @@ glm::vec2 Arranger::stack(const Container& container,
         }
         if (component->type() == component::Type::MenuBar) {
             if (bars != nullptr) {
-                bars->push_back(boost::dynamic_pointer_cast<component::MenuBar>(component));
+                bars->push_back(boost::dynamic_pointer_cast<component::menu::Bar>(component));
             }
             menus += row;
             continue;
@@ -462,14 +462,14 @@ void Arranger::strip(component::Toolbar& bar, const glm::vec2& corner, const glm
 
 /**
  **/
-void Arranger::panel(component::Menu& menu, const glm::vec2& origin, const glm::vec2& room) const {
+void Arranger::panel(component::menu::Menu& menu, const glm::vec2& origin, const glm::vec2& room) const {
     const std::size_t count = menu.count();
     if (count == 0) {
         return;
     }
     float widest = 0.0f;
     for (std::size_t index = 0; index < count; index++) {
-        const boost::shared_ptr<component::MenuItem>& item = menu[index];
+        const boost::shared_ptr<component::menu::Item>& item = menu[index];
         widest = std::max(widest, item ? measure_(item->text()) : 0.0f);
     }
     const paint::Dressing& base = styles_.base();
@@ -487,7 +487,7 @@ void Arranger::panel(component::Menu& menu, const glm::vec2& origin, const glm::
     place(menu, corner, size);
 
     for (std::size_t index = 0; index < count; index++) {
-        const boost::shared_ptr<component::MenuItem>& item = menu[index];
+        const boost::shared_ptr<component::menu::Item>& item = menu[index];
         if (item) {
             const float top = corner.y + base.panelPadding + base.lineHeight * static_cast<float>(index);
             place(*item, glm::vec2(corner.x, top), glm::vec2(size.x, base.lineHeight));
@@ -497,14 +497,14 @@ void Arranger::panel(component::Menu& menu, const glm::vec2& origin, const glm::
 
 /**
  **/
-void Arranger::centred(component::Menu& level, const glm::vec2& room) const {
+void Arranger::centred(component::menu::Menu& level, const glm::vec2& room) const {
     const std::size_t count = level.count();
     if (count == 0) {
         return;
     }
     float widest = 0.0f;
     for (std::size_t index = 0; index < count; index++) {
-        const boost::shared_ptr<component::MenuItem>& item = level[index];
+        const boost::shared_ptr<component::menu::Item>& item = level[index];
         widest = std::max(widest, item ? measure_(item->text()) : 0.0f);
     }
     const paint::Dressing& base = styles_.base();
@@ -514,7 +514,7 @@ void Arranger::centred(component::Menu& level, const glm::vec2& room) const {
     place(level, corner, size);
 
     for (std::size_t index = 0; index < count; index++) {
-        const boost::shared_ptr<component::MenuItem>& item = level[index];
+        const boost::shared_ptr<component::menu::Item>& item = level[index];
         if (item) {
             const float top = corner.y + base.padding + base.lineHeight * static_cast<float>(index);
             place(*item, glm::vec2(corner.x, top), glm::vec2(size.x, base.lineHeight));

@@ -32,11 +32,14 @@ class Resolver;
 namespace component {
 class Box;
 class Button;
-class Menu;
-class MenuBar;
 class TabBar;
 class Toolbar;
 };  // namespace component
+
+namespace component::menu {
+class Bar;
+class Menu;
+};  // namespace component::menu
 
 /**
  * Works out where every component of a tree goes, and leaves each holding the box it was
@@ -124,7 +127,7 @@ class Arranger final {
      **/
     glm::vec2 stack(const Container& container,
         std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>>* strips,
-        std::vector<boost::shared_ptr<component::MenuBar>>* bars) const;
+        std::vector<boost::shared_ptr<component::menu::Bar>>* bars) const;
 
     /**
      * Where a tab bar's chosen page goes - the room the strip and its rule leave under
@@ -170,12 +173,12 @@ class Arranger final {
      * Place a menu bar's open panel and its items, hanging from an origin and moved back into
      * the room where it would hang off an edge.
      **/
-    void panel(component::Menu& menu, const glm::vec2& origin, const glm::vec2& room) const;
+    void panel(component::menu::Menu& menu, const glm::vec2& origin, const glm::vec2& room) const;
 
     /**
      * Place a game menu's level and its items, centred in the room.
      **/
-    void centred(component::Menu& level, const glm::vec2& room) const;
+    void centred(component::menu::Menu& level, const glm::vec2& room) const;
 
     /**
      * How wide a flyout panel's mark column is, as a fraction of a line - the room on each

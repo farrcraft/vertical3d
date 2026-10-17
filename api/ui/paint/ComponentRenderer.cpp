@@ -26,7 +26,7 @@
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/Type.h>
 #include <api/ui/component/menu/Menu.h>
-#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/component/menu/Bar.h>
 #include <api/ui/style/Button.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
@@ -279,7 +279,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())));
 
     std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>> strips;
-    std::vector<boost::shared_ptr<component::MenuBar>> bars;
+    std::vector<boost::shared_ptr<component::menu::Bar>> bars;
     arranger_.stack(container, &strips, &bars);
 
     for (const boost::shared_ptr<Component>& component : container.ordered()) {
@@ -291,7 +291,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
             continue;
         }
         if (component->type() == component::Type::Menu) {
-            draw(canvas, boost::dynamic_pointer_cast<component::Menu>(component));
+            draw(canvas, boost::dynamic_pointer_cast<component::menu::Menu>(component));
         } else {
             // everything else is a box: it is laid out against the canvas, and whatever it
             // holds is laid out against it
@@ -308,7 +308,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     }
     // an open menu drops a panel over whatever the strips below it occupy, so a menu bar
     // is drawn after them
-    for (const boost::shared_ptr<component::MenuBar>& bar : bars) {
+    for (const boost::shared_ptr<component::menu::Bar>& bar : bars) {
         draw(canvas, bar);
     }
 }
@@ -758,12 +758,12 @@ glm::vec2 ComponentRenderer::insets(const Container& container) const {
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Menu>& menu) const {
     if (canvas == nullptr || !menu) {
         return;
     }
 
-    boost::shared_ptr<component::Menu> level = menu->level();
+    boost::shared_ptr<component::menu::Menu> level = menu->level();
     if (!level) {
         level = menu;
     }
@@ -781,7 +781,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     canvas->rect(origin - glm::vec2(1.0f, 1.0f), origin + glm::vec2(width + 1.0f, height + 1.0f), base().border);
     canvas->rect(origin, origin + glm::vec2(width, height), base().panel);
 
-    const boost::shared_ptr<component::MenuItem> active = level->active();
+    const boost::shared_ptr<component::menu::Item> active = level->active();
 
     for (std::size_t index = 0; index < count; index++) {
         const float top = origin.y + base().padding + base().lineHeight * static_cast<float>(index);
@@ -797,14 +797,14 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         // the pen sits on the baseline, which is most of the way down the line box - the
         // remainder is where descenders go
         const glm::vec2 pen(origin.x + base().padding, top + base().lineHeight * 0.75f);
-        const boost::shared_ptr<component::MenuItem>& item = (*level)[index];
+        const boost::shared_ptr<component::menu::Item>& item = (*level)[index];
         write_(item ? item->text() : std::string(), pen, selected ? base().activeText : base().text);
     }
 }
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::MenuBar>& bar) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Bar>& bar) const {
     if (canvas == nullptr || !bar) {
         return;
     }
@@ -819,7 +819,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     float pen = base().padding * 0.5f;
     for (std::size_t index = 0; index < bar->count(); index++) {
-        const boost::shared_ptr<component::Menu> menu = bar->menu(index);
+        const boost::shared_ptr<component::menu::Menu> menu = bar->menu(index);
         if (!menu) {
             continue;
         }
@@ -838,7 +838,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     }
 
     // outermost first, so that a flyout is drawn over the panel it came out of
-    const std::vector<boost::shared_ptr<component::Menu>>& panels = bar->panels();
+    const std::vector<boost::shared_ptr<component::menu::Menu>>& panels = bar->panels();
     for (std::size_t depth = 0; depth < panels.size(); depth++) {
         glm::vec2 origin;
         if (depth == 0) {
@@ -846,7 +846,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         } else {
             // out of the right hand edge of the parent, level with the item it came from
             const v3d::type::geometry::Bound2D bounds = panels[depth - 1]->bound();
-            const boost::shared_ptr<component::MenuItem> item = panels[depth - 1]->active();
+            const boost::shared_ptr<component::menu::Item> item = panels[depth - 1]->active();
             origin = glm::vec2(bounds.position().x + bounds.size().x,
                 item ? item->position().y : bounds.position().y);
         }
@@ -885,7 +885,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
 /**
  **/
-void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu,
+void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Menu>& menu,
     const glm::vec2& origin) const {
     const std::size_t count = menu->count();
     if (count == 0) {
@@ -900,10 +900,10 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
     canvas->rect(corner - glm::vec2(1.0f, 1.0f), corner + size + glm::vec2(1.0f, 1.0f), base().border);
     canvas->rect(corner, corner + size, base().panel);
 
-    const boost::shared_ptr<component::MenuItem> active = menu->active();
+    const boost::shared_ptr<component::menu::Item> active = menu->active();
 
     for (std::size_t index = 0; index < count; index++) {
-        const boost::shared_ptr<component::MenuItem>& item = (*menu)[index];
+        const boost::shared_ptr<component::menu::Item>& item = (*menu)[index];
         const float top = corner.y + base().panelPadding + base().lineHeight * static_cast<float>(index);
         const bool selected = active && item == active;
 

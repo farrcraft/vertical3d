@@ -150,7 +150,7 @@ bool Controller::buildUi() {
         logger()->get()->error("The ui config has no {} container", uiContainer);
         return false;
     }
-    menu_ = boost::dynamic_pointer_cast<v3d::ui::component::MenuBar>(container->get(menuBar));
+    menu_ = boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(container->get(menuBar));
     if (!menu_) {
         logger()->get()->error("The {} container has no {} in it", uiContainer, menuBar);
         return false;
@@ -174,7 +174,7 @@ void Controller::syncUi() {
         return;
     }
     auto mark = [this](const char* command, bool on) {
-        boost::shared_ptr<v3d::ui::component::MenuItem> item = menu_->find(command);
+        boost::shared_ptr<v3d::ui::component::menu::Item> item = menu_->find(command);
         if (item) {
             item->checked(on);
         }

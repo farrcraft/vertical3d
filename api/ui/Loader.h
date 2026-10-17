@@ -36,8 +36,6 @@ class Button;
 class CheckBox;
 class Icon;
 class Label;
-class Menu;
-class MenuBar;
 class Panel;
 class Scrollbar;
 class Slider;
@@ -47,6 +45,11 @@ class TabPage;
 class TextBox;
 class Toolbar;
 };  // namespace component
+
+namespace component::menu {
+class Bar;
+class Menu;
+};  // namespace component::menu
 
 /**
  * Builds containers and themes out of a ui config document.
@@ -129,8 +132,8 @@ class Loader final {
     boost::shared_ptr<Component> buildComponent(const std::string& componentType,
         const boost::json::object& entry);
 
-    boost::shared_ptr<component::Menu> loadMenu(const boost::json::object& entry);
-    boost::shared_ptr<component::MenuBar> loadMenuBar(const boost::json::object& entry);
+    boost::shared_ptr<component::menu::Menu> loadMenu(const boost::json::object& entry);
+    boost::shared_ptr<component::menu::Bar> loadMenuBar(const boost::json::object& entry);
     boost::shared_ptr<component::Toolbar> loadToolbar(const boost::json::object& entry);
     boost::shared_ptr<component::Button> loadButton(const boost::json::object& entry);
     static boost::shared_ptr<component::Label> loadLabel(const boost::json::object& entry);

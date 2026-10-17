@@ -18,7 +18,7 @@
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/Type.h>
 #include <api/ui/component/menu/Menu.h>
-#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/component/menu/Bar.h>
 
 #include <algorithm>
 #include <vector>
@@ -37,7 +37,7 @@ namespace {
  * disabled, or not pickable.
  **/
 void strips(const boost::shared_ptr<Container>& container,
-    std::vector<boost::shared_ptr<component::MenuBar>>* bars,
+    std::vector<boost::shared_ptr<component::menu::Bar>>* bars,
     std::vector<boost::shared_ptr<component::Toolbar>>* toolbars) {
     for (const boost::shared_ptr<Component>& component : container->components()) {
         if (!component || !component->visible() || !component->enabled() || !component->pickable()) {
@@ -47,7 +47,7 @@ void strips(const boost::shared_ptr<Container>& container,
             continue;
         }
         if (component->type() == component::Type::MenuBar) {
-            bars->push_back(boost::dynamic_pointer_cast<component::MenuBar>(component));
+            bars->push_back(boost::dynamic_pointer_cast<component::menu::Bar>(component));
         } else {
             toolbars->push_back(boost::dynamic_pointer_cast<component::Toolbar>(component));
         }
@@ -120,11 +120,11 @@ bool Cursor::motion(const glm::vec2& point) {
         if (!container || !container->visible()) {
             continue;
         }
-        std::vector<boost::shared_ptr<component::MenuBar>> bars;
+        std::vector<boost::shared_ptr<component::menu::Bar>> bars;
         std::vector<boost::shared_ptr<component::Toolbar>> toolbars;
         strips(container, &bars, &toolbars);
 
-        for (const boost::shared_ptr<component::MenuBar>& bar : bars) {
+        for (const boost::shared_ptr<component::menu::Bar>& bar : bars) {
             taken = (bar && bar->motion(point)) || taken;
         }
         for (const boost::shared_ptr<component::Toolbar>& bar : toolbars) {
@@ -166,11 +166,11 @@ bool Cursor::press(const glm::vec2& point) {
 }
 
 bool Cursor::press(const boost::shared_ptr<Container>& container, const glm::vec2& point) {
-    std::vector<boost::shared_ptr<component::MenuBar>> bars;
+    std::vector<boost::shared_ptr<component::menu::Bar>> bars;
     std::vector<boost::shared_ptr<component::Toolbar>> toolbars;
     strips(container, &bars, &toolbars);
 
-    for (const boost::shared_ptr<component::MenuBar>& bar : bars) {
+    for (const boost::shared_ptr<component::menu::Bar>& bar : bars) {
         if (bar && bar->press(point)) {
             return true;
         }

@@ -5,7 +5,7 @@ one sweeps comments, and one updates the documents. No step changes behaviour.
 
 | Step | | Step | |
 |---|---|---|---|
-| 1 `realtime/entity` | landed | 5 `ui::component::menu` | open |
+| 1 `realtime/entity` | landed | 5 `ui::component::menu` | landed |
 | 2 `realtime/lighting` | landed | 6 `libmoya/reyes` | open |
 | 3 `realtime/canvas` | landed | 7 libmoya comments | open |
 | 4 `image/format` | landed | 8 documents | open |
@@ -184,6 +184,14 @@ them as `format::` now. No document named them.
 
 `component::Type::MenuBar`, the enumerator the loader switches on, is not a class name and does
 not change. Neither does any document a ui is loaded from.
+
+**Landed.** 26 files changed. Build clean, 26 of 26 suites pass, cpplint clean. Every use
+outside the directory was qualified, so `component::Type::MenuBar` could not match a rename.
+Inside it, the rename skipped any name after `Type::`. Three `api/ui` headers forward-declared
+`Menu` and `MenuBar` in their `component` block, and declare `Bar` and `Menu` in a
+`component::menu` block now. `style::Menu` is a different class and is unchanged.
+
+Cozy names the canvas and menu classes 23 times, and follows on its next submodule update.
 
 ### Step 6 — `libmoya/reyes/`
 

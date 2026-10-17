@@ -15,7 +15,7 @@
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
-#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/component/menu/Bar.h>
 #include <vertical3d/src/command/CommandDirectory.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/scene/Project.h>
@@ -200,7 +200,7 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<v3d::ui::input::Cursor> uiCursor_;
     boost::shared_ptr<v3d::ui::shell::Keyboard> uiKeys_;
     boost::shared_ptr<v3d::ui::shell::FileChooser> chooser_;
-    boost::shared_ptr<v3d::ui::component::MenuBar> menu_;
+    boost::shared_ptr<v3d::ui::component::menu::Bar> menu_;
     std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
     boost::shared_ptr<Project> project_;
     // the document Save writes to

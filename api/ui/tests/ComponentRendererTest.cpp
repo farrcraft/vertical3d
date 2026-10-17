@@ -10,8 +10,8 @@
 #include <api/ui/component/Label.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/menu/Menu.h>
-#include <api/ui/component/menu/MenuBar.h>
-#include <api/ui/component/menu/MenuItem.h>
+#include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Item.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/style/Resolver.h>
@@ -52,11 +52,11 @@ const float characterWidth = 10.0f;
  * A menu of action items with the given labels, with its level pointing at itself the way
  * the ui engine's loader leaves it.
  **/
-boost::shared_ptr<v3d::ui::component::Menu> buildMenu(const std::vector<std::string>& labels) {
+boost::shared_ptr<v3d::ui::component::menu::Menu> buildMenu(const std::vector<std::string>& labels) {
     boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::ui::component::Menu> menu = boost::make_shared<v3d::ui::component::Menu>(dispatcher);
+    boost::shared_ptr<v3d::ui::component::menu::Menu> menu = boost::make_shared<v3d::ui::component::menu::Menu>(dispatcher);
     for (const std::string& label : labels) {
-        menu->addItem(boost::make_shared<v3d::ui::component::MenuItem>(v3d::ui::component::menu::ItemType::Action, label));
+        menu->addItem(boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Action, label));
     }
     menu->level(menu);
     menu->active(0);
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
-    boost::shared_ptr<v3d::ui::component::Menu> menu = buildMenu({"One", "Two", "Three"});
+    boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"One", "Two", "Three"});
     menu->next();
 
     renderer.draw(&canvas, menu);
@@ -147,10 +147,10 @@ BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(800, 600);
 
-    boost::shared_ptr<v3d::ui::component::Menu> menu = buildMenu({"Options", "Quit"});
-    boost::shared_ptr<v3d::ui::component::Menu> submenu = buildMenu({"Rounds", "Keys"});
+    boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"Options", "Quit"});
+    boost::shared_ptr<v3d::ui::component::menu::Menu> submenu = buildMenu({"Rounds", "Keys"});
     submenu->parent(menu);
-    (*menu)[0] = boost::make_shared<v3d::ui::component::MenuItem>(v3d::ui::component::menu::ItemType::Submenu, "Options");
+    (*menu)[0] = boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Submenu, "Options");
     (*menu)[0]->submenu(submenu);
     submenu->level(submenu);
 
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
     BOOST_CHECK(drawn > 0);
 
     canvas.clear();
-    boost::shared_ptr<v3d::ui::component::Menu> hidden = buildMenu({"One"});
+    boost::shared_ptr<v3d::ui::component::menu::Menu> hidden = buildMenu({"One"});
     hidden->visible(false);
     v3d::ui::Container withHidden("with-hidden", true);
     withHidden.add(hidden);

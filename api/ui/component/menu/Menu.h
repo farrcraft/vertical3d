@@ -9,14 +9,14 @@
 
 #include <vector>
 
-#include "MenuItem.h"
+#include "Item.h"
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
 
-namespace v3d::ui::component {
+namespace v3d::ui::component::menu {
 /**
- * A Menu is a container for an ordered set of MenuItems. It does not dictate how the
+ * A Menu is a container for an ordered set of Items. It does not dictate how the
  * items are rendered. 
  */
 class Menu : public Component {
@@ -58,16 +58,16 @@ class Menu : public Component {
     size_t count() const;
 
     // use a [] operator to get individual items instead
-    boost::shared_ptr<MenuItem> & operator[](size_t i);
+    boost::shared_ptr<Item> & operator[](size_t i);
 
     /**
-      * Get the active MenuItem from this menu
+      * Get the active Item from this menu
       * This is always the active item within this menu level
-      * @return the active MenuItem
+      * @return the active Item
       */
-    boost::shared_ptr<MenuItem> active() const;
+    boost::shared_ptr<Item> active() const;
     /**
-      * Set the active MenuItem from this menu.
+      * Set the active Item from this menu.
       * Negative or out of bounds (>= size) will result in a null active pointer
       * being set.
       * @param idx the index of new the active item.
@@ -112,7 +112,7 @@ class Menu : public Component {
      **/
     void cancel();
 
-    void addItem(const boost::shared_ptr<MenuItem>& item);
+    void addItem(const boost::shared_ptr<Item>& item);
 
     /**
      * Get the currently active menu level.
@@ -133,7 +133,7 @@ class Menu : public Component {
      * navigation left active.
      * @return false when the item has no event bound to it
      **/
-    bool dispatch(const boost::shared_ptr<MenuItem>& item) const;
+    bool dispatch(const boost::shared_ptr<Item>& item) const;
 
     /**
      * Check to see if this is a submenu.
@@ -143,14 +143,14 @@ class Menu : public Component {
 
  private:
     boost::shared_ptr<entt::dispatcher> dispatcher_;
-    std::vector< boost::shared_ptr<MenuItem> > items_;
+    std::vector< boost::shared_ptr<Item> > items_;
     int active_;  // the active item in this menu, or -1 when there is none
     boost::weak_ptr<Menu> level_;
     boost::weak_ptr<Menu> parent_;  // if this is a submenu it will have a parent menu
     // the item being captured into, held here rather than on the level it belongs to
     // because level_ is, and both are state of the menu as a whole rather than of one of
     // its levels
-    boost::shared_ptr<MenuItem> capture_;
+    boost::shared_ptr<Item> capture_;
 };
 
-};  // namespace v3d::ui::component
+};  // namespace v3d::ui::component::menu

@@ -18,7 +18,7 @@
 #include <api/ui/component/TabPage.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/Toolbar.h>
-#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/component/menu/Bar.h>
 #include <api/ui/input/Cursor.h>
 #include <api/ui/paint/ComponentRenderer.h>
 

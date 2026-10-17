@@ -100,7 +100,7 @@ int SelectList::at(const glm::vec2& point) const {
 
 void SelectList::event(const v3d::event::Event& destination) {
     event_ = destination;
-    // marked as a command here rather than by the caller, as Button and MenuItem do, because a
+    // marked as a command here rather than by the caller, as Button and menu::Item do, because a
     // listener that accepts only Destination events drops an unmarked one
     event_.type(v3d::event::Type::Destination);
 }

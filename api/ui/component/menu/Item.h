@@ -16,7 +16,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
-namespace v3d::ui::component {
+namespace v3d::ui::component::menu {
 class Menu;
 
 /**
@@ -25,10 +25,9 @@ class Menu;
  * - action - activating an action item dispatches its bound event
  * - check - an action item that also shows a mark when it is checked
  * - radio - a check item that is one of a set, only one of which is marked
- * - submenu - activating this type of menu item will replace the currently active menu with the submenu
- * - input - this type of menu item is the same as an action item type except that it accepts a single input 
- *		when activated before it dispatches the event. the input becomes the item's value, which is sent as
- *		the event's data.
+ * - submenu - activating the item replaces the active menu with its submenu
+ * - input - an action item that takes one input when activated, before it dispatches its
+ *   event. The input becomes the item's value, and the event carries it as its data.
  * - numeric_input - the same as an input type except restricted to number input types only
  * - key_input - an input type that uses a key name as the value
  *
@@ -44,7 +43,7 @@ class Menu;
  * A key input ends at the first key it is given, because a binding is one key; the other two
  * end at the next activation, which the ui::selectMenu binding sends.
  **/
-class MenuItem : public Component {
+class Item : public Component {
  public:
     /**
      * Construct a new menu item
@@ -54,8 +53,8 @@ class MenuItem : public Component {
      * @param scope the scope of the command
      * @param param the command paramater
      */
-    MenuItem(menu::ItemType type, const std::string & label);
-    ~MenuItem() override;
+    Item(menu::ItemType type, const std::string & label);
+    ~Item() override;
 
     /**
       * Set the menu item text label 
@@ -139,4 +138,4 @@ class MenuItem : public Component {
     v3d::event::EventData value_;
 };
 
-};  // namespace v3d::ui::component
+};  // namespace v3d::ui::component::menu

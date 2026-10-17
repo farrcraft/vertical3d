@@ -324,7 +324,7 @@ so the item inherits from it.
 
 The parent is a raw pointer. An app may keep an item after its holder is destroyed, so every
 holder calls `disown()` on each adopted item from its own destructor, and `~Component` does the
-same for `children()`. A holder that replaces an item, as `MenuItem::submenu()` does, disowns the
+same for `children()`. A holder that replaces an item, as `menu::Item::submenu()` does, disowns the
 one it replaces. A new holder type does all three.
 
 ## Adding a component type

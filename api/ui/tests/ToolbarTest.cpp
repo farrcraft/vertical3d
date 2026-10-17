@@ -8,7 +8,7 @@
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
-#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/component/menu/Bar.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
 #include <cstddef>
@@ -236,8 +236,8 @@ BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
     Fixture fixture;
     const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
 
-    boost::shared_ptr<v3d::ui::component::MenuBar> menu =
-        boost::make_shared<v3d::ui::component::MenuBar>();
+    boost::shared_ptr<v3d::ui::component::menu::Bar> menu =
+        boost::make_shared<v3d::ui::component::menu::Bar>();
     boost::shared_ptr<v3d::ui::component::Toolbar> top =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
     boost::shared_ptr<v3d::ui::component::Toolbar> left =

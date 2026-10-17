@@ -13,29 +13,29 @@
 #include <vector>
 
 #include "Menu.h"
-#include "MenuItem.h"
+#include "Item.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 
-namespace v3d::ui::component {
+namespace v3d::ui::component::menu {
 
 /**
  * A row of named menus along the top of the window, driven by the cursor.
  *
  * One of the menus may be open, and under it any depth of submenu the cursor has
- * descended into - panels() is that stack, outermost first, and is what a renderer draws
- * and what the cursor is tested against.
+ * descended into. panels() is that stack, outermost first. A renderer draws it, and the
+ * cursor is tested against it.
  *
  * The bar tests the cursor against the bounds a renderer left on the components, so
  * nothing is hit until something has been drawn.
  *
  * It is pickable from the start, and one marked otherwise is offered nothing.
  **/
-class MenuBar : public Component {
+class Bar : public Component {
  public:
-    MenuBar();
-    ~MenuBar() override;
+    Bar();
+    ~Bar() override;
 
     /**
      * Add a menu to the end of the row. A null menu is ignored, and the row is left as it was.
@@ -100,7 +100,7 @@ class MenuBar : public Component {
     void close();
 
     /**
-     * @return whether the bar has a menu open, which is when it takes the cursor
+     * @return whether the bar has a menu open. The bar takes the cursor while it does
      **/
     bool active() const noexcept;
 
@@ -135,7 +135,7 @@ class MenuBar : public Component {
      * @param command the item's event as Event::str() gives it - "context::name"
      * @return the item, or null when no item sends that command
      **/
-    boost::shared_ptr<MenuItem> find(const std::string& command) const;
+    boost::shared_ptr<Item> find(const std::string& command) const;
 
  private:
     /**
@@ -162,12 +162,12 @@ class MenuBar : public Component {
      * Descend into an item's submenu when it has one, dropping any deeper panel.
      * @param depth the panel the item belongs to
      **/
-    void descend(std::size_t depth, const boost::shared_ptr<MenuItem>& item);
+    void descend(std::size_t depth, const boost::shared_ptr<Item>& item);
 
     /**
      * Search one menu and everything below it.
      **/
-    static boost::shared_ptr<MenuItem> find(const boost::shared_ptr<Menu>& menu, const std::string& command);
+    static boost::shared_ptr<Item> find(const boost::shared_ptr<Menu>& menu, const std::string& command);
 
     std::vector<std::string> labels_;
     std::vector<v3d::type::geometry::Bound2D> bounds_;  // where each label was drawn in the strip
@@ -177,4 +177,4 @@ class MenuBar : public Component {
     int open_;   // the open menu, or -1
 };
 
-};  // namespace v3d::ui::component
+};  // namespace v3d::ui::component::menu

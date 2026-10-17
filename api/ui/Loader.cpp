@@ -27,8 +27,8 @@
 #include <api/ui/component/Type.h>
 #include <api/ui/component/VerticalBox.h>
 #include <api/ui/component/menu/Menu.h>
-#include <api/ui/component/menu/MenuBar.h>
-#include <api/ui/component/menu/MenuItem.h>
+#include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Item.h>
 #include <api/ui/style/Button.h>
 #include <api/ui/style/Property.h>
 #include <api/ui/style/Style.h>
@@ -274,7 +274,7 @@ boost::shared_ptr<Component> Loader::buildComponent(const std::string& component
     // the enum fails the build here until it is given a way to be built
     switch (component::parse(componentType)) {
         case component::Type::Menu: {
-            boost::shared_ptr<component::Menu> menu = loadMenu(entry);
+            boost::shared_ptr<component::menu::Menu> menu = loadMenu(entry);
             if (!menu) {
                 return nullptr;
             }
@@ -768,8 +768,8 @@ boost::shared_ptr<component::Icon> Loader::loadIcon(const boost::json::object& e
 
 /**
  **/
-boost::shared_ptr<component::MenuBar> Loader::loadMenuBar(const boost::json::object& entry) {
-    boost::shared_ptr<component::MenuBar> bar = boost::make_shared<component::MenuBar>();
+boost::shared_ptr<component::menu::Bar> Loader::loadMenuBar(const boost::json::object& entry) {
+    boost::shared_ptr<component::menu::Bar> bar = boost::make_shared<component::menu::Bar>();
 
     auto const menusSection = entry.at("menus");
     if (!menusSection.is_array()) {
@@ -785,7 +785,7 @@ boost::shared_ptr<component::MenuBar> Loader::loadMenuBar(const boost::json::obj
         }
         auto const menuConfig = menuIterator->as_object();
         std::string label = boost::json::value_to<std::string>(menuConfig.at("label"));
-        boost::shared_ptr<component::Menu> menu = loadMenu(menuConfig);
+        boost::shared_ptr<component::menu::Menu> menu = loadMenu(menuConfig);
         if (!menu) {
             return nullptr;
         }
@@ -800,8 +800,8 @@ boost::shared_ptr<component::MenuBar> Loader::loadMenuBar(const boost::json::obj
 
 /**
  **/
-boost::shared_ptr<component::Menu> Loader::loadMenu(const boost::json::object& entry) {
-    boost::shared_ptr<component::Menu> menu = boost::make_shared<component::Menu>(dispatcher_);
+boost::shared_ptr<component::menu::Menu> Loader::loadMenu(const boost::json::object& entry) {
+    boost::shared_ptr<component::menu::Menu> menu = boost::make_shared<component::menu::Menu>(dispatcher_);
 
     auto const itemsSection = entry.at("items");
     if (!itemsSection.is_array()) {
@@ -821,7 +821,7 @@ boost::shared_ptr<component::Menu> Loader::loadMenu(const boost::json::object& e
 
         const v3d::event::Event command = loadCommand(menuItemConfig);
 
-        boost::shared_ptr<component::MenuItem> menuItem = boost::make_shared<component::MenuItem>(component::menu::stringToType(itemType), label);
+        boost::shared_ptr<component::menu::Item> menuItem = boost::make_shared<component::menu::Item>(component::menu::stringToType(itemType), label);
         // the owning menu has to be set before the submenu below, which reads it to find its parent
         menuItem->menu(menu);
         if (command.context()) {
@@ -831,7 +831,7 @@ boost::shared_ptr<component::Menu> Loader::loadMenu(const boost::json::object& e
         menu->addItem(menuItem);
 
         if (menuItem->itemType() == component::menu::ItemType::Submenu) {
-            boost::shared_ptr<component::Menu> submenu = loadMenu(menuItemConfig);
+            boost::shared_ptr<component::menu::Menu> submenu = loadMenu(menuItemConfig);
             if (!submenu) {  // submenu(null) would fault setting the parent
                 return nullptr;
             }

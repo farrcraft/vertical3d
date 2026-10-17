@@ -42,8 +42,6 @@ class Button;
 class CheckBox;
 class Icon;
 class Label;
-class Menu;
-class MenuBar;
 class Panel;
 class Scrollbar;
 class Slider;
@@ -52,6 +50,11 @@ class TabBar;
 class TextBox;
 class Toolbar;
 };  // namespace component
+
+namespace component::menu {
+class Bar;
+class Menu;
+};  // namespace component::menu
 
 };  // namespace v3d::ui
 
@@ -210,14 +213,14 @@ class ComponentRenderer {
      * It is the active level rather than the menu itself that is drawn: descending into
      * a submenu replaces what is on screen, and the parent stays where it was.
      **/
-    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Menu>& menu) const;
 
     /**
      * Draw a menu bar - the strip across the top, and the open menu with any flyout the
      * cursor has descended into drawn under it. It takes the top of the canvas, which is
      * where its panels are dropped from.
      **/
-    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::MenuBar>& bar) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Bar>& bar) const;
 
     /**
      * Draw a toolbar - a row of buttons across the canvas, or a column down its side.
@@ -249,7 +252,7 @@ class ComponentRenderer {
      * @param origin where the panel's top left corner would go, before it is moved to
      *      keep it on the canvas
      **/
-    void panel(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Menu>& menu,
+    void panel(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Menu>& menu,
         const glm::vec2& origin) const;
 
     /**

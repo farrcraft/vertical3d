@@ -90,9 +90,9 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
  * The menu's active item, by label, which navigation moves.
  **/
 std::string active(const boost::shared_ptr<v3d::ui::Engine>& ui) {
-    boost::shared_ptr<v3d::ui::component::Menu> menu =
-        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
-    boost::shared_ptr<v3d::ui::component::Menu> level = menu->level();
+    boost::shared_ptr<v3d::ui::component::menu::Menu> menu =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(ui->container("game-menu")->get("main-menu"));
+    boost::shared_ptr<v3d::ui::component::menu::Menu> level = menu->level();
     if (!level || !level->active()) {
         return std::string();
     }
@@ -233,8 +233,8 @@ BOOST_AUTO_TEST_CASE(a_key_input_item_captures_a_key_and_sends_it) {
     BOOST_TEST(!menu.capturing());
 
     // the item carries what it captured, and its event goes out with it
-    boost::shared_ptr<v3d::ui::component::Menu> component =
-        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
+    boost::shared_ptr<v3d::ui::component::menu::Menu> component =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(ui->container("game-menu")->get("main-menu"));
     boost::optional<v3d::event::EventData> value = (*component)[0]->value();
     BOOST_REQUIRE(value);
     BOOST_TEST(std::get<std::string>(value.get()) == "w");
@@ -257,8 +257,8 @@ BOOST_AUTO_TEST_CASE(a_capture_takes_nothing_until_it_is_open) {
     menu.toggle();
     BOOST_TEST(!menu.capture(std::string("w")));
 
-    boost::shared_ptr<v3d::ui::component::Menu> component =
-        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
+    boost::shared_ptr<v3d::ui::component::menu::Menu> component =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(ui->container("game-menu")->get("main-menu"));
     BOOST_TEST(!(*component)[0]->value());
 }
 
@@ -269,8 +269,8 @@ BOOST_AUTO_TEST_CASE(a_capture_takes_nothing_until_it_is_open) {
 BOOST_AUTO_TEST_CASE(a_disabled_input_item_opens_no_capture) {
     boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
     v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
-    boost::shared_ptr<v3d::ui::component::Menu> component =
-        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
+    boost::shared_ptr<v3d::ui::component::menu::Menu> component =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(ui->container("game-menu")->get("main-menu"));
     (*component)[0]->enabled(false);
 
     menu.toggle();
@@ -299,8 +299,8 @@ BOOST_AUTO_TEST_CASE(a_toggle_during_a_capture_abandons_it) {
     // the menu is still up, and nothing was captured
     BOOST_TEST(menu.visible());
 
-    boost::shared_ptr<v3d::ui::component::Menu> component =
-        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
+    boost::shared_ptr<v3d::ui::component::menu::Menu> component =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(ui->container("game-menu")->get("main-menu"));
     BOOST_TEST(!(*component)[0]->value());
 
     // and navigation moves again
