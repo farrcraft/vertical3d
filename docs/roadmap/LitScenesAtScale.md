@@ -8,6 +8,8 @@ The gaps are each described in [TODO.md](../TODO.md#lit-scenes) and
 [TODO.md](../TODO.md#audio). This roadmap orders them. Only the instancing steps depend on each
 other. The grade and the panned voice are here because they are due with the same kind of scene.
 
+The [LitScenesAtScale plan](../plans/LitScenesAtScale.md) takes all five steps.
+
 ## What exists
 
 - **[`Lit`](../../api/render/realtime/vulkan/renderer/Lit.h)** draws a mesh in a cel pass and an

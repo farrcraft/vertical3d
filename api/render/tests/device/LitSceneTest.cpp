@@ -45,6 +45,7 @@
 #include <entt/entt.hpp>
 
 #include "Headless.h"
+#include "Shapes.h"
 
 using v3d::ecs::component::Transform;
 using v3d::render::realtime::Frame;
@@ -56,6 +57,8 @@ using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
 using v3d::render::realtime::vulkan::renderer::Lit;
 using v3d::render::realtime::vulkan::renderer::World;
+using v3d::test::cube;
+using v3d::test::twoCubes;
 
 namespace lighting = v3d::render::realtime::lighting;
 
@@ -65,61 +68,6 @@ namespace {
 const VkFormat colourFormat = VK_FORMAT_R8G8B8A8_SRGB;
 const uint32_t width = 128;
 const uint32_t height = 128;
-
-/**
- * A unit cube centred on the origin, a face at a time so that each face has its own normal,
- * wound counter clockwise seen from outside as a glTF model is.
- **/
-v3d::type::Model cube(const glm::vec4& colour) {
-    v3d::type::Model model;
-    const glm::vec3 normals[6] = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
-    for (const glm::vec3& n : normals) {
-        // two axes across the face, chosen so that u x v points along the normal
-        const glm::vec3 u = glm::abs(n.y) > 0.5f ? glm::vec3(n.y, 0, 0) * -1.0f : glm::vec3(-n.z, 0, n.x);
-        const glm::vec3 v = glm::cross(n, u);
-        const uint32_t first = static_cast<uint32_t>(model.vertices().size());
-        const glm::vec3 corners[4] = {
-            n * 0.5f - u * 0.5f - v * 0.5f, n * 0.5f + u * 0.5f - v * 0.5f,
-            n * 0.5f + u * 0.5f + v * 0.5f, n * 0.5f - u * 0.5f + v * 0.5f
-        };
-        for (const glm::vec3& corner : corners) {
-            v3d::type::Model::Vertex vertex;
-            vertex.position = corner;
-            vertex.normal = n;
-            model.vertices().push_back(vertex);
-        }
-        model.indices().insert(model.indices().end(), {first, first + 1, first + 2, first, first + 2, first + 3});
-    }
-    v3d::type::Model::Material material;
-    material.baseColour = colour;
-    model.materials().push_back(material);
-    model.parts().push_back({0, static_cast<uint32_t>(model.indices().size()), 0});
-    return model;
-}
-
-/**
- * Two cubes side by side along x in one model, a part each: red on the left, green on the
- * right.
- **/
-v3d::type::Model twoCubes() {
-    v3d::type::Model model = cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-    for (v3d::type::Model::Vertex& vertex : model.vertices()) {
-        vertex.position.x -= 0.75f;
-    }
-    const v3d::type::Model green = cube(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-    const uint32_t base = static_cast<uint32_t>(model.vertices().size());
-    const uint32_t first = static_cast<uint32_t>(model.indices().size());
-    for (v3d::type::Model::Vertex vertex : green.vertices()) {
-        vertex.position.x += 0.75f;
-        model.vertices().push_back(vertex);
-    }
-    for (const uint32_t index : green.indices()) {
-        model.indices().push_back(base + index);
-    }
-    model.materials().push_back(green.materials()[0]);
-    model.parts().push_back({first, static_cast<uint32_t>(green.indices().size()), 1});
-    return model;
-}
 
 entt::entity place(entt::registry* registry, const MeshHandle& mesh, const glm::vec3& position, const glm::vec3& scale,
     bool castsShadow) {

@@ -241,7 +241,7 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Lit scenes
 
-[LitScenesAtScale](roadmap/LitScenesAtScale.md) orders the grade and instancing entries.
+[LitScenesAtScale](plans/LitScenesAtScale.md) takes the grade and instancing entries.
 [ToolingDebt](plans/ToolingDebt.md) takes the grade tolerance.
 
 [] **There are no cascaded shadow maps.**
@@ -335,7 +335,7 @@ Due when one does.
 ## Audio
 
 `audio::Engine` plays a voice on a named bus, with a fade and a gain. Nothing gives a voice a
-position. [LitScenesAtScale](roadmap/LitScenesAtScale.md) orders the entry below.
+position. [LitScenesAtScale](plans/LitScenesAtScale.md) takes the entry below.
 
 [] **A voice has no pan.**
 
