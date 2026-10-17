@@ -8,13 +8,16 @@ board. None holds for a world of regions.
 The gaps are each described in [TODO.md](../TODO.md). This roadmap orders them, because most of
 them block the next.
 
+**Steps 1 to 6 are taken up by [the StreamingWorlds plan](../plans/StreamingWorlds.md).** Step 7
+is held behind its trigger.
+
 ## What exists
 
 - **Every load runs on the main thread.** `asset::Manager` decodes, and
   [`MeshRegistry`](../../api/render/realtime/MeshRegistry.h) and
   [`TextureFactory`](../../api/render/realtime/vulkan/memory/TextureFactory.h) upload. A load is a
-  frame hitch the size of the load. The manager's loaders are shared and keep state, so one
-  manager cannot be used from two threads.
+  frame hitch the size of the load. Whether one manager can be used from two threads is not
+  established.
 - **`MeshRegistry::acquire` decodes a glTF file's textures during the upload.** Decoding and
   uploading are one call, so they cannot run on different threads.
 - **[`memory::Uploader`](../../api/render/realtime/vulkan/memory/Uploader.h) waits for the queue to
@@ -25,7 +28,8 @@ them block the next.
   every frame that may name it has finished. A mesh released from `MeshRegistry` and a handle
   released from `pipeline::Resources` already go through it.
 - **[`TileGrid`](../../api/grid/TileGrid.h)** is one rectangle of tiles centred on the world
-  origin. Every conversion between world and tile coordinates assumes that origin.
+  origin. Every conversion between world and tile coordinates goes through `worldMin()`, which
+  assumes that origin.
 - **`TileFilter` is a `std::function`**, called for every neighbour of every visited tile.
 - **Remembered sight** is in odyssey's [tile/Sight.h](../../odyssey/tile/Sight.h). Nothing in it
   is specific to odyssey.
@@ -61,7 +65,7 @@ the voxel change.
 - A region is a piece of the world that is loaded and released with its sprite sheets.
 - Each region needs an offset in the world. The most likely shape is a world origin on
   `TileGrid`. A grid of grids and a game's own list of grids are the alternatives.
-- The choice changes every conversion between world and tile coordinates, so it needs an ADR.
+- The choice decides how every caller places a grid, so it needs an ADR.
 - A region is loaded through step 2, so loading a region does not stall a frame.
 
 ### 5. The movement filter as a template parameter

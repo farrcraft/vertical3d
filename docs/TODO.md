@@ -144,7 +144,7 @@ Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4
 
 `api/grid` is a library of its own, and odyssey uses it. The grid owns a map's picture and
 terrain legend; the rest of a map belongs to the game. [Grid.md](api/Grid.md) describes the
-library. [StreamingWorlds](roadmap/StreamingWorlds.md) orders the entries below.
+library. [StreamingWorlds](plans/StreamingWorlds.md) takes the first and third entries below.
 
 [] **A world cannot be made of regions.**
 
@@ -172,7 +172,7 @@ library. [StreamingWorlds](roadmap/StreamingWorlds.md) orders the entries below.
 
 ## Voxel
 
-[StreamingWorlds](roadmap/StreamingWorlds.md) orders the first entry with asynchronous loading.
+[StreamingWorlds](plans/StreamingWorlds.md) takes the first entry.
 
 [] **A remeshed chunk destroys its old mesh too early once uploads become asynchronous.**
 
@@ -216,7 +216,7 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Lit scenes
 
-[StreamingWorlds](roadmap/StreamingWorlds.md) orders the shadow map entry.
+[StreamingWorlds](plans/StreamingWorlds.md) takes the shadow map entry.
 [LitScenesAtScale](roadmap/LitScenesAtScale.md) orders the grade and instancing entries.
 [ToolingDebt](plans/ToolingDebt.md) takes the grade tolerance.
 
@@ -260,16 +260,14 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Loading
 
-[StreamingWorlds](roadmap/StreamingWorlds.md) orders the first entry.
+[StreamingWorlds](plans/StreamingWorlds.md) takes the first entry.
 [ReleaseHardening](plans/ReleaseHardening.md) takes the second.
 
 [] **Every load runs on the main thread**, so each load is a frame hitch the size of the load.
 
-- First piece: decode on a worker thread through its own `asset::Manager`, because the manager's
-  loaders are shared and stateful. The main thread polls once a frame and uploads what is ready
-  through `TextureFactory::create(image)` and `MeshRegistry::add(name, model, albedos)`.
-- Before any thread is added, a texture named by a glTF file must be decoded on the load side.
-  Today `MeshRegistry::acquire` decodes it inside the upload.
+- First piece: decode on a worker thread through the app's `asset::Manager`, which loads
+  correctly from several threads at once. The main thread polls once a frame and uploads what is
+  ready through `TextureFactory::create(image)` and `MeshRegistry::add(name, model, albedos)`.
 - This would be the first thread in `api/`, which needs an ADR of its own.
 - Due when a game streams regions, or any load is long enough for a player to see.
 - Background: [ShellAndShipping, step 12](plans/completed/ShellAndShipping.md#step-12--asynchronous-loading-held).

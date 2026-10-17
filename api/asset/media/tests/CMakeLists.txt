@@ -3,7 +3,8 @@
 v3d_add_test(asset_media
 	"TestMain.cpp"
 	"GltfTest.cpp"
-	"MediaTest.cpp")
+	"MediaTest.cpp"
+	"ThreadTest.cpp")
 
 target_link_libraries(v3dtest_asset_media PRIVATE
 	v3dlib_asset_media

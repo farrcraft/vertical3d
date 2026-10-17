@@ -4,9 +4,13 @@
  **/
 
 #include <api/asset/Manager.h>
+#include <api/asset/Loader.h>
+#include <api/asset/Type.h>
 #include <api/asset/media/Loaders.h>
+#include <api/asset/media/loader/Image.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/render/realtime/DecodedModel.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/MeshRegistry.h>
@@ -20,6 +24,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -67,6 +72,27 @@ boost::shared_ptr<MeshRegistry> registry(v3d::test::Headless* headless) {
     v3d::asset::media::registerLoaders(*assets, headless->logger);
     return boost::make_shared<MeshRegistry>(headless->logger, headless->context, assets);
 }
+
+/**
+ * A PNG loader that counts its loads, so a case can see whether a picture was decoded.
+ **/
+class CountingPng final : public v3d::asset::Loader {
+ public:
+    explicit CountingPng(const boost::shared_ptr<v3d::log::Logger>& logger) :
+        Loader(v3d::asset::Type::ImagePng, logger),
+        png_(v3d::asset::Type::ImagePng, logger) {
+    }
+
+    boost::shared_ptr<v3d::asset::Asset> load(std::string_view name) override {
+        loads++;
+        return png_.load(name);
+    }
+
+    unsigned int loads = 0;
+
+ private:
+    v3d::asset::media::loader::Image png_;
+};
 
 /**
  * Two triangles in code, a part each, naming a texture apiece - empty for none.
@@ -261,6 +287,71 @@ BOOST_AUTO_TEST_CASE(two_parts_naming_one_image_share_it) {
     BOOST_CHECK(headless.context->resources()->texture(entry.parts[0].texture) != nullptr);
     BOOST_CHECK(meshes->release(once));
     BOOST_CHECK(headless.context->resources()->texture(entry.parts[0].texture) == nullptr);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A decoded model is uploaded under its path, and a second upload of the same path returns the
+ * first handle.
+ **/
+BOOST_AUTO_TEST_CASE(a_decoded_model_is_uploaded_once) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
+    MeshRegistry meshes(headless.logger, headless.context, assets);
+
+    const v3d::render::realtime::DecodedModel decoded = v3d::render::realtime::decodeModel(*assets, "embedded_texture.glb");
+    const MeshHandle first = meshes.add(decoded);
+    const MeshHandle second = meshes.add(decoded);
+
+    BOOST_CHECK(first == second);
+    BOOST_CHECK_EQUAL(meshes.count(), 1U);
+    BOOST_CHECK(meshes.load("embedded_texture.glb") == first);
+    const MeshRegistry::Entry* entry = meshes.resolve(first);
+    BOOST_REQUIRE(entry != nullptr);
+    BOOST_REQUIRE(!entry->parts.empty());
+    BOOST_CHECK(entry->parts[0].texture != headless.context->textures()->white());
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A decoded model without one albedo per material, or with no model at all, is refused and
+ * registers nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_decoded_model_without_its_albedos_is_refused) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
+
+    v3d::render::realtime::DecodedModel missing;
+    missing.path = "short";
+    missing.model = boost::make_shared<const v3d::type::Model>(twoParts("", ""));
+    missing.albedos.resize(1);
+    BOOST_CHECK_THROW(meshes->add(missing), std::runtime_error);
+
+    v3d::render::realtime::DecodedModel empty;
+    empty.path = "empty";
+    BOOST_CHECK_THROW(meshes->add(empty), std::runtime_error);
+
+    BOOST_CHECK_EQUAL(meshes->count(), 0U);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * An albedo another entry already uploaded is not read again.
+ **/
+BOOST_AUTO_TEST_CASE(an_uploaded_albedo_is_not_read_again) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
+    const boost::shared_ptr<CountingPng> png = boost::make_shared<CountingPng>(headless.logger);
+    assets->registerLoader(png, {".png"});
+    MeshRegistry meshes(headless.logger, headless.context, assets);
+
+    const MeshHandle crate = meshes.add("crate", triangle("pixel.png"));
+    const MeshHandle barrel = meshes.add("barrel", triangle("pixel.png"));
+
+    BOOST_CHECK_EQUAL(png->loads, 1U);
+    BOOST_CHECK(meshes.resolve(crate)->parts.at(0).texture == meshes.resolve(barrel)->parts.at(0).texture);
     BOOST_CHECK(headless.silent());
 }
 

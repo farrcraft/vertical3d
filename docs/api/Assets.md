@@ -36,6 +36,9 @@ auto model = assets()->load<v3d::asset::media::kind::Model>("knight.glb");
   not decode, an extension nothing is registered for, and a file of a different kind than `T`
   all fail the same way. Check the one pointer.
 - The manager does not cache. Each call reads the file again, so keep what you load.
+- **One manager can load on several threads at once.** Its loaders are only read after they are
+  registered, and each load decodes with its own state. Register every loader before the first
+  load on another thread.
 
 To load from somewhere else, build a second manager on that directory, for example on
 `engine::userPath()` for a saved game. Register the loaders it needs on it first.
@@ -73,7 +76,8 @@ manager.registerLoader(boost::make_shared<MyLoader>(logger), {".map"});
 - Registering a type again replaces its loader.
 - **`load()` returns null and logs on failure. It never throws.**
 - **A loader holds no state between calls.** One instance serves everything that loads through
-  the manager, so a setting left on it by one caller would be seen by the next.
+  the manager, possibly on several threads at once, so a setting left on it by one caller would
+  be seen by the next.
 
 Splitting the loaders this way keeps each library's dependencies small. `config` needs only the
 JSON loader, so it does not pull in libpng, libjpeg or FreeType. Only an app that links `audio`

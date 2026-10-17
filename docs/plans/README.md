@@ -20,6 +20,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
+| [StreamingWorlds](StreamingWorlds.md) | Realtime, asset, grid, voxel, odyssey | Loading on a worker thread, uploads that do not drain the queue, regions in odyssey, and a shadow map fitted to the view |
 | [ReleaseHardening](ReleaseHardening.md) | Engine, ui, config, grid, rendering, docs | The defects a player of a released game could meet, and the known review findings |
 | [ToolingDebt](ToolingDebt.md) | All of the tree, tests | The thirteen disabled clang-tidy checks enabled, and the test gaps that need no new hardware |
 

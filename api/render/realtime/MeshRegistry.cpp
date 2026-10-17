@@ -6,8 +6,6 @@
 #include "MeshRegistry.h"
 
 #include <api/asset/Manager.h>
-#include <api/asset/media/kind/Image.h>
-#include <api/asset/media/kind/Model.h>
 #include <api/image/Image.h>
 #include <api/render/realtime/DeviceContext.h>
 
@@ -18,7 +16,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/filesystem/path.hpp>
 #include <boost/make_shared.hpp>
 
 namespace v3d::render::realtime {
@@ -75,24 +72,7 @@ MeshHandle MeshRegistry::load(const std::string& path) {
         return found->second;
     }
 
-    const boost::shared_ptr<asset::media::kind::Model> loaded =
-        assets_->load<asset::media::kind::Model>(path, asset::Type::ModelGltf);
-    if (!loaded || !loaded->model()) {
-        throw std::runtime_error("Unable to load a model from " + path);
-    }
-    const type::Model& model = *loaded->model();
-
-    // an image packed into the file is the file's own, and one it names is resolved beside it
-    std::vector<Source> sources(model.materials().size());
-    for (std::size_t index = 0; index < sources.size(); index++) {
-        const std::string& named = model.materials()[index].baseColourTexture;
-        if (loaded->baseColourImage(index)) {
-            sources[index] = Source{ path + "#albedo" + std::to_string(index), loaded->baseColourImage(index) };
-        } else if (!named.empty()) {
-            sources[index].key = (boost::filesystem::path(path).parent_path() / named).generic_string();
-        }
-    }
-    return upload(path, model, sources);
+    return add(decodeModel(*assets_, path, [this](const std::string& key) { return uploaded(key); }));
 }
 
 /**
@@ -104,20 +84,34 @@ MeshHandle MeshRegistry::add(const std::string& name, const type::Model& model,
         return found->second;
     }
 
-    std::vector<Source> sources(model.materials().size());
+    std::vector<DecodedModel::Albedo> sources(model.materials().size());
     for (std::size_t index = 0; index < sources.size(); index++) {
         if (index < albedos.size() && albedos[index]) {
-            sources[index] = Source{ name + "#albedo" + std::to_string(index), albedos[index] };
+            sources[index] = DecodedModel::Albedo{ name + "#albedo" + std::to_string(index), albedos[index] };
         } else {
             sources[index].key = model.materials()[index].baseColourTexture;
         }
     }
+    decodeAlbedos(*assets_, &sources, [this](const std::string& key) { return uploaded(key); });
     return upload(name, model, sources);
 }
 
 /**
  **/
-MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model, const std::vector<Source>& sources) {
+MeshHandle MeshRegistry::add(const DecodedModel& decoded) {
+    const std::map<std::string, MeshHandle>::const_iterator found = keys_.find(decoded.path);
+    if (found != keys_.end()) {
+        return found->second;
+    }
+    if (!decoded.model) {
+        throw std::runtime_error("The model " + decoded.path + " holds no geometry to upload");
+    }
+    return upload(decoded.path, *decoded.model, decoded.albedos);
+}
+
+/**
+ **/
+MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model, const std::vector<DecodedModel::Albedo>& albedos) {
     if (model.empty() || model.indices().empty()) {
         throw std::runtime_error("The model " + key + " holds no geometry to upload");
     }
@@ -126,6 +120,9 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
     }
     if (!model.skeleton().empty() && model.influences().size() != model.vertices().size()) {
         throw std::runtime_error("The model " + key + " has a skeleton and not an influence for every vertex");
+    }
+    if (albedos.size() != model.materials().size()) {
+        throw std::runtime_error("The model " + key + " does not have one albedo per material");
     }
     // checked before anything is acquired, so that a bad part acquires nothing
     for (const type::Model::Part& part : model.parts()) {
@@ -148,7 +145,7 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
             part.firstIndex = source.firstIndex;
             part.indexCount = source.indexCount;
             part.baseColour = model.materials()[source.material].baseColour;
-            slot.albedos.push_back(acquire(sources[source.material], &part));
+            slot.albedos.push_back(acquire(albedos[source.material], &part));
             slot.entry.parts.push_back(part);
         }
         handle = meshes_.add(slot);
@@ -168,7 +165,7 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
 
 /**
  **/
-std::string MeshRegistry::acquire(const Source& source, Part* part) {
+std::string MeshRegistry::acquire(const DecodedModel::Albedo& source, Part* part) {
     const boost::shared_ptr<Textures> textures = context_->textures();
     part->texture = textures->white();
     part->material = textures->material(part->texture);
@@ -179,13 +176,7 @@ std::string MeshRegistry::acquire(const Source& source, Part* part) {
 
     std::map<std::string, Albedo>::iterator found = albedos_.find(key);
     if (found == albedos_.end()) {
-        boost::shared_ptr<image::Image> image = source.pixels;
-        if (!image) {
-            const boost::shared_ptr<asset::media::kind::Image> asset = assets_->load<asset::media::kind::Image>(key);
-            if (asset) {
-                image = asset->image();
-            }
-        }
+        const boost::shared_ptr<image::Image>& image = source.pixels;
         if (!image) {
             logger_->get()->warn("The albedo {} was not found, and is drawn white", key);
             return std::string();
@@ -209,6 +200,12 @@ std::string MeshRegistry::acquire(const Source& source, Part* part) {
     part->texture = found->second.texture;
     part->material = found->second.material;
     return key;
+}
+
+/**
+ **/
+bool MeshRegistry::uploaded(const std::string& key) const {
+    return albedos_.find(key) != albedos_.end();
 }
 
 /**

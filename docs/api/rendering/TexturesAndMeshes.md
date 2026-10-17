@@ -53,6 +53,10 @@ meshes.release(crate);
 - `load()` reads glTF. Asking for the same path again returns the same handle.
 - `add()` registers a model built in code under a name. Names and paths share one namespace.
   It can take an image per material where you have pixels instead of a file name.
+- **Reading and decoding are separate from uploading.** `decodeModel(assets, path)` reads a
+  glTF file and decodes the albedo each material uses, and makes no device call. It returns a
+  `DecodedModel`, which `add(decoded)` uploads without reading any file. `load(path)` is the
+  two together, and skips decoding an albedo an entry already uploaded.
 - An entry is drawn one *part* at a time. A part is a range of the indices, an albedo texture
   and a base colour, and is one draw.
 - A texture a model names that cannot be found is logged and drawn white.

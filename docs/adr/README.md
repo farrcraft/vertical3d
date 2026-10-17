@@ -100,6 +100,7 @@ content went. Numbers are never reused.
 | [0080](0080-apps-the-engine-owns-startup-and-shutdown-order.md) | Apps: the engine owns startup and shutdown order | accepted |
 | [0081](0081-input-key-events-and-commands-are-separate.md) | Input: key events and commands are separate | accepted |
 | [0084](0084-audio-events-and-parameters-behind-an-interface.md) | Audio: events and parameters behind an interface | accepted |
+| [0086](0086-loading-one-worker-thread-polled-from-the-main-thread.md) | Loading: one worker thread, polled from the main thread | accepted |
 
 ## Grid and ECS
 

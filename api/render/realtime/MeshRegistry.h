@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/realtime/DecodedModel.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Registry.h>
 #include <api/render/realtime/vulkan/memory/Mesh.h>
@@ -134,6 +135,16 @@ class MeshRegistry final {
         const std::vector<boost::shared_ptr<image::Image>>& albedos = {});
 
     /**
+     * A model already read and decoded, uploaded the first time its path is asked for. An albedo
+     * with a key and no pixels is drawn white unless an entry already uploaded it, and nothing is
+     * read from a file.
+     *
+     * @throw std::runtime_error if the model holds no geometry, a part outside it, a skeleton
+     *        without an influence for every vertex, or not one albedo per material
+     **/
+    MeshHandle add(const DecodedModel& decoded);
+
+    /**
      * Stop addressing an entry. Items queued before the release are still drawn by their frame,
      * with their albedo. What only this entry was using is destroyed once that frame has
      * finished.
@@ -169,15 +180,6 @@ class MeshRegistry final {
     };
 
     /**
-     * Where a material's albedo comes from: the key it is shared by, and its pixels when the
-     * caller has them rather than a name to load.
-     **/
-    struct Source final {
-        std::string key;  /**< empty for a material with no albedo **/
-        boost::shared_ptr<image::Image> pixels;
-    };
-
-    /**
      * An albedo, and how many entries name it.
      **/
     struct Albedo final {
@@ -187,20 +189,27 @@ class MeshRegistry final {
     };
 
     /**
-     * Upload a model and register it under a key, with each part's albedo found from its
-     * material's source.
+     * Upload a model and register it under a key, with each part's albedo taken from its
+     * material's.
      *
-     * @param sources one per material, by index
-     * @throw std::runtime_error if the model holds no geometry, no parts, or a part outside it
+     * @param albedos one per material, by index
+     * @throw std::runtime_error if the model holds no geometry, no parts, a part outside it, or
+     *        not one albedo per material
      **/
-    MeshHandle upload(const std::string& key, const type::Model& model, const std::vector<Source>& sources);
+    MeshHandle upload(const std::string& key, const type::Model& model, const std::vector<DecodedModel::Albedo>& albedos);
 
     /**
-     * Find or upload an albedo, and count one more user of it.
+     * Find or upload an albedo, and count one more user of it. Nothing is read from a file.
      *
-     * @return the key it is shared by, or empty when it could not be found and white is used
+     * @return the key it is shared by, or empty when it has no pixels and none is uploaded, and
+     *         white is used
      **/
-    std::string acquire(const Source& source, Part* part);
+    std::string acquire(const DecodedModel::Albedo& source, Part* part);
+
+    /**
+     * @return whether an albedo is uploaded under a key
+     **/
+    bool uploaded(const std::string& key) const;
 
     /**
      * Count one fewer user of an albedo, and release it when none is left.

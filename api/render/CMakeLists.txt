@@ -16,6 +16,7 @@ v3d_add_api_library(render
 	"realtime/component/Sprite.h"
 	"realtime/component/Particles.h"
 	"realtime/component/Mesh.h"
+	"realtime/DecodedModel.h" "realtime/DecodedModel.cpp"
 	"realtime/MeshRegistry.h" "realtime/MeshRegistry.cpp"
 	"realtime/Textures.h" "realtime/Textures.cpp"
 	"realtime/Meshes.h" "realtime/Meshes.cpp"
@@ -121,7 +122,7 @@ set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES
 # PRIVATE: Canvas.h forward declares font::TextBuffer rather than including it, so a consumer
 # needs the font library only if it names one itself. The ecs components the lit renderer
 # reads are named in its sources and in no header, and so are the model and image assets
-# MeshRegistry loads. MeshRegistry.cpp names a texture beside its model with
+# DecodedModel loads. DecodedModel.cpp names a texture beside its model with
 # boost::filesystem.
 target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_ecs v3dlib_asset_media Boost::filesystem)
 

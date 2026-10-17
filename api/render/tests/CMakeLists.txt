@@ -3,6 +3,7 @@
 # projection and the line geometry. The choice of swapchain format and the channel order of a
 # captured frame are cpu side too. The frame count after which a released resource is destroyed,
 # the scissor a clip rectangle becomes, and the colour formats a quad is decoded for are as well.
+# Decoding a model and its albedos reads files and makes no device call, and is here too.
 # Everything else below the recorder needs a device, and is in render_device below.
 v3d_add_test(render
 	"TestMain.cpp"
@@ -24,9 +25,13 @@ v3d_add_test(render
 	"GradeTest.cpp"
 	"CaptureConvertTest.cpp"
 	"QuadFormatTest.cpp"
-	"ResultTest.cpp")
+	"ResultTest.cpp"
+	"DecodedModelTest.cpp")
 
-target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_ecs v3dlib_font v3dlib_image v3dlib_type EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
+target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_ecs v3dlib_font v3dlib_image v3dlib_type v3dlib_asset v3dlib_asset_media v3dlib_log Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
+
+# a model is decoded from a copy of the asset suite's fixtures
+target_compile_definitions(v3dtest_render PRIVATE V3D_ASSET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../../asset/tests/data")
 
 # A second binary, because these cases need a Vulkan device and the first must run on a machine
 # with none. CI provides a software implementation. Where there is no device at all, the binary
