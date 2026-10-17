@@ -13,7 +13,7 @@ first, as Review.md requires, or records why no such test can be written.
 
 | ADR | Decision | Step |
 |---|---|---|
-| **New** | How a path reaches the logger and the asset manager: as `boost::filesystem::path` or UTF-8 through every layer, or as narrow strings under a UTF-8 code page set by each app's manifest | 1 |
+| [0089](../adr/0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md) | Paths: narrow strings are UTF-8, under a UTF-8 code page | 1 |
 | **New** | Why SDL3 replaced SDL2, recorded after the fact | 7 |
 
 ## What blocks what
@@ -27,11 +27,11 @@ first, as Review.md requires, or records why no such test can be written.
 
 ### Step 1 — Paths outside the ANSI code page
 
-**Open.** [TODO.md](../TODO.md#loading), "A path outside the ANSI code page cannot be opened".
-
-- `engine::appPath()`, the logger and `asset::Manager` carry the path in the form the ADR chooses.
-- The test runs a suite from a directory whose name the ANSI code page cannot hold. The log file
-  is written there, and an asset is found there.
+**Closed.** ADR-0089 keeps every narrow path in UTF-8 and has `v3dlib_log` carry a manifest that
+sets the process code page to UTF-8, so every executable that links the logger reads a narrow
+path as UTF-8. No signature changed. `a_path_outside_the_ansi_code_page_is_written_and_read` in
+the engine suite runs `run<T>` from a directory named in Japanese: the log is written there and
+an asset is found there. It failed on both checks before the manifest.
 
 ### Step 2 — A minimised window waits
 

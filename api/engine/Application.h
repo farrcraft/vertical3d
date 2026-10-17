@@ -20,6 +20,9 @@ namespace v3d::engine {
  * An engine resolves its relative asset paths against this. It comes from argv[0] because a
  * game can be started from any working directory.
  *
+ * Both the argument and the result are UTF-8. The result is correct only in an executable whose
+ * manifest sets the UTF-8 code page, which linking v3dlib_log provides.
+ *
  * @param executable argv[0]
  **/
 std::string appPath(const char* executable);

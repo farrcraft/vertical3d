@@ -4,14 +4,18 @@
  **/
 
 #include <api/engine/Application.h>
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
 
 #include <string>
 #include <utility>
 
 #include <boost/test/unit_test.hpp>
 
+#include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/make_shared.hpp>
 
 namespace {
 
@@ -155,6 +159,43 @@ BOOST_AUTO_TEST_CASE(run_still_takes_a_path_alone) {
 
     BOOST_CHECK_EQUAL(record.option, 0);
     BOOST_CHECK(record.label.empty());
+}
+
+/**
+ * A narrow path is UTF-8. A game installed under a directory whose name the ANSI code page
+ * cannot hold still writes its log there and finds its assets there.
+ *
+ * The directory is made and checked through wide paths, so the test does not depend on the
+ * conversion it is testing.
+ **/
+BOOST_AUTO_TEST_CASE(a_path_outside_the_ansi_code_page_is_written_and_read) {
+    // "日本", which no Western ANSI code page can hold
+    const boost::filesystem::path directory = boost::filesystem::current_path() / L"日本";
+    const std::string narrow = boost::filesystem::current_path().string() + "/\xE6\x97\xA5\xE6\x9C\xAC";
+    boost::filesystem::remove_all(directory);
+    boost::filesystem::create_directory(directory);
+    {
+        boost::filesystem::ofstream asset(directory / L"found.txt");
+        asset << "found";
+    }
+
+    Built record;
+    built = &record;
+    BOOST_TEST(v3d::engine::run<StubEngine>((narrow + "/stub.exe").c_str(), "stub") == EXIT_SUCCESS);
+    built = nullptr;
+
+    BOOST_TEST(boost::filesystem::exists(directory / L"v3d.log"));
+
+    {
+        auto logger = boost::make_shared<v3d::log::Logger>();
+        v3d::asset::Manager manager(record.path, logger);
+        BOOST_TEST(manager.loadTypeFromExt("found.txt") != nullptr);
+    }
+
+    // the log file stays open while any logger holds it, so it is moved back before the
+    // directory goes
+    v3d::log::Logger::open("v3d.log");
+    boost::filesystem::remove_all(directory);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

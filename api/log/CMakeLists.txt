@@ -9,6 +9,11 @@ v3d_add_api_library(log
 # duplicate symbol at link time in whichever app happens to pull the wrong object first.
 target_link_libraries(v3dlib_log PUBLIC spdlog::spdlog)
 
+# Every narrow path in the api is UTF-8, which Windows reads as UTF-8 only in a process whose
+# manifest sets the UTF-8 code page. Every executable links the logger, so the logger carries
+# the manifest, and the linker embeds it in each executable that links this library.
+target_sources(v3dlib_log INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Utf8.manifest")
+
 target_compile_options(v3dlib_log PRIVATE /EHsc)
 
 set(CMAKE_CXX_FLAGS "/utf-8")

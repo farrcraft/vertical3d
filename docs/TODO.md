@@ -266,8 +266,6 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Loading
 
-[ReleaseHardening](plans/ReleaseHardening.md) takes the last entry.
-
 [] **A texture has no request of its own.**
 
 - `MeshRegistry::request` returns a mesh handle at once and fills it later. A texture handle
@@ -287,18 +285,6 @@ matches the asset manager's path handling only because the manager passes cgltf 
 [] **The upload budget's default is not measured.** `MeshRegistry::DEFAULT_UPLOAD_BUDGET` is
 4 MiB, chosen without measuring a region's upload, because no game in the tree requests meshes.
 Due when one does.
-
-[] **A path outside the ANSI code page cannot be opened.**
-
-- `engine::appPath()` builds a narrow string with `boost::filesystem::path::string()`, which
-  converts through the ANSI code page. A character that page cannot hold becomes `?`.
-- spdlog opens its file with a narrow name, because the vcpkg port is built without
-  `SPDLOG_WCHAR_FILENAMES`. `asset::Manager` takes the narrow path as its root.
-- An app under such a directory logs to stderr instead of `v3d.log`, and finds none of its
-  assets.
-- The fix carries paths as `boost::filesystem::path` or UTF-8 through `appPath()`, the logger
-  and the asset manager, or gives every app a manifest that sets the UTF-8 code page.
-- Due when a player reports it, or before a release.
 
 ## Frames
 

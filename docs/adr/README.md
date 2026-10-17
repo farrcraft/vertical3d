@@ -102,6 +102,7 @@ content went. Numbers are never reused.
 | [0081](0081-input-key-events-and-commands-are-separate.md) | Input: key events and commands are separate | accepted |
 | [0084](0084-audio-events-and-parameters-behind-an-interface.md) | Audio: events and parameters behind an interface | accepted |
 | [0086](0086-loading-one-worker-thread-polled-from-the-main-thread.md) | Loading: one worker thread, polled from the main thread | accepted |
+| [0089](0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md) | Paths: narrow strings are UTF-8, under a UTF-8 code page | accepted |
 
 ## Grid and ECS
 

@@ -55,6 +55,27 @@ The meaning of each key is the app's. `Settings` stores keys and values; applyin
 app's job, for example `Engine::rebind()` for a key or `Window::request()` for a window size.
 pong's `applyStoredBindings()` is the reference.
 
+## Paths
+
+**A narrow path is UTF-8.** That holds for every `std::string` path in the api: `appPath()`,
+`userPath()`, the log file, `asset::Manager`'s root and the names given to every loader. SDL
+already hands an app its arguments and directories in UTF-8.
+
+Windows reads a narrow path as UTF-8 only in a process whose manifest sets the UTF-8 code page.
+`v3dlib_log` carries that manifest as an interface source, so every executable that links
+`v3dlib_log` embeds it. An executable that does not link `v3dlib_log` and opens a file has to
+add [api/log/Utf8.manifest](../../../api/log/Utf8.manifest) to its own sources.
+
+- It needs Windows 10 version 1903 or later. An older Windows ignores the setting, and a path
+  with characters outside the ANSI code page cannot be opened there.
+- Convert a path to a narrow string with `string()` only inside a process with the manifest.
+  Without it, `boost::filesystem::path::string()` converts through the ANSI code page and
+  replaces each character that page cannot hold with `?`.
+- A narrow string written to a console is shown in the console's own code page, which the
+  manifest does not change. The log file is UTF-8.
+
+Background: [ADR-0089](../../adr/0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md)
+
 ## Writing files
 
 `api/asset` has the functions for writing documents and other files. They are described in

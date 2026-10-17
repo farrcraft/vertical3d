@@ -224,6 +224,10 @@ Specific rules:
   the definition, spdlog compiles header-only and defines symbols the compiled library also
   defines. The result is a duplicate-symbol link error in whichever app pulls in the wrong object
   first.
+- **`v3dlib_log` carries the UTF-8 code page manifest.** Linking it embeds the manifest in
+  the executable, so the executable reads every narrow path as UTF-8. An executable that opens
+  files without linking `v3dlib_log` adds `api/log/Utf8.manifest` to its sources.
+  [Files.md](../api/engine/Files.md#paths) states the path rule.
 - **Only an app that plays sound links the mixer.** It names `v3dlib_audio`, which links
   `SDL3_mixer::SDL3_mixer` PRIVATE, because its headers declare the mixer's handles rather than
   including the mixer. The app calls `audio::registerLoaders()` on its asset manager. No other
