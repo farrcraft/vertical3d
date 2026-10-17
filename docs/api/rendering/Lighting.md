@@ -92,7 +92,8 @@ Rules:
   instance per entity. A scene's draw count follows how many distinct entries it shows, not how
   many entities. A copy of a model registered under a second key is a second entry, and is not
   grouped with the first.
-- `casters()` submits only entities whose `component::Mesh::castsShadow` is set.
+- `casters()` submits only entities whose `component::Mesh::castsShadow` is set, grouped as
+  `meshes()` groups them.
 - An entity whose mesh handle was released is skipped.
 
 ### Fitting the shadow map

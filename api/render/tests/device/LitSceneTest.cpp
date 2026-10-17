@@ -369,7 +369,8 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     // the pipeline is biased, so the pass names a bias - none, so that the depths stay exact
     pass->depthBias(0.0f, 0.0f);
     v3d::render::realtime::entity::casters(registry, 1.0f, meshes, &lit, pass.get());
-    BOOST_CHECK_EQUAL(pass->items().size(), 2U);
+    // the two that cast share a mesh, so they are one draw of two instances
+    BOOST_CHECK_EQUAL(pass->items().size(), 1U);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),

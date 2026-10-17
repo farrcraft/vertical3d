@@ -135,10 +135,7 @@ void casters(const entt::registry& registry, float alpha, const MeshRegistry& me
     Pass* pass, const Poses& poses) {
     for (const std::vector<Placed>& group : gather(registry, alpha, meshes, poses, true)) {
         const PipelineHandle pipeline = group.front().entry->skin ? lit->skinnedShadow() : lit->shadow();
-        // a caster is drawn alone, an instance of one
-        for (const Placed& placed : group) {
-            submit({placed}, pipeline, 0.0f, lit, pass);
-        }
+        submit(group, pipeline, 0.0f, lit, pass);
     }
 }
 

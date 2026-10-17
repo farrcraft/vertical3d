@@ -143,19 +143,16 @@ and clang-tidy again.
 
 #### Step 5 — Instanced shadow casters
 
-**Open.**
-
-- `casters()` groups its draws the same way, so the shadow pass costs an item per distinct part.
-- `checkCasterDepths` places three blocks of one mesh, two of them casting, and checks for two
-  items. After this step it expects one. The change to that count is the failing test.
-- `a_skinned_caster_casts_its_pose` and the step 1 cases pass unchanged.
+**Closed.** `casters()` submits one draw per part per group, as `meshes()` does. The two casting
+blocks of one mesh in `checkCasterDepths` are now one draw of two instances, and their depths
+are unchanged. `a_skinned_caster_casts_its_pose` and the step 1 cases pass, and all 53
+baseline pictures still match byte for byte.
 
 #### Step 6 — Close phase 1
 
 **Open.**
 
 - Delete the TODO.md entry "There is no instanced drawing".
-- Update [Lighting.md](../api/rendering/Lighting.md) to say casters are grouped as well.
 - Update the roadmap's "What exists" section.
 
 ### Phase 2 — The grade
