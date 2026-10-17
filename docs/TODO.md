@@ -199,19 +199,18 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Lit scenes
 
-[StreamingWorlds](plans/StreamingWorlds.md) takes the shadow map entry.
 [LitScenesAtScale](roadmap/LitScenesAtScale.md) orders the grade and instancing entries.
 [ToolingDebt](plans/ToolingDebt.md) takes the grade tolerance.
 
-[] **A shadow map covers only a fixed sphere.**
+[] **There are no cascaded shadow maps.**
 
-- `shadow::fit` fits the shadow map to its casters once. Anything that moves out of that sphere
-  is not covered.
-- The fit covers each caster's position and the margin the caller passes, not the caster's
-  extent or scale, and it reads the stepped position rather than the one drawn between steps. A
-  caller with large or fast casters has to pass a margin big enough for both.
-- A world larger than one look-dev scene needs the fit to follow the camera, and beyond that,
-  cascaded shadow maps.
+- `shadow::fitView` fits one map to the camera's view out to a distance. Over a long view, one
+  map spreads its texels thinly, and near shadows lose detail.
+- Cascades split the view into slices by distance, each with its own map, and the lit shader
+  picks the slice a fragment falls in.
+- `shadow::fit` covers each caster's position and a margin, not its extent or scale. A caller
+  with large casters passes a margin big enough for them.
+- Due when a game's view is long enough for near shadows to look coarse.
 - Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
 
 [] **The colour grade's table is sampled by linear colour.**

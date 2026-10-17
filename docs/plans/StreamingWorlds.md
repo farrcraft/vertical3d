@@ -231,7 +231,14 @@ cost, and the TODO.md entry is deleted.
 
 #### Step 11 — A shadow map fitted to the view
 
-**Open.**
+**Closed.** `shadow::fitView` fits a sphere to the camera's view volume out to a distance, with a
+radius fixed by the volume's shape and a centre snapped to the map's texels. `shadow::fit` reads
+each caster where it is drawn, through an `alpha` that defaults to the current step. The render
+suite tests the enclosure, the cut at the distance, the radius under a moving camera, a world
+point keeping its place within its texel, and the refusals. Removing the snap fails the texel
+case. No app in the tree draws a shadowed scene, so no screenshot was taken.
+[Lighting.md](../api/rendering/Lighting.md) states the rules, and the TODO.md entry keeps only
+cascaded shadow maps.
 
 - Add a fit to the part of the ground the camera sees, out to a shadow distance the caller
   gives. It uses `type::Frustum`.

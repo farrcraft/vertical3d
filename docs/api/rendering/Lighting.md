@@ -87,12 +87,27 @@ Rules:
 
 ### Fitting the shadow map
 
-`shadow::fit(registry, alsoCover, margin)` returns a sphere around every shadow caster: the mean
-of their positions, and the farthest of them plus `margin`. The margin has to cover a caster's
-size and the length of its shadow. Things that cast nothing, such as the ground, stay out of the
-fit. `alsoCover` adds points that must be inside the map, such as where a character is walking
-to. `fit` returns nothing when no entity casts. The radius is never below
-`shadow::minimumRadius` (0.01), so one caster with no margin still gives a usable matrix.
+`shadow::fit(registry, alsoCover, margin, alpha)` returns a sphere around every shadow caster:
+the mean of their positions, and the farthest of them plus `margin`. The margin has to cover a
+caster's size and the length of its shadow. Things that cast nothing, such as the ground, stay
+out of the fit. `alsoCover` adds points that must be inside the map, such as where a character
+is walking to. `fit` returns nothing when no entity casts. The radius is never below
+`shadow::minimumRadius` (0.01), so one caster with no margin still gives a usable matrix. Each
+caster is read where it is drawn, `alpha` of the way from its previous step, as the lit pass
+draws it. Pass `Engine::alpha()`; the default of one reads the current step.
+
+`shadow::fitView(viewProjection, distance, towards, texels)` fits the map to what the camera sees
+instead, for a world larger than one view. Call it every frame with the camera's matrix.
+
+- The sphere encloses the camera's view volume from the near plane out to `distance` along each
+  edge, or to the far plane where that is nearer. Shadows beyond `distance` are not drawn.
+- The radius depends only on the shape of the view volume, so the map's texels keep their size
+  as the camera moves and turns.
+- The centre is moved across the light to a whole number of texels. A point fixed in the world
+  therefore stays at the same place within its texel, and a shadow's edge does not crawl as the
+  camera moves. `texels` is the shadow map's width, at least 4.
+- It returns nothing for a distance that is not finite and positive, a light direction that is
+  zero or not finite, fewer than 4 texels, or a matrix that cannot be inverted.
 
 `shadow::light(towards, centre, radius, hand)` builds the matrix the shadow pass draws through:
 an orthographic box around the sphere, seen from the light. `hand` is the camera's
@@ -100,8 +115,8 @@ an orthographic box around the sphere, seen from the light. `hand` is the camera
 light as under a camera of that hand, so the shadow pipeline culls the same faces the cel
 pipeline does. A light built in the other hand stores each caster's far side in the map.
 
-**The map does not follow the casters.** Fit it at scene load, or when the casters move
-somewhere new.
+**A map fitted by `fit` does not follow the casters.** Fit it at scene load, or when the casters
+move somewhere new. A map fitted by `fitView` every frame follows the camera instead.
 
 ### Skinned models
 

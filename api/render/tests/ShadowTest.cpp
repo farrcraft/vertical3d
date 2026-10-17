@@ -6,10 +6,13 @@
 #include <api/render/realtime/Shadow.h>
 #include <api/render/realtime/component/Mesh.h>
 
+#include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
 #include <api/type/camera/Camera.h>
 
 #include <cmath>
+#include <cstdint>
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -17,6 +20,8 @@
 #include <entt/entt.hpp>
 #include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/matrix.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
 using v3d::ecs::component::Transform;
@@ -74,6 +79,51 @@ void caster(entt::registry* registry, const glm::vec3& position, bool castsShado
     transform.position = position;
     registry->emplace<Transform>(entity, transform);
     registry->emplace<Mesh>(entity, Mesh{v3d::render::realtime::MeshHandle(), castsShadow});
+}
+
+/**
+ * The direction towards a light low in the sky, for the view fit's cases.
+ **/
+glm::vec3 towards() {
+    return glm::normalize(glm::vec3(-0.45f, 0.62f, 0.64f));
+}
+
+/**
+ * A perspective camera's view projection, looking from an eye at a point.
+ **/
+glm::mat4 perspective(const glm::vec3& eye, const glm::vec3& at, float farPlane) {
+    v3d::type::camera::Camera camera;
+    v3d::type::camera::Profile& profile = camera.profile();
+    profile.orthographic(false);
+    profile.fov(60.0f);
+    profile.pixelAspect(1.0f);
+    profile.clipping(0.5f, farPlane);
+    profile.eye(eye);
+    profile.up(glm::vec3(0.0f, 1.0f, 0.0f));
+    profile.lookat(at);
+    camera.createProjection();
+    camera.createView();
+    return camera.projection() * camera.view();
+}
+
+/**
+ * The corners of a camera's view volume, each far corner cut at a distance along its edge.
+ **/
+std::vector<glm::vec3> viewCorners(const glm::mat4& viewProjection, float distance) {
+    const glm::mat4 inverse = glm::inverse(viewProjection);
+    std::vector<glm::vec3> corners;
+    for (const float x : {-1.0f, 1.0f}) {
+        for (const float y : {-1.0f, 1.0f}) {
+            const glm::vec4 nearClip = inverse * glm::vec4(x, y, 0.0f, 1.0f);
+            const glm::vec4 farClip = inverse * glm::vec4(x, y, 1.0f, 1.0f);
+            const glm::vec3 nearCorner = glm::vec3(nearClip) / nearClip.w;
+            const glm::vec3 farCorner = glm::vec3(farClip) / farClip.w;
+            const glm::vec3 edge = farCorner - nearCorner;
+            corners.push_back(nearCorner);
+            corners.push_back(glm::length(edge) > distance ? nearCorner + glm::normalize(edge) * distance : farCorner);
+        }
+    }
+    return corners;
 }
 
 };  // namespace
@@ -218,6 +268,102 @@ BOOST_AUTO_TEST_CASE(nothing_casting_fits_nothing) {
 
     BOOST_CHECK(!shadow::fit(registry, cover, 3.0f));
     BOOST_CHECK(!shadow::fit(entt::registry(), {}, 3.0f));
+}
+
+/**
+ * A caster is fitted where it is drawn, alpha of the way from its previous step, and at an
+ * alpha of one where its current step puts it.
+ **/
+BOOST_AUTO_TEST_CASE(the_fit_reads_the_drawn_position) {
+    entt::registry registry;
+    caster(&registry, glm::vec3(0.0f, 0.0f, 0.0f), true);
+    v3d::ecs::snapshot<Transform>(registry);
+    for (auto [entity, transform] : registry.view<Transform>().each()) {
+        transform.position = glm::vec3(10.0f, 0.0f, 0.0f);
+    }
+
+    const std::optional<shadow::Bounds> halfway = shadow::fit(registry, {}, 1.0f, 0.5f);
+    const std::optional<shadow::Bounds> current = shadow::fit(registry, {}, 1.0f);
+    BOOST_REQUIRE(halfway);
+    BOOST_REQUIRE(current);
+    BOOST_CHECK_CLOSE(halfway->centre.x, 5.0f, 1e-3f);
+    BOOST_CHECK_CLOSE(current->centre.x, 10.0f, 1e-3f);
+}
+
+/**
+ * The view fit encloses the camera's view volume out to the distance, and stops at the far
+ * plane when that is nearer.
+ **/
+BOOST_AUTO_TEST_CASE(the_view_fit_encloses_what_the_camera_sees) {
+    const glm::mat4 camera = perspective(glm::vec3(3.0f, 10.0f, 12.0f), glm::vec3(0.0f), 200.0f);
+    const std::optional<shadow::Bounds> fitted = shadow::fitView(camera, 30.0f, towards(), 1024);
+    BOOST_REQUIRE(fitted);
+
+    for (const glm::vec3& corner : viewCorners(camera, 30.0f)) {
+        BOOST_CHECK_LE(glm::length(corner - fitted->centre), fitted->radius);
+    }
+
+    // a far plane nearer than the distance bounds the volume instead
+    const glm::mat4 shallow = perspective(glm::vec3(3.0f, 10.0f, 12.0f), glm::vec3(0.0f), 20.0f);
+    const std::optional<shadow::Bounds> cut = shadow::fitView(shallow, 30.0f, towards(), 1024);
+    const std::optional<shadow::Bounds> farther = shadow::fitView(camera, 300.0f, towards(), 1024);
+    BOOST_REQUIRE(cut);
+    BOOST_REQUIRE(farther);
+    BOOST_CHECK_LT(cut->radius, fitted->radius);
+    BOOST_CHECK_GT(farther->radius, fitted->radius);
+}
+
+/**
+ * The radius stays the same as the camera moves and turns, so the map's texels stay the same
+ * size.
+ **/
+BOOST_AUTO_TEST_CASE(the_view_fit_keeps_its_radius_as_the_camera_moves) {
+    const std::optional<shadow::Bounds> here = shadow::fitView(perspective(glm::vec3(3.0f, 10.0f, 12.0f), glm::vec3(0.0f), 200.0f),
+        30.0f, towards(), 1024);
+    const std::optional<shadow::Bounds> moved = shadow::fitView(
+        perspective(glm::vec3(-40.0f, 13.0f, 7.0f), glm::vec3(-20.0f, 0.0f, 31.0f), 200.0f), 30.0f, towards(), 1024);
+    BOOST_REQUIRE(here);
+    BOOST_REQUIRE(moved);
+    BOOST_CHECK_CLOSE(here->radius, moved->radius, 1e-2f);
+}
+
+/**
+ * A point fixed in the world falls at the same place within its texel however far the camera
+ * slides, so a shadow's edge does not crawl.
+ **/
+BOOST_AUTO_TEST_CASE(the_view_fit_keeps_the_world_on_its_texels) {
+    const uint32_t texels = 1024;
+    const glm::vec3 point(1.3f, 0.0f, -2.7f);
+    std::vector<glm::vec2> within;
+    for (const float slide : {0.0f, 0.013f, 0.37f, 2.9f}) {
+        const glm::vec3 offset(slide, 0.0f, slide * 0.5f);
+        const glm::mat4 camera = perspective(glm::vec3(3.0f, 10.0f, 12.0f) + offset, offset, 200.0f);
+        const std::optional<shadow::Bounds> fitted = shadow::fitView(camera, 30.0f, towards(), texels);
+        BOOST_REQUIRE(fitted);
+        const glm::vec3 clip = project(shadow::light(towards(), fitted->centre, fitted->radius), point);
+        const glm::vec2 texel = (glm::vec2(clip) + 1.0f) * 0.5f * static_cast<float>(texels);
+        within.emplace_back(texel.x - std::floor(texel.x), texel.y - std::floor(texel.y));
+    }
+    for (const glm::vec2& fraction : within) {
+        BOOST_CHECK_SMALL(fraction.x - within.front().x, 2e-2f);
+        BOOST_CHECK_SMALL(fraction.y - within.front().y, 2e-2f);
+    }
+}
+
+/**
+ * A distance, a direction, a map width or a matrix that cannot be fitted gives nothing.
+ **/
+BOOST_AUTO_TEST_CASE(the_view_fit_refuses_what_it_cannot_fit) {
+    const glm::mat4 camera = perspective(glm::vec3(3.0f, 10.0f, 12.0f), glm::vec3(0.0f), 200.0f);
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+
+    BOOST_CHECK(!shadow::fitView(camera, 0.0f, towards(), 1024));
+    BOOST_CHECK(!shadow::fitView(camera, nan, towards(), 1024));
+    BOOST_CHECK(!shadow::fitView(camera, std::numeric_limits<float>::infinity(), towards(), 1024));
+    BOOST_CHECK(!shadow::fitView(camera, 30.0f, glm::vec3(0.0f), 1024));
+    BOOST_CHECK(!shadow::fitView(camera, 30.0f, glm::vec3(nan, 1.0f, 0.0f), 1024));
+    BOOST_CHECK(!shadow::fitView(camera, 30.0f, towards(), 3));
+    BOOST_CHECK(!shadow::fitView(glm::mat4(0.0f), 30.0f, towards(), 1024));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
