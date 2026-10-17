@@ -1,19 +1,20 @@
 # Regrouping — `render/realtime`, libmoya, and three smaller moves
 
-Drafted 2026-10-16 from a survey of `api/` and `moya/libmoya`. Eight steps: six move files,
-one sweeps comments, and one updates the documents. No step changes behaviour.
+Drafted 2026-10-16 from a survey of `api/` and `moya/libmoya`, and **closed** the same day. Eight
+steps: six move files, one sweeps comments, and one updates the documents. No step changes
+behaviour.
 
 | Step | | Step | |
 |---|---|---|---|
 | 1 `realtime/entity` | landed | 5 `ui::component::menu` | landed |
 | 2 `realtime/lighting` | landed | 6 `libmoya/reyes` | landed |
 | 3 `realtime/canvas` | landed | 7 libmoya comments | landed |
-| 4 `image/format` | landed | 8 documents | open |
+| 4 `image/format` | landed | 8 documents | landed |
 
-The rule is the one in [Conventions.md](../contributing/Conventions.md#directories): a directory
+The rule is the one in [Conventions.md](../../contributing/Conventions.md#directories): a directory
 splits when its files serve different purposes, not when it reaches a size. A class in a
 subdirectory drops the subdirectory's name, and a namespace follows its directory.
-[ApiOrganisation](completed/ApiOrganisation.md) applied that rule to six libraries. This plan
+[ApiOrganisation](ApiOrganisation.md) applied that rule to six libraries. This plan
 applies it to the directories that have grown since.
 
 ## Context
@@ -21,8 +22,8 @@ applies it to the directories that have grown since.
 ### The root of `api/render/realtime` holds six jobs
 
 It holds 26 classes. `vulkan/` below it is already split, and each of its five subdirectories
-has its own page in [internals/realtime/](../internals/realtime/README.md). The root is not split,
-and its classes fall into six groups. The user documents in [api/rendering/](../api/rendering/README.md)
+has its own page in [internals/realtime/](../../internals/realtime/README.md). The root is not split,
+and its classes fall into six groups. The user documents in [api/rendering/](../../api/rendering/README.md)
 already split along the same lines:
 
 | Group | Classes | Outside references | Document |
@@ -59,7 +60,7 @@ beside `Image`, `Reader`, `Writer` and `TextureAtlas`, which every consumer uses
   `RenderContext`, and draws through `api/render/offline/trace`.
 - **The Reyes pipeline:** `ReyesHider` (declared in `Hider.h`), `Bucket`, `ReyesPrimitive`,
   `Polygon`, `MicroPolygon`, `MicroPolygonGrid`, `GridShader`, `Vertex`, `Footprint` and
-  `Samples`. [Reyes.md](../offline/Reyes.md) describes them as one pipeline.
+  `Samples`. [Reyes.md](../../offline/Reyes.md) describes them as one pipeline.
 
 The Reyes files are ten of the seventeen, and the `Reyes` prefix on two of them is a namespace
 written by hand.
@@ -224,7 +225,7 @@ README and RunningAndTesting.md name the classes by their new names.
 
 ### Step 7 — libmoya's comments
 
-A sweep by [the code-comments skill](../../.claude/skills/code-comments/SKILL.md), as its own
+A sweep by [the code-comments skill](../../../.claude/skills/code-comments/SKILL.md), as its own
 commit, checked by `node scripts/commentsonly.ts --base HEAD~1`. Two comments are already known
 to be wrong:
 
@@ -243,27 +244,31 @@ Forty-seven comments were false, and most described behaviour the code does not 
 said that `prepareWorld()` freezes the options and `render()` releases the world. They said a
 bucket's `left_` and `top_` hold its edges, and an unsupported projection falls back to
 orthographic. The defects behind thirteen of them
-are in [TODO.md](../TODO.md), under moya's front end and reyes hider.
+are in [TODO.md](../../TODO.md), under moya's front end and reyes hider.
 
 ### Step 8 — The documents
 
 Each step updates the reference documents that name what it moved, in the same commit. This
 step checks the documents that describe the shape of the tree:
 
-- [api/README.md](../api/README.md) for the shape of `api/`.
-- [api/rendering/](../api/rendering/README.md) and
-  [internals/realtime/README.md](../internals/realtime/README.md) for steps 1 to 3. Both name
+- [api/README.md](../../api/README.md) for the shape of `api/`.
+- [api/rendering/](../../api/rendering/README.md) and
+  [internals/realtime/README.md](../../internals/realtime/README.md) for steps 1 to 3. Both name
   classes and paths.
-- [api/ui/](../api/ui/README.md) and [UserInterface.md](../internals/UserInterface.md) for step 5.
-- [offline/](../offline/README.md), Reyes.md above all, for step 6.
-- This plan's entry in [README.md](README.md), which moves to the completed table when the plan
+- [api/ui/](../../api/ui/README.md) and [UserInterface.md](../../internals/UserInterface.md) for step 5.
+- [offline/](../../offline/README.md), Reyes.md above all, for step 6.
+- This plan's entry in [README.md](../README.md), which moves to the completed table when the plan
   closes.
 
 `CLAUDE.md` changes only if its routing table names a moved path.
 
+**Landed.** Each step updated the documents for what it moved, so this step found nothing left
+to change. None of the documents above lists a library's subdirectories, and `CLAUDE.md` names
+no moved path.
+
 ## Method
 
-[ApiOrganisation](completed/ApiOrganisation.md) recorded what its renames cost. Each of these
+[ApiOrganisation](ApiOrganisation.md) recorded what its renames cost. Each of these
 held there and holds here:
 
 - **Rewrite qualified names and include paths, not bare identifiers.** `Canvas` is a substring
@@ -275,8 +280,8 @@ held there and holds here:
   second, unrelated type, and no include-based check finds it.
 - **List what a header declares, not what it is called.** `Hider.h` holds `ReyesHider`, and
   `CanvasStacks.h` holds two classes with other names.
-- **The CMake lists are written by hand.** [api/render/CMakeLists.txt](../../api/render/CMakeLists.txt)
-  and [moya/libmoya/CMakeLists.txt](../../moya/libmoya/CMakeLists.txt) name every source. A missed
+- **The CMake lists are written by hand.** [api/render/CMakeLists.txt](../../../api/render/CMakeLists.txt)
+  and [moya/libmoya/CMakeLists.txt](../../../moya/libmoya/CMakeLists.txt) name every source. A missed
   line is a link error at the end of a long build.
 
 ## Verification
@@ -287,7 +292,7 @@ For each step:
 - **Tests:** `scripts\test.cmd`. Every suite passes with no change beyond includes and
   qualification. A test that needs more means the step moved more than files.
 - **Lint:** cpplint over the tree, and `node scripts/prose.ts` on the documents.
-- **`examples/starter`** builds after steps 1 to 3, as [examples/README.md](../../examples/README.md)
+- **`examples/starter`** builds after steps 1 to 3, as [examples/README.md](../../../examples/README.md)
   describes.
 
 At the end, run the editor, one 2D game and odyssey once each with the validation layer on.
@@ -304,7 +309,7 @@ Nothing here changes a draw, so this checks that the tree links and starts.
   concept, repeated.
 - **It does not merge the one-file `kind/` and `loader/` directories** in `asset/`,
   `asset/media/` and `audio/`. They are one pattern across three libraries.
-- **It does not move `engine::IsometricController`.** [Input.md](../api/engine/Input.md)
+- **It does not move `engine::IsometricController`.** [Input.md](../../api/engine/Input.md)
   documents it as engine API.
 - **It does not move a library boundary.** Every move is inside one `v3dlib_*` target.
 
@@ -315,3 +320,39 @@ Nothing here changes a draw, so this checks that the tree links and starts.
   `vulkan/memory/` moves.
 - **Whether `realtime/component/` belongs under `entity/`.** It stays separate here, because its
   types are ECS components and apps name them beside `ecs::component`.
+
+## Outcome
+
+Drafted and closed on 2026-10-16. Six directories now hold one job each, and every header in
+`api/` declares the namespace its directory names. No step changed behaviour: the build, 26 of
+26 suites and cpplint were clean at every step, and `examples/starter` built after the canvas
+move.
+
+```
+api/render/realtime/entity/     meshes() casters() sprites() particles() poses() Poses
+api/render/realtime/lighting/   Settings SceneUniforms pack() fitShadow() shadowLight() ...
+api/render/realtime/canvas/     Canvas Line World DepthOrder TransformStack ClipStack
+api/image/format/               the bmp structs, JpegError
+api/ui/component/menu/          menu::Menu menu::Bar menu::Item
+moya/libmoya/reyes/             Hider Primitive Bucket MicroPolygon MicroPolygonGrid GridShader
+                                Footprint Samples
+```
+
+Three things came out differently from the plan:
+
+- Step 2 made `lighting/` rather than `lit/`. Code names its `renderer::Lit` `lit`, and
+  `lit.scene(lit::pack(...))` reads badly.
+- Step 6 left `Polygon` and `Vertex` at the root. Both hiders draw them.
+- Each step updated its own documents, so step 8 had nothing left.
+
+Two things are worth knowing before a move like these:
+
+- `prose.ts` diffs with renames off, so it reads a moved file whole. Steps 3, 5 and 6 each
+  split sentences that predate the move, because CI would have failed them on a pull request.
+- A header declares more than its name says. `Footprint.h` holds two free functions, the Bmp
+  headers declare snake-case structs, and `JpegError.h` holds `jpegErrorExit`. The compiler
+  found each one.
+
+Step 7 found forty-seven false comments in libmoya. The defects behind thirteen of them are open
+in [TODO.md](../../TODO.md). Cozy names the moved canvas and menu classes 23 times, and follows when
+it next updates its submodule.
