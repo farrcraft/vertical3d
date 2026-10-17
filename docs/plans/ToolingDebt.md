@@ -27,8 +27,10 @@ No step needs an ADR in advance. One question is left to the step that meets it,
 
 ### Step 1 — The weak frame test
 
-**Open.** [TODO.md](../TODO.md#weak-test). `a_frame_begun_again_restarts_its_claims` claims on the
-slot it began twice. Run `scripts/failsfirst.ts` to show it fails without the turn counter.
+**Done.** `a_frame_begun_again_restarts_its_claims` now begins the same slot three times and
+claims before each begin. With `turns()` put back to counting only first begins, it fails with
+two pairs held where one is expected. `failsfirst.ts` was not the tool for this: it finds new
+cases, and this one existed before the change, so the check was made by hand.
 
 ### Step 2 — The grade tolerance
 

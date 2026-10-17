@@ -391,8 +391,9 @@ BOOST_AUTO_TEST_CASE(a_skipped_frame_gives_its_claims_back) {
 
 /**
  * A renderer claims before the frame begins. A frame begun and abandoned, because recording
- * threw, was never drawn, so the attempt that follows reuses its claims. The first claim on
- * the next slot then takes that slot's first pair.
+ * threw, was never drawn, so the attempt that follows reuses its claims. That holds however
+ * many times the same slot is begun again, so the slot holds one pair. The first claim on the
+ * next slot then takes that slot's first pair.
  **/
 BOOST_AUTO_TEST_CASE(a_frame_begun_again_restarts_its_claims) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -402,7 +403,11 @@ BOOST_AUTO_TEST_CASE(a_frame_begun_again_restarts_its_claims) {
     headless.context->ring()->begin();
 
     stream.claim(16, 8);
+    headless.context->ring()->begin();
+
+    stream.claim(16, 8);
     headless.submit(headless.context->ring()->begin());
+    BOOST_CHECK_EQUAL(stream.held(), 1u);
 
     const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim(16, 8);
     BOOST_CHECK(next.vertices != nullptr);

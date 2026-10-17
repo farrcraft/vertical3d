@@ -333,12 +333,8 @@ more strongly needs a second Vulkan implementation to compare against, and this 
 Defects a review found that the change under review did not introduce.
 [Review.md](contributing/Review.md) says how this list is used: a reviewer reads it first and
 does not report an entry again. Each entry names its class.
-[ToolingDebt](plans/ToolingDebt.md) takes the weak test.
 
-### Weak test
-
-[] **`a_frame_begun_again_restarts_its_claims` never claims on the slot it began twice.** It passes
-without the turn counter it was written for. Its sibling test does fail without it.
+None are open.
 
 ## Editor
 
