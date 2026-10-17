@@ -91,8 +91,8 @@ RenderContext & RIBHandler::context() {
 
 void RIBHandler::option(const std::string & name, const ParameterList & parameters) {
     if (name == "searchpath") {
-        // RI writes it as Option "searchpath" "shader" ["./shaders:&"], and the shader
-        // and texture paths are the ones this renderer looks anything up on
+        // RI writes it as Option "searchpath" "shader" ["./shaders:&"]. The renderer looks
+        // up shaders and textures only, so every other path is ignored
         if (parameters.has("shader")) {
             context().searchpath(parameters.string("shader", std::string()));
         }
@@ -213,7 +213,7 @@ void RIBHandler::output(const std::string & name) {
 }
 
 bool RIBHandler::resolution(int width, int height) {
-    // the context reads a side of zero or less as its default, which is not a size asked for
+    // the context reads a side of zero or less as its default, so such a side is refused here
     if (width < 1 || height < 1 || !context().imageResolution(width, height, 1.0f)) {
         return false;
     }

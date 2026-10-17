@@ -22,6 +22,10 @@ class RenderContext;
 
 namespace v3d::moya::reyes {
 
+/**
+ * A primitive as the reyes hider handles it. The first pass bounds and buckets it, and the
+ * second pass dices it into grids or splits it.
+ */
 class Primitive {
  public:
         Primitive();
@@ -48,18 +52,17 @@ class Primitive {
         virtual void diceable(bool status);
 
         /**
-         * The graphics state this primitive was submitted under. It is the object to eye
-         * transformation the first pass measured it with, the colour that was current, and
-         * the geometric normal of the plane it lies in. All three are in the space its
-         * vertices are in.
+         * The graphics state this primitive was submitted under: the object to eye
+         * transformation the first pass measured it with, the current colour, its plane's
+         * geometric normal in object space, and its shading.
          *
-         * A primitive keeps them because splitting resubmits its pieces through that pass
-         * during the second one, when none of that state is current any more. Without them,
-         * a scene that places and colours two objects would measure a split piece of the
-         * first against the state of the last. A split carries each vertex's own colour and
-         * shading normal onto the pieces, interpolating them where an edge is cut, so the
-         * colour and the normal here fill only a vertex that has none. The normal is also
-         * every piece's geometric normal, since a piece lies in its parent's plane.
+         * Splitting resubmits the pieces through the first pass during the second pass, when
+         * none of that state is current. Each piece is placed with its parent's state, so a
+         * piece of one object is not measured against the state of a later one. A split
+         * carries each vertex's own colour and shading normal onto the pieces, interpolating
+         * them where an edge is cut. The colour and the normal here fill only a vertex that
+         * has none. The normal is also every piece's geometric normal, since a piece lies in
+         * its parent's plane.
          */
         bool placed(void) const;
         void place(const glm::mat4x4 & toEye, const glm::vec3 & color, const glm::vec3 & normal,
@@ -68,15 +71,16 @@ class Primitive {
         const glm::vec3 & color(void) const;
         const glm::vec3 & normal(void) const;
         /**
-         * The surface shader and the lights that were on. Carried across a split for the
-         * same reason the colour is, and read by the second pass rather than the first.
+         * The surface shader and the lights that were on. Carried across a split with the
+         * rest of the state, and read when the second pass shades the primitive's grids.
          */
         const Shading & shading(void) const;
 
         /**
-         * The object to eye transformation across the shutter, of which placement() is the
-         * open end. The vertices are where the open end puts them, and a sample places
-         * them at its own time. Carried across a split for the reason the rest is.
+         * The object to eye transformation across the shutter. placement() is its reference
+         * end: the open end, or the close end when the open one has no inverse. The vertices
+         * are where the reference end puts them, and a sample moves them to its own time.
+         * Carried across a split with the rest of the state.
          */
         void motion(const v3d::render::offline::MovingTransform & toEye);
         const v3d::render::offline::MovingTransform & motion(void) const;
@@ -88,11 +92,10 @@ class Primitive {
         glm::vec3 normal_ = glm::vec3(0.0f);
         Shading shading_;
         bool placed_ = false;
-        /*
-            False until the first pass has measured the primitive against the grid size.
-            An unmeasured primitive is therefore split rather than diced, which routes it
-            through that measurement instead of assuming it small enough to skip it.
-        */
+        /**
+         * False until the first pass has measured the primitive against the grid size. An
+         * unmeasured primitive is split rather than diced, and its pieces are measured.
+         */
         bool diceable_ = false;
 };
 };  // namespace v3d::moya::reyes

@@ -90,11 +90,6 @@ glm::vec3 Polygon::geometricNormal(void) const {
     return glm::vec3(0.0f);
 }
 
-/* note - clipping happens after culling
-
-    this is a 3D Sutherland-Hodgman polygon clipper: instead of clipping against a single
-    clipping rectangle edge, it clips against a plane.
-*/
 void Polygon::clip(const v3d::type::geometry::Plane & plane) {
     const size_t nverts = vertices_.size();
     // fewer than three vertices bound no area to keep, and the loop below starts on the
@@ -108,12 +103,12 @@ void Polygon::clip(const v3d::type::geometry::Plane & plane) {
     for (size_t j = 0; j < nverts; j++) {
         const Vertex p = vertices_[j];
         /*
-         there are 4 possible test cases:
-            case 1: s & p both inside	 - in/in
-            case 2: s inside, p outside - in/out
-            case 3: s & p both outside	 - out/out
-            case 4: s outside, p inside - out/in
-         */
+            s is the previous vertex and p the current one.
+            case 1: s and p both inside.
+            case 2: s inside, p outside.
+            case 3: s and p both outside.
+            case 4: s outside, p inside.
+        */
         const bool pInside = plane.classify(p.point()) != v3d::type::geometry::Plane::NEGATIVE;
         const bool sInside = plane.classify(s.point()) != v3d::type::geometry::Plane::NEGATIVE;
         if (pInside) {  // cases 1 & 4
@@ -133,16 +128,14 @@ void Polygon::clip(const v3d::type::geometry::Plane & plane) {
     vertices_ = std::move(clipped);
 }
 
-// return an object space bound of the polygon
+// the bound in the space the vertices are in: object space, until the first pass moves a
+// diceable polygon's vertices into eye space
 v3d::type::geometry::AABBox Polygon::bound(void) const {
     v3d::type::geometry::AABBox bound;
 
     if (vertices_.empty()) {
         return bound;
     }
-    /*
-        move over each vertex and record min/max
-    */
     std::vector<Vertex>::const_iterator it = vertices_.begin();
     glm::vec3 min;
     glm::vec3 max;
@@ -157,51 +150,6 @@ v3d::type::geometry::AABBox Polygon::bound(void) const {
     return bound;
 }
 
-/* split the polygon into smaller polygons
-   how do we decide where to split polygons?
-   how many smaller polygons do we make?
-
-   recursive subdivision seems like the way to do it.
-   it would work similar to frustum clipping.
-   a polygon in plane A will be divided into two halves by a plane B
-   that is perpendicular to plane A.
-
-   the generated sub polygons should be fed back to the active render context.
-
-   each call to split should divide the polygon into 4 smaller pieces.
-
-    there are two ways to go on this:
-        - splitting using polygon/plane intersection
-        - polygon triangulation
-
-    the problem with triangulation is that the next step is dicing where we'll
-    want to convert the triangles into a grid of equilateral micropolygons.
-
-    using plane intersection suffers from not having a specific plane to use for
-    the intersection. there's also no guarantee that the resulting geometry will
-    be any better than what we'd get with triangulation.
-
-    first, we'll try implementing plane intersection (since it should be easier
-    than doing triangulation here). there are two ways to figure out what plane
-    to use:
-        - (poly.v1 - poly.v0).normalize().cross(poly.normal)
-        - find rotation that maps poly.normal to [0.0, 0.0, 1.0]
-
-    the first method uses an edge of the polygon and its normal to find a normal
-    for the plane that is perpendicular to both.
-
-    the second finds a matrix that can transform the polygon's vertices onto the
-    x/y plane.
-
-    the last piece we need is a point that lies on the plane. this should be the
-    center of the polygon.
-*/
-
-/*
-internal splitter - will be called 3 times by split()
-args p1 and p2 should be pointers to empty polygons to store the resulting split
-polygons
-*/
 namespace {
 
 /**
@@ -313,6 +261,10 @@ void addWholeEdge(const Vertex& a, const Vertex& b, int side, bool first, bool l
 
 };  // namespace
 
+/*
+    Cut the polygon by a plane. p1 takes the negative side and p2 the positive, and both
+    start empty. split(RenderContext &) calls this three times to make four pieces.
+*/
 void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2) {
     // intersect each edge with the plane
     glm::vec3 hit;
@@ -320,7 +272,6 @@ void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared
         const size_t vcount = vertices_.size();
         const Vertex & a = vertices_[i];
         const Vertex & b = i == (vcount - 1) ? vertices_[0] : vertices_[i + 1];
-        // classify which side of the plane A is on
         const int side = plane.classify(a.point());
         const bool first = (i == 0);
         const bool last = (i == (vcount - 1));
@@ -334,15 +285,18 @@ void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared
     }
 }
 
+/*
+    Cut the polygon into four by two planes through the centre of its bound. Both are
+    perpendicular to the polygon's plane, and the second is perpendicular to the first.
+*/
 void Polygon::split(RenderContext & rc) {
-    // the cutting plane is derived from the first three vertices, and a polygon holding
-    // fewer than that has no area to divide
+    // a polygon with fewer than three vertices has no area to divide
     if (vertices_.size() < 3) {
         return;
     }
 
-    // the plane of the polygon, and an edge in it: the cutting plane is perpendicular to
-    // both. A polygon with no plane - every vertex on one line - has no area to divide
+    // the plane of the polygon, and an edge in it: the normal of the first cutting plane is
+    // perpendicular to both. A polygon with no plane, every vertex on one line, has no area
     const glm::vec3 n = geometricNormal();
     if (n == glm::vec3(0.0f)) {
         return;
@@ -354,10 +308,10 @@ void Polygon::split(RenderContext & rc) {
         v0 = vertices_[0].point() - vertices_[i].point();
     }
 
-    // calculate plane's normal
+    // the first cutting plane is perpendicular to the polygon's plane and parallel to the edge
     glm::vec3 pn;
     pn = glm::normalize(glm::cross(n, v0));
-    // find a point on the plane
+    // both cutting planes pass through the centre of the bound
     v3d::type::geometry::AABBox bounds;
     glm::vec3 mp;
     glm::vec3 pop;
@@ -365,23 +319,20 @@ void Polygon::split(RenderContext & rc) {
     mp = (bounds.max() - bounds.min());
     mp /= 2.0;
     pop = bounds.min() + mp;
-    // create the intersection plane from pop and pn
     v3d::type::geometry::Plane plane;
     plane.calculate(pn, pop);
 
-    // two new (potentially) polygons created as a result of splitting
+    // the two halves of the first cut. A half that receives no vertices stays empty
     boost::shared_ptr<Polygon> p1(new Polygon());
     boost::shared_ptr<Polygon> p2(new Polygon());
-    // first split
     split(plane, p1, p2);
 
-    // calculate normal for 2nd plane to split against
+    // the second cutting plane is perpendicular to the polygon's plane and to the first
     pn = glm::normalize(glm::cross(n, pn));
 
-    // create the new intersection plane
     plane.calculate(pn, pop);
 
-    // split the two new polygons against the two created by the last split
+    // each half is cut again, into quarters
     boost::shared_ptr<Polygon> pf1(new Polygon());
     boost::shared_ptr<Polygon> pf2(new Polygon());
     boost::shared_ptr<Polygon> pf3(new Polygon());
@@ -406,21 +357,20 @@ void Polygon::split(RenderContext & rc) {
 }
 
 /*
-    dice - turn the polygon into a grid of micropolygons
-    dicing is done in eye space, so the grid is built in x, y, z and projected only when
-    the hider needs raster coordinates
+    The first pass moves a diceable polygon's vertices into eye space, so the grid is built
+    in eye space. The hider projects it to raster space.
 */
 bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc) {
-    // one grid covers the whole polygon at this sampling, so the call after the first is
-    // the end of the sequence rather than another grid
+    // one grid covers the whole polygon, so the second call ends the sequence
     if (diced_ || vertices_.size() < 3) {
         return false;
     }
 
     /*
-        the grid size is the number of micropolygons in a grid, and a grid of n vertices a
-        side is n - 1 of them a side. The first pass has already split anything whose
-        raster bound is larger than that, so one grid is enough for what reaches here.
+        The grid size is the number of micropolygons in a grid, and a grid of n vertices a
+        side has n - 1 micropolygons a side. The first pass splits anything whose raster
+        bound is wider or taller than the square root of the grid size times the shading
+        rate, so one grid covers what reaches here.
     */
     unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));
     grid.reset(new reyes::MicroPolygonGrid(across + 1));
@@ -446,8 +396,8 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderCont
         vertices_[2].color(),
         vertices_[fourth].color()
     };
-    // and so does the shading normal, so a surface given a varying "N" comes out smooth
-    // rather than faceted
+    // the shading normal interpolates the same way, so a surface given a varying "N" is
+    // shaded smooth rather than faceted
     glm::vec3 normals[4] = {
         vertices_[0].normal(),
         vertices_[1].normal(),

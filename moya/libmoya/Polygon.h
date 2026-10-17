@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "Vertex.h"
-// #include "RenderContext.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -40,7 +39,7 @@ class Polygon : public reyes::Primitive {
     Vertex vertex(size_t idx) const;
 
     /**
-        **/
+     **/
     void removeVertex(size_t idx);
 
     /**
@@ -52,11 +51,11 @@ class Polygon : public reyes::Primitive {
     void clear(void);
 
     /**
-     * The plane the polygon lies in, from its first three non collinear vertices, wound
-     * the way the vertices are.
+     * The unit normal of the plane the polygon lies in, wound the way the vertices are. It
+     * comes from the first vertex and the first pair of later neighbours not collinear with it.
      *
-     * One value for the whole polygon - SL's Ng. A polygon whose vertices are collinear,
-     * or which has fewer than three of them, has no plane and returns zero.
+     * It is one value for the whole polygon, and is the shading language's Ng. A polygon
+     * whose vertices are collinear, or which has fewer than three, has no plane and returns zero.
      **/
     glm::vec3 geometricNormal(void) const;
 
@@ -67,8 +66,7 @@ class Polygon : public reyes::Primitive {
      **/
     void clip(const v3d::type::geometry::Plane & plane);
 
-    // reyes methods
-    // virtual bool diceable(void) const;
+    // reyes::Primitive
     virtual v3d::type::geometry::AABBox bound(void) const;
     virtual void split(RenderContext & rc);
     virtual bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc);
@@ -78,8 +76,7 @@ class Polygon : public reyes::Primitive {
 
  private:
     std::vector<Vertex> vertices_;
-    // one grid covers the whole polygon, so dice() returns true once and false
-    // afterwards; the caller loops until it returns false
+    // one grid covers the whole polygon, so dice() returns true once and false afterwards
     bool diced_ = false;
 };
 

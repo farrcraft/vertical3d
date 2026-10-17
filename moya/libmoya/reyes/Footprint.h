@@ -16,10 +16,10 @@ namespace v3d::moya::reyes {
  * The pixels a raster space bound touches, clipped to a frame of columns by rows: left, top,
  * right and bottom, each inclusive. Only x and y of the bound are read.
  *
- * A bound with a NaN in it touches no pixel, and neither does a frame with no pixels. No pixel
- * is a right edge left of the left one, or a bottom edge above the top one. A bound far off the
- * frame or infinite is held within one pixel of the frame before it is made an integer, so it
- * touches no pixel or a whole row or column of them.
+ * A bound with a NaN in it touches no pixel, and neither does a frame with no pixels. A result
+ * that touches no pixel has its right edge left of its left one, or its bottom edge above its
+ * top one. A bound far off the frame or infinite is held within one pixel of the frame before
+ * it is made an integer, so it touches no pixel or a whole row or column of them.
  */
 std::array<int, 4> footprint(const glm::vec3 & min, const glm::vec3 & max, int columns, int rows);
 

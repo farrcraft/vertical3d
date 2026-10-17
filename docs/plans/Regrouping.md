@@ -7,7 +7,7 @@ one sweeps comments, and one updates the documents. No step changes behaviour.
 |---|---|---|---|
 | 1 `realtime/entity` | landed | 5 `ui::component::menu` | landed |
 | 2 `realtime/lighting` | landed | 6 `libmoya/reyes` | landed |
-| 3 `realtime/canvas` | landed | 7 libmoya comments | open |
+| 3 `realtime/canvas` | landed | 7 libmoya comments | landed |
 | 4 `image/format` | landed | 8 documents | open |
 
 The rule is the one in [Conventions.md](../contributing/Conventions.md#directories): a directory
@@ -233,6 +233,17 @@ to be wrong:
   state", with blank lines around it.
 
 `RenderMan.h` keeps its Pixar copyright notice.
+
+**Landed.** 27 files, comments only: `commentsonly.ts` finds no code change, and the build,
+26 of 26 suites, cpplint and `prose.ts` are clean. About 160 comments were reworded and about
+70 deleted, including commented-out code and the RI specification quoted at length in
+`RenderMan.cxx`.
+
+Forty-seven comments were false, and most described behaviour the code does not have. They
+said that `prepareWorld()` freezes the options and `render()` releases the world. They said a
+bucket's `left_` and `top_` hold its edges, and an unsupported projection falls back to
+orthographic. The defects behind thirteen of them
+are in [TODO.md](../TODO.md), under moya's front end and reyes hider.
 
 ### Step 8 — The documents
 

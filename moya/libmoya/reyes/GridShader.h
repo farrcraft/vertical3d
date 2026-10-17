@@ -32,11 +32,11 @@ namespace v3d::moya::reyes {
  * **The shading points are the grid's vertices**, all shaded in one run: a grid of n by n is
  * a batch of n squared.
  *
- * **moya's current space is camera space.** The reyes hider works in camera space, and the
- * space table returns the identity for "current". A traced hit's current space is world space,
- * so the table is a renderer callback rather than a constant.
+ * **The current space is camera space.** The reyes hider works in camera space, and the space
+ * table returns the identity for "current". A hit the tracer shades has world space as its
+ * current space, and the tracer answers that hit's space table itself.
  *
- * One of these lives for a render rather than for a grid. `prepare` sizes a register file,
+ * The render context holds one of these for its lifetime. `prepare` sizes a register file,
  * and a later grid of the same size over the same program reuses it rather than allocating
  * again.
  **/
@@ -73,8 +73,8 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
 
  private:
     /**
-     * A machine sized for one program and one batch. A light's program is run once per
-     * grid and a surface's once per grid, so both are worth keeping between grids.
+     * A machine sized for one program and one batch, and that program's globals. Kept
+     * between grids, for a light's program and a surface's alike.
      */
     class Run final {
      public:
@@ -95,15 +95,19 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
     /** What is being shaded, for the space table and for the lights. **/
     const Shading* shading_ = nullptr;
     /**
-     * The shader being run's own space into camera space: the surface's, and a light's while
-     * that light runs, so a light's `point "shader" (0, 0, 0)` lands where the scene placed it.
+     * The running shader's own space into camera space. It is the surface's, and a light's
+     * while that light runs, so a light's `point "shader" (0, 0, 0)` lands where the scene
+     * placed it.
      **/
     glm::mat4x4 placement_ = glm::mat4x4(1.0f);
     unsigned int batch_ = 1;
     std::map<const v3d::render::offline::sl::runtime::Program*, Run> runs_;
     /** What casts the rays, into the context's traced scene. **/
     v3d::render::offline::trace::Tracer tracer_;
-    /** Camera space to world space, and each shading point's Ng in world space. **/
+    /**
+     * Camera space to world space, and each shading point's Ng in world space, which a traced
+     * ray starts off.
+     **/
     glm::mat4x4 toWorld_ = glm::mat4x4(1.0f);
     std::vector<glm::vec3> planes_;
 };

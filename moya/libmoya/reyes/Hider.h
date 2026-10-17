@@ -15,8 +15,8 @@ class RenderContext;
 namespace v3d::moya::reyes {
 
 /**
- * `Hider "hidden"`, RI's default: every primitive diced into micropolygon grids, shaded, and
- * hidden into the samples of the buckets it reaches.
+ * The hider `Hider "hidden"` selects, and RI's default. Every primitive is bucketed, diced
+ * into micropolygon grids and shaded, and each grid is hidden into the frame's samples.
  **/
 class Hider final : public moya::Hider {
  public:

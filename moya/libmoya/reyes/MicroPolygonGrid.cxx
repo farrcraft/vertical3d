@@ -26,15 +26,8 @@ Vertex MicroPolygonGrid::vertex(unsigned int i, unsigned int j) const {
 }
 
 MicroPolygon MicroPolygonGrid::microPolygon(unsigned int i, unsigned int j) const {
-    /*
-        poly is composed of points on grid:
-        [i][j]
-        [i][j+1]
-        [i+1][j+1]
-        [i+1][j]
-    */
-    // a micropolygon is named by its lower indexed corner, so the last row and column of
-    // vertices close the grid rather than opening a polygon of their own
+    // the corners in order are [i][j], [i][j+1], [i+1][j+1] and [i+1][j]. A micropolygon is
+    // named by its corner with the lowest indices, so i and j each stop one short of size()
     assert(i + 1 < size() && j + 1 < size());
     MicroPolygon p;
     p[0] = grid_[i][j];

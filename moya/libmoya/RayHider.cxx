@@ -68,13 +68,11 @@ void RayHider::camera(const Camera & camera) {
 }
 
 glm::vec3 RayHider::unproject(const glm::vec2 & raster, float z) const {
-    /*
-        A raster position is (m * p).xy / (m * p).w, and with p's z fixed both numerator and
-        w are linear in its x and y, so they are two equations in two unknowns. Solving them
-        at a depth rather than inverting the whole matrix keeps the answer out of the
-        projection's depth terms, which RI's default clipping range makes as badly
-        conditioned as a float allows.
-    */
+    // a raster position is (m * p).xy / (m * p).w. With p's z fixed, the numerator and w are
+    // both linear in p's x and y, which gives two equations in two unknowns. Solving them at a
+    // depth keeps the answer clear of the projection's depth terms. RI's default clipping
+    // range makes those terms as badly conditioned as a float allows, so the whole matrix is
+    // not inverted
     const glm::mat4x4 & m = camera_.toRaster;
     const float a = m[0][0] - raster.x * m[0][3];
     const float b = m[1][0] - raster.x * m[1][3];
@@ -94,12 +92,10 @@ v3d::type::geometry::Ray RayHider::ray(const glm::vec2 & raster, const glm::vec2
     glm::vec3 origin;
     glm::vec3 direction;
     if (camera_.perspective) {
-        /*
-            Every point a perspective camera sees at a raster position lies on one line from
-            the eye, so the point at depth one is the direction. A lens moves the eye across
-            it and aims at the point that ray reaches on the plane of focus, so that plane
-            stays sharp and nothing else does.
-        */
+        // every point a perspective camera sees at a raster position lies on one line from
+        // the eye, so the point at depth one is the direction. A lens moves the eye across
+        // the lens and aims at the point that line reaches on the plane of focus, so that
+        // plane stays sharp and nothing else does
         direction = unproject(raster, 1.0f);
         origin = glm::vec3(0.0f);
         const float radius = sampling.lensRadius();
@@ -143,8 +139,8 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
     v3d::render::offline::Film film(width, height, sampling);
     for (unsigned int row = 0; row < height; row++) {
         for (unsigned int column = 0; column < width; column++) {
-            // each further set is seeded by the pixel and its pass, so the result does not
-            // depend on the order anything is rendered in
+            // each set of samples is seeded by the pixel and its pass, so the result does not
+            // depend on the order the pixels are rendered in
             Spread spread;
             unsigned int taken = 0;
             for (unsigned int pass = 0;; pass++) {

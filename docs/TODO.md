@@ -140,6 +140,49 @@ Applying them again after the read would make the command line win.
 
 Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration).
 
+## moya's front end and reyes hider
+
+Defects in `moya/libmoya` that its comments described wrongly. Each is due when a scene or a
+caller reaches it.
+
+[] **Five RI C entry points are unsafe or empty.**
+
+- `RiProjection` reads the value after `"fov"` as a token and builds a string from it, then
+  reads a `double` where RI passes a pointer to an `RtFloat`. The behaviour is undefined.
+- `RiEnd` with no context open calls `pop_back` on an empty stack.
+- `RiGetContext` returns a pointer into a `std::vector<RenderContext>`, so a later `RiBegin`
+  that grows the vector leaves the handle dangling. `RiContext` ignores the handle.
+- `RiDisplayV`, `RiPolygonV` and `RiProjectionV` are empty, and `RiDisplay` ignores its
+  parameter list.
+- `RtErrorHandler`, `RtProcSubdivFunc`, `RtProcFreeFunc` and `RtArchiveCallback` return
+  `RtFloat` where RI has `RtVoid`, so `RiErrorIgnore` and its kin cannot be passed to
+  `RiErrorHandler`.
+
+[] **A bad name is accepted silently.**
+
+- `RiProjection(RI_NULL)` gives an orthographic projection and an unknown name the identity.
+  RI has the reverse, and nothing logs the unknown name.
+- `setCoordinateSystem()` and `coordinateSystem()` with an unknown name insert an all-zero
+  matrix and make it current, which flattens everything drawn after it.
+
+[] **`RenderContext` assumes its caller's order.**
+
+- `addPolygon()` under the reyes hider dereferences `frameBuffer_`, which exists only after
+  `prepareWorld()`. A polygon sent before `RiWorldBegin` crashes.
+- `render()` ignores the result of `image::Factory::write`, so an unknown extension writes no
+  file and reports nothing. It also makes a new `Logger` instead of using `logger_`.
+- `RiCropWindow` has no effect. `crop_` is stored by nothing and read by nothing.
+
+[] **The reyes hider departs from RI in four places.**
+
+- `GridShader` sets I to P for every camera. That is right for a perspective camera only; an
+  orthographic camera's I is (0, 0, 1) in camera space. The ray hider is right.
+- `GridShader::space("object")` fails, although the primitive's placement is that transform.
+  `shade()` is given the `Shading`, not the primitive.
+- ShadingRate is read as a side length in pixels: the first pass splits at
+  `sqrt(gridSize) * shadingRate` pixels. RI defines it as an area.
+- `Polygon::dice()` uses the first four vertices, so a polygon with more is diced wrongly.
+
 ## Tile grids
 
 `api/grid` is a library of its own, and odyssey uses it. The grid owns a map's picture and

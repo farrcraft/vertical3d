@@ -44,11 +44,9 @@ GridShader::Run & GridShader::run(const v3d::render::offline::sl::InstancePtr & 
 }
 
 bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
-    /*
-        Every one of these maps out of camera space, because the reyes hider works there and
-        so its current space is camera space. The context's table holds world to camera and
-        camera to screen, so "world" is an inverse of it and "screen" is the entry itself.
-    */
+    // every matrix maps out of camera space, the reyes hider's current space. The context's
+    // table holds world to camera and camera to screen, so "world" is the inverse of its
+    // entry and "screen" is the entry itself
     if (name == "current" || name == "camera") {
         *matrix = glm::mat4x4(1.0f);
         return true;
@@ -81,9 +79,9 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
         *matrix = normalised * screen;
         return true;
     }
-    // "object" is the transform in force at the primitive rather than at the shader, and
-    // a primitive does not carry it. Returning the shader's transform would be wrong for a
-    // scene that transforms between Surface and Polygon
+    // "object" is the transform in force at the primitive rather than at the shader. shade()
+    // receives only the primitive's Shading, which does not hold it. The shader's transform
+    // differs from it in a scene that transforms between Surface and Polygon
     return false;
 }
 
@@ -123,8 +121,8 @@ bool GridShader::light(unsigned int index, const Value & surface, Value* directi
     const v3d::render::offline::sl::Placed & shining = shading_->lights[index];
     Run & held = run(shining.shader, batch_);
 
-    // the batch it is lighting is in camera space, and the light's own space is where the
-    // scene put it
+    // the points being lit are in camera space. "shader" space is the light's placement
+    // while it runs, and the surface's again afterwards
     const glm::mat4x4 was = placement_;
     placement_ = shining.placement;
     const bool ran = held.globals.shine(shining, &held.machine, batch_, surface, direction, colour, reached, ambient);
@@ -155,8 +153,8 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
         return;
     }
 
-    // the grid parameters dicing uses: vertex (i, j) is at i and j over the span, and the
-    // spacing between two of them is the step a derivative divides by
+    // the grid parameters dicing uses: vertex (i, j) is at u = i / span and v = j / span, and
+    // the spacing between two neighbours is the step a derivative divides by
     const float span = size > 1 ? static_cast<float>(size - 1) : 1.0f;
 
     for (unsigned int i = 0; i < size; i++) {
@@ -167,8 +165,8 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
             point.position = vert.point();
             point.normal = vert.normal();
             point.geometric = vert.geometricNormal();
-            // the eye is the origin of camera space, so the direction the surface is seen
-            // along is the point itself
+            // the eye is the origin of camera space, so I is the point itself. This is the
+            // perspective camera's I, and an orthographic camera is given the same value
             point.incident = vert.point();
             point.colour = vert.color();
             point.opacity = shading.opacity;

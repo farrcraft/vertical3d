@@ -25,21 +25,21 @@ namespace v3d::moya {
  * The hider `Hider "raytrace"` selects: a primary ray through every sample, into the traced
  * scene, rather than primitives diced and bucketed.
  *
- * A ray is found by inverting the same camera to raster transformation the reyes hider
- * projects through, so the two hiders cannot disagree about where a pixel looks. The ray is
- * then carried into world space, where the traced scene is.
+ * A ray is solved from the same camera to raster transformation the reyes hider projects
+ * through, so the two hiders agree about where a pixel looks. The ray is then carried into
+ * world space, where the traced scene is.
  **/
 class RayHider final : public Hider {
  public:
     /**
-     * The camera as RiWorldBegin froze it.
+     * The camera as RiWorldBegin froze it. render() reads it from the context.
      **/
     class Camera final {
      public:
         /** The world to camera transformation. **/
         glm::mat4x4 toCamera = glm::mat4x4(1.0f);
         /**
-         * Camera to raster, which a ray is found by inverting and a depth is projected through.
+         * Camera to raster. A ray is solved from it, and a hit's depth is projected through it.
          **/
         glm::mat4x4 toRaster = glm::mat4x4(1.0f);
         bool perspective = false;
@@ -54,8 +54,8 @@ class RayHider final : public Hider {
     /**
      * Cast every sample of every pixel and write what the film makes of them.
      *
-     * With a PixelVariance above zero, another set of samples is taken wherever the first
-     * leaves a pixel uncertain.
+     * With a PixelVariance above zero, a pixel whose samples' variance of the mean is above it
+     * takes further sets of samples, up to four sets in all.
      **/
     void render(RenderContext* context, v3d::render::offline::FrameBuffer* planes) override;
 

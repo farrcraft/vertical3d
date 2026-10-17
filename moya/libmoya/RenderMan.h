@@ -313,4 +313,4 @@ extern RtVoid RiErrorHandler(RtErrorHandler handler);
 #define RIE_INFO ((RtInt)0) /* Rendering stats and other info */
 #define RIE_WARNING ((RtInt)1) /* Something seems wrong, maybe okay */
 #define RIE_ERROR ((RtInt)2) /* Problem. Results may be wrong */
-#define RIE_SEVERE ((RtInt)3) /* So bad you should probably abort */
+#define RIE_SEVERE ((RtInt)3) /* Severe enough to abort */

@@ -17,13 +17,13 @@ namespace v3d::moya {
 /**
  * Drives a render context from a RIB stream. The reader calls one typed method per RI request.
  *
- * RiBegin and RiEnd have no RIB equivalent - the standard says they are implied at the
- * start and end of a file - so a handler creates the context it drives and destroys it
- * when it goes out of scope.
+ * RiBegin and RiEnd have no RIB equivalent. The standard implies them at the start and end
+ * of a file, so a handler creates the context it drives and destroys it when it goes out of
+ * scope.
  *
  * The C entry points in RenderMan.cxx are the other way into the same render context.
- * Neither goes through the other: a va_list cannot be built at runtime, so a reader
- * holding a parsed parameter list could not call them.
+ * Neither calls the other. The reader passes typed parameter lists, and the C entry points
+ * take untyped arrays.
  **/
 class RIBHandler final : public v3d::render::offline::rib::Handler {
  public:
@@ -85,16 +85,14 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
         const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
-     * The context the requests are landing in, which is where a driver reads the
-     * framebuffer from once the file has been read.
+     * The context the requests reach. Its framebuffer holds the picture once the file has
+     * been read.
      **/
     RenderContext & context();
 
     /**
-     * Where the render goes whatever the scene's Display names.
-     *
-     * A command line naming an output file means that file rather than the one the scene
-     * was written to write, and a scene's Display arrives after this is set.
+     * The file the render is written to, whatever the scene's Display names. It is set
+     * before the scene is read, and a Display the scene makes later keeps this name.
      **/
     void output(const std::string & name);
 

@@ -10,14 +10,14 @@
 #include "MicroPolygon.h"
 
 namespace v3d::moya::reyes {
-// a grid of micropolygons
-// micropolygon vertices are shared
+/**
+ * A grid of vertices, each shared by the micropolygons around it.
+ **/
 class MicroPolygonGrid {
  public:
     /**
-     * A grid of size-by-size vertices, which is size-1 by size-1 micropolygons. There is
-     * no default constructor because a grid's extent is fixed when it is made and every
-     * accessor indexes into it.
+     * A grid of size-by-size vertices, which is size-1 by size-1 micropolygons. The extent
+     * is fixed when the grid is made, and every accessor indexes into it.
      */
     explicit MicroPolygonGrid(unsigned int size);
     ~MicroPolygonGrid();

@@ -24,25 +24,25 @@ namespace {
 
 typedef std::array<glm::vec3, 4> Corners;
 
-/*
-    Where a micropolygon is in raster space for a sample: at its time, and seen from its
-    point on the lens.
-
-    A lens point L moves the eye across the lens and keeps the plane of focus where it was.
-    A point at eye depth z then moves by L (1 - z / focus) in eye x and y before it is
-    projected. On the plane of focus that is nothing, and everywhere else it is the circle of
-    confusion.
-
-    A still micropolygon is cheap. The move leaves z alone, and with it the perspective
-    divide, so a corner's raster position is linear in L. Each corner is projected three
-    times: at the centre of the lens, and a unit along each axis of it. Every sample's corners
-    are a sum of those, and the lens's four extremes bound them all.
-
-    A moving one is placed afresh for every sample, by the primitive's motion from its reference
-    end to the sample's time. Its bound is the union of where it is at a run of times across
-    the shutter. The bound is grown by the furthest a corner moves between two of those times,
-    so it covers a path that curves between them.
-*/
+/**
+ * Where a micropolygon is in raster space for a sample: at the sample's time, and seen from
+ * the sample's point on the lens.
+ *
+ * Let L be the lens point scaled by the lens radius. L moves the eye across the lens and
+ * leaves the plane of focus in place. A point at eye depth z then moves by -L (1 - z / focus)
+ * in eye x and y before it is projected. That is zero on the plane of focus, and elsewhere it
+ * is the circle of confusion.
+ *
+ * A still micropolygon is placed once. The lens move leaves z, and so the perspective divide,
+ * unchanged, so a corner's raster position is linear in L. Each corner is projected three
+ * times: at the centre of the lens, and one unit along each axis of it. Every sample's corners
+ * are a weighted sum of those, and the four corners of the lens square bound them all.
+ *
+ * A moving micropolygon is placed again for every sample, by the primitive's motion from its
+ * reference end to the sample's time. Its bound is the union of its bounds at STEPS + 1 evenly
+ * spaced times across the shutter. The bound is grown by the furthest a corner moves between
+ * two neighbouring times, so it also covers a path that curves between them.
+ */
 class Placement {
  public:
     Placement(const glm::mat4x4 & toRaster, float radius, float focus,
@@ -52,7 +52,7 @@ class Placement {
     }
 
     /**
-     * Places a micropolygon's eye space corners, ready for at() and bound().
+     * Places a micropolygon's eye space corners, ready for at(), reaches(), min() and max().
      */
     void place(const Corners & eye) {
         eye_ = eye;
@@ -103,10 +103,11 @@ class Placement {
     }
 
     /**
-     * Whether a sample can be covered at all. For a still micropolygon, its bound is the answer.
-     * A moving one is tested against the bound of the slice of the shutter the sample's time
-     * falls in. That bound is where the micropolygon was at either end of the slice, grown by
-     * the furthest a corner moves in one slice.
+     * Whether a sample can be covered at all. A still micropolygon always returns true, because
+     * hide() visits only the samples inside its bound. A moving one is tested against the bound
+     * of the slice of the shutter the sample's time falls in. That bound is where the
+     * micropolygon was at either end of the slice, grown by the furthest a corner moves in one
+     * slice.
      */
     bool reaches(const Samples::Sample & sample) const {
         if (!motion_.moving()) {
@@ -230,11 +231,11 @@ class Placement {
     float stride_ { 0.0f };
 };
 
-/*
-    The motion from a moving primitive's reference end to each sample's time, worked out once per
-    sample over a region of the frame. Every micropolygon of a grid whose swept bound reaches a
-    sample tests it, so without this the same motion is worked out for each of them.
-*/
+/**
+ * The motion from a moving primitive's reference end to each sample's time, worked out once per
+ * sample over a region of the frame. Every micropolygon of the grid whose swept bound reaches a
+ * sample reads the same motion from here.
+ */
 class Motions {
  public:
     Motions(const Placement & placement, unsigned int perPixel, int left, int top, int right, int bottom) :
@@ -273,10 +274,11 @@ std::array<int, 4> pixels(const glm::vec3 & min, const glm::vec3 & max, const Sa
     return footprint(min, max, static_cast<int>(samples.width()), static_cast<int>(samples.height()));
 }
 
-/*
-    Every sample in the pixels a micropolygon's bound touches that the micropolygon covers
-    takes its colour, where its depth there beats what the sample already holds.
-*/
+/**
+ * Hide one placed micropolygon into the samples of the pixels its bound touches. A sample it
+ * covers takes its colour, full opacity and its depth, unless the sample already holds a hit
+ * at the same depth or nearer.
+ */
 void hide(const Placement & placement, const glm::vec3 & color, Samples * samples, Motions * motions) {
     const std::array<int, 4> region = pixels(placement.min(), placement.max(), *samples);
     for (int row = region[1]; row <= region[3]; row++) {
@@ -302,13 +304,13 @@ void hide(const Placement & placement, const glm::vec3 & color, Samples * sample
     }
 }
 
-/*
-    Every micropolygon of a grid into the frame's samples. The film filters the samples
-    into pixels once every bucket is done.
-*/
+/**
+ * Hide every micropolygon of a grid into the frame's samples. The film filters the samples
+ * into pixels once every bucket is done.
+ */
 void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & rc) {
-    // eye space to raster is the projection and then the scale into pixels, in that
-    // order - a matrix applies to what is on its right
+    // eye space to raster is the projection and then the scale into pixels. A matrix applies
+    // to what is on its right, so the projection is on the right
     const glm::mat4x4 toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
     // an orthographic camera has no lens to blur through
     const float radius = rc.perspective() ? rc.sampling().lensRadius() : 0.0f;
@@ -324,8 +326,8 @@ void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & 
         return eye;
     };
 
-    // a moving grid's motions are shared by its micropolygons, over the region all of them
-    // sweep, which takes a pass to measure
+    // a moving grid's micropolygons share one Motions, which covers the pixels all of them
+    // sweep. A first pass over the grid measures that region
     boost::shared_ptr<Motions> motions;
     if (primitive.motion().moving()) {
         glm::vec3 min(std::numeric_limits<float>::max());
@@ -340,8 +342,9 @@ void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & 
         const std::array<int, 4> region = pixels(min, max, samples);
         const std::size_t entries = static_cast<std::size_t>(std::max(0, region[2] - region[0] + 1)) *
             static_cast<std::size_t>(std::max(0, region[3] - region[1] + 1)) * samples.perPixel();
-        // a grid that sweeps much of the frame would need gigabytes of motions; past the cap each
-        // micropolygon works out its own instead, which is slower and needs no memory
+        // a grid that sweeps much of the frame would need gigabytes of motions. Past the
+        // context's motionCache() entries, each micropolygon works out its own motions instead,
+        // which is slower and needs no memory
         if (entries <= rc.motionCache()) {
             motions = boost::make_shared<Motions>(placement, samples.perPixel(), region[0], region[1], region[2],
                 region[3]);
@@ -351,7 +354,7 @@ void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & 
     for (unsigned int i = 0; i + 1 < grid.size(); i++) {
         for (unsigned int j = 0; j + 1 < grid.size(); j++) {
             placement.place(corners(i, j));
-            // the shaded colour the surface shader left on the vertex
+            // flat shaded with the colour on its first corner, which the surface shader left there
             hide(placement, grid.microPolygon(i, j)[0].color(), &samples, motions.get());
         }
     }
@@ -375,25 +378,22 @@ size_t Bucket::primitiveCount(void) const {
 
 bool Bucket::render(RenderContext & rc) {
     bool split = false;
-    // iterate over each primitive in the bucket
     // splitting resubmits pieces through the first pass, which may append to this same
     // bucket, so the loop reads the size each time around rather than caching it
     for (size_t i = 0; i < primitives_.size(); i++) {
-        // a copy, because the entry it came from is erased below while it is still in use
+        // a copy, because split() may append to primitives_ and so move the entry it came from
         boost::shared_ptr<Primitive> prim = primitives_[i];
         if (prim->diceable()) {
             boost::shared_ptr<MicroPolygonGrid> grid;
             while (prim->dice(grid, rc)) {
-                // dicing carries the primitive's own colour onto the grid as Cs, and the
-                // surface shader runs over every vertex of it at once and leaves Ci there
+                // dicing interpolates the vertices' colours onto the grid as Cs. The surface
+                // shader runs over every vertex of the grid at once and leaves Ci there
                 rc.shader().shade(prim->shading(), grid.get());
                 hide(*grid, *prim, rc);
             }
         } else {
-            // split the primitive into smaller primitives, which may be diceable. The
-            // splitter feeds each piece back through the first pass. That pass buckets the
-            // piece and decides whether it is diceable in turn, so the original is finished
-            // with either way
+            // the first pass buckets each piece and decides whether it is diceable, so the
+            // original is erased whether or not split() submitted anything
             prim->split(rc);
             primitives_.erase(primitives_.begin() + i);
             i--;

@@ -12,15 +12,12 @@
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::moya::reyes {
-/*
-    the screen space to be rendered is broken down into a grid of tiles (buckets).
-    as geometry is converted to micropolygon grids it is placed in the appropriate 
-    bucket corresponding to the screen space it occupies.
-    once all geometry has been processed into buckets each bucket is rendered one
-    at a time starting from the upper left corner.
-    all buckets are the same size, configurable at render time.
-    the render context is responsible for the bucket size
-*/
+/**
+ * One tile of the image, and the primitives waiting in it. The first pass puts each primitive
+ * in the bucket that holds the upper left corner of its raster space bound. FrameBuffer
+ * renders the buckets in turn once every primitive is in. A micropolygon is hidden into every
+ * sample its bound touches, including samples outside its own bucket.
+ */
 class Bucket final {
  public:
     Bucket();
@@ -32,16 +29,17 @@ class Bucket final {
      * them and hide them into the frame's samples. A primitive too large to
      * dice is split instead, and its pieces go back through the first pass, which may
      * add them to this bucket or another one.
-     * @return whether anything was split, and so whether the sweep has to come round
-     *         again for pieces that landed behind it
+     * @return whether anything was split. FrameBuffer then renders every bucket again, for
+     *         pieces that landed in a bucket it had already rendered
      */
     bool render(RenderContext & rc);
 
     size_t primitiveCount(void) const;
 
  private:
-    unsigned int left_ = 0;  // left edge of this bucket in pixel coordinates
-    unsigned int top_ = 0;  // top edge of this bucket in pixel coordinates
-    std::vector<boost::shared_ptr<Primitive> > primitives_;  // list of primitives in this bucket
+    // never set or read, so every bucket holds 0 in both
+    unsigned int left_ = 0;
+    unsigned int top_ = 0;
+    std::vector<boost::shared_ptr<Primitive> > primitives_;
 };
 };  // namespace v3d::moya::reyes

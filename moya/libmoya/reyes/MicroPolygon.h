@@ -13,7 +13,11 @@
 #include <glm/vec3.hpp>
 
 namespace v3d::moya::reyes {
-// a flat shaded quadrilateral with an area of about 1/4 of a pixel
+/**
+ * A quadrilateral of four neighbouring grid vertices, flat shaded with the colour of its
+ * first corner. The first pass splits a primitive until its grid's micropolygons are at most
+ * about ShadingRate pixels across.
+ **/
 class MicroPolygon {
  public:
     MicroPolygon();

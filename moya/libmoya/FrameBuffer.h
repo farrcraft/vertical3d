@@ -11,18 +11,16 @@
 #include <vector>
 
 namespace v3d::moya {
-/*
-    the screen space to be rendered is broken down into a grid of tiles (buckets).
-    the framebuffer owns that grid, and the stack of float image planes the frame's
-    samples are filtered into.
-*/
+/**
+ * The image divided into a grid of tiles, called buckets, and the stack of float image
+ * planes the frame's samples are filtered into. It owns both.
+ */
 class FrameBuffer {
  public:
     /**
-     * The planes a render writes. The colour channels lead because the image conversion
-     * takes the leading planes as the picture; the depth follows them, and is the
-     * renderer's own rather than an alpha - written into one it would be a wrong picture
-     * that looks like a shading fault.
+     * The planes a render writes. The colour planes come first, because image() takes its
+     * channels from the leading planes. DEPTH follows them and is not an alpha channel, so
+     * the picture is written with CHANNELS planes and never four.
      */
     enum Plane {
         RED = 0,
@@ -30,9 +28,9 @@ class FrameBuffer {
         BLUE = 2,
         DEPTH = 3,
         /**
-         * How much of the pixel was drawn into, which is SL's alpha: the filtered
-         * fraction of its samples that hit. An imager reads it to tell a pixel nothing was
-         * drawn into from a black one.
+         * How much of the pixel was drawn into: the filtered fraction of its samples that
+         * hit. An imager reads it as SL's alpha, to tell a pixel nothing was drawn into from
+         * a black one.
          */
         COVERAGE = 4
     };
