@@ -56,10 +56,14 @@ Tracer::Run & Tracer::run(const v3d::render::offline::sl::InstancePtr & shader) 
         return held;
     }
     held.program = &shader->program();
-    // a batch of one point: a hit runs the same machine as a grid
-    held.machine.prepare(shader->program(), 1);
+    // a hit and its two neighbours: a hit runs the same machine as a grid
+    held.machine.prepare(shader->program(), STENCIL);
     held.globals = v3d::render::offline::sl::Globals(shader->program());
     return held;
+}
+
+const Scene::Poses & Tracer::poses() const {
+    return poses_;
 }
 
 void Tracer::time(float when) {

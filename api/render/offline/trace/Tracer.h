@@ -88,10 +88,18 @@ class Tracer final {
     glm::vec3 traced(const v3d::type::geometry::Line & path, const glm::vec3 & geometric);
 
     const Scene* scene() const;
+    /** Where the moving primitives are at the time set by time(). **/
+    const Scene::Poses & poses() const;
+
+    /**
+     * How many points a hit is shaded as: the hit, and the two a step along u and along v
+     * from it that its derivatives difference.
+     **/
+    static constexpr unsigned int STENCIL = 3;
     v3d::render::offline::Textures* textures() const;
 
     /**
-     * A machine sized for one program and a batch of one, and that program's globals. Kept
+     * A machine sized for one program and a hit's stencil, and that program's globals. Kept
      * between hits, so that a register file is not allocated for every hit.
      *
      * There is one per program per trace depth. A shader that calls trace() is still running

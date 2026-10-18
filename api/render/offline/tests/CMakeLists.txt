@@ -20,6 +20,7 @@ v3d_add_test(render_offline
 	"SlDerivativeTest.cxx"
 	"SlLightingTest.cxx"
 	"TraceHierarchyTest.cxx"
+	"TraceStencilTest.cxx"
 	"SlShaderLibraryTest.cxx"
 	"SlImagerTest.cxx"
 	"SlGlobalsTest.cxx"

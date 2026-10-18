@@ -60,6 +60,8 @@ class Sphere final : public Primitive {
     void describe(const Intersection & found, Hit* hit) const override;
     /** The box around its own slab, [-r, r] by [-r, r] by [zmin, zmax], placed in world space. **/
     bool bound(v3d::type::geometry::AABBox* box) const override;
+    /** u is the fraction of the sweep and v the fraction of the slab in latitude, as at a hit. **/
+    bool at(const glm::vec2 & parameters, Hit* hit) const override;
 
  private:
     float radius_;

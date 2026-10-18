@@ -123,6 +123,22 @@ bool Sphere::bound(v3d::type::geometry::AABBox* box) const {
     return true;
 }
 
+bool Sphere::at(const glm::vec2 & parameters, Hit* hit) const {
+    if (!(radius_ > 0.0F)) {
+        return false;
+    }
+    const float low = std::asin(zmin_ / radius_);
+    const float high = std::asin(zmax_ / radius_);
+    const float phi = parameters.x * thetamax_;
+    const float latitude = low + (parameters.y * (high - low));
+    Intersection found;
+    found.point = radius_ * glm::vec3(std::cos(latitude) * std::cos(phi), std::cos(latitude) * std::sin(phi),
+        std::sin(latitude));
+    describe(found, hit);
+    hit->point = glm::vec3(glm::inverse(toObject_) * glm::vec4(found.point, 1.0F));
+    return true;
+}
+
 void Sphere::describe(const Intersection & found, Hit* hit) const {
     hit->normal = normal(found.point);
     hit->geometric = hit->normal;

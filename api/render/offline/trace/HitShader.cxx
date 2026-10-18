@@ -7,6 +7,7 @@
 
 #include <api/render/offline/Texture.h>
 #include <api/render/offline/sl/Globals.h>
+#include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/sl/runtime/Value.h>
 
 #include <string>
@@ -94,7 +95,8 @@ bool HitShader::light(unsigned int index, const Value & surface, Value* directio
     // the scene instanced the light in
     const glm::mat4x4 was = placement_;
     placement_ = source.placement;
-    const bool ran = held.globals.shine(source, &held.machine, 1, surface, direction, colour, reached, ambient);
+    const bool ran = held.globals.shine(source, &held.machine, Tracer::STENCIL, surface, direction, colour, reached,
+        ambient);
     placement_ = was;
     return ran;
 }
@@ -103,7 +105,13 @@ bool HitShader::transmission(const Value & from, const Value & to, Value* fracti
     if (tracer_->scene() == nullptr || fraction == nullptr) {
         return false;
     }
-    fraction->triple(0, tracer_->transmitted({.origin = from.triple(0), .direction = to.triple(0) - from.triple(0)}, hit_.geometric));
+    // only the hit traces. Its neighbours are a pixel away and take its answer, so a shadow is
+    // not traced three times
+    const glm::vec3 passed = tracer_->transmitted({.origin = from.triple(0), .direction = to.triple(0) - from.triple(0)},
+        hit_.geometric);
+    for (unsigned int point = 0; point < fraction->width(); point++) {
+        fraction->triple(point, passed);
+    }
     return true;
 }
 
@@ -111,12 +119,53 @@ bool HitShader::trace(const Value & origin, const Value & direction, Value* colo
     if (tracer_->scene() == nullptr || colour == nullptr) {
         return false;
     }
-    colour->triple(0, tracer_->traced({.origin = origin.triple(0), .direction = direction.triple(0)}, hit_.geometric));
+    const glm::vec3 seen = tracer_->traced({.origin = origin.triple(0), .direction = direction.triple(0)}, hit_.geometric);
+    for (unsigned int point = 0; point < colour->width(); point++) {
+        colour->triple(point, seen);
+    }
     return true;
 }
 
 const v3d::render::offline::Texture* HitShader::texture(const std::string & name) {
     return tracer_->textures() == nullptr ? nullptr : tracer_->textures()->find(name);
+}
+
+v3d::render::offline::sl::runtime::Renderer::Shape HitShader::shape() const {
+    Shape stencil;
+    stencil.layout = Shape::Layout::STENCIL;
+    stencil.du = du_;
+    stencil.dv = dv_;
+    return stencil;
+}
+
+void HitShader::neighbours(Hit* alongU, Hit* alongV) {
+    *alongU = hit_;
+    *alongV = hit_;
+    du_ = 0.0F;
+    dv_ = 0.0F;
+    const Scene* scene = tracer_->scene();
+    if (scene == nullptr) {
+        return;
+    }
+    const float width = scene->footprint(hit_.point);
+    // how far the surface moves for a small change in each parameter, which turns a pixel's
+    // width into a step in that parameter
+    constexpr float PROBE = 1.0e-3F;
+    Hit probe;
+    const glm::vec2 here(hit_.u, hit_.v);
+    Hit* const neighbour[2] = { alongU, alongV };
+    float* const step[2] = { &du_, &dv_ };
+    for (int axis = 0; axis < 2; axis++) {
+        glm::vec2 along(0.0F);
+        along[axis] = 1.0F;
+        if (!Scene::around(hit_, here + (PROBE * along), tracer_->poses(), &probe)) {
+            continue;
+        }
+        const float rate = glm::length(probe.point - hit_.point) / PROBE;
+        if (rate > 0.0F && Scene::around(hit_, here + ((width / rate) * along), tracer_->poses(), neighbour[axis])) {
+            *step[axis] = width / rate;
+        }
+    }
 }
 
 glm::vec3 HitShader::shade(glm::vec3* opacity) {
@@ -134,18 +183,28 @@ glm::vec3 HitShader::shade(glm::vec3* opacity) {
         return primitive.opacity() * hit_.colour;
     }
 
-    v3d::render::offline::sl::Point point;
-    point.position = hit_.point;
-    point.normal = hit_.normal;
-    point.geometric = hit_.geometric;
-    point.incident = hit_.incident;
-    point.colour = hit_.colour;
-    point.opacity = primitive.opacity();
-    point.s = hit_.s;
-    point.t = hit_.t;
-    point.u = hit_.u;
-    point.v = hit_.v;
-    held.globals.surface(&held.machine, 0, point);
+    Hit alongU;
+    Hit alongV;
+    neighbours(&alongU, &alongV);
+    const Hit* const stencil[Tracer::STENCIL] = { &hit_, &alongU, &alongV };
+    for (unsigned int lane = 0; lane < Tracer::STENCIL; lane++) {
+        const Hit & at = *stencil[lane];
+        v3d::render::offline::sl::Point point;
+        point.position = at.point;
+        point.normal = at.normal;
+        point.geometric = at.geometric;
+        // the neighbours are seen along the hit's ray, a pixel to one side of it
+        point.incident = hit_.incident;
+        point.colour = at.colour;
+        point.opacity = primitive.opacity();
+        point.s = at.s;
+        point.t = at.t;
+        point.u = at.u;
+        point.v = at.v;
+        point.du = du_;
+        point.dv = dv_;
+        held.globals.surface(&held.machine, lane, point);
+    }
     held.globals.eye(&held.machine, tracer_->scene() == nullptr ? glm::vec3(0.0F) : tracer_->scene()->eye());
 
     if (!held.machine.run()) {

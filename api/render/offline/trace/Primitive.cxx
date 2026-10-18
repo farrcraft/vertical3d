@@ -17,6 +17,10 @@ bool Primitive::bound(v3d::type::geometry::AABBox* /* box */) const {
     return false;
 }
 
+bool Primitive::at(const glm::vec2 & /* parameters */, Hit* /* hit */) const {
+    return false;
+}
+
 const glm::vec3 & Primitive::colour() const {
     return colour_;
 }

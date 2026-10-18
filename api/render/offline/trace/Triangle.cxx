@@ -125,6 +125,15 @@ bool Triangle::bound(v3d::type::geometry::AABBox* box) const {
     return true;
 }
 
+bool Triangle::at(const glm::vec2 & parameters, Hit* hit) const {
+    Intersection found;
+    found.u = parameters.x;
+    found.v = parameters.y;
+    describe(found, hit);
+    hit->point = a_ + (parameters.x * (b_ - a_)) + (parameters.y * (c_ - a_));
+    return true;
+}
+
 void Triangle::describe(const Intersection & found, Hit* hit) const {
     hit->normal = shadingNormal(found.u, found.v);
     hit->geometric = geometric_;

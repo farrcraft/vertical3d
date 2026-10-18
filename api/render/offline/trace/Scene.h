@@ -14,6 +14,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 #include "Hierarchy.h"
@@ -136,6 +137,21 @@ class Scene final {
      **/
     bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, float time = 0.0F) const;
 
+    /**
+     * A hit's surface at other parameters, where the hit's primitive is at the poses' time:
+     * what Primitive::at() gives, carried forward as nearest() carries a hit. The primitive and
+     * the incident direction are the hit's. False when the primitive cannot place a point by its
+     * parameters.
+     **/
+    static bool around(const Hit & hit, const glm::vec2 & parameters, const Poses & poses, Hit* near);
+
+    /**
+     * How wide one pixel of the camera's picture is at a point in world space, measured across
+     * x in raster space. A scene with no camera has the identity for its projection, so a pixel
+     * there is one unit wide.
+     **/
+    float footprint(const glm::vec3 & point) const;
+
     const glm::vec3 & background() const;
     void background(const glm::vec3 & colour);
 
@@ -152,6 +168,9 @@ class Scene final {
     Projection projection_;
     /** The motion a primitive placed by this transformation is carried by, or -1. **/
     int motion(const v3d::render::offline::MovingTransform & placed);
+
+    /** Carries a hit's normals forward from its primitive's stored pose to the poses' time. **/
+    static void carry(const Primitive & primitive, const Poses & poses, Hit* hit);
 
     /** Builds the hierarchy over every primitive with a bound, and lists those without one. **/
     void build() const;

@@ -127,7 +127,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [5](#step-5--a-bounding-volume-hierarchy-in-the-traced-scene) | Primitive bounds, and the structure in `trace::Scene` | `api/render/offline` | 0092 | done |
 | [6](#step-6--the-record-how-a-hider-supplies-derivatives) | The record: how a hider supplies derivatives | `docs/adr` | **0093** | done |
 | [7](#step-7--derivatives-under-the-reyes-hider) | `Du`, `Dv`, `Deriv`, `area` and `calculatenormal`, under the reyes hider | `api/render/offline`, `moya` | 0093 | done |
-| [8](#step-8--derivatives-under-the-ray-hider) | The same built-ins under the ray hider | `api/render/offline` | 0093 | open |
+| [8](#step-8--derivatives-under-the-ray-hider) | The same built-ins under the ray hider | `api/render/offline` | 0093 | done |
 | [9](#step-9--held-traced-hits-shaded-in-batches) | Traced hits shaded in batches | `api/render/offline`, `moya` | — | held |
 | [10](#step-10--the-record-how-an-area-light-is-sampled) | The record: how an area light is sampled | `docs/adr` | **0094** | open |
 | [11](#step-11--an-area-light-keeps-its-geometry) | An area light keeps its geometry | `api/render/offline`, `moya` | 0094 | open |
@@ -363,7 +363,8 @@ layout, so the stencil is tested before the ray hider uses it. `GridShaderTest.c
 grid's shape and a bumped plane against normals worked out by hand. `reference-bump.png` is a
 plane bumped by noise, from code and from `reference-bump.rib`, through the `bumpy.sl` fixture.
 `calculatenormal` points the way a diced polygon's `Ng` does, so it needs no flip. ADR-0093 is
-accepted.
+accepted. Most new cases fail to build without the change, so the grid's backward difference was
+also broken by hand: with the last row given no neighbour, three cases fail.
 
 * **`Du`, `Dv`, `Deriv` and `area`** are declared in `sl/Builtins.cxx` and implemented in the
   library, for floats, colours, points and vectors.
@@ -384,6 +385,16 @@ accepted.
 **A reference for bump mapping**: `reference-bump.png`, a plane bumped by a seeded noise.
 
 ### Step 8 — Derivatives under the ray hider
+
+**Done.** `HitShader` shades a hit and its two neighbours as one batch, and answers `shape()`
+with the stencil. `Primitive::at()` places a neighbour on a triangle and on a sphere, and
+`Scene::around()` carries it into the hit's pose. The step comes from `Scene::footprint()`, a
+pixel's width through the camera projection that step 3 put on the traced scene. Only the hit
+traces. The derivatives of a triangle are its own edges, against which `TraceStencilTest.cxx`
+checks them, and a sphere's against its analytic derivatives. Comparing with the grid directly
+would mix two parameterisations of the same polygon. `raytrace-bump.png` is the bumped plane
+under the ray hider, from code and from RIB. Every committed `raytrace-` picture is unchanged,
+because lane zero is shaded as before.
 
 * **`HitShader` shades a hit as the stencil ADR-0093 decides.** `trace::Primitive` gives the
   point and the normal at a (u, v) near a hit, and the step's size comes from the ray's distance.

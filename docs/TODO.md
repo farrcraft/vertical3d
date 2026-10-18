@@ -33,17 +33,14 @@ takes them up, in the order the [OfflineShading roadmap](roadmap/OfflineShading.
 - Due when a scene needs soft shadows. Both hiders can already cast shadows through the shared
   ray tracer.
 
-[] **Displacement is not possible, and bump mapping works under the reyes hider only.**
-Displacement shaders are refused. A traced hit is shaded alone, so its derivatives are zero.
+[] **Displacement is not possible.** Displacement shaders are refused.
 
 - Under the reyes hider, displacement reaches into moya's dicing. The displacement shader runs on
   a grid after dicing and before the surface shader, and the primitive's bound grows by
   `displacementbound`.
 - Under the ray hider, displacement needs tessellation, which the ray tracer does not otherwise
   do.
-- Bump mapping under the ray hider needs neighbours for each hit. The hits of a scanline lie on
-  different primitives, so they are not neighbours.
-- Due when a scene needs surface detail that a texture cannot give.
+- Due when a scene needs surface detail that bump mapping cannot give, such as a silhouette.
 
 [] **The reyes hider ignores opacity (`Oi`).**
 

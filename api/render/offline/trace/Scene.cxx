@@ -7,6 +7,7 @@
 
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/sl/Types.h>
 #include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Ray.h>
 
@@ -217,17 +218,45 @@ bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, 
     hit->point = ray.origin() + ray.direction() * nearest.distance;
     hit->colour = met->colour();
     met->describe(nearest, hit);
-    // a moving primitive's normals are carried forward to the time its hit was found at
-    const int motion = met->motion();
-    if (motion >= 0) {
-        const glm::mat3 normals = glm::transpose(glm::inverse(glm::mat3(poses.ahead[motion])));
-        hit->normal = glm::normalize(normals * hit->normal);
-        if (glm::length(hit->geometric) > 0.0F) {
-            hit->geometric = glm::normalize(normals * hit->geometric);
-        }
-    }
+    carry(*met, poses, hit);
     hit->incident = ray.direction();
     return true;
+}
+
+void Scene::carry(const Primitive & primitive, const Poses & poses, Hit* hit) {
+    // a moving primitive's normals are carried forward to the time its hit was found at
+    const int motion = primitive.motion();
+    if (motion < 0) {
+        return;
+    }
+    const glm::mat3 normals = glm::transpose(glm::inverse(glm::mat3(poses.ahead[static_cast<std::size_t>(motion)])));
+    hit->normal = glm::normalize(normals * hit->normal);
+    if (glm::length(hit->geometric) > 0.0F) {
+        hit->geometric = glm::normalize(normals * hit->geometric);
+    }
+}
+
+bool Scene::around(const Hit & hit, const glm::vec2 & parameters, const Poses & poses, Hit* near) {
+    if (hit.primitive == nullptr) {
+        return false;
+    }
+    *near = hit;
+    if (!hit.primitive->at(parameters, near)) {
+        return false;
+    }
+    const int motion = hit.primitive->motion();
+    if (motion >= 0) {
+        near->point = glm::vec3(poses.ahead[static_cast<std::size_t>(motion)] * glm::vec4(near->point, 1.0F));
+    }
+    carry(*hit.primitive, poses, near);
+    return true;
+}
+
+float Scene::footprint(const glm::vec3 & point) const {
+    const glm::mat4x4 toRaster = projection_.raster * view_;
+    const glm::vec3 raster = v3d::render::offline::sl::project(toRaster, point);
+    const glm::vec3 beside = v3d::render::offline::sl::project(glm::inverse(toRaster), raster + glm::vec3(1.0F, 0.0F, 0.0F));
+    return glm::length(beside - point);
 }
 
 const glm::vec3 & Scene::background() const {

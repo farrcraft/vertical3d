@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 #include "Intersection.h"
@@ -54,6 +55,15 @@ class Primitive {
      * no bound against every ray.
      **/
     virtual bool bound(v3d::type::geometry::AABBox* box) const;
+
+    /**
+     * The surface at parameters u and v, in the pose it is stored in: its point, normals,
+     * colour, s and t, as describe() gives them at a hit there. A derivative at a hit
+     * differences the hit with two such points a step away in u and in v. Parameters past the
+     * primitive's edge continue its surface: a triangle's plane, or a sphere's sweep. False for
+     * a primitive that cannot place a point by its parameters, whose derivatives are zero.
+     **/
+    virtual bool at(const glm::vec2 & parameters, Hit* hit) const;
 
     /** The colour that was current, which is SL's Cs. **/
     const glm::vec3 & colour() const;

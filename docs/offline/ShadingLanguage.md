@@ -58,7 +58,8 @@ named. The language is in `api/render/offline/sl`.
   condition is read once. `break`, `continue` and `return` clear mask bits instead of jumping.
   An `illuminance` body is a loop over the lights, so a `break` or a `return` inside it ends it
   for those points and they run it for no later light. A grid's batch is its vertices, a
-  traced hit's batch is one point, and an imager's batch is a row of pixels.
+  traced hit's batch is the hit and its two neighbours, and an imager's batch is a row of
+  pixels.
 - **A function call is inlined.** A run has no call stack and no register file per call. A
   shader's own function is pasted in at each call, bracketed so that a `return` inside it ends
   the function for those points, not the shader. Recursion is rejected at the call graph, so
@@ -89,8 +90,8 @@ named. The language is in `api/render/offline/sl`.
   the scene put the light.
 - **Both hiders bind the same globals.** A hider fills one `sl::Point` per shading point.
   `sl::Globals`, resolved once per program, writes the points into the batch and reads `Ci` and
-  `Oi` back. `Globals::shine` runs a light over a batch. `du` and `dv` are zero for a traced
-  hit, because a single point has no neighbour to difference.
+  `Oi` back. `Globals::shine` runs a light over a batch. `du` and `dv` are the step to a
+  neighbouring point: one over a grid's span, or a traced hit's stencil step.
 - **A grid and a traced hit have different current spaces.** A grid is shaded in camera space
   and a traced hit in world space. The space table is therefore a callback each renderer
   implements (`sl::runtime::Renderer::space`), not a constant in the library. Neither a grid
@@ -158,7 +159,9 @@ files on disk.
   A derivative is the difference to the neighbouring point along u or v, divided by the step
   `du` or `dv` between them. The renderer says how its batch lies on the surface through
   `Renderer::shape()`. A grid's neighbour is the next vertex, or the previous one on the last row
-  or column. A batch of lone points has none, and every derivative there is zero.
+  or column. A traced hit's neighbours are its stencil, described in
+  [RayTracing.md](RayTracing.md). A batch of lone points has none, and every derivative there
+  is zero.
   - `Du` and `Dv` take a float, a colour or a position. A position's derivative is a vector.
   - A uniform value's derivative is zero, because it is the same at every point.
   - `Deriv(num, den)` is RI's `Du(num) / Du(den) + Dv(num) / Dv(den)`. A term is dropped where

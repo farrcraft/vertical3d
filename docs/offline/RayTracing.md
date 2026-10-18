@@ -62,6 +62,20 @@ Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-trace
 - **Each hit is shaded by a `trace::HitShader`** made on the stack for it. The `HitShader`
   answers the shader's callbacks for that hit. A hit a shader traces into gets its own
   `HitShader`, so nothing is saved and restored around a traced ray.
+- **A hit is shaded as a stencil of three points**: the hit, and the points a step along its
+  primitive's u and along its v. The derivative built-ins difference them. A step is the change
+  in the parameter that moves the surface one pixel's width, from `Scene::footprint()`, so a
+  derivative is taken over what one pixel sees. A scene with no camera has a pixel one unit
+  wide. `Primitive::at()` places a neighbour by its u and v, and `Scene::around()` carries it
+  into the hit's pose. A step past a triangle's edge stays on its plane, and one past a
+  sphere's seam continues its sweep. A primitive that cannot place a point has zero derivatives.
+- **Only the hit traces.** A shadow or traced ray is cast from the hit, and its two neighbours
+  take its answer. The neighbours are a pixel away, so the difference would not show, and a
+  hit's rays are not tripled.
+- **A triangle's u and v are its barycentric weights**, so its Du(P) and Dv(P) are its own
+  edges, not those of the grid the reyes hider dices from the same polygon. `calculatenormal`
+  points the same way under both, because a change of parameters scales the cross product of
+  the two derivatives without turning it.
 - **The `Tracer` keeps one machine per program per trace depth.** A surface tracing into another
   surface with the same shader is still part way through its run when the second run starts.
 - **The `Tracer` computes the poses once for a sample's time** (`Tracer::time()`), so a

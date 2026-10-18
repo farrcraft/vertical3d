@@ -58,6 +58,10 @@ const char* BUMP = "data/reference-bump.png";
 const char* BUMP_RENDERED = "data_out/reference-bump.png";
 const char* BUMP_SCENE = "data/reference-bump.rib";
 const char* BUMP_RIB_RENDERED = "data_out/reference-bump-rib.png";
+const char* TRACED_BUMP = "data/raytrace-bump.png";
+const char* TRACED_BUMP_RENDERED = "data_out/raytrace-bump.png";
+const char* TRACED_BUMP_SCENE = "data/raytrace-bump.rib";
+const char* TRACED_BUMP_RIB_RENDERED = "data_out/raytrace-bump-rib.png";
 
 const char* MOTION = "data/reference-motion.png";
 const char* MOTION_RENDERED = "data_out/reference-motion.png";
@@ -1119,11 +1123,12 @@ BOOST_AUTO_TEST_CASE(reference_motion_without_a_cache_test) {
 }
 
 /*
-    The same scene as data/reference-bump.rib: a plane facing the camera, bumped by noise in
-    its own space and lit low across its face, so the bumps show as light and shade. A plane
-    with no bumps would be one flat colour.
+    The same scene as data/reference-bump.rib, and as data/raytrace-bump.rib under the ray
+    hider. A plane faces the camera, bumped by noise in its own space and lit low across its
+    face, so the bumps show as light and shade. A plane with no bumps would be one flat colour.
 */
-void bumpScene(v3d::moya::RenderContext & rc) {
+void bumpScene(v3d::moya::RenderContext & rc, const char* hider) {
+    rc.hider(hider);
     rc.imageResolution({64, 48}, 1.0F);
     pixelCentres(rc);
     rc.clipping({.hither = 1.0F, .yon = 100.0F});
@@ -1155,7 +1160,7 @@ void bumpScene(v3d::moya::RenderContext & rc) {
  **/
 BOOST_AUTO_TEST_CASE(moya_bump_reference_test) {
     v3d::moya::RenderContext rc;
-    bumpScene(rc);
+    bumpScene(rc, "hidden");
     rc.render();
 
     check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), BUMP, BUMP_RENDERED);
@@ -1174,6 +1179,34 @@ BOOST_AUTO_TEST_CASE(moya_bump_reference_from_rib_test) {
 
     check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
         BUMP, BUMP_RIB_RENDERED);
+}
+
+/**
+ * The bumped plane under the ray hider. Each hit is shaded with two neighbours a pixel away,
+ * so calculatenormal follows the bumps here too. The hiders sample differently, so this
+ * picture is not compared with reference-bump.png.
+ **/
+BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_test) {
+    v3d::moya::RenderContext rc;
+    bumpScene(rc, "raytrace");
+    rc.render();
+
+    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_BUMP, TRACED_BUMP_RENDERED);
+}
+
+/**
+ * The same traced bumped plane said in RIB, against the same committed picture.
+ **/
+BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_from_rib_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(TRACED_BUMP_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+        TRACED_BUMP, TRACED_BUMP_RIB_RENDERED);
 }
 
 };  // namespace
