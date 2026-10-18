@@ -66,8 +66,8 @@ class Characters final {
     static bool space(int character);
 
     /**
-     * Formats a position as " at line 3, column 7". Every lexer and parser error message ends
-     * with it.
+     * Formats a position as " at line 3, column 7". Every lexer error message ends with it,
+     * and every parser error message ends with the same text.
      **/
     static std::string position(unsigned int line, unsigned int column);
 

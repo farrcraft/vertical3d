@@ -19,10 +19,9 @@ namespace v3d::render::offline::sl {
 namespace {
 
 /**
- * The closed set: the five shader types, the eight data types, the two storage classes,
- * the control flow, and the three lighting constructs. A name outside it is an identifier,
- * so a shader may declare a variable called "output" or "noise" and have it mean what it
- * declared.
+ * The keywords: the shader types, the data types, the storage classes, the control flow,
+ * and the lighting constructs. Any other name is an identifier, so a shader may declare a
+ * variable called "output" or "noise".
  **/
 const char* const KEYWORDS[] = {
     "surface", "light", "displacement", "volume", "imager",
@@ -55,8 +54,8 @@ bool Lexer::skipSpace() {
         if (character != '/') {
             return true;
         }
-        // a '/' is a division until the character after it says otherwise, and reading that
-        // character means the '/' has already been taken
+        // a '/' is a division unless the next character starts a comment. Reading that
+        // character takes the '/' first
         const unsigned int line = in_.line();
         const unsigned int column = in_.column() + 1;
         in_.get();
@@ -105,8 +104,8 @@ Token Lexer::scanString(unsigned int line, unsigned int column) {
 }
 
 Token Lexer::scanNumber(unsigned int line, unsigned int column) {
-    // no sign is taken here, unlike RIB's numbers: a '-' in SL is the subtraction or the
-    // negation, so "a-1" is three tokens rather than two
+    // unlike a RIB number, an SL number takes no sign. A '-' in SL is a subtraction or a
+    // negation, so "a-1" is three tokens
     std::string text;
     bool digits = false;
     while (Characters::digit(in_.look())) {
@@ -148,8 +147,8 @@ Token Lexer::scanOperator(unsigned int line, unsigned int column) {
     const int first = in_.get();
     std::string text(1, static_cast<char>(first));
 
-    // the two character forms, longest match first: a '<' is not a '<=' until the '=' is
-    // seen, and a '&' that is not half of a '&&' is not a token in this language
+    // the two-character forms, longest match first. A '<' followed by '=' is '<='. A '&' or
+    // '|' that is not doubled is not a token in SL
     const int second = in_.look();
     const bool assigns = (first == '+' || first == '-' || first == '*' || first == '/' ||
         first == '=' || first == '!' || first == '<' || first == '>') && second == '=';
@@ -179,9 +178,9 @@ Token Lexer::scan() {
         return Token(Token::Kind::END, {.line = line, .column = column});
     }
     if (character == '#') {
-        // '#' has no other meaning in SL, so wherever one is, it came from a directive this
-        // lexer will not resolve. Reporting it by name says the shader needs a preprocessor,
-        // rather than suggesting that it is misspelt
+        // '#' has no meaning in SL except as a preprocessor directive, which this lexer does
+        // not resolve. The error says the shader needs a preprocessor, so it does not read
+        // as a misspelling
         in_.get();
         return fail("the C preprocessor is not run, so a '#' directive cannot be read", line, column);
     }

@@ -16,14 +16,17 @@ namespace v3d::render::offline::sl::syntax {
 /**
  * A formal parameter of a shader or of a function inside one.
  *
- * A shader parameter has a **required** default: SL has no uninitialised parameter, and a
- * scene that does not mention the parameter gets the default. A function's formals have
- * none, and that is the only difference between the two lists.
+ * A shader parameter has a **required** default. SL has no uninitialised parameter, and a
+ * scene that does not bind the parameter gets the default. A function's formals have no
+ * default.
  **/
 class Parameter final {
  public:
     Storage storage = Storage::UNSPECIFIED;
-    /** Whether the shader writes it back, which only a shader parameter may be. **/
+    /**
+     * Whether the declaration says `output`. The parser accepts it on a function's formal
+     * as well, and the compiler ignores it there.
+     **/
     bool output = false;
     Type type = Type::FLOAT;
     std::string name;

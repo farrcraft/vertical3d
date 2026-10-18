@@ -18,19 +18,18 @@ namespace v3d::render::offline::sl::runtime {
 /**
  * A value a shader run holds: a type, a storage class and a buffer.
  *
- * The buffer is **one element wide when uniform and one per shading point when varying**,
- * and `lane()` makes the two read the same way: a uniform value returns lane zero for every
- * point. A grid of a hundred points and a single traced hit therefore share one code path,
- * and a batch of one is not a special case.
+ * The buffer is **one element wide when uniform and one per shading point when varying**.
+ * `lane()` makes the two read the same way: a uniform value returns lane zero for every
+ * point. A grid of many points and a single traced hit therefore share one code path.
  *
- * A string is uniform always. There is no per-point coordinate space to name, and allowing
- * one would make every transform a runtime string lookup.
+ * A string is always uniform. A coordinate space named by a string is therefore one matrix
+ * for the whole batch.
  **/
 class Value final {
  public:
     /**
-     * Size the buffer for a type, a storage class and a batch. A varying value takes the
-     * batch; a uniform one takes a single element whatever the batch is.
+     * Size the buffer for a type, a storage class and a batch. A varying value holds one
+     * element per point of the batch. A uniform value holds one element whatever the batch.
      **/
     void reset(Type type, Storage storage, unsigned int batch);
 
@@ -70,9 +69,9 @@ class Value final {
     void text(const std::string & value);
 
     /**
-     * Take another value's contents, converting: a float replicates across the components,
-     * and the three point-like types keep theirs. The batch is this value's own, so a
-     * uniform source spreads over a varying destination.
+     * Copy another value's contents at one point, converting. A float fills every component,
+     * except that a matrix takes it on the diagonal. The three point-like types copy their
+     * components unchanged. A uniform source is read at lane zero for every point.
      **/
     void assign(const Value & other, unsigned int point);
 

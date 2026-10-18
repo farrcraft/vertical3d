@@ -63,12 +63,12 @@ boost::shared_ptr<v3d::image::Image> FrameBuffer::image(unsigned int channels) c
     unsigned char* data = image->data();
     for (unsigned int row = 0; row < height_; row++) {
         for (unsigned int column = 0; column < width_; column++) {
-            // an image pixel is `channels` bytes wide, so the plane coordinate has to be
-            // scaled by that to reach the pixel rather than landing on its neighbours
+            // an image pixel is `channels` bytes wide, so the pixel index is scaled by that
+            // to reach the pixel's first byte
             const unsigned int index = ((row * width_) + column) * channels;
             for (unsigned int i = 0; i < channels; i++) {
-                // a value that is not a number is black, since converting it to a byte is
-                // undefined; the rest is clamped and truncated
+                // a NaN is black, because converting it to a byte is undefined. Every other
+                // value is clamped and truncated
                 const float stored = planes_[i][row][column];
                 const float v = std::isnan(stored) ? 0.0F : std::clamp(stored, 0.0F, 1.0F);
                 data[index + i] = static_cast<unsigned char>(v * BYTE_SCALE);

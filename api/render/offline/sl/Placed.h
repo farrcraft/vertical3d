@@ -16,8 +16,8 @@ namespace v3d::render::offline::sl {
  *
  * RI defines a shader's own space as the transform that was in force when a scene named
  * it. Its `point "shader" (0, 0, 1)` and every position a scene binds are stated in that
- * space. The two travel together everywhere, a surface on a primitive and a light in a
- * scene, so they are one type rather than two fields repeated at each use.
+ * space. A surface on a primitive and a light in a scene each need both, so they are kept
+ * together.
  **/
 class Placed final {
  public:

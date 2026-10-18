@@ -42,8 +42,8 @@ class Sampler final {
      * An axis with one stratum is sampled at the pixel centre rather than jittered, so one
      * sample a pixel is exactly the pixel centre.
      *
-     * @param pass which set of samples; a pixel sampled more than once is given a different
-     *        set each time, and the same set for the same pass
+     * @param pass which set of samples. A pixel sampled more than once is given a different
+     *        set for each pass, and the same set for the same pass
      **/
     std::vector<Sample> pixel(unsigned int column, unsigned int row, unsigned int pass = 0) const;
 

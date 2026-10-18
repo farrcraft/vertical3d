@@ -14,7 +14,7 @@
 namespace v3d::render::offline {
 
 /**
- * The five pixel filters RI names.
+ * The pixel filters RI names.
  **/
 enum class Filter : std::uint8_t {
     Box,
@@ -35,8 +35,8 @@ bool filterNamed(const std::string & name, Filter * filter);
  * A pixel filter's weight at an offset from the pixel centre, with RI's formulas.
  *
  * @param offset from the centre, in pixels
- * @param width the filter's whole extent along each axis, in pixels; every filter is zero
- *        outside it, including the catmull-rom and sinc ones whose RI formulas ignore it
+ * @param width the filter's whole extent along each axis, in pixels. Every filter is zero
+ *        outside it, including catmull-rom and sinc, whose RI formulas ignore the width
  **/
 float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width);
 

@@ -14,8 +14,9 @@
 namespace v3d::render::offline::sl::syntax {
 
 /**
- * The three message passing constructs. Each takes a parenthesised argument list and a body
- * that runs once per light, or once per surface point being lit.
+ * illuminance, illuminate or solar. Each takes a parenthesised argument list and a body.
+ * An illuminance body runs once per light. An illuminate or solar body runs over the
+ * surface points the light reaches.
  **/
 class Lighting final : public Statement {
  public:

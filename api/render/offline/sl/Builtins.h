@@ -19,9 +19,9 @@ namespace v3d::render::offline::sl {
  * One way a standard library function may be called: what it takes and what it gives back.
  *
  * This is the **declared interface**, not a statement of how the function is implemented.
- * Some of these are arithmetic the machine does. `ambient`, `diffuse`, `specular` and `phong`
- * are ordinary shader functions written over `illuminance`, as the standard defines them.
- * Neither a caller nor the type checker can tell the difference.
+ * Most of these run in the machine. `diffuse`, `specular` and `phong` are ordinary shader
+ * functions written over `illuminance`, as the standard defines them. Neither a caller nor
+ * the type checker can tell the difference.
  **/
 class Signature final {
  public:
@@ -31,14 +31,14 @@ class Signature final {
      **/
     enum class Body : std::uint8_t {
         /**
-         * Written in the language - see sources() - and inlined by the compiler, so a call
+         * Written in the shading language, in sources(), and inlined by the compiler. A call
          * never reaches the machine.
          **/
         SOURCE,
         /**
          * Declared but not implemented: it returns its default, and the machine reports the
-         * call once. The report exists because a scene that rendered nothing and a scene that
-         * was not understood look identical from outside.
+         * call once. Without the report, a scene the renderer did not understand would look
+         * the same as a scene that rendered nothing.
          **/
         STUB,
         // each component of the result is this function of the same component of each
@@ -46,17 +46,17 @@ class Signature final {
         // the angle conversions are declared for floats only
         ABS, SIGN, FLOOR, CEIL, ROUND, SQRT, EXP, LOG, RADIANS, DEGREES,
         SIN, COS, TAN, ASIN, ACOS, ATAN, MOD, POW, MIN, MAX, CLAMP, MIX, STEP, SMOOTHSTEP,
-        // a triple read as a direction rather than as three numbers
+        // a triple read as a direction, not as three numbers
         LENGTH, DISTANCE, NORMALIZE, FACEFORWARD, REFLECT, REFRACT, FRESNEL,
         // one component of one value, named or indexed
         XCOMP, YCOMP, ZCOMP, SETXCOMP, SETYCOMP, SETZCOMP, COMP, SETCOMP,
-        // a named coordinate space, which the renderer supplies rather than the machine
+        // a named coordinate space, which the renderer supplies
         PTRANSFORM, VTRANSFORM, NTRANSFORM, CTRANSFORM, MTRANSFORM, DEPTH,
         // a matrix
         DETERMINANT, TRANSLATE, ROTATE, SCALE,
         // a pattern, out of an image or out of nothing
         TEXTURE, NOISE,
-        // computed by the renderer rather than the machine
+        // computed from the renderer's lights, shadows and rays
         AMBIENT, TRANSMISSION, TRACE,
         PRINTF
     };
@@ -129,17 +129,17 @@ const std::vector<Signature> & builtins();
 std::vector<Signature> builtin(const std::string & name);
 
 /**
- * The library's own functions, written in the language rather than in C++.
+ * The library's own functions, written in the shading language instead of C++.
  *
- * `diffuse`, `specular` and `phong` are ordinary functions over `illuminance` rather than
- * built-ins with privileged access to the lights, as the standard defines them. A test can
- * write the same three lines and compare. A shader that calls one has it added to its own
- * function list and inlined from there, so nothing after the compiler treats it differently.
+ * `diffuse`, `specular` and `phong` are ordinary functions over `illuminance`, as the
+ * standard defines them. They have no special access to the lights, so a test can write the
+ * same few lines and compare. A shader that calls one has it added to its own function list
+ * and inlined from there. Nothing after the compiler treats it differently.
  *
- * A shader's own function of the same name wins, which is how a scene overrides one.
+ * A shader's own function of the same name takes precedence, so a scene can override one.
  *
- * Read fresh every call rather than held: the compiler annotates a tree in place, so two
- * shaders that both call `diffuse` need two trees rather than one they take turns writing.
+ * Parsed again on every call. The compiler annotates a syntax tree in place, so each shader
+ * that calls `diffuse` needs its own copy of the tree.
  **/
 std::vector<syntax::Function> sources();
 

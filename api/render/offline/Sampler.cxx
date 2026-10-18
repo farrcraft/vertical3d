@@ -60,8 +60,8 @@ std::vector<Sampler::Sample> Sampler::pixel(unsigned int column, unsigned int ro
     const unsigned int ny = sampling_.samples.y == 0 ? 1 : sampling_.samples.y;
     const unsigned int count = nx * ny;
 
-    // splitmix64 mixes its seed, so the position alone is a good one; a pass is folded in by
-    // the golden ratio constant so that each pass is a sequence of its own
+    // splitmix64 mixes its seed, so the position alone makes a good seed. A pass is folded in
+    // by the golden ratio constant, so that each pass gets a sequence of its own
     const uint64_t seed = ((static_cast<uint64_t>(row) << 32) | column) ^
         (static_cast<uint64_t>(pass) * 0x9E3779B97F4A7C15ULL);
     v3d::type::Random random(seed);

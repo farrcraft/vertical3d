@@ -117,8 +117,8 @@ void MovingTransform::settle() {
         return;
     }
     // an end that flattens the primitive has no rotation to take apart, whatever order its
-    // scale and its turns were applied in, so the ends are blended as matrices instead. That
-    // grows the primitive out of its flat end in a straight line
+    // scale and rotations were applied in, so the ends are blended as matrices instead. The
+    // primitive then grows out of its flat end in a straight line
     linear_ = !invertible(open_) || !invertible(close_);
     if (linear_) {
         return;
@@ -188,7 +188,7 @@ void MovingTransform::concat(const glm::mat4x4 & matrix) {
         settle();
         return;
     }
-    // the open end builds on the base's open and every later one on its close
+    // the first request builds on the base's open end, and every later one on its close end
     ends_.push_back((ends_.empty() ? baseOpen_ : baseClose_) * matrix);
 }
 

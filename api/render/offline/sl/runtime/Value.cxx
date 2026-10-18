@@ -40,8 +40,8 @@ unsigned int Value::components() const {
 }
 
 unsigned int Value::lane(unsigned int point) const {
-    // a uniform value returns lane zero for every point, so one instruction serves both
-    // storage classes without checking which it has
+    // a uniform value returns lane zero for every point, so an instruction does not check
+    // which storage class it has
     return storage_ == Storage::VARYING && point < width_ ? point : 0;
 }
 
@@ -70,7 +70,7 @@ void Value::number(unsigned int point, float value) {
 }
 
 glm::vec3 Value::triple(unsigned int point) const {
-    // a float read as a triple replicates, as RI promotes it, rather than a zero fill
+    // a float read as a triple fills all three components, as RI promotes it
     if (components() == 1) {
         return glm::vec3(component(point, 0));
     }
@@ -126,7 +126,8 @@ void Value::assign(const Value & other, unsigned int point) {
         return;
     }
     if (other.components() == 1) {
-        // a float replicates into every component, as in "color c = 1"
+        // a float fills every component, as in "color c = 1". A matrix takes it on the
+        // diagonal, as in "matrix m = 1"
         const float single = other.number(point);
         for (unsigned int i = 0; i < wide; i++) {
             component(point, i, i < 3 || wide != 16 ? single : 0.0F);

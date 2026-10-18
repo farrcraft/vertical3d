@@ -13,8 +13,8 @@
 namespace v3d::render::offline::sl::syntax {
 
 /**
- * An assignment and its compound forms. The target is an expression rather than a name so
- * that `Ci[0] = 1` parses; the compiler checks whether it can be assigned to.
+ * An assignment and its compound forms. The target is an expression, not a name, so that
+ * `Ci[0] = 1` parses. The compiler checks whether the target can be assigned to.
  **/
 class Assignment final : public Statement {
  public:

@@ -12,8 +12,8 @@
 namespace v3d::render::offline::sl::syntax {
 
 /**
- * Everything infix, including two operators that differ from C: '.' is a dot product
- * rather than a member access, and '^' is a cross product rather than an exponent.
+ * Every infix operator, including two that differ from C: '.' is a dot product, not a
+ * member access, and '^' is a cross product, not an exclusive or.
  **/
 class Binary final : public Expression {
  public:

@@ -88,8 +88,8 @@ float noise(const glm::vec3 & point) {
     const float fx = std::floor(point.x);
     const float fy = std::floor(point.y);
     const float fz = std::floor(point.z);
-    // the lattice repeats every 256 cells, so a cell is reduced by that period before it
-    // becomes an int, which a coordinate past the range of an int could not
+    // the lattice repeats every 256 cells, so a cell is reduced by that period before it is
+    // converted to an int. A coordinate beyond the range of an int could not be converted
     const int cx = static_cast<int>(std::fmod(fx, 256.0F)) & 255;  // checked: fx is finite, so the remainder lies in (-256, 256)
     const int cy = static_cast<int>(std::fmod(fy, 256.0F)) & 255;  // checked: fy is finite, so the remainder lies in (-256, 256)
     const int cz = static_cast<int>(std::fmod(fz, 256.0F)) & 255;  // checked: fz is finite, so the remainder lies in (-256, 256)
@@ -114,8 +114,8 @@ float noise(const glm::vec3 & point) {
         lerp(v, lerp(u, gradient(at(aa + 1), {x, y, z - 1.0F}), gradient(at(ba + 1), {x - 1.0F, y, z - 1.0F})),
             lerp(u, gradient(at(ab + 1), {x, y - 1.0F, z - 1.0F}),
                 gradient(at(bb + 1), {x - 1.0F, y - 1.0F, z - 1.0F}))));
-    // the improved noise's range is about [-1, 1]; its extremes reach a little past it, and
-    // SL's noise never leaves [0, 1]
+    // the improved noise's range is about [-1, 1], and its extremes reach a little past it.
+    // SL's noise never leaves [0, 1], so the result is clamped
     return std::clamp(0.5F + (0.5F * value), 0.0F, 1.0F);
 }
 

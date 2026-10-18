@@ -28,7 +28,7 @@ class Statement {
         /** break, continue or return. **/
         JUMP,
         EXPRESSION,
-        /** illuminance, illuminate or solar - a construct with a body rather than a call. **/
+        /** illuminance, illuminate or solar: a construct with a body, not a call. **/
         LIGHTING
     };
 

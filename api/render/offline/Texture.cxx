@@ -64,11 +64,11 @@ glm::vec3 Texture::sample(float s, float t) const {
     if (texels_.empty() || !std::isfinite(s) || !std::isfinite(t)) {
         return glm::vec3(0.0F);
     }
-    // the texture repeats, so a coordinate is taken into one repeat first: a large one would
-    // otherwise overflow the integer texel index
+    // the texture repeats, so a coordinate is first reduced into [0, 1). A large coordinate
+    // would otherwise overflow the integer texel index
     s -= std::floor(s);
     t -= std::floor(t);
-    // texel centres are at half a texel in, so a position is measured from the first one
+    // texel centres are half a texel in, so a position is measured from the first centre
     const float x = (s * static_cast<float>(width_)) - 0.5F;
     const float y = (t * static_cast<float>(height_)) - 0.5F;
     const float left = std::floor(x);

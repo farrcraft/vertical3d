@@ -17,9 +17,9 @@ namespace v3d::render::offline::sl::syntax {
 /**
  * A node of the syntax tree.
  *
- * The nodes are data the compiler traverses rather than objects with behaviour, so their
- * members are public and there are no accessors, as in `ParameterList::Parameter`. A
- * consumer reads `kind` and casts to the class it names.
+ * The nodes are plain data for the compiler to traverse, so their members are public and
+ * there are no accessors, as in `ParameterList::Parameter`. A consumer reads `kind` and
+ * casts to the class it names.
  **/
 class Expression {
  public:
@@ -48,10 +48,8 @@ class Expression {
     /**
      * What the expression turns out to be, filled in by Compiler.
      *
-     * The tree carries its own analysis rather than a second structure keyed by node. The
-     * two are written and read by passes in the same library, and a parallel map would be
-     * one more thing to keep in step. Until the compiler has run, `storage` is UNSPECIFIED
-     * and `type` means nothing.
+     * The compiler writes its analysis onto the tree itself, not into a separate map keyed
+     * by node. Until the compiler has run, `storage` is UNSPECIFIED and `type` means nothing.
      **/
     Type type = Type::FLOAT;
     Storage storage = Storage::UNSPECIFIED;

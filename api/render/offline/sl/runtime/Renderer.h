@@ -17,12 +17,12 @@
 namespace v3d::render::offline::sl::runtime {
 
 /**
- * What the machine needs from a renderer, and does not hold itself.
+ * What the machine reads from a renderer.
  *
  * A shader run has no access to buckets, grids, rays or scenes. What it does need arrives
  * through this interface: the matrix for a named coordinate space, the lights shining on the
- * batch, whether light reaches a point, and a traced ray. moya's grids and a traced hit each
- * implement it.
+ * batch, whether light reaches a point, a traced ray, and a texture. moya's grid shader and
+ * the ray tracer's hit shader each implement it.
  *
  * **Every method has a default for a renderer that cannot do it**, so a renderer, or a
  * test's stand-in for one, implements only what it supports. Only the coordinate space is
@@ -54,8 +54,8 @@ class Renderer {
      * transform("space", P) applies this matrix. A cast such as `point "space" (x, y, z)` states
      * a value in the named space, so it applies the inverse.
      *
-     * This is a callback rather than a table the library holds, because moya's grids are shaded
-     * in camera space and a traced hit in world space.
+     * The renderer supplies these matrices because current space differs between renderers.
+     * moya's grids are shaded in camera space, and a traced hit in world space.
      *
      * @param name the space: "current", "object", "shader", "world", "camera", "raster", ...
      * @param matrix where to put it, if the renderer recognises the space
@@ -69,12 +69,10 @@ class Renderer {
     virtual unsigned int lights();
 
     /**
-     * Runs one light over the batch, for the surface shader's side of the message passing
-     * between surface and light shaders.
+     * Runs one light over the batch, for a surface shader's illuminance loop.
      *
-     * Running a light means running its own program over the same batch. That is the
-     * renderer's job rather than the machine's, because the renderer holds the shader
-     * instances a scene named.
+     * Running a light means running the light shader's own program over the same batch. The
+     * renderer does this, because the renderer holds the shader instances a scene named.
      *
      * @param index which of lights()
      * @param surface where each point being lit is, which is the light shader's Ps
@@ -92,7 +90,7 @@ class Renderer {
      * How much of the light leaving one point arrives at the other, per component.
      *
      * This is how a shadow is cast. moya computes it with the shared ray tracer, for a grid
-     * and for a traced hit alike. A ray tracing extension rather than part of RI 3.03.
+     * and for a traced hit alike. It is a ray tracing extension, not part of RI 3.03.
      *
      * @return whether the renderer computed it; when it did not, all the light gets through
      **/
@@ -108,7 +106,7 @@ class Renderer {
     virtual bool trace(const Value & origin, const Value & direction, Value* colour);
 
     /**
-     * The texture a shader names, which the renderer holds for the frame so that each is
+     * The texture a shader names. The renderer keeps each texture for the frame, so each is
      * read once however many batches use it.
      *
      * @return null when the name cannot be read, or when the renderer holds no textures;

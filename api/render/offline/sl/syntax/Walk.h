@@ -24,14 +24,14 @@ typedef std::function<void(const StatementPtr &)> StatementVisitor;
  * This is the only place that lists which members of each kind of node are its children. A
  * traversal that treats most nodes alike, such as gathering the names a tree calls, handles
  * the kinds it needs and calls this for the rest. A new kind of node then needs one case
- * here rather than one in every traversal.
+ * here, not one in every traversal.
  **/
 void forEachChild(const Expression & node, const ExpressionVisitor & visit);
 
 /**
  * Hand each expression and each statement a statement holds to the visitor for its kind,
- * in source order. A missing child - a `for` with no step, an `if` with no `else` - is
- * skipped rather than visited as null.
+ * in source order. A missing child, such as a `for` with no step or an `if` with no
+ * `else`, is skipped and not visited as null.
  **/
 void forEachChild(const Statement & node, const ExpressionVisitor & expressions, const StatementVisitor & statements);
 

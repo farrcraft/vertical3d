@@ -65,8 +65,8 @@ void Inference::spread(int symbol, const syntax::ExpressionPtr & from) {
         return;
     }
     if (entry.declared) {
-        // an explicit uniform that a varying value reaches is an error; silently keeping it
-        // uniform would give a whole grid one point's value
+        // an explicit uniform that a varying value reaches is an error. Keeping it uniform
+        // without one would give a whole grid one point's value
         if (violation_.empty()) {
             const unsigned int line = from ? from->line : shader_->line;
             const unsigned int column = from ? from->column : shader_->column;
@@ -81,8 +81,8 @@ void Inference::spread(int symbol, const syntax::ExpressionPtr & from) {
 
 std::string Inference::run() {
     // a loop can carry a varying value back to a name that was read before it was written,
-    // so one pass is not enough. A round only ever changes a symbol from uniform to varying, so
-    // there are at most as many rounds as symbols and the loop runs until nothing changes
+    // so one pass is not enough. Rounds repeat until nothing changes. A round only changes
+    // things from uniform to varying, so the rounds end
     results_.assign(shader_->functions.size(), Storage::UNIFORM);
     for (;;) {
         changed_ = false;
@@ -164,9 +164,8 @@ void Inference::inferStatement(const syntax::StatementPtr & statement, bool vary
                 inferExpression(argument);
             }
             // the body runs once per light with L and Cl set per point, so everything it
-            // writes is varying whatever reached it. An illuminance body is a loop over the
-            // lights, so a break or a continue inside it leaves that loop rather than one
-            // around it
+            // writes is varying. An illuminance body is a loop over the lights, so a break or
+            // a continue inside it leaves the illuminance loop and not an outer one
             const bool loop = lighting.construct == syntax::Lighting::Construct::ILLUMINANCE;
             if (loop) {
                 enclosing_.push_back(statement.get());
@@ -271,9 +270,8 @@ Storage Inference::inferExpression(const syntax::ExpressionPtr & expression) {
     switch (expression->kind) {
         case syntax::Expression::Kind::NUMBER:
         case syntax::Expression::Kind::STRING:
-            // a string names a coordinate space, a texture or a message, and there is no
-            // per-point one to name: allowing one would make every transform a runtime
-            // string lookup
+            // a string names a coordinate space, a texture or a message, and is always
+            // uniform
             storage = Storage::UNIFORM;
             break;
         case syntax::Expression::Kind::VARIABLE:
@@ -285,8 +283,8 @@ Storage Inference::inferExpression(const syntax::ExpressionPtr & expression) {
         case syntax::Expression::Kind::TERNARY:
         case syntax::Expression::Kind::CAST:
         case syntax::Expression::Kind::TUPLE:
-            // as varying as any operand - a cast's space is a name rather than an operand,
-            // and a name is uniform
+            // varying when any operand is. A cast's space name is not an operand, and is
+            // uniform
             syntax::forEachChild(*expression, [this, &storage](const syntax::ExpressionPtr & operand) {
                 storage = join(storage, inferExpression(operand));
             });

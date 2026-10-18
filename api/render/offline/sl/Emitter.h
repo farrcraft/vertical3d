@@ -24,8 +24,8 @@ namespace v3d::render::offline::sl {
  * The annotated tree, turned into a flat program.
  *
  * Runs after Compiler, which puts the type and the storage class on every expression and
- * the symbol index on every variable. The emitter reads those rather than working them out
- * again.
+ * the symbol index on every variable. The emitter reads those annotations and does not
+ * compute them again.
  *
  * **A uniform condition becomes a jump and a varying one becomes a mask.** A condition with
  * the same value at every point in the batch costs a branch. A condition whose value differs
@@ -36,7 +36,7 @@ class Emitter final {
     Emitter(const syntax::ShaderPtr & shader, const std::vector<Symbol> & symbols);
 
     /**
-     * False when the shader uses something that has no instructions; error() names it.
+     * False when the shader uses something that has no instructions, and error() names it.
      **/
     bool emit(runtime::Program* program);
 
@@ -72,9 +72,8 @@ class Emitter final {
         const syntax::StatementPtr & step);
     void emitJump(const syntax::StatementPtr & statement);
     /**
-     * The three message passing constructs. Each is a loop or a mask over the registers that
-     * hold the shader's own globals, so they are instructions rather than calls into the
-     * library.
+     * illuminance, illuminate and solar. Each is a loop or a mask over the registers that
+     * hold the shader's globals, so each compiles to its own instructions and not to a CALL.
      **/
     void emitLighting(const syntax::StatementPtr & statement);
     /** The register that holds a shader global, which the lighting constructs read and write. **/
@@ -84,9 +83,8 @@ class Emitter final {
     int emitBinary(const syntax::ExpressionPtr & expression);
     int emitCall(const syntax::ExpressionPtr & expression);
     /**
-     * A shader's own function, pasted in where it was called. A run has no call stack, so a
-     * call has nowhere to return to. Pasting terminates because the compiler rejects
-     * recursion.
+     * A shader's own function, inlined where it is called, because the machine has no call
+     * stack. Inlining ends because the compiler rejects recursion.
      **/
     int emitInline(const syntax::ExpressionPtr & expression);
     int emitCast(const syntax::ExpressionPtr & expression);

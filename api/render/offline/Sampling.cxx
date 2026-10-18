@@ -64,8 +64,8 @@ float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width) {
         return (1.0F - (std::fabs(offset.x) / half.x)) * (1.0F - (std::fabs(offset.y) / half.y));
     case Filter::CatmullRom: {
         // radial and not scaled by the width. The kernel reaches zero two pixels out, so a
-        // width under four cuts it off at the box tested above, which is RI's rule for every
-        // filter
+        // width under four cuts it off at the width test above. RI applies that cut-off to
+        // every filter
         const float radiusSquared = (offset.x * offset.x) + (offset.y * offset.y);
         const float radius = std::sqrt(radiusSquared);
         if (radius >= 2.0F) {

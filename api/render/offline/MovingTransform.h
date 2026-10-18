@@ -20,7 +20,7 @@ namespace v3d::render::offline {
  *
  * Only a transform moves. Inside a block, each transform request applies to its own copy of
  * the transformation as it was when the block opened. The first request sets the open end and
- * the last sets the close; a block naming more than two times keeps its first and last.
+ * the last sets the close. A block naming more than two times keeps its first and last.
  * Outside a block, a request applies to both ends, so what follows a block moves with it.
  *
  * The motion between the ends is translation and scale interpolated linearly and rotation by a
@@ -40,8 +40,8 @@ class MovingTransform final {
     const glm::mat4x4 & close() const;
     /**
      * The end a moving primitive is stored at, and moved from to any other time by
-     * at(time) * inverse(reference()). The open end, unless it has no inverse, as when it
-     * scales an axis to nothing; then the close end.
+     * at(time) * inverse(reference()). This is the open end, unless the open end has no
+     * inverse, as when it scales an axis to nothing. Then it is the close end.
      **/
     const glm::mat4x4 & reference() const;
     /**
@@ -60,7 +60,7 @@ class MovingTransform final {
     glm::mat4x4 at(float time) const;
 
     /**
-     * Both ends followed by a matrix - a request outside a block, or a camera applied after.
+     * Both ends followed by a matrix: a request outside a block, or a camera applied after.
      **/
     MovingTransform after(const glm::mat4x4 & matrix) const;
     /** A matrix followed by both ends: the order in which the camera transformation applies. **/

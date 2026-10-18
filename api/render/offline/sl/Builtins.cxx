@@ -85,8 +85,8 @@ Signature shading(const char* name, Body body, Type result, const std::vector<Ar
 std::vector<Signature> build() {
     std::vector<Signature> table;
 
-    // maths, which is arithmetic over the value model. These take a float or a triple, and
-    // a triple gives each of its components the same function
+    // maths. These take a float or a triple, and apply the same function to each component
+    // of a triple
     const struct { const char* name; Body body; } numeric[] = {
         { "abs", Body::ABS }, { "sign", Body::SIGN }, { "floor", Body::FLOOR },
         { "ceil", Body::CEIL }, { "round", Body::ROUND }, { "sqrt", Body::SQRT },
@@ -174,7 +174,8 @@ std::vector<Signature> build() {
         { Argument::MATRIX, Argument::FLOAT, Argument::POINTLIKE }));
     table.push_back(declare("scale", Body::SCALE, Type::MATRIX, { Argument::MATRIX, Argument::POINTLIKE }));
 
-    // the light model, written over illuminance rather than given privileged access
+    // the light model. ambient() runs in the machine, and the others are written in the
+    // shading language over illuminance
     table.push_back(shading("ambient", Body::AMBIENT, Type::COLOR, {}));
     table.push_back(shading("diffuse", Body::SOURCE, Type::COLOR, { Argument::POINTLIKE }));
     table.push_back(shading("specular", Body::SOURCE, Type::COLOR,
@@ -184,7 +185,7 @@ std::vector<Signature> build() {
     table.push_back(declare("specularbrdf", Body::SOURCE, Type::COLOR,
         { Argument::POINTLIKE, Argument::POINTLIKE, Argument::POINTLIKE, Argument::FLOAT }));
 
-    // computed by the renderer rather than the machine: a shadow, and a traced ray
+    // computed by the renderer: a shadow, and a traced ray
     table.push_back(shading("transmission", Body::TRANSMISSION, Type::COLOR, { Argument::POINT, Argument::POINT }));
     table.push_back(shading("trace", Body::TRACE, Type::COLOR, { Argument::POINT, Argument::POINTLIKE }));
 
@@ -214,9 +215,9 @@ std::vector<Signature> build() {
 }
 
 /*
-    The light model, in the language. L points from the point being shaded toward the
-    light - the same direction in a light shader's illuminate and in a surface shader's
-    illuminance body - so a cosine falloff is L . N and no term here negates anything.
+    The light model, in the shading language. L points from the point being shaded toward
+    the light, both in a light shader's illuminate and in a surface shader's illuminance
+    body. A cosine falloff is therefore L . N, and no term here negates L.
 
     A cone of PI/2 covers the front of the surface, so a light behind it is left out of
     the sum.
@@ -256,8 +257,8 @@ std::vector<syntax::Function> read() {
     std::istringstream stream(SOURCE);
     Parser parser(stream);
     const std::vector<syntax::ShaderPtr> shaders = parser.parse();
-    // the wrapper is a shader only because a function is parsed inside one; nothing but its
-    // function list is kept
+    // the parser reads functions only inside a shader, so the source wraps them in one. Only
+    // its function list is kept
     return shaders.size() == 1 ? shaders[0]->functions : std::vector<syntax::Function>();
 }
 

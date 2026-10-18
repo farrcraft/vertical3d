@@ -25,8 +25,8 @@ class Call final : public Expression {
     int function = -1;
     /**
      * Which signature of the standard library it matched, as an index into `builtins()`,
-     * or -1. An index rather than the signature itself, because Builtins.h declares the
-     * signatures in terms of these nodes, and a node naming one would make the two circular.
+     * or -1. This is an index, not the signature, because Builtins.h includes the syntax
+     * headers, and a node holding a Signature would make the includes circular.
      **/
     int signature = -1;
 };

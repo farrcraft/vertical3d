@@ -37,9 +37,10 @@ class Point final {
 };
 
 /**
- * The register holding each global a renderer writes or reads, in one program, looked up once
- * when its machine is prepared rather than by name at every point. A global the program does
- * not have is -1, and writing or reading it does nothing.
+ * The register holding each global a renderer writes or reads, in one program. They are
+ * looked up once, when this is constructed, and not by name at every point. A global the
+ * program does not have is -1. Writing it does nothing, and reading it returns the default
+ * the caller gave.
  **/
 class Globals final {
  public:

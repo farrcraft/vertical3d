@@ -29,8 +29,8 @@ namespace {
 /**
  * The SL type a RIB declaration says the value is.
  *
- * RIB's integer is SL's float, because SL has no integer type; RIB's hpoint has no SL
- * reading at all and a parameter declared as one will not coerce.
+ * RIB's integer is SL's float, because SL has no integer type. RIB's hpoint has no SL type,
+ * so a parameter declared as one will not coerce.
  **/
 Type declared(rib::Declaration::Type type) {
     switch (type) {
@@ -58,8 +58,8 @@ Type declared(rib::Declaration::Type type) {
 /**
  * A position or a direction out of the space it was stated in and into the machine's.
  *
- * The point-like types differ in which of the three transforms they take. Using the wrong
- * one is invisible under any uniform scale.
+ * Each point-like type takes its own transform. Giving a normal a vector's transform is
+ * invisible under a uniform scale, so the mistake is easy to miss.
  **/
 glm::vec3 moved(Type type, const glm::mat4x4 & placement, const glm::vec3 & given) {
     switch (type) {
@@ -74,8 +74,8 @@ glm::vec3 moved(Type type, const glm::mat4x4 & placement, const glm::vec3 & give
         case Type::COLOR:
         case Type::MATRIX:
         case Type::STRING:
-            // a colour has no space to be in, and a matrix is written component by
-            // component below rather than through this
+            // a colour has no coordinate space, and a matrix is written component by
+            // component in write()
             return given;
     }
     return given;
@@ -86,8 +86,8 @@ glm::vec3 moved(Type type, const glm::mat4x4 & placement, const glm::vec3 & give
 Instance::Instance(const ProgramPtr & program, const boost::shared_ptr<v3d::log::Logger> & logger) :
     program_(program),
     logger_(logger) {
-    // a light shader with neither illuminate nor solar lights every point of every batch;
-    // ambient() sums such lights and an illuminance loop skips them
+    // a light shader with neither illuminate nor solar lights every point of every batch.
+    // ambient() sums such lights, and an illuminance loop skips them
     ambient_ = program_->type == ShaderType::LIGHT &&
         std::ranges::none_of(program_->instructions, [](const runtime::Instruction & instruction) {
             return instruction.opcode == runtime::Opcode::ILLUMINATE ||
@@ -157,9 +157,10 @@ void Instance::bind(const rib::ParameterList & parameters) {
         const std::vector<float> & values = parameters.floats(given);
         held->values.assign(components(held->type), 0.0F);
         for (unsigned int component = 0; component < held->values.size(); component++) {
-            // a float bound onto a colour replicates, as RI promotes it; "Color [1]" and a
-            // one value "specularcolor" both rely on this. A float bound onto a matrix is the
-            // diagonal matrix, as an assignment promotes it, so its other components stay 0
+            // a float bound onto a colour fills every component, as RI promotes it. "Color [1]"
+            // and a one-value "specularcolor" both rely on this. A float bound onto a matrix
+            // is the diagonal matrix, as an assignment promotes it, so its other components
+            // stay 0
             if (values.size() == 1 && held->type == Type::MATRIX && component % MATRIX_DIAGONAL_STRIDE != 0) {
                 continue;
             }
@@ -175,8 +176,8 @@ bool Instance::write(runtime::Machine* machine, const glm::mat4x4 & placement) c
     // every run a renderer makes starts here, so the machine is given the log here
     machine->logger(logger_);
 
-    // the declared defaults, run rather than remembered: the renderer resolves a coordinate
-    // space in one, and the machine has a renderer attached now
+    // run the declared defaults now, because a default may name a coordinate space and the
+    // machine has a renderer attached to resolve it
     if (!machine->initialise()) {
         // reported once per machine, because the same defaults fail the same way on every run
         machine->report("the defaults of shader " + name() + " did not run: " + machine->error());
@@ -192,14 +193,14 @@ bool Instance::write(runtime::Machine* machine, const glm::mat4x4 & placement) c
             value.text(held.text);
             continue;
         }
-        // a position or a direction a scene binds is stated in the space that was in
-        // force when it instanced the shader, and the machine works in the current one
+        // a position or a direction a scene binds is stated in the space in force when it
+        // instanced the shader, and the machine works in current space
         const bool triple = held.values.size() == 3;
         const glm::vec3 place = triple ?
             moved(held.type, placement, glm::vec3(held.values[0], held.values[1], held.values[2])) :
             glm::vec3(0.0F);
-        // a uniform parameter is one element and a varying one is the batch, and a scene
-        // binds one value either way: every point of the batch gets it
+        // a uniform parameter is one element and a varying one is the batch. A scene binds
+        // one value either way, and every point of the batch gets it
         for (unsigned int point = 0; point < value.width(); point++) {
             for (unsigned int component = 0; component < held.values.size(); component++) {
                 value.component(point, component,

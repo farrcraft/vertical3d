@@ -6,10 +6,9 @@
 /*
     The bodies behind the signatures in sl/Builtins.h: what a CALL instruction does.
 
-    This is a second translation unit for Machine rather than a class of its own. Every body
-    here reads the live mask, writes the register file and says what it could not do, and all
-    three of those are the machine's own state. The file holds most of the built-in
-    functions, and none of the control flow or the masking they run under.
+    These are Machine member functions, in a second translation unit. Every body here reads
+    the live mask, writes the register file and reports what it could not do, and all three
+    are Machine's state. Control flow and masking are in Machine.cxx.
 */
 
 #include "Instruction.h"
@@ -64,8 +63,7 @@ float clamp(float value, const Range & range) {
 }
 
 /**
- * The Hermite between two edges rather than the linear one, with the edges first and the
- * value last.
+ * Hermite interpolation between two edges, with the edges first and the value last.
  **/
 float smoothstep(float low, float high, float value) {
     if (high == low) {
@@ -79,8 +77,7 @@ float smoothstep(float low, float high, float value) {
 }
 
 /**
- * The maths of one argument, which is most of the table and is the same function of every
- * component of what it was given.
+ * The functions of one argument. Each applies alike to every component of its argument.
  **/
 float once(Body body, float x) {
     switch (body) {
@@ -132,8 +129,8 @@ float number(Body body, const float* given, std::size_t count) {
         case Body::ATAN:
             return count == 2 ? std::atan2(given[0], given[1]) : once(body, given[0]);
         case Body::MOD:
-            // RI's mod takes the sign of the divisor rather than of the dividend, so that
-            // mod(-1, 3) is 2 and a value decreasing past zero stays inside the period
+            // RI's mod takes the sign of the divisor, not of the dividend. mod(-1, 3) is 2, so
+            // a value decreasing past zero stays inside the period
             return given[1] == 0.0F ? 0.0F : given[0] - (given[1] * std::floor(given[0] / given[1]));
         case Body::POW:
             return std::pow(given[0], given[1]);
@@ -178,8 +175,8 @@ glm::vec3 refract(const glm::vec3 & incident, const glm::vec3 & normal, float et
 }
 
 /**
- * Everything one call needs at one shading point. A class rather than eight arguments,
- * since the only thing that changes between two points of a batch is which point it is.
+ * Everything one call needs, gathered once for the batch. Only the point index changes from
+ * one shading point to the next.
  **/
 class Site final {
  public:
@@ -241,8 +238,8 @@ void fresnel(const Site & site, unsigned int point) {
 }
 
 /**
- * Where three components of noise are read from, so that a colour of noise is three patterns
- * rather than one grey one. The offsets are far apart and off the lattice.
+ * The offsets each of three noise components is read at, so that a colour of noise is three
+ * patterns and not one grey one. The offsets are far apart and off the lattice.
  **/
 const float STREAMS[3][3] = {
     { 0.0F, 0.0F, 0.0F }, { 31.416F, 47.853F, 12.793F }, { -73.218F, 9.631F, 58.437F }
@@ -337,8 +334,8 @@ void component(const Site & site, unsigned int point) {
 }
 
 /**
- * The group that works through a named space. Named for the space rather than for the
- * transform, since Machine::transform is the instruction the cast form compiles to.
+ * The built-ins that work through a named space. A cast to a space compiles to the TRANSFORM
+ * instruction instead, which Machine::transform() runs.
  **/
 void spaces(const Site & site, unsigned int point) {
     // the value is the last argument in every form: a space name or two comes first
@@ -390,9 +387,9 @@ void matrices(const Site & site, unsigned int point) {
 }
 
 /**
- * The group where every component of the result is the same function of that component of
- * each argument. A one component argument is read for all of them, as RI promotes it,
- * rather than a zero fill.
+ * The built-ins where each component of the result is the same function of that component of
+ * each argument. A one-component argument is read for every component, as RI promotes a
+ * float. The missing components are not read as zero.
  **/
 void componentwise(const Site & site, unsigned int point) {
     float given[3] = { 0.0F, 0.0F, 0.0F };
@@ -454,7 +451,7 @@ void apply(const Site & site, unsigned int point) {
 }
 
 /**
- * How a printf conversion prints its value. SL's are the types rather than C's widths: %c
+ * How a printf conversion prints its value. SL's conversions name types, not C's formats: %c
  * is a colour, %p a point, %v a vector, %n a normal and %m a matrix.
  **/
 std::string printed(char conversion, const Value & value, unsigned int point) {
@@ -492,8 +489,8 @@ std::string format(const std::vector<const Value*> & given, unsigned int point) 
         } else if (next < given.size()) {
             line += printed(conversion, *given[next++], point);
         } else {
-            // a conversion with nothing left to print is reported rather than reading past
-            // the arguments, which would crash the render
+            // a conversion with no argument left prints a marker, and nothing reads past the
+            // end of the arguments
             line += "(missing)";
         }
     }
@@ -509,9 +506,9 @@ bool transforming(Body body) {
 };  // namespace
 
 void Machine::colourSpaces(const std::vector<const Value*> & given) {
-    // there is one colour space here and it is the one a framebuffer holds; a scene naming
-    // another gets its colours back unchanged. Every argument before the colour names a
-    // space: the one to convert into, or the one to convert from and then into
+    // the only colour space is rgb, the one a framebuffer holds. A scene naming another gets
+    // its colours back unchanged. Every argument before the colour names a space: the one to
+    // convert into, or the one to convert from and then the one to convert into
     for (std::size_t which = 0; which + 1 < given.size(); which++) {
         if (given[which]->text() != "rgb") {
             report("the colour space \"" + given[which]->text() + "\" is not one this renderer knows");
@@ -553,8 +550,8 @@ void Machine::builtin(const Instruction & instruction) {
         shadowed(body == Body::TRACE, *given[0], *given[1], &answer);
         return;
     }
-    // a function that changes an argument in place writes that register rather than its result.
-    // That register is both where the value goes and the one the mask is checked against
+    // a function that changes an argument in place writes that register, not its result.
+    // The mask is checked against that register
     const int updates = table[index].updates;
     site.written = updates >= 0 && static_cast<std::size_t>(updates) < instruction.arguments.size() ?
         &file_[static_cast<std::size_t>(instruction.arguments[static_cast<std::size_t>(updates)])] : site.target;
@@ -566,8 +563,8 @@ void Machine::builtin(const Instruction & instruction) {
         site.outputs = &outputs;
     }
 
-    // a named space is one matrix for the whole batch, since a string is always uniform, so
-    // this is not a lookup per point
+    // a space name is a string, and a string is always uniform, so the matrix is looked up
+    // once for the whole batch
     if (transforming(body)) {
         site.matrix = space(given[0]->text());
         if (given.size() == 3) {
@@ -663,9 +660,8 @@ void Machine::shadowed(bool ray, const Value & from, const Value & to, Value* ta
         return;
     }
     /*
-        The result when the renderer cannot do it. All the light gets through, so a scene
-        renders unshadowed rather than not at all, and a ray returns black rather than
-        something plausible.
+        The result when the renderer cannot answer. transmission() lets all the light
+        through, so the scene renders unshadowed. trace() returns black.
     */
     const unsigned int wide = target->storage() == Storage::VARYING ? batch_ : 1;
     const float answer = ray ? 0.0F : 1.0F;

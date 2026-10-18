@@ -18,8 +18,8 @@ class Variable final : public Expression {
     std::string name;
     /**
      * Which symbol the name resolved to, or -1 before Compiler has run. A local declared
-     * twice in nested scopes is two symbols, so the index is what the machine allocates a
-     * register against rather than the name.
+     * twice in nested scopes is two symbols, so registers are allocated by this index and
+     * not by the name.
      **/
     int symbol = -1;
 };

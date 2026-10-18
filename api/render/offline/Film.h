@@ -20,8 +20,8 @@ namespace v3d::render::offline {
  * is applied here and nowhere else.
  *
  * A sample is filtered as it arrives into every pixel whose centre is within half the filter's
- * width of it on each axis. The film therefore holds a weighted sum per pixel rather than the
- * samples. Its memory is a frame buffer's, whatever the sample count.
+ * width of it on each axis. The film therefore holds a weighted sum per pixel and not the
+ * samples, so its memory does not grow with the sample count.
  **/
 class Film final {
  public:
@@ -80,7 +80,7 @@ class Film final {
      *
      * @param colour the first of three planes the colour goes into
      * @param coverage the plane the coverage goes into
-     * @param depth the plane the depth goes into, or negative for none; a pixel no sample
+     * @param depth the plane the depth goes into, or negative for none. A pixel no sample
      *        hit keeps what the plane held
      **/
     void resolve(FrameBuffer * frame, unsigned int colour, unsigned int coverage, int depth = -1) const;

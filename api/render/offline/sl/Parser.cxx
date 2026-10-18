@@ -116,8 +116,8 @@ Parser::Failure Parser::fail(const std::string & message, const Token & token) {
 const Token & Parser::peek() {
     const Token & token = lexer_.peek();
     if (!lexer_.error().empty()) {
-        // the lexer's message already says where, so it stands as it is rather than being
-        // wrapped in one about the END it handed back
+        // the lexer's message already gives the position, so it is used unchanged, not
+        // replaced by a message about the END token the lexer returned
         if (error_.empty()) {
             error_ = lexer_.error();
         }
@@ -167,8 +167,8 @@ std::vector<syntax::ShaderPtr> Parser::parse() {
             shaders.push_back(parseShader());
         }
     } catch (const Failure &) {
-        // a parse that fails yields no program at all: half a shader is worse than none,
-        // because a renderer would run it
+        // a parse that fails yields no shaders at all, because a renderer would run a
+        // partly parsed shader
         return std::vector<syntax::ShaderPtr>();
     }
     return shaders;
@@ -199,8 +199,8 @@ syntax::ShaderPtr Parser::parseShader() {
         if (peek().kind() == Token::Kind::END) {
             throw fail("expected '}' but found end of source", peek());
         }
-        // a storage class can only begin a declaration; a bare type keyword begins either a
-        // declaration or a function, and the token after the name is what tells them apart
+        // a storage class can only begin a declaration. A bare type keyword begins either a
+        // declaration or a function, and the token after the name tells them apart
         const Storage storage = parseStorage();
         Type declared = Type::FLOAT;
         if (storage != Storage::UNSPECIFIED) {
@@ -248,8 +248,8 @@ void Parser::parseParameters(std::vector<syntax::Parameter>* parameters, bool de
         parameter.line = opening.line();
         parameter.column = opening.column();
 
-        // SL writes "output varying color Ci = 0", but either order is accepted, and
-        // 'output' is an identifier rather than a keyword
+        // SL writes "output varying color Ci = 0", but either order is accepted. 'output' is
+        // an identifier, not a keyword
         for (;;) {
             if (accept(Token::Kind::IDENTIFIER, "output")) {
                 parameter.output = true;
@@ -269,16 +269,15 @@ void Parser::parseParameters(std::vector<syntax::Parameter>* parameters, bool de
         }
         parameter.name = expectKind(Token::Kind::IDENTIFIER, "a parameter name").text();
         if (defaults) {
-            // SL has no uninitialised shader parameter: the default is what a scene that
-            // does not mention the parameter gets, so a missing one is an error rather
-            // than a zero
+            // SL has no uninitialised shader parameter. A scene that does not bind the
+            // parameter gets the default, so a missing default is an error
             expect(Token::Kind::OPERATOR, "=");
             parameter.defaultValue = parseExpression();
         }
         parameters->push_back(parameter);
 
         // a shader's parameters are separated by semicolons and a function's formals by
-        // commas, and a file written the other way round is accepted
+        // commas. Either separator is accepted in both
         if (!accept(Token::Kind::PUNCTUATION, ";") && !accept(Token::Kind::PUNCTUATION, ",")) {
             return;
         }
@@ -393,7 +392,7 @@ syntax::StatementPtr Parser::parseConditional() {
     expect(Token::Kind::PUNCTUATION, ")");
     const syntax::StatementPtr whenTrue = parseStatement();
     syntax::StatementPtr whenFalse;
-    // an else binds to the nearest if, so it is taken here rather than by an outer one
+    // an else binds to the nearest if, so it is taken here and not by an outer one
     if (accept(Token::Kind::KEYWORD, "else")) {
         whenFalse = parseStatement();
     }
@@ -519,7 +518,7 @@ syntax::ExpressionPtr Parser::parseTernary() {
     if (!accept(Token::Kind::OPERATOR, "?")) {
         return condition;
     }
-    // right associative, so the arms are ternaries themselves rather than one level down
+    // right associative, so each arm is parsed as a ternary itself
     const syntax::ExpressionPtr whenTrue = parseTernary();
     expect(Token::Kind::OPERATOR, ":");
     const syntax::ExpressionPtr whenFalse = parseTernary();
@@ -622,8 +621,8 @@ syntax::ExpressionPtr Parser::parseUnary() {
     }
     Type type = Type::FLOAT;
     if (parseType(&type)) {
-        // a cast, and the place a coordinate space is named: `point "world" (0, 0, 0)`
-        // casts and transforms in one
+        // a cast, which may name a coordinate space: `point "world" (0, 0, 0)` casts and
+        // transforms in one
         std::string space;
         if (peek().kind() == Token::Kind::STRING) {
             space = next().text();

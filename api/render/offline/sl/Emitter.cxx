@@ -176,8 +176,8 @@ bool Emitter::emit(runtime::Program* program) {
     program_->name = shader_->name;
     program_->registers.clear();
     program_->instructions.clear();
-    // the symbols come first and in the compiler's order, so a renderer binds a parameter or
-    // reads Ci by the index the compiler gave it rather than by looking a name up
+    // the symbols come first and in the compiler's order, so a renderer can bind a parameter
+    // or read Ci by the symbol's index without looking up its name
     for (const Symbol & symbol : symbols_) {
         runtime::Register reg;
         reg.type = symbol.type;
@@ -188,8 +188,8 @@ bool Emitter::emit(runtime::Program* program) {
     }
     program_->symbols = symbols_.size();
     try {
-        // the declared defaults come first and are their own run: a default the body
-        // computed would overwrite whatever a scene bound, once per grid
+        // the declared defaults come first, in the prologue, which Machine::run() skips. A
+        // default computed in the body would overwrite the value a scene bound on every grid
         for (const syntax::Parameter & parameter : shader_->parameters) {
             if (!parameter.defaultValue || parameter.symbol < 0) {
                 continue;
@@ -270,8 +270,8 @@ void Emitter::emitAssignment(const syntax::StatementPtr & statement) {
         put(runtime::Opcode::MOVE, {.target = variable.symbol, .left = value, .right = -1}, assignment.value);
         return;
     }
-    // a compound form is the operator and then the assignment, over a temporary of the
-    // target's own type so that "Ci *= 0.5" stays a colour
+    // a compound assignment applies the operator into a temporary of the target's type, then
+    // assigns it, so that "Ci *= 0.5" stays a colour
     const std::string op = assignment.op.substr(0, 1);
     const int combined = temporary(assignment.target->type, assignment.target->storage);
     put(binaryOpcode(op), {.target = combined, .left = variable.symbol, .right = value}, assignment.value);
@@ -283,8 +283,8 @@ void Emitter::emitConditional(const syntax::StatementPtr & statement) {
     const int condition = emitExpression(conditional.condition);
 
     if (conditional.condition->storage != Storage::VARYING) {
-        // the condition is the same at every point, so the arm not taken costs a branch
-        // rather than a pass over the batch with an empty mask
+        // the condition is the same at every point, so the arm not taken is jumped over
+        // instead of run with an empty mask
         const int skip = put(runtime::Opcode::JUMP_IF_ZERO, {.target = -1, .left = condition, .right = -1}, conditional.condition);
         emitStatement(conditional.whenTrue);
         if (!conditional.whenFalse) {
@@ -333,9 +333,9 @@ void Emitter::emitFor(const syntax::StatementPtr & statement) {
 void Emitter::emitLoop(const syntax::ExpressionPtr & condition, const syntax::StatementPtr & body,
     const syntax::StatementPtr & step) {
     /*
-        A loop is masked whether its condition varies or not. A uniform condition narrows the
-        loop's lanes all together, so it behaves as the jump it would have compiled to. With
-        one form, break and continue have one meaning rather than two.
+        Every loop uses a mask, whether its condition varies or not. A uniform condition
+        clears all of the loop's lanes at once, which has the effect of a jump. break and
+        continue then work the same way in every loop.
     */
     const int open = put(runtime::Opcode::LOOP, {.target = -1, .left = -1, .right = -1}, condition);
     const int top = here();
@@ -345,8 +345,8 @@ void Emitter::emitLoop(const syntax::ExpressionPtr & condition, const syntax::St
     }
     emitStatement(body);
     if (step) {
-        // a lane that took a continue still runs the step, as C's continue does; otherwise
-        // its counter would stop advancing and the loop would never end
+        // a lane that took a continue still runs the step, as in C. Without the step, its
+        // counter would stop advancing and the loop would never end
         put(runtime::Opcode::LOOP_RESTORE, {.target = -1, .left = -1, .right = -1}, condition);
         emitStatement(step);
     }
@@ -392,8 +392,7 @@ int Emitter::emitExpression(const syntax::ExpressionPtr & expression) {
         case syntax::Expression::Kind::BINARY:
             return emitBinary(expression);
         case syntax::Expression::Kind::TERNARY: {
-            // both arms are computed and one is chosen: the same work a mask would do, in
-            // fewer instructions
+            // both arms are computed for every lane, and two masked moves choose between them
             const syntax::Ternary & ternary = static_cast<const syntax::Ternary &>(*expression);
             const int condition = emitExpression(ternary.condition);
             const int result = temporary(expression->type, expression->storage);
@@ -524,9 +523,8 @@ void Emitter::emitLighting(const syntax::StatementPtr & statement) {
     open.column = statement->column;
     if (lighting.construct != syntax::Lighting::Construct::ILLUMINANCE) {
         /*
-            A light shader's end of the message passing. L and Ps are its own globals: the
-            construct writes the first for every point it lights and reads the second for
-            the position of each of those points.
+            The light shader's side. L and Ps are the light shader's globals. The construct
+            writes L for each point, and reads Ps as the position of each point.
         */
         open.opcode = lighting.construct == syntax::Lighting::Construct::ILLUMINATE
             ? runtime::Opcode::ILLUMINATE : runtime::Opcode::SOLAR;
@@ -541,10 +539,9 @@ void Emitter::emitLighting(const syntax::StatementPtr & statement) {
     }
 
     /*
-        A surface shader's end. The body is a loop over the lights rather than over a
-        condition, so it is its own opcode rather than the LOOP the machine already has:
-        what narrows the batch is which points a light reaches, and that arrives from the
-        renderer one light at a time.
+        The surface shader's side. The body loops over the lights, not over a condition, so
+        it has its own opcode instead of LOOP. The mask is the set of points a light
+        reaches, and the renderer supplies that one light at a time.
     */
     open.opcode = runtime::Opcode::ILLUMINANCE;
     open.left = global("L");
@@ -562,8 +559,8 @@ void Emitter::emitLighting(const syntax::StatementPtr & statement) {
 int Emitter::emitInline(const syntax::ExpressionPtr & expression) {
     const syntax::Call & call = static_cast<const syntax::Call &>(*expression);
     const syntax::Function & function = shader_->functions[static_cast<std::size_t>(call.function)];
-    // every argument is evaluated before any formal is written, so that an argument which
-    // is itself a call cannot land on a formal this one has already filled
+    // every argument is evaluated before any formal is written. An argument that calls the
+    // same function writes the same formal registers, and must not overwrite one already set
     std::vector<int> given;
     given.reserve(call.arguments.size());
     for (const syntax::ExpressionPtr & argument : call.arguments) {
