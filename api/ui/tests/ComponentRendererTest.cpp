@@ -216,8 +216,8 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
 }
 
 /**
- * A container that is not visible draws nothing, which is how an app shows and hides its
- * whole ui without taking it apart.
+ * A container that is not visible draws nothing. An app shows and hides its whole ui this
+ * way, without taking it apart.
  **/
 BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
     const v3d::ui::paint::ComponentRenderer renderer(

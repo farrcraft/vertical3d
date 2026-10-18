@@ -119,9 +119,9 @@ class Arranger final {
      *
      * @param strips filled with one toolbar and its top left corner per strip, in the
      *      order they are drawn; null when only the total is wanted
-     * @param bars filled with the container's menu bars, which are drawn last because an
-     *      open menu drops a panel over the strips below it; null when only the total is
-     *      wanted
+     * @param bars filled with the container's menu bars; null when only the total is
+     *      wanted. The bars are drawn last. An open menu drops a panel over the strips
+     *      below it.
      * @return the left inset in x and the top inset in y, in pixels
      **/
     glm::vec2 stack(const Container& container,

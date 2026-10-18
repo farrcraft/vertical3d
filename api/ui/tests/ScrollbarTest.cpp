@@ -112,8 +112,8 @@ BOOST_AUTO_TEST_CASE(the_thumb_has_a_floor) {
 
 /**
  * The offset is clamped to what there is to scroll, on the way in and again when the range
- * changes - a list that shrank while scrolled to its end comes back to the end of what is
- * left rather than past it.
+ * changes. A list that shrank while scrolled to its end comes back to the end of what is
+ * left, not past it.
  **/
 BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_there_is_to_scroll) {
     const boost::shared_ptr<v3d::ui::component::Scrollbar> component =
@@ -181,8 +181,8 @@ BOOST_AUTO_TEST_CASE(a_bar_that_was_never_drawn_scrolls_nowhere) {
 
 /**
  * The track is drawn whether or not there is anything to scroll, and the thumb only when
- * there is - a full length thumb would read as a bar scrolled nowhere rather than as one
- * with nowhere to go.
+ * there is. A full length thumb would look like a bar scrolled nowhere, not one with
+ * nowhere to go.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_draws_its_track_alone) {
     const v3d::ui::paint::ComponentRenderer renderer(
@@ -265,8 +265,8 @@ BOOST_AUTO_TEST_CASE(dragging_a_bound_bar_moves_the_list) {
 }
 
 /**
- * A list that fits its box has nothing to scroll, so the bar draws a track and no thumb -
- * the same answer an unbound bar showing all of its content gives.
+ * A list that fits its box has nothing to scroll, so the bar draws a track and no thumb. An
+ * unbound bar showing all of its content draws the same.
  **/
 BOOST_AUTO_TEST_CASE(a_bound_bar_with_nothing_to_scroll_draws_no_thumb) {
     const boost::shared_ptr<v3d::ui::component::SelectList> rows =

@@ -845,8 +845,8 @@ BOOST_AUTO_TEST_CASE(the_layer_says_when_it_wants_the_cursor) {
     // nothing has been drawn, so nothing is wanted
     BOOST_CHECK(!ui.capturing());
 
-    // a frame with the cursor inside a window claims it for the next one, which is when an
-    // app asks
+    // a frame with the cursor inside a window claims the cursor for the next frame. An app
+    // asks between the two
     ui.begin(&canvas, hover(glm::vec2(50.0F, 30.0F)));
     ui.window("panel", {.position = glm::vec2(10.0F, 10.0F), .size = glm::vec2(200.0F, 100.0F)}, 1.0F);
     ui.endWindow();
@@ -978,8 +978,8 @@ BOOST_AUTO_TEST_CASE(a_dragged_window_keeps_its_title_bar_on_the_canvas) {
     ui.endWindow();
     ui.end();
     BOOST_REQUIRE(!written.empty());
-    // the whole window fits across, so it stops with its right edge on the canvas; down,
-    // it stops with the bar on it
+    // the whole window fits across, so it stops with its right edge on the canvas. Down, it
+    // stops with the bar on the canvas
     BOOST_CHECK_CLOSE(written[0].pen.x,
         static_cast<float>(canvas.width()) - size.x + ui.dressing().padding, 0.001F);
     BOOST_CHECK(written[0].pen.y < static_cast<float>(canvas.height()));

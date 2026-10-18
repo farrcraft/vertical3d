@@ -275,7 +275,7 @@ void ComponentRenderer::ring(v3d::render::realtime::canvas::Canvas* canvas,
         return;
     }
     // the class the component is drawn in, so a theme can ring a text box differently from
-    // a list; one dressed by the base alone is ringed out of the base
+    // a list. A component dressed by the base alone is ringed out of the base
     const std::optional<style::Resolver::Class> className = ringed(component->type());
     const Dressing& dress = className.has_value()
         ? styles_.resolve(*className, component->style()) : base();
@@ -829,8 +829,8 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
                 base().highlight);
         }
 
-        // the pen sits on the baseline, which is most of the way down the line box - the
-        // remainder is where descenders go
+        // the pen sits on the baseline, most of the way down the line box. Descenders go in
+        // the space below it
         const glm::vec2 pen(origin.x + base().padding, top + (base().lineHeight * lineBaseline));
         const boost::shared_ptr<component::menu::Item>& item = (*level)[index];
         write_(item ? item->text() : std::string(), pen, itemInk(item, base(), selected));

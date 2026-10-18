@@ -125,9 +125,9 @@ class Resolver final {
 
  private:
     /**
-     * How many classes there are, which is how many maps of resolved answers are held.
+     * How many classes there are. One map of resolved answers is held for each class.
      * Counted from the last enumerator, so a class added before it is counted with no edit
-     * here; one added after it is not, and indexes past the array.
+     * here. A class added after it is not counted, and indexes past the array.
      **/
     static constexpr std::size_t classes = static_cast<std::size_t>(Class::Button) + 1;
 

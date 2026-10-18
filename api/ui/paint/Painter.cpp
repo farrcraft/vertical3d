@@ -55,8 +55,8 @@ void box(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& first, 
 void turn(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& corner, const glm::vec2& towards,
     float radius, float width, float start, const glm::vec4& colour) {
     canvas->ring({.centre = corner + towards * radius, .outer = radius, .inner = radius - width, .sides = cornerSides, .start = start, .sweep = quarterTurn}, colour);
-    // the turn fills a square of the radius; an outline thicker than that leaves the rest
-    // of a square of its own width, which is two rectangles beside the turn
+    // the turn fills a square of the radius. An outline thicker than that leaves the rest
+    // of a square of its own width, and two rectangles beside the turn fill it
     if (width <= radius) {
         return;
     }
@@ -80,8 +80,8 @@ void fillBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min
         return;
     }
 
-    // three bands and four wedges, none of them overlapping - which matters because a box
-    // is usually drawn with an alpha, and anything drawn twice under one would show
+    // three bands and four wedges, none of them overlapping. A box is usually drawn with an
+    // alpha, and anything drawn twice under one would show
     canvas->rect(glm::vec2(min.x + corner, min.y), glm::vec2(max.x - corner, max.y), colour);
     canvas->rect(glm::vec2(min.x, min.y + corner), glm::vec2(min.x + corner, max.y - corner), colour);
     canvas->rect(glm::vec2(max.x - corner, min.y + corner), glm::vec2(max.x, max.y - corner), colour);

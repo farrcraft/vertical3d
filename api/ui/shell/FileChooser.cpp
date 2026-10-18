@@ -190,7 +190,7 @@ void FileChooser::name(const std::string& value) {
 /**
  **/
 std::string FileChooser::name() const {
-    // the field is typed into directly, so it is what holds the name when there is one
+    // the field is typed into directly, so the name is read from it when there is one
     const boost::shared_ptr<Container> shown = container();
     const boost::shared_ptr<component::TextBox> field = shown
         ? boost::dynamic_pointer_cast<component::TextBox>(shown->get(names_.field))

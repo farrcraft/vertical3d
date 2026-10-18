@@ -97,7 +97,7 @@ struct Fixture final {
     }
 
     /**
-     * The middle of a component, which is where a click on it lands.
+     * The middle of a component. A test clicks a component there.
      **/
     static glm::vec2 centre(const v3d::ui::Component& component) {
         return component.position() + component.size() * 0.5F;

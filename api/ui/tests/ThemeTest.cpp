@@ -307,8 +307,8 @@ BOOST_AUTO_TEST_CASE(the_image_pass_resolves_every_source_the_config_named) {
 }
 
 /**
- * An icon inside a panel inside a box is resolved, which is where an icon in a real
- * document actually is.
+ * An icon inside a panel inside a box is resolved. An icon in a real document is nested
+ * this way.
  *
  * Loader hands a nested component to its parent rather than to the container, so the
  * container's own list reaches only what nothing laid out. Container::get searches the whole

@@ -160,8 +160,8 @@ BOOST_AUTO_TEST_CASE(the_order_is_the_order_things_are_drawn_in) {
 }
 
 /**
- * A ui with nothing focused is left alone. That is what keeps a game's movement keys
- * working: tab must not take the focus onto the first widget of a hud nobody is using.
+ * A ui with nothing focused is left alone. Tab does not take the focus onto the first
+ * widget of a hud nobody is using, so a game's movement keys keep working.
  **/
 BOOST_AUTO_TEST_CASE(nothing_focused_stays_nothing_focused) {
     const Fixture fixture(ONE_CONTAINER);

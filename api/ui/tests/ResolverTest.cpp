@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(a_scrollbar_does_not_take_a_bars_style) {
 
 /**
  * A class rings its own control, so a theme can mark a focused text box differently from a
- * focused list - and a class naming neither keeps the base's ring.
+ * focused list. A class that names no ring keeps the base's.
  **/
 BOOST_AUTO_TEST_CASE(a_class_can_ring_its_own_control) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
@@ -231,8 +231,8 @@ BOOST_AUTO_TEST_CASE(a_class_can_ring_its_own_control) {
 }
 
 /**
- * A button's ring comes out of the "button" class, which is the only thing a button reads as a
- * Dressing - its fill is nine images and its label is the base's.
+ * A button's ring comes out of the "button" class. The ring is the only thing a button reads
+ * as a Dressing. Its fill is nine images and its label is the base's.
  *
  * A button's styles are told apart by state as well as by name. The first of the set is
  * used here, because a ring shows where the keyboard is rather than what state the button

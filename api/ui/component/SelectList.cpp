@@ -29,7 +29,7 @@ SelectList::SelectList() :
     widest_(-1.0F),
     measured_(0),
     selected_(none) {
-    // a control is pickable and focusable from the start; a plain component is neither, so a
+    // a control is pickable and focusable from the start. A plain component is neither, so a
     // panel laid over a scene lets presses through
     pickable(true);
     focusable(true);

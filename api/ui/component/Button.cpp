@@ -21,7 +21,7 @@ Button::Button() :
     state_(STATE_NORMAL),
     toggle_(false),
     checked_(false) {
-    // a control is pickable and focusable from the start; a plain component is neither, so a
+    // a control is pickable and focusable from the start. A plain component is neither, so a
     // panel laid over a scene lets presses through
     pickable(true);
     focusable(true);

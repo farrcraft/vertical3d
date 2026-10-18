@@ -52,8 +52,8 @@ BOOST_AUTO_TEST_CASE(no_rate_is_shown_before_the_first_frame) {
 }
 
 /**
- * The steps line is what says the accumulator's clamp is doing real work, so a frame that
- * owed several of them has to be able to say so.
+ * The steps line shows whether the accumulator's clamp is doing real work. A frame that
+ * owed several steps reports all of them.
  **/
 BOOST_AUTO_TEST_CASE(a_frame_that_owed_several_steps_says_so) {
     v3d::ui::shell::StatisticsOverlay::Sample sample;

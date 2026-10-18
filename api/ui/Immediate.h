@@ -349,8 +349,8 @@ class Immediate {
     /**
      * Draw the header row - the column names on a band of their own.
      *
-     * In a table that scrolls, the band is drawn above the region rather than in it, so
-     * the rows pass under it rather than over it.
+     * In a table that scrolls, the band is drawn above the scrolled region, not in it. The
+     * rows pass under the band.
      **/
     void headerRow();
 

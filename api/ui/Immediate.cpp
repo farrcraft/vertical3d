@@ -341,9 +341,9 @@ void Immediate::nextItemWidth(float width) {
 }
 
 float Immediate::itemWidth() {
-    // measured from where the widget will actually be placed, which on a shared row is
-    // past the last one rather than at the margin - place() has not run yet, so this
-    // works out the same corner it will
+    // measured from where the widget will be placed. On a shared row that is past the last
+    // widget, and otherwise at the margin. place() has not run yet, so this works out the
+    // same corner it will
     const float left = row_.sameLine ? row_.lastRight + dressing_.spacing : row_.margin;
     const float rest = std::max(row_.right - left, 0.0F);
     const float width = nextWidth_ > 0.0F ? std::min(nextWidth_, rest) : rest;
@@ -835,8 +835,8 @@ void Immediate::tableBody() {
     table_.clipped = true;
     row_.penY = table_.contentTop - retained.scroll;
 
-    // the wheel turns the innermost region under the cursor, so a table takes it from the
-    // window it is drawn in - the same rule that lets a window take it from one under it
+    // the wheel turns the innermost region under the cursor. A table takes it from the
+    // window it is drawn in, by the same rule that lets a window take it from one under it
     if (paint::inside(glm::vec2(table_.left, table_.top), max, input_.cursor)) {
         wheeled_ = table_.id;
     }
@@ -875,9 +875,9 @@ void Immediate::headerRow() {
     if (canvas_ == nullptr || !table_.open) {
         return;
     }
-    // the band runs the whole width of the table rather than the width its columns were
-    // given, so that a scrolling table's gutter is banded beside the names rather than
-    // notched out of them. The two are the same edge for a table that does not scroll
+    // the band runs the whole width of the table, not the width its columns were given. A
+    // scrolling table's gutter is banded beside the names, not notched out of the band. The
+    // two widths are the same for a table that does not scroll
     const glm::vec2 min(table_.left, row_.penY);
     const glm::vec2 max(table_.right, row_.penY + dressing_.lineHeight);
     paint::fillBox(canvas_, min, max, 0.0F, dressing_.titleBar);

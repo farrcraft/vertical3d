@@ -213,16 +213,16 @@ class ComponentRenderer {
 
     /**
      * Draw a menu bar - the strip across the top, and the open menu with any flyout the
-     * cursor has descended into drawn under it. It takes the top of the canvas, which is
-     * where its panels are dropped from.
+     * cursor has descended into drawn under it. It takes the top of the canvas, and its
+     * panels drop from there.
      **/
     void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Bar>& bar) const;
 
     /**
      * Draw a toolbar - a row of buttons across the canvas, or a column down its side.
      *
-     * @param corner the strip's top left, which is where the edge it runs along has
-     *      room for it once the strips before it have taken theirs
+     * @param corner the strip's top left, past the room the strips before it have taken
+     *      along the same edge
      **/
     void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Toolbar>& bar,
         const glm::vec2& corner) const;

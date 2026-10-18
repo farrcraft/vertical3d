@@ -319,8 +319,8 @@ BOOST_AUTO_TEST_CASE(a_box_is_sized_by_its_room_and_not_by_its_text) {
 }
 
 /**
- * A box loaded from a config is pickable and focusable without saying so, because a box
- * exists to be typed into - unlike a panel, which must not take a press off the scene.
+ * A box loaded from a config is pickable and focusable without saying so. A box exists to
+ * be typed into. A panel is neither, so it does not take a press off the scene.
  **/
 BOOST_AUTO_TEST_CASE(a_loaded_box_asks_for_the_press_and_the_keyboard) {
     const Fixture fixture;
@@ -391,8 +391,8 @@ BOOST_AUTO_TEST_CASE(an_arrow_out_of_a_selection_lands_on_its_edge) {
 }
 
 /**
- * Typing over a selected run replaces it, and so does a backspace, a delete and a paste -
- * every one of them through removeSelection(), so there is one answer rather than four.
+ * Typing over a selected run replaces it, and so does a backspace, a delete and a paste.
+ * Every one of them goes through removeSelection(), so all four give the same answer.
  **/
 BOOST_AUTO_TEST_CASE(an_edit_over_a_selection_replaces_the_run) {
     const boost::shared_ptr<v3d::ui::component::TextBox> typed = box("abcde");
@@ -611,9 +611,9 @@ BOOST_AUTO_TEST_CASE(shift_and_a_caret_key_selects) {
 }
 
 /**
- * The selected run is drawn behind the line, so it can be seen: one more quad than the same
- * box with nothing selected, and no batch of its own - the box's own clip is what splits the
- * batches, and the highlight is drawn inside the one the text is.
+ * The selected run is drawn behind the line, so it can be seen. It adds one quad to the same
+ * box with nothing selected, and no batch of its own. The box's own clip splits the batches,
+ * and the highlight is drawn inside the batch the text is in.
  **/
 BOOST_AUTO_TEST_CASE(the_selected_run_is_drawn_behind_the_text) {
     Fixture fixture;

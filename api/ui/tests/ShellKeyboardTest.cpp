@@ -202,8 +202,8 @@ BOOST_AUTO_TEST_CASE(an_unnamed_key_is_not_taken) {
 }
 
 /**
- * A letter reaching a focused button is not taken, because a button is not something a
- * player types into - so the movement binding on that letter still fires.
+ * A letter reaching a focused button is not taken. A player does not type into a button, so
+ * the movement binding on that letter still fires.
  **/
 BOOST_AUTO_TEST_CASE(a_letter_at_a_button_reaches_the_bindings) {
     const Fixture fixture;

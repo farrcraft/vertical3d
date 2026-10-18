@@ -132,8 +132,8 @@ BOOST_AUTO_TEST_CASE(a_toggle_shows_the_container_and_suspends_the_game) {
 }
 
 /**
- * Going back up out of a submenu leaves the menu open - it is only closing the top level
- * that resumes the game, so a toggle inside a submenu is not a close.
+ * Going back up out of a submenu leaves the menu open. Only closing the top level resumes
+ * the game, so a toggle inside a submenu is not a close.
  **/
 BOOST_AUTO_TEST_CASE(a_toggle_inside_a_submenu_only_goes_up_a_level) {
     const boost::shared_ptr<v3d::ui::Engine> ui = load(document);
@@ -198,8 +198,8 @@ BOOST_AUTO_TEST_CASE(nothing_is_navigated_while_the_menu_is_down) {
 }
 
 /**
- * A config that names no such container leaves every call doing nothing, rather than
- * failing - a game whose ui carries no menu still runs, without one.
+ * A config that names no such container leaves every call doing nothing, and none of them
+ * fails. A game whose ui carries no menu still runs, without one.
  **/
 BOOST_AUTO_TEST_CASE(a_missing_container_leaves_the_menu_inert) {
     const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({"themes": [], "containers": []})");

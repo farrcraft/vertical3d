@@ -44,7 +44,7 @@ TextBox::TextBox() :
     anchor_(0),
     limit_(0),
     pen_(0.0F) {
-    // a control is pickable and focusable from the start; a plain component is neither, so a
+    // a control is pickable and focusable from the start. A plain component is neither, so a
     // panel laid over a scene lets presses through
     pickable(true);
     focusable(true);

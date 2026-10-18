@@ -381,8 +381,8 @@ BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
     BOOST_CHECK_EQUAL(fixture.sent.front(), "test::first");
 
-    // and the hover half answers the same way, once the press has come up - a press that
-    // is still down is a drag, and a drag follows what it took hold of rather than picking
+    // the hover half answers the same way once the press has come up. A press that is still
+    // down is a drag. A drag follows what it took hold of and does not pick
     fixture.cursor->release(point);
     fixture.sent.clear();
     BOOST_CHECK(fixture.cursor->motion(point));
