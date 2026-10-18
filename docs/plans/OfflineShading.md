@@ -512,10 +512,10 @@ shades in two orders, and both reyes area pictures.
 ### Step 13 — Opacity under the reyes hider
 
 **Done.** A vertex carries `Oi`, and a micropolygon is hidden as a layer with its first corner's
-colour and opacity. `Samples::Layers` keeps a sample's layers and the depth of its nearest
-opaque one, and `Samples::resolve` sorts and composites them. The plan did not foresee that a
-sample on an edge two micropolygons share is covered by both, so a sample keeps one layer from
-each grid. The four cases are in `SamplesTest.cxx`. `reference-glass.png` is the translucent quad over the
+colour and opacity. `Samples::Layers` keeps a sample's layers and the depth of its nearest opaque
+one, and `Samples::resolve` sorts and composites them. The plan did not foresee that a sample on
+an edge two micropolygons share is covered by both, so a sample keeps one layer from each grid.
+The four cases are in `SamplesTest.cxx`. `reference-glass.png` is the translucent quad over the
 checked plane, from code and from RIB. Every committed picture is unchanged, because an opaque
 layer drops what is behind it as the nearest hit did.
 
