@@ -42,6 +42,14 @@ glm::vec3 Scene::eye() const {
     return glm::vec3(glm::inverse(view_)[3]);
 }
 
+void Scene::projection(const Projection & projected) {
+    projection_ = projected;
+}
+
+const Scene::Projection & Scene::projection() const {
+    return projection_;
+}
+
 int Scene::motion(const v3d::render::offline::MovingTransform & placed) {
     if (!placed.moving()) {
         return -1;

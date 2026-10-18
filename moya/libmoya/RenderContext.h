@@ -300,6 +300,12 @@ class RenderContext {
         glm::mat4x4 coordinateSystem(const std::string & name);
 
         /**
+         * The matrices from camera space into "screen", "raster" and "NDC", as the camera
+         * options stand. prepareWorld() gives them to the traced scene.
+         **/
+        v3d::render::offline::trace::Scene::Projection projected();
+
+        /**
          * maps to RiDeclare()
          * The parameter types the C entry points read. The RIB reader keeps its own
          * declarations for the file it reads, separate from these.

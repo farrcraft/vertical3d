@@ -51,17 +51,10 @@ namespace v3d::moya {
 
 namespace {
 
-/** The least w a point is divided by. A point at or below it is at or behind the eye. **/
-constexpr float SMALLEST_W = 1.0e-6F;
-
 };  // namespace
 
 glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point) {
-    const glm::vec4 projected = matrix * glm::vec4(point, 1.0F);
-    if (projected.w <= SMALLEST_W) {
-        return glm::vec3(projected);
-    }
-    return glm::vec3(projected) / projected.w;
+    return v3d::render::offline::sl::project(matrix, point);
 }
 
 RenderContext::RenderContext() {
@@ -162,8 +155,22 @@ void RenderContext::prepareWorld() {
     raster = glm::translate(raster, glm::vec3(1.0F, -1.0F, 1.0F));
 
     coordinateSystems_["raster"] = raster;
+    traced_.projection(projected());
 
     frameBuffer_.reset(new FrameBuffer({.bucket = glm::uvec2(bucketWidth_, bucketHeight_), .image = glm::uvec2(xres_, yres_)}));
+}
+
+v3d::render::offline::trace::Scene::Projection RenderContext::projected() {
+    v3d::render::offline::trace::Scene::Projection projection;
+    projection.screen = coordinateSystems_["screen"];
+    projection.raster = coordinateSystems_["raster"] * projection.screen;
+    // raster divided by the resolution: x runs right and y runs down over [0, 1] from the
+    // upper left corner. Screen space has y up over [-1, 1], so y is negated as raster
+    // negates it. z is screen depth moved from [-1, 1] onto [0, 1]
+    glm::mat4x4 normalised = glm::scale(glm::mat4x4(1.0F), glm::vec3(0.5F, -0.5F, 0.5F));
+    normalised = glm::translate(normalised, glm::vec3(1.0F, -1.0F, 1.0F));
+    projection.ndc = normalised * projection.screen;
+    return projection;
 }
 
 unsigned int RenderContext::imageWidth() const {
@@ -821,7 +828,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     bool projected = false;
     for (int k = 0; k < 8; k++) {
         const glm::vec3 corner = boxCorner(bound_min, bound_max, k);
-        if ((screen * glm::vec4(corner, 1.0F)).w <= SMALLEST_W) {
+        if ((screen * glm::vec4(corner, 1.0F)).w <= v3d::render::offline::sl::SMALLEST_W) {
             poly->diceable(false);
             continue;
         }

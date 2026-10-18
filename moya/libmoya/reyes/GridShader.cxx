@@ -10,6 +10,7 @@
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/runtime/Value.h>
+#include <api/render/offline/trace/Scene.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
 
@@ -19,7 +20,6 @@
 #include <vector>
 
 #include <glm/geometric.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 #include <glm/vec2.hpp>
@@ -69,22 +69,19 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
         *matrix = glm::inverse(context_->coordinateSystem("camera"));
         return true;
     }
-    const glm::mat4x4 screen = context_->coordinateSystem("screen");
+    // the projected spaces are the ones the ray hider answers with, so a shader that reads
+    // one gives the same value under either hider
+    const v3d::render::offline::trace::Scene::Projection & projection = context_->traced().projection();
     if (name == "screen") {
-        *matrix = screen;
+        *matrix = projection.screen;
         return true;
     }
     if (name == "raster") {
-        *matrix = context_->coordinateSystem("raster") * screen;
+        *matrix = projection.raster;
         return true;
     }
     if (name == "NDC") {
-        // raster divided by the resolution: x runs right and y runs down over [0, 1] from the
-        // upper left corner. Screen space has y up over [-1, 1], so y is negated as raster
-        // negates it. z is screen depth moved from [-1, 1] onto [0, 1]
-        glm::mat4x4 normalised = glm::scale(glm::mat4x4(1.0F), glm::vec3(0.5F, -0.5F, 0.5F));
-        normalised = glm::translate(normalised, glm::vec3(1.0F, -1.0F, 1.0F));
-        *matrix = normalised * screen;
+        *matrix = projection.ndc;
         return true;
     }
     // "object" is the transform in force at the primitive rather than at the shader. shade()

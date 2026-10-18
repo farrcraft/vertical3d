@@ -108,8 +108,17 @@ named. The language is in `api/render/offline/sl`.
   cast drops the translation, and a normal cast takes the inverse transpose of that inverse.
 - **NDC is raster space divided by the resolution.** x runs right and y runs down over
   [0, 1], from the upper left corner of the picture, as raster does. Its z is screen depth
-  moved from [-1, 1] onto [0, 1], the value `depth()` returns. moya's grids define NDC. A
-  traced hit has no screen, raster or NDC space.
+  moved from [-1, 1] onto [0, 1], the value `depth()` returns.
+- **A point into or out of a projected space is divided by w.** `"screen"`, `"raster"` and
+  `"NDC"` are the projected spaces, as `Renderer::projected(name)` answers. A perspective
+  projection writes the eye depth into w, so `ptransform`, `depth()` and a point cast divide by
+  it, with either end of a two-space form projected. A point whose w is at or below 1e-6 is
+  left undivided. `sl::project` is that divide, and moya's own projection calls it. A vector or
+  a normal is not divided, because it has no position.
+- **Both hiders answer the projected spaces from one camera.** `trace::Scene::projection()`
+  holds the camera to screen, raster and NDC matrices, which moya sets when the world begins.
+  A grid and a traced hit both read them, so a shader that reads a projected position gets the
+  same value under either hider.
 
 ### Built-in shaders
 

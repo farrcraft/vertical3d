@@ -44,6 +44,20 @@ class Scene final {
         std::vector<glm::mat4x4> backward;
     };
 
+    /**
+     * The matrices from camera space into the projected spaces a shader can name. Each is the
+     * identity until the renderer sets the camera.
+     **/
+    class Projection final {
+     public:
+        /** The projection, with the visible picture over [-1, 1] in x and y. **/
+        glm::mat4x4 screen = glm::mat4x4(1.0F);
+        /** Pixels: x to the right and y down from the upper left corner of the picture. **/
+        glm::mat4x4 raster = glm::mat4x4(1.0F);
+        /** Raster divided by the resolution, over [0, 1], with z over [0, 1] from near to far. **/
+        glm::mat4x4 ndc = glm::mat4x4(1.0F);
+    };
+
     Scene();
 
     /**
@@ -54,6 +68,10 @@ class Scene final {
     void view(const glm::mat4x4 & toCamera);
     glm::mat4x4 view() const;
     glm::vec3 eye() const;
+
+    /** The camera's projection, which defines a hit's "screen", "raster" and "NDC" spaces. **/
+    void projection(const Projection & projected);
+    const Projection & projection() const;
 
     /**
      * A primitive whose geometry was placed by the reference() matrix of a transformation
@@ -124,6 +142,7 @@ class Scene final {
 
  private:
     glm::mat4x4 view_ = glm::mat4x4(1.0F);
+    Projection projection_;
     /** The motion a primitive placed by this transformation is carried by, or -1. **/
     int motion(const v3d::render::offline::MovingTransform & placed);
 

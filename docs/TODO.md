@@ -24,13 +24,6 @@ and its section names the plan or roadmap that orders it.
 Each of these waits until a scene needs it. The [OfflineShading plan](plans/OfflineShading.md)
 takes them up, in the order the [OfflineShading roadmap](roadmap/OfflineShading.md) gives.
 
-[] **A transform into a projected space does not divide by w.** `ptransform` drops w, so
-`transform("screen", P)`, `"raster"`, `"NDC"` and `depth()` are right under an orthographic
-projection and not under a perspective one.
-
-- The fix divides by w for the projected spaces, in the transform built-ins and in a cast.
-- Due when a shader reads a projected position under a perspective camera.
-
 [] **Area lights render as point lights.**
 
 - A RenderMan area light runs its light shader at points on a primitive.

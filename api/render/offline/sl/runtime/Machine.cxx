@@ -308,6 +308,10 @@ glm::mat4x4 Machine::space(const std::string & name) {
     return matrix;
 }
 
+bool Machine::projected(const std::string & name) const {
+    return renderer_ != nullptr && renderer_->projected(name);
+}
+
 void Machine::transform(const Instruction & instruction) {
     Value & target = file_[static_cast<std::size_t>(instruction.target)];
     const Value & source = file_[static_cast<std::size_t>(instruction.left)];
@@ -315,8 +319,11 @@ void Machine::transform(const Instruction & instruction) {
     // A cast's operand is in the named space and the shader works in the current space, so
     // the cast applies the inverse of the matrix the renderer returns
     const bool geometric = pointlike(target.type());
-    const glm::mat4x4 matrix = geometric ?
-        glm::inverse(space(file_[static_cast<std::size_t>(instruction.right)].text())) : glm::mat4x4(1.0F);
+    const std::string & name = file_[static_cast<std::size_t>(instruction.right)].text();
+    const glm::mat4x4 matrix = geometric ? glm::inverse(space(name)) : glm::mat4x4(1.0F);
+    // a point stated in a projected space comes back to current space through the inverse
+    // projection, and is right only after the divide
+    const bool divided = geometric && projected(name);
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     for (unsigned int point = 0; point < count; point++) {
         if (!writable(target, point)) {
@@ -324,7 +331,8 @@ void Machine::transform(const Instruction & instruction) {
         }
         switch (target.type()) {
             case Type::POINT:
-                target.triple(point, ptransform(matrix, source.triple(point)));
+                target.triple(point, divided ? project(matrix, source.triple(point)) :
+                    ptransform(matrix, source.triple(point)));
                 break;
             case Type::VECTOR:
                 target.triple(point, vtransform(matrix, source.triple(point)));

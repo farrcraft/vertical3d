@@ -64,6 +64,13 @@ class Renderer {
     virtual bool space(const std::string & name, glm::mat4x4* matrix) = 0;
 
     /**
+     * Whether a point taken into or out of the named space is divided by w. A perspective
+     * projection puts the eye depth in w, so a point in a projected space is only right after
+     * the divide. This answers true for "screen", "raster" and "NDC", and false for any other.
+     **/
+    virtual bool projected(const std::string & name) const;
+
+    /**
      * How many light sources are shining on the batch being shaded.
      **/
     virtual unsigned int lights();

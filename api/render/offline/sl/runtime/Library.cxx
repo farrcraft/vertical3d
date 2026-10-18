@@ -193,6 +193,8 @@ class Site final {
     const std::vector<Value*>* outputs = nullptr;
     /** The matrix of a named coordinate space, for the bodies that take one. **/
     glm::mat4x4 matrix = glm::mat4x4(1.0F);
+    /** Whether a point through the matrix is divided by w: a space it names is projected. **/
+    bool projected = false;
     /** The image texture() reads, and where: its own arguments, or the shader's s and t. **/
     const Texture* texture = nullptr;
     const Value* s = nullptr;
@@ -342,7 +344,8 @@ void spaces(const Site & site, unsigned int point) {
     const Value & value = site.argument(site.count() - 1);
     switch (site.body) {
         case Body::PTRANSFORM:
-            site.target->triple(point, sl::ptransform(site.matrix, value.triple(point)));
+            site.target->triple(point, site.projected ? sl::project(site.matrix, value.triple(point)) :
+                sl::ptransform(site.matrix, value.triple(point)));
             return;
         case Body::VTRANSFORM:
             site.target->triple(point, sl::vtransform(site.matrix, value.triple(point)));
@@ -354,7 +357,7 @@ void spaces(const Site & site, unsigned int point) {
             site.target->matrix(point, site.matrix * value.matrix(point));
             return;
         case Body::DEPTH:
-            site.target->number(point, sl::ptransform(site.matrix, value.triple(point)).z);
+            site.target->number(point, sl::project(site.matrix, value.triple(point)).z);
             return;
         default:
             // there is one colour space here and it is the one a framebuffer holds
@@ -567,9 +570,12 @@ void Machine::builtin(const Instruction & instruction) {
     // once for the whole batch
     if (transforming(body)) {
         site.matrix = space(given[0]->text());
+        site.projected = projected(given[0]->text());
         if (given.size() == 3) {
-            // "from" and "to": out of the space the value is in, and into the other
+            // "from" and "to": out of the space the value is in, and into the other. Either
+            // end being projected puts a w other than one into the point
             site.matrix = space(given[1]->text()) * glm::inverse(site.matrix);
+            site.projected = site.projected || projected(given[1]->text());
         }
     } else if (body == Body::DEPTH) {
         site.matrix = space("NDC");

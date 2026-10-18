@@ -15,6 +15,7 @@
 #include <glm/matrix.hpp>
 
 #include "Hit.h"
+#include "Scene.h"
 #include "Tracer.h"
 
 namespace v3d::render::offline::trace {
@@ -41,13 +42,30 @@ bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
         *matrix = glm::inverse(placement_);
         return true;
     }
-    if (name == "camera" && tracer_->scene() != nullptr) {
-        *matrix = tracer_->scene()->view();
+    if (tracer_->scene() == nullptr) {
+        return false;
+    }
+    const Scene & scene = *tracer_->scene();
+    if (name == "camera") {
+        *matrix = scene.view();
         return true;
     }
-    // a ray tracer does not project, so it has no screen or raster space. The camera makes the
-    // ray through each pixel and holds that matrix. "object" space is the transformation in
-    // force at the primitive, and a traced primitive does not store it
+    // the projected spaces are the camera's, which builds the ray through each pixel, so a
+    // point taken to raster space lands on the pixel whose ray reached it
+    if (name == "screen") {
+        *matrix = scene.projection().screen * scene.view();
+        return true;
+    }
+    if (name == "raster") {
+        *matrix = scene.projection().raster * scene.view();
+        return true;
+    }
+    if (name == "NDC") {
+        *matrix = scene.projection().ndc * scene.view();
+        return true;
+    }
+    // "object" space is the transformation in force at the primitive, and a traced primitive
+    // does not store it
     return false;
 }
 

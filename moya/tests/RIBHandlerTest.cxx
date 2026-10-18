@@ -771,7 +771,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_rotations_build_the_specification_cube_test
     BOOST_REQUIRE_EQUAL(triangles.size(), 12U);
 
     // the faces in the order the file draws them, as the specification names them
-    const char* names[] = { "far", "right", "near", "left", "bottom", "top" };
+    const char* const names[] = { "far", "right", "near", "left", "bottom", "top" };
     const glm::vec3 centres[] = {
         { 0.0F, 0.0F, 0.5F }, { 0.5F, 0.0F, 0.0F }, { 0.0F, 0.0F, -0.5F },
         { -0.5F, 0.0F, 0.0F }, { 0.0F, -0.5F, 0.0F }, { 0.0F, 0.5F, 0.0F }

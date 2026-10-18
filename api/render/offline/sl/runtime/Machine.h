@@ -218,6 +218,8 @@ class Machine final {
      * the value in the wrong place.
      **/
     glm::mat4x4 space(const std::string & name);
+    /** Whether the renderer divides a point in the named space by w. False without a renderer. **/
+    bool projected(const std::string & name) const;
     /** Push the lanes of the condition that are, or are not, non-zero. **/
     void mask(const Instruction & instruction, bool wanted);
     /** Narrow a loop to the lanes its condition still holds. **/

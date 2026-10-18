@@ -122,7 +122,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 |---|---|---|---|---|
 | [1](#step-1--what-the-roadmap-got-wrong) | The roadmap and TODO.md corrected | `docs` | — | done |
 | [2](#step-2--rirotates-sign-checked-against-the-specification) | `RiRotate`'s sign checked against the specification's cube | `moya` | — | done |
-| [3](#step-3--projected-spaces-divide-by-w) | Projected spaces divide by w, and the ray hider answers them | `api/render/offline` | — | open |
+| [3](#step-3--projected-spaces-divide-by-w) | Projected spaces divide by w, and the ray hider answers them | `api/render/offline` | — | done |
 | [4](#step-4--the-record-the-acceleration-structure) | The record: the acceleration structure | `docs/adr` | **0092** | open |
 | [5](#step-5--a-bounding-volume-hierarchy-in-the-traced-scene) | Primitive bounds, and the structure in `trace::Scene` | `api/render/offline` | 0092 | open |
 | [6](#step-6--the-record-how-a-hider-supplies-derivatives) | The record: how a hider supplies derivatives | `docs/adr` | **0093** | open |
@@ -227,6 +227,14 @@ by hand: with the angle negated in `RenderContext::rotate`, the case must fail. 
 picture changes.
 
 ### Step 3 — Projected spaces divide by w
+
+**Done.** `sl::project` holds the divide and the smallest w, and moya's `project()` calls it.
+`Renderer::projected()` answers for the three spaces, and the machine divides for them in
+`ptransform`, `depth()` and a point cast. `trace::Scene::projection()` carries the camera's
+screen, raster and NDC matrices. moya sets them when the world begins, and both `GridShader` and
+`HitShader` answer from them, so the NDC rule now lives in one place. The four cases are in
+`ProjectedSpaceTest.cxx`, and two machine cases with a stand-in projection are in
+`SlLibraryTest.cxx`. No reference changed. The TODO entry is deleted.
 
 * **`sl::ptransform` gains a projected form** that divides by w, with the same smallest w as
   `moya::project()`. That rule moves into `api/render/offline`, and moya's `project()` calls it.
