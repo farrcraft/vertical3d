@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_without_initialize_test) {
 
 /**
  * The track functions with no device. The clip table and the voice bookkeeping can be
- * tested; whether a sound is audible cannot, so these tests run without the device that
+ * tested. Whether a sound is audible cannot, so these tests run without the device that
  * audio::Engine::initialize() opens.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_play_without_a_device_test) {

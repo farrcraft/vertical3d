@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(quads_are_drawn_in_the_order_they_were_added) {
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8);
     BOOST_CHECK_CLOSE(canvas.vertices()[0].position.z, 8.0F, 0.001F);
     BOOST_CHECK_CLOSE(canvas.vertices()[4].position.z, 0.0F, 0.001F);
-    // one batch, because both are untextured - painter order inside it is index order
+    // one batch, because both are untextured. Painter order inside it is index order
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
     BOOST_CHECK_EQUAL(canvas.indices()[6], 4U);
 }

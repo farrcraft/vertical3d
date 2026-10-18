@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(texture_grey_test) {
 }
 
 /**
- * A name is found on the search path and read once; a name that cannot be read is null, and
+ * A name is found on the search path and read once. A name that cannot be read is null, and
  * is remembered as missing rather than tried again.
  **/
 BOOST_AUTO_TEST_CASE(textures_find_test) {

@@ -66,10 +66,10 @@ glm::mat4 shadowLight(const glm::vec3& towards, const ShadowBounds& bounds,
  *
  * The centre is the mean of the positions and the radius the farthest of them from it, plus
  * the margin. The radius is at least minimumShadowRadius, which one caster with no margin, or a
- * negative margin, would otherwise take to zero or below. A position is an origin rather than
- * an extent, so the margin is what covers a caster's size and the length of the shadow it
- * throws. What casts nothing is left out, because a ground plane reaches past anything that
- * shadows it and would spread the map's texels over ground no shadow falls on.
+ * negative margin, would otherwise take to zero or below. A position is an origin, not an
+ * extent. The margin covers a caster's size and the length of the shadow it throws. What
+ * casts nothing is left out, because a ground plane reaches past anything that shadows it
+ * and would spread the map's texels over ground no shadow falls on.
  *
  * Each position is the one drawn: alpha of the way from the caster's previous step to its
  * current one, as the lit pass draws it.

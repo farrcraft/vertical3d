@@ -572,7 +572,7 @@ function makeWorktree(head: string, base: string, changes: Change[], worktree: s
     console.log(`worktree: ${worktree}`);
     git(["worktree", "add", "--detach", worktree, head]);
     // a deleted file comes back even under tests/, because a base CMakeLists.txt may add the
-    // test directory it was in; a head list does not name it, so it builds into nothing
+    // test directory it was in. A head list does not name it, so it builds into nothing
     const restore = changes.filter((c) => c.status === "D" || (!isTestFile(c.file) && c.status !== "A")).map((c) => c.file);
     const remove = changes.filter((c) => !isTestFile(c.file) && c.status === "A").map((c) => c.file);
     for (let i = 0; i < restore.length; i += 100) {

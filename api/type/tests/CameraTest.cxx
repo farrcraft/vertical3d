@@ -62,14 +62,14 @@ BOOST_AUTO_TEST_CASE(camera_projection_test) {
     glm::mat4x4 frustum = perspective.projection();
     BOOST_CHECK_CLOSE(frustum[1][1], -1.0F / std::tan(glm::pi<float>() / 6.0F), 0.01F);
     BOOST_CHECK_CLOSE(frustum[0][0], -frustum[1][1] / 1.33F, 0.01F);
-    // w is the view z rather than its negation - the camera looks along its own +z
+    // w is the view z, not its negation. The camera looks along its own +z
     BOOST_CHECK_EQUAL(frustum[2][3], 1.0F);
     BOOST_CHECK_EQUAL(frustum[3][3], 0.0F);
 }
 
 /**
- * One large zoom in leaves the half height at its floor rather than at zero or below, so the
- * next drag, which is scaled by the half height, can still zoom back out.
+ * One large zoom in leaves the half height at its floor, not at zero or below. The next drag
+ * is scaled by the half height, so it can still zoom back out.
  **/
 BOOST_AUTO_TEST_CASE(camera_zoom_has_a_floor_test) {
     v3d::type::camera::Camera camera;

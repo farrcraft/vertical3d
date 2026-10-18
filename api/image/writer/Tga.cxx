@@ -114,8 +114,8 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     tga_footer footer;
     memset(&footer, 0, sizeof(tga_footer));
 
-    // The signature fills the field exactly, with no terminator - it is 16 bytes of a
-    // fixed size record rather than a C string.
+    // The signature fills the field exactly, with no terminator. It is 16 bytes of a fixed
+    // size record, not a C string.
     memcpy(footer.signature_, "TRUEVISION-XFILE", sizeof(footer.signature_));
     footer.reserved_ = '.';
     file.write(reinterpret_cast<char*>(&footer), sizeof(footer));

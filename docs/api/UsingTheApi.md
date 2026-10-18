@@ -6,7 +6,7 @@ and how to build, run and update it. [docs/api/README.md](README.md) describes t
 themselves.
 
 [examples/starter/](../../examples/starter) is the finished result of this walkthrough. CI builds
-it on every run. Copy it rather than typing the steps out; this page explains each piece.
+it on every run. Copy it rather than typing the steps out. This page explains each piece.
 
 - [Before you start](#before-you-start)
 - [What you need](#what-you-need)

@@ -180,8 +180,8 @@ class Pass final {
     /**
      * The depth bias every pipeline built with one draws at in this pass.
      *
-     * The bias belongs to the pass rather than the item, because it depends on the target's
-     * depth format and the light's angle, which every caster in a shadow pass shares. A
+     * The bias belongs to the pass, not the item. It depends on the target's depth format and
+     * the light's angle, and every caster in a shadow pass shares both. A
      * pipeline built without one ignores it, so other geometry can share the pass. An item
      * whose pipeline was built with one, in a pass that names none, is an error at record
      * time. Otherwise Vulkan would draw with whatever bias was last set, and report nothing.
@@ -234,7 +234,7 @@ class Pass final {
      * Add a draw item to the pass. The engine decides when it is recorded.
      *
      * The key's pipeline and material are taken from the item's handles here, so whatever a
-     * caller set them to is replaced; its layer and depth are the caller's.
+     * caller set them to is replaced. Its layer and depth are the caller's.
      **/
     void submit(const DrawItem& item);
 

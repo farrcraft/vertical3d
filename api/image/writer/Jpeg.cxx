@@ -64,7 +64,7 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
     jpeg_create_compress(&cinfo);
 
     // The colour space has to be set before jpeg_set_defaults(), which reads it to decide
-    // the rest - including how many components a scanline has.
+    // the rest. That includes how many components a scanline has.
     cinfo.in_color_space = img->format() == Image::Format::Grey ? JCS_GRAYSCALE : JCS_RGB;
 
     jpeg_set_defaults(&cinfo);

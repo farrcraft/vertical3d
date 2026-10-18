@@ -24,7 +24,7 @@ class TetrisScene {
 
     /**
      * Advance the board by one simulation step.
-     * @param step seconds, which is what the fall rate is expressed against
+     * @param step seconds, the unit the fall rate is expressed against
      */
     void tick(float step);
     void resize(int width, int height);

@@ -70,7 +70,7 @@ class IsometricController final {
     using Held = std::function<bool(std::string_view command)>;
 
     /**
-     * @param orbit the orbit to drive, which the app owns and which outlives this
+     * @param orbit the orbit to drive. The app owns it, and it outlives this
      * @param dispatcher where the rotate commands arrive
      * @param held asked each simulate() step whether a pan or zoom command is held
      **/

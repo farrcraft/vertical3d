@@ -101,7 +101,7 @@ class Manipulator {
          **/
         bool valid;
         /**
-         * The object's origin in world space, which is where its transform pivots.
+         * The object's origin in world space. Its transform pivots about this point.
          **/
         glm::vec3 origin;
         /**

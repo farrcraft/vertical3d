@@ -25,7 +25,7 @@
 //   Three clips, each a second long:
 //
 //     bend   middle turns a quarter about +z, linearly, so top swings to (-1, 1, 0). It also
-//            moves the tip, which is not a joint, and which a loader drops.
+//            moves the tip, which is not a joint. A loader drops that channel.
 //     step   the same turn, held at the first key until the second.
 //     cubic  top rises from y = 1 to 2 as a cubic spline, with an out tangent of +x and an in
 //            tangent of -x, which at a half puts it at (0.25, 1.5, 0).
@@ -34,7 +34,7 @@
 //
 //   The same skeleton listed child first in the skin: top, root, middle. A loader reorders it and
 //   remaps every vertex's joints. The armature stands at (0, 0, 4), which the inverse bind
-//   matrices and the strip's positions include, and which a loader keeps as the skeleton's root.
+//   matrices and the strip's positions include. A loader keeps it as the skeleton's root.
 //   Joints are unsigned bytes and weights normalised unsigned bytes. No tip.
 //
 // Run from the root of the tree:

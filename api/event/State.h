@@ -26,7 +26,7 @@ enum class State : std::uint8_t {
 
 /**
  * Convert a binding config's state name to a State.
- * An unrecognized name - including the absence of one - is Any, which matches both edges.
+ * An unrecognized name is Any, and so is an empty one. Any matches both edges.
  **/
 constexpr State stringToState(const std::string_view& stateName) {
     if (stateName == "pressed" || stateName == "down") {

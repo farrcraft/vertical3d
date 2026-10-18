@@ -124,7 +124,7 @@ constexpr float debugLineHeight = 26.0F;
 constexpr float debugAlpha = 0.85F;
 
 /**
- * The block palette, indexed by Voxel::BlockType less one - air is never meshed, so the
+ * The block palette, indexed by Voxel::BlockType less one. Air is never meshed, so the
  * table starts at dirt.
  **/
 constexpr glm::vec3 palette[materialCount] = {

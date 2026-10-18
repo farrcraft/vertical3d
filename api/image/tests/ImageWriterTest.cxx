@@ -215,8 +215,8 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
  * The reader builds a 24 bit Image and copies three bytes a pixel, which is only true of the
  * scanline if the decoder was asked for RGB. Left in its own colour space a greyscale file
  * yields one component per pixel, and the third byte of the last pixel is off the end of the
- * row. The ramp is what makes that visible: reading three bytes out of a single component
- * row takes the next two pixels' greys as green and blue, so the channels come apart.
+ * row. The ramp makes that visible. Reading three bytes out of a single component row
+ * takes the next two pixels' greys as green and blue, so the channels come apart.
  **/
 BOOST_FIXTURE_TEST_CASE(imagereader_greyscale_jpeg_test, OutputDirectory) {
     const unsigned int side = 8;

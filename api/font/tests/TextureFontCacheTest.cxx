@@ -172,7 +172,7 @@ BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
     BOOST_CHECK(wide->height_ > narrow->height_);
 
     // the advance is the face's own metric and is not a bitmap dimension, so the spread
-    // must not have moved it - it is what a line of text is laid out along
+    // must not have moved it. A line of text is laid out along the advance
     BOOST_CHECK_CLOSE(wide->advance_.x, narrow->advance_.x, 0.01F);
 
     // and the coordinates still land inside the atlas they were packed into

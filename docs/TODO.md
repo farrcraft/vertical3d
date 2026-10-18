@@ -76,7 +76,7 @@ projection and not under a perspective one.
 [] **The reyes hider adds every polygon to the traced scene.**
 
 - moya fans each polygon into the traced scene as it arrives, before culling, and shades its
-  lights once for it. This is what lets an off-screen caster cast a shadow.
+  lights once for it. This lets an off-screen caster cast a shadow.
 - A scene that never calls `trace()` or `transmission()` pays the memory and the time anyway.
 - The fix adds geometry only when a surface or light shader in the scene traces.
 - Due when a large reyes-only scene's memory or load time shows it.

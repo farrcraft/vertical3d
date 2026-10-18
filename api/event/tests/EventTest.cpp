@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(mouse_event_position_test) {
 
     const v3d::event::kind::MouseButton press("left", glm::vec2(4.0F, 9.0F), mouse, true);
     BOOST_CHECK_EQUAL(press.button(), "left");
-    // the button names the event, so binding one is binding "left" - the same shape a key has
+    // the button names the event, so binding one is binding "left". A key has the same shape
     BOOST_CHECK_EQUAL(press.name(), "left");
     BOOST_CHECK_EQUAL(press.position()[0], 4.0F);
     BOOST_CHECK_EQUAL(press.position()[1], 9.0F);

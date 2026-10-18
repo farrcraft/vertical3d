@@ -1,7 +1,7 @@
 # Ray tracing
 
-The shared ray tracer in `api/render/offline/trace`, which the ray-trace hider uses to find what
-the camera sees and which shaders use for shadows, reflection and refraction.
+The shared ray tracer in `api/render/offline/trace`. The ray-trace hider uses it to find what the
+camera sees, and shaders use it for shadows, reflection and refraction.
 
 ## Ray tracing
 

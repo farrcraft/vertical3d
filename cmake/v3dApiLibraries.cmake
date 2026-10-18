@@ -152,8 +152,8 @@ function(v3d_api_closure)
 	set(V3D_API_PACKAGES "${packages}" PARENT_SCOPE)
 endfunction()
 
-# One manifest field of one library against what the link lines actually named. Appends to
-# the list named by out_var, which is why it takes the name rather than the value.
+# One manifest field of one library against what the link lines actually named. It appends to
+# the list named by out_var, so it takes the variable's name, not its value.
 function(v3d_api_compare library field actual out_var)
 	set(declared ${V3D_API_${library}_${field}})
 	set(problems ${${out_var}})
@@ -259,7 +259,7 @@ endfunction()
 # includes what its library links PRIVATE fails here, and so does a PUBLIC link that no header
 # needs.
 #
-# It runs at configure, so a header edited since then is checked at the next one; CI
+# It runs at configure, so a header edited since then is checked at the next one. CI
 # configures every run.
 function(v3d_api_verify_visibility root)
 	set(problems)

@@ -35,8 +35,8 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
         return false;
     }
 
-    // an 8 bit bmp is palettised - its pixels are indices rather than colours - so a grey
-    // one carries a ramp whose nth entry is the grey n. That makes the index and the grey
+    // an 8 bit bmp is palettised, and its pixels are indices into the palette. A grey one
+    // carries a ramp whose nth entry is the grey n. That makes the index and the grey
     // the same number, and the pixel data goes out unchanged.
     const bool grey = img->format() == v3d::image::Image::Format::Grey;
     const uint32_t shades = grey ? 256U : 0U;

@@ -106,8 +106,8 @@ class TileGrid {
     bool contains(TileCoord tile) const;
 
     /**
-     * @return the world position of a tile's centre, on the ground plane, which is where
-     *         anything standing on the tile sits
+     * @return the world position of a tile's centre, on the ground plane. Anything standing
+     *         on the tile sits there
      **/
     glm::vec3 tileToWorld(TileCoord tile) const;
 

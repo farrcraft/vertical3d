@@ -130,9 +130,9 @@ BOOST_AUTO_TEST_CASE(trace_an_occluder_casts_a_shadow_test) {
     scene.add(v3d::render::offline::trace::Triangle({glm::vec3(-0.5F, -0.5F, 1.0F), glm::vec3(0.5F, -0.5F, 1.0F), glm::vec3(0.0F, 0.5F, 1.0F)}, glm::vec3(1.0F)));
 
     /*
-        The light is up and over to one side rather than straight overhead, so the shadow
-        falls beside the occluder rather than under it. The camera cannot see a point
-        directly beneath the occluder.
+        The light is up and over to one side, not straight overhead. The shadow falls
+        beside the occluder, not under it. The camera cannot see a point directly beneath
+        the occluder.
     */
     ParameterList tilted;
     add(&tilted, "to", Declaration::Type::POINT, { 0.70710678F, 0.0F, -0.70710678F });

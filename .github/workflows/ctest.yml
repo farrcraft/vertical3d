@@ -37,8 +37,8 @@ jobs:
       # environment is not readable from a workflow expression.
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\out\build\vcpkg-cache
       # Mesa's software Vulkan implementation, which gives the render tests a device on a
-      # runner that has no gpu. Pinned rather than resolved the way the SDK above is: this
-      # comes from a third-party release rather than a package manager, so "latest" would let
+      # runner that has no gpu. Its version is pinned, where the SDK's above is resolved. Mesa
+      # comes from a third-party release, not a package manager. Resolving "latest" would let
       # the driver under the tests change without a commit here.
       MESA_VERSION: "26.2.0"
       MESA_ROOT: ${{ github.workspace }}\out\build\mesa
@@ -91,9 +91,9 @@ jobs:
           if (-not $toolset) { throw "the toolchain at $install names no default tools version" }
           "toolset=$toolset" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
-      # The version is resolved before the cache is asked for one, because a key naming
-      # "latest" pins whichever SDK was installed first and then never picks up another - the
-      # opposite of what the word says. Naming the version means a new SDK is a new key.
+      # The version is resolved before the cache is asked for one. A key naming "latest" pins
+      # whichever SDK was installed first and never picks up another. Naming the version means
+      # a new SDK is a new key.
       - name: Resolve the Vulkan SDK version
         id: sdk
         shell: pwsh
@@ -139,9 +139,9 @@ jobs:
           # a layer that is not there reports no errors exactly like a clean run does.
           "VK_LAYER_PATH=$env:VULKAN_SDK_ROOT\Bin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-      # Lavapipe, so that everything below the recorder has a device to draw with. Without it
-      # the render suite skips, which ctest reports rather than passing over - see
-      # api/render/tests/device/TestMain.cpp.
+      # Lavapipe, so that everything below the recorder has a device to draw with.
+      # Without it the render suite skips, and ctest reports the skip. The skip is
+      # made in api/render/tests/device/TestMain.cpp.
       - name: Restore lavapipe
         id: mesa-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -157,7 +157,7 @@ jobs:
           $url = "https://github.com/pal1000/mesa-dist-win/releases/download/$env:MESA_VERSION/mesa3d-$env:MESA_VERSION-release-msvc.7z"
           Invoke-WebRequest -Uri $url -OutFile $archive
           New-Item -ItemType Directory -Force -Path "$env:MESA_ROOT" | Out-Null
-          # 7z is on the runner image; -y because the archive has nested directories
+          # 7z is on the runner image. -y is passed because the archive has nested directories
           & 7z x $archive "-o$env:MESA_ROOT" -y | Out-Null
           if ($LASTEXITCODE -ne 0) { throw "unpacking mesa $env:MESA_VERSION exited $LASTEXITCODE" }
 
@@ -182,11 +182,11 @@ jobs:
             throw "the lavapipe ICD names $library, which is not at $driver - the archive is incomplete or something removed it"
           }
 
-          # An ICD is not a loader. vulkan-1.dll is what an application actually links, and the
-          # SDK does not carry one - on a developer's machine it arrives in System32 with the
-          # gpu driver, which is exactly what a runner has none of. Checked here rather than
-          # left to the tests, because its absence is a process that will not start rather than
-          # a device that is not found, and that reads as neither a failure nor a skip.
+          # An ICD is not a loader. An application links vulkan-1.dll, and the SDK does not
+          # carry one. On a developer's machine it arrives in System32 with the gpu driver, and
+          # a runner has no gpu driver. The loader is checked here, not left to the tests.
+          # Without it a test process does not start at all, and that reads as neither a
+          # failure nor a skip.
           $loader = Join-Path $env:WINDIR "System32\vulkan-1.dll"
           if (-not (Test-Path $loader)) {
             throw "there is no vulkan loader at $loader - the SDK installs one only where it can write System32, and nothing else on this image provides it"
@@ -218,8 +218,8 @@ jobs:
             Write-Host "$key <- $($manifests[$key])"
           }
 
-      # vcpkg builds boost from source, which is most of an hour cold. The binary cache is
-      # what makes a second run cheap, and vcpkg refuses a cache directory that is not there.
+      # vcpkg builds boost from source, which is most of an hour cold. The binary cache
+      # makes a second run cheap. vcpkg refuses a cache directory that is not there.
       #
       # The key names everything vcpkg hashes into a package's ABI that this job can vary:
       # vcpkg.json for which ports, vcpkg-configuration.json for the registry baseline that
@@ -274,9 +274,8 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
             -DVCPKG_TARGET_TRIPLET=x64-windows || exit /b 1
 
-      # Saved here rather than from a post step so that a run whose build or tests fail still
-      # keeps the packages the configure just spent the time building - a failing test is not
-      # a reason to make the next run pay for boost again. Skipped where the restore was an
+      # Saved here, not from a post step. A run whose build or tests fail still keeps the
+      # packages the configure just spent the time building. Skipped where the restore was an
       # exact hit, which leaves nothing this configure could have added.
       - name: Save the vcpkg binaries
         if: steps.vcpkg-cache.outputs.cache-hit != 'true'
@@ -314,8 +313,8 @@ jobs:
         run: |
           # Absolute before anything moves, since every path below is built from it.
           $tests = (Resolve-Path "$env:BUILD_DIR\api\render\tests").Path
-          # Run from beside the executable, which is where ctest runs it from and where its
-          # committed reference pictures are: a fixture path resolves against the working
+          # Run from beside the executable. ctest runs it from there, and its committed
+          # reference pictures are there. A fixture path resolves against the working
           # directory and against nothing else.
           Push-Location $tests
           & "$tests\v3dtest_render_device.exe" --detect_memory_leaks=0

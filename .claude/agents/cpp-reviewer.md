@@ -48,8 +48,8 @@ Report nothing you cannot point at a line for. An empty review is a valid review
 
 Be careful not to report pre-existing breakage as though the change caused it. The tree is
 clean at every gate in `docs/contributing/Linting.md`, so a finding there is usually the
-diff's - but an environment fault is not, and `docs/contributing/Build.md` lists the ones that
-recur.
+diff's. An environment fault is not the diff's, and `docs/contributing/Build.md` lists the ones
+that recur.
 
 ---
 
@@ -67,10 +67,10 @@ most often Major.
 - **A Vulkan or OS handle not owned by a class with a destructor.** `Instance`, `Surface`,
   `Device` and `Swapchain` are RAII wrappers, non-copyable, each destroying exactly what it
   created. A raw handle stored and freed by hand somewhere else is a finding.
-- **Destruction out of order.** Destruction is the reverse of creation, and the ordering is
-  real: the surface goes before both the instance it belongs to and the window it presents
-  to; swapchain images cannot be destroyed while the queues may still be reading them, which
-  is why `Swapchain::recreate` waits for the device to go idle first.
+- **Destruction out of order.** Destruction is the reverse of creation. The surface goes
+  before both the instance it belongs to and the window it presents to. Swapchain images
+  cannot be destroyed while the queues may still be reading them. `Swapchain::recreate` waits
+  for the device to go idle first for that reason.
 - **A constructor that can throw after acquiring a handle, without cleanup.** Nothing runs
   the destructor of an object whose constructor threw. `Swapchain` catches, destroys and
   rethrows for exactly this reason; a new resource class that acquires more than one thing

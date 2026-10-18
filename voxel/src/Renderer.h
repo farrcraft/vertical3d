@@ -99,8 +99,8 @@ class Renderer {
     void createUniforms();
 
     /**
-     * Compile the terrain pipeline against the pass it draws into - a colour attachment and
-     * a depth one, which dynamic rendering needs named at compile time.
+     * Compile the terrain pipeline against the pass it draws into: a colour attachment and
+     * a depth one. Dynamic rendering needs both named at compile time.
      **/
     void createPipeline();
 

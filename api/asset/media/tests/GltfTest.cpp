@@ -221,8 +221,8 @@ BOOST_AUTO_TEST_CASE(gltf_names_the_texture_rather_than_decoding_it_test) {
 }
 
 /**
- * An image the file carries has no name to hand over, so it arrives decoded - and decoded
- * to exactly what the png reader makes of the same bytes on disk.
+ * An image the file carries has no name to hand over, so it arrives decoded. It decodes to
+ * exactly what the png reader makes of the same bytes on disk.
  **/
 BOOST_AUTO_TEST_CASE(gltf_decodes_a_texture_the_file_carries_test) {
     const boost::shared_ptr<v3d::asset::media::kind::Model> asset = loadAsset(EMBEDDED);
@@ -386,8 +386,8 @@ BOOST_AUTO_TEST_CASE(gltf_a_static_model_has_no_skeleton_test) {
 }
 
 /**
- * The skin's joints, their parents, rest poses and inverse bind matrices - every one a whole
- * number, so compared exactly.
+ * The skin's joints, their parents, rest poses and inverse bind matrices. Every value is a
+ * whole number and is compared exactly.
  **/
 BOOST_AUTO_TEST_CASE(gltf_reads_a_skeleton_test) {
     const boost::shared_ptr<v3d::type::Model> model = load(SKINNED);
@@ -462,7 +462,7 @@ BOOST_AUTO_TEST_CASE(gltf_a_skeleton_listed_child_first_is_reordered_test) {
 }
 
 /**
- * Every animation is a clip, named as the file named it, keeping the channels on joints - the
+ * Every animation is a clip, named as the file named it, keeping the channels on joints. The
  * bend also moves the tip, which is not a joint, and that channel is dropped.
  **/
 BOOST_AUTO_TEST_CASE(gltf_reads_the_clips_test) {

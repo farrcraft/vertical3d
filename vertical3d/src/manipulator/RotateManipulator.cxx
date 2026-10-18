@@ -42,11 +42,11 @@ constexpr float tumbleRate = 0.0075F;
  * How face on a ring has to be before a click can be meant for it, as the cosine of
  * the angle between its axis and the direction of view.
  *
- * A ring seen edge on projects to a line through the middle of the manipulator,
- * which crosses every other handle - and its ends land exactly on the rim of the
- * ring facing the camera, so a click meant for that rim would be taken by a ring
- * whose shape the user cannot even see. An axis view is the case that matters: two
- * of the three rings are exactly edge on there, and only the third can be turned.
+ * A ring seen edge on projects to a line through the middle of the manipulator. The
+ * line crosses every other handle. Its ends land exactly on the rim of the ring
+ * facing the camera, so a click meant for that rim would be taken by a ring whose
+ * shape the user cannot even see. An axis view is the case that matters. Two of the
+ * three rings are exactly edge on there, and only the third can be turned.
  **/
 constexpr float faceOn = 0.15F;
 

@@ -67,7 +67,7 @@ if(V3D_ANALYZE)
 endif()
 
 # The check list is .clang-tidy at the root of the tree. CMAKE_CXX_CLANG_TIDY is read when a
-# target is created, so this has to precede the add_subdirectory calls below; CMake passes
+# target is created, so this has to precede the add_subdirectory calls below. CMake passes
 # --driver-mode=cl for an MSVC build itself.
 #
 # /EHsc is repeated to clang-tidy rather than left to the compile command it is already on.

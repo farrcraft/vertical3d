@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_SUITE(render_target_test)
  * the frame before drew is still there to read. On the first frame there is no frame before,
  * and previous() is the cleared image the target was made with rather than an image in an
  * undefined layout. That image is transparent black, so the quad drawn from it blends to
- * nothing and the reader's own blue clear is what shows.
+ * nothing and the reader's own blue clear shows through.
  **/
 BOOST_AUTO_TEST_CASE(a_target_per_frame_reads_the_frame_before) {
     v3d::test::Headless headless(colourFormat, width, height);

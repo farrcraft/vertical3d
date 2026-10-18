@@ -116,8 +116,8 @@ build either an orthographic or perspective projection matrix
 
 both are vulkan clip space: y points down and depth runs from zero at the
 near plane to one at the far one. The camera looks along its own direction vector, which
-the profile documents as +z of the basis its three normals define - so a point in front
-of the camera has a positive view z, and w is that z rather than its negation.
+the profile documents as +z of the basis its three normals define. A point in front of
+the camera has a positive view z, and w is that z, not its negation.
 
 the frustum is symmetric about both axes, so there are no off centre terms in the third
 column.

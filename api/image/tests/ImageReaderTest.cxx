@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(imagereader_tga_orientation_test) {
 
 /**
  * The path is written in terms of the buffer, so the two have to agree pixel for pixel in
- * every format - an image embedded in a .glb decodes to what the same bytes on disk would.
+ * every format. An image embedded in a .glb decodes to what the same bytes on disk would.
  **/
 BOOST_AUTO_TEST_CASE(imagereader_buffer_matches_the_path) {
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();

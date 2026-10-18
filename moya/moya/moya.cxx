@@ -131,7 +131,7 @@ int run(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // the picture was written by RiWorldEnd, which is where the RI standard puts it
+    // the picture was written by RiWorldEnd, as the RI standard specifies
     return EXIT_SUCCESS;
 }
 

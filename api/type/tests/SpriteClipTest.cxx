@@ -16,7 +16,7 @@ namespace {
 
 /**
  * Three frames of a strip four regions wide, shown for a quarter, a half and a quarter of a
- * second - lengths a float sums exactly, so every boundary is where the test says it is.
+ * second. A float sums those lengths exactly, so every boundary is where the test says it is.
  **/
 std::vector<SpriteClip::Frame> strip() {
     return {

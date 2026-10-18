@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(logger_open_moves_the_log_test) {
         logger.get()->flush();
     }
 
-    // open() creates the file, so the line written to it is what shows the log moved
+    // open() creates the file, so only the line written to it shows that the log moved
     std::string contents;
     {
         std::ifstream file(path);

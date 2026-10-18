@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE(slcompiler_varying_condition_test) {
         "    Ci = Cs;\n"
         "}\n", &symbols), "");
 
-    // the value assigned is uniform in both, and the condition is what differs
+    // the value assigned is uniform in both. Only the condition differs
     BOOST_CHECK(storageOf(symbols, "inside") == Storage::VARYING);
     BOOST_CHECK(storageOf(symbols, "outside") == Storage::UNIFORM);
 }

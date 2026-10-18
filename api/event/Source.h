@@ -50,7 +50,7 @@ class Source final : public Event {
  * to. Only the event engine listens for this.
  **/
 struct Unclaimed final {
-    const Source* source;  // never null; a pointer because a dispatcher stores its events by value
+    const Source* source;  // never null. A pointer, because a dispatcher stores its events by value
 };
 
 /**
