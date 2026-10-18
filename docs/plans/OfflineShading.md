@@ -395,6 +395,8 @@ checks them, and a sphere's against its analytic derivatives. Comparing with the
 would mix two parameterisations of the same polygon. `raytrace-bump.png` is the bumped plane
 under the ray hider, from code and from RIB. Every committed `raytrace-` picture is unchanged,
 because lane zero is shaded as before.
+With the stencil switched off by hand, four of the five new cases fail. The fifth checks
+`Scene::footprint()` alone.
 
 * **`HitShader` shades a hit as the stencil ADR-0093 decides.** `trace::Primitive` gives the
   point and the normal at a (u, v) near a hit, and the step's size comes from the ray's distance.
