@@ -56,8 +56,9 @@ Background: [ADR-0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md
 `config::CameraProfiles` ([api/config/CameraProfiles.h](../../../api/config/CameraProfiles.h))
 reads named `type::camera::Profile`s. Each entry needs a `name`. The other fields have defaults:
 `orthographic` (true), `eye` (`[0, 0, -10]`), `lookat` (`[0, 0, 0]`), `up` (`[0, 1, 0]`),
-`zoom` (10, and at least `Camera::MINIMUM_ZOOM`, 0.01, or the load fails), `fov` (60, in degrees), `aspect` (1.33), `near` (0.1), `far` (100), and `adaptive`
-(`none`, `projection`, `position` or `both`). A profile is described by where the camera is and
+`zoom` (10), `fov` (60, in degrees), `aspect` (1.33), `near` (0.1), `far` (100), and `adaptive`
+(`none`, `projection`, `position` or `both`). A `zoom` below `Camera::MINIMUM_ZOOM`, 0.01, fails
+the load. A profile is described by where the camera is and
 what it looks at, because `Profile::lookat()` is the one call that sets the basis and the
 rotation together. The editor's `data/cameras.json` is the example in the tree. Cameras are
 covered in [Types.md](../Types.md#cameras).

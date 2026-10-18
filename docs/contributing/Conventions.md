@@ -116,10 +116,13 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
   2.0 and 100.0.
 - **A variable or parameter name is at least two letters**, and says what it holds:
   `expected` and `actual`, not `a` and `b`. One letter is allowed only where it is the
-  conventional name: `x`, `y`, `z` and `w` for coordinates, `u` and `v` for a surface's
-  parameters, `s` and `t` for texture coordinates, `i`, `j` and `k` for a loop counter, `n` for a
-  count parameter and `e` for a caught exception. clang-tidy's `readability-identifier-length`
-  reports any other name shorter than two letters.
+  conventional name:
+  - `x`, `y`, `z` and `w` for coordinates;
+  - `u` and `v` for a surface's parameters, and `s` and `t` for texture coordinates;
+  - `i`, `j` and `k` for a loop counter;
+  - `n` for a count parameter and `e` for a caught exception.
+
+  clang-tidy's `readability-identifier-length` reports any other name shorter than two letters.
 - **A literal's suffix is in capitals:** `1.0F`, `16U`, `0xFFULL`. A lowercase `l` reads as the
   digit 1. clang-tidy's `readability-uppercase-literal-suffix` reports a lowercase suffix,
   inside a macro argument too.

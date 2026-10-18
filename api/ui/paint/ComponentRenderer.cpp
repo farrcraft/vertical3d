@@ -5,6 +5,7 @@
 
 #include "ComponentRenderer.h"
 
+#include <api/type/Checked.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
@@ -37,6 +38,8 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -587,7 +590,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     const float scrolled = list->offset();
     // only the rows the box shows are drawn - a list of a thousand costs the rows on screen
-    const std::size_t first = static_cast<std::size_t>(std::max(scrolled / row, 0.0F));
+    const std::size_t first = v3d::type::toCount(scrolled / row, std::numeric_limits<uint32_t>::max()).value_or(0U);
     const std::size_t last = std::min(list->items().size(),
         first + static_cast<std::size_t>(size.y / row) + 2U);
 

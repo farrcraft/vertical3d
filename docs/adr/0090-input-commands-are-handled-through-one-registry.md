@@ -39,7 +39,7 @@ window to check its bindings the same way.
   send the same command reach the same handler. The editor's command directory becomes the api's,
   and every app handles commands one way
 - **Costs**: every app's input handling is rewritten. A handler registered in the constructor
-  runs only after `start()`, so it may not use what `start()` builds until then, and the shell's
+  runs only after `start()`, so it may not use what `start()` builds until then. The shell's
   game menu is registered through a function the app calls rather than by the menu itself. An
   app suite compiles the app's engine class, and so links what the app links
 - **Revisit when**: commands need to be registered or removed while the game runs, such as by a

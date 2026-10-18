@@ -393,7 +393,7 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderCont
         anything whose raster bound is wider or taller than the square root of the grid size
         times the shading rate, so one grid covers what reaches here.
     */
-    const unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));
+    const unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));  // checked: the root of a count is finite and no larger
     grid.reset(new reyes::MicroPolygonGrid(across + 1));
 
     /*

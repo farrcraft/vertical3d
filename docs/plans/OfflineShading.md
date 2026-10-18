@@ -206,8 +206,8 @@ Steps 18 to 20 can land at any point.
 under a different rotation, so the sign decides where each face lands.
 
 * **A moya case reads it through the RIB reader**, and checks the centre of each face in camera
-  space against the face the specification names: far +z, right +x, near −z, left −x, bottom −y
-  and top +y.
+  space against the face the specification names. Those are far +z, right +x, near −z, left −x,
+  bottom −y and top +y.
 * **A comment on `RenderContext::rotate` states the rule**: a positive angle turns +z towards +x
   about y, and +z towards −y about x, as the specification's example requires.
 * **The TODO entry for `RiRotate`'s sign is deleted.** It is the only TODO entry this step
@@ -431,8 +431,8 @@ mean of many samples is near its centre.
   `SlCompilerTest.cxx:595-600` and `SlParserTest.cxx:229-236` change to say they compile.
 * **The RIB reader dispatches `Displacement`**, and `rib::Handler` gains `displacement`.
   `RiDisplacementV` stops being empty.
-* **`Attribute "displacementbound" "float sphere"`** reaches the context, with the `"coordinatesystem"`
-  form. Any other attribute is reported once, as now.
+* **`Attribute "displacementbound" "float sphere"`** reaches the context, with the
+  `"coordinatesystem"` form. Any other attribute is reported once, as now.
 
 **Tests:** the request reaches a recording handler, from RIB and from the C API. A displacement
 shader that moves `P` along `N` compiles and runs on a batch.

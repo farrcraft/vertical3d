@@ -116,7 +116,7 @@ bool TextureFont::Freetype::loadFace(const std::string& filename, float size) {
 
     // set transform matrix
     FT_Matrix matrix = {
-        static_cast<int>((1.0 / HORIZONTAL_OVERSAMPLE) * 0x10000L),
+        static_cast<int>((1.0 / HORIZONTAL_OVERSAMPLE) * 0x10000L),  // checked: a constant, 1024
         static_cast<int>(0.0 * 0x10000L),
         static_cast<int>(0.0 * 0x10000L),
         static_cast<int>(1.0 * 0x10000L)
