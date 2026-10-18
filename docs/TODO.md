@@ -39,15 +39,6 @@ primitive undisplaced, so its shadows follow its old shape.
 - The fix adds geometry only when a surface or light shader in the scene traces.
 - Due when a large reyes-only scene's memory or load time shows it.
 
-[] **`solar` with an angle lights along its axis only.**
-
-- A non-zero angle lets L be any direction inside a cone around the axis. RenderMan chooses the
-  one nearest the surface's illuminance cone.
-- A light shader is run with the surface's position only, so the machine cannot choose. It
-  reports the angle once and uses the axis.
-- The fix passes the surface's illuminance axis and angle to the light along with its position.
-- Due when a scene needs a sky or another wide distant light.
-
 [] **`offline::trace::Tracer` runs a shader once per hit.**
 
 - Each hit gets its own `HitShader` and its own run of the machine, so a ray-hidden image pays

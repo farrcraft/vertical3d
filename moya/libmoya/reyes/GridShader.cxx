@@ -131,7 +131,8 @@ unsigned int GridShader::lights() {
     return shading_ == nullptr ? 0U : v3d::render::offline::sl::shining(shading_->lights);
 }
 
-bool GridShader::light(unsigned int index, const Value & surface, Value* direction,
+bool GridShader::light(unsigned int index, const Value & surface, const v3d::render::offline::sl::runtime::Cone & gathering,
+    Value* direction,
     Value* colour, std::vector<char>* reached, bool* ambient) {
     if (shading_ == nullptr) {
         return false;
@@ -158,8 +159,8 @@ bool GridShader::light(unsigned int index, const Value & surface, Value* directi
     // while it runs, and the surface's again afterwards
     const glm::mat4x4 was = placement_;
     placement_ = shining.placement;
-    const bool ran = held.globals.shine(shining, &held.machine, batch_, surface, direction, colour, reached, ambient,
-        shining.area ? &from : nullptr);
+    const bool ran = held.globals.shine(shining, &held.machine, batch_, surface, gathering, direction, colour, reached,
+        ambient, shining.area ? &from : nullptr);
     placement_ = was;
     if (ran && shining.area) {
         // each sample carries its share of the light

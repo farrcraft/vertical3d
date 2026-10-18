@@ -63,6 +63,7 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
     bool space(const std::string & name, glm::mat4x4* matrix) override;
     unsigned int lights() override;
     bool light(unsigned int index, const v3d::render::offline::sl::runtime::Value & surface,
+        const v3d::render::offline::sl::runtime::Cone & gathering,
         v3d::render::offline::sl::runtime::Value* direction,
         v3d::render::offline::sl::runtime::Value* colour,
         std::vector<char>* reached, bool* ambient) override;

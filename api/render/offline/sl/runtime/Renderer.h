@@ -29,6 +29,17 @@ namespace v3d::render::offline::sl::runtime {
  * test's stand-in for one, implements only what it supports. Only the coordinate space is
  * required, because a renderer that cannot say where it is shading has nothing to shade.
  **/
+/**
+ * The cone a surface's illuminance loop gathers light from at each point: its axis and its half
+ * angle in radians. Both null for a loop with no cone, which gathers from every direction. A
+ * light with a `solar` angle chooses its direction against it.
+ **/
+class Cone final {
+ public:
+    const Value* axis = nullptr;
+    const Value* angle = nullptr;
+};
+
 class Renderer {
  public:
     /**
@@ -114,6 +125,7 @@ class Renderer {
      *
      * @param index which of lights()
      * @param surface where each point being lit is, which is the light shader's Ps
+     * @param gathering the cone the illuminance loop gathers from at each point
      * @param direction where L lands: **from the surface point toward the light**
      * @param colour where Cl lands
      * @param reached which points the light gets to at all
@@ -121,7 +133,8 @@ class Renderer {
      *        out of an illuminance loop and summed by ambient()
      * @return whether the renderer ran it; a light it could not run lights nothing
      **/
-    virtual bool light(unsigned int index, const Value & surface, Value* direction,
+    virtual bool light(unsigned int index, const Value & surface, const Cone & gathering,
+        Value* direction,
         Value* colour, std::vector<char>* reached, bool* ambient);
 
     /**

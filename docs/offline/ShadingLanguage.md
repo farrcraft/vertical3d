@@ -192,11 +192,14 @@ files on disk.
 
 - **`ambient()` is C++.** An ambient light uses neither `illuminate` nor `solar`, so it has no
   direction, and an `illuminance` loop cannot reach it.
-- **`solar` is lit along its axis.** An angle other than 0 would let `L` be any direction inside a
-  cone, chosen against the surface's own `illuminance` cone, which a light shader is not given.
-  The machine reports such an angle once and uses the axis.
+- **`solar` with an angle chooses `L` inside its cone, nearest the surface's illuminance axis**,
+  as RenderMan does. An axis inside the light's cone is `L` itself, and an axis outside it gives
+  the cone's edge nearest it, with the length of the light's axis. An illuminance loop hands its
+  cone to each light it runs, as `runtime::Cone`, through `Renderer::light` and
+  `Globals::shine`, and the light's machine reads it from `Machine::gather`. With no cone, as
+  under `ambient()`, the light shines along its axis.
 - **A machine's reports reach the log.** A report says what a run could not do, such as a space
-  no renderer named or an angle `solar` cannot honour. Each distinct report is logged once per
+  no renderer named or a stub that was called. Each distinct report is logged once per
   machine as a warning, through the logger of the shader instance that wrote the machine's
   parameters. A shader whose parameter defaults fail to run is reported in the same way, once
   per machine, and the renderer treats it as a run that failed.

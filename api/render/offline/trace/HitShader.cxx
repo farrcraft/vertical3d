@@ -83,7 +83,8 @@ unsigned int HitShader::lights() {
     return v3d::render::offline::sl::shining(shining());
 }
 
-bool HitShader::light(unsigned int index, const Value & surface, Value* direction,
+bool HitShader::light(unsigned int index, const Value & surface, const v3d::render::offline::sl::runtime::Cone & gathering,
+    Value* direction,
     Value* colour, std::vector<char>* reached, bool* ambient) {
     unsigned int sample = 0;
     const v3d::render::offline::sl::Placed* lit = v3d::render::offline::sl::which(shining(), index, &sample);
@@ -105,8 +106,8 @@ bool HitShader::light(unsigned int index, const Value & surface, Value* directio
     // the scene instanced the light in
     const glm::mat4x4 was = placement_;
     placement_ = source.placement;
-    const bool ran = held.globals.shine(source, &held.machine, Tracer::STENCIL, surface, direction, colour, reached,
-        ambient, source.area ? &from : nullptr);
+    const bool ran = held.globals.shine(source, &held.machine, Tracer::STENCIL, surface, gathering, direction, colour,
+        reached, ambient, source.area ? &from : nullptr);
     placement_ = was;
     if (ran && source.area) {
         // each sample carries its share of the light

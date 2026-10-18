@@ -8,6 +8,7 @@
 #include <api/render/offline/sl/Types.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Program.h>
+#include <api/render/offline/sl/runtime/Renderer.h>
 
 #include "Placed.h"
 
@@ -102,11 +103,20 @@ float Globals::alpha(const runtime::Machine & machine, unsigned int lane, float 
 }
 
 bool Globals::shine(const Placed & light, runtime::Machine* machine, unsigned int batch, const runtime::Value & surface,
-    runtime::Value* direction, runtime::Value* colour, std::vector<char>* reached, bool* ambient,
-    const std::vector<glm::vec3>* from) const {
+    const runtime::Cone & gathering, runtime::Value* direction, runtime::Value* colour, std::vector<char>* reached,
+    bool* ambient, const std::vector<glm::vec3>* from) const {
     if (!light.shader->write(machine, light.placement)) {
         return false;
     }
+    std::vector<glm::vec3> axes;
+    std::vector<float> angles;
+    if (gathering.axis != nullptr && gathering.angle != nullptr) {
+        for (unsigned int lane = 0; lane < batch; lane++) {
+            axes.push_back(gathering.axis->triple(lane));
+            angles.push_back(gathering.angle->number(lane));
+        }
+    }
+    machine->gather(axes, angles);
 
     const glm::vec3 origin = ptransform(light.placement, glm::vec3(0.0F));
     for (unsigned int lane = 0; lane < batch; lane++) {

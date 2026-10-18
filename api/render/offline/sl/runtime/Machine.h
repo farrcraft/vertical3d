@@ -80,6 +80,13 @@ class Machine final {
      **/
     void renderer(Renderer* renderer);
 
+    /**
+     * The cone a surface's illuminance loop gathers from at each point, for a light shader's
+     * `solar` with an angle to choose its direction against. Empty for none, and then such a
+     * `solar` lights along its axis. It lasts until it is set again.
+     **/
+    void gather(const std::vector<glm::vec3> & axes, const std::vector<float> & angles);
+
     const std::string & error() const;
 
     /**
@@ -276,6 +283,8 @@ class Machine final {
     int s_ = -1;
     int t_ = -1;
     std::vector<char> lit_;
+    std::vector<glm::vec3> gatherAxes_;
+    std::vector<float> gatherAngles_;
     std::vector<std::string> reports_;
     boost::shared_ptr<v3d::log::Logger> logger_;
     std::vector<std::string> printed_;

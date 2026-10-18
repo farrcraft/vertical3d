@@ -33,7 +33,7 @@ unsigned int Renderer::lights() {
     return 0;
 }
 
-bool Renderer::light(unsigned int /* index */, const Value & /* surface */,
+bool Renderer::light(unsigned int /* index */, const Value & /* surface */, const Cone & /* gathering */,
     Value* /* direction */, Value* /* colour */, std::vector<char>* /* reached */,
     bool* /* ambient */) {
     return false;

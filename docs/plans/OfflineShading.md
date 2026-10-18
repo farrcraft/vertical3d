@@ -137,7 +137,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [15](#step-15--displacement-under-the-reyes-hider) | Displacement under the reyes hider | `moya` | — | done |
 | [16](#step-16--the-record-displacement-under-the-ray-hider) | The record: displacement under the ray hider | `docs/adr` | **0095** | open |
 | [17](#step-17--displacement-under-the-ray-hider) | Displacement under the ray hider, as 0095 decides | `api/render/offline`, `moya` | 0095 | open |
-| [18](#step-18--solar-with-an-angle) | `solar` with an angle | `api/render/offline`, `moya` | — | open |
+| [18](#step-18--solar-with-an-angle) | `solar` with an angle | `api/render/offline`, `moya` | — | done |
 | [19](#step-19--the-traced-scene-only-when-something-traces) | The reyes hider fills the traced scene only when something traces | `api/render/offline`, `moya` | — | open |
 | [20](#step-20--the-command-line-wins-over-option-limits) | The command line wins over `Option "limits"` | `moya` | — | open |
 | [21](#step-21--the-documents) | The offline documents state the new rules | `docs` | — | open |
@@ -627,6 +627,13 @@ Built as ADR-0095 decides. If the ADR decides a refusal, this step is the report
 * a shadow cast by a displaced surface follows the displaced shape, under both hiders.
 
 ### Step 18 — `solar` with an angle
+
+**Done.** `Renderer::light` takes the illuminance loop's cone as `runtime::Cone`, and
+`Globals::shine` hands it to the light's machine through `Machine::gather`. `solar` with an angle
+then takes the direction in its cone nearest the loop's axis. The reported case became
+`sllighting_solar_with_an_angle_chooses_its_direction_test`, and a second case runs the cone
+from a surface's illuminance loop to the light and back. The log case, which used the solar
+report as its example, now uses the report a `shadow` call makes.
 
 * **`Renderer::light` receives the surface's illuminance axis and angle**, and `Globals::shine`
   passes them to the light shader.

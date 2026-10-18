@@ -115,7 +115,8 @@ BOOST_AUTO_TEST_CASE(slglobals_shine_test) {
     colour.reset(v3d::render::offline::sl::Type::COLOR, v3d::render::offline::sl::Storage::VARYING, 3);
     std::vector<char> reached;
     bool ambient = false;
-    BOOST_REQUIRE(globals.shine(light, &machine, 3, surface, &direction, &colour, &reached, &ambient));
+    BOOST_REQUIRE(globals.shine(light, &machine, 3, surface, v3d::render::offline::sl::runtime::Cone(), &direction, &colour,
+        &reached, &ambient));
 
     BOOST_CHECK(ambient);
     BOOST_REQUIRE_EQUAL(reached.size(), 3U);

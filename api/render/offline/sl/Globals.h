@@ -103,13 +103,15 @@ class Globals final {
      *
      * @param machine prepared for the light's program, whose globals these are
      * @param surface the points being lit, in the renderer's current space
+     * @param gathering the cone the surface's illuminance loop gathers from, which a `solar`
+     *        with an angle chooses its direction against
      * @param from for an area light, the point it shines from at each shading point, in the
      *        renderer's current space. Null for any other light
      * @return whether the light ran
      **/
     bool shine(const Placed & light, runtime::Machine* machine, unsigned int batch, const runtime::Value & surface,
-        runtime::Value* direction, runtime::Value* colour, std::vector<char>* reached, bool* ambient,
-        const std::vector<glm::vec3>* from = nullptr) const;
+        const runtime::Cone & gathering, runtime::Value* direction, runtime::Value* colour, std::vector<char>* reached,
+        bool* ambient, const std::vector<glm::vec3>* from = nullptr) const;
 
  private:
     int position_ = -1;

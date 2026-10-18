@@ -775,7 +775,7 @@ void Machine::ambient(Value* target) {
     for (unsigned int index = 0; index < count; index++) {
         std::vector<char> reached(batch_, 1);
         bool isAmbient = false;
-        if (!renderer_->light(index, surface, &direction_, &colour_, &reached, &isAmbient)) {
+        if (!renderer_->light(index, surface, Cone(), &direction_, &colour_, &reached, &isAmbient)) {
             continue;
         }
         if (!isAmbient) {
