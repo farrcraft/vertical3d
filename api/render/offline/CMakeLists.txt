@@ -10,6 +10,7 @@ set(CMAKE_C_FLAGS "/utf-8")
 v3d_add_api_library(render_offline
 	"Characters.h" "Characters.cxx"
 	"Position.h"
+	"Units.h"
 	"Lexeme.h"
 	"FrameBuffer.h" "FrameBuffer.cxx"
 	"Sampling.h" "Sampling.cxx"

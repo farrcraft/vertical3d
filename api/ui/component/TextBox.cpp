@@ -15,10 +15,17 @@ namespace v3d::ui::component {
 namespace {
 
 /**
+ * The top two bits of a utf-8 byte, which say whether it is a continuation, and the value
+ * they hold in one.
+ **/
+constexpr unsigned int CONTINUATION_MASK = 0xC0U;
+constexpr unsigned int CONTINUATION_TAG = 0x80U;
+
+/**
  * Whether a byte is a utf-8 continuation - the ones a character boundary is never on.
  **/
 bool continuation(char byte) noexcept {
-    return (static_cast<unsigned char>(byte) & 0xC0U) == 0x80U;
+    return (static_cast<unsigned char>(byte) & CONTINUATION_MASK) == CONTINUATION_TAG;
 }
 
 };  // namespace

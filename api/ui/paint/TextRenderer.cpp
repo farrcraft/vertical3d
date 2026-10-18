@@ -110,37 +110,64 @@ std::u32string TextRenderer::decode(std::string_view utf8) {
  **/
 char32_t TextRenderer::next(std::string_view utf8, std::size_t* index) {
     const char32_t replacement = 0xFFFD;
-    // the smallest code point each sequence length may encode; anything below is overlong
-    const std::array<char32_t, 5> minimum = {0, 0, 0x80, 0x800, 0x10000};
+    // a byte below this is a whole character on its own
+    constexpr int singleByteLimit = 0x80;
+    // the smallest code point each longer sequence may encode; anything below is overlong
+    constexpr char32_t twoByteSmallest = 0x80;
+    constexpr char32_t threeByteSmallest = 0x800;
+    constexpr char32_t fourByteSmallest = 0x10000;
+    // the same, indexed by sequence length
+    constexpr std::array<char32_t, 5> minimum = {0, 0, twoByteSmallest, threeByteSmallest, fourByteSmallest};
+    // a lead byte of each sequence length: the mask of its tag bits, the tag, and the mask of
+    // the code point bits it carries
+    constexpr int twoByteMask = 0xE0;
+    constexpr int twoByteTag = 0xC0;
+    constexpr int twoBytePayload = 0x1F;
+    constexpr int threeByteMask = 0xF0;
+    constexpr int threeByteTag = 0xE0;
+    constexpr int threeBytePayload = 0x0F;
+    constexpr int fourByteMask = 0xF8;
+    constexpr int fourByteTag = 0xF0;
+    constexpr int fourBytePayload = 0x07;
+    // a continuation byte: the mask of its tag bits, the tag, and the six code point bits it
+    // carries
+    constexpr int continuationMask = 0xC0;
+    constexpr int continuationTag = 0x80;
+    constexpr int continuationBits = 6;
+    constexpr int continuationPayload = 0x3F;
+    // the largest code point, and the surrogate range, which no code point may fall in
+    constexpr char32_t largestPoint = 0x10FFFF;
+    constexpr char32_t firstSurrogate = 0xD800;
+    constexpr char32_t lastSurrogate = 0xDFFF;
 
     const std::size_t start = *index;
     const unsigned char lead = static_cast<unsigned char>(utf8[start]);
     std::size_t length = 0;
     char32_t point = 0;
-    if (lead < 0x80) {
+    if (lead < singleByteLimit) {
         length = 1;
         point = lead;
-    } else if ((lead & 0xE0) == 0xC0) {
+    } else if ((lead & twoByteMask) == twoByteTag) {
         length = 2;
-        point = static_cast<char32_t>(lead & 0x1F);
-    } else if ((lead & 0xF0) == 0xE0) {
+        point = static_cast<char32_t>(lead & twoBytePayload);
+    } else if ((lead & threeByteMask) == threeByteTag) {
         length = 3;
-        point = static_cast<char32_t>(lead & 0x0F);
-    } else if ((lead & 0xF8) == 0xF0) {
+        point = static_cast<char32_t>(lead & threeBytePayload);
+    } else if ((lead & fourByteMask) == fourByteTag) {
         length = 4;
-        point = static_cast<char32_t>(lead & 0x07);
+        point = static_cast<char32_t>(lead & fourBytePayload);
     }
 
     bool valid = length > 0 && start + length <= utf8.size();
     for (std::size_t offset = 1; valid && offset < length; offset++) {
         const unsigned char following = static_cast<unsigned char>(utf8[start + offset]);
-        if ((following & 0xC0) != 0x80) {
+        if ((following & continuationMask) != continuationTag) {
             valid = false;
         } else {
-            point = (point << 6) | static_cast<char32_t>(following & 0x3F);
+            point = (point << continuationBits) | static_cast<char32_t>(following & continuationPayload);
         }
     }
-    if (valid && (point < minimum.at(length) || point > 0x10FFFF || (point >= 0xD800 && point <= 0xDFFF))) {
+    if (valid && (point < minimum.at(length) || point > largestPoint || (point >= firstSurrogate && point <= lastSurrogate))) {
         valid = false;
     }
 

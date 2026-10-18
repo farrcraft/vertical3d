@@ -18,6 +18,11 @@ namespace v3d::config {
 
 namespace {
 
+// what a profile entry that leaves these out gets, where it differs from a new Profile
+constexpr float ENTRY_ZOOM = 10.0f;
+constexpr float ENTRY_NEAR = 0.1f;
+constexpr glm::vec3 ENTRY_EYE{0.0f, 0.0f, -10.0f};
+
 /**
  * Read a three element array as a vector.
  * @return the value read, or the fallback if the entry is missing, the wrong length, or holds
@@ -89,7 +94,7 @@ bool CameraProfiles::load(const boost::json::object& doc) {
 
         // a half height of zero or less draws nothing, and the editor's zoom drag cannot
         // bring it back
-        const float zoom = number(entry, "zoom", 10.0f);
+        const float zoom = number(entry, "zoom", ENTRY_ZOOM);
         if (zoom < v3d::type::camera::Camera::MINIMUM_ZOOM) {
             logger_->get()->error("Camera profile {} has a zoom of {}, which is below {}", name, zoom,
                 v3d::type::camera::Camera::MINIMUM_ZOOM);
@@ -99,15 +104,15 @@ bool CameraProfiles::load(const boost::json::object& doc) {
         v3d::type::camera::Profile profile(name);
         profile.orthographic(flag(entry, "orthographic", true));
         profile.orthoZoom(zoom);
-        profile.fov(number(entry, "fov", 60.0f));
-        profile.pixelAspect(number(entry, "aspect", 1.33f));
-        profile.clipping(glm::vec2(number(entry, "near", 0.1f), number(entry, "far", 100.0f)));
+        profile.fov(number(entry, "fov", v3d::type::camera::Profile::DEFAULT_FOV));
+        profile.pixelAspect(number(entry, "aspect", v3d::type::camera::Profile::DEFAULT_PIXEL_ASPECT));
+        profile.clipping(glm::vec2(number(entry, "near", ENTRY_NEAR), number(entry, "far", v3d::type::camera::Profile::DEFAULT_FAR)));
 
         const std::string adaptive = adaptiveRead.value_or("none");
         profile.adaptiveProjection(adaptive == "both" || adaptive == "projection");
         profile.adaptivePosition(adaptive == "both" || adaptive == "position");
 
-        profile.eye(vector(entry, "eye", glm::vec3(0.0f, 0.0f, -10.0f)));
+        profile.eye(vector(entry, "eye", ENTRY_EYE));
         // up before lookat: lookat starts from the up vector and derives the other two
         // and the rotation from it, so an up that arrives afterwards is overwritten
         profile.up(vector(entry, "up", glm::vec3(0.0f, 1.0f, 0.0f)));

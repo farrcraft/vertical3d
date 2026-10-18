@@ -16,6 +16,13 @@
 
 namespace v3d::render::offline {
 
+namespace {
+
+/** A pixel whose total filter weight is smaller than this has no value. **/
+constexpr double NEGLIGIBLE_WEIGHT = 1.0e-12;
+
+};  // namespace
+
 Film::Film(unsigned int width, unsigned int height, const Sampling & sampling) :
     width_(width), height_(height), filter_(sampling.filter), filterWidth_(sampling.width),
     pixels_(static_cast<std::size_t>(width) * height) {
@@ -86,7 +93,7 @@ void Film::add(const Sample & sample) {
 glm::vec3 Film::colour(unsigned int column, unsigned int row) const {
     const Pixel & pixel = at(column, row);
     // a filter with negative lobes can bring a weight to zero without a sample being absent
-    if (std::fabs(pixel.weight) < 1.0e-12) {
+    if (std::fabs(pixel.weight) < NEGLIGIBLE_WEIGHT) {
         return glm::vec3(0.0f);
     }
     return glm::vec3(pixel.colour / pixel.weight);
@@ -94,7 +101,7 @@ glm::vec3 Film::colour(unsigned int column, unsigned int row) const {
 
 glm::vec3 Film::opacity(unsigned int column, unsigned int row) const {
     const Pixel & pixel = at(column, row);
-    if (std::fabs(pixel.weight) < 1.0e-12) {
+    if (std::fabs(pixel.weight) < NEGLIGIBLE_WEIGHT) {
         return glm::vec3(0.0f);
     }
     return glm::vec3(pixel.opacity / pixel.weight);
@@ -102,7 +109,7 @@ glm::vec3 Film::opacity(unsigned int column, unsigned int row) const {
 
 float Film::coverage(unsigned int column, unsigned int row) const {
     const Pixel & pixel = at(column, row);
-    if (std::fabs(pixel.weight) < 1.0e-12) {
+    if (std::fabs(pixel.weight) < NEGLIGIBLE_WEIGHT) {
         return 0.0f;
     }
     return static_cast<float>(pixel.coverage / pixel.weight);

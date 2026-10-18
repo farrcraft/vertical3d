@@ -307,10 +307,10 @@ RtVoid RiProjection(RtToken name, ...) {
     va_start(ap, name);
     RtToken param = va_arg(ap, RtToken);
     std::string token;
-    float fov = 90.;
+    float fov = v3d::moya::RenderContext::defaultFov;
     if (name == RI_NULL) {
         renderer().activeRenderContext().projection("");
-    } else if (strncmp(name, RI_PERSPECTIVE, 11) == 0) {
+    } else if (strncmp(name, RI_PERSPECTIVE, strlen(RI_PERSPECTIVE)) == 0) {
         // perspective takes an optional fov parameter
         if (param != RI_NULL) {
             token = va_arg(ap, RtToken);

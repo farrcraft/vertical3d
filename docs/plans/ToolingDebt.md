@@ -58,7 +58,7 @@ names it as the one Python file in the tree.
 
 ### Steps 5 to 17 — One check each
 
-**Steps 5 to 13 done; 14 to 17 open.**
+**Steps 5 to 14 done; 15 to 17 open.**
 
 - Steps 5 to 8 shared one discovery pass and one verification pass. Several files carried sites
   of more than one check.
@@ -107,6 +107,14 @@ names it as the one Python file in the tree.
   app still owns its entities as before. The other two were test doubles that mixed public and
   private data.
 - A class outside the tree that derives from one of those bases has to call the accessor.
+- Step 14 found 6069 sites, 5398 of them in tests. A test's literal is the value it expects, so
+  each tests directory has a `.clang-tidy` that turns the check off there. The check's options
+  ignore 24, 255, powers of two, 0.5 and 2.0, which left about 390 sites in libraries and apps.
+  Each became a named constant. Where several numbers are one value, they are one constant: a
+  colour, the ui's shared palette in `ui/paint/Palette.h`, a coefficient table. A count is
+  derived with `std::size` or `sizeof` instead of written. The shared offline renderer
+  constants are in `render/offline/Units.h`. `RtBound` keeps the standard's `[6]` under a
+  NOLINTNEXTLINE.
 
 Each step follows the same procedure:
 

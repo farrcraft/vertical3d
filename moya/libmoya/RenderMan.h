@@ -25,6 +25,8 @@ typedef RtFloat RtNormal[3];
 typedef RtFloat RtHpoint[4];
 typedef RtFloat RtMatrix[4][4];
 typedef RtFloat RtBasis[4][4];
+// the standard's own declaration: xmin, xmax, ymin, ymax, zmin, zmax
+// NOLINTNEXTLINE(readability-magic-numbers)
 typedef RtFloat RtBound[6];
 typedef char * RtString;
 

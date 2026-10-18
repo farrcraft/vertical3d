@@ -7,6 +7,15 @@
 
 namespace v3d::ui {
 
+namespace {
+
+/**
+ * What a percentage is multiplied by to give a fraction.
+ **/
+constexpr float PERCENT_TO_FRACTION = 0.01f;
+
+};  // namespace
+
 Length::Length() noexcept :
     value_(0.0f),
     unit_(Unit::Auto) {
@@ -32,7 +41,7 @@ float Length::resolve(const Basis& basis) const noexcept {
         case Unit::Pixels:
             return value_;
         case Unit::Percent:
-            return extent * value_ * 0.01f;
+            return extent * value_ * PERCENT_TO_FRACTION;
         case Unit::Auto:
         default:
             return own;

@@ -17,13 +17,16 @@ namespace v3d::render::offline {
 
 namespace {
 
+/** The seed of the lattice's shuffle. Every render sees the same noise. **/
+constexpr uint32_t PERMUTATION_SEED = 0x5EEDF00Du;
+
 /** The lattice's hash: a permutation of 0 to 255, written twice so an index never wraps. **/
 std::array<int, 512> shuffled() {
     std::array<int, 512> table {};
     for (int i = 0; i < 256; i++) {
         table[static_cast<std::size_t>(i)] = i;
     }
-    v3d::type::Random random(0x5EEDF00Du);
+    v3d::type::Random random(PERMUTATION_SEED);
     for (uint32_t i = 255; i > 0; i--) {
         std::swap(table[i], table[random.below(i + 1)]);
     }
@@ -39,7 +42,12 @@ const std::array<int, 512> & permutation() {
 }
 
 float fade(float t) {
-    return t * t * t * ((t * ((t * 6.0f) - 15.0f)) + 10.0f);
+    // the coefficients of 6t^5 - 15t^4 + 10t^3, whose first and second derivatives are zero
+    // at 0 and 1
+    constexpr float quintic = 6.0f;
+    constexpr float quartic = 15.0f;
+    constexpr float cubic = 10.0f;
+    return t * t * t * ((t * ((t * quintic) - quartic)) + cubic);
 }
 
 float lerp(float t, float a, float b) {
@@ -52,12 +60,16 @@ float lerp(float t, float a, float b) {
  * rather than a division.
  **/
 float gradient(int hash, const glm::vec3 & offset) {
+    // hashes 12 to 15 repeat four of the directions. 12 (x + y) and 14 (y - x) lie in the xy
+    // plane, so their second component is x. 13 and 15 keep z
+    constexpr int repeatXPlusY = 12;
+    constexpr int repeatYMinusX = 14;
     const int h = hash & 15;
     const float u = h < 8 ? offset.x : offset.y;
     float v = offset.z;
     if (h < 4) {
         v = offset.y;
-    } else if (h == 12 || h == 14) {
+    } else if (h == repeatXPlusY || h == repeatYMinusX) {
         v = offset.x;
     }
     return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);

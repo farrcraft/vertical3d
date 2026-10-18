@@ -141,6 +141,27 @@ const float markFill = 0.5f;
 const float defaultCorner = 8.0f;
 
 /**
+ * How far down a widget the baseline of its text sits, as a fraction of the widget's height.
+ **/
+constexpr float widgetBaseline = 0.7f;
+
+/**
+ * How far down a line of text its baseline sits, as a fraction of the line height. The rest
+ * is room for descenders.
+ **/
+constexpr float lineBaseline = 0.75f;
+
+/**
+ * The half side of the square that marks a checked menu item, as a fraction of a line.
+ **/
+constexpr float checkMarkScale = 0.15f;
+
+/**
+ * The radius of the arrow that marks a submenu, as a fraction of a line.
+ **/
+constexpr float submenuArrowScale = 0.18f;
+
+/**
  * @return what a style's image property was resolved to, unset when the style names no
  *      such image or nothing has resolved it
  **/
@@ -334,7 +355,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     const glm::vec2 size = arranger_.drawn(*label);
     Arranger::place(*label, {.position = label->position(), .size = size});
 
-    glm::vec2 pen(label->position().x, label->position().y + (base().lineHeight * 0.75f));
+    glm::vec2 pen(label->position().x, label->position().y + (base().lineHeight * lineBaseline));
     if (label->layout().width.unit() == Length::Unit::Auto) {
         write_(text, pen, ink(*label, base(), base().text));
         return;
@@ -393,7 +414,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         return;
     }
 
-    const glm::vec2 baseline(min.x + ((size.x - measure_(label)) * 0.5f), min.y + (size.y * 0.7f));
+    const glm::vec2 baseline(min.x + ((size.x - measure_(label)) * 0.5f), min.y + (size.y * widgetBaseline));
     write_(label, baseline, ink(*button, base(), lit ? base().activeText : base().text));
 }
 
@@ -530,7 +551,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     if (text.empty()) {
         return;
     }
-    write_(text, glm::vec2(min.x + side + (dress.padding * 0.5f), min.y + (size.y * 0.7f)),
+    write_(text, glm::vec2(min.x + side + (dress.padding * 0.5f), min.y + (size.y * widgetBaseline)),
         ink(*box, dress, dress.text));
 }
 
@@ -573,7 +594,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         if (picked) {
             fillBox(canvas, glm::vec2(low.x, top), glm::vec2(high.x, top + row), 0.0f, dress.highlight);
         }
-        write_(list->items()[index], glm::vec2(low.x + (dress.padding * 0.5f), top + (row * 0.7f)),
+        write_(list->items()[index], glm::vec2(low.x + (dress.padding * 0.5f), top + (row * widgetBaseline)),
             ink(*list, dress, picked ? dress.activeText : dress.text));
     }
 
@@ -606,7 +627,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         // the placeholder says what the box is for and is not what it holds, so it is
         // dropped the moment there is something to type into
         box->pen(low.x);
-        write_(box->placeholder(), glm::vec2(low.x, min.y + (size.y * 0.7f)), dress.placeholder);
+        write_(box->placeholder(), glm::vec2(low.x, min.y + (size.y * widgetBaseline)), dress.placeholder);
         canvas->unclip();
         return;
     }
@@ -617,7 +638,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     const float room = high.x - low.x;
     const float slid = caret > room ? caret - room : 0.0f;
 
-    const glm::vec2 pen(low.x - slid, min.y + (size.y * 0.7f));
+    const glm::vec2 pen(low.x - slid, min.y + (size.y * widgetBaseline));
     // left on the box so that a press can find the character under it, the way a list is
     // left holding the height of a row
     box->pen(pen.x);
@@ -668,7 +689,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
         const bool picked = static_cast<int>(index) == bar->selected();
         fillBox(canvas, corner, corner + extent, dress.radius, picked ? dress.highlight : dress.tab);
-        write_(label, glm::vec2(corner.x + (dress.padding * 0.5f), corner.y + (height * 0.7f)),
+        write_(label, glm::vec2(corner.x + (dress.padding * 0.5f), corner.y + (height * widgetBaseline)),
             ink(*bar, dress, picked ? dress.activeText : dress.text));
         pen += width + dress.borderWidth;
     }
@@ -806,7 +827,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
         // the pen sits on the baseline, which is most of the way down the line box - the
         // remainder is where descenders go
-        const glm::vec2 pen(origin.x + base().padding, top + (base().lineHeight * 0.75f));
+        const glm::vec2 pen(origin.x + base().padding, top + (base().lineHeight * lineBaseline));
         const boost::shared_ptr<component::menu::Item>& item = (*level)[index];
         write_(item ? item->text() : std::string(), pen, itemInk(item, base(), selected));
     }
@@ -843,7 +864,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         if (lit) {
             canvas->rect(glm::vec2(pen, 0.0f), glm::vec2(pen + extent, base().barHeight), base().highlight);
         }
-        write_(label, glm::vec2(pen + (base().padding * 0.5f), base().barHeight * 0.7f), lit ? base().activeText : base().text);
+        write_(label, glm::vec2(pen + (base().padding * 0.5f), base().barHeight * widgetBaseline), lit ? base().activeText : base().text);
         pen += extent;
     }
 
@@ -923,7 +944,7 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
 
         if (item && item->checked()) {
             const glm::vec2 centre(corner.x + (column * 0.5f), top + (base().lineHeight * 0.5f));
-            const float mark = base().lineHeight * 0.15f;
+            const float mark = base().lineHeight * checkMarkScale;
             canvas->rect(centre - glm::vec2(mark, mark), centre + glm::vec2(mark, mark), base().activeText);
         }
 
@@ -931,10 +952,10 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
             // a three sided circle is a triangle with a vertex at zero degrees, which
             // points along +x
             canvas->circle(glm::vec2(corner.x + size.x - (column * 0.5f), top + (base().lineHeight * 0.5f)),
-                base().lineHeight * 0.18f, 3, selected ? base().activeText : base().text);
+                base().lineHeight * submenuArrowScale, 3, selected ? base().activeText : base().text);
         }
 
-        const glm::vec2 pen(corner.x + column, top + (base().lineHeight * 0.75f));
+        const glm::vec2 pen(corner.x + column, top + (base().lineHeight * lineBaseline));
         write_(item ? item->text() : std::string(), pen, itemInk(item, base(), selected));
     }
 }

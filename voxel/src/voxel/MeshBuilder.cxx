@@ -7,6 +7,8 @@
 
 #include <voxel/src/engine/MortonCode.h>
 
+#include <iterator>
+
 #include "Chunk.h"
 #include "FaceCulling.h"
 #include "MeshCache.h"
@@ -52,7 +54,7 @@ void MeshBuilder::generateChunk(const boost::shared_ptr<ChunkMeshPool> & pool, c
     const glm::vec3 origin(chunkPosition * static_cast<int>(chunkSize));
     cache_->reset();  // reset cache not the ptr
 
-    const Voxel::BlockFace checkFaces[6] = {
+    const Voxel::BlockFace checkFaces[] = {
         Voxel::BLOCK_FACE_FRONT, Voxel::BLOCK_FACE_BACK,
         Voxel::BLOCK_FACE_LEFT, Voxel::BLOCK_FACE_RIGHT,
         Voxel::BLOCK_FACE_TOP, Voxel::BLOCK_FACE_BOTTOM
@@ -66,7 +68,7 @@ void MeshBuilder::generateChunk(const boost::shared_ptr<ChunkMeshPool> & pool, c
         hash = (*it).first;
         pos = MortonCode::decode3(hash);
 
-        for (unsigned int i = 0; i < 6; i++) {
+        for (unsigned int i = 0; i < std::size(checkFaces); i++) {
             // check for face occlusion from other blocks within the same chunk
             if (chunk->hidden(checkFaces[i], pos)) {
                 faces &= ~checkFaces[i];

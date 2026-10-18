@@ -16,10 +16,19 @@
 
 #include <glm/gtx/string_cast.hpp>
 
+namespace {
+
+/**
+ * Where the player starts: above the terrain rather than inside it. The world is 64 blocks
+ * tall, and there is no collision or gravity to lift a spawn that starts under the hills
+ * back out of them.
+ **/
+constexpr glm::vec3 SPAWN_POSITION(128.0f, 80.0f, 240.0f);
+
+};  // namespace
+
 Scene::Scene() {
-    // above the terrain rather than inside it - the world is 64 blocks tall, and there is no
-    // collision or gravity to lift a spawn that starts under the hills back out of them
-    player_.reset(new Player(glm::vec3(128.0f, 80.0f, 240.0f)));
+    player_.reset(new Player(SPAWN_POSITION));
 
     // generate the terrain heightmap
     TerrainMap terrain;

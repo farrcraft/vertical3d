@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -20,7 +21,7 @@ namespace {
  * is unaffected.
  **/
 uint16_t slot(uint32_t id) noexcept {
-    return static_cast<uint16_t>(std::min<uint32_t>(id, 0xFFFFu));
+    return static_cast<uint16_t>(std::min<uint32_t>(id, std::numeric_limits<uint16_t>::max()));
 }
 
 };  // namespace

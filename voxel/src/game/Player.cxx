@@ -7,6 +7,8 @@
 
 #include <voxel/src/engine/Camera.h>
 
+#include <iterator>
+
 namespace {
 
 typedef struct Moves {
@@ -24,6 +26,14 @@ Moves possibleMoves[] = {
     { Player::MOVE_DOWN, 1, -1.0f }
 };
 
+/**
+ * How fast the player moves, in units per second, and how fast that grows, in units per
+ * second squared. The camera's velocity is constant here - nothing calls updateVelocity -
+ * so the walk is the linear term and the acceleration is a small addition on top of it.
+ **/
+constexpr glm::vec3 PLAYER_ACCELERATION(8.0f, 8.0f, 8.0f);
+constexpr glm::vec3 PLAYER_VELOCITY(12.0f, 12.0f, 12.0f);
+
 };  // namespace
 
 Player::Player(const glm::vec3 & pos) :
@@ -32,11 +42,8 @@ Player::Player(const glm::vec3 & pos) :
     camera_.reset(new Camera());
     camera_->behavior(Camera::CAMERA_BEHAVIOR_FIRST_PERSON);
     camera_->position(position_);
-    // units per second and per second squared. The camera's velocity is constant here -
-    // nothing calls updateVelocity - so the walk is the linear term and the acceleration is
-    // a small addition on top of it.
-    camera_->acceleration(glm::vec3(8.0f, 8.0f, 8.0f));
-    camera_->velocity(glm::vec3(12.0f, 12.0f, 12.0f));
+    camera_->acceleration(PLAYER_ACCELERATION);
+    camera_->velocity(PLAYER_VELOCITY);
 }
 
 glm::vec3 Player::position() const {
@@ -52,7 +59,7 @@ void Player::position(const glm::vec3 & pos) {
 }
 
 void Player::move(Movement direction, bool held) {
-    for (unsigned int i = 0; i < 6; i++) {
+    for (unsigned int i = 0; i < std::size(possibleMoves); i++) {
         if (direction == possibleMoves[i].move_) {
             if (((movement_ & direction) != 0) == held) {
                 return;
@@ -83,7 +90,7 @@ void Player::look(float heading, float pitch) {
 void Player::tick(float step) {
     // update player position based on current movement flags
     glm::vec3 dir(0.0f, 0.0f, 0.0f);
-    for (unsigned int i = 0; i < 6; i++) {
+    for (unsigned int i = 0; i < std::size(possibleMoves); i++) {
         if ((movement_ & possibleMoves[i].move_) != 0) {
             dir[static_cast<glm::length_t>(possibleMoves[i].axis_)] = possibleMoves[i].magnitude_;
         }

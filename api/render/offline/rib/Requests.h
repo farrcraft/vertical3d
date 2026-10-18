@@ -126,10 +126,13 @@ struct PointsPolygons {
  * degrees.
  **/
 struct Sphere {
+    /** The thetamax of a whole turn, which closes the sphere. **/
+    static constexpr float FULL_THETAMAX = 360.0f;
+
     float radius = 1.0f;
     float zmin = -1.0f;
     float zmax = 1.0f;
-    float thetamax = 360.0f;
+    float thetamax = FULL_THETAMAX;
 };
 
 };  // namespace v3d::render::offline::rib

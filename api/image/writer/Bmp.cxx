@@ -18,6 +18,7 @@
 #include <boost/make_shared.hpp>
 
 namespace v3d::image::writer {
+
 /**
  **/
 Bmp::Bmp(const boost::shared_ptr<v3d::log::Logger>& logger) : Writer(logger) {
@@ -44,7 +45,7 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     format::bmp_file_header fheader;
     memset(&fheader, 0, sizeof(format::bmp_file_header));
 
-    fheader.type_ = 19778;
+    fheader.type_ = format::BMP_SIGNATURE;
     fheader.offset_ = sizeof(format::bmp_file_header) + sizeof(format::bmp_info_header) + (shades * sizeof(format::bmp_rgb_quad));
     // the total file size, filled in below once the padded data length is known
     fheader.size_ = fheader.offset_;

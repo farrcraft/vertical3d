@@ -163,6 +163,12 @@ class Manipulator {
     static const float tolerance;
 
     /**
+     * How many times the tolerance the centre handle reaches, so that it can be picked
+     * where the axes crowd it.
+     **/
+    static constexpr float centreReach = 1.5f;
+
+    /**
      * What the coordinate space means to this manipulator. Scale overrides it: a non
      * uniform scale is a vector in the object's own axes and has no global form.
      **/

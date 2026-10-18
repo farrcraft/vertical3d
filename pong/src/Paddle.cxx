@@ -13,6 +13,14 @@
 #include <pong/src/component/Score.h>
 #include <pong/src/component/Travel.h>
 
+namespace {
+
+// a paddle's thickness and its length along the side it moves on, in court units
+constexpr float PADDLE_THICKNESS = 15.0f;
+constexpr float PADDLE_LENGTH = 50.0f;
+
+};  // namespace
+
 Paddle::Paddle(entt::registry* registry) :
     registry_(registry) {
     id_ = registry->create();
@@ -22,7 +30,7 @@ Paddle::Paddle(entt::registry* registry) :
     registry->emplace<Score>(id_, 0);
     registry->emplace<Travel>(id_, false, false);
     registry->emplace<Offset>(id_, 0.0f);
-    registry->emplace<PaddleSize>(id_, 15.0f, 50.0f);
+    registry->emplace<PaddleSize>(id_, PADDLE_THICKNESS, PADDLE_LENGTH);
 }
 
 glm::vec3 Paddle::color() const {

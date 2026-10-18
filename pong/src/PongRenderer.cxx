@@ -28,6 +28,12 @@ constexpr glm::vec4 scoreColour(0.85f, 0.85f, 0.85f, 1.0f);
 const unsigned int ballSides = 32;
 const unsigned int centreLineWidth = 14;
 
+// where the scores sit, as fractions of the court: a quarter of the way down, centred over
+// each half
+constexpr float scoreRow = 0.25f;
+constexpr float leftScoreColumn = 0.25f;
+constexpr float rightScoreColumn = 0.75f;
+
 };  // namespace
 
 /**
@@ -127,8 +133,8 @@ void PongRenderer::drawScores() {
     const std::string left = boost::lexical_cast<std::string>(scene_->left().score());
     const std::string right = boost::lexical_cast<std::string>(scene_->right().score());
 
-    screen_->text()->draw(&court_, left, glm::vec2(width * 0.25f, height * 0.25f), scoreColour, fontSize);
-    screen_->text()->draw(&court_, right, glm::vec2(width * 0.75f, height * 0.25f), scoreColour, fontSize);
+    screen_->text()->draw(&court_, left, glm::vec2(width * leftScoreColumn, height * scoreRow), scoreColour, fontSize);
+    screen_->text()->draw(&court_, right, glm::vec2(width * rightScoreColumn, height * scoreRow), scoreColour, fontSize);
 }
 
 /**

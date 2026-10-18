@@ -7,12 +7,32 @@
 
 #include <api/type/Checked.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <optional>
 #include <string>
 
 namespace v3d::render::offline {
+
+namespace {
+
+/** The coefficients of a cubic in r, of r^3, r^2, r and 1 in turn. **/
+typedef std::array<float, 4> Cubic;
+
+/**
+ * The two pieces of the Catmull-Rom kernel, doubled: one for r under one, and one for r from
+ * one to two. Doubling scales every weight alike, and the film divides by the total weight.
+ **/
+constexpr Cubic CATMULL_ROM_INNER{3.0f, -5.0f, 0.0f, 2.0f};
+constexpr Cubic CATMULL_ROM_OUTER{-1.0f, 5.0f, -8.0f, 4.0f};
+
+/** A cubic at r, given r and its square. **/
+float evaluate(const Cubic & c, float r, float r2) {
+    return (c[0] * r * r2) + (c[1] * r2) + (c[2] * r) + c[3];
+}
+
+};  // namespace
 
 bool filterNamed(const std::string & name, Filter * filter) {
     if (name == "box") {
@@ -51,9 +71,9 @@ float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width) {
             return 0.0f;
         }
         if (r < 1.0f) {
-            return (3.0f * r * r2) - (5.0f * r2) + 2.0f;
+            return evaluate(CATMULL_ROM_INNER, r, r2);
         }
-        return (-r * r2) + (5.0f * r2) - (8.0f * r) + 4.0f;
+        return evaluate(CATMULL_ROM_OUTER, r, r2);
     }
     case Filter::Gaussian: {
         // scaled so that the edge of the width is two standard deviations out

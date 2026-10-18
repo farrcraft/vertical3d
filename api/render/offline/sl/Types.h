@@ -64,6 +64,9 @@ const char* name(ShaderType type);
  **/
 unsigned int components(Type type);
 
+/** How far apart the diagonal components of a matrix are, among its sixteen. **/
+constexpr unsigned int MATRIX_DIAGONAL_STRIDE = 5;
+
 /**
  * Whether the type is a position or a direction - point, vector or normal. The three are
  * all three floats and convert to each other freely in arithmetic; only a transform treats

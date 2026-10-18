@@ -8,6 +8,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/paint/Painter.h>
+#include <api/ui/paint/Palette.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
@@ -68,6 +69,24 @@ const float bulletScale = 0.28f;
  **/
 const unsigned int bulletSides = 8;
 
+/**
+ * The sizes a dressing starts with, in pixels.
+ **/
+constexpr float defaultLineHeight = 18.0f;
+constexpr float defaultPadding = 6.0f;
+constexpr float defaultSpacing = 4.0f;
+constexpr float defaultBarHeight = 22.0f;
+constexpr float defaultRadius = 3.0f;
+constexpr float defaultIndent = 14.0f;
+constexpr float defaultScrollbarWidth = 10.0f;
+
+/**
+ * The colours a dressing starts with that the retained ui does not share.
+ **/
+constexpr glm::vec4 titleBarColor{0.12f, 0.14f, 0.19f, 1.0f};
+constexpr glm::vec4 hoverColor{0.22f, 0.25f, 0.33f, 1.0f};
+constexpr glm::vec4 ruleColor{0.24f, 0.26f, 0.32f, 1.0f};
+
 };  // namespace
 
 Immediate::Input::Input() noexcept :
@@ -95,25 +114,25 @@ dragging(false) {
 }
 
 Immediate::Dressing::Dressing() noexcept :
-lineHeight(18.0f),
-padding(6.0f),
-spacing(4.0f),
-barHeight(22.0f),
+lineHeight(defaultLineHeight),
+padding(defaultPadding),
+spacing(defaultSpacing),
+barHeight(defaultBarHeight),
 borderWidth(1.0f),
-radius(3.0f),
-indent(14.0f),
-scrollbarWidth(10.0f),
-panel(0.05f, 0.06f, 0.09f, 0.92f),
-border(0.35f, 0.38f, 0.45f, 1.0f),
-titleBar(0.12f, 0.14f, 0.19f, 1.0f),
-text(0.78f, 0.80f, 0.84f, 1.0f),
+radius(defaultRadius),
+indent(defaultIndent),
+scrollbarWidth(defaultScrollbarWidth),
+panel(paint::PANEL_COLOR),
+border(paint::EDGE_COLOR),
+titleBar(titleBarColor),
+text(paint::TEXT_COLOR),
 activeText(1.0f, 1.0f, 1.0f, 1.0f),
-dimText(0.45f, 0.47f, 0.52f, 1.0f),
-widget(0.16f, 0.18f, 0.24f, 1.0f),
-highlight(0.16f, 0.34f, 0.58f, 1.0f),
-hover(0.22f, 0.25f, 0.33f, 1.0f),
-fill(0.30f, 0.62f, 0.36f, 1.0f),
-rule(0.24f, 0.26f, 0.32f, 1.0f) {
+dimText(paint::DIM_TEXT_COLOR),
+widget(paint::RAISED_COLOR),
+highlight(paint::HIGHLIGHT_COLOR),
+hover(hoverColor),
+fill(paint::FILL_COLOR),
+rule(ruleColor) {
 }
 
 Immediate::Row::Row() noexcept :

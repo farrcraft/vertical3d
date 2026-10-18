@@ -19,6 +19,9 @@ namespace v3d::render::offline {
 
 namespace {
 
+/** The least determinant, relative to the basis lengths, that counts as invertible. **/
+constexpr float SMALLEST_DETERMINANT = 1.0e-6f;
+
 /**
  * A matrix as a translation, a rotation and a scale along each axis, with any shear folded
  * into the rotation's columns before they are normalised. Only an invertible matrix is taken
@@ -54,7 +57,7 @@ class Parts {
 bool invertible(const glm::mat4x4 & matrix) {
     const glm::mat3 basis(matrix);
     const float lengths = glm::length(basis[0]) * glm::length(basis[1]) * glm::length(basis[2]);
-    return lengths > 0.0f && std::fabs(glm::determinant(basis)) > 1.0e-6f * lengths;
+    return lengths > 0.0f && std::fabs(glm::determinant(basis)) > SMALLEST_DETERMINANT * lengths;
 }
 
 };  // namespace

@@ -32,6 +32,13 @@ class Profile {
                 DirectionCrossUp        /**< right = direction x up, which glm::lookAt builds **/
         };
 
+        /** The projection a new profile starts with. **/
+        static constexpr float DEFAULT_ORTHO_ZOOM = 1.0f;
+        static constexpr float DEFAULT_PIXEL_ASPECT = 1.33f;
+        static constexpr float DEFAULT_NEAR = 0.001f;
+        static constexpr float DEFAULT_FAR = 100.0f;
+        static constexpr float DEFAULT_FOV = 60.0f;
+
         explicit Profile(const std::string & name);
         /**
         *	Construct a profile with an explicit basis.

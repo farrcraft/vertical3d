@@ -11,6 +11,13 @@
 
 namespace v3d::render::realtime::vulkan::frame {
 
+namespace {
+
+// the timestamp period is in nanoseconds, and a timing is reported in milliseconds
+constexpr double NANOSECONDS_PER_MILLISECOND = 1.0e6;
+
+};  // namespace
+
 /**
  **/
 Timings::Timings(const boost::shared_ptr<device::Device>& device, uint32_t framesInFlight) :
@@ -101,7 +108,7 @@ void Timings::read(Slot* slot) {
         // masked, because a queue writing fewer than 64 bits wraps, and a span across the
         // wrap is still the difference of the two
         const uint64_t ticks = (stamps[(index * 2) + 1] - stamps[index * 2]) & mask_;
-        last_.push_back(Timing{ slot->names[index], static_cast<double>(ticks) * period_ / 1.0e6 });
+        last_.push_back(Timing{ slot->names[index], static_cast<double>(ticks) * period_ / NANOSECONDS_PER_MILLISECOND });
     }
 }
 

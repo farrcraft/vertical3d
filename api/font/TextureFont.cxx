@@ -15,12 +15,27 @@
 #include FT_MODULE_H
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <iterator>
 #include <string>
 
 #include <boost/make_shared.hpp>
 
 namespace v3d::font {
+
+namespace {
+
+// metrics and advances are 26.6 fixed point, 64 units to the pixel
+constexpr float FIXED_POINT_SCALE = 64.0f;
+// the face is loaded at this many times its horizontal resolution, and the transform matrix
+// scales x back down by the same factor
+constexpr FT_UInt HORIZONTAL_OVERSAMPLE = 64;
+// the resolution FT_Set_Char_Size is given, in dots per inch, at which one point is one pixel
+constexpr FT_UInt RESOLUTION_DPI = 72;
+
+};  // namespace
+
 /**
  * The library and the face a font is read through, for as long as it is being read. Whatever
  * is open is closed by release(), by opening another, or by the owner going - so no path
@@ -90,8 +105,7 @@ bool TextureFont::Freetype::loadFace(const std::string& filename, float size) {
 
     // set char size
     // size *= 100.0f;
-    const FT_UInt hres = 64;
-    error = FT_Set_Char_Size(face_, static_cast<int>((size * 64)), 0, 72 * hres, 72);
+    error = FT_Set_Char_Size(face_, static_cast<int>((size * FIXED_POINT_SCALE)), 0, RESOLUTION_DPI * HORIZONTAL_OVERSAMPLE, RESOLUTION_DPI);
     if (error != 0) {
         logger_->get()->error("Error setting freetype char size!");
         release();
@@ -100,7 +114,7 @@ bool TextureFont::Freetype::loadFace(const std::string& filename, float size) {
 
     // set transform matrix
     FT_Matrix matrix = {
-        static_cast<int>((1.0 / hres) * 0x10000L),
+        static_cast<int>((1.0 / HORIZONTAL_OVERSAMPLE) * 0x10000L),
         static_cast<int>(0.0 * 0x10000L),
         static_cast<int>(0.0 * 0x10000L),
         static_cast<int>(1.0 * 0x10000L)
@@ -124,11 +138,8 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
     hinting_(1),
     lcdFiltering_(1),
     logger_(logger) {
-    lcdWeights_[0] = 0x10;
-    lcdWeights_[1] = 0x40;
-    lcdWeights_[2] = 0x70;
-    lcdWeights_[3] = 0x40;
-    lcdWeights_[4] = 0x10;
+    constexpr std::array<unsigned char, LCD_FILTER_TAPS> defaultLcdWeights{ 0x10, 0x40, 0x70, 0x40, 0x10 };
+    std::copy(defaultLcdWeights.begin(), defaultLcdWeights.end(), std::begin(lcdWeights_));
 
     // what the face would have set, for a face that does not open
     underlinePosition_ = 0.0f;
@@ -145,21 +156,21 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
         return;
     }
 
-    // 64 * 64 because of 26.6 encoding AND the transform matrix used
-    // in texture_font_load_face (hres = 64)
-    underlinePosition_ = static_cast<float>(freetype_->face_->underline_position) / (64.0f * 64.0f) * size_;
+    // the face's units are 26.6 fixed point and scaled by the horizontal oversample of the
+    // transform matrix loadFace sets
+    underlinePosition_ = static_cast<float>(freetype_->face_->underline_position) / (FIXED_POINT_SCALE * static_cast<float>(HORIZONTAL_OVERSAMPLE)) * size_;
     underlinePosition_ = underlinePosition_ < 0.0f ? std::ceil(underlinePosition_ - 0.5f) : std::floor(underlinePosition_ + 0.5f);
     underlinePosition_ = std::min(underlinePosition_, -2.0f);
 
-    underlineThickness_ = static_cast<float>(freetype_->face_->underline_thickness) / (64.0f * 64.0f) * size_;
+    underlineThickness_ = static_cast<float>(freetype_->face_->underline_thickness) / (FIXED_POINT_SCALE * static_cast<float>(HORIZONTAL_OVERSAMPLE)) * size_;
     underlineThickness_ = underlineThickness_ < 0.0f ? std::ceil(underlineThickness_ - 0.5f) : std::floor(underlineThickness_ + 0.5f);
     underlineThickness_ = std::max(underlineThickness_, 1.0f);
 
     // metrics are 26.6 fixed point, which already carries fractional pixels
     const FT_Size_Metrics metrics = freetype_->face_->size->metrics;
-    ascender_ = static_cast<float>(metrics.ascender) / 64.0f;
-    descender_ = static_cast<float>(metrics.descender) / 64.0f;
-    height_ = static_cast<float>(metrics.height) / 64.0f;
+    ascender_ = static_cast<float>(metrics.ascender) / FIXED_POINT_SCALE;
+    descender_ = static_cast<float>(metrics.descender) / FIXED_POINT_SCALE;
+    height_ = static_cast<float>(metrics.height) / FIXED_POINT_SCALE;
     linegap_ = height_ - ascender_ + descender_;
 
     freetype_->release();
@@ -390,7 +401,7 @@ bool strokeGlyph(FT_Library library, FT_Face face, TextureFont::OutlineType outl
     const StrokerHandle stroker(raw);
     FT_Stroker_Set(
         stroker.get(),
-        static_cast<int>(thickness * 64),
+        static_cast<int>(thickness * FIXED_POINT_SCALE),
         FT_STROKER_LINECAP_ROUND,
         FT_STROKER_LINEJOIN_ROUND,
         0);
@@ -519,8 +530,8 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
         // Discard hinting to get advance
         FT_Load_Glyph(freetype_->face_, glyphIndex, FT_LOAD_RENDER | FT_LOAD_NO_HINTING);
         FT_GlyphSlot advanced = freetype_->face_->glyph;
-        glyph->advance_.x = static_cast<float>(advanced->advance.x) / 64.0f;
-        glyph->advance_.y = static_cast<float>(advanced->advance.y) / 64.0f;
+        glyph->advance_.x = static_cast<float>(advanced->advance.x) / FIXED_POINT_SCALE;
+        glyph->advance_.y = static_cast<float>(advanced->advance.y) / FIXED_POINT_SCALE;
 
         glyphs_.push_back(glyph);
     }

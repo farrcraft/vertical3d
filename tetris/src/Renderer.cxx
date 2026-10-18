@@ -46,6 +46,12 @@ const float panelCells = 6.0f;
 
 const float margin = 16.0f;
 
+/**
+ * The height of a line of text, as a multiple of the text's size.
+ **/
+constexpr float lineSpacing = 1.4f;
+
+constexpr glm::vec4 backgroundColour(0.09f, 0.09f, 0.11f, 1.0f);
 constexpr glm::vec4 wellColour(0.04f, 0.04f, 0.05f, 1.0f);
 constexpr glm::vec4 borderColour(0.30f, 0.30f, 0.34f, 1.0f);
 constexpr glm::vec4 textColour(0.85f, 0.85f, 0.85f, 1.0f);
@@ -59,7 +65,7 @@ TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::render::realtime::Wi
     const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
     logger_(logger), engine_(logger, assetManager) {
     engine_.initialize(window);
-    engine_.clearColour(glm::vec4(0.09f, 0.09f, 0.11f, 1.0f));
+    engine_.clearColour(backgroundColour);
 
     loadPieces(assetManager, logger);
 
@@ -258,19 +264,25 @@ void TetrisRenderer::drawBlock(const std::string& colour, const glm::vec2& min, 
  **/
 void TetrisRenderer::drawPanel(const Layout& metrics) {
     const GameBoard* board = scene_->board();
-    const float line = fontSize * 1.4f;
+    const float line = fontSize * lineSpacing;
+    // the panel's rows, counted in lines from its top
+    constexpr float nextLabelRow = 3.0f;
+    constexpr float previewRow = 3.5f;
+    constexpr float gameOverRow = 7.0f;
+    constexpr float debugRow = 9.0f;
+    // the preview is drawn a little smaller than the well, so a four wide tetrad fits the
+    // panel it was given
+    constexpr float previewScale = 0.75f;
     const glm::vec2 panel = metrics.origin + glm::vec2(metrics.cell * (static_cast<float>(board->columns()) + 1.0f), line);
 
     screen_->text()->draw(&screen_->canvas(), "SCORE", panel, textColour, fontSize);
     screen_->text()->draw(&screen_->canvas(), boost::lexical_cast<std::string>(scene_->score()), panel + glm::vec2(0.0f, line), textColour, fontSize);
 
-    screen_->text()->draw(&screen_->canvas(), "NEXT", panel + glm::vec2(0.0f, line * 3.0f), textColour, fontSize);
-    // the preview is drawn a little smaller than the well, so a four wide tetrad fits the
-    // panel it was given
-    drawTetrad(board->nextTetrad(), panel + glm::vec2(0.0f, line * 3.5f), metrics.cell * 0.75f);
+    screen_->text()->draw(&screen_->canvas(), "NEXT", panel + glm::vec2(0.0f, line * nextLabelRow), textColour, fontSize);
+    drawTetrad(board->nextTetrad(), panel + glm::vec2(0.0f, line * previewRow), metrics.cell * previewScale);
 
     if (board->over()) {
-        screen_->text()->draw(&screen_->canvas(), "GAME OVER", panel + glm::vec2(0.0f, line * 7.0f), textColour, fontSize);
+        screen_->text()->draw(&screen_->canvas(), "GAME OVER", panel + glm::vec2(0.0f, line * gameOverRow), textColour, fontSize);
     }
 
     if (scene_->debug()) {
@@ -279,6 +291,6 @@ void TetrisRenderer::drawPanel(const Layout& metrics) {
         const std::string state =
             boost::lexical_cast<std::string>(position.first) + "," + boost::lexical_cast<std::string>(position.second) +
             " " + boost::lexical_cast<std::string>(current.width()) + "x" + boost::lexical_cast<std::string>(current.height());
-        screen_->text()->draw(&screen_->canvas(), state, panel + glm::vec2(0.0f, line * 9.0f), textColour, fontSize);
+        screen_->text()->draw(&screen_->canvas(), state, panel + glm::vec2(0.0f, line * debugRow), textColour, fontSize);
     }
 }

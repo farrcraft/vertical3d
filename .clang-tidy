@@ -1,7 +1,7 @@
 # The check list clang-tidy runs under -DV3D_CLANG_TIDY=ON. Four families are enabled and
 # named checks are subtracted, rather than the live checks being listed one by one: a name
 # clang-tidy does not recognise is not an error, so a list that has gone stale turns findings
-# on and fails loudly instead of quietly covering less. 195 of the 206 checks in these families
+# on and fails loudly instead of quietly covering less. 196 of the 206 checks in these families
 # are live, and the tree is clean at all of them.
 #
 # The cppcoreguidelines, modernize and google families are not enabled at all. Each argues with
@@ -34,6 +34,11 @@
 #    boost does not export that instantiation - the call compiles and then fails to link
 #    with an unresolved __declspec(dllimport). count() is what those two keep.
 #
+# One check is off in part of the tree rather than all of it. Each tests directory has a
+# .clang-tidy of its own that turns off readability-magic-numbers, because a test's literal is
+# the value it expects and belongs beside the assertion that checks it. Everywhere else the
+# check applies.
+#
 # Every other subtraction is open work. The way to remove one is to fix what it reports, not to
 # widen the exclusion.
 Checks: >
@@ -49,7 +54,6 @@ Checks: >
   -readability-ambiguous-smartptr-reset-call,
   -readability-container-contains,
   -readability-identifier-length,
-  -readability-magic-numbers,
   -readability-make-member-function-const,
   -readability-non-const-parameter,
   -readability-uppercase-literal-suffix
@@ -85,3 +89,10 @@ CheckOptions:
   # initialisers and read field by field. The check is for a class that keeps an invariant
   # over its members, so a mix of public and private data, or protected data, is reported.
   misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: 'true'
+  # A number needs a name when a reader cannot tell what it is. These rarely leave a reader
+  # guessing: a power of two is a size, a width or an alignment, 24 is the bits of an rgb pixel
+  # and the shift to a word's top byte, 255 is the largest byte, and 0.5 and 2.0 halve and
+  # double. The check already ignores 0 to 4, 1.0 and 100.0.
+  readability-magic-numbers.IgnoredIntegerValues: '1;2;3;4;24;255'
+  readability-magic-numbers.IgnorePowersOf2IntegerValues: 'true'
+  readability-magic-numbers.IgnoredFloatingPointValues: '0.5;1.0;2.0;100.0'

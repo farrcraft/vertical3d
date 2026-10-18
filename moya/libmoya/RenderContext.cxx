@@ -34,9 +34,16 @@
 
 namespace v3d::moya {
 
+namespace {
+
+/** The least w a point is divided by. A point at or below it is at or behind the eye. **/
+constexpr float SMALLEST_W = 1.0e-6f;
+
+};  // namespace
+
 glm::vec3 project(const glm::mat4x4 & m, const glm::vec3 & point) {
     const glm::vec4 projected = m * glm::vec4(point, 1.0f);
-    if (projected.w <= 1.0e-6f) {
+    if (projected.w <= SMALLEST_W) {
         return glm::vec3(projected);
     }
     return glm::vec3(projected) / projected.w;
@@ -799,7 +806,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     bool projected = false;
     for (int k = 0; k < 8; k++) {
         const glm::vec3 corner = boxCorner(bound_min, bound_max, k);
-        if ((screen * glm::vec4(corner, 1.0f)).w <= 1.0e-6f) {
+        if ((screen * glm::vec4(corner, 1.0f)).w <= SMALLEST_W) {
             poly->diceable(false);
             continue;
         }

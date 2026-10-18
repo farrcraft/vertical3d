@@ -5,34 +5,58 @@
 
 #include "Dressing.h"
 
+#include <api/ui/paint/Palette.h>
+
 namespace v3d::ui::paint {
 
+namespace {
+
+/**
+ * The sizes a dressing starts with, in pixels.
+ **/
+constexpr float DEFAULT_LINE_HEIGHT = 34.0f;
+constexpr float DEFAULT_PADDING = 24.0f;
+constexpr float DEFAULT_BAR_HEIGHT = 28.0f;
+constexpr float DEFAULT_ICON_SIZE = 22.0f;
+constexpr float DEFAULT_PANEL_PADDING = 4.0f;
+constexpr float DEFAULT_SCROLLBAR_WIDTH = 12.0f;
+constexpr float DEFAULT_MARK_SIZE = 16.0f;
+
+// the colours a dressing starts with that the immediate ui does not share
+
+/** the unfilled part of a bar, and a tab that is not chosen **/
+constexpr glm::vec4 TRACK_COLOR{0.12f, 0.13f, 0.17f, 1.0f};
+/** a mark, the caret and the focus ring **/
+constexpr glm::vec4 ACCENT_COLOR{0.42f, 0.66f, 0.95f, 1.0f};
+
+};  // namespace
+
 Dressing::Dressing() noexcept :
-lineHeight(34.0f),
-padding(24.0f),
-barHeight(28.0f),
-iconSize(22.0f),
-panelPadding(4.0f),
-scrollbarWidth(12.0f),
-markSize(16.0f),
+lineHeight(DEFAULT_LINE_HEIGHT),
+padding(DEFAULT_PADDING),
+barHeight(DEFAULT_BAR_HEIGHT),
+iconSize(DEFAULT_ICON_SIZE),
+panelPadding(DEFAULT_PANEL_PADDING),
+scrollbarWidth(DEFAULT_SCROLLBAR_WIDTH),
+markSize(DEFAULT_MARK_SIZE),
 borderWidth(1.0f),
 focusWidth(2.0f),
 radius(0.0f),
-panel(0.05f, 0.06f, 0.09f, 0.92f),
-border(0.35f, 0.38f, 0.45f, 1.0f),
-track(0.12f, 0.13f, 0.17f, 1.0f),
-fill(0.30f, 0.62f, 0.36f, 1.0f),
-thumb(0.35f, 0.38f, 0.45f, 1.0f),
-mark(0.42f, 0.66f, 0.95f, 1.0f),
-caret(0.42f, 0.66f, 0.95f, 1.0f),
-placeholder(0.45f, 0.47f, 0.52f, 1.0f),
-tab(0.12f, 0.13f, 0.17f, 1.0f),
-text(0.78f, 0.80f, 0.84f, 1.0f),
+panel(PANEL_COLOR),
+border(EDGE_COLOR),
+track(TRACK_COLOR),
+fill(FILL_COLOR),
+thumb(EDGE_COLOR),
+mark(ACCENT_COLOR),
+caret(ACCENT_COLOR),
+placeholder(DIM_TEXT_COLOR),
+tab(TRACK_COLOR),
+text(TEXT_COLOR),
 activeText(1.0f, 1.0f, 1.0f, 1.0f),
-disabledText(0.45f, 0.47f, 0.52f, 1.0f),
-highlight(0.16f, 0.34f, 0.58f, 1.0f),
-hover(0.16f, 0.18f, 0.24f, 1.0f),
-focus(0.42f, 0.66f, 0.95f, 1.0f) {
+disabledText(DIM_TEXT_COLOR),
+highlight(HIGHLIGHT_COLOR),
+hover(RAISED_COLOR),
+focus(ACCENT_COLOR) {
 }
 
 };  // namespace v3d::ui::paint

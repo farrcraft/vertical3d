@@ -23,6 +23,14 @@ const unsigned int cornerSides = 6;
 const float quarterTurn = 1.5707963267948966f;
 
 /**
+ * The angles the arcs of a rounded box's corners start from. The corner at the largest x and
+ * y starts at no turn, and each corner after it, going round, starts a quarter turn later.
+ **/
+const float noTurn = 0.0f;
+const float halfTurn = quarterTurn * 2.0f;
+const float threeQuarterTurn = quarterTurn * 3.0f;
+
+/**
  * A rectangle between two corners in any order, and nothing at all when they make no box.
  **/
 void box(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& first, const glm::vec2& second,
@@ -76,9 +84,9 @@ void fillBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min
     canvas->rect(glm::vec2(min.x, min.y + corner), glm::vec2(min.x + corner, max.y - corner), colour);
     canvas->rect(glm::vec2(max.x - corner, min.y + corner), glm::vec2(max.x, max.y - corner), colour);
 
-    canvas->arc({.centre = glm::vec2(min.x + corner, min.y + corner), .radius = corner, .sides = cornerSides, .start = quarterTurn * 2.0f, .sweep = quarterTurn}, colour);
-    canvas->arc({.centre = glm::vec2(max.x - corner, min.y + corner), .radius = corner, .sides = cornerSides, .start = quarterTurn * 3.0f, .sweep = quarterTurn}, colour);
-    canvas->arc({.centre = glm::vec2(max.x - corner, max.y - corner), .radius = corner, .sides = cornerSides, .start = 0.0f, .sweep = quarterTurn}, colour);
+    canvas->arc({.centre = glm::vec2(min.x + corner, min.y + corner), .radius = corner, .sides = cornerSides, .start = halfTurn, .sweep = quarterTurn}, colour);
+    canvas->arc({.centre = glm::vec2(max.x - corner, min.y + corner), .radius = corner, .sides = cornerSides, .start = threeQuarterTurn, .sweep = quarterTurn}, colour);
+    canvas->arc({.centre = glm::vec2(max.x - corner, max.y - corner), .radius = corner, .sides = cornerSides, .start = noTurn, .sweep = quarterTurn}, colour);
     canvas->arc({.centre = glm::vec2(min.x + corner, max.y - corner), .radius = corner, .sides = cornerSides, .start = quarterTurn, .sweep = quarterTurn}, colour);
 }
 
@@ -113,9 +121,9 @@ void strokeBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
     box(canvas, glm::vec2(min.x, min.y + taken), glm::vec2(min.x + thickness, max.y - taken), colour);
     box(canvas, glm::vec2(max.x - thickness, min.y + taken), glm::vec2(max.x, max.y - taken), colour);
 
-    turn(canvas, min, glm::vec2(1.0f, 1.0f), corner, thickness, quarterTurn * 2.0f, colour);
-    turn(canvas, glm::vec2(max.x, min.y), glm::vec2(-1.0f, 1.0f), corner, thickness, quarterTurn * 3.0f, colour);
-    turn(canvas, max, glm::vec2(-1.0f, -1.0f), corner, thickness, 0.0f, colour);
+    turn(canvas, min, glm::vec2(1.0f, 1.0f), corner, thickness, halfTurn, colour);
+    turn(canvas, glm::vec2(max.x, min.y), glm::vec2(-1.0f, 1.0f), corner, thickness, threeQuarterTurn, colour);
+    turn(canvas, max, glm::vec2(-1.0f, -1.0f), corner, thickness, noTurn, colour);
     turn(canvas, glm::vec2(min.x, max.y), glm::vec2(1.0f, -1.0f), corner, thickness, quarterTurn, colour);
 }
 

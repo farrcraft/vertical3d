@@ -13,6 +13,22 @@
 
 namespace v3d::render::offline::rib {
 
+namespace {
+
+/** The three bytes of a UTF-8 byte order mark. **/
+constexpr unsigned char UTF8_BOM1 = 0xef;
+constexpr unsigned char UTF8_BOM2 = 0xbb;
+constexpr unsigned char UTF8_BOM3 = 0xbf;
+
+/** The two bytes a gzip stream opens with. **/
+constexpr unsigned char GZIP_ID1 = 0x1f;
+constexpr unsigned char GZIP_ID2 = 0x8b;
+
+/** The least byte that begins an encoded request in binary RIB. **/
+constexpr unsigned char FIRST_ENCODED_BYTE = 0x80;
+
+};  // namespace
+
 Lexer::Lexer(std::istream & stream) : in_(stream) {
     // the stream is read from where it stands, which is not always its beginning
     std::streampos start = stream.tellg();
@@ -28,14 +44,14 @@ Lexer::Lexer(std::istream & stream) : in_(stream) {
     const unsigned char second = static_cast<unsigned char>(header[1]);
     const unsigned char third = static_cast<unsigned char>(header[2]);
     // a UTF-8 byte order mark is text, not an encoded request, and is skipped
-    const bool marked = count >= 3 && first == 0xef && second == 0xbb && third == 0xbf;
+    const bool marked = count >= 3 && first == UTF8_BOM1 && second == UTF8_BOM2 && third == UTF8_BOM3;
     stream.seekg(marked ? start + std::streamoff(3) : start);
     if (marked) {
         return;
     }
-    if (count >= 2 && first == 0x1f && second == 0x8b) {
+    if (count >= 2 && first == GZIP_ID1 && second == GZIP_ID2) {
         error_ = "gzipped RIB is not supported - the stream opens with a gzip header";
-    } else if (count >= 1 && first >= 0x80) {
+    } else if (count >= 1 && first >= FIRST_ENCODED_BYTE) {
         error_ = "binary RIB is not supported - the stream opens with an encoded request";
     }
 }

@@ -60,7 +60,7 @@ int Frustum::intersect(const AABBox& box) const {
     return crossing ? CROSSING : INSIDE;
 }
 
-const std::array<Plane, 6>& Frustum::planes() const noexcept {
+const std::array<Plane, Frustum::PLANE_COUNT>& Frustum::planes() const noexcept {
     return planes_;
 }
 

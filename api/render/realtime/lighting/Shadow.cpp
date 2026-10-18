@@ -24,6 +24,9 @@ namespace v3d::render::realtime::lighting {
 
 namespace {
 
+// how far the light's projection reaches along its view, in radii of the bounds it covers
+constexpr float DEPTH_RADII = 4.0f;
+
 /**
  * The light's own axes: its right, its up, and the direction it looks along, which is +z of its
  * basis as a camera's is.
@@ -84,7 +87,7 @@ glm::mat4 shadowLight(const glm::vec3& towards, const ShadowBounds& bounds, type
     glm::mat4 projection(1.0f);
     projection[0][0] = 1.0f / radius;
     projection[1][1] = -1.0f / radius;
-    projection[2][2] = 1.0f / (radius * 4.0f);
+    projection[2][2] = 1.0f / (radius * DEPTH_RADII);
 
     return projection * view;
 }

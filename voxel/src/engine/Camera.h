@@ -40,12 +40,18 @@ class Camera : public Aligned<16> {
     glm::vec3 calculateMovement(const glm::vec3 & delta);
 
     void move(const glm::vec3 &direction, const glm::vec3 &amount);
+
+    /** The lens a camera has until it is given one: degrees across, and the planes in blocks. **/
+    static constexpr float DEFAULT_FOVX = 90.0f;
+    static constexpr float DEFAULT_ZNEAR = 0.1f;
+    static constexpr float DEFAULT_ZFAR = 1000.0f;
+
     /** The horizontal field of view in degrees, the aspect, and the near and far planes. **/
     struct Lens {
-        float fovx = 90.0f;
+        float fovx = DEFAULT_FOVX;
         float aspect = 1.0f;
-        float znear = 0.1f;
-        float zfar = 1000.0f;
+        float znear = DEFAULT_ZNEAR;
+        float zfar = DEFAULT_ZFAR;
     };
 
     void perspective(const Lens& lens);

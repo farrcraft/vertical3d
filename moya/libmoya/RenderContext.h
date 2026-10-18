@@ -69,6 +69,10 @@ class RenderContext {
         /** The picture's size when no Format names one. **/
         static constexpr unsigned int defaultWidth = 320;
         static constexpr unsigned int defaultHeight = 240;
+        /** RI's default frame aspect ratio, the aspect of defaultWidth by defaultHeight. **/
+        static constexpr float defaultFrameAspectRatio = 4.0f / 3.0f;
+        /** RI's default "fov" for a "perspective" projection, in degrees. **/
+        static constexpr float defaultFov = 90.0f;
 
         /**
          * maps to RiFormat(xres, yres, aspect)
@@ -105,7 +109,7 @@ class RenderContext {
          * in degrees across screen x from -1 to 1. Any other name is kept, and projects
          * through the identity. The current transformation is reset to the identity.
          **/
-        void projection(std::string name, float fov = 90.0);
+        void projection(std::string name, float fov = defaultFov);
         /**
          * maps to RiHider()
          * "hidden", RI's default, is the reyes hider. "raytrace" casts a
@@ -351,10 +355,12 @@ class RenderContext {
 
         /*
          * The options below carry RI's defaults as member initialisers, so that both
-         * constructors set every one of them. RI_EPSILON and RI_INFINITY are written as their
-         * values, 1.0e-10 and 1.0e38, because RenderMan.h is the C interface and is not
+         * constructors set every one of them. riEpsilon and riInfinity hold the values of
+         * RI_EPSILON and RI_INFINITY, because RenderMan.h is the C interface and is not
          * included here.
          */
+        static constexpr float riEpsilon = 1.0e-10f;
+        static constexpr float riInfinity = 1.0e38f;
         /**
          * What RiAttributeBegin saves and RiAttributeEnd puts back.
          **/
@@ -417,8 +423,8 @@ class RenderContext {
         unsigned int yres_ = defaultHeight;
         float pixelAspect_ = 1.0f;
         float crop_[4] = { 0.0f, 1.0f, 0.0f, 1.0f };  // RiCropWindow's default; nothing sets or reads it
-        float frameAspect_ = 4.0f / 3.0f;
-        float screen_[4] = { -4.0f / 3.0f, 4.0f / 3.0f, -1.0f, 1.0f };  // the screen window: left, right, bottom, top
+        float frameAspect_ = defaultFrameAspectRatio;
+        float screen_[4] = { -defaultFrameAspectRatio, defaultFrameAspectRatio, -1.0f, 1.0f };  // the screen window: left, right, bottom, top
         // RiFormat sets the frame aspect, and the frame aspect sets the screen window. Once a
         // scene names the frame aspect or the screen window, that one stops following. A named
         // projection means prepareWorld() only rebuilds the screen transform
@@ -428,7 +434,7 @@ class RenderContext {
         glm::vec3 color_ = glm::vec3(1.0f);
         glm::vec3 opacity_ = glm::vec3(1.0f);
         std::string projection_ = "orthographic";
-        float fov_ = 90.0f;
+        float fov_ = defaultFov;
         boost::shared_ptr<Hider> hider_;
         // an empty display name writes no file. RI's default display is a framebuffer,
         // which moya does not have
@@ -439,8 +445,8 @@ class RenderContext {
         v3d::render::offline::MovingTransform transform_;
         // the transformation in force at RiProjection; the projection applies after it
         v3d::render::offline::MovingTransform projectionBase_;
-        float near_ = 1.0e-10f;  // near clipping plane, RI_EPSILON
-        float far_ = 1.0e38f;  // far clipping plane, RI_INFINITY
+        float near_ = riEpsilon;  // near clipping plane
+        float far_ = riInfinity;  // far clipping plane
         v3d::render::offline::Sampling sampling_;
 
         /*
@@ -453,7 +459,8 @@ class RenderContext {
         unsigned int bucketWidth_ = 16;
         unsigned int bucketHeight_ = 16;
         unsigned int gridSize_ = 256;
-        std::size_t motionCache_ = std::size_t(1) << 20;
+        static constexpr unsigned int defaultMotionCacheLog2 = 20;
+        std::size_t motionCache_ = std::size_t(1) << defaultMotionCacheLog2;
         float shadingRate_ = 1.0f;
 };
 

@@ -28,6 +28,10 @@ const char* const spriteName = "sample.png";
 constexpr glm::vec4 clearColour(0.05f, 0.05f, 0.07f, 1.0f);
 constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 
+constexpr glm::vec4 wallColour(0.35f, 0.35f, 0.40f, 1.0f);
+constexpr glm::vec4 crateColour(0.45f, 0.33f, 0.18f, 1.0f);
+constexpr glm::vec4 floorColour(0.14f, 0.15f, 0.18f, 1.0f);
+
 /**
  * A tile is drawn as its kind's colour. There is no tile artwork, so the kind is the only
  * thing that tells tiles apart. An unset texture handle draws against the renderer's white
@@ -36,11 +40,11 @@ constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
 glm::vec4 tileColour(odyssey::tile::Kind kind) {
     switch (kind) {
     case odyssey::tile::Kind::Wall:
-        return glm::vec4(0.35f, 0.35f, 0.40f, 1.0f);
+        return wallColour;
     case odyssey::tile::Kind::Crate:
-        return glm::vec4(0.45f, 0.33f, 0.18f, 1.0f);
+        return crateColour;
     default:
-        return glm::vec4(0.14f, 0.15f, 0.18f, 1.0f);
+        return floorColour;
     }
 }
 

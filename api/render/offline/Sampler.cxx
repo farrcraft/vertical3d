@@ -21,7 +21,9 @@ namespace {
  * square stratified on the disc.
  **/
 glm::vec2 disc(const glm::vec2 & square) {
-    const float pi = 3.14159265358979f;
+    constexpr float pi = 3.14159265358979f;
+    // the square's diagonals cut the disc into four quarters, and this is half the angle of one
+    constexpr float halfQuarter = pi / 4.0f;
     const glm::vec2 centred = square * 2.0f - glm::vec2(1.0f);
     if (centred.x == 0.0f && centred.y == 0.0f) {
         return glm::vec2(0.0f);
@@ -30,10 +32,10 @@ glm::vec2 disc(const glm::vec2 & square) {
     float angle = 0.0f;
     if (std::fabs(centred.x) > std::fabs(centred.y)) {
         radius = centred.x;
-        angle = (pi / 4.0f) * (centred.y / centred.x);
+        angle = halfQuarter * (centred.y / centred.x);
     } else {
         radius = centred.y;
-        angle = (pi / 2.0f) - ((pi / 4.0f) * (centred.x / centred.y));
+        angle = (pi / 2.0f) - (halfQuarter * (centred.x / centred.y));
     }
     return glm::vec2(radius * std::cos(angle), radius * std::sin(angle));
 }

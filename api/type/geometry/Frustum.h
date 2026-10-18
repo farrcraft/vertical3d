@@ -6,6 +6,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 #include <glm/mat4x4.hpp>
@@ -24,6 +25,8 @@ namespace v3d::type::geometry {
  **/
 class Frustum final {
  public:
+    static constexpr std::size_t PLANE_COUNT = 6;
+
     /**
      * The depth range of the clip space the matrix builds, which decides where its near
      * plane is.
@@ -64,10 +67,10 @@ class Frustum final {
      * The planes are read straight out of the matrix and are not normalised. signedDistance()
      * on one tells the side a point is on, but its value is not a distance.
      **/
-    const std::array<Plane, 6>& planes() const noexcept;
+    const std::array<Plane, PLANE_COUNT>& planes() const noexcept;
 
  private:
-    std::array<Plane, 6> planes_;
+    std::array<Plane, PLANE_COUNT> planes_;
 };
 
 };  // namespace v3d::type::geometry

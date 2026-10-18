@@ -122,10 +122,14 @@ Turn it on with `-DV3D_CLANG_TIDY=ON`. It is off by default for the same cost re
 list is in [.clang-tidy](../../.clang-tidy). The clang-tidy executable comes with the MSVC install,
 under `VC/Tools/Llvm/x64/bin`.
 
-`.clang-tidy` enables four check families and subtracts 11 checks by name. The tree is clean at
-the 195 that remain. [TODO.md](../TODO.md#the-clang-tidy-backlog) lists what each subtracted
+`.clang-tidy` enables four check families and subtracts 10 checks by name. The tree is clean at
+the 196 that remain. [TODO.md](../TODO.md#the-clang-tidy-backlog) lists what each subtracted
 check reports, except seven that the `.clang-tidy` comment marks as settled. To remove a line from
 that list, fix what the check reports. Do not widen the exclusion.
+
+Each `tests` directory has a `.clang-tidy` of its own. It inherits the root file and turns off
+`readability-magic-numbers`, because a test's literal is the value it expects. A new tests
+directory needs a copy of that file.
 
 `V3D_WARNINGS_AS_ERRORS` also decides whether a clang-tidy finding stops the build. Turning
 either analyser on or off changes the compile commands, so ninja rebuilds what it needs to.

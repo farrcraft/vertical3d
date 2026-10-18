@@ -25,6 +25,8 @@ namespace v3d::render::realtime::component {
  * as Sprite holds its own.
  **/
 struct Particles final {
+    static constexpr float DEFAULT_STRETCH = 0.05f;
+
     /**
      * Which way a particle's quad lies.
      **/
@@ -51,7 +53,7 @@ struct Particles final {
      * For a particle stretched along its velocity, how many seconds of its travel the quad
      * spans. The quad is never shorter than it is wide.
      **/
-    float stretch{ 0.05f };
+    float stretch{ DEFAULT_STRETCH };
 };
 
 };  // namespace v3d::render::realtime::component

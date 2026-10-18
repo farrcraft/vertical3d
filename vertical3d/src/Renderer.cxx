@@ -51,6 +51,14 @@ const float uiScale = 1.0f;
  **/
 const float fontSize = 15.0f * uiScale;
 
+/**
+ * The ui's spacing, each a multiple of the text size.
+ **/
+constexpr float lineHeightScale = 1.5f;
+constexpr float paddingScale = 1.4f;
+constexpr float barHeightScale = 1.8f;
+constexpr float panelPaddingScale = 0.3f;
+
 };  // namespace
 
 /**
@@ -68,10 +76,10 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
     v3d::ui::shell::Screen::Options options;
     options.size = fontSize;
     options.dress = [](v3d::ui::paint::Dressing* style, float size) {
-        style->lineHeight = size * 1.5f;
-        style->padding = size * 1.4f;
-        style->barHeight = size * 1.8f;
-        style->panelPadding = size * 0.3f;
+        style->lineHeight = size * lineHeightScale;
+        style->padding = size * paddingScale;
+        style->barHeight = size * barHeightScale;
+        style->panelPadding = size * panelPaddingScale;
     };
     screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
 }

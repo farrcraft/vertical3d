@@ -5,6 +5,8 @@
 
 #include "Sphere.h"
 
+#include <api/render/offline/Units.h>
+
 #include <algorithm>
 #include <cmath>
 
@@ -16,19 +18,13 @@
 
 namespace v3d::render::offline::trace {
 
-namespace {
-
-const float PI = 3.14159265358979323846f;
-
-};  // namespace
-
 Sphere::Sphere(const v3d::render::offline::rib::Sphere & shape, const glm::mat4x4 & placement, const glm::vec3 & colour) :
     Primitive(colour), radius_(shape.radius),
     // clamped by the size of the radius, so a negative one is still a valid range; such a
     // sphere is never hit anyway
     zmin_(std::clamp(std::min(shape.zmin, shape.zmax), -std::fabs(shape.radius), std::fabs(shape.radius))),
     zmax_(std::clamp(std::max(shape.zmin, shape.zmax), -std::fabs(shape.radius), std::fabs(shape.radius))),
-    thetamax_(std::clamp(shape.thetamax, 0.0f, 360.0f) * PI / 180.0f),
+    thetamax_(std::clamp(shape.thetamax, 0.0f, v3d::render::offline::rib::Sphere::FULL_THETAMAX) * PI / HALF_TURN_DEGREES),
     toObject_(glm::inverse(placement)) {
 }
 

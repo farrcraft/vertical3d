@@ -17,10 +17,15 @@ namespace v3d::ui::shell {
 namespace {
 
 /**
+ * The height of a line of text, as a multiple of the text's size.
+ **/
+constexpr float LINE_SPACING = 1.4f;
+
+/**
  * The dressing an app gets when it names none: a line of text and the gap after it.
  **/
 void lineHeight(paint::Dressing* dressing, float size) {
-    dressing->lineHeight = size * 1.4f;
+    dressing->lineHeight = size * LINE_SPACING;
 }
 
 };  // namespace

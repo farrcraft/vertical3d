@@ -19,6 +19,10 @@ namespace v3d::render::realtime::vulkan::renderer {
 
 namespace {
 
+// the stride of lit.glsl's Object struct in a std430 array
+constexpr std::size_t OBJECT_STRIDE = 96;
+static_assert(sizeof(Lit::Object) == OBJECT_STRIDE, "Lit::Object must match the std430 stride of lit.glsl's Object");
+
 /**
  * The api's lit shaders, compiled to SPIR-V at build time - see v3d_add_shader.
  **/

@@ -9,6 +9,16 @@
 
 #include <noise.h>
 
+namespace {
+
+/**
+ * How far the height map reaches into the noise on each axis, in the noise's own units.
+ * More of the noise in the same 256 samples makes the hills smaller and closer together.
+ **/
+constexpr double NOISE_EXTENT = 4.0;
+
+};  // namespace
+
 class TerrainMap::Noise {
  public:
         void generate();
@@ -29,7 +39,7 @@ void TerrainMap::Noise::generate() {
 
     heightMapBuilder.SetDestSize(256, 256);
     // lower x, upper x, lower z, upper z
-    heightMapBuilder.SetBounds(0.0, 4.0, 0.0, 4.0);
+    heightMapBuilder.SetBounds(0.0, NOISE_EXTENT, 0.0, NOISE_EXTENT);
 
     heightMapBuilder.Build();
 

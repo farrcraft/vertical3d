@@ -77,6 +77,13 @@ struct Masks final {
     uint32_t alpha = 0;
 };
 
+// an uncompressed 16 bit file has five bits a channel
+constexpr Masks RGB555_MASKS{0x7C00u, 0x03E0u, 0x001Fu, 0u};
+// and an uncompressed 32 bit file has eight, with alpha in the top byte
+constexpr Masks ARGB8888_MASKS{0x00FF0000u, 0x0000FF00u, 0x000000FFu, 0xFF000000u};
+// each mask after the info header is one word, in the order red, green, blue, alpha
+constexpr std::size_t MASK_SIZE = sizeof(uint32_t);
+
 uint32_t readWord(const unsigned char* at) {
     return static_cast<uint32_t>(at[0]) | (static_cast<uint32_t>(at[1]) << 8) |
         (static_cast<uint32_t>(at[2]) << 16) | (static_cast<uint32_t>(at[3]) << 24);
@@ -125,23 +132,22 @@ bool supported(const format::bmp_info_header& header, const boost::shared_ptr<v3
  **/
 bool readMasks(const unsigned char* encoded, std::size_t length, const format::bmp_info_header& header, Masks* masks) {
     if (header.bits_ == 16) {
-        // an uncompressed 16 bit file has five bits a channel
-        *masks = Masks{0x7C00u, 0x03E0u, 0x001Fu, 0u};
+        *masks = RGB555_MASKS;
     } else if (header.bits_ == 32) {
-        *masks = Masks{0x00FF0000u, 0x0000FF00u, 0x000000FFu, 0xFF000000u};
+        *masks = ARGB8888_MASKS;
     }
     if (header.compression_ != bitfields) {
         return true;
     }
     const std::size_t held = sizeof(format::bmp_file_header) + sizeof(format::bmp_info_header);
-    const bool alpha = header.size_ >= sizeof(format::bmp_info_header) + 16;
-    if (length < held + (alpha ? 16 : 12)) {
+    const bool alpha = header.size_ >= sizeof(format::bmp_info_header) + (4 * MASK_SIZE);
+    if (length < held + ((alpha ? 4 : 3) * MASK_SIZE)) {
         return false;
     }
     masks->red = readWord(encoded + held);
-    masks->green = readWord(encoded + held + 4);
-    masks->blue = readWord(encoded + held + 8);
-    masks->alpha = alpha ? readWord(encoded + held + 12) : 0u;
+    masks->green = readWord(encoded + held + MASK_SIZE);
+    masks->blue = readWord(encoded + held + (2 * MASK_SIZE));
+    masks->alpha = alpha ? readWord(encoded + held + (3 * MASK_SIZE)) : 0u;
     return true;
 }
 
@@ -240,7 +246,7 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
     memcpy(&fheader, encoded, sizeof(format::bmp_file_header));
     memcpy(&iheader, encoded + sizeof(format::bmp_file_header), sizeof(format::bmp_info_header));
 
-    if (fheader.type_ != 19778) {
+    if (fheader.type_ != format::BMP_SIGNATURE) {
         logger()->get()->error("BMPReader::read - bad header magic number!");
         return empty_ptr;
     }

@@ -9,6 +9,15 @@
 
 namespace v3d::editor {
 
+namespace {
+
+/**
+ * World units a perspective camera moves for each pixel the mouse is dragged.
+ **/
+constexpr float perspectiveFactor = 0.125f;
+
+};  // namespace
+
 /**
  **/
 CameraControlTool::CameraControlTool() :
@@ -125,7 +134,7 @@ void CameraControlTool::zoom(const glm::vec2& position) {
         factor = camera->orthoFactorHorizontal();
         camera->zoom(-delta * factor);
     } else {
-        factor = 0.125f;
+        factor = perspectiveFactor;
         camera->dolly(delta * factor);
     }
 }
@@ -149,7 +158,7 @@ void CameraControlTool::truck(const glm::vec2& position) {
         if (camera->orthographic()) {
             factor = camera->orthoFactorHorizontal();
         } else {
-            factor = 0.125f;
+            factor = perspectiveFactor;
         }
         camera->truck(delta_x * -factor);
     }
@@ -158,7 +167,7 @@ void CameraControlTool::truck(const glm::vec2& position) {
         if (camera->orthographic()) {
             factor = camera->orthoFactorVertical();
         } else {
-            factor = 0.125f;
+            factor = perspectiveFactor;
         }
         camera->pedestal(delta_y * factor);
     }

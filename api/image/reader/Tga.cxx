@@ -13,6 +13,14 @@
 #include <vector>
 
 namespace v3d::image::reader {
+
+namespace {
+
+// the header byte that holds the image descriptor, whose bit 5 is the vertical origin
+constexpr std::size_t IMAGE_DESCRIPTOR = 5;
+
+};  // namespace
+
 /**
  **/
 Tga::Tga(const boost::shared_ptr<v3d::log::Logger>& logger) : Reader(logger) {
@@ -71,7 +79,7 @@ boost::shared_ptr<Image> Tga::read(const unsigned char* data, std::size_t size) 
     // often than it is set - the file then holds its rows bottom up. Every other reader
     // here yields a top down image, and so does every consumer of one, so flip rather
     // than leave the orientation up to whoever wrote the file
-    if ((header[5] & 0x20) == 0) {
+    if ((header[IMAGE_DESCRIPTOR] & 0x20) == 0) {
         const unsigned int stride = width * bytespp;
         std::vector<unsigned char> row(stride);
         for (unsigned int i = 0; i < height / 2; ++i) {

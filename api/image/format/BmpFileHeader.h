@@ -9,6 +9,9 @@
 
 namespace v3d::image::format {
 
+// the type_ of every bmp: the bytes "BM", read as a little endian word
+constexpr uint16_t BMP_SIGNATURE = 19778;
+
 #pragma pack(push, 2)
 
 struct bmp_file_header {

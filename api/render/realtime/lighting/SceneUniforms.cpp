@@ -11,15 +11,23 @@
 
 namespace v3d::render::realtime::lighting {
 
-// the offsets lit.glsl's std140 Scene block puts each member at, which nothing at runtime checks
+namespace {
+
+constexpr std::size_t VEC4 = sizeof(glm::vec4);
+
+};  // namespace
+
+// the offsets lit.glsl's std140 Scene block puts each member at, which nothing at runtime checks.
+// Every member is a vec4 or a mat4, which std140 packs with no padding between them
 static_assert(offsetof(SceneUniforms, light) == 0, "light is at offset 0");
-static_assert(offsetof(SceneUniforms, thresholds) == 16, "thresholds are at offset 16");
-static_assert(offsetof(SceneUniforms, bands) == 32, "bands are at offset 32");
-static_assert(offsetof(SceneUniforms, lightViewProjection) == 48, "the light's matrix is at offset 48");
-static_assert(offsetof(SceneUniforms, shadow) == 112, "the shadow terms are at offset 112");
-static_assert(offsetof(SceneUniforms, colour) == 128, "the light's colour is at offset 128");
-static_assert(offsetof(SceneUniforms, shadowColour) == 144, "the shadow's colour is at offset 144");
-static_assert(sizeof(SceneUniforms) == 160, "the Scene block is 160 bytes");
+static_assert(offsetof(SceneUniforms, thresholds) == VEC4, "thresholds are at offset 16");
+static_assert(offsetof(SceneUniforms, bands) == 2 * VEC4, "bands are at offset 32");
+static_assert(offsetof(SceneUniforms, lightViewProjection) == 3 * VEC4, "the light's matrix is at offset 48");
+static_assert(offsetof(SceneUniforms, shadow) == offsetof(SceneUniforms, lightViewProjection) + sizeof(glm::mat4),
+    "the shadow terms are at offset 112");
+static_assert(offsetof(SceneUniforms, colour) == offsetof(SceneUniforms, shadow) + VEC4, "the light's colour is at offset 128");
+static_assert(offsetof(SceneUniforms, shadowColour) == offsetof(SceneUniforms, colour) + VEC4, "the shadow's colour is at offset 144");
+static_assert(sizeof(SceneUniforms) == offsetof(SceneUniforms, shadowColour) + VEC4, "the Scene block is 160 bytes");
 
 /**
  **/

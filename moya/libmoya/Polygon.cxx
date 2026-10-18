@@ -23,6 +23,12 @@ namespace v3d::moya {
 
 namespace {
 
+/**
+ * The least length of the cross product of two edges from a polygon's first vertex that gives
+ * the polygon a normal.
+ **/
+constexpr float SMALLEST_SPANNED_AREA = 1.0e-8f;
+
 Vertex crossing(const Vertex & a, const Vertex & b, const glm::vec3 & hit);
 
 /**
@@ -96,7 +102,7 @@ glm::vec3 Polygon::geometricNormal(void) const {
         const glm::vec3 across = glm::cross(vertices_[i].point() - vertices_[0].point(),
                                             vertices_[i + 1].point() - vertices_[0].point());
         const float area = glm::length(across);
-        if (area > 1.0e-8f) {
+        if (area > SMALLEST_SPANNED_AREA) {
             return across / area;
         }
     }

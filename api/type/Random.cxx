@@ -14,6 +14,23 @@
 
 namespace v3d::type {
 
+namespace {
+
+// SplitMix64: the counter's step, which is 2^64 divided by the golden ratio, and the shifts
+// and multipliers of its two mixing rounds and final fold
+constexpr uint64_t STATE_STEP = 0x9E3779B97F4A7C15ULL;
+constexpr int FIRST_MIX_SHIFT = 30;
+constexpr uint64_t FIRST_MIX_MULTIPLIER = 0xBF58476D1CE4E5B9ULL;
+constexpr int SECOND_MIX_SHIFT = 27;
+constexpr uint64_t SECOND_MIX_MULTIPLIER = 0x94D049BB133111EBULL;
+constexpr int FOLD_SHIFT = 31;
+
+// unit() keeps the top 24 bits of a draw, the precision of a float, and scales them by 2^-24
+constexpr int UNIT_DISCARDED_BITS = 40;
+constexpr float UNIT_SCALE = 0x1.0p-24f;
+
+};  // namespace
+
 Random::Random(uint64_t seed) noexcept :
     state_(seed) {
 }
@@ -21,11 +38,11 @@ Random::Random(uint64_t seed) noexcept :
 uint64_t Random::next() noexcept {
     // the state is only a counter and the mixing randomises the output, so the generator
     // saves and restores as one integer
-    state_ += 0x9E3779B97F4A7C15ULL;
+    state_ += STATE_STEP;
     uint64_t z = state_;
-    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
-    z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
-    return z ^ (z >> 31);
+    z = (z ^ (z >> FIRST_MIX_SHIFT)) * FIRST_MIX_MULTIPLIER;
+    z = (z ^ (z >> SECOND_MIX_SHIFT)) * SECOND_MIX_MULTIPLIER;
+    return z ^ (z >> FOLD_SHIFT);
 }
 
 uint32_t Random::below(uint32_t bound) {
@@ -47,7 +64,7 @@ uint32_t Random::below(uint32_t bound) {
 }
 
 float Random::unit() noexcept {
-    return static_cast<float>(next() >> 40) * 0x1.0p-24f;
+    return static_cast<float>(next() >> UNIT_DISCARDED_BITS) * UNIT_SCALE;
 }
 
 float Random::range(float low, float high) noexcept {

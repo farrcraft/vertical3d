@@ -12,6 +12,13 @@
 
 namespace v3d::render::realtime::canvas {
 
+namespace {
+
+// two triangles
+constexpr uint32_t QUAD_INDICES = 6;
+
+};  // namespace
+
 /**
  **/
 World::Batch::Batch() noexcept :
@@ -144,11 +151,11 @@ void World::vertex(const glm::vec3& position, const glm::vec2& uv, const glm::ve
 /**
  **/
 void World::fan(uint32_t first) {
-    const uint32_t order[6] = {0, 1, 2, 2, 3, 0};
-    for (std::size_t index = 0; index < 6; index++) {
+    const uint32_t order[QUAD_INDICES] = {0, 1, 2, 2, 3, 0};
+    for (std::size_t index = 0; index < QUAD_INDICES; index++) {
         indices_.push_back(first + order[index]);
     }
-    batches_.back().indices += 6;
+    batches_.back().indices += QUAD_INDICES;
 }
 
 };  // namespace v3d::render::realtime::canvas

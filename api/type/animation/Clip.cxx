@@ -52,8 +52,12 @@ glm::vec4 hermite(const Channel& channel, const Segment& segment) {
     const glm::vec4 out = channel.values[(key * 3) + 2] * span;
     const glm::vec4 in = channel.values[(key + 1) * 3] * span;
     const glm::vec4 to = channel.values[((key + 1) * 3) + 1];
-    return ((2.0f * u3) - (3.0f * u2) + 1.0f) * from + (u3 - (2.0f * u2) + u) * out + ((-2.0f * u3) + (3.0f * u2)) * to +
-        (u3 - u2) * in;
+    // the cubic Hermite basis functions
+    const float fromWeight = (2.0f * u3) - (3.0f * u2) + 1.0f;
+    const float outWeight = u3 - (2.0f * u2) + u;
+    const float toWeight = (-2.0f * u3) + (3.0f * u2);
+    const float inWeight = u3 - u2;
+    return fromWeight * from + outWeight * out + toWeight * to + inWeight * in;
 }
 
 /**

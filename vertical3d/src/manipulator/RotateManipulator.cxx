@@ -122,7 +122,7 @@ bool RotateManipulator::grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
 
     // the centre handle is the disc inside the rings rather than a point, so that a
     // tumble is as easy to start as a constrained turn
-    if (glm::distance(root, cursor) <= tolerance * 1.5f) {
+    if (glm::distance(root, cursor) <= tolerance * centreReach) {
         if (axis != nullptr) {
             *axis = Axis::None;
         }

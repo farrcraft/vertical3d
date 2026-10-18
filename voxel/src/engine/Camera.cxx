@@ -16,9 +16,9 @@
 
 Camera::Camera() :
     behavior_(CAMERA_BEHAVIOR_FLIGHT),
-    fovx_(90.0f),
-    near_(0.1f),
-    far_(1000.0f),
+    fovx_(DEFAULT_FOVX),
+    near_(DEFAULT_ZNEAR),
+    far_(DEFAULT_ZFAR),
     aspect_(1.0f),
     pitch_(0.0f),
     eye_(0.0f, 0.0f, 0.0f),
@@ -253,16 +253,19 @@ void Camera::rotateFlight(float headingDegrees, float pitchDegrees, float rollDe
 }
 
 void Camera::rotateFirstPerson(float headingDegrees, float pitchDegrees) {
+    // degrees above or below the horizon: straight up or straight down, and no further
+    constexpr float pitchLimit = 90.0f;
+
     pitch_ += pitchDegrees;
 
-    if (pitch_ > 90.0f) {
-        pitchDegrees = 90.0f - (pitch_ - pitchDegrees);
-        pitch_ = 90.0f;
+    if (pitch_ > pitchLimit) {
+        pitchDegrees = pitchLimit - (pitch_ - pitchDegrees);
+        pitch_ = pitchLimit;
     }
 
-    if (pitch_ < -90.0f) {
-        pitchDegrees = -90.0f - (pitch_ - pitchDegrees);
-        pitch_ = -90.0f;
+    if (pitch_ < -pitchLimit) {
+        pitchDegrees = -pitchLimit - (pitch_ - pitchDegrees);
+        pitch_ = -pitchLimit;
     }
 
     glm::mat4 rotMtx;

@@ -152,12 +152,13 @@ void Line::box(const glm::vec3& min, const glm::vec3& max, const glm::vec4& colo
         glm::vec3(min.x, max.y, max.z)
     };
     // the near face, the far face, and the four struts between them
-    const unsigned int edge[24] = {
+    constexpr std::size_t edgeEnds = 24;
+    const unsigned int edge[edgeEnds] = {
         0, 1, 1, 2, 2, 3, 3, 0,
         4, 5, 5, 6, 6, 7, 7, 4,
         0, 4, 1, 5, 2, 6, 3, 7
     };
-    for (std::size_t index = 0; index < 24; index += 2) {
+    for (std::size_t index = 0; index < edgeEnds; index += 2) {
         line(corner[edge[index]], corner[edge[index + 1]], colour);
     }
 }

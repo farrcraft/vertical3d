@@ -5,6 +5,8 @@
 
 #include "FrameBuffer.h"
 
+#include <api/render/offline/Units.h>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -67,7 +69,7 @@ boost::shared_ptr<v3d::image::Image> FrameBuffer::image(unsigned int channels) c
                 // undefined; the rest is clamped and truncated
                 const float stored = planes_[i][row][column];
                 const float v = std::isnan(stored) ? 0.0f : std::clamp(stored, 0.0f, 1.0f);
-                data[index + i] = static_cast<unsigned char>(v * 255.0f);
+                data[index + i] = static_cast<unsigned char>(v * BYTE_SCALE);
             }
         }
     }

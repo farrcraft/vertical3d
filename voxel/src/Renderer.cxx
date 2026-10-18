@@ -12,6 +12,7 @@
 #include <voxel/src/engine/Camera.h>
 #include <voxel/src/engine/ChunkMeshBuilder.h>
 #include <voxel/src/engine/ChunkVertex.h>
+#include <voxel/src/engine/Nanoseconds.h>
 #include <voxel/src/engine/SceneUniforms.h>
 #include <voxel/src/game/Player.h>
 #include <voxel/src/voxel/ChunkCulling.h>
@@ -21,6 +22,7 @@
 #include <cstddef>
 #include <cstring>
 #include <functional>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -77,6 +79,33 @@ constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
  * whole world arriving in one frame would be a visible stall.
  **/
 const size_t chunkUpdatesPerTick = 16;
+
+/**
+ * The sun, in world space and well above a 256 block wide world.
+ **/
+constexpr glm::vec4 sunPosition(128.0f, 200.0f, 128.0f, 1.0f);
+constexpr glm::vec4 ambientLight(0.4f, 0.4f, 0.4f, 1.0f);
+
+/**
+ * The specular colour every block shares, with its shininess in the fourth component.
+ **/
+constexpr glm::vec4 blockSpecular(0.8f, 0.8f, 0.8f, 100.0f);
+
+/**
+ * The farthest distance, in blocks, that a draw's depth key can hold.
+ **/
+constexpr float maxDepthKey = static_cast<float>(std::numeric_limits<uint16_t>::max());
+
+/**
+ * Where the debug readout sits and how big it is, in pixels, and what its background is
+ * drawn at. It is a fixed height, and a line taller for each span of the frame that was
+ * timed.
+ **/
+constexpr glm::vec2 debugPosition(20.0f, 20.0f);
+constexpr float debugWidth = 260.0f;
+constexpr float debugHeight = 154.0f;
+constexpr float debugLineHeight = 26.0f;
+constexpr float debugAlpha = 0.85f;
 
 /**
  * The block palette, indexed by Voxel::BlockType less one - air is never meshed, so the
@@ -163,9 +192,8 @@ void Renderer::createLayout() {
  **/
 void Renderer::createUniforms() {
     SceneUniforms uniforms{};
-    // the sun, in world space and well above a 256 block wide world
-    uniforms.lightPosition = glm::vec4(128.0f, 200.0f, 128.0f, 1.0f);
-    uniforms.ambient = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
+    uniforms.lightPosition = sunPosition;
+    uniforms.ambient = ambientLight;
     uniforms.diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     uniforms.specular = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     for (unsigned int i = 0; i < materialCount; i++) {
@@ -173,7 +201,7 @@ void Renderer::createUniforms() {
         // what varies between block types is the colour, not the finish
         uniforms.materials[i].ambient = glm::vec4(palette[i], 1.0f);
         uniforms.materials[i].diffuse = glm::vec4(palette[i], 1.0f);
-        uniforms.materials[i].specular = glm::vec4(0.8f, 0.8f, 0.8f, 100.0f);
+        uniforms.materials[i].specular = blockSpecular;
     }
 
     uniforms_ = boost::make_shared<v3d::render::realtime::vulkan::memory::DeviceBuffer>(
@@ -265,7 +293,7 @@ void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
         // shaded. The far plane is 1000 blocks and a chunk is 16, so quantizing the distance
         // to whole blocks is finer than the ordering can use
         const float distance = glm::length(entry.origin - eye);
-        item.key.depth = static_cast<uint16_t>(distance < 65535.0f ? distance : 65535.0f);
+        item.key.depth = static_cast<uint16_t>(distance < maxDepthKey ? distance : maxDepthKey);
 
         pass->submit(item);
     }
@@ -279,12 +307,11 @@ void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statis
 
     v3d::ui::Immediate* layer = screen_->immediate();
     layer->begin(&screen_->canvas(), tools);
-    // a line more for each span of the frame that was timed
-    const float tall = 154.0f + (26.0f * static_cast<float>(statistics.spans.size()));
-    if (layer->window(debugTitle, {.position = glm::vec2(20.0f, 20.0f), .size = glm::vec2(260.0f, tall)}, 0.85f)) {
+    const float tall = debugHeight + (debugLineHeight * static_cast<float>(statistics.spans.size()));
+    if (layer->window(debugTitle, {.position = debugPosition, .size = glm::vec2(debugWidth, tall)}, debugAlpha)) {
         layer->text(std::string("Voxel ") + VOXEL_VERSION);
         // the loop already keeps a rolling mean, so nothing here averages anything
-        layer->text(std::to_string(statistics.mean / 1000000U) + " ms");
+        layer->text(std::to_string(statistics.mean / NANOSECONDS_PER_MILLISECOND) + " ms");
         std::stringstream where;
         where.precision(1);
         where << std::fixed << "x " << position.x << "  y " << position.y << "  z " << position.z;
@@ -356,7 +383,7 @@ void Renderer::resize(const glm::ivec2& size) {
     const float w = static_cast<float>(width);
     const float h = static_cast<float>(height);
 
-    scene_->camera()->perspective({.fovx = 90.0f, .aspect = w / h, .znear = 0.1f, .zfar = 1000.0f});
+    scene_->camera()->perspective({.fovx = Camera::DEFAULT_FOVX, .aspect = w / h, .znear = Camera::DEFAULT_ZNEAR, .zfar = Camera::DEFAULT_ZFAR});
 }
 
 /**

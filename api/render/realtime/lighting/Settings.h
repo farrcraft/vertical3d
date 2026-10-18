@@ -18,31 +18,41 @@ namespace v3d::render::realtime::lighting {
  * a thin outline and full strength shadows.
  **/
 struct Settings final {
+    static constexpr glm::vec3 DEFAULT_LIGHT{-0.45f, 0.62f, 0.64f};
+    static constexpr float DEFAULT_FILL = 0.35f;
+    static constexpr float DEFAULT_SHADOW_THRESHOLD = 0.26f;
+    static constexpr float DEFAULT_LIT_THRESHOLD = 0.70f;
+    static constexpr glm::vec3 DEFAULT_BANDS{0.30f, 0.55f, 1.0f};
+    static constexpr float DEFAULT_OUTLINE = 0.022f;
+    static constexpr float DEFAULT_CONSTANT_BIAS = 1.5f;
+    static constexpr float DEFAULT_SLOPE_BIAS = 2.75f;
+    static constexpr float DEFAULT_NORMAL_BIAS = 0.02f;
+
     /**
      * Towards the key light, in world space - it need not be normalised. Keep it well off the
      * camera's axis, or every surface the camera sees lands in the top band and reads flat.
      **/
-    glm::vec3 light{-0.45f, 0.62f, 0.64f};
+    glm::vec3 light{DEFAULT_LIGHT};
 
     /**
      * How strongly a fill from above and opposite the key is added before banding. Without it
      * every face turned from the key is one flat shape.
      **/
-    float fill = 0.35f;
+    float fill = DEFAULT_FILL;
 
     /**
      * Where the light, key plus fill, crosses from the shadow band into the mid band, and from
      * the mid into the lit. A surface whose light sits close to one of these crosses it all at
      * once when the light moves a little, so keep the ground well clear of both.
      **/
-    float shadowThreshold = 0.26f;
-    float litThreshold = 0.70f;
+    float shadowThreshold = DEFAULT_SHADOW_THRESHOLD;
+    float litThreshold = DEFAULT_LIT_THRESHOLD;
 
     /**
      * What the albedo is multiplied by in the shadow, mid and lit bands. A shadowed fragment
      * drops one band, so the mid multiplier is also how dark a cast shadow on lit ground is.
      **/
-    glm::vec3 bands{0.30f, 0.55f, 1.0f};
+    glm::vec3 bands{DEFAULT_BANDS};
 
     /**
      * The light's colour, which the mid and lit bands are multiplied by, and the shadow band's:
@@ -56,21 +66,21 @@ struct Settings final {
      * How far the outline hull is pushed out along each normal, in the model's units. Zero
      * draws no outline.
      **/
-    float outline = 0.022f;
+    float outline = DEFAULT_OUTLINE;
 
     /**
      * Depth bias for the shadow pass: a constant in the depth format's smallest steps, and
      * one scaled by the caster's slope. Too little and a surface shadows itself, too much and
      * a contact shadow comes away from what casts it.
      **/
-    float constantBias = 1.5f;
-    float slopeBias = 2.75f;
+    float constantBias = DEFAULT_CONSTANT_BIAS;
+    float slopeBias = DEFAULT_SLOPE_BIAS;
 
     /**
      * How far a receiver's lookup is moved along its normal before the shadow map is read,
      * which removes the acne bias alone leaves on curved surfaces.
      **/
-    float normalBias = 0.02f;
+    float normalBias = DEFAULT_NORMAL_BIAS;
 
     /**
      * How much of a band a shadow takes away. Zero still draws the shadow pass but ignores its

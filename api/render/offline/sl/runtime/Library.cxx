@@ -16,6 +16,7 @@
 
 #include <api/render/offline/Noise.h>
 #include <api/render/offline/Texture.h>
+#include <api/render/offline/Units.h>
 #include <api/render/offline/sl/Builtins.h>
 #include <api/render/offline/sl/Types.h>
 
@@ -34,8 +35,6 @@ namespace v3d::render::offline::sl::runtime {
 namespace {
 
 typedef Signature::Body Body;
-
-const float PI = 3.14159265358979323846f;
 
 float sign(float value) {
     if (value < 0.0f) {
@@ -69,8 +68,11 @@ float smoothstep(float low, float high, float value) {
     if (high == low) {
         return value < low ? 0.0f : 1.0f;
     }
+    // 3t^2 - 2t^3, as t^2 (3 - 2t)
+    constexpr float squareCoefficient = 3.0f;
+    constexpr float cubeCoefficient = 2.0f;
     const float t = clamp((value - low) / (high - low), {.low = 0.0f, .high = 1.0f});
-    return t * t * (3.0f - (2.0f * t));
+    return t * t * (squareCoefficient - (cubeCoefficient * t));
 }
 
 /**
@@ -98,9 +100,9 @@ float once(Body body, float x) {
         case Body::LOG:
             return std::log(x);
         case Body::RADIANS:
-            return x * PI / 180.0f;
+            return x * PI / HALF_TURN_DEGREES;
         case Body::DEGREES:
-            return x * 180.0f / PI;
+            return x * HALF_TURN_DEGREES / PI;
         case Body::SIN:
             return std::sin(x);
         case Body::COS:

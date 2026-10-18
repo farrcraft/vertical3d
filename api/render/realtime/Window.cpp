@@ -13,12 +13,20 @@
 
 namespace v3d::render::realtime {
 
+namespace {
+
+// the size a window reports before it is created
+constexpr int DEFAULT_WIDTH = 300;
+constexpr int DEFAULT_HEIGHT = 200;
+
+};  // namespace
+
 /**
  **/
 Window::Window(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept :
     window_(nullptr),
-    width_(300),
-    height_(200),
+    width_(DEFAULT_WIDTH),
+    height_(DEFAULT_HEIGHT),
     vulkanLoaded_(false),
     created_(false),
     logger_(logger) {

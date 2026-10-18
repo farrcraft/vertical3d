@@ -313,7 +313,7 @@ bool Manipulator::grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, const Vie
 
     // the centre handle sits on top of where all three axes meet, so it is tested
     // first or an axis root would always win it
-    if (glm::distance(root, cursor) <= tolerance * 1.5f) {
+    if (glm::distance(root, cursor) <= tolerance * centreReach) {
         if (axis != nullptr) {
             *axis = Axis::None;
         }

@@ -179,7 +179,7 @@ void RIBHandler::screenWindow(const v3d::render::offline::rib::ScreenWindow & re
 }
 
 void RIBHandler::projection(const std::string & name, const ParameterList & parameters) {
-    context().projection(name, parameters.number("fov", 90.0f));
+    context().projection(name, parameters.number("fov", RenderContext::defaultFov));
 }
 
 void RIBHandler::clipping(const v3d::render::offline::rib::Clipping & request) {

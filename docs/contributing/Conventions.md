@@ -103,6 +103,12 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
   protected accessor, such as `logger()` or `registry()`. A struct whose data members are all
   public is a record, and is exempt. clang-tidy's `misc-non-private-member-variables-in-classes`
   reports a protected data member, and a public one in a class that also has private data.
+- **A number whose meaning is not plain from its line is a named constant.** The name says
+  what the number means, not its value. Numbers that are one value, such as a colour or a
+  table, are one constant. A count or a length is derived, with `std::size` or `sizeof`,
+  rather than written. clang-tidy's `readability-magic-numbers` reports a literal outside a
+  constant's initialiser, except in tests and for 0 to 4, 24, 255, powers of two, 0.5, 1.0,
+  2.0 and 100.0.
 - **Pass a non-trivial type by `const` reference**, including a `boost::shared_ptr` and a
   `std::string`. clang-tidy's `performance-unnecessary-value-param` also accepts a by-value
   parameter that is moved from, but this tree uses the `const` reference in both cases.

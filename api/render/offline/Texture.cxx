@@ -5,6 +5,8 @@
 
 #include "Texture.h"
 
+#include <api/render/offline/Units.h>
+
 #include <cmath>
 #include <vector>
 
@@ -33,10 +35,10 @@ Texture::Texture(const v3d::image::Image & image) :
     texels_.reserve(static_cast<std::size_t>(width_) * height_);
     for (unsigned int i = 0; i < width_ * height_; i++) {
         const unsigned int at = i * channels;
-        glm::vec3 colour(static_cast<float>(image[at]) / 255.0f);
+        glm::vec3 colour(static_cast<float>(image[at]) / BYTE_SCALE);
         if (channels >= 3) {
-            colour.g = static_cast<float>(image[at + 1]) / 255.0f;
-            colour.b = static_cast<float>(image[at + 2]) / 255.0f;
+            colour.g = static_cast<float>(image[at + 1]) / BYTE_SCALE;
+            colour.b = static_cast<float>(image[at + 2]) / BYTE_SCALE;
         }
         texels_.push_back(colour);
     }

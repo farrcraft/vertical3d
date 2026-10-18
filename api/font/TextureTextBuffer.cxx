@@ -15,6 +15,13 @@
 
 namespace v3d::font {
 
+namespace {
+
+// two triangles
+constexpr unsigned int QUAD_INDICES = 6;
+
+};  // namespace
+
 TextureTextBuffer::TextureTextBuffer() :
     ascender_(0.0f),
     descender_(0.0f),
@@ -68,7 +75,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.backgroundColor_, markup.gamma_);
 
         vcount += 4;
-        icount += 6;
+        icount += QUAD_INDICES;
     }
 
     if (lines && markup.underline_) {
@@ -78,7 +85,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.underlineColor_, markup.gamma_);
 
         vcount += 4;
-        icount += 6;
+        icount += QUAD_INDICES;
     }
 
     if (lines && markup.overline_) {
@@ -88,7 +95,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.overlineColor_, markup.gamma_);
 
         vcount += 4;
-        icount += 6;
+        icount += QUAD_INDICES;
     }
 
     if (lines && markup.strikethrough_) {
@@ -98,7 +105,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.strikethroughColor_, markup.gamma_);
 
         vcount += 4;
-        icount += 6;
+        icount += QUAD_INDICES;
     }
 
     // actual glyph. y grows downwards and the pen sits on the baseline, so the bottom of
@@ -113,7 +120,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     addQuad(xy0, xy1, glyph->st_[0], glyph->st_[1], markup.foregroundColor_, markup.gamma_);
 
     vcount += 4;
-    icount += 6;
+    icount += QUAD_INDICES;
 
     pen->x += advance;
     items_.push_back(glm::ivec4(vstart, vcount, istart, icount));

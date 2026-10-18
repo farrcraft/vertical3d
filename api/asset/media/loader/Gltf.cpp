@@ -19,6 +19,7 @@
 #include <map>
 #include <numeric>
 #include <string>
+#include <string_view>
 #include <vector>
 
 // cgltf.h is a C header, and cpplint sorts it with the C system headers rather than with
@@ -35,6 +36,10 @@
 namespace v3d::asset::media::loader {
 
 namespace {
+
+// the scheme that starts a data uri, and the marker that ends the header of a base64 one
+constexpr std::string_view DATA_SCHEME = "data:";
+constexpr std::string_view BASE64_MARKER = ";base64";
 
 /**
  * The accessors one primitive draws from. Position is the only one a primitive has to have:
@@ -584,7 +589,7 @@ v3d::type::Model::Material readMaterial(const cgltf_material& source, const cglt
     if (texture == nullptr || texture->image == nullptr) {
         return material;
     }
-    if (texture->image->uri != nullptr && std::strncmp(texture->image->uri, "data:", 5) != 0) {
+    if (texture->image->uri != nullptr && std::strncmp(texture->image->uri, DATA_SCHEME.data(), DATA_SCHEME.size()) != 0) {
         // a uri is percent-encoded, and the app resolves the file it names
         std::string decoded(texture->image->uri);
         decoded.resize(cgltf_decode_uri(decoded.data()));
@@ -608,8 +613,8 @@ v3d::type::Model::Material readMaterial(const cgltf_material& source, const cglt
 std::string readerFor(const cgltf_image& image) {
     // the mime type is optional for an image inlined as a data uri, which states its own
     std::string mime = image.mime_type != nullptr ? std::string(image.mime_type) : std::string();
-    if (mime.empty() && image.uri != nullptr && std::strncmp(image.uri, "data:", 5) == 0) {
-        const char* type = image.uri + 5;
+    if (mime.empty() && image.uri != nullptr && std::strncmp(image.uri, DATA_SCHEME.data(), DATA_SCHEME.size()) == 0) {
+        const char* type = image.uri + DATA_SCHEME.size();
         const char* end = std::strpbrk(type, ";,");
         if (end != nullptr) {
             mime.assign(type, static_cast<std::size_t>(end - type));
@@ -769,7 +774,8 @@ boost::shared_ptr<v3d::image::Image> Gltf::decodeEmbedded(const cgltf_image& ima
         return empty;
     }
     const char* comma = std::strchr(image.uri, ',');
-    if (comma == nullptr || comma - image.uri < 7 || std::strncmp(comma - 7, ";base64", 7) != 0) {
+    if (comma == nullptr || static_cast<std::size_t>(comma - image.uri) < BASE64_MARKER.size() ||
+        std::strncmp(comma - BASE64_MARKER.size(), BASE64_MARKER.data(), BASE64_MARKER.size()) != 0) {
         logger()->get()->error("The base colour texture of {} is a data uri that is not base64", model);
         return empty;
     }

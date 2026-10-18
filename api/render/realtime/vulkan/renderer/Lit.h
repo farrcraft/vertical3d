@@ -58,7 +58,6 @@ class Lit final {
         uint32_t firstJoint;  /**< where the object's palette starts, for a skinned pipeline **/
         float padding[2] = {0.0f, 0.0f};
     };
-    static_assert(sizeof(Object) == 96, "Lit::Object must match the std430 stride of lit.glsl's Object");
 
     /**
      * The SPIR-V each pipeline is built from. The defaults are the api's own, embedded at

@@ -7,15 +7,32 @@
 
 namespace v3d::editor {
 
+namespace {
+
+/**
+ * How many lines apart the emphasised ones are, and how many lines the grid is across.
+ **/
+constexpr unsigned int defaultIntervals = 10;
+constexpr unsigned int defaultLines = 60;
+
+/**
+ * The colours of an ordinary line, an emphasised line and the lines through the origin.
+ **/
+constexpr glm::vec4 minorColour(0.30f, 0.30f, 0.30f, 1.0f);
+constexpr glm::vec4 majorColour(0.42f, 0.42f, 0.52f, 1.0f);
+constexpr glm::vec4 originColour(0.65f, 0.65f, 0.70f, 1.0f);
+
+};  // namespace
+
 /**
  **/
 ConstructionPlane::ConstructionPlane() :
     spacing_(1.0f),
-    intervals_(10),
-    lines_(60),
-    minor_(0.30f, 0.30f, 0.30f, 1.0f),
-    major_(0.42f, 0.42f, 0.52f, 1.0f),
-    origin_(0.65f, 0.65f, 0.70f, 1.0f) {
+    intervals_(defaultIntervals),
+    lines_(defaultLines),
+    minor_(minorColour),
+    major_(majorColour),
+    origin_(originColour) {
 }
 
 /**

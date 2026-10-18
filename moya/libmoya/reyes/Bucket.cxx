@@ -166,7 +166,7 @@ class Placement {
         min_ = glm::vec3(std::numeric_limits<float>::max());
         max_ = glm::vec3(-std::numeric_limits<float>::max());
         Samples::Sample sample;
-        for (const glm::vec2 & lens : extremes()) {
+        for (const glm::vec2 & lens : EXTREMES) {
             sample.lens = lens;
             grow(at(sample));
             if (radius_ <= 0.0f) {
@@ -185,7 +185,7 @@ class Placement {
             const glm::mat4x4 moving = delta(time);
             stepMin_[i] = glm::vec3(std::numeric_limits<float>::max());
             stepMax_[i] = glm::vec3(-std::numeric_limits<float>::max());
-            for (const glm::vec2 & lens : extremes()) {
+            for (const glm::vec2 & lens : EXTREMES) {
                 for (const glm::vec3 & corner : moved(moving, lens)) {
                     stepMin_[i] = glm::min(stepMin_[i], corner);
                     stepMax_[i] = glm::max(stepMax_[i], corner);
@@ -211,12 +211,10 @@ class Placement {
     /**
      * The centre of the lens and its four extremes, which bound every point on it.
      */
-    static std::array<glm::vec2, 5> extremes() {
-        return {
-            glm::vec2(0.0f), glm::vec2(-1.0f, -1.0f), glm::vec2(1.0f, -1.0f),
-            glm::vec2(1.0f, 1.0f), glm::vec2(-1.0f, 1.0f)
-        };
-    }
+    static constexpr std::array EXTREMES{
+        glm::vec2(0.0f), glm::vec2(-1.0f, -1.0f), glm::vec2(1.0f, -1.0f),
+        glm::vec2(1.0f, 1.0f), glm::vec2(-1.0f, 1.0f)
+    };
 
     glm::mat4x4 toRaster_;
     float radius_;

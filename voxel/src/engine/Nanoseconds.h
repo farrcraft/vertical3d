@@ -7,6 +7,8 @@
 
 #include <cstdint>
 
+constexpr std::uint64_t NANOSECONDS_PER_MILLISECOND = 1000000U;
+
 /**
  * A span the device timed, in milliseconds, as whole nanoseconds, with the fraction dropped.
  * A negative span or a NaN is zero. A span of 2^64 nanoseconds or longer, +infinity among them,

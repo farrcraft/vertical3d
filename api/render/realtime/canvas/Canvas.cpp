@@ -14,6 +14,15 @@
 
 namespace v3d::render::realtime::canvas {
 
+namespace {
+
+// two triangles
+constexpr uint32_t QUAD_INDICES = 6;
+// the sweep of a whole circle, in radians
+constexpr float FULL_TURN = 6.283185307179586f;
+
+};  // namespace
+
 /**
  **/
 Canvas::Batch::Batch() noexcept :
@@ -221,11 +230,11 @@ void Canvas::vertex(const Vertex& untransformed) {
 /**
  **/
 void Canvas::quad(uint32_t first) {
-    const uint32_t order[6] = {0, 1, 2, 2, 3, 0};
-    for (std::size_t index = 0; index < 6; index++) {
+    const uint32_t order[QUAD_INDICES] = {0, 1, 2, 2, 3, 0};
+    for (std::size_t index = 0; index < QUAD_INDICES; index++) {
         indices_.push_back(first + order[index]);
     }
-    batches_.back().indices += 6;
+    batches_.back().indices += QUAD_INDICES;
 }
 
 /**
@@ -253,7 +262,7 @@ void Canvas::rect(const glm::vec2& min, const glm::vec2& max, const glm::vec2& u
 /**
  **/
 void Canvas::circle(const glm::vec2& centre, float radius, unsigned int sides, const glm::vec4& colour) {
-    arc({.centre = centre, .radius = radius, .sides = sides, .start = 0.0f, .sweep = 6.283185307179586f}, colour);
+    arc({.centre = centre, .radius = radius, .sides = sides, .start = 0.0f, .sweep = FULL_TURN}, colour);
 }
 
 void Canvas::ring(const Ring& shape, const glm::vec4& colour) {
@@ -291,7 +300,7 @@ void Canvas::ring(const Ring& shape, const glm::vec4& colour) {
         indices_.push_back(edge + 2);
         indices_.push_back(edge + 3);
     }
-    batches_.back().indices += sides * 6;
+    batches_.back().indices += sides * QUAD_INDICES;
 }
 
 void Canvas::arc(const Arc& shape, const glm::vec4& colour) {

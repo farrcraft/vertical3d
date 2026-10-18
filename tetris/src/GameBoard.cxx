@@ -21,11 +21,24 @@ namespace {
  **/
 const unsigned int rowScore = 100;
 
+const unsigned int boardRows = 20;
+const unsigned int boardColumns = 10;
+
+/**
+ * Seconds a tetrad rests on each row.
+ **/
+constexpr float fallRate = 0.8f;
+
+/**
+ * Lines of the shapes file that describe one tetrad: four bitmap rows and a texture name.
+ **/
+const size_t linesPerShape = 5;
+
 };  // namespace
 
 GameBoard::GameBoard(const boost::shared_ptr<v3d::log::Logger>& logger) :
-                        rows_(20), cols_(10), fallRate_(0.8f),
-                        fastFallMultiplier_(8), fastFall_(false), nextMove_(0.8f),
+                        rows_(boardRows), cols_(boardColumns), fallRate_(fallRate),
+                        fastFallMultiplier_(8), fastFall_(false), nextMove_(fallRate),
                         debug_(false), score_(0), over_(false), logger_(logger) {
     reset();
 
@@ -60,7 +73,7 @@ bool GameBoard::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager)
     }
 
     std::vector<Tetrad::ShapeInfo> parsed;
-    for (size_t i = 0; i + 4 < lines.size(); i += 5) {
+    for (size_t i = 0; i + linesPerShape <= lines.size(); i += linesPerShape) {
         Tetrad::ShapeInfo info;
         bool valid = true;
         for (unsigned int row = 0; row < 4; row++) {

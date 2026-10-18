@@ -22,16 +22,19 @@
 
 #include <boost/make_shared.hpp>
 #include <boost/weak_ptr.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::render::realtime {
 
-// the layout a pipeline drawing an entry declares, which nothing at runtime checks
+// the layout a pipeline drawing an entry declares, which nothing at runtime checks: each
+// member follows the one before it with no padding
 static_assert(sizeof(type::Model::Vertex) == 32, "a model vertex is a position, a normal and a uv");
 static_assert(offsetof(type::Model::Vertex, position) == 0, "the position is at location 0");
-static_assert(offsetof(type::Model::Vertex, normal) == 12, "the normal is at location 1");
-static_assert(offsetof(type::Model::Vertex, uv) == 24, "the uv is at location 2");
+static_assert(offsetof(type::Model::Vertex, normal) == sizeof(glm::vec3), "the normal is at location 1");
+static_assert(offsetof(type::Model::Vertex, uv) == 2 * sizeof(glm::vec3), "the uv is at location 2");
 // and a skinned one's, which renderer::Lit's skinned pipelines declare
-static_assert(sizeof(MeshRegistry::SkinnedVertex) == 56, "a skinned vertex is a model vertex and its influence");
+static_assert(sizeof(MeshRegistry::SkinnedVertex) == sizeof(type::Model::Vertex) + sizeof(type::Model::Influence),
+    "a skinned vertex is a model vertex and its influence");
 static_assert(offsetof(MeshRegistry::SkinnedVertex, influence) == 32, "the influence follows the vertex");
 static_assert(offsetof(type::Model::Influence, joints) == 0, "the joints are at location 3");
 static_assert(offsetof(type::Model::Influence, weights) == 8, "the weights are at location 4");

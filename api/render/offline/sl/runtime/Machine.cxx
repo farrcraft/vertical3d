@@ -56,7 +56,7 @@ float promoted(const Value & value, unsigned int point, unsigned int i, unsigned
     if (value.components() != 1) {
         return value.component(point, i);
     }
-    if (wide == 16 && i % 5 != 0) {
+    if (wide == 16 && i % MATRIX_DIAGONAL_STRIDE != 0) {
         return 0.0f;
     }
     return value.number(point);

@@ -5,7 +5,18 @@
 
 #include "GameState.h"
 
-GameState::GameState() : ballSize_(10.0f), coop_(true), paused_(false), maxScore_(5) {
+namespace {
+
+// the side of the ball's box, in court units
+constexpr float DEFAULT_BALL_SIZE = 10.0f;
+constexpr int DEFAULT_MAX_SCORE = 5;
+// court units per second: a served ball crosses the 800 unit court in a little over
+// thirteen seconds
+constexpr float BALL_START_SPEED = 60.0f;
+
+};  // namespace
+
+GameState::GameState() : ballSize_(DEFAULT_BALL_SIZE), coop_(true), paused_(false), maxScore_(DEFAULT_MAX_SCORE) {
     reset();
 }
 
@@ -18,9 +29,7 @@ bool GameState::paused() const {
 }
 
 void GameState::reset() {
-    // court units per second: a served ball crosses the 800 unit court in a little over
-    // thirteen seconds
-    ballStartSpeed_ = 60.0f;
+    ballStartSpeed_ = BALL_START_SPEED;
 }
 
 int GameState::maxScore() const {

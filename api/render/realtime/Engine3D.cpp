@@ -13,6 +13,12 @@
 
 namespace v3d::render::realtime {
 
+namespace {
+
+constexpr glm::vec4 DEFAULT_CLEAR_COLOUR{0.06f, 0.07f, 0.10f, 1.0f};
+
+};  // namespace
+
 const char* const Engine3D::colourPass = "colour";
 
 /**
@@ -20,7 +26,7 @@ const char* const Engine3D::colourPass = "colour";
 Engine3D::Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
     VkFormat preferred, vulkan::memory::Allocator::Kind allocations) :
     Engine(logger, assetManager),
-    clearColour_(0.06f, 0.07f, 0.10f, 1.0f),
+    clearColour_(DEFAULT_CLEAR_COLOUR),
     preferred_(preferred),
     allocations_(allocations) {
 }
