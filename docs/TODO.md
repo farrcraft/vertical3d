@@ -211,8 +211,6 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Lit scenes
 
-[ToolingDebt](plans/ToolingDebt.md) takes the grade tolerance.
-
 [] **There are no cascaded shadow maps.**
 
 - `lighting::fitShadowToView` fits one map to the camera's view out to a distance. Over a long
@@ -223,16 +221,6 @@ matches the asset manager's path handling only because the manager passes cgltf 
   caller with large casters passes a margin big enough for them.
 - Due when a game's view is long enough for near shadows to look coarse.
 - Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
-
-[] **The grade tests allow a one-step tolerance that may not be needed.**
-
-- The identity grade and the inverting grade were exact on the authoring GPU (a Radeon), from a
-  UNORM scene and from an sRGB one.
-- [PostTest.cpp](../api/render/tests/device/PostTest.cpp) still allows a difference of one step,
-  because lavapipe, the software Vulkan driver CI uses, had not been checked.
-- If CI shows lavapipe is exact too, reduce the tolerance to zero. If it is not, add a comment
-  beside the case saying lavapipe is the reason.
-- Background: [LitScene, step 10](plans/completed/LitScene.md#step-10--the-chain-after-the-scene).
 
 ## Loading
 
