@@ -33,15 +33,6 @@ takes them up, in the order the [OfflineShading roadmap](roadmap/OfflineShading.
   do.
 - Due when a scene needs surface detail that bump mapping cannot give, such as a silhouette.
 
-[] **The reyes hider ignores opacity (`Oi`).**
-
-- A sample keeps only the nearest surface and sets its opacity to one. A translucent shader is
-  opaque under `"hidden"` and translucent under `"raytrace"`.
-- The fix: each sample keeps every surface it meets, and composites them front to back once the
-  bucket is done. This is the ray hider's `see()` loop, applied to a sample's list of surfaces
-  instead of a ray's hits.
-- Due when a scene needs glass or smoke drawn by the reyes hider.
-
 [] **The reyes hider adds every polygon to the traced scene.**
 
 - moya fans each polygon into the traced scene as it arrives, before culling, and shades its

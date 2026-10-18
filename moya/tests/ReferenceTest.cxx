@@ -66,6 +66,10 @@ const char* TRACED_AREA = "data/raytrace-area.png";
 const char* TRACED_AREA_RENDERED = "data_out/raytrace-area.png";
 const char* TRACED_AREA_SCENE = "data/raytrace-area.rib";
 const char* TRACED_AREA_RIB_RENDERED = "data_out/raytrace-area-rib.png";
+const char* GLASS = "data/reference-glass.png";
+const char* GLASS_RENDERED = "data_out/reference-glass.png";
+const char* GLASS_SCENE = "data/reference-glass.rib";
+const char* GLASS_RIB_RENDERED = "data_out/reference-glass-rib.png";
 const char* TRACED_BUMP = "data/raytrace-bump.png";
 const char* TRACED_BUMP_RENDERED = "data_out/raytrace-bump.png";
 const char* TRACED_BUMP_SCENE = "data/raytrace-bump.rib";
@@ -1327,6 +1331,71 @@ BOOST_AUTO_TEST_CASE(moya_traced_area_reference_from_rib_test) {
 
     check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
         TRACED_AREA, TRACED_AREA_RIB_RENDERED);
+}
+
+/*
+    The same scene as data/reference-glass.rib. A blue quad of opacity one half stands in front
+    of a checked plane, which is tilted away from the camera so its checks run across both x
+    and z. The checks show through the quad, darkened by half and tinted.
+*/
+void glassScene(v3d::moya::RenderContext & rc) {
+    rc.imageResolution({64, 48}, 1.0F);
+    pixelCentres(rc);
+    rc.clipping({.hither = 1.0F, .yon = 100.0F});
+    rc.searchpath("data:&");
+    rc.prepareWorld();
+
+    typedef v3d::render::offline::rib::Declaration Declaration;
+    v3d::render::offline::rib::ParameterList ambient;
+    put(&ambient, "intensity", Declaration::Type::FLOAT, { 0.3F });
+    rc.lightSource({.shader = "ambientlight", .handle = "0"}, ambient);
+    v3d::render::offline::rib::ParameterList ahead;
+    put(&ahead, "intensity", Declaration::Type::FLOAT, { 0.8F });
+    put(&ahead, "to", Declaration::Type::POINT, { 0.0F, 0.0F, 1.0F });
+    rc.lightSource({.shader = "distantlight", .handle = "1"}, ahead);
+
+    rc.attributeBegin();
+    rc.color(glm::vec3(0.9F, 0.85F, 0.7F));
+    v3d::render::offline::rib::ParameterList checks;
+    put(&checks, "size", Declaration::Type::FLOAT, { 0.4F });
+    rc.surface("checked", checks);
+    quadAt(rc, {glm::vec3(-1.4F, -1.1F, 4.0F), glm::vec3(-1.4F, 1.1F, 8.0F), glm::vec3(1.4F, 1.1F, 8.0F),
+        glm::vec3(1.4F, -1.1F, 4.0F)});
+    rc.attributeEnd();
+
+    rc.attributeBegin();
+    rc.color(glm::vec3(0.2F, 0.5F, 0.9F));
+    rc.opacity(glm::vec3(0.5F));
+    rc.surface("constant", v3d::render::offline::rib::ParameterList());
+    quadAt(rc, {glm::vec3(-0.6F, -0.5F, 3.0F), glm::vec3(-0.6F, 0.5F, 3.0F), glm::vec3(0.6F, 0.5F, 3.0F),
+        glm::vec3(0.6F, -0.5F, 3.0F)});
+    rc.attributeEnd();
+}
+
+/**
+ * A translucent surface under the reyes hider. Each sample keeps the quad and the plane behind
+ * it, and composites them front to back once the buckets are done.
+ **/
+BOOST_AUTO_TEST_CASE(moya_glass_reference_test) {
+    v3d::moya::RenderContext rc;
+    glassScene(rc);
+    rc.render();
+
+    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), GLASS, GLASS_RENDERED);
+}
+
+/**
+ * The same translucent quad said in RIB, against the same committed picture.
+ **/
+BOOST_AUTO_TEST_CASE(moya_glass_reference_from_rib_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(GLASS_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), GLASS, GLASS_RIB_RENDERED);
 }
 
 };  // namespace

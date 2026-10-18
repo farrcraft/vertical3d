@@ -132,7 +132,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [10](#step-10--the-record-how-an-area-light-is-sampled) | The record: how an area light is sampled | `docs/adr` | **0094** | done |
 | [11](#step-11--an-area-light-keeps-its-geometry) | An area light keeps its geometry | `api/render/offline`, `moya` | 0094 | done |
 | [12](#step-12--area-lights-shine-from-their-surface) | Area lights shine from points on their surface | `api/render/offline`, `moya` | 0094 | done |
-| [13](#step-13--opacity-under-the-reyes-hider) | Opacity under the reyes hider | `moya` | — | open |
+| [13](#step-13--opacity-under-the-reyes-hider) | Opacity under the reyes hider | `moya` | — | done |
 | [14](#step-14--a-displacement-shader-reaches-the-renderer) | A displacement shader compiles and reaches the renderer | `api/render/offline`, `moya` | — | open |
 | [15](#step-15--displacement-under-the-reyes-hider) | Displacement under the reyes hider | `moya` | — | open |
 | [16](#step-16--the-record-displacement-under-the-ray-hider) | The record: displacement under the ray hider | `docs/adr` | **0095** | open |
@@ -510,6 +510,18 @@ shades in two orders, and both reyes area pictures.
   soft shadow.
 
 ### Step 13 — Opacity under the reyes hider
+
+**Done.** A vertex carries `Oi`, and a micropolygon is hidden as a layer with its first corner's
+colour and opacity. `Samples::Layers` keeps a sample's layers and the depth of its nearest
+opaque one, and `Samples::resolve` sorts and composites them. The plan did not foresee that a
+sample on an edge two micropolygons share is covered by both, so a sample keeps one layer from
+each grid. The four cases are in `SamplesTest.cxx`. `reference-glass.png` is the translucent quad over the
+checked plane, from code and from RIB. Every committed picture is unchanged, because an opaque
+layer drops what is behind it as the nearest hit did.
+
+Compared by eye with the same scene under the ray hider, the quad's tint and the checks seen
+through it agree. The checks' edges are stepped under the reyes hider, because a micropolygon
+is flat shaded with its first corner's colour, which was already so.
 
 * **A vertex carries `Oi`.** The grid shader writes it back with `Ci`.
 * **A sample keeps every surface nearer than its nearest opaque one**, sorted by depth. A surface

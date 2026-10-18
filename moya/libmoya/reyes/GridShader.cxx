@@ -232,11 +232,12 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
         return;
     }
 
-    // what the shader left in Oi is not read, because the reyes hider's samples are opaque
+    // Ci and Oi go back on each vertex. A shader that never writes Oi leaves Os there
     for (unsigned int i = 0; i < size; i++) {
         for (unsigned int j = 0; j < size; j++) {
             Vertex vert = grid->vertex(i, j);
             vert.color(held.globals.colour(held.machine, (i * size) + j, vert.color()));
+            vert.opacity(held.globals.opacity(held.machine, (i * size) + j, shading.opacity));
             grid->addVertex(vert, i, j);
         }
     }
