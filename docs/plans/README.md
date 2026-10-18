@@ -21,6 +21,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 | Plan | Area | What it delivers |
 |---|---|---|
 | [ToolingDebt](ToolingDebt.md) | All of the tree, tests | The thirteen disabled clang-tidy checks enabled, and the test gaps that need no new hardware |
+| [OfflineShading](OfflineShading.md) | Offline rendering, moya | Verified transformations, a bounding volume hierarchy, derivatives, area lights, reyes opacity, displacement and bump mapping |
 
 ## Completed plans
 

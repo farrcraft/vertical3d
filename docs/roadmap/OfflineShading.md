@@ -9,6 +9,8 @@ Area lights multiply the number of shadow rays, so the ray tracer has to be fast
 built. Every later step builds on transformations, so their correctness comes first.
 [The offline renderer](../offline/README.md) describes the pipeline and the two hiders.
 
+The [OfflineShading plan](../plans/OfflineShading.md) takes up every section below.
+
 ## What exists
 
 - **Two hiders share one film and one ray tracer.** The reyes hider (`"hidden"`) dices
