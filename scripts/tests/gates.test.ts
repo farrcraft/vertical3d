@@ -68,6 +68,64 @@ test('prose reports a comment line past 100 columns, and not a comment after cod
     assert.deepEqual(prose(lines), ['2: long-line']);
 });
 
+test('prose reports a sentence with three clause joins, and not one with two', () => {
+    const lines = [
+        '// The ring is shared, which keeps it small, so a frame waits because the fence is set.',
+        '',
+        '// The ring is shared, so a frame waits because the fence is set.',
+    ];
+    assert.deepEqual(prose(lines), ['1: stacked']);
+});
+
+test('prose reports two clause joins when one is a semicolon or a dash', () => {
+    const lines = [
+        '// The ring is shared; a frame waits because the fence is set.',
+        '',
+        '// The ring is shared - a frame waits, so the fence is set.',
+        '',
+        '// The ring is shared by every frame, so a frame waits because the fence is set.',
+    ];
+    assert.deepEqual(prose(lines), ['1: stacked', '3: stacked']);
+});
+
+test('prose counts the dashes around an aside as one join, and not a minus sign', () => {
+    const lines = [
+        '// Every quad - a sprite or a glyph - is drawn once.',
+        '',
+        '// The count is n - 1, so the last index is n - 1 too.',
+        '',
+        '// Every quad - a sprite or a glyph - is drawn once, so the count is small.',
+    ];
+    assert.deepEqual(prose(lines), ['5: stacked']);
+});
+
+test('prose reports two relative clauses on one noun', () => {
+    const lines = [
+        '// The frames are a Ring, which this drives but which works without it.',
+        '',
+        '// The engine registers quit, which ends the loop, and pause, which stops it.',
+    ];
+    assert.deepEqual(prose(lines), ['1: stacked']);
+});
+
+test('prose does not count a semicolon that ends a list item', () => {
+    const lines = [
+        '// - the factory, which copies through the uploader;',
+        '//',
+        '// The factory, which copies through the uploader; the pool is shared.',
+    ];
+    assert.deepEqual(prose(lines), ['3: stacked']);
+});
+
+test('prose reports "X is what" followed by a verb, and not by a subject', () => {
+    const lines = [
+        '// The submit made by present() is what signals the fence.',
+        '',
+        '// The pixels are what the file holds, and the offset is what insets() returns.',
+    ];
+    assert.deepEqual(prose(lines), ['1: inverted']);
+});
+
 test('boundary reports a cast on a line that starts with a dereference', () => {
     const text = 'void f(int* out, float x) {\n    *out = static_cast<int>(std::floor(x));\n}';
     assert.deepEqual(boundary(text, [2]), ['2: float-cast']);

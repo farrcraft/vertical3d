@@ -7,7 +7,15 @@
  *
  *   long-sentence    a sentence of more than 35 words. A code span counts as one word.
  *   opener           a sentence that starts with "And" or "So".
- *   inverted         a clause of the form "X, which is what Y" (also how, where, why, when).
+ *   inverted         a clause of the form "X, which is what Y" (also how, where, why, when), or
+ *                    "X is what Y" where a verb follows "what", as in "the submit is what signals
+ *                    the fence".
+ *   stacked          a sentence with three clause joins, or with two when one is a semicolon or a
+ *                    dash, or when both are a relative "which" and one is "and which" or "but
+ *                    which". A join is ", which", ", so", "so that", "because", "rather than", a
+ *                    semicolon, or a dash between words. A sentence's semicolons count as one
+ *                    join, and so do the two dashes around an aside. A semicolon that ends a list
+ *                    item is not counted.
  *   personification  "knows", "wants", "owes" or "trusts", or "does not know" and its kin,
  *                    with a subject that is not a person or whoever writes an app.
  *   history          "used to" (not the passive "is used to"), a date, or "phase N". Plans and
@@ -69,6 +77,18 @@ const HISTORY_EXEMPT_PREFIXES = ['docs/plans/', 'docs/roadmap/'];
 
 const OPENERS = new Set(['And', 'So']);
 const INVERTED = /,\s+which\s+is\s+(what|how|where|why|when)\b/i;
+// "X is what signals Y": "what" followed by a verb, not by the subject of a clause. A word that
+// ends in s and is followed by "(" or "of" is taken as a name or a noun.
+const CLEFT = /\b(?:is|are|was|were)\s+what\s+(?:also\s+|only\s+|then\s+)?([a-z]+s)\b(?![(\w]|\s+of\b)/gi;
+const NOT_VERBS = new Set(['this', 'its', 'his', 'is', 'was', 'has', 'as', 'us', 'thus', 'those', 'these', 'ones']);
+// A clause join: a relative "which", ", so" or "so that", "because", "rather than", a semicolon,
+// or a dash between two words. A dash between operands, as in "n - 1", is not one.
+const JOIN = new RegExp([
+    /,\s+which\b/, /\b(?:but|and)\s+which\b/, /,\s+so\b(?!\s+(?:does|do|is|are|can|did|will)\b)/,
+    /\bso\s+that\b/, /\bbecause\b/, /\brather\s+than\b/, /;/,
+    /(?<=(?:^|\s)[A-Za-z][a-z']+,?)\s(?:-{1,2}|–|—)\s(?=[A-Za-z][a-z']*(?:[\s,.;:]|$))/, /(?<=[a-z])—(?=[a-z])/,
+].map((part) => part.source).join('|'), 'gi');
+const DASH = /^[-–—]+$/;
 const PERSON_VERB =
     /\b([A-Za-z_][\w']*)\s+(?:(?:also|already|only|still|never|always|then|just)\s+)?(knows|wants|owes|trusts)\b/g;
 const PERSON_NEGATED =
@@ -621,6 +641,34 @@ function wordCount(sentence: string): number {
     return sentence.split(/\s+/).filter((token) => /[A-Za-z0-9]/.test(token)).length;
 }
 
+/**
+ * Return the clause joins of a sentence, each named as the stacked rule reports it. A semicolon
+ * that ends the sentence closes a list item and is not counted. The semicolons of one sentence
+ * count as one join, and so do the two dashes around an aside.
+ */
+function clauseJoins(masked: string): string[] {
+    const joins: string[] = [];
+    let semicolons = 0;
+    let dashes = 0;
+    for (const match of masked.replace(/;\s*$/, '').matchAll(JOIN)) {
+        const join = match[0].replace(/^,/, '').trim().replace(/\s+/g, ' ').toLowerCase();
+        if (join === ';') {
+            semicolons += 1;
+            if (semicolons === 1) {
+                joins.push('a semicolon');
+            }
+        } else if (DASH.test(join)) {
+            dashes += 1;
+            if (dashes % 2 === 1) {
+                joins.push('a dash');
+            }
+        } else {
+            joins.push(`"${join}"`);
+        }
+    }
+    return joins;
+}
+
 /** Return [rule, detail] pairs for one sentence. Matches are reported from the original text. */
 function checkSentence(original: string, maskedSentence: string, path: string,
     phaseHeadings: boolean): Array<[string, string]> {
@@ -636,9 +684,21 @@ function checkSentence(original: string, maskedSentence: string, path: string,
     // A quoted phrase is cited, not written, so the remaining rules skip it.
     const masked = maskedSentence.replace(QUOTED, (quoted) => 'x'.repeat(quoted.length));
     const at = (index: number, length: number): string => original.slice(index, index + length);
+    const joins = clauseJoins(masked);
+    const strong = joins.some((join) => join === 'a semicolon' || join === 'a dash');
+    const relatives = joins.filter((join) => join.endsWith('which"')).length;
+    const stackedWhich = relatives >= 2 && joins.some((join) => /^"(and|but) which"$/.test(join));
+    if (joins.length >= 3 || (joins.length === 2 && (strong || stackedWhich))) {
+        findings.push(['stacked', `${joins.length} joins: ${joins.join(', ')}`]);
+    }
     const inverted = INVERTED.exec(masked);
     if (inverted) {
         findings.push(['inverted', at(inverted.index, inverted[0].length).replace(/^,\s*/, '')]);
+    }
+    for (const cleft of masked.matchAll(CLEFT)) {
+        if (!NOT_VERBS.has(cleft[1].toLowerCase())) {
+            findings.push(['inverted', at(cleft.index, cleft[0].length)]);
+        }
     }
     for (const pattern of [PERSON_VERB, PERSON_NEGATED]) {
         for (const match of masked.matchAll(pattern)) {

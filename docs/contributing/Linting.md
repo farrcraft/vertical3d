@@ -176,6 +176,14 @@ checks every sentence that overlaps one. It reports:
 - a sentence of more than 35 words;
 - a sentence that starts with "And" or "So";
 - a clause such as "X, which is what Y", or the same with how, where, why or when;
+- "X is what Y" where a verb follows "what", as in "the submit is what signals the fence";
+- a sentence with three clause joins, or with two when one is a semicolon or a dash. A join is
+  ", which", ", so", "so that", "because", "rather than", a semicolon, or a dash between two
+  words. All the semicolons of a sentence count as one join, and so do the two dashes around
+  an aside. A semicolon at the end of a list item is not counted, and neither is a minus sign
+  such as the one in "n - 1";
+- two relative clauses on one noun, as in "a Ring, which this drives but which works without
+  it";
 - "knows", "wants", "owes" or "trusts", or "does not know" and its kin, after a subject that is
   not a person, an app, a caller or a consumer;
 - "used to", a date or "phase N", except in [plans/](../plans) and [roadmap/](../roadmap);

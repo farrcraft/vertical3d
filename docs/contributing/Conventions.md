@@ -135,10 +135,17 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
 These rules apply to code comments and to every document in [docs/](..) alike.
 
 - **Plain words, literal statements.** Say what a thing does or requires. Avoid aphorisms
-  ("a character is not a key"), inverted sentences ("X, which is what Y") and personification.
+  ("a character is not a key"), inverted sentences ("X, which is what Y", "the submit is what
+  signals the fence") and personification.
   Code requires, stores, returns or receives. Do not describe it as wanting, knowing, owing or
   trusting.
-- **Short sentences, one idea each.** Aim for about 25 words. Split anything over 35.
+- **Short sentences, one idea each.** Aim for about 25 words. Split anything over 35. Do not
+  stack clauses: three joins such as "which", "so", "because" and "rather than" are too many for
+  one sentence, and so are two when one is a semicolon or a dash.
+- **State a choice without arguing for it.** "Each image has its own semaphore" is a statement.
+  "Per image rather than per frame, because a present waits on it" argues for the choice in the
+  sentence that makes it. Where the reason is a constraint the reader needs, give it a sentence
+  of its own.
 - **Define a term before using it,** or use the standard word for it. In-house shorthand such
   as "seam", "the walk" or "the tier" means nothing to a new reader.
 - **Present tense.** Describe the code as it is. No "used to", no "no longer", no dates, no
