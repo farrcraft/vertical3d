@@ -875,4 +875,34 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displacement_reaches_the_context_test) {
     BOOST_CHECK_EQUAL(shading.displacementBound, 0.0F);
 }
 
+/**
+ * A primitive's bound grows by its displacementbound before it is culled. A quad just past the
+ * far clipping plane is culled, unless a bound lets its displacement reach in front of the
+ * plane, and the displacement moves it there and it is drawn.
+ *
+ * The bound is about 12 pixels on each side here, wider than a grid of 16 pixels with the quad.
+ * The quad is still diced, because it is measured for splitting without the bound.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_bound_is_not_culled_test) {
+    const auto render = [](const std::string & bound) {
+        v3d::moya::Renderer renderer;
+        v3d::moya::RIBHandler handler(&renderer);
+        BOOST_REQUIRE(read(
+            "Format 64 48 1\n"
+            "PixelSamples 1 1\n"
+            "PixelFilter \"box\" 1 1\n"
+            "Projection \"orthographic\"\n"
+            "Clipping 1 100\n"
+            "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
+            "WorldBegin\n"
+            "Surface \"constant\"\n" + bound +
+            "Displacement \"lift\" \"float amount\" [0.5]\n"
+            "Polygon \"P\" [-0.5 -0.5 100.2  -0.5 0.5 100.2  0.5 0.5 100.2  0.5 -0.5 100.2]\n"
+            "WorldEnd\n", &handler));
+        return coverage(*handler.context().framebuffer()->planes());
+    };
+    BOOST_CHECK_EQUAL(render(""), 0U);
+    BOOST_CHECK_GT(render("Attribute \"displacementbound\" \"float sphere\" [0.5]\n"), 0U);
+}
+
 };  // namespace

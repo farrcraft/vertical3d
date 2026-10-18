@@ -170,6 +170,58 @@ bool GridShader::light(unsigned int index, const Value & surface, Value* directi
     return ran;
 }
 
+void GridShader::displace(const Shading & shading, MicroPolygonGrid* grid) {
+    if (!shading.displacement.shader || grid == nullptr) {
+        return;
+    }
+    const unsigned int size = grid->size();
+    const unsigned int batch = size * size;
+    if (batch == 0) {
+        return;
+    }
+    // a displacement shader names no lights, so shading_ stays null while it runs
+    placement_ = shading.displacement.placement;
+    batch_ = batch;
+    size_ = size;
+    Run & held = run(shading.displacement.shader, batch);
+    if (!shading.displacement.shader->write(&held.machine, shading.displacement.placement)) {
+        return;
+    }
+    const float span = size > 1 ? static_cast<float>(size - 1) : 1.0F;
+    for (unsigned int i = 0; i < size; i++) {
+        for (unsigned int j = 0; j < size; j++) {
+            const Vertex vert = grid->vertex(i, j);
+            v3d::render::offline::sl::Point point;
+            point.position = vert.point();
+            point.normal = vert.normal();
+            point.geometric = vert.geometricNormal();
+            point.incident = vert.point();
+            const glm::vec2 st = vert.hasTexCoord() ? vert.st() :
+                glm::vec2(static_cast<float>(i) / span, static_cast<float>(j) / span);
+            point.s = st.x;
+            point.t = st.y;
+            point.u = static_cast<float>(i) / span;
+            point.v = static_cast<float>(j) / span;
+            point.du = 1.0F / span;
+            point.dv = 1.0F / span;
+            held.globals.surface(&held.machine, (i * size) + j, point);
+        }
+    }
+    held.globals.eye(&held.machine, glm::vec3(0.0F));
+    if (!held.machine.run()) {
+        return;
+    }
+    for (unsigned int i = 0; i < size; i++) {
+        for (unsigned int j = 0; j < size; j++) {
+            Vertex vert = grid->vertex(i, j);
+            const unsigned int lane = (i * size) + j;
+            vert.point(held.globals.position(held.machine, lane, vert.point()));
+            vert.normal(held.globals.normal(held.machine, lane, vert.normal()));
+            grid->addVertex(vert, i, j);
+        }
+    }
+}
+
 void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     if (!shading.surface || grid == nullptr) {
         return;

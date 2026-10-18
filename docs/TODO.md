@@ -24,12 +24,9 @@ and its section names the plan or roadmap that orders it.
 Each of these waits until a scene needs it. The [OfflineShading plan](plans/OfflineShading.md)
 takes them up, in the order the [OfflineShading roadmap](roadmap/OfflineShading.md) gives.
 
-[] **Displacement is not possible.** A displacement shader compiles and reaches the render
-context, with its `displacementbound`, but neither hider runs it.
+[] **Displacement works under the reyes hider only.** The traced scene holds a displaced
+primitive undisplaced, so its shadows follow its old shape.
 
-- Under the reyes hider, displacement reaches into moya's dicing. The displacement shader runs on
-  a grid after dicing and before the surface shader, and the primitive's bound grows by
-  `displacementbound`.
 - Under the ray hider, displacement needs tessellation, which the ray tracer does not otherwise
   do.
 - Due when a scene needs surface detail that bump mapping cannot give, such as a silhouette.

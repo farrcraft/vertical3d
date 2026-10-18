@@ -134,7 +134,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [12](#step-12--area-lights-shine-from-their-surface) | Area lights shine from points on their surface | `api/render/offline`, `moya` | 0094 | done |
 | [13](#step-13--opacity-under-the-reyes-hider) | Opacity under the reyes hider | `moya` | — | done |
 | [14](#step-14--a-displacement-shader-reaches-the-renderer) | A displacement shader compiles and reaches the renderer | `api/render/offline`, `moya` | — | done |
-| [15](#step-15--displacement-under-the-reyes-hider) | Displacement under the reyes hider | `moya` | — | open |
+| [15](#step-15--displacement-under-the-reyes-hider) | Displacement under the reyes hider | `moya` | — | done |
 | [16](#step-16--the-record-displacement-under-the-ray-hider) | The record: displacement under the ray hider | `docs/adr` | **0095** | open |
 | [17](#step-17--displacement-under-the-ray-hider) | Displacement under the ray hider, as 0095 decides | `api/render/offline`, `moya` | 0095 | open |
 | [18](#step-18--solar-with-an-angle) | `solar` with an angle | `api/render/offline`, `moya` | — | open |
@@ -564,6 +564,24 @@ displacement fixture that step 15 also uses.
 shader that moves `P` along `N` compiles and runs on a batch.
 
 ### Step 15 — Displacement under the reyes hider
+
+**Done.** `GridShader::displace` runs the displacement shader on a grid before `shade`, and
+`Bucket::render` calls it after dicing. `addPolygon` grows a primitive's bound by its
+`displacementbound` before the cull and the bucketing. `reference-displaced.png` is a plane
+rippled by `lift.sl`, from code and from RIB, which match the driver byte for byte.
+
+Three things the plan did not foresee:
+
+* **The split test cannot use the grown bound.** A bound wider than a grid's side made every
+  piece too large to dice, and a quad split without end. The split test measures the primitive
+  without its bound. The culling case found it, as a hang.
+* **s is not continuous across a split polygon.** A grid with no `st` takes its own parameters,
+  so a ripple in s broke into squares at every piece. `lift.sl` ripples along x in its own space.
+* **The undisplaced traced scene shadows what moves behind it.** A ripple behind the plane was
+  shadowed by the plane, so the reference moves the plane toward the camera only.
+
+`calculatenormal` differences each grid alone, so the normals at the edges of two pieces of the
+plane differ a little, and the picture shows fine seams where they meet.
 
 * **A grid is displaced after dicing and before the surface shader**, in `Bucket::render`. The
   surface shader sees the moved `P` and the `N` the displacement shader left.

@@ -111,7 +111,7 @@ Background: [ADR-0078](../adr/0078-offline-moya-is-the-one-renderer-ray-tracing-
 
 [TODO.md](../TODO.md#offline-rendering) holds the open work and when each item becomes due:
 
-- A displacement shader compiles and reaches the renderer, but neither hider runs it yet.
+- The ray hider does not run a displacement shader.
 - `trace::Scene::nearest` tests every primitive; there is no acceleration structure.
 
 Also not built, with no open item:

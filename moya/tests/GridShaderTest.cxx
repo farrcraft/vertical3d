@@ -459,4 +459,44 @@ BOOST_AUTO_TEST_CASE(moya_an_area_light_samples_the_same_in_any_order_test) {
     }
 }
 
+/**
+ * A displacement of a constant amount moves every vertex of a plane's grid that far along its
+ * normal, toward the camera here, and leaves the plane facing the way it did. The surface
+ * shader then runs on the moved grid.
+ **/
+BOOST_AUTO_TEST_CASE(moya_a_constant_displacement_moves_the_grid_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.searchpath("data:&");
+    ParameterList lifted;
+    add(&lifted, "amount", Declaration::Type::FLOAT, { 0.25F });
+    rc.displacement("lift", lifted);
+    rc.surface("constant", ParameterList());
+    const v3d::moya::Shading shading = rc.shading();
+    BOOST_REQUIRE(shading.displacement.shader);
+
+    v3d::moya::reyes::MicroPolygonGrid grid = plane();
+    rc.shader().displace(shading, &grid);
+    for (const unsigned int atU : { 0U, 2U, 4U }) {
+        for (const unsigned int atV : { 0U, 3U }) {
+            BOOST_TEST_CONTEXT("vertex " << atU << ", " << atV) {
+                BOOST_CHECK_CLOSE(grid.vertex(atU, atV).point().z, 4.75F, 0.01F);
+                BOOST_CHECK_CLOSE(grid.vertex(atU, atV).point().x, static_cast<float>(atV) * 0.25F, 0.01F);
+                BOOST_CHECK_CLOSE(glm::normalize(grid.vertex(atU, atV).normal()).z, -1.0F, 0.01F);
+            }
+        }
+    }
+}
+
+/**
+ * A primitive with no displacement shader is left where it is.
+ **/
+BOOST_AUTO_TEST_CASE(moya_no_displacement_leaves_the_grid_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    v3d::moya::reyes::MicroPolygonGrid grid = plane();
+    rc.shader().displace(rc.shading(), &grid);
+    BOOST_CHECK_EQUAL(grid.vertex(2, 2).point().z, 5.0F);
+}
+
 };  // namespace

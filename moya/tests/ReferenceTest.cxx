@@ -70,6 +70,10 @@ const char* GLASS = "data/reference-glass.png";
 const char* GLASS_RENDERED = "data_out/reference-glass.png";
 const char* GLASS_SCENE = "data/reference-glass.rib";
 const char* GLASS_RIB_RENDERED = "data_out/reference-glass-rib.png";
+const char* DISPLACED = "data/reference-displaced.png";
+const char* DISPLACED_RENDERED = "data_out/reference-displaced.png";
+const char* DISPLACED_SCENE = "data/reference-displaced.rib";
+const char* DISPLACED_RIB_RENDERED = "data_out/reference-displaced-rib.png";
 const char* TRACED_BUMP = "data/raytrace-bump.png";
 const char* TRACED_BUMP_RENDERED = "data_out/raytrace-bump.png";
 const char* TRACED_BUMP_SCENE = "data/raytrace-bump.rib";
@@ -1396,6 +1400,70 @@ BOOST_AUTO_TEST_CASE(moya_glass_reference_from_rib_test) {
     BOOST_CHECK_EQUAL(reader.error(), "");
 
     check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), GLASS, GLASS_RIB_RENDERED);
+}
+
+/*
+    The same scene as data/reference-displaced.rib. A plane is rippled three times across x by
+    the lift displacement shader, toward the camera only, and lit from the left. The plane's
+    normal points away from the camera, so the amount is negative. The traced scene holds the
+    plane as it was, so a point moved behind it would be shadowed by it.
+*/
+void displacedScene(v3d::moya::RenderContext & rc) {
+    rc.imageResolution({64, 48}, 1.0F);
+    pixelCentres(rc);
+    rc.clipping({.hither = 1.0F, .yon = 100.0F});
+    rc.searchpath("data:&");
+    rc.prepareWorld();
+
+    typedef v3d::render::offline::rib::Declaration Declaration;
+    v3d::render::offline::rib::ParameterList ambient;
+    put(&ambient, "intensity", Declaration::Type::FLOAT, { 0.1F });
+    rc.lightSource({.shader = "ambientlight", .handle = "0"}, ambient);
+    v3d::render::offline::rib::ParameterList side;
+    put(&side, "intensity", Declaration::Type::FLOAT, { 1.0F });
+    put(&side, "to", Declaration::Type::POINT, { 0.8F, 0.0F, 1.0F });
+    rc.lightSource({.shader = "distantlight", .handle = "1"}, side);
+
+    rc.color(glm::vec3(0.8F, 0.8F, 0.85F));
+    rc.surface("matte", v3d::render::offline::rib::ParameterList());
+    v3d::render::offline::rib::ParameterList bound;
+    put(&bound, "sphere", Declaration::Type::FLOAT, { 0.16F });
+    rc.attribute("displacementbound", bound);
+    v3d::render::offline::rib::ParameterList ripples;
+    put(&ripples, "amount", Declaration::Type::FLOAT, { -0.08F });
+    put(&ripples, "wave", Declaration::Type::FLOAT, { 0.08F });
+    put(&ripples, "frequency", Declaration::Type::FLOAT, { 7.853982F });
+    rc.displacement("lift", ripples);
+    quadAt(rc, {glm::vec3(-1.2F, -0.9F, 5.0F), glm::vec3(1.2F, -0.9F, 5.0F), glm::vec3(1.2F, 0.9F, 5.0F),
+        glm::vec3(-1.2F, 0.9F, 5.0F)});
+}
+
+/**
+ * A displaced surface under the reyes hider. Each grid is moved by the displacement shader
+ * before the surface shader runs, so matte shades the moved normals. The ripples show as light
+ * and shade across a plane that is flat in the scene.
+ **/
+BOOST_AUTO_TEST_CASE(moya_displaced_reference_test) {
+    v3d::moya::RenderContext rc;
+    displacedScene(rc);
+    rc.render();
+
+    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), DISPLACED, DISPLACED_RENDERED);
+}
+
+/**
+ * The same displaced plane said in RIB, against the same committed picture.
+ **/
+BOOST_AUTO_TEST_CASE(moya_displaced_reference_from_rib_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(DISPLACED_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+        DISPLACED, DISPLACED_RIB_RENDERED);
 }
 
 };  // namespace

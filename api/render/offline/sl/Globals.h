@@ -64,6 +64,13 @@ class Globals final {
     void eye(runtime::Machine* machine, const glm::vec3 & position) const;
 
     /**
+     * P and N where a displacement shader left them, or `otherwise` when the program has
+     * none. A displacement shader writes both.
+     **/
+    glm::vec3 position(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const;
+    glm::vec3 normal(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const;
+
+    /**
      * @return what the shader left in Ci at a lane, or otherwise when it has no Ci
      **/
     glm::vec3 colour(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const;

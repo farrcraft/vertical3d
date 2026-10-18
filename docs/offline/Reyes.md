@@ -53,6 +53,9 @@ Only `Polygon` and `PointsPolygons` reach this pass. Spheres are not diced.
   and `"st"` bilinearly over the first four vertices. A triangle's fourth corner is its third. A
   polygon with more than four vertices loses the rest, which gives a wrong grid for a concave
   polygon.
+- **The grid is displaced**, when the primitive has a displacement shader.
+  `GridShader::displace` runs it once over every vertex and leaves the `P` and `N` it wrote on
+  each, so the surface shader sees the moved surface.
 - **The grid is shaded**: `moya::reyes::GridShader` runs the surface shader once over all of the
   grid's vertices and leaves `Ci` and `Oi` on each. A shader that never writes `Oi` leaves the
   primitive's `Os`. It answers `Renderer::shape()` with the grid, so a
@@ -87,6 +90,17 @@ Rules:
   composites what it passes through: each adds its `Ci` scaled by what the nearer ones let
   through, `1 - Oi`. The order the layers arrived in does not matter. The sample's depth is its
   nearest layer's.
+- **A primitive's bound grows by its `displacementbound`** before it is culled and bucketed, so
+  a surface the displacement moves into view is not culled. A displacement that goes past its
+  bound is clipped, and a primitive with no bound does not grow. The split test measures the
+  primitive without the bound: a grid covers the surface, not its bound, and a bound wider than
+  a grid would otherwise be split without end.
+- **The traced scene holds a displaced primitive as it was before it moved.** Its shadow and its
+  reflection follow its undisplaced shape, and so do the shadows a point moved behind that shape
+  receives from it.
+- **A grid of a polygon with no `st` takes its own parameters as s and t**, so the pieces of a
+  split polygon each run from 0 to 1. A displacement that should be continuous across a
+  polygon reads a position, not s.
 - **A grid is shaded once for all its samples**, so its shadow and traced rays see the scene at
   the shutter's open time.
 - **`--grid` and `--bucket` on the command line, and `Option "limits"`**, set the grid size and

@@ -73,6 +73,14 @@ void Globals::eye(runtime::Machine* machine, const glm::vec3 & position) const {
     put(machine, eye_, 0, position);
 }
 
+glm::vec3 Globals::position(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const {
+    return position_ < 0 ? otherwise : machine.value(position_).triple(lane);
+}
+
+glm::vec3 Globals::normal(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const {
+    return normal_ < 0 ? otherwise : machine.value(normal_).triple(lane);
+}
+
 glm::vec3 Globals::colour(const runtime::Machine & machine, unsigned int lane, const glm::vec3 & otherwise) const {
     return colour_ < 0 ? otherwise : machine.value(colour_).triple(lane);
 }

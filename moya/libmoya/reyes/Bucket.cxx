@@ -413,8 +413,10 @@ bool Bucket::render(RenderContext & rc) {
         if (prim->diceable()) {
             boost::shared_ptr<MicroPolygonGrid> grid;
             while (prim->dice(grid, rc)) {
-                // dicing interpolates the vertices' colours onto the grid as Cs. The surface
-                // shader runs over every vertex of the grid at once and leaves Ci there
+                // dicing interpolates the vertices' colours onto the grid as Cs. A displacement
+                // shader moves the grid first, so the surface shader sees the moved P and N.
+                // The surface shader runs over every vertex at once and leaves Ci there
+                rc.shader().displace(prim->shading(), grid.get());
                 rc.shader().shade(prim->shading(), grid.get());
                 hide(*grid, *prim, rc);
             }

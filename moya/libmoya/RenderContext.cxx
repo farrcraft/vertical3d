@@ -870,6 +870,19 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // shrinks a primitive and never the distance it travels
     Bound swept = eye;
     sweep(poly->motion(), object, &swept);
+
+    // a displacement shader may move the surface as far as its bound, so the bound grows by it
+    // before the primitive is culled and bucketed. A displacement that goes past the bound is
+    // clipped. With no bound the primitive does not grow. The size test reads the surface
+    // before it is grown, because the grid it is diced into covers the surface and not the
+    // bound. A bound wider than a grid would otherwise be split without end
+    const float grown = poly->shading().displacementBound;
+    const glm::vec3 surface_min = bound_min;
+    const glm::vec3 surface_max = bound_max;
+    bound_min -= glm::vec3(grown);
+    bound_max += glm::vec3(grown);
+    swept.min -= glm::vec3(grown);
+    swept.max += glm::vec3(grown);
     const glm::vec3 & swept_min = swept.min;
     const glm::vec3 & swept_max = swept.max;
 
@@ -909,6 +922,8 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // test on w is the one project() makes before it divides
     glm::vec3 raster_min(std::numeric_limits<float>::max());
     glm::vec3 raster_max(std::numeric_limits<float>::lowest());
+    glm::vec3 measured_min(std::numeric_limits<float>::max());
+    glm::vec3 measured_max(std::numeric_limits<float>::lowest());
     bool projected = false;
     for (int k = 0; k < 8; k++) {
         const glm::vec3 corner = boxCorner(bound_min, bound_max, k);
@@ -920,6 +935,9 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         raster_min = glm::min(raster_min, point);
         raster_max = glm::max(raster_max, point);
         projected = true;
+        const glm::vec3 inner = project(screen, boxCorner(surface_min, surface_max, k));
+        measured_min = glm::min(measured_min, inner);
+        measured_max = glm::max(measured_max, inner);
     }
     if (!projected) {
         // no corner is in front of the eye. The primitive is split, and its pieces are
@@ -938,7 +956,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         // shadingRate_ pixels, is split
         float size = static_cast<float>(gridSize_);
         size = sqrt(size) * shadingRate_;
-        glm::vec3 bound_size = bound_max - bound_min;
+        const glm::vec3 bound_size = measured_max - measured_min;
         if ((bound_size[0] > size) || (bound_size[1] > size)) {
             poly->diceable(false);
         }

@@ -52,6 +52,13 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
      */
     void shade(const Shading & shading, MicroPolygonGrid* grid);
 
+    /**
+     * Run the primitive's displacement shader over every vertex of the grid, and leave the P
+     * and N it wrote on each. Nothing happens when the primitive has no displacement shader.
+     * The surface shader runs afterwards, on the moved grid.
+     **/
+    void displace(const Shading & shading, MicroPolygonGrid* grid);
+
     // the callbacks the shading machine calls on its renderer
     bool space(const std::string & name, glm::mat4x4* matrix) override;
     unsigned int lights() override;
