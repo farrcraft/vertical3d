@@ -69,20 +69,20 @@ BOOST_AUTO_TEST_CASE(quads_come_out_furthest_first) {
  * where submission order would have cut four.
  **/
 BOOST_AUTO_TEST_CASE(equal_keys_are_grouped_by_texture) {
-    const TextureHandle a(1);
-    const TextureHandle b(2);
+    const TextureHandle firstTexture(1);
+    const TextureHandle secondTexture(2);
     DepthOrder order;
-    order.quad(5.0f, tile(0.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, a);
-    order.quad(5.0f, tile(1.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, b);
-    order.quad(5.0f, tile(2.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, a);
-    order.quad(5.0f, tile(3.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, b);
+    order.quad(5.0f, tile(0.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, firstTexture);
+    order.quad(5.0f, tile(1.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, secondTexture);
+    order.quad(5.0f, tile(2.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, firstTexture);
+    order.quad(5.0f, tile(3.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, secondTexture);
 
     canvas::World canvas;
     order.into(&canvas);
 
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2u);
-    BOOST_CHECK(canvas.batches()[0].texture == a);
-    BOOST_CHECK(canvas.batches()[1].texture == b);
+    BOOST_CHECK(canvas.batches()[0].texture == firstTexture);
+    BOOST_CHECK(canvas.batches()[1].texture == secondTexture);
 }
 
 /**

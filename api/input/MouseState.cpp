@@ -67,9 +67,9 @@ bool MouseState::operator() (const std::string& button) {
 
 /**
  **/
-glm::vec2 MouseState::operator() (const glm::vec2& p) {
+glm::vec2 MouseState::operator() (const glm::vec2& cursor) {
     const glm::vec2 previous = position_;
-    position_ = p;
+    position_ = cursor;
     return previous;
 }
 

@@ -27,7 +27,7 @@ class Face final {
     glm::vec3 normal(void) const;
     void normal(const glm::vec3 & n);
     Index edge(void) const;
-    void edge(Index e);
+    void edge(Index edgeIndex);
 
  private:
     glm::vec3 normal_;

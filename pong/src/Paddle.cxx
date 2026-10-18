@@ -100,14 +100,14 @@ int Paddle::score() {
     return component.score_;
 }
 
-void Paddle::up(bool k) {
+void Paddle::up(bool held) {
     Travel& travel = registry_->get<Travel>(id_);
-    travel.up_ = k;
+    travel.up_ = held;
 }
 
-void Paddle::down(bool k) {
+void Paddle::down(bool held) {
     Travel& travel = registry_->get<Travel>(id_);
-    travel.down_ = k;
+    travel.down_ = held;
 }
 
 void Paddle::score(int s) {

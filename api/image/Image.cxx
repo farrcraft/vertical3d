@@ -35,7 +35,7 @@ Image::Format formatOf(uint8_t bpp) {
 Image::Image() : data_(0), width_(0), height_(0), bpp_(24), format_(Format::RGB) {
 }
 
-Image::Image(const glm::uvec2& dimensions, uint8_t b) : width_(dimensions.x), height_(dimensions.y), bpp_(b), format_(formatOf(b)) {
+Image::Image(const glm::uvec2& dimensions, uint8_t bitsPerPixel) : width_(dimensions.x), height_(dimensions.y), bpp_(bitsPerPixel), format_(formatOf(bitsPerPixel)) {
     const unsigned int bytesPerPixel = bpp_ / 8;
     const uint64_t size = static_cast<uint64_t>(width_) * height_ * bytesPerPixel;
     data_ = new unsigned char[size];
@@ -66,16 +66,16 @@ Image::Format Image::format() const {
     return format_;
 }
 
-unsigned char& Image::operator[] (unsigned int i) {
-    assert(i < (width_* height_* (bpp_ / 8)));
+unsigned char& Image::operator[] (unsigned int index) {
+    assert(index < (width_* height_* (bpp_ / 8)));
     assert(data_ != 0);
-    return data_[i];
+    return data_[index];
 }
 
-unsigned char Image::operator[] (unsigned int i) const {
-    assert(i < (width_* height_* (bpp_ / 8)));
+unsigned char Image::operator[] (unsigned int index) const {
+    assert(index < (width_* height_* (bpp_ / 8)));
     assert(data_ != 0);
-    return data_[i];
+    return data_[index];
 }
 
 };  // namespace v3d::image

@@ -20,26 +20,27 @@ unsigned int MicroPolygonGrid::size(void) const {
     return static_cast<unsigned int>(grid_.size());
 }
 
-Vertex MicroPolygonGrid::vertex(unsigned int i, unsigned int j) const {
-    assert(i < size() && j < size());
-    return grid_[i][j];
+Vertex MicroPolygonGrid::vertex(unsigned int column, unsigned int row) const {
+    assert(column < size() && row < size());
+    return grid_[column][row];
 }
 
-MicroPolygon MicroPolygonGrid::microPolygon(unsigned int i, unsigned int j) const {
-    // the corners in order are [i][j], [i][j+1], [i+1][j+1] and [i+1][j]. A micropolygon is
-    // named by its corner with the lowest indices, so i and j each stop one short of size()
-    assert(i + 1 < size() && j + 1 < size());
-    MicroPolygon p;
-    p[0] = grid_[i][j];
-    p[1] = grid_[i][j+1];
-    p[2] = grid_[i+1][j+1];
-    p[3] = grid_[i+1][j];
-    return p;
+MicroPolygon MicroPolygonGrid::microPolygon(unsigned int column, unsigned int row) const {
+    // the corners in order are [column][row], [column][row+1], [column+1][row+1] and
+    // [column+1][row]. A micropolygon is named by its corner with the lowest indices, so
+    // column and row each stop one short of size()
+    assert(column + 1 < size() && row + 1 < size());
+    MicroPolygon poly;
+    poly[0] = grid_[column][row];
+    poly[1] = grid_[column][row+1];
+    poly[2] = grid_[column+1][row+1];
+    poly[3] = grid_[column+1][row];
+    return poly;
 }
 
-void MicroPolygonGrid::addVertex(const Vertex & vert, unsigned int i, unsigned int j) {
-    assert(i < size() && j < size());
-    grid_[i][j] = vert;
+void MicroPolygonGrid::addVertex(const Vertex & vert, unsigned int column, unsigned int row) {
+    assert(column < size() && row < size());
+    grid_[column][row] = vert;
 }
 
 };  // namespace v3d::moya::reyes

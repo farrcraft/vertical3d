@@ -27,9 +27,9 @@ class MicroPolygonGrid {
      */
     unsigned int size(void) const;
 
-    Vertex vertex(unsigned int i, unsigned int j) const;
-    MicroPolygon microPolygon(unsigned int i, unsigned int j) const;
-    void addVertex(const Vertex & vert, unsigned int i, unsigned int j);
+    Vertex vertex(unsigned int column, unsigned int row) const;
+    MicroPolygon microPolygon(unsigned int column, unsigned int row) const;
+    void addVertex(const Vertex & vert, unsigned int column, unsigned int row);
 
  private:
     std::vector< std::vector<Vertex> > grid_;

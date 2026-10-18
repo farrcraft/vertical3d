@@ -21,8 +21,8 @@ enum class Colour : uint8_t {
     Blue = 1 << 2
 };
 
-constexpr Flags<Colour> operator|(Colour a, Colour b) noexcept {
-    return Flags<Colour>(a) | b;
+constexpr Flags<Colour> operator|(Colour lhs, Colour rhs) noexcept {
+    return Flags<Colour>(lhs) | rhs;
 }
 
 /**

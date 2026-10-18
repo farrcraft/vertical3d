@@ -27,21 +27,21 @@ class KeyState final {
      *
      * @return bool
      **/
-    bool held(std::string_view c) const;
+    bool held(std::string_view key) const;
 
     /**
      * Did a key go down since the last flush?
      *
-     * @param c the key's name
+     * @param key the key's name
      **/
-    bool pressed(std::string_view c) const;
+    bool pressed(std::string_view key) const;
 
     /**
      * Did a key come up since the last flush?
      *
-     * @param c the key's name
+     * @param key the key's name
      **/
-    bool released(std::string_view c) const;
+    bool released(std::string_view key) const;
 
     /**
      * Forget this frame's edges, leaving what is held alone. Called once per frame by the
@@ -52,11 +52,11 @@ class KeyState final {
     /**
      * Toggle the state of the key
      *
-     * @param c The key being toggled
+     * @param key The key being toggled
      *
      * @return bool true if the resulting state is a held key
      **/
-    bool operator() (const std::string& c);
+    bool operator() (const std::string& key);
 
  private:
     std::vector<std::string> keys_;

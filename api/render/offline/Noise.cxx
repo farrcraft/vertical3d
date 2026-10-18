@@ -50,8 +50,8 @@ float fade(float t) {
     return t * t * t * ((t * ((t * quintic) - quartic)) + cubic);
 }
 
-float lerp(float t, float a, float b) {
-    return a + (t * (b - a));
+float lerp(float t, float from, float to) {
+    return from + (t * (to - from));
 }
 
 /**
@@ -64,15 +64,15 @@ float gradient(int hash, const glm::vec3 & offset) {
     // plane, so their second component is x. 13 and 15 keep z
     constexpr int repeatXPlusY = 12;
     constexpr int repeatYMinusX = 14;
-    const int h = hash & 15;
-    const float u = h < 8 ? offset.x : offset.y;
+    const int bits = hash & 15;
+    const float u = bits < 8 ? offset.x : offset.y;
     float v = offset.z;
-    if (h < 4) {
+    if (bits < 4) {
         v = offset.y;
-    } else if (h == repeatXPlusY || h == repeatYMinusX) {
+    } else if (bits == repeatXPlusY || bits == repeatYMinusX) {
         v = offset.x;
     }
-    return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
+    return ((bits & 1) == 0 ? u : -u) + ((bits & 2) == 0 ? v : -v);
 }
 
 };  // namespace
@@ -83,7 +83,7 @@ float noise(const glm::vec3 & point) {
     if (!finite) {
         return 0.5f;
     }
-    const std::array<int, 512> & p = permutation();
+    const std::array<int, 512> & table = permutation();
     const float fx = std::floor(point.x);
     const float fy = std::floor(point.y);
     const float fz = std::floor(point.z);
@@ -99,13 +99,13 @@ float noise(const glm::vec3 & point) {
     const float v = fade(y);
     const float w = fade(z);
 
-    const auto at = [&p](int index) { return p[static_cast<std::size_t>(index)]; };
-    const int a = at(cx) + cy;
-    const int aa = at(a) + cz;
-    const int ab = at(a + 1) + cz;
-    const int b = at(cx + 1) + cy;
-    const int ba = at(b) + cz;
-    const int bb = at(b + 1) + cz;
+    const auto at = [&table](int index) { return table[static_cast<std::size_t>(index)]; };
+    const int hashA = at(cx) + cy;
+    const int aa = at(hashA) + cz;
+    const int ab = at(hashA + 1) + cz;
+    const int hashB = at(cx + 1) + cy;
+    const int ba = at(hashB) + cz;
+    const int bb = at(hashB + 1) + cz;
 
     const float value = lerp(w,
         lerp(v, lerp(u, gradient(at(aa), {x, y, z}), gradient(at(ba), {x - 1.0f, y, z})),

@@ -67,11 +67,11 @@ class MouseState final {
     /**
      * Move the cursor
      *
-     * @param p the new cursor position
+     * @param cursor the new cursor position
      *
      * @return the previous position
      **/
-    glm::vec2 operator() (const glm::vec2& p);
+    glm::vec2 operator() (const glm::vec2& cursor);
 
     /**
      * @return the current cursor position

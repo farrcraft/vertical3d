@@ -19,8 +19,8 @@ static_assert(v3d::ecs::Interpolable<v3d::ecs::component::Transform>);
 
 namespace {
 
-bool same(const glm::vec3& a, const glm::vec3& b) {
-    return glm::all(glm::epsilonEqual(a, b, 0.0001f));
+bool same(const glm::vec3& actual, const glm::vec3& expected) {
+    return glm::all(glm::epsilonEqual(actual, expected, 0.0001f));
 }
 
 /**

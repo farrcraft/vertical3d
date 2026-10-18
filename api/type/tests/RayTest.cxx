@@ -54,75 +54,75 @@ BOOST_AUTO_TEST_CASE(ray_transformed_test) {
 }
 
 BOOST_AUTO_TEST_CASE(ray_triangle_test) {
-    const glm::vec3 a(-1.0f, -1.0f, 0.0f);
-    const glm::vec3 b(1.0f, -1.0f, 0.0f);
-    const glm::vec3 c(0.0f, 1.0f, 0.0f);
+    const glm::vec3 p0(-1.0f, -1.0f, 0.0f);
+    const glm::vec3 p1(1.0f, -1.0f, 0.0f);
+    const glm::vec3 p2(0.0f, 1.0f, 0.0f);
 
     float distance = 0.0f;
 
     // straight through the middle
     const v3d::type::geometry::Ray hit({.origin = glm::vec3(0.0f, 0.0f, -5.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
-    BOOST_CHECK_EQUAL(hit.intersects(a, b, c, &distance), true);
+    BOOST_CHECK_EQUAL(hit.intersects(p0, p1, p2, &distance), true);
     BOOST_CHECK_CLOSE(distance, 5.0f, 0.01f);
 
     // from behind, which a modeller picks as readily as the front
     const v3d::type::geometry::Ray behind({.origin = glm::vec3(0.0f, 0.0f, 5.0f), .direction = glm::vec3(0.0f, 0.0f, -1.0f)});
-    BOOST_CHECK_EQUAL(behind.intersects(a, b, c, &distance), true);
+    BOOST_CHECK_EQUAL(behind.intersects(p0, p1, p2, &distance), true);
     BOOST_CHECK_CLOSE(distance, 5.0f, 0.01f);
 
     // outside the triangle but in its plane's way
     const v3d::type::geometry::Ray beside({.origin = glm::vec3(3.0f, 0.0f, -5.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
-    BOOST_CHECK_EQUAL(beside.intersects(a, b, c, nullptr), false);
+    BOOST_CHECK_EQUAL(beside.intersects(p0, p1, p2, nullptr), false);
 
     // pointing away from it - a half line, not a line
     const v3d::type::geometry::Ray away({.origin = glm::vec3(0.0f, 0.0f, -5.0f), .direction = glm::vec3(0.0f, 0.0f, -1.0f)});
-    BOOST_CHECK_EQUAL(away.intersects(a, b, c, nullptr), false);
+    BOOST_CHECK_EQUAL(away.intersects(p0, p1, p2, nullptr), false);
 
     // edge on, where the barycentric solution is meaningless
     const v3d::type::geometry::Ray edgeOn({.origin = glm::vec3(0.0f, 0.0f, 0.0f), .direction = glm::vec3(1.0f, 0.0f, 0.0f)});
-    BOOST_CHECK_EQUAL(edgeOn.intersects(a, b, c, nullptr), false);
+    BOOST_CHECK_EQUAL(edgeOn.intersects(p0, p1, p2, nullptr), false);
 }
 
 BOOST_AUTO_TEST_CASE(ray_triangle_barycentric_test) {
     // a right triangle on the z = 0 plane, so a weight reads straight off a coordinate
-    const glm::vec3 a(0.0f, 0.0f, 0.0f);
-    const glm::vec3 b(4.0f, 0.0f, 0.0f);
-    const glm::vec3 c(0.0f, 4.0f, 0.0f);
+    const glm::vec3 p0(0.0f, 0.0f, 0.0f);
+    const glm::vec3 p1(4.0f, 0.0f, 0.0f);
+    const glm::vec3 p2(0.0f, 4.0f, 0.0f);
 
     float distance = 0.0f;
     glm::vec2 weights(0.0f);
 
-    // a hit at b itself weighs b alone
+    // a hit at p1 itself weighs p1 alone
     const v3d::type::geometry::Ray corner({.origin = glm::vec3(4.0f, 0.0f, -2.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
-    BOOST_CHECK_EQUAL(corner.intersects(a, b, c, &distance, &weights), true);
+    BOOST_CHECK_EQUAL(corner.intersects(p0, p1, p2, &distance, &weights), true);
     BOOST_CHECK_CLOSE(distance, 2.0f, 0.01f);
     BOOST_CHECK_CLOSE(weights.x, 1.0f, 0.01f);
     BOOST_CHECK_SMALL(weights.y, 0.0001f);
 
-    // (1, 2) is a + (1/4)(b - a) + (1/2)(c - a), so a carries the remaining quarter
+    // (1, 2) is p0 + (1/4)(p1 - p0) + (1/2)(p2 - p0), so p0 carries the remaining quarter
     const v3d::type::geometry::Ray inside({.origin = glm::vec3(1.0f, 2.0f, -2.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
-    BOOST_CHECK_EQUAL(inside.intersects(a, b, c, &distance, &weights), true);
+    BOOST_CHECK_EQUAL(inside.intersects(p0, p1, p2, &distance, &weights), true);
     BOOST_CHECK_CLOSE(weights.x, 0.25f, 0.01f);
     BOOST_CHECK_CLOSE(weights.y, 0.5f, 0.01f);
     BOOST_CHECK_CLOSE(1.0f - weights.x - weights.y, 0.25f, 0.01f);
 
-    // the weights are of b and c in that order, not of the two the ray happens to be
+    // the weights are of p1 and p2 in that order, not of the two the ray happens to be
     // nearer: swapping the triangle's last two corners swaps them
-    BOOST_CHECK_EQUAL(inside.intersects(a, c, b, &distance, &weights), true);
+    BOOST_CHECK_EQUAL(inside.intersects(p0, p2, p1, &distance, &weights), true);
     BOOST_CHECK_CLOSE(weights.x, 0.5f, 0.01f);
     BOOST_CHECK_CLOSE(weights.y, 0.25f, 0.01f);
 
     // a miss writes nothing, so what the caller had stands
     weights = glm::vec2(-1.0f);
     const v3d::type::geometry::Ray beside({.origin = glm::vec3(5.0f, 5.0f, -2.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
-    BOOST_CHECK_EQUAL(beside.intersects(a, b, c, &distance, &weights), false);
+    BOOST_CHECK_EQUAL(beside.intersects(p0, p1, p2, &distance, &weights), false);
     BOOST_CHECK_EQUAL(weights.x, -1.0f);
     BOOST_CHECK_EQUAL(weights.y, -1.0f);
 
     // the overload without them returns what the overload with them returns
     const v3d::type::geometry::Ray same({.origin = glm::vec3(1.0f, 2.0f, -2.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
     float plain = 0.0f;
-    BOOST_CHECK_EQUAL(same.intersects(a, b, c, &plain), true);
+    BOOST_CHECK_EQUAL(same.intersects(p0, p1, p2, &plain), true);
     BOOST_CHECK_CLOSE(plain, 2.0f, 0.01f);
 }
 
@@ -262,16 +262,16 @@ BOOST_AUTO_TEST_CASE(ray_that_is_not_a_number_misses_triangle_and_plane_test) {
     const float nan = std::nanf("");
     const v3d::type::geometry::Ray lost({.origin = glm::vec3(0.25f, 0.25f, -5.0f), .direction = glm::vec3(nan, 0.0f, 1.0f)});
     const v3d::type::geometry::Ray nowhere({.origin = glm::vec3(nan, 0.25f, -5.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
-    const glm::vec3 a(0.0f, 0.0f, 0.0f);
-    const glm::vec3 b(1.0f, 0.0f, 0.0f);
-    const glm::vec3 c(0.0f, 1.0f, 0.0f);
-    const v3d::type::geometry::Plane facing(a, b, c);
+    const glm::vec3 p0(0.0f, 0.0f, 0.0f);
+    const glm::vec3 p1(1.0f, 0.0f, 0.0f);
+    const glm::vec3 p2(0.0f, 1.0f, 0.0f);
+    const v3d::type::geometry::Plane facing(p0, p1, p2);
 
     for (const v3d::type::geometry::Ray & ray : {lost, nowhere}) {
         float distance = -1.0f;
         glm::vec2 weights(-1.0f);
-        BOOST_CHECK(!ray.intersects(a, b, c, &distance));
-        BOOST_CHECK(!ray.intersects(a, b, c, &distance, &weights));
+        BOOST_CHECK(!ray.intersects(p0, p1, p2, &distance));
+        BOOST_CHECK(!ray.intersects(p0, p1, p2, &distance, &weights));
         BOOST_CHECK(!ray.intersects(facing, &distance));
         BOOST_CHECK_EQUAL(distance, -1.0f);
         BOOST_CHECK_EQUAL(weights.x, -1.0f);

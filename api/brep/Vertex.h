@@ -14,7 +14,7 @@ namespace v3d::brep {
 class Vertex final {
  public:
     Vertex();
-    Vertex(const glm::vec3 & p);
+    Vertex(const glm::vec3 & position);
     ~Vertex();
 
     // const, because C++20's reversed candidate for a non-const operator== makes every
@@ -30,9 +30,9 @@ class Vertex final {
     void selected(bool sel) noexcept;
 
     Index edge(void) const;
-    void edge(Index e);
+    void edge(Index edgeIndex);
     glm::vec3 point(void) const;
-    void point(const glm::vec3 & p);
+    void point(const glm::vec3 & position);
 
  private:
     glm::vec3 point_;

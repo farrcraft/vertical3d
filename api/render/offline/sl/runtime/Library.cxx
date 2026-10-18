@@ -169,9 +169,9 @@ glm::vec3 faceforward(const glm::vec3 & normal, const glm::vec3 & incident,
 
 glm::vec3 refract(const glm::vec3 & incident, const glm::vec3 & normal, float eta) {
     const float cosine = glm::dot(incident, normal);
-    const float k = 1.0f - (eta * eta * (1.0f - (cosine * cosine)));
+    const float discriminant = 1.0f - (eta * eta * (1.0f - (cosine * cosine)));
     // a negative discriminant is total internal reflection, where nothing is refracted
-    return k < 0.0f ? glm::vec3(0.0f) : eta * incident - ((eta * cosine) + std::sqrt(k)) * normal;
+    return discriminant < 0.0f ? glm::vec3(0.0f) : eta * incident - ((eta * cosine) + std::sqrt(discriminant)) * normal;
 }
 
 /**
@@ -220,10 +220,10 @@ void fresnel(const Site & site, unsigned int point) {
     const glm::vec3 normal = unit(site.argument(1).triple(point));
     const float eta = site.argument(2).number(point);
     const float cosine = std::fabs(glm::dot(incident, normal));
-    const float k = 1.0f - (eta * eta * (1.0f - (cosine * cosine)));
+    const float discriminant = 1.0f - (eta * eta * (1.0f - (cosine * cosine)));
     float reflected = 1.0f;
-    if (k > 0.0f) {
-        const float through = std::sqrt(k);
+    if (discriminant > 0.0f) {
+        const float through = std::sqrt(discriminant);
         const float across = ((eta * cosine) - through) / ((eta * cosine) + through);
         const float along = (cosine - (eta * through)) / (cosine + (eta * through));
         reflected = 0.5f * ((across * across) + (along * along));

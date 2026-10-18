@@ -13,14 +13,14 @@ namespace {
  * A frustum plane is a combination of the matrix's rows: its w row times one weight plus
  * one of its x, y or z rows times another.
  *
- * glm is column major, so row i component k is m[k][i]. Reading m[i][k] instead extracts
- * the planes of the transposed matrix, which for anything but a symmetric one is a
+ * glm is column major, so row i component k is matrix[k][i]. Reading matrix[i][k] instead
+ * extracts the planes of the transposed matrix, which for anything but a symmetric one is a
  * different frustum.
  **/
-Plane rowPlane(const glm::mat4& m, unsigned int row, float wWeight, float rowWeight) {
+Plane rowPlane(const glm::mat4& matrix, unsigned int row, float wWeight, float rowWeight) {
     Plane plane;
     for (glm::length_t k = 0; k < 4; k++) {
-        plane[k] = (wWeight * m[k][3]) + (rowWeight * m[k][static_cast<glm::length_t>(row)]);
+        plane[k] = (wWeight * matrix[k][3]) + (rowWeight * matrix[k][static_cast<glm::length_t>(row)]);
     }
     return plane;
 }

@@ -58,7 +58,7 @@ names it as the one Python file in the tree.
 
 ### Steps 5 to 17 — One check each
 
-**Steps 5 to 14 done; 15 to 17 open.**
+**Steps 5 to 15 done; 16 and 17 open.**
 
 - Steps 5 to 8 shared one discovery pass and one verification pass. Several files carried sites
   of more than one check.
@@ -115,6 +115,10 @@ names it as the one Python file in the tree.
   derived with `std::size` or `sizeof` instead of written. The shared offline renderer
   constants are in `render/offline/Units.h`. `RtBound` keeps the standard's `[6]` under a
   NOLINTNEXTLINE.
+- Step 15 found 1529 sites, 468 of them in tests. The check's options set the minimum to two
+  letters and allow the conventional single letters: `x`, `y`, `z`, `w`, `u`, `v`, `s` and `t`,
+  plus the defaults `i`, `j`, `k`, `n` and `e`. That left 391 sites, mostly `a`, `b`, `c`, `p`,
+  `m`, `d`, `e` and `f`, and each was renamed by hand for what it holds.
 
 Each step follows the same procedure:
 

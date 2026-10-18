@@ -33,9 +33,9 @@ class Image {
         /**
          * Constructor
          * @param dimensions image width and height
-         * @param b bits per pixel
+         * @param bitsPerPixel bits per pixel
          */
-        Image(const glm::uvec2& dimensions, uint8_t b);
+        Image(const glm::uvec2& dimensions, uint8_t bitsPerPixel);
         virtual ~Image();
 
         /**
@@ -70,8 +70,8 @@ class Image {
 
         Format format() const;
 
-        unsigned char & operator[] (unsigned int i);
-        unsigned char operator[] (unsigned int i) const;
+        unsigned char & operator[] (unsigned int index);
+        unsigned char operator[] (unsigned int index) const;
 
  private:
         unsigned char * data_;  // Data (Up To 32 Bits)

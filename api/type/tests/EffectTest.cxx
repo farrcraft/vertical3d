@@ -48,13 +48,13 @@ void run(const Emitter& emitter, State* state, int steps) {
     }
 }
 
-bool equal(const std::vector<Particle>& a, const std::vector<Particle>& b) {
-    if (a.size() != b.size()) {
+bool equal(const std::vector<Particle>& first, const std::vector<Particle>& second) {
+    if (first.size() != second.size()) {
         return false;
     }
-    for (std::size_t particle = 0; particle < a.size(); particle++) {
-        if (a[particle].position != b[particle].position || a[particle].velocity != b[particle].velocity ||
-            a[particle].lifetime != b[particle].lifetime || a[particle].phase != b[particle].phase) {
+    for (std::size_t particle = 0; particle < first.size(); particle++) {
+        if (first[particle].position != second[particle].position || first[particle].velocity != second[particle].velocity ||
+            first[particle].lifetime != second[particle].lifetime || first[particle].phase != second[particle].phase) {
             return false;
         }
     }
@@ -113,10 +113,10 @@ BOOST_AUTO_TEST_CASE(effect_a_particle_falls_under_gravity_test) {
     const int steps = 30;
     run(emitter, &state, steps);
 
-    const float h = sixtieth;
-    const float fallen = -9.8f * h * h * static_cast<float>(steps * (steps + 1)) / 2.0f;
+    const float dt = sixtieth;
+    const float fallen = -9.8f * dt * dt * static_cast<float>(steps * (steps + 1)) / 2.0f;
     BOOST_CHECK_CLOSE(state.particles[0].position.y, fallen, 1e-3f);
-    BOOST_CHECK_CLOSE(state.particles[0].velocity.y, -9.8f * h * static_cast<float>(steps), 1e-3f);
+    BOOST_CHECK_CLOSE(state.particles[0].velocity.y, -9.8f * dt * static_cast<float>(steps), 1e-3f);
 }
 
 /**

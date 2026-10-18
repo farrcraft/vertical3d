@@ -22,8 +22,8 @@ Menu::~Menu() {
 
 /**
  **/
-void Menu::parent(const boost::weak_ptr<Menu>& p) {
-    parent_ = p;
+void Menu::parent(const boost::weak_ptr<Menu>& parentMenu) {
+    parent_ = parentMenu;
 }
 
 bool Menu::hasParent() const {
@@ -34,8 +34,8 @@ boost::shared_ptr<Menu> Menu::level() const {
     return level_.lock();
 }
 
-void Menu::level(const boost::weak_ptr<Menu>& m) {
-    level_ = m;
+void Menu::level(const boost::weak_ptr<Menu>& current) {
+    level_ = current;
 }
 
 void Menu::addItem(const boost::shared_ptr<Item>& item) {
@@ -141,9 +141,9 @@ size_t Menu::count() const {
     return items_.size();
 }
 
-boost::shared_ptr<Item>& Menu::operator[](size_t i) {
-    assert(i < items_.size());
-    return items_[i];
+boost::shared_ptr<Item>& Menu::operator[](size_t index) {
+    assert(index < items_.size());
+    return items_[index];
 }
 
 /**

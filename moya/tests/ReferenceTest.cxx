@@ -270,13 +270,13 @@ struct Columns {
     unsigned int to = 0;
 };
 
-float largest(const v3d::render::offline::FrameBuffer & a, const v3d::render::offline::FrameBuffer & b,
+float largest(const v3d::render::offline::FrameBuffer & first, const v3d::render::offline::FrameBuffer & second,
     const Columns & columns) {
     float worst = 0.0f;
-    for (unsigned int plane = 0; plane < a.planes(); plane++) {
-        for (unsigned int row = 0; row < a.height(); row++) {
+    for (unsigned int plane = 0; plane < first.planes(); plane++) {
+        for (unsigned int row = 0; row < first.height(); row++) {
             for (unsigned int column = columns.from; column <= columns.to; column++) {
-                worst = std::max(worst, std::fabs(a.value(plane, column, row) - b.value(plane, column, row)));
+                worst = std::max(worst, std::fabs(first.value(plane, column, row) - second.value(plane, column, row)));
             }
         }
     }
@@ -1098,9 +1098,9 @@ BOOST_AUTO_TEST_CASE(reference_motion_without_a_cache_test) {
     motionScene(uncached);
     uncached.render();
 
-    const v3d::render::offline::FrameBuffer & a = *cached.framebuffer()->planes();
-    const v3d::render::offline::FrameBuffer & b = *uncached.framebuffer()->planes();
-    BOOST_CHECK_EQUAL(largest(a, b, {.from = 0, .to = a.width() - 1}), 0.0f);
+    const v3d::render::offline::FrameBuffer & cachedImage = *cached.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & uncachedImage = *uncached.framebuffer()->planes();
+    BOOST_CHECK_EQUAL(largest(cachedImage, uncachedImage, {.from = 0, .to = cachedImage.width() - 1}), 0.0f);
 }
 
 };  // namespace

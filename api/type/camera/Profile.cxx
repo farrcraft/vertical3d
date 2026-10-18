@@ -183,10 +183,10 @@ void Profile::turn(const glm::quat& local) {
 
     // the rotation's columns are the right handed basis lookat() builds, so the normals
     // come out of it the way lookat() hands them out
-    const glm::mat3 m = glm::mat3_cast(rotation_);
-    right_ = hand_ == Hand::DirectionCrossUp ? -m[0] : m[0];
-    up_ = m[1];
-    direction_ = m[2];
+    const glm::mat3 axes = glm::mat3_cast(rotation_);
+    right_ = hand_ == Hand::DirectionCrossUp ? -axes[0] : axes[0];
+    up_ = axes[1];
+    direction_ = axes[2];
 }
 
 glm::mat4x4 Profile::orientation() const {
@@ -239,29 +239,29 @@ void Profile::lookat(const glm::vec3& center) {
         [  2,  6, 10,  14 ]
         [  3,  7, 11,  15 ]
     */
-    glm::mat4x4 m;
+    glm::mat4x4 basis;
 
-    m[0][0] = x[0];
-    m[0][1] = x[1];
-    m[0][2] = x[2];
-    m[0][3] = 0.0;
-    m[1][0] = y[0];
-    m[1][1] = y[1];
-    m[1][2] = y[2];
-    m[1][3] = 0.0;
-    m[2][0] = z[0];
-    m[2][1] = z[1];
-    m[2][2] = z[2];
-    m[2][3] = 0.0;
-    m[3][0] = 0.0;
-    m[3][1] = 0.0;
-    m[3][2] = 0.0;
-    m[3][3] = 1.0;
+    basis[0][0] = x[0];
+    basis[0][1] = x[1];
+    basis[0][2] = x[2];
+    basis[0][3] = 0.0;
+    basis[1][0] = y[0];
+    basis[1][1] = y[1];
+    basis[1][2] = y[2];
+    basis[1][3] = 0.0;
+    basis[2][0] = z[0];
+    basis[2][1] = z[1];
+    basis[2][2] = z[2];
+    basis[2][3] = 0.0;
+    basis[3][0] = 0.0;
+    basis[3][1] = 0.0;
+    basis[3][2] = 0.0;
+    basis[3][3] = 1.0;
 
-    rotation_ = glm::quat_cast(m);
+    rotation_ = glm::quat_cast(basis);
     // and the matrix itself is kept, so createView() does not have to rebuild it out of
     // the quaternion it was just cast to
-    basis_ = m;
+    basis_ = basis;
     basisValid_ = true;
     up_ = y;
     direction_ = z;
@@ -301,9 +301,9 @@ void Profile::hand(Hand hand) {
     hand_ = hand;
 }
 
-Profile& Profile::operator = (const Profile& p) {
-    if (this != &p) {
-        clone(p);
+Profile& Profile::operator = (const Profile& other) {
+    if (this != &other) {
+        clone(other);
     }
     return *this;
 }

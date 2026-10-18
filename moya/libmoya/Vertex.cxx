@@ -25,8 +25,8 @@ glm::vec3 Vertex::color(void) const {
      return color_;
 }
 
-void Vertex::color(const glm::vec3 & c) {
-     color_ = c;
+void Vertex::color(const glm::vec3 & colour) {
+     color_ = colour;
      bits_ |= HAS_COLOR;
 }
 

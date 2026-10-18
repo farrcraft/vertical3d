@@ -66,13 +66,13 @@ void MeshCache::reset() {
     vertexCount_ = 0;
 }
 
-size_t MeshCache::addTri(size_t a, size_t b, size_t c) {
+size_t MeshCache::addTri(size_t i0, size_t i1, size_t i2) {
     if (triCount_ == maxTris_) {
         throw std::runtime_error("MeshCache tri limit exceeded!");
     }
     const size_t index = triCount_;
     triCount_++;
-    tris_[index] = glm::ivec3(a, b, c);
+    tris_[index] = glm::ivec3(i0, i1, i2);
     return index;
 }
 

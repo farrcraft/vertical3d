@@ -338,8 +338,8 @@ void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & 
         rc.sampling().shutter);
     Samples & samples = rc.samples();
 
-    const auto corners = [&grid](unsigned int i, unsigned int j) {
-        MicroPolygon poly = grid.microPolygon(i, j);
+    const auto corners = [&grid](unsigned int column, unsigned int row) {
+        MicroPolygon poly = grid.microPolygon(column, row);
         Corners eye;
         for (unsigned int k = 0; k < 4; k++) {
             eye[k] = poly[k].point();

@@ -26,7 +26,7 @@ class MeshCache {
 
     void reset();
 
-    size_t addTri(size_t a, size_t b, size_t c);
+    size_t addTri(size_t i0, size_t i1, size_t i2);
     size_t addTri(const glm::vec3 & v0, const glm::vec3 & v1, const glm::vec3 & v2);
     size_t addVertex(const glm::vec3 & vertex);
 

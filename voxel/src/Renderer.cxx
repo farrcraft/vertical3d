@@ -380,10 +380,10 @@ void Renderer::tick(unsigned int /* delta */) {
 void Renderer::resize(const glm::ivec2& size) {
     const int width = size.x;
     const int height = size.y;
-    const float w = static_cast<float>(width);
-    const float h = static_cast<float>(height);
+    const float floatWidth = static_cast<float>(width);
+    const float floatHeight = static_cast<float>(height);
 
-    scene_->camera()->perspective({.fovx = Camera::DEFAULT_FOVX, .aspect = w / h, .znear = Camera::DEFAULT_ZNEAR, .zfar = Camera::DEFAULT_ZFAR});
+    scene_->camera()->perspective({.fovx = Camera::DEFAULT_FOVX, .aspect = floatWidth / floatHeight, .znear = Camera::DEFAULT_ZNEAR, .zfar = Camera::DEFAULT_ZFAR});
 }
 
 /**

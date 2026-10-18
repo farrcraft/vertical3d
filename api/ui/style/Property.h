@@ -38,9 +38,9 @@ class Property {
     Alignment align() const;
     /**
      * Set the property alignment.
-     * @param a the new alignment
+     * @param alignment the new alignment
      */
-    void align(Alignment a);
+    void align(Alignment alignment);
     /**
      * Get the property name.
      * @return the property name

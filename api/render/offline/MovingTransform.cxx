@@ -29,9 +29,9 @@ constexpr float SMALLEST_DETERMINANT = 1.0e-6f;
  **/
 class Parts {
  public:
-    explicit Parts(const glm::mat4x4 & m) {
-        translation = glm::vec3(m[3]);
-        glm::mat3 basis(m);
+    explicit Parts(const glm::mat4x4 & matrix) {
+        translation = glm::vec3(matrix[3]);
+        glm::mat3 basis(matrix);
         for (int axis = 0; axis < 3; axis++) {
             scale[axis] = glm::length(basis[axis]);
             basis[axis] /= scale[axis];

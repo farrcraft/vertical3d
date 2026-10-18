@@ -94,8 +94,8 @@ v3d::event::Event Item::event() const {
     return event_;
 }
 
-void Item::menu(const boost::weak_ptr<Menu>& m) {
-    menu_ = m;
+void Item::menu(const boost::weak_ptr<Menu>& owner) {
+    menu_ = owner;
 }
 
 boost::weak_ptr<Menu> Item::menu() {

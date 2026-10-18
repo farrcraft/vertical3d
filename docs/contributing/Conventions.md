@@ -109,6 +109,12 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
   rather than written. clang-tidy's `readability-magic-numbers` reports a literal outside a
   constant's initialiser, except in tests and for 0 to 4, 24, 255, powers of two, 0.5, 1.0,
   2.0 and 100.0.
+- **A variable or parameter name is at least two letters**, and says what it holds:
+  `expected` and `actual`, not `a` and `b`. One letter is allowed only where it is the
+  conventional name: `x`, `y`, `z` and `w` for coordinates, `u` and `v` for a surface's
+  parameters, `s` and `t` for texture coordinates, `i`, `j` and `k` for a loop counter, `n` for a
+  count parameter and `e` for a caught exception. clang-tidy's `readability-identifier-length`
+  reports any other name shorter than two letters.
 - **Pass a non-trivial type by `const` reference**, including a `boost::shared_ptr` and a
   `std::string`. clang-tidy's `performance-unnecessary-value-param` also accepts a by-value
   parameter that is moved from, but this tree uses the `const` reference in both cases.

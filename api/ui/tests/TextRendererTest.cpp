@@ -80,12 +80,12 @@ BOOST_AUTO_TEST_CASE(a_character_that_is_not_packed_measures_and_draws_nothing) 
     const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = renderer(v3d::ui::paint::TextRenderer::ascii);
     BOOST_REQUIRE(text->loaded());
 
-    const float a = text->width("a");
-    BOOST_REQUIRE(a > 0.0f);
+    const float letterWidth = text->width("a");
+    BOOST_REQUIRE(letterWidth > 0.0f);
 
     BOOST_CHECK_EQUAL(text->width(eAcute), 0.0f);
     BOOST_CHECK_EQUAL(text->width(eAcute), 0.0f);
-    BOOST_CHECK_CLOSE(text->width(std::string("a") + eAcute), a, 0.01f);
+    BOOST_CHECK_CLOSE(text->width(std::string("a") + eAcute), letterWidth, 0.01f);
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(640, 480));

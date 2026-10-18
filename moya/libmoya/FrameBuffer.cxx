@@ -37,8 +37,8 @@ void FrameBuffer::allocate() {
     for (unsigned int i = 0; i < bucketColumns_; i++) {
         std::vector<reyes::Bucket> vb;
         for (unsigned int j = 0; j < bucketRows_; j++) {
-            const reyes::Bucket b;
-            vb.push_back(b);
+            const reyes::Bucket bucket;
+            vb.push_back(bucket);
         }
         buckets_.push_back(vb);
     }
@@ -91,14 +91,14 @@ void FrameBuffer::addPrimitive(const boost::shared_ptr<reyes::Primitive> & primi
     const float top = std::max(0.0f, min[1]);
 
     // the primitive goes in the bucket that holds the upper left corner of its bound
-    unsigned int i = static_cast<unsigned int>(left) / bucketSize_[0];
-    unsigned int j = static_cast<unsigned int>(top) / bucketSize_[1];
+    unsigned int column = static_cast<unsigned int>(left) / bucketSize_[0];
+    unsigned int row = static_cast<unsigned int>(top) / bucketSize_[1];
 
     // a corner past the right or bottom edge belongs to the last bucket on that axis
-    i = std::min(i, bucketColumns_ - 1);
-    j = std::min(j, bucketRows_ - 1);
+    column = std::min(column, bucketColumns_ - 1);
+    row = std::min(row, bucketRows_ - 1);
 
-    buckets_[i][j].addPrimitive(primitive);
+    buckets_[column][row].addPrimitive(primitive);
 }
 
 void FrameBuffer::render(RenderContext & rc) {

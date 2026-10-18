@@ -14,9 +14,9 @@
 
 namespace {
 
-bool near(const glm::vec3& a, const glm::vec3& b) {
+bool near(const glm::vec3& actual, const glm::vec3& expected) {
     const float tolerance = 0.0001f;
-    return glm::abs(a.x - b.x) < tolerance && glm::abs(a.y - b.y) < tolerance && glm::abs(a.z - b.z) < tolerance;
+    return glm::abs(actual.x - expected.x) < tolerance && glm::abs(actual.y - expected.y) < tolerance && glm::abs(actual.z - expected.z) < tolerance;
 }
 
 glm::vec3 apply(const glm::mat4& transform, const glm::vec3& point) {

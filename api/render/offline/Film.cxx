@@ -127,10 +127,10 @@ bool Film::depth(unsigned int column, unsigned int row, float * depth) const {
 void Film::resolve(FrameBuffer * frame, unsigned int colour, unsigned int coverage, int depth) const {
     for (unsigned int row = 0; row < height_ && row < frame->height(); row++) {
         for (unsigned int column = 0; column < width_ && column < frame->width(); column++) {
-            const glm::vec3 c = this->colour(column, row);
-            frame->value(colour, column, row, c.r);
-            frame->value(colour + 1, column, row, c.g);
-            frame->value(colour + 2, column, row, c.b);
+            const glm::vec3 rgb = this->colour(column, row);
+            frame->value(colour, column, row, rgb.r);
+            frame->value(colour + 1, column, row, rgb.g);
+            frame->value(colour + 2, column, row, rgb.b);
             frame->value(coverage, column, row, this->coverage(column, row));
             float nearest = 0.0f;
             if (depth >= 0 && this->depth(column, row, &nearest)) {

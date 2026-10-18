@@ -145,15 +145,15 @@ int TextureAtlas::fit(unsigned int index, const glm::uvec2& size) {
     }
     int y = node.y;
     int widthLeft = static_cast<int>(width);
-    unsigned int i = index;
+    unsigned int nodeIndex = index;
     while (widthLeft > 0) {
-        node = nodes_[i];
+        node = nodes_[nodeIndex];
         y = std::max(y, node.y);
         if ((y + height) > (height_ - 1)) {
             return -1;
         }
         widthLeft -= node.z;
-        ++i;
+        ++nodeIndex;
     }
     return y;
 }

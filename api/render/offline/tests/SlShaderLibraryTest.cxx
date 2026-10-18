@@ -157,9 +157,9 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_a_matrix_from_a_float_test) {
     BOOST_REQUIRE(shader->write(&machine));
     const int reg = shader->program().symbol("m");
     BOOST_REQUIRE(reg >= 0);
-    const v3d::render::offline::sl::runtime::Value & m = machine.value(reg);
+    const v3d::render::offline::sl::runtime::Value & matrix = machine.value(reg);
     for (unsigned int i = 0; i < 16; i++) {
-        BOOST_CHECK_EQUAL(m.component(0, i), i % 5 == 0 ? 2.0f : 0.0f);
+        BOOST_CHECK_EQUAL(matrix.component(0, i), i % 5 == 0 ? 2.0f : 0.0f);
     }
 
     std::remove("diagonal.sl");

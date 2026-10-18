@@ -30,7 +30,7 @@ class Vertex {
      * micropolygon, since a micropolygon shares its corners with its neighbours.
      */
     glm::vec3 color(void) const;
-    void color(const glm::vec3 & c);
+    void color(const glm::vec3 & colour);
     /**
      * Whether a colour was written. A vertex with no "Cs" of its own takes the colour that
      * was current when its primitive was added, and one with its own keeps it.

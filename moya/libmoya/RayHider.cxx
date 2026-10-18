@@ -43,11 +43,11 @@ class Spread {
         if (count_ < 2) {
             return false;
         }
-        const double n = static_cast<double>(count_);
-        const glm::dvec3 mean = sum_ / n;
-        const glm::dvec3 variance = (squares_ - mean * mean * n) / (n - 1.0);
+        const double samples = static_cast<double>(count_);
+        const glm::dvec3 mean = sum_ / samples;
+        const glm::dvec3 variance = (squares_ - mean * mean * samples) / (samples - 1.0);
         const double worst = std::max(variance.x, std::max(variance.y, variance.z));
-        return worst / n <= static_cast<double>(bound);
+        return worst / samples <= static_cast<double>(bound);
     }
 
  private:
@@ -68,23 +68,24 @@ void RayHider::camera(const Camera & camera) {
 }
 
 glm::vec3 RayHider::unproject(const glm::vec2 & raster, float z) const {
-    // a raster position is (m * p).xy / (m * p).w. With p's z fixed, the numerator and w are
-    // both linear in p's x and y, which gives two equations in two unknowns. Solving them at a
-    // depth keeps the answer clear of the projection's depth terms. RI's default clipping
-    // range makes those terms as badly conditioned as a float allows, so the whole matrix is
-    // not inverted
-    const glm::mat4x4 & m = camera_.toRaster;
-    const float a = m[0][0] - (raster.x * m[0][3]);
-    const float b = m[1][0] - (raster.x * m[1][3]);
-    const float c = m[0][1] - (raster.y * m[0][3]);
-    const float d = m[1][1] - (raster.y * m[1][3]);
-    const float e = (raster.x * ((m[2][3] * z) + m[3][3])) - ((m[2][0] * z) + m[3][0]);
-    const float f = (raster.y * ((m[2][3] * z) + m[3][3])) - ((m[2][1] * z) + m[3][1]);
-    const float determinant = (a * d) - (b * c);
+    // a raster position is (matrix * p).xy / (matrix * p).w. With p's z fixed, the numerator
+    // and w are both linear in p's x and y, which gives two equations in two unknowns. Solving
+    // them at a depth keeps the answer clear of the projection's depth terms. RI's default
+    // clipping range makes those terms as badly conditioned as a float allows, so the whole
+    // matrix is not inverted
+    const glm::mat4x4 & matrix = camera_.toRaster;
+    // the system is A (x, y) = b, where a row of A and of b is one raster coordinate's equation
+    const float a00 = matrix[0][0] - (raster.x * matrix[0][3]);
+    const float a01 = matrix[1][0] - (raster.x * matrix[1][3]);
+    const float a10 = matrix[0][1] - (raster.y * matrix[0][3]);
+    const float a11 = matrix[1][1] - (raster.y * matrix[1][3]);
+    const float b0 = (raster.x * ((matrix[2][3] * z) + matrix[3][3])) - ((matrix[2][0] * z) + matrix[3][0]);
+    const float b1 = (raster.y * ((matrix[2][3] * z) + matrix[3][3])) - ((matrix[2][1] * z) + matrix[3][1]);
+    const float determinant = (a00 * a11) - (a01 * a10);
     if (determinant == 0.0f) {
         return glm::vec3(0.0f, 0.0f, z);
     }
-    return glm::vec3(((e * d) - (b * f)) / determinant, ((a * f) - (e * c)) / determinant, z);
+    return glm::vec3(((b0 * a11) - (a01 * b1)) / determinant, ((a00 * b1) - (b0 * a10)) / determinant, z);
 }
 
 v3d::type::geometry::Ray RayHider::ray(const v3d::render::offline::Sampler::Sample & at,

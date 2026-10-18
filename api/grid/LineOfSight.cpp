@@ -26,8 +26,8 @@ int signOf(int value) {
  * inside it can be broken one way for one end and the other way for the other. Row before
  * column, to match the grid's own row major layout.
  **/
-bool precedes(TileCoord a, TileCoord b) {
-    return a.y != b.y ? a.y < b.y : a.x < b.x;
+bool precedes(TileCoord first, TileCoord second) {
+    return first.y != second.y ? first.y < second.y : first.x < second.x;
 }
 
 /**
@@ -49,10 +49,10 @@ struct Step {
  * Walk every tile the segment between two tile centres touches, from exclusive.
  *
  * Tiles are unit squares centred on their coordinate, so the boundaries the segment crosses
- * sit at half integers. After i steps along x and j along y, the segment meets the next x
- * boundary before the next y boundary exactly when ady * (2i + 1) < adx * (2j + 1) - integer
- * arithmetic throughout, so the tie is exact rather than a tolerance, and the tie is the
- * corner case.
+ * sit at half integers. After xSteps steps along x and ySteps along y, the segment meets the
+ * next x boundary before the next y boundary exactly when
+ * ady * (2 * xSteps + 1) < adx * (2 * ySteps + 1) - integer arithmetic throughout, so the tie
+ * is exact rather than a tolerance, and the tie is the corner case.
  *
  * @param onStep called for each tile entered; returning false stops the walk
  **/
@@ -64,28 +64,28 @@ void trace(TileCoord from, TileCoord to, OnStep onStep) {
     const std::int64_t adx = std::abs(to.x - from.x);
     const std::int64_t ady = std::abs(to.y - from.y);
 
-    auto at = [from, sx, sy](std::int64_t i, std::int64_t j) {
-        return TileCoord{ from.x + (sx * static_cast<int>(i)), from.y + (sy * static_cast<int>(j)) };
+    auto at = [from, sx, sy](std::int64_t alongX, std::int64_t alongY) {
+        return TileCoord{ from.x + (sx * static_cast<int>(alongX)), from.y + (sy * static_cast<int>(alongY)) };
     };
 
-    std::int64_t i = 0;
-    std::int64_t j = 0;
-    while (i != adx || j != ady) {
-        const std::int64_t boundary = (ady * ((2 * i) + 1)) - (adx * ((2 * j) + 1));
+    std::int64_t xSteps = 0;
+    std::int64_t ySteps = 0;
+    while (xSteps != adx || ySteps != ady) {
+        const std::int64_t boundary = (ady * ((2 * xSteps) + 1)) - (adx * ((2 * ySteps) + 1));
 
         Step step;
         if (boundary == 0) {
             step.diagonal = true;
-            step.corner = { at(i + 1, j), at(i, j + 1) };
-            ++i;
-            ++j;
+            step.corner = { at(xSteps + 1, ySteps), at(xSteps, ySteps + 1) };
+            ++xSteps;
+            ++ySteps;
         } else if (boundary < 0) {
-            ++i;
+            ++xSteps;
         } else {
-            ++j;
+            ++ySteps;
         }
 
-        step.tile = at(i, j);
+        step.tile = at(xSteps, ySteps);
         if (!onStep(step)) {
             return;
         }

@@ -21,8 +21,8 @@ constexpr float SMALLEST_TRIANGLE_AREA = 1.0e-8f;
  * The plane of a triangle, wound the way its corners are. A triangle with no area names no
  * plane and returns zero rather than normalising a zero vector.
  **/
-glm::vec3 plane(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c) {
-    const glm::vec3 across = glm::cross(b - a, c - a);
+glm::vec3 plane(const glm::vec3 & cornerA, const glm::vec3 & cornerB, const glm::vec3 & cornerC) {
+    const glm::vec3 across = glm::cross(cornerB - cornerA, cornerC - cornerA);
     const float area = glm::length(across);
     return area > SMALLEST_TRIANGLE_AREA ? across / area : glm::vec3(0.0f);
 }
@@ -65,21 +65,21 @@ glm::vec3 Triangle::shadingNormal(float u, float v) const {
     return length > 0.0f ? normal / length : geometric_;
 }
 
-void Triangle::st(const glm::vec2 & a, const glm::vec2 & b, const glm::vec2 & c) {
-    sta_ = a;
-    stb_ = b;
-    stc_ = c;
+void Triangle::st(const glm::vec2 & stA, const glm::vec2 & stB, const glm::vec2 & stC) {
+    sta_ = stA;
+    stb_ = stB;
+    stc_ = stC;
 }
 
 glm::vec2 Triangle::st(float u, float v) const {
     return sta_ * (1.0f - u - v) + stb_ * u + stc_ * v;
 }
 
-void Triangle::colours(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c) {
+void Triangle::colours(const glm::vec3 & colourA, const glm::vec3 & colourB, const glm::vec3 & colourC) {
     coloured_ = true;
-    ca_ = a;
-    cb_ = b;
-    cc_ = c;
+    ca_ = colourA;
+    cb_ = colourB;
+    cc_ = colourC;
 }
 
 glm::vec3 Triangle::colour(float u, float v) const {

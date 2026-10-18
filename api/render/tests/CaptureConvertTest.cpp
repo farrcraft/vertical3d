@@ -20,8 +20,8 @@ namespace {
 /**
  * @return one texel, in the order a copy off the chain leaves it
  **/
-std::vector<unsigned char> texel(unsigned char a, unsigned char b, unsigned char c, unsigned char d) {
-    return std::vector<unsigned char>{a, b, c, d};
+std::vector<unsigned char> texel(unsigned char first, unsigned char second, unsigned char third, unsigned char fourth) {
+    return std::vector<unsigned char>{first, second, third, fourth};
 }
 
 BOOST_AUTO_TEST_SUITE(capture_convert_test)

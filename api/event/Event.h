@@ -58,7 +58,7 @@ class Event {
      * The event's parameter. A binding may configure one, and a menu item carries its
      * value here; either way it reaches the handler as the event's data.
      **/
-    void data(const EventData &d);
+    void data(const EventData &payload);
     boost::optional<EventData> data() const;
 
     /**

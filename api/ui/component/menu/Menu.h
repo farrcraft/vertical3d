@@ -59,7 +59,7 @@ class Menu : public Component {
     size_t count() const;
 
     // use a [] operator to get individual items instead
-    boost::shared_ptr<Item> & operator[](size_t i);
+    boost::shared_ptr<Item> & operator[](size_t index);
 
     /**
       * Get the active Item from this menu
@@ -121,12 +121,12 @@ class Menu : public Component {
      * all the way to the lowest active submenu.  Level points to that menu.
      **/
     boost::shared_ptr<Menu> level() const;
-    void level(const boost::weak_ptr<Menu>& m);
+    void level(const boost::weak_ptr<Menu>& current);
 
     /**
      * Set this menu's parent if it is a submenu 
      **/
-    void parent(const boost::weak_ptr<Menu>& p);
+    void parent(const boost::weak_ptr<Menu>& parentMenu);
 
     /**
      * Send a menu item's bound event, carrying its value as event data when it has one.

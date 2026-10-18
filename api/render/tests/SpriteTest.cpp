@@ -33,8 +33,8 @@ constexpr glm::vec3 right(1.0f, 0.0f, 0.0f);
 constexpr glm::vec3 up(0.0f, 1.0f, 0.0f);
 constexpr glm::vec3 away(0.0f, 0.0f, 1.0f);
 
-bool same(const glm::vec3& a, const glm::vec3& b) {
-    return glm::all(glm::epsilonEqual(a, b, 0.0001f));
+bool same(const glm::vec3& first, const glm::vec3& second) {
+    return glm::all(glm::epsilonEqual(first, second, 0.0001f));
 }
 
 entt::entity place(entt::registry* registry, const glm::vec3& feet, const Sprite& sprite) {

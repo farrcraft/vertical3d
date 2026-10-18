@@ -21,14 +21,14 @@ namespace {
 /**
  * How many texels of an image are not the RGBA given.
  **/
-std::size_t mismatches(const boost::shared_ptr<v3d::image::Image>& image, unsigned char r, unsigned char g,
-    unsigned char b, unsigned char a) {
+std::size_t mismatches(const boost::shared_ptr<v3d::image::Image>& image, unsigned char red, unsigned char green,
+    unsigned char blue, unsigned char alpha) {
     const unsigned char* pixels = image->data();
     std::size_t count = 0;
     const std::size_t texels = static_cast<std::size_t>(image->width()) * image->height();
     for (std::size_t i = 0; i < texels; ++i) {
         const unsigned char* texel = pixels + (i * 4);
-        if (texel[0] != r || texel[1] != g || texel[2] != b || texel[3] != a) {
+        if (texel[0] != red || texel[1] != green || texel[2] != blue || texel[3] != alpha) {
             ++count;
         }
     }

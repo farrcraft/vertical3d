@@ -12,7 +12,7 @@ namespace v3d::brep {
 Vertex::Vertex() : edge_(static_cast<Index>(INVALID_ID)), selected_(false) {
 }
 
-Vertex::Vertex(const glm::vec3& p) : point_(p), edge_(static_cast<Index>(INVALID_ID)), selected_(false) {
+Vertex::Vertex(const glm::vec3& position) : point_(position), edge_(static_cast<Index>(INVALID_ID)), selected_(false) {
 }
 
 Vertex::~Vertex() {
@@ -38,16 +38,16 @@ Index Vertex::edge(void) const {
     return edge_;
 }
 
-void Vertex::edge(Index e) {
-    edge_ = e;
+void Vertex::edge(Index edgeIndex) {
+    edge_ = edgeIndex;
 }
 
 glm::vec3 Vertex::point(void) const {
     return point_;
 }
 
-void Vertex::point(const glm::vec3& p) {
-    point_ = p;
+void Vertex::point(const glm::vec3& position) {
+    point_ = position;
 }
 
 };  // namespace v3d::brep

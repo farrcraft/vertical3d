@@ -59,7 +59,7 @@ class Triangle final : public Primitive {
      * The texture coordinates at each corner, from a scene's varying "st". A triangle given
      * none has (0, 0), (1, 0) and (0, 1), so its s and t are its barycentric weights.
      **/
-    void st(const glm::vec2 & a, const glm::vec2 & b, const glm::vec2 & c);
+    void st(const glm::vec2 & stA, const glm::vec2 & stB, const glm::vec2 & stC);
     /** SL's s and t at a hit, weighted as shadingNormal() weighs the normals. **/
     glm::vec2 st(float u, float v) const;
 
@@ -67,7 +67,7 @@ class Triangle final : public Primitive {
      * A colour at each corner, from a scene's varying "Cs". A triangle given none is the one
      * colour it was built with.
      **/
-    void colours(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c);
+    void colours(const glm::vec3 & colourA, const glm::vec3 & colourB, const glm::vec3 & colourC);
     /** SL's Cs at a hit, weighted as shadingNormal() weighs the normals. **/
     glm::vec3 colour(float u, float v) const;
     using Primitive::colour;

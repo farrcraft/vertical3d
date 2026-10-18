@@ -29,19 +29,19 @@ namespace {
  **/
 constexpr float SMALLEST_SPANNED_AREA = 1.0e-8f;
 
-Vertex crossing(const Vertex & a, const Vertex & b, const glm::vec3 & hit);
+Vertex crossing(const Vertex & start, const Vertex & end, const glm::vec3 & hit);
 
 /**
  * Where an edge whose ends classify on opposite sides of a plane meets it. The two tests round
  * differently, so intersectEdge can find no meeting for an edge that ends a hair past the
  * plane. The edge then meets the plane at the end nearer to it.
  **/
-glm::vec3 meeting(const v3d::type::geometry::Plane & plane, const glm::vec3 & a, const glm::vec3 & b) {
+glm::vec3 meeting(const v3d::type::geometry::Plane & plane, const glm::vec3 & start, const glm::vec3 & end) {
     glm::vec3 hit;
-    if (plane.intersectEdge(a, b, &hit)) {
+    if (plane.intersectEdge(start, end, &hit)) {
         return hit;
     }
-    return std::abs(plane.signedDistance(a)) <= std::abs(plane.signedDistance(b)) ? a : b;
+    return std::abs(plane.signedDistance(start)) <= std::abs(plane.signedDistance(end)) ? start : end;
 }
 
 /**
@@ -119,26 +119,26 @@ void Polygon::clip(const v3d::type::geometry::Plane & plane) {
     std::vector<Vertex> clipped;
     Vertex s = vertices_[nverts - 1];  // start with last vertex
     for (size_t j = 0; j < nverts; j++) {
-        const Vertex p = vertices_[j];
+        const Vertex current = vertices_[j];
         /*
-            s is the previous vertex and p the current one.
-            case 1: s and p both inside.
-            case 2: s inside, p outside.
-            case 3: s and p both outside.
-            case 4: s outside, p inside.
+            s is the previous vertex.
+            case 1: s and current both inside.
+            case 2: s inside, current outside.
+            case 3: s and current both outside.
+            case 4: s outside, current inside.
         */
-        const bool pInside = plane.classify(p.point()) != v3d::type::geometry::Plane::NEGATIVE;
+        const bool currentInside = plane.classify(current.point()) != v3d::type::geometry::Plane::NEGATIVE;
         const bool sInside = plane.classify(s.point()) != v3d::type::geometry::Plane::NEGATIVE;
-        if (pInside) {  // cases 1 & 4
+        if (currentInside) {  // cases 1 & 4
             if (!sInside) {  // case 4
-                clipped.push_back(crossing(s, p, meeting(plane, s.point(), p.point())));
+                clipped.push_back(crossing(s, current, meeting(plane, s.point(), current.point())));
             }
-            clipped.push_back(p);
+            clipped.push_back(current);
         } else if (sInside) {  // case 2
-            clipped.push_back(crossing(s, p, meeting(plane, s.point(), p.point())));
+            clipped.push_back(crossing(s, current, meeting(plane, s.point(), current.point())));
         }
         // case 3: the entire edge is clipped
-        s = p;
+        s = current;
     }
 
     vertices_ = std::move(clipped);
@@ -189,17 +189,17 @@ Vertex carried(const Vertex & from) {
 }
 
 /**
- * The shading normal part of the way from a to b, as a unit vector. Two equal normals give
- * that normal back unchanged. Opposite normals meeting half way give zero, which names no
- * direction, so false is returned and the crossing is left without a normal of its own.
+ * The shading normal part of the way from one normal to another, as a unit vector. Two equal
+ * normals give that normal back unchanged. Opposite normals meeting half way give zero, which
+ * names no direction, so false is returned and the crossing is left without a normal of its own.
  **/
-bool between(const glm::vec3 & a, const glm::vec3 & b, float along, glm::vec3* normal) {
-    if (a == b) {
-        *normal = a;
+bool between(const glm::vec3 & from, const glm::vec3 & to, float along, glm::vec3* normal) {
+    if (from == to) {
+        *normal = from;
         return true;
     }
     // interpolating unit normals does not give a unit one back
-    const glm::vec3 mixed = a + (b - a) * along;
+    const glm::vec3 mixed = from + (to - from) * along;
     const float length = glm::length(mixed);
     if (!(length > 0.0f)) {
         return false;
@@ -213,47 +213,47 @@ bool between(const glm::vec3 & a, const glm::vec3 & b, float along, glm::vec3* n
  * far along the edge as the point is, each only when both ends of the edge have one. The
  * normal is renormalised.
  **/
-Vertex crossing(const Vertex & a, const Vertex & b, const glm::vec3 & hit) {
+Vertex crossing(const Vertex & start, const Vertex & end, const glm::vec3 & hit) {
     Vertex vert;
     vert.point(hit);
-    const float span = glm::length(b.point() - a.point());
-    const float along = span > 0.0f ? glm::length(hit - a.point()) / span : 0.0f;
-    if (a.hasColor() && b.hasColor()) {
-        vert.color(a.color() + (b.color() - a.color()) * along);
+    const float span = glm::length(end.point() - start.point());
+    const float along = span > 0.0f ? glm::length(hit - start.point()) / span : 0.0f;
+    if (start.hasColor() && end.hasColor()) {
+        vert.color(start.color() + (end.color() - start.color()) * along);
     }
     glm::vec3 normal(0.0f);
-    if (a.hasNormal() && b.hasNormal() && between(a.normal(), b.normal(), along, &normal)) {
+    if (start.hasNormal() && end.hasNormal() && between(start.normal(), end.normal(), along, &normal)) {
         vert.normal(normal);
     }
-    if (a.hasTexCoord() && b.hasTexCoord()) {
-        vert.st(a.st() + (b.st() - a.st()) * along);
+    if (start.hasTexCoord() && end.hasTexCoord()) {
+        vert.st(start.st() + (end.st() - start.st()) * along);
     }
     return vert;
 }
 
 /**
  * An edge that crosses the plane. hit is the vertex both halves come to share, so it goes
- * into each of them; which half keeps A and which keeps B follows the side A is on.
+ * into each of them; which half keeps start and which keeps end follows the side start is on.
  **/
-void addCrossingEdge(const Vertex& a, const Vertex& b, const glm::vec3& hit, int side,
+void addCrossingEdge(const Vertex& start, const Vertex& end, const glm::vec3& hit, int side,
     bool first, bool last, const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
     if (first) {
         if (side < 0) {
-            p1->addVertex(carried(a));
+            p1->addVertex(carried(start));
         } else {
-            p2->addVertex(carried(a));
+            p2->addVertex(carried(start));
         }
     }
 
-    const Vertex shared = crossing(a, b, hit);
+    const Vertex shared = crossing(start, end, hit);
     p1->addVertex(shared);
     p2->addVertex(shared);
 
     if (!last) {
         if (side < 0) {
-            p2->addVertex(carried(b));
+            p2->addVertex(carried(end));
         } else {
-            p1->addVertex(carried(b));
+            p1->addVertex(carried(end));
         }
     }
 }
@@ -261,17 +261,17 @@ void addCrossingEdge(const Vertex& a, const Vertex& b, const glm::vec3& hit, int
 /**
  * An edge wholly on one side of the plane, so both its vertices go to the same half.
  *
- * Only the first edge contributes its A and only a non-final edge contributes its B: every
- * other vertex is the B of the edge before it.
+ * Only the first edge contributes its start and only a non-final edge contributes its end:
+ * every other vertex is the end of the edge before it.
  **/
-void addWholeEdge(const Vertex& a, const Vertex& b, int side, bool first, bool last,
+void addWholeEdge(const Vertex& start, const Vertex& end, int side, bool first, bool last,
     const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
     const boost::shared_ptr<Polygon>& half = side <= 0 ? p1 : p2;
     if (first) {
-        half->addVertex(carried(a));
+        half->addVertex(carried(start));
     }
     if (!last) {
-        half->addVertex(carried(b));
+        half->addVertex(carried(end));
     }
 }
 
@@ -286,19 +286,19 @@ void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared
     glm::vec3 hit;
     for (unsigned int i = 0; i < vertices_.size(); i++) {
         const size_t vcount = vertices_.size();
-        const Vertex & a = vertices_[i];
-        const Vertex & b = i == (vcount - 1) ? vertices_[0] : vertices_[i + 1];
-        const int side = plane.classify(a.point());
+        const Vertex & start = vertices_[i];
+        const Vertex & end = i == (vcount - 1) ? vertices_[0] : vertices_[i + 1];
+        const int side = plane.classify(start.point());
         const bool first = (i == 0);
         const bool last = (i == (vcount - 1));
-        if (plane.intersectEdge(a.point(), b.point(), &hit)) {
-            addCrossingEdge(a, b, hit, side, first, last, p1, p2);
-        } else if (side != plane.classify(b.point())) {
+        if (plane.intersectEdge(start.point(), end.point(), &hit)) {
+            addCrossingEdge(start, end, hit, side, first, last, p1, p2);
+        } else if (side != plane.classify(end.point())) {
             // the two tests round differently, so an edge that ends a hair past the plane
             // still crosses it
-            addCrossingEdge(a, b, meeting(plane, a.point(), b.point()), side, first, last, p1, p2);
+            addCrossingEdge(start, end, meeting(plane, start.point(), end.point()), side, first, last, p1, p2);
         } else {
-            addWholeEdge(a, b, side, first, last, p1, p2);
+            addWholeEdge(start, end, side, first, last, p1, p2);
         }
     }
 }
@@ -315,8 +315,8 @@ void Polygon::split(RenderContext & rc) {
 
     // the plane of the polygon, and an edge in it: the normal of the first cutting plane is
     // perpendicular to both. A polygon with no plane, every vertex on one line, has no area
-    const glm::vec3 n = geometricNormal();
-    if (n == glm::vec3(0.0f)) {
+    const glm::vec3 surfaceNormal = geometricNormal();
+    if (surfaceNormal == glm::vec3(0.0f)) {
         return;
     }
     // the edge is taken from the first vertex that differs from the head. A repeated head
@@ -328,7 +328,7 @@ void Polygon::split(RenderContext & rc) {
 
     // the first cutting plane is perpendicular to the polygon's plane and parallel to the edge
     glm::vec3 pn;
-    pn = glm::normalize(glm::cross(n, v0));
+    pn = glm::normalize(glm::cross(surfaceNormal, v0));
     // both cutting planes pass through the centre of the bound
     v3d::type::geometry::AABBox bounds;
     glm::vec3 mp;
@@ -346,7 +346,7 @@ void Polygon::split(RenderContext & rc) {
     split(plane, p1, p2);
 
     // the second cutting plane is perpendicular to the polygon's plane and to the first
-    pn = glm::normalize(glm::cross(n, pn));
+    pn = glm::normalize(glm::cross(surfaceNormal, pn));
 
     plane.calculate(pn, pop);
 

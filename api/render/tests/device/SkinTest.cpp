@@ -165,10 +165,10 @@ std::size_t covered(v3d::image::Image& picture) {
     return count;
 }
 
-std::size_t differing(v3d::image::Image& a, v3d::image::Image& b) {
+std::size_t differing(v3d::image::Image& first, v3d::image::Image& second) {
     std::size_t count = 0;
-    for (std::size_t texel = 0; texel < static_cast<std::size_t>(a.width()) * a.height(); texel++) {
-        if (std::memcmp(a.data() + (texel * 4), b.data() + (texel * 4), 4) != 0) {
+    for (std::size_t texel = 0; texel < static_cast<std::size_t>(first.width()) * first.height(); texel++) {
+        if (std::memcmp(first.data() + (texel * 4), second.data() + (texel * 4), 4) != 0) {
             count++;
         }
     }

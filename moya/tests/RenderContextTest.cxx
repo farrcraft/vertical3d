@@ -274,10 +274,10 @@ BOOST_AUTO_TEST_CASE(render_context_normal_inverse_transpose_test) {
     }
 
     // and the transformed vertices agree: the plane the normal names is the plane they are in
-    const glm::vec3 a = polygon->vertex(0).point();
-    const glm::vec3 b = polygon->vertex(1).point();
-    const glm::vec3 c = polygon->vertex(2).point();
-    const glm::vec3 measured = glm::normalize(glm::cross(b - a, c - a));
+    const glm::vec3 p0 = polygon->vertex(0).point();
+    const glm::vec3 p1 = polygon->vertex(1).point();
+    const glm::vec3 p2 = polygon->vertex(2).point();
+    const glm::vec3 measured = glm::normalize(glm::cross(p1 - p0, p2 - p0));
     BOOST_TEST(measured.x == expected.x, boost::test_tools::tolerance(0.0001f));
     BOOST_TEST(measured.y == expected.y, boost::test_tools::tolerance(0.0001f));
 }

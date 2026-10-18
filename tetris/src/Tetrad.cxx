@@ -91,8 +91,8 @@ void Tetrad::normalize(ShapeInfo * shape) {
     memcpy(shape->layout_, shifted, sizeof(shifted));
 }
 
-void Tetrad::position(PositionType p) {
-    position_ = p;
+void Tetrad::position(PositionType newPosition) {
+    position_ = newPosition;
 }
 
 Tetrad::PositionType Tetrad::position() const {
@@ -103,8 +103,8 @@ unsigned int Tetrad::orientation() const {
     return orientation_;
 }
 
-void Tetrad::orientation(unsigned int o) {
-    orientation_ = o;
+void Tetrad::orientation(unsigned int newOrientation) {
+    orientation_ = newOrientation;
 }
 
 const Tetrad::ShapeInfo & Tetrad::shape() const {

@@ -174,9 +174,9 @@ void Camera::perspective(const Lens& lens) {
     // Construct a projection matrix based on the horizontal field of view
     // 'fovx' rather than the more traditional vertical field of view 'fovy'.
 
-    const float e = 1.0f / tanf(glm::radians(fovx) / 2.0f);
+    const float focal = 1.0f / tanf(glm::radians(fovx) / 2.0f);
     const float aspectInv = 1.0f / aspect;
-    const float fovy = 2.0f * atanf(aspectInv / e);
+    const float fovy = 2.0f * atanf(aspectInv / focal);
     const float xScale = 1.0f / tanf(0.5f * fovy);
     const float yScale = xScale / aspectInv;
 

@@ -296,10 +296,10 @@ BOOST_AUTO_TEST_CASE(a_source_released_twice_hands_its_set_back_once) {
 
     const MaterialHandle first = copy.source({texture});
     const MaterialHandle second = copy.source({texture});
-    const v3d::render::realtime::vulkan::pipeline::Material* a = headless.context->resources()->material(first);
-    const v3d::render::realtime::vulkan::pipeline::Material* b = headless.context->resources()->material(second);
-    BOOST_REQUIRE(a != nullptr && b != nullptr);
-    BOOST_CHECK(a->set != b->set);
+    const v3d::render::realtime::vulkan::pipeline::Material* firstMaterial = headless.context->resources()->material(first);
+    const v3d::render::realtime::vulkan::pipeline::Material* secondMaterial = headless.context->resources()->material(second);
+    BOOST_REQUIRE(firstMaterial != nullptr && secondMaterial != nullptr);
+    BOOST_CHECK(firstMaterial->set != secondMaterial->set);
     BOOST_CHECK(copy.release(first));
     BOOST_CHECK(copy.release(second));
     BOOST_CHECK(headless.silent());

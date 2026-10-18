@@ -125,17 +125,17 @@ bool Ray::intersects(const AABBox& box, float* distance) const {
 
 /**
  **/
-bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance) const {
-    return intersects(a, b, c, distance, nullptr);
+bool Ray::intersects(const glm::vec3& vertexA, const glm::vec3& vertexB, const glm::vec3& vertexC, float* distance) const {
+    return intersects(vertexA, vertexB, vertexC, distance, nullptr);
 }
 
-bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance,
+bool Ray::intersects(const glm::vec3& vertexA, const glm::vec3& vertexB, const glm::vec3& vertexC, float* distance,
     glm::vec2* weights) const {
     if (!finite(origin_, direction_)) {
         return false;
     }
-    const glm::vec3 ab = b - a;
-    const glm::vec3 ac = c - a;
+    const glm::vec3 ab = vertexB - vertexA;
+    const glm::vec3 ac = vertexC - vertexA;
     const glm::vec3 perpendicular = glm::cross(direction_, ac);
     const float determinant = glm::dot(ab, perpendicular);
 
@@ -146,7 +146,7 @@ bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c,
     }
 
     const float inverse = 1.0f / determinant;
-    const glm::vec3 offset = origin_ - a;
+    const glm::vec3 offset = origin_ - vertexA;
     const float weightB = glm::dot(offset, perpendicular) * inverse;
     if (weightB < 0.0f || weightB > 1.0f) {
         return false;

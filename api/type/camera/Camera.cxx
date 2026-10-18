@@ -36,23 +36,23 @@ takes a screen space coordinate and the viewport dimensions
 and returns the world space coordinate
 */
 glm::vec3 Camera::unproject(const glm::vec3& point, const int viewport[4]) const {
-    glm::vec4 p;
+    glm::vec4 ndc;
     // normalize point to range [-1, 1]
-    p[0] = ((point[0] - static_cast<float>(viewport[0])) * 2.0f / static_cast<float>(viewport[2])) - 1.0f;
+    ndc[0] = ((point[0] - static_cast<float>(viewport[0])) * 2.0f / static_cast<float>(viewport[2])) - 1.0f;
     // clip space points y downward, the same way a screen coordinate does
-    p[1] = ((point[1] - static_cast<float>(viewport[1])) * 2.0f / static_cast<float>(viewport[3])) - 1.0f;
+    ndc[1] = ((point[1] - static_cast<float>(viewport[1])) * 2.0f / static_cast<float>(viewport[3])) - 1.0f;
     // depth is already the [0, 1] the projection wrote
-    p[2] = point[2];
-    p[3] = 1.0f;
+    ndc[2] = point[2];
+    ndc[3] = 1.0f;
 
     // get inverse transformation matrix
-    glm::mat4x4 m;
+    glm::mat4x4 transform;
     glm::mat4x4 inv;
-    m = projection() * view();
-    inv = glm::inverse(m);
-    const float w = (inv[0][3] * p[0]) + (inv[1][3] * p[1]) + (inv[2][3] * p[2]) + inv[3][3];
+    transform = projection() * view();
+    inv = glm::inverse(transform);
+    const float w = (inv[0][3] * ndc[0]) + (inv[1][3] * ndc[1]) + (inv[2][3] * ndc[2]) + inv[3][3];
 
-    return ((inv * p) / w);
+    return ((inv * ndc) / w);
 }
 
 /*
@@ -61,20 +61,20 @@ takes a world space coordinate and the viewport dimensions
 returns the screen space coordinate
 */
 glm::vec3 Camera::project(const glm::vec3& point, const int viewport[4]) const {
-    glm::vec4 p;
-    p = view() * glm::vec4(point, 1.0f);
-    p = projection() * p;
+    glm::vec4 projected;
+    projected = view() * glm::vec4(point, 1.0f);
+    projected = projection() * projected;
 
     // the perspective divide. An orthographic projection leaves w at one
-    if (p[3] != 0.0f) {
-        p /= p[3];
+    if (projected[3] != 0.0f) {
+        projected /= projected[3];
     }
 
-    p[0] = static_cast<float>(viewport[0]) + ((1.0f + p[0]) * static_cast<float>(viewport[2]) / 2.0f);
+    projected[0] = static_cast<float>(viewport[0]) + ((1.0f + projected[0]) * static_cast<float>(viewport[2]) / 2.0f);
     // clip space y already points down, so this is a screen coordinate
-    p[1] = static_cast<float>(viewport[1]) + ((1.0f + p[1]) * static_cast<float>(viewport[3]) / 2.0f);
+    projected[1] = static_cast<float>(viewport[1]) + ((1.0f + projected[1]) * static_cast<float>(viewport[3]) / 2.0f);
 
-    return p;
+    return projected;
 }
 
 std::optional<glm::vec3> Camera::screenPoint(const glm::vec3& point, const int viewport[4]) const {
@@ -130,11 +130,11 @@ void Camera::createProjection() {  // active scene bound
 
             x = near / xmax, the half width of the near plane
             y = near / ymax
-            C = far / (far - near)
-            D = -(far * near) / (far - near)
+            C = depthScale = far / (far - near)
+            D = depthOffset = -(far * near) / (far - near)
 
-            C and D put the near plane at depth zero and the far one at depth one; the
-            negated y is the flip into vulkan's downward clip space.
+            depthScale and depthOffset put the near plane at depth zero and the far one at depth
+            one; the negated y is the flip into vulkan's downward clip space.
         */
         const float near = profile_.clipping()[0];
         const float far = profile_.clipping()[1];
@@ -143,8 +143,8 @@ void Camera::createProjection() {  // active scene bound
 
         const float x = near / xmax;
         const float y = near / ymax;
-        const float C = far / (far - near);
-        const float D = -(far * near) / (far - near);
+        const float depthScale = far / (far - near);
+        const float depthOffset = -(far * near) / (far - near);
 
         projection_[0][0] = x;
         projection_[1][0] = 0.0f;
@@ -156,8 +156,8 @@ void Camera::createProjection() {  // active scene bound
         projection_[3][1] = 0.0f;
         projection_[0][2] = 0.0f;
         projection_[1][2] = 0.0f;
-        projection_[2][2] = C;
-        projection_[3][2] = D;
+        projection_[2][2] = depthScale;
+        projection_[3][2] = depthOffset;
         projection_[0][3] = 0.0f;
         projection_[1][3] = 0.0f;
         // w is the view z, because the camera looks along +z
@@ -213,13 +213,13 @@ void Camera::createView() {
     // a world point is translated to the eye and then rotated into the camera's axes.
     // The rotation applied is the profile's inverse, which for a pure rotation is its
     // transpose, and it has to come after the translation or it turns the eye offset too
-    const glm::vec3 e = -profile_.eye();
+    const glm::vec3 eyeOffset = -profile_.eye();
     // the basis lookat() built when it is still the rotation in force, and the rotation
     // cast back to a matrix when anything else has set it since. The two agree to about
     // 2e-6 of an element; the cached one is the same arithmetic glm::lookAt does, so a
     // view built through lookat() matches one built through glm::lookAt exactly
     view_ = glm::transpose(profile_.orientation());
-    view_ = glm::translate(view_, e);
+    view_ = glm::translate(view_, eyeOffset);
     if (profile_.hand() == Profile::Hand::DirectionCrossUp) {
         // the mirrored basis is the rotation with view x negated. A quaternion cannot carry
         // a mirror, so the negation is applied here. Applied on the left, so it mirrors the
@@ -251,8 +251,8 @@ void Camera::tilt(float angle) {
     dolly, truck, pedestal are types of translations with special restrictions
     dolly - same as pedestal but use direction vector instead of up vector
 */
-void Camera::dolly(float d) {
-    profile_.eye(profile_.eye() + profile_.direction() * d);
+void Camera::dolly(float distance) {
+    profile_.eye(profile_.eye() + profile_.direction() * distance);
 }
 
 /*

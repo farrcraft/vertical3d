@@ -261,12 +261,12 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_is_repeatable_test) {
     adaptive(second);
     second.render();
 
-    const v3d::render::offline::FrameBuffer & a = *first.framebuffer()->planes();
-    const v3d::render::offline::FrameBuffer & b = *second.framebuffer()->planes();
-    for (unsigned int plane = 0; plane < a.planes(); plane++) {
+    const v3d::render::offline::FrameBuffer & firstImage = *first.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & secondImage = *second.framebuffer()->planes();
+    for (unsigned int plane = 0; plane < firstImage.planes(); plane++) {
         for (unsigned int row = 0; row < SIZE; row++) {
             for (unsigned int column = 0; column < SIZE; column++) {
-                BOOST_REQUIRE_EQUAL(a.value(plane, column, row), b.value(plane, column, row));
+                BOOST_REQUIRE_EQUAL(firstImage.value(plane, column, row), secondImage.value(plane, column, row));
             }
         }
     }

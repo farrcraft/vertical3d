@@ -41,10 +41,10 @@ const uint32_t height = 16;
  * A texture that is one flat colour, so that wherever and however it is sampled what reaches
  * the target is that colour exactly, on any conformant driver.
  **/
-TextureHandle flat(v3d::test::Headless* headless, unsigned char r, unsigned char g, unsigned char b) {
+TextureHandle flat(v3d::test::Headless* headless, unsigned char red, unsigned char green, unsigned char blue) {
     std::vector<unsigned char> pixels;
     for (int texel = 0; texel < 4 * 4; texel++) {
-        pixels.insert(pixels.end(), {r, g, b, 0xFF});
+        pixels.insert(pixels.end(), {red, green, blue, 0xFF});
     }
     return headless->context->textures()->texture(pixels.data(), 4, 4, 4);
 }

@@ -239,17 +239,17 @@ Reader::Result Reader::namedRequest(const std::string & name, Lexer * lexer, Han
  * Reads the RI options: what the picture is and what the scene calls things.
  **/
 Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float a = 0.0f;
-    float b = 0.0f;
-    float c = 0.0f;
+    float arg1 = 0.0f;
+    float arg2 = 0.0f;
+    float arg3 = 0.0f;
     std::string first;
     std::string second;
 
     if (name == "version") {
-        if (!number(lexer, &a)) {
+        if (!number(lexer, &arg1)) {
             return Result::Failed;
         }
-        handler->version(a);
+        handler->version(arg1);
         return Result::Handled;
     }
     if (name == "Declare") {
@@ -263,19 +263,19 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
         return Result::Handled;
     }
     if (name == "Format") {
-        if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c)) {
+        if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3)) {
             return Result::Failed;
         }
         // a side formatSide() refuses skips the request. A side of zero or less arrives as 0,
         // which asks for the renderer's default. An aspect that is not a positive finite number
         // asks for the device's own, which is square pixels.
-        const std::optional<uint32_t> width = formatSide(a);
-        const std::optional<uint32_t> height = formatSide(b);
+        const std::optional<uint32_t> width = formatSide(arg1);
+        const std::optional<uint32_t> height = formatSide(arg2);
         if (!width || !height) {
-            logger_->get()->warn("RIB Format {} {} {} is not a picture size and was skipped", a, b, c);
+            logger_->get()->warn("RIB Format {} {} {} is not a picture size and was skipped", arg1, arg2, arg3);
             return Result::Handled;
         }
-        handler->format({.width = *width, .height = *height, .pixelAspect = c > 0.0f && std::isfinite(c) ? c : 1.0f});
+        handler->format({.width = *width, .height = *height, .pixelAspect = arg3 > 0.0f && std::isfinite(arg3) ? arg3 : 1.0f});
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -285,37 +285,37 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
  * Reads the camera: what the projection is and what of it reaches the picture.
  **/
 Reader::Result Reader::cameraRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float a = 0.0f;
-    float b = 0.0f;
-    float c = 0.0f;
-    float d = 0.0f;
+    float arg1 = 0.0f;
+    float arg2 = 0.0f;
+    float arg3 = 0.0f;
+    float arg4 = 0.0f;
 
     if (name == "FrameAspectRatio") {
-        if (!number(lexer, &a)) {
+        if (!number(lexer, &arg1)) {
             return Result::Failed;
         }
-        handler->frameAspectRatio(a);
+        handler->frameAspectRatio(arg1);
         return Result::Handled;
     }
     if (name == "ScreenWindow") {
-        if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c) || !number(lexer, &d)) {
+        if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3) || !number(lexer, &arg4)) {
             return Result::Failed;
         }
-        handler->screenWindow({.left = a, .right = b, .bottom = c, .top = d});
+        handler->screenWindow({.left = arg1, .right = arg2, .bottom = arg3, .top = arg4});
         return Result::Handled;
     }
     if (name == "CropWindow") {
-        if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c) || !number(lexer, &d)) {
+        if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3) || !number(lexer, &arg4)) {
             return Result::Failed;
         }
-        handler->cropWindow({.xmin = a, .xmax = b, .ymin = c, .ymax = d});
+        handler->cropWindow({.xmin = arg1, .xmax = arg2, .ymin = arg3, .ymax = arg4});
         return Result::Handled;
     }
     if (name == "Clipping") {
-        if (!number(lexer, &a) || !number(lexer, &b)) {
+        if (!number(lexer, &arg1) || !number(lexer, &arg2)) {
             return Result::Failed;
         }
-        handler->clipping({.hither = a, .yon = b});
+        handler->clipping({.hither = arg1, .yon = arg2});
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -325,7 +325,7 @@ Reader::Result Reader::cameraRequest(const std::string & name, Lexer * lexer, Ha
  * Reads where the picture goes and the frame it belongs to.
  **/
 Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float a = 0.0f;
+    float arg1 = 0.0f;
     std::string first;
     std::string second;
     std::string third;
@@ -342,12 +342,12 @@ Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, H
         return Result::Handled;
     }
     if (name == "FrameBegin") {
-        if (!number(lexer, &a)) {
+        if (!number(lexer, &arg1)) {
             return Result::Failed;
         }
-        const std::optional<int32_t> frame = v3d::type::toInteger(a, {.minimum = -2000000000, .maximum = 2000000000});
+        const std::optional<int32_t> frame = v3d::type::toInteger(arg1, {.minimum = -2000000000, .maximum = 2000000000});
         if (!frame) {
-            logger_->get()->warn("RIB FrameBegin {} is not a frame number and was skipped", a);
+            logger_->get()->warn("RIB FrameBegin {} is not a frame number and was skipped", arg1);
             return Result::Handled;
         }
         handler->frameBegin(*frame);
@@ -364,9 +364,9 @@ Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, H
  * Reads the lens and the shutter: the depth of field, and when the shutter opens and closes.
  **/
 Reader::Result Reader::lensRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float a = 0.0f;
-    float b = 0.0f;
-    float c = 0.0f;
+    float arg1 = 0.0f;
+    float arg2 = 0.0f;
+    float arg3 = 0.0f;
 
     if (name == "DepthOfField") {
         // the form with no arguments sets a pinhole
@@ -374,17 +374,17 @@ Reader::Result Reader::lensRequest(const std::string & name, Lexer * lexer, Hand
             handler->depthOfField({.fstop = std::numeric_limits<float>::infinity(), .focalLength = 0.0f, .focalDistance = 0.0f});
             return Result::Handled;
         }
-        if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c)) {
+        if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3)) {
             return Result::Failed;
         }
-        handler->depthOfField({.fstop = a, .focalLength = b, .focalDistance = c});
+        handler->depthOfField({.fstop = arg1, .focalLength = arg2, .focalDistance = arg3});
         return Result::Handled;
     }
     if (name == "Shutter") {
-        if (!number(lexer, &a) || !number(lexer, &b)) {
+        if (!number(lexer, &arg1) || !number(lexer, &arg2)) {
             return Result::Failed;
         }
-        handler->shutter({.open = a, .close = b});
+        handler->shutter({.open = arg1, .close = arg2});
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -394,19 +394,19 @@ Reader::Result Reader::lensRequest(const std::string & name, Lexer * lexer, Hand
  * Reads how a pixel is sampled and filtered.
  **/
 Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float a = 0.0f;
-    float b = 0.0f;
+    float arg1 = 0.0f;
+    float arg2 = 0.0f;
     std::string first;
 
     if (name == "PixelSamples") {
-        if (!number(lexer, &a) || !number(lexer, &b)) {
+        if (!number(lexer, &arg1) || !number(lexer, &arg2)) {
             return Result::Failed;
         }
-        handler->pixelSamples(glm::uvec2(sampleCount(a), sampleCount(b)));
+        handler->pixelSamples(glm::uvec2(sampleCount(arg1), sampleCount(arg2)));
         return Result::Handled;
     }
     if (name == "PixelFilter") {
-        if (!text(lexer, &first) || !number(lexer, &a) || !number(lexer, &b)) {
+        if (!text(lexer, &first) || !number(lexer, &arg1) || !number(lexer, &arg2)) {
             return Result::Failed;
         }
         Filter filter = Filter::Gaussian;
@@ -418,18 +418,18 @@ Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Ha
             }
             return Result::Handled;
         }
-        if (!filterWidth(glm::vec2(a, b))) {
-            logger_->get()->warn("RIB PixelFilter width {} {} is not a width and was skipped", a, b);
+        if (!filterWidth(glm::vec2(arg1, arg2))) {
+            logger_->get()->warn("RIB PixelFilter width {} {} is not a width and was skipped", arg1, arg2);
             return Result::Handled;
         }
-        handler->pixelFilter(filter, a, b);
+        handler->pixelFilter(filter, arg1, arg2);
         return Result::Handled;
     }
     if (name == "PixelVariance") {
-        if (!number(lexer, &a)) {
+        if (!number(lexer, &arg1)) {
             return Result::Failed;
         }
-        handler->pixelVariance(a);
+        handler->pixelVariance(arg1);
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -473,7 +473,7 @@ Reader::Result Reader::blockRequest(const std::string & name, Lexer * lexer, Han
  * Reads the current transformation.
  **/
 Reader::Result Reader::transformRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    glm::mat4x4 m(1.0f);
+    glm::mat4x4 transformation(1.0f);
     std::vector<float> triple;
 
     if (name == "Identity") {
@@ -481,17 +481,17 @@ Reader::Result Reader::transformRequest(const std::string & name, Lexer * lexer,
         return Result::Handled;
     }
     if (name == "Transform") {
-        if (!matrix(lexer, &m)) {
+        if (!matrix(lexer, &transformation)) {
             return Result::Failed;
         }
-        handler->transform(m);
+        handler->transform(transformation);
         return Result::Handled;
     }
     if (name == "ConcatTransform") {
-        if (!matrix(lexer, &m)) {
+        if (!matrix(lexer, &transformation)) {
             return Result::Failed;
         }
-        handler->concatTransform(m);
+        handler->concatTransform(transformation);
         return Result::Handled;
     }
     if (name == "Translate") {
@@ -554,7 +554,7 @@ Reader::Result Reader::motionRequest(const std::string & name, Lexer * lexer, Ha
  * Reads the attributes a primitive is submitted under.
  **/
 Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float a = 0.0f;
+    float arg1 = 0.0f;
     std::vector<float> triple;
 
     if (name == "Color") {
@@ -572,10 +572,10 @@ Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer,
         return Result::Handled;
     }
     if (name == "ShadingRate") {
-        if (!number(lexer, &a)) {
+        if (!number(lexer, &arg1)) {
             return Result::Failed;
         }
-        handler->shadingRate(a);
+        handler->shadingRate(arg1);
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -646,10 +646,10 @@ bool Reader::handle(Lexer * lexer, std::string * value) {
  * Reads the geometry.
  **/
 Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float a = 0.0f;
-    float b = 0.0f;
-    float c = 0.0f;
-    float d = 0.0f;
+    float arg1 = 0.0f;
+    float arg2 = 0.0f;
+    float arg3 = 0.0f;
+    float arg4 = 0.0f;
     ParameterList list;
 
     if (name == "Polygon") {
@@ -677,13 +677,13 @@ Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer,
         return Result::Handled;
     }
     if (name == "Sphere") {
-        if (!number(lexer, &a) || !number(lexer, &b) || !number(lexer, &c) || !number(lexer, &d)) {
+        if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3) || !number(lexer, &arg4)) {
             return Result::Failed;
         }
         if (!parameters(lexer, 1, &list)) {
             return Result::Failed;
         }
-        handler->sphere({.radius = a, .zmin = b, .zmax = c, .thetamax = d}, list);
+        handler->sphere({.radius = arg1, .zmin = arg2, .zmax = arg3, .thetamax = arg4}, list);
         return Result::Handled;
     }
     return Result::Unhandled;

@@ -41,7 +41,7 @@ class Characters final {
      * The stream's own putback is not used because it fails once the stream has reached its
      * end. A lexer that looks one character past a trailing character reaches that state.
      **/
-    void unget(int c);
+    void unget(int character);
 
     /** The line of the last character consumed, counting from one. **/
     unsigned int line() const;
@@ -59,11 +59,11 @@ class Characters final {
      **/
     bool quoted(bool lineEnds, std::string* text);
 
-    static bool digit(int c);
-    static bool octal(int c);
+    static bool digit(int character);
+    static bool octal(int character);
     /** A letter or an underscore: the characters a name may start with. **/
-    static bool alpha(int c);
-    static bool space(int c);
+    static bool alpha(int character);
+    static bool space(int character);
 
     /**
      * Formats a position as " at line 3, column 7". Every lexer and parser error message ends

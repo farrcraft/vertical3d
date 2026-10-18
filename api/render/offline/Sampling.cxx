@@ -17,19 +17,20 @@ namespace v3d::render::offline {
 
 namespace {
 
-/** The coefficients of a cubic in r, of r^3, r^2, r and 1 in turn. **/
+/** The coefficients of a cubic in the radius, of radius^3, radius^2, radius and 1 in turn. **/
 typedef std::array<float, 4> Cubic;
 
 /**
- * The two pieces of the Catmull-Rom kernel, doubled: one for r under one, and one for r from
- * one to two. Doubling scales every weight alike, and the film divides by the total weight.
+ * The two pieces of the Catmull-Rom kernel, doubled: one for a radius under one, and one for a
+ * radius from one to two. Doubling scales every weight alike, and the film divides by the total
+ * weight.
  **/
 constexpr Cubic CATMULL_ROM_INNER{3.0f, -5.0f, 0.0f, 2.0f};
 constexpr Cubic CATMULL_ROM_OUTER{-1.0f, 5.0f, -8.0f, 4.0f};
 
-/** A cubic at r, given r and its square. **/
-float evaluate(const Cubic & c, float r, float r2) {
-    return (c[0] * r * r2) + (c[1] * r2) + (c[2] * r) + c[3];
+/** A cubic at a radius, given the radius and its square. **/
+float evaluate(const Cubic & cubic, float radius, float radiusSquared) {
+    return (cubic[0] * radius * radiusSquared) + (cubic[1] * radiusSquared) + (cubic[2] * radius) + cubic[3];
 }
 
 };  // namespace
@@ -65,15 +66,15 @@ float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width) {
         // radial and not scaled by the width. The kernel reaches zero two pixels out, so a
         // width under four cuts it off at the box tested above, which is RI's rule for every
         // filter
-        const float r2 = (offset.x * offset.x) + (offset.y * offset.y);
-        const float r = std::sqrt(r2);
-        if (r >= 2.0f) {
+        const float radiusSquared = (offset.x * offset.x) + (offset.y * offset.y);
+        const float radius = std::sqrt(radiusSquared);
+        if (radius >= 2.0f) {
             return 0.0f;
         }
-        if (r < 1.0f) {
-            return evaluate(CATMULL_ROM_INNER, r, r2);
+        if (radius < 1.0f) {
+            return evaluate(CATMULL_ROM_INNER, radius, radiusSquared);
         }
-        return evaluate(CATMULL_ROM_OUTER, r, r2);
+        return evaluate(CATMULL_ROM_OUTER, radius, radiusSquared);
     }
     case Filter::Gaussian: {
         // scaled so that the edge of the width is two standard deviations out

@@ -78,19 +78,19 @@ boost::shared_ptr<v3d::asset::Manager> prepare(const std::vector<std::string>& m
  * Whether two loads of one picture decoded to the same pixels.
  **/
 bool same(const boost::shared_ptr<v3d::asset::Asset>& expected, const boost::shared_ptr<v3d::asset::Asset>& actual) {
-    const auto a = boost::dynamic_pointer_cast<v3d::asset::media::kind::Image>(expected);
-    const auto b = boost::dynamic_pointer_cast<v3d::asset::media::kind::Image>(actual);
-    if (a && b) {
-        return a->image() && b->image() && v3d::image::compare(*a->image(), *b->image(), 0).match;
+    const auto expectedImage = boost::dynamic_pointer_cast<v3d::asset::media::kind::Image>(expected);
+    const auto actualImage = boost::dynamic_pointer_cast<v3d::asset::media::kind::Image>(actual);
+    if (expectedImage && actualImage) {
+        return expectedImage->image() && actualImage->image() && v3d::image::compare(*expectedImage->image(), *actualImage->image(), 0).match;
     }
 
-    const auto c = boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(expected);
-    const auto d = boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(actual);
-    if (!c || !d || !c->model() || !d->model()) {
+    const auto expectedModel = boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(expected);
+    const auto actualModel = boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(actual);
+    if (!expectedModel || !actualModel || !expectedModel->model() || !actualModel->model()) {
         return false;
     }
-    const v3d::type::Model& left = *c->model();
-    const v3d::type::Model& right = *d->model();
+    const v3d::type::Model& left = *expectedModel->model();
+    const v3d::type::Model& right = *actualModel->model();
     if (left.vertices().size() != right.vertices().size() || left.indices() != right.indices() ||
         left.parts().size() != right.parts().size() || left.materials().size() != right.materials().size()) {
         return false;
@@ -100,12 +100,12 @@ bool same(const boost::shared_ptr<v3d::asset::Asset>& expected, const boost::sha
         return false;
     }
     for (std::size_t material = 0; material < left.materials().size(); material++) {
-        const boost::shared_ptr<v3d::image::Image> e = c->baseColourImage(material);
-        const boost::shared_ptr<v3d::image::Image> f = d->baseColourImage(material);
-        if (static_cast<bool>(e) != static_cast<bool>(f)) {
+        const boost::shared_ptr<v3d::image::Image> expectedTexture = expectedModel->baseColourImage(material);
+        const boost::shared_ptr<v3d::image::Image> actualTexture = actualModel->baseColourImage(material);
+        if (static_cast<bool>(expectedTexture) != static_cast<bool>(actualTexture)) {
             return false;
         }
-        if (e && !v3d::image::compare(*e, *f, 0).match) {
+        if (expectedTexture && !v3d::image::compare(*expectedTexture, *actualTexture, 0).match) {
             return false;
         }
     }

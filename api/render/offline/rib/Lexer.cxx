@@ -58,10 +58,10 @@ Lexer::Lexer(std::istream & stream) : in_(stream) {
 
 void Lexer::skipSpace() {
     for (;;) {
-        const int c = in_.look();
-        if (Characters::space(c)) {
+        const int character = in_.look();
+        if (Characters::space(character)) {
             in_.get();
-        } else if (c == '#') {
+        } else if (character == '#') {
             while (in_.look() != Characters::END && in_.look() != '\n') {
                 in_.get();
             }
@@ -135,29 +135,29 @@ Token Lexer::scan() {
 
     const unsigned int line = in_.line();
     const unsigned int column = in_.column() + 1;
-    const int c = in_.look();
-    if (c == Characters::END) {
+    const int character = in_.look();
+    if (character == Characters::END) {
         return Token(Token::Kind::END, {.line = line, .column = column});
     }
-    if (c == '[') {
+    if (character == '[') {
         in_.get();
         return Token(Token::Kind::ARRAY_BEGIN, {.line = line, .column = column});
     }
-    if (c == ']') {
+    if (character == ']') {
         in_.get();
         return Token(Token::Kind::ARRAY_END, {.line = line, .column = column});
     }
-    if (c == '"') {
+    if (character == '"') {
         return scanString(line, column);
     }
-    if (c == '+' || c == '-' || c == '.' || Characters::digit(c)) {
+    if (character == '+' || character == '-' || character == '.' || Characters::digit(character)) {
         return scanNumber(line, column);
     }
-    if (Characters::alpha(c)) {
+    if (Characters::alpha(character)) {
         return scanIdentifier(line, column);
     }
     in_.get();
-    return fail(std::string("unexpected character '") + static_cast<char>(c) + "'", line, column);
+    return fail(std::string("unexpected character '") + static_cast<char>(character) + "'", line, column);
 }
 
 Token Lexer::next() {

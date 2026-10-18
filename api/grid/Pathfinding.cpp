@@ -45,8 +45,8 @@ struct Frontier {
     int estimate{0};
     std::size_t index{0};
 
-    friend bool operator>(const Frontier& a, const Frontier& b) {
-        return a.estimate > b.estimate;
+    friend bool operator>(const Frontier& lhs, const Frontier& rhs) {
+        return lhs.estimate > rhs.estimate;
     }
 };
 
@@ -156,8 +156,8 @@ std::vector<int> flood(const Walk& walk, TileCoord seed, int budget, const std::
 
 };  // namespace
 
-int tileDistance(TileCoord a, TileCoord b) {
-    return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y));
+int tileDistance(TileCoord from, TileCoord to) {
+    return std::max(std::abs(from.x - to.x), std::abs(from.y - to.y));
 }
 
 std::vector<TileCoord> findPath(const TileGrid& grid, TileCoord start, TileCoord goal, const TileFilter& enterable) {

@@ -13,8 +13,8 @@
 
 namespace {
 
-glm::vec3 apply(const glm::mat4x4 & m, const glm::vec3 & point) {
-    return glm::vec3(m * glm::vec4(point, 1.0f));
+glm::vec3 apply(const glm::mat4x4 & transform, const glm::vec3 & point) {
+    return glm::vec3(transform * glm::vec4(point, 1.0f));
 }
 
 glm::mat4x4 translation(float x) {

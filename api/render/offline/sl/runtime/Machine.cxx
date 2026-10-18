@@ -49,14 +49,15 @@ float compare(Opcode opcode, float left, float right) {
 }
 
 /**
- * Component i of a value read as one of wide components. A float fills every component, except
- * that a float read as a matrix is the diagonal matrix. An assignment promotes it the same way.
+ * Component index of a value read as one of wide components. A float fills every component,
+ * except that a float read as a matrix is the diagonal matrix. An assignment promotes it the
+ * same way.
  **/
-float promoted(const Value & value, unsigned int point, unsigned int i, unsigned int wide) {
+float promoted(const Value & value, unsigned int point, unsigned int index, unsigned int wide) {
     if (value.components() != 1) {
-        return value.component(point, i);
+        return value.component(point, index);
     }
-    if (wide == 16 && i % MATRIX_DIAGONAL_STRIDE != 0) {
+    if (wide == 16 && index % MATRIX_DIAGONAL_STRIDE != 0) {
         return 0.0f;
     }
     return value.number(point);
@@ -218,9 +219,9 @@ void Machine::arithmetic(const Instruction & instruction) {
         for (unsigned int i = 0; i < wide; i++) {
             // a one component operand is a scale over the whole of the other, as RI promotes
             // it, rather than a zero fill
-            const float a = left.component(point, left.components() == 1 ? 0 : i);
-            const float b = right.component(point, right.components() == 1 ? 0 : i);
-            target.component(point, i, combine(instruction.opcode, a, b));
+            const float leftComponent = left.component(point, left.components() == 1 ? 0 : i);
+            const float rightComponent = right.component(point, right.components() == 1 ? 0 : i);
+            target.component(point, i, combine(instruction.opcode, leftComponent, rightComponent));
         }
     }
 }

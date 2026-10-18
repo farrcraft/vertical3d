@@ -41,19 +41,19 @@ void DepthOrder::into(World* canvas) const {
     std::vector<std::size_t> order(entries_.size());
     std::iota(order.begin(), order.end(), std::size_t{0});
     std::stable_sort(order.begin(), order.end(), [this](std::size_t left, std::size_t right) {
-        const Entry& a = entries_[left];
-        const Entry& b = entries_[right];
+        const Entry& first = entries_[left];
+        const Entry& second = entries_[right];
         // a key that is not a number goes last, because a sort given NaN compared as a number
         // has no consistent order and its result is undefined
-        const bool aMissing = std::isnan(a.key);
-        const bool bMissing = std::isnan(b.key);
-        if (aMissing != bMissing) {
-            return bMissing;
+        const bool firstMissing = std::isnan(first.key);
+        const bool secondMissing = std::isnan(second.key);
+        if (firstMissing != secondMissing) {
+            return secondMissing;
         }
-        if (!aMissing && a.key != b.key) {
-            return a.key > b.key;
+        if (!firstMissing && first.key != second.key) {
+            return first.key > second.key;
         }
-        return a.texture < b.texture;
+        return first.texture < second.texture;
     });
 
     for (std::size_t index : order) {

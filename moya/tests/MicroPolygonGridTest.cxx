@@ -115,16 +115,16 @@ BOOST_AUTO_TEST_CASE(micropolygon_depth_is_interpolated_test) {
         glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(4.0f, 0.0f, 1.0f),
         glm::vec3(4.0f, 4.0f, 1.0f), glm::vec3(0.0f, 4.0f, 3.0f)
     };
-    float a = 0.0f;
-    float b = 0.0f;
-    BOOST_REQUIRE(v3d::moya::reyes::covers(rising, glm::vec2(1.0f, 2.0f), &a));
-    BOOST_REQUIRE(v3d::moya::reyes::covers(falling, glm::vec2(1.0f, 2.0f), &b));
-    BOOST_CHECK_CLOSE(a, 1.5f, 1.0e-4f);
-    BOOST_CHECK_CLOSE(b, 2.5f, 1.0e-4f);
+    float risingDepth = 0.0f;
+    float fallingDepth = 0.0f;
+    BOOST_REQUIRE(v3d::moya::reyes::covers(rising, glm::vec2(1.0f, 2.0f), &risingDepth));
+    BOOST_REQUIRE(v3d::moya::reyes::covers(falling, glm::vec2(1.0f, 2.0f), &fallingDepth));
+    BOOST_CHECK_CLOSE(risingDepth, 1.5f, 1.0e-4f);
+    BOOST_CHECK_CLOSE(fallingDepth, 2.5f, 1.0e-4f);
 
-    BOOST_REQUIRE(v3d::moya::reyes::covers(rising, glm::vec2(3.0f, 2.0f), &a));
-    BOOST_REQUIRE(v3d::moya::reyes::covers(falling, glm::vec2(3.0f, 2.0f), &b));
-    BOOST_CHECK(b < a);
+    BOOST_REQUIRE(v3d::moya::reyes::covers(rising, glm::vec2(3.0f, 2.0f), &risingDepth));
+    BOOST_REQUIRE(v3d::moya::reyes::covers(falling, glm::vec2(3.0f, 2.0f), &fallingDepth));
+    BOOST_CHECK(fallingDepth < risingDepth);
 }
 
 };  // namespace

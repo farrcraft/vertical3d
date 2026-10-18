@@ -34,28 +34,28 @@ bool Sphere::intersects(const v3d::type::geometry::Line & line, float from, floa
     }
     // an affine map keeps a line's parameter, so a root here is a distance in the caller's
     // units without being carried back
-    const glm::vec3 o(toObject_ * glm::vec4(line.origin, 1.0f));
-    const glm::vec3 d = glm::mat3(toObject_) * line.direction;
-    const float a = glm::dot(d, d);
-    const float b = 2.0f * glm::dot(o, d);
-    const float c = glm::dot(o, o) - (radius_ * radius_);
-    const float discriminant = (b * b) - (4.0f * a * c);
-    if (a <= 0.0f || discriminant < 0.0f) {
+    const glm::vec3 origin(toObject_ * glm::vec4(line.origin, 1.0f));
+    const glm::vec3 direction = glm::mat3(toObject_) * line.direction;
+    const float quadratic = glm::dot(direction, direction);
+    const float linear = 2.0f * glm::dot(origin, direction);
+    const float constant = glm::dot(origin, origin) - (radius_ * radius_);
+    const float discriminant = (linear * linear) - (4.0f * quadratic * constant);
+    if (quadratic <= 0.0f || discriminant < 0.0f) {
         return false;
     }
     const float root = std::sqrt(discriminant);
     // the nearer root first, and the far one when the near is behind or cut away: a ray
     // from inside, or one through the open top of a cut sphere, meets the inside
-    const float roots[2] = { (-b - root) / (2.0f * a), (-b + root) / (2.0f * a) };
+    const float roots[2] = { (-linear - root) / (2.0f * quadratic), (-linear + root) / (2.0f * quadratic) };
     for (const float t : roots) {
         if (t <= from) {
             continue;
         }
-        const glm::vec3 p = o + d * t;
-        if (p.z < zmin_ || p.z > zmax_) {
+        const glm::vec3 position = origin + direction * t;
+        if (position.z < zmin_ || position.z > zmax_) {
             continue;
         }
-        float phi = std::atan2(p.y, p.x);
+        float phi = std::atan2(position.y, position.x);
         if (phi < 0.0f) {
             phi += 2.0f * PI;
         }
@@ -63,7 +63,7 @@ bool Sphere::intersects(const v3d::type::geometry::Line & line, float from, floa
             continue;
         }
         *along = t;
-        *point = p;
+        *point = position;
         return true;
     }
     return false;

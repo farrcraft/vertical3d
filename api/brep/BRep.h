@@ -38,11 +38,11 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
          * A component by index, or null when the mesh holds no such one. Walking a face is
          * faceLoop()'s - see Topology.h.
          **/
-        HalfEdge * edge(Index e);
-        Face * face(Index f);
+        HalfEdge * edge(Index index);
+        Face * face(Index index);
         Vertex * vertex(Index vert);
-        const HalfEdge * edge(Index e) const;
-        const Face * face(Index f) const;
+        const HalfEdge * edge(Index index) const;
+        const Face * face(Index index) const;
         const Vertex * vertex(Index vert) const;
 
         /**
@@ -78,8 +78,8 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         size_t faceCount(void) const;
 
         Index addVertex(const Vertex & v);
-        Index addEdge(const HalfEdge & e);
-        Index addFace(const Face & f);
+        Index addEdge(const HalfEdge & newEdge);
+        Index addFace(const Face & newFace);
 
  protected:
         Index addVertex(const glm::vec3 & v);

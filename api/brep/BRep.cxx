@@ -35,18 +35,18 @@ Index BRep::addVertex(const glm::vec3& v) {
 }
 
 Index BRep::addEdge(Index vertex) {
-    const HalfEdge e(vertex);
+    const HalfEdge halfEdge(vertex);
     /*
     Index index = 0;
     for (; index < _edges.size(); index++)
     {
-        if (_edges[index] == e)
+        if (_edges[index] == halfEdge)
         {
             return index;
         }
     }
     */
-    edges_.push_back(e);
+    edges_.push_back(halfEdge);
     return static_cast<Index>(edges_.size() - 1);
 }
 
@@ -91,8 +91,8 @@ void BRep::addFace(const std::vector<glm::vec3>& vertices, const glm::vec3& norm
 
     // add face
     Index face;
-    const Face f(normal, edges[0]);
-    faces_.push_back(f);
+    const Face newFace(normal, edges[0]);
+    faces_.push_back(newFace);
     face = static_cast<Index>(faces_.size() - 1);
 
     // finish constructing edges
@@ -176,16 +176,16 @@ Index BRep::findPair(Index edge, Index prevEdge) {
     return INVALID_ID;
 }
 
-HalfEdge* BRep::edge(Index edge) {
-    if (edge < edges_.size()) {
-        return &edges_[edge];
+HalfEdge* BRep::edge(Index index) {
+    if (index < edges_.size()) {
+        return &edges_[index];
     }
     return 0;
 }
 
-Face* BRep::face(Index face) {
-    if (face < faces_.size()) {
-        return &faces_[face];
+Face* BRep::face(Index index) {
+    if (index < faces_.size()) {
+        return &faces_[index];
     }
     return 0;
 }
@@ -197,12 +197,12 @@ Vertex* BRep::vertex(Index vert) {
     return 0;
 }
 
-const HalfEdge* BRep::edge(Index edge) const {
-    return edge < edges_.size() ? &edges_[edge] : nullptr;
+const HalfEdge* BRep::edge(Index index) const {
+    return index < edges_.size() ? &edges_[index] : nullptr;
 }
 
-const Face* BRep::face(Index face) const {
-    return face < faces_.size() ? &faces_[face] : nullptr;
+const Face* BRep::face(Index index) const {
+    return index < faces_.size() ? &faces_[index] : nullptr;
 }
 
 const Vertex* BRep::vertex(Index vert) const {
@@ -263,13 +263,13 @@ Index BRep::addVertex(const Vertex& v) {
     return static_cast<Index>(vertices_.size() - 1);
 }
 
-Index BRep::addEdge(const HalfEdge& e) {
-    edges_.push_back(e);
+Index BRep::addEdge(const HalfEdge& newEdge) {
+    edges_.push_back(newEdge);
     return static_cast<Index>(edges_.size() - 1);
 }
 
-Index BRep::addFace(const Face& f) {
-    faces_.push_back(f);
+Index BRep::addFace(const Face& newFace) {
+    faces_.push_back(newFace);
     return static_cast<Index>(faces_.size() - 1);
 }
 
@@ -285,11 +285,11 @@ void BRep::deselectComponents(void) noexcept {
     for (Vertex& vert : vertices_) {
         vert.selected(false);
     }
-    for (HalfEdge& e : edges_) {
-        e.selected(false);
+    for (HalfEdge& halfEdge : edges_) {
+        halfEdge.selected(false);
     }
-    for (Face& f : faces_) {
-        f.selected(false);
+    for (Face& polygon : faces_) {
+        polygon.selected(false);
     }
 }
 

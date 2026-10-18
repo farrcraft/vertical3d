@@ -78,7 +78,7 @@ class Ray final {
      * @param distance where the hit is, if there is one - may be null
      * @return whether the ray meets the triangle at a non negative distance
      **/
-    bool intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance) const;
+    bool intersects(const glm::vec3& vertexA, const glm::vec3& vertexB, const glm::vec3& vertexC, float* distance) const;
 
     /**
      * The same test, also reporting where in the triangle the hit landed.
@@ -87,14 +87,14 @@ class Ray final {
      * so anything that interpolates a per vertex value across a triangle - a normal, a
      * texture coordinate - gets them for nothing here rather than solving again.
      *
-     * The weights are of b and c: the hit is a + u * (b - a) + v * (c - a), so a carries
-     * 1 - u - v.
+     * The weights are of vertexB and vertexC: the hit is
+     * vertexA + u * (vertexB - vertexA) + v * (vertexC - vertexA), so vertexA carries 1 - u - v.
      *
      * @param distance where the hit is, if there is one - may be null
-     * @param weights the weights of b and then c, if there is a hit - may be null
+     * @param weights the weights of vertexB and then vertexC, if there is a hit - may be null
      * @return whether the ray meets the triangle at a non negative distance
      **/
-    bool intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance,
+    bool intersects(const glm::vec3& vertexA, const glm::vec3& vertexB, const glm::vec3& vertexC, float* distance,
         glm::vec2* weights) const;
 
     /**

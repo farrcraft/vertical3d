@@ -162,10 +162,10 @@ class Profile {
         *	Assignment operator.
         *	Copy the camera settings from one profile and assign them to another.
         *	This is just the profile method packaged in an operator.
-        *	@param p the camera profile to copy settings from.
+        *	@param other the camera profile to copy settings from.
         *	@return the camera profile with the new settings copied to it.
         */
-        Profile & operator = (const Profile & p);
+        Profile & operator = (const Profile & other);
 
  private:
         typedef enum CameraOptions : std::uint8_t {

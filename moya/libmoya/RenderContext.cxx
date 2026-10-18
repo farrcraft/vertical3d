@@ -41,8 +41,8 @@ constexpr float SMALLEST_W = 1.0e-6f;
 
 };  // namespace
 
-glm::vec3 project(const glm::mat4x4 & m, const glm::vec3 & point) {
-    const glm::vec4 projected = m * glm::vec4(point, 1.0f);
+glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point) {
+    const glm::vec4 projected = matrix * glm::vec4(point, 1.0f);
     if (projected.w <= SMALLEST_W) {
         return glm::vec3(projected);
     }
@@ -493,10 +493,10 @@ glm::vec3 boxCorner(const glm::vec3 & min, const glm::vec3 & max, int index) {
  * All eight corners go through the matrix. Under a rotation any corner can hold the extreme
  * on an axis, so the two diagonal corners alone can leave part of the box outside.
  **/
-Bound transformBound(const glm::mat4x4 & m, const Bound & object) {
+Bound transformBound(const glm::mat4x4 & transform, const Bound & object) {
     Bound bound{.min = glm::vec3(std::numeric_limits<float>::max()), .max = glm::vec3(std::numeric_limits<float>::lowest())};
     for (int k = 0; k < 8; k++) {
-        const glm::vec3 corner(m * glm::vec4(boxCorner(object.min, object.max, k), 1.0f));
+        const glm::vec3 corner(transform * glm::vec4(boxCorner(object.min, object.max, k), 1.0f));
         bound.min = glm::min(bound.min, corner);
         bound.max = glm::max(bound.max, corner);
     }

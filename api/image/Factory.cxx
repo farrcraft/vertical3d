@@ -38,7 +38,7 @@ std::string format(std::string_view filename) {
         ext.erase(0, 1);
     }
     std::transform(ext.begin(), ext.end(), ext.begin(),
-        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
     return ext;
 }
 

@@ -71,8 +71,8 @@ std::vector<unsigned char> texel(const boost::shared_ptr<v3d::image::Image>& ima
 /**
  * @return the four bytes a colour channel quartet should read as
  **/
-std::vector<unsigned char> rgba(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
-    return std::vector<unsigned char>{r, g, b, a};
+std::vector<unsigned char> rgba(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha) {
+    return std::vector<unsigned char>{red, green, blue, alpha};
 }
 
 /**

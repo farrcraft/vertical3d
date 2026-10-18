@@ -1,7 +1,7 @@
 # The check list clang-tidy runs under -DV3D_CLANG_TIDY=ON. Four families are enabled and
 # named checks are subtracted, rather than the live checks being listed one by one: a name
 # clang-tidy does not recognise is not an error, so a list that has gone stale turns findings
-# on and fails loudly instead of quietly covering less. 196 of the 206 checks in these families
+# on and fails loudly instead of quietly covering less. 197 of the 206 checks in these families
 # are live, and the tree is clean at all of them.
 #
 # The cppcoreguidelines, modernize and google families are not enabled at all. Each argues with
@@ -53,7 +53,6 @@ Checks: >
   -misc-no-recursion,
   -readability-ambiguous-smartptr-reset-call,
   -readability-container-contains,
-  -readability-identifier-length,
   -readability-make-member-function-const,
   -readability-non-const-parameter,
   -readability-uppercase-literal-suffix
@@ -96,3 +95,12 @@ CheckOptions:
   readability-magic-numbers.IgnoredIntegerValues: '1;2;3;4;24;255'
   readability-magic-numbers.IgnorePowersOf2IntegerValues: 'true'
   readability-magic-numbers.IgnoredFloatingPointValues: '0.5;1.0;2.0;100.0'
+  # A name of two letters is a word or a standard abbreviation: at, to, id, op, ui, dx. One
+  # letter is a name only where it is the conventional one: x, y, z and w are coordinates, u and
+  # v are a surface's parameters, and s and t are its texture coordinates. i, j and k count a
+  # loop, n is a count and e is a caught exception. Every other name says what it holds.
+  readability-identifier-length.MinimumVariableNameLength: '2'
+  readability-identifier-length.MinimumParameterNameLength: '2'
+  readability-identifier-length.IgnoredVariableNames: '^[xyzwuvst]$'
+  readability-identifier-length.IgnoredParameterNames: '^[nxyzwuvst]$'
+  readability-identifier-length.IgnoredLoopCounterNames: '^[ijk_xyzwuvst]$'

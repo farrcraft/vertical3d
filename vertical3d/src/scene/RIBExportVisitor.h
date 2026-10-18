@@ -60,7 +60,7 @@ class RIBExportVisitor final : public SceneVisitor {
      * Both put the translation last, so a transpose here would move the object to where
      * its axes point instead.
      **/
-    void matrix(const glm::mat4x4& m);
+    void matrix(const glm::mat4x4& transform);
 
     std::ostream* stream_;
     unsigned int meshes_ = 0;

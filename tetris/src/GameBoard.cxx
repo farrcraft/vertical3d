@@ -162,11 +162,11 @@ Piece GameBoard::piece(unsigned int col, unsigned int row) const {
     return pieces_[row][col];
 }
 
-void GameBoard::piece(unsigned int col, unsigned int row, const Piece & p) {
+void GameBoard::piece(unsigned int col, unsigned int row, const Piece & placed) {
     if (row >= pieces_.size() || col >= pieces_[row].size()) {
         return;
     }
-    pieces_[row][col] = p;
+    pieces_[row][col] = placed;
 }
 
 Tetrad GameBoard::currentTetrad() const {
@@ -316,8 +316,8 @@ unsigned int GameBoard::checkCompletedRows() {
         }
 
         // move everything above down one row and empty the top one
-        for (unsigned int m = row - 1; m > 0; m--) {
-            pieces_[m] = pieces_[m - 1];
+        for (unsigned int target = row - 1; target > 0; target--) {
+            pieces_[target] = pieces_[target - 1];
         }
         pieces_[0] = std::vector<Piece>(cols_);
         cleared++;

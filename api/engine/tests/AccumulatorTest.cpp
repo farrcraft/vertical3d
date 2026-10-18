@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(accumulator_pacing_test) {
 
     Accumulator smooth;
     const std::vector<std::uint64_t> even(60, second / 60);
-    const Result a = run(&smooth, even);
+    const Result smoothResult = run(&smooth, even);
 
     Accumulator ragged;
     std::vector<std::uint64_t> uneven;
@@ -110,10 +110,10 @@ BOOST_AUTO_TEST_CASE(accumulator_pacing_test) {
         uneven.push_back(second / 120);
         uneven.push_back(second / 40);
     }
-    const Result b = run(&ragged, uneven);
+    const Result raggedResult = run(&ragged, uneven);
 
-    BOOST_CHECK_EQUAL(a.steps, b.steps);
-    BOOST_CHECK_EQUAL(a.simulated, b.simulated);
+    BOOST_CHECK_EQUAL(smoothResult.steps, raggedResult.steps);
+    BOOST_CHECK_EQUAL(smoothResult.simulated, raggedResult.simulated);
 }
 
 /**

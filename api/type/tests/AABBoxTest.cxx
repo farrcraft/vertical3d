@@ -83,9 +83,9 @@ BOOST_AUTO_TEST_CASE(aabbox_test) {
 namespace {
 
 v3d::type::geometry::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
-    v3d::type::geometry::AABBox b;
-    b.extents(min, max);
-    return b;
+    v3d::type::geometry::AABBox built;
+    built.extents(min, max);
+    return built;
 }
 
 };  // namespace

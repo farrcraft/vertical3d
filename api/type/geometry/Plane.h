@@ -21,7 +21,7 @@ namespace v3d::type::geometry {
 class Plane {
  public:
     Plane();
-    Plane(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 & C);
+    Plane(const glm::vec3 & p0, const glm::vec3 & p1, const glm::vec3 & p2);
     ~Plane();
 
     enum HalfSpace : std::int8_t {
@@ -38,8 +38,8 @@ class Plane {
         C = 2,
         D = 3
     };
-    void set(const glm::vec3 & n, float d);
-    void calculate(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 & C);
+    void set(const glm::vec3 & n, float originDistance);
+    void calculate(const glm::vec3 & p0, const glm::vec3 & p1, const glm::vec3 & p2);
     void calculate(const glm::vec3 & normal, const glm::vec3 & point);
 
     /**
@@ -57,11 +57,11 @@ class Plane {
     float signedDistance(const glm::vec3 & point) const;
     int classify(const AABBox & aabb) const;
     int classify(const glm::vec3 & point) const;
-    bool intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * hitPoint) const;
+    bool intersectEdge(const glm::vec3 & start, const glm::vec3 & end, glm::vec3 * hitPoint) const;
     void normalize(void);
 
-    float & operator[] (unsigned int i);
-    float operator[] (unsigned int i) const;
+    float & operator[] (unsigned int index);
+    float operator[] (unsigned int index) const;
 
  private:
     /*

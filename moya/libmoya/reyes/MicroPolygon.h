@@ -23,7 +23,7 @@ class MicroPolygon {
     MicroPolygon();
     ~MicroPolygon();
 
-    Vertex & operator[] (unsigned int i);
+    Vertex & operator[] (unsigned int index);
 
  private:
     Vertex points_[4];

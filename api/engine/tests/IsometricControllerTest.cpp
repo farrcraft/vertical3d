@@ -42,8 +42,8 @@ IsometricController::Held holding(const std::set<std::string, std::less<>>* down
     return [down](std::string_view command) { return down->find(command) != down->end(); };
 }
 
-bool near(const glm::vec3& a, const glm::vec3& b) {
-    return glm::length(a - b) < 1e-4f;
+bool near(const glm::vec3& actual, const glm::vec3& expected) {
+    return glm::length(actual - expected) < 1e-4f;
 }
 
 BOOST_AUTO_TEST_SUITE(isometric_controller_test)

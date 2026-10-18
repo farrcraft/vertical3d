@@ -68,7 +68,7 @@ boost::shared_ptr<Asset> Manager::load(std::string_view name, asset::Type t) {
 boost::shared_ptr<Asset> Manager::loadTypeFromExt(std::string_view name) {
     std::string ext = boost::filesystem::path(static_cast<std::string>(name)).extension().string();
     std::transform(ext.begin(), ext.end(), ext.begin(),
-        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
     auto found = extensions_.find(ext);
     if (found == extensions_.end()) {
         logger_->get()->error("Nothing is registered to load a {} file, so {} is not loaded", ext.empty() ? "nameless" : ext, name);

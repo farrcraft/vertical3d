@@ -30,10 +30,10 @@ Tetrad::ShapeInfo el() {
     return shape;
 }
 
-bool same(const Tetrad::ShapeInfo & a, const Tetrad::ShapeInfo & b) {
+bool same(const Tetrad::ShapeInfo & left, const Tetrad::ShapeInfo & right) {
     for (unsigned int i = 0; i < 4; i++) {
         for (unsigned int j = 0; j < 4; j++) {
-            if (a.layout_[i][j] != b.layout_[i][j]) {
+            if (left.layout_[i][j] != right.layout_[i][j]) {
                 return false;
             }
         }

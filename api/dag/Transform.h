@@ -24,7 +24,7 @@ class Transform {
     virtual ~Transform();
 
     void scale(const glm::vec3 & s);
-    void rotation(const glm::quat & r);
+    void rotation(const glm::quat & orientation);
     void translation(const glm::vec3 & t);
 
     glm::vec3 scale(void) const;

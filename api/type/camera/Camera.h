@@ -123,14 +123,14 @@ class Camera {
          *	Move eye forward or backward along direction of view
          *	same as pedestal but use direction vector instead of up vector
          */
-        void dolly(float d);
+        void dolly(float distance);
         /**
          *	Truck the camera.
          *	Move eye on axis perpendicular to direction of view and up axis - move 
          *	left/right multiply delta value and right vector to get eye delta - 
          *	right vector must be normalized - add eye delta to current eye position
          */
-        void truck(float d);
+        void truck(float delta);
         /**
          *	Zoom the camera.
          *	Affects the camera lens to zoom in or out (dolly without moving camera)
@@ -143,7 +143,7 @@ class Camera {
          *	Move eye on up axis - move up/down
          *	same as truck but use up vector instead of right vector
          */
-        void pedestal(float d);
+        void pedestal(float delta);
 
         bool orthographic() const;
         void orthographic(bool ortho);

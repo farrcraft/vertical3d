@@ -36,8 +36,8 @@ Index Face::edge(void) const {
     return edge_;
 }
 
-void Face::edge(Index e) {
-    edge_ = e;
+void Face::edge(Index edgeIndex) {
+    edge_ = edgeIndex;
 }
 
 };  // namespace v3d::brep

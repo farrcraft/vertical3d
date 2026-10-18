@@ -13,13 +13,13 @@ class HalfEdge {
  public:
     HalfEdge();
     explicit HalfEdge(Index vert);
-    explicit HalfEdge(const HalfEdge & e);
+    explicit HalfEdge(const HalfEdge & other);
     ~HalfEdge();
 
     // const, because C++20's reversed candidate for a non-const operator== makes every
     // a == b ambiguous with the b == a it synthesizes
-    bool operator == (const HalfEdge & e) const;
-    HalfEdge & operator = (const HalfEdge & e);
+    bool operator == (const HalfEdge & other) const;
+    HalfEdge & operator = (const HalfEdge & other);
 
     /**
      * Whether this component is selected. Selection is per component, not per mesh, so
@@ -34,9 +34,9 @@ class HalfEdge {
     Index next(void) const;
 
     void vertex(Index vert);
-    void face(Index f);
-    void pair(Index e);
-    void next(Index e);
+    void face(Index faceIndex);
+    void pair(Index pairIndex);
+    void next(Index nextIndex);
 
  private:
     Index vertex_;  // vertex at end of half edge

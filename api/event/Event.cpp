@@ -78,9 +78,9 @@ std::string Event::str() const {
     return std::string(context_->name()) + "::" + name_;
 }
 
-void Event::data(const EventData& d) {
+void Event::data(const EventData& payload) {
     hasData_ = true;
-    data_ = d;
+    data_ = payload;
 }
 
 boost::optional<EventData> Event::data() const {

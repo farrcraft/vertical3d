@@ -14,19 +14,19 @@ namespace v3d::test {
 v3d::type::Model cube(const glm::vec4& colour) {
     v3d::type::Model model;
     const glm::vec3 normals[6] = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
-    for (const glm::vec3& n : normals) {
+    for (const glm::vec3& normal : normals) {
         // two axes across the face, chosen so that u x v points along the normal
-        const glm::vec3 u = glm::abs(n.y) > 0.5f ? glm::vec3(n.y, 0, 0) * -1.0f : glm::vec3(-n.z, 0, n.x);
-        const glm::vec3 v = glm::cross(n, u);
+        const glm::vec3 u = glm::abs(normal.y) > 0.5f ? glm::vec3(normal.y, 0, 0) * -1.0f : glm::vec3(-normal.z, 0, normal.x);
+        const glm::vec3 v = glm::cross(normal, u);
         const uint32_t first = static_cast<uint32_t>(model.vertices().size());
         const glm::vec3 corners[4] = {
-            n * 0.5f - u * 0.5f - v * 0.5f, n * 0.5f + u * 0.5f - v * 0.5f,
-            n * 0.5f + u * 0.5f + v * 0.5f, n * 0.5f - u * 0.5f + v * 0.5f
+            normal * 0.5f - u * 0.5f - v * 0.5f, normal * 0.5f + u * 0.5f - v * 0.5f,
+            normal * 0.5f + u * 0.5f + v * 0.5f, normal * 0.5f - u * 0.5f + v * 0.5f
         };
         for (const glm::vec3& corner : corners) {
             v3d::type::Model::Vertex vertex;
             vertex.position = corner;
-            vertex.normal = n;
+            vertex.normal = normal;
             model.vertices().push_back(vertex);
         }
         model.indices().insert(model.indices().end(), {first, first + 1, first + 2, first, first + 2, first + 3});

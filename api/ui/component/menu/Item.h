@@ -68,9 +68,9 @@ class Item : public Component {
     void submenu(const boost::shared_ptr<Menu>& sub);
     /**
       * Set the parent owner menu
-      * @param m the new parent
+      * @param owner the new parent
       */
-    void menu(const boost::weak_ptr<Menu>& m);
+    void menu(const boost::weak_ptr<Menu>& owner);
     /**
       * Get the current menu item label text
       * @return the label text

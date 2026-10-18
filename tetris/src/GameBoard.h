@@ -112,7 +112,7 @@ class GameBoard {
          * @param col column on the board (x axis)
          * @param row row on the board (y axis)
          */
-        void piece(unsigned int col, unsigned int row, const Piece & p);
+        void piece(unsigned int col, unsigned int row, const Piece & placed);
 
         Tetrad currentTetrad() const;
         Tetrad nextTetrad() const;

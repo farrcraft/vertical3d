@@ -502,20 +502,20 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
         }
 
         const unsigned int w = rendered.width / atlas_->depth();
-        const unsigned int h = rendered.rows;
-        const glm::ivec4 region = atlas_->region(w, h);
+        const unsigned int rows = rendered.rows;
+        const glm::ivec4 region = atlas_->region(w, rows);
         if (region.x < 0) {
             missed++;
             continue;
         }
         const unsigned int x = region.x;
         const unsigned int y = region.y;
-        atlas_->region(glm::ivec4(x, y, w, h), rendered.bitmap.buffer, rendered.bitmap.pitch);
+        atlas_->region(glm::ivec4(x, y, w, rows), rendered.bitmap.buffer, rendered.bitmap.pitch);
 
         const boost::shared_ptr<Glyph> glyph = createGlyph();
         glyph->charcode_ = charcodes[i];
         glyph->width_ = w;
-        glyph->height_ = h;
+        glyph->height_ = rows;
         glyph->outline_ = outline_;
         glyph->outlineThickness_ = outlineThickness_;
         glyph->offset_.x = rendered.left;

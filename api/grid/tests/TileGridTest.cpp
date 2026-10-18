@@ -33,9 +33,9 @@ TileGrid makeGrid() {
     return TileGrid(4, 4);
 }
 
-bool near(float a, float b) {
+bool near(float actual, float expected) {
     const float tolerance = 0.00001f;
-    return (a > b ? a - b : b - a) < tolerance;
+    return (actual > expected ? actual - expected : expected - actual) < tolerance;
 }
 
 BOOST_AUTO_TEST_CASE(tilegrid_dimensions_test) {

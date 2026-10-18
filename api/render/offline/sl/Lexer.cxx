@@ -30,8 +30,8 @@ const char* const KEYWORDS[] = {
     "illuminance", "illuminate", "solar"
 };
 
-bool punctuation(int c) {
-    return c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}' || c == ',' || c == ';';
+bool punctuation(int character) {
+    return character == '(' || character == ')' || character == '[' || character == ']' || character == '{' || character == '}' || character == ',' || character == ';';
 }
 
 bool keyword(const std::string & name) {
@@ -45,12 +45,12 @@ Lexer::Lexer(std::istream & stream) : in_(stream) {
 
 bool Lexer::skipSpace() {
     for (;;) {
-        const int c = in_.look();
-        if (Characters::space(c)) {
+        const int character = in_.look();
+        if (Characters::space(character)) {
             in_.get();
             continue;
         }
-        if (c != '/') {
+        if (character != '/') {
             return true;
         }
         // a '/' is a division until the character after it says otherwise, and reading that
@@ -172,24 +172,24 @@ Token Lexer::scan() {
 
     const unsigned int line = in_.line();
     const unsigned int column = in_.column() + 1;
-    const int c = in_.look();
-    if (c == Characters::END) {
+    const int character = in_.look();
+    if (character == Characters::END) {
         return Token(Token::Kind::END, {.line = line, .column = column});
     }
-    if (c == '#') {
+    if (character == '#') {
         // '#' has no other meaning in SL, so wherever one is, it came from a directive this
         // lexer will not resolve. Reporting it by name says the shader needs a preprocessor,
         // rather than suggesting that it is misspelt
         in_.get();
         return fail("the C preprocessor is not run, so a '#' directive cannot be read", line, column);
     }
-    if (c == '"') {
+    if (character == '"') {
         return scanString(line, column);
     }
-    if (Characters::digit(c)) {
+    if (Characters::digit(character)) {
         return scanNumber(line, column);
     }
-    if (c == '.') {
+    if (character == '.') {
         // a '.' opens a number when a digit follows it and is the dot product otherwise
         in_.get();
         if (Characters::digit(in_.look())) {
@@ -198,19 +198,19 @@ Token Lexer::scan() {
         }
         return Token(Token::Kind::OPERATOR, ".", {.line = line, .column = column});
     }
-    if (Characters::alpha(c)) {
+    if (Characters::alpha(character)) {
         return scanName(line, column);
     }
-    if (punctuation(c)) {
+    if (punctuation(character)) {
         in_.get();
-        return Token(Token::Kind::PUNCTUATION, std::string(1, static_cast<char>(c)), {.line = line, .column = column});
+        return Token(Token::Kind::PUNCTUATION, std::string(1, static_cast<char>(character)), {.line = line, .column = column});
     }
-    if (c == '+' || c == '-' || c == '*' || c == '/' || c == '^' || c == '=' || c == '!' ||
-        c == '<' || c == '>' || c == '&' || c == '|' || c == '?' || c == ':') {
+    if (character == '+' || character == '-' || character == '*' || character == '/' || character == '^' || character == '=' || character == '!' ||
+        character == '<' || character == '>' || character == '&' || character == '|' || character == '?' || character == ':') {
         return scanOperator(line, column);
     }
     in_.get();
-    return fail(std::string("unexpected character '") + static_cast<char>(c) + "'", line, column);
+    return fail(std::string("unexpected character '") + static_cast<char>(character) + "'", line, column);
 }
 
 Token Lexer::next() {

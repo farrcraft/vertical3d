@@ -219,10 +219,10 @@ BOOST_AUTO_TEST_CASE(lineofsight_is_symmetric_over_every_pair_test) {
         const TileGrid grid = scatterFullCover(seed);
         const std::vector<TileCoord> tiles = allTiles(grid);
 
-        for (const TileCoord a : tiles) {
-            for (const TileCoord b : tiles) {
-                if (hasLineOfSight(grid, a, b) != hasLineOfSight(grid, b, a) && asymmetric.empty()) {
-                    asymmetric = "seed " + std::to_string(seed) + " between " + describe(a) + " and " + describe(b);
+        for (const TileCoord from : tiles) {
+            for (const TileCoord to : tiles) {
+                if (hasLineOfSight(grid, from, to) != hasLineOfSight(grid, to, from) && asymmetric.empty()) {
+                    asymmetric = "seed " + std::to_string(seed) + " between " + describe(from) + " and " + describe(to);
                 }
             }
         }
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(lineofsight_is_symmetric_over_every_pair_test) {
 BOOST_AUTO_TEST_CASE(lineofsight_stays_symmetric_with_a_blocker_test) {
     const TileGrid grid = scatterFullCover(4242ULL);
 
-    // an extra blocker with a shape of its own, so the sweep is not just re-testing the
+    // an extra blocker with from shape of its own, so the sweep is not just re-testing the
     // grid's cover under another name
     const SightBlocker smoke = [](TileCoord tile) {
         return ((tile.x * 3) + (tile.y * 5)) % 7 == 0;
@@ -242,10 +242,10 @@ BOOST_AUTO_TEST_CASE(lineofsight_stays_symmetric_with_a_blocker_test) {
 
     std::string asymmetric;
     const std::vector<TileCoord> tiles = allTiles(grid);
-    for (const TileCoord a : tiles) {
-        for (const TileCoord b : tiles) {
-            if (hasLineOfSight(grid, a, b, smoke) != hasLineOfSight(grid, b, a, smoke) && asymmetric.empty()) {
-                asymmetric = describe(a) + " and " + describe(b);
+    for (const TileCoord from : tiles) {
+        for (const TileCoord to : tiles) {
+            if (hasLineOfSight(grid, from, to, smoke) != hasLineOfSight(grid, to, from, smoke) && asymmetric.empty()) {
+                asymmetric = describe(from) + " and " + describe(to);
             }
         }
     }
@@ -258,13 +258,13 @@ BOOST_AUTO_TEST_CASE(sightline_reverses_exactly_over_every_pair_test) {
     const std::vector<TileCoord> tiles = allTiles(grid);
 
     std::string wrong;
-    for (const TileCoord a : tiles) {
-        for (const TileCoord b : tiles) {
-            const std::vector<TileCoord> forward = sightLine(grid, a, b);
-            const bool ok = forward == reversed(sightLine(grid, b, a)) && contiguous(forward) &&
-                forward.front() == a && forward.back() == b;
+    for (const TileCoord from : tiles) {
+        for (const TileCoord to : tiles) {
+            const std::vector<TileCoord> forward = sightLine(grid, from, to);
+            const bool ok = forward == reversed(sightLine(grid, to, from)) && contiguous(forward) &&
+                forward.front() == from && forward.back() == to;
             if (!ok && wrong.empty()) {
-                wrong = describe(a) + " to " + describe(b);
+                wrong = describe(from) + " to " + describe(to);
             }
         }
     }

@@ -31,11 +31,11 @@ Pose blend(const Pose& from, const Pose& to, float weight) {
     Pose mixed;
     mixed.joints.resize(from.joints.size());
     for (std::size_t joint = 0; joint < from.joints.size(); joint++) {
-        const Pose::Joint& a = from.joints[joint];
-        const Pose::Joint& b = to.joints[joint];
-        mixed.joints[joint].translation = glm::mix(a.translation, b.translation, weight);
-        mixed.joints[joint].rotation = glm::normalize(glm::slerp(a.rotation, b.rotation, weight));
-        mixed.joints[joint].scale = glm::mix(a.scale, b.scale, weight);
+        const Pose::Joint& fromJoint = from.joints[joint];
+        const Pose::Joint& toJoint = to.joints[joint];
+        mixed.joints[joint].translation = glm::mix(fromJoint.translation, toJoint.translation, weight);
+        mixed.joints[joint].rotation = glm::normalize(glm::slerp(fromJoint.rotation, toJoint.rotation, weight));
+        mixed.joints[joint].scale = glm::mix(fromJoint.scale, toJoint.scale, weight);
     }
     return mixed;
 }

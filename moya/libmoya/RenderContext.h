@@ -472,6 +472,6 @@ class RenderContext {
  * units. A point whose w is at or behind the eye is returned undivided. addPolygon() tests w
  * itself first, and splits a primitive with such a corner.
  **/
-glm::vec3 project(const glm::mat4x4 & m, const glm::vec3 & point);
+glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point);
 
 };  // namespace v3d::moya

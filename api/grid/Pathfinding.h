@@ -40,7 +40,7 @@ constexpr int DIAGONAL_STEP_COST = 1;
  * This is the distance metric for anything measured in tiles. Use it rather than another
  * metric, so that distances agree with what movement costs.
  **/
-int tileDistance(TileCoord a, TileCoord b);
+int tileDistance(TileCoord from, TileCoord to);
 
 /**
  * Cheapest route from start to goal, start first and goal last.

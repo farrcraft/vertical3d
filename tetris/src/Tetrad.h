@@ -40,9 +40,9 @@ class Tetrad {
 
         /**
          * Set the position of the tetrad.
-         * @param p the new position
+         * @param newPosition the new position
          */
-        void position(PositionType p);
+        void position(PositionType newPosition);
         /**
          * Move the tetrad by the specified amount.
          * @param dx amount to move the tetrad in the x axis (number of columns)
@@ -55,7 +55,7 @@ class Tetrad {
          */
         PositionType position() const;
         unsigned int orientation() const;
-        void orientation(unsigned int o);
+        void orientation(unsigned int newOrientation);
         void rotate(RotationDirection dir);
         unsigned int width() const;
         unsigned int height() const;

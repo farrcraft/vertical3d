@@ -603,11 +603,11 @@ BOOST_AUTO_TEST_CASE(gltf_strips_and_fans_become_lists_test) {
     BOOST_REQUIRE_EQUAL(model->indices().size(), 12u);
     BOOST_CHECK_EQUAL(model->vertices().size(), 8u);
     for (std::size_t first = 0; first < model->indices().size(); first += 3) {
-        const glm::vec3 a = model->vertices()[model->indices()[first]].position;
-        const glm::vec3 b = model->vertices()[model->indices()[first + 1]].position;
-        const glm::vec3 c = model->vertices()[model->indices()[first + 2]].position;
+        const glm::vec3 p0 = model->vertices()[model->indices()[first]].position;
+        const glm::vec3 p1 = model->vertices()[model->indices()[first + 1]].position;
+        const glm::vec3 p2 = model->vertices()[model->indices()[first + 2]].position;
         BOOST_TEST_CONTEXT("triangle " << first / 3) {
-            BOOST_CHECK_GT(glm::cross(b - a, c - a).z, 0.0f);
+            BOOST_CHECK_GT(glm::cross(p1 - p0, p2 - p0).z, 0.0f);
         }
     }
 

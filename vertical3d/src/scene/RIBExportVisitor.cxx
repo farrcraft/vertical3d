@@ -16,11 +16,11 @@ namespace v3d::editor {
 RIBExportVisitor::RIBExportVisitor(std::ostream* stream) : stream_(stream) {
 }
 
-void RIBExportVisitor::matrix(const glm::mat4x4& m) {
+void RIBExportVisitor::matrix(const glm::mat4x4& transform) {
     *stream_ << "[";
     for (int column = 0; column < 4; column++) {
         for (int row = 0; row < 4; row++) {
-            *stream_ << " " << m[column][row];
+            *stream_ << " " << transform[column][row];
         }
     }
     *stream_ << " ]";
