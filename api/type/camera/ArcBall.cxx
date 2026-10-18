@@ -72,9 +72,8 @@ glm::quat ArcBall::drag(const glm::vec2& point) {
 }
 
 void ArcBall::bounds(float width, float height) {
-    // the scale below divides by (extent - 1), so clamping at 1 still leaves a zero
-    // divisor and every mapped point comes back as a NaN. Two is the narrowest
-    // viewport this mapping means anything for.
+    // the scale below divides by (extent - 1). An extent of 1 would make every mapped
+    // point a NaN, so each extent is at least 2.
     width = std::max(width, 2.0F);
     height = std::max(height, 2.0F);
     width_ = 1.0F / ((width - 1.0F) * 0.5F);

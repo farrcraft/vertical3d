@@ -119,10 +119,10 @@ near plane to one at the far one. The camera looks along its own direction vecto
 the profile documents as +z of the basis its three normals define - so a point in front
 of the camera has a positive view z, and w is that z rather than its negation.
 
-the frustum the fov and the pixel aspect describe is symmetric about both axes, so there
-are no off centre terms in the third column.
+the frustum is symmetric about both axes, so there are no off centre terms in the third
+column.
 */
-void Camera::createProjection() {  // active scene bound
+void Camera::createProjection() {
     float aspect = profile_.pixelAspect();
     if (!orthographic()) {
         /*
@@ -137,7 +137,7 @@ void Camera::createProjection() {  // active scene bound
             D = depthOffset = -(far * near) / (far - near)
 
             depthScale and depthOffset put the near plane at depth zero and the far one at depth
-            one; the negated y is the flip into vulkan's downward clip space.
+            one. The negated y flips into vulkan's downward clip space.
         */
         const float near = profile_.clipping()[0];
         const float far = profile_.clipping()[1];
@@ -177,8 +177,8 @@ void Camera::createProjection() {  // active scene bound
             ty =  (top + bottom) / (top - bottom)
             tz = -near / (far - near)
 
-            near and far are distances from the camera along its direction of view; left,
-            right, top and bottom are points on the respective clipping planes.
+            near and far are distances from the camera along its direction of view. left,
+            right, top and bottom are the positions of the side clipping planes.
         */
         aspect *= profile_.orthoZoom();
         const float left = -1.0F * aspect;
@@ -213,71 +213,43 @@ void Camera::createProjection() {  // active scene bound
 }
 
 void Camera::createView() {
-    // a world point is translated to the eye and then rotated into the camera's axes.
-    // The rotation applied is the profile's inverse, which for a pure rotation is its
-    // transpose, and it has to come after the translation or it turns the eye offset too
+    // a world point is translated by minus the eye and then rotated into the camera's axes.
+    // The rotation is the inverse of the profile's orientation. For a pure rotation the
+    // inverse is the transpose. The translation is applied first, so the rotation does not
+    // turn the eye offset
     const glm::vec3 eyeOffset = -profile_.eye();
-    // the basis lookat() built when it is still the rotation in force, and the rotation
-    // cast back to a matrix when anything else has set it since. The two agree to about
-    // 2e-6 of an element; the cached one is the same arithmetic glm::lookAt does, so a
-    // view built through lookat() matches one built through glm::lookAt exactly
     view_ = glm::transpose(profile_.orientation());
     view_ = glm::translate(view_, eyeOffset);
     if (profile_.hand() == Profile::Hand::DirectionCrossUp) {
-        // the mirrored basis is the rotation with view x negated. A quaternion cannot carry
-        // a mirror, so the negation is applied here. Applied on the left, so it mirrors the
-        // view rather than the world the rotation is turning
+        // the mirrored basis is the rotation with view x negated. A quaternion cannot hold
+        // a mirror, so the negation is applied here. It is multiplied on the left, so it
+        // mirrors view space rather than world space
         glm::mat4x4 mirror(1.0F);
         mirror[0][0] = -1.0F;
         view_ = mirror * view_;
     }
 }
 
-/*
-    pan - move horizontally around a fixed axis (the camera's y axis) - camera rotation & look at position changes
-            but eye position doesn't - look left/right
-    pan and tilt are types of rotation with restrictions
-*/
 void Camera::pan(float angle) {
     profile_.turn(glm::angleAxis(angle, glm::vec3(0.0F, 1.0F, 0.0F)));
 }
 
-/*
-    tilt - move vertically around a fixed axis (camera's x axis) - look up/down
-*/
 void Camera::tilt(float angle) {
     profile_.turn(glm::angleAxis(angle, glm::vec3(1.0F, 0.0F, 0.0F)));
 }
 
-/*
-    dolly - move eye forward or backward along direction of view
-    dolly, truck, pedestal are types of translations with special restrictions
-    dolly - same as pedestal but use direction vector instead of up vector
-*/
 void Camera::dolly(float distance) {
     profile_.eye(profile_.eye() + profile_.direction() * distance);
 }
 
-/*
-    truck - move eye on axis perpendicular to direction of view and up axis - move left/right
-    truck - multiply delta value and right vector to get eye delta - right vector must be
-    normalized - add eye delta to current eye position
-*/
 void Camera::truck(float delta) {
     profile_.eye(profile_.eye() + profile_.right() * delta);
 }
 
-/*
-    zoom - affects the camera lens to zoom in or out (dolly without moving camera)
-*/
 void Camera::zoom(float z) {
     profile_.orthoZoom(std::max(profile_.orthoZoom() + z, MINIMUM_ZOOM));
 }
 
-/*
-    pedestal - move eye on up axis - move up/down
-    pedestal - same as truck but use up vector instead of right vector
-*/
 void Camera::pedestal(float delta) {
     profile_.eye(profile_.eye() + profile_.up() * delta);
 }
@@ -313,8 +285,8 @@ float Camera::orthoFactorVertical() const {
 }
 
 void Camera::rotate(const glm::quat& new_rot) {
-    // ArcBall::drag returns a zero quaternion for a drag too short to have an axis, which
-    // is no rotation at all rather than one to compose
+    // a zero quaternion is no rotation, so it is not composed. ArcBall::drag returns one
+    // for a drag too short to have an axis
     if (glm::dot(new_rot, new_rot) <= glm::epsilon<float>()) {
         return;
     }

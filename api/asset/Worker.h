@@ -23,12 +23,12 @@ namespace v3d::asset {
  * thread that polls it.
  *
  * A job runs on the worker thread. It may read and decode files, through an asset::Manager or
- * otherwise, and must not touch anything the polling thread uses unguarded: no device call, no
- * ECS registry and no realtime registry.
+ * otherwise. It must not touch anything the polling thread uses without a lock: no device
+ * call, no ECS registry and no realtime registry.
  *
  * A completion runs on the polling thread, inside poll(), in the order the jobs were posted. It
- * receives the job's result, or the exception the job threw. Whoever owns a worker polls it once
- * a frame, from tick().
+ * receives the job's result, or the exception the job threw. The owner of a worker polls it
+ * once a frame, from tick().
  *
  * Destroying a worker drops every job that has not started and every completion that has not
  * run. The job that is running finishes first, and the thread is joined.

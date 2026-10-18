@@ -14,9 +14,8 @@
 namespace v3d::type::geometry {
 
 /**
-    *	defines a plane from one of:
-    *		N dot P = D
-    *		Ax+Bx+Cz = D
+    *	A plane: the points P where N dot P = d, that is Ax + By + Cz = d.
+    *	The equation is stored as A, B, C and D = -d, so Ax + By + Cz + D = 0.
     */
 class Plane {
  public:
@@ -65,9 +64,9 @@ class Plane {
 
  private:
     /*
-        The equation is the plane's only state: normal in [A..C] and the negated distance
-        from the origin in [D]. distance(p) is then the equation applied to p. A separate
-        stored normal and distance could disagree with it.
+        The equation is the plane's only state: the normal in [A..C] and the negated
+        distance from the origin in [D]. signedDistance(p) is the equation applied to p.
+        A separately stored normal and distance could disagree with it.
     */
     float equation_[4] = { 0.0F, 0.0F, 0.0F, 0.0F };  // abcd
 };

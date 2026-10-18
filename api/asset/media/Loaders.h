@@ -16,8 +16,8 @@ namespace v3d::asset::media {
  * Register the loaders for pictures and models with a manager, and the extensions each is
  * found by.
  *
- * engine::Engine does this for the manager it builds. A manager built anywhere else loads
- * none of these until something calls it.
+ * engine::Engine calls this for the manager it builds. A manager built anywhere else loads
+ * none of these types until this is called on it.
  **/
 void registerLoaders(Manager& manager, const boost::shared_ptr<v3d::log::Logger>& logger);
 

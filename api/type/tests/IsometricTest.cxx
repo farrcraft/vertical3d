@@ -120,8 +120,8 @@ BOOST_AUTO_TEST_CASE(isometriccamera_a_quarter_turn_turns_the_axes_test) {
 /**
  * right() is to the right on screen and forward() is away, at every azimuth and in either
  * hand. The hand changes the ground vectors and the view together, so the screen direction
- * stays fixed while the basis changes. An orbit whose right() followed one hand while apply()
- * drew in the other passes every test above this one and fails this one.
+ * stays fixed while the basis changes. This catches an orbit whose right() follows one hand
+ * while apply() draws in the other.
  **/
 BOOST_AUTO_TEST_CASE(isometriccamera_right_is_to_the_right_on_screen_test) {
     const v3d::type::camera::Profile::Hand hands[] = {
@@ -136,8 +136,7 @@ BOOST_AUTO_TEST_CASE(isometriccamera_right_is_to_the_right_on_screen_test) {
         for (int index = 0; index < v3d::type::camera::Isometric::AZIMUTHS; ++index) {
             orbit.azimuth(index);
             v3d::type::camera::Camera camera = applied(orbit);
-            // the orbit's hand is what the camera is drawing through, rather than whatever
-            // the profile was left at
+            // the camera draws with the orbit's hand, not whatever the profile was left at
             BOOST_CHECK(camera.profile().hand() == hand);
 
             const glm::vec3 centre = screen(&camera, orbit.target());

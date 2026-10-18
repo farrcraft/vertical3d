@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(frustum_camera_sides_test) {
 }
 
 /**
- * The planes come back in the order the header names, so a caller can pick one out.
+ * The planes come back in the order planes() documents, so a caller can pick one out.
  **/
 BOOST_AUTO_TEST_CASE(frustum_planes_order_test) {
     const Frustum tested = frustum(camera(true));

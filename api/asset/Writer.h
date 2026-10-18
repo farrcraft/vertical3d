@@ -15,20 +15,20 @@ namespace v3d::asset {
 /**
  * Writing documents to disk, the counterpart of readFile and the Json loader for reading.
  *
- * A caller decides what its document holds; this decides only how it reaches the disk.
+ * The caller decides what its document holds. These functions decide only how it is written.
  **/
 
 /**
- * Render a document as text a person can read and diff: a scalar, a vector and a record of
- * those stay on one line, and everything else is indented two spaces a level. A double that a
- * float holds exactly prints as that float, in the float's shortest form. Any other double
- * prints as a double, in its own shortest form.
+ * Render a document as text a person can read and diff. A scalar, an array of scalars and an
+ * object of those stay on one line. Everything else is indented two spaces a level. A double
+ * that a float holds exactly prints as that float, in the float's shortest form. Any other
+ * double prints as a double, in its own shortest form.
  *
  * JSON has no form for infinity or NaN, and this prints them as std::to_chars spells them.
  * writeDocument() refuses a document holding one.
  *
- * Named for the document rather than for what it does, because an unqualified serialize() on a
- * boost::json::value resolves to the one-line boost::json::serialize through ADL.
+ * It is not named serialize(), because an unqualified serialize() on a boost::json::value
+ * resolves to the one-line boost::json::serialize through ADL.
  *
  * @return the document, with no trailing newline
  **/
@@ -37,9 +37,9 @@ std::string serializeDocument(const boost::json::value& document);
 /**
  * Replace the file at path with bytes, whole or not at all.
  *
- * The bytes go to a sibling temporary that is renamed onto the target, so the file already
- * there survives every failure but the rename. Nothing is flushed to the device, so this is
- * atomic against a crash and not against power loss.
+ * The bytes go to a temporary file beside the target, which is then renamed onto the target.
+ * The existing file therefore survives every failure except one in the rename. Nothing is
+ * flushed to the device, so this is atomic against a crash but not against power loss.
  *
  * @param path the file to replace, which need not exist
  * @param bytes what it should hold

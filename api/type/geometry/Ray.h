@@ -18,9 +18,9 @@ namespace v3d::type::geometry {
 /**
  * A half line: an origin and a direction, and the things it can be intersected with.
  *
- * A distance along a ray is in units of its direction vector. The constructor
- * normalises, so that is world units; transformed() does not, so a distance found in
- * one space is comparable with one found in another.
+ * A distance along a ray is in units of its direction vector. The constructor normalises
+ * the direction, so a distance is in world units. transformed() does not normalise, so a
+ * distance found in one space can be compared with one found in another.
  *
  * A ray whose origin or direction has a component that is NaN or infinite meets nothing.
  * Every intersects() overload returns false for it and leaves its outputs untouched.
@@ -28,7 +28,7 @@ namespace v3d::type::geometry {
 class Ray final {
  public:
     /**
-     * A degenerate ray at the origin, pointing along +z.
+     * A ray at the origin, pointing along +z.
      **/
     Ray();
 
@@ -54,10 +54,10 @@ class Ray final {
     /**
      * The same ray seen from another space.
      *
-     * The direction is transformed as a vector and the origin as a point, and neither is
-     * renormalised. Under a scale, renormalising would change what a distance means, and a
-     * hit found in model space could not be compared with one found in world space. To move
-     * a world ray into a mesh's own space, pass the inverse of that mesh's matrix.
+     * The direction is transformed as a vector and the origin as a point. Neither is
+     * renormalised, so a distance means the same in both spaces, even under a scale. A hit
+     * found in model space can then be compared with one found in world space. To move a
+     * world ray into a mesh's own space, pass the inverse of that mesh's matrix.
      **/
     Ray transformed(const glm::mat4& transform) const;  // NOLINT(build/include_what_you_use) - the name, not std::transform
 
@@ -83,9 +83,9 @@ class Ray final {
     /**
      * The same test, also reporting where in the triangle the hit landed.
      *
-     * Moller-Trumbore solves for the barycentric coordinates on its way to the distance,
-     * so anything that interpolates a per vertex value across a triangle - a normal, a
-     * texture coordinate - gets them for nothing here rather than solving again.
+     * Moller-Trumbore solves for the barycentric coordinates on its way to the distance.
+     * Use this overload to interpolate a per vertex value, such as a normal or a texture
+     * coordinate, without solving for them again.
      *
      * The weights are of vertexB and vertexC: the hit is
      * vertexA + u * (vertexB - vertexA) + v * (vertexC - vertexA), so vertexA carries 1 - u - v.
@@ -100,9 +100,8 @@ class Ray final {
     /**
      * Where this ray crosses a plane.
      *
-     * A ray lying in the plane, or parallel to it, does not cross it. Neither does one that
-     * would have to run backwards to reach it: a click on the sky is not a click on the ground
-     * behind the camera.
+     * A ray lying in the plane, or parallel to it, does not cross it. Neither does a ray
+     * that would have to run backwards from its origin to reach it.
      *
      * @param plane the plane, whose normal need not be unit length
      * @param distance where the crossing is, if there is one - may be null

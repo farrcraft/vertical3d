@@ -46,7 +46,7 @@ struct Skeleton final {
     glm::mat4 root{ 1.0F };
 
     /**
-     * @return whether there is a skeleton at all, which a static model does not have
+     * @return whether the skeleton has no joints, as for a static model
      **/
     bool empty() const noexcept;
 };

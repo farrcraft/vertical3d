@@ -58,7 +58,7 @@ float Plane::distance(void) const {
         N.y = (U.z * V.x) - (U.x * V.z)
         N.z = (U.x * V.y) - (U.y * V.x)
 
-    The resulting normal is not in normalized form.
+    The normal is then normalized.
 
     The distance d is the dot product of the normalized normal N and point p0:
         d = (N.x * p0.x) + (N.y * p0.y) + (N.z * p0.z)
@@ -80,7 +80,7 @@ float Plane::signedDistance(const glm::vec3 & point) const {
     return (equation_[0] * point[0]) + (equation_[1] * point[1]) + (equation_[2] * point[2]) + equation_[3];
 }
 
-// classifies whether a point is on either side of the plane or on the plane itself.
+// classifies a point as on the positive side of the plane, the negative side, or on it.
 int Plane::classify(const glm::vec3 & point) const {
     /*
         Ax + By + Cz + D = 0

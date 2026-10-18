@@ -31,20 +31,18 @@ class Model : public Asset {
     boost::shared_ptr<v3d::type::Model> model();
 
     /**
-     * A material's base colour texture, where the file carried its pixels rather than a name.
+     * A material's base colour texture, when the file stored its pixels instead of a uri.
      *
-     * A .glb packs its images into its own buffer and a .gltf may inline one as a data
-     * uri, so there is no path for the material to name and type::Model::Material's
-     * baseColourTexture is empty. Decoded pixels arrive here instead, for the app to
+     * A .glb packs its images into its own buffer, and a .gltf may inline one as a data uri.
+     * Neither has a path for the material to name, so type::Model::Material's
+     * baseColourTexture is empty. The decoded pixels arrive here instead, for the app to
      * upload the way it uploads any other image.
      *
-     * It is on the asset rather than on the material because it describes how the file was
-     * packaged, not the surface. api/type also depends on glm alone, and a material holding
-     * an image would pull api/image into every consumer of a model, the offline renderer
-     * included.
+     * The image is held on the asset, not on the material, because it describes how the file
+     * was packaged, not the surface. This also keeps api/type free of api/image, so a model's
+     * consumers, the offline renderer included, depend on glm alone.
      *
-     * Null for a material whose texture was named, which is every .gltf pointing at a file
-     * beside it, and for one with no texture at all.
+     * Null for a material whose texture is a separate file, and for one with no texture.
      *
      * @param material an index into the model's materials()
      **/

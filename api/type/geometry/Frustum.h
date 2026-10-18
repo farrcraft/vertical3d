@@ -51,9 +51,9 @@ class Frustum final {
     /**
      * Whether a box is wholly inside the frustum, wholly outside it, or crosses its edge.
      *
-     * A box outside any one plane is outside, since the half spaces are intersected. A box
-     * near a corner of the frustum can be outside it while inside every plane separately,
-     * and is answered as crossing: the test never culls what it should keep.
+     * A box wholly outside any one plane is outside. A box near a corner of the frustum can
+     * lie outside it while crossing planes and being wholly outside none. Such a box is
+     * answered as crossing, so the test never culls a box it should keep.
      *
      * @param box the box, in the space the matrix reads
      **/
@@ -64,8 +64,8 @@ class Frustum final {
      * by plane 2, and clip y = w by plane 3. The cameras in api/type build a y-down clip
      * space, so for them plane 2 is the top of the screen and plane 3 the bottom.
      *
-     * The planes are read straight out of the matrix and are not normalised. signedDistance()
-     * on one tells the side a point is on, but its value is not a distance.
+     * The planes are read straight out of the matrix and are not normalised. The sign of
+     * signedDistance() on one gives the side a point is on, but its value is not a distance.
      **/
     const std::array<Plane, PLANE_COUNT>& planes() const noexcept;
 

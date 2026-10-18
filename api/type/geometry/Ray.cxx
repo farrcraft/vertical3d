@@ -22,16 +22,16 @@ namespace v3d::type::geometry {
 namespace {
 
 /**
- * Below this a direction is degenerate, and a triangle determinant is edge on - a
- * ray running in the plane of the triangle, where the barycentric solution is
+ * A direction shorter than this is degenerate. A triangle determinant smaller than this
+ * means the ray runs in the plane of the triangle, where the barycentric solution is
  * meaningless.
  **/
 constexpr float epsilon = 1e-7F;
 
 /**
  * Whether every component of a ray's origin and direction is finite. Each intersection test
- * refuses a ray that is not, because a comparison with NaN is false and lets it pass every
- * rejection test.
+ * rejects a ray that is not. A comparison with NaN is false, so a NaN ray would otherwise
+ * pass every rejection test.
  **/
 bool finite(const glm::vec3& origin, const glm::vec3& direction) {
     return std::isfinite(origin.x) && std::isfinite(origin.y) && std::isfinite(origin.z) &&
@@ -101,8 +101,8 @@ bool Ray::intersects(const AABBox& box, float* distance) const {
 
     for (int axis = 0; axis < 3; axis++) {
         if (std::fabs(direction_[axis]) < epsilon) {
-            // parallel to this pair of slabs, so it either misses them or is
-            // unconstrained by them
+            // parallel to this pair of slabs: the origin is either outside them, a miss,
+            // or between them, no constraint
             if (origin_[axis] < min[axis] || origin_[axis] > max[axis]) {
                 return false;
             }
@@ -143,8 +143,8 @@ bool Ray::intersects(const glm::vec3& vertexA, const glm::vec3& vertexB, const g
     const glm::vec3 perpendicular = glm::cross(direction_, ac);
     const float determinant = glm::dot(ab, perpendicular);
 
-    // no back face cull: a modeller picks the inside of a mesh as readily as the
-    // outside, so only an edge on ray is rejected here
+    // no back face cull, so a pick can hit the inside of a mesh. Only an edge on ray is
+    // rejected
     if (std::fabs(determinant) < epsilon) {
         return false;
     }
@@ -182,9 +182,9 @@ bool Ray::intersects(const Plane& plane, float* distance) const {
     if (!finite(origin_, direction_)) {
         return false;
     }
-    // the plane's equation along the ray is distance(origin) + t * dot(normal, direction),
-    // which is zero where the ray crosses. Neither term needs a unit normal, since a scale
-    // of one is a scale of the other
+    // along the ray, the plane's equation is signedDistance(origin) + t * dot(normal,
+    // direction), which is zero where the ray crosses. Both terms scale with the length of
+    // the normal, so their ratio does not need a unit normal
     const float approach = glm::dot(plane.normal(), direction_);
     if (std::fabs(approach) < epsilon) {
         return false;

@@ -35,8 +35,8 @@ BOOST_AUTO_TEST_CASE(plane_representation_test) {
 }
 
 /**
- * The three point constructor writes the same equation the two argument calculate does, so
- * classify reads a plane that was filled in.
+ * The three point constructor fills in the equation, so classify() sees the plane through
+ * the three points.
  **/
 BOOST_AUTO_TEST_CASE(plane_from_three_points_test) {
     const v3d::type::geometry::Plane plane(glm::vec3(0.0F, 0.0F, 2.0F), glm::vec3(1.0F, 0.0F, 2.0F), glm::vec3(1.0F, 1.0F, 2.0F));
@@ -47,8 +47,8 @@ BOOST_AUTO_TEST_CASE(plane_from_three_points_test) {
 }
 
 /**
- * A ray hit is found from the same equation the classification is, so the two agree about
- * where the plane is.
+ * intersectEdge() works from the same equation as classify(), so the two agree about where
+ * the plane is.
  **/
 BOOST_AUTO_TEST_CASE(plane_intersect_edge_test) {
     const v3d::type::geometry::Plane plane = zPlane();

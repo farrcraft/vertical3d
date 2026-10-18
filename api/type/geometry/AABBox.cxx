@@ -26,8 +26,8 @@ constexpr std::size_t MAX_X_MAX_Y_MAX_Z = 7;
 
 };  // namespace
 
-// an empty box sits at the origin rather than wherever the stack left it - BRep::bound
-// returns a default-constructed box for a mesh with no vertices, and its caller reads it
+// a default box has both corners at the origin. BRep::bound() returns one for a mesh with
+// no vertices, and its callers read it
 AABBox::AABBox() : min_(0.0F), max_(0.0F) {
 }
 
@@ -81,7 +81,6 @@ void AABBox::vertices(glm::vec3* v) const {
 }
 
 
-// set min & max extents
 void AABBox::extents(const glm::vec3& min, const glm::vec3& max) {
     min_ = min;
     max_ = max;

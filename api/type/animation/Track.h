@@ -73,8 +73,8 @@ class Track final {
     T sample(float time) const {
         const Key& first = keys_.front();
         const Key& last = keys_.back();
-        // a time that is not finite fails every comparison below, so it would fall through to
-        // a search that finds no key; it reads as the first key instead
+        // a time that is not finite fails every comparison below, and the search would find
+        // no key. It reads as the first key instead
         if (!std::isfinite(time)) {
             return first.value;
         }

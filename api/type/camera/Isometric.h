@@ -16,32 +16,28 @@ namespace v3d::type::camera {
  * An orthographic camera that orbits a point on the ground at a fixed elevation, snapping
  * to one of four azimuths.
  *
- * A camera behaviour rather than a camera: it holds where the view is aimed and from which
- * of the four corners, and apply() writes that onto a Camera, which builds the
- * matrices. Nothing here reads an input device - a caller maps its own keys or gestures onto
- * rotate(), pan() and zoomBy(), the same way ArcBall is handed points rather than events.
+ * This is not a Camera. It holds the point the view is aimed at and which of the four
+ * corners it is seen from. apply() writes that onto a Camera, and the Camera builds the
+ * matrices. Nothing here reads an input device. A caller maps its own keys or gestures onto
+ * rotate(), pan() and zoomBy(), in the same way it passes points to ArcBall.
  *
- * The four azimuths make it a snap camera rather than a free orbit: a scene is authored to be
- * legible from the four corners, and from no angle between them. pan() is measured in the
- * view's own axes rather than the world's, so dragging right moves the scene right whichever
- * corner the camera is at.
+ * The camera stops only at the four corners, never between them, so a scene only has to read
+ * well from those four views. pan() is measured in the view's own axes, so dragging right
+ * moves the scene right from every corner.
  **/
 class Isometric {
  public:
     /**
-     * The number of azimuths the orbit snaps to. Four right angles, so the ground plane's
-     * axes stay axis aligned on screen at every one of them.
+     * The number of azimuths the orbit snaps to. They are a right angle apart.
      **/
     static constexpr int AZIMUTHS = 4;
 
     /**
      * The default angle above the horizon, in radians - 45 degrees.
      *
-     * A true isometric projection is atan(1 / sqrt(2)), about 35.26 degrees, which is the
-     * angle that makes the three world axes equal on screen. 45 is the angle games usually
-     * mean by the word: it is a whole number of degrees, it halves the depth of the scene
-     * on screen rather than compressing it by a third, and a wall drawn at it reads as a
-     * wall. Pass the true value to elevation() for the strict projection.
+     * A true isometric projection uses atan(1 / sqrt(2)), about 35.26 degrees. At that
+     * angle the three world axes are equally long on screen. Games usually mean 45 degrees
+     * by the word. Pass the true value to elevation() for the strict projection.
      **/
     static constexpr float DEFAULT_ELEVATION = 0.78539816339744830961F;
 
@@ -49,8 +45,8 @@ class Isometric {
      * How far the eye sits from the target, in world units.
      *
      * An orthographic projection does not change with distance, so this decides only what
-     * the near and far planes cut. It has to clear the tallest thing between the eye and
-     * the target.
+     * the near and far planes cut. It has to be long enough that the eye clears the tallest
+     * thing in the scene.
      **/
     static constexpr float DEFAULT_DISTANCE = 30.0F;
 
@@ -77,8 +73,7 @@ class Isometric {
 
     /**
      * Snap to an azimuth without going through the steps between. Wraps, so any index is
-     * valid. A capture uses this to reach all four orientations without driving the camera
-     * as a player would.
+     * valid.
      **/
     void azimuth(int index);
 
@@ -91,24 +86,24 @@ class Isometric {
     /**
      * The ground plane direction that is to the right on screen at the current azimuth.
      *
-     * Crossed the way this orbit's hand() names. A pan built on the other hand moves the
-     * scene the wrong way while everything else looks correct.
+     * The cross product follows hand(). A pan computed with the other hand moves the scene
+     * the wrong way, while everything else looks correct.
      **/
     glm::vec3 right() const;
 
     /**
-     * The basis this orbit drives. It decides which way right() points, and apply() writes
+     * The basis this orbit uses. It decides which way right() points, and apply() writes
      * it onto the camera's profile.
      *
-     * The orbit holds it rather than the profile because pan() and right() receive no
-     * camera, yet must agree with what is drawn. A caller sets it here once.
+     * The orbit stores its own copy because pan() and right() receive no camera, and they
+     * must still match what is drawn. Set it here, not on the profile.
      **/
     Profile::Hand hand() const;
     void hand(Profile::Hand hand);
 
     /**
      * The ground plane direction that is away from the eye on screen at the current
-     * azimuth, which is the camera's direction of view flattened onto the ground.
+     * azimuth. It is the camera's direction of view flattened onto the ground.
      **/
     glm::vec3 forward() const;
 
@@ -143,12 +138,12 @@ class Isometric {
      * Write this placement onto a camera: the eye, the orientation that aims it at the
      * target, the orthographic half height, and orthographic itself.
      *
-     * This does not set the clipping distances, the pixel aspect or the viewport size; they
-     * belong to whoever owns the viewport. It does not rebuild the matrices either, so a
-     * frame that moves the camera several times builds them once, as ViewPort does.
+     * This does not set the clipping distances, the pixel aspect or the viewport size. The
+     * owner of the viewport sets those. It does not rebuild the matrices either, so a frame
+     * that moves the camera several times can build them once.
      *
-     * It does set the profile's Hand, so the camera draws through the basis that right()
-     * and pan() were measured in.
+     * It does set the profile's Hand, so the camera draws with the basis that right() and
+     * pan() use.
      **/
     void apply(Camera* camera) const;
 

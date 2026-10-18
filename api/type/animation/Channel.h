@@ -39,8 +39,9 @@ struct Channel final {
     std::vector<float> times;
 
     /**
-     * A value a key, or for a cubic spline three - its in tangent, its value and its out
-     * tangent. A translation or a scale is xyz, and a rotation a quaternion in x, y, z, w order.
+     * One value per key, or three per key for a cubic spline: the in tangent, the value and the
+     * out tangent. A translation or a scale is xyz, and a rotation a quaternion in x, y, z, w
+     * order.
      **/
     std::vector<glm::vec4> values;
 };

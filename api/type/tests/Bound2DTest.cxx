@@ -24,11 +24,10 @@ BOOST_AUTO_TEST_CASE(bound2d_test) {
 
     const v3d::type::geometry::Bound2D bound2({.position = position, .size = size});
 
-    // test 2nd constructor form
+    // a bound built from another's position and size reports them back
     const glm::vec2 position2 = bound2.position();
     BOOST_CHECK_EQUAL((position == position2), true);
 
-    // test 2nd constructor form
     const glm::vec2 size2 = bound2.size();
     BOOST_CHECK_EQUAL((size == size2), true);
 

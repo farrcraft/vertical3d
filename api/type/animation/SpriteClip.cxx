@@ -15,7 +15,8 @@ namespace v3d::type::animation {
 namespace {
 
 /**
- * @return the summed length of the frames, refusing what a clip cannot show
+ * @return the summed length of the frames
+ * @throw std::invalid_argument for no frames, or a frame whose duration is not positive
  **/
 float total(const std::vector<SpriteClip::Frame>& frames) {
     if (frames.empty()) {

@@ -32,10 +32,6 @@ glm::quat asQuat(const glm::vec4& value) {
     return glm::quat(value.w, value.x, value.y, value.z);
 }
 
-/**
- * Hermite between two keys, as glTF's cubic spline defines it: each key's value and its out or
- * in tangent, the tangents scaled by the time between the keys.
- **/
 /** The key a segment starts at, how far through it to sample, and how long it lasts. **/
 struct Segment {
     std::size_t key = 0;
@@ -43,6 +39,10 @@ struct Segment {
     float span = 0.0F;
 };
 
+/**
+ * Hermite between two keys, as glTF's cubic spline defines it: each key's value and its out or
+ * in tangent, the tangents scaled by the time between the keys.
+ **/
 glm::vec4 hermite(const Channel& channel, const Segment& segment) {
     const std::size_t key = segment.key;
     const float u = segment.u;
@@ -79,7 +79,8 @@ void apply(const Channel& channel, const glm::vec4& value, Pose::Joint* joint) {
 }
 
 /**
- * Whether a channel holds enough values for its keys, so that sampling reads only what is there.
+ * Whether a channel holds enough values for its keys. Sampling skips a channel that does not,
+ * so it never reads past the values.
  **/
 bool wellFormed(const Channel& channel) {
     const std::size_t per = channel.interpolation == Channel::Interpolation::CubicSpline ? 3 : 1;

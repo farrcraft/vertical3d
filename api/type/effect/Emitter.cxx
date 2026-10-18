@@ -25,8 +25,8 @@ namespace {
 
 /**
  * How far below a whole particle the owed fraction may fall and still be spawned. A rate summed
- * a step at a time drifts below the whole number it should reach, and without this a rate of
- * five a second at sixty steps spawns four in the first second.
+ * one step at a time drifts below the whole number it should reach. Without this slack, a rate
+ * of five a second at sixty steps a second spawns four in the first second.
  **/
 const float owedSlack = 1e-4F;
 
@@ -78,9 +78,9 @@ void travel(const Emitter& emitter, State* state, float seconds, const glm::vec3
 }
 
 uint32_t owing(State* state, float rate, float seconds) {
-    // a negative rate emits nothing, and so does one that is not a finite number, rather
-    // than a count that wraps round or is undefined when it is made unsigned. What is owed is
-    // capped at the largest count a step can return
+    // a negative rate emits nothing, and so does one that is not a finite number. Either
+    // would otherwise give a count that wraps round or is undefined when made unsigned. What
+    // is owed is capped at the largest count a step can return
     const float earned = rate * seconds;
     if (std::isfinite(earned) && earned > 0.0F) {
         state->owed = std::min(state->owed + earned, mostOwed);

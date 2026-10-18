@@ -37,8 +37,8 @@ Random::Random(uint64_t seed) noexcept :
 }
 
 uint64_t Random::next() noexcept {
-    // the state is only a counter and the mixing randomises the output, so the generator
-    // saves and restores as one integer
+    // the state is only a counter, and the mixing randomises the output. The generator
+    // therefore saves and restores as one integer
     state_ += STATE_STEP;
     uint64_t z = state_;
     z = (z ^ (z >> FIRST_MIX_SHIFT)) * FIRST_MIX_MULTIPLIER;

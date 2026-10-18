@@ -26,7 +26,7 @@ constexpr float QUARTER_TURN = 1.57079632679489661923F;
 
 /**
  * The step index reduced into [0, AZIMUTHS), for a negative index as well as a positive
- * one - the built in remainder keeps the sign of its left operand.
+ * one. The built in remainder keeps the sign of its left operand.
  **/
 int wrap(int index) {
     const int remainder = index % Isometric::AZIMUTHS;
@@ -61,9 +61,8 @@ glm::vec3 Isometric::forward() const {
 }
 
 glm::vec3 Isometric::right() const {
-    // the projection sends the basis x to the right of the screen, so this is the profile's
-    // right flattened onto the ground, crossed the way the hand names. The cross order is
-    // all that a hand changes
+    // the profile's right flattened onto the ground. The hand changes only the order of
+    // the cross product
     return hand_ == Profile::Hand::DirectionCrossUp
         ? glm::normalize(glm::cross(forward(), UP))
         : glm::normalize(glm::cross(UP, forward()));
@@ -130,7 +129,7 @@ void Isometric::apply(Camera* camera) const {
     profile.orthographic(true);
     profile.orthoZoom(zoom_);
     profile.eye(eye());
-    // up before lookat: lookat derives the other two normals and the rotation from it
+    // up before lookat(), which derives the other two normals and the rotation from it
     profile.up(UP);
     profile.lookat(target_);
 }

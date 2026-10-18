@@ -31,8 +31,8 @@ boost::shared_ptr<Asset> Image::load(std::string_view name) {
     logger()->get()->info("Looking for image asset at: {}", name);
     v3d::image::Factory factory(logger());
     const boost::shared_ptr<v3d::image::Image> image = factory.read(name);
-    // an asset holding no image is indistinguishable from a loaded one until a
-    // consumer dereferences it, so a read that failed comes back as no asset at all
+    // an asset holding no image looks like a loaded one until a consumer dereferences it,
+    // so a failed read returns no asset at all
     if (!image) {
         logger()->get()->error("Could not read image asset: {}", name);
         return boost::shared_ptr<Asset>();

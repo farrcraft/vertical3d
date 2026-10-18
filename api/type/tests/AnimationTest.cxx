@@ -110,9 +110,8 @@ BOOST_AUTO_TEST_CASE(animation_the_rest_palette_is_the_identity_test) {
 }
 
 /**
- * The skeleton's root stands above every root joint, so a root that moves the skeleton moves
- * every joint's global matrix - and the palette, which a pose bound under no root does not
- * expect.
+ * The skeleton's root sits above every root joint, so a root that moves the skeleton moves
+ * every joint's global matrix with it.
  **/
 BOOST_AUTO_TEST_CASE(animation_the_root_places_the_skeleton_test) {
     Skeleton skeleton = strip();

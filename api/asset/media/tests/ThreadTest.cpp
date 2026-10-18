@@ -115,11 +115,8 @@ bool same(const boost::shared_ptr<v3d::asset::Asset>& expected, const boost::sha
 
 /**
  * One manager loads pictures and models on several threads at once, and every load matches
- * the same load made on one thread. This is what lets a worker thread load through the
- * manager an app already has.
- *
- * Covers the base: 7270a33e holds the loaders as they are. Checked by decoding every PNG into
- * one static buffer shared by all calls, which failed this case on six runs of six.
+ * the same load made on one thread. A worker thread can therefore load through the manager
+ * an app already has.
  **/
 BOOST_AUTO_TEST_CASE(thread_one_manager_loads_on_many_threads_test) {
     const std::vector<std::string> models = { "two_surfaces.glb", "embedded_texture.glb", "data_uri_texture.gltf" };

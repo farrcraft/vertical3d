@@ -12,8 +12,9 @@
 namespace v3d::type {
 
 /**
- * Where a thing is, which way it is turned, and how large it is. Both an ecs entity and an
- * editor mesh are placed by it, so the composition is written once.
+ * Where a thing is, which way it is turned, and how large it is. An ecs entity and a
+ * dag::Transform, such as an editor mesh, are both placed by it, so the composition is
+ * written once.
  **/
 struct Transform final {
     glm::vec3 position{0.0F};
@@ -22,15 +23,15 @@ struct Transform final {
 
     /**
      * @return the model matrix, scaling first, then rotating, then moving into place. Scale
-     *         goes first so that it acts along the thing's own axes: composed the other way
-     *         round, a non-uniform scale shears everything the rotation turned
+     *         goes first so that it acts along the thing's own axes. In the other order, a
+     *         non-uniform scale would shear the rotated shape
      **/
     glm::mat4 matrix() const;
 };
 
 /**
- * The transform alpha of the way from one to the other. The rotation is slerped, so it turns
- * the short way round.
+ * The transform a fraction alpha of the way from one to the other. The rotation is slerped,
+ * so it turns the short way round.
  **/
 Transform interpolate(const Transform& from, const Transform& to, float alpha);
 

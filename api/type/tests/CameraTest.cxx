@@ -54,8 +54,8 @@ BOOST_AUTO_TEST_CASE(camera_projection_test) {
     BOOST_CHECK_CLOSE(zoomed[0][0], ortho[0][0] / 2.0F, 0.01F);
     BOOST_CHECK_CLOSE(zoomed[1][1], -0.5F, 0.01F);
 
-    // the perspective projection divides by w, which is where the -1 in the third column
-    // and the 0 in the corner come from
+    // the perspective projection puts the view z in w, so the third column ends in 1 and
+    // the corner is 0
     v3d::type::camera::Camera perspective;
     perspective.orthographic(false);
     perspective.createProjection();
@@ -82,8 +82,8 @@ BOOST_AUTO_TEST_CASE(camera_zoom_has_a_floor_test) {
 
 BOOST_AUTO_TEST_CASE(camera_depth_range_test) {
     // a point on the near plane lands at depth zero and one on the far plane at depth one,
-    // which is the range vulkan clips against and what the engine clears depth to. The
-    // camera looks along +z, so both points are in front of it
+    // which is the range vulkan clips against. The camera looks along +z, so both points are
+    // in front of it
     v3d::type::camera::Camera perspective;
     perspective.orthographic(false);
     perspective.profile().clipping(glm::vec2(1.0F, 100.0F));
@@ -110,9 +110,9 @@ BOOST_AUTO_TEST_CASE(camera_depth_range_test) {
 }
 
 BOOST_AUTO_TEST_CASE(camera_lookat_test) {
-    // the rotation a lookat writes takes the camera into the basis its normals define, and
-    // createView transposes it back - so a camera told to look at a point sees that point
-    // straight ahead, on its own +z axis and on neither of the other two
+    // the rotation lookat() writes takes the camera into the basis its normals define, and
+    // createView() transposes it. A camera that looks at a point therefore sees it straight
+    // ahead, on its own +z axis
     v3d::type::camera::Camera camera;
     camera.profile().eye(glm::vec3(0.0F, 10.0F, 0.0F));
     camera.profile().up(glm::vec3(0.0F, 0.0F, 1.0F));
@@ -407,9 +407,8 @@ BOOST_AUTO_TEST_CASE(camera_ortho_factor_test) {
  *
  * Two conventions are undone before the views are compared. This camera looks along +z where
  * glm looks along -z, so row 2 is negated. glm's basis is the DirectionCrossUp hand, so the
- * profile uses that hand. Equality is checked
- * with == rather than by comparing bits, because the mirror turns some zeros negative and
- * -0.0f == 0.0f while their bits differ.
+ * profile uses that hand. Equality is checked with == rather than by comparing bits, because
+ * the mirror turns some zeros negative, and -0.0f == 0.0f while their bits differ.
  **/
 BOOST_AUTO_TEST_CASE(camera_lookat_matches_glm_exactly_test) {
     const glm::vec3 eyes[] = {

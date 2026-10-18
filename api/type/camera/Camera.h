@@ -23,9 +23,9 @@ namespace v3d::type::camera {
 class Camera {
  public:
         /**
-         *	The smallest orthographic half height zoom() leaves, in world units. A drag
-         *	scales the next step by the half height, so one that reached zero could never
-         *	zoom back out.
+         *	The smallest orthographic half height zoom() leaves, in world units. A zoom drag
+         *	is scaled by the current half height, so a half height of zero could never grow
+         *	again.
          */
         static constexpr float MINIMUM_ZOOM = 0.01F;
 
@@ -52,10 +52,11 @@ class Camera {
 
         /**
          *	Where a world point lands on the screen, if it lands anywhere.
-         *	project() divides by w whatever its sign, so a point behind a perspective
-         *	camera comes back mirrored through the centre of the viewport as though it
-         *	were in front. This returns nothing for such a point, and for a viewport
-         *	with no area. An orthographic camera has nothing behind it.
+         *	project() divides by w whatever its sign. A point behind a perspective camera
+         *	therefore comes back mirrored through the centre of the viewport, as though it
+         *	were in front. This returns nothing for such a point, and nothing for a viewport
+         *	with no area. An orthographic projection leaves w at one, so it rejects no point
+         *	for being behind the camera.
          *	@param point the point, in world space
          *	@param viewport the region the camera draws into, as x, y, width, height
          *	@return the point in window pixels, with its depth in z, or nothing
@@ -64,20 +65,19 @@ class Camera {
 
         /**
          *	The ray a screen point casts into the scene, in world space.
-         *	It starts at the near plane and its direction is a unit vector, so a
-         *	distance along it is in world units. An orthographic camera gives a ray
-         *	parallel to every other, which falls out of unprojecting the two depths
-         *	rather than being a case of its own.
-         *	The matrices are the cached ones, so createProjection() and createView()
-         *	have to have been called for the state the point was clicked against.
+         *	It starts at the near plane. Ray normalizes its direction, so a distance along
+         *	it is in world units. With an orthographic camera, every ray is parallel to the
+         *	view direction.
+         *	This reads the cached matrices. Call createProjection() and createView() for
+         *	the camera state the point was clicked against first.
          *	@param point where the click was, in window pixels
          *	@param viewport the region the camera draws into, as x, y, width, height
          */
         geometry::Ray ray(const glm::vec2 & point, const int viewport[4]) const;
 
         /**
-         *	The point on a plane under the cursor: ray() followed by the ray's crossing
-         *	of the plane, the question a grid game asks of its ground.
+         *	The point on a plane under the cursor. It casts ray() and intersects the
+         *	result with the plane.
          *	@param cursor where the cursor is, in window pixels
          *	@param viewport the region the camera draws into, as x, y, width, height
          *	@param plane the plane to pick on, such as the ground
@@ -103,45 +103,35 @@ class Camera {
         void createView();
 
         // transformations
-        /*
-            dolly, truck, pedestal are types of translations with special restrictions
-            pan and tilt are types of rotation with restrictions
-        */
         /**
-         *	Pan the camera.
-         *	Move horizontally around a fixed axis (the camera's y axis) - camera 
-         *	rotation & look at position changes but eye position doesn't - look left/right
+         *	Pan the camera: turn it about its own y axis, to look left or right.
+         *	The eye does not move.
          */
         void pan(float angle);
         /**
-         *	Tilt the camera.
-         *	Move vertically around a fixed axis (camera's x axis) - look up/down
+         *	Tilt the camera: turn it about its own x axis, to look up or down.
+         *	The eye does not move.
          */
         void tilt(float angle);
         /**
-         *	Dolly the camera.
-         *	Move eye forward or backward along direction of view
-         *	same as pedestal but use direction vector instead of up vector
+         *	Dolly the camera: move the eye forward or back along the direction vector.
          */
         void dolly(float distance);
         /**
-         *	Truck the camera.
-         *	Move eye on axis perpendicular to direction of view and up axis - move 
-         *	left/right multiply delta value and right vector to get eye delta - 
-         *	right vector must be normalized - add eye delta to current eye position
+         *	Truck the camera: move the eye left or right along the right vector.
+         *	The eye moves by delta times the right vector, so delta is in world units only
+         *	while the right vector is normalized.
          */
         void truck(float delta);
         /**
-         *	Zoom the camera.
-         *	Affects the camera lens to zoom in or out (dolly without moving camera)
+         *	Zoom the camera by changing the orthographic half height. The eye does not
+         *	move, and a perspective projection is unaffected.
          *	@param z what to add to the orthographic half height, which stays at or above
          *	MINIMUM_ZOOM
          */
         void zoom(float z);
         /**
-         *	Pedestal the camera.
-         *	Move eye on up axis - move up/down
-         *	same as truck but use up vector instead of right vector
+         *	Pedestal the camera: move the eye up or down along the up vector.
          */
         void pedestal(float delta);
 
@@ -149,24 +139,21 @@ class Camera {
         void orthographic(bool ortho);
         /**
         *	The world units a single horizontal pixel of the viewport covers.
-        *	A screen space drag is turned into a camera move by multiplying it by this.
-        *	The factor is a division by the viewport size, so it is zero until the
-        *	profile has been given one.
+        *	Multiply a drag in pixels by this to get a camera move in world units.
+        *	The factor divides by the viewport width. It is zero while the profile's size
+        *	is zero.
         */
         float orthoFactorHorizontal() const;
         /**
         *	The world units a single vertical pixel of the viewport covers.
-        *	The pixel aspect ratio applies to width only, so the two factors are not
-        *	interchangeable.
+        *	Unlike the horizontal factor, this one leaves out the pixel aspect ratio.
         */
         float orthoFactorVertical() const;
         /**
-        *	Rotate the camera by a given amount.
-        *	The rotation tells how to transform the camera into the same space 
-        *	defined by its normals. The normals are the up, right, and direction
-        *	vectors. The default coordinate system with no rotation is a right-
-        *	handed system with right +x, up +y, and direction +z.
-        *	@param new_rot the new rotation value.
+        *	Rotate the camera by composing a rotation onto its current one, in its own
+        *	axes, through Profile::turn(). A zero quaternion leaves the camera unchanged.
+        *	ArcBall::drag() returns one for a drag too short to have an axis.
+        *	@param new_rot the rotation to compose.
         */
         void rotate(const glm::quat & new_rot);
 

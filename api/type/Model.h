@@ -24,22 +24,22 @@ namespace v3d::type {
  * Loaded geometry: one interleaved vertex array, the indices into it, and the surface it
  * is drawn with.
  *
- * Not to be confused with the two other meshes in the tree: a brep::BRep is topology the
- * editor models with, and a render::realtime::vulkan::memory::Mesh is two device buffers. This
- * is what a file on disk is loaded into before it is uploaded. It holds no handle and no
- * device type, so a renderer that never opens a window can read one.
+ * A brep::BRep is the topology the editor models with, and a
+ * render::realtime::vulkan::memory::Mesh is a pair of device buffers. A Model is what a file on
+ * disk is loaded into before it is uploaded. It holds no handle and no device type, so a
+ * renderer that never opens a window can read one.
  *
  * All geometry is merged into a single vertex array and a single index run, so a model is
- * one upload. A part is a range of that index run drawn with one material, so a file with
- * several surfaces is one model drawn with one draw per part.
+ * one upload. A part is a range of that index run drawn with one material. A file with
+ * several surfaces is one model, drawn with one draw per part.
  **/
 class Model final {
  public:
     /**
      * The interleaved attributes, in the order a pipeline declaring this layout expects
-     * them. The device sees only bytes and a stride, and the pipeline sets the stride, so
-     * this layout is an agreement between a loader and the pipeline an app draws it with.
-     * The device does not enforce it.
+     * them. The device sees only bytes and a stride, and the pipeline sets the stride. A
+     * loader and the pipeline an app draws with must agree on this layout, and nothing
+     * checks that they do.
      **/
     struct Vertex final {
         glm::vec3 position{ 0.0F, 0.0F, 0.0F };
@@ -57,15 +57,16 @@ class Model final {
         glm::vec4 baseColour{ 1.0F, 1.0F, 1.0F, 1.0F };
 
         /**
-         * What the base colour is multiplied by, named the way the model file named it and
-         * so relative to wherever that file was. Empty when the surface is a flat colour.
+         * The image the base colour is multiplied by, named as the model file names it. The
+         * name is relative to the model file's directory. Empty when the surface is a flat
+         * colour.
          **/
         std::string baseColourTexture;
     };
 
     /**
-     * Which joints a vertex follows, and how far: the weighted sum of their matrices is what
-     * moves it. Four at most, and the weights sum to one.
+     * Which joints a vertex follows, and how far. The weighted sum of their matrices moves
+     * the vertex. There are four at most, and the weights sum to one.
      **/
     struct Influence final {
         glm::u16vec4 joints{ 0, 0, 0, 0 };  /**< into the skeleton's joints **/

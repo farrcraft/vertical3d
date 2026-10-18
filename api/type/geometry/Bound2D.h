@@ -10,7 +10,7 @@
 namespace v3d::type::geometry {
 
 /**
- * A 2 dimensional clipped bounding plane object
+ * An axis aligned rectangle: a top left corner and a size.
  */
 class Bound2D {
  public:
@@ -25,13 +25,13 @@ class Bound2D {
     explicit Bound2D(const Area & area);
 
     /**
-        * Get the size of the bounding volume
+        * Get the size of the bounded area
         *
         * @return the width and height of the bounded area
         */
     glm::vec2 size() const;
     /**
-        * Get the position of the bounding volume
+        * Get the position of the bounded area
         *
         * @return the top left corner of the bounding box
         */

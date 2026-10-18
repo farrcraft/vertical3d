@@ -25,8 +25,8 @@ Profile::Profile(const std::string& name) :
     fov_(DEFAULT_FOV),
     options_(OPTION_ORTHOGRAPHIC),
     size_(),
-    // glm leaves the quaternion uninitialized, and Camera::createView casts it before
-    // anything else has a chance to set it
+    // glm leaves a quaternion uninitialized, and Camera::createView() can cast it before
+    // anything sets it
 rotation_(1.0F, 0.0F, 0.0F, 0.0F),
 basisValid_(false) {
 }
@@ -171,7 +171,7 @@ void Profile::direction(const glm::vec3& direction) {
 
 void Profile::rotation(const glm::quat& rotation) {
     rotation_ = rotation;
-    // whatever lookat() built is not this rotation, so createView() goes back to casting
+    // the cached basis no longer matches, so orientation() casts the quaternion
     basisValid_ = false;
 }
 
@@ -179,8 +179,9 @@ void Profile::turn(const glm::quat& local) {
     rotation_ = glm::normalize(rotation_ * local);
     basisValid_ = false;
 
-    // the rotation's columns are the right handed basis lookat() builds, so the normals
-    // come out of it the way lookat() hands them out
+    // the rotation's columns are the right handed basis lookat() builds. The normals are
+    // read from them the same way lookat() sets them, with right negated for the mirrored
+    // hand
     const glm::mat3 axes = glm::mat3_cast(rotation_);
     right_ = hand_ == Hand::DirectionCrossUp ? -axes[0] : axes[0];
     up_ = axes[1];
@@ -207,13 +208,11 @@ void Profile::lookat(const glm::vec3& center) {
     // start with original up vector
     y = up_;
 
-    // normal of the yz plane is the right vector, taken as up x direction, and the normal
-    // of the xy plane is the up vector. The result is the unmirrored basis, the only one of
-    // the two hands a quaternion can carry
+    // right is up x direction, the normal of the yz plane. This is the unmirrored basis.
+    // It is the only one of the two hands a quaternion can represent
     x = glm::normalize(glm::cross(y, z));
-    // the component of the original up perpendicular to the direction, which is the same
-    // vector whichever way round the right was taken - the two hands mirror horizontally
-    // and agree about which way is up.
+    // the new up is the component of the original up perpendicular to the direction. It
+    // is the same for both hands, because the hands mirror only horizontally.
     //
     // Not normalized: z and x are unit and perpendicular, so their cross product is already
     // unit to within rounding. glm::lookAt does not normalize it either, and doing so would
@@ -226,10 +225,10 @@ void Profile::lookat(const glm::vec3& center) {
         to get the world to view transform.
 
         The rotation is always built from the right handed basis, never from the mirrored
-        one. A mirror is an improper transform and no quaternion represents one, so a
-        quat_cast of it returns something that is not a rotation at all and the view matrix
-        that comes out of it is not rigid. The hand is applied by Camera::createView()
-        instead, which negates view x.
+        one. A mirror is an improper transform and no quaternion represents one. A
+        quat_cast of a mirror returns something that is not a rotation, and the view matrix
+        built from it is not rigid. Camera::createView() applies the hand instead, by
+        negating view x.
 
         glm indexes [column][row]:
         [  0,  4,  8,  12 ]
@@ -257,15 +256,13 @@ void Profile::lookat(const glm::vec3& center) {
     basis[3][3] = 1.0;
 
     rotation_ = glm::quat_cast(basis);
-    // and the matrix itself is kept, so createView() does not have to rebuild it out of
-    // the quaternion it was just cast to
+    // the matrix is kept too, so createView() can use it instead of casting the quaternion
     basis_ = basis;
     basisValid_ = true;
     up_ = y;
     direction_ = z;
-    // the normals follow the hand, so the mirrored hand reports right negated. Callers read
-    // the normals and draw their own geometry against them; the rotation holds the unmirrored
-    // basis
+    // the normals follow the hand, so the mirrored hand reports right negated. Callers
+    // draw against the normals. The rotation holds the unmirrored basis
     right_ = hand_ == Hand::DirectionCrossUp ? -x : x;
 }
 
@@ -282,8 +279,8 @@ void Profile::clone(const Profile& profile) {
     direction_ = profile.direction_;
     name_ = profile.name_;
     rotation_ = profile.rotation_;
-    // the cache is copied with the rotation it describes, so a clone of a profile built by
-    // lookat() builds the same view
+    // the cache is copied with the rotation it describes, so a clone of a profile oriented
+    // by lookat() builds the same view
     basis_ = profile.basis_;
     basisValid_ = profile.basisValid_;
     options_ = profile.options_;
