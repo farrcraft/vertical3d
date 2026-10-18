@@ -523,6 +523,9 @@ Compared by eye with the same scene under the ray hider, the quad's tint and the
 through it agree. The checks' edges are stepped under the reyes hider, because a micropolygon
 is flat shaded with its first corner's colour, which was already so.
 
+Treating every surface as opaque fails the two compositing cases and the glass picture, and
+letting a grid add a second layer fails the one-layer case.
+
 * **A vertex carries `Oi`.** The grid shader writes it back with `Ci`.
 * **A sample keeps every surface nearer than its nearest opaque one**, sorted by depth. A surface
   behind an opaque one is dropped when it arrives.
