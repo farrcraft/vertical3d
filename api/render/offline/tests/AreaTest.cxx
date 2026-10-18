@@ -23,9 +23,7 @@ namespace {
 constexpr unsigned int COUNT = 4000;
 
 /**
- * A point sampled on a quad lies on the quad, and the mean of many is near its centre. The
- * quad is two triangles of unequal shape, so a sampler that weighted the triangles equally
- * rather than by area would still land on the quad and its mean would move off the centre.
+ * A point sampled on a quad lies on the quad, and the mean of many is near its centre.
  **/
 BOOST_AUTO_TEST_CASE(area_points_on_a_quad_test) {
     v3d::render::offline::Area quad("1");
@@ -49,6 +47,27 @@ BOOST_AUTO_TEST_CASE(area_points_on_a_quad_test) {
     const glm::vec3 mean = sum / static_cast<float>(COUNT);
     BOOST_CHECK_SMALL(mean.x - 2.0F, 0.08F);
     BOOST_CHECK_SMALL(mean.y - 0.5F, 0.03F);
+}
+
+/**
+ * Pieces of unequal area are sampled in proportion to their areas. Of two triangles apart, one
+ * of area 3 and one of area 1, three quarters of the points land on the larger. Weighting the
+ * pieces equally would put half on each.
+ **/
+BOOST_AUTO_TEST_CASE(area_weights_pieces_by_area_test) {
+    v3d::render::offline::Area pieces("1");
+    pieces.add(glm::vec3(0.0F), glm::vec3(3.0F, 0.0F, 0.0F), glm::vec3(0.0F, 2.0F, 0.0F));
+    pieces.add(glm::vec3(10.0F, 0.0F, 0.0F), glm::vec3(11.0F, 0.0F, 0.0F), glm::vec3(10.0F, 2.0F, 0.0F));
+    BOOST_CHECK_CLOSE(pieces.area(), 4.0F, 0.01F);
+
+    v3d::type::Random random(9);
+    unsigned int larger = 0;
+    for (unsigned int k = 0; k < COUNT; k++) {
+        if (pieces.sample(glm::vec2(random.unit(), random.unit())).x < 5.0F) {
+            larger++;
+        }
+    }
+    BOOST_CHECK_SMALL((static_cast<float>(larger) / static_cast<float>(COUNT)) - 0.75F, 0.03F);
 }
 
 /**

@@ -461,6 +461,8 @@ is open. The concentric disc map is now `uniform::disc`, beside `uniform::triang
 `uniform::sphere`. No other primitive is drawn by moya, so the report for one under an area
 light has nothing to report. The cases showed that `AttributeEnd` switches an area light off,
 as RI does for any light made in a block. `Illuminate` switches it on again.
+Picking an area light's pieces evenly rather than by area fails the weighting case, and leaving
+the area light open past its block fails both geometry cases.
 
 * **moya's handler overrides `areaLightSource`.** The geometry that follows it in the attribute
   block is added to the light as well as to the scene. `RiAreaLightSourceV` does the same.
