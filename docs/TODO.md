@@ -47,11 +47,6 @@ primitive undisplaced, so its shadows follow its old shape.
   shades a grid. It is for speed alone, and gives no derivatives.
 - Due when a ray-hidden scene's shading time shows it.
 
-[] **moya's `--grid` and `--bucket` do not override a scene's `Option "limits"`.** The driver
-applies them before reading the scene, so a scene that names its own sizes replaces them.
-Applying them after the read is too late, because the reader renders at `WorldEnd`. The command
-line has to win while the scene is read.
-
 Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration).
 
 ## moya's front end and reyes hider

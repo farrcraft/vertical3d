@@ -409,6 +409,30 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_limits_test) {
 }
 
 /**
+ * A size pinned before the scene is read, as moya's --grid and --bucket pin theirs, survives a
+ * scene that names its own with Option "limits". A size that is not pinned is replaced.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_pinned_limits_win_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    handler.context().pinGridSize(64);
+    handler.context().pinBucketSize(8, 8);
+
+    BOOST_REQUIRE(read(
+        "Option \"limits\" \"bucketsize\" [6 6]\n"
+        "Option \"limits\" \"gridsize\" [18]\n", &handler));
+    BOOST_CHECK_EQUAL(handler.context().gridSize(), 64U);
+    BOOST_CHECK_EQUAL(handler.context().bucketWidth(), 8U);
+
+    // a pin of zero is refused, and pins nothing
+    v3d::moya::Renderer other;
+    v3d::moya::RIBHandler loose(&other);
+    loose.context().pinGridSize(0);
+    BOOST_REQUIRE(read("Option \"limits\" \"gridsize\" [18]\n", &loose));
+    BOOST_CHECK_EQUAL(loose.context().gridSize(), 18U);
+}
+
+/**
  * Option "trace" "maxdepth" sets how deep trace() goes. A depth above sixteen is taken as
  * sixteen. A depth that is negative or not finite is not used, and the depth stays as it was.
  **/

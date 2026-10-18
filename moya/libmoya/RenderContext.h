@@ -206,11 +206,18 @@ class RenderContext {
 
         /**
          * shadingRate maps to RiShadingRate(). bucketSize and gridSize map to Option
-         * "limits" "bucketsize" and "gridsize", and both refuse a zero.
+         * "limits" "bucketsize" and "gridsize", and both refuse a zero. A size the command
+         * line pinned is left as it is, and nothing is reported.
          **/
         void shadingRate(float size);
         void bucketSize(unsigned int width, unsigned int height);
         void gridSize(unsigned int size);
+        /**
+         * Sets a size and pins it, so a scene's Option "limits" does not replace it. moya's
+         * `--bucket` and `--grid` pin the sizes they name. A zero is refused and pins nothing.
+         **/
+        void pinBucketSize(unsigned int width, unsigned int height);
+        void pinGridSize(unsigned int size);
         /**
          * The most sample motions one moving grid caches. A grid that sweeps more samples
          * than this works out each micropolygon's motion again instead, which is slower
@@ -518,6 +525,9 @@ class RenderContext {
         unsigned int bucketWidth_ = 16;
         unsigned int bucketHeight_ = 16;
         unsigned int gridSize_ = 256;
+        /** Whether the command line pinned the bucket size or the grid size. **/
+        bool bucketPinned_ = false;
+        bool gridPinned_ = false;
         static constexpr unsigned int defaultMotionCacheLog2 = 20;
         std::size_t motionCache_ = std::size_t(1) << defaultMotionCacheLog2;
         float shadingRate_ = 1.0F;

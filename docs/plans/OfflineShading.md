@@ -139,7 +139,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [17](#step-17--displacement-under-the-ray-hider) | Displacement under the ray hider, as 0095 decides | `api/render/offline`, `moya` | 0095 | open |
 | [18](#step-18--solar-with-an-angle) | `solar` with an angle | `api/render/offline`, `moya` | — | done |
 | [19](#step-19--the-traced-scene-only-when-something-traces) | The reyes hider fills the traced scene only when something traces | `api/render/offline`, `moya` | — | open |
-| [20](#step-20--the-command-line-wins-over-option-limits) | The command line wins over `Option "limits"` | `moya` | — | open |
+| [20](#step-20--the-command-line-wins-over-option-limits) | The command line wins over `Option "limits"` | `moya` | — | done |
 | [21](#step-21--the-documents) | The offline documents state the new rules | `docs` | — | open |
 
 ## What blocks what
@@ -656,6 +656,10 @@ cone's nearest edge.
 shadowing light shader fills it. The committed pictures are unchanged.
 
 ### Step 20 — The command line wins over `Option "limits"`
+
+**Done.** `RenderContext::pinGridSize` and `pinBucketSize` set a size and pin it, and the setters
+`Option "limits"` calls leave a pinned size alone. moya's driver pins what `--grid` and
+`--bucket` name. A pin of zero is refused and pins nothing.
 
 * **The context holds pinned limits.** `--grid` and `--bucket` set the size and pin it. A scene's
   `Option "limits"` then leaves a pinned size alone, and reports nothing.

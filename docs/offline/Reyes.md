@@ -104,4 +104,5 @@ Rules:
 - **A grid is shaded once for all its samples**, so its shadow and traced rays see the scene at
   the shutter's open time.
 - **`--grid` and `--bucket` on the command line, and `Option "limits"`**, set the grid size and
-  bucket size. `ShadingRate` scales the split threshold.
+  bucket size. The command line wins: a size it names is pinned, and a scene's `Option "limits"`
+  leaves a pinned size as it is. `ShadingRate` scales the split threshold.

@@ -457,6 +457,9 @@ void RenderContext::shadingRate(float size) {
 }
 
 void RenderContext::bucketSize(unsigned int width, unsigned int height) {
+    if (bucketPinned_) {
+        return;
+    }
     // a bucket of no pixels covers nothing and the frame would never be finished
     if (width == 0 || height == 0) {
         logger_->get()->warn("a bucket of {} by {} pixels is not used", width, height);
@@ -467,12 +470,27 @@ void RenderContext::bucketSize(unsigned int width, unsigned int height) {
 }
 
 void RenderContext::gridSize(unsigned int size) {
+    if (gridPinned_) {
+        return;
+    }
     // a grid of no micropolygons would split every primitive without end
     if (size == 0) {
         logger_->get()->warn("a grid size of 0 is not used");
         return;
     }
     gridSize_ = size;
+}
+
+void RenderContext::pinBucketSize(unsigned int width, unsigned int height) {
+    bucketPinned_ = false;
+    bucketSize(width, height);
+    bucketPinned_ = width != 0 && height != 0;
+}
+
+void RenderContext::pinGridSize(unsigned int size) {
+    gridPinned_ = false;
+    gridSize(size);
+    gridPinned_ = size != 0;
 }
 
 void RenderContext::motionCache(std::size_t entries) {
