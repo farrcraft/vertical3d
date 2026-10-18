@@ -24,11 +24,11 @@ namespace v3d::render::offline::trace {
 
 /**
  * Traces rays through a scene and shades what they meet: the ray hider's primary rays, and
- * the shadow and traced rays a shader requests under either of moya's hiders.
+ * the shadow and traced rays a shader requests under any of moya's hiders.
  *
  * Each hit is shaded by a HitShader made for it on the stack, which handles the shader's
- * callbacks. A traced ray shades its hit with another HitShader, so a shader that traces
- * part way through its run is left as it was.
+ * callbacks. A traced ray's hit gets its own HitShader, so a shader that calls trace() part
+ * way through its run resumes with its state unchanged.
  **/
 class Tracer final {
  public:
@@ -42,8 +42,8 @@ class Tracer final {
      * What a ray sees: every surface along it composited front to back by its Oi, until
      * they are opaque or the ray leaves the scene, and the background behind what is left.
      *
-     * A ray going on through a surface is not a traced ray, so it does not count against
-     * the scene's trace depth, and a stack of panes of any depth is composited.
+     * A ray that continues through a surface is not a traced ray. It does not count against
+     * the scene's trace depth, so any number of stacked transparent surfaces is composited.
      **/
     class Seen final {
      public:
@@ -80,8 +80,9 @@ class Tracer final {
      *
      * @param path for transmitted(), from the shading point to the light: its direction ends at
      *        the light. For traced(), where the ray starts and which way it goes.
-     * @param geometric the plane of the surface the ray leaves, which it is started off so
-     *        that it does not meet that surface again; zero starts it where it is
+     * @param geometric the geometric normal of the surface the ray leaves. The ray starts a
+     *        small offset along it, so that it does not meet that surface again. Zero starts
+     *        the ray at the path's origin
      **/
     glm::vec3 transmitted(const v3d::type::geometry::Line & path, const glm::vec3 & geometric);
     glm::vec3 traced(const v3d::type::geometry::Line & path, const glm::vec3 & geometric);
@@ -91,12 +92,11 @@ class Tracer final {
 
     /**
      * A machine sized for one program and a batch of one, and that program's globals. Kept
-     * between hits, because a render runs one per pixel and sizing a register file per pixel
-     * would be the costliest allocation in the render.
+     * between hits, so that a register file is not allocated for every hit.
      *
-     * There is one per program per trace depth. A surface tracing into another with the
-     * same shader is still running its machine when the other starts, and sharing one
-     * would overwrite the registers the first is part way through.
+     * There is one per program per trace depth. A shader that calls trace() is still running
+     * when the traced hit is shaded, possibly by the same program. A machine per depth keeps
+     * the first run's registers intact.
      **/
     class Run final {
      public:
@@ -117,8 +117,8 @@ class Tracer final {
     /**
      * How many traced rays deep the run is.
      *
-     * A ray a shader traced may hit a surface whose shader traces again, and nothing in
-     * the language stops that recursing for ever; the scene's trace depth limits it.
+     * A ray a shader traced may hit a surface whose shader traces again. Nothing in the
+     * language stops that recursion, so the scene's trace depth limits it.
      **/
     unsigned int depth_ = 0;
     std::map<std::pair<unsigned int, const v3d::render::offline::sl::runtime::Program*>, Run> runs_;

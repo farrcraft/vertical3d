@@ -27,8 +27,8 @@ v3d_add_test(render_offline
 
 target_link_libraries(v3dtest_render_offline PRIVATE v3dlib_render_offline v3dlib_image v3dlib_log v3dlib_type ${Boost_LIBRARIES})
 
-# The suite opens its fixtures by a relative path against the working directory, which
-# v3d_add_test points at the executable.
+# The suite opens its fixtures by a path relative to the working directory. v3d_add_test
+# sets the working directory to the executable's directory.
 add_custom_command(TARGET v3dtest_render_offline POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/data"

@@ -15,8 +15,8 @@
 namespace v3d::moya::reyes {
 /**
  * A quadrilateral of four neighbouring grid vertices, flat shaded with the colour of its
- * first corner. The first pass splits a primitive until its grid's micropolygons are at most
- * about ShadingRate pixels across.
+ * first corner. A primitive is split until its grid's micropolygons are at most about
+ * ShadingRate pixels across.
  **/
 class MicroPolygon {
  public:

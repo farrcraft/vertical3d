@@ -26,8 +26,8 @@ namespace v3d::render::offline::trace {
 
 Sphere::Sphere(const v3d::render::offline::rib::Sphere & shape, const glm::mat4x4 & placement, const glm::vec3 & colour) :
     Primitive(colour), radius_(shape.radius),
-    // clamped by the size of the radius, so a negative one is still a valid range; such a
-    // sphere is never hit anyway
+    // clamped to the absolute radius, so a negative radius still gives a valid range. A
+    // sphere with a negative radius is never hit
     zmin_(std::clamp(std::min(shape.zmin, shape.zmax), -std::fabs(shape.radius), std::fabs(shape.radius))),
     zmax_(std::clamp(std::max(shape.zmin, shape.zmax), -std::fabs(shape.radius), std::fabs(shape.radius))),
     thetamax_(std::clamp(shape.thetamax, 0.0F, v3d::render::offline::rib::Sphere::FULL_THETAMAX) * PI / HALF_TURN_DEGREES),

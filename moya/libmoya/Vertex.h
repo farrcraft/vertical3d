@@ -25,9 +25,9 @@ class Vertex {
     void point(const glm::vec3 & v);
 
     /**
-     * The colour. Before a grid is shaded it is the geometry's colour, SL's Cs, and the surface
-     * shader replaces it with Ci. It is set on every vertex of a grid rather than per
-     * micropolygon, since a micropolygon shares its corners with its neighbours.
+     * The colour. Before a grid is shaded it is the geometry's colour, SL's Cs. The surface
+     * shader then replaces it with Ci. It is set on every vertex of a grid, not per
+     * micropolygon, because a micropolygon shares its corners with its neighbours.
      */
     glm::vec3 color(void) const;
     void color(const glm::vec3 & colour);
@@ -51,9 +51,9 @@ class Vertex {
     bool hasNormal(void) const;
 
     /**
-     * The geometric normal, SL's Ng: the normal of the plane the primitive lies in, one value
-     * across the primitive rather than a value a vertex brings. It is carried apart from N
-     * because a shader reads Ng on its own, and a traced ray starts off the plane it names.
+     * The geometric normal, SL's Ng: the normal of the plane the primitive lies in. It is one
+     * value across the primitive, not a value each vertex brings. It is kept apart from N
+     * because a shader reads Ng on its own, and a traced ray starts a small offset along it.
      */
     glm::vec3 geometricNormal(void) const;
     void geometricNormal(const glm::vec3 & n);

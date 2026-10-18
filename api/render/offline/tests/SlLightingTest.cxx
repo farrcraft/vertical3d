@@ -106,8 +106,8 @@ class Lamp final {
 };
 
 /**
- * The renderer's half of the message passing: it holds the light shader instances a scene
- * named, and an illuminance loop calls it to run one.
+ * The Renderer an illuminance loop calls to run a light. It holds the light shader instances
+ * a scene named.
  **/
 class Scene final : public v3d::render::offline::sl::runtime::Renderer {
  public:
@@ -282,9 +282,9 @@ BOOST_AUTO_TEST_CASE(sllighting_a_report_reaches_the_log_test) {
 }
 
 /**
- * A light with a position aims a cone, and the points outside it are not lit at all. This is
- * the light shader's side of the mask: L is written for every point it reaches, and the
- * surface never runs the body for the points it misses.
+ * A light with a position aims a cone, and the points outside it are not lit at all. The light
+ * shader writes L for every point the cone reaches. The surface's illuminance body never runs
+ * for the points the cone misses.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_illuminate_cone_test) {
     Scene scene;
@@ -516,8 +516,8 @@ BOOST_AUTO_TEST_CASE(sllighting_return_and_break_leave_illuminance_test) {
 
 /**
  * Lanes of one batch leave an illuminance loop at different lights. A continue skips one light
- * for the lanes that take it, and a break ends the loop for those lanes alone; the lanes beside
- * them go on through every light.
+ * for the lanes that take it, and a break ends the loop for those lanes alone. The other lanes
+ * of the batch go on through every light.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_lanes_leave_illuminance_at_different_lights_test) {
     Scene scene;

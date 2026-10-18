@@ -54,8 +54,8 @@ BOOST_AUTO_TEST_CASE(render_context_image_resolution_test) {
 }
 
 /**
- * A named context takes the same defaults as an unnamed one - the name is what RiBegin is
- * given and is not itself an option.
+ * A named context takes the same defaults as an unnamed one. The name is what RiBegin is
+ * given, and is not itself an option.
  **/
 BOOST_AUTO_TEST_CASE(render_context_named_test) {
     const v3d::moya::RenderContext rc(std::string("scene.rib"));
@@ -65,8 +65,7 @@ BOOST_AUTO_TEST_CASE(render_context_named_test) {
 }
 
 /**
- * The six reserved systems are identity until something saves over them, so a lookup before
- * any transform has been set does not hand back an uninitialised matrix.
+ * Each reserved coordinate system is identity until something saves over it.
  **/
 BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
     v3d::moya::RenderContext rc;
@@ -116,8 +115,7 @@ BOOST_AUTO_TEST_CASE(render_context_translate_test) {
 }
 
 /**
- * A rotate composes onto the current transform the way a translate does, so RiRotate and
- * RiScale change the transform.
+ * A rotate composes onto the current transform the way a translate does.
  **/
 BOOST_AUTO_TEST_CASE(render_context_rotate_test) {
     v3d::moya::RenderContext rc;
@@ -146,7 +144,8 @@ BOOST_AUTO_TEST_CASE(render_context_scale_test) {
 }
 
 /**
- * The first pass files a polygon in the bucket its raster bound opens in.
+ * addPolygon() files a polygon in the bucket that holds the upper left corner of its raster
+ * bound.
  **/
 BOOST_AUTO_TEST_CASE(render_context_buckets_a_polygon_test) {
     v3d::moya::RenderContext rc;
@@ -163,10 +162,10 @@ BOOST_AUTO_TEST_CASE(render_context_buckets_a_polygon_test) {
 }
 
 /**
- * A polygon far larger than one grid is undiceable, so the second pass splits it and hands the
- * pieces back to the first, which measures each in turn. The recursion ends because a split
- * that does not shrink its input is not handed back at all - without that the pieces would be
- * re-split forever.
+ * A polygon far larger than one grid is undiceable. Rendering the buckets splits it, and hands
+ * each piece back to addPolygon(), which measures it in turn. The recursion ends because a
+ * piece that is not smaller than its parent is not handed back. Without that rule, the pieces
+ * would be split again without end.
  **/
 BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
     v3d::moya::RenderContext rc;
@@ -184,9 +183,7 @@ BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
     /*
         The default screen window is [-4/3, 4/3] by [-1, 1] over a 320 by 240 image, so the
         raster bound is 216 pixels across. A grid covers 16, so four rounds of four way
-        splitting bring every piece under one: 4^4 pieces, all diceable and bucketed. The case
-        also checks that the count is reached at all, because a split that failed to shrink its
-        input would be re-split without end.
+        splitting bring every piece under one: 4^4 pieces, all diceable and bucketed.
     */
     BOOST_TEST(rc.framebuffer()->primitiveCount() == 256U);
 }
@@ -194,9 +191,9 @@ BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
 namespace {
 
 /**
- * A triangle small enough that the first pass measures it as diceable, so its vertices are
- * moved into eye space rather than handed to the splitter. Its plane is (1, 1, 0)
- * normalised, which is a normal no axis aligned scale leaves alone.
+ * A triangle small enough that addPolygon() measures it as diceable, so its vertices are
+ * moved into eye space and it is not split. Its plane is (1, 1, 0) normalised, a normal that
+ * a scale of the x or y axis alone changes.
  **/
 boost::shared_ptr<v3d::moya::Polygon> diagonal() {
     boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
@@ -220,7 +217,7 @@ BOOST_AUTO_TEST_CASE(render_context_face_normal_test) {
     polygon->addVertex(vertex(-0.01F, -0.01F, 5.0F));
     polygon->addVertex(vertex(0.01F, -0.01F, 5.0F));
     polygon->addVertex(vertex(0.01F, 0.01F, 5.0F));
-    // nothing has written a shading normal yet, so the fill in supplies one
+    // nothing has written a shading normal yet, so addPolygon() fills one in
     BOOST_TEST(!polygon->vertex(0).hasNormal());
 
     rc.addPolygon(polygon);
@@ -233,7 +230,7 @@ BOOST_AUTO_TEST_CASE(render_context_face_normal_test) {
 }
 
 /**
- * A varying "N" is the shading normal and overrides the plane; Ng stays the plane, because SL
+ * A varying "N" is the shading normal and overrides the plane. Ng stays the plane, because SL
  * defines faceforward() and calculatenormal() in terms of the pair.
  **/
 BOOST_AUTO_TEST_CASE(render_context_normal_override_test) {
@@ -256,9 +253,10 @@ BOOST_AUTO_TEST_CASE(render_context_normal_override_test) {
 }
 
 /**
- * A normal transforms by the inverse transpose. Under a rotation or a uniform scale that is
- * the same matrix that moves the points, so only a scale of one axis tells the two apart: the
- * normal of the transformed plane leans the opposite way to the points.
+ * A normal transforms by the inverse transpose. Under a rotation or a uniform scale, that
+ * moves a normal the way the matrix that moves the points does. Only a scale of one axis
+ * tells the two apart, and then the normal of the transformed plane leans the opposite way to
+ * the points.
  **/
 BOOST_AUTO_TEST_CASE(render_context_normal_inverse_transpose_test) {
     v3d::moya::RenderContext rc;
@@ -269,8 +267,8 @@ BOOST_AUTO_TEST_CASE(render_context_normal_inverse_transpose_test) {
     rc.addPolygon(polygon);
 
     BOOST_REQUIRE(polygon->diceable());
-    // the object plane is (1, 1, 0) normalised; the inverse transpose of a scale of two in y
-    // halves that component, which is the plane the doubled points actually lie in
+    // the object plane is (1, 1, 0) normalised. The inverse transpose of a scale of two in y
+    // halves the y component, and gives the plane the scaled points lie in
     const glm::vec3 expected = glm::normalize(glm::vec3(1.0F, 0.5F, 0.0F));
     for (size_t i = 0; i < polygon->vertexCount(); i++) {
         const glm::vec3 normal = polygon->vertex(i).geometricNormal();
@@ -348,14 +346,14 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
     polygon->addVertex(vertex(-0.9F, 0.9F, 5.0F));
     rc.addPolygon(polygon);
 
-    // too large for one grid, so the second pass splits it rather than dicing it - and the
+    // too large for one grid, so rendering the buckets splits it and does not dice it. The
     // plane it hands its pieces is the one it was placed with
     BOOST_REQUIRE(!polygon->diceable());
     BOOST_TEST((polygon->normal() == glm::vec3(0.0F, 0.0F, 1.0F)));
 
-    // the pieces reach the first pass again already placed, so they keep it. The render then
-    // terminates with every piece bucketed, which would fail if a piece were re-measured
-    // against the state of whatever came last
+    // the pieces reach addPolygon() again already placed, so they keep that plane. The render
+    // ends with every piece bucketed. It would not if a piece were measured with the current
+    // state instead of its parent's
     rc.render();
     BOOST_TEST(rc.framebuffer()->primitiveCount() == 256U);
 }
@@ -364,9 +362,9 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
  * An imager runs after the last bucket, over the finished frame, and gives a pixel nothing
  * was drawn into the value the scene set for it.
  *
- * The ray hider runs the same shader through the same runner after its last ray. The imager
- * reads the coverage plane, because without it a pixel the hider never reached and a black
- * one hold the same value.
+ * render() runs the imager the same way after either hider. The imager reads the coverage
+ * plane, because without it a pixel the hider never reached and a black one hold the same
+ * value.
  **/
 BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
     v3d::moya::RenderContext rc;

@@ -37,8 +37,9 @@ ShaderLibrary & library() {
 }
 
 /**
- * Defaults that fail fail the same way on every run, so the failure is reported once per
- * machine rather than once per run. A machine never prepared fails them every time.
+ * A shader's defaults that fail to run fail the same way on every run, so the failure is
+ * reported once per machine rather than once per run. A machine never prepared fails them
+ * every time.
  **/
 BOOST_AUTO_TEST_CASE(slglobals_failed_defaults_are_reported_once_test) {
     const InstancePtr shader = library().instance("constant", ShaderType::SURFACE, ParameterList());
@@ -53,7 +54,7 @@ BOOST_AUTO_TEST_CASE(slglobals_failed_defaults_are_reported_once_test) {
 
 /**
  * A surface reads the point a hider bound into each lane, and what it leaves in Ci and Oi
- * comes back per lane - `constant` is Os * Cs and Os.
+ * comes back per lane. `constant` sets Ci to Os * Cs and Oi to Os.
  **/
 BOOST_AUTO_TEST_CASE(slglobals_surface_test) {
     const InstancePtr shader = library().instance("constant", ShaderType::SURFACE, ParameterList());
@@ -81,8 +82,8 @@ BOOST_AUTO_TEST_CASE(slglobals_surface_test) {
 }
 
 /**
- * A program a renderer was not given has no globals at all, and what is read back from it
- * is the fallback value the renderer passed.
+ * Globals built with no program have no globals at all. A read returns the fallback value
+ * the caller passed.
  **/
 BOOST_AUTO_TEST_CASE(slglobals_absent_test) {
     const Globals globals;

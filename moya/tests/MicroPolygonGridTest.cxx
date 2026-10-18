@@ -38,8 +38,8 @@ BOOST_AUTO_TEST_CASE(micropolygon_grid_size_test) {
 }
 
 /**
- * A micropolygon is named by its lower indexed corner and shares its vertices with its
- * neighbours, so the four corners come off the grid in winding order.
+ * A micropolygon is named by its lower indexed corner, and shares its vertices with its
+ * neighbours. Its four corners come off the grid in winding order.
  **/
 BOOST_AUTO_TEST_CASE(micropolygon_grid_polygon_test) {
     v3d::moya::reyes::MicroPolygonGrid grid(2);
@@ -64,14 +64,14 @@ BOOST_AUTO_TEST_CASE(micropolygon_grid_extent_test) {
     v3d::moya::reyes::MicroPolygonGrid grid(3);
 
     BOOST_TEST(grid.size() == 3U);
-    // (1, 1) reads vertices (1, 1) through (2, 2), which is the last polygon that fits
+    // (1, 1) is the last polygon that fits, and reads vertices (1, 1) through (2, 2)
     grid.addVertex(vertex(9.0F, 9.0F, 9.0F), 2, 2);
     BOOST_TEST((grid.microPolygon(1, 1)[2].point() == glm::vec3(9.0F, 9.0F, 9.0F)));
 }
 
 /**
- * A micropolygon turned 45 degrees covers the points inside it and not the corners of its
- * raster bound, which a hider that filled the whole bound would write.
+ * A micropolygon turned 45 degrees covers the points inside it, and not the corners of its
+ * raster bound.
  **/
 BOOST_AUTO_TEST_CASE(micropolygon_covers_test) {
     const std::array<glm::vec3, 4> diamond = {

@@ -36,8 +36,8 @@ BOOST_AUTO_TEST_CASE(polygon_vertex_test) {
 }
 
 /**
- * The subscript is the only accessor that hands back a reference, so it is the one a caller
- * can write a vertex through.
+ * The subscript is the only accessor that returns a reference. A caller writes a vertex
+ * through it.
  **/
 BOOST_AUTO_TEST_CASE(polygon_vertex_reference_test) {
     v3d::moya::Polygon polygon;
@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(polygon_remove_middle_vertex_test) {
 }
 
 /**
- * clear empties the polygon, so a clip can write its result back over the one it was given.
+ * clear removes every vertex of the polygon.
  **/
 BOOST_AUTO_TEST_CASE(polygon_clear_test) {
     v3d::moya::Polygon polygon;
@@ -75,8 +75,8 @@ BOOST_AUTO_TEST_CASE(polygon_clear_test) {
 }
 
 /**
- * The bound is in object space and is the per-axis extent of the vertices. The splitter and
- * the bucket assignment both read it.
+ * The bound is the per-axis extent of the vertices, in the space they are in. split() and
+ * RenderContext::addPolygon() both read it.
  **/
 BOOST_AUTO_TEST_CASE(polygon_bound_test) {
     v3d::moya::Polygon polygon;
@@ -91,8 +91,7 @@ BOOST_AUTO_TEST_CASE(polygon_bound_test) {
 }
 
 /**
- * A polygon holding nothing has no extent to report, so the bound comes back as the default
- * one rather than as whatever the first vertex would have seeded it with.
+ * A polygon with no vertices has no extent, and its bound is a default constructed one.
  **/
 BOOST_AUTO_TEST_CASE(polygon_empty_bound_test) {
     const v3d::moya::Polygon polygon;
@@ -104,8 +103,9 @@ BOOST_AUTO_TEST_CASE(polygon_empty_bound_test) {
 }
 
 /**
- * The plane a polygon lies in, wound the way its vertices are - SL's Ng, and the normal every
- * vertex of it takes when the scene supplies no varying "N".
+ * The geometric normal is the normal of the plane the polygon lies in, facing the way its
+ * vertices wind. It is SL's Ng. Every vertex takes it as its normal when the scene supplies no
+ * varying "N".
  **/
 BOOST_AUTO_TEST_CASE(polygon_geometric_normal_test) {
     v3d::moya::Polygon polygon;
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(polygon_geometric_normal_test) {
 
     BOOST_TEST((polygon.geometricNormal() == glm::vec3(0.0F, 0.0F, 1.0F)));
 
-    // the winding is what decides which way it faces, so reversing it reverses the normal
+    // the winding decides which way the polygon faces, so reversing it reverses the normal
     v3d::moya::Polygon reversed;
     reversed.addVertex(vertex(0.0F, 0.0F, 0.0F));
     reversed.addVertex(vertex(0.0F, 1.0F, 0.0F));
@@ -139,8 +139,7 @@ BOOST_AUTO_TEST_CASE(polygon_geometric_normal_skips_collinear_test) {
 }
 
 /**
- * A polygon with no area lies in no plane, and returns zero rather than normalising a zero
- * vector.
+ * A polygon with no area lies in no plane, and its geometric normal is the zero vector.
  **/
 BOOST_AUTO_TEST_CASE(polygon_degenerate_normal_test) {
     v3d::moya::Polygon collinear;

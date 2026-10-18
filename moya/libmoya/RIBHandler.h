@@ -18,8 +18,7 @@ namespace v3d::moya {
  * Drives a render context from a RIB stream. The reader calls one typed method per RI request.
  *
  * RiBegin and RiEnd have no RIB equivalent. The standard implies them at the start and end
- * of a file, so a handler creates the context it drives and destroys it when it goes out of
- * scope.
+ * of a file, so the constructor pushes a render context and the destructor pops it.
  *
  * The C entry points in RenderMan.cxx are the other way into the same render context.
  * Neither calls the other. The reader passes typed parameter lists, and the C entry points

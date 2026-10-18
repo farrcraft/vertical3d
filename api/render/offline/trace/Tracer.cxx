@@ -56,7 +56,7 @@ Tracer::Run & Tracer::run(const v3d::render::offline::sl::InstancePtr & shader) 
         return held;
     }
     held.program = &shader->program();
-    // a batch of one: a hit is not a special case of the model
+    // a batch of one point: a hit runs the same machine as a grid
     held.machine.prepare(shader->program(), 1);
     held.globals = v3d::render::offline::sl::Globals(shader->program());
     return held;
@@ -76,19 +76,19 @@ glm::vec3 Tracer::transmitted(const v3d::type::geometry::Line & path, const glm:
     }
 
     /*
-        The ray leaves the surface it is shading, so it starts off it: exactly on it, it
-        meets it. The offset is along the geometric normal and toward the light, which is
-        the side the light is on - a ray leaving the back of a surface would otherwise
-        start inside it.
+        The ray starts a small offset from the surface it leaves, because a ray that starts
+        exactly on the surface hits it. The offset is along the geometric normal, on the
+        side the light is on. A ray leaving the back of a surface would otherwise start
+        inside it.
     */
     const float side = glm::dot(geometric, along) < 0.0F ? -1.0F : 1.0F;
     const v3d::type::geometry::Ray ray({.origin = path.origin + (geometric * (side * EPSILON)), .direction = along / span});
 
     /*
-        Everything between here and the light takes its share, and nothing beyond the light
-        does. An occluder lets through what its Os does not stop. Os is read off the
-        primitive rather than by running its shader. A shadow is a visibility question, and
-        asking a shader would make every shadow ray a shading one.
+        Each occluder between the shading point and the light lets through what its Os
+        does not stop. Nothing beyond the light counts. Os is read from the primitive, and
+        its shader is not run: a shadow ray only tests visibility, and running a shader would
+        make every shadow ray a shading ray.
     */
     glm::vec3 through(1.0F);
     float past = 0.0F;
@@ -129,9 +129,8 @@ Tracer::Seen Tracer::see(const v3d::type::geometry::Ray & ray) {
     }
     /*
         Each surface goes behind what is in front of it: C += (1 - A) Ci and A += (1 - A) Oi,
-        with Ci already premultiplied. The next surface is searched for past the last one,
-        so the loop ends: the distances only grow, and a ray meets each primitive at most
-        twice.
+        with Ci already premultiplied. Each search starts past the last hit, so the distance
+        only grows. A ray meets each primitive at most twice, so the loop ends.
     */
     float past = 0.0F;
     Hit hit;

@@ -25,9 +25,9 @@ namespace v3d::render::offline::rib {
  * The methods mirror the RI request set. A method that does not correspond to an RI request
  * does not belong here.
  *
- * **Every method has an empty body rather than being pure virtual.** The RI standard requires
- * a renderer to accept a request for a feature it does not support, and a request added
- * later then breaks no handler. A misspelled override is silent as a result, so every
+ * **Every method has an empty body, not a pure virtual one.** The RI standard requires a
+ * renderer to accept a request for a feature it does not support. A method added here also
+ * breaks no existing handler. A misspelled override would compile as a new method, so every
  * override carries `override`.
  **/
 class Handler {
@@ -149,9 +149,9 @@ class Handler {
         (void)on;
     }
     /**
-     * Make a texture file from an image. Nothing by default: a renderer that reads the image
-     * a scene names as the texture has nothing to make, and the request is still understood
-     * rather than unrecognised.
+     * Make a texture file from an image. Does nothing by default. A renderer that reads the
+     * named image directly as the texture has nothing to make. The reader still counts the
+     * request as recognised.
      **/
     virtual void makeTexture(const MakeTexture & request, const ParameterList & parameters) {
         (void)request;
@@ -169,15 +169,15 @@ class Handler {
     // geometry
     /**
      * The handler that receives each primitive after the first in a motion block. Such a
-     * primitive is the same one at a later time, so it deforms. Null by default: the reader
-     * then reads the primitive to keep the stream in step, drops it, and lists it as
-     * unsupported, so the primitive is drawn at the block's first time.
+     * primitive is the first one at a later time, so the primitive deforms. Null by default.
+     * The reader then still parses the primitive, discards it, and lists it as unsupported.
+     * The primitive is drawn at the block's first time only.
      **/
     virtual Handler* deformation() { return nullptr; }
 
     /**
-     * One closed planar convex polygon. RIB carries no vertex count - it is the length of
-     * the "P" array, which the reader has already divided out.
+     * One closed planar convex polygon. RIB carries no vertex count. The reader takes it
+     * from the length of "P", or of "Pw" or "Pz" when there is no "P".
      **/
     virtual void polygon(unsigned int vertices, const ParameterList & parameters) {
         (void)vertices;

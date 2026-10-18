@@ -64,8 +64,8 @@ const glm::vec3 & Triangle::geometricNormal() const {
 
 glm::vec3 Triangle::shadingNormal(float u, float v) const {
     const glm::vec3 normal = na_ * (1.0F - u - v) + nb_ * u + nc_ * v;
-    // interpolating unit normals does not give a unit one back, and three corners whose
-    // normals cancel give none at all, so the plane is used instead
+    // a blend of unit normals is not unit length, so it is normalised. Corner normals that
+    // cancel give a zero vector, and the plane is used instead
     const float length = glm::length(normal);
     return length > 0.0F ? normal / length : geometric_;
 }

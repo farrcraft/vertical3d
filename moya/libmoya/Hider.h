@@ -15,17 +15,17 @@ class RenderContext;
 
 /**
  * How moya decides what the camera sees. A scene picks the hider with the `Hider` request.
- * Both hiders read one graphics state and write one framebuffer. They differ in whether
- * primitives are diced and bucketed or traced.
+ * Every hider reads the same graphics state and writes the same framebuffer. Hiders differ in
+ * whether primitives are diced and bucketed, or traced.
  **/
 class Hider {
  public:
     virtual ~Hider() = default;
 
     /**
-     * Whether the hider sees the traced scene and nothing else. A primitive is then traced
-     * rather than diced and bucketed, and a sphere, which only the tracer intersects, can be
-     * drawn.
+     * Whether the hider sees the traced scene and nothing else. A primitive is then traced,
+     * not diced and bucketed. Only such a hider draws a sphere, because only the tracer
+     * intersects one.
      **/
     virtual bool traces() const = 0;
 

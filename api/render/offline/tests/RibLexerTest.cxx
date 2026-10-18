@@ -123,8 +123,8 @@ BOOST_AUTO_TEST_CASE(riblexer_position_test) {
 }
 
 /**
- * Both encodings are part of the format and neither is supported. Parsed as ASCII they would
- * produce nonsense rather than an error, so the lexer reports an error instead.
+ * Binary and gzipped RIB are both part of the format, and neither is supported. The lexer
+ * reports either one as an error. Parsed as ASCII, they would produce nonsense tokens.
  **/
 BOOST_AUTO_TEST_CASE(riblexer_binary_rejected_test) {
     std::string error;

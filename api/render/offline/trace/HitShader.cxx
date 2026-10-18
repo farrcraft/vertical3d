@@ -30,14 +30,14 @@ HitShader::HitShader(Tracer* tracer, const Hit & hit) :
 }
 
 bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
-    // a hit's current space is world space, because that is where the scene is
+    // a hit's current space is world space, because the scene is held in world space
     if (name == "current" || name == "world") {
         *matrix = glm::mat4x4(1.0F);
         return true;
     }
     if (name == "shader") {
-        // the placement maps the shader's own space into world space, and this maps out of
-        // world space, so it is the inverse
+        // the placement maps shader space into world space. This matrix maps world space
+        // into shader space, so it is the inverse
         *matrix = glm::inverse(placement_);
         return true;
     }
@@ -45,9 +45,9 @@ bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
         *matrix = tracer_->scene()->view();
         return true;
     }
-    // a ray tracer has no screen or raster space: it does not project, but requests a ray
-    // through a pixel from the camera, and that matrix belongs to the camera. "object" is the
-    // transformation in force at the primitive, and a traced primitive does not carry it
+    // a ray tracer does not project, so it has no screen or raster space. The camera makes the
+    // ray through each pixel and holds that matrix. "object" space is the transformation in
+    // force at the primitive, and a traced primitive does not store it
     return false;
 }
 
@@ -72,8 +72,8 @@ bool HitShader::light(unsigned int index, const Value & surface, Value* directio
     Tracer::Run & held = tracer_->run(source.shader);
     held.machine.renderer(this);
 
-    // the point it is lighting is in world space, and the light's own space is where the
-    // scene instanced it
+    // the shading point is in world space. While the light runs, "shader" space is the space
+    // the scene instanced the light in
     const glm::mat4x4 was = placement_;
     placement_ = source.placement;
     const bool ran = held.globals.shine(source, &held.machine, 1, surface, direction, colour, reached, ambient);

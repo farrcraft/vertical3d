@@ -35,9 +35,9 @@ v3d::type::geometry::Plane zPlane() {
 }
 
 /**
- * A plane and an edge on which the two plane tests disagree: classify() puts s on the cut side
- * and p on the kept side, and intersectEdge() finds no meeting, because p is a hair past the
- * plane and the parameter it computes for p comes out just above one.
+ * A plane and an edge on which the two plane tests disagree. classify() puts cutEnd() on the
+ * cut side and keptEnd() on the kept side. intersectEdge() finds no meeting, because keptEnd()
+ * is a hair past the plane and the edge parameter it computes comes out just above one.
  **/
 v3d::type::geometry::Plane tiltedPlane() {
     v3d::type::geometry::Plane plane;
@@ -54,8 +54,8 @@ glm::vec3 keptEnd() {
 }
 
 /**
- * A polygon whose split by one plane a test can call, which the renderer reaches only through
- * the split into four.
+ * A polygon that makes the protected split by one plane public to a test. The renderer calls
+ * that split only through split(RenderContext &), which cuts a polygon into four.
  **/
 class Splittable final : public v3d::moya::Polygon {
  public:
@@ -63,7 +63,8 @@ class Splittable final : public v3d::moya::Polygon {
 };
 
 /**
- * A triangle with that edge, and a third corner well inside the kept half space.
+ * A triangle with the edge from cutEnd() to keptEnd(), and a third corner well inside the kept
+ * half space of tiltedPlane().
  **/
 boost::shared_ptr<Splittable> tiltedTriangle() {
     const glm::vec3 inside = keptEnd() + glm::vec3(-0.522197902F, 0.622982621F, 0.582410455F) * 2.0F;
@@ -94,8 +95,8 @@ BOOST_AUTO_TEST_CASE(polygon_clip_an_edge_that_ends_past_the_plane_test) {
 }
 
 /**
- * Split takes the same edge as a crossing too, rather than as an edge wholly on one side, so
- * each piece holds only what is on its own side of the plane.
+ * Split takes the same edge as a crossing too, not as an edge wholly on one side. Each piece
+ * holds only what is on its own side of the plane.
  **/
 BOOST_AUTO_TEST_CASE(polygon_split_an_edge_that_ends_past_the_plane_test) {
     const v3d::type::geometry::Plane plane = tiltedPlane();
@@ -116,7 +117,7 @@ BOOST_AUTO_TEST_CASE(polygon_split_an_edge_that_ends_past_the_plane_test) {
 }
 
 /**
- * The clip rewrites the polygon it is called on, so the polygon itself comes out clipped.
+ * The clip rewrites the polygon it is called on.
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_rewrites_the_polygon_test) {
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
@@ -149,8 +150,7 @@ BOOST_AUTO_TEST_CASE(polygon_clip_keeps_an_inside_polygon_test) {
 }
 
 /**
- * A polygon with no area has no inside to keep, and the clip loop starts on the vertex before
- * the first one, so the polygon is left alone rather than indexed off the front.
+ * A polygon of fewer than three vertices has no area to keep, and the clip leaves it as it was.
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_degenerate_polygon_test) {
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
@@ -166,7 +166,8 @@ BOOST_AUTO_TEST_CASE(polygon_clip_degenerate_polygon_test) {
 }
 
 /**
- * A frustum clip runs every plane over the polygon, so what survives is inside all six.
+ * A frustum clip runs every plane of the frustum over the polygon. What survives is inside
+ * all of them.
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_frustum_test) {
     v3d::moya::Polygon polygon;
@@ -220,8 +221,8 @@ BOOST_AUTO_TEST_CASE(polygon_clip_carries_texture_coordinates_test) {
 
 /**
  * A vertex the clip makes where an edge crosses the plane has the colour and the shading
- * normal as far along the edge as it is, the normal at unit length. An edge with an end that
- * has no normal gives the crossing none, so it is filled from the primitive later.
+ * normal as far along the edge as it is. The normal is at unit length. A crossing on an edge
+ * with an end that has no normal gets no normal either.
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_carries_colour_and_normal_test) {
     v3d::moya::Polygon polygon;

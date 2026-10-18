@@ -93,8 +93,8 @@ BOOST_AUTO_TEST_CASE(sltypes_vtransform_test) {
 
 /**
  * A normal goes by the inverse transpose. Under a rotation a normal transforms as a vector
- * does; under a scale of one axis it does not. moya's dicing and its traced fan follow the
- * same rule.
+ * does, and under a scale of one axis it does not. moya transforms the normals of diced grids
+ * and of traced polygons by the same rule.
  **/
 BOOST_AUTO_TEST_CASE(sltypes_ntransform_test) {
     // under a rotation and a translation the three agree about direction

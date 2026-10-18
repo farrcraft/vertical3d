@@ -41,7 +41,7 @@ v3d::render::offline::Sampling box(const Box & filter) {
 
 /**
  * Each filter at its centre, at half its width and past it, against RI's formulas worked by
- * hand. A box and a triangle two pixels wide reach a pixel either side; the gaussian is
+ * hand. A box and a triangle two pixels wide reach a pixel either side. The gaussian is
  * exp(-2) at its edge.
  **/
 BOOST_AUTO_TEST_CASE(film_filter_weights_test) {
@@ -109,8 +109,8 @@ BOOST_AUTO_TEST_CASE(film_uniform_test) {
 }
 
 /**
- * Half of a pixel's samples hitting is a coverage of a half under a box, the fraction the
- * coverage plane holds. A black miss weighs in, so the colour is premultiplied.
+ * Under a box, a pixel where half the samples hit has a coverage of a half. The coverage
+ * plane holds that fraction. A miss adds black to the colour, so the colour is premultiplied.
  **/
 BOOST_AUTO_TEST_CASE(film_half_coverage_test) {
     const v3d::render::offline::Sampling sampling = box({.samples = 2, .width = 1.0F});

@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE(ribreader_camera_requests_test) {
 }
 
 /**
- * RIB carries no vertex count - it is the length of the position array.
+ * RIB carries no vertex count. The count is the length of the position array.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_polygon_test) {
     CountingHandler handler;
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE(ribreader_polygon_test) {
 
 /**
  * A varying parameter carries one element per vertex, so a colour per corner reads back as
- * four colours without the reader being told how many there were.
+ * four colours, although the file never states the count.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_varying_parameter_test) {
     CountingHandler handler;
@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE(ribreader_points_polygons_test) {
 }
 
 /**
- * An unbracketed value is legal for a uniform parameter; only the declaration table says
+ * An unbracketed value is legal for a uniform parameter. Only the declaration table gives
  * how many values it takes.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_unbracketed_parameter_test) {
@@ -439,8 +439,8 @@ BOOST_AUTO_TEST_CASE(ribreader_unrecognised_request_test) {
 }
 
 /**
- * MakeTexture is understood and makes nothing, because the image a scene names is the
- * texture; and the texture search path is a string the renderer receives.
+ * MakeTexture is recognised and makes nothing, because the image a scene names is the
+ * texture. The texture search path reaches the renderer as a string.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_texture_requests_test) {
     CountingHandler handler;
@@ -541,14 +541,14 @@ BOOST_AUTO_TEST_CASE(ribreader_example_file_test) {
     // the floor polygon is the only geometry with vertices in the file
     BOOST_CHECK_EQUAL(handler.vertices_, 4U);
 
-    // Displacement and ShadingRate are recognised by the standard and not by this reader
+    // Displacement is a standard request that this reader does not recognise
     BOOST_CHECK(!reader.unrecognised().empty());
 }
 
 /**
  * A light carries a handle, and a later Illuminate names it by that handle. RIB 3.03
- * writes it as a sequence number and later RIB writes a string; both reach the handler as a
- * string.
+ * writes the handle as a sequence number and later RIB writes a string. Both reach the
+ * handler as a string.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_light_handles_test) {
     CountingHandler handler;
@@ -609,8 +609,8 @@ BOOST_AUTO_TEST_CASE(ribreader_hider_test) {
 }
 
 /**
- * A motion block's times reach the handler, and every transform request inside it does too,
- * since each is the transformation at one of the times.
+ * A motion block's times reach the handler, and so does every transform request inside it.
+ * Each request is the transformation at one of the times.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_motion_block_test) {
     CountingHandler handler;
@@ -635,9 +635,9 @@ BOOST_AUTO_TEST_CASE(ribreader_motion_block_test) {
 }
 
 /**
- * A primitive repeated inside a motion block deforms, which the default handler does not
- * build: the first reaches
- * the handler, the second is read and reported, and the request after the block still reads.
+ * A primitive repeated inside a motion block deforms, and the default handler does not build a
+ * deforming primitive. The first pose reaches the handler and the second is read and reported.
+ * The request after the block still reads.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_deforming_motion_test) {
     CountingHandler handler;
@@ -662,8 +662,8 @@ BOOST_AUTO_TEST_CASE(ribreader_deforming_motion_test) {
 namespace {
 
 /**
- * A handler that implements what the default bodies leave out: sample an area light, make a
- * texture, and build a primitive that deforms.
+ * A handler that overrides the Handler defaults to sample an area light, make a texture, and
+ * build a primitive that deforms.
  **/
 class CapableHandler final : public v3d::render::offline::rib::Handler {
  public:
@@ -689,7 +689,7 @@ class CapableHandler final : public v3d::render::offline::rib::Handler {
         return &later_;
     }
 
-    /** The later poses, which this renderer keeps apart from the first. **/
+    /** Receives the later poses, kept apart from the first. **/
     class Later final : public v3d::render::offline::rib::Handler {
      public:
         void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
@@ -735,10 +735,10 @@ BOOST_AUTO_TEST_CASE(ribreader_capable_handler_test) {
 }
 
 /**
- * A Format, a FrameBegin or a PixelFilter width that is not a size is skipped with a warning,
- * rather than converted to an unsigned count, which is undefined for one out of range. A
- * Format side above largestResolution, infinite, or between 0 and 1 is not a size. The file
- * still reads, and the requests that are sizes still arrive.
+ * A Format, a FrameBegin or a PixelFilter width that is not a size is skipped with a warning.
+ * Converting an out of range value to an unsigned count is undefined. A Format side above
+ * largestResolution, infinite, or between 0 and 1 is not a size. The file still reads, and
+ * the requests that are sizes still arrive.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_sizes_that_are_not_sizes_are_skipped_test) {
     CountingHandler handler;
@@ -763,7 +763,7 @@ BOOST_AUTO_TEST_CASE(ribreader_sizes_that_are_not_sizes_are_skipped_test) {
 }
 
 /**
- * A Format side of zero or less asks for the renderer's default for that side, as RI reads it.
+ * A Format side of zero or less selects the renderer's default for that side, as RI reads it.
  * It arrives as 0, and the other side arrives as named.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_format_nonpositive_side_asks_for_the_default_test) {
@@ -782,7 +782,7 @@ BOOST_AUTO_TEST_CASE(ribreader_format_nonpositive_side_asks_for_the_default_test
 }
 
 /**
- * A pixel aspect of zero or less asks for the device's own. The size still arrives, with
+ * A pixel aspect of zero or less selects the device's own. The size still arrives, with
  * square pixels.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_default_pixel_aspect_test) {

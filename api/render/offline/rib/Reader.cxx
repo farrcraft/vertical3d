@@ -276,9 +276,9 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
         if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3)) {
             return Result::Failed;
         }
-        // a side formatSide() refuses skips the request. A side of zero or less arrives as 0,
-        // which asks for the renderer's default. An aspect that is not a positive finite number
-        // asks for the device's own, which is square pixels.
+        // a side that formatSide() refuses skips the request. A side of zero or less arrives
+        // as 0, which asks for the renderer's default. An aspect that is not a positive finite
+        // number becomes 1, square pixels.
         const std::optional<uint32_t> width = formatSide(arg1);
         const std::optional<uint32_t> height = formatSide(arg2);
         if (!width || !height) {
@@ -421,8 +421,8 @@ Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Ha
         }
         Filter filter = Filter::Gaussian;
         if (!filterNamed(first, &filter)) {
-            // the request was understood and its filter was not, so the renderer keeps the
-            // one it had rather than the parse failing
+            // an unknown filter skips the request without failing the parse, and the
+            // renderer keeps its current filter
             if (reported_.insert("filter " + first).second) {
                 logger_->get()->warn("RIB PixelFilter '{}' is not a filter and was skipped", first);
             }
@@ -529,7 +529,7 @@ Reader::Result Reader::transformRequest(const std::string & name, Lexer * lexer,
 }
 
 /**
- * Reads a motion block's bounds. What it moves is the transform requests between them.
+ * Reads MotionBegin and MotionEnd, and records whether a motion block is open.
  **/
 Reader::Result Reader::motionRequest(const std::string & name, Lexer * lexer, Handler * handler) {
     if (name == "MotionBegin") {
@@ -663,7 +663,7 @@ Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer,
     ParameterList list;
 
     if (name == "Polygon") {
-        // RIB carries no vertex count: it is the length of the position array
+        // RIB carries no vertex count: it is the length of "P", "Pw" or "Pz"
         if (!parameters(lexer, 0, &list)) {
             return Result::Failed;
         }
@@ -785,8 +785,8 @@ bool Reader::read(std::istream & stream, Handler * handler) {
 }
 
 bool Reader::read(const std::string & path, Handler * handler) {
-    // binary rather than text: the lexer sniffs the opening bytes for a binary or gzipped
-    // stream, and a carriage return is whitespace to it either way
+    // opened in binary mode so the lexer sees the opening bytes unchanged when it checks for
+    // binary or gzipped RIB. The lexer treats a carriage return as whitespace.
     std::ifstream file(path.c_str(), std::ios::binary);
     if (!file.is_open()) {
         error_ = "could not open '" + path + "'";

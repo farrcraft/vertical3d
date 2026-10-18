@@ -16,9 +16,9 @@ namespace v3d::moya {
  * request lands in it.
  *
  * Moya is not a RenderMan compliant renderer. Compliance forbids any way into the renderer
- * besides the RI calls and RIB, and RenderContext is one. A program that uses the RI standard
- * without being compliant must display Pixar's copyright notice. The renderer prints it on
- * stdout each time a context is pushed onto an empty stack.
+ * besides the RI calls and RIB, and RenderContext is another way in. A program that uses the
+ * RI standard without being compliant must display Pixar's copyright notice. The renderer
+ * prints it on stdout each time a context is pushed onto an empty stack.
  **/
 class Renderer {
  public:

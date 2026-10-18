@@ -14,9 +14,8 @@
 namespace {
 
 /**
- * A primitive is undiceable until the first pass has measured it against the grid size, so an
- * unmeasured one is routed through that measurement rather than assumed small enough to skip
- * it.
+ * A primitive is undiceable until RenderContext::addPolygon() has measured it against the grid
+ * size. An unmeasured primitive is never assumed small enough to dice.
  **/
 BOOST_AUTO_TEST_CASE(reyes_primitive_default_diceable_test) {
     const v3d::moya::reyes::Primitive primitive;
@@ -35,7 +34,7 @@ BOOST_AUTO_TEST_CASE(reyes_primitive_diceable_test) {
 }
 
 /**
- * The flag is per primitive, so splitting one does not decide for its neighbours.
+ * Each primitive has its own diceable flag, and setting it on one does not change another.
  **/
 BOOST_AUTO_TEST_CASE(reyes_primitive_flag_is_per_instance_test) {
     v3d::moya::reyes::Primitive first;
@@ -49,8 +48,8 @@ BOOST_AUTO_TEST_CASE(reyes_primitive_flag_is_per_instance_test) {
 }
 
 /**
- * A polygon is a primitive, and the bound a caller reaches through the base is the polygon's
- * own rather than the base's empty one.
+ * A polygon is a primitive. The bound a caller reaches through the base is the polygon's own,
+ * not the base's empty one.
  **/
 BOOST_AUTO_TEST_CASE(reyes_primitive_polygon_is_a_primitive_test) {
     v3d::moya::Polygon polygon;
@@ -66,9 +65,9 @@ BOOST_AUTO_TEST_CASE(reyes_primitive_polygon_is_a_primitive_test) {
 }
 
 /**
- * A primitive carries the state it was submitted under so that a split can hand it to its
- * pieces: the object to eye transformation, the colour that was current, and the plane it lies
- * in. Nothing has placed a fresh one, and its normal names no plane until something does.
+ * A primitive carries the state it was submitted under: the object to eye transformation, the
+ * colour that was current, and the plane it lies in. A split hands that state to its pieces. A
+ * new primitive is not placed, and its normal is zero until it is.
  **/
 BOOST_AUTO_TEST_CASE(reyes_primitive_place_test) {
     v3d::moya::reyes::Primitive primitive;

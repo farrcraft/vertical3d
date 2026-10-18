@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(sllexer_lighting_keywords_test) {
 }
 
 /**
- * SL has no integer type, so every literal is a float however it was written - with a
+ * SL has no integer type, so every number literal is a float however it was written: with a
  * leading '.', a trailing one, or an exponent.
  **/
 BOOST_AUTO_TEST_CASE(sllexer_number_test) {
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(sllexer_comment_test) {
     BOOST_CHECK_EQUAL(tokens[2].text(), "b");
     BOOST_CHECK_EQUAL(tokens[3].text(), "c");
     BOOST_CHECK_EQUAL(tokens[4].text(), "d");
-    // a '/' at the very end of the stream is still a division; the stream's own putback
+    // a '/' at the very end of the stream is still a division. The stream's own putback
     // fails in this case
     BOOST_CHECK(tokens[5].kind() == Token::Kind::OPERATOR);
     BOOST_CHECK_EQUAL(tokens[5].text(), "/");
@@ -257,8 +257,8 @@ BOOST_AUTO_TEST_CASE(sllexer_unterminated_block_comment_test) {
 
 /**
  * A shader that needs cpp is rejected by name rather than mis-parsed. A '#' has no other
- * meaning in SL, so a scene that names such a shader is told what is missing rather than
- * that its file is malformed.
+ * meaning in SL, so the error for such a shader names the missing preprocessor rather than
+ * calling its file malformed.
  **/
 BOOST_AUTO_TEST_CASE(sllexer_preprocessor_test) {
     std::string error;

@@ -29,7 +29,7 @@ typedef v3d::render::offline::sl::ShaderLibrary ShaderLibrary;
 typedef v3d::render::offline::sl::InstancePtr InstancePtr;
 typedef v3d::render::offline::sl::ShaderType ShaderType;
 
-/** The colour plane count plus one for coverage, as moya's framebuffer holds. **/
+/** The index of the coverage plane, which follows the three colour planes. **/
 const unsigned int COVERAGE = 3;
 
 ShaderLibrary & library() {
@@ -109,8 +109,8 @@ BOOST_AUTO_TEST_CASE(slimager_a_row_is_a_batch_test) {
 
 /**
  * A shader that is not an imager is refused rather than run over the frame. The library
- * already reports a name that is the wrong kind of shader; this check covers a caller that
- * passes one here anyway.
+ * already reports a name that is the wrong kind of shader. This check covers a caller that
+ * passes one to the imager anyway.
  **/
 BOOST_AUTO_TEST_CASE(slimager_only_an_imager_test) {
     const InstancePtr surface = library().instance("matte", ShaderType::SURFACE, ParameterList());

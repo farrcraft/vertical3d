@@ -31,8 +31,8 @@ BOOST_AUTO_TEST_CASE(framebuffer_bucket_grid_test) {
 }
 
 /**
- * An image that is not gets a partial bucket rather than losing its right and bottom edges,
- * as an integer division of the two sizes would.
+ * An image that is not a whole number of buckets across gets a partial bucket over its right
+ * and bottom edges. An integer division of the two sizes would lose those edges.
  **/
 BOOST_AUTO_TEST_CASE(framebuffer_partial_bucket_test) {
     const v3d::moya::FrameBuffer buffer({.bucket = glm::uvec2(16, 16), .image = glm::uvec2(330, 250)});
@@ -43,8 +43,8 @@ BOOST_AUTO_TEST_CASE(framebuffer_partial_bucket_test) {
 
 /**
  * A raster space bound is placed by its upper left corner. A primitive straddling the top or
- * left edge has a negative one, which cannot be converted to an unsigned bucket index - it
- * belongs to the first bucket on that axis.
+ * left edge has a negative corner, and belongs to the first bucket on that axis. A bound past
+ * the right or bottom edge belongs to the last bucket on that axis.
  **/
 BOOST_AUTO_TEST_CASE(framebuffer_negative_bound_test) {
     v3d::moya::FrameBuffer buffer({.bucket = glm::uvec2(16, 16), .image = glm::uvec2(320, 240)});
@@ -52,8 +52,7 @@ BOOST_AUTO_TEST_CASE(framebuffer_negative_bound_test) {
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     buffer.addPrimitive(polygon, box(glm::vec3(-40.0F, -12.0F, 0.0F), glm::vec3(10.0F, 10.0F, 0.0F)));
 
-    // nothing to assert beyond the placement not being undefined; a bound past the far edge
-    // is the same question from the other side
+    // the case passes when neither placement indexes outside the bucket grid
     buffer.addPrimitive(polygon, box(glm::vec3(9000.0F, 9000.0F, 0.0F), glm::vec3(9100.0F, 9100.0F, 0.0F)));
 }
 

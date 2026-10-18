@@ -72,8 +72,8 @@ class Primitive {
     void lights(const Lights & lit);
 
     /**
-     * Which of the scene's motions carries the primitive, or negative for none. It is
-     * stored where the motion's reference end put it.
+     * Which of the scene's motions carries the primitive, or negative for none. The
+     * primitive's geometry is stored where the motion's reference() transformation put it.
      **/
     int motion() const;
 

@@ -66,8 +66,8 @@ void triangle(v3d::moya::RenderContext & rc, const std::array<glm::vec3, 3> & co
 }
 
 /**
- * A right triangle with its vertical edge at x = 0.5 and its horizontal one at y = -0.5, so a
- * pixel either side of each edge is half a pixel away from it.
+ * A right triangle with its vertical edge at x = edge and its horizontal one at y = -0.5. At
+ * the default edge of 0.5, the pixel centres either side of each edge are half a pixel from it.
  **/
 void rightTriangle(v3d::moya::RenderContext & rc, float edge = 0.5F) {
     triangle(rc, {glm::vec3(-1.5F, -0.5F, 1.0F), glm::vec3(edge, -0.5F, 1.0F), glm::vec3(edge, 1.5F, 1.0F)}, glm::vec3(1.0F, 0.0F, 0.0F));
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(rayhider_renderman_hider_test) {
 }
 
 /**
- * Every ray misses, so every pixel records that nothing was drawn into it. An imager can then
+ * In an empty scene every ray misses, and every pixel has a coverage of zero. An imager can then
  * tell a pixel the scene never reached from a black one.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_empty_scene_test) {
@@ -238,8 +238,8 @@ BOOST_AUTO_TEST_CASE(rayhider_sampled_edge_coverage_test) {
 }
 
 /**
- * A pixel whose samples agree takes the first set and no more, and one on an edge, whose
- * samples are red and black, takes more - up to four times the first set.
+ * A pixel whose samples agree takes the first set of samples and no more. A pixel on an edge,
+ * whose samples are red and black, takes more, up to four times the first set.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_adaptive_sampling_test) {
     v3d::moya::RenderContext rc;
@@ -260,8 +260,8 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_sampling_test) {
 }
 
 /**
- * Every further set is seeded by its pixel and its pass, so an adapted render is the same
- * twice.
+ * Each further set of samples is seeded by its pixel and its pass, so two adaptive renders of
+ * one scene are the same.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_adaptive_is_repeatable_test) {
     v3d::moya::RenderContext first;
@@ -284,8 +284,7 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_is_repeatable_test) {
 
 /**
  * An off centre screen window is a camera like any other. Here it covers world x over
- * [0, 2]. A quad on the left of the world is out of the picture, and one at x in [0, 1]
- * fills the left half of it.
+ * [0, 2], and a quad at x in [0, 1] fills the left half of the picture.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_off_centre_screen_window_test) {
     v3d::moya::Renderer renderer;
@@ -335,8 +334,9 @@ BOOST_AUTO_TEST_CASE(rayhider_scaling_camera_test) {
 }
 
 /**
- * A polygon reaches the traced scene fanned into triangles, through the current transformation:
- * the scene holds them in world space, and a transform block puts back what it saved.
+ * A polygon reaches the traced scene fanned into triangles, moved by the current
+ * transformation. The scene holds the triangles in world space. A transform block before the
+ * polygon restores what it saved, so only the translation after the block moves the polygon.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_polygon_is_fanned_test) {
     v3d::moya::Renderer renderer;

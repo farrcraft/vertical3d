@@ -78,8 +78,8 @@ v3d::render::offline::sl::syntax::ExpressionPtr right(const v3d::render::offline
 }
 
 /**
- * The four standard surface shaders, as the RI specification writes them. The library
- * compiles them in.
+ * Four of the standard surface shaders and the four standard lights, as the RI specification
+ * writes them. The library compiles in its own copies.
  **/
 const char* const CONSTANT =
 "surface constant() {\n"
@@ -152,7 +152,7 @@ const char* const SPOTLIGHT =
 "}\n";
 
 /**
- * The four standard surface shaders parse, so a renderer can resolve `Surface "matte"` with
+ * Four of the standard surface shaders parse, so a renderer can resolve `Surface "matte"` with
  * no shader files at all.
  **/
 BOOST_AUTO_TEST_CASE(slparser_standard_surface_shaders_test) {
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(slparser_standard_surface_shaders_test) {
 }
 
 /**
- * The four standard lights parse; they contain the three lighting constructs.
+ * The four standard lights parse. Between them they contain the three lighting constructs.
  **/
 BOOST_AUTO_TEST_CASE(slparser_standard_light_shaders_test) {
     const char* const sources[] = { AMBIENTLIGHT, DISTANTLIGHT, POINTLIGHT, SPOTLIGHT };
@@ -229,8 +229,8 @@ BOOST_AUTO_TEST_CASE(slparser_parameter_needs_a_default_test) {
 
 /**
  * All five shader types parse. Displacement and volume shaders do not run, and come back
- * marked rather than refused, so a scene carrying one is told what is unsupported rather
- * than what is malformed.
+ * marked rather than refused. A scene carrying one is then reported as unsupported rather
+ * than malformed.
  **/
 BOOST_AUTO_TEST_CASE(slparser_unsupported_shader_types_test) {
     std::string error;
@@ -455,8 +455,8 @@ BOOST_AUTO_TEST_CASE(slparser_lighting_constructs_test) {
 }
 
 /**
- * A function may be defined inside a shader, and only at the top of its body. The machine has
- * a register file per shader run and no call stack, and the compiler requires this placement.
+ * A function may be defined inside a shader, and only at the top of its body. The parser
+ * rejects a definition anywhere else.
  **/
 BOOST_AUTO_TEST_CASE(slparser_function_test) {
     std::string error;
@@ -513,7 +513,7 @@ BOOST_AUTO_TEST_CASE(slparser_empty_source_test) {
 
 /**
  * Every diagnostic names a line, a column and what was expected. A parse that fails yields no
- * shaders at all - half a shader is worse than none, because a renderer would run it.
+ * shaders at all, because a renderer would run half a shader.
  **/
 BOOST_AUTO_TEST_CASE(slparser_error_position_test) {
     std::string error;

@@ -109,8 +109,8 @@ std::size_t count(const Program & program, Opcode opcode) {
 
 /**
  * A hand-built program computes the same arithmetic over four points and over one, and
- * returns the same value at the point they share. A single traced hit is not a special case
- * of the model; it is a batch one wide.
+ * returns the same value at the point they share. A single traced hit is shaded as a batch
+ * one wide, not as a special case.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_batch_of_one_test) {
     Program program;
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(slmachine_batch_of_one_test) {
 }
 
 /**
- * A uniform value is stored once and read by every point; the storage class decides how
+ * A uniform value is stored once and read by every point. The storage class decides how
  * much memory a value takes.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_uniform_is_one_element_test) {
@@ -658,7 +658,7 @@ BOOST_AUTO_TEST_CASE(slmachine_function_is_inlined_test) {
 /**
  * A return means "this lane is done with the function", not "done with the shader". Under a
  * varying condition each lane leaves by its own arm and the shader carries on for all of
- * them. An inlined body is bracketed rather than merely pasted for this reason.
+ * them. An inlined body is therefore bracketed by ENTER and LEAVE rather than pasted bare.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_return_leaves_the_function_test) {
     std::string error;

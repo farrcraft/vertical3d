@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(moving_transform_rotation_test) {
 
 /**
  * A request after the block applies to both ends, so what is placed under a moving
- * transformation moves with it; one before it is the base both ends start from.
+ * transformation moves with it. A request before the block is the base both ends start from.
  **/
 BOOST_AUTO_TEST_CASE(moving_transform_requests_around_a_block_test) {
     v3d::render::offline::MovingTransform moving;
@@ -120,8 +120,7 @@ BOOST_AUTO_TEST_CASE(moving_transform_reference_test) {
 
 /**
  * A turned primitive that grows from nothing along one axis is turned the whole way through.
- * Halfway, the axis it grows along points where the turn puts it, at half its length, rather
- * than wherever an empty column would have sent the rotation.
+ * Halfway, the axis it grows along points where the turn puts it, at half its length.
  **/
 BOOST_AUTO_TEST_CASE(moving_transform_a_flat_end_keeps_its_turn_test) {
     const glm::mat4x4 turn = glm::rotate(glm::mat4x4(1.0F), glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F));
@@ -171,9 +170,9 @@ BOOST_AUTO_TEST_CASE(moving_transform_a_turn_after_a_flat_scale_test) {
 }
 
 /**
- * A small uniform scale is not flat. The test compares the determinant with the lengths of the
- * basis. A primitive scaled to a ten thousandth on every axis is still stored at its open end,
- * and is placeable.
+ * A small uniform scale is not flat, because flatness compares the determinant with the
+ * lengths of the basis columns. A primitive scaled to a ten thousandth on every axis is still
+ * stored at its open end, and is placeable.
  **/
 BOOST_AUTO_TEST_CASE(moving_transform_a_small_scale_is_not_flat_test) {
     v3d::render::offline::MovingTransform tiny;

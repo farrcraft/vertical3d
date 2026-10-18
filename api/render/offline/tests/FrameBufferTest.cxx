@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(framebuffer_row_order_test) {
 BOOST_AUTO_TEST_CASE(framebuffer_saturation_test) {
     v3d::render::offline::FrameBuffer buffer(2, 1, 3);
 
-    // a cast alone wraps a value above one, which turns a bright pixel dark
+    // a value above one saturates to 255, and a value below zero to 0
     buffer.value(0, 0, 0, 4.0F);
     buffer.value(1, 0, 0, 1.004F);
     buffer.value(2, 0, 0, -0.5F);

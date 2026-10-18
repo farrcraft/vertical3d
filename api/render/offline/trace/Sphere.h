@@ -23,8 +23,8 @@ namespace v3d::render::offline::trace {
  * axis and swept through an angle about it. The transformation that was current places it in
  * world space.
  *
- * It is intersected where it is defined rather than tessellated, so its silhouette is exact
- * at any size. Its normal points out, which is RI's orientation; an inside-out sphere needs
+ * It is intersected exactly, not tessellated, so its silhouette is exact at any size. Its
+ * normal points outward, which is RI's default orientation. An inside-out sphere needs
  * `Orientation`, which this renderer does not read.
  **/
 class Sphere final : public Primitive {

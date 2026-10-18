@@ -13,9 +13,6 @@ namespace v3d::render::offline::trace {
 
 /**
  * Where a ray met a primitive, and everything a shader reads there.
- *
- * A hit is shaded as a batch of one point: the same program and the same instructions that
- * run over a grid of a hundred in moya, with a mask one bit wide.
  **/
 class Hit final {
  public:
@@ -23,7 +20,10 @@ class Hit final {
     float distance = 0.0F;
     /** SL's P, in world space, which is a hit's current space. **/
     glm::vec3 point = glm::vec3(0.0F);
-    /** SL's N and Ng: the interpolated shading normal and the triangle's plane. **/
+    /**
+     * SL's N and Ng: the shading normal, and the geometric normal. A triangle's geometric
+     * normal is its plane. A sphere's is the same as its shading normal.
+     **/
     glm::vec3 normal = glm::vec3(0.0F);
     glm::vec3 geometric = glm::vec3(0.0F);
     /** SL's I, the direction the surface was seen along. **/

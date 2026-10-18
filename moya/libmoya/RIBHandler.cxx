@@ -54,10 +54,10 @@ const float DEEPEST_TRACE = 16.0F;
 typedef v3d::render::offline::rib::ParameterList ParameterList;
 
 /**
- * One polygon from a run of the position array, with whatever colour, shading normal and
- * texture coordinates the scene gave each corner. A vertex left without a colour or a
- * normal takes the primitive's in addPolygon() - the current colour, and the plane the
- * polygon lies in.
+ * One polygon from the corners that indices names in the position array, with whatever
+ * colour, shading normal and texture coordinates the scene gave each corner. An index past
+ * the position array is skipped. addPolygon() gives a vertex left without a colour the
+ * current colour, and a vertex left without a normal the plane the polygon lies in.
  **/
 boost::shared_ptr<Polygon> build(const std::vector<glm::vec3> & points,
     const std::vector<glm::vec3> & colors, const std::vector<glm::vec3> & normals,

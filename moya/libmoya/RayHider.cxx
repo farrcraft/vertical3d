@@ -137,8 +137,8 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
     const unsigned int height = camera_.height;
     taken_.assign(static_cast<std::size_t>(width) * height, 0);
 
-    // one of these for the render rather than one per pixel: it holds the register files,
-    // and sizing them for every pixel would be the tracer's largest allocation cost
+    // one tracer for the whole render, not one per pixel. It holds the register files, so
+    // they are sized once and not for every pixel
     v3d::render::offline::trace::Tracer tracer(&context->traced(), &context->textures());
     const v3d::render::offline::Sampler sampler(sampling);
     v3d::render::offline::Film film(width, height, sampling);

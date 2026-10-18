@@ -25,15 +25,16 @@ class Tracer;
  * Runs a surface shader over one hit, which is a batch one point wide, and implements the
  * renderer callbacks the shader makes while it runs.
  *
- * There is no special case and no second path: the hit runs the same program and the same
- * instructions that run over a grid of a hundred in moya, with a mask one bit wide.
+ * A hit takes no separate path. It runs the same program and the same instructions that moya
+ * runs over a grid, with a mask one bit wide.
  *
- * One is made on the stack for each hit the Tracer shades. A hit that a shader traces into
- * is shaded by another, so nothing this one holds changes under it.
+ * The Tracer makes one on the stack for each hit it shades. A hit reached by the shader's
+ * trace() is shaded by its own HitShader, so this one's state is unchanged when trace()
+ * returns.
  *
- * **A hit's current space is world space**, because that is where the scene is. moya's
- * grids shade in camera space. The two differ, so the space table is a renderer callback
- * rather than a constant the library holds.
+ * **A hit's current space is world space**, because the scene is held in world space. moya's
+ * grids shade in camera space. Because the two differ, each renderer answers space() itself,
+ * and the library holds no fixed table of spaces.
  **/
 class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
  public:
@@ -43,8 +44,9 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
     HitShader & operator=(const HitShader &) = delete;
 
     /**
-     * @return the surface shader's Ci, and its Oi through opacity - the primitive's own
-     *         colour and opacity when it has no shader or its shader fails
+     * @return the surface shader's Ci, with its Oi written through opacity. When the
+     *         primitive has no shader or the shader fails, the primitive's colour times
+     *         its opacity, and its opacity
      **/
     glm::vec3 shade(glm::vec3* opacity);
 

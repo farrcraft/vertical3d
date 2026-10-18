@@ -13,9 +13,9 @@ namespace v3d::render::offline::rib {
 /**
  * The storage class and type of one parameter.
  *
- * RIB does not say how many values a parameter takes - the declaration does, and without
- * one a reader is stuck at the first parameter that is not "P". The type gives the float
- * count of an element and the class gives how many elements a primitive carries.
+ * RIB does not say how many values a parameter takes. The declaration does: the type gives
+ * the float count of one element, and the storage class gives how many elements a primitive
+ * carries.
  **/
 class Declaration final {
  public:

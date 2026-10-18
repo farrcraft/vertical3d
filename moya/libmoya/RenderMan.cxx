@@ -361,8 +361,8 @@ RtVoid RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
 }
 
 RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
-    // the C interface names a filter by its function, and only the five RI declares are
-    // known; any other leaves the filter the context had
+    // the C interface names a filter by its function, and only the filters RI declares are
+    // known. Any other function leaves the filter the context had
     v3d::render::offline::Filter filter = v3d::render::offline::Filter::Gaussian;
     if (filterfunc == RiBoxFilter) {
         filter = v3d::render::offline::Filter::Box;

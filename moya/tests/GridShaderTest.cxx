@@ -42,17 +42,18 @@ void add(ParameterList* list, const std::string & name, Declaration::Type type,
 }
 
 /**
- * A grid of four vertices, all at the same place and facing the same way, so that a case
- * asserting one vertex is asserting the shader rather than the interpolation.
- *
- * The camera looks down positive z, so a surface facing it has a normal along negative z.
+ * Which way a grid faces, and its colour. The camera looks down positive z, so a surface
+ * facing it has a normal along negative z.
  **/
-/** Which way a grid faces, and its colour. **/
 struct Surface {
     glm::vec3 normal{0.0F, 0.0F, -1.0F};
     glm::vec3 colour{1.0F};
 };
 
+/**
+ * A grid of four vertices, all facing the same way and with the same colour. A case that
+ * checks one vertex then checks the shader and not the interpolation.
+ **/
 v3d::moya::reyes::MicroPolygonGrid facing(const Surface & surface) {
     const glm::vec3 & normal = surface.normal;
     const glm::vec3 & colour = surface.colour;
@@ -71,12 +72,12 @@ v3d::moya::reyes::MicroPolygonGrid facing(const Surface & surface) {
 }
 
 /**
- * `matte` over a grid under one distant light is the cosine of
- * the angle between the surface and the light, at every vertex of the grid at once.
+ * `matte` over a grid under one distant light is the cosine of the angle between the surface
+ * and the light, at every vertex of the grid at once.
  *
- * distantlight aims from the shader's origin toward (0, 0, 1) by default, so the light
- * travels away from the camera and L - which points at the light - is along negative z.
- * A surface facing the camera faces the light head on.
+ * distantlight aims from the shader's origin toward (0, 0, 1) by default, so the light travels
+ * away from the camera. L points at the light, and is along negative z. A surface facing the
+ * camera faces the light head on.
  **/
 BOOST_AUTO_TEST_CASE(moya_matte_under_one_light_test) {
     v3d::moya::RenderContext rc;
@@ -101,9 +102,9 @@ BOOST_AUTO_TEST_CASE(moya_matte_under_one_light_test) {
     BOOST_CHECK_CLOSE(tilted.vertex(0, 0).color().r, 0.5F, 0.1F);
 
     /*
-        A surface whose normal points away from the camera is shaded as though it did not.
-        matte turns it with faceforward, so a polygon wound the other way is not simply
-        black.
+        A surface whose normal points away from the camera is shaded as though it faced the
+        camera. matte turns the normal with faceforward, so a polygon wound the other way is
+        not black.
     */
     v3d::moya::reyes::MicroPolygonGrid backwards = facing({.normal = glm::vec3(0.0F, 0.0F, 1.0F), .colour = glm::vec3(1.0F)});
     rc.shader().shade(shading, &backwards);
@@ -112,8 +113,7 @@ BOOST_AUTO_TEST_CASE(moya_matte_under_one_light_test) {
 
 /**
  * A light behind the surface lights nothing. The illuminance cone of PI/2 inside `diffuse`
- * keeps it out of the sum, so a scene with lights on both sides does not come out uniformly
- * bright.
+ * leaves it out of the sum.
  **/
 BOOST_AUTO_TEST_CASE(moya_a_light_behind_the_surface_test) {
     v3d::moya::RenderContext rc;
@@ -155,9 +155,8 @@ BOOST_AUTO_TEST_CASE(moya_constant_is_the_flat_colour_test) {
 }
 
 /**
- * Two lights sum, and `Illuminate` turning one off changes the picture. The second is
- * green and half as bright, so which light each component came from is readable rather
- * than being one number that could have come from either.
+ * Two lights sum, and `Illuminate` turning one off changes the picture. The second light is
+ * green and half as bright, so red comes from the first light alone and green from both.
  **/
 BOOST_AUTO_TEST_CASE(moya_two_lights_test) {
     v3d::moya::RenderContext rc;
@@ -165,7 +164,7 @@ BOOST_AUTO_TEST_CASE(moya_two_lights_test) {
     rc.lightSource({.shader = "distantlight", .handle = "key"}, ParameterList());
 
     ParameterList fill;
-    // aimed along negative x, so L - which points at the light - is along positive x
+    // aimed along negative x, so L, which points at the light, is along positive x
     add(&fill, "to", Declaration::Type::POINT, { -1.0F, 0.0F, 0.0F });
     add(&fill, "intensity", Declaration::Type::FLOAT, { 0.5F });
     add(&fill, "lightcolor", Declaration::Type::COLOR, { 0.0F, 1.0F, 0.0F });
@@ -196,8 +195,7 @@ BOOST_AUTO_TEST_CASE(moya_two_lights_test) {
 
 /**
  * Which lights are on is an attribute, so an `Illuminate` inside an AttributeBegin block
- * is local to it. The lights themselves belong to the frame and outlive the block, so a light
- * created inside a block can still be switched on after it.
+ * is local to it.
  **/
 BOOST_AUTO_TEST_CASE(moya_illuminate_is_an_attribute_test) {
     v3d::moya::RenderContext rc;
@@ -213,9 +211,9 @@ BOOST_AUTO_TEST_CASE(moya_illuminate_is_an_attribute_test) {
 }
 
 /**
- * A light is where the scene put it. `pointlight` falls off with the square of the
- * distance and states its position in its own space, so a light the scene lifted lights a
- * surface below it from above rather than from the origin.
+ * A light is where the scene put it. `pointlight` falls off with the square of the distance,
+ * and states its position in its own space. A light the scene moved lights a surface from
+ * where it was moved to, not from the origin.
  **/
 BOOST_AUTO_TEST_CASE(moya_a_light_is_placed_test) {
     v3d::moya::RenderContext rc;
@@ -238,8 +236,8 @@ BOOST_AUTO_TEST_CASE(moya_a_light_is_placed_test) {
 
 /**
  * A light runs in its own space, not in the space of the surface it is lighting. A light
- * placed inside an attribute block that the surface is outside of still lights from where
- * the block put it.
+ * placed inside an attribute block still lights from where the block put it, after the
+ * block ends. The light outlives the block and can be switched on after it.
  **/
 BOOST_AUTO_TEST_CASE(moya_a_light_runs_in_its_own_space_test) {
     v3d::moya::RenderContext rc;
@@ -255,8 +253,8 @@ BOOST_AUTO_TEST_CASE(moya_a_light_runs_in_its_own_space_test) {
     v3d::moya::reyes::MicroPolygonGrid grid = facing({.normal = glm::vec3(0.0F, 0.0F, -1.0F), .colour = glm::vec3(1.0F)});
     rc.shader().shade(rc.shading(), &grid);
 
-    // two units away as above; taking the surface's space for the light's would put the
-    // light at the origin, five units away
+    // two units away, as above. A light in the surface's space would sit at the origin, five
+    // units away
     BOOST_CHECK_CLOSE(grid.vertex(0, 0).color().r, 0.25F, 1.0F);
 }
 

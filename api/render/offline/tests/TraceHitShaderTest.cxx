@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(trace_matte_at_a_hit_test) {
         ParameterList()));
     scene.add(triangle);
 
-    // aimed down the negative z axis, so L - which points at the light - is along positive z
+    // aimed down the negative z axis, so L, which points at the light, is along positive z
     ParameterList overhead;
     add(&overhead, "to", Declaration::Type::POINT, { 0.0F, 0.0F, -1.0F });
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, overhead));
@@ -430,8 +430,9 @@ BOOST_AUTO_TEST_CASE(trace_a_failed_shader_keeps_its_opacity_test) {
 
 /**
  * A hit has no "object" space, because a traced primitive does not carry the transformation
- * that was in force where the scene created it. The hit refuses the space, which the machine
- * reports, rather than answering with world space. "world" and "current" are the identity.
+ * that was in force where the scene created it. The hit refuses the space rather than
+ * answering with world space, and the machine reports the refusal. "world" and "current" are
+ * the identity.
  **/
 BOOST_AUTO_TEST_CASE(trace_a_hit_refuses_object_space_test) {
     v3d::render::offline::trace::Scene scene;

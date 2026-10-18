@@ -92,8 +92,8 @@ struct Display {
 /**
  * RiLightSource and RiAreaLightSource.
  *
- * RIB 3.03 writes the handle as a sequence number and later RIB writes a string. Both are read,
- * and it is a string here either way, so a renderer keying a map on it handles one form.
+ * RIB 3.03 writes the handle as a sequence number and later RIB writes a string. The reader
+ * accepts both and stores the handle as a string, so a renderer keys its lights on one type.
  **/
 struct LightSource {
     std::string shader;  /**< the light shader's name **/

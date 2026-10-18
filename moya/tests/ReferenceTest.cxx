@@ -94,7 +94,7 @@ const char* HIDERS[] = { "hidden", "raytrace" };
 
 /**
  * One sample at each pixel centre under a one pixel box, which the film gives back exactly.
- * The references drawn this way pin the hider and the shading; reference-sampled pins the
+ * A reference drawn this way checks the hider and the shading. reference-sampled checks the
  * sampling.
  **/
 void pixelCentres(v3d::moya::RenderContext & rc) {
@@ -111,8 +111,8 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
 
 /*
     A quad facing the camera, asymmetric about both axes so that a flipped picture is a
-    failing one. The screen window is [-1, 1] on both axes, and the raster transform puts
-    its origin at the upper left corner.
+    failing one. The screen window is the default for a 4:3 frame, [-4/3, 4/3] by [-1, 1].
+    The raster transform puts its origin at the upper left corner.
 
     Regenerate this reference when a change to shading or sampling alters the picture on
     purpose. Any other change to the picture fails the test.
@@ -124,8 +124,8 @@ void scene(v3d::moya::RenderContext & rc) {
     // scale at about 2e-38 and collapse every z onto the near plane
     rc.clipping({.hither = 1.0F, .yon = 100.0F});
     rc.prepareWorld();
-    // the shader that means no shading, built rather than defaulted to, so that this
-    // picture goes through the language by both routes
+    // the shader that means no shading, named rather than left as the default. The picture
+    // shows that the shading language draws an unshaded surface unchanged
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
@@ -160,8 +160,8 @@ void quad(v3d::moya::RenderContext & rc, float left, float right,
 /**
  * One parameter as a scene wrote it, typed the way the reader would have typed it.
  *
- * An out parameter rather than a return value, as rib::arguments uses. A ParameterList is a
- * map, and returning one by value copies every parameter a request carried.
+ * The list is an out parameter, as in rib::arguments. A ParameterList is a map, and returning
+ * one by value copies every parameter in it.
  **/
 void put(v3d::render::offline::rib::ParameterList* list, const std::string & name,
     v3d::render::offline::rib::Declaration::Type type, const std::vector<float> & values) {
@@ -248,9 +248,6 @@ void focusScene(v3d::moya::RenderContext & rc, bool lens) {
     rc.addPolygon(far);
 }
 
-/**
- * How many pixels along a row are partly covered. That count is the width of an edge.
- **/
 /** A row, and the columns along it from the first to the last, inclusive. **/
 struct Run {
     unsigned int row = 0;
@@ -258,6 +255,9 @@ struct Run {
     unsigned int to = 0;
 };
 
+/**
+ * How many pixels along a row are partly covered. That count is the width of an edge.
+ **/
 unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, const Run & run) {
     unsigned int count = 0;
     for (unsigned int column = run.from; column <= run.to; column++) {
@@ -269,15 +269,15 @@ unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned 
     return count;
 }
 
-/**
- * The largest difference between two frames over every plane of a block of columns.
- **/
 /** The first and last columns of a block, inclusive. **/
 struct Columns {
     unsigned int from = 0;
     unsigned int to = 0;
 };
 
+/**
+ * The largest difference between two frames over every plane of a block of columns.
+ **/
 float largest(const v3d::render::offline::FrameBuffer & first, const v3d::render::offline::FrameBuffer & second,
     const Columns & columns) {
     float worst = 0.0F;
@@ -390,15 +390,15 @@ void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* re
         difference.description() + " - what was rendered instead is in " + output);
 }
 
-/**
- * A frame read from a file, under the hider the file names unless the caller names one first.
- **/
 /** A scene file, and the hider to render it under, or null for the one the file names. **/
 struct Scene {
     const char* file = nullptr;
     const char* hider = nullptr;
 };
 
+/**
+ * A frame read from a file, under the hider the file names unless the caller names one first.
+ **/
 boost::shared_ptr<v3d::render::offline::FrameBuffer> read(const Scene & scene) {
     v3d::moya::Renderer renderer;
     v3d::moya::RIBHandler handler(&renderer);
@@ -592,8 +592,8 @@ void slidingQuad(v3d::moya::RenderContext & rc) {
 }
 
 /**
- * The second pass writes samples where the polygon is and leaves the rest of the planes at
- * what they were allocated with.
+ * Rendering the buckets writes samples where the polygon is, and leaves the rest of the planes
+ * at what they were allocated with.
  **/
 BOOST_AUTO_TEST_CASE(moya_renders_a_polygon_test) {
     v3d::moya::RenderContext rc;
@@ -651,8 +651,8 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
 /**
  * The same scene said in RIB, against the same committed picture.
  *
- * Two routes to one image: if the file path and the code path disagree, this case fails, and
- * neither path is the reference. A fault in the reader therefore shows as a wrong picture.
+ * The file and the code are two routes to one image, and neither route is the reference. If
+ * the two disagree, this case fails. A fault in the reader shows as a wrong picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
     v3d::moya::Renderer renderer;
@@ -680,8 +680,8 @@ BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
 }
 
 /**
- * A display of type "file" is what turns the sampled planes into a picture on disk; the
- * driver's --output reaches the context through RiDisplay and nothing else writes.
+ * A display of type "file" writes the sampled planes to a picture on disk. The driver's
+ * --output reaches the context through RiDisplay, and nothing else writes a file.
  **/
 BOOST_AUTO_TEST_CASE(moya_display_writes_a_file_test) {
     boost::filesystem::create_directory("data_out");
@@ -708,12 +708,12 @@ BOOST_AUTO_TEST_CASE(moya_no_display_writes_nothing_test) {
 }
 
 /**
- * A shaded scene: a matte surface and a plastic one, a distant light and a point light, each
- * surface carrying normals of its own so the falloff is a gradient.
+ * A shaded scene: a matte surface and a plastic one, a distant light and a point light. Each
+ * surface carries normals of its own, so the falloff is a gradient.
  *
- * The picture does not test individual shaders: the shading language has its own cases in
- * v3dtest_render_offline, and a wrong smoothstep is found there. This case checks the wiring
- * between the shading machine and the renderer, which no unit case covers.
+ * The picture does not test individual shaders, which have their own cases in
+ * v3dtest_render_offline. This case checks the wiring between the shading language and
+ * the renderer.
  **/
 BOOST_AUTO_TEST_CASE(moya_shaded_reference_test) {
     v3d::moya::RenderContext rc;
@@ -728,8 +728,9 @@ BOOST_AUTO_TEST_CASE(moya_shaded_reference_test) {
 /**
  * The same shaded scene said in RIB, against the same committed picture.
  *
- * Two routes to one image. A scene with shaders has more for the two paths to disagree
- * about: a parameter bound on one path and defaulted on the other shows here and nowhere else.
+ * The file and the code are two routes to one image. A scene with shaders has more for the two
+ * routes to disagree about. A shader parameter bound on one route and defaulted on the other
+ * shows here.
  **/
 BOOST_AUTO_TEST_CASE(moya_shaded_reference_from_rib_test) {
     v3d::moya::Renderer renderer;
@@ -858,10 +859,11 @@ BOOST_AUTO_TEST_CASE(moya_in_focus_is_sharp_test) {
 
 /**
  * The quad off the plane of focus spreads its edge over its circle of confusion. Under a one
- * pixel box, a pinhole leaves the edge in a pixel or two. The lens is a quarter of a unit
- * across and focused four units out. It blurs a point ten units out over
- * 2 * 0.25 * (10 - 4) / 10 of a unit there, about five pixels at this field of view. The reyes
- * hider gets there by moving the micropolygon, and the ray hider by moving the ray.
+ * pixel box, a pinhole leaves the edge in a pixel or two. The lens has a radius of a quarter
+ * of a unit and is focused four units out. It blurs a point ten units out over
+ * 2 * 0.25 * (10 - 4) / 10 of a unit, measured on the plane of focus. That is about five
+ * pixels at this field of view. The reyes hider blurs by moving the micropolygon, and the
+ * ray hider by moving the ray.
  **/
 BOOST_AUTO_TEST_CASE(moya_out_of_focus_spreads_test) {
     for (const char* hider : HIDERS) {
@@ -913,9 +915,9 @@ BOOST_AUTO_TEST_CASE(moya_motion_reference_from_rib_test) {
 }
 
 /**
- * A quad translated across the shutter spreads over the distance it moved, its coverage
- * rising and falling linearly along it. The reyes hider moves the micropolygons to a sample's
- * time and the ray hider carries the ray back to where the quad was then.
+ * A quad translated across the shutter spreads over the distance it moved. Its coverage rises
+ * and falls linearly along that distance. The reyes hider moves the micropolygons to a
+ * sample's time, and the ray hider carries the ray back to where the quad was then.
  **/
 BOOST_AUTO_TEST_CASE(moya_motion_spreads_linearly_test) {
     for (const char* hider : HIDERS) {
@@ -934,10 +936,10 @@ BOOST_AUTO_TEST_CASE(moya_motion_spreads_linearly_test) {
  * A quad showing a texture through paintedplastic, under each hider.
  *
  * The image's 2 by 2 texel blocks are each one colour, so a pixel well inside a block reads
- * that colour exactly whether it is sampled at the pixel or a micropolygon away from it. Both
- * hiders pin the same sixteen pixels: the same s and t, the same way up, and the same texel at
- * each. Under the reyes hider the quad is larger than a grid, so it splits, and its pieces
- * carry their st with them.
+ * that colour exactly whether it is sampled at the pixel or a micropolygon away from it. The
+ * case checks a grid of pixels under both hiders: the same s and t, the same way up, and the
+ * same texel at each. Under the reyes hider the quad is larger than a grid, so it splits, and
+ * its pieces carry their st with them.
  **/
 BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
     for (const char* hider : HIDERS) {
@@ -975,7 +977,7 @@ BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
         The two hiders also agree on the same file away from the edges, where the reyes hider's
         micropolygons are flat. The regions checked are a shadow of both lights, the point
         light's shadow alone, a region lit by both, and the imager's background. An edge moves
-        by up to a micropolygon, so only the insides are pinned.
+        by up to a micropolygon, so only the insides are checked.
     */
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> traced = read({.file = SHADOW_SCENE, .hider = "raytrace"});
     const unsigned int pixels[][2] = { { 40, 30 }, { 24, 40 }, { 56, 26 }, { 8, 8 }, { 2, 2 } };
@@ -990,9 +992,8 @@ BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
 }
 
 /**
- * The ray hider's references, each reached by a file and by the render context, against one
- * committed picture. Two routes to one image: if they disagree, the case fails, and neither
- * of them is the reference.
+ * The ray hider's references, each rendered from a file and through the render context, against
+ * one committed picture. Neither route is the reference, and the case fails if they disagree.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_triangle_reference_test) {
     v3d::moya::RenderContext rc;
@@ -1007,8 +1008,9 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_triangle_reference_test) {
  * across the floor, one sample at each pixel centre.
  *
  * The picture does not test individual shaders, which have their own cases in
- * v3dtest_render_offline. This case checks the wiring: an ambient() that reached no light, a
- * shadow ray that started on the surface it left, an imager that ran over the wrong plane.
+ * v3dtest_render_offline. This case checks the wiring between the shaders and the ray hider.
+ * It fails if ambient() reaches no light, if a shadow ray starts on the surface it leaves, or if
+ * an imager runs over the wrong plane.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_shaded_reference_test) {
     v3d::moya::RenderContext rc;
@@ -1033,7 +1035,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_sampled_reference_test) {
 }
 
 /**
- * Two renders are equal byte for byte, so a sampled picture can have a reference at all.
+ * Two renders are equal byte for byte. A sampled picture can have a reference only if they are.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_render_is_repeatable_test) {
     v3d::moya::RenderContext first;
@@ -1080,8 +1082,8 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_spheres_reference_test) {
 }
 
 /**
- * A quad under one distant light forty five degrees off it, so a white quad comes out at the
- * cosine of that - a value neither the geometry's colour nor no shading could produce.
+ * A white quad under one distant light forty five degrees off its normal comes out at the
+ * cosine of that angle. An unshaded quad would come out white.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_lit_quad_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/raytrace-lit-quad.rib"});

@@ -204,8 +204,8 @@ void RenderContext::projection(std::string name, float fov) {
 
 void RenderContext::screenTransform() {
     // append the projection to the transformation in force at RiProjection. RI states the
-    // composition in row vectors, where the projection is on the right; a matrix applies to
-    // what is on its right here, so it goes on the left
+    // composition in row vectors, with the projection on the right. Here a matrix applies to
+    // what is on its right, so the projection goes on the left
     const v3d::render::offline::MovingTransform current = transform_;
     transform_ = projectionBase_.before(projectionMatrix());
     // save as screen coordinate system
@@ -764,9 +764,9 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
 
     /*
         The bound is in object space. The placement takes it to eye space, where every
-        later calculation on the polygon happens. It is the camera coordinate system, which
-        holds world to camera as prepareWorld() saved it, times the object to world
-        transformation. It applies as it stands, with no transpose or inverse.
+        later calculation on the polygon happens. The placement is the camera coordinate
+        system, which holds world to camera as prepareWorld() saved it, times the object to
+        world transformation. It applies as it stands, with no transpose or inverse.
     */
     const glm::mat4x4 toEye = poly->placement();
     const Bound object{.min = bound_min, .max = bound_max};
@@ -801,7 +801,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
 
     // viewing frustum cull. The frustum is built from the "screen" coordinate system, which
     // takes eye space to screen space, so it is tested against the eye space bound swept
-    // over the shutter. Only the bound is transformed; the vertices stay in object space
+    // over the shutter. Only the bound is transformed. The vertices stay in object space
     const v3d::type::geometry::Frustum frustum(coordinateSystems_["screen"], v3d::type::geometry::Frustum::Depth::MinusOneToOne);
     v3d::type::geometry::AABBox eyeBound;
     eyeBound.extents(swept_min, swept_max);
@@ -869,8 +869,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         }
     }
 
-    // the last step of the first pass: the polygon goes in the bucket that holds the upper
-    // left corner of its raster bound
+    // the polygon goes in the bucket that holds the upper left corner of its raster bound
     frameBuffer_->addPrimitive(poly, bound);
 }
 

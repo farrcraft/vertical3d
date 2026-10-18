@@ -110,7 +110,8 @@ BOOST_AUTO_TEST_CASE(shutter_slice_outside_the_shutter_test) {
 
 /**
  * A shutter that does not open, or one with a NaN or an infinite end, puts every time in the
- * first slice. A count of no slices does too. The largest count is held within its range.
+ * first slice. A count of no slices does too. Under the largest count, a time after the
+ * shutter takes the last slice, one below the count.
  **/
 BOOST_AUTO_TEST_CASE(shutter_slice_degenerate_shutter_test) {
     BOOST_CHECK_EQUAL(v3d::moya::reyes::shutterSlice(0.5F, glm::vec2(1.0F, 1.0F), 8), 0U);

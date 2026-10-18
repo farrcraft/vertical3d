@@ -17,21 +17,20 @@
 namespace {
 
 /**
- * The context the C entry points are landing in. RiGetContext is RI's own query for it, and
- * the handle it returns is the context.
+ * The context the C entry points write to. RiGetContext is RI's own query for it, and the
+ * handle it returns is the context.
  **/
 v3d::moya::RenderContext & context() {
     return *static_cast<v3d::moya::RenderContext*>(RiGetContext());
 }
 
 /**
- * The C interface and the RIB reader are the two ways into a render context, and neither
- * goes through the other: a va_list cannot be built at runtime, so a reader holding a
- * parsed parameter list could not call these.
+ * The C interface and the RIB reader each reach a render context, and neither goes through the
+ * other. A va_list cannot be built at runtime, so the reader cannot call the C entry points.
  *
- * The shader requests therefore need a case on this path too. A parameter a C caller passes
- * is typed by what RiDeclare said, the same table a file's Declare fills, and it reaches the
- * same graphics state.
+ * The shader requests are checked on the C path here. A parameter a C caller passes is typed
+ * by what RiDeclare said, the same table a file's Declare fills, and it reaches the same
+ * graphics state.
  **/
 BOOST_AUTO_TEST_CASE(renderman_surface_and_lights_test) {
     RiBegin(RI_NULL);
@@ -73,7 +72,7 @@ BOOST_AUTO_TEST_CASE(renderman_declare_test) {
     RtFloat squish = 5.0F;
     RiSurface(const_cast<char*>("matte"), const_cast<char*>("squish"), &squish, RI_NULL);
 
-    // matte declares no "squish", so the library dropped it and matte is still matte
+    // matte declares no "squish", so the parameter is dropped and the surface is still matte
     const v3d::moya::Shading shading = context().shading();
     BOOST_REQUIRE(shading.surface);
     BOOST_CHECK_EQUAL(shading.surface->name(), "matte");

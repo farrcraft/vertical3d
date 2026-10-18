@@ -59,8 +59,8 @@ Declarations::Declarations() {
     declarations_["name"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
     declarations_["shadinggroup"] = Declaration(Storage::UNIFORM, Type::STRING, 1);
 
-    // the renderer options this tree's Option "limits" carries. The standard leaves
-    // these implementation specific, and an undeclared one is a warning per read.
+    // the parameters of Option "limits". The standard leaves these to each renderer.
+    // Without a declaration here, the reader skips each one with a warning.
     declarations_["bucketsize"] = Declaration(Storage::UNIFORM, Type::INTEGER, 2);
     declarations_["gridsize"] = Declaration(Storage::UNIFORM, Type::INTEGER, 1);
     // the parameters of Option "trace" and Option "searchpath", whose names the standard defines

@@ -178,7 +178,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_componentwise_promotes_test) {
 }
 
 /**
- * The geometry that is a number out of directions.
+ * The geometric built-ins that measure directions and points: length, distance and
+ * normalize.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_geometry_test) {
     BOOST_CHECK_CLOSE(answer("length(vector (3, 4, 0))"), 5.0F, 0.01F);
@@ -194,9 +195,9 @@ BOOST_AUTO_TEST_CASE(sllibrary_geometry_test) {
 }
 
 /**
- * faceforward turns a normal to the side its reference is on, hand worked: against an
- * incident direction coming from in front, the normal is left alone; from behind, it is
- * flipped. The two argument form has no Ng and uses the normal as its own reference.
+ * faceforward turns a normal to the side its reference is on, checked against hand-worked
+ * values. An incident direction from in front leaves the normal alone, and one
+ * from behind flips it. The two argument form has no Ng and uses the normal as its own reference.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_faceforward_test) {
     const Shaded toward("normal answer = faceforward(normal (0, 0, 1), vector (0, 0, -1));");
@@ -213,8 +214,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_faceforward_test) {
 
 /**
  * reflect and refract against hand-worked values. A ray coming down onto a surface facing
- * up reflects back up; through equal media it carries straight on; and at a grazing angle
- * into a denser one it turns toward the normal.
+ * up reflects back up. Through equal media it carries straight on. At 45 degrees into a
+ * denser medium it turns toward the normal.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_reflect_and_refract_test) {
     const Shaded mirrored("vector answer = reflect(vector (1, 0, -1), normal (0, 0, 1));");
@@ -271,7 +272,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_fresnel_test) {
 
 /**
  * The component accessors and their setters, by name and by index. A setter writes the
- * value it was given rather than returning one; no other built-in does that.
+ * value it was given into its first argument rather than returning one.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_components_test) {
     BOOST_CHECK_CLOSE(answer("xcomp(point (7, 8, 9))"), 7.0F, 0.01F);
@@ -301,9 +302,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_matrix_test) {
 }
 
 /**
- * The renderer resolves a named coordinate space. With none attached the value arrives in
- * the space it was already in and the machine reports it once, rather than a scene silently
- * rendering in the wrong place.
+ * The renderer resolves a named coordinate space. With no renderer attached, the value
+ * arrives in the space it was already in, and the machine reports the unknown space once.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_transform_without_a_renderer_test) {
     const Shaded shaded("point answer = ptransform(\"world\", point (1, 2, 3));");
@@ -689,9 +689,9 @@ BOOST_AUTO_TEST_CASE(sllibrary_colour_cast_space_test) {
 }
 
 /**
- * calculatenormal needs the derivatives of the grid it is shading, which no renderer
- * supplies. It is a stub like the other three rather than returning a plausible value,
- * because a plausible value would make a scene render wrong silently.
+ * calculatenormal needs the derivatives of the grid it is shading, and no renderer supplies
+ * them. It is a stub that reports itself rather than returning a plausible value. A plausible
+ * value would make a scene render wrong silently.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_calculatenormal_is_a_stub_test) {
     const Shaded shaded("normal answer = calculatenormal(P);", 4);

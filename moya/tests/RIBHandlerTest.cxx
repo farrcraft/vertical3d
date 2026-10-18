@@ -49,8 +49,9 @@ unsigned int coverage(const v3d::render::offline::FrameBuffer & planes) {
 }
 
 /**
- * The lines a log writes while this is alive. It adds a sink to the log for its lifetime and
- * takes it away again, so a case can read what a render said without reading the log file.
+ * Collects the lines a logger writes while this object exists. It adds a ring buffer sink to
+ * the logger and removes the sink when destroyed. A case reads the log output through it,
+ * without reading the log file.
  **/
 class Heard {
  public:
@@ -117,8 +118,8 @@ const unsigned int INSIDE[][2] = {
 };
 
 /**
- * A scene reaches the render context through the handler, so a RIB file drives the offline
- * renderer.
+ * A scene read through the handler sets the render context's image size and builds its frame
+ * buffer.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_test) {
     v3d::moya::Renderer renderer;
@@ -169,8 +170,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_sampling_test) {
 }
 
 /**
- * The polygon a file names reaches the first pass with the points it named, moved into eye
- * space by the transform that was current.
+ * The polygon a file names reaches RenderContext::addPolygon(), which files it in a bucket.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_polygon_test) {
     v3d::moya::Renderer renderer;
@@ -189,8 +189,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_polygon_test) {
 
 /**
  * A scene places its camera with a matrix that translates, as the standard's own example
- * does. The world to camera transformation applies as it stands: a transpose and an
- * inverse are both right only when it is a rotation, and neither is when it is not.
+ * does. The world to camera transformation applies as it stands, with no transpose or inverse.
+ * Transposing and inverting a matrix gives back the same matrix only when it is a rotation.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_transform_test) {
     v3d::moya::Renderer renderer;
@@ -207,13 +207,12 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_transform_test) {
         "Polygon \"P\" [-0.2 -0.2 0  0.2 -0.2 0  0.2 0.2 0  -0.2 0.2 0]\n"
         "WorldEnd\n", &handler));
 
-    // it survived the hither-yon cull, which it could not have at a depth of zero
+    // the quad survived the hither-yon cull. At a depth of zero it would have been culled
     BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1U);
 }
 
 /**
- * RiColor is graphics state rather than a material, and it reaches the pixels. Without it
- * every scene is one flat grey, which is a picture that cannot tell two polygons apart.
+ * RiColor is graphics state rather than a material, and it reaches the pixels.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_color_test) {
     v3d::moya::Renderer renderer;
@@ -325,7 +324,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
 
 /**
  * The screen window follows the frame aspect, so a frame that is not square does not stretch
- * a square window across itself: a quad as wide as it is tall covers as many columns as rows.
+ * the picture. A quad as wide as it is tall covers as many columns as rows.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_test) {
     v3d::moya::Renderer renderer;
@@ -361,8 +360,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_test) {
 }
 
 /**
- * An explicit screen window stops the frame aspect writing one, and RiFormat afterwards does
- * not put it back.
+ * An explicit screen window replaces the one the frame aspect gives, and a later RiFormat
+ * does not restore the default.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_explicit_screen_window_test) {
     v3d::moya::Renderer renderer;
@@ -381,8 +380,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_explicit_screen_window_test) {
         "WorldEnd\n", &handler));
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
-    // a window of [-2, 2] means the quad nearly fills the frame; the default [-4/3, 4/3] by
-    // [-1, 1] would have clipped it away at the top and bottom
+    // under a window of [-2, 2] the quad nearly fills the frame. The default [-4/3, 4/3] by
+    // [-1, 1] would clip it at the top and bottom
     BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 1), 1.0F);
     BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 46), 1.0F);
 }
@@ -426,14 +425,13 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_trace_depth_test) {
 }
 
 /**
- * TransformEnd restores what TransformBegin saved, rather than leaving the current
- * transformation wherever the block moved it.
+ * TransformEnd restores the current transformation that TransformBegin saved.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_transform_block_test) {
     v3d::moya::Renderer renderer;
     v3d::moya::RIBHandler handler(&renderer);
 
-    // the block leaves nothing behind: a polygon added after it sits where its own points say
+    // a polygon added after the block sits where its own points say
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
         "Projection \"orthographic\"\n"
@@ -460,13 +458,13 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_output_override_test) {
 
     BOOST_REQUIRE(read("Display \"scene-says.png\" \"file\" \"rgb\"\n", &handler));
 
-    // nothing is written until WorldEnd, so this reads the context rather than the disk
+    // nothing is written until WorldEnd, so the case reads the context and not the disk
     BOOST_CHECK_EQUAL(handler.context().displayName(), "data_out/override.png");
 }
 
 /**
- * The reyes hider dices polygons only, so a scene with a sphere in it renders without the
- * sphere and logs a warning that says so, rather than failing. The ray hider draws one.
+ * The reyes hider dices polygons only. A scene with a sphere in it renders without the sphere
+ * and logs a warning. The ray hider draws spheres.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
     v3d::moya::Renderer renderer;
@@ -521,8 +519,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
 }
 
 /**
- * A size given to the handler replaces the size a scene's Format names, as a command line
- * does, while the scene still renders at that size.
+ * A size given to the handler, as a command line gives one, replaces the size a scene's Format
+ * names. The scene renders at the handler's size.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_override_test) {
     v3d::moya::Renderer renderer;
@@ -536,8 +534,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_override_test) {
 }
 
 /**
- * A size given to the handler that is not a picture side is refused, and the scene's Format
- * is used instead.
+ * A size given to the handler with a side of zero or less, or above largestResolution, is
+ * refused. The scene's Format is used instead.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_refuses_a_side_out_of_range_test) {
     v3d::moya::Renderer renderer;
@@ -567,9 +565,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_format_nonpositive_side_is_the_default_test
 }
 
 /**
- * A sphere whose radius is not positive is not drawn by the ray hider: it is logged and left
- * out of the traced scene, rather than built with a range that has no meaning. One with a
- * positive radius in the same scene is drawn.
+ * The ray hider does not draw a sphere whose radius is not positive. The sphere is logged and
+ * left out of the traced scene. A sphere with a positive radius in the same scene is drawn.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_sphere_with_no_size_is_skipped_test) {
     v3d::moya::Renderer renderer;
@@ -590,9 +587,9 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_sphere_with_no_size_is_skipped_test) {
 }
 
 /**
- * A primitive whose motion is flat at both ends has no pose to be moved from. A polygon under
- * such a motion is left out of the frame and a sphere out of the traced scene, and neither
- * throws or leaves a pose that is not a number.
+ * A primitive whose motion flattens it at both ends of the shutter has no pose to move it from.
+ * A polygon under such a motion is left out of the frame, and a sphere out of the traced
+ * scene. Neither throws nor leaves a pose that is not a number.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_motion_flat_at_both_ends_test) {
     const std::string flat =
@@ -698,8 +695,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_repeated_head_polygon_splits_test) {
 /**
  * A split carries each corner's "Cs" onto its pieces, interpolated where it cuts an edge. A
  * quad with a different colour at each corner comes out the same split as diced whole.
- * Colour is bilinear across a grid, and a split of a rectangle through its middle keeps it so,
- * which leaves only rounding between the two.
+ * Colour is bilinear across a grid, and a split of a rectangle through its middle keeps it
+ * bilinear. The two pictures differ only by rounding.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_colour_test) {
     const std::string shading = "Surface \"constant\"\n";
@@ -715,7 +712,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_colour_test) {
             }
         }
     }
-    // the colours do vary across it, so the comparison is not of two flat pictures. The
+    // the colours vary across the quad, so the comparison is not of two flat pictures. The
     // lower left corner is red and the upper right blue
     BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 40) > 0.8F);
     BOOST_TEST(split->value(v3d::moya::FrameBuffer::BLUE, 14, 40) < 0.2F);
@@ -724,12 +721,12 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_colour_test) {
 }
 
 /**
- * A split carries each corner's "N" onto its pieces too, so a quad lit through normals that
- * sweep across it shades as a gradient whether it is split or not. A piece without them would
- * shade with the quad's plane, and be lit full on.
+ * A split carries each corner's "N" onto its pieces too. A quad lit through normals that
+ * sweep across it shades as a gradient whether it is split or not. A piece without the
+ * normals would shade with the quad's plane, and be lit full on.
  *
- * The normals are interpolated and renormalised at each cut, which is not quite the bilinear
- * blend a whole grid makes, so the two agree to a few hundredths rather than exactly.
+ * The normals are interpolated and renormalised at each cut. That differs slightly from the
+ * bilinear blend a whole grid makes, so the two pictures agree to a few hundredths.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
     const std::string shading =

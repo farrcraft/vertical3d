@@ -175,8 +175,8 @@ BOOST_AUTO_TEST_CASE(parameterlist_reads_back_typed_test) {
 }
 
 /**
- * A partial trailing triple contributes nothing. A file whose array does not match its
- * declaration produces one.
+ * A partial trailing triple contributes no point. A file whose array length does not match
+ * its declaration produces such a triple.
  **/
 BOOST_AUTO_TEST_CASE(parameterlist_partial_point_test) {
     v3d::render::offline::rib::ParameterList parameters;
@@ -192,8 +192,9 @@ BOOST_AUTO_TEST_CASE(parameterlist_partial_point_test) {
 }
 
 /**
- * A matrix read in RIB's order needs no transpose to become glm's, as ParameterList::matrix
- * explains. The test checks the convention by applying the result to a point.
+ * A matrix read in RIB's order needs no transpose to become glm's. RIB writes row by row for
+ * row vectors, and glm stores column by column for column vectors. The test checks the
+ * convention by applying the result to a point.
  **/
 BOOST_AUTO_TEST_CASE(parameterlist_matrix_convention_test) {
     v3d::render::offline::rib::ParameterList parameters;

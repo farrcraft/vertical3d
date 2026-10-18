@@ -19,9 +19,9 @@ namespace v3d::moya {
  * What a primitive is shaded by: its surface shader and the lights that were switched on
  * when it was submitted.
  *
- * A primitive keeps a copy with its placement and its colour. A split resubmits its pieces
- * during the second pass, when none of the graphics state is current, and each piece is
- * shaded with its parent's copy.
+ * A primitive keeps a copy with its placement and its colour. A split primitive resubmits
+ * its pieces while the buckets render, after WorldEnd, when none of the graphics state is
+ * current. Each piece is shaded with its parent's copy.
  **/
 class Shading final {
  public:
@@ -35,8 +35,8 @@ class Shading final {
     glm::vec3 opacity = glm::vec3(1.0F);
     /**
      * The lights that were switched on, each with the space the scene instanced it in. A
-     * light shader states `from` and `to` in that space and shades points in eye space.
-     * The pair places a light where the scene put it rather than at the origin.
+     * light shader states `from` and `to` in that space, and shades points in eye space.
+     * The stored space places each light where the scene put it, not at the origin.
      **/
     std::vector<v3d::render::offline::sl::Placed> lights;
 };

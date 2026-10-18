@@ -60,8 +60,8 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
         return true;
     }
     if (name == "shader") {
-        // the placement maps the shader's own space into camera space, and this maps out of
-        // camera space, so it is the inverse
+        // the placement maps shader space into camera space. This matrix maps camera space
+        // into shader space, so it is the inverse
         *matrix = glm::inverse(placement_);
         return true;
     }

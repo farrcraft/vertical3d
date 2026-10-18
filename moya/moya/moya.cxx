@@ -27,8 +27,8 @@ namespace {
 void sizes(const boost::program_options::variables_map& var_map, v3d::moya::RIBHandler* handler) {
     const bool width = var_map.count("width") > 0;
     const bool height = var_map.count("height") > 0;
-    // a picture within the largest side can still be larger than memory holds, and main
-    // reports the allocation that fails
+    // a picture within the largest side can still be larger than memory holds. main catches
+    // and reports the allocation that fails
     if (width && height) {
         const int x = var_map["width"].as<int>();
         const int y = var_map["height"].as<int>();
@@ -61,7 +61,6 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::RIBH
 }
 
 int run(int argc, char *argv[]) {
-    // setup option parser
     boost::program_options::options_description opts_desc("Allowed options");
     opts_desc.add_options()
         ("help", "produce help message")
@@ -76,12 +75,10 @@ int run(int argc, char *argv[]) {
         ("bucket", boost::program_options::value<int>(),
             "square bucket size in pixels, used unless the scene sets one with Option \"limits\"");
 
-    // parse options
     boost::program_options::variables_map var_map;
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, opts_desc), var_map);
     boost::program_options::notify(var_map);
 
-    // process options
     if (var_map.count("help") != 0) {
         std::cout << opts_desc << "\n";
         exit(EXIT_SUCCESS);
@@ -111,8 +108,8 @@ int run(int argc, char *argv[]) {
         exit(EXIT_SUCCESS);
     }
 
-    // RiBegin and RiEnd have no RIB equivalent - the standard says they are implied at the
-    // start and end of a file - so the handler creates and destroys the context
+    // RiBegin and RiEnd have no RIB equivalent. The RIBHandler pushes the render context on
+    // construction and pops it on destruction
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::moya::Renderer renderer;
     v3d::moya::RIBHandler handler(&renderer);
@@ -141,9 +138,9 @@ int run(int argc, char *argv[]) {
 };  // namespace
 
 int main(int argc, char *argv[]) {
-    // the option parser and the reader both report by throwing, and an exception leaving
-    // main is an abort with no message in it. The handler reports through stdio rather than
-    // the stream the rest of the file writes to, because a last-resort handler must not throw
+    // the option parser reports an error by throwing, and so does a failed allocation. An
+    // exception leaving main aborts with no message. The catch blocks write through stdio,
+    // not std::cout, because a last-resort handler must not throw
     try {
         return run(argc, argv);
     } catch (const std::exception& error) {

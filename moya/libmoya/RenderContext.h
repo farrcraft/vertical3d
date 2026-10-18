@@ -119,8 +119,8 @@ class RenderContext {
         void hider(const std::string & name);
         bool raytracing() const;
         /**
-         * The reyes pass. Every bucket's grids are hidden into a new set of samples, and the
-         * samples are resolved into the planes. The reyes hider renders through this.
+         * Renders the buckets, for the reyes hider. Every bucket's grids are hidden into a new
+         * set of samples, and the samples are then resolved into the planes.
          **/
         void bucket(v3d::render::offline::FrameBuffer* planes);
         /** The near clipping plane, RiClipping's hither. **/
@@ -199,7 +199,7 @@ class RenderContext {
 
         /**
          * shadingRate maps to RiShadingRate(). bucketSize and gridSize map to Option
-         * "limits" "bucketsize" and "gridsize", and each refuses a zero.
+         * "limits" "bucketsize" and "gridsize", and both refuse a zero.
          **/
         void shadingRate(float size);
         void bucketSize(unsigned int width, unsigned int height);
@@ -270,17 +270,18 @@ class RenderContext {
         /**
          * maps to RiPolygon()
          * Under the ray hider the polygon is only added to the traced scene. Under the
-         * reyes hider this is the first pass. A polygon outside the clipping planes or the
+         * reyes hider it is also added to the traced scene, then bounded and bucketed, and
+         * prepareWorld() must come first. A polygon outside the clipping planes or the
          * frustum is culled. One that is too large or crosses the eye plane is marked for
          * splitting. A polygon that is not culled goes in the bucket that holds the upper
-         * left corner of its raster bound. The reyes hider requires prepareWorld() first.
+         * left corner of its raster bound. The pieces of a split come back through here,
+         * and are bucketed again but not traced again.
          **/
         void addPolygon(const boost::shared_ptr<Polygon>& poly);
         /**
          * maps to RiSphere()
-         * Only the ray hider draws one, intersected where it is defined; the reyes
-         * hider does not dice spheres. A sphere whose radius is not positive is
-         * logged and not drawn.
+         * Only the ray hider draws one, and intersects it exactly. The reyes hider does
+         * not dice spheres. A sphere whose radius is not positive is logged and not drawn.
          *
          * @return false when the hider cannot draw spheres
          **/
@@ -399,8 +400,9 @@ class RenderContext {
         bool flatMotionReported_ = false;
 
         /**
-         * Whether the current transformation moves and is flat at both ends. A primitive
-         * under it has no pose to be moved from and is left out. The first one is logged.
+         * Whether the current transformation moves and has no inverse at both ends. A
+         * primitive under it has no stored pose to move from, and is left out. The first such
+         * primitive is logged.
          **/
         bool flatMotion();
         boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
@@ -426,8 +428,8 @@ class RenderContext {
         float frameAspect_ = defaultFrameAspectRatio;
         float screen_[4] = { -defaultFrameAspectRatio, defaultFrameAspectRatio, -1.0F, 1.0F };  // the screen window: left, right, bottom, top
         // RiFormat sets the frame aspect, and the frame aspect sets the screen window. Once a
-        // scene names the frame aspect or the screen window, that one stops following. A named
-        // projection means prepareWorld() only rebuilds the screen transform
+        // scene names the frame aspect or the screen window, that value stops following. With
+        // a named projection, prepareWorld() only rebuilds the screen transform
         bool frameAspectNamed_ = false;
         bool screenNamed_ = false;
         bool projectionNamed_ = false;
@@ -468,8 +470,8 @@ class RenderContext {
  * A point through a matrix that may be a perspective one, divided by w.
  *
  * An orthographic projection leaves w at one, so the divide changes nothing. A perspective
- * one writes the eye depth into w, and the divide is what takes the point to screen or raster
- * units. A point whose w is at or behind the eye is returned undivided. addPolygon() tests w
+ * one writes the eye depth into w, and the divide takes the point to screen or raster units.
+ * A point whose w is at or behind the eye is returned undivided. addPolygon() tests w
  * itself first, and splits a primitive with such a corner.
  **/
 glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point);

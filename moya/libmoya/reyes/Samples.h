@@ -18,10 +18,10 @@ namespace v3d::moya::reyes {
 /**
  * Every sample of the frame, and the nearest micropolygon hidden at each so far.
  *
- * Visibility is resolved per sample, and a sample is finished only when every grid that could
+ * Visibility is resolved per sample. A sample is finished only when every grid that could
  * reach it has been hidden. A split can put a piece in a bucket already rendered, and the
- * buckets are then rendered again, so no bucket is finished before the last pass over them.
- * The store covers the whole image, and goes through the film once, after that pass.
+ * buckets are then all rendered again, so no bucket is finished before the last round. The
+ * samples therefore cover the whole image, and go through the film once, after that round.
  **/
 class Samples final {
  public:

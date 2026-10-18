@@ -21,8 +21,8 @@ typedef v3d::render::offline::rib::ParameterList ParameterList;
 
 /**
  * The C interface passes a parameter list as two parallel arrays, and neither says how long
- * a value array is; only the declaration does. The reader resolves a file's parameters the
- * same way, so both paths into a render context agree.
+ * a value array is. Only the declaration gives the length. The reader resolves a file's
+ * parameters the same way, so both paths into a render context agree.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_typed_by_declaration_test) {
     const Declarations declarations;

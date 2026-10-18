@@ -147,8 +147,8 @@ void Polygon::clip(const v3d::type::geometry::Plane & plane) {
     vertices_ = std::move(clipped);
 }
 
-// the bound in the space the vertices are in: object space, until the first pass moves a
-// diceable polygon's vertices into eye space
+// the bound in the space the vertices are in: object space, until RenderContext::addPolygon()
+// moves a diceable polygon's vertices into eye space
 v3d::type::geometry::AABBox Polygon::bound(void) const {
     v3d::type::geometry::AABBox bound;
 
@@ -235,8 +235,8 @@ Vertex crossing(const Vertex & start, const Vertex & end, const glm::vec3 & hit)
 }
 
 /**
- * An edge that crosses the plane. hit is the vertex both halves come to share, so it goes
- * into each of them; which half keeps start and which keeps end follows the side start is on.
+ * An edge that crosses the plane. hit is the vertex both halves share, so it goes into each
+ * of them. The side start is on decides which half keeps start and which keeps end.
  **/
 void addCrossingEdge(const Vertex& start, const Vertex& end, const glm::vec3& hit, int side,
     bool first, bool last, const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
@@ -361,8 +361,8 @@ void Polygon::split(RenderContext & rc) {
     p1->split(plane, pf1, pf2);
     p2->split(plane, pf3, pf4);
 
-    // the four pieces go back to the top of the renderer, which re-bounds, re-culls and
-    // re-measures each against the grid; this polygon is discarded by the caller
+    // each piece goes back through RenderContext::addPolygon(), which bounds, culls and
+    // measures it against the grid again. The caller discards this polygon
     const boost::shared_ptr<Polygon> pieces[] = { pf1, pf2, pf3, pf4 };
     for (const boost::shared_ptr<Polygon> & piece : pieces) {
         if (progress(piece, bounds)) {
@@ -378,8 +378,8 @@ void Polygon::split(RenderContext & rc) {
 }
 
 /*
-    The first pass moves a diceable polygon's vertices into eye space, so the grid is built
-    in eye space. The hider projects it to raster space.
+    RenderContext::addPolygon() moves a diceable polygon's vertices into eye space, so the
+    grid is built in eye space. The hider projects it to raster space.
 */
 bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc) {
     // one grid covers the whole polygon, so the second call ends the sequence
@@ -389,18 +389,18 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderCont
 
     /*
         The grid size is the number of micropolygons in a grid, and a grid of n vertices a
-        side has n - 1 micropolygons a side. The first pass splits anything whose raster
-        bound is wider or taller than the square root of the grid size times the shading
-        rate, so one grid covers what reaches here.
+        side has n - 1 micropolygons a side. RenderContext::addPolygon() marks for splitting
+        anything whose raster bound is wider or taller than the square root of the grid size
+        times the shading rate, so one grid covers what reaches here.
     */
     const unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));
     grid.reset(new reyes::MicroPolygonGrid(across + 1));
 
     /*
         bilinear interpolation over the polygon's first four vertices. A triangle's fourth
-        corner degenerates onto its third; a polygon with more than four vertices has the
-        rest dropped, which gives a wrong grid for a concave one. Triangulating before
-        dicing would avoid that.
+        corner degenerates onto its third. A polygon with more than four vertices has the
+        rest dropped, so its grid does not cover the part of the polygon past the fourth
+        vertex.
     */
     const size_t fourth = vertices_.size() > 3 ? 3 : 2;
     const glm::vec3 corners[4] = {
@@ -428,7 +428,7 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderCont
     // the geometric normal is one value across the primitive, so there is nothing to
     // interpolate: addPolygon() wrote the same one onto every vertex
     const glm::vec3 geometric = vertices_[0].geometricNormal();
-    // texture coordinates interpolate only when the scene gave every corner one; a grid
+    // texture coordinates interpolate only when the scene gave every corner one. A grid
     // without them takes its own parameters as s and t when it is shaded
     const bool textured = vertices_[0].hasTexCoord() && vertices_[1].hasTexCoord() &&
         vertices_[2].hasTexCoord() && vertices_[fourth].hasTexCoord();

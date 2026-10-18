@@ -133,7 +133,7 @@ const char* const BACKGROUND =
 "}\n";
 
 /**
- * The nine shaders compiled into the library all pass the checker.
+ * The standard shaders, as this file writes them out, all pass the checker.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_standard_shaders_test) {
     const char* const sources[] = {
@@ -230,8 +230,8 @@ BOOST_AUTO_TEST_CASE(slcompiler_promoted_builtin_test) {
 }
 
 /**
- * A shader may only write the globals its type owns. A light shader assigning Ci is told that
- * Ci belongs to a surface and an imager, rather than that the name is undeclared.
+ * A shader may only write the globals its type owns. The error for a light shader assigning Ci
+ * says that Ci belongs to a surface and an imager, not that the name is undeclared.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_global_writability_test) {
     BOOST_CHECK_EQUAL(compile("light l() { Ci = 1; }"),
@@ -250,8 +250,8 @@ BOOST_AUTO_TEST_CASE(slcompiler_global_writability_test) {
 }
 
 /**
- * A surface shader's L and Cl are set by the light whose shader illuminance is running, and
- * mean nothing outside that body.
+ * A surface shader's L and Cl are set by the light whose shader the illuminance loop is
+ * running. They mean nothing outside the illuminance body.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_lighting_globals_test) {
     BOOST_CHECK_EQUAL(compile("surface s() { illuminance(P) { Ci = Ci + Cl; } }"), "");
@@ -275,8 +275,9 @@ BOOST_AUTO_TEST_CASE(slcompiler_undeclared_identifier_test) {
 }
 
 /**
- * A global is varying because it differs per shading point; a parameter is uniform unless it
- * was declared otherwise, because a scene binds one value for the whole primitive.
+ * A global that differs per shading point, such as P, is varying, and one that does not, such
+ * as E, is uniform. A parameter is uniform unless it was declared otherwise, because a scene
+ * binds one value for the whole primitive.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_storage_defaults_test) {
     std::vector<Symbol> symbols;
@@ -389,9 +390,8 @@ BOOST_AUTO_TEST_CASE(slcompiler_break_in_illuminance_test) {
 }
 
 /**
- * A string is uniform, and so is the coordinate space name inside a cast: there is no
- * per-point transform to look up, and allowing one would make every transform a runtime
- * string lookup.
+ * A string is uniform, and so is the coordinate space name inside a cast. The space is looked
+ * up once for the whole batch, not once per point.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_string_is_uniform_test) {
     std::vector<Symbol> symbols;

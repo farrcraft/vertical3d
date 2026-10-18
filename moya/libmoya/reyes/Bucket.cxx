@@ -352,7 +352,7 @@ void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & 
     };
 
     // a moving grid's micropolygons share one Motions, which covers the pixels all of them
-    // sweep. A first pass over the grid measures that region
+    // sweep. A loop over the grid measures that region before any micropolygon is hidden
     boost::shared_ptr<Motions> motions;
     if (primitive.motion().moving()) {
         glm::vec3 min(std::numeric_limits<float>::max());
@@ -402,8 +402,8 @@ size_t Bucket::primitiveCount(void) const {
 
 bool Bucket::render(RenderContext & rc) {
     bool split = false;
-    // splitting resubmits pieces through the first pass, which may append to this same
-    // bucket, so the loop reads the size each time around rather than caching it
+    // splitting resubmits pieces through RenderContext::addPolygon(), which may append to
+    // this same bucket, so the loop reads the size on every iteration
     for (size_t i = 0; i < primitives_.size(); i++) {
         // a copy, because split() may append to primitives_ and so move the entry it came from
         const boost::shared_ptr<Primitive> prim = primitives_[i];
@@ -416,8 +416,8 @@ bool Bucket::render(RenderContext & rc) {
                 hide(*grid, *prim, rc);
             }
         } else {
-            // the first pass buckets each piece and decides whether it is diceable, so the
-            // original is erased whether or not split() submitted anything
+            // RenderContext::addPolygon() buckets each piece and decides whether it is
+            // diceable, so the original is erased whether or not split() submitted anything
             prim->split(rc);
             primitives_.erase(primitives_.begin() + static_cast<std::ptrdiff_t>(i));
             i--;

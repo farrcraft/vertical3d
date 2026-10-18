@@ -13,10 +13,10 @@
 
 namespace v3d::moya::reyes {
 /**
- * One tile of the image, and the primitives waiting in it. The first pass puts each primitive
- * in the bucket that holds the upper left corner of its raster space bound. FrameBuffer
- * renders the buckets in turn once every primitive is in. A micropolygon is hidden into every
- * sample its bound touches, including samples outside its own bucket.
+ * One tile of the image, and the primitives waiting in it. RenderContext::addPolygon() puts
+ * each primitive in the bucket that holds the upper left corner of its raster space bound.
+ * FrameBuffer renders the buckets in turn once every primitive is in. A micropolygon is
+ * hidden into every sample its bound touches, including samples outside its own bucket.
  */
 class Bucket final {
  public:
@@ -26,9 +26,9 @@ class Bucket final {
     void addPrimitive(const boost::shared_ptr<Primitive>& primitive);
     /**
      * Render every primitive in the bucket: dice it into micropolygon grids, shade
-     * them and hide them into the frame's samples. A primitive too large to
-     * dice is split instead, and its pieces go back through the first pass, which may
-     * add them to this bucket or another one.
+     * them and hide them into the frame's samples. A primitive too large to dice is split
+     * instead. Its pieces go back through RenderContext::addPolygon(), which may add them
+     * to this bucket or another one.
      * @return whether anything was split. FrameBuffer then renders every bucket again, for
      *         pieces that landed in a bucket it had already rendered
      */

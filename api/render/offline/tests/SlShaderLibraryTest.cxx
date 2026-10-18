@@ -122,8 +122,8 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_expression_default_test) {
 }
 
 /**
- * A colour bound with one value replicates and one bound with three does not, as RI
- * promotes it, rather than a partial write.
+ * A colour bound with three values takes each in its own component, rather than replicating
+ * the first as a colour bound with one value does.
  **/
 BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_a_colour_test) {
     ShaderLibrary library(logger());
@@ -188,8 +188,8 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_unbindable_parameters_test) {
 
 /**
  * A shader that will not compile is reported and substituted rather than fatal, because RI
- * requires a renderer to carry on. A light has no substitute: one fewer light is better than
- * a light of some other kind.
+ * requires a renderer to carry on. A surface is replaced by matte. A light has no substitute
+ * and is left out of the scene.
  **/
 BOOST_AUTO_TEST_CASE(slshaderlibrary_substitutes_a_failure_test) {
     ShaderLibrary library(logger());
