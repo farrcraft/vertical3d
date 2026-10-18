@@ -7,6 +7,8 @@
 
 #include <api/log/Logger.h>
 #include <api/render/realtime/DeviceContext.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
@@ -36,8 +38,6 @@ namespace {
  * values, or is read decoded to linear. A target stores what it is given, or encodes on store.
  **/
 const uint32_t gradeShader[] =
-#include "Handle.h"
-#include "Pass.h"
 #include "shaders/grade.frag.inc"
 ;  // NOLINT(whitespace/semicolon)
 
