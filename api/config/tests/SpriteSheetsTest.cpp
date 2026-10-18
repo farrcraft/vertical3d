@@ -30,7 +30,7 @@ boost::shared_ptr<v3d::log::Logger> logger() {
 }
 
 /**
- * Two sheets, one of them the shape a tile set is: a square image cut into a row of tiles.
+ * Two sheets. terrain is a 256 by 128 image holding two 64-pixel tiles and one larger sprite.
  **/
 const char* const sheets =
 "{\"sheets\": ["
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_convert_pixels_to_uv_test) {
     BOOST_CHECK_CLOSE(uv1.x, 0.5F, 0.001F);
     BOOST_CHECK_CLOSE(uv1.y, 0.5F, 0.001F);
 
-    // the sheet that fills its image is 0..1 in both axes
+    // a sprite that reaches the sheet's far corner ends at uv 1, 1
     BOOST_REQUIRE(terrain.uv("cabin", &uv0, &uv1));
     BOOST_CHECK_CLOSE(uv1.x, 1.0F, 0.001F);
     BOOST_CHECK_CLOSE(uv1.y, 1.0F, 0.001F);

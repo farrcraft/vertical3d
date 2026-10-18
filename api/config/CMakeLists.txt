@@ -10,7 +10,7 @@ v3d_add_api_library(config
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_asset: Config.h names an asset::Json, and load() resolves each file it lists
 # through the asset manager.
-# v3dlib_type: CameraProfiles.h holds a table of type::CameraProfile and hands them out by
+# v3dlib_type: CameraProfiles.h holds a table of type::camera::Profile and hands them out by
 # value.
 # glm: SpriteSheet.h hands a region out as a uv pair, and WindowSize.h a size as an ivec2.
 # Boost::json: CameraProfiles.h, SpriteSheets.h and WindowSize.h each read a boost::json::object.

@@ -38,9 +38,9 @@ class TextureAtlas {
      * neighbouring region.
      *
      * The rectangle returned is the usable one: the size asked for, positioned inside the
-     * gutter. Pass it to the blit below and use it for texture coordinates as it is. A
-     * caller asks for the size it will blit, and neither adds the gutter to the request
-     * nor subtracts it from the result.
+     * gutter. Pass it to region(area, data, stride) and use it for texture coordinates as
+     * it is. A caller asks for the size it will blit, and neither adds the gutter to the
+     * request nor subtracts it from the result.
      *
      * @return the usable rectangle, or x and y of -1 when the atlas has no room left
      **/

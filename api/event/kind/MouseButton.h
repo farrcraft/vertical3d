@@ -18,9 +18,9 @@ namespace v3d::event::kind {
  * A mouse button changed edge. Carries where the cursor was when it did, in window
  * coordinates with the origin at the top left, the same frame MouseMotion reports in.
  *
- * The button is named, not numbered, so a subscriber needs no SDL header to tell which
- * one it was - the same reason a key arrives as "escape" rather than as a keycode. The
- * name is the event's own, the way KeyDown's is, so binding one is binding "left".
+ * The button is named, not numbered, so a listener needs no SDL header to tell which one it
+ * was. A key arrives as "escape", not as a keycode, for the same reason. The button's name is
+ * the event's name, as a key's is, so a binding names the left button "left".
  **/
 class MouseButton : public Event {
  public:

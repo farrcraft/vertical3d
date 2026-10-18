@@ -85,9 +85,9 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     fheader.bpp_ = img->bpp();
     const bool grey = img->format() == Image::Format::Grey;
     fheader.type_ = grey ? 3 : 2;
-    // bit 5 of the descriptor is the vertical origin, and the rows below go out top down
-    // because that is the order Image holds them in. Leaving it clear claims bottom up,
-    // which a reader is entitled to act on by turning the picture over
+    // bit 5 of the descriptor marks a top-left origin. The rows go out top down, the order
+    // Image holds them in, so the bit is set. A reader treats a clear bit as bottom up and
+    // flips the picture
     fheader.descriptor_ = 0x20;
 
     file.write(reinterpret_cast<char*>(&fheader), sizeof(fheader));

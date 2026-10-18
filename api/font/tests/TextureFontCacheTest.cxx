@@ -123,13 +123,12 @@ BOOST_AUTO_TEST_CASE(texturefont_atlas_overflow_test) {
 }
 
 /**
- * The atlas budget a distance field asks for, at the base size and spread ui::TextRenderer
+ * The atlas a distance field needs, at the base size and spread ui::paint::TextRenderer
  * defaults to.
  *
- * A distance field glyph carries its spread on every side, so it is substantially larger
- * than the coverage glyph of the same face and size. A 512 square atlas is still enough at
- * 48 with a spread of 8, but only just: raising either one step overflows it, and the
- * caller then has to pass larger dimensions. The second half of this test checks that.
+ * A distance field glyph carries its spread on every side, so it is larger than the coverage
+ * glyph of the same face and size. A 512 square atlas holds printable ascii at 48 with a
+ * spread of 8. With a spread of 12 it does not, and the caller has to pass larger dimensions.
  **/
 BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
@@ -141,7 +140,7 @@ BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
     BOOST_CHECK_EQUAL(field->spread(), 8U);
     BOOST_REQUIRE_EQUAL(field->loadGlyphs(kPrintable), true);
 
-    // the same charset one step wider does not fit the same square, and says so
+    // with a spread of 12 the same charset does not fit the same square, and the load says so
     v3d::font::TextureFontCache cramped(512, 512, 1, logger);
     const boost::shared_ptr<v3d::font::TextureFont> tooBig =
         boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0F, logger, 12);

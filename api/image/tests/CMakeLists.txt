@@ -9,8 +9,8 @@ v3d_add_test(image
 
 target_link_libraries(v3dtest_image PRIVATE v3dlib_image v3dlib_log ${Boost_LIBRARIES} ${PNG_LIBRARIES} JPEG::JPEG)
 
-# The readers resolve a relative path against the working directory, which v3d_add_test
-# points at the executable, so the fixtures have to sit beside it.
+# Factory resolves a relative path against the working directory. v3d_add_test sets that to
+# the executable's directory, so the fixtures are copied there.
 add_custom_command(TARGET v3dtest_image POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/data"

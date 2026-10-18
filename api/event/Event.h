@@ -28,8 +28,8 @@ class Event {
     explicit Event(const std::string& name);
 
     /**
-     * Order events by identity and then by state, so that a binding on one edge and a
-     * binding on Any are distinct keys in a Mapper rather than colliding.
+     * Order events by identity, then by state. A Mapper keeps its bindings in this order, so
+     * the bindings on one source sit together, sorted by edge. The parameter is not compared.
      **/
     bool operator <(const Event& rhs) const;
 
@@ -46,17 +46,17 @@ class Event {
     State state() const;
 
     /**
-     * Whether a press is the platform repeating a key that is held down, rather than a new
-     * press. A binding carries it from the key to the command. A command that acts while its
-     * key is held, such as moving a piece, takes repeats. One that toggles something, such as
-     * a menu, ignores them, or holding the key would flick it on and off.
+     * Whether a press is the platform repeating a key that is held down, not a new press. The
+     * event engine copies it from the key to each command the key is bound to. A command that
+     * acts while its key is held, such as moving a piece, takes repeats. A command that toggles
+     * something, such as a menu, ignores them, or holding the key would flick it on and off.
      **/
     void repeat(bool repeated) noexcept;
     bool repeat() const noexcept;
 
     /**
-     * The event's parameter. A binding may configure one, and a menu item carries its
-     * value here; either way it reaches the handler as the event's data.
+     * The event's parameter. A binding's "param" and a menu item's value both reach the
+     * handler here.
      **/
     void data(const EventData &payload);
     boost::optional<EventData> data() const;

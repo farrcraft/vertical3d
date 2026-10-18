@@ -114,8 +114,8 @@ BOOST_AUTO_TEST_CASE(event_state_name_test) {
 }
 
 /**
- * Both mouse events carry a position. The test checks only that the position survives from
- * the SDL event to the event dispatched from it.
+ * Both mouse events keep the position they are built with, and a MouseButton takes its
+ * button's name as the event's name.
  **/
 BOOST_AUTO_TEST_CASE(mouse_event_position_test) {
     const boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");

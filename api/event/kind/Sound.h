@@ -11,7 +11,7 @@
 namespace v3d::event::kind {
 
 /**
- * A request to play a clip as a one shot, which audio::Engine listens for.
+ * A request to play a clip once. audio::Engine listens for it.
  **/
 class Sound final {
  public:

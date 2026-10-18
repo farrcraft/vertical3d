@@ -72,9 +72,7 @@ BOOST_AUTO_TEST_CASE(commands_reports_an_unknown_command) {
 }
 
 /**
- * A second registration of the same name is refused rather than replacing the first, so
- * two handlers for one command is a failure at startup rather than one of them silently
- * never running.
+ * A second registration of the same name is refused, and the first handler stays in place.
  **/
 BOOST_AUTO_TEST_CASE(commands_refuses_a_duplicate) {
     v3d::event::Commands directory;

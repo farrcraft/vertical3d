@@ -101,13 +101,15 @@ BOOST_AUTO_TEST_CASE(engine_lets_the_dispatcher_go_test) {
         const v3d::event::Engine engine(dispatcher);
         BOOST_CHECK(!dispatcher->sink<v3d::event::Unclaimed>().empty());
     }
-    // the dispatcher outlives the engine, and a delegate to it would be a dangling call
+    // the engine disconnects when it is destroyed, so the dispatcher that outlives it holds
+    // no delegate to it
     BOOST_CHECK(dispatcher->sink<v3d::event::Unclaimed>().empty());
 }
 
 namespace {
 /**
- * Hears both sinks into one list, so the order a key and its command arrive in can be read.
+ * Records what both sinks deliver in one list, so a test can read the order a key and its
+ * command arrive in.
  **/
 struct Order {
     void key(const v3d::event::Source& source) {

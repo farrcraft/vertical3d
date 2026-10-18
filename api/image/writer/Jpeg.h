@@ -16,4 +16,4 @@ class Jpeg final : public v3d::image::Writer {
     virtual bool write(std::string_view filename, const boost::shared_ptr<Image> & img);
 };
 
-};
+};  // namespace v3d::image::writer

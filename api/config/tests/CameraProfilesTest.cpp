@@ -27,7 +27,7 @@ boost::shared_ptr<v3d::log::Logger> logger() {
 }
 
 /**
- * Two of the profiles from data/cameras.json.
+ * Two of the profiles from vertical3d/data/cameras.json.
  **/
 const char* const cameras =
 "{\"cameras\": ["
@@ -63,8 +63,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
 }
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_orientation_test) {
-    // lookat() orients a profile, so the three normals and the rotation agree; a table
-    // naming each of them separately could disagree
+    // load() orients each profile with lookat(), so its basis vectors and its rotation agree
     v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config(cameras)));
 
@@ -106,7 +105,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_rejects_test) {
     // a name or an adaptive setting that is not a string is refused rather than thrown
     BOOST_CHECK_NO_THROW(BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": 5}]}"))));
     BOOST_CHECK_NO_THROW(BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"adaptive\": 3}]}"))));
-    // a half height of zero or less draws nothing, and nothing could zoom it back out
+    // a zoom below Camera::MINIMUM_ZOOM is refused, because it could never zoom back out
     BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"zoom\": 0.0}]}")));
     BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"zoom\": -4.0}]}")));
 }

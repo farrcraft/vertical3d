@@ -31,16 +31,13 @@ pngtest_warning(png_structp png_ptr, png_const_charp message) {
     std::cout << name << ": libpng warning: " << message << "\n";
 }
 
-/* This is the default error handling function.  Note that replacements for
- * this function MUST NOT RETURN, or the program will likely crash.  This
- * function is used by default, or if the program supplies NULL for the
- * error function pointer in png_set_error_fn().
+/* The error handler png_set_error_fn() installs. It prints the message and returns.
+ * png_error() then calls libpng's default handler, which longjmps to png_jmpbuf, or
+ * aborts the process when no setjmp is in place.
  */
 void
 pngtest_error(png_structp png_ptr, png_const_charp message) {
     pngtest_warning(png_ptr, message);
-    /* We can return because png_error calls the default handler, which is
-    * actually OK in this case. */
 }
 
 };  // namespace
@@ -146,7 +143,7 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     png_write_image(png_ptr, row_pointers);
 
     png_write_end(png_ptr, info_ptr);
-    // clean up after the write, and free any memory allocated */
+    // clean up after the write, and free any memory allocated
     png_destroy_write_struct(&png_ptr, &info_ptr);
 
     delete[] row_pointers;

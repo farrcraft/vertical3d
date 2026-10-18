@@ -16,16 +16,15 @@
 namespace v3d::event {
 
 /**
- * What an app can be asked to do, by name.
+ * A registry of the commands an app handles, each mapped by name to a handler.
  *
- * A command is identified by a "context::name" string, the value `Event::str()` returns, and
- * the registry maps that string to a handler. A key binding and a menu item that carry the same
- * event therefore reach the same handler. The registry does not record where an invocation came
- * from.
+ * A command's name is the "context::name" string that `Event::str()` returns. A key binding
+ * and a menu item that carry the same event therefore reach the same handler. The registry does
+ * not record where an invocation came from.
  *
- * Every command an app handles is registered, including one it reads by polling whether its
- * key is held rather than by handling the event. A binding whose command is not registered is
- * one nothing handles, and unhandled() lists those.
+ * An app registers every command it handles. That includes a command the app reads by polling
+ * whether its key is held, which addHeld() registers. unhandled() lists the bound commands that
+ * are not registered.
  *
  * A name with no handler is not an error here: `invoke` returns false and the caller decides
  * what that means.
@@ -39,7 +38,7 @@ class Commands final {
     using Handler = std::function<void(const Event&)>;
 
     /**
-     * A handler for a command that only ever happens on the press.
+     * A handler that runs only on a press.
      **/
     using PressHandler = std::function<void()>;
 
@@ -54,9 +53,9 @@ class Commands final {
     bool add(const std::string& name, const Handler& handler);
 
     /**
-     * Register a handler that runs on the press only. A release of the same binding is
-     * still handled - it just does nothing - so the command does not report as unknown. A held
-     * key's repeat is handled the same way, and holding the key runs the action once.
+     * Register a handler that runs on a press, or on an event with State::Any. A release and
+     * a held key's repeat are still handled, so invoke() returns true, but the handler does not
+     * run. Holding a key therefore runs the action once.
      * @param name the command's "context::name"
      * @param handler what to run
      * @return false when the name is already registered, leaving the first handler in place
@@ -64,15 +63,15 @@ class Commands final {
     bool addPress(const std::string& name, const PressHandler& handler);
 
     /**
-     * Register a command that is read by asking whether its key is held, not by handling its
-     * event. Its event is handled and does nothing.
+     * Register a command that the app reads by polling whether its key is held. Its event is
+     * handled and does nothing.
      * @param name the command's "context::name"
      * @return false when the name is already registered
      **/
     bool addHeld(const std::string& name);
 
     /**
-     * Forget a command, so its handler can no longer run.
+     * Remove a command and its handler.
      * @return false when it was not registered
      **/
     bool remove(const std::string& name);

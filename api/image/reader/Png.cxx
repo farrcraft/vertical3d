@@ -26,7 +26,7 @@ namespace v3d::image::reader {
 namespace {
 
 /**
- * How far into the buffer libpng has read, since it walks rather than seeks.
+ * How far libpng has read into the buffer. libpng reads in order and never seeks.
  **/
 struct Cursor final {
     const unsigned char* data;
@@ -37,8 +37,8 @@ struct Cursor final {
 /**
  * libpng's own read, over memory instead of a FILE.
  *
- * A short buffer is an error rather than a short read: png_error longjmps out of the
- * decode, so the rows below are never filled from whatever was on the stack.
+ * A read past the end of the buffer calls png_error, which longjmps out of the decode. No
+ * row is then filled from memory past the end of the buffer.
  **/
 void readFromBuffer(png_structp png, png_bytep into, png_size_t wanted) {
     Cursor* cursor = static_cast<Cursor*>(png_get_io_ptr(png));
@@ -83,9 +83,9 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
     }
 
     // longjmp does not destroy anything constructed after the setjmp point, so every
-    // object below that owns memory is declared above it. Without this libpng's default
-    // error handler aborts the process. A reader receives bytes it did not open itself,
-    // and a truncated png is an ordinary input, so it has to fail instead.
+    // object below that owns memory is declared above it. Without the setjmp, libpng's
+    // default error handler aborts the process. A truncated png is ordinary input, so the
+    // read has to fail and return instead.
     boost::shared_ptr<Image> img;
     std::vector<png_bytep> rowpointers;
     // C4611 flags the mix of setjmp with C++ object destruction, which the declarations

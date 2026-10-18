@@ -49,8 +49,8 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     if (!glyph) {
         return;
     }
-    // the lines and the background are drawn with the white square, which a full atlas may
-    // have had no room for: the glyph is still drawn, and they are not
+    // the lines and the background are drawn with the white square. A full atlas may have no
+    // room for it, and then the glyph is drawn without them
     const bool lines = black != nullptr;
 
     // every metric below is in pixels of the size the face was rasterized at, so another
@@ -109,9 +109,9 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         icount += QUAD_INDICES;
     }
 
-    // actual glyph. y grows downwards and the pen sits on the baseline, so the bottom of
-    // the quad is however far the bitmap reaches below the baseline - its height less the
-    // bearing - and the top is one bitmap height above that
+    // the glyph itself. y grows downwards and the pen sits on the baseline. The quad's bottom
+    // is as far below the baseline as the bitmap reaches, its height less its top bearing, and
+    // its top is one bitmap height above that
     const float glyphWidth = static_cast<float>(glyph->width_) * scale;
     const float glyphHeight = static_cast<float>(glyph->height_) * scale;
     const float bottom = pen->y + glyphHeight - (static_cast<float>(glyph->offset_.y) * scale);

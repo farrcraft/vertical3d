@@ -1,10 +1,9 @@
 /**
  * Check the writing rules on the prose a change adds.
  *
- * The rules are the ones in docs/contributing/Conventions.md#writing. The script reads the lines
- * a change adds to Markdown files and to the comments of C++, GLSL, TypeScript, JavaScript,
- * CMake, batch and YAML files.
- * It rebuilds the paragraph around each added line and checks every sentence that overlaps one:
+ * The script reads the lines a change adds to Markdown files and to the comments of C++, GLSL,
+ * TypeScript, JavaScript, CMake, batch and YAML files. It rebuilds the paragraph around each
+ * added line and checks every sentence that overlaps one:
  *
  *   long-sentence    a sentence of more than 35 words. A code span counts as one word.
  *   opener           a sentence that starts with "And" or "So".

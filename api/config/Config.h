@@ -18,7 +18,7 @@
 
 namespace v3d::config {
 /**
- * JSON file-derived configuration
+ * The JSON documents an app's config.json lists, each stored under the type its entry names.
  **/
 class Config final {
  public:
@@ -27,14 +27,15 @@ class Config final {
     Config(const boost::shared_ptr<v3d::log::Logger> &logger);
 
     /**
-     * Load all of the standard config
+     * Read config.json, then load every file it lists.
      * 
      * @param assetManager loads JSON files as managed assets
      * 
      * An entry with an empty type is refused. typeName() returns the empty string for
      * Type::Unknown, so get(Type::Unknown) would otherwise find that entry.
      *
-     * @return true if all of the config is successfully loaded
+     * @return true if every listed file loaded. On false, the documents stored by an earlier
+     *         load stay in place.
      **/
     bool load(const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
@@ -44,8 +45,8 @@ class Config final {
     boost::shared_ptr<v3d::asset::kind::Json> get(Type configType);
 
     /**
-     * Get a loaded config by the type its entry names, which may be one of the app's own -
-     * a type the api has never heard of is filed like any other.
+     * Get a loaded config by the type its entry names. The type may be one of the app's own,
+     * because load() stores a type the api does not read like any other.
      *
      * @return the document, or null when config.json names none of that type
      **/

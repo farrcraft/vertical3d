@@ -1,5 +1,5 @@
 /**
- * Check the linking rules in docs/contributing/Build.md and Testing.md for apps and suites.
+ * Check the linking rules for apps and test suites.
  *
  * The script reads every CMakeLists.txt in the tree and checks each target that is not an api
  * library: every app, every app library such as v3dlib_moya, every app test suite and every api

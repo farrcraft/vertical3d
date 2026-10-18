@@ -36,8 +36,8 @@ void Engine::handleSourceEvent(const Unclaimed& unclaimed) {
     for (auto it = mappers_.begin(); it != mappers_.end(); it++) {
         std::vector<Event> destinations = it->second->destinations(source);
         for (auto mapped = destinations.begin(); mapped != destinations.end(); ++mapped) {
-            // carry the edge across so a handler can tell press from release without
-            // needing a separate binding for each
+            // copy the source's edge and repeat flag onto the command, so a handler can tell
+            // press from release without a separate binding for each
             mapped->state(source.state());
             mapped->repeat(source.repeat());
             dispatcher_->trigger(*mapped);

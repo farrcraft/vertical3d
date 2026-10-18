@@ -3,12 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-// jpeglib.h names FILE in its stdio helpers without including stdio itself
-
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 
+// jpeglib.h names FILE in its stdio helpers without including stdio itself
 #include <stdio.h>
 #include <jpeglib.h>
 
@@ -77,11 +76,10 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
 /**
  * Which way up an image is, once it has been through a writer and a reader.
  *
- * v3d::image::Image holds its rows top down - row 0 is the top of the picture - and the
- * canvas, the texture factory and every consumer downstream of them read it that way. A
- * format whose file layout is bottom up has to be flipped by its reader and its writer, so
- * that the pair agree with Image rather than only with each other. The rows here differ
- * because an image of one colour round trips through a flip unchanged.
+ * v3d::image::Image holds its rows top down: row 0 is the top of the picture. A format stored
+ * bottom up is flipped by both its reader and its writer, so that each agrees with Image and
+ * not only with the other. The two rows differ in colour, because a flip leaves an image of
+ * one colour unchanged.
  **/
 BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
     // two rows of one pixel: red on top, green below
@@ -110,16 +108,16 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
 }
 
 /**
- * The jpeg pair is pinned against libjpeg directly rather than against itself.
+ * The jpeg reader and writer are each checked against libjpeg directly, not against each
+ * other.
  *
- * A round trip cannot see an orientation fault: a writer and a reader that both reverse
- * their rows return the image they were given. So the writer is checked by decoding what it
- * produced, and the reader by handing it a file encoded here, each with the other half of
- * the pair left out of it.
+ * A round trip cannot see an orientation fault, because a writer and a reader that both
+ * reverse their rows return the image they were given. The test decodes the writer's file
+ * with libjpeg, and gives the reader a file encoded with libjpeg.
  *
- * The image is two bands rather than two rows because jpeg is lossy and its 8x8 blocks
- * bleed across a boundary; a band per half of an 8 row image leaves the first and last
- * scanlines unambiguous.
+ * The image is two bands, not two rows. jpeg is lossy and its 8x8 blocks blur across a
+ * boundary, so a band over each half of an 8 row image keeps the first and last scanlines
+ * clear.
  **/
 BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
     const unsigned int side = 8;
@@ -277,11 +275,10 @@ BOOST_FIXTURE_TEST_CASE(imagereader_greyscale_jpeg_test, OutputDirectory) {
  * A one channel image goes out as the grey form of each format that has one, and the picture
  * survives being read back.
  *
- * **What comes back is not always grey, and the three disagree about it**: the png reader
- * asks libpng for gray_to_rgb and the bmp reader resolves every index through the palette, so
- * both hand back RGB; the tga reader builds an image at the file's own depth and hands the
- * grey back as grey. That is pinned per format below rather than averaged over, because it is
- * the sort of thing a caller writes an assumption about.
+ * **What comes back is not always grey, and the formats differ.** The png reader asks libpng
+ * for gray_to_rgb, and the bmp reader resolves every index through the palette, so both return
+ * RGB. The tga reader builds an image at the file's own depth and returns grey. The test
+ * checks each format's result separately, because a caller may depend on it.
  *
  * The values are a ramp, so a stride or a palette index that is out by one shows up as a
  * shifted picture rather than as a plausible wrong colour.

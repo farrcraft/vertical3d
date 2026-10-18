@@ -39,9 +39,9 @@ constexpr FT_UInt RESOLUTION_DPI = 72;
 };  // namespace
 
 /**
- * The library and the face a font is read through, for as long as it is being read. Whatever
- * is open is closed by release(), by opening another, or by the owner going - so no path
- * through a load has to remember which of the two it had got as far as.
+ * The FreeType library and face a font is read through, open only while it is being read.
+ * release() closes whatever is open, and so do loadFace() and the destructor. A load that
+ * fails part way therefore never has to track which of the two it opened.
  **/
 class TextureFont::Freetype {
  public:
@@ -150,10 +150,9 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
 
     freetype_ = boost::make_shared<Freetype>(logger);
 
-    // the face is loaded at its own size. Asking for a hundred times the size - the
-    // upstream trick for reading the metrics with more precision - overflows what
-    // FT_Set_Char_Size accepts at the 64x horizontal resolution this uses, and every
-    // metric comes back zero.
+    // load the face at its own size. A hundred times the size, for more precise metrics,
+    // overflows what FT_Set_Char_Size accepts at the 64x horizontal resolution, and every
+    // metric then comes back zero.
     if (!freetype_->loadFace(filename_, size_)) {
         return;
     }
@@ -283,10 +282,10 @@ struct GlyphBitmap final {
 };
 
 /**
- * Owns the stroker for as long as the outline is being built.
+ * Owns the stroker while the outline is built.
  *
- * Every step between FT_Stroker_New and the bitmap can fail, and each of those failures is
- * a return - so the release belongs to the scope rather than to any one of them.
+ * Each step after FT_Stroker_New can fail and return, so the destructor releases the stroker
+ * on every path.
  **/
 class StrokerHandle final {
  public:
@@ -307,12 +306,12 @@ class StrokerHandle final {
 };
 
 /**
- * Owns the glyph the outline path builds, for the iteration that built it.
+ * Owns the glyph the outline path builds, until the end of the loop iteration that built it.
  *
- * Holding nothing is the normal case: a glyph with no outline is read out of the face's
- * own slot, which the face owns. Only FT_Get_Glyph hands back a copy to release, and it is
- * released however the iteration ends - a full atlas skips the rest of one, and a stroke
- * that fails abandons the whole run.
+ * It usually holds nothing: a glyph with no outline is read from the face's own slot, which
+ * the face owns. Only FT_Get_Glyph returns a copy that must be released. The destructor
+ * releases it however the iteration ends, whether a full atlas skips to the next glyph or a
+ * failed stroke ends the load.
  **/
 class GlyphHandle final {
  public:
@@ -326,8 +325,8 @@ class GlyphHandle final {
     GlyphHandle& operator=(const GlyphHandle&) = delete;
 
     /**
-     * Where FT_Get_Glyph writes. It is left alone by a failure before that call, and holds
-     * whatever the last step that succeeded replaced it with after one.
+     * Where FT_Get_Glyph writes. A failure before that call leaves it null. After that call,
+     * it holds the glyph from the last step that succeeded.
      **/
     FT_Glyph* address() {
         return &glyph_;
@@ -338,10 +337,10 @@ class GlyphHandle final {
 };
 
 /**
- * Which of freetype's render modes a run of glyphs is rasterized through.
+ * The FreeType render mode for a run of glyphs.
  *
- * A three channel atlas is subpixel filtered and has to stay so. A single channel one is a
- * distance field when a spread was asked for, and coverage otherwise.
+ * A three channel atlas holds subpixel (LCD) coverage. Any other atlas holds a distance field
+ * when sdf is set, and coverage otherwise.
  **/
 FT_Render_Mode glyphRenderMode(unsigned int depth, bool sdf) {
     if (depth == 3) {
@@ -351,16 +350,16 @@ FT_Render_Mode glyphRenderMode(unsigned int depth, bool sdf) {
 }
 
 /**
- * The FT_LOAD flags one glyph is asked for under, and the lcd filter that goes with them.
+ * The FT_LOAD flags for one glyph.
  *
- * Setting the filter is part of choosing the flags rather than a step of its own: it only
- * means anything alongside FT_LOAD_TARGET_LCD.
+ * For a three channel atlas this also sets the library's LCD filter, because the filter only
+ * has an effect with FT_LOAD_TARGET_LCD.
  **/
 FT_Int32 glyphLoadFlags(FT_Library library, TextureFont::OutlineType outline, bool hinting,
     unsigned int depth, bool lcdFiltering, const unsigned char* lcdWeights, bool sdf) {
     FT_Int32 flags = 0;
-    // a distance field is built from the outline, so the load must not have rendered one
-    // to a bitmap already - the caller renders it afterwards, in the mode it needs
+    // a distance field and a stroked outline are both built from the glyph's outline, so the
+    // load must not render a bitmap. The caller renders afterwards, in the mode it needs
     if (outline != TextureFont::OUTLINE_TYPE_NONE || sdf) {
         flags |= FT_LOAD_NO_BITMAP;
     } else {
@@ -386,10 +385,10 @@ FT_Int32 glyphLoadFlags(FT_Library library, TextureFont::OutlineType outline, bo
 /**
  * Stroke the loaded glyph and render the outline to a bitmap.
  *
- * *glyph is whatever FT_Get_Glyph handed back, which the caller's GlyphHandle owns from
- * that point on: FT_Glyph_Stroke and FT_Glyph_To_Bitmap are both asked to destroy what they
- * replace, and only do so when they succeed. Releasing the face after a failure is the
- * caller's, which is where the face was loaded.
+ * *glyph receives FT_Get_Glyph's copy, which the caller's GlyphHandle owns from then on.
+ * FT_Glyph_Stroke and FT_Glyph_To_Bitmap are both told to destroy the glyph they replace, and
+ * do so only when they succeed. After a failure the caller releases the face, because the
+ * caller loaded it.
  **/
 bool strokeGlyph(FT_Library library, FT_Face face, TextureFont::OutlineType outline, float thickness,
     FT_Render_Mode mode, FT_Glyph* glyph, GlyphBitmap* out,
@@ -456,9 +455,8 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
     const bool sdf = spread_ > 0 && atlas_->depth() == 1;
     const FT_Render_Mode mode = glyphRenderMode(atlas_->depth(), sdf);
     if (sdf) {
-        // freetype clamps this to its own 2..32, and the spread is in pixels of the size
-        // the face was loaded at, which is why the base size and the spread are chosen
-        // together
+        // FreeType clamps the spread to 2..32. The spread is in pixels at the size the face
+        // was loaded at, so the base size and the spread are chosen together
         FT_Int property = static_cast<FT_Int>(spread_);
         FT_Property_Set(freetype_->library_, "sdf", "spread", &property);
     }
@@ -476,8 +474,8 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
             return false;
         }
 
-        // the handle is the iteration's, so a stroke that fails and a full atlas both
-        // release what FT_Get_Glyph built without either having to say so
+        // declared per iteration, so its destructor releases FT_Get_Glyph's copy whether the
+        // iteration finishes, skips a glyph for a full atlas, or returns on a failed stroke
         GlyphHandle stroked;
         GlyphBitmap rendered;
         if (outline_ == OUTLINE_TYPE_NONE) {

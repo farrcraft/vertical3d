@@ -12,8 +12,8 @@
 
 namespace v3d::image::format {
 
-// jmp_buf is over-aligned, so the struct is padded to suit it. That is the platform's
-// requirement rather than something to pack away, and nothing here is written to a file.
+// jmp_buf is over-aligned, so the compiler pads the struct and warns (C4324). The padding is
+// the platform's requirement, and the struct is never written to a file.
 #pragma warning(push)
 #pragma warning(disable : 4324)
 /**

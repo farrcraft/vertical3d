@@ -10,8 +10,7 @@
 namespace {
 
 /**
- * These are the names a config.json entry's "type" is written as. camera and layout are the
- * editor's alone; everything else is shared.
+ * These are the names a config.json entry's "type" is written as.
  **/
 BOOST_AUTO_TEST_CASE(config_string_to_type_test) {
     BOOST_TEST((v3d::config::stringToType("window") == v3d::config::Type::Window));
@@ -25,8 +24,8 @@ BOOST_AUTO_TEST_CASE(config_string_to_type_test) {
 
 /**
  * load() files an entry whose type is Unknown under its own name, for the app to ask for.
- * Anything that is not one of the seven above, a case difference included, must map to Unknown
- * rather than to a neighbouring type.
+ * Any other name, a case difference included, maps to Unknown and never to a neighbouring
+ * type.
  **/
 BOOST_AUTO_TEST_CASE(config_unknown_type_name_test) {
     BOOST_TEST((v3d::config::stringToType("") == v3d::config::Type::Unknown));

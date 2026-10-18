@@ -23,7 +23,6 @@ BOOST_AUTO_TEST_CASE(image_test) {
     BOOST_CHECK_EQUAL(img24.height(), 4U);
     BOOST_CHECK_EQUAL(img24.bpp(), 24U);
 
-    // an image's shape is what it was made with, since the buffer was sized for it
     v3d::image::Image img(glm::uvec2(2, 2), 24);
 
     // pixel data starts zeroed
@@ -48,8 +47,7 @@ static_assert(!std::is_copy_assignable<v3d::image::Image>::value,
     "assigning an image would free its buffer twice");
 
 /**
- * format() is the channel count and it follows the depth. A depth no format describes still
- * gives a defined value, because every writer reads format() to size a row.
+ * format() is the channel count, and follows the depth the image was made with.
  **/
 BOOST_AUTO_TEST_CASE(image_format_follows_depth_test) {
     // a texture atlas packed at depth 1 is this
@@ -63,8 +61,8 @@ BOOST_AUTO_TEST_CASE(image_format_follows_depth_test) {
 }
 
 /**
- * The swap BMP and TGA go through exchanges red and blue and carries an alpha across as it
- * is, in place or into another buffer.
+ * swapRedBlue() exchanges red and blue and copies an alpha unchanged, in place or into another
+ * buffer.
  **/
 BOOST_AUTO_TEST_CASE(image_swap_red_blue_test) {
     const unsigned char pixels[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };

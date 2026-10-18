@@ -122,7 +122,6 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     // write image data
     file.write(reinterpret_cast<char*>(data), static_cast<std::streamsize>(size));
 
-    // done reading in file
     file.close();
 
     return true;

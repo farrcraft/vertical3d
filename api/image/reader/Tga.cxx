@@ -56,7 +56,7 @@ boost::shared_ptr<Image> Tga::read(const unsigned char* data, std::size_t size) 
 
     const unsigned int width = (header[1] * 256) + header[0];  // Determine The TGA Width (highbyte*256+lowbyte)
     const unsigned int height = (header[3] * 256) + header[2];  // Determine The TGA Height (highbyte*256+lowbyte)
-    const unsigned int bpp = header[4];  // Grab The TGA's Bits Per Pixel (24 or 32)
+    const unsigned int bpp = header[4];  // Grab The TGA's Bits Per Pixel (8, 24 or 32)
 
     if (width == 0 ||  // Is The Width Zero
         height == 0 ||  // Is The Height Zero
@@ -78,10 +78,9 @@ boost::shared_ptr<Image> Tga::read(const unsigned char* data, std::size_t size) 
         swapRedBlue(out, out, {.pixels = pixels / bytespp, .channels = bytespp});
     }
 
-    // bit 5 of the image descriptor is the vertical origin, and it is clear far more
-    // often than it is set - the file then holds its rows bottom up. Every other reader
-    // here yields a top down image, and so does every consumer of one, so flip rather
-    // than leave the orientation up to whoever wrote the file
+    // bit 5 of the image descriptor is the vertical origin. When it is clear, which is the
+    // usual case, the file holds its rows bottom up. Every other reader returns rows top
+    // down, and so does this one after the flip
     if ((header[IMAGE_DESCRIPTOR] & 0x20) == 0) {
         const unsigned int stride = width * bytespp;
         std::vector<unsigned char> row(stride);

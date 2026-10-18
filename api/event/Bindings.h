@@ -24,16 +24,15 @@
 namespace v3d::event {
 
 /**
- * What a binding document says, as the global mapper the event engine routes through.
+ * Builds the event engine's Mapper named "global" from a binding document.
  *
- * The bindings are held as one mapper named "global" that has no way to be edited in place,
- * so a rebind rebuilds it from the document with the overrides applied. Each override is kept
- * rather than written into the mapper, because the next rebind rebuilds from the document
- * again and would otherwise lose it.
+ * A Mapper cannot be edited in place, so rebind() rebuilds the whole mapper from the document
+ * with the overrides applied. The overrides are stored apart from the mapper, because each
+ * rebuild starts from the document again.
  *
- * This class does not distinguish a key from a mouse button. The Known check the owner
- * supplies decides whether a source names something a device can send. A name it does not
- * recognise is logged and bound anyway, and never fires.
+ * Bindings does not tell a key from a mouse button. The Known check passed to the constructor
+ * decides whether a source names something a device can send. A source the check rejects is
+ * logged and bound anyway.
  **/
 class Bindings final {
  public:
@@ -48,17 +47,16 @@ class Bindings final {
     /**
      * Read a binding document, keep it for later rebinds, and install what it says.
      *
-     * @return false when the document does not describe its bindings, which is logged and
-     *         leaves the previous mapper in place
+     * @return false when the document is malformed. The failure is logged, and the previous
+     *         mapper and document stay in place.
      **/
     bool load(const boost::json::object& document);
 
     /**
      * Point a command at a different source name than the document bound it to.
      *
-     * Only the source's name changes. Whatever context and edge the document bound the
-     * command under it keeps, so rebinding a key that fires on press does not silently
-     * start firing on release too.
+     * Only the source's name changes. The source keeps the context and edge the document gave
+     * it, so a command bound to a press still fires only on a press after the rebind.
      *
      * @param command the destination the binding drives, as "context::name"
      * @param name the source event name to bind it to

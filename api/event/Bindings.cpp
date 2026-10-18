@@ -64,9 +64,9 @@ std::vector<std::string> Bindings::commands() const {
 }
 
 bool Bindings::build() {
-    // every member is read through the checked reads, which return nothing for a member that is
-    // missing or of the wrong type. A document this does not understand has to come back as a
-    // false return, not as an exception out of startup.
+    // read every member through the checked reads in api/asset/Json.h. Each returns nothing for
+    // a member that is missing or of the wrong type. A malformed document returns false here,
+    // and never throws.
     const boost::json::object& doc = *document_;
     const boost::json::array* mappings = v3d::asset::readArray(doc, "mappings");
     if (mappings == nullptr) {
@@ -100,7 +100,7 @@ bool Bindings::build() {
         }
         mapper->map(source, destination);
     }
-    // addMapper stores by name, so this replaces the mapper rather than adding a second
+    // addMapper stores mappers by name, so this replaces the previous "global" mapper
     events_->addMapper(mapper);
     mapper_ = mapper;
     return true;
@@ -155,9 +155,8 @@ bool Bindings::readDestination(const boost::json::object& mapping, Event* event)
     }
     *event = Event(*name, events_->resolveContext(*context));
     event->type(Type::Destination);
-    // an optional "param" lets one action serve several bindings, telling them apart by the
-    // value it arrives with. It reaches the handler as the event's data, the same way a menu
-    // item's value does.
+    // an optional "param" becomes the destination event's data. Several bindings can then drive
+    // one command with different values. A menu item's value arrives the same way.
     if (!destination->contains("param")) {
         return true;
     }

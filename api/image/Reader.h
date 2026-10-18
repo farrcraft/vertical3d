@@ -18,13 +18,12 @@ namespace v3d::image {
 /**
  * One image format, decoded.
  *
- * A format implements the buffer overload, and the path overload is written in terms of it,
- * because an image is not always a file. One embedded in a .glb arrives as a span of the
- * model's own buffer and has no name to open.
+ * A format's reader implements the buffer overload of read(). The path overload reads the
+ * whole file into memory and passes it to the buffer overload. An image is not always a file:
+ * one embedded in a .glb arrives as a span of the model's buffer, with no name to open.
  *
- * As a result a file is read whole into memory before it is decoded. The cost is small:
- * these are textures loaded at start up, and the decoded image each reader allocates is
- * larger than the encoded one.
+ * Reading a file whole costs little, because the decoded image a reader allocates is larger
+ * than the encoded file.
  **/
 class Reader {
  public:

@@ -41,8 +41,8 @@ boost::shared_ptr<Image> Jpeg::read(const unsigned char* encoded, std::size_t si
 #pragma warning(push)
 #pragma warning(disable : 4611)
     if (setjmp(jerr.setjmp_buffer)) {
-        /* If we get here, the JPEG code has signaled an error.
-            * We need to clean up the JPEG object, close the input file, and return.
+        /* The decoder signalled an error. Destroy the decompress object and fail.
+            * The input is the caller's buffer, so there is no file to close.
             */
         jpeg_destroy_decompress(&cinfo);
         return empty_ptr;
@@ -51,8 +51,8 @@ boost::shared_ptr<Image> Jpeg::read(const unsigned char* encoded, std::size_t si
     // Initialize the JPEG decompression object
     jpeg_create_decompress(&cinfo);
 
-    // Specify data source for decompression. The buffer is not copied, so it has to
-    // outlive the decode - it is the caller's and outlives the whole call.
+    // Specify data source for decompression. jpeg_mem_src does not copy the buffer. The
+    // buffer is the caller's and outlives this call, so it outlives the decode.
     // unsigned long is jpeg_mem_src's own parameter type, not a choice made here
     jpeg_mem_src(&cinfo, encoded, static_cast<unsigned long>(size));  // NOLINT(runtime/int)
 
@@ -75,7 +75,7 @@ boost::shared_ptr<Image> Jpeg::read(const unsigned char* encoded, std::size_t si
         ((j_common_ptr)&cinfo, JPOOL_IMAGE, row_width, (JDIMENSION)1);
     buffer_height = 1;
 
-    // Adjust default decompression parameters by re-parsing the options
+    // Start the decompressor. output_scanline then counts the scanlines read
     (void)jpeg_start_decompress(&cinfo);
 
     img.reset(new Image(glm::uvec2(cinfo.image_width, cinfo.image_height), 24));

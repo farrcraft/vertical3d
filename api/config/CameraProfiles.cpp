@@ -20,7 +20,7 @@ namespace v3d::config {
 
 namespace {
 
-// what a profile entry that leaves these out gets, where it differs from a new Profile
+// the values a profile entry gets when it leaves these out, where they differ from a new Profile
 constexpr float ENTRY_ZOOM = 10.0F;
 constexpr float ENTRY_NEAR = 0.1F;
 constexpr glm::vec3 ENTRY_EYE{0.0F, 0.0F, -10.0F};
@@ -94,8 +94,8 @@ bool CameraProfiles::load(const boost::json::object& doc) {
         }
         const std::string& name = *named;
 
-        // a half height of zero or less draws nothing, and the editor's zoom drag cannot
-        // bring it back
+        // the zoom is the orthographic half height. A zoom drag scales each step by the half
+        // height, so one below Camera::MINIMUM_ZOOM could never zoom back out
         const float zoom = number(entry, "zoom", ENTRY_ZOOM);
         if (zoom < v3d::type::camera::Camera::MINIMUM_ZOOM) {
             logger_->get()->error("Camera profile {} has a zoom of {}, which is below {}", name, zoom,
@@ -115,8 +115,8 @@ bool CameraProfiles::load(const boost::json::object& doc) {
         profile.adaptivePosition(adaptive == "both" || adaptive == "position");
 
         profile.eye(vector(entry, "eye", ENTRY_EYE));
-        // up before lookat: lookat starts from the up vector and derives the other two
-        // and the rotation from it, so an up that arrives afterwards is overwritten
+        // set up before lookat. lookat() derives the other two basis vectors and the rotation
+        // from the up vector, so an up set afterwards would not match them
         profile.up(vector(entry, "up", glm::vec3(0.0F, 1.0F, 0.0F)));
         profile.lookat(vector(entry, "lookat", glm::vec3(0.0F, 0.0F, 0.0F)));
 

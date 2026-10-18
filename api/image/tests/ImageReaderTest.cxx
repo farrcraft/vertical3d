@@ -183,8 +183,8 @@ BOOST_AUTO_TEST_CASE(imagereader_buffer_matches_the_path) {
 }
 
 /**
- * Bytes that are not the format they were said to be decode to nothing rather than to
- * whatever was next to them - a reader walking a buffer has no end of file to stop at.
+ * Bytes that are not in the stated format decode to nothing, and no reader reads past the end
+ * of the buffer it is given.
  **/
 BOOST_AUTO_TEST_CASE(imagereader_rejects_bytes_that_are_not_the_format) {
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
