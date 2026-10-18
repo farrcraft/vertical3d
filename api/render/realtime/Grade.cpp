@@ -103,8 +103,8 @@ Grade::Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_p
 /**
  **/
 Grade::~Grade() {
-    // a destructor must not throw. Releasing only hands objects to the ring, which fails only
-    // when out of memory, and then they stay registered until the context goes
+    // a destructor must not throw. A release only retires objects through the Ring, which
+    // throws only when out of memory. They then stay registered until the context is destroyed
     try {
         for (const std::pair<const MaterialHandle, Source>& source : sources_) {
             pass(source.second).release(source.second.current);
@@ -216,7 +216,8 @@ vulkan::renderer::FullScreen& Grade::pass(const Source& source) const {
 /**
  **/
 TextureHandle Grade::createTable(const std::vector<uint8_t>& texels) {
-    // sampled linearly between entries, the factory's default, so sixteen of them are enough
+    // sampled linearly between entries, the factory's default, so sixteen entries an edge are
+    // enough
     const vulkan::memory::TextureFactory factory(context_->device(), context_->uploader());
     return context_->resources()->add(factory.volume(texels.data(), SIZE, SIZE, SIZE));
 }

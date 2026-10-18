@@ -22,11 +22,11 @@
 namespace v3d::render::realtime::vulkan::memory {
 
 /**
- * Static geometry in device local memory - vertices, and indices where a draw is indexed.
+ * Static geometry in device local memory: vertices, and indices where the draw is indexed.
  *
- * A mesh is the only thing a draw item names that pipeline::Resources does not own. A mesh is
- * held by whatever built it - a chunk, a model, the MeshRegistry - and a draw item referring
- * to one is only valid while that owner is alive.
+ * A mesh is the only thing a draw item names that pipeline::Resources does not own. Whatever
+ * built a mesh holds it, such as a chunk, a model or the MeshRegistry. A draw item that refers
+ * to one is valid only while that owner is alive.
  *
  * The buffers are filled once at construction. Rebuilding geometry means building a new
  * mesh rather than refilling this one, since a refill has to wait for every frame that
@@ -39,11 +39,9 @@ class Mesh final {
      * @param device the device to allocate on
      * @param uploader runs the staging copies
      * @param vertices the vertex data, in whatever layout the pipeline declares
-     * @param vertexBytes its size
-     * @param vertexCount how many vertices that is - the stride is the pipeline's, not
-     *        something a mesh stores, so the count cannot be worked out from the size
+     * @param vertexCount how many vertices that is. The stride belongs to the pipeline, not
+     *        the mesh, so the count cannot be worked out from the size.
      * @param indices 32 bit indices into it
-     * @param indexCount how many
      * @throw std::runtime_error if either buffer cannot be created or filled
      **/
     Mesh(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader,
@@ -83,7 +81,7 @@ class Mesh final {
     uint32_t indexCount() const noexcept;
 
     /**
-     * Fill in a draw item's geometry - the buffers, the index type and the counts.
+     * Fill in a draw item's geometry: the buffers, the index type and the counts.
      * What the item draws with, and where it sorts, are left to the caller.
      **/
     void describe(DrawItem* item) const;

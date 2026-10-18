@@ -18,7 +18,7 @@ namespace v3d::render::realtime {
  *
  * A slot can be reused once what was in it is released, so a handle also carries the
  * generation of the occupant it was given for. Two handles to the same slot with
- * different generations are different handles; only the slot is a sort order.
+ * different generations are different handles. Only the slot goes into a sort key.
  **/
 template <typename Tag>
 class Handle final {

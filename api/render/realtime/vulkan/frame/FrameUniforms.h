@@ -24,28 +24,27 @@
 namespace v3d::render::realtime::vulkan::frame {
 
 /**
- * Set 0, which holds per frame data: the camera a whole pass draws through.
+ * Set 0: the camera a whole pass draws through.
  *
- * A scene of a few hundred draws shares one view and one projection, so they are bound
- * once for the pass rather than pushed per draw. This owns the layout every pipeline in
- * the engine declares at set 0, so those pipelines are interchangeable within a pass. A
- * descriptor set bound for one stays bound across a pipeline change to another built
- * against the same layout.
+ * Every draw in a pass shares one view and one projection, so they are bound once for the
+ * pass, not pushed per draw. FrameUniforms owns the layout every pipeline in the engine
+ * declares at set 0, so those pipelines are interchangeable within a pass. A set bound for
+ * one pipeline stays bound when the pass binds another built against the same layout.
  *
- * There is a slot per pass per frame in flight, because a frame's several passes have
- * different cameras and the device may still be reading the set two frames back. Slots
- * are added as passes need them and never given back - a frame's pass count settles in
- * the first few frames.
+ * There is one slot per pass per frame in flight. Each pass of a frame has its own camera,
+ * and the device may still read a slot written framesInFlight frames ago. Slots are added as
+ * passes need them and are never released. A frame's pass count settles in the first few
+ * frames.
  *
- * A slot is written during recording, which is after the presenter has waited on the
- * frame's fence, so nothing is reading what is about to be overwritten.
+ * A slot is written during recording, after the frame's fence has been waited on, so the
+ * device is not reading it.
  **/
 class FrameUniforms final {
  public:
     /**
      * What set 0 holds, laid out to match the uniform block the shaders declare.
      * std140 puts a mat4 and a vec4 at their natural offsets, so the struct maps
-     * straight across with no padding of our own.
+     * straight across with no explicit padding.
      **/
     struct Camera final {
         Camera() noexcept;
@@ -58,7 +57,7 @@ class FrameUniforms final {
 
     /**
      * @param device the device the buffers and sets are allocated on
-     * @param ring the frames in flight, one ring of slots for each
+     * @param ring the frames in flight. Each has its own list of slots.
      * @throw std::runtime_error if the layout cannot be created
      **/
     FrameUniforms(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring);
@@ -102,9 +101,9 @@ class FrameUniforms final {
 
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<pipeline::DescriptorPool> pool_;
-    std::vector<std::vector<Slot>> slots_;   /**< a ring of slots per frame in flight **/
-    uint32_t frame_;                         /**< which ring write() is filling **/
-    std::size_t cursor_;                     /**< how far into that ring it has got **/
+    std::vector<std::vector<Slot>> slots_;   /**< a list of slots per frame in flight **/
+    uint32_t frame_;                         /**< the frame whose slots write() fills **/
+    std::size_t cursor_;                     /**< the next slot write() fills **/
 };
 
 };  // namespace v3d::render::realtime::vulkan::frame

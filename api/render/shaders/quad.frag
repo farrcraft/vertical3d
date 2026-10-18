@@ -5,9 +5,9 @@
  * The fragment stage of the batched quad primitive.
  *
  * There is one sampler and it is always bound, because an untextured quad is drawn against a
- * 1x1 white texture rather than through a second pipeline. A single channel texture - a glyph
- * atlas - is given a view that swizzles its one channel into alpha, so the sample reaches the
- * same place whatever was bound.
+ * 1x1 white texture rather than through a second pipeline. A single channel texture, such as
+ * a glyph atlas, is given a view that swizzles its one channel into alpha, so the value is in
+ * alpha whatever was bound.
  *
  * The only branch is text. A glyph atlas holds signed distances rather than coverage, and a
  * distance has to be thresholded to become an alpha. The branch is uniform across a draw,

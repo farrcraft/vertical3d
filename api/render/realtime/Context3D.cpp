@@ -66,11 +66,11 @@ boost::shared_ptr<vulkan::frame::Presenter> Context3D::presenter() const {
  **/
 void Context3D::resize() {
     swapchain_->recreate(static_cast<uint32_t>(window_->width()), static_cast<uint32_t>(window_->height()));
-    // a new chain can hold a different number of images, and the presenter keeps a
+    // a new swapchain can hold a different number of images, and the Presenter keeps a
     // semaphore per image
     presenter_->reset();
-    // the chain's extent rather than the window's - the surface is allowed to dictate one
-    // that is not what was asked for, and everything sized against it has to agree
+    // the swapchain's extent, not the window's. The surface may require an extent other than
+    // the one requested, and everything sized against the swapchain has to match it
     describe(swapchain_->format(), swapchain_->extent());
     if (hasDepth()) {
         // the depth buffer is only correct while it is the size of what it is attached to

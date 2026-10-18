@@ -87,7 +87,7 @@ void declare(pipeline::Builder* builder, VkDescriptorSetLayout camera, VkDescrip
 }
 
 /**
- * The vertex a pipeline reads: a model's, and for a skinned one its influence after it - the
+ * The vertex a pipeline reads: a model's, and for a skinned one its influence after it, the
  * layout MeshRegistry uploads a skinned model in. A depth only stage reads the position alone.
  **/
 void vertex(pipeline::Builder* builder, bool skinned, bool positionOnly) {
@@ -300,7 +300,7 @@ Lit::Slot& Lit::slot() {
     write.descriptorCount = 1;
     write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     write.pBufferInfo = &buffer;
-    // the set points at the buffer for good - a frame writes the buffer, not the descriptor
+    // the set points at the buffer permanently. A frame writes the buffer, not the descriptor
     vkUpdateDescriptorSets(device_->handle(), 1, &write, 0, nullptr);
     reserve(&slot, &slot.palette, {.binding = 2, .needed = initialJoints * sizeof(glm::mat4), .kept = 0});
     reserve(&slot, &slot.objects, {.binding = 3, .needed = initialObjects * sizeof(Object), .kept = 0});
@@ -327,9 +327,9 @@ void Lit::reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, const R
             (*buffer)->read(bytes.data(), kept);
             grown->write(bytes.data(), kept);
         }
-        // the frame that last read it should have finished, since the slot is only written
-        // after waiting for it. It is still released through the ring, which destroys it only
-        // once no frame in flight can read it
+        // the frame that last read it should have finished, because a slot is written only
+        // after waiting for its frame. It is still retired through the Ring, which destroys it
+        // only once no frame in flight can read it
         ring_->retire([old = *buffer]() mutable { old.reset(); });
     }
     *buffer = grown;
@@ -351,7 +351,7 @@ void Lit::reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, const R
 /**
  **/
 VkDescriptorSet Lit::scene(const lighting::SceneUniforms& uniforms, const TextureHandle& shadowMap, const std::vector<glm::mat4>& palette) {
-    // the slot about to be written was last read by the frame that used it a ring ago
+    // the device may still read this slot from framesInFlight frames ago
     ring_->waitFrame();
     Slot& written = slot();
     current_ = &written;

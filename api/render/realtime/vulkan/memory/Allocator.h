@@ -11,9 +11,9 @@
 
 #include <cstdint>
 
-// the allocator's own handle, declared rather than included: vk_mem_alloc.h is large and
-// this header is included by most of the renderer. Repeating the library's own typedef keeps
-// that header in the one translation unit that implements it - VmaImpl.cxx
+// the Vulkan Memory Allocator's handle, declared here instead of included. vk_mem_alloc.h is
+// large, and this header is included by most of the renderer. Repeating the library's typedef
+// keeps vk_mem_alloc.h out of every file except Allocator.cxx and VmaImpl.cxx
 VK_DEFINE_HANDLE(VmaAllocator)
 
 namespace v3d::render::realtime::vulkan::memory {
@@ -21,14 +21,12 @@ namespace v3d::render::realtime::vulkan::memory {
 /**
  * Gives a buffer or an image memory to live in, and takes it back.
  *
- * One allocation per resource, made from the device directly. That is the right shape for
- * the resources this tree creates, which are made once at load time and freed at shutdown;
- * it is the wrong one for an application with per-frame buffers, because
- * maxMemoryAllocationCount is a real device limit and a suballocator is what an allocation
- * per frame per resource needs.
+ * Kind::Direct makes one device allocation per resource. That suits resources made once at
+ * load time and freed at shutdown. It does not suit an app with per-frame buffers, because
+ * maxMemoryAllocationCount is a real device limit. Kind::Suballocated places each resource in
+ * a region of a larger block, through the Vulkan Memory Allocator.
  *
- * Every allocation in the renderer goes through here so that there is one place for such an
- * allocator to be, rather than five sites each calling vkAllocateMemory for themselves.
+ * Every allocation in the renderer goes through Allocator, so the choice is made in one place.
  **/
 class Allocator final {
  public:
@@ -36,7 +34,7 @@ class Allocator final {
      * How the memory behind a resource is found.
      **/
     enum class Kind : std::uint8_t {
-        /**< one device allocation per resource, which is every app in this tree **/
+        /**< one device allocation per resource **/
         Direct,
         /**< regions of larger blocks, through the Vulkan Memory Allocator **/
         Suballocated
@@ -47,7 +45,7 @@ class Allocator final {
      * @param physical the physical device whose memory types are chosen from
      * @param instance the instance the device came from, which a suballocator needs to load
      *        the entry points it calls
-     * @param kind how to find memory - Direct unless the consumer asked otherwise
+     * @param kind how to find memory. Direct unless the consumer asked otherwise.
      * @throw std::runtime_error if a suballocator was asked for and could not be created
      **/
     Allocator(VkDevice device, VkPhysicalDevice physical, VkInstance instance, Kind kind = Kind::Direct);
@@ -66,11 +64,10 @@ class Allocator final {
      * Give a buffer memory and bind it there.
      *
      * @param buffer the buffer to allocate for, already created
-     * @param properties what the memory has to be - host visible, device local, and so on
+     * @param properties what the memory has to be: host visible, device local, and so on
      * @param allocation where the allocation is written, untouched unless VK_SUCCESS
-     * @return what the allocation or the bind returned
-     * @throw std::runtime_error if the device offers no memory type with those properties,
-     *        which is a device that cannot do this rather than an allocation that failed
+     * @return what the allocation or the bind returned. VK_ERROR_FEATURE_NOT_PRESENT means the
+     *         device offers no memory type with those properties.
      **/
     VkResult bind(VkBuffer buffer, VkMemoryPropertyFlags properties, Allocation* allocation);
 

@@ -22,27 +22,26 @@
 namespace v3d::render::realtime::vulkan::frame {
 
 /**
- * The frames recorded ahead of the one the device is still drawing, and what each of them
- * owns: a command buffer and the fence its submission signals.
+ * The frames in flight: frames recorded while the device still draws earlier ones. Each frame
+ * owns a command buffer and a fence that its submit signals.
  *
- * This needs only a device. Pacing frames is separate from presenting. Everything keeping a
- * resource per frame in flight is indexed by the ring, so a renderer works the same whether
- * its frames end up on a screen or in a file.
+ * A Ring needs only a device, not a swapchain. Every resource kept per frame in flight is
+ * indexed by the Ring's frame(), so a renderer works the same whether its frames go to a
+ * screen or to a file.
  *
- * The fence is created here and waited on here, but is signalled by whichever submit the
- * caller makes - Presenter's, or a test's. The caller's submit must signal it, so
- * submitting() is public.
+ * The Ring creates each fence and waits on it. The caller's submit signals it, whether that
+ * submit is Presenter's or a test's, so submitting() is public.
  *
- * Because the ring tracks when a frame has finished, it is also where something released
- * during play waits to be destroyed. Anything driving frames has to begin them through
- * begin(), or nothing retired is ever collected.
+ * The Ring tracks when each frame finishes, so it also holds objects released during play
+ * until no frame can read them. Every frame has to start with begin(), because begin() is
+ * where retired objects are destroyed.
  **/
 class Ring final {
  public:
     /**
      * @param device the device the buffers are allocated on and the fences live on
-     * @param framesInFlight how many frames may be recorded ahead of the device, which is
-     *        clamped up to one because a ring of none can record nothing
+     * @param framesInFlight how many frames may be recorded ahead of the device. A value of
+     *        zero is raised to one.
      * @throw std::runtime_error if a fence cannot be created
      **/
     explicit Ring(const boost::shared_ptr<device::Device>& device, uint32_t framesInFlight = 2);
@@ -55,7 +54,7 @@ class Ring final {
     Ring& operator=(const Ring&) = delete;
 
     /**
-     * @return the device the ring was built on
+     * @return the device the Ring was built on
      **/
     boost::shared_ptr<device::Device> device() const noexcept;
 
@@ -65,18 +64,17 @@ class Ring final {
     uint32_t framesInFlight() const noexcept;
 
     /**
-     * @return which of those frames is being recorded, and so which slot of any per-frame
-     *         resource the caller keeps is the one to write into
+     * @return the index of the frame being recorded. A caller that keeps one resource per
+     *         frame in flight writes into the slot at this index.
      **/
     uint32_t frame() const noexcept;
 
     /**
      * Wait until the frame that will be recorded next has finished its last submission.
      *
-     * begin() does this itself. It is exposed for anything else keeping a resource per frame
-     * in flight - a geometry buffer a batcher rewrites, typically - which has to write into
-     * that slot before the frame is recorded, while the device may still be reading what was
-     * in it two frames ago.
+     * begin() also waits. waitFrame() is for a per-frame resource that is written before the
+     * frame begins, such as a StreamRing buffer. Until the wait returns, the device may still
+     * read what that slot held framesInFlight frames ago.
      *
      * @throw std::runtime_error if the wait fails
      **/
@@ -95,14 +93,13 @@ class Ring final {
     void waitIdleNoThrow() const noexcept;
 
     /**
-     * @return how many frames have been begun since the ring was built
+     * @return how many frames have been begun since the Ring was built
      **/
     uint64_t begun() const noexcept;
 
     /**
-     * Record a frame that ended without being begun, because there was no image to draw
-     * into. Per-frame state that is reset when a frame begins is reset by this too, through
-     * turns().
+     * Count a frame that was never begun because there was no image to draw into. skip()
+     * changes turns(), so per-frame state that resets when a frame begins also resets here.
      **/
     void skip() noexcept;
 
@@ -115,27 +112,25 @@ class Ring final {
     uint64_t turns() const noexcept;
 
     /**
-     * @return the count, as begun() counts, of the frame a draw item queued now is recorded
-     *         into. That is the frame begun and not yet submitted, or else the next one to be
-     *         begun.
+     * @return the begun() count of the frame that a draw item queued now is recorded into:
+     *         the frame begun and not yet submitted, or else the next one to be begun.
      **/
     uint64_t recording() const noexcept;
 
     /**
-     * Hold a destruction back until every frame that may name the released object has
-     * finished.
+     * Delay a destruction until every frame that may name the released object has finished.
      *
      * The last frame that may name it is recording(), because draw items queued for that frame
-     * before the release may name the object. The callback runs from a later begin(), or from
-     * the destructor once the device is idle, and is the last use of whatever it captured.
+     * before the release may name the object. destroy runs from a later begin(), or from the
+     * destructor once the device is idle. It is the last use of whatever it captured.
      **/
     void retire(std::function<void()> destroy);
 
     /**
-     * Unsignal the current frame's fence and return it, for the submit that ends the frame to
-     * signal. Called immediately before that submit and nowhere else: a frame that is begun and
-     * then abandoned, because recording threw, leaves the fence signalled, so nothing that
-     * waits on it later waits forever.
+     * Reset the current frame's fence and return it, for the submit that ends the frame to
+     * signal. Call it immediately before that submit and nowhere else. A frame that is begun
+     * and then abandoned, because recording threw, then leaves the fence signalled, and a later
+     * wait on it does not block forever.
      *
      * @throw std::runtime_error if the fence cannot be reset
      **/
@@ -145,11 +140,11 @@ class Ring final {
      * Wait for the current frame's last submission and begin its command buffer.
      *
      * The fence stays signalled until submitting(), so a caller that gives up at any point
-     * before the submit leaves the ring able to begin the frame again. A frame begun again
+     * before the submit leaves the Ring able to begin the frame again. A frame begun again
      * this way is not counted a second time. Once a new frame is begun, whatever was retired
      * framesInFlight frames ago is destroyed.
      *
-     * Only the ring recovers this way. A swapchain image already acquired for the abandoned
+     * Only the Ring recovers this way. A swapchain image already acquired for the abandoned
      * frame, and the semaphore its acquire signalled, are not given back, so a presenting app
      * that catches a recording failure cannot keep drawing.
      *
@@ -159,15 +154,15 @@ class Ring final {
     VkCommandBuffer begin();
 
     /**
-     * Move to the next frame. Call after the submit, since everything indexed by frame()
-     * refers to the one just recorded until then.
+     * Move to the next frame. Call after the submit, because until then every per-frame
+     * resource indexed by frame() belongs to the frame just recorded.
      **/
     void advance() noexcept;
 
     /**
-     * How long the device spent on what each slot recorded, read when the slot is begun
-     * again. The recorder times every pass of a frame it records, and a caller recording
-     * its own commands into begin()'s buffer may open and close spans of its own.
+     * The device time taken by each slot's commands, read back when the slot is begun again.
+     * Recorder times every pass of a frame it records. A caller that records its own commands
+     * into begin()'s buffer may open and close its own spans.
      **/
     Timings& timings() noexcept;
 

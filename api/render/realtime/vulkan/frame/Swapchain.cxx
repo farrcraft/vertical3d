@@ -48,7 +48,7 @@ Swapchain::~Swapchain() {
 /**
  **/
 void Swapchain::recreate(uint32_t width, uint32_t height) {
-    // the images cannot go away while the queues are still reading them
+    // the images cannot be destroyed while a queue still uses them
     const VkResult result = vkDeviceWaitIdle(device_->handle());
     device::check(result, "Unable to wait for the vulkan device before recreating the swapchain");
     destroy();
@@ -144,8 +144,7 @@ Swapchain::Support Swapchain::querySupport() const {
 /**
  **/
 VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>& formats, VkFormat preferred) {
-    // a caller's format is used where the surface offers it, and falls through where it does
-    // not
+    // the caller's format, where the surface offers it
     if (preferred != VK_FORMAT_UNDEFINED) {
         for (const VkSurfaceFormatKHR& format : formats) {
             if (format.format == preferred && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -154,9 +153,9 @@ VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>
         }
     }
 
-    // a UNORM format rather than an SRGB one, so a colour a shader writes is the colour
-    // that appears. An _SRGB target encodes on write, treating every colour in the engine
-    // as linear and brightening it
+    // a UNORM format, not an SRGB one, so the colour a shader writes is the colour that
+    // appears. An _SRGB format encodes on write. It would treat every colour in the engine as
+    // linear and brighten it
     for (const VkSurfaceFormatKHR& format : formats) {
         if ((format.format == VK_FORMAT_B8G8R8A8_UNORM || format.format == VK_FORMAT_R8G8B8A8_UNORM) &&
             format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -181,7 +180,7 @@ VkPresentModeKHR Swapchain::choosePresentMode(const std::vector<VkPresentModeKHR
 /**
  **/
 VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities, uint32_t width, uint32_t height) {
-    // a surface that has already settled on a size does not let us pick one
+    // a surface with a current extent requires the swapchain to match it
     if (capabilities.currentExtent.width != UINT32_MAX) {
         return capabilities.currentExtent;
     }
@@ -201,7 +200,7 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     const VkPresentModeKHR presentMode = choosePresentMode(support.presentModes);
     const VkExtent2D extent = chooseExtent(support.capabilities, width, height);
 
-    // a window with no area has no chain - leave it empty and let the caller come back
+    // a window with no area cannot have a swapchain. Leave it empty until the next recreate()
     if (extent.width == 0 || extent.height == 0) {
         format_ = surfaceFormat.format;
         extent_ = extent;
@@ -214,7 +213,7 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     }
     arealess_ = false;
 
-    // one more than the minimum, so we are not always waiting on the driver for an image
+    // one more than the minimum, so acquiring an image does not always wait on the driver
     uint32_t imageCount = support.capabilities.minImageCount + 1;
     if (support.capabilities.maxImageCount > 0 && imageCount > support.capabilities.maxImageCount) {
         imageCount = support.capabilities.maxImageCount;
@@ -229,7 +228,7 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
     // TRANSFER_SRC lets frame::Capture copy an image out. A surface need not support it, and
-    // the chain is built without it rather than not at all
+    // without it the swapchain is still created
     const bool copyable = (support.capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     if (copyable) {
@@ -274,8 +273,8 @@ void Swapchain::create(uint32_t width, uint32_t height) {
 
     logger_->get()->info("Created a vulkan swapchain of {} images at {} x {}", images_.size(), extent_.width, extent_.height);
 
-    // silent when there was no preference or it was met. A caller whose colours depend on
-    // the format is told when it did not get the one it named
+    // warn only when the caller named a format and did not get it, because the caller's
+    // colours may depend on the format
     if (preferred_ != VK_FORMAT_UNDEFINED && format_ != preferred_) {
         logger_->get()->warn("The surface does not offer swapchain format {}, so {} is what the chain was built with",
             static_cast<int>(preferred_), static_cast<int>(format_));
@@ -317,7 +316,7 @@ void Swapchain::destroy() {
     }
     views_.clear();
 
-    // the images belong to the chain, so they go with it rather than being destroyed
+    // the swapchain owns its images and destroys them with itself
     images_.clear();
 
     if (swapchain_ != VK_NULL_HANDLE) {

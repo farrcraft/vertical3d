@@ -68,8 +68,9 @@ DescriptorPool::~DescriptorPool() {
             vkDestroyDescriptorSetLayout(device->handle(), layout, nullptr);
         }
     };
-    // a set from here may be bound by a frame already queued or in flight, so the pools go once
-    // those frames have finished. If the ring cannot hold them, they go once the device is idle
+    // a set from here may be bound by a frame already queued or in flight, so the pools are
+    // destroyed once those frames have finished. If retire() throws, they are destroyed once
+    // the device is idle
     try {
         ring_->retire([destroy, pools = pools_]() { destroy(pools); });
     } catch (...) {

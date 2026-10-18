@@ -18,21 +18,20 @@
 
 namespace v3d::render::realtime {
 /**
- * The 3D render context - a DeviceContext whose destination is a window: the chain of images
- * presented to it, and the loop that gets one onto the screen.
+ * The 3D render context: a DeviceContext that draws into a window.
  *
- * What the base owns is everything that only needs a device. What is here is what needs the
- * surface, which is the chain, the presenter, and keeping the base's description of its
- * destination in step with a chain that is rebuilt whenever the window changes size.
+ * DeviceContext owns everything that needs only a device. Context3D owns what needs the
+ * surface: the swapchain and the Presenter. It also keeps DeviceContext's description of the
+ * destination in step with the swapchain, which is recreated whenever the window changes size.
  **/
 class Context3D : public DeviceContext {
  public:
     /**
      * @param logger
      * @param window the window the context renders to
-     * @param preferred the colour format to present through - see Swapchain. The format
-     *        chosen is swapchain()->format(), which the quad renderer and every other
-     *        pipeline drawing into the chain are built against.
+     * @param preferred the colour format to present through, as Swapchain describes. The
+     *        format chosen is swapchain()->format(), which every pipeline drawing into the
+     *        swapchain is built against.
      * @param allocations how the device finds memory for its buffers and images
      **/
     Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window,
@@ -44,18 +43,18 @@ class Context3D : public DeviceContext {
     ~Context3D() override;
 
     /**
-     * @return the chain of images being presented to the window
+     * @return the swapchain presented to the window
      **/
     boost::shared_ptr<vulkan::frame::Swapchain> swapchain() const;
 
     /**
-     * @return the acquire, submit and present loop the frames go through
+     * @return the Presenter that acquires, submits and presents each frame
      **/
     boost::shared_ptr<vulkan::frame::Presenter> presenter() const;
 
     /**
-     * Rebuild the swapchain against the window's current size, and everything that is
-     * sized by it. Call this when presenting reports the chain has gone out of date.
+     * Recreate the swapchain at the window's current size, and everything sized by it. Call
+     * it when the Presenter returns OutOfDate.
      **/
     void resize();
 
@@ -63,8 +62,8 @@ class Context3D : public DeviceContext {
     /**
      * The device the base is built on, taken from the window's instance and surface.
      *
-     * Static because it runs in the member initializer list, before there is an object: the
-     * base class needs a device and the only place one can come from is the window.
+     * Static because it runs in the member initializer list, before the object exists. The
+     * base class needs a device, and only the window can supply one.
      *
      * @throw std::runtime_error if the window has not been created
      **/
@@ -73,8 +72,8 @@ class Context3D : public DeviceContext {
 
     boost::shared_ptr<Window> window_;
     boost::shared_ptr<vulkan::frame::Swapchain> swapchain_;
-    // last, so that it is torn down first - nothing else may go away while a frame it
-    // submitted is still in flight
+    // declared last, so it is destroyed first. Its destructor waits for the device, so
+    // nothing else is destroyed while a frame it submitted is in flight
     boost::shared_ptr<vulkan::frame::Presenter> presenter_;
 };
 };  // namespace v3d::render::realtime

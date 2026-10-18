@@ -115,8 +115,8 @@ void DeviceBuffer::upload(const void* data, VkDeviceSize bytes, VkDeviceSize off
         copy.size = bytes;
         vkCmdCopyBuffer(commands, source, destination, 1, &copy);
 
-        // waiting on the upload orders the copy against what comes after it but does not
-        // make its writes visible to a later read - the barrier is what does that
+        // waiting on the upload orders the copy against what comes after it, but does not
+        // make its writes visible to a later read. The barrier does that
         VkBufferMemoryBarrier2 barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
         barrier.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;

@@ -32,8 +32,8 @@ namespace {
 
 /**
  * The world quad pipeline's shader modules, compiled to SPIR-V at build time by glslc and
- * included here as the C initialiser lists its -mfmt=c writes - see v3d_add_shader in the
- * root CMakeLists.
+ * included here as the C initialiser lists its -mfmt=c writes, by v3d_add_shader in
+ * cmake/v3dHelpers.cmake.
  **/
 const uint32_t vertexShader[] =
 #include "shaders/world.vert.inc"
@@ -115,8 +115,8 @@ PipelineHandle World::createPipeline(const std::string& name, const pipeline::Fo
         builder.blend(adding);
     }
 
-    // tests and does not write unless the pass says otherwise: the scene occludes a quad and a
-    // quad does not cut a hole in the one behind it where both are transparent
+    // tests, and does not write unless the pass says otherwise. The scene occludes a quad,
+    // and a quad does not cut a hole in the one behind it where both are transparent
     if (depth != VK_FORMAT_UNDEFINED) {
         builder.depth(true, false).depthWriteDynamic(true).depthFormat(depth);
     }

@@ -33,8 +33,8 @@ namespace v3d::render::realtime::entity {
  * Each draw's object is added to that scene, so scene() is called first.
  *
  * @param alpha Engine::alpha(), the fraction of a step elapsed since the last one
- * @param outline how far the outline hull is pushed out - lighting::Settings::outline. Zero
- *        submits no outlines
+ * @param outline how far the outline hull is pushed out, from lighting::Settings::outline.
+ *        Zero submits no outlines
  * @param poses this frame's, whose palette the scene the pass names was written with
  **/
 void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,

@@ -29,7 +29,7 @@ struct Settings final {
     static constexpr float DEFAULT_NORMAL_BIAS = 0.02F;
 
     /**
-     * Towards the key light, in world space - it need not be normalised. Keep it well off the
+     * Towards the key light, in world space. It need not be normalised. Keep it well off the
      * camera's axis, or every surface the camera sees lands in the top band and reads flat.
      **/
     glm::vec3 light{DEFAULT_LIGHT};

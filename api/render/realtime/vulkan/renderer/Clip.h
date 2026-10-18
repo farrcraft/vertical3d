@@ -17,10 +17,10 @@
 namespace v3d::render::realtime::vulkan::renderer {
 
 /**
- * Cut an item down to a canvas's clip rectangle - min x, min y, max x, max y, in the pixels of
- * the image drawn into, the unit a scissor uses. What lies off the top or left of the image is
- * dropped, and a rectangle turned inside out cuts the draw to nothing. A NaN left or top edge
- * is taken as the image's edge, and a NaN right or bottom edge cuts the draw to nothing. Every
+ * Clip an item to a canvas's clip rectangle: min x, min y, max x, max y, in pixels of the image
+ * drawn into, the unit a scissor uses. What lies off the top or left of the image is dropped,
+ * and a rectangle whose max is below its min clips the draw to nothing. A NaN left or top edge
+ * is taken as the image's edge, and a NaN right or bottom edge clips the draw to nothing. Every
  * edge is held within 2^24 pixels, far past any image, so each converts to an integer exactly.
  **/
 inline void clip(DrawItem* item, const glm::vec4& rectangle) {

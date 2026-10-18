@@ -73,10 +73,9 @@ bool Engine3D::shutdown() {
         // window are destroyed
         context_->ring()->waitIdleNoThrow();
     }
-    // the context has to go before the window does. It owns the device, which holds
-    // the window's surface alive, and the window's teardown unloads the vulkan library -
-    // a surface destroyed after that is not destroyed at all, and the instance reports
-    // it as leaked
+    // the context must be destroyed before the window. The context owns the device, which
+    // keeps the window's surface alive. The window's teardown unloads the Vulkan library, and
+    // a surface destroyed after that is never destroyed, so the instance reports it as leaked
     // assigned null rather than calling frame_.reset(), which reads like Frame::reset()
     frame_ = nullptr;
     // the capture's readback buffer belongs to the device the context owns
@@ -180,8 +179,8 @@ void Engine3D::renderFrame() {
     const vulkan::frame::Presenter::Status status = presenter->acquire(&acquisition);
 
     if (status == vulkan::frame::Presenter::Status::OutOfDate) {
-        // the window changed size between the last present and this acquire - rebuild
-        // the chain and let the next frame draw into it
+        // the window changed size since the last present. Recreate the swapchain, and draw
+        // into it next frame
         context_->resize();
         context_->ring()->skip();
         endFrame();
@@ -189,8 +188,9 @@ void Engine3D::renderFrame() {
     }
 
     if (status == vulkan::frame::Presenter::Status::Skip) {
-        // there is no chain, which means the window had no area when it was last built.
-        // if it has one again - a minimized window that came back - build one for it
+        // there is no swapchain, because the window had no area when the swapchain was last
+        // created. Once the window has an area again, as when it is restored from minimized,
+        // recreate the swapchain
         if (window() && window()->width() > 0 && window()->height() > 0) {
             context_->resize();
         }
@@ -225,19 +225,20 @@ void Engine3D::renderFrame() {
     vulkan::frame::Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get(),
         &context_->ring()->timings());
 
-    // a chain rebuilt since the request may have lost TRANSFER_SRC, and Capture throws for that
+    // a swapchain recreated since the request may have lost TRANSFER_SRC, and Capture throws
+    // for that
     const bool capturing = !capturePath_.empty() && swapchain->copyable();
     if (!capturePath_.empty() && !capturing) {
         logger()->get()->error("Cannot capture a frame to {}: the swapchain images cannot be copied out of", capturePath_);
         capturePath_.clear();
     }
     if (capturing) {
-        // after the recorder, which leaves the image in PRESENT_SRC as the copy expects
+        // after Recorder::record, which leaves the image in PRESENT_SRC as the copy expects
         capture_->record(acquisition.commands, *swapchain, acquisition.image);
     }
 
-    // the submission stands even when the chain has gone out of date, so a capture recorded
-    // into it is written either way
+    // present() submits even when it returns OutOfDate, so a capture recorded into the frame
+    // is written either way
     const bool outOfDate = presenter->present(acquisition) == vulkan::frame::Presenter::Status::OutOfDate;
 
     if (capturing) {

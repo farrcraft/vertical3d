@@ -72,8 +72,8 @@ Instance::Instance(const boost::shared_ptr<v3d::log::Logger>& logger, const std:
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.apiVersion = VK_API_VERSION_1_3;
 
-    // the layer and the extension that carries its messages are both optional - a machine
-    // without the sdk installed has neither, and should still run
+    // the layer and the extension that carries its messages are both optional. A machine
+    // without the SDK installed has neither, and still runs
     validating_ = hasValidationLayer() && hasExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
     std::vector<const char*> enabled(extensions);

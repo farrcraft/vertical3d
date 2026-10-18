@@ -90,8 +90,8 @@ Device::Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::s
 /**
  **/
 Device::~Device() {
-    // before the device, not after it: a member is destroyed once this body has run, and an
-    // allocator holding blocks of its own frees them against a device that is already gone
+    // reset before the device is destroyed. Members are destroyed after this body runs, and a
+    // suballocator frees its blocks against the device, which by then would be gone
     allocator_.reset();
     if (device_ != VK_NULL_HANDLE) {
         vkDestroyDevice(device_, nullptr);
@@ -247,7 +247,7 @@ bool Device::hasRequiredFeatures(VkPhysicalDevice device) {
 
     // the renderer draws through dynamic rendering and synchronizes with the 1.3 barrier forms.
     // Separate depth and stencil layouts let a barrier move only the depth aspect of a combined
-    // depth and stencil format; every 1.2 device supports them
+    // depth and stencil format. Every 1.2 device supports them
     return features13.dynamicRendering == VK_TRUE && features13.synchronization2 == VK_TRUE &&
         features12.separateDepthStencilLayouts == VK_TRUE;
 }
@@ -271,7 +271,7 @@ void Device::selectPhysical() {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(device, &properties);
 
-        // the renderer is built against 1.3 - dynamic rendering and synchronization2
+        // the renderer requires 1.3, for dynamic rendering and synchronization2
         if (properties.apiVersion < requiredApiVersion) {
             continue;
         }
@@ -289,7 +289,7 @@ void Device::selectPhysical() {
             continue;
         }
 
-        // a discrete gpu is worth taking over whatever we may have already settled for
+        // a discrete gpu replaces any device already chosen
         const bool discrete = properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
         if (physical_ == VK_NULL_HANDLE || discrete) {
             physical_ = device;
@@ -340,7 +340,7 @@ void Device::createLogical() {
     }
 
     // dynamic rendering replaces render passes and framebuffers, and synchronization2 replaces
-    // the 1.0 barrier and submit forms - both are 1.3 core features and both have to be asked for
+    // the 1.0 barrier and submit forms. Both are 1.3 core features, and both have to be enabled
     VkPhysicalDeviceVulkan13Features features13{};
     features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
     features13.dynamicRendering = VK_TRUE;

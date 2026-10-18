@@ -65,7 +65,7 @@ class World final {
 
     /**
      * The four corners of a quad, in order around its perimeter so that consecutive corners
-     * share an edge - the order grid::tileCorners hands them out in.
+     * share an edge. grid::tileCorners returns them in this order.
      **/
     typedef std::array<glm::vec3, 4> Corners;
 

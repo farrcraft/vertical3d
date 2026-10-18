@@ -193,7 +193,7 @@ void Pass::ordered(std::vector<const DrawItem*>* into) const {
 /**
  **/
 void Pass::reset() noexcept {
-    // the capacity is worth keeping - the next frame submits about as much as this one did
+    // keep the capacity. The next frame submits about as much as this one did
     items_.clear();
 }
 

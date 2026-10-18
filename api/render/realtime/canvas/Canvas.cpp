@@ -123,7 +123,7 @@ glm::vec2 Canvas::toPixels(const glm::vec2& point) const noexcept {
  **/
 glm::mat4 Canvas::projection() const {
     // pixels to clip space, origin top left: scaled to the two units clip space spans and
-    // shifted back by one. y is not flipped - vulkan's y already points down
+    // shifted back by one. y is not flipped, because Vulkan's y already points down
     const float width = width_ > 0 ? static_cast<float>(width_) : 1.0F;
     const float height = height_ > 0 ? static_cast<float>(height_) : 1.0F;
 
@@ -347,7 +347,7 @@ void Canvas::text(const v3d::font::TextBuffer& text, const TextureHandle& atlas)
         return;
     }
     // the three streams are filled a vertex at a time, so a mismatch means a partly built
-    // buffer - draw nothing rather than read off the end of the shorter one
+    // buffer. Draw nothing rather than read off the end of the shorter one
     if (uvs.size() < positions.size() || colours.size() < positions.size()) {
         return;
     }
@@ -356,7 +356,7 @@ void Canvas::text(const v3d::font::TextBuffer& text, const TextureHandle& atlas)
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
     for (std::size_t index = 0; index < positions.size(); index++) {
-        // glyphs are laid out in three dimensions; a 2D canvas has no use for the third
+        // glyphs are laid out in three dimensions. A 2D canvas has no use for the third
         vertex({.position = glm::vec2(positions[index].x, positions[index].y), .uv = uvs[index], .colour = colours[index]});
     }
 

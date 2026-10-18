@@ -17,9 +17,8 @@ namespace v3d::render::realtime::vulkan::pipeline {
  * The driver's cache of compiled pipeline state.
  *
  * Every pipeline the engine builds is created against this, so that pipelines sharing
- * shader stages or state pay for the compilation once. A pipeline created outside the
- * cache is not retroactively put into it, which is why the cache exists from the first
- * frame rather than being added when it starts to matter.
+ * shader stages or state pay for the compilation once. A pipeline created without the cache
+ * is not added to it later, so the cache exists from the first frame.
  *
  * Nothing writes the cache to disk, so it lives only as long as the process.
  **/

@@ -19,19 +19,19 @@ namespace v3d::render::realtime::vulkan::memory {
 /**
  * Runs one-shot transfer commands on the graphics queue and waits for them.
  *
- * Everything that has to reach device local memory - a texture's pixels, a mesh's
- * vertices - is copied there by a command buffer that belongs to nothing else. The
- * caller cannot free its staging buffer until that copy has run. This therefore waits,
- * which keeps a staging allocation's lifetime within the function that made it.
+ * Everything that has to reach device local memory, such as a texture's pixels or a mesh's
+ * vertices, is copied there by a command buffer that belongs to nothing else. The caller
+ * cannot free its staging buffer until that copy has run, so oneShot() waits. A staging
+ * allocation then lives only within the function that made it.
  *
- * It waits on a fence for its own submission, not for the queue to go idle, so frames
- * already in flight go on running. An upload therefore does not mean that a frame in flight
- * has finished, and an object a frame may still read is retired through the frame ring
- * rather than destroyed. Recording copies into an object a frame may be reading is the
- * caller's to prevent; every upload in the api copies into a buffer or image it has just made.
+ * oneShot() waits on a fence for its own submission, not for the queue to go idle, so frames
+ * already in flight keep running. A finished upload does not mean that a frame in flight has
+ * finished, so an object a frame may still read is retired through the Ring, not destroyed.
+ * The caller must not record a copy into an object a frame may be reading. Every upload in the
+ * api copies into a buffer or image it has just made.
  *
- * The one command buffer is reset and reused, so a thousand chunk meshes cost one
- * allocation rather than a thousand the pool never hands back.
+ * The one command buffer is reset and reused, so any number of uploads costs one command
+ * buffer allocation.
  **/
 class Uploader final {
  public:

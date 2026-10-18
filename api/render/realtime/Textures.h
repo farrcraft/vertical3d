@@ -32,17 +32,17 @@ class RenderTarget;
  * The textures a context holds and the materials they are sampled through.
  *
  * Every pipeline that samples a texture at set 1 declares this one layout, so a material made
- * here serves the quad, the world quad and the lit renderer alike and an atlas is uploaded
- * once. It belongs to the context rather than to any renderer, so a context that draws no
- * quads - a headless one, or one loading meshes - registers textures all the same.
+ * here serves the quad, the world quad and the lit renderer alike, and an atlas is uploaded
+ * once. It belongs to the context, not to any renderer, so a context that draws no quads,
+ * such as a headless one or one loading meshes, can still register textures.
  *
  * What is registered belongs to pipeline::Resources. The white texture lives as long as the
- * context; a texture lives until it is released here, along with its material.
+ * context. Any other texture lives until it is released here, along with its material.
  **/
 class Textures final {
  public:
     /**
-     * @param uploader the context's one-shot queue, which every texture is copied through
+     * @param uploader the context's Uploader, which copies every texture
      * @throw std::runtime_error if the white texture cannot be uploaded
      **/
     Textures(const boost::shared_ptr<vulkan::device::Device>& device,
@@ -55,7 +55,7 @@ class Textures final {
 
     /**
      * Upload an image and register it, so a draw can name it.
-     * @param encoding how a shader reads it back - as authored unless something lights it
+     * @param encoding how a shader reads it back: as authored, unless the texture is lit
      * @param sampler how a shader reads the image. The default is linear and clamped to the
      *        edge. A surface meant to tile names a repeating address mode
      **/
@@ -65,7 +65,7 @@ class Textures final {
 
     /**
      * @param pixels tightly packed rows of width * channels bytes
-     * @param channels 1 for a coverage mask such as a glyph atlas, 3 or 4 for colour
+     * @param channels 1 for a coverage mask or a glyph atlas, 3 or 4 for colour
      * @param sampler how a shader reads the image, as above
      **/
     TextureHandle texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
@@ -81,11 +81,11 @@ class Textures final {
      * goes on naming the old ones, which it keeps alive: after a recreate(), release the old
      * handle and register the target again.
      *
-     * A target with no colour image has nothing to register, and comes back as the white
-     * texture for the same reason depthTexture() gives one for a target with no depth to read.
+     * A target with no colour image has nothing to register, and returns the white texture,
+     * as depthTexture() does for a target with no depth to read.
      *
-     * @param slot which of the target's images - one handle per slot for a target holding one
-     *        per frame in flight, of which a reader names current() or previous() each frame
+     * @param slot which of the target's images. A target with one image per frame in flight
+     *        has one handle per slot, and a reader names current() or previous() each frame.
      **/
     TextureHandle texture(const vulkan::frame::RenderTarget& target, uint32_t slot = 0);
 

@@ -34,14 +34,14 @@ namespace v3d::render::realtime::vulkan::renderer {
 /**
  * The device side of the world space quad primitive.
  *
- * A canvas is filled on the CPU during a tick and handed here. This uploads it into buffers
- * belonging to the frame about to be recorded, and turns each of its batches into a draw item
- * on a pass. The buffers are per frame in flight, because the device may still be reading the
- * previous frame's out of the previous slot.
+ * An app fills a canvas::World on the CPU during a tick. submit() uploads it into buffers of
+ * the frame about to be recorded, and turns each of its batches into a draw item on a pass.
+ * The buffers are per frame in flight, because the device may still be reading the previous
+ * frame's buffers.
  *
- * A frame may submit any number of canvases, and each submission takes a pair of buffers of
- * its own out of the frame's ring. They cannot share one pair: growing a buffer replaces the
- * allocation, which invalidates the handle every draw item already recorded holds.
+ * A frame may submit any number of canvases, and each submission claims a pair of buffers of
+ * its own from the StreamRing. They cannot share one pair: growing a buffer replaces the
+ * allocation, which invalidates the handle every draw item already queued holds.
  *
  * **Textures and their descriptors belong to the context's Textures.** A world quad samples
  * through the same set 1 layout as a ui quad, so an atlas uploaded once serves both and there
@@ -71,8 +71,8 @@ class World final {
      * @param cache the pipeline cache every pipeline is compiled against
      * @param resources where the pipelines are registered
      * @param ring which frame in flight is being recorded, and when its buffers are free
-     * @param uniforms set 0, which both pipelines declare and read - a world canvas is in
-     *        world space, so the pass's camera is its only transform
+     * @param uniforms set 0, which every world quad pipeline declares and reads. A world
+     *        canvas is in world space, so the pass's camera is its only transform.
      * @param textures where a texture becomes the set 1 descriptor a draw item names
      * @param colour the format of the image the pass draws into, which dynamic rendering
      *        needs at pipeline creation because there is no render pass to take it from
@@ -119,9 +119,10 @@ class World final {
     void createPipelines(const pipeline::Formats & formats);
 
     /**
-     * Compile one of the four.
+     * Compile one world quad pipeline.
      *
-     * @param depth the depth format to test against, or undefined for a pass without one
+     * @param formats the attachment formats. A depth format of VK_FORMAT_UNDEFINED is for a
+     *        pass without depth, and anything else is tested against.
      **/
     PipelineHandle createPipeline(const std::string& name, const pipeline::Formats & formats, Blend blend);
 

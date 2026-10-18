@@ -23,8 +23,8 @@ namespace v3d::render::realtime::canvas {
  * The caller supplies the key. In an isometric projection it is how far up the ground plane a
  * sprite's feet are, which nothing here can compute. A larger key is further away and is drawn
  * first. Equal keys are drawn grouped by texture and otherwise in the order they were added. A
- * caller that needs fewer batch cuts quantises its key - to a tile row, say - and lets the
- * tie-break merge them. A key that is not a number is drawn last.
+ * caller that needs fewer batch cuts quantises its key, to a tile row for example, and lets
+ * the tie-break merge them. A key that is not a number is drawn last.
  *
  * World itself still draws in submission order. This is one way of choosing that order.
  **/

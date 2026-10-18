@@ -45,8 +45,8 @@ Resources::~Resources() {
     });
 
     // descriptor sets are freed with the pool they came from, so a material owns nothing
-    // of its own to destroy. A texture is destroyed with the held registries, which a release
-    // still waiting in the ring keeps until it runs
+    // of its own to destroy. A texture is destroyed with Held, which a release still waiting
+    // in the Ring keeps alive until it runs
 }
 
 /**
@@ -73,8 +73,8 @@ bool Resources::release(const MaterialHandle& handle) {
     if (held_->materials.resolve(handle) == nullptr || held_->retiringMaterials.count(handle) > 0) {
         return false;
     }
-    // marked before it is handed to the ring, and unmarked if the ring cannot take it, so a
-    // failed release leaves the material registered as it was
+    // marked before retire(), and unmarked if retire() throws, so a failed release leaves the
+    // material registered as it was
     held_->retiringMaterials[handle] = ring_->recording();
     try {
         ring_->retire([held = held_, handle]() {

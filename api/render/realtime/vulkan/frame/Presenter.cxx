@@ -48,8 +48,8 @@ Presenter::Presenter(const boost::shared_ptr<v3d::log::Logger>& logger, const bo
 /**
  **/
 Presenter::~Presenter() {
-    // nothing may be waiting on a semaphore when it is destroyed. The ring's fences are the
-    // ring's to wait on, and it outlives this because this holds it
+    // no submission may still use a semaphore when it is destroyed. The Ring destroys its own
+    // fences, and outlives the Presenter because the Presenter holds it
     ring_->waitIdleNoThrow();
     destroySync();
 }
@@ -70,8 +70,8 @@ void Presenter::createSync() {
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    // one per frame rather than per image: a frame waits on it before drawing, and frames are
-    // counted by the ring, not by the chain
+    // one per frame in flight, not per swapchain image. The acquire needs the semaphore before
+    // it returns the image index, so the Ring's frame() indexes it
     for (uint32_t index = 0; index < ring_->framesInFlight(); index++) {
         VkSemaphore semaphore = VK_NULL_HANDLE;
         const VkResult result = vkCreateSemaphore(device_->handle(), &semaphoreInfo, nullptr, &semaphore);
@@ -118,16 +118,15 @@ boost::shared_ptr<Ring> Presenter::ring() const noexcept {
 /**
  **/
 Presenter::Status Presenter::acquire(Acquisition* acquisition) {
-    // a window with no area has no chain to draw into
+    // a window with no area has no swapchain to draw into
     if (!swapchain_->valid() || renderFinished_.empty()) {
         return Status::Skip;
     }
 
-    // the wait belongs here rather than being left to begin(): the semaphore the acquire
-    // signals is one per frame, and this slot's may still be pending from its last turn until
-    // that submission completes. begin() waits again, which costs nothing on a fence that is
-    // already signalled. The fence is unsignalled only by the submit, so a chain found out of
-    // date below leaves the ring exactly as it was found
+    // wait before acquiring, not in begin(). The acquire signals this frame's semaphore, and
+    // that semaphore may still be in use by the frame's last submission until it completes.
+    // begin() waits again, but a signalled fence returns at once. Only the submit unsignals
+    // the fence, so an OutOfDate return below leaves the ring unchanged
     ring_->waitFrame();
 
     uint32_t image = 0;
@@ -138,7 +137,7 @@ Presenter::Status Presenter::acquire(Acquisition* acquisition) {
         return Status::OutOfDate;
     }
     device::check(result, "Unable to acquire a vulkan swapchain image", VK_SUBOPTIMAL_KHR);
-    // a suboptimal image can still be drawn and presented - rebuild the chain afterwards
+    // a suboptimal image can still be drawn and presented. present() then returns OutOfDate
     suboptimal_ = result == VK_SUBOPTIMAL_KHR;
 
     acquisition->image = image;
@@ -161,12 +160,11 @@ Presenter::Status Presenter::present(const Acquisition& acquisition) {
     VkSemaphoreSubmitInfo signal{};
     signal.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
     signal.semaphore = renderFinished_[acquisition.image];
-    // every stage, not the colour attachment one: the last thing the command buffer does to
-    // the image is the layout transition into PRESENT_SRC, whose destination scope is the
-    // bottom of the pipe. A semaphore signalled at COLOR_ATTACHMENT_OUTPUT does not wait for
-    // that transition, so the presentation engine reads an image still being moved - which
-    // synchronization validation reports as PRESENT_AFTER_WRITE. Presentation is not a
-    // pipeline stage, so there is no narrower stage that is the right one here.
+    // ALL_COMMANDS, not COLOR_ATTACHMENT_OUTPUT. The command buffer ends with the layout
+    // transition into PRESENT_SRC, whose destination scope is the bottom of the pipe. A
+    // semaphore signalled at COLOR_ATTACHMENT_OUTPUT does not wait for that transition, and
+    // synchronization validation reports PRESENT_AFTER_WRITE. Presentation is not a pipeline
+    // stage, so no narrower stage covers it.
     signal.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 
     VkCommandBufferSubmitInfo commands{};
@@ -182,7 +180,7 @@ Presenter::Status Presenter::present(const Acquisition& acquisition) {
     submit.signalSemaphoreInfoCount = 1;
     submit.pSignalSemaphoreInfos = &signal;
 
-    // the ring's fence, which its next turn around waits on
+    // signals the Ring's fence for this frame. The Ring waits on it before reusing the slot
     result = vkQueueSubmit2(device_->graphicsQueue(), 1, &submit, ring_->submitting());
     device::check(result, "Unable to submit a vulkan frame");
 
@@ -200,7 +198,8 @@ Presenter::Status Presenter::present(const Acquisition& acquisition) {
     ring_->advance();
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || suboptimal_) {
-        // the submission stands either way - the chain is rebuilt before the next frame
+        // the submit has already happened. The caller recreates the swapchain before the
+        // next frame
         suboptimal_ = false;
         return Status::OutOfDate;
     }

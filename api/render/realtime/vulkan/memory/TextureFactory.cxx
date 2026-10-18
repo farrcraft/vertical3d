@@ -31,8 +31,8 @@ TextureFactory::TextureFactory(const boost::shared_ptr<device::Device>& device, 
     device_(device),
     uploader_(uploader) {
     // the default. It is linear, because a glyph atlas is sampled at whatever size the text is
-    // drawn at and a sprite at whatever size the window is. It is clamped, because a region's
-    // neighbour in an atlas is a different glyph and wrapping would bleed it in
+    // drawn at and a sprite at whatever size the window is. It is clamped, so a read past one
+    // edge of the image does not wrap around to the opposite edge
     sampler(pipeline::Sampler::Spec());
 }
 
@@ -48,8 +48,8 @@ pipeline::Texture TextureFactory::create(const boost::shared_ptr<v3d::image::Ima
     if (!image) {
         throw std::runtime_error("A vulkan texture needs an image to be created from");
     }
-    // bpp really is bits per pixel here, whatever the name suggests: the loaders set it
-    // to 24 or 32, and a glyph atlas of depth 1 to 8
+    // bpp is bits per pixel. The loaders set it to 24 or 32, and a glyph atlas of depth 1
+    // sets it to 8
     return create({.data = image->data(), .width = image->width(), .height = image->height(), .channels = static_cast<uint32_t>(image->bpp() / 8)}, encoding, sampler);
 }
 
@@ -101,8 +101,9 @@ pipeline::Texture TextureFactory::create(const Pixels& source, Encoding encoding
     spec.format = format;
     spec.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     if (coverage) {
-        // a glyph atlas carries coverage in its one channel, and the quad shader
-        // multiplies the vertex colour by whatever it samples - so hand it white
+        // the one channel is read as alpha, and rgb as white. The quad shader multiplies a
+        // coverage mask's sample into the vertex colour, and reads a glyph atlas's distance
+        // from alpha
         spec.components.r = VK_COMPONENT_SWIZZLE_ONE;
         spec.components.g = VK_COMPONENT_SWIZZLE_ONE;
         spec.components.b = VK_COMPONENT_SWIZZLE_ONE;

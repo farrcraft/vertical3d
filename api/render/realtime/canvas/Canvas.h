@@ -27,9 +27,9 @@ namespace v3d::render::realtime::canvas {
  *
  * This is the CPU side of the batched quad primitive. A coloured rectangle, a sprite and a
  * glyph are the same quad with a different texture. They share one vertex buffer, and the
- * stream is cut into a new batch only where the texture changes. An untextured quad names no
- * texture and is drawn against the renderer's 1x1 white one, so it never cuts a batch of
- * its own.
+ * stream is cut into a new batch only where the texture or the clip changes. An untextured
+ * quad names no texture and is drawn against the renderer's 1x1 white one, so untextured
+ * quads share one batch.
  *
  * Glyphs are the exception. A glyph atlas holds distances rather than coverage, so a batch
  * also records whether it is text and the stream cuts where that changes. A sprite drawn
@@ -71,7 +71,7 @@ class Canvas final {
         TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
         bool text;              /**< whether the run samples a distance field **/
         bool clipped;           /**< whether the run is cut to clip **/
-        glm::vec4 clip;         /**< the rectangle it is cut to - min x, min y, max x, max y **/
+        glm::vec4 clip;         /**< the rectangle it is cut to: min x, min y, max x, max y **/
         uint32_t firstIndex;    /**< where the run starts in indices() **/
         uint32_t indices;       /**< how long the run is **/
     };

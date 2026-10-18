@@ -230,9 +230,9 @@ VkPipelineColorBlendAttachmentState Builder::colourBlend() const {
 /**
  **/
 std::vector<VkDynamicState> Builder::dynamics() const {
-    // the viewport is dynamic so that a window resize costs no pipeline rebuild, and the
-    // depth bias is dynamic for a pipeline that asked for one - its numbers belong to the
-    // scene rather than to the pipeline
+    // the viewport is dynamic so that a window resize costs no pipeline rebuild. The depth
+    // bias is dynamic for a pipeline built with one, because its values belong to the scene,
+    // not the pipeline
     std::vector<VkDynamicState> dynamics{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
     if (depthBias_) {
         dynamics.push_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
@@ -252,8 +252,8 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
         msg << "The " << name_ << " pipeline was built with no shader stages";
         throw std::runtime_error(msg.str());
     }
-    // an empty list is a pipeline that writes no colour, which a shadow pass is. An entry
-    // left undefined was never named; that is the default, and still an error
+    // an empty list is a pipeline that writes no colour, as in a shadow pass. An entry left
+    // undefined was never set. That is the default, and still an error
     for (const VkFormat format : colours_) {
         if (format == VK_FORMAT_UNDEFINED) {
             std::stringstream msg;

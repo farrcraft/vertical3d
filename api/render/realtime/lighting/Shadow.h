@@ -51,7 +51,7 @@ struct ShadowFit final {
  * Camera::createView build a camera's in the hand given. A face is therefore wound the same way
  * under the light as under a camera of that hand, and one cull mode serves both passes.
  *
- * @param towards the direction towards the light - Settings::light. It need not be
+ * @param towards the direction towards the light, such as Settings::light. It need not be
  *        normalised, and must not be zero
  * @param bounds the middle of what should cast and receive shadows, and how far from it that
  *        reaches, which must be above zero

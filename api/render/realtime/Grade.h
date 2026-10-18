@@ -57,8 +57,8 @@ class Grade final {
     static const uint32_t SIZE = 16;
 
     /**
-     * @param colour the format of what the grade draws into
-     * @param depth the depth format of the pass it is drawn in, or undefined for none
+     * @param formats the colour format of what the grade draws into, and the depth format of
+     *        the pass it is drawn in, or undefined for none
      * @param strip the table, or empty for the identity
      * @throw std::runtime_error if the pipeline or the table cannot be made
      **/
@@ -66,7 +66,7 @@ class Grade final {
         const vulkan::pipeline::Formats& formats, const boost::shared_ptr<image::Image>& strip = boost::shared_ptr<image::Image>());
 
     /**
-     * Release the table, and every source not yet released, through the ring, so a frame in
+     * Release the table, and every source not yet released, through the Ring, so a frame in
      * flight finishes with them.
      **/
     ~Grade();
@@ -77,9 +77,9 @@ class Grade final {
     /**
      * Bind one slot of a scene target as what is graded, with the table.
      *
-     * A target that is resized is bound again. A source not released by the time the grade
-     * goes is released by its destructor. If binding throws, the scene's registration is
-     * released before the exception leaves.
+     * After the target is resized, call source() again. A source not released by the time the
+     * Grade is destroyed is released by its destructor. If binding throws, the scene's
+     * registration is released before the exception leaves.
      *
      * @return the source submit() names
      * @throw std::runtime_error if the scene has no colour image, or the source cannot be bound
@@ -87,7 +87,7 @@ class Grade final {
     MaterialHandle source(const vulkan::frame::RenderTarget& scene, uint32_t slot = 0);
 
     /**
-     * Let a source go, and the scene's registration with it.
+     * Release a source, and the scene's registration with it.
      *
      * @return whether there was anything to release
      **/
@@ -97,11 +97,11 @@ class Grade final {
      * Grade with a different table from the next frame built: a zone's own look, or a step of
      * a slow change between two tables a game lerps itself.
      *
-     * The table is made anew and the old one released through the ring, so a frame in flight
-     * finishes with the table it was recorded against. Uploading the new table waits for the
-     * device's queue to go idle. Every source keeps the handle source() gave it. Call this
-     * before the frame's submit(), because it releases the material a submit earlier in the
-     * same frame would have used.
+     * A new table is made and the old one retired through the Ring, so a frame in flight
+     * finishes with the table it was recorded against. Uploading the new table waits for that
+     * upload alone, not for frames in flight. Every source keeps the handle source() gave it.
+     * Call this before the frame's submit(): a submit() earlier in the same frame still draws
+     * with the old table.
      *
      * @param texels SIZE cubed RGBA texels in the order table() gives them
      * @return false for texels of the wrong count, which leave the table as it was
@@ -114,7 +114,7 @@ class Grade final {
     void submit(const MaterialHandle& source, Pass* pass) const;
 
     /**
-     * The table a strip describes, as RGBA texels with red fastest, then green, then blue -
+     * The table a strip describes, as RGBA texels with red fastest, then green, then blue,
      * the order a 3D image is uploaded in.
      *
      * @return the texels, or nothing for a strip that is not SIZE * SIZE by SIZE, in RGB or RGBA
@@ -129,8 +129,8 @@ class Grade final {
  private:
     /**
      * A scene being graded: its registration, and the material that pairs it with the current
-     * table. The material changes when the table is replaced; the handle the caller holds is
-     * the first one, which is this entry's key.
+     * table. The material changes when the table is replaced. The handle the caller holds is
+     * the first material, which is this entry's key.
      **/
     struct Source final {
         TextureHandle scene;

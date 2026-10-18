@@ -31,11 +31,13 @@ namespace v3d::render::realtime::vulkan::renderer {
 
 /**
  * The device side of a lit scene. It holds the cel and outline pipelines a registered model is
- * drawn with, the shadow pipeline it casts with, and a skinned variant of each. It also holds
- * the scene set both passes bind at set 2. The scene set carries every joint palette drawn in
- * the frame in one storage buffer, so a skinned model casts the pose it is drawn in. It
- * carries every object drawn in the frame in another, which a shader reads by its instance
- * index, so a draw names where its objects start as its first instance and pushes nothing.
+ * drawn with, the shadow pipeline it casts with, and a skinned variant of each.
+ *
+ * It also holds the scene set that the lit pass and the shadow pass bind at set 2. One storage
+ * buffer in the scene set holds every joint palette drawn in the frame, so a skinned model
+ * casts the pose it is drawn in. Another holds every object drawn in the frame, which a shader
+ * reads by its instance index. A draw names where its objects start as its first instance,
+ * and pushes nothing.
  *
  * Every pipeline here declares the camera at set 0, the albedo at set 1 in the Textures
  * material layout, and the scene at set 2, and no push constants. What they draw is linear
@@ -66,7 +68,7 @@ class Lit final {
      * A replacement must declare the same descriptor sets as the defaults and no push
      * constants, which including shaders/lit/lit.glsl provides. A vertex stage reads its object
      * at its instance index, and a fragment stage at an index its vertex stage hands it. A
-     * missing or extra binding fails at pipeline creation; a block with its members reordered
+     * missing or extra binding fails at pipeline creation. A block with its members reordered
      * is not detected.
      **/
     struct Shaders final {
@@ -120,7 +122,8 @@ class Lit final {
 
     /**
      * The pipeline a caster is drawn into a shadow map with. It is built with depth bias, so
-     * the pass it is drawn in names one - lighting::Settings::constantBias and slopeBias.
+     * the pass it is drawn in must name one, from lighting::Settings::constantBias and
+     * slopeBias.
      *
      * @return the pipeline, or an unset handle when this was built with no shadow format
      **/
@@ -128,7 +131,7 @@ class Lit final {
 
     /**
      * The pipelines a skinned model is drawn with, in place of cel(), outline() and shadow().
-     * Their vertex is a type::Model::Vertex followed by its type::Model::Influence -
+     * Their vertex is a type::Model::Vertex followed by its type::Model::Influence, which is
      * MeshRegistry::SkinnedVertex.
      **/
     PipelineHandle skinnedCel() const noexcept;
@@ -139,13 +142,12 @@ class Lit final {
      * Write this frame's scene and return the set a lit pass names as its scene.
      *
      * One scene a frame: the set is the frame's own, so a second call in the same frame
-     * replaces what the first wrote, and empties the frame's objects. It waits for the frame it
-     * writes to have finished its last submission, the way renderer::Quad does before writing
-     * its geometry. It is therefore called while the frame is built and before the ring begins
-     * it, and before any object() of the frame.
+     * replaces what the first wrote, and empties the frame's objects. It waits for the frame's
+     * last submission to finish, as StreamRing::claim() does. Call it while the frame is
+     * built, before the Ring begins the frame, and before any object() call for the frame.
      *
      * @param shadowMap the depth a shadow pass drew, or an unset handle for no shadow
-     * @param palette every joint matrix drawn this frame - entity::Poses::palette()
+     * @param palette every joint matrix drawn this frame, from entity::Poses::palette()
      **/
     VkDescriptorSet scene(const lighting::SceneUniforms& uniforms, const TextureHandle& shadowMap = TextureHandle(),
         const std::vector<glm::mat4>& palette = {});
@@ -160,7 +162,7 @@ class Lit final {
     uint32_t object(const Object& object);
 
     /**
-     * @return set 2's layout, for a pipeline of a game's own that reads the same scene
+     * @return set 2's layout, for a game's own pipeline that reads the same scene
      **/
     VkDescriptorSetLayout sceneLayout() const noexcept;
 

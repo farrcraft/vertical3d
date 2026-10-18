@@ -92,18 +92,18 @@ void DepthBuffer::create(uint32_t width, uint32_t height) {
         // copied out
         spec.usage |= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     }
-    // the stencil aspect is left out even where the format carries one - nothing
-    // stencils, and an attachment view may name only the aspects it is used through
+    // the stencil aspect is left out even where the format carries one. Nothing uses
+    // stencil, and an attachment view may name only the aspects it is used through
     spec.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
     image_ = boost::make_shared<memory::Image>(device_, spec);
 
     if (sampled_) {
         pipeline::Sampler::Spec sampler;
-        // nearest, so a read returns one stored depth. A shader compares each read against a
-        // fragment's depth and softens the edge by averaging several comparisons. Nearest
-        // also needs no FILTER_LINEAR support, which a device need not offer for a depth
-        // format. Nothing here enables the compare mode: a caller that needs a hardware PCF
-        // sampler creates its own, and this one serves a plain read
+        // nearest, so a read returns one stored depth. A shader compares each read against
+        // the fragment's depth, and softens the edge by averaging several comparisons.
+        // Nearest also needs no FILTER_LINEAR support, which a device need not offer for a
+        // depth format. The compare mode is off. A caller that needs a hardware PCF sampler
+        // creates its own
         sampler.filter = VK_FILTER_NEAREST;
         sampler.mipmap = VK_SAMPLER_MIPMAP_MODE_NEAREST;
         // outside what was rendered is lit, not shadowed, so the border is the far plane

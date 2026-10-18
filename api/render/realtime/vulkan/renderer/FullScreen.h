@@ -26,9 +26,9 @@
 namespace v3d::render::realtime::vulkan::renderer {
 
 /**
- * A pass over the whole of a target, one fragment per pixel: a triangle covering it, and a
- * fragment stage of the caller's reading images bound at set 1. A colour grade is one, and so
- * is any later post pass - a blur, a tone map, a vignette.
+ * A pass over the whole of a target, one fragment per pixel. A triangle covers the target, and
+ * the caller's fragment stage reads images bound at set 1. A colour grade is one, and so is any
+ * other post pass, such as a blur, a tone map or a vignette.
  *
  * The images are the source, named as a material, so the item binds them the way any draw
  * binds a texture. Set 0 is declared, as every pipeline in the engine declares it, and need
@@ -42,7 +42,7 @@ class FullScreen final {
      **/
     struct Spec final {
         std::string name;
-        std::vector<uint32_t> fragment;  /**< SPIR-V; it reads uv at location 0 **/
+        std::vector<uint32_t> fragment;  /**< SPIR-V. It reads uv at location 0 **/
         uint32_t sources = 1;            /**< combined image samplers at set 1, bindings 0 upwards **/
         VkFormat colour = VK_FORMAT_UNDEFINED;  /**< what the pass draws into **/
         /**
@@ -64,12 +64,12 @@ class FullScreen final {
 
     /**
      * Bind images as a source, each read through the sampler it was registered with. A depth
-     * image is bound in DEPTH_READ_ONLY_OPTIMAL, the layout the recorder leaves a sampled
-     * depth image in.
+     * image is bound in DEPTH_READ_ONLY_OPTIMAL, the layout Recorder leaves a sampled depth
+     * image in.
      *
-     * A source names its images as they are now. A target that is resized, or a texture that
-     * is released, is bound again rather than followed. Release a source before this goes,
-     * since the set it names is this one's.
+     * A source names its images as they are now. After a target is resized or a texture is
+     * released, make a new source, because the old one is not updated. Release a source before
+     * the FullScreen is destroyed, because its set comes from the FullScreen's pool.
      *
      * @param textures one per binding the spec declared, in binding order
      * @return the material an item names
@@ -78,7 +78,8 @@ class FullScreen final {
     MaterialHandle source(const std::vector<TextureHandle>& textures);
 
     /**
-     * Let a source go, its set returned through the ring once no frame can be reading it.
+     * Release a source. Its set goes back to the pool through the Ring once no frame can read
+     * it.
      *
      * @return whether there was anything to release
      **/

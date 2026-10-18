@@ -31,7 +31,7 @@ class Engine3D : public Engine {
      * @param assetManager
      * @param preferred the colour format to present through. An app whose shaders write
      *        linear light names one here. Leaving it undefined selects the display space
-     *        (UNORM) default every app in this tree presents through.
+     *        (UNORM) default.
      * @param allocations how the device finds memory for its buffers and images. An app with
      *        per-frame resources asks for Suballocated, because maxMemoryAllocationCount is a
      *        real device limit.
@@ -61,16 +61,16 @@ class Engine3D : public Engine {
      *
      * The frame is copied after it is recorded and before it is presented, so the file holds
      * exactly what reached the window. A frame that is skipped, because the window has no area
-     * or the chain is being rebuilt, keeps the request for the next one that presents. Once a
-     * frame has tried to write the file the request is cleared, so a path that cannot be
-     * written fails once and is reported in the log.
+     * or the swapchain is being recreated, keeps the request for the next one that presents.
+     * Once a frame has tried to write the file the request is cleared, so a path that cannot
+     * be written fails once and is reported in the log.
      *
      * The frame waits for the device to go idle before it reads the copy back, so a frame that
      * is captured does not overlap the next one.
      *
      * @param path where the png is written
-     * @return false, and nothing is requested, before initialize() or when the chain's images
-     *         cannot be copied out of because the surface does not allow it
+     * @return false, and nothing is requested, before initialize() or when the swapchain's
+     *         images cannot be copied out of because the surface does not allow it
      **/
     bool capture(std::string_view path);
 
@@ -78,8 +78,8 @@ class Engine3D : public Engine {
      * Whether there is a frame worth building, and how big it is.
      *
      * A minimized window has no area, and a canvas with none has no projection to build
-     * geometry against. When this returns false the frame has already been presented -
-     * empty - so the caller draws nothing and returns.
+     * geometry against. When this returns false, it has already called renderFrame() for the
+     * empty frame, so the caller draws nothing and returns.
      *
      * No resize event reaches a renderer, so this is also where an app learns that the
      * window it is drawing into has changed size.
@@ -96,9 +96,8 @@ class Engine3D : public Engine {
     boost::shared_ptr<Frame> frame() const;
 
     /**
-     * How long the device spent on each pass of a frame, by the pass's name. The frame is
-     * as many behind as there are frames in flight, and the list is empty on a device that
-     * writes no timestamps.
+     * How long the device spent on each pass of a frame, by the pass's name. The numbers are
+     * framesInFlight frames old, and the list is empty on a device that writes no timestamps.
      **/
     const std::vector<vulkan::frame::Timings::Timing>& timings() const;
 
@@ -108,7 +107,7 @@ class Engine3D : public Engine {
     void clearColour(const glm::vec4& colour);
 
     /**
-     * The batched quad primitive every 2D thing draws through. An app fills a Canvas during
+     * The batched quad primitive that all 2D drawing goes through. An app fills a Canvas during
      * its tick and hands both to this.
      **/
     boost::shared_ptr<vulkan::renderer::Quad> quads() const;
@@ -152,7 +151,7 @@ class Engine3D : public Engine {
     boost::shared_ptr<Context3D> context_;
     boost::shared_ptr<Frame> frame_;
     glm::vec4 clearColour_;
-    /**< what initialize() requests from the chain; the chain decides what it gets **/
+    /**< the format initialize() requests for the swapchain. The surface decides which it gets **/
     VkFormat preferred_;
     /**< what initialize() builds the device's allocator as **/
     vulkan::memory::Allocator::Kind allocations_;

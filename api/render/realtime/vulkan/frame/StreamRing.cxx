@@ -35,9 +35,8 @@ StreamRing::Geometry StreamRing::claim(const Sizes& sizes) {
     const VkDeviceSize indexBytes = sizes.indexBytes;
     // the device may still be reading what this slot held framesInFlight frames ago
     ring_->waitFrame();
-    // claims restart whenever the ring turns or moves to another slot. A frame that was
-    // skipped, or begun and abandoned, was never drawn, so the next attempt reuses its claims
-    // rather than claiming after them
+    // the cursor restarts when turns() or frame() changes. A frame that was skipped, or begun
+    // and abandoned, was never drawn, so the next attempt reuses its buffers from the front
     if (ring_->turns() != counted_ || ring_->frame() != countedFrame_) {
         counted_ = ring_->turns();
         countedFrame_ = ring_->frame();

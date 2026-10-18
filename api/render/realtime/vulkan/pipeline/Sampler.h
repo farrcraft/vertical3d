@@ -25,8 +25,7 @@ class Sampler final {
     /**
      * What to make. The defaults are what a texture and a render target are read through. They
      * are linear, because both are drawn at sizes other than their own. They are clamped to
-     * the edge, because a region's neighbour in an atlas is another sprite and wrapping would
-     * bleed it in.
+     * the edge, so a read past one edge of the image does not wrap around to the opposite edge.
      **/
     struct Spec final {
         Spec() noexcept;

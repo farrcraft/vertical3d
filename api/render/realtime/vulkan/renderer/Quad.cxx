@@ -36,8 +36,8 @@ namespace {
 
 /**
  * The quad pipeline's shader modules, compiled to SPIR-V at build time by glslc and
- * included here as the C initialiser lists its -mfmt=c writes - see v3d_add_shader in
- * the root CMakeLists.
+ * included here as the C initialiser lists its -mfmt=c writes, by v3d_add_shader in
+ * cmake/v3dHelpers.cmake.
  **/
 const uint32_t vertexShader[] =
 #include "shaders/quad.vert.inc"
@@ -91,7 +91,7 @@ Quad::Quad(const boost::shared_ptr<device::Device>& device,
  **/
 Quad::~Quad() {
     // the pipelines and their layouts belong to pipeline::Resources and the textures to the
-    // context - what is owned here is the geometry buffers, which go with it
+    // context's Textures. The geometry buffers are owned here and are destroyed with it
 }
 
 /**

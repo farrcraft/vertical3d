@@ -24,10 +24,6 @@ namespace v3d::render::realtime::entity {
 
 namespace {
 
-/**
- * One of a skin's clips sampled over its rest pose, or the rest pose when the clip is none or
- * not one the skin has.
- **/
 /** A clip, how far into it the playback is, how long it lasts, and whether it loops. **/
 struct Track {
     uint32_t clip = 0;
@@ -36,6 +32,10 @@ struct Track {
     bool loops = false;
 };
 
+/**
+ * One of a skin's clips sampled over its rest pose, or the rest pose when the clip is none or
+ * not one the skin has.
+ **/
 type::animation::Pose sampled(const MeshRegistry::Skin& skin, const Track& track) {
     const uint32_t clip = track.clip;
     const float time = track.time;

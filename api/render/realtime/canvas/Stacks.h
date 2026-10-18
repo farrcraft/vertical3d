@@ -60,7 +60,7 @@ class ClipStack final {
     void reset();
 
     /**
-     * Clip to the rectangle between two corners, in whichever order they come - a negative
+     * Clip to the rectangle between two corners, in whichever order they come. A negative
      * scale swaps them.
      **/
     void push(const glm::vec2& first, const glm::vec2& second);
@@ -77,7 +77,7 @@ class ClipStack final {
     bool clipped() const noexcept;
 
     /**
-     * @return what is clipped to - min x, min y, max x, max y - or zero when nothing is
+     * @return the clip rectangle as min x, min y, max x, max y, or zero when nothing is
      **/
     glm::vec4 top() const noexcept;
 

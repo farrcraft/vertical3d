@@ -25,24 +25,23 @@ namespace v3d::render::realtime::vulkan::frame {
 /**
  * An image a pass draws into that is not the swapchain's, and that a later pass samples.
  *
- * A target is created with sampled usage, and the recorder leaves it in
+ * A target is created with sampled usage, and Recorder leaves it in
  * VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL once the last pass drawing into it has finished,
  * so a later pass can read what an earlier one rendered. A shadow map, a scene rendered
  * before it is graded, and a second view of one scene are all render targets.
  *
- * The extent is given rather than following the swapchain. A shadow map is sized by how
- * much detail it needs and not by the window; a target that should track the window is
- * recreated by the app when Engine3D::beginFrame reports a new size.
+ * The caller gives the extent, and it does not follow the swapchain. A shadow map is sized by
+ * the detail it needs, not by the window. To track the window, the app recreates the target
+ * when Engine3D::beginFrame reports a new size.
  *
  * The colour format is given too, and is not taken from the swapchain. A pipeline under
  * dynamic rendering is built against the format of what it draws into, so a pass drawing
  * into a target of a different format needs a pipeline built for that format. A target
  * cannot adapt a pipeline at record time.
  *
- * A target's images are thrown away and rebuilt whenever what it is sized against changes,
- * and a frame still in flight may be drawing into them or reading them when that happens.
- * What it releases, on a resize or when it is destroyed, therefore goes to the ring rather
- * than being destroyed at once.
+ * recreate() replaces a target's images while a frame in flight may still draw into them or
+ * read them. The images a target releases, on recreate() or on destruction, are therefore
+ * retired through the Ring, not destroyed at once.
  *
  * A target holds one image, or one per frame in flight. With one per frame, a pass draws
  * into current() and what the previous frame drew is still readable at previous(). One
@@ -53,18 +52,18 @@ class RenderTarget final {
  public:
     /**
      * @param device the device to allocate on
-     * @param ring the frames in flight, which hold back the images a resize lets go of
+     * @param ring the frames in flight. Images that recreate() releases are retired through it.
      * @param width in pixels
      * @param height in pixels
-     * @param colour the format of the colour image, or VK_FORMAT_UNDEFINED for none - a
-     *        target with sampled depth and no colour is what a shadow map draws into, and
-     *        every colour accessor then answers null
+     * @param colour the format of the colour image, or VK_FORMAT_UNDEFINED for none. A shadow
+     *        map target has sampled depth and no colour, and every colour accessor then
+     *        returns null.
      * @param depth whether to allocate a depth image the same size, for a pass that tests
      * @param sampledDepth whether that depth image is also read by a later pass, as a
      *        shadow map is. It costs a sampler and can change which depth format
      *        the device gives, so a pipeline drawing into this has to be built against
-     *        depthFormat() rather than against DepthBuffer::chooseFormat's default
-     * @param images one, or the ring's frames in flight for a target a pass reads the previous
+     *        depthFormat(), not against DepthBuffer::chooseFormat's default
+     * @param images one, or the Ring's frames in flight for a target a pass reads the previous
      *        frame of. Each image of a target with more than one starts cleared and readable,
      *        so previous() can be read on the first frame
      * @throw std::runtime_error if allocation fails, if either dimension is zero, if there
@@ -83,7 +82,7 @@ class RenderTarget final {
     RenderTarget& operator=(const RenderTarget&) = delete;
 
     /**
-     * Throw the images away and build them at the new size, keeping the formats so that no
+     * Replace the images with new ones at the new size. The formats stay the same, so no
      * pipeline built against this target has to be rebuilt.
      *
      * The view and the sampler are new, so anything holding a descriptor set written
@@ -104,7 +103,7 @@ class RenderTarget final {
     uint32_t images() const noexcept;
 
     /**
-     * @return the slot the frame being built draws into, which is chosen by the ring's frame
+     * @return the slot the frame being built draws into: the Ring's frame() modulo images()
      **/
     uint32_t current() const noexcept;
 
@@ -156,7 +155,7 @@ class RenderTarget final {
     VkFormat depthFormat() const noexcept;
 
     /**
-     * The recorder leaves a sampled depth image in a readable layout after its last pass.
+     * Recorder leaves a sampled depth image in a readable layout after its last pass.
      *
      * @return whether the depth image can be read as well as written
      **/

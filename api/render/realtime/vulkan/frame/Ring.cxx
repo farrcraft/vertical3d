@@ -162,21 +162,21 @@ VkCommandBuffer Ring::begin() {
     result = vkBeginCommandBuffer(commands, &beginInfo);
     device::check(result, "Unable to begin a vulkan command buffer");
 
-    // a slot begun and never submitted, because recording threw, is begun again rather than
-    // counted again. Its frame never reached the device. Counting it twice would collect
-    // something retired while the frame before it may still be reading it.
+    // a slot begun and never submitted, because recording threw, is begun again but not
+    // counted again. Its frame never reached the device. Counting it twice would destroy a
+    // retired object while the frame before it may still read it.
     const bool again = pending_;
 
     // what this slot timed the last time it was submitted is readable now its fence has signalled
     timings_->begin(commands, frame_, !again);
 
-    // counted only once nothing can throw, because a begin that failed waited on a slot without
-    // moving past it, and counting it would collect a frame early
+    // count only after every call that can throw. A begin() that threw has not moved past the
+    // slot, and counting it would destroy retired objects a frame early
     if (!again) {
         begun_++;
         retired_.collect(begun_);
     }
-    // counted on a begin again too, so per-frame state reset through turns() is reset for it
+    // counted when a slot is begun again too, so per-frame state keyed on turns() resets
     starts_++;
     pending_ = true;
 

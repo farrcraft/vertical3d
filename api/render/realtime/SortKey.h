@@ -13,14 +13,14 @@ namespace v3d::render::realtime {
  * Where a draw item falls in the order the engine records items in.
  *
  * The fields are ordered from the coarsest grouping to the finest and packed into one
- * integer, so a whole pass sorts on a single comparison. Layer comes first because 2D
- * content is painter ordered: a sprite drawn later has to stay on top of the one under
- * it whatever pipeline or material either of them uses. Within a layer, grouping by
- * pipeline and then material is what lets the recorder merge adjacent items.
+ * integer, so comparing two keys is one integer comparison. Layer comes first because 2D
+ * content is painter ordered: a sprite drawn later has to stay on top of the one under it,
+ * whatever pipeline or material either uses. Within a layer, grouping by pipeline and then
+ * material lets Recorder skip rebinding between adjacent items.
  *
- * A pass is recorded in submission order unless Pass::sort() asks for key order. The
- * pipeline and material are filled in by Pass::submit from the item's handles; the layer and
- * depth are the caller's, and are zero when nobody sets them.
+ * A pass is recorded in submission order unless Pass::sort() is enabled. Pass::submit fills
+ * in the pipeline and material from the item's handles. The layer and depth are the caller's,
+ * and default to zero.
  **/
 struct SortKey final {
     /**

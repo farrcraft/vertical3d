@@ -102,7 +102,7 @@ void Image::destroy() noexcept {
         vkDestroyImage(device_->handle(), image_, nullptr);
         image_ = VK_NULL_HANDLE;
     }
-    // the memory outlives the image it backs, so it goes last
+    // free the memory last, after the image it backs
     device_->allocator().free(&memory_);
 }
 

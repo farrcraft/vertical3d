@@ -44,20 +44,19 @@ namespace v3d::render::realtime::vulkan::renderer {
 /**
  * The device side of the batched quad primitive.
  *
- * There is one pipeline here and every 2D thing in the engine draws with it: a rectangle,
- * a sprite and a glyph differ only in which texture is bound and what the vertex colour is.
+ * Every 2D thing in the engine draws through Quad: a rectangle, a sprite and a glyph differ
+ * only in which texture is bound and what the vertex colour is.
  *
- * A canvas::Canvas is filled on the CPU during a tick and handed here. This uploads its geometry
- * into buffers belonging to the frame about to be recorded, and turns each of its batches
- * into a draw item on a pass. The buffers are per frame in flight, because the device may
- * still be reading the previous frame's out of the previous slot.
+ * An app fills a canvas::Canvas on the CPU during a tick. submit() uploads its geometry into
+ * buffers of the frame about to be recorded, and turns each of its batches into a draw item
+ * on a pass. The buffers are per frame in flight, because the device may still be reading
+ * the previous frame's buffers.
  *
- * A frame may submit any number of canvases, and each submission takes a pair of
- * buffers of its own out of the frame's ring. They cannot share one pair: growing a
- * buffer replaces the allocation, which invalidates the handle every draw item already
- * recorded holds.
+ * A frame may submit any number of canvases, and each submission claims a pair of buffers of
+ * its own from the StreamRing. They cannot share one pair: growing a buffer replaces the
+ * allocation, which invalidates the handle every draw item already queued holds.
  *
- * The pipelines it registers belong to pipeline::Resources and live until the context does.
+ * The pipelines it registers belong to pipeline::Resources and live until it is destroyed.
  * Textures and their materials belong to the context's Textures.
  **/
 class Quad final {
@@ -95,8 +94,8 @@ class Quad final {
      * @param canvas the geometry to draw, which is copied and not kept
      * @param pass where the draw items are submitted
      * @param layer the layer the items' sort key carries. It only has an effect in a pass
-     *        that sorts; an unsorted pass records in submission order, and within one
-     *        canvas submission order decides what is on top
+     *        that sorts. An unsorted pass records in submission order, and within one
+     *        canvas, submission order decides what is on top
      **/
     void submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer = 0);
 
@@ -107,19 +106,19 @@ class Quad final {
      * so for one of those the quad is decoded first and the encode gives the colour back. Any
      * other format stores what it is given.
      *
-     * Device free, so a test can pin which formats are converted.
+     * Needs no device, so a test can check which formats are converted.
      **/
     static bool linearises(VkFormat colour) noexcept;
 
  private:
     /**
-     * Compile the quad pipeline twice - once for a pass with a depth attachment and once
-     * for a pass without.
+     * Compile the quad pipeline twice: once for a pass with a depth attachment and once for a
+     * pass without.
      *
      * Two, because dynamic rendering matches a pipeline to the attachments of the pass it
      * draws into: one built with no depth format cannot draw into a pass that has one.
-     * Neither tests or writes depth - 2D is painter ordered either way, and a ui drawn
-     * over a scene has to stay on top of it whatever the scene left in the buffer.
+     * Neither tests nor writes depth. 2D is painter ordered either way, and a ui drawn over a
+     * scene has to stay on top of it whatever depth the scene left.
      **/
     void createPipelines(const pipeline::Formats & formats);
 

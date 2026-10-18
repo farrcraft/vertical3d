@@ -72,8 +72,8 @@ v3d_add_api_library(render
 	"realtime/vulkan/renderer/Lit.h" "realtime/vulkan/renderer/Lit.cxx"
 	"realtime/vulkan/renderer/FullScreen.h" "realtime/vulkan/renderer/FullScreen.cxx")
 
-# The batched quad primitive. Every shader is compiled to SPIR-V and embedded rather than
-# loaded from disk - see v3d_add_shader in cmake/v3dHelpers.cmake.
+# The batched quad primitive. Every shader is compiled to SPIR-V and embedded, not loaded
+# from disk, by v3d_add_shader in cmake/v3dHelpers.cmake.
 v3d_add_shader(v3dlib_render "shaders/quad.vert")
 v3d_add_shader(v3dlib_render "shaders/quad.frag")
 # the same stage for an _SRGB target, which decodes before writing so the target's encode on store
@@ -94,8 +94,8 @@ v3d_add_shader(v3dlib_render "shaders/lit/cel.frag")
 v3d_add_shader(v3dlib_render "shaders/lit/outline.vert")
 v3d_add_shader(v3dlib_render "shaders/lit/outline.frag")
 v3d_add_shader(v3dlib_render "shaders/lit/shadow.vert")
-# A skinned model uses the same three vertex shaders compiled with SKINNED - see
-# shaders/lit/pose.glsl
+# A skinned model uses the same vertex shaders compiled with SKINNED, which
+# shaders/lit/pose.glsl reads
 v3d_add_shader(v3dlib_render "shaders/lit/mesh.vert" OUTPUT "skinned_mesh.vert" DEFINES SKINNED)
 v3d_add_shader(v3dlib_render "shaders/lit/outline.vert" OUTPUT "skinned_outline.vert" DEFINES SKINNED)
 v3d_add_shader(v3dlib_render "shaders/lit/shadow.vert" OUTPUT "skinned_shadow.vert" DEFINES SKINNED)
@@ -105,14 +105,14 @@ v3d_add_shader(v3dlib_render "shaders/fullscreen.vert")
 v3d_add_shader(v3dlib_render "shaders/grade.frag")
 # The grade compiled for each pairing of what it reads and what it draws into. LINEAR_SCENE reads
 # a scene from an _SRGB target, which arrives decoded, and LINEAR_TARGET draws into one, which
-# encodes on store - see shaders/grade.frag
+# encodes on store. shaders/grade.frag reads both
 v3d_add_shader(v3dlib_render "shaders/grade.frag" OUTPUT "grade_linear_scene.frag" DEFINES LINEAR_SCENE)
 v3d_add_shader(v3dlib_render "shaders/grade.frag" OUTPUT "grade_linear_target.frag" DEFINES LINEAR_TARGET)
 v3d_add_shader(v3dlib_render "shaders/grade.frag" OUTPUT "grade_linear.frag" DEFINES LINEAR_SCENE LINEAR_TARGET)
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_image: Grade.h takes the image::Image a colour grade is built from.
-# Vulkan and SDL3 are PUBLIC because the realtime headers name their types outright -
+# Vulkan and SDL3 are PUBLIC because the realtime headers name their types outright:
 # Context3D.h and every vulkan/ header carry VkDevice and its neighbours, and Window.h
 # carries SDL_Window.
 target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset v3dlib_image v3dlib_type Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)

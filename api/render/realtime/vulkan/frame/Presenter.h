@@ -21,17 +21,18 @@
 namespace v3d::render::realtime::vulkan::frame {
 
 /**
- * The acquire / record / submit / present loop, and the synchronization it needs.
+ * Takes each frame through acquire, record, submit and present, and owns the semaphores that
+ * order those steps.
  *
- * The frames recorded ahead of the device are a Ring, which this drives but which works
- * without it. This holds what needs the chain: an image-available semaphore per frame, and a
- * render-finished semaphore per swapchain image. The second is per image rather than per
- * frame, because presentation waits on it and presentation is tied to the image.
+ * Each frame in the Ring has a semaphore that signals when its swapchain image is ready to draw
+ * into. Each swapchain image has a semaphore that signals when drawing into it has finished.
+ * The second kind is per image because a present waits on it, and a present is for one image.
+ * The Ring also works without a Presenter, for drawing offscreen.
  *
- * The submit made by present() is what signals the ring's fence for the frame it recorded.
+ * present() submits the frame's commands. That submit signals the Ring's fence for the frame.
  *
- * Nothing here recreates the swapchain - a caller that is told the chain is out of date
- * recreates it and calls reset(), because only the caller knows the window's new size.
+ * The Presenter never recreates the swapchain. When acquire() or present() returns OutOfDate,
+ * the caller recreates the swapchain at the window's new size, then calls reset().
  **/
 class Presenter final {
  public:
@@ -40,8 +41,8 @@ class Presenter final {
      **/
     enum class Status : std::uint8_t {
         Ready,       /**< there is an image to draw into **/
-        Skip,        /**< there is nothing to draw into and nothing to be done about it - a minimized window **/
-        OutOfDate    /**< the chain no longer matches the surface and has to be rebuilt **/
+        Skip,        /**< there is no image to draw into, as for a minimized window **/
+        OutOfDate    /**< the swapchain does not match the surface and has to be recreated **/
     };
 
     /**
@@ -56,8 +57,8 @@ class Presenter final {
 
     /**
      * @param logger
-     * @param swapchain the chain images are acquired from
-     * @param ring the frames to pace against, whose device is the one that presents
+     * @param swapchain the swapchain to acquire images from
+     * @param ring the frames in flight. Its device presents.
      **/
     Presenter(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Swapchain>& swapchain,
         const boost::shared_ptr<Ring>& ring);
@@ -70,29 +71,29 @@ class Presenter final {
     Presenter& operator=(const Presenter&) = delete;
 
     /**
-     * Wait for the frame's previous submission to finish, take the next image from the
-     * chain, and begin its command buffer.
+     * Wait for the frame's previous submission to finish, acquire the next swapchain image,
+     * and begin the frame's command buffer.
      * @param acquisition filled in when the status is Ready
-     * @throw std::runtime_error if the device fails rather than the chain going stale
+     * @throw std::runtime_error if the device fails. An out-of-date swapchain returns OutOfDate.
      **/
     Status acquire(Acquisition* acquisition);
 
     /**
      * End the command buffer, submit it, and present the image it drew into.
-     * @return OutOfDate when the chain needs rebuilding before the next frame
+     * @return OutOfDate when the swapchain must be recreated before the next frame
      * @throw std::runtime_error if the submission fails
      **/
     Status present(const Acquisition& acquisition);
 
     /**
-     * Rebuild what is sized by the swapchain. Call after recreating the chain, since a
-     * new chain may hold a different number of images.
+     * Recreate the per-image semaphores. Call after recreating the swapchain, because the new
+     * swapchain may hold a different number of images.
      **/
     void reset();
 
     /**
-     * @return the frames this paces against, which anything keeping a resource per frame
-     *         in flight indexes by
+     * @return the Ring. Anything that keeps one resource per frame in flight indexes it by
+     *         the Ring's frame().
      **/
     boost::shared_ptr<Ring> ring() const noexcept;
 
@@ -106,7 +107,7 @@ class Presenter final {
     void destroyImageSync() noexcept;
 
     /**
-     * Destroy every semaphore this holds, for the destructor and for a constructor that threw.
+     * Destroy every semaphore, for the destructor and for a constructor that threw.
      **/
     void destroySync() noexcept;
 

@@ -22,16 +22,17 @@
 namespace v3d::render::realtime::vulkan::frame {
 
 /**
- * The buffers a renderer streams a frame's geometry through, a set per frame in flight.
+ * Buffers that a renderer streams a frame's geometry through, with one set per frame in flight.
  *
- * A submission claims the next pair of the frame being recorded, and a frame takes as many as
- * it submits. The ring identifies the frame. Claims restart from the front of a slot the first
- * time it is claimed from after the ring has begun, begun again, skipped or advanced, so
- * nothing has to signal that a frame ended. A renderer an app built itself reuses its buffers
- * the same way as one the engine holds.
+ * Each claim() takes the next vertex and index buffer pair from the set of the frame being
+ * recorded. A frame holds as many pairs as it has claimed. The Ring identifies the frame. The
+ * first claim after the Ring begins, begins again, skips or advances starts from the front of
+ * the set, so nothing has to signal the end of a frame. A renderer that an app creates reuses
+ * its buffers the same way as one the engine holds.
  *
- * A buffer the content outgrows is replaced by one twice the size, and the old one is retired
- * through the ring rather than destroyed while the device may be reading it.
+ * When content outgrows a buffer, the buffer is replaced by one doubled in size until it fits.
+ * The old buffer is retired through the Ring, so it is not destroyed while the device may read
+ * it.
  **/
 class StreamRing final {
  public:
@@ -44,8 +45,8 @@ class StreamRing final {
     };
 
     /**
-     * What each vertex buffer starts at, and what each index buffer starts at, which is zero for
-     * geometry with no indices.
+     * Sizes in bytes of a vertex buffer and an index buffer. Given to the constructor, they are
+     * the starting sizes, and an index size of zero means no index buffers are made.
      **/
     struct Sizes {
         VkDeviceSize vertexBytes = 0;
@@ -64,8 +65,9 @@ class StreamRing final {
     Geometry claim(const Sizes& sizes);
 
     /**
-     * @return how many sets of buffers are held across every frame in flight - as many as the
-     *         busiest frame claimed, times the frames, and no more however many frames run
+     * @return how many buffer pairs are held across every frame in flight. Each slot holds as
+     *         many as its busiest frame claimed, and the count does not grow with the number
+     *         of frames run.
      **/
     std::size_t held() const noexcept;
 
@@ -81,8 +83,8 @@ class StreamRing final {
     VkDeviceSize indexBytes_;
     std::vector<std::vector<Geometry>> slots_;  /**< a set of geometry per frame in flight, grown as a frame claims more **/
     std::size_t cursor_ = 0;                    /**< how far into the current frame's set the claims have got **/
-    uint64_t counted_ = std::numeric_limits<uint64_t>::max();  /**< the ring's turns() the cursor counts in **/
-    uint32_t countedFrame_ = std::numeric_limits<uint32_t>::max();  /**< the ring's frame() the cursor counts in **/
+    uint64_t counted_ = std::numeric_limits<uint64_t>::max();  /**< the Ring's turns() when cursor_ was last reset **/
+    uint32_t countedFrame_ = std::numeric_limits<uint32_t>::max();  /**< the Ring's frame() when cursor_ was last reset **/
 };
 
 };  // namespace v3d::render::realtime::vulkan::frame

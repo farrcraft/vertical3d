@@ -20,13 +20,12 @@ namespace v3d::render::realtime::vulkan::memory {
 /**
  * A device local buffer, filled through a staging copy.
  *
- * This is the other half of the trade Buffer describes: geometry that is built once and
- * drawn for the life of the process pays for one staging copy at load time and is read
- * out of the memory closest to the device for every frame after it. A batcher rewriting
- * its whole content every frame should use Buffer instead.
+ * Geometry built once and drawn for the life of the process pays for one staging copy at load
+ * time. Every frame after that reads it from the memory closest to the device. A batcher that
+ * rewrites its whole content every frame should use Buffer instead.
  *
- * The buffer is not mapped and cannot be written to directly - upload() is the only way
- * anything reaches it. It waits for the copy and not for frames in flight, so no frame may be
+ * The buffer is not mapped and cannot be written to directly. upload() is the only way to
+ * fill it. upload() waits for the copy and not for frames in flight, so no frame may be
  * reading the buffer when it is called. The constructors upload into a buffer nothing has
  * read yet.
  **/
@@ -35,7 +34,7 @@ class DeviceBuffer final {
     /**
      * @param device the device to allocate on
      * @param uploader runs the staging copy
-     * @param usage what the buffer will be bound as - transfer destination is added
+     * @param usage what the buffer will be bound as. Transfer destination usage is added.
      * @param bytes how large to allocate, which upload() never changes
      * @throw std::runtime_error if the buffer cannot be created or allocated
      **/

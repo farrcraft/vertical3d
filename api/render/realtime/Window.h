@@ -23,8 +23,8 @@ namespace v3d::render::realtime {
  * The window everything is drawn into, and the Vulkan instance and surface that present to it.
  *
  * Every window is a Vulkan window: an app presents through a swapchain whether it draws in two
- * dimensions or three. A 2D app differs from a 3D one in what its passes request - an
- * orthographic camera and no depth - not in the window.
+ * dimensions or three. A 2D app differs from a 3D one in what its passes request, an
+ * orthographic camera and no depth, and not in the window.
  **/
 class Window final {
  public:

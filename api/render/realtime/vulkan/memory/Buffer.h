@@ -16,7 +16,7 @@
 namespace v3d::render::realtime::vulkan::memory {
 
 /**
- * What a buffer is bound as - vertex, index, uniform or transfer - and the size it starts at.
+ * What a buffer is bound as (vertex, index, uniform or transfer), and the size it starts at.
  **/
 struct BufferSpec {
     VkBufferUsageFlags usage = 0;
@@ -26,10 +26,10 @@ struct BufferSpec {
 /**
  * A host visible buffer the CPU writes directly, kept mapped for its whole life.
  *
- * This is the buffer a frame's geometry is built in: a batcher rewrites the whole thing
- * every frame, so a staging copy to device local memory would cost more than the slower
- * reads do. Static geometry needs the opposite trade and should not use this. It is also
- * where a transfer the CPU has to read lands, the same trade in the other direction.
+ * A frame's geometry is built in this buffer. A batcher rewrites all of it every frame, so a
+ * staging copy to device local memory would cost more than the slower reads do. Static
+ * geometry should use DeviceBuffer instead. A transfer that the CPU reads back also lands in
+ * a Buffer.
  *
  * The allocation is coherent, so a write is visible to the device without a flush and a
  * completed transfer is visible to the CPU without an invalidate.

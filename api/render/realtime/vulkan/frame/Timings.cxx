@@ -87,8 +87,8 @@ void Timings::begin(VkCommandBuffer commands, uint32_t slot, bool submitted) {
     }
     active.names.clear();
     active.open = false;
-    // reset in the command buffer rather than on the host, which needs a feature the device
-    // is not asked for
+    // reset in the command buffer. A reset on the host needs the hostQueryReset feature, which
+    // the device does not enable
     vkCmdResetQueryPool(commands, active.pool, 0, capacity * 2);
 }
 
@@ -109,8 +109,8 @@ void Timings::read(Slot* slot) {
     last_.clear();
     last_.reserve(slot->names.size());
     for (std::size_t index = 0; index < slot->names.size(); ++index) {
-        // masked, because a queue writing fewer than 64 bits wraps, and a span across the
-        // wrap is still the difference of the two
+        // masked, because a queue that writes fewer than 64 bits wraps. The masked difference
+        // is still correct for a span across the wrap
         const uint64_t ticks = (stamps[(index * 2) + 1] - stamps[index * 2]) & mask_;
         last_.push_back(Timing{ slot->names[index], static_cast<double>(ticks) * period_ / NANOSECONDS_PER_MILLISECOND });
     }

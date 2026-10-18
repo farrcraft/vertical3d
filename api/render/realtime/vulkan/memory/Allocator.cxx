@@ -28,8 +28,8 @@ namespace {
  **/
 VkResult allocate(VkDevice device, VkPhysicalDevice physical, const VkMemoryRequirements& requirements,
     VkMemoryPropertyFlags properties, Allocation* allocation) {
-    // reported as the suballocator reports it, so that a caller that made a buffer or an image
-    // destroys it on the way out whichever kind of allocator it was given
+    // returned as an error, as the suballocator reports it, so a caller that made a buffer or
+    // an image destroys it on the way out with either kind of allocator
     const std::optional<uint32_t> type = memoryType(physical, requirements, properties);
     if (!type) {
         return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -147,8 +147,7 @@ VkResult Allocator::bind(VkBuffer buffer, VkMemoryPropertyFlags properties, Allo
     }
     const VkResult result = vkBindBufferMemory(device_, buffer, bound.memory, bound.offset);
     if (result != VK_SUCCESS) {
-        // the caller has a buffer to destroy and no allocation to free, so this is given back
-        // here rather than left for a caller that has nothing to name it with
+        // the caller receives no allocation to free, so the memory is freed here
         free(&bound);
         return result;
     }
@@ -187,8 +186,8 @@ void Allocator::free(Allocation* allocation) noexcept {
         return;
     }
     if (allocation->handle != VK_NULL_HANDLE) {
-        // the region is given back to the block it came from, which is not the same thing as
-        // freeing the block - the suballocator decides when that happens
+        // the region goes back to the block it came from. That does not free the block. The
+        // suballocator decides when to free it
         vmaFreeMemory(suballocator_, allocation->handle);
     } else {
         vkFreeMemory(device_, allocation->memory, nullptr);

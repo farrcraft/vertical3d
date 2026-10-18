@@ -53,7 +53,7 @@ class Registry final {
      * now on, and its slot is free for the next add.
      *
      * @return what the handle referred to, for a caller that has to destroy it, or nothing
-     *         if it referred to nothing - a handle released twice, say
+     *         if it referred to nothing, such as a handle released twice
      **/
     std::optional<Resource> release(const Handle<Tag>& handle) {
         Slot* slot = live(handle);

@@ -49,8 +49,8 @@ std::optional<uint32_t> firstJoint(const MeshRegistry::Entry& entry, entt::entit
 
 /**
  * Every entity carrying a transform and a mesh, grouped by the entry it draws. Groups keep the
- * order their first entities were met in, and so do the entities in a group. The draws a walk
- * submits therefore do not depend on how a container hashes. An entity whose entry does not
+ * order their first entities were met in, and so do the entities in a group. The draws
+ * submitted therefore do not depend on how a container hashes. An entity whose entry does not
  * resolve, or a skinned one the poses do not name, is left out.
  *
  * @param castersOnly true to leave out an entity whose mesh casts no shadow
@@ -122,7 +122,7 @@ void meshes(const entt::registry& registry, float alpha, const MeshRegistry& mes
     const std::vector<std::vector<Placed>> groups = gather(registry, alpha, meshes, poses, false);
     const bool outlined = outline > 0.0F;
 
-    // two walks rather than one, so every hull is in the pass before any surface
+    // two loops over the groups, so every hull is submitted before any surface
     for (int walk = outlined ? 0 : 1; walk < 2; walk++) {
         const bool surfaces = walk == 1;
         for (const std::vector<Placed>& group : groups) {

@@ -21,8 +21,8 @@ namespace v3d::render::realtime::vulkan::frame {
 namespace {
 
 /**
- * How many sets a descriptor pool is created with. One set per pass per frame in
- * flight, so a pool covers more frames of passes than anything here will ask for.
+ * How many sets each descriptor pool holds. Each pass of each frame in flight takes one set,
+ * and DescriptorPool adds another pool when one fills.
  **/
 const uint32_t poolSize = 32;
 
@@ -53,8 +53,8 @@ FrameUniforms::FrameUniforms(const boost::shared_ptr<device::Device>& device, co
     camera.binding = 0;
     camera.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     camera.descriptorCount = 1;
-    // a fragment shader needs the camera as often as a vertex shader does - for a view
-    // direction, or for reconstructing a position - so both stages see it
+    // a fragment shader needs the camera too, for a view direction or to reconstruct a
+    // position, so both stages see it
     camera.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pool_ = boost::make_shared<pipeline::DescriptorPool>(device_, ring, std::vector<VkDescriptorSetLayoutBinding>{camera},
         poolSize, "per frame");
@@ -82,8 +82,8 @@ FrameUniforms::Slot FrameUniforms::addSlot() {
     write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     write.pBufferInfo = &buffer;
 
-    // the set points at the buffer for good - a frame writes the buffer's contents, not
-    // the descriptor
+    // the set points at the buffer permanently. A frame writes the buffer's contents, not the
+    // descriptor
     vkUpdateDescriptorSets(device_->handle(), 1, &write, 0, nullptr);
 
     return slot;

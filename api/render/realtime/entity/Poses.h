@@ -28,7 +28,7 @@ namespace v3d::render::realtime::entity {
 class Poses final {
  public:
     /**
-     * @return every matrix, in the order the entities were walked
+     * @return every matrix, in the order the entities were posed
      **/
     const std::vector<glm::mat4>& palette() const noexcept;
 

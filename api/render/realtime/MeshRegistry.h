@@ -48,8 +48,8 @@ class DeviceContext;
  * texture and a material from the context's Textures, shared by every part naming the same
  * image, and the white texture for a part naming none.
  *
- * The vertex layout is type::Model::Vertex - a position, a normal and a uv, 32 bytes - which
- * is what a pipeline drawing an entry declares. A model with a skeleton is uploaded as a
+ * The vertex layout is type::Model::Vertex: a position, a normal and a uv, 32 bytes. A pipeline
+ * that draws an entry declares that layout. A model with a skeleton is uploaded as a
  * SkinnedVertex instead, and keeps its skeleton and clips on the CPU for whatever poses it.
  *
  * A handle is released explicitly, and resolves to nothing at once. An albedo is released with
@@ -75,8 +75,8 @@ class MeshRegistry final {
     };
 
     /**
-     * A skinned model's vertex on the device: the model's vertex, then the joints that move it -
-     * what renderer::Lit's skinned pipelines read.
+     * A skinned model's vertex on the device: the model's vertex, then the joints that move it.
+     * renderer::Lit's skinned pipelines read this layout.
      **/
     struct SkinnedVertex final {
         type::Model::Vertex vertex;
@@ -115,9 +115,9 @@ class MeshRegistry final {
         const boost::shared_ptr<asset::Manager>& assets, const boost::shared_ptr<asset::Worker>& worker = {});
 
     /**
-     * Destroys every mesh still registered at once, the way Resources destroys what it holds,
-     * so it goes after the frames in flight have finished. An albedo still registered with
-     * the context's Textures stays there until the context goes.
+     * Destroys every mesh still registered at once, as Resources does, so destroy the registry
+     * only after the frames in flight have finished. An albedo still registered with the
+     * context's Textures stays there until the context is destroyed.
      **/
     ~MeshRegistry() = default;
 

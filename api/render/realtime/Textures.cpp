@@ -30,8 +30,8 @@ namespace v3d::render::realtime {
 namespace {
 
 /**
- * How many sets a descriptor pool is created with. One set per texture; another pool is
- * added when this one is full.
+ * How many sets each descriptor pool holds. Each texture's material takes one set, and
+ * DescriptorPool adds another pool when one is full.
  **/
 const uint32_t poolSize = 64;
 

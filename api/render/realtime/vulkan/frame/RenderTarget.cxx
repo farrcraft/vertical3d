@@ -100,7 +100,7 @@ RenderTarget::RenderTarget(const boost::shared_ptr<device::Device>& device, cons
     extent_(),
     wantsDepth_(depth),
     sampledDepth_(sampledDepth) {
-    // a slot is chosen by the ring's frame, so any other count would make previous() a frame
+    // a slot is chosen by the Ring's frame(), so any other count would make previous() a frame
     // that is not the one before
     if (images_ != 1 && images_ != ring_->framesInFlight()) {
         throw std::runtime_error("A vulkan render target holds one image or one per frame in flight");
@@ -185,8 +185,8 @@ boost::shared_ptr<memory::Image> RenderTarget::createColour(const VkExtent2D& ex
 /**
  **/
 void RenderTarget::ready(const std::vector<Slot>& slots, const VkExtent2D& extent) const {
-    // a clear by rendering rather than by transfer, because attachment usage is what every
-    // target's images already have
+    // clear by rendering, not by a transfer command, because every target image already has
+    // attachment usage and none has TRANSFER_DST
     const memory::Uploader uploader(device_);
     uploader.oneShot([&slots, &extent](VkCommandBuffer commands) {
         for (const Slot& slot : slots) {
@@ -235,7 +235,7 @@ uint32_t RenderTarget::previous() const noexcept {
 /**
  **/
 const RenderTarget::Slot& RenderTarget::slot() const noexcept {
-    // every accessor then answers null rather than reading past the end
+    // an empty slot, so every accessor returns null instead of reading past the end
     static const Slot none;
     if (slots_.empty()) {
         return none;

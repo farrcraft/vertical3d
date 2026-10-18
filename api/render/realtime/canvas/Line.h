@@ -22,8 +22,8 @@ namespace v3d::render::realtime::canvas {
  *
  * The CPU side of the world space line primitive, and the counterpart of Canvas: filled
  * during a tick and handed to vulkan::renderer::Line, which draws the whole stream as one
- * line list. There is no index buffer - segments rarely share a vertex, so indexing a
- * line list costs more than it saves.
+ * line list. There is no index buffer. Segments rarely share a vertex, so indexing a line
+ * list costs more than it saves.
  *
  * Nothing here calls Vulkan.
  *
@@ -52,7 +52,7 @@ class Line final {
         Batch() noexcept;
 
         bool clipped;           /**< whether the run is cut to clip **/
-        glm::vec4 clip;         /**< the rectangle it is cut to - min x, min y, max x, max y **/
+        glm::vec4 clip;         /**< the rectangle it is cut to: min x, min y, max x, max y **/
         uint32_t firstVertex;   /**< where the run starts in vertices() **/
         uint32_t vertices;      /**< how long the run is **/
     };

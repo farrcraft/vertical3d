@@ -51,10 +51,10 @@ VkImageMemoryBarrier2 colourForDrawing(VkImage image) {
     // races it. Synchronization validation reports that as WRITE_AFTER_READ against
     // vkAcquireNextImageKHR.
     //
-    // FRAGMENT_SHADER is for a render target rather than the swapchain: there is one
-    // image and two frames in flight, so the previous frame may still be sampling it. A
-    // barrier's first scope reaches work already submitted to the queue, so naming the
-    // stage that reads is what orders the two.
+    // FRAGMENT_SHADER is for a render target, not the swapchain. A target with one image is
+    // shared by every frame in flight, so the previous frame may still be sampling it. A
+    // barrier's first scope reaches work already submitted to the queue, so naming the stage
+    // that reads orders the two.
     into.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
     // a write after a read needs the reads to have happened, not to be visible
     into.srcAccessMask = VK_ACCESS_2_NONE;
@@ -75,8 +75,8 @@ VkImageMemoryBarrier2 colourAfterDrawing(VkImage image, VkImageLayout to) {
         out.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
         out.dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
     } else {
-        // presentation is not a pipeline stage - the semaphore it waits on is what
-        // orders it, so the barrier only has to make the writes visible
+        // presentation is not a pipeline stage. The semaphore it waits on orders it, so the
+        // barrier only has to make the writes visible
         out.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
         out.dstAccessMask = VK_ACCESS_2_NONE;
     }
@@ -88,9 +88,9 @@ VkImageMemoryBarrier2 colourAfterDrawing(VkImage image, VkImageLayout to) {
 VkImageMemoryBarrier2 depthForDrawing(VkImage image) {
     VkImageMemoryBarrier2 into = barrier(image, VK_IMAGE_ASPECT_DEPTH_BIT, {.from = VK_IMAGE_LAYOUT_UNDEFINED, .to = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL});
     // one depth image serves every frame in flight, so this transition lands on top of the
-    // last frame's storeOp. A layout transition is a write of its own, and the access bit is
-    // what makes the earlier write available to it - a stage on its own orders nothing.
-    // Depth is written at both fragment test stages
+    // last frame's storeOp. A layout transition is a write of its own. The access bit makes
+    // the earlier write available to it, which a stage mask alone does not. Depth is written
+    // at both fragment test stages
     into.srcStageMask = depthTests;
     into.srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     into.dstStageMask = depthTests;
@@ -159,15 +159,15 @@ VkImageMemoryBarrier2 afterReadback(VkImage image, VkImageAspectFlags aspect, Vk
     out.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
     out.srcAccessMask = VK_ACCESS_2_NONE;
     if (to == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
-        // presentation is not a pipeline stage - the semaphore it waits on is what orders
-        // it, so the barrier only has to put the image back in the layout it expects
+        // presentation is not a pipeline stage. The semaphore it waits on orders it, so the
+        // barrier only has to put the image back in the layout it expects
         out.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
         out.dstAccessMask = VK_ACCESS_2_NONE;
     } else {
-        // anything else is going back to a layout something in this same submit may sample
-        // or draw into, and unlike presentation that use has no semaphore of its own to
-        // order it. The transition is a write, so it has to be complete and visible before
-        // any of them rather than merely before the end of the buffer.
+        // any other layout is one that later work in the same submit may sample or draw into.
+        // Unlike presentation, that work has no semaphore to order it. The transition is a
+        // write, so it has to be complete and visible before any of that work, not merely
+        // before the end of the buffer.
         out.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
         out.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
     }
