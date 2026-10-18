@@ -44,8 +44,9 @@ The sound document lists clips by id:
 - **The game converts a position to a pan**, because which way is left depends on its camera.
   There is no listener and no fall-off with distance.
 - `has(id)` says whether a clip is filed under an id. It works without a device.
-- `busGain(bus, level)` sets the volume of a named bus such as `music` or `sfx`. It may be set
-  before anything plays on that bus.
+- `busGain(bus, level)` sets the gain of every voice playing on a named bus such as `music` or
+  `sfx`. It replaces each voice's own gain, and does not apply to a voice started afterwards.
+  Nothing stores the level.
 - **A device that does not open leaves the app silent, not broken.** `initialize()` returns
   false and logs, clips still load, and playing returns false.
 

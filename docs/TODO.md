@@ -277,6 +277,9 @@ Due when one does.
 logs and abandons such a request, but no fixture decodes cleanly and then fails `upload()`'s
 checks, so the branch never runs in a test.
 
+[] **Nothing binds one value to a colour shader parameter.** `sl::Instance` copies a single
+value to every channel, and no case in `SlShaderLibraryTest` binds fewer than three.
+
 [] **Two things need a window or a sound device to test:** `Feature::Window` and
 `audio::Engine::initialize()`. A software Vulkan driver does not help with either.
 `ui::TextRenderer`'s atlas upload needs a device, which the `render_device` suite could give it.
@@ -292,7 +295,101 @@ Defects a review found that the change under review did not introduce.
 [Review.md](contributing/Review.md) says how this list is used: a reviewer reads it first and
 does not report an entry again. Each entry names its class.
 
-None are open.
+[] **The PNG writer has no error recovery.** Cleanup, major. `writer::Png` installs no
+`setjmp(png_jmpbuf(...))`, so any `png_error`, including its own "Image is too tall", aborts the
+process and leaks `row_pointers`. The error pointer it gives `png_set_error_fn` is the `c_str()`
+of a temporary `std::string`, so `pngtest_warning` reads a dangling pointer as the file name.
+
+[] **The TGA writer writes a wrong footer and can overflow its size.** Semantics and boundary
+input, major.
+
+- `tga_footer` declares both offsets as `int64_t`, so the footer is 34 bytes. TGA 2.0 has a
+  26-byte footer with 4-byte offsets.
+- `width_ * height_ * bytespp` is computed in `unsigned int`, which overflows for an image the
+  writer accepts, up to 65535 on a side.
+
+[] **The base `image::Writer::write` returns true and writes nothing.** Contract, minor. A format
+registered with the base class reports success silently.
+
+[] **A bus volume is not a bus gain.** Contract, major. `audio::Engine::busGain` calls
+`MIX_SetTagGain`, which overwrites the gain of each track tagged at that moment. It does nothing
+when no track plays on the bus and stores nothing. A volume set before anything plays has no
+effect, and a later `play()` resets the track to `Play::gain`.
+
+[] **voxel's camera rotation is undefined.** Contract, major. `Camera::rotateFlight` and
+`rotateFirstPerson` rotate a default-constructed `glm::mat4`, which is uninitialised because the
+tree does not define `GLM_FORCE_CTOR_INIT`. They also pass degrees to `glm::rotate`, which takes
+radians, so the 90 degree pitch clamp does not match the rotation.
+
+[] **voxel's player speed is never read.** Contract, minor. `PLAYER_VELOCITY` is read only by
+`Camera::updateVelocity()`, and that and `updatePosition()` have no caller. `Player::move()` sets
+a velocity of 1, so the player walks at one unit a second.
+
+[] **voxel's perspective may not honour its horizontal field of view.** Semantics, minor.
+`Camera::perspective` multiplies both scales by the aspect ratio, so the horizontal field of view
+equals `fovx` only at an aspect of 1. Check against the intended projection.
+
+[] **A shading language `output` is never copied back.** Semantics, major.
+
+- A shader parameter declared `output` sets `Symbol::output`, which nothing reads.
+- A function formal declared `output` is accepted. `Emitter::emitInline` copies arguments into
+  formals and never copies them back, so a function that writes one leaves the caller's variable
+  unchanged. The shading language passes an output formal by reference.
+
+[] **Two-argument `faceforward(N, I)` uses N as its own reference.** Semantics, minor. RenderMan
+defines the default reference as Ng. The two-argument form is in `sl/runtime/Library.cxx`.
+
+[] **A runtime shader report has no source position.** Contract, minor. The emitter writes a line
+and column into every `sl::runtime::Instruction`, and no machine report reads them.
+
+[] **The RIB reader reads a Sphere's parameters as one vertex.** Semantics, minor.
+`Reader::primitiveRequest` passes `vertices = 1`. RI gives a quadric four varying values, so a
+bracketed varying "Cs" warns about its length and a bare one reads one element. It does not
+matter while spheres ignore their parameter list.
+
+[] **`RiPolygon` reads only "P".** Contract, minor. The RIB path also reads "Cs", "N" and "st",
+so the C entry point and the RIB reader build different polygons from the same request.
+
+[] **A default `camera::Profile::Frame` disagrees with its hand.** Contract, minor. The Frame
+defaults (direction -z, right +x, up +y) form the DirectionCrossUp basis, but a Frame-built
+profile has `hand_` UpCrossDirection and an identity rotation. Its `direction()` is -z while
+`createView()` looks along +z until `lookat()` or `turn()` runs. Check whether a caller relies on
+the defaults.
+
+[] **The glTF loader drops two failures without a word.** Boundary input, minor.
+
+- `influenceOf()` maps a joint index outside the skin to joint 0 at full weight, and sets no
+  `Dropped` flag.
+- `decodeEmbedded()` returns null without logging when an image has neither a buffer view nor a
+  uri. Every other failure in that function logs.
+
+[] **A region load that throws is not logged.** Cleanup, minor. `odyssey/tile/World.cpp` marks
+the region failed and drops the exception held in the `std::expected`.
+
+[] **`CameraControlTool::deactivate` ignores which mode it was given.** Contract, minor. It always
+resets to `CAMERA_MODE_NONE`, so releasing one camera modifier while another is held cancels the
+held move.
+
+[] **A menu `Item` of any type can show a check mark.** Contract, minor. `Item::checked()` returns
+`checked_` whatever the type, unlike `Button::checked()`, which also requires a toggle.
+`ComponentRenderer::panel()` draws a mark for any checked item.
+
+[] **`Immediate::theme()` reads every `Dressing` metric but `indent`.** Contract, minor. A "tools"
+style cannot set the bullet indent.
+
+[] **pong's multiplayer mode is single player.** Contract, minor. `ui::setMultiplayerMode` calls
+`mode(false)`, as single player does, so the computer still plays the right paddle.
+
+[] **`BRep::addEdge(const glm::vec3&)` is declared and never defined.** Build, minor. A call
+compiles and fails to link.
+
+[] **Two tests do not check what they claim.** Weak test, minor.
+
+- odyssey's `a_world_destroyed_before_its_loads_arrive` streams at (1, 1), five tiles from the
+  east region, and `APPROACH` is 4. No load is in flight when the world is destroyed. Streaming
+  at (2, 1) puts one in flight.
+- moya's `framebuffer_negative_bound_test` has no assertion. It passes unless an out-of-range
+  bucket index crashes, and never checks which bucket a primitive lands in.
 
 ## Editor
 
