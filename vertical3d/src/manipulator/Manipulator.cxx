@@ -183,9 +183,9 @@ bool Manipulator::project(const ViewPort& view, const glm::vec3& point, glm::vec
     viewport[3] = static_cast<int>(region.w);
 
     const glm::vec3 projected = camera->project(point, viewport);
-    // outside the depth range is behind the near plane or beyond the far one, and a
-    // point behind a perspective camera lands beyond it rather than looking like one in
-    // front
+    // outside the depth range is behind the near plane or beyond the far one. A point
+    // behind a perspective camera lands outside the range too, so it is not taken for a
+    // point in front
     if (projected.z < 0.0F || projected.z > 1.0F) {
         return false;
     }

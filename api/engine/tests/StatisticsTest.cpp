@@ -21,8 +21,7 @@ using v3d::engine::Statistics;
 constexpr std::uint64_t MS = 1000000ULL;
 
 /**
- * Nothing has happened yet, so there is no mean to report rather than a mean of an array
- * of zeros.
+ * Before the first frame, every count and time reads zero.
  **/
 BOOST_AUTO_TEST_CASE(statistics_empty_test) {
     Statistics statistics;

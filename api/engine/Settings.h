@@ -22,8 +22,8 @@ namespace v3d::engine {
  * unchanged setting follows whatever the build ships. A binding added in a later build
  * therefore reaches a player who already has a settings document.
  *
- * The app defines the schema; this stores only keys, values and a version. Applying a
- * setting is done elsewhere: a binding through Engine::rebind(), a window size through
+ * The app defines the schema. This class stores only keys, values and a version. The app
+ * applies each setting itself: a binding through Engine::rebind(), a window size through
  * Window::request().
  *
  * The document is written whole or not at all: to a temporary file that is then renamed over
@@ -38,8 +38,8 @@ class Settings final {
 
     /**
      * @param org the organization the app belongs to, as userPath() takes it
-     * @param app what this app is called, and never changed once it has been chosen -
-     *        changing it orphans every existing player's settings
+     * @param app what this app is called, never changed once chosen. Changing it orphans
+     *        every existing player's settings
      **/
     Settings(const std::string& org, const std::string& app,
         const boost::shared_ptr<v3d::log::Logger>& logger);
@@ -47,11 +47,12 @@ class Settings final {
     /**
      * Read the document, replacing whatever is held.
      *
-     * A missing file is the common case and not a failure: nothing is held and every read
-     * gives its caller's default. A document this build does not understand is treated the
-     * same way, and a document from a later version additionally makes this read-only, so a
-     * player who downgrades keeps the settings the newer build wrote. An older one is read
-     * forward through asset::readForward(), and one with no version it can read is refused.
+     * A missing file is the common case and not a failure: nothing is held, and every read
+     * gives its caller's default. A document this build cannot read is treated the same way.
+     *
+     * A document from a later version also makes this read-only. A player who downgrades then
+     * keeps the settings the newer build wrote. An older document is migrated through
+     * asset::readForward(). A document with no version this build can read is refused.
      *
      * @return whether a document was read
      **/

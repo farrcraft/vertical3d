@@ -55,17 +55,17 @@ class Controller final : public v3d::engine::Engine {
     bool render() override;
 
     /**
-     * Offer every event to the ui before the bindings map it.
+     * Offer every event to the ui keyboard before the bindings map it.
      *
-     * Only the keyboard goes this way. A press has to interleave with the camera and the
-     * transform tools - drag() offers the ui the press and drives a camera with the one it
-     * did not take - so the cursor is routed from a mapped command.
+     * Only the keyboard goes this way. The ui's share of the mouse is decided in drag(),
+     * from the mapped view::drag command: drag() offers each press to the ui first, and
+     * passes a press the ui did not take to the tools.
      **/
     bool onEvent(const SDL_Event& event) override;
 
     /**
-     * The cursor moved. The view under the cursor decides which camera a drag drives, so
-     * this is where the active view is chosen.
+     * The cursor moved. A drag drives the camera of the view under the cursor, so this
+     * chooses the active view.
      **/
     void handleMotion(const v3d::event::kind::MouseMotion& event);
 
@@ -76,7 +76,8 @@ class Controller final : public v3d::engine::Engine {
 
  protected:
     /**
-     * Bring up the window, read the config, and build the views out of it.
+     * Build the scene, the views, the tools, the renderer and the ui from the config the
+     * engine read.
      * @return whether the editor can run
      **/
     bool start() override;
@@ -143,8 +144,8 @@ class Controller final : public v3d::engine::Engine {
     /**
      * Write the scene out as RIB for the offline renderer.
      *
-     * Export only: topology and a placement per mesh, from the active view's camera.
-     * Nothing reads the RIB back; the editor saves and opens its own project format.
+     * It writes the topology and a placement per mesh, seen from the active view's camera.
+     * Nothing reads the RIB back. The editor saves and opens its own project format.
      **/
     void exportProject();
 
@@ -160,7 +161,8 @@ class Controller final : public v3d::engine::Engine {
     void toggleShow(ViewPort::VisibleFilter filter);
 
     /**
-     * The primary mouse button, which drives three tools - see registerCommands().
+     * The primary mouse button went down or up. It drives the camera, transform and select
+     * tools, and this decides which one takes it.
      **/
     void drag(bool pressed);
 
@@ -217,7 +219,7 @@ class Controller final : public v3d::engine::Engine {
     // names registered a second time, whose handlers would never run. The logger does not
     // exist while the constructor registers, so start() reports them
     std::vector<std::string> refused_;
-    // the dispatcher holds a delegate to this object; these let it go when the object does
+    // the dispatcher holds delegates to this object. These disconnect them when it is destroyed
     entt::scoped_connection motion_;
     entt::scoped_connection resize_;
 };

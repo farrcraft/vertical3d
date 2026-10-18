@@ -41,7 +41,7 @@ class HalfEdge {
  private:
     Index vertex_;  // vertex at end of half edge
     Index face_;  // face to left of edge
-    Index pair_;  // symetric half edge
+    Index pair_;  // the opposite half edge of the same edge
     Index next_;  // next CCW half edge
     bool selected_;
 };

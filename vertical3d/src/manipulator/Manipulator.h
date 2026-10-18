@@ -27,15 +27,14 @@ namespace v3d::editor {
  * the object's own origin because the transform pivots there, so a rotation turns about
  * the point the handles show.
  *
- * Handles are picked by testing each one against the cursor on the CPU, and drawn
- * through canvas::Line. They are sized in world
- * units taken from the view, so a handle keeps roughly the same length on screen
- * however far away the object is.
+ * Handles are picked by testing each one against the cursor on the CPU, and drawn through
+ * canvas::Line. They are sized in world units taken from the view, so a handle keeps
+ * roughly the same length on screen however far away the object is.
  *
- * A drag is one motion event at a time: apply() is given the two cursor positions
- * either side of the move and adds what it measures to the transform. Writing an
- * absolute position instead would snap the object to the gesture rather than move it
- * by the gesture.
+ * A drag is applied one motion event at a time. apply() is given the cursor positions
+ * before and after the move, and adds what it measures to the transform. Writing an
+ * absolute position instead would snap the object to the gesture, not move it by the
+ * gesture.
  **/
 class Manipulator {
  public:
@@ -98,7 +97,7 @@ class Manipulator {
      **/
     struct Placement final {
         /**
-         * False when there is nothing to draw for - no mesh, or a view with no area.
+         * False when there is nothing to draw for: no mesh, or a view with no area.
          **/
         bool valid;
         /**

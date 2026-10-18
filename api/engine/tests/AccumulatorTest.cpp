@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(accumulator_clamp_test) {
         drained++;
     }
     BOOST_CHECK_EQUAL(drained, 15U);
-    // thirty seconds arrived and a quarter of a second of it was simulated - the rest is gone
+    // thirty seconds arrived and a quarter of a second of it was simulated. The rest is dropped
     BOOST_CHECK_EQUAL(accumulator.simulated(), 15ULL * Accumulator::step);
 }
 

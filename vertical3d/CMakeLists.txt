@@ -49,8 +49,8 @@ target_link_libraries(vertical3d PRIVATE
 v3d_add_shared_data(vertical3d)
 v3d_add_app_data(vertical3d)
 
-# a console subsystem executable is given a console of its own alongside the app's window.
-# main is reached through the WinMain that SDL_main.h supplies.
+# a windows subsystem executable, so no console opens beside the app's window. It starts in
+# the WinMain that SDL_main.h supplies, and WinMain calls main.
 set_target_properties(vertical3d PROPERTIES WIN32_EXECUTABLE TRUE)
 
 target_compile_options(vertical3d PRIVATE /EHsc)

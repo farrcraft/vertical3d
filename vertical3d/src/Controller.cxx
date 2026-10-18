@@ -175,7 +175,6 @@ bool Controller::buildUi() {
     // The text measure is the renderer's, so a press inside a text box places the caret
     // on the character drawn under the pointer
     uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher(), renderer_->measure());
-    // the keyboard adapter comes from the api's shell rather than being written here
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher(), window());
     chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui_);
 
@@ -485,8 +484,8 @@ void Controller::drag(bool pressed) {
         return;
     }
 
-    // the primary mouse button, whose number the input layer does not put on the mapped
-    // event - the binding names which button it is
+    // the primary mouse button. The mapped event carries no button number, because the
+    // binding names which button it is
     cameraTool_->button(1, pressed, cursor_);
     // one button drives three tools. With a modifier held, the drag drives a camera.
     // Otherwise a handle of the selection under the cursor takes the press, and a press no
@@ -554,14 +553,14 @@ void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
     cursor_ = event.position();
 
     const bool dragging = (cameraTool_ && cameraTool_->dragging()) || (transformTool_ && transformTool_->dragging());
-    // a gesture under way keeps the cursor wherever it goes, so a drag that wanders under
-    // a strip is not interrupted by it
+    // while a drag is under way the ui is not offered the cursor, so a drag that passes
+    // over the menu bar or a toolbar is not interrupted
     if (!dragging && uiMotion(cursor_)) {
         return;
     }
 
-    // the view under the cursor is the one a drag would drive - but not while one is
-    // under way, or a gesture that wandered over a border would change camera mid drag
+    // the view under the cursor becomes the one a drag drives. It does not change during a
+    // drag, so a drag that crosses a border between views keeps its camera
     if (!dragging) {
         const std::size_t index = layout_->viewAt(cursor_.x, cursor_.y);
         if (index < views_.size()) {

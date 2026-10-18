@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(brep_identity_test) {
 
     // a mesh is a dag::Node, so it has an id for the selection model to key on
     BOOST_CHECK(first.id() != second.id());
-    // which a copy would share with its original
+    // a copy would share that id with its original, so a mesh cannot be copied
     static_assert(!std::is_copy_constructible_v<v3d::brep::BRep>);
     static_assert(!std::is_copy_assignable_v<v3d::brep::BRep>);
 
@@ -167,8 +167,8 @@ BOOST_AUTO_TEST_CASE(brep_selection_test) {
 }
 
 /**
- * A mesh built face by face holds only what it refers to, and one whose references reach past
- * what it holds - as a document edited by hand might - says which reference it is.
+ * A mesh built face by face refers only to what it holds. A mesh with a reference past what it
+ * holds, as a hand-edited document might have, fails validation and names that reference.
  **/
 BOOST_AUTO_TEST_CASE(brep_validate_test) {
     v3d::brep::BRep mesh;

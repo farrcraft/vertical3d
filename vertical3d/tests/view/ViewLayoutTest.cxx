@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE(viewlayout_covers_the_window_test) {
     BOOST_REQUIRE(layout.load(config(quad)));
 
     // an odd size does not divide evenly, and the last child of a split takes what integer
-    // division left over - otherwise there is a gap of pixels no pass ever draws into
+    // division left over. Otherwise there would be a gap of pixels no pass draws into
     layout.resize(1025, 769);
 
     BOOST_CHECK_EQUAL(layout.views()[0].region.z + layout.views()[1].region.z, 1025.0F);
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(viewlayout_hit_test) {
 }
 
 BOOST_AUTO_TEST_CASE(viewlayout_single_view_test) {
-    // a layout does not have to split at all - one viewport covering the window is valid
+    // a layout does not have to split at all: one viewport covering the window is valid
     v3d::editor::ViewLayout layout(logger());
     BOOST_REQUIRE(layout.load(config("{\"layout\": {\"root\": {\"camera\": \"Perspective\"}}}")));
 

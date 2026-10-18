@@ -7,8 +7,8 @@
 
 #include <string>
 
-// the mixer's handles, named here and defined in SDL_mixer.h, which only this library's
-// sources include - so a consumer of these headers needs nothing from SDL3_mixer
+// the mixer's handles, declared here and defined in SDL_mixer.h. Only this library's sources
+// include SDL_mixer.h, so a consumer of these headers needs nothing from SDL3_mixer
 struct MIX_Audio;
 struct MIX_Mixer;
 struct MIX_Track;

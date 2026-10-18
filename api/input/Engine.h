@@ -23,8 +23,8 @@
 
 namespace v3d::input {
 /**
- * The Input Engine is responsible for handling input from supported/registered
- * devices, e.g. mouse, keyboard.
+ * Owns the input devices an app asked for, the keyboard and the mouse, and offers each polled
+ * event to them.
  **/
 class Engine final {
  public:
@@ -43,14 +43,14 @@ class Engine final {
     void flush();
 
     /**
-     * @return what the keyboard holds and what changed edge this frame, or nullptr when the
-     *         engine was built without DeviceType::Keyboard
+     * @return the keys held and this frame's edges, or nullptr when the engine was built
+     *         without DeviceType::Keyboard
      **/
     const KeyState* keys() const;
 
     /**
-     * @return what the mouse holds, where its cursor is and what changed edge this frame, or
-     *         nullptr when the engine was built without DeviceType::Mouse
+     * @return the buttons held, the cursor position and this frame's edges, or nullptr when
+     *         the engine was built without DeviceType::Mouse
      **/
     const MouseState* mouse() const;
 

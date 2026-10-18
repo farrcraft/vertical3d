@@ -57,7 +57,7 @@ class TransformTool final : public Tool {
     void button(unsigned int button, bool pressed, const glm::vec2& position) override;
 
     /**
-     * Where a finished gesture is recorded. A tool with no stack still transforms;
+     * Where a finished gesture is recorded. A tool with no stack still transforms, but
      * nothing it does can then be undone.
      **/
     void commands(const boost::shared_ptr<CommandStack>& commands);
@@ -104,8 +104,8 @@ class TransformTool final : public Tool {
  private:
     /**
      * Record the gesture that has just ended, if it moved anything. Every path out of a
-     * drag comes through here - a release and a mode change alike - because a change
-     * that reached the mesh but not the stack could not be undone.
+     * drag, a release or a mode change, comes through here. A change that reached the mesh
+     * but not the stack could not be undone.
      **/
     void commit();
 

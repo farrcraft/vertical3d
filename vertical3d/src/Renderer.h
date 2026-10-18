@@ -32,19 +32,18 @@ namespace v3d::editor {
 /**
  * The editor's frame: two passes per viewport, over one device.
  *
- * Four views of one scene are four pairs of passes with four cameras. Each pass carries
- * its viewport's region as its scissor and its camera at set 0, and the scene pass clears
- * its own region. The split into views is therefore a property of the frame, not of the
- * window.
+ * Each view of the scene is a pair of passes with the view's own camera. Each pass carries
+ * its viewport's region and its camera at set 0, and the scene pass clears only its own
+ * region. The split into views is therefore a property of the frame, not of the window.
  *
  * A scene pass depth tests, so a wireframe is occluded by what is in front of it. All the
  * scene passes share one depth buffer, and each clears it within its own region. The
  * handle pass that follows does not depth test and keeps what the scene pass left,
  * because the manipulator is an overlay.
  *
- * One more pass follows all of them, over the whole window rather than a view, and draws
- * the ui. It draws quads rather than lines, because panels and glyphs both go through
- * the batched quad pipeline.
+ * One more pass follows all of them. It covers the whole window, not one view, and draws
+ * the ui. It draws quads, not lines, because panels and glyphs both go through the batched
+ * quad pipeline.
  */
 class Renderer final {
  public:
@@ -68,7 +67,7 @@ class Renderer final {
     void views(const std::vector<boost::shared_ptr<ViewPort>>& views);
 
     /**
-     * What every view draws. One scene, four passes.
+     * The one scene every view draws.
      **/
     void scene(const boost::shared_ptr<Scene>& scene);
 
@@ -99,7 +98,7 @@ class Renderer final {
     glm::vec2 insets() const;
 
     /**
-     * Draw one frame - a pass per view.
+     * Draw one frame: two passes per view, then the ui pass.
      *
      * @param statistics what the loop measured about the frame being drawn, which the
      *        overlay reads. The app passes it in because api/ui cannot depend on api/engine
@@ -134,10 +133,10 @@ class Renderer final {
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<Manipulator> manipulator_;
     std::vector<boost::shared_ptr<ViewPort>> views_;
-    // one canvas per view rather than one shared: a canvas becomes a single draw item,
-    // and each is filled before any of them is submitted
+    // one canvas per view. Each view fills its own and submits it before the next view
+    // draws, and the submit copies it
     std::vector<v3d::render::realtime::canvas::Line> canvases_;
-    // and one more per view for the handles, which are drawn in a pass of their own
+    // one more canvas per view for the handles, which are drawn in a pass of their own
     std::vector<v3d::render::realtime::canvas::Line> overlays_;
 
     boost::shared_ptr<v3d::ui::Engine> ui_;

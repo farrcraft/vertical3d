@@ -33,41 +33,41 @@ namespace v3d::audio {
 /**
  * A sound that has been started, for as long as it is playing.
  *
- * An id rather than a pointer, so that a handle to a sound that has since finished is
- * refused rather than being a pointer to a track the engine has recycled underneath it.
- * None is no sound at all, which a failed play() returns. Every other value is a count that
- * play() makes, so the base is as wide as that count, not as wide as None.
+ * An id, not a pointer. The engine reuses the track of a finished sound, and a handle to that
+ * sound is refused instead of reaching the reused track. None is no sound at all, and a failed
+ * play() returns it. Every other value comes from a counter in play(), so the base type is as
+ * wide as that counter.
  **/
 // NOLINTNEXTLINE(performance-enum-size)
 enum class Voice : uint32_t { None = 0 };
 
 /**
- * An Audio / Sound processing engine
+ * Plays loaded clips through one audio device, and plays each Sound event the dispatcher
+ * carries.
  **/
 class Engine final {
  public:
     Engine(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher>& dispatcher);
     /**
-     * Shuts down, so the device, the tracks and the dispatcher's delegate to this engine
-     * go with it whether or not the owner called shutdown() itself.
+     * Calls shutdown(), so the device, the tracks and the dispatcher connection are released
+     * whether or not the owner called shutdown() itself.
      **/
     ~Engine();
     Engine(const Engine&) = delete;
     Engine& operator=(const Engine&) = delete;
 
     /**
-     * Turns the source a sound config names into a loaded clip. This library never reaches
-     * the asset manager itself, so an app whose clips do not come from files supplies one of
-     * these. The manager overload of load() below wraps the asset manager in one, for an app
-     * that loads its clips as assets.
+     * Turns the source a sound config names into a loaded clip. An app whose clips do not
+     * come from files supplies one of these. The asset::Manager overload of load() wraps the
+     * manager in one, for an app that loads its clips as assets.
      **/
     typedef std::function<boost::shared_ptr<AudioClip>(const std::string& source)> Resolve;
 
     /**
      * Open an audio device.
      *
-     * @return false when none opened, which leaves the engine silent rather than unusable -
-     *         a clip still loads and files, and playing one is a false return
+     * @return false when no device opened. The engine is then silent but still usable: a
+     *         clip still loads and is stored, and play() returns Voice::None
      **/
     bool initialize();
     void shutdown();
@@ -75,10 +75,10 @@ class Engine final {
     /**
      * Load every clip a sound config names, through the resolver the app supplies.
      *
-     * @param doc the document, an array of clip ids over the files that hold them
+     * @param doc the document, whose "sounds" array holds a clip_id and a file for each clip
      * @param resolve what turns one of those files into a clip
      * @return false when the document is malformed, or when a clip it named would not
-     *         load - the clips that did load are kept either way
+     *         load. The clips that did load are kept either way
      **/
     bool load(const boost::json::object & doc, const Resolve & resolve);
 
@@ -90,16 +90,16 @@ class Engine final {
     bool load(const boost::json::object & config, v3d::asset::Manager & assets);
 
     /**
-     * File an already loaded clip under the id a sound event will name.
+     * Store an already loaded clip under the id a sound event will name.
      *
-     * @return false for a clip holding no audio, which playClip would hand to the mixer
-     *         as a null
+     * @return false for a clip holding no audio, which play() would otherwise hand to the
+     *         mixer as a null
      **/
     bool addClip(const boost::shared_ptr<AudioClip> & clip, const std::string_view & key);
 
     /**
-     * Whether a clip is filed under an id. This needs no device, so it shows what load()
-     * and addClip() filed on a machine that has none.
+     * Whether a clip is stored under an id. This needs no device, so it shows what load()
+     * and addClip() stored on a machine that has none.
      **/
     bool has(const std::string_view & clip) const;
 
@@ -140,7 +140,7 @@ class Engine final {
     bool playing(Voice voice) const;
 
     /**
-     * Set one sound's own volume, which multiplies its bus's.
+     * Set one sound's volume. It replaces any volume busGain() gave the sound.
      *
      * @return false for a voice that is not playing
      **/
@@ -154,12 +154,12 @@ class Engine final {
     bool pan(Voice voice, float value);
 
     /**
-     * Set a bus's volume, which every sound started on it is multiplied by.
+     * Set the volume of every sound playing on a bus now. It replaces each sound's own gain.
      *
-     * The bus need not exist yet: a settings screen writes the volumes before anything has
-     * played, and a sound started on that bus afterwards is mixed at what was set.
+     * The level is not stored. A sound started on the bus afterwards plays at its Play::gain,
+     * and a bus with nothing playing on it is left unchanged.
      *
-     * @return false when there is no device
+     * @return false when there is no device, or for an empty bus name
      **/
     bool busGain(const std::string & bus, float level);
 
@@ -175,9 +175,9 @@ class Engine final {
     };
 
     /**
-     * Give a track the gains of a pan. A centred pan clears the track's gains rather than
-     * setting both to one, so a track handed back from a panned sound plays the next one
-     * exactly as the mixer would unpanned.
+     * Give a track the gains of a pan. A centred pan clears the track's stereo gains instead
+     * of setting both to one. A track reused after a panned sound then plays the next sound
+     * exactly as an unpanned track would.
      **/
     static bool place(MIX_Track* track, float pan);
 
@@ -216,7 +216,7 @@ class Engine final {
     std::map<Voice, Playing> voices_;
     std::vector<MIX_Track*> free_;   /**< reaped tracks, waiting to be played again **/
     uint32_t nextVoice_ = 1;         /**< never reused, so a stale handle stays stale **/
-    // after dispatcher_, so it disconnects before the dispatcher it points into can go
+    // declared after dispatcher_, so it disconnects before the dispatcher is destroyed
     entt::scoped_connection sound_;
 };
 

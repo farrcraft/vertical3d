@@ -27,8 +27,8 @@ void Statistics::frame(std::chrono::nanoseconds took, unsigned int steps) noexce
     const std::uint64_t frame = static_cast<std::uint64_t>(took.count());
     last_ = frame;
     steps_ = steps;
-    // the slot being overwritten leaves the window, so the running total loses it rather
-    // than the mean summing the array again every frame
+    // the slot being overwritten leaves the window, so it comes off the running total. The
+    // mean then does not have to sum the array every frame
     total_ -= recent_[next_];
     total_ += frame;
     recent_[next_] = frame;

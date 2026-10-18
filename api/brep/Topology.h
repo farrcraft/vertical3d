@@ -19,8 +19,8 @@ namespace v3d::brep {
 /**
  * The half edges of one face, in order.
  *
- * A half edge names the next edge round its face, so a face's geometry is reached by walking
- * the chain - there is no array of a face's vertices to index into.
+ * A half edge names the next half edge round its face. A face's geometry is found by
+ * following those links, because there is no array of a face's vertices.
  *
  * Each half edge appears at most once, so the result never holds more entries than the
  * mesh has half edges. An unfinished modelling operation can leave a next chain that does

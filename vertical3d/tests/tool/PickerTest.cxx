@@ -31,8 +31,8 @@ namespace {
 
 /**
  * A square front view, four hundred pixels on a side, of the default orthographic
- * profile: the eye is at z of -1 looking along +z, and the volume spans [-1, 1] on both
- * axes - so the unit primitives cover the middle half of it and a world unit is two
+ * profile. The eye is at z of -1 looking along +z, and the volume spans [-1, 1] on both
+ * axes. The unit primitives therefore cover the middle half of it, and a world unit is two
  * hundred pixels.
  **/
 boost::shared_ptr<v3d::editor::ViewPort> frontView() {
@@ -88,8 +88,8 @@ BOOST_AUTO_TEST_CASE(picker_nearest_test) {
     front->translation(glm::vec3(0.0F, 0.0F, 2.0F));
     const unsigned int id = scene.add(front);
 
-    // both are under the cursor, and the one nearer the camera along the ray wins - the
-    // second added, so insertion order is not what decides it
+    // both are under the cursor, and the one nearer the camera along the ray wins. It is
+    // the second added, so insertion order does not decide it
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::Picker picker;
     const v3d::editor::Picker::Hit hit = picker.pick(scene, *view, glm::vec2(200.0F, 200.0F),
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(picker_transform_test) {
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::Picker picker;
 
-    // the mesh is picked where it is drawn, which is through its transform - the middle of
+    // the mesh is picked where it is drawn, which is through its transform. The middle of
     // the view is now beside it
     const v3d::editor::Picker::Hit centre = picker.pick(scene, *view, glm::vec2(200.0F, 200.0F),
         v3d::editor::SelectMask::Object);

@@ -18,13 +18,13 @@ namespace v3d::editor {
 /**
  * Resizes the selection: a box on a stalk per axis, and a box at the centre.
  *
- * Dragging a handle out to twice its length doubles the object along that axis, so the
- * gesture is proportional rather than a number of world units - a small object and a
- * large one resize at the same rate under the cursor. The centre handle scales all
- * three axes together.
+ * Dragging a handle out to twice its length doubles the object along that axis. The
+ * gesture is proportional, not a number of world units, so a small object and a large one
+ * resize at the same rate under the cursor. The centre handle scales all three axes
+ * together.
  *
- * The handles are always the object's own axes: a scale is a vector in those axes and
- * a global one could not be written back through the transform.
+ * The handles always follow the object's own axes. A scale is a vector in those axes, and
+ * a scale along global axes could not be written back through the transform.
  **/
 class ScaleManipulator final : public Manipulator {
  public:

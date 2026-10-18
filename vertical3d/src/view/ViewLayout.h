@@ -20,8 +20,8 @@ namespace v3d::editor {
  * How the window is divided into viewports, loaded from data/layout.json.
  *
  * The config describes the window as a tree of nested splits with a viewport at each
- * leaf. There are no widgets here, so the tree is flattened into one pixel region per
- * viewport, and a pass draws into that region.
+ * leaf. The tree is flattened into one pixel region per viewport, and a pass draws into
+ * that region.
  *
  * A split divides its area evenly between its children, and the divisions are fixed. A split
  * with no children is refused, at any depth.
@@ -29,7 +29,7 @@ namespace v3d::editor {
 class ViewLayout final {
  public:
     /**
-     * One viewport of the layout - which camera profile it shows and where it is.
+     * One viewport of the layout: which camera profile it shows, and where it is.
      **/
     struct View final {
         View();
@@ -50,7 +50,7 @@ class ViewLayout final {
 
     /**
      * Read the layout tree.
-     * A layout with no viewport in it is rejected - there would be nothing to draw.
+     * A layout with no viewport in it is rejected, because it would draw nothing.
      *
      * @param config the parsed layout.json
      * @return whether the tree was understood
@@ -67,8 +67,9 @@ class ViewLayout final {
     void resize(int width, int height);
 
     /**
-     * Divide a region of the window between the views, rather than the whole of it. The
-     * menu bar takes a strip off the top, and the views have the rest.
+     * Divide a region of the window between the views, not the whole of it. The menu bar
+     * and the toolbars cover strips along the top and left edges, and the views have the
+     * rest.
      **/
     void resize(const glm::vec4& region);
 

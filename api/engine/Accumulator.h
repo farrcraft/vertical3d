@@ -10,11 +10,11 @@
 namespace v3d::engine {
 
 /**
- * Real time in, whole simulation steps out.
+ * Turns elapsed real time into whole simulation steps.
  *
- * The loop passes each frame's elapsed time to accumulate() and then drains the steps now
- * due, one fixed step at a time. The timing arithmetic lives here, apart from the loop, so it
- * can be tested without a window or a device.
+ * The loop passes each frame's elapsed time to accumulate(). It then calls drain() once for
+ * each step now due. The timing arithmetic is kept apart from the loop so that it can be
+ * tested without a window or a device.
  **/
 class Accumulator final {
  public:

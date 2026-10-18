@@ -256,8 +256,8 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
 
     Manipulator::Axis axis = Manipulator::Axis::None;
     if (!current->grab(mesh, *view_, position, &axis)) {
-        // no handle under the cursor, so the press is not this tool's - the controller
-        // passes it on to the one that selects
+        // no handle under the cursor, so the press is not this tool's. The controller
+        // passes it on to the select tool
         current->active(false);
         return;
     }

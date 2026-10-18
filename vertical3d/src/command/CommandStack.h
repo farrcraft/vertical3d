@@ -17,12 +17,12 @@ namespace v3d::editor {
 /**
  * The editor's history: what has been done, and what has been undone out of it.
  *
- * Pushing never applies anything, because a command arrives already done. Pushing
- * discards whatever had been undone: a new change starts a new branch of the history, so
+ * Pushing never applies anything, because a command arrives already done. Pushing also
+ * discards whatever had been undone. A new change starts a new branch of the history, so
  * the undone commands cannot be redone.
  *
- * The stack has a capacity so that a session's history cannot grow without bound. The
- * oldest commands are dropped first, since they are furthest from being undone.
+ * The stack has a capacity, so a session's history cannot grow without bound. The oldest
+ * commands are dropped first, because they are the last to be undone.
  **/
 class CommandStack final {
  public:

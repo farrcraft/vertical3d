@@ -53,7 +53,7 @@ const char* const uiPass = "ui";
 /**
  * How large the whole ui is drawn, as a multiple of the size it was laid out at.
  *
- * Every metric below is a multiple of the text size and the text size is a multiple of
+ * Every metric below is a multiple of the text size, and the text size is a multiple of
  * this, so the editor scales by one number. Glyphs are distance fields, so a new scale
  * does not need a rebuilt atlas.
  **/
@@ -227,16 +227,16 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
  **/
 void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame,
     const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
-    // the overlay draws onto the same canvas, so this runs for it whether or not there is
-    // a ui to draw as well
+    // the statistics overlay draws onto the same canvas, so this runs even when there is no
+    // ui to draw
     screen_->draw(ui_.get(), statistics);
     const v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
     if (canvas.empty()) {
         return;
     }
 
-    // over the whole window rather than a view, and over what every view left. A canvas
-    // carries its own projection, so this pass needs no camera
+    // this pass covers the whole window, over what every view drew. A canvas carries its
+    // own projection, so this pass needs no camera
     const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(uiPass);
     pass->keepColour();
     pass->depth(false);

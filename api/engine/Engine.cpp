@@ -100,8 +100,8 @@ bool Engine::initialize() {
     if (!start()) {
         return false;
     }
-    // a key bound to a command nothing handles does nothing when pressed, and says nothing
-    // either, so each one is reported here
+    // a key bound to a command nothing handles does nothing when pressed. Each such binding
+    // is reported here, at startup, rather than only when the key is first pressed
     for (const std::string& command : unhandled()) {
         logger_->get()->error("{} is bound to a key, but nothing handles it", command);
     }
@@ -112,7 +112,6 @@ bool Engine::initialize() {
  **/
 bool Engine::loadConfig() {
     config_ = boost::make_shared<v3d::config::Config>(logger_);
-    // Load config (through the asset manager)
     if (!config_->load(assetManager_)) {
         return false;
     }
@@ -155,12 +154,11 @@ void Engine::startInput() {
 /**
  **/
 bool Engine::openWindow() {
-    // Initialize SDL
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         logger_->get()->error("SDL could not initialize! SDL_Error: {}", SDL_GetError());
         return false;
     }
-    // We've reached a point of initialization that will require a shutdown
+    // from here on, shutdown() or ~Engine has to destroy the window and quit SDL
     needShutdown_ = true;
 
     window_ = boost::make_shared<v3d::render::realtime::Window>(logger_);
@@ -244,8 +242,8 @@ bool Engine::shutdown() {
     bool released = true;
     if (!released_) {
         released_ = true;
-        // a release that throws leaves the window and SDL to ~Engine, which runs after the
-        // app's own members are destroyed, so whatever presents to the window still goes first
+        // when release() throws, ~Engine destroys the window and quits SDL. ~Engine runs
+        // after the app's own members are destroyed, so a renderer still goes before the window
         released = release();
     }
     if (!needShutdown_) {
@@ -290,8 +288,8 @@ std::vector<std::string> Engine::unhandled() const {
 /**
  **/
 std::vector<std::string> Engine::unhandled(const boost::json::object& document) const {
-    // the bindings install what they read into an event engine, so they are given one of
-    // their own rather than the one the loop routes through
+    // the bindings install what they read into an event engine. They get a private one here,
+    // not the one the loop routes through
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     v3d::event::Bindings bindings(boost::make_shared<v3d::event::Engine>(dispatcher), boost::make_shared<v3d::log::Logger>());
     if (!bindings.load(document)) {
@@ -309,8 +307,8 @@ bool Engine::render() {
 /**
  **/
 void Engine::route(const SDL_Event& event) {
-    // the app is offered the event first, because it draws over the scene and so is what
-    // the cursor points at. An event the app consumes never reaches the bindings
+    // the app sees the event first, because its ui draws over the scene and the cursor
+    // points at the ui first. An event the app consumes never reaches the bindings
     if (!onEvent(event) && inputEngine_ && inputEngine_->filterEvent(event)) {
         return;
     }
@@ -343,8 +341,8 @@ void Engine::handleEvent(const SDL_Event& event) {
         }
         dispatcher_->trigger(v3d::event::kind::WindowResize(glm::ivec2(event.window.data1, event.window.data2)));
         break;
-    // a key released while the window is unfocused never arrives, so an app that drops
-    // held input on focus loss is told when focus goes rather than polling for it
+    // a key released while the window is unfocused never arrives. WindowFocus lets an app
+    // drop held input when focus goes
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
         dispatcher_->trigger(v3d::event::kind::WindowFocus(true));
         break;
@@ -376,9 +374,7 @@ bool Engine::eventLoop() {
     if (window_ && window_->created()) {
         minimized_ = (SDL_GetWindowFlags(window_->sdl()) & SDL_WINDOW_MINIMIZED) != 0;
     }
-    // Enter main game loop
     while (!quitting_) {
-        // Handle events on queue
         while (SDL_PollEvent(&event) && !quitting_) {
             route(event);
         }
@@ -387,8 +383,8 @@ bool Engine::eventLoop() {
         if (quitting_) {
             break;
         }
-        // a minimized window shows nothing, so rather than present empty frames the loop
-        // sleeps until an event arrives. The wait is not a frame, so the clock restarts after it
+        // a minimized window shows nothing, so the loop sleeps until an event arrives instead
+        // of presenting frames. The wait is not a frame, and the clock restarts after it
         if (minimized_) {
             if (SDL_WaitEvent(&event)) {
                 route(event);
@@ -411,7 +407,6 @@ bool Engine::eventLoop() {
                 return false;
             }
         }
-        // draw the frame on the screen
         if (!render()) {
             return false;
         }

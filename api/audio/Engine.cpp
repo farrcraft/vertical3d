@@ -61,9 +61,9 @@ void Engine::shutdown() {
 }
 
 bool Engine::initialize() {
-    // the mixer opens a device out of SDL's audio subsystem, which the game engine does
-    // not ask for - it initialises video only. The subsystem is refcounted, and this call
-    // pairs with the SDL_QuitSubSystem in shutdown().
+    // the mixer opens a device from SDL's audio subsystem. The game engine initializes only
+    // video, so this starts audio. The subsystem is reference counted, and this call pairs
+    // with the SDL_QuitSubSystem in shutdown().
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
         logger_->get()->error("could not initialize SDL audio: {}", SDL_GetError());
         return false;
@@ -121,8 +121,8 @@ bool Engine::load(const boost::json::object& doc, const Resolve& resolve) {
         }
         const std::string& clipId = *clip;
         const std::string& fileName = *file;
-        // a clip that will not load leaves the rest of the document to load anyway - one
-        // missing wav is not a reason to start an app without any of its sounds
+        // a clip that will not load does not stop the rest of the document from loading.
+        // One missing wav does not leave the app without any of its sounds
         if (!resolve || !addClip(resolve(fileName), clipId)) {
             logger_->get()->error("unable to load audio clip [{}] from [{}]", clipId, fileName);
             loaded = false;
@@ -140,8 +140,8 @@ bool Engine::load(const boost::json::object& config, v3d::asset::Manager& assets
 }
 
 bool Engine::addClip(const boost::shared_ptr<AudioClip>& clip, const std::string_view& key) {
-    // playClip hands the audio to the mixer, so a clip that never read its file is
-    // refused here rather than reaching it as a null
+    // play() hands the audio to the mixer. A clip that never read its file is refused here,
+    // so the mixer never receives a null
     if (!clip || clip->audio() == nullptr) {
         return false;
     }
@@ -157,8 +157,7 @@ bool Engine::has(const std::string_view & clip) const {
 }
 
 bool Engine::playClip(const std::string_view & clip) {
-    // a one shot nobody holds is still a track underneath, so that it can be stopped by
-    // stopAll() and mixed on whatever the master gain is
+    // a one shot plays on a track like any other sound, so stopAll() stops it too
     return play(clip, Play()) != Voice::None;
 }
 
@@ -174,8 +173,7 @@ void Engine::reap() {
 
 std::map<Voice, Engine::Playing>::iterator Engine::retire(const std::map<Voice, Playing>::iterator & playing) {
     if (!playing->second.bus.empty()) {
-        // an untagged track, so that being played again on another bus does not leave it
-        // mixed on both
+        // untag the track, so that a reuse on another bus does not leave it on both
         MIX_UntagTrack(playing->second.track, playing->second.bus.c_str());
     }
     free_.push_back(playing->second.track);

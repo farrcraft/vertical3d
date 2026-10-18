@@ -156,8 +156,8 @@ void Picker::surface(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
             continue;
         }
 
-        // a fan from the loop's first vertex is correct only for a planar convex
-        // face, which is all the primitives and the modelling operations produce
+        // a fan from the loop's first vertex is correct only for a planar convex face.
+        // Every primitive the editor creates has only such faces
         const std::optional<v3d::brep::Segment> opening = v3d::brep::loopSegment(*mesh, loop, 0);
         if (!opening) {
             continue;

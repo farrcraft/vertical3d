@@ -203,8 +203,8 @@ BOOST_AUTO_TEST_CASE(keyboard_held_key_test) {
     dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
     // SDL repeats key down while a key is held. Every repeat is still a press, marked as a
-    // repeat, and the release that follows is still a release - the state tracking must not
-    // invert on the way through.
+    // repeat, and the release that follows is still a release. The repeats must not toggle
+    // the held state.
     keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_W}));
     keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_W, .repeat = true}));
     keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_W, .repeat = true}));

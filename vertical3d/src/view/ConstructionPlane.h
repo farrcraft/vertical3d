@@ -20,12 +20,12 @@ namespace v3d::editor {
  * the origin emphasised again. The emphasis is colour rather than width, because lines
  * are drawn one pixel wide.
  *
- * The plane the grid lies in follows the camera. An orthographic view is looking along
- * one axis, so the grid lies in the plane of the other two and the view reads as a
- * drafting elevation; a perspective view gets the ground plane.
+ * The plane the grid lies in follows the camera. An orthographic view looks along one axis,
+ * so the grid lies in the plane of the other two, as in a drafting elevation. A perspective
+ * view gets the ground plane.
  *
- * This belongs to the editor rather than to the api: canvas::Line offers primitives, and
- * how big a grid is, how far apart its lines are and which way it faces are all policy.
+ * This belongs to the editor, not the api. canvas::Line offers primitives, and the size of a
+ * grid, the spacing of its lines and the way it faces are editor choices.
  **/
 class ConstructionPlane final {
  public:
@@ -67,7 +67,7 @@ class ConstructionPlane final {
      * Append the grid to a canvas, in the plane chosen for the camera.
      *
      * @param camera the view the grid is being drawn for, which decides its plane
-     * @param canvas where the segments are appended - nothing is cleared
+     * @param canvas where the segments are appended. Nothing is cleared
      **/
     void draw(const v3d::type::camera::Camera& camera, v3d::render::realtime::canvas::Line* canvas) const;
 

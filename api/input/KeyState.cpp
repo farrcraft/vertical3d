@@ -49,8 +49,8 @@ bool KeyState::operator() (const std::string& key) {
     } else {
         keys_.push_back(key);
     }
-    // both edges can be true of one key in one frame, so this records rather than replaces:
-    // a key pressed and released between two flushes reports both edges and is not held
+    // each edge is appended, not replaced, because one key can have both edges in one frame.
+    // A key pressed and released between two flushes reports both edges and is not held
     if (held) {
         pressed_.push_back(key);
     } else {

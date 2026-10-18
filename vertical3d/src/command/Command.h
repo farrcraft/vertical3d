@@ -12,10 +12,9 @@ namespace v3d::editor {
 /**
  * One undoable unit of editing.
  *
- * A command is a record of a change that has already been made rather than a request to
- * make one. It is pushed onto the stack once the change is complete, and the stack calls
- * undo() and redo() on it from then on. Whatever made the change decides how large one
- * unit is: for a drag it is the whole gesture, not one motion event.
+ * A command is pushed onto the stack once its change has been made, and the stack calls
+ * undo() and redo() on it from then on. Pushing never applies it. Whatever made the change
+ * decides how large one unit is: for a drag it is the whole gesture, not one motion event.
  **/
 class Command {
  public:
@@ -27,8 +26,9 @@ class Command {
     virtual void undo() = 0;
 
     /**
-     * Make the change again. This is also how the change is made the first time, so
-     * that the first do and a redo cannot drift apart.
+     * Make the change again. A command whose change is not already made calls this to make
+     * it the first time, so that the first do and a redo run the same code. A
+     * TransformCommand is the exception: its drag moved the mesh before it was made.
      **/
     virtual void redo() = 0;
 

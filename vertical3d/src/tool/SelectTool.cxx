@@ -88,8 +88,8 @@ void SelectTool::motion(const glm::vec2& position) {
 /**
  **/
 void SelectTool::button(unsigned int button, bool pressed, const glm::vec2& position) {
-    // only the primary button selects, and on the press rather than the release - a
-    // release that follows a drag out of the view would pick somewhere else
+    // only the primary button selects, and on the press, not the release. A release that
+    // follows a drag out of the view would pick somewhere else
     if (button != 1 || !pressed) {
         return;
     }
@@ -125,7 +125,7 @@ void SelectTool::apply(const Picker::Hit& hit) {
 
     if (!hit.valid) {
         // a miss in a component mode clears the components and leaves the objects
-        // selected: the user is working inside one and a stray click should not undo that
+        // selected, so a stray click does not lose the object the user is working inside
         scene_->deselectComponents();
         return;
     }

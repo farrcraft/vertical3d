@@ -74,7 +74,7 @@ std::vector<boost::shared_ptr<v3d::brep::BRep>> meshes(const boost::shared_ptr<v
 
 /**
  * Whether two meshes hold the same geometry, the same topology and the same placement.
- * Ids are deliberately not compared - a mesh read from a file is a new node.
+ * Ids are not compared, because a mesh read from a file is a new node.
  **/
 void same(const boost::shared_ptr<v3d::brep::BRep>& left, const boost::shared_ptr<v3d::brep::BRep>& right) {
     BOOST_REQUIRE_EQUAL(left->vertexCount(), right->vertexCount());

@@ -20,9 +20,9 @@ namespace v3d::editor {
 /**
  * The CameraControlTool provides interactive manipulation of a Camera through a ViewPort.
  *
- * Which of the three moves a drag performs is chosen by the modifier held. The tool
- * has no viewport of its own: the view it drives is the one the cursor was in when the
- * drag started, so a four way split is four cameras and one tool.
+ * The modifier held chooses which of the three moves a drag performs. The tool has no
+ * viewport of its own. It drives the view the cursor was in when the drag started, so one
+ * tool serves the camera of every view.
  */
 class CameraControlTool final : public Tool {
  public:

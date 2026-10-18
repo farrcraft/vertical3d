@@ -58,8 +58,8 @@ BOOST_AUTO_TEST_CASE(settings_missing_document_test) {
 }
 
 /**
- * What was set is what comes back on the next run, and nothing else is: an overlay, so a
- * setting nobody touched still tracks the build.
+ * What was set comes back on the next run, and nothing else is stored. A setting nobody
+ * touched still follows the build's default.
  **/
 BOOST_AUTO_TEST_CASE(settings_round_trip_test) {
     v3d::engine::Settings settings = fresh("roundtrip");
@@ -144,7 +144,8 @@ BOOST_AUTO_TEST_CASE(settings_malformed_document_test) {
     BOOST_CHECK_EQUAL(settings.load(), false);
     BOOST_CHECK_EQUAL(settings.text("paddle1up").value_or("w"), "w");
 
-    // unlike a future document, this one is replaceable - there is nothing in it to keep
+    // unlike a document from a later build, this one can be overwritten: nothing in it is
+    // worth keeping
     BOOST_CHECK_EQUAL(settings.writable(), true);
     settings.set("paddle1up", "e");
     BOOST_REQUIRE_EQUAL(settings.save(), true);

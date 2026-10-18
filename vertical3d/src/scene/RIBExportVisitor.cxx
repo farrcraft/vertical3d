@@ -87,8 +87,8 @@ void RIBExportVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         if (loop.size() < 3) {
             continue;
         }
-        // a half edge names the vertex it ends at, so the loop's segments start where the
-        // one before them ended - taking each segment's start walks the face once
+        // a half edge names the vertex it ends at, so each segment starts where the one
+        // before it ended. Taking each segment's start visits every vertex of the face once
         std::vector<glm::vec3> points;
         for (std::size_t index = 0; index < loop.size(); index++) {
             const std::optional<v3d::brep::Segment> segment = v3d::brep::loopSegment(*mesh, loop, index);

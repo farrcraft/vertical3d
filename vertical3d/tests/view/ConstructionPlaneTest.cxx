@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_extent_test) {
     BOOST_CHECK_CLOSE(minU, -2.0F, 0.01F);
     BOOST_CHECK_CLOSE(maxU, 2.0F, 0.01F);
     // a default camera is orthographic and looks along +z, so its own right and up are x
-    // and y - the grid lies in the plane the view faces
+    // and y. The grid lies in the plane the view faces
     BOOST_CHECK_CLOSE(minV, -2.0F, 0.01F);
     BOOST_CHECK_CLOSE(maxV, 2.0F, 0.01F);
 }

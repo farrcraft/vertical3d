@@ -48,8 +48,8 @@ BOOST_AUTO_TEST_CASE(wireframe_pairs_drawn_once_test) {
     const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     wireframe.visit(cube);
 
-    // 24 half edges paired into the cube's 12 edges - a half edge and its pair are one
-    // segment, and drawing both would double every line the modeller sees
+    // 24 half edges paired into the cube's 12 edges. A half edge and its pair are one
+    // segment, and drawing both would double every line
     BOOST_CHECK_EQUAL(cube->edgeCount(), 24U);
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 24U);
 }

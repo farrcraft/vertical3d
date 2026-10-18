@@ -55,8 +55,8 @@ bool MouseState::operator() (const std::string& button) {
     } else {
         buttons_.push_back(button);
     }
-    // a click and its release inside one frame is both edges of one button, so this records
-    // rather than replaces - the same rule KeyState keeps
+    // each edge is appended, not replaced, as in KeyState. A click and its release inside
+    // one frame report both edges of one button
     if (held) {
         pressed_.push_back(button);
     } else {

@@ -35,8 +35,8 @@ boost::shared_ptr<v3d::editor::ViewPort> frontView() {
 }
 
 /**
- * A tool over a scene, in a front view, with no logger - a test has no use for the
- * lines a pick writes, and the tool takes an empty one.
+ * A tool over a scene, in a front view, with no logger. A test has no use for the lines a
+ * pick writes, and the tool accepts an empty logger.
  **/
 boost::shared_ptr<v3d::editor::SelectTool> tool(const boost::shared_ptr<v3d::editor::Scene>& scene) {
     boost::shared_ptr<v3d::editor::SelectTool> select =

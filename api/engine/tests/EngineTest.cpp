@@ -26,8 +26,7 @@
 namespace {
 
 /**
- * The engine keeps what it built where its app subclass can reach it, so a test reads the
- * mappings it registered the way a Controller does.
+ * An app subclass, so that a test reaches the engine's protected members as an app does.
  **/
 class TestEngine final : public v3d::engine::Engine {
  public:
@@ -91,8 +90,8 @@ v3d::event::Source source(const boost::shared_ptr<v3d::event::Context>& context,
 }
 
 /**
- * An app path rather than a data path: initialize() appends "data/" to it, so a fixture
- * carries the directory the manager ends up resolving against one level down.
+ * An app path, not a data path. initialize() appends "data/" to it, so each fixture keeps
+ * its documents in a data/ subdirectory.
  **/
 std::string appPath(const std::string& fixture) {
     return "fixtures/" + fixture + "/";
@@ -120,9 +119,8 @@ SDL_Event keyUp(SDL_Keycode key) {
 }
 
 /**
- * A mask of nothing builds the asset manager, the dispatcher and the event engine and stops
- * there: no config read, no input devices and no window, so the engine can be tested
- * without a window.
+ * An empty feature mask builds the asset manager, the dispatcher and the event engine, and
+ * nothing more. It reads no config, and opens no input devices and no window.
  **/
 BOOST_AUTO_TEST_CASE(engine_initialize_no_features_test) {
     TestEngine engine(appPath("good"));
@@ -136,7 +134,8 @@ BOOST_AUTO_TEST_CASE(engine_initialize_no_features_test) {
 }
 
 /**
- * Feature::Config reads config.json out of the app's data directory and files what it names.
+ * Feature::Config reads config.json from the app's data directory, and loads each document it
+ * names.
  **/
 BOOST_AUTO_TEST_CASE(engine_initialize_config_test) {
     TestEngine engine(appPath("good"), configFeature);
@@ -149,8 +148,8 @@ BOOST_AUTO_TEST_CASE(engine_initialize_config_test) {
 }
 
 /**
- * The mappings the config named are registered as one global mapper, so a source event
- * triggered on the dispatcher comes back out as the destination it was bound to.
+ * The bindings the config names are installed. A source event published on the dispatcher
+ * comes back as the destination it is bound to.
  **/
 BOOST_AUTO_TEST_CASE(engine_registers_mappings_test) {
     TestEngine engine(appPath("good"), configFeature);
@@ -362,8 +361,8 @@ BOOST_AUTO_TEST_CASE(engine_quit_test) {
 }
 
 /**
- * The base tick and render do nothing and succeed - an app overrides both, and the loop reads
- * the return to stop.
+ * The base tick() and render() do nothing and return true. The loop stops when either
+ * returns false.
  **/
 BOOST_AUTO_TEST_CASE(engine_base_tick_and_render_test) {
     TestEngine engine(appPath("good"));
@@ -396,8 +395,8 @@ BOOST_AUTO_TEST_CASE(engine_held_follows_the_keyboard_test) {
 }
 
 /**
- * A rebound command is held by its new key and not by its old one, with nothing asked of the
- * app but the rebind.
+ * A rebound command is held by its new key and not by its old one. The app does nothing but
+ * call rebind().
  **/
 BOOST_AUTO_TEST_CASE(engine_held_follows_a_rebind_test) {
     TestEngine engine(appPath("good"), boundFeature);
@@ -411,8 +410,7 @@ BOOST_AUTO_TEST_CASE(engine_held_follows_a_rebind_test) {
 }
 
 /**
- * Without a keyboard nothing is held, rather than every command reading as up by accident of
- * a null state.
+ * Without Feature::KeyboardInput, held() returns false for every command.
  **/
 BOOST_AUTO_TEST_CASE(engine_held_without_a_keyboard_test) {
     TestEngine engine(appPath("good"), configFeature);
@@ -609,9 +607,9 @@ BOOST_AUTO_TEST_CASE(engine_a_release_that_throws_is_a_failure_test) {
 namespace {
 
 /**
- * An engine with no features whose first tick minimizes its window. A timer restores the window
- * later, from SDL's timer thread, and the first tick after the restore quits. Every tick is
- * counted, and so is each one that ran while the window was minimized.
+ * An engine with no features whose first tick pushes a window-minimized event. A timer on
+ * SDL's timer thread pushes a restore later, and the first tick after the restore quits. Every
+ * tick is counted, and so is each one that ran while minimized.
  **/
 class MinimizedEngine final : public v3d::engine::Engine {
  public:

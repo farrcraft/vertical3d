@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(create_poly_plane_test) {
 BOOST_AUTO_TEST_CASE(create_poly_cylinder_test) {
     const boost::shared_ptr<v3d::brep::BRep> cylinder = v3d::editor::create_poly_cylinder();
 
-    // eight walls and no caps, as the extrude and split operations expect
+    // eight walls and no caps
     BOOST_CHECK_EQUAL(cylinder->faceCount(), 8U);
     // the ring closes without repeating its first point
     BOOST_CHECK_EQUAL(cylinder->vertexCount(), 16U);

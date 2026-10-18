@@ -25,16 +25,15 @@ class Manipulator;
  * One view of the scene: a camera, the region of the window it draws into, and what it
  * decorates the scene with.
  *
- * A viewport is not a window and owns no device state. It fills a canvas::Line during a
- * tick, and the renderer turns that into a pass with this viewport's camera at set 0 and
- * this viewport's region as its scissor. Four views of one scene are therefore four
- * passes against one device.
+ * A viewport is not a window and owns no device state. The renderer has it fill a
+ * canvas::Line each frame, and turns that into a pass with this viewport's camera at set 0
+ * and this viewport's region. Every view of the scene therefore draws through one device.
  **/
 class ViewPort final {
  public:
     /**
-     * Bit flags, ORed together into showFlags_ - each value has to own a bit of
-     * its own or toggling one decoration hides another.
+     * Bit flags, ORed together into showFlags_. Each value owns a bit of its own, or
+     * toggling one decoration would hide another.
      **/
     typedef enum VisibleFilter : std::uint8_t {
         SHOW_GRID = (1 << 0),
@@ -63,9 +62,9 @@ class ViewPort final {
     /**
      * Give the view the region of the window it covers, as x, y, width, height.
      *
-     * The camera is told the same thing: the ortho factors divide by the viewport size
-     * and the projection is built around the pixel aspect ratio, so a camera that has
-     * not been given a region drives at zero units per pixel.
+     * The camera's profile gets the same size and its pixel aspect ratio. The ortho factors
+     * divide by the viewport size, and the projection is built around the pixel aspect
+     * ratio, so a camera that has not been given a region drives at zero units per pixel.
      **/
     void resize(const glm::vec4& region);
 
@@ -103,21 +102,21 @@ class ViewPort final {
      * Rebuild the view's geometry for this frame, into the canvas the renderer will
      * hand to the line primitive.
      *
-     * The canvas is cleared first: it is rebuilt every frame rather than kept, because
-     * the grid follows the camera and the camera moves.
+     * The canvas is cleared first. It is rebuilt every frame, because the grid follows the
+     * camera and the camera moves.
      *
-     * The scene is drawn by every view that shows meshes, so one scene becomes four
-     * canvases - each view draws it through its own camera.
+     * Every view that shows meshes draws the scene into its own canvas, through its own
+     * camera.
      *
      * The handles go to a canvas of their own because they are an overlay, drawn in a
      * second pass that does not depth test. On the scene's canvas a handle would be in
      * the depth tested pass, where the grid's axis lines lie in the same plane and hide it.
      *
      * @param scene what to draw, which the controller owns
-     * @param manipulator the handles the selection carries, which every view that shows
-     *        handles draws through its own camera - may be null
+     * @param manipulator the handles the selection carries, or null. Every view that shows
+     *        handles draws them through its own camera
      * @param canvas where the view's geometry goes
-     * @param handles where the manipulator's geometry goes - may be null
+     * @param handles where the manipulator's geometry goes, or null
      **/
     void draw(const Scene& scene, const Manipulator* manipulator, v3d::render::realtime::canvas::Line* canvas,
         v3d::render::realtime::canvas::Line* handles);

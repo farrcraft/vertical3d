@@ -50,8 +50,8 @@ struct Resolver {
 };
 
 /**
- * The document is a list of clip ids over the sources that hold them. The library names a
- * source and the app resolves it - this library cannot reach the asset manager itself.
+ * The document lists a clip id and a source for each clip. The engine passes each source to
+ * the resolver the app supplies, and stores what comes back under the clip id.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_load_test) {
     v3dtest::writeWav("hit.wav");
@@ -103,8 +103,8 @@ BOOST_AUTO_TEST_CASE(audio_engine_load_without_resolver_test) {
 }
 
 /**
- * Every rejection is a false return rather than an exception out of app startup - the lookups
- * are guarded because boost::json::object::at throws for a key it does not hold.
+ * Every rejection is a false return, not an exception out of app startup. The lookups are
+ * guarded because boost::json::object::at throws for a key it does not hold.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_no_sounds_key_test) {
     Resolver resolve;
@@ -151,8 +151,8 @@ BOOST_AUTO_TEST_CASE(audio_engine_empty_sounds_test) {
 }
 
 /**
- * playClip hands the clip's audio to the mixer, so a clip holding none is refused when it is
- * filed rather than reaching the mixer as a null.
+ * play() hands the clip's audio to the mixer. A clip holding none is refused when it is
+ * stored, so the mixer never receives a null.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_add_clip_test) {
     v3dtest::writeWav("hit.wav");

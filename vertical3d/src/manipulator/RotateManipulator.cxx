@@ -236,8 +236,8 @@ void RotateManipulator::apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, co
         turn = glm::angleAxis(angle, glm::normalize(unit));
     }
 
-    // on the left: the turn is measured in world space and the object's own rotation is
-    // what it turns
+    // multiplied on the left, because the turn is measured in world space and applies on
+    // top of the object's own rotation
     mesh->rotation(glm::normalize(turn * mesh->rotation()));
 }
 

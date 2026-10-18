@@ -43,7 +43,7 @@ constexpr glm::vec2 centre(200.0F, 200.0F);
 BOOST_AUTO_TEST_CASE(manipulator_default_test) {
     const v3d::editor::TranslateManipulator manipulator;
 
-    // both halves of the state are initialised - a manipulator whose coordinate space was
+    // both halves of the state are initialised. A manipulator whose coordinate space was
     // never written would be in one or the other at random
     BOOST_CHECK(manipulator.axis() == v3d::editor::Manipulator::Axis::None);
     BOOST_CHECK(manipulator.space() == v3d::editor::Manipulator::Space::Global);
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(manipulator_rotate_test) {
     // into this view, so the world turn is the opposite way round from the screen one
     manipulator.apply(cube, *view, glm::vec2(centre.x + 90.0F, centre.y), glm::vec2(centre.x, centre.y + 90.0F));
 
-    // the object's own x axis, drawn pointing right, follows the cursor down the screen -
+    // the object's own x axis, drawn pointing right, follows the cursor down the screen,
     // and down the screen is world -y
     const glm::vec3 turned = cube->rotation() * glm::vec3(1.0F, 0.0F, 0.0F);
     BOOST_CHECK_SMALL(turned.x, 0.001F);
@@ -176,9 +176,9 @@ BOOST_AUTO_TEST_CASE(manipulator_scale_test) {
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::ScaleManipulator manipulator;
 
-    // a scale is a vector in the object's own axes, so the handles are the object's axes
-    // whatever the coordinate space says - a quarter turn about z puts the x handle along
-    // world y even in the global space
+    // a scale is a vector in the object's own axes, so the handles follow the object's axes
+    // whatever the coordinate space says. A quarter turn about z puts the x handle along
+    // world y, even in the global space
     cube->rotation(glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0F, 0.0F, 1.0F)));
     manipulator.space(v3d::editor::Manipulator::Space::Global);
     const glm::vec3 handleAxis = manipulator.placement(cube, *view).orientation * glm::vec3(1.0F, 0.0F, 0.0F);

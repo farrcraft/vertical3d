@@ -146,8 +146,8 @@ class WriteVisitor final : public SceneVisitor {
 };
 
 /**
- * Read the placement a mesh was saved under. Every part of it is optional: a mesh saved
- * before the transform was written carries none, and is left where a new one starts.
+ * Read the placement a mesh was saved under. Every part of it is optional. A mesh with no
+ * transform entry is left where a new mesh starts.
  **/
 void readTransform(const boost::json::object& entry, const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     if (!entry.contains("transform") || !entry.at("transform").is_object()) {

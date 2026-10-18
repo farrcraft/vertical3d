@@ -34,12 +34,12 @@ std::string appPath(const char* executable);
  * the player chose: a settings document, a key binding, a saved game. The two differ because
  * appPath() is overwritten on every build and may not be writable at all.
  *
- * Nothing else is needed to read or write there: asset::Manager takes its root as a
- * constructor argument, so a second manager on this path loads through the same loaders.
+ * asset::Manager takes its root directory as a constructor argument. A second manager built on
+ * this path, with the same loaders registered, reads and writes there.
  *
- * A platform that cannot provide one gives an empty string and a log line rather than
- * throwing, because a game without a settings directory should still run on its defaults.
- * The directory is created if it does not exist.
+ * When the platform cannot provide the directory, this logs the failure and returns an empty
+ * string. It does not throw, so a game without a settings directory still runs on its
+ * defaults. The directory is created if it does not exist.
  *
  * @param org the organization the app belongs to, the same for every app that shares it
  * @param app what this app is called, and never changed once it has been chosen

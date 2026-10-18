@@ -43,9 +43,9 @@ class Engine {
     explicit Engine(const std::string& appPath);
 
     /**
-     * Releases the window and SDL if shutdown() never ran - a test, or a run that failed
-     * before it got there. An app's own release() cannot run from here, because what it
-     * releases has already been destroyed by the time a base destructor runs.
+     * Destroys the window and quits SDL if shutdown() has not. That happens in a test, or in a
+     * run that threw before shutdown(). It does not call the app's release(): when a base
+     * class destructor runs, the app's own members are already destroyed.
      **/
     virtual ~Engine();
 
@@ -77,23 +77,24 @@ class Engine {
     /**
      * Offered every SDL event before the input devices see it.
      *
-     * This is where an app feeds a third-party ui toolkit, which needs the raw events
-     * rather than the commands the bindings make from them. Polling the keyboard is not a
-     * substitute: a press and a release inside one frame poll as no change.
+     * An app feeds a third-party ui toolkit from here. Such a toolkit needs the raw events,
+     * not the commands the bindings make from them. Polling the keyboard does not replace
+     * this, because a press and a release inside one frame poll as no change.
      *
-     * Returning true consumes the event, so the input engine never maps it to a command.
-     * One click then cannot both press a button and issue an order, the same rule
-     * ui::Cursor::press() applies inside api/ui. The engine still handles quit, resize and
-     * focus whatever this returns.
+     * Returning true consumes the event, and the input engine never maps it to a command.
+     * One click then cannot both press a button and issue an order. ui::Cursor::press()
+     * applies the same rule inside api/ui. The engine handles quit, resize and focus events
+     * whatever this returns.
      *
      * @return whether the app took the event
      **/
     virtual bool onEvent(const SDL_Event& event);
 
     /**
-     * Advance the game world time
-     * @param delta milliseconds elapsed since the previous tick. Simulation that scales by
-     *              this stays frame rate independent; simulation that ignores it does not.
+     * Called once per frame, before the frame's simulate() steps. Simulation goes in
+     * simulate(), not here.
+     *
+     * @param delta milliseconds elapsed since the previous tick
      * @return bool
      **/
     virtual bool tick(unsigned int delta);
@@ -122,24 +123,25 @@ class Engine {
     const Statistics& statistics() const noexcept;
 
     /**
-     * Render the current frame.
-     * This will be called after each tick within the event loop to draw the current frame
-     * 
+     * Render the current frame. Called once per frame, after tick() and the frame's
+     * simulate() steps.
+     *
      * @return bool
      **/
     virtual bool render();
 
     /**
-     * Ask the game loop to stop after the frame it is on.
+     * Ask the game loop to stop. A quit command calls this.
      *
-     * A quit command calls this. The loop still ticks and renders after an event handler
-     * returns, so the window cannot be torn down inside a handler. Instead eventLoop()
-     * returns, and run() shuts down once, outside the loop. An app cannot call shutdown().
+     * Called from an event handler, it stops the loop before that frame's tick() and
+     * render(), and the remaining events are not routed. Called from tick(), simulate() or
+     * render(), it stops the loop when the frame ends. eventLoop() then returns, and run()
+     * shuts down once, outside the loop. An app cannot call shutdown().
      **/
     void quit() noexcept;
 
     /**
-     * @return whether something has asked the loop to stop
+     * @return whether quit() has been called
      **/
     bool quitting() const noexcept;
 
@@ -149,8 +151,8 @@ class Engine {
     boost::shared_ptr<v3d::render::realtime::Window> window() const;
 
     /**
-     * What the engine built, for an app to build on. Each is null until initialize() runs,
-     * and the config until it runs with Feature::Config; the window needs Feature::Window.
+     * What the engine built, for an app to build on. Each is null until initialize() runs.
+     * config() stays null unless the app asks for Feature::Config.
      **/
     const boost::shared_ptr<v3d::log::Logger>& logger() const noexcept;
     const boost::shared_ptr<v3d::config::Config>& config() const noexcept;
@@ -159,13 +161,13 @@ class Engine {
     const boost::shared_ptr<v3d::event::Engine>& events() const noexcept;
 
     /**
-     * What the keyboard holds, and what changed edge during this frame's events. The loop
-     * clears the edges after render(), so a tick sees the frame it is part of and never the
-     * one before.
+     * The keys held now, and the edges: the keys pressed or released during this frame's
+     * events. The loop clears the edges after render(), so tick() sees only the edges of its
+     * own frame.
      *
-     * Read the edges in tick() or render(), which run once a frame. A frame runs as many
-     * simulate() steps as time has passed for, which can be none or several, so an edge read
-     * in simulate() can be missed or seen twice. Read held() there instead.
+     * Read the edges in tick() or render(), which run once a frame. A frame runs one
+     * simulate() step for each step of elapsed time, which can be none or several. An edge
+     * read in simulate() can therefore be missed or seen twice. Read held() there instead.
      *
      * @return nullptr when the app did not ask for Feature::KeyboardInput
      **/
@@ -181,13 +183,13 @@ class Engine {
     /**
      * Whether a command is held: whether any key bound to it is down now.
      *
-     * Reads the keyboard's current state rather than the edges the command was sent on. It
-     * therefore gives the same result for a binding that fires on press alone, follows a
-     * rebind automatically, and releases when the key does. Only keys count: a mouse button
-     * bound to a command never holds it.
+     * Reads the keyboard's current state, not the edges the command was sent on. The result
+     * is the same for a binding that fires only on press. It follows a rebind, and it ends
+     * when the key is released. Only keys count: a mouse button bound to a command never
+     * holds it.
      *
-     * A command is its name and context; a binding's param is not part of it, so commands
-     * that are to be held apart are bound as commands of their own.
+     * A command is its name and context. A binding's param is not part of it. Two commands
+     * that have to be held separately are bound under different names.
      *
      * @param command the destination as "context::name", as rebind() takes it
      * @return false when nothing is bound to it, or without Feature::KeyboardInput
@@ -195,8 +197,8 @@ class Engine {
     bool held(std::string_view command) const;
 
     /**
-     * Every command the app handles, by "context::name". The engine runs the handler each
-     * command event names, and handles nothing any other way.
+     * Every command the app handles, by "context::name". The engine handles a command event
+     * only by running the handler registered here under its name.
      *
      * An app registers its commands in its constructor, including the ones it reads with
      * held(), so that a test can build the app without a window and check its bindings. A
@@ -220,30 +222,30 @@ class Engine {
      * it ships with.
      *
      * @param document a binding document, as data/mappings.json holds
-     * @return the one entry "mappings" when the document cannot be read, which is logged, so a
-     *         caller that expects none sees a failure rather than an empty list
+     * @return the single entry "mappings" when the document cannot be read, and the failure is
+     *         logged. A caller that expects an empty list then sees a failure.
      **/
     std::vector<std::string> unhandled(const boost::json::object& document) const;
 
  protected:
     /**
-     * What the engine sets up before start(). All four by default; an app that needs fewer
-     * overrides this.
+     * What the engine sets up before start(). Every feature by default. An app that needs
+     * fewer overrides this.
      **/
     virtual Features features() const;
 
     /**
-     * The app's own startup, run once every feature is up - the window open, the config read,
-     * the bindings built - so it can build on all of them.
+     * The app's own startup. It runs after every feature is set up: the window is open, the
+     * config is read and the bindings are built.
      *
      * @return false to stop startup, which run() reports as a failed run
      **/
     virtual bool start();
 
     /**
-     * The app's own teardown, run before the engine destroys the window: whatever presents
-     * to the window, a renderer above all, has to let the device go idle while the window
-     * still exists. The engine calls this; nothing else should.
+     * The app's own teardown. It runs before the engine destroys the window. Anything that
+     * presents to the window, a renderer above all, is released here, while the window still
+     * exists to wait for the device to go idle. Only the engine calls this.
      *
      * @return false when something failed to release, which run() reports
      **/
@@ -275,7 +277,7 @@ class Engine {
 
     /**
      * Bind a command to a different key than the config gave it, keeping the context and
-     * the edge from the config. event::Bindings does the work.
+     * the edge from the config.
      *
      * The change is not saved. It lasts for the process unless the app stores it, for
      * example in a document under engine::userPath().
@@ -290,16 +292,15 @@ class Engine {
     /**
      * Offer one polled event to the app, the input devices and the engine, in that order.
      *
-     * Separate from eventLoop(), which renders and so cannot run in a test, so that the
-     * order can be tested.
+     * eventLoop() renders, and cannot run in a test. This is a separate function so that a
+     * test can check the order.
      **/
     void route(const SDL_Event& event);
 
  private:
      /**
       * Handle one event the input devices did not take: a quit, a resize, a focus change or
-      * a window minimized or restored. eventLoop() decides when to poll for events; this
-      * decides what the engine does with one.
+      * a window minimized or restored.
       **/
      void handleEvent(const SDL_Event& event);
 
@@ -310,8 +311,8 @@ class Engine {
 
      /**
       * The three parts of initialize() that a feature turns on: the config and the bindings
-      * it names, the input devices, and the window the window config sizes. Each returns
-      * false, after logging why, when startup cannot continue.
+      * it names, the input devices, and the window the window config sizes. loadConfig() and
+      * openWindow() log the reason and return false when startup cannot continue.
       **/
      bool loadConfig();
      void startInput();
@@ -344,7 +345,7 @@ class Engine {
      Features features_;
      bool needShutdown_;
      bool released_ = false;
-     // after dispatcher_, so it disconnects before the dispatcher it points into can go
+     // declared after dispatcher_, so it disconnects before the dispatcher is destroyed
      entt::scoped_connection commandListener_;
      v3d::event::Commands commands_;
      bool quitting_;

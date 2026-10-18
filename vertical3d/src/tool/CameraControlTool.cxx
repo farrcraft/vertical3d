@@ -97,8 +97,8 @@ void CameraControlTool::motion(const glm::vec2& position) {
             pan(point);
         }
     }
-    // after the move, not before: pan() drags the arcball to the point the gesture has
-    // reached, and a last_ written first would make every rotation one event stale
+    // after the move, not before: zoom() and truck() measure the move from last_, and a
+    // last_ written first would make every move zero
     last_ = point;
 }
 
@@ -127,13 +127,12 @@ void CameraControlTool::zoom(const glm::vec2& position) {
     if (!camera) {
         return;
     }
-    // do camera zooming/dollying - ortho cameras zoom, but perspective cameras dolly
+    // an orthographic camera zooms, and a perspective camera dollies
     float delta;
-    // event is current position and mouse is previous position
+    // position is where the cursor is now, and last_ is where it was at the last event
     delta = static_cast<float>(position[0] - last_[0]);
     float factor;
     if (camera->orthographic()) {
-        // size is the viewport size (pixel dimensions)
         factor = camera->orthoFactorHorizontal();
         camera->zoom(-delta * factor);
     } else {
@@ -166,7 +165,7 @@ void CameraControlTool::truck(const glm::vec2& position) {
         camera->truck(delta_x * -factor);
     }
     if (delta_y != 0.0F) {
-        // the vertical factor - the pixel aspect ratio belongs to width alone
+        // the vertical factor, because the pixel aspect ratio applies to the width alone
         if (camera->orthographic()) {
             factor = camera->orthoFactorVertical();
         } else {

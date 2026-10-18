@@ -31,8 +31,8 @@ namespace {
 const char* const DOCUMENT = "settings.json";
 
 /**
- * The top level key the settings sit under. They are not at the root so that "version" is
- * the format's and an app can still have a setting called version.
+ * The top level key the settings sit under. They are kept off the root so that the format's
+ * "version" key cannot collide with an app setting called version.
  **/
 const char* const ENTRIES = "settings";
 
@@ -167,8 +167,8 @@ int Settings::integer(const std::string& key, int fallback) const {
     if (value == nullptr) {
         return fallback;
     }
-    // a number too large for an int, or one with a fraction, is a document somebody edited
-    // into a shape this build cannot use rather than one to round
+    // a number too large for an int, or one with a fraction, gives the fallback. It is not
+    // rounded
     boost::system::error_code error;
     const int number = value->to_number<int>(error);
     return error ? fallback : number;

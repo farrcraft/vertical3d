@@ -38,8 +38,8 @@ class RotateManipulator final : public Manipulator {
      * How close the cursor comes to the ring about one axis, in pixels.
      *
      * A ring is not one segment, so it is tested as the run of segments it is drawn
-     * as. Nothing within tolerance of any of them, and nothing that projects at all,
-     * both come back negative.
+     * as. The result is negative when no segment is within tolerance, or when no
+     * segment projects onto the screen at all.
      **/
     static float ringDistance(const Placement& placement, const glm::vec3& unit,
         const ViewPort& view, const glm::vec2& cursor);

@@ -42,16 +42,6 @@ Index BRep::addVertex(const glm::vec3& v) {
 
 Index BRep::addEdge(Index vertex) {
     const HalfEdge halfEdge(vertex);
-    /*
-    Index index = 0;
-    for (; index < _edges.size(); index++)
-    {
-        if (_edges[index] == halfEdge)
-        {
-            return index;
-        }
-    }
-    */
     edges_.push_back(halfEdge);
     return static_cast<Index>(edges_.size() - 1);
 }
@@ -69,29 +59,9 @@ void BRep::addFace(const std::vector<glm::vec3>& vertices, const glm::vec3& norm
     // add edges
     Index index = 0;
     Index edge_id;
-    /*
-    Index firstEdgeID = INVALID_ID;
-    Index lastEdgeID = INVALID_ID;
-    */
     std::vector<Index> edges;
     for (; index < static_cast<Index>(indices.size()); index++) {
         edge_id = addEdge(indices[index]);
-        /*
-        if (index != 0)
-            _edges[edgeID].pair(indices[index - 1]);
-        if (lastEdgeID != INVALID_ID)
-            _edges[lastEdgeID].next(edgeID);
-
-        if (index == (indices.size() - 1))
-        {
-            _edges[firstEdgeID].pair(edgeID);
-            _edges[edgeID].next(firstEdgeID);
-        }
-
-        if (firstEdgeID == INVALID_ID)
-            firstEdgeID = edgeID;
-        lastEdgeID = edgeID;
-        */
         edges.push_back(edge_id);
     }
 
@@ -126,7 +96,6 @@ void BRep::addFace(const std::vector<glm::vec3>& vertices, const glm::vec3& norm
         } else {
             pair = findPair(edges[index], edges[static_cast<Index>(edges.size()) - 1]);
         }
-        //  assert(pair != INVALID_ID);
         if (pair != INVALID_ID) {
             ep->pair(pair);
             edge(pair)->pair(edges[index]);
@@ -135,9 +104,9 @@ void BRep::addFace(const std::vector<glm::vec3>& vertices, const glm::vec3& norm
 }
 
 Index BRep::findPair(Index edge, Index prevEdge) {
-    // this edge's pair points to the previous edge/vertex in this face
-    // find the edge that points to the previous edge's vertex
-    // and whose next edge points to this edge's vertex
+    // a half edge runs from the vertex prevEdge ends at to the vertex it ends at itself. Its
+    // pair runs the other way, in another face. The pair therefore ends at prevEdge's vertex,
+    // and the half edge before the pair in its loop ends at this edge's vertex
 
     Index index = 0;
     // pairs never share the same face
@@ -145,8 +114,8 @@ Index BRep::findPair(Index edge, Index prevEdge) {
     for (; index < static_cast<Index>(edges_.size()); index++) {
         if (edges_[index].face() != face &&
             edges_[index].vertex() == edges_[prevEdge].vertex()) {
-            // find potential pair's prev edge
-            // bounded by the edge count, so a ring that does not close ends the search
+            // find the half edge before the candidate in its loop. The walk is bounded by the
+            // edge count, so a ring that does not close ends the search
             Index pair_prev = edges_[index].next();
             std::size_t steps = 0;
             while (pair_prev < edges_.size() && edges_[pair_prev].next() != index && steps++ < edges_.size()) {
@@ -157,27 +126,6 @@ Index BRep::findPair(Index edge, Index prevEdge) {
                 return index;
             }
         }
-        /* #2
-            if (_edges[index].face() != face &&
-                _edges[index].vertex() == _edges[edgeID].vertex())
-            {
-                Index next = _edges[index].next();
-                assert(next != INVALID_ID);
-                if (_edges[next].vertex() == _edges[prevEdgeID].vertex())
-                    return index;
-            }
-        */
-        /* #1
-        if (index != edgeID && index != prevEdgeID &&
-            _edges[index].vertex() == _edges[prevEdgeID].vertex())
-        {
-            if (_edges[index].next() != INVALID_ID)
-            {
-                if (_edges[_edges[index].next()].vertex() == _edges[edgeID].vertex())
-                    return index;
-            }
-        }
-        */
     }
     return INVALID_ID;
 }

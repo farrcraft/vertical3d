@@ -22,7 +22,6 @@ namespace v3d::input {
  **/
 Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<entt::dispatcher>& dispatcher, DeviceTypes devices) :
     dispatcher_(dispatcher) {
-    // add keyboard & mouse devices
     if (devices.has(DeviceType::Keyboard)) {
         const boost::shared_ptr<v3d::event::Context> keyboardContext = eventEngine->resolveContext("keyboard");
         keyboard_ = boost::make_shared<Keyboard>(keyboardContext, dispatcher_);
@@ -58,7 +57,6 @@ const MouseState* Engine::mouse() const {
 /**
  **/
 bool Engine::filterEvent(const SDL_Event& event) {
-    // iterate over devices
     for (auto it = devices_.begin(); it != devices_.end(); it++) {
         if ((*it)->handleEvent(event)) {
             return true;

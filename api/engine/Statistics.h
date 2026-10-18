@@ -40,8 +40,8 @@ class Statistics final {
     };
 
     /**
-     * A span of the frame being timed, which adds its lifetime to its name's row when it
-     * ends. Held for the length of whatever is being timed, and not kept past the frame.
+     * Times a span of the frame. When it is destroyed, it adds its lifetime to its name's
+     * row. Hold it for the length of whatever is being timed, and not past the frame.
      **/
     class Scope final {
      public:
@@ -83,8 +83,8 @@ class Statistics final {
     Scope scope(std::string_view name);
 
     /**
-     * Add time to a name's row for the frame. A scope calls this as it ends, and it is how
-     * a time measured elsewhere joins the rows.
+     * Add time to a name's row for the frame. A time measured without a Scope joins the rows
+     * through this.
      **/
     void add(std::string_view name, std::uint64_t nanoseconds);
 
@@ -94,7 +94,7 @@ class Statistics final {
     std::vector<Row> rows() const;
 
     /**
-     * Read the time from somewhere else, which is for a test.
+     * Replace the clock that scopes read. A test passes one it can step.
      **/
     void clock(const Clock& clock);
 
@@ -111,9 +111,9 @@ class Statistics final {
     /**
      * Steps due in the last frame.
      *
-     * This is the number worth watching. It sits at 0 or 1 with occasional 2s on a healthy
-     * frame; a sustained 3 or more means frames take longer than the fixed step and the loop
-     * is falling behind.
+     * This is the number worth watching. On a healthy loop it sits at 0 or 1, with an
+     * occasional 2. A sustained 3 or more means frames take longer than the simulation step,
+     * and the loop is falling behind.
      **/
     unsigned int steps() const noexcept;
 

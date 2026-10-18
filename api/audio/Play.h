@@ -17,9 +17,8 @@ struct Play final {
     Play() noexcept;
 
     /**
-     * The bus the sound is mixed on - "music", "sfx", "ambience". A bus is a named group
-     * with its own volume, so a settings screen can offer a slider per bus. Empty is no
-     * bus.
+     * The bus the sound is mixed on, such as "music", "sfx" or "ambience". A bus is a named
+     * group of sounds whose volume Engine::busGain() sets together. Empty is no bus.
      **/
     std::string bus;
 
@@ -35,7 +34,8 @@ struct Play final {
     int fadeInMs;
 
     /**
-     * The sound's own volume, multiplied by its bus's. 1 is unchanged.
+     * The sound's own volume. 1 is unchanged. A later Engine::busGain() on its bus
+     * replaces it.
      **/
     float gain;
 

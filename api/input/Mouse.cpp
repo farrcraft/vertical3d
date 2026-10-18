@@ -21,8 +21,8 @@ namespace v3d::input {
 namespace {
 
 /**
- * Map an SDL mouse button index to a string representation.
- * These are the names a binding config uses, the way key names are for the keyboard.
+ * Map an SDL mouse button index to its name, or to an empty string for a button with none.
+ * A binding config names a mouse button by this, as it names a key by keyName().
  **/
 std::string buttonEvent(unsigned int button) {
     switch (button) {
@@ -59,8 +59,8 @@ bool Mouse::handleEvent(const SDL_Event& event) {
     case SDL_EVENT_MOUSE_BUTTON_UP: {
         pressed = (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN);
         buttonName = buttonEvent(event.button.button);
-        // a button we have no name for cannot be bound to anything, and must not reach
-        // MouseState either - it would be held under an empty name that no caller can query
+        // a button with no name cannot be bound, and is kept out of MouseState. There it
+        // would be held under an empty name that no caller can query
         if (buttonName.empty()) {
             return true;
         }
@@ -78,11 +78,11 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         state_(position);
         dispatcher()->trigger<v3d::event::kind::MouseMotion>(
             v3d::event::kind::MouseMotion({.position = position, .motion = glm::vec2(event.motion.xrel, event.motion.yrel)}, context()));
-        return true;  // motion is not a bindable source event - it has no discrete name
+        return true;  // motion has no discrete name, so it is not a bindable source event
     }
     case SDL_EVENT_MOUSE_WHEEL: {
-        // a wheel sends one event per notch, so the state accumulates them and the frame
-        // reads what the whole flick came to
+        // a wheel sends one event per notch. MouseState adds them up, and the frame reads
+        // the total for the whole flick
         const glm::vec2 notches(event.wheel.x, event.wheel.y);
         state_.wheel(notches.y);
         dispatcher()->trigger<v3d::event::kind::MouseWheel>(
@@ -93,8 +93,8 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         return false;
     }
 
-    // trigger a source event so any mappers can propagate a mapped event, the same way
-    // the keyboard does. The edge is the event's state, not its data.
+    // publish a source event for the bindings to map, as the keyboard does. The edge is the
+    // event's state, not its data.
     v3d::event::publish(*dispatcher(), v3d::event::Source(buttonName, context(),
         pressed ? v3d::event::State::Pressed : v3d::event::State::Released));
 
