@@ -76,7 +76,7 @@ v3d_add_api_library(render_offline
 	"sl/runtime/Machine.h" "sl/runtime/Machine.cxx"
 	"sl/runtime/Library.cxx"
 	"sl/Instance.h" "sl/Instance.cxx"
-	"sl/Placed.h"
+	"sl/Placed.h" "sl/Placed.cxx"
 	"sl/Globals.h" "sl/Globals.cxx"
 	"sl/ShaderLibrary.h" "sl/ShaderLibrary.cxx"
 	"sl/Imager.h" "sl/Imager.cxx"

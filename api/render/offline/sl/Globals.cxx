@@ -94,7 +94,8 @@ float Globals::alpha(const runtime::Machine & machine, unsigned int lane, float 
 }
 
 bool Globals::shine(const Placed & light, runtime::Machine* machine, unsigned int batch, const runtime::Value & surface,
-    runtime::Value* direction, runtime::Value* colour, std::vector<char>* reached, bool* ambient) const {
+    runtime::Value* direction, runtime::Value* colour, std::vector<char>* reached, bool* ambient,
+    const std::vector<glm::vec3>* from) const {
     if (!light.shader->write(machine, light.placement)) {
         return false;
     }
@@ -102,7 +103,7 @@ bool Globals::shine(const Placed & light, runtime::Machine* machine, unsigned in
     const glm::vec3 origin = ptransform(light.placement, glm::vec3(0.0F));
     for (unsigned int lane = 0; lane < batch; lane++) {
         put(machine, lit_, lane, surface.triple(lane));
-        put(machine, position_, lane, origin);
+        put(machine, position_, lane, from != nullptr && lane < from->size() ? (*from)[lane] : origin);
     }
     if (!machine->run()) {
         return false;

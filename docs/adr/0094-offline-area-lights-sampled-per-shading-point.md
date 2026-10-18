@@ -1,6 +1,6 @@
 # ADR-0094: Offline: area lights sampled per shading point
 
-**Status**: proposed
+**Status**: accepted
 **Date**: 2026-10-18
 **Documented in**: [offline/ShadingLanguage.md](../offline/ShadingLanguage.md)
 

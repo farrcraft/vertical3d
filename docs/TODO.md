@@ -24,15 +24,6 @@ and its section names the plan or roadmap that orders it.
 Each of these waits until a scene needs it. The [OfflineShading plan](plans/OfflineShading.md)
 takes them up, in the order the [OfflineShading roadmap](roadmap/OfflineShading.md) gives.
 
-[] **Area lights render as point lights.**
-
-- A RenderMan area light runs its light shader at points on a primitive.
-- moya keeps an area light's geometry, as `offline::Area`, but neither hider shines from it.
-- The samples have to be seeded per shading point, not from the film. The reyes hider shades a
-  grid before any film sample reaches it.
-- Due when a scene needs soft shadows. Both hiders can already cast shadows through the shared
-  ray tracer.
-
 [] **Displacement is not possible.** Displacement shaders are refused.
 
 - Under the reyes hider, displacement reaches into moya's dicing. The displacement shader runs on

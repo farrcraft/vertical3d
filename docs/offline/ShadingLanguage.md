@@ -129,7 +129,7 @@ files on disk.
 | Kind | Shaders |
 |---|---|
 | Surface | `constant`, `matte`, `metal`, `plastic`, `paintedplastic`, `shinymetal`, `glass` |
-| Light | `ambientlight`, `distantlight`, `pointlight`, `spotlight` |
+| Light | `ambientlight`, `distantlight`, `pointlight`, `spotlight`, `arealight` |
 | Imager | `background` |
 
 - **`paintedplastic`** multiplies `Cs` by the texture its `texturename` names. It tests whether
@@ -137,9 +137,22 @@ files on disk.
 - **`shinymetal` traces a reflection ray** where RI's version reads an environment map.
 - **`glass` is this tree's own**; RI has no refracting shader. It sets `Oi` to one, because it
   shows what lies behind it by refraction. Its `Os` is what a shadow ray through it reads.
-- **The three directional lights** (`distantlight`, `pointlight`, `spotlight`) call
+- **The directional lights** (`distantlight`, `pointlight`, `spotlight`, `arealight`) call
   `transmission()`, so they cast shadows. A `spotlight` tests its cone against `-L`, the
   direction its light travels.
+- **`arealight` shines from its P**, evenly in every direction with the square of the distance,
+  as `pointlight` shines from its position. It is the shader an `AreaLightSource` names.
+- **An area light shines from points sampled on its geometry.** Its light shader runs once for
+  each of its samples, with P the sample, and the illuminance loop sees each sample as a light
+  of its own. Each sample carries `1 / nsamples` of the light, so the count changes the noise
+  and not the brightness. `sl::shining()` and `sl::which()` count a light list this way for
+  both hiders.
+- **A shading point's samples are seeded by the light's handle, the point's position in world
+  space and the sample's index** (`Area::point()`). A point gets the same samples on every run,
+  in any order of buckets or pixels. A grid vertex is moved into world space first, so a vertex
+  and a traced hit at the same position sample a light alike.
+
+  Background: [ADR-0094](../adr/0094-offline-area-lights-sampled-per-shading-point.md)
 - **`background`** adds its colour behind each pixel in proportion to `1 - alpha`, then sets
   `alpha` to one, so a pixel it painted is no longer empty. A scene can use it instead of a
   backdrop polygon.

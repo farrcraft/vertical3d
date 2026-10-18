@@ -90,15 +90,19 @@ class Globals final {
      * Run a light over a batch of surface points and read back what it shone on each.
      *
      * The light's parameters are written through its placement, and its P is the origin of
-     * that space, so a light placed by a transform lands where the scene put it. While this
+     * that space, so a light placed by a transform lands where the scene put it. An area
+     * light's P is instead the point sampled on its surface for each shading point. While this
      * runs, the renderer resolves "shader" space from the light's placement.
      *
      * @param machine prepared for the light's program, whose globals these are
      * @param surface the points being lit, in the renderer's current space
+     * @param from for an area light, the point it shines from at each shading point, in the
+     *        renderer's current space. Null for any other light
      * @return whether the light ran
      **/
     bool shine(const Placed & light, runtime::Machine* machine, unsigned int batch, const runtime::Value & surface,
-        runtime::Value* direction, runtime::Value* colour, std::vector<char>* reached, bool* ambient) const;
+        runtime::Value* direction, runtime::Value* colour, std::vector<char>* reached, bool* ambient,
+        const std::vector<glm::vec3>* from = nullptr) const;
 
  private:
     int position_ = -1;

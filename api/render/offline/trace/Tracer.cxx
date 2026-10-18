@@ -86,7 +86,15 @@ glm::vec3 Tracer::transmitted(const v3d::type::geometry::Line & path, const glm:
         inside it.
     */
     const float side = glm::dot(geometric, along) < 0.0F ? -1.0F : 1.0F;
-    const v3d::type::geometry::Ray ray({.origin = path.origin + (geometric * (side * EPSILON)), .direction = along / span});
+    // aimed from where it starts at where the path ends, so its length is the distance from
+    // the offset start to the light
+    const glm::vec3 start = path.origin + (geometric * (side * EPSILON));
+    const glm::vec3 toward = path.origin + along - start;
+    const float length = glm::length(toward);
+    if (length <= EPSILON) {
+        return glm::vec3(1.0F);
+    }
+    const v3d::type::geometry::Ray ray({.origin = start, .direction = toward / length});
 
     /*
         Each occluder between the shading point and the light lets through what its Os
@@ -97,7 +105,10 @@ glm::vec3 Tracer::transmitted(const v3d::type::geometry::Line & path, const glm:
     glm::vec3 through(1.0F);
     float past = 0.0F;
     Hit blocker;
-    while (scene_->nearest(ray, past, &blocker, poses_) && blocker.distance < span) {
+    // the ray stops short of its end by the same offset, because the end can lie on a surface
+    // too: an area light's samples lie on its own geometry, which must not shadow it
+    const float reach = length - EPSILON;
+    while (scene_->nearest(ray, past, &blocker, poses_) && blocker.distance < reach) {
         through *= glm::vec3(1.0F) - blocker.primitive->opacity();
         if (std::max(through.r, std::max(through.g, through.b)) <= 0.0F) {
             break;

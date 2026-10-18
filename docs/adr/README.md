@@ -68,7 +68,7 @@ content went. Numbers are never reused.
 | [0078](0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md) | Offline: moya is the one renderer, ray tracing is a hider | accepted |
 | [0092](0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md) | Offline: a bounding volume hierarchy for traced rays | accepted |
 | [0093](0093-offline-derivatives-from-neighbouring-shading-points.md) | Offline: derivatives from neighbouring shading points | accepted |
-| [0094](0094-offline-area-lights-sampled-per-shading-point.md) | Offline: area lights sampled per shading point | proposed |
+| [0094](0094-offline-area-lights-sampled-per-shading-point.md) | Offline: area lights sampled per shading point | accepted |
 
 ## User interface
 

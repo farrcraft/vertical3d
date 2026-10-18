@@ -131,6 +131,17 @@ light distantlight(float intensity = 1; color lightcolor = 1;
     }
 }
 
+/*
+    An area light's shader. P is the point sampled on the light's surface for the point being
+    lit, so the light shines evenly in every direction from each sample, as a point light does
+    from its position. The renderer divides each sample's light by the number of samples.
+*/
+light arealight(float intensity = 1; color lightcolor = 1) {
+    illuminate(P) {
+        Cl = intensity * lightcolor * transmission(Ps, Ps + L) / (L . L);
+    }
+}
+
 light pointlight(float intensity = 1; color lightcolor = 1;
         point from = point "shader" (0, 0, 0)) {
     illuminate(from) {

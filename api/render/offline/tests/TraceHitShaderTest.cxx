@@ -449,4 +449,25 @@ BOOST_AUTO_TEST_CASE(trace_a_hit_refuses_object_space_test) {
     BOOST_CHECK((matrix == glm::mat4x4(1.0F)));
 }
 
+/**
+ * A shadow ray that ends on a surface is not blocked by that surface. An area light's samples
+ * lie on its own geometry, which would otherwise shadow all of its light. The ray leaves a
+ * surface facing the triangle, at a slant, so it starts a little nearer the triangle than the
+ * point it was cast from.
+ **/
+BOOST_AUTO_TEST_CASE(trace_a_shadow_ray_ending_on_a_surface_reaches_it_test) {
+    v3d::render::offline::trace::Scene scene;
+    scene.add(facing(2.0F, glm::vec3(1.0F)));
+    v3d::render::offline::trace::Tracer tracer(&scene);
+
+    const glm::vec3 start(1.5F, 0.4F, 3.0F);
+    const glm::vec3 end(-0.3F, -0.2F, 0.0F);
+    const glm::vec3 passed = tracer.transmitted({.origin = start, .direction = end - start}, glm::vec3(0.0F, 0.0F, -1.0F));
+    BOOST_CHECK_EQUAL(passed.r, 1.0F);
+    // a ray that goes on past the surface is blocked by it
+    const glm::vec3 beyond = tracer.transmitted({.origin = start, .direction = 1.5F * (end - start)},
+        glm::vec3(0.0F, 0.0F, -1.0F));
+    BOOST_CHECK_EQUAL(beyond.r, 0.0F);
+}
+
 };  // namespace

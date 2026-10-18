@@ -9,6 +9,8 @@
 
 #include "Instance.h"
 
+#include <vector>
+
 #include <boost/shared_ptr.hpp>
 
 #include <glm/mat4x4.hpp>
@@ -33,5 +35,17 @@ class Placed final {
      **/
     boost::shared_ptr<const v3d::render::offline::Area> area;
 };
+
+/**
+ * How many lights a list shines as. A light is one, and an area light is one for each of its
+ * samples, so an illuminance loop sees each sample as a light of its own.
+ **/
+unsigned int shining(const std::vector<Placed> & lights);
+
+/**
+ * The light a renderer's light index names, and which of its samples, or null past the end.
+ * The index counts as shining() does.
+ **/
+const Placed* which(const std::vector<Placed> & lights, unsigned int index, unsigned int* sample);
 
 };  // namespace v3d::render::offline::sl

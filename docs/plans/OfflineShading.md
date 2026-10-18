@@ -131,7 +131,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [9](#step-9--held-traced-hits-shaded-in-batches) | Traced hits shaded in batches | `api/render/offline`, `moya` | — | held |
 | [10](#step-10--the-record-how-an-area-light-is-sampled) | The record: how an area light is sampled | `docs/adr` | **0094** | done |
 | [11](#step-11--an-area-light-keeps-its-geometry) | An area light keeps its geometry | `api/render/offline`, `moya` | 0094 | done |
-| [12](#step-12--area-lights-shine-from-their-surface) | Area lights shine from points on their surface | `api/render/offline`, `moya` | 0094 | open |
+| [12](#step-12--area-lights-shine-from-their-surface) | Area lights shine from points on their surface | `api/render/offline`, `moya` | 0094 | done |
 | [13](#step-13--opacity-under-the-reyes-hider) | Opacity under the reyes hider | `moya` | — | open |
 | [14](#step-14--a-displacement-shader-reaches-the-renderer) | A displacement shader compiles and reaches the renderer | `api/render/offline`, `moya` | — | open |
 | [15](#step-15--displacement-under-the-reyes-hider) | Displacement under the reyes hider | `moya` | — | open |
@@ -476,6 +476,24 @@ after the attribute block does not join it. A point sampled on a quad lies on th
 mean of many samples is near its centre.
 
 ### Step 12 — Area lights shine from their surface
+
+**Done.** `Globals::shine` takes the point an area light runs at for each shading point, and both
+hiders pass `Area::point()` for it. An area light counts as one light for each of its samples,
+and each carries its share of the light. `Attribute "light" "integer nsamples"` sets the count,
+through the RIB handler and through `RiAttribute`. ADR-0094 is accepted.
+
+Two things the plan did not foresee:
+
+* **The standard lights ignore P.** `pointlight` shines from its `from` parameter, so moving P
+  changed nothing. A built-in `arealight` shines from P, as RenderMan area light shaders do.
+* **An area light shadowed itself.** A shadow ray to a sample ends on the light's own quad. The
+  ray's start was offset along the normal while its direction was not, so it reached the
+  quad's plane short of its end. A shadow ray is now aimed from its offset start at the light
+  and stops an offset short. That moved `raytrace-sampled.png` at four of its 3072 pixels, by
+  at most three levels at a shadow's edge, and it was regenerated.
+
+`reference-area.png` and `raytrace-area.png` are a box's soft shadow on a wall, from code and
+from RIB. The code route, the RIB route and the moya driver give the same bytes.
 
 * **`Globals::shine` takes the point the light runs at**, rather than its placement's origin. Both
   hiders' `light()` pass a sampled point for an area light, and the origin for any other light.

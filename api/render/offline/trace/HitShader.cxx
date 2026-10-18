@@ -7,6 +7,7 @@
 
 #include <api/render/offline/Texture.h>
 #include <api/render/offline/sl/Globals.h>
+#include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/sl/runtime/Value.h>
 
@@ -79,25 +80,40 @@ const std::vector<v3d::render::offline::sl::Placed> & HitShader::shining() const
 }
 
 unsigned int HitShader::lights() {
-    return static_cast<unsigned int>(shining().size());
+    return v3d::render::offline::sl::shining(shining());
 }
 
 bool HitShader::light(unsigned int index, const Value & surface, Value* direction,
     Value* colour, std::vector<char>* reached, bool* ambient) {
-    if (index >= shining().size()) {
+    unsigned int sample = 0;
+    const v3d::render::offline::sl::Placed* lit = v3d::render::offline::sl::which(shining(), index, &sample);
+    if (lit == nullptr) {
         return false;
     }
-    const v3d::render::offline::sl::Placed & source = shining()[index];
+    const v3d::render::offline::sl::Placed & source = *lit;
     Tracer::Run & held = tracer_->run(source.shader);
     held.machine.renderer(this);
+    // a hit's current space is world space, where an area light's samples are taken
+    std::vector<glm::vec3> from;
+    if (source.area) {
+        for (unsigned int lane = 0; lane < Tracer::STENCIL; lane++) {
+            from.push_back(source.area->point(surface.triple(lane), sample));
+        }
+    }
 
     // the shading point is in world space. While the light runs, "shader" space is the space
     // the scene instanced the light in
     const glm::mat4x4 was = placement_;
     placement_ = source.placement;
     const bool ran = held.globals.shine(source, &held.machine, Tracer::STENCIL, surface, direction, colour, reached,
-        ambient);
+        ambient, source.area ? &from : nullptr);
     placement_ = was;
+    if (ran && source.area) {
+        // each sample carries its share of the light
+        for (unsigned int lane = 0; lane < Tracer::STENCIL; lane++) {
+            colour->triple(lane, colour->triple(lane) / static_cast<float>(source.area->samples()));
+        }
+    }
     return ran;
 }
 

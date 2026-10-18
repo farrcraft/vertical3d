@@ -96,6 +96,9 @@ Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-trace
 - **A ray leaving a surface is offset along the geometric normal, toward its target.** A ray
   started exactly on the surface hits that surface, and every lit pixel turns black in a
   pattern that looks like a normal fault.
+- **A shadow ray is aimed from its offset start at the light, and stops the same offset short
+  of it.** The end can lie on a surface too. An area light's samples lie on its own geometry,
+  and a shadow ray that reached its end would hit that geometry and shadow the whole light.
 - **`trace()` goes as deep as `Option "trace" "maxdepth"`**, two by default. Past that depth it
   returns the background, which stops two surfaces that trace into each other. moya takes a
   depth above 16 as 16, with a warning, because a shader that traces twice at every hit

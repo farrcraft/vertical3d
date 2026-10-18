@@ -58,6 +58,14 @@ const char* BUMP = "data/reference-bump.png";
 const char* BUMP_RENDERED = "data_out/reference-bump.png";
 const char* BUMP_SCENE = "data/reference-bump.rib";
 const char* BUMP_RIB_RENDERED = "data_out/reference-bump-rib.png";
+const char* AREA = "data/reference-area.png";
+const char* AREA_RENDERED = "data_out/reference-area.png";
+const char* AREA_SCENE = "data/reference-area.rib";
+const char* AREA_RIB_RENDERED = "data_out/reference-area-rib.png";
+const char* TRACED_AREA = "data/raytrace-area.png";
+const char* TRACED_AREA_RENDERED = "data_out/raytrace-area.png";
+const char* TRACED_AREA_SCENE = "data/raytrace-area.rib";
+const char* TRACED_AREA_RIB_RENDERED = "data_out/raytrace-area-rib.png";
 const char* TRACED_BUMP = "data/raytrace-bump.png";
 const char* TRACED_BUMP_RENDERED = "data_out/raytrace-bump.png";
 const char* TRACED_BUMP_SCENE = "data/raytrace-bump.rib";
@@ -1207,6 +1215,118 @@ BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_from_rib_test) {
 
     check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
         TRACED_BUMP, TRACED_BUMP_RIB_RENDERED);
+}
+
+/*
+    The same scene as data/reference-area.rib, and as data/raytrace-area.rib under the ray
+    hider. A box stands in front of a wall, lit by a quad light up and to its left. The light
+    is sampled at 16 points for every shading point, so the box's shadow on the wall is soft.
+    The light's quad is drawn too, in white.
+*/
+void areaScene(v3d::moya::RenderContext & rc, const char* hider) {
+    rc.hider(hider);
+    rc.imageResolution({64, 48}, 1.0F);
+    pixelCentres(rc);
+    rc.screenWindow({.left = -2.0F, .right = 2.0F, .bottom = -1.5F, .top = 1.5F});
+    rc.clipping({.hither = 0.1F, .yon = 100.0F});
+    rc.prepareWorld();
+
+    typedef v3d::render::offline::rib::Declaration Declaration;
+    v3d::render::offline::rib::ParameterList ambient;
+    put(&ambient, "intensity", Declaration::Type::FLOAT, { 0.08F });
+    rc.lightSource({.shader = "ambientlight", .handle = "0"}, ambient);
+
+    rc.attributeBegin();
+    v3d::render::offline::rib::ParameterList count;
+    put(&count, "nsamples", Declaration::Type::INTEGER, { 16.0F });
+    rc.attribute("light", count);
+    v3d::render::offline::rib::ParameterList bright;
+    put(&bright, "intensity", Declaration::Type::FLOAT, { 6.0F });
+    rc.areaLightSource({.shader = "arealight", .handle = "1"}, bright);
+    rc.surface("constant", v3d::render::offline::rib::ParameterList());
+    quadAt(rc, {glm::vec3(-1.9F, 0.6F, 3.0F), glm::vec3(-0.9F, 0.6F, 3.0F), glm::vec3(-0.9F, 1.4F, 3.0F),
+        glm::vec3(-1.9F, 1.4F, 3.0F)});
+    rc.attributeEnd();
+    // the block switched the light off, as it does any light made in one
+    rc.illuminate("1", true);
+
+    rc.attributeBegin();
+    rc.color(glm::vec3(0.8F, 0.8F, 0.75F));
+    rc.surface("matte", v3d::render::offline::rib::ParameterList());
+    quadAt(rc, {glm::vec3(-2.0F, -1.5F, 6.0F), glm::vec3(-2.0F, 1.5F, 6.0F), glm::vec3(2.0F, 1.5F, 6.0F),
+        glm::vec3(2.0F, -1.5F, 6.0F)});
+    rc.attributeEnd();
+
+    // the box from (-0.2, -0.6, 4.6) to (0.6, 0.2, 5.4), each face wound to face out
+    rc.attributeBegin();
+    rc.color(glm::vec3(0.7F, 0.3F, 0.25F));
+    rc.surface("matte", v3d::render::offline::rib::ParameterList());
+    const float x0 = -0.2F;
+    const float x1 = 0.6F;
+    const float y0 = -0.6F;
+    const float y1 = 0.2F;
+    const float z0 = 4.6F;
+    const float z1 = 5.4F;
+    quadAt(rc, {glm::vec3(x0, y0, z0), glm::vec3(x0, y1, z0), glm::vec3(x1, y1, z0), glm::vec3(x1, y0, z0)});
+    quadAt(rc, {glm::vec3(x1, y0, z1), glm::vec3(x1, y1, z1), glm::vec3(x0, y1, z1), glm::vec3(x0, y0, z1)});
+    quadAt(rc, {glm::vec3(x0, y0, z1), glm::vec3(x0, y1, z1), glm::vec3(x0, y1, z0), glm::vec3(x0, y0, z0)});
+    quadAt(rc, {glm::vec3(x1, y0, z0), glm::vec3(x1, y1, z0), glm::vec3(x1, y1, z1), glm::vec3(x1, y0, z1)});
+    quadAt(rc, {glm::vec3(x0, y1, z0), glm::vec3(x0, y1, z1), glm::vec3(x1, y1, z1), glm::vec3(x1, y1, z0)});
+    quadAt(rc, {glm::vec3(x0, y0, z1), glm::vec3(x0, y0, z0), glm::vec3(x1, y0, z0), glm::vec3(x1, y0, z1)});
+    rc.attributeEnd();
+}
+
+/**
+ * A soft shadow from an area light under the reyes hider. Each grid vertex runs the light
+ * at 16 points on its quad, each with its own shadow ray, so the shadow's edge is a gradient.
+ **/
+BOOST_AUTO_TEST_CASE(moya_area_reference_test) {
+    v3d::moya::RenderContext rc;
+    areaScene(rc, "hidden");
+    rc.render();
+
+    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), AREA, AREA_RENDERED);
+}
+
+/**
+ * The same area light said in RIB, against the same committed picture.
+ **/
+BOOST_AUTO_TEST_CASE(moya_area_reference_from_rib_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(AREA_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), AREA, AREA_RIB_RENDERED);
+}
+
+/**
+ * The soft shadow under the ray hider. It is not compared with reference-area.png, because the
+ * hiders sample differently.
+ **/
+BOOST_AUTO_TEST_CASE(moya_traced_area_reference_test) {
+    v3d::moya::RenderContext rc;
+    areaScene(rc, "raytrace");
+    rc.render();
+
+    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_AREA, TRACED_AREA_RENDERED);
+}
+
+/**
+ * The traced area light said in RIB, against the same committed picture.
+ **/
+BOOST_AUTO_TEST_CASE(moya_traced_area_reference_from_rib_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(TRACED_AREA_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+        TRACED_AREA, TRACED_AREA_RIB_RENDERED);
 }
 
 };  // namespace

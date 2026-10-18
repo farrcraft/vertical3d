@@ -26,9 +26,10 @@ The reader recognises these requests:
 | Shaders and lights | `Surface`, `LightSource`, `AreaLightSource`, `Illuminate`, `MakeTexture` |
 | Geometry | `Polygon`, `PointsPolygons`, `Sphere` |
 
-moya acts on all of them except `CropWindow`, `Attribute`, `FrameBegin` and `FrameEnd`, which it
-accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"searchpath"`
-(`shader`, `texture`) and `"trace"` (`maxdepth`).
+moya acts on all of them except `CropWindow`, `FrameBegin` and `FrameEnd`, which it accepts and
+ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"searchpath"` (`shader`,
+`texture`) and `"trace"` (`maxdepth`). `Attribute` acts on `"light"` (`nsamples`), and reports any
+other attribute once by name.
 
 ### Rules
 

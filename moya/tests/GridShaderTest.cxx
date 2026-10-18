@@ -6,6 +6,7 @@
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/Shading.h>
 #include <moya/libmoya/Vertex.h>
 #include <moya/libmoya/reyes/GridShader.h>
@@ -16,10 +17,12 @@
 #include <string>
 #include <vector>
 
+#include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -369,6 +372,91 @@ BOOST_AUTO_TEST_CASE(moya_a_bumped_plane_test) {
     }
     // the sine rises fastest at s = 0, so the bump tilts the normal most there
     BOOST_TEST(std::fabs(((grid.vertex(0, 2).color() * 2.0F) - glm::vec3(1.0F)).y) > 0.2F);
+}
+
+/**
+ * A quad light a hundredth of a unit across, sampled once, lights a grid as a point light at
+ * the quad's centre does. Its one sample is within a two-hundredth of the centre.
+ **/
+BOOST_AUTO_TEST_CASE(moya_one_sample_of_a_small_area_light_is_a_point_light_test) {
+    ParameterList bright;
+    add(&bright, "intensity", Declaration::Type::FLOAT, { 3.0F });
+    const glm::vec3 centre(0.5F, 0.5F, 3.0F);
+
+    v3d::moya::RenderContext area;
+    prepare(&area);
+    area.attributeBegin();
+    ParameterList once;
+    once.add("nsamples", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::INTEGER, 1), { 1.0F },
+        std::vector<std::string>());
+    area.attribute("light", once);
+    area.areaLightSource({.shader = "arealight", .handle = "1"}, bright);
+    const boost::shared_ptr<v3d::moya::Polygon> tiny = boost::make_shared<v3d::moya::Polygon>();
+    for (const glm::vec2 & corner : { glm::vec2(-1.0F, -1.0F), glm::vec2(1.0F, -1.0F), glm::vec2(1.0F, 1.0F),
+        glm::vec2(-1.0F, 1.0F) }) {
+        v3d::moya::Vertex vert;
+        vert.point(centre + glm::vec3(corner * 0.005F, 0.0F));
+        tiny->addVertex(vert);
+    }
+    area.addPolygon(tiny);
+    area.surface("matte", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid lit = facing(Surface());
+    area.shader().shade(area.shading(), &lit);
+
+    v3d::moya::RenderContext point;
+    prepare(&point);
+    point.pushTransform();
+    point.translate(centre.x, centre.y, centre.z);
+    point.lightSource({.shader = "pointlight", .handle = "1"}, bright);
+    point.popTransform();
+    point.surface("matte", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid pointLit = facing(Surface());
+    point.shader().shade(point.shading(), &pointLit);
+
+    for (unsigned int i = 0; i < 2; i++) {
+        for (unsigned int j = 0; j < 2; j++) {
+            BOOST_TEST_CONTEXT("vertex " << i << ", " << j) {
+                BOOST_CHECK_GT(pointLit.vertex(i, j).color().r, 0.05F);
+                BOOST_CHECK_CLOSE(lit.vertex(i, j).color().r, pointLit.vertex(i, j).color().r, 1.0F);
+            }
+        }
+    }
+}
+
+/**
+ * An area light's samples are seeded by the shading point, not by the order of shading. A grid
+ * shaded twice, with another grid shaded between, comes out the same both times.
+ **/
+BOOST_AUTO_TEST_CASE(moya_an_area_light_samples_the_same_in_any_order_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.areaLightSource({.shader = "arealight", .handle = "1"}, ParameterList());
+    const boost::shared_ptr<v3d::moya::Polygon> panel = boost::make_shared<v3d::moya::Polygon>();
+    for (const glm::vec3 & corner : { glm::vec3(-1.0F, -1.0F, 2.0F), glm::vec3(1.0F, -1.0F, 2.0F),
+        glm::vec3(1.0F, 1.0F, 2.0F), glm::vec3(-1.0F, 1.0F, 2.0F) }) {
+        v3d::moya::Vertex vert;
+        vert.point(corner);
+        panel->addVertex(vert);
+    }
+    rc.addPolygon(panel);
+    rc.surface("matte", ParameterList());
+    const v3d::moya::Shading shading = rc.shading();
+
+    v3d::moya::reyes::MicroPolygonGrid first = plane();
+    rc.shader().shade(shading, &first);
+    // the panel lights the grid, which is all it has to light it
+    BOOST_CHECK_GT(first.vertex(2, 2).color().r, 0.05F);
+    v3d::moya::reyes::MicroPolygonGrid between = facing(Surface());
+    rc.shader().shade(shading, &between);
+    v3d::moya::reyes::MicroPolygonGrid again = plane();
+    rc.shader().shade(shading, &again);
+    for (unsigned int i = 0; i < 5; i++) {
+        for (unsigned int j = 0; j < 5; j++) {
+            BOOST_TEST_CONTEXT("vertex " << i << ", " << j) {
+                BOOST_CHECK_EQUAL(first.vertex(i, j).color().r, again.vertex(i, j).color().r);
+            }
+        }
+    }
 }
 
 };  // namespace

@@ -381,6 +381,7 @@ void RenderContext::attributeBegin() {
     saved.surfacePlacement = surfacePlacement_;
     saved.lit = lit_;
     saved.areaLight = areaLight_;
+    saved.lightSamples = lightSamples_;
     attributes_.push_back(saved);
 }
 
@@ -399,6 +400,7 @@ void RenderContext::attributeEnd() {
     // for the block that created it
     lit_ = saved.lit;
     areaLight_ = saved.areaLight;
+    lightSamples_ = saved.lightSamples;
     attributes_.pop_back();
 }
 
@@ -598,7 +600,22 @@ void RenderContext::areaLightSource(const v3d::render::offline::rib::LightSource
         return;
     }
     lights_.back().area = boost::make_shared<v3d::render::offline::Area>(request.handle);
+    lights_.back().area->samples(lightSamples_);
     areaLight_ = lights_.back().area;
+}
+
+void RenderContext::attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+    if (name == "light" && parameters.has("nsamples")) {
+        const float count = parameters.number("nsamples", 1.0F);
+        // capped, so a count past what an unsigned holds is not cast into one
+        constexpr float MOST_SAMPLES = 4096.0F;
+        lightSamples_ = std::isfinite(count) && count >= 1.0F ? static_cast<unsigned int>(std::min(count, MOST_SAMPLES)) : 1U;
+        return;
+    }
+    if (std::find(unusedAttributes_.begin(), unusedAttributes_.end(), name) == unusedAttributes_.end()) {
+        unusedAttributes_.push_back(name);
+        logger_->get()->warn("the attribute \"{}\" is not used", name);
+    }
 }
 
 const boost::shared_ptr<v3d::render::offline::Area> & RenderContext::areaLight() const {

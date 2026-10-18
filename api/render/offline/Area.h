@@ -49,6 +49,13 @@ class Area final {
      **/
     glm::vec3 sample(const glm::vec2 & square) const;
 
+    /**
+     * The sample a shading point takes of the light, by its index among the point's samples.
+     * It is seeded by the light's key, the point's position in world space and the index, so a
+     * point gets the same samples on every run, in any order of buckets or pixels.
+     **/
+    glm::vec3 point(const glm::vec3 & shading, unsigned int index) const;
+
     /** How many points a shading point samples the light at. **/
     unsigned int samples() const;
     void samples(unsigned int count);

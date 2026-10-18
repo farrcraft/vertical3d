@@ -5,9 +5,12 @@
 
 #include "Area.h"
 
+#include <api/type/Random.h>
+
 #include "Uniform.h"
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -93,6 +96,19 @@ glm::vec3 Area::sample(const glm::vec2 & square) const {
     }
     const Sphere & sphere = spheres_[piece - triangles_.size()];
     return glm::vec3(sphere.placement * glm::vec4(sphere.radius * uniform::sphere(within), 1.0F));
+}
+
+glm::vec3 Area::point(const glm::vec3 & shading, unsigned int index) const {
+    // each coordinate's bits and the index are folded into the key one at a time, through the
+    // generator's own mixing, so two points a bit apart start two unrelated sequences
+    std::uint64_t seed = key_;
+    for (int axis = 0; axis < 3; axis++) {
+        seed = v3d::type::Random(seed ^ std::bit_cast<std::uint32_t>(shading[axis])).next();
+    }
+    v3d::type::Random random(seed ^ index);
+    const float first = random.unit();
+    const float second = random.unit();
+    return sample(glm::vec2(first, second));
 }
 
 unsigned int Area::samples() const {

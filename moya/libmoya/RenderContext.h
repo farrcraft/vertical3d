@@ -235,6 +235,14 @@ class RenderContext {
         void lightSource(const v3d::render::offline::rib::LightSource & request,
             const v3d::render::offline::rib::ParameterList & parameters);
         /**
+         * maps to RiAttribute()
+         * `Attribute "light" "integer nsamples"` is how many points an area light made after
+         * it samples at each shading point. A count below one is taken as one, and one above
+         * 4096 as 4096. Any other
+         * attribute is reported once by name and not used.
+         **/
+        void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters);
+        /**
          * maps to RiAreaLightSource()
          * A light, as lightSource() makes one, that also keeps the geometry declared after it
          * in the same attribute block: every polygon and sphere, in world space, whichever
@@ -403,6 +411,7 @@ class RenderContext {
              **/
             std::vector<std::string> lit;
             boost::shared_ptr<v3d::render::offline::Area> areaLight;
+            unsigned int lightSamples = 16;
         };
 
         /**
@@ -420,6 +429,10 @@ class RenderContext {
 
         /** The area light the geometry being declared joins, until its attribute block ends. **/
         boost::shared_ptr<v3d::render::offline::Area> areaLight_;
+        /** `Attribute "light" "nsamples"`, which an area light takes when it is made. **/
+        unsigned int lightSamples_ = 16;
+        /** The attributes already reported as not used, so each is reported once. **/
+        std::vector<std::string> unusedAttributes_;
 
         std::string name_;
         std::vector<v3d::render::offline::MovingTransform> transforms_;

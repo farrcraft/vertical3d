@@ -128,23 +128,45 @@ bool GridShader::trace(const Value & origin, const Value & direction, Value* col
 }
 
 unsigned int GridShader::lights() {
-    return shading_ == nullptr ? 0U : static_cast<unsigned int>(shading_->lights.size());
+    return shading_ == nullptr ? 0U : v3d::render::offline::sl::shining(shading_->lights);
 }
 
 bool GridShader::light(unsigned int index, const Value & surface, Value* direction,
     Value* colour, std::vector<char>* reached, bool* ambient) {
-    if (shading_ == nullptr || index >= shading_->lights.size()) {
+    if (shading_ == nullptr) {
         return false;
     }
-    const v3d::render::offline::sl::Placed & shining = shading_->lights[index];
+    unsigned int sample = 0;
+    const v3d::render::offline::sl::Placed* lit = v3d::render::offline::sl::which(shading_->lights, index, &sample);
+    if (lit == nullptr) {
+        return false;
+    }
+    const v3d::render::offline::sl::Placed & shining = *lit;
     Run & held = run(shining.shader, batch_);
+    // an area light's samples are taken in world space, so a vertex and a traced hit at one
+    // point sample the light alike, and brought into camera space to run the light there
+    std::vector<glm::vec3> from;
+    if (shining.area) {
+        const glm::mat4x4 toCamera = context_->coordinateSystem("camera");
+        for (unsigned int point = 0; point < batch_; point++) {
+            const glm::vec3 world(toWorld_ * glm::vec4(surface.triple(point), 1.0F));
+            from.emplace_back(toCamera * glm::vec4(shining.area->point(world, sample), 1.0F));
+        }
+    }
 
     // the points being lit are in camera space. "shader" space is the light's placement
     // while it runs, and the surface's again afterwards
     const glm::mat4x4 was = placement_;
     placement_ = shining.placement;
-    const bool ran = held.globals.shine(shining, &held.machine, batch_, surface, direction, colour, reached, ambient);
+    const bool ran = held.globals.shine(shining, &held.machine, batch_, surface, direction, colour, reached, ambient,
+        shining.area ? &from : nullptr);
     placement_ = was;
+    if (ran && shining.area) {
+        // each sample carries its share of the light
+        for (unsigned int point = 0; point < batch_; point++) {
+            colour->triple(point, colour->triple(point) / static_cast<float>(shining.area->samples()));
+        }
+    }
     return ran;
 }
 
