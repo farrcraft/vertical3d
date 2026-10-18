@@ -17,8 +17,8 @@
 namespace v3d::test {
 
 /**
- * What main() returns when there is no device to draw with. ctest is told to read it as a skip
- * rather than a failure; 77 is the convention automake set and ctest inherited.
+ * What main() returns when there is no device to draw with. The test's SKIP_RETURN_CODE is 77,
+ * so ctest reports a skip, not a failure. 77 is the automake convention, which ctest follows.
  **/
 const int skipExitCode = 77;
 
@@ -32,12 +32,12 @@ bool deviceAvailable();
  * An instance, a surface-free device and a context to draw with, for a case that needs all
  * three but does not test any of them.
  *
- * The context is given its target format at construction, because every pipeline it compiles
- * is built against that format. Set afterwards, the renderers would already have been built
- * against VK_FORMAT_UNDEFINED.
+ * The context receives its target format at construction, because every pipeline it compiles
+ * is built against that format. If the format were set afterwards, the renderers would already
+ * have been built against VK_FORMAT_UNDEFINED.
  *
- * Each case gets its own, so what one leaves on the device cannot reach another. That costs a
- * device creation per case, and in return the cases fail independently.
+ * Each case constructs its own, so state one case leaves on the device cannot affect another.
+ * This creates a device per case, and the cases fail independently.
  **/
 struct Headless {
     /**
@@ -68,8 +68,8 @@ struct Headless {
     void submitAndWait(VkCommandBuffer commands);
 
     /**
-     * Submit a command buffer from the context's ring and move on without waiting, the way a
-     * presented frame does, so that what it reads is still in flight when the case continues.
+     * Submit a command buffer from the context's ring without waiting, as a presented frame is
+     * submitted. The work is still in flight when the case continues.
      *
      * @param commands a buffer from ring()->begin(), still recording
      **/

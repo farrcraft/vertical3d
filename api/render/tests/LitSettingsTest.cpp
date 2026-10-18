@@ -19,9 +19,9 @@ namespace {
 BOOST_AUTO_TEST_SUITE(lit_settings_test)
 
 /**
- * Each setting lands in the member and the component lit.glsl reads it from. The offsets are
- * static assertions beside pack(). This test catches what those cannot: a value written into
- * the wrong component of the right member.
+ * Each setting is written to the member and component that lit.glsl reads it from. Static
+ * assertions beside pack() check the offsets. This test checks what they cannot: a value
+ * written into the wrong component of the right member.
  **/
 BOOST_AUTO_TEST_CASE(pack_puts_each_setting_where_the_shader_reads_it) {
     lighting::Settings settings;

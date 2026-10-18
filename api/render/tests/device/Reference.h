@@ -15,7 +15,7 @@
 namespace v3d::test {
 
 /**
- * Write back what a capture read out of a target, and compare it against the picture
+ * Write out what a capture read back from a target, and compare it with the reference image
  * committed under the same name.
  *
  * A reference may contain only output the Vulkan specification fixes exactly, so any
@@ -27,9 +27,9 @@ namespace v3d::test {
  * The comparison is exact, so a case that breaks the rule fails on any device other than the
  * one that produced its reference.
  *
- * What was drawn is written to `data_out/<name>.png` whether or not it matched, because the
- * capture has no other way out. A deliberate change to a picture is that file copied over
- * the committed one by hand; nothing here writes `data/`.
+ * What was drawn is written to `data_out/<name>.png` whether or not it matched, so that it can
+ * be inspected. To change a reference deliberately, copy that file over the committed one by
+ * hand. Nothing here writes to `data/`.
  *
  * @param capture a capture whose readback has been submitted and waited on
  * @param name the picture's name, with no directory and no extension

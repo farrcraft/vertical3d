@@ -21,8 +21,8 @@ namespace v3d::test {
 namespace {
 
 /**
- * Where a picture is committed, and where one that was drawn is left. Both are resolved
- * against the working directory, which v3d_add_test points at the executable.
+ * The directory of the committed references, and the directory a drawn image is written to.
+ * Both are relative to the working directory, which v3d_add_test sets to the executable's.
  **/
 const char* const committedDirectory = "data";
 const char* const renderedDirectory = "data_out";

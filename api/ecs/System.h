@@ -19,7 +19,7 @@ class System {
     /**
      * Advance this system by one simulation step.
      *
-     * Named after Engine::simulate(), which calls it: a system runs once per fixed
+     * An app's override of Engine::simulate() calls it, so a system runs once per
      * simulation step, not once per drawn frame.
      *
      * @param step seconds of simulated time

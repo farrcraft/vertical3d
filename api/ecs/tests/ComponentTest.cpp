@@ -15,8 +15,8 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-// a component is a value: an aggregate entt builds from the arguments to emplace, and a
-// snapshot of the previous step is a copy
+// each component is a copyable aggregate, so entt builds it from the arguments to emplace, and
+// snapshot() copies it
 static_assert(std::is_aggregate_v<v3d::ecs::component::Color3>);
 static_assert(std::is_aggregate_v<v3d::ecs::component::Position1D>);
 static_assert(std::is_aggregate_v<v3d::ecs::component::Position2D>);
@@ -49,8 +49,8 @@ BOOST_AUTO_TEST_CASE(component_interpolate_test) {
 }
 
 /**
- * A component is emplaced with the value it holds and read back through the registry. Every
- * app holds its components this way.
+ * A component is emplaced with the value it holds, and read back and written through the
+ * registry.
  **/
 BOOST_AUTO_TEST_CASE(component_registry_test) {
     entt::registry registry;

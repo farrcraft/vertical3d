@@ -16,8 +16,8 @@ namespace {
 using Kind = v3d::render::realtime::vulkan::memory::Allocator::Kind;
 
 /**
- * The kind of the allocator on the device the engine's context built. Read from the allocator
- * rather than from anything the engine stored, because what is being tested is that the choice
+ * The kind of the allocator on the device the engine's context built. It is read from the
+ * allocator, not from anything the engine stored, because the test checks that the choice
  * reaches the device.
  **/
 Kind built(const v3d::test::Windowed& windowed) {

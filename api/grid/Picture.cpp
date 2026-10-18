@@ -40,7 +40,7 @@ Picture fromPicture(const std::vector<std::string>& rows, const std::map<char, T
         }
     }
 
-    // checked here with the grid's own test, so its constructor never throws
+    // check with TileGrid::refusal() first, so the constructor below never throws
     const int columns = static_cast<int>(width);
     const int lines = static_cast<int>(rows.size());
     const std::optional<std::string> refused = TileGrid::refusal(columns, lines, tileSize, corner.value_or(glm::vec3(0.0F)));

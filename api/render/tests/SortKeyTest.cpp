@@ -15,8 +15,8 @@ namespace {
 BOOST_AUTO_TEST_SUITE(sortkey_test)
 
 /**
- * A fresh key is the lowest one there is, so an item nobody has classified sorts first
- * rather than landing somewhere arbitrary.
+ * A default key is the lowest key, so an item that was never classified sorts first, not at
+ * an arbitrary place.
  **/
 BOOST_AUTO_TEST_CASE(default_key_is_zero) {
     const v3d::render::realtime::SortKey key;

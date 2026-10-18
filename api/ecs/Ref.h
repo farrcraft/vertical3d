@@ -17,9 +17,9 @@ namespace v3d::ecs {
  * A Ref compares the version it stored with the registry's, so it reads null instead.
  *
  * It is for view state: a selection, an inspector's target, the entity a camera follows. A
- * container the rules keep, such as a turn order, is kept correct by whatever destroys an entity.
- * Checking on read there would hide a fault in that upkeep, so such a container holds plain
- * entities.
+ * container of game state, such as a turn order, holds plain entities instead. The code that
+ * destroys an entity also removes it from such a container, and a check on read would hide a
+ * failure to do so.
  **/
 class Ref final {
  public:

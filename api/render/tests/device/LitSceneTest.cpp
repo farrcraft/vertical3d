@@ -256,7 +256,7 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
     registry.emplace<Transform>(entity);
     registry.emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{crate, true});
 
-    // the tree's own orthographic camera, which builds Vulkan clip space and so decides which
+    // type::camera's orthographic camera, which builds Vulkan clip space and so decides which
     // way round a face is on screen. Steeper than its default 45 degrees, so that the ray
     // through the centre of the picture meets the top face rather than an edge
     v3d::type::camera::Isometric orbit;
@@ -376,7 +376,8 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     pass->target(map);
     pass->depth(true);
     pass->scene(lit.scene(lighting::pack(lighting::Settings(), light, 1.0F / size)));
-    // the pipeline is biased, so the pass names a bias - none, so that the depths stay exact
+    // the pipeline is biased, so the pass must name a bias. It names zero, so the depths stay
+    // exact
     pass->depthBias(0.0F, 0.0F);
     v3d::render::realtime::entity::casters(registry, 1.0F, meshes, &lit, pass.get());
     // the two that cast share a mesh, so they are one draw of two instances
@@ -444,7 +445,7 @@ BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_under_the_mirrored_hand) {
  * against the clear value and draw over the near one.
  *
  * The two cubes are submitted from two registries, one after the other, so the near one is
- * drawn first whatever order a registry walks its entities in.
+ * drawn first whatever order a registry iterates its entities in.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -526,7 +527,7 @@ BOOST_AUTO_TEST_CASE(a_released_mesh_is_not_walked) {
     }
     BOOST_REQUIRE(meshes.release(released));
 
-    // the walk adds each draw's object to the frame's scene, so the scene is written first
+    // meshes() adds each draw's object to the frame's scene, so the scene is written first
     Pass pass("lit");
     pass.scene(lit.scene(lighting::pack(lighting::Settings(), glm::mat4(1.0F), 0.0F)));
     v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, 0.1F, &pass);
@@ -553,9 +554,9 @@ BOOST_AUTO_TEST_CASE(a_caster_is_drawn_into_the_shadow_map_under_the_mirrored_ha
 
 /**
  * Two frames in flight share one shadow map. The second frame's shadow pass writes the map
- * while the first frame's lit pass may still be sampling it, so the barrier that opens the map
- * has to wait for that read. Only synchronization validation reports it when it does not, so
- * the case checks that the layer is silent.
+ * while the first frame's lit pass may still be sampling it, so the barrier before the shadow
+ * pass writes the map has to wait for that read. Only synchronization validation reports a
+ * barrier that does not wait, so the case checks that the layer is silent.
  **/
 BOOST_AUTO_TEST_CASE(a_shadow_map_is_shared_by_frames_in_flight) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -591,7 +592,7 @@ BOOST_AUTO_TEST_CASE(a_shadow_falls_on_the_ground) {
 }
 
 /**
- * A full-size lit game scene built from this tree's fixtures. It holds a ground that casts
+ * A full-size lit game scene built from the asset suite's fixtures. It holds a ground that casts
  * nothing, two upright figures and ten props at set yaws, under one key light at the defaults of
  * lighting::Settings. It is seen through an orthographic camera at 45 degrees at 1280 by 720.
  * The frame is a shadow pass, the lit scene into an sRGB target, and a grade into a target in

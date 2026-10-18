@@ -16,8 +16,8 @@ namespace {
 BOOST_AUTO_TEST_SUITE(retirement_test)
 
 /**
- * Something released while frame n was being recorded is still in use until frame n has
- * finished, and with two frames in flight that is known only once frame n + 2 has begun.
+ * A resource released while frame n is recorded stays in use until frame n finishes. With two
+ * frames in flight, that is certain only once frame n + 2 begins.
  **/
 BOOST_AUTO_TEST_CASE(a_destruction_waits_for_the_frames_in_flight) {
     Retirement retirement(2);
@@ -53,8 +53,8 @@ BOOST_AUTO_TEST_CASE(only_what_is_due_is_collected) {
 }
 
 /**
- * Whatever is still held when the queue goes is destroyed rather than leaked - the ring idles
- * the device before that happens.
+ * Whatever a Retirement still holds when it is destroyed is destroyed with it, not leaked. The
+ * Ring waits for the device to idle before that.
  **/
 BOOST_AUTO_TEST_CASE(what_is_held_is_destroyed_with_the_queue) {
     bool destroyed = false;

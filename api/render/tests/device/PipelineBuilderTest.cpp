@@ -30,8 +30,8 @@ const uint32_t width = 64;
 const uint32_t height = 32;
 
 /**
- * A vertex stage and nothing else, which is all a depth only pipeline needs. Included as the
- * C initialiser list glslc's -mfmt=c writes - see v3d_add_shader.
+ * A vertex stage and nothing else, which is all a depth only pipeline needs. It is included as
+ * the C initialiser list that v3d_add_shader has glslc write with -mfmt=c.
  **/
 const uint32_t vertexShader[] =
 #include "shaders/depth.vert.inc"

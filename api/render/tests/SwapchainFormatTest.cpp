@@ -14,7 +14,7 @@ using v3d::render::realtime::vulkan::frame::Swapchain;
 namespace {
 
 /**
- * @return a surface format entry, in the only colour space a chain is presented in
+ * @return a surface format entry, in the only colour space a swapchain is presented in
  **/
 VkSurfaceFormatKHR offered(VkFormat format, VkColorSpaceKHR space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
     VkSurfaceFormatKHR entry{};
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(a_preference_the_surface_offers_wins) {
 }
 
 /**
- * A chain is built either way. A preference the surface cannot satisfy falls back to the
+ * A swapchain is built either way. A preference the surface cannot satisfy falls back to the
  * default rather than failing. The app then has to encode its colours itself.
  **/
 BOOST_AUTO_TEST_CASE(a_preference_the_surface_lacks_falls_back) {
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(a_preference_in_another_colour_space_is_not_a_match) {
 }
 
 /**
- * A surface offering neither a preference nor a UNORM format still yields a chain.
+ * A surface offering neither a preference nor a UNORM format still yields a swapchain.
  **/
 BOOST_AUTO_TEST_CASE(neither_available_takes_the_first_offered) {
     const std::vector<VkSurfaceFormatKHR> formats{

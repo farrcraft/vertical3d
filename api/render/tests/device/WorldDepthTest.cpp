@@ -119,7 +119,8 @@ void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::stri
     described.extent = target->extent();
     described.depthImage = target->depthImage();
     described.depthView = target->depthView();
-    // not presented, and PRESENT_SRC is not a layout a device with no swapchain extension has
+    // the image is not presented, and a device without the swapchain extension has no
+    // PRESENT_SRC layout
     described.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     Recorder::record(commands, frame, described, *headless->context->resources(),
         headless->context->frameUniforms().get());

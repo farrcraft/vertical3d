@@ -23,7 +23,8 @@ const int skipExitCode = 77;
 /**
  * A window and an Engine3D presenting to it, for a case that needs the whole frame loop.
  *
- * Each case gets its own, so a chain or a request one case leaves behind cannot reach another.
+ * Each case constructs its own, so a swapchain or a pending request left by one case cannot
+ * affect another.
  * The window is small and is open only while the case runs.
  **/
 struct Windowed {

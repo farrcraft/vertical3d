@@ -1,5 +1,5 @@
-# Components and the system base are plain data over an entt registry - no window, no device
-# and no files, so there is nothing to copy beside the executable.
+# The components and System are plain data over an entt registry. The tests need no window, no
+# device, and no files copied beside the executable.
 v3d_add_test(ecs
 	"TestMain.cpp"
 	"ComponentTest.cpp"

@@ -19,8 +19,8 @@ constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
 constexpr glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
 
 /**
- * The point one corner of the canvas maps to, for checking the projection without
- * pulling glm's matrix multiply into the expectation.
+ * Where a point of the canvas lands in clip space. It applies the projection's scale and offset
+ * directly, so the expectation does not depend on glm's matrix multiply.
  **/
 glm::vec2 project(const v3d::render::realtime::canvas::Canvas& canvas, const glm::vec2& point) {
     const glm::mat4 projection = canvas.projection();
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(a_rectangle_is_two_triangles) {
 }
 
 /**
- * The batch is cut where the texture changes and nowhere else, so a screen of quads sharing
+ * A new batch starts where the texture changes and nowhere else, so a screen of quads sharing
  * an atlas is one draw.
  **/
 BOOST_AUTO_TEST_CASE(batches_are_cut_only_where_the_texture_changes) {
@@ -85,9 +85,9 @@ BOOST_AUTO_TEST_CASE(batches_are_cut_only_where_the_texture_changes) {
 }
 
 /**
- * Going back to a texture that was used earlier starts a new batch rather than reopening the
- * old one - the quads in between have to stay underneath, and merging them would put them on
- * top. Painter order takes priority over batch count.
+ * Going back to a texture used earlier starts a new batch instead of adding to the old one. The
+ * quads in between stay underneath, and merging the batches would change what is on top.
+ * Painter's order takes priority over batch count.
  **/
 BOOST_AUTO_TEST_CASE(returning_to_a_texture_does_not_reopen_its_batch) {
     v3d::render::realtime::canvas::Canvas canvas;
@@ -121,8 +121,8 @@ BOOST_AUTO_TEST_CASE(the_transform_stack_offsets_what_is_drawn_under_it) {
 }
 
 /**
- * A pop with nothing pushed leaves the canvas's own identity in place rather than emptying
- * the stack - an unbalanced pop in one caller must not corrupt every draw after it.
+ * A pop with nothing pushed leaves the canvas's own identity in place, not an empty stack, so
+ * an unbalanced pop in one caller does not corrupt every later draw.
  **/
 BOOST_AUTO_TEST_CASE(an_unbalanced_pop_leaves_the_identity_transform) {
     v3d::render::realtime::canvas::Canvas canvas;
@@ -178,8 +178,8 @@ BOOST_AUTO_TEST_CASE(the_projection_puts_the_origin_at_the_top_left) {
 }
 
 /**
- * A canvas that has never been sized still produces a usable projection rather than dividing
- * by zero - a window can report no area before the first resize.
+ * A canvas that has never been sized still produces a usable projection, without dividing by
+ * zero. A window can report no area before the first resize.
  **/
 BOOST_AUTO_TEST_CASE(an_unsized_canvas_has_a_finite_projection) {
     const v3d::render::realtime::canvas::Canvas canvas;
@@ -206,8 +206,8 @@ BOOST_AUTO_TEST_CASE(a_circle_is_a_fan_that_batches_with_untextured_quads) {
 }
 
 /**
- * A ring is a strip between two radii - two triangles per segment over a pair of vertices at
- * each end of it - and it batches with the untextured quads around it.
+ * A ring is a strip between two radii, with two triangles per segment over a pair of vertices
+ * at each end. It batches with the untextured quads around it.
  **/
 BOOST_AUTO_TEST_CASE(a_ring_is_a_strip_between_two_radii) {
     v3d::render::realtime::canvas::Canvas canvas;
@@ -287,7 +287,7 @@ BOOST_AUTO_TEST_CASE(text_is_appended_against_its_atlas_and_reindexed) {
 
 /**
  * A text buffer with nothing in it adds neither vertices nor a batch, so drawing an empty
- * string does not cut the batch a caller is in the middle of.
+ * string does not split the batch a caller is in the middle of.
  **/
 BOOST_AUTO_TEST_CASE(empty_text_adds_no_batch) {
     v3d::render::realtime::canvas::Canvas canvas;
@@ -325,7 +325,7 @@ BOOST_AUTO_TEST_CASE(a_scale_multiplies_what_is_drawn_under_it) {
 }
 
 /**
- * A clip cuts the stream where it opens and where it closes, and the batch between them
+ * A clip starts a new batch where it opens and where it closes, and the batch between them
  * carries the rectangle the device scissors to. Nothing is dropped on the cpu: the quad
  * inside the clip is still four vertices.
  **/
@@ -428,8 +428,8 @@ BOOST_AUTO_TEST_CASE(drawing_under_one_clip_stays_in_one_batch) {
 }
 
 /**
- * An unbalanced unclip leaves the canvas uncut rather than emptying the stack, the same
- * way an unbalanced pop leaves the identity transform.
+ * An unbalanced unclip leaves the canvas unclipped, not with an empty stack, in the same way
+ * that an unbalanced pop leaves the identity transform.
  **/
 BOOST_AUTO_TEST_CASE(an_unbalanced_unclip_leaves_the_canvas_uncut) {
     v3d::render::realtime::canvas::Canvas canvas;
@@ -444,7 +444,7 @@ BOOST_AUTO_TEST_CASE(an_unbalanced_unclip_leaves_the_canvas_uncut) {
 
 /**
  * clear() drops what is clipped along with the transform, so a frame that threw between a
- * clip and its unclip does not cut the next one.
+ * clip and its unclip does not clip the next one.
  **/
 BOOST_AUTO_TEST_CASE(clearing_drops_what_is_clipped) {
     v3d::render::realtime::canvas::Canvas canvas;

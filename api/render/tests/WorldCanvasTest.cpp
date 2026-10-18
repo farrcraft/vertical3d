@@ -98,8 +98,8 @@ BOOST_AUTO_TEST_CASE(the_uv_rectangle_follows_the_corner_order) {
 }
 
 /**
- * The stream cuts where the bound texture changes and nowhere else, as the 2D canvas does. A
- * sheet of sprites drawn from one atlas is one draw however many there are.
+ * A new batch starts where the texture changes and nowhere else, as in the 2D canvas. A sheet
+ * of sprites drawn from one atlas is one draw however many sprites there are.
  **/
 BOOST_AUTO_TEST_CASE(the_stream_cuts_where_the_texture_changes) {
     v3d::render::realtime::canvas::World canvas;
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(the_stream_cuts_where_the_texture_changes) {
     BOOST_CHECK_EQUAL(canvas.batches()[1].indices, 6);
     BOOST_CHECK_EQUAL(canvas.batches()[2].firstIndex, 24);
 
-    // an untextured quad cuts the batch too, because white is a texture like any other
+    // an untextured quad starts a new batch too, because white is a texture like any other
     canvas.quad(tile(5.0F, 0.0F), red);
     BOOST_CHECK_EQUAL(canvas.batches().size(), 4);
 }

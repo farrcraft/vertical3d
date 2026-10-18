@@ -326,10 +326,10 @@ BOOST_AUTO_TEST_CASE(each_skinned_entity_sharing_a_mesh_takes_its_own_pose) {
 }
 
 /**
- * Six entities sharing one model of two parts take one draw per part in each walk: two outline
- * draws and two surface draws, each of six instances. The same six, each given its own copy of
- * the model under its own key, take a draw per part per entity. Both draw the same picture, byte
- * for byte, since an instance reads the same object a lone draw would.
+ * Six entities sharing one model of two parts take one draw per part from entity::meshes(): two
+ * outline draws and two surface draws, each of six instances. The same six, each given its own
+ * copy of the model under its own key, take a draw per part per entity. Both draw the same
+ * picture, byte for byte, since an instance reads the same object a lone draw would.
  *
  * The pictures are written to data_out/lit_crowd_shared.png and data_out/lit_crowd_apart.png.
  **/
@@ -400,7 +400,7 @@ BOOST_AUTO_TEST_CASE(entities_sharing_a_mesh_are_drawn_in_one_draw_per_part) {
  * A grid of 576 cubes, each one object, is more than the scene's object buffer starts with. It
  * is drawn in two frames, the first left in flight while the second is built, and the top of
  * every cube in the second shows red where the cube stands. The buffer grows part way through
- * the walk, and the objects added before that must reach the bigger buffer.
+ * entity::meshes(), and the objects added before that must reach the bigger buffer.
  *
  * The picture is written to data_out/lit_crowd_grown.png.
  *
@@ -440,7 +440,8 @@ BOOST_AUTO_TEST_CASE(a_crowd_larger_than_the_object_buffer_draws_every_object) {
         pass->camera(view.view(), view.projection());
         pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F)));
         v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
-        // every cube shares one mesh of one part, so the walk is one draw of every instance
+        // every cube shares one mesh of one part, so entity::meshes() makes one draw of every
+        // instance
         BOOST_CHECK_EQUAL(pass->items().size(), 1U);
 
         VkCommandBuffer commands = headless.context->ring()->begin();

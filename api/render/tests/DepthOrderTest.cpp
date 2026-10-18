@@ -66,8 +66,8 @@ BOOST_AUTO_TEST_CASE(quads_come_out_furthest_first) {
 }
 
 /**
- * Equal keys with alternating textures are grouped by texture, so the canvas cuts two batches
- * where submission order would have cut four.
+ * Equal keys with alternating textures are grouped by texture, so the canvas makes two batches
+ * where submission order would make four.
  **/
 BOOST_AUTO_TEST_CASE(equal_keys_are_grouped_by_texture) {
     const TextureHandle firstTexture(1);
@@ -106,8 +106,8 @@ BOOST_AUTO_TEST_CASE(exact_equals_keep_their_submission_order) {
 }
 
 /**
- * What the helper hands over goes through the canvas's transform like anything else added
- * to it.
+ * What a DepthOrder hands to a canvas goes through the canvas's transform like anything else
+ * added to it.
  **/
 BOOST_AUTO_TEST_CASE(the_canvas_transform_applies) {
     DepthOrder order;

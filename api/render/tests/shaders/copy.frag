@@ -1,8 +1,8 @@
 #version 450
 
 /**
- * A full-screen pass that copies its source, a texel per pixel, read by position rather than
- * through a sampler so that no filtering can touch it. What it writes is what was read.
+ * A full-screen pass that copies its source, a texel per pixel. It reads by position with
+ * texelFetch, not through a sampler, so no filtering applies. It writes exactly what it reads.
  **/
 
 layout(set = 1, binding = 0) uniform sampler2D source;

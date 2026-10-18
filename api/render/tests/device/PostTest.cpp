@@ -108,7 +108,7 @@ boost::shared_ptr<v3d::image::Image> invertingStrip() {
  * Draw the sweep into a scene a texel per pixel, grade it, and read back the graded picture.
  *
  * @param sceneFormat the scene's format, which must be the one the headless context was made
- *        with, since its quads draw the sweep. A quad keeps its display value in either
+ *        with, since its quads draw the sweep. A quad keeps its displayed value in either format
  * @param outputFormat what the grade draws into
  **/
 boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const boost::shared_ptr<v3d::image::Image>& strip,

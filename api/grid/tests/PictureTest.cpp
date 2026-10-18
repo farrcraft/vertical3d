@@ -23,7 +23,7 @@ using v3d::grid::TileCoord;
 namespace {
 
 /**
- * Floor, wall and a low crate - the three kinds of terrain both formats in the tree describe.
+ * Floor, wall and a low crate.
  **/
 std::map<char, Terrain> legend() {
     return {

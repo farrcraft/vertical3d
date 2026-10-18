@@ -117,8 +117,7 @@ BOOST_AUTO_TEST_CASE(overlay_tile_corners_bound_the_tile_test) {
 BOOST_AUTO_TEST_CASE(overlay_is_lifted_clear_of_the_ground_test) {
     const TileGrid grid(4, 4);
 
-    // coplanar geometry z-fights the ground wherever depth testing is on, and every layer
-    // of the overlay shares one lift so none of them sinks into another
+    // every layer of the overlay sits at the same lift above the ground
     for (const glm::vec3& corner : tileCorners(grid, at(0, 0))) {
         BOOST_CHECK_CLOSE(corner.y, v3d::grid::OVERLAY_LIFT, 0.01F);
     }
@@ -161,8 +160,7 @@ BOOST_AUTO_TEST_CASE(overlay_grid_draws_the_boundaries_test) {
 
     outlineGrid(grid, INTERIOR, BORDER, recorder.sink());
 
-    // the lines are the boundaries rather than the tiles: five down the width and four
-    // across the height, not twelve tiles' worth
+    // one line per boundary: five across the width and four across the height
     BOOST_CHECK_EQUAL(recorder.segments().size(), 9U);
     BOOST_CHECK_EQUAL(recorder.coloured(BORDER), 4U);
     BOOST_CHECK_EQUAL(recorder.coloured(INTERIOR), 5U);
@@ -179,9 +177,7 @@ BOOST_AUTO_TEST_CASE(overlay_grid_spans_the_board_test) {
     const float spanZ = static_cast<float>(grid.height()) * grid.tileSize();
 
     for (const Segment& segment : recorder.segments()) {
-        // every line runs the full extent of the board on one axis and sits on a tile
-        // boundary on the other. The outline uses the grid's own arithmetic rather than a
-        // separate calculation of where the tiles are
+        // every line runs the full extent of the grid along one axis
         const bool alongZ = segment.from.x == segment.to.x;
         if (alongZ) {
             BOOST_CHECK_CLOSE(segment.from.z, min.z, 0.01F);
@@ -196,8 +192,8 @@ BOOST_AUTO_TEST_CASE(overlay_grid_spans_the_board_test) {
 BOOST_AUTO_TEST_CASE(overlay_a_tile_outline_lies_on_the_grid_outline_test) {
     const TileGrid grid(4, 4);
 
-    // the corner tile's outer corner is the board's own corner, so a highlight cannot sit
-    // half a tile off the lines it is drawn over
+    // the corner tile's outer corner is the grid's own corner, so a highlight lines up with
+    // the grid lines it is drawn over
     const std::array<glm::vec3, 4> corners = tileCorners(grid, at(0, 0));
     const glm::vec3 min = grid.worldMin();
 
@@ -215,7 +211,7 @@ BOOST_AUTO_TEST_CASE(overlay_a_default_sink_draws_nothing_test) {
 
 /**
  * A filled tile is the four corners the outline is drawn from, in the same order and at the
- * same lift, so a fill and an outline of one tile land on each other rather than beside.
+ * same lift, so a fill and an outline of one tile coincide.
  **/
 BOOST_AUTO_TEST_CASE(overlay_fills_a_tile_with_the_corners_it_outlines_test) {
     const TileGrid grid(4, 4);
@@ -234,8 +230,8 @@ BOOST_AUTO_TEST_CASE(overlay_fills_a_tile_with_the_corners_it_outlines_test) {
 }
 
 /**
- * A tile off the grid fills nothing, and a run of them skips the ones that are rather than
- * refusing the whole run - a movement range clipped by the board's edge is the common case.
+ * A tile off the grid fills nothing. fillTiles() skips the tiles off the grid and fills the
+ * rest, as for a movement range cut off by the edge of the grid.
  **/
 BOOST_AUTO_TEST_CASE(overlay_fill_skips_tiles_off_the_grid_test) {
     const TileGrid grid(4, 4);

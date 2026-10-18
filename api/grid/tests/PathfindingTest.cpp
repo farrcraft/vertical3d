@@ -59,8 +59,8 @@ bool contains(const std::vector<TileCoord>& tiles, TileCoord tile) {
     return std::ranges::find(tiles, tile) != tiles.end();
 }
 
-// whether every consecutive pair in a path is one 8 way step apart. a path that teleports is
-// the failure mode a length assertion alone would not catch
+// whether every consecutive pair in a path is one 8-way step apart. A check of the length alone
+// would miss a path that skips a tile
 bool contiguous(const std::vector<TileCoord>& path) {
     for (std::size_t i = 1; i < path.size(); ++i) {
         if (tileDistance(path[i - 1], path[i]) != 1) {
@@ -152,10 +152,10 @@ BOOST_AUTO_TEST_CASE(findpath_rounding_an_offset_wall_is_free_test) {
     BOOST_CHECK_EQUAL(contiguous(path), true);
     BOOST_CHECK_EQUAL(std::ranges::none_of(path, [](TileCoord t) { return t.x == 4 && t.y < 8; }), true);
 
-    // straight across is 8 steps, and going around by way of the gap at (4, 8) is also 8.
-    // the four rows of detour are absorbed by the four columns of travel it already had to
-    // make. with 8 way movement at a flat cost, a wall adds cost only when the way round
-    // leaves the diagonal envelope
+    // straight across is 8 steps, and going round by the gap at (4, 8) is also 8. The detour
+    // climbs four rows while it crosses eight columns, so each row is climbed by a diagonal
+    // step that also crosses a column. With 8-way movement at a flat cost, a wall adds cost
+    // only when the detour needs more rows than the route has columns to cross
     BOOST_CHECK_EQUAL(path.size(), 9U);
 }
 
@@ -214,8 +214,8 @@ BOOST_AUTO_TEST_CASE(findpath_the_start_is_never_tested_test) {
     TileGrid grid = makeGrid();
     grid.setPassable(CENTRE, false);
 
-    // the mover stands on the start tile; whatever makes it unenterable does not trap
-    // whoever is already there
+    // the mover stands on the start tile, so whatever makes it unenterable does not trap the
+    // mover
     const std::vector<TileCoord> path = findPath(grid, CENTRE, at(6, 4), blocking({ CENTRE }));
 
     BOOST_CHECK_EQUAL(path.size(), 3U);
@@ -262,8 +262,8 @@ BOOST_AUTO_TEST_CASE(findpath_cannot_squeeze_between_two_blocked_tiles_test) {
 BOOST_AUTO_TEST_CASE(findpath_the_corner_rule_reads_the_filter_too_test) {
     const TileGrid grid = makeGrid();
 
-    // the same rule, with the blocked tiles coming from the filter rather than from the
-    // grid: movers standing corner to corner block like a wall
+    // the same rule, with the blocked tiles from the filter instead of the grid. Movers
+    // standing corner to corner block like a wall
     const std::vector<TileCoord> path =
         findPath(grid, at(3, 3), at(4, 4), blocking({ at(4, 3), at(3, 4) }));
 
@@ -397,8 +397,8 @@ BOOST_AUTO_TEST_CASE(reachabletiles_rejects_a_negative_budget_test) {
 BOOST_AUTO_TEST_CASE(reachabletiles_the_corner_rule_charges_what_the_path_does_test) {
     TileGrid grid = makeGrid();
 
-    // the highlight and the path search read one predicate: if they ever disagree, the
-    // highlight offers a tile the move then refuses
+    // reachableTiles() and findPath() apply the same corner rule, so a highlight never offers
+    // a tile for less than the move costs
     grid.setCover(at(4, 3), Cover::Full);
     grid.setCover(at(3, 4), Cover::Full);
     grid.setPassable(at(4, 3), false);
@@ -425,8 +425,8 @@ BOOST_AUTO_TEST_CASE(distancefield_agrees_with_tiledistance_on_open_ground_test)
 BOOST_AUTO_TEST_CASE(distancefield_costs_what_findpath_charges_test) {
     TileGrid grid = makeGrid();
 
-    // a wall across the middle of the board with one hole in it: the tile against the wall
-    // is the closest one by tileDistance and the furthest one from anywhere that leads round
+    // a wall across the middle of the grid, with one hole at its far end. The tile against the
+    // wall is the closest to the goal by tileDistance(), but the furthest by any route round
     for (int x = 0; x < 8; ++x) {
         grid.setPassable(at(x, 4), false);
     }
@@ -453,9 +453,9 @@ BOOST_AUTO_TEST_CASE(distancefield_the_tile_against_a_wall_is_further_than_the_w
 
     const DistanceField field(grid, at(0, 8));
 
-    // (0,3) is five tiles from the goal as the crow flies, and stepping down the column
-    // toward it is what a greedy approach does; the only way round is the hole at the far end
-    // of the wall, which every one of those steps walks away from
+    // (0,3) is five tiles from the goal in a straight line, and a greedy mover steps down the
+    // column toward it. The only way round is the hole at the far end of the wall, and each of
+    // those steps leads away from the hole
     BOOST_CHECK_EQUAL(tileDistance(at(0, 3), at(0, 8)), 5);
     BOOST_CHECK_EQUAL(field.cost(at(0, 3)) > field.cost(at(7, 3)), true);
 }
@@ -476,8 +476,8 @@ BOOST_AUTO_TEST_CASE(distancefield_a_walled_off_tile_is_unreachable_test) {
 BOOST_AUTO_TEST_CASE(distancefield_the_goal_is_never_tested_test) {
     const TileGrid grid = makeGrid();
 
-    // whoever is standing on the goal does not make it unreachable - the same exemption
-    // findPath() gives its start, so an approach can be measured to an occupied tile
+    // whoever stands on the goal does not make it unreachable, as findPath() does not test
+    // its start. An approach can therefore be measured to an occupied tile
     const DistanceField field(grid, CENTRE, blocking({ CENTRE }));
 
     BOOST_CHECK_EQUAL(field.cost(CENTRE), 0);

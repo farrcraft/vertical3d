@@ -27,8 +27,8 @@ namespace v3d::test {
 namespace {
 
 /**
- * Small, and above the width Windows enforces for a window with a title bar, so the chain is
- * the size asked for.
+ * Small, but wider than the minimum Windows enforces for a window with a title bar, so the
+ * swapchain is the size requested.
  **/
 const int windowWidth = 160;
 const int windowHeight = 120;
@@ -74,8 +74,8 @@ Windowed::~Windowed() {
 /**
  **/
 bool Windowed::silent() const {
-    // the layer must be on for an empty log to mean anything: where it is not installed nothing
-    // checked the calls, and no errors reported looks exactly like a clean run
+    // no errors means a clean run only when the layer is on. Without the layer nothing checks
+    // the calls, and every run reports no errors
     const boost::shared_ptr<render::realtime::vulkan::device::Instance> instance = window->instance();
     if (!instance->validating()) {
         BOOST_TEST_MESSAGE("the validation layer is not installed - this case asserts nothing");
@@ -94,7 +94,7 @@ bool windowAvailable() {
         const Windowed windowed;
         return true;
     } catch (const std::exception& error) {
-        // the console rather than the logger, which writes to a file beside the executable
+        // write to the console, not the logger, which writes to a file
         std::cerr << "no window to present to: " << error.what() << "\n";
         return false;
     }

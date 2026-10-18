@@ -242,8 +242,9 @@ BOOST_AUTO_TEST_CASE(tilegrid_placed_by_its_corner_test) {
 }
 
 /**
- * Two grids placed side by side agree on their seam. A point on it belongs to the higher tile,
- * which is the second grid's first column. The first grid puts it just off its board.
+ * Two grids placed side by side agree on the edge they share. A point on that edge belongs to
+ * the higher tile, in the second grid's first column. The first grid puts the point just off
+ * its own edge.
  **/
 BOOST_AUTO_TEST_CASE(tilegrid_side_by_side_grids_agree_on_their_seam_test) {
     const TileGrid west(4, 4, 1.0F, glm::vec3(0.0F));

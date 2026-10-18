@@ -42,8 +42,8 @@ int stepCost(TileCoord step) {
 }
 
 /**
- * One tile in the priority queue, ordered by total estimated cost. Dijkstra is the same type
- * with the heuristic left at zero.
+ * One tile in the priority queue, ordered by estimated total cost. flood() uses the same type
+ * with a heuristic of zero, which makes it Dijkstra's algorithm.
  **/
 struct Frontier {
     int estimate{0};
@@ -110,12 +110,13 @@ class Walk {
 };
 
 /**
- * Every tile a walk reaches from a seed and what reaching it cost: Dijkstra, which is the A* of
- * findPath() with the heuristic left at zero. A step that would cost more than the budget is
- * not taken.
+ * Finds every tile reachable from seed, and the cost of reaching it. This is Dijkstra's
+ * algorithm: the A* search of findPath() with a heuristic of zero. A step that would take the
+ * cost past budget is not taken.
  *
- * @param settled told of each tile once, when its cost is final, cheapest first - or empty
- * @return each tile's cost by index, UNREACHED where the flood did not get
+ * @param settled called once for each tile when its cost is final, cheapest first. May be
+ *        empty
+ * @return each tile's cost by grid index, or UNREACHED where the flood did not reach
  **/
 std::vector<int> flood(const Walk& walk, TileCoord seed, int budget, const std::function<void(TileCoord, int)>& settled) {
     std::vector<int> best(walk.count(), UNREACHED);
@@ -247,10 +248,10 @@ DistanceField::DistanceField(const TileGrid& grid, TileCoord goal, const TileFil
     }
 
     width_ = grid.width();
-    // the flood goes outward from the goal and records each step on the tile it leads *to*.
-    // it reads as the cost of coming back the other way because both halves of the rule are
-    // symmetric. A diagonal costs the same either way. The two corners it squeezes between
-    // are the same two tiles from both ends. UNREACHED and UNREACHABLE are one value
+    // the flood goes outward from the goal and records each cost on the tile a step leads to.
+    // That is also the cost of the route back, because a step costs the same in both
+    // directions, and a diagonal passes between the same two tiles from either end. A budget
+    // of UNREACHED sets no limit. UNREACHED and UNREACHABLE are the same value
     costs_ = flood(Walk(grid, enterable), goal, UNREACHED, {});
 }
 

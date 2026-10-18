@@ -33,8 +33,8 @@ namespace lighting = v3d::render::realtime::lighting;
 namespace {
 
 /**
- * Where a world point lands in clip space, after the divide - which an orthographic matrix
- * leaves at one anyway.
+ * Where a world point lands in clip space, after the perspective divide. An orthographic matrix
+ * leaves w at one, so the divide changes nothing for it.
  **/
 glm::vec3 project(const glm::mat4& matrix, const glm::vec3& point) {
     const glm::vec4 clip = matrix * glm::vec4(point, 1.0F);
@@ -173,9 +173,9 @@ BOOST_AUTO_TEST_CASE(a_radius_out_is_the_edge_of_the_map) {
 }
 
 /**
- * A light is drawn through the matrix a camera of the tree's own would build at the same eye,
- * looking at the same point with the same box. The shadow pass can then cull with the cel
- * pass's winding. A camera built any other way can turn every face around on screen.
+ * The light's matrix is the one a type::camera camera builds at the same eye, looking at the
+ * same point through the same box. The shadow pass can then cull with the cel pass's winding. A
+ * matrix built any other way can reverse the winding of every face on screen.
  **/
 BOOST_AUTO_TEST_CASE(the_light_sees_as_a_camera_does) {
     checkSeenAsCamera(v3d::type::camera::Profile::Hand::UpCrossDirection);
@@ -194,8 +194,8 @@ BOOST_AUTO_TEST_CASE(the_light_sees_as_a_mirrored_camera_does) {
 }
 
 /**
- * A light straight overhead looks straight down, where the usual up has no right to cross
- * into. The matrix takes z as up instead, and is still a matrix rather than a set of NaNs.
+ * A light straight overhead looks straight down, along the usual up, so crossing up with the
+ * view gives no right. The matrix takes z as up instead, and its values stay finite, not NaN.
  **/
 BOOST_AUTO_TEST_CASE(a_light_overhead_takes_z_as_up) {
     const glm::vec3 centre(1.0F, 0.0F, 2.0F);

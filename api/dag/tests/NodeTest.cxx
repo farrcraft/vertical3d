@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_CASE(node_id_test) {
     const v3d::dag::Node first;
     const v3d::dag::Node second;
 
-    // the selection model keys on the id, so two nodes never share one
+    // two nodes never share an id, and a later node has a larger one
     BOOST_CHECK(first.id() != second.id());
     BOOST_CHECK(second.id() > first.id());
     BOOST_CHECK(v3d::dag::Node::baseID() >= second.id());

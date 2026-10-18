@@ -18,14 +18,15 @@ namespace v3d::ecs::component {
 namespace {
 
 /**
- * How long a looping clip's unwrapped time may grow before whole loops are taken off it. A
- * float still resolves half a millisecond here, and loses that within the next few hours.
+ * The unwrapped time, in seconds, at which a looping clip's time is wrapped back into the clip.
+ * A float near this value resolves about half a millisecond. Within a few more hours of play it
+ * would resolve much less.
  **/
 const float rebaseAfter = 4096.0F;
 
 /**
- * The earlier of two times of the same looping clip, moved back by whole loops when the later
- * one was rebased in between, so that the two still run forwards.
+ * earlier.time, moved back by whole loops when later.time was wrapped between the two steps.
+ * The two times then still run forwards.
  **/
 float unrolled(const Playback& earlier, const Playback& later) {
     if (!later.loops || later.duration <= 0.0F || earlier.time <= later.time) {
@@ -60,8 +61,8 @@ void play(Playback* playback, const Start& start) {
 }
 
 void advance(Playback* playback, float step) {
-    // the rest pose has no clock of its own, but a fade into it still runs below, or the old
-    // clip would be blended in at weight zero for ever
+    // the rest pose has no clock, so only a clip's time advances here. A fade into the rest
+    // pose still runs below. Without it, the old clip would never fade out
     if (playback->clip != Playback::none) {
         const type::animation::Clock clock(playback->duration, playback->loops);
         playback->time = clock.advance(playback->time, step);
@@ -102,8 +103,8 @@ Playback interpolate(const Playback& from, const Playback& to, float alpha) {
     Playback blended = to;
     blended.time = glm::mix(unrolled(from, to), to.time, alpha);
     if (to.from != Playback::none && from.from == to.from) {
-        // the faded clip's time is kept wrapped, so a wrap between the steps is drawn at the
-        // later one rather than sweeping back through the clip
+        // fromTime is kept wrapped. When it wraps between the steps, draw the later step's
+        // time instead of sweeping back through the clip
         blended.fromTime = from.fromTime <= to.fromTime ? glm::mix(from.fromTime, to.fromTime, alpha) : to.fromTime;
         blended.fade = glm::mix(from.fade, to.fade, alpha);
     }

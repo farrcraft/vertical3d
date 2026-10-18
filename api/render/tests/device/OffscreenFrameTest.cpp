@@ -47,7 +47,8 @@ Recorder::Target describe(const boost::shared_ptr<RenderTarget>& target) {
     described.image = target->image();
     described.view = target->view();
     described.extent = target->extent();
-    // not presented, and PRESENT_SRC is not a layout a device with no swapchain extension has
+    // the image is not presented, and a device without the swapchain extension has no
+    // PRESENT_SRC layout
     described.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     return described;
 }
@@ -132,7 +133,7 @@ bool nearGrey(unsigned char value) {
 BOOST_AUTO_TEST_SUITE(offscreen_frame_test)
 
 /**
- * A complete frame, drawn into a target rather than a chain: a pass that clears, recorded by
+ * A complete frame, drawn into a target, not a swapchain image: a pass that clears, recorded by
  * the recorder, submitted, and read back. The case passes if the validation layer reports no
  * errors and every texel is the clear colour.
  **/
@@ -155,7 +156,7 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
     source.image = target->image();
     source.extent = target->extent();
     source.format = target->format();
-    // what the frame was told to leave it in, since it is not presented
+    // the layout the frame leaves it in, since it is not presented
     source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     capture.record(commands, source);
 
@@ -168,8 +169,8 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
     BOOST_REQUIRE(picture);
     BOOST_CHECK_EQUAL(picture->width(), width);
     BOOST_CHECK_EQUAL(picture->height(), height);
-    // every texel, not a sample of them: a clear that reached only part of the target is the
-    // kind of wrong a spot check in the middle would pass
+    // every texel, not a sample. A spot check in the middle would pass a clear that reached
+    // only part of the target
     for (uint32_t y = 0; y < height; y++) {
         for (uint32_t x = 0; x < width; x++) {
             if (texel(picture, x, y) != rgba(0, 255, 0, 255)) {
@@ -182,7 +183,7 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
 
 /**
  * The same frame with a quad in it, so the case reaches a pipeline: the renderer compiles one
- * against the target's format rather than a chain's, and the recorder binds and draws it.
+ * against the target's format, not a swapchain's, and the recorder binds and draws it.
  *
  * The picture is compared against a committed reference, so it is deliberately simple: one
  * flat rect on a cleared target, at integer boundaries, in channels at the ends of their
@@ -240,9 +241,9 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
  * colours over a rectangle that is wider than it is tall, so a transpose and a flip in either
  * axis all give different pictures.
  *
- * It is drawn at one texel per pixel on integer boundaries, so the output is exact. Every
- * sampler in the tree is linear, and at that scale the filter lands on texel centres, so
- * each texel reaches the target unchanged.
+ * It is drawn at one texel per pixel on integer boundaries, so the output is exact. The default
+ * sampler is linear, and at that scale the filter lands on texel centres, so each texel reaches
+ * the target unchanged.
  **/
 BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -303,12 +304,12 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
 
 /**
  * The same clear, on a device whose memory comes from a suballocator rather than from one
- * device allocation per resource. Nothing in this tree selects that allocator, because direct
- * allocation is the default. This case is the only code that runs the suballocated path.
+ * device allocation per resource. No app selects that allocator, because direct allocation is
+ * the default, so only the tests run the suballocated path.
  *
  * It asserts the picture as well as the silence, because an allocation bound at the wrong
- * offset is a wrong picture rather than a reported error - a suballocated region starts part
- * way into its block, and the direct path's offset is always zero.
+ * offset gives a wrong picture, not a reported error. A suballocated region starts part way
+ * into its block, and the direct path's offset is always zero.
  **/
 BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
     v3d::test::Headless headless(colourFormat, width, height,
@@ -444,7 +445,8 @@ BOOST_AUTO_TEST_CASE(an_abandoned_frame_can_be_begun_again) {
  * is destroyed once framesInFlight frames after that one have begun.
  **/
 BOOST_AUTO_TEST_CASE(a_retirement_outlives_the_frame_about_to_begin) {
-    // declared before the device, because the ring runs whatever is still held when it goes
+    // declared before the device, because the ring runs every destroy it still holds when the
+    // ring is destroyed
     bool queued = false;
     bool recording = false;
     v3d::test::Headless headless(colourFormat, width, height);
@@ -488,7 +490,8 @@ BOOST_AUTO_TEST_CASE(a_grey_quad_reads_back_grey_from_an_srgb_target) {
 
 /**
  * The same quad reads back as 0x80 from a UNORM target, which stores what it is given. A quad
- * decoded whatever its target would read about 0x37 here, darkening every UNORM app's ui.
+ * decoded to linear for every target would read about 0x37 here, and darken the UI of every app
+ * with a UNORM target.
  *
  * Passes before the change: the decode to linear is what the change adds, so before it nothing
  * could reach a UNORM target and darken it.

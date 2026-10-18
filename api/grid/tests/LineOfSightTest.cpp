@@ -37,8 +37,8 @@ TileGrid makeGrid() {
     return TileGrid(9, 9);
 }
 
-// whether every consecutive pair in a traced line is one 8 way step apart. a line that
-// teleports over a tile is the failure mode a length assertion alone would not catch
+// whether every consecutive pair in a traced line is one 8-way step apart. A check of the
+// length alone would miss a line that skips a tile
 bool contiguous(const std::vector<TileCoord>& line) {
     for (std::size_t i = 1; i < line.size(); ++i) {
         if (tileDistance(line[i - 1], line[i]) != 1) {
@@ -64,8 +64,8 @@ std::vector<TileCoord> allTiles(const TileGrid& grid) {
     return tiles;
 }
 
-// splitmix64's finaliser over the tile and the seed. the sweep below needs a scatter that is
-// varied and reproducible, and nothing else - no state has to be carried between tiles
+// splitmix64's finaliser over the tile and the seed. It gives a scatter that is varied and
+// reproducible, and carries no state from one tile to the next
 std::uint64_t mix(std::uint64_t value) {
     value += 0x9e3779b97f4a7c15ULL;
     value = (value ^ (value >> 30)) * 0xbf58476d1ce4e5b9ULL;
@@ -75,9 +75,8 @@ std::uint64_t mix(std::uint64_t value) {
 
 // a grid with roughly a fifth of its tiles walled off, from a seed.
 //
-// layouts are generated rather than authored because the asymmetry the sweep looks for
-// appears only on particular geometry, and a few hand drawn maps would cover only the
-// geometry someone guessed at
+// the layouts are generated, not drawn by hand. An asymmetry appears only on particular
+// geometry, and a few hand-drawn maps would cover only the cases someone thought of
 TileGrid scatterFullCover(std::uint64_t seed) {
     TileGrid grid = makeGrid();
 
@@ -207,10 +206,9 @@ BOOST_AUTO_TEST_CASE(sightline_an_off_grid_endpoint_traces_nothing_test) {
     BOOST_CHECK_EQUAL(sightLine(grid, at(0, 9), at(4, 4)).empty(), true);
 }
 
-// the sweeps below are over every ordered pair rather than a sample, because the asymmetry a
-// naive trace produces appears only where a line passes exactly through a corner, and nothing
-// about a sampled pair says whether it does. one assertion per sweep rather than one per
-// pair, so a passing run does not log 32,000 checks
+// the sweeps below cover every ordered pair, not a sample. A naive trace is asymmetric only
+// where a line passes exactly through a corner, and a sample can miss every such pair. Each
+// sweep makes one assertion, not one per pair, so a passing run does not log a check per pair
 
 BOOST_AUTO_TEST_CASE(lineofsight_is_symmetric_over_every_pair_test) {
     std::string asymmetric;
@@ -234,8 +232,8 @@ BOOST_AUTO_TEST_CASE(lineofsight_is_symmetric_over_every_pair_test) {
 BOOST_AUTO_TEST_CASE(lineofsight_stays_symmetric_with_a_blocker_test) {
     const TileGrid grid = scatterFullCover(4242ULL);
 
-    // an extra blocker with from shape of its own, so the sweep is not just re-testing the
-    // grid's cover under another name
+    // a blocker with a pattern of its own, so the sweep does not just re-test the grid's
+    // cover under another name
     const SightBlocker smoke = [](TileCoord tile) {
         return ((tile.x * 3) + (tile.y * 5)) % 7 == 0;
     };

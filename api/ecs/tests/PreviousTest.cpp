@@ -14,15 +14,15 @@
 
 namespace {
 
-/** A tile address, which has no interpolate() and so no position between two of it. **/
+/** A tile address. It has no interpolate(), so there is no value between two tiles. **/
 struct Tile {
     int x = 0;
 };
 
 };  // namespace
 
-// the positions can be drawn between steps, and a tile cannot: interpolated<Tile> fails to
-// compile rather than snapping
+// the positions can be drawn between steps and a tile cannot. interpolated<Tile> fails to
+// compile instead of snapping
 static_assert(v3d::ecs::Interpolable<v3d::ecs::component::Position1D>);
 static_assert(v3d::ecs::Interpolable<v3d::ecs::component::Position2D>);
 static_assert(!v3d::ecs::Interpolable<Tile>);
@@ -51,8 +51,7 @@ BOOST_AUTO_TEST_CASE(previous_interpolated_test) {
 }
 
 /**
- * A snapshot replaces the previous one rather than keeping the first, so what is blended is
- * always the last two steps.
+ * A snapshot replaces the previous one, so interpolated() always blends the last two steps.
  **/
 BOOST_AUTO_TEST_CASE(previous_snapshot_replaces_test) {
     entt::registry registry;
@@ -119,9 +118,8 @@ BOOST_AUTO_TEST_CASE(previous_snapshot_covers_every_entity_test) {
 }
 
 /**
- * An entity that loses its value and is given one again later is drawn at the new one. The
- * snapshot between the two takes its previous step away with the value, so nothing is blended
- * from where it was before it lost it.
+ * An entity that loses its value and gets one again later is drawn at the new value. The
+ * snapshot between the two removes its Previous, so nothing is blended from the old value.
  **/
 BOOST_AUTO_TEST_CASE(previous_removed_with_its_value_test) {
     entt::registry registry;

@@ -39,8 +39,8 @@ std::size_t mismatches(const boost::shared_ptr<v3d::image::Image>& image, unsign
  * A capture holds the frame it was requested for, not the one before it.
  *
  * The first frame is cleared red and the captured one green. A copy taken before the frame is
- * recorded reads the image as the previous frame using it left it, which is red or undefined,
- * and never green.
+ * recorded would read the image as an earlier frame left it, which is red or undefined, never
+ * green.
  **/
 BOOST_AUTO_TEST_CASE(engine3d_capture_writes_the_frame_it_presents_test) {
     const v3d::test::Windowed windowed;

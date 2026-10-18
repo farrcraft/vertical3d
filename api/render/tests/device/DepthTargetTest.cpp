@@ -215,8 +215,9 @@ BOOST_AUTO_TEST_CASE(a_depth_only_target_holds_the_depth_drawn) {
 }
 
 /**
- * A pass's bias reaches a biased pipeline. How far it moves a depth is the implementation's,
- * by way of the format's smallest step, so the case pins only that it moved away from the eye.
+ * A pass's bias reaches a biased pipeline. How far the bias moves a depth depends on the
+ * implementation and the format's smallest step, so the case checks only that the depth moved
+ * away from the eye.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_bias_moves_the_depth_drawn) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -238,9 +239,10 @@ BOOST_AUTO_TEST_CASE(a_pass_bias_moves_the_depth_drawn) {
 }
 
 /**
- * A target written by a pass without depth and by one with it has its depth opened and closed
- * once a frame, whichever of the two comes first. The validation layer reports a depth image
- * used in the wrong layout, so the case checks that it is silent and that the depth is right.
+ * A target written by a pass without depth and by one with depth has its depth image moved into
+ * the attachment layout once per frame, whichever of the two passes comes first. The validation
+ * layer reports a depth image used in the wrong layout, so the case checks that the layer is
+ * silent and that the depth is right.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_without_depth_beside_one_with_it) {
     for (const bool depthFirst : {false, true}) {

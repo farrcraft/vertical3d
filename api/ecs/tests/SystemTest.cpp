@@ -15,8 +15,8 @@
 namespace {
 
 /**
- * A system holds the registry it was given rather than one of its own, because the app
- * owns the registry and passes it in as a raw pointer.
+ * A system works on the registry it is given. The app owns the registry and passes it in as a
+ * raw pointer.
  **/
 class CountingSystem final : public v3d::ecs::System {
  public:
@@ -69,8 +69,8 @@ BOOST_AUTO_TEST_CASE(system_simulate_test) {
 }
 
 /**
- * The engine's loop reads the return value to decide whether to stop, so a system that fails
- * must be able to report it through the base.
+ * A system reports a failure by returning false, through a pointer to the base. The engine's
+ * loop stops when simulate() returns false.
  **/
 BOOST_AUTO_TEST_CASE(system_simulate_failure_test) {
     entt::registry registry;

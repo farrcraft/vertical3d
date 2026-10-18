@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(poses_are_laid_end_to_end) {
 
 /**
  * An entity with no playback, and one playing nothing, stand in the rest pose, whose palette
- * is the identity; one whose mesh was released is not posed.
+ * is the identity. An entity whose mesh was released is not posed.
  **/
 BOOST_AUTO_TEST_CASE(an_entity_with_nothing_playing_stands_at_rest) {
     const v3d::test::Headless headless(colourFormat, width, height);

@@ -12,11 +12,10 @@
 namespace v3d::ecs::component {
 
 /**
- * Where a thing stands in a 3D world, which way it is turned, and how large it is.
+ * Where an entity stands in a 3D world, which way it is turned, and how large it is.
  *
- * The position is the thing's origin: a sprite's feet, a mesh's own origin. The fields are
- * written directly, since simulation sets them every step. The value is type::Transform, which
- * an editor mesh is placed by too.
+ * position is the entity's origin, such as a sprite's feet or a mesh's own origin. Simulation
+ * writes the fields directly. The type is type::Transform, which also places an editor mesh.
  **/
 using Transform = v3d::type::Transform;
 
@@ -27,8 +26,8 @@ using Transform = v3d::type::Transform;
 glm::quat aboutY(float radians);
 
 /**
- * The transform alpha of the way from one to the other, which ecs::interpolated uses to draw
- * it between two simulation steps.
+ * The transform alpha of the way from one to the other. ecs::interpolated() uses it to draw
+ * the transform between two simulation steps.
  **/
 using v3d::type::interpolate;
 

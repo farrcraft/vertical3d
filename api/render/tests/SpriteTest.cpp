@@ -61,10 +61,6 @@ void draw(const entt::registry& registry, float alpha, const glm::vec3& across,
     order.into(canvas);
 }
 
-/**
- * The corners of a billboard built by hand, for comparing against what sprites() emits: half
- * the width either side along right, the height along up, top-left first.
- **/
 /** Where a billboard stands, its size, and the directions its width and height run in. **/
 struct Upright {
     glm::vec3 feet{0.0F};
@@ -74,6 +70,10 @@ struct Upright {
     glm::vec3 rise{0.0F, 1.0F, 0.0F};
 };
 
+/**
+ * The corners of a billboard built by hand, to compare with what sprites() emits: half the
+ * width either side along across, the height along rise, top-left first.
+ **/
 canvas::World::Corners billboard(const Upright& upright) {
     const glm::vec3& feet = upright.feet;
     const float width = upright.width;

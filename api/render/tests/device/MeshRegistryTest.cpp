@@ -72,8 +72,8 @@ const uint32_t albedoShader[] =
 ;  // NOLINT(whitespace/semicolon)
 
 /**
- * A registry loading from the asset suite's fixtures, which the build names rather than
- * copying - see V3D_ASSET_FIXTURES.
+ * A registry loading from the asset suite's fixtures. The build passes their directory in
+ * V3D_ASSET_FIXTURES instead of copying them.
  **/
 boost::shared_ptr<MeshRegistry> registry(v3d::test::Headless* headless) {
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
@@ -306,8 +306,8 @@ BOOST_AUTO_TEST_CASE(each_part_has_its_own_albedo) {
 }
 
 /**
- * Two parts naming one image share it, and it is released once, when the entry is - not when
- * the first of the two parts is counted off.
+ * Two parts naming one image share it, and it is released once, with the entry, not when the
+ * first of the two parts is released.
  **/
 BOOST_AUTO_TEST_CASE(two_parts_naming_one_image_share_it) {
     v3d::test::Headless headless(colourFormat, width, height);

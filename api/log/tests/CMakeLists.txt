@@ -1,4 +1,4 @@
-# The wrapper is a name and two levels over spdlog's global registry - no window, no device.
+# Logger wraps spdlog's global registry. The test needs no window and no device.
 v3d_add_test(log
 	"TestMain.cpp"
 	"LoggerTest.cpp")

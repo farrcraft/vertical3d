@@ -21,8 +21,8 @@ using Node = v3d::render::realtime::Frame::Node;
 
 namespace {
 
-// stand-ins for targets: the ordering compares identities and never looks behind them. The
-// values differ so that nothing could fold the two into one address
+// stand-ins for targets. The ordering compares only their addresses. The values differ so that
+// the compiler cannot merge the two into one address
 const int sceneTarget = 1;
 const int shadowTarget = 2;
 
@@ -36,7 +36,7 @@ Node node(const void* writes, const std::vector<const void*>& reads = {}) {
 BOOST_AUTO_TEST_SUITE(frame_test)
 
 /**
- * A frame starts with no passes at all - the engine adds the one it draws through.
+ * A frame starts with no passes. The engine adds the pass it draws through.
  **/
 BOOST_AUTO_TEST_CASE(frame_starts_empty) {
     const v3d::render::realtime::Frame frame;
@@ -80,8 +80,8 @@ BOOST_AUTO_TEST_CASE(a_pass_clears_by_default) {
 }
 
 /**
- * Items come back in submission order. A pass sorts only when it has been asked to, so it
- * must not reorder anything behind the caller's back.
+ * Items come back in submission order. A pass sorts only when it is configured to, so an
+ * unsorted pass never reorders its items.
  **/
 BOOST_AUTO_TEST_CASE(items_keep_submission_order) {
     v3d::render::realtime::Pass pass("colour");
@@ -157,9 +157,9 @@ BOOST_AUTO_TEST_CASE(a_pass_has_an_identity_camera_until_it_is_given_one) {
 }
 
 /**
- * A pass records in submission order unless it is told otherwise, because 2D content is
- * painter ordered and the key groups by pipeline and material within a layer - sorting a
- * canvas's batches would put a panel over the text drawn on it.
+ * A pass records in submission order unless it is configured to sort. 2D content is drawn in
+ * painter's order, and the key groups by pipeline and material within a layer. Sorting a
+ * canvas's batches would therefore put a panel over the text drawn on it.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_records_in_submission_order_by_default) {
     v3d::render::realtime::Pass pass("overlay");
@@ -222,8 +222,8 @@ BOOST_AUTO_TEST_CASE(a_sorted_pass_records_in_key_order) {
 
 /**
  * Equal keys keep the order they were submitted in. A run of quads sharing a pipeline and a
- * material depends on it - they differ only in where they are on the screen, and the later
- * one has to stay on top.
+ * material depends on it. They differ only in where they are on the screen, and the later one
+ * stays on top.
  **/
 BOOST_AUTO_TEST_CASE(sorting_a_pass_is_stable) {
     v3d::render::realtime::Pass pass("scene");
@@ -265,7 +265,8 @@ BOOST_AUTO_TEST_CASE(sorting_is_configured_per_pass) {
 
 /**
  * A pass reading a target is recorded after the pass drawing into it, even when the reader was
- * created first. Engine3D's colour pass is such a reader: it is made before an app adds anything.
+ * created first. Engine3D's colour pass is such a reader, and Engine3D creates it before an app
+ * adds any pass.
  **/
 BOOST_AUTO_TEST_CASE(a_reader_is_recorded_after_a_writer_created_later) {
     const std::vector<Node> nodes{node(nullptr, {&sceneTarget}), node(&sceneTarget)};
@@ -273,7 +274,7 @@ BOOST_AUTO_TEST_CASE(a_reader_is_recorded_after_a_writer_created_later) {
 }
 
 /**
- * Passes the reads do not order keep the order they were created in. Passes into one target
+ * Passes that no read orders keep the order they were created in. Passes into one target
  * keep it whatever else moves. An overlay created after the colour pass still draws over it
  * once the scene the colour pass reads has been moved in front of both.
  **/

@@ -65,8 +65,8 @@ BOOST_AUTO_TEST_CASE(slots_are_handed_out_in_order) {
 }
 
 /**
- * Resolving something that was never registered gives nothing rather than a stale
- * reference - a recorder walking a frame full of items has to be able to skip one.
+ * Resolving a handle that was never registered gives nothing, not a stale reference, so a
+ * recorder can skip an item whose resource does not exist.
  **/
 BOOST_AUTO_TEST_CASE(an_unknown_handle_resolves_to_nothing) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;
@@ -96,8 +96,8 @@ BOOST_AUTO_TEST_CASE(a_released_handle_resolves_to_nothing) {
 }
 
 /**
- * A slot freed by a release is reused, and the old handle does not reach the new occupant
- * even though both name the same slot - the generation is what tells them apart.
+ * A slot freed by a release is reused, and the old handle does not reach the new occupant. Both
+ * handles name the same slot, and the generation tells them apart.
  **/
 BOOST_AUTO_TEST_CASE(a_reused_slot_refuses_the_old_handle) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;
@@ -129,8 +129,8 @@ BOOST_AUTO_TEST_CASE(a_second_release_is_a_no_op) {
 }
 
 /**
- * Walking a registry with released slots visits only what it still holds, in slot order. A
- * destructor uses the same walk to destroy what remains.
+ * each() on a registry with released slots visits only what it still holds, in slot order. A
+ * destructor calls each() to destroy what remains.
  **/
 BOOST_AUTO_TEST_CASE(a_walk_skips_released_slots) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;

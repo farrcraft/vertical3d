@@ -18,8 +18,8 @@ using v3d::render::realtime::Grade;
 namespace {
 
 /**
- * The strip the identity table is baked to: slice b at b * 16 across, red across each slice
- * and green down it, each entry k of fifteen.
+ * The identity table baked to a strip. Slice b holds blue step b and starts at x = b * 16. Red
+ * steps across each slice and green steps down it, and step k has the value k / 15.
  **/
 boost::shared_ptr<v3d::image::Image> identityStrip(uint8_t bits) {
     const uint32_t size = Grade::SIZE;

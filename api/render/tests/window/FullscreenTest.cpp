@@ -25,7 +25,7 @@ void settle(const v3d::test::Windowed& windowed) {
 
 /**
  * The window fills its display and comes back, and the frame loop draws through both changes
- * without a validation error, rebuilding the chain for each new size.
+ * without a validation error, rebuilding the swapchain for each new size.
  **/
 BOOST_AUTO_TEST_CASE(window_goes_full_screen_and_back_test) {
     const v3d::test::Windowed windowed;

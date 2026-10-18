@@ -75,8 +75,8 @@ BOOST_AUTO_TEST_CASE(playback_asking_again_changes_nothing_test) {
 }
 
 /**
- * A fade's weight runs from 0 to 1 over its duration, the clip faded from keeps playing
- * meanwhile, and once the fade is done that clip is let go.
+ * A fade's weight runs from 0 to 1 over its duration, and the clip faded from keeps playing
+ * meanwhile. When the fade ends, from returns to none.
  **/
 BOOST_AUTO_TEST_CASE(playback_a_fade_runs_its_length_test) {
     Playback playback = walking();
@@ -97,8 +97,8 @@ BOOST_AUTO_TEST_CASE(playback_a_fade_runs_its_length_test) {
 }
 
 /**
- * Playing no clip with a fade fades the old clip out into the rest pose, and the fade ends
- * rather than holding the old clip at weight zero.
+ * Playing no clip with a fade fades the old clip out into the rest pose. The fade reaches 1,
+ * and from returns to none.
  **/
 BOOST_AUTO_TEST_CASE(playback_fades_out_into_no_clip_test) {
     Playback playback = walking();
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(playback_interpolating_across_a_wrap_runs_forwards_test) {
 }
 
 /**
- * Across a step that changed clip there is no halfway, so the later step is drawn.
+ * Interpolating across a step that changed clip gives the later step.
  **/
 BOOST_AUTO_TEST_CASE(playback_interpolating_across_a_change_of_clip_test) {
     const Playback before = walking();
@@ -174,8 +174,8 @@ BOOST_AUTO_TEST_CASE(playback_interpolating_a_fade_test) {
 }
 
 /**
- * A looping clip that has played for over an hour has whole loops taken off its time, and is
- * still drawn forwards and still passes its markers across the step that did it.
+ * A looping clip's time is wrapped once it passes 4096 seconds, a little over an hour. Across
+ * the step that wraps it, the time is still drawn forwards and still passes its markers.
  **/
 BOOST_AUTO_TEST_CASE(playback_a_long_loop_is_rebased_test) {
     Playback before;
@@ -207,8 +207,8 @@ BOOST_AUTO_TEST_CASE(playback_markers_test) {
 }
 
 /**
- * Every entity's playback is advanced, and snapshot and interpolated draw it between steps as
- * they do a Transform.
+ * advance() moves every entity's playback, and snapshot() and interpolated() draw it between
+ * steps as they do a Transform.
  **/
 BOOST_AUTO_TEST_CASE(playback_on_the_registry_test) {
     entt::registry registry;

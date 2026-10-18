@@ -21,8 +21,8 @@ struct Previous final {
 };
 
 /**
- * A type that can be drawn between two steps: an interpolate(from, to, alpha) beside it,
- * found by argument-dependent lookup, that returns a T.
+ * A type that can be drawn between two simulation steps. Argument-dependent lookup must find an
+ * interpolate(from, to, alpha) for it that returns a T.
  **/
 template <typename T>
 concept Interpolable = std::copy_constructible<T> && requires(const T& from, const T& to, float alpha) {
@@ -33,11 +33,12 @@ concept Interpolable = std::copy_constructible<T> && requires(const T& from, con
  * Copy every entity's T into its Previous<T>, giving one to an entity that has none, and take
  * Previous<T> off every entity that no longer has a T.
  *
- * Called at the top of simulate(), before anything moves, once for each type a renderer
- * draws between steps. Every entity carrying T is snapshotted whether or not it is about to
- * move, so one that has stopped is drawn where it stopped. An entity that loses its T and is
- * given one again in a later step is drawn at its new value, not blended from the one it lost.
- * One that loses and regains it within one step keeps its Previous<T>; call settle() for it.
+ * Call it at the start of simulate(), before anything moves, once for each type a renderer
+ * draws between steps. Every entity with a T is snapshotted whether or not it is about to
+ * move, so an entity that has stopped is drawn where it stopped. An entity that loses its T and
+ * is given one again in a later step is drawn at its new value, not blended from the old one.
+ * An entity that loses and regains its T within one step keeps its Previous<T>. Call settle()
+ * for it.
  **/
 template <typename T>
 void snapshot(entt::registry& registry) {
@@ -51,9 +52,9 @@ void snapshot(entt::registry& registry) {
 /**
  * Make an entity's previous step its current one, so it is drawn with no motion.
  *
- * A teleport calls this, such as a ball put back on the centre spot, after it has written the
- * new value: this copies the T the entity has now. Otherwise the frame after it draws the
- * entity sweeping from where it was to where it was put.
+ * Call it after a teleport writes the new value, such as a ball put back on the centre spot. It
+ * copies the entity's current T. Without it, the next frame draws the entity sweeping from its
+ * old place to its new one.
  **/
 template <typename T>
 void settle(entt::registry& registry, entt::entity entity) {
@@ -63,8 +64,8 @@ void settle(entt::registry& registry, entt::entity entity) {
 /**
  * An entity's T blended alpha of the way from its previous step to its current one.
  *
- * An entity with no previous step yet - one created during the step it is first drawn after -
- * is drawn at its current value.
+ * An entity with no Previous<T>, such as one created during the last step, is drawn at its
+ * current value.
  *
  * @param alpha Engine::alpha(), the fraction of a step elapsed since the last one
  **/

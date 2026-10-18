@@ -36,16 +36,16 @@ struct Picture final {
 /**
  * Build a grid from rows of glyphs, one per tile, and a legend saying what each glyph is.
  *
- * The grid parses terrain only. Reading the file the rows came from, and any other meaning a
- * glyph has to a game, such as a prop, a spawn or the player's start, belong to the game. A
- * glyph the legend does not name is therefore returned in Picture::unknown rather than
- * refused. A game that treats one as an error checks that list itself.
+ * fromPicture() reads terrain only. The game reads the file the rows came from, and handles
+ * any other meaning a glyph has, such as a prop, a spawn or the player's start. A glyph the
+ * legend does not name is therefore returned in Picture::unknown, not refused. A game that
+ * treats an unknown glyph as an error checks that list itself.
  *
  * @param rows the picture, row y of it being tile row y, all the same length
  * @param legend what each glyph is made of
  * @param tileSize the grid's tile edge length in world units
- * @param corner where the grid's minimum corner is placed, for a region; the grid is centred on
- *        the origin without one
+ * @param corner where the grid's minimum corner is placed, for a region of a larger world.
+ *        Without it, the grid is centred on the origin
  * @return the grid, or no grid and the reason when there are no rows, a row is empty, the rows
  *         differ in length, or TileGrid::refusal() refuses the grid. It never throws for these.
  **/

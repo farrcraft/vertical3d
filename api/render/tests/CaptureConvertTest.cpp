@@ -18,7 +18,7 @@ using v3d::render::realtime::vulkan::frame::Capture;
 namespace {
 
 /**
- * @return one texel, in the order a copy off the chain leaves it
+ * @return one texel, in the channel order a copy from a swapchain image leaves it
  **/
 std::vector<unsigned char> texel(unsigned char first, unsigned char second, unsigned char third, unsigned char fourth) {
     return std::vector<unsigned char>{first, second, third, fourth};
@@ -27,8 +27,8 @@ std::vector<unsigned char> texel(unsigned char first, unsigned char second, unsi
 BOOST_AUTO_TEST_SUITE(capture_convert_test)
 
 /**
- * A bgra chain is the common case, and the one a naive copy gets wrong: red and blue come
- * back the other way round from the order a png wants them in.
+ * A BGRA swapchain is the common case, and the one a naive copy gets wrong. Red and blue come
+ * back in the opposite order to the one a PNG stores.
  **/
 BOOST_AUTO_TEST_CASE(a_bgra_chain_is_swizzled) {
     const std::vector<unsigned char> pixels = texel(10, 20, 30, 40);
@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(a_bgra_chain_is_swizzled) {
 }
 
 /**
- * An srgb chain, which an app can request, has the same channel order as its unorm neighbour.
+ * An SRGB swapchain, which an app can request, has the same channel order as its UNORM twin.
  * The transfer function does not change which byte is red.
  **/
 BOOST_AUTO_TEST_CASE(an_srgb_chain_is_swizzled_the_same_way) {
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(an_srgb_chain_is_swizzled_the_same_way) {
 }
 
 /**
- * An rgba chain is copied through untouched.
+ * An RGBA swapchain image is copied through untouched.
  **/
 BOOST_AUTO_TEST_CASE(an_rgba_chain_keeps_its_order) {
     const std::vector<unsigned char> pixels = texel(10, 20, 30, 40);
@@ -67,9 +67,9 @@ BOOST_AUTO_TEST_CASE(an_rgba_chain_keeps_its_order) {
 }
 
 /**
- * Whatever the chain presented in its alpha channel, a captured frame is opaque: the image
- * has already been composited, so a viewer reading that alpha would show the file through
- * whatever is behind it.
+ * Whatever the swapchain image holds in its alpha channel, a captured frame is opaque. The image
+ * has already been composited, and a viewer that read the alpha would show whatever is behind
+ * the file through it.
  **/
 BOOST_AUTO_TEST_CASE(alpha_is_written_opaque) {
     const std::vector<unsigned char> pixels = texel(10, 20, 30, 0);
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(alpha_is_written_opaque) {
 }
 
 /**
- * Every texel is converted, and the image is the size the chain was.
+ * Every texel is converted, and the image is the size of the swapchain image.
  **/
 BOOST_AUTO_TEST_CASE(the_whole_image_is_converted) {
     constexpr std::size_t width = 2;

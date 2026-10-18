@@ -35,9 +35,9 @@ bool deviceAvailable() {
         const render::realtime::vulkan::device::Device device(logger, instance);
         return device.handle() != VK_NULL_HANDLE;
     } catch (const std::exception& error) {
-        // the console rather than the logger, which writes to a file beside the executable.
-        // A machine with no gpu and one whose loader found no driver both reach here, and
-        // this message tells them apart
+        // write to the console, not the logger, which writes to a file. A machine with no GPU
+        // and one whose loader found no driver both reach here, and the message tells them
+        // apart
         std::cerr << "no device to draw with: " << error.what() << "\n";
         return false;
     }
@@ -47,8 +47,8 @@ bool deviceAvailable() {
  **/
 Headless::Headless(VkFormat colour, uint32_t width, uint32_t height,
     render::realtime::vulkan::memory::Allocator::Kind allocations) {
-    // where a captured frame is written, beside the executable. The suites that render against
-    // a committed reference do the same, and nothing creates it for them either
+    // a captured frame is written to data_out, beside the executable, and the directory has to
+    // exist first
     boost::filesystem::create_directory("data_out");
 
     logger = boost::make_shared<v3d::log::Logger>();
@@ -103,8 +103,8 @@ void Headless::submit(VkCommandBuffer commands) {
 /**
  **/
 bool Headless::silent() const {
-    // the layer must be on for an empty log to mean anything: where it is not installed nothing
-    // checked the calls, and no errors reported looks exactly like a clean run
+    // no errors means a clean run only when the layer is on. Without the layer nothing checks
+    // the calls, and every run reports no errors
     if (!instance->validating()) {
         BOOST_TEST_MESSAGE("the validation layer is not installed - this case asserts nothing");
         return false;

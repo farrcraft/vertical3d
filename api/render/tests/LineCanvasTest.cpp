@@ -229,7 +229,7 @@ BOOST_AUTO_TEST_CASE(an_uncut_stream_is_one_batch) {
 }
 
 /**
- * A clip cuts the stream where it opens and where it closes, and the batch between them
+ * A clip starts a new batch where it opens and where it closes, and the batch between them
  * carries the rectangle the device scissors to. Nothing is dropped on the cpu: the segment
  * inside the clip is still two vertices.
  **/
@@ -256,9 +256,9 @@ BOOST_AUTO_TEST_CASE(a_clip_cuts_the_batch_and_carries_its_rectangle) {
 }
 
 /**
- * The clip is in the pixels of the image drawn into and the modelview does not apply to it,
- * unlike Canvas's: a line canvas is world space, so the transform a vertex goes through is
- * not one a screen rectangle could go through.
+ * The clip is in pixels of the image drawn into, and the modelview does not apply to it, unlike
+ * Canvas's clip. A line canvas is in world space, and a screen rectangle cannot go through a
+ * world-space transform.
  **/
 BOOST_AUTO_TEST_CASE(a_clip_is_not_moved_by_the_transform) {
     v3d::render::realtime::canvas::Line canvas;
