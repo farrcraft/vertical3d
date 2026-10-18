@@ -125,7 +125,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [3](#step-3--projected-spaces-divide-by-w) | Projected spaces divide by w, and the ray hider answers them | `api/render/offline` | — | done |
 | [4](#step-4--the-record-the-acceleration-structure) | The record: the acceleration structure | `docs/adr` | **0092** | done |
 | [5](#step-5--a-bounding-volume-hierarchy-in-the-traced-scene) | Primitive bounds, and the structure in `trace::Scene` | `api/render/offline` | 0092 | done |
-| [6](#step-6--the-record-how-a-hider-supplies-derivatives) | The record: how a hider supplies derivatives | `docs/adr` | **0093** | open |
+| [6](#step-6--the-record-how-a-hider-supplies-derivatives) | The record: how a hider supplies derivatives | `docs/adr` | **0093** | done |
 | [7](#step-7--derivatives-under-the-reyes-hider) | `Du`, `Dv`, `Deriv`, `area` and `calculatenormal`, under the reyes hider | `api/render/offline`, `moya` | 0093 | open |
 | [8](#step-8--derivatives-under-the-ray-hider) | The same built-ins under the ray hider | `api/render/offline` | 0093 | open |
 | [9](#step-9--held-traced-hits-shaded-in-batches) | Traced hits shaded in batches | `api/render/offline`, `moya` | — | held |
@@ -327,6 +327,9 @@ step's state note. A Release render of a scene of about ten thousand triangles i
 because the suites' scenes are too small to show the gain.
 
 ### Step 6 — The record: how a hider supplies derivatives
+
+**Done.** ADR-0093 is written as the recommendation below, and the decision was agreed. It is
+accepted when step 7 lands.
 
 **ADR-0093.** SL's `Du`, `Dv`, `Deriv` and `area` are differences across neighbouring shading
 points. `calculatenormal` is the cross product of `P`'s two derivatives.
