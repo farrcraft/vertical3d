@@ -5,6 +5,8 @@
 
 #include "Painter.h"
 
+#include <api/render/realtime/canvas/Canvas.h>
+
 #include <algorithm>
 
 namespace v3d::ui::paint {

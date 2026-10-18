@@ -5,6 +5,15 @@
 
 #include "Context3D.h"
 
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/Presenter.h>
+#include <api/render/realtime/vulkan/frame/Swapchain.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
+
+#include "DeviceContext.h"
+#include "Window.h"
+
 #include <cstdint>
 #include <stdexcept>
 

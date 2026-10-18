@@ -5,7 +5,9 @@
 
 #include "Weather.h"
 
+#include "Emitter.h"
 #include "Particle.h"
+#include "State.h"
 
 #include <algorithm>
 #include <cmath>

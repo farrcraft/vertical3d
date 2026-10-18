@@ -6,6 +6,7 @@
 #include <api/asset/Manager.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/paint/TextRenderer.h>
 

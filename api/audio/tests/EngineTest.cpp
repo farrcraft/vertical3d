@@ -3,11 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/audio/AudioClip.h>
 #include <api/audio/Engine.h>
 #include <api/audio/Play.h>
 #include <api/event/kind/Sound.h>
 #include <api/log/Logger.h>
 
+#include <functional>
 #include <string>
 #include <vector>
 

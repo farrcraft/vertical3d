@@ -12,6 +12,7 @@
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/entity/Meshes.h>
@@ -30,6 +31,7 @@
 #include <api/type/camera/Isometric.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <optional>
 #include <string>

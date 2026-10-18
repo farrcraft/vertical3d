@@ -5,10 +5,17 @@
 
 #include "Map.h"
 
+#include <api/asset/kind/Json.h>
 #include <api/grid/Picture.h>
 #include <api/grid/Terrain.h>
+#include <api/grid/TileCoord.h>
+#include <api/grid/TileGrid.h>
 #include <api/grid/Unknown.h>
+#include <api/log/Logger.h>
 
+#include "Tile.h"
+
+#include <cstddef>
 #include <map>
 #include <optional>
 #include <string>

@@ -5,7 +5,11 @@
 
 #include "Image.h"
 
+#include <api/ui/Image.h>
+#include <api/ui/style/Property.h>
+
 #include <string>
+#include <string_view>
 
 namespace v3d::ui::style::property {
 

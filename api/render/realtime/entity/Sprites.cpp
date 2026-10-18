@@ -5,10 +5,14 @@
 
 #include "Sprites.h"
 
+#include <api/render/realtime/canvas/DepthOrder.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/component/Sprite.h>
 
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
+
+#include "Billboard.h"
 
 #include <glm/geometric.hpp>
 

@@ -4,12 +4,13 @@
  **/
 
 #include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/Sampling.h>
 #include <moya/libmoya/FrameBuffer.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/RenderMan.h>
+#include <moya/libmoya/Shading.h>
 
 #include <cmath>
-#include <string>
 
 #include <boost/test/unit_test.hpp>
 

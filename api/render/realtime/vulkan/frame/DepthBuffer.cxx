@@ -5,8 +5,13 @@
 
 #include "DepthBuffer.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
+#include <api/render/realtime/vulkan/memory/Image.h>
+#include <api/render/realtime/vulkan/pipeline/Sampler.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
+#include <cstdint>
 #include <stdexcept>
 
 #include <boost/make_shared.hpp>

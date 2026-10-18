@@ -9,10 +9,12 @@
 #include <vk_mem_alloc.h>
 #pragma warning(pop)
 
+#include <cstdint>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 
+#include "Allocation.h"
 #include "Memory.h"
 
 namespace v3d::render::realtime::vulkan::memory {

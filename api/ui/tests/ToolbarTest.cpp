@@ -4,12 +4,17 @@
  **/
 
 #include <api/event/Context.h>
+#include <api/event/Engine.h>
+#include <api/event/Event.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/Component.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/paint/Dressing.h>
 
 #include <cstddef>
 #include <string>

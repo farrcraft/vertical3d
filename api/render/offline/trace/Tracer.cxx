@@ -5,12 +5,19 @@
 
 #include "Tracer.h"
 
+#include <api/render/offline/Textures.h>
+#include <api/render/offline/sl/Instance.h>
+#include <api/type/geometry/Line.h>
+#include <api/type/geometry/Ray.h>
+
 #include <algorithm>
 #include <utility>
 
 #include <glm/geometric.hpp>
 
+#include "Hit.h"
 #include "HitShader.h"
+#include "Scene.h"
 
 namespace v3d::render::offline::trace {
 

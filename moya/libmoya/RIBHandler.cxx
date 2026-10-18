@@ -5,7 +5,15 @@
 
 #include "RIBHandler.h"
 
+#include <api/render/offline/Sampling.h>
+#include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/rib/Requests.h>
 #include <api/type/Checked.h>
+
+#include "Polygon.h"
+#include "RenderContext.h"
+#include "Renderer.h"
+#include "Vertex.h"
 
 #include <algorithm>
 #include <cmath>

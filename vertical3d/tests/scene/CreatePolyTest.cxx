@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/BRep.h>
 #include <api/type/geometry/AABBox.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 

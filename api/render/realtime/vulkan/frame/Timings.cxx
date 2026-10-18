@@ -5,8 +5,12 @@
 
 #include "Timings.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <string_view>
 #include <vector>
 
 namespace v3d::render::realtime::vulkan::frame {

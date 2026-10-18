@@ -5,6 +5,8 @@
 
 #include "Layout.h"
 
+#include <api/type/geometry/Bound2D.h>
+
 namespace v3d::ui {
 
 Layout::Layout() noexcept :

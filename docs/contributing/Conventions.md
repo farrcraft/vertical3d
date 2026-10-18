@@ -26,6 +26,11 @@ editing.**
 
 ### Includes
 
+- **A file includes the header for each name from the tree or the standard library that it
+  uses**, rather than receiving it through another header, and includes nothing it does not use.
+  clang-tidy's `misc-include-cleaner` reports both. A third-party library is included through its
+  public header, such as `<glm/vec3.hpp>` or `<vulkan/vulkan.h>`, and the check does not judge
+  those. [Linting.md](Linting.md#clang-tidy) describes the pragmas that answer it.
 - **Include a header from another directory by its path from the repository root, in angle
   brackets.** For example, `#include <api/render/realtime/canvas/Canvas.h>`, or
   `#include <vertical3d/src/scene/Node.h>` for an app's own header in another directory.

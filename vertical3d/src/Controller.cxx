@@ -5,12 +5,38 @@
 
 #include "Controller.h"
 
+#include <api/brep/BRep.h>
+#include <api/config/CameraProfiles.h>
 #include <api/config/Type.h>
+#include <api/engine/Engine.h>
+#include <api/engine/Statistics.h>
+#include <api/event/Event.h>
+#include <api/event/State.h>
+#include <api/event/kind/MouseMotion.h>
+#include <api/event/kind/WindowResize.h>
 #include <api/render/realtime/Window.h>
+#include <api/ui/Component.h>
 #include <api/ui/Container.h>
+#include <api/ui/Engine.h>
+#include <api/ui/component/Button.h>
+#include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/Item.h>
+#include <api/ui/input/Cursor.h>
+#include <api/ui/shell/FileChooser.h>
+#include <api/ui/shell/Keyboard.h>
+#include <vertical3d/src/command/Command.h>
+#include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/tool/CameraControlTool.h>
+#include <vertical3d/src/tool/SelectMask.h>
+#include <vertical3d/src/tool/SelectTool.h>
+#include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/ViewLayout.h>
+#include <vertical3d/src/view/ViewPort.h>
 
 #include <algorithm>
 #include <cstddef>

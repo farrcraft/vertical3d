@@ -6,10 +6,13 @@
 #include "Tga.h"
 
 #include <api/image/Channels.h>
+#include <api/image/Image.h>
+#include <api/image/Reader.h>
+#include <api/log/Logger.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
-#include <string>
 #include <vector>
 
 namespace v3d::image::reader {

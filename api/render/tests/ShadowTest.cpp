@@ -9,6 +9,7 @@
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
 #include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 
 #include <cmath>
 #include <cstdint>

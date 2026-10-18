@@ -4,6 +4,9 @@
  **/
 
 #include <api/render/offline/rib/Arguments.h>
+#include <api/render/offline/rib/Declaration.h>
+#include <api/render/offline/rib/Declarations.h>
+#include <api/render/offline/rib/Parameters.h>
 
 #include <string>
 #include <vector>

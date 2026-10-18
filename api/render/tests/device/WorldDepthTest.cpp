@@ -6,6 +6,7 @@
 #include <api/image/Compare.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/canvas/World.h>
@@ -13,6 +14,7 @@
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
 
+#include <cstdint>
 #include <string>
 
 #include <boost/make_shared.hpp>

@@ -7,6 +7,8 @@
 #include <api/font/TextureTextBuffer.h>
 #include <api/log/Logger.h>
 
+#include <cstddef>
+#include <cstdlib>
 #include <string>
 
 #include <boost/test/unit_test.hpp>

@@ -5,6 +5,7 @@
 
 #include "Keys.h"
 
+#include <api/event/Event.h>
 #include <api/ui/Component.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Scrollbar.h>
@@ -15,7 +16,6 @@
 #include <api/ui/component/Type.h>
 
 #include <algorithm>
-#include <string>
 #include <string_view>
 
 #include "Command.h"

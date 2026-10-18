@@ -3,8 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/log/Logger.h>
 #include <api/render/offline/Sampling.h>
+#include <api/render/offline/rib/Handler.h>
+#include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
+#include <api/render/offline/rib/Requests.h>
 
 #include <cmath>
 #include <map>

@@ -5,6 +5,10 @@
 
 #include "Panel.h"
 
+#include <api/ui/Component.h>
+
+#include "Type.h"
+
 namespace v3d::ui::component {
 
 Panel::Panel() :

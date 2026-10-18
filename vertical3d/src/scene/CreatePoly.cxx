@@ -5,6 +5,8 @@
 
 #include "CreatePoly.h"
 
+#include <api/brep/BRep.h>
+
 #include <cmath>
 #include <vector>
 

@@ -5,9 +5,11 @@
 
 #include "Texture.h"
 
+#include <api/image/Image.h>
 #include <api/render/offline/Units.h>
 
 #include <cmath>
+#include <cstddef>
 #include <vector>
 
 namespace v3d::render::offline {

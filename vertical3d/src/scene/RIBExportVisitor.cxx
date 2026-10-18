@@ -5,8 +5,14 @@
 
 #include "RIBExportVisitor.h"
 
+#include <api/brep/BRep.h>
+#include <api/brep/Index.h>
 #include <api/brep/Topology.h>
+#include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 
+#include <cstddef>
+#include <optional>
 #include <ostream>
 #include <vector>
 

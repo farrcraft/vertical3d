@@ -6,8 +6,7 @@
 #include "Image.h"
 
 #include <cassert>
-#include <algorithm>
-#include <iostream>
+#include <cstdint>
 #include <cstring>
 
 namespace v3d::image {

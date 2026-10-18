@@ -5,6 +5,8 @@
 
 #include "Statement.h"
 
+#include <api/render/offline/Position.h>
+
 namespace v3d::render::offline::sl::syntax {
 
 Statement::Statement(Kind kind, const v3d::render::offline::Position & at) :

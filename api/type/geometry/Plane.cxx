@@ -5,6 +5,8 @@
 
 #include "Plane.h"
 
+#include "AABBox.h"
+
 #include <cmath>
 #include <cassert>
 

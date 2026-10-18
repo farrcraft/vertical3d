@@ -5,13 +5,14 @@
 
 #include "DeviceBuffer.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
 #include <stdexcept>
 
 #include "Allocator.h"
 #include "Buffer.h"
-#include "Memory.h"
+#include "Uploader.h"
 
 namespace v3d::render::realtime::vulkan::memory {
 

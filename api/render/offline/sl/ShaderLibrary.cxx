@@ -5,7 +5,10 @@
 
 #include "ShaderLibrary.h"
 
+#include <api/log/Logger.h>
 #include <api/render/offline/SearchPath.h>
+#include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 
 #include <fstream>
@@ -17,7 +20,9 @@
 
 #include "Compiler.h"
 #include "Emitter.h"
+#include "Instance.h"
 #include "Parser.h"
+#include "Types.h"
 
 namespace v3d::render::offline::sl {
 

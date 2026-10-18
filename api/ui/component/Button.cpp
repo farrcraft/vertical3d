@@ -5,7 +5,14 @@
 
 #include "Button.h"
 
+#include <api/event/Event.h>
+#include <api/event/Type.h>
+#include <api/ui/Component.h>
+
+#include "Type.h"
+
 #include <string>
+#include <string_view>
 
 namespace v3d::ui::component {
 

@@ -3,10 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/World.h>
 
-#include <array>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>

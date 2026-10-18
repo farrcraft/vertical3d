@@ -5,6 +5,8 @@
 
 #include "SpriteSheet.h"
 
+#include "SpriteRegion.h"
+
 #include <map>
 #include <string>
 #include <vector>

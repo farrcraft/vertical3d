@@ -5,6 +5,7 @@
 
 #include <api/ecs/component/Emitter.h>
 #include <api/ecs/component/Transform.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/entity/Particles.h>
 #include <api/render/realtime/entity/Sprites.h>
@@ -16,7 +17,6 @@
 #include <api/type/effect/Emitter.h>
 #include <api/type/effect/Particle.h>
 
-#include <cstddef>
 #include <vector>
 
 #include <boost/make_shared.hpp>

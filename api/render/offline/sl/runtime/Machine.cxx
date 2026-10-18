@@ -7,8 +7,15 @@
 
 #include <api/render/offline/sl/Types.h>
 
+#include "Instruction.h"
+#include "Program.h"
+#include "Register.h"
+#include "Renderer.h"
+#include "Value.h"
+
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <string>
 #include <vector>
 

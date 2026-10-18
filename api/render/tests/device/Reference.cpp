@@ -8,6 +8,8 @@
 #include <api/image/Compare.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/frame/Capture.h>
 
 #include <string>
 

@@ -6,6 +6,8 @@
 #include <voxel/src/voxel/MeshCache.h>
 #include <voxel/src/voxel/Voxel.h>
 
+#include <cstddef>
+
 #include <boost/test/unit_test.hpp>
 
 #include <boost/make_shared.hpp>

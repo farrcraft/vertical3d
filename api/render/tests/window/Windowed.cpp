@@ -5,8 +5,15 @@
 
 #include "Windowed.h"
 
+#include <api/log/Logger.h>
+#include <api/render/realtime/Engine3D.h>
+#include <api/render/realtime/Window.h>
+#include <api/render/realtime/vulkan/device/Instance.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
+
 #include <SDL3/SDL.h>
 
+#include <exception>
 #include <iostream>
 #include <stdexcept>
 #include <string>

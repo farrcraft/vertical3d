@@ -5,6 +5,11 @@
 
 #include "Model.h"
 
+#include <api/asset/Asset.h>
+#include <api/asset/Type.h>
+#include <api/image/Image.h>
+#include <api/type/Model.h>
+
 #include <cstddef>
 #include <string>
 #include <vector>

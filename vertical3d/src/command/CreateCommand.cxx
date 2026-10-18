@@ -5,6 +5,9 @@
 
 #include "CreateCommand.h"
 
+#include <api/brep/BRep.h>
+#include <vertical3d/src/scene/Scene.h>
+
 #include <string>
 
 #include <boost/shared_ptr.hpp>

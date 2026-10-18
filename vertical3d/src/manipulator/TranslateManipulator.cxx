@@ -5,6 +5,10 @@
 
 #include "TranslateManipulator.h"
 
+#include <api/brep/BRep.h>
+#include <api/render/realtime/canvas/Line.h>
+#include <vertical3d/src/view/ViewPort.h>
+
 #include <cmath>
 
 #include <boost/shared_ptr.hpp>

@@ -5,9 +5,15 @@
 
 #include "Gltf.h"
 
+#include <api/asset/Asset.h>
+#include <api/asset/Loader.h>
 #include <api/asset/Type.h>
 #include <api/asset/media/kind/Model.h>
 #include <api/image/Factory.h>
+#include <api/image/Image.h>
+#include <api/log/Logger.h>
+#include <api/type/Model.h>
+#include <api/type/Skeleton.h>
 #include <api/type/animation/Channel.h>
 #include <api/type/animation/Clip.h>
 

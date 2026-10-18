@@ -5,6 +5,8 @@
 
 #include "Face.h"
 
+#include "Index.h"
+
 namespace v3d::brep {
 
 Face::Face() : normal_(0.0F, 0.0F, 0.0F), edge_(INVALID_ID), selected_(false) {

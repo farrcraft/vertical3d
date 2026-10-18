@@ -7,6 +7,7 @@
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
@@ -16,6 +17,7 @@
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <vector>
 

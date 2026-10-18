@@ -5,8 +5,14 @@
 
 #include "TabBar.h"
 
+#include <api/type/geometry/Bound2D.h>
+#include <api/ui/Component.h>
 #include <api/ui/paint/Painter.h>
 
+#include "TabPage.h"
+#include "Type.h"
+
+#include <cstddef>
 #include <vector>
 
 #include <boost/make_shared.hpp>

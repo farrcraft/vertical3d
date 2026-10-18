@@ -6,6 +6,8 @@
 
 #include "Camera.h"
 
+#include <cmath>
+
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include <glm/gtc/type_ptr.hpp>

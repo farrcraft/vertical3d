@@ -5,13 +5,19 @@
 
 #include "WireframeVisitor.h"
 
+#include <api/brep/BRep.h>
+#include <api/brep/Face.h>
+#include <api/brep/HalfEdge.h>
+#include <api/brep/Index.h>
 #include <api/brep/Topology.h>
+#include <api/brep/Vertex.h>
+#include <api/render/realtime/canvas/Line.h>
 #include <api/type/geometry/AABBox.h>
 
 #include <algorithm>
 #include <cstddef>
+#include <optional>
 #include <vector>
-
 
 #include <boost/shared_ptr.hpp>
 

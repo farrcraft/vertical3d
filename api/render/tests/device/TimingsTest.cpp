@@ -10,6 +10,7 @@
 #include <api/render/realtime/vulkan/frame/Timings.h>
 
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 #include <boost/make_shared.hpp>

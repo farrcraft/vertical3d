@@ -5,11 +5,16 @@
 
 #include "HitShader.h"
 
+#include <api/render/offline/Texture.h>
+#include <api/render/offline/sl/Globals.h>
+#include <api/render/offline/sl/runtime/Value.h>
+
 #include <string>
 #include <vector>
 
 #include <glm/matrix.hpp>
 
+#include "Hit.h"
 #include "Tracer.h"
 
 namespace v3d::render::offline::trace {

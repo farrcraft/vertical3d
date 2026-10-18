@@ -5,6 +5,8 @@
 
 #include "Compare.h"
 
+#include "Image.h"
+
 #include <cstdlib>
 #include <string>
 

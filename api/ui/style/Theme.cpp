@@ -5,7 +5,10 @@
 
 #include "Theme.h"
 
+#include "Style.h"
+
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::ui::style {

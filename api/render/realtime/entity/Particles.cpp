@@ -5,11 +5,15 @@
 
 #include "Particles.h"
 
+#include <api/render/realtime/canvas/DepthOrder.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/component/Particles.h>
 
 #include <api/ecs/component/Emitter.h>
 #include <api/type/effect/Emitter.h>
 #include <api/type/effect/Particle.h>
+
+#include "Billboard.h"
 
 #include <algorithm>
 #include <cmath>

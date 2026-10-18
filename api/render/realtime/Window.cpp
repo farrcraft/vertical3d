@@ -5,8 +5,14 @@
 
 #include "Window.h"
 
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/device/Instance.h>
+#include <api/render/realtime/vulkan/device/Surface.h>
+
+#include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/make_shared.hpp>

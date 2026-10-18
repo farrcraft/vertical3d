@@ -5,7 +5,8 @@
 
 #include "Vertex.h"
 
-#include "HalfEdge.h"
+#include "Index.h"
+
 
 namespace v3d::brep {
 

@@ -5,8 +5,11 @@
 
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
+#include <moya/libmoya/Shading.h>
+#include <moya/libmoya/Vertex.h>
 #include <moya/libmoya/reyes/GridShader.h>
 #include <moya/libmoya/RenderContext.h>
+#include <moya/libmoya/reyes/MicroPolygonGrid.h>
 
 #include <string>
 #include <vector>

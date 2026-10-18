@@ -5,8 +5,12 @@
 
 #include "Mapper.h"
 
+#include "Event.h"
+#include "State.h"
+
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 

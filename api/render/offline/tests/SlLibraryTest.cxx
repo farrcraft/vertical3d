@@ -11,7 +11,9 @@
 #include <api/render/offline/sl/Emitter.h>
 #include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <api/render/offline/sl/syntax/Function.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 
 #include <set>

@@ -10,6 +10,7 @@
 #include <api/type/animation/Pose.h>
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <vector>

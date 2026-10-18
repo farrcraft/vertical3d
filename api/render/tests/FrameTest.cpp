@@ -3,10 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <vector>
 

@@ -4,15 +4,19 @@
  **/
 
 #include <api/event/Engine.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/RadioButton.h>
 #include <api/ui/component/Scrollbar.h>
+#include <api/ui/component/Type.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/paint/Dressing.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>

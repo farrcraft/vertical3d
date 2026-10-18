@@ -5,6 +5,26 @@
 
 #include "Engine3D.h"
 
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/frame/Capture.h>
+#include <api/render/realtime/vulkan/frame/DepthBuffer.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Presenter.h>
+#include <api/render/realtime/vulkan/frame/Recorder.h>
+#include <api/render/realtime/vulkan/frame/Timings.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
+#include <api/render/realtime/vulkan/renderer/Line.h>
+#include <api/render/realtime/vulkan/renderer/Quad.h>
+#include <api/render/realtime/vulkan/renderer/World.h>
+
+#include "Context3D.h"
+#include "DeviceContext.h"
+#include "Engine.h"
+#include "Frame.h"
+#include "Textures.h"
+#include "Window.h"
+
 #include <string>
 #include <string_view>
 #include <vector>

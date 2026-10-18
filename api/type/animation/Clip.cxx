@@ -13,6 +13,7 @@
 
 #include <glm/gtc/quaternion.hpp>
 
+#include "Channel.h"
 #include "Pose.h"
 
 namespace v3d::type::animation {

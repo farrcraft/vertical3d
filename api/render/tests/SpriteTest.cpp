@@ -5,6 +5,7 @@
 
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/entity/Sprites.h>
 #include <api/render/realtime/canvas/World.h>

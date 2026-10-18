@@ -5,11 +5,12 @@
 
 #include "Surface.h"
 
+#include "Instance.h"
+
 #include <SDL3/SDL_vulkan.h>
 
 #include <sstream>
 #include <stdexcept>
-#include <string>
 
 namespace v3d::render::realtime::vulkan::device {
 

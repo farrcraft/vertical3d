@@ -5,6 +5,7 @@
 
 #include "Command.h"
 
+#include <api/event/Event.h>
 #include <api/ui/Component.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>

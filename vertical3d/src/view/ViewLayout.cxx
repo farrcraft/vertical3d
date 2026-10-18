@@ -6,6 +6,8 @@
 #include "ViewLayout.h"
 
 #include <api/asset/Json.h>
+#include <api/asset/kind/Json.h>
+#include <api/log/Logger.h>
 
 #include <algorithm>
 #include <cstddef>

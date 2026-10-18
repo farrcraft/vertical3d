@@ -12,7 +12,9 @@
     functions, and none of the control flow or the masking they run under.
 */
 
+#include "Instruction.h"
 #include "Machine.h"
+#include "Value.h"
 
 #include <api/render/offline/Noise.h>
 #include <api/render/offline/Texture.h>
@@ -21,6 +23,7 @@
 #include <api/render/offline/sl/Types.h>
 
 #include <cmath>
+#include <cstddef>
 #include <string>
 #include <vector>
 

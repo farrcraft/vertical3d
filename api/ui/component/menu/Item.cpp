@@ -4,9 +4,16 @@
  **/
 
 #include "Item.h"
+
+#include <api/event/Event.h>
+#include <api/event/Type.h>
+#include <api/ui/Component.h>
+#include <api/ui/component/Type.h>
 #include "Menu.h"
+#include "Type.h"
 
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <variant>
 

@@ -6,6 +6,7 @@
 #include "World.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include <glm/gtc/matrix_transform.hpp>

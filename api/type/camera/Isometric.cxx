@@ -5,6 +5,9 @@
 
 #include "Isometric.h"
 
+#include "Camera.h"
+#include "Profile.h"
+
 #include <algorithm>
 #include <cmath>
 

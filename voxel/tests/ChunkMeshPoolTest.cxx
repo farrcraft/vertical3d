@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/vulkan/memory/Mesh.h>
 #include <voxel/src/voxel/ChunkMeshPool.h>
 
 #include <cstddef>

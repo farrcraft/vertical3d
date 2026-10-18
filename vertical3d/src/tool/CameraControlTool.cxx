@@ -5,6 +5,9 @@
 
 #include "CameraControlTool.h"
 
+#include <api/type/camera/Camera.h>
+#include <vertical3d/src/view/ViewPort.h>
+
 #include <string>
 
 namespace v3d::editor {

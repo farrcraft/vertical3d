@@ -7,6 +7,7 @@
 
 #include <voxel/src/voxel/Voxel.h>
 
+#include <cstddef>
 #include <stdexcept>
 
 MeshCache::MeshCache(const Capacity& capacity) :

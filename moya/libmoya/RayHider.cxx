@@ -6,11 +6,14 @@
 #include "RayHider.h"
 
 #include <api/render/offline/Film.h>
+#include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampler.h>
+#include <api/render/offline/Sampling.h>
 #include <api/render/offline/trace/Tracer.h>
+#include <api/type/geometry/Ray.h>
 
 #include <algorithm>
-#include <cmath>
+#include <cstddef>
 #include <vector>
 
 #include <glm/geometric.hpp>

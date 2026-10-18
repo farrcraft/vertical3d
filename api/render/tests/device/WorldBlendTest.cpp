@@ -14,6 +14,7 @@
 #include <api/render/realtime/vulkan/renderer/World.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 
 #include <boost/make_shared.hpp>

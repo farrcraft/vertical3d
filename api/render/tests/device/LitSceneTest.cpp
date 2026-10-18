@@ -10,6 +10,7 @@
 #include <api/image/Compare.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Grade.h>
@@ -29,13 +30,14 @@
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/renderer/Lit.h>
 #include <api/render/realtime/vulkan/renderer/World.h>
-#include <api/type/Model.h>
+#include <api/type/animation/Track.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Isometric.h>
 #include <api/type/effect/Weather.h>
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>

@@ -6,6 +6,11 @@
 #include "Config.h"
 
 #include <api/asset/Json.h>
+#include <api/asset/Manager.h>
+#include <api/asset/kind/Json.h>
+#include <api/log/Logger.h>
+
+#include "Type.h"
 
 #include <optional>
 #include <string>

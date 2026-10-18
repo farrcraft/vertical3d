@@ -5,6 +5,10 @@
 
 #include "Sound.h"
 
+#include <api/asset/Asset.h>
+#include <api/asset/Type.h>
+#include <api/audio/AudioClip.h>
+
 #include <string>
 
 namespace v3d::audio::kind {

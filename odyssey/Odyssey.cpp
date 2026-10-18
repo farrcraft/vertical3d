@@ -3,6 +3,7 @@
  * Copyright (c) 2022 Joshua Farr (josh@farrcraft.com)
  **/
 
+#include <api/engine/Application.h>
 #include <api/engine/Main.h>
 #include <odyssey/engine/Engine.h>
 

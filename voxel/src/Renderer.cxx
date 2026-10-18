@@ -5,10 +5,25 @@
 
 #include "Renderer.h"
 
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/Engine3D.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Window.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/frame/Timings.h>
+#include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/render/realtime/vulkan/pipeline/Material.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/type/geometry/Frustum.h>
+#include <api/ui/Engine.h>
+#include <api/ui/Immediate.h>
+#include <api/ui/shell/Screen.h>
+#include <api/ui/shell/StatisticsOverlay.h>
 #include <voxel/src/engine/Camera.h>
 #include <voxel/src/engine/ChunkMeshBuilder.h>
 #include <voxel/src/engine/ChunkVertex.h>
@@ -20,8 +35,10 @@
 #include <voxel/src/voxel/MeshBuilder.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <functional>
+#include <ios>
 #include <limits>
 #include <sstream>
 #include <stdexcept>

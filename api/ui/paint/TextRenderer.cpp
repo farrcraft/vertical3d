@@ -5,10 +5,18 @@
 
 #include "TextRenderer.h"
 
+#include <api/asset/Manager.h>
 #include <api/font/TextureFont.h>
+#include <api/font/TextureFontCache.h>
+#include <api/font/TextureTextBuffer.h>
 #include <api/image/TextureAtlas.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/canvas/Canvas.h>
+
+#include "Text.h"
 
 #include <array>
+#include <cstddef>
 #include <limits>
 #include <string>
 #include <string_view>

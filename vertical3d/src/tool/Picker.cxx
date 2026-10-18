@@ -5,10 +5,18 @@
 
 #include "Picker.h"
 
+#include <api/brep/BRep.h>
+#include <api/brep/Index.h>
 #include <api/brep/Topology.h>
+#include <api/brep/Vertex.h>
+#include <api/type/camera/Camera.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/view/ViewPort.h>
 
+#include "SelectMask.h"
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>

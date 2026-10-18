@@ -5,14 +5,17 @@
 
 #include "Bmp.h"
 
+#include <api/image/Image.h>
+#include <api/image/Reader.h>
 #include <api/image/format/BmpFileHeader.h>
 #include <api/image/format/BmpInfoHeader.h>
 #include <api/image/format/BmpRgbQuad.h>
+#include <api/log/Logger.h>
 
 #include <bit>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
-#include <string>
 #include <vector>
 
 #include <boost/make_shared.hpp>

@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/geometry/AABBox.h>
 #include <moya/libmoya/FrameBuffer.h>
 #include <moya/libmoya/Polygon.h>
 

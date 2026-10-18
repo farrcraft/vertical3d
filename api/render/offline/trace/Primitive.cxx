@@ -5,6 +5,8 @@
 
 #include "Primitive.h"
 
+#include <api/render/offline/sl/Placed.h>
+
 namespace v3d::render::offline::trace {
 
 Primitive::Primitive(const glm::vec3 & colour) : colour_(colour) {

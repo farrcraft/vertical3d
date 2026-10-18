@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstddef>
 #include <fstream>
+#include <ios>
 #include <limits>
 #include <string>
 #include <system_error>

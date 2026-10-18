@@ -9,6 +9,7 @@
 #include <api/render/offline/Sampling.h>
 
 #include <cmath>
+#include <cstddef>
 #include <limits>
 #include <vector>
 

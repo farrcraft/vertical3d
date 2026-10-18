@@ -4,7 +4,9 @@
  **/
 
 #include <api/image/Compare.h>
+#include <api/image/Image.h>
 
+#include <cstdint>
 #include <string>
 
 #include <boost/test/unit_test.hpp>

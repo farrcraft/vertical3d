@@ -5,11 +5,16 @@
 
 #include "Png.h"
 
+#include <api/image/Image.h>
+#include <api/image/Writer.h>
+#include <api/log/Logger.h>
+
 #include <png.h>
 
 #include <iostream>
 #include <cstdio>
 #include <string>
+#include <string_view>
 
 namespace {
 

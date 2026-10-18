@@ -5,6 +5,7 @@
 
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Grade.h>
@@ -12,11 +13,13 @@
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/vulkan/pipeline/Material.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 #include <api/render/realtime/vulkan/renderer/FullScreen.h>
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <iterator>
 #include <string>

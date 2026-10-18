@@ -5,7 +5,16 @@
 
 #include "Screen.h"
 
+#include <api/asset/Manager.h>
+#include <api/image/Image.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/Engine3D.h>
+#include <api/ui/Engine.h>
+#include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/TextRenderer.h>
+
+#include "StatisticsOverlay.h"
 
 #include <cstdint>
 

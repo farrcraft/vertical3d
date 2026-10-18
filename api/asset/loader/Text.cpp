@@ -5,12 +5,16 @@
 
 #include "Text.h"
 
+#include <api/asset/Asset.h>
 #include <api/asset/File.h>
+#include <api/asset/Loader.h>
 #include <api/asset/Type.h>
 #include <api/asset/kind/Text.h>
+#include <api/log/Logger.h>
 
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include <boost/make_shared.hpp>
 

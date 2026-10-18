@@ -5,7 +5,11 @@
 
 #include "Emitter.h"
 
+#include <api/type/effect/Emitter.h>
+
 #include "Transform.h"
+
+#include <cstdint>
 
 #include <glm/gtc/quaternion.hpp>
 #include <glm/vec3.hpp>

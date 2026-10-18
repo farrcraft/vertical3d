@@ -5,6 +5,9 @@
 
 #include "Overlay.h"
 
+#include "TileCoord.h"
+#include "TileGrid.h"
+
 #include <array>
 #include <cstddef>
 #include <vector>

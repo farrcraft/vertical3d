@@ -12,6 +12,8 @@
 #include <voxel/src/voxel/Chunk.h>
 #include <voxel/src/voxel/TerrainMap.h>
 
+#include <cstddef>
+
 #define GLM_ENABLE_EXPERIMENTAL 1
 
 #include <glm/gtx/string_cast.hpp>

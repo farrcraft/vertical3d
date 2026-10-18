@@ -5,10 +5,15 @@
 
 #include "Triangle.h"
 
+#include <api/type/geometry/Ray.h>
+
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
 
 #include "Hit.h"
+#include "Intersection.h"
+#include "Pose.h"
+#include "Primitive.h"
 
 namespace v3d::render::offline::trace {
 

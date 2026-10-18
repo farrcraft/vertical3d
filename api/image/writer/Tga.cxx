@@ -6,12 +6,16 @@
 #include "Tga.h"
 
 #include <api/image/Channels.h>
+#include <api/image/Image.h>
+#include <api/image/Writer.h>
+#include <api/log/Logger.h>
 
+#include <cstdint>
 #include <fstream>
-#include <iostream>
 #include <limits>
 #include <cstring>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace {

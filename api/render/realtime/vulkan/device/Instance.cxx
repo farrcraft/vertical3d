@@ -7,6 +7,7 @@
 
 #include "Result.h"
 
+#include <cstdint>
 #include <cstring>
 #include <sstream>
 #include <stdexcept>

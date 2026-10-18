@@ -5,10 +5,13 @@
 
 #include "Jpeg.h"
 
+#include <api/image/Image.h>
+#include <api/image/Reader.h>
 #include <api/image/format/JpegError.h>
+#include <api/log/Logger.h>
 
+#include <csetjmp>
 #include <cstddef>
-#include <string>
 
 namespace v3d::image::reader {
 /**

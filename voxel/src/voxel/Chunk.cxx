@@ -7,6 +7,8 @@
 
 #include <voxel/src/engine/MortonCode.h>
 
+#include "TerrainMap.h"
+
 Chunk::Chunk(TerrainMap * terrain, glm::ivec3 chunkPosition, unsigned int ceiling) :
     position_(chunkPosition),
     dirty_(false),

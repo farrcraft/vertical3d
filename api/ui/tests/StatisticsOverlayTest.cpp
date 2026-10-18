@@ -4,6 +4,7 @@
  **/
 
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/StatisticsOverlay.h>
 
 #include <array>

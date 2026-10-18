@@ -5,6 +5,10 @@
 
 #include "Ray.h"
 
+#include "AABBox.h"
+#include "Line.h"
+#include "Plane.h"
+
 #include <algorithm>
 #include <cmath>
 #include <limits>

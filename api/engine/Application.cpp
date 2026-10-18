@@ -5,6 +5,8 @@
 
 #include "Application.h"
 
+#include <api/log/Logger.h>
+
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_stdinc.h>

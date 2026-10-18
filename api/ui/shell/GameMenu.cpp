@@ -5,6 +5,12 @@
 
 #include "GameMenu.h"
 
+#include <api/event/Commands.h>
+#include <api/event/Event.h>
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
+#include <api/ui/component/menu/Menu.h>
+
 #include <string>
 #include <string_view>
 

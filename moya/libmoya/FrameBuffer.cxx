@@ -5,10 +5,14 @@
 
 #include "FrameBuffer.h"
 
+#include <api/render/offline/FrameBuffer.h>
+#include <api/type/geometry/AABBox.h>
+#include <moya/libmoya/reyes/Bucket.h>
 #include <moya/libmoya/reyes/Primitive.h>
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <limits>
 #include <vector>
 

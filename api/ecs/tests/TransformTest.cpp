@@ -6,7 +6,6 @@
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
 
-#include <cmath>
 #include <limits>
 
 #include <boost/test/unit_test.hpp>

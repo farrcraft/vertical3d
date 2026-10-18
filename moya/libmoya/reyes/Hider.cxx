@@ -5,6 +5,7 @@
 
 #include "Hider.h"
 
+#include <api/render/offline/FrameBuffer.h>
 #include <moya/libmoya/RenderContext.h>
 
 namespace v3d::moya::reyes {

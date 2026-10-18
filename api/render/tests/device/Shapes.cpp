@@ -5,6 +5,8 @@
 
 #include "Shapes.h"
 
+#include <api/type/Model.h>
+
 #include <cstdint>
 
 namespace v3d::test {

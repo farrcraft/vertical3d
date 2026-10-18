@@ -4,9 +4,15 @@
  **/
 
 #include "Engine.h"
+
+#include <api/event/Context.h>
+#include <api/event/Engine.h>
+#include "Device.h"
+#include "KeyState.h"
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "DeviceType.h"
+#include "MouseState.h"
 
 #include <boost/make_shared.hpp>
 

@@ -5,8 +5,10 @@
 
 #include "MeshBuilder.h"
 
+#include <voxel/src/engine/ChunkMeshBuilder.h>
 #include <voxel/src/engine/MortonCode.h>
 
+#include <cstddef>
 #include <iterator>
 
 #include "Chunk.h"

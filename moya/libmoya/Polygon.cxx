@@ -5,12 +5,14 @@
 
 #include "Polygon.h"
 
+#include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Frustum.h>
 #include <api/type/geometry/Plane.h>
+#include <moya/libmoya/reyes/MicroPolygonGrid.h>
 
+#include <cassert>
 #include <cmath>
 #include <cstddef>
-#include <iostream>
 #include <utility>
 #include <vector>
 
@@ -18,6 +20,7 @@
 #include <glm/geometric.hpp>
 
 #include "RenderContext.h"
+#include "Vertex.h"
 
 namespace v3d::moya {
 

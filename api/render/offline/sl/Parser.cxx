@@ -31,6 +31,9 @@
 #include <api/render/offline/sl/syntax/Variable.h>
 #include <api/render/offline/sl/syntax/While.h>
 
+#include "Token.h"
+#include "Types.h"
+
 #include <istream>
 #include <string>
 #include <vector>

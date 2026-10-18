@@ -6,9 +6,12 @@
 #include "Samples.h"
 
 #include <api/render/offline/Film.h>
+#include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampler.h>
+#include <api/render/offline/Sampling.h>
 
 #include <cassert>
+#include <cstddef>
 #include <vector>
 
 namespace v3d::moya::reyes {

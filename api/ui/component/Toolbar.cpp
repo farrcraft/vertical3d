@@ -5,11 +5,15 @@
 
 #include "Toolbar.h"
 
+#include <api/event/Event.h>
+#include <api/type/geometry/Bound2D.h>
+#include <api/ui/Component.h>
 #include <api/ui/input/Command.h>
 
 #include <cstddef>
 #include <string>
 
+#include "Button.h"
 #include "Type.h"
 
 namespace v3d::ui::component {

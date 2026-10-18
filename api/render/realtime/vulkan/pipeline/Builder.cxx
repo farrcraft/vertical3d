@@ -5,8 +5,14 @@
 
 #include "Builder.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
+#include "Cache.h"
+#include "Pipeline.h"
+
+#include <cstddef>
+#include <cstdint>
 #include <sstream>
 #include <stdexcept>
 #include <string>

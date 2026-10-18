@@ -6,9 +6,11 @@
 #include "Immediate.h"
 
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Palette.h>
+#include <api/ui/paint/Text.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
@@ -16,6 +18,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 #include <string>
 #include <vector>

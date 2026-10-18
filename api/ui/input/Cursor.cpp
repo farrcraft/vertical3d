@@ -8,7 +8,6 @@
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
-#include <api/ui/component/Bar.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
@@ -17,8 +16,8 @@
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/Type.h>
-#include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Bar.h>
+#include <api/ui/paint/Text.h>
 
 #include <algorithm>
 #include <vector>

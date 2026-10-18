@@ -5,11 +5,13 @@
 
 #include "FrameBuffer.h"
 
+#include <api/image/Image.h>
 #include <api/render/offline/Units.h>
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 #include <boost/make_shared.hpp>

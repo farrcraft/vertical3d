@@ -5,11 +5,14 @@
 
 #include "Resolver.h"
 
+#include <api/ui/paint/Dressing.h>
 #include <api/ui/style/Style.h>
 
+#include <cstddef>
 #include <functional>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "Theme.h"

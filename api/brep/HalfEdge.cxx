@@ -5,6 +5,8 @@
 
 #include "HalfEdge.h"
 
+#include "Index.h"
+
 namespace v3d::brep {
 
 HalfEdge::HalfEdge() : vertex_(INVALID_ID), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID), selected_(false) {

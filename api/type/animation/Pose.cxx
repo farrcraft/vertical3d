@@ -5,6 +5,8 @@
 
 #include "Pose.h"
 
+#include <api/type/Skeleton.h>
+
 #include <cstddef>
 #include <vector>
 

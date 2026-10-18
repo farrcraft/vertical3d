@@ -5,8 +5,14 @@
 
 #include "StreamRing.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/memory/Buffer.h>
+
 #include <algorithm>
+#include <cstddef>
 #include <vector>
+
+#include "Ring.h"
 
 #include <boost/make_shared.hpp>
 

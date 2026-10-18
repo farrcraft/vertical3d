@@ -6,6 +6,7 @@
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 #include <api/ui/shell/Screen.h>
+#include <api/ui/shell/StatisticsOverlay.h>
 #include <api/ui/style/Theme.h>
 
 #include <boost/make_shared.hpp>

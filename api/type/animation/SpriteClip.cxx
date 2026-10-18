@@ -6,6 +6,7 @@
 #include "SpriteClip.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <stdexcept>
 #include <vector>
 

@@ -5,6 +5,11 @@
 
 #include "Frustum.h"
 
+#include "AABBox.h"
+#include "Plane.h"
+
+#include <array>
+
 namespace v3d::type::geometry {
 
 namespace {

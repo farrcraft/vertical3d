@@ -4,6 +4,7 @@
  **/
 
 #include <moya/libmoya/Polygon.h>
+#include <moya/libmoya/Vertex.h>
 #include <moya/libmoya/reyes/Primitive.h>
 
 #include <boost/test/unit_test.hpp>

@@ -4,6 +4,9 @@
  **/
 
 #include <api/event/Context.h>
+#include <api/event/Engine.h>
+#include <api/event/Event.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
@@ -17,6 +20,7 @@
 #include <api/ui/style/Resolver.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>

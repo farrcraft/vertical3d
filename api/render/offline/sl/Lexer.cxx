@@ -7,6 +7,8 @@
 
 #include <api/render/offline/Characters.h>
 
+#include "Token.h"
+
 #include <algorithm>
 #include <cstdlib>
 #include <istream>

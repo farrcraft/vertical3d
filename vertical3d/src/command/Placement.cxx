@@ -5,6 +5,8 @@
 
 #include "Placement.h"
 
+#include <api/dag/Transform.h>
+
 #include <cmath>
 
 namespace v3d::editor {

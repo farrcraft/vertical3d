@@ -5,8 +5,11 @@
 
 #include "Loaders.h"
 
+#include <api/asset/Manager.h>
+#include <api/asset/Type.h>
 #include <api/asset/media/loader/Gltf.h>
 #include <api/asset/media/loader/Image.h>
+#include <api/log/Logger.h>
 
 #include <boost/make_shared.hpp>
 

@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/paint/Painter.h>
 
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
 
 #include <boost/test/unit_test.hpp>
 

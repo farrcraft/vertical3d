@@ -5,7 +5,12 @@
 
 #include "Event.h"
 
+#include "Context.h"
+#include "State.h"
+#include "Type.h"
+
 #include <string>
+#include <string_view>
 
 namespace v3d::event {
 

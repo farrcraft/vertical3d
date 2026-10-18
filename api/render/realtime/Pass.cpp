@@ -5,9 +5,12 @@
 
 #include "Pass.h"
 
+#include "DrawItem.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 

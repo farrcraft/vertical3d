@@ -5,6 +5,8 @@
 
 #include <voxel/src/engine/MortonCode.h>
 #include <voxel/src/voxel/Chunk.h>
+#include <voxel/src/voxel/TerrainMap.h>
+#include <voxel/src/voxel/Voxel.h>
 
 #include <boost/test/unit_test.hpp>
 

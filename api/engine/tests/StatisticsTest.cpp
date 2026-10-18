@@ -6,6 +6,7 @@
 #include <api/engine/Accumulator.h>
 #include <api/engine/Statistics.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <vector>

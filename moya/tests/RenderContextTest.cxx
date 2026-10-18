@@ -3,8 +3,14 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/rib/Parameters.h>
+#include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RenderContext.h>
+#include <moya/libmoya/Vertex.h>
+#include <moya/libmoya/reyes/MicroPolygonGrid.h>
 
+#include <cstddef>
 #include <string>
 #include <vector>
 

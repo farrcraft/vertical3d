@@ -5,6 +5,8 @@
 
 #include "Expression.h"
 
+#include <api/render/offline/Position.h>
+
 namespace v3d::render::offline::sl::syntax {
 
 Expression::Expression(Kind kind, const v3d::render::offline::Position & at) :

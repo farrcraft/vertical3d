@@ -4,12 +4,14 @@
  **/
 
 #include <api/event/Context.h>
+#include <api/event/Event.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
-#include <api/ui/Container.h>
+#include <api/ui/Component.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Type.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
 #include <cstddef>

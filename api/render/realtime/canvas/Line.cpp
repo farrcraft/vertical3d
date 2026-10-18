@@ -5,9 +5,9 @@
 
 #include "Line.h"
 
-#include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 namespace v3d::render::realtime::canvas {

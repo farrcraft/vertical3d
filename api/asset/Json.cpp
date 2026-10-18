@@ -7,7 +7,9 @@
 
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
+#include <string_view>
 
 namespace v3d::asset {
 

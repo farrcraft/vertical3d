@@ -5,6 +5,8 @@
 
 #include "Worker.h"
 
+#include <cstddef>
+#include <mutex>
 #include <utility>
 
 namespace v3d::asset {

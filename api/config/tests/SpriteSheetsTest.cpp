@@ -9,6 +9,7 @@
 #include <api/asset/Writer.h>
 #include <api/log/Logger.h>
 
+#include <cstddef>
 #include <limits>
 #include <string>
 

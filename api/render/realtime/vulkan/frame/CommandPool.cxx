@@ -5,8 +5,10 @@
 
 #include "CommandPool.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
+#include <cstdint>
 #include <vector>
 
 namespace v3d::render::realtime::vulkan::frame {

@@ -5,7 +5,14 @@
 
 #include "Topology.h"
 
+#include "BRep.h"
+#include "Face.h"
+#include "HalfEdge.h"
+#include "Index.h"
+#include "Vertex.h"
+
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 #include <glm/geometric.hpp>

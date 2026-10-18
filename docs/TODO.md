@@ -19,24 +19,6 @@ the condition that makes the work due.
 An open plan or roadmap may order entries from here. The entry stays here until the work lands,
 and its section names the plan or roadmap that orders it.
 
-## The clang-tidy backlog
-
-[.clang-tidy](../.clang-tidy) enables the bugprone, performance, misc and readability families
-and disables 8 checks by name. The tree is clean at the 198 checks left enabled.
-
-Seven of the disabled checks are disabled for good, and `.clang-tidy` says why; they are not
-listed here. The other one is in the table below, with the number of distinct sites it
-reports over a full `-DV3D_CLANG_TIDY=ON` build.
-[ToolingDebt](plans/ToolingDebt.md) clears it.
-
-- To remove a row, fix every site it reports. Never widen an exclusion instead.
-- `voxel/src/noise` is not counted. It is vendored code, kept unchanged, and is skipped by
-  clang-tidy, `/analyze` and cpplint.
-
-| Check | Sites |
-|---|---|
-| `misc-include-cleaner` | 3346 |
-
 ## RiRotate's sign
 
 [] The sign of `RiRotate` is unverified.

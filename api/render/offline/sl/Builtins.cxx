@@ -8,12 +8,12 @@
 #include <api/render/offline/sl/syntax/Function.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 
-#include <algorithm>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "Parser.h"
+#include "Types.h"
 
 namespace v3d::render::offline::sl {
 

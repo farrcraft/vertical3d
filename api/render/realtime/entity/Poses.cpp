@@ -5,7 +5,9 @@
 
 #include "Poses.h"
 
+#include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/component/Mesh.h>
+#include <api/type/animation/Clip.h>
 #include <api/type/animation/Clock.h>
 #include <api/type/animation/Pose.h>
 

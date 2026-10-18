@@ -7,6 +7,7 @@
 
 #include <api/render/offline/sl/Types.h>
 
+#include <cstddef>
 #include <string>
 
 namespace v3d::render::offline::sl::runtime {

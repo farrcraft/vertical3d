@@ -5,6 +5,11 @@
 
 #include "Conditional.h"
 
+#include <api/render/offline/Position.h>
+
+#include "Expression.h"
+#include "Statement.h"
+
 namespace v3d::render::offline::sl::syntax {
 
 Conditional::Conditional(const ExpressionPtr & condition, const Branches & branches, const v3d::render::offline::Position & at) :

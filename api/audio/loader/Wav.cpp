@@ -5,10 +5,15 @@
 
 #include "Wav.h"
 
+#include <api/asset/Asset.h>
+#include <api/asset/Loader.h>
 #include <api/asset/Type.h>
+#include <api/audio/AudioClip.h>
 #include <api/audio/kind/Sound.h>
+#include <api/log/Logger.h>
 
 #include <string>
+#include <string_view>
 
 #include <boost/make_shared.hpp>
 

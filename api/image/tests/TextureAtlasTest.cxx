@@ -7,6 +7,7 @@
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 
+#include <cstddef>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>

@@ -5,6 +5,12 @@
 
 #include "Writer.h"
 
+#include <api/log/Logger.h>
+
+#include "Image.h"
+
+#include <string_view>
+
 namespace v3d::image {
 /**
  **/

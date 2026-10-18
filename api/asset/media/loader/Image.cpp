@@ -5,10 +5,16 @@
 
 #include "Image.h"
 
+#include <api/asset/Asset.h>
+#include <api/asset/Loader.h>
+#include <api/asset/Type.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/image/Factory.h>
+#include <api/image/Image.h>
+#include <api/log/Logger.h>
 
 #include <string>
+#include <string_view>
 
 #include <boost/make_shared.hpp>
 

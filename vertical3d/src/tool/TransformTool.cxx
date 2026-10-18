@@ -5,10 +5,17 @@
 
 #include "TransformTool.h"
 
+#include <api/brep/BRep.h>
+#include <api/log/Logger.h>
+#include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/TransformCommand.h>
+#include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/manipulator/RotateManipulator.h>
 #include <vertical3d/src/manipulator/ScaleManipulator.h>
 #include <vertical3d/src/manipulator/TranslateManipulator.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/view/ViewPort.h>
 
 #include <string>
 

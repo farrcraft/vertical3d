@@ -8,10 +8,10 @@
 #include <api/event/kind/Sound.h>
 #include <api/type/geometry/Bound2D.h>
 
+#include "Paddle.h"
+
 #include <algorithm>
 #include <cmath>
-#include <iostream>
-#include <string>
 
 #include <glm/geometric.hpp>
 

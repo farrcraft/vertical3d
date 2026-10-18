@@ -5,6 +5,8 @@
 
 #include "CommandStack.h"
 
+#include "Command.h"
+
 #include <algorithm>
 #include <cstddef>
 

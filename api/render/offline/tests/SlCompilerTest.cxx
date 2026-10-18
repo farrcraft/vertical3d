@@ -6,6 +6,7 @@
 #include <api/render/offline/sl/Compiler.h>
 #include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/Symbol.h>
+#include <api/render/offline/sl/Types.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 
 #include <sstream>

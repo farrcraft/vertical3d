@@ -5,13 +5,26 @@
 
 #include "Renderer.h"
 
+#include <api/asset/Manager.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/asset/Type.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Window.h>
+#include <api/render/realtime/canvas/Canvas.h>
+#include <api/render/realtime/vulkan/renderer/Line.h>
+#include <api/ui/Engine.h>
+#include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Text.h>
+#include <api/ui/shell/Screen.h>
+#include <api/ui/shell/StatisticsOverlay.h>
+#include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
-#include <cstdint>
 #include <string>
 #include <vector>
 

@@ -5,9 +5,17 @@
 
 #include <api/image/Compare.h>
 #include <api/image/Factory.h>
+#include <api/image/Image.h>
+#include <api/log/Logger.h>
+#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/Sampling.h>
+#include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Reader.h>
+#include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RenderContext.h>
+#include <moya/libmoya/Renderer.h>
+#include <moya/libmoya/Vertex.h>
 
 #include <algorithm>
 #include <cmath>

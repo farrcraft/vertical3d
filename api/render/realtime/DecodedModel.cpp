@@ -10,6 +10,7 @@
 #include <api/asset/media/kind/Image.h>
 #include <api/asset/media/kind/Model.h>
 #include <api/image/Image.h>
+#include <api/type/Model.h>
 
 #include <cstddef>
 #include <map>

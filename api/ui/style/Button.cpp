@@ -5,6 +5,8 @@
 
 #include "Button.h"
 
+#include "Style.h"
+
 #include <string>
 
 namespace v3d::ui::style {

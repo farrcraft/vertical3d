@@ -6,21 +6,33 @@
 #include "RenderContext.h"
 
 #include <api/image/Factory.h>
+#include <api/log/Logger.h>
+#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/Sampling.h>
+#include <api/render/offline/Textures.h>
+#include <api/render/offline/rib/Declarations.h>
+#include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/sl/Imager.h>
+#include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/sl/Types.h>
+#include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>
+#include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Frustum.h>
 #include <moya/libmoya/reyes/GridShader.h>
 #include <moya/libmoya/reyes/Hider.h>
+#include <moya/libmoya/reyes/Samples.h>
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <iostream>
+#include <cstddef>
 #include <limits>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -29,8 +41,11 @@
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 
+#include "FrameBuffer.h"
 #include "Hider.h"
+#include "Polygon.h"
 #include "RayHider.h"
+#include "Shading.h"
 
 namespace v3d::moya {
 

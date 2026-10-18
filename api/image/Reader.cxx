@@ -5,9 +5,15 @@
 
 #include "Reader.h"
 
+#include <api/log/Logger.h>
+
+#include "Image.h"
+
 #include <cstddef>
 #include <fstream>
+#include <ios>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::image {

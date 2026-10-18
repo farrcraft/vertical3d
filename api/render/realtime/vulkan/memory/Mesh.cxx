@@ -5,6 +5,15 @@
 
 #include "Mesh.h"
 
+#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+
+#include "DeviceBuffer.h"
+#include "Uploader.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <span>
 #include <stdexcept>
 
 #include <boost/make_shared.hpp>

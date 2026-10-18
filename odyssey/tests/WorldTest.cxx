@@ -4,6 +4,7 @@
  **/
 
 #include <api/asset/Manager.h>
+#include <api/asset/Type.h>
 #include <api/asset/Worker.h>
 #include <api/asset/kind/Json.h>
 #include <api/grid/TileCoord.h>
@@ -12,6 +13,7 @@
 #include <odyssey/tile/World.h>
 
 #include <chrono>
+#include <cstddef>
 #include <fstream>
 #include <optional>
 #include <string>

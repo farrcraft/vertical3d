@@ -3,6 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/BRep.h>
+#include <api/log/Logger.h>
+#include <api/type/camera/Profile.h>
+#include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Scene.h>

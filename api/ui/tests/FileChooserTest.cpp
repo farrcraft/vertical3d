@@ -4,6 +4,7 @@
  **/
 
 #include <api/event/Engine.h>
+#include <api/log/Logger.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/shell/FileChooser.h>

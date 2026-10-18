@@ -5,14 +5,13 @@
 
 #include "Engine.h"
 
+#include <api/event/Engine.h>
 #include <api/log/Logger.h>
 #include <api/ui/DrawOrder.h>
 #include <api/ui/Image.h>
-#include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Icon.h>
 #include <api/ui/component/Toolbar.h>
-#include <api/ui/component/Type.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Image.h>
@@ -20,6 +19,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 

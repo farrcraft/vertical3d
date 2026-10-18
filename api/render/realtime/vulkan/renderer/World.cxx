@@ -6,9 +6,21 @@
 #include "World.h"
 
 #include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/canvas/World.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/frame/StreamRing.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 

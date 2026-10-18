@@ -8,6 +8,7 @@
 #include <SDL3_mixer/SDL_mixer.h>
 
 #include <string>
+#include <string_view>
 
 namespace v3d::audio {
 

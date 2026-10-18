@@ -5,10 +5,10 @@
 
 #include "Buffer.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
 #include "Allocator.h"
-#include "Memory.h"
 
 #include <cstring>
 #include <stdexcept>

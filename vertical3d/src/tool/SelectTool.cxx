@@ -5,6 +5,17 @@
 
 #include "SelectTool.h"
 
+#include <api/brep/BRep.h>
+#include <api/brep/Face.h>
+#include <api/brep/HalfEdge.h>
+#include <api/brep/Vertex.h>
+#include <api/log/Logger.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/view/ViewPort.h>
+
+#include "Picker.h"
+#include "SelectMask.h"
+
 #include <string>
 
 #include <boost/shared_ptr.hpp>

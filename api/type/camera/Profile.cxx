@@ -5,8 +5,6 @@
 
 #include "Profile.h"
 
-#include <iostream>
-#include <cmath>
 #include <string>
 
 #include <glm/gtc/quaternion.hpp>

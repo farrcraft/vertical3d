@@ -4,10 +4,14 @@
  **/
 
 #include <api/config/Type.h>
+#include <api/event/Context.h>
+#include <api/event/Event.h>
 #include <api/event/Source.h>
 #include <api/engine/Application.h>
 #include <api/engine/Engine.h>
 #include <api/engine/Feature.h>
+#include <api/event/State.h>
+#include <api/event/Type.h>
 
 #include <algorithm>
 #include <cstdlib>

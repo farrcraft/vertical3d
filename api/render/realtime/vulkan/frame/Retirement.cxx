@@ -5,6 +5,9 @@
 
 #include "Retirement.h"
 
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <utility>
 
 namespace v3d::render::realtime::vulkan::frame {

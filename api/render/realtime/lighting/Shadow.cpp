@@ -9,11 +9,15 @@
 
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
+#include <api/type/camera/Profile.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <span>
 #include <vector>
 
 #include <glm/geometric.hpp>

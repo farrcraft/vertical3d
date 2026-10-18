@@ -5,6 +5,7 @@
 
 #include "Image.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
 #include <stdexcept>

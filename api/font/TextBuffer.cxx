@@ -5,6 +5,7 @@
 
 #include "TextBuffer.h"
 
+#include <cstddef>
 #include <vector>
 
 namespace v3d::font {

@@ -7,10 +7,16 @@
 
 #include <api/asset/loader/Json.h>
 #include <api/asset/loader/Text.h>
+#include <api/log/Logger.h>
+
+#include "Asset.h"
+#include "Loader.h"
+#include "Type.h"
 
 #include <algorithm>
 #include <cctype>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/make_shared.hpp>

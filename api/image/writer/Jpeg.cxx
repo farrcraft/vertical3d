@@ -5,10 +5,15 @@
 
 #include "Jpeg.h"
 
+#include <api/image/Image.h>
+#include <api/image/Writer.h>
 #include <api/image/format/JpegError.h>
+#include <api/log/Logger.h>
 
+#include <csetjmp>
 #include <cstdio>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::image::writer {

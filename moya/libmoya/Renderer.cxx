@@ -5,6 +5,8 @@
 
 #include "Renderer.h"
 
+#include "RenderContext.h"
+
 #include <iostream>
 #include <string>
 

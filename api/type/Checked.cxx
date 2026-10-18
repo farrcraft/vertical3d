@@ -5,6 +5,9 @@
 
 #include "Checked.h"
 
+#include <cstdint>
+#include <optional>
+
 namespace v3d::type {
 
 std::optional<uint32_t> toCount(float value, const Range<uint32_t>& range) noexcept {

@@ -5,6 +5,8 @@
 
 #include "Swapchain.h"
 
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
 #include <algorithm>

@@ -5,12 +5,13 @@
 
 #include "Container.h"
 
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/DrawOrder.h>
-#include <api/ui/component/TabBar.h>
-#include <api/ui/component/TabPage.h>
-#include <api/ui/component/Type.h>
+
+#include "Component.h"
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::ui {

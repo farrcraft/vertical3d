@@ -1,7 +1,7 @@
 # The check list clang-tidy runs under -DV3D_CLANG_TIDY=ON. Four families are enabled and
 # named checks are subtracted, rather than the live checks being listed one by one: a name
 # clang-tidy does not recognise is not an error, so a list that has gone stale turns findings
-# on and fails loudly instead of quietly covering less. 198 of the 206 checks in these families
+# on and fails loudly instead of quietly covering less. 199 of the 206 checks in these families
 # are live, and the tree is clean at all of them.
 #
 # The cppcoreguidelines, modernize and google families are not enabled at all. Each argues with
@@ -38,9 +38,6 @@
 # .clang-tidy of its own that turns off readability-magic-numbers, because a test's literal is
 # the value it expects and belongs beside the assertion that checks it. Everywhere else the
 # check applies.
-#
-# Every other subtraction is open work. The way to remove one is to fix what it reports, not to
-# widen the exclusion.
 Checks: >
   -*,
   bugprone-*,
@@ -48,7 +45,6 @@ Checks: >
   misc-*,
   readability-*,
   -bugprone-invalid-enum-default-initialization,
-  -misc-include-cleaner,
   -misc-multiple-inheritance,
   -misc-no-recursion,
   -readability-ambiguous-smartptr-reset-call,
@@ -106,3 +102,9 @@ CheckOptions:
   # A literal's suffix is written in capitals, so a long 1L is not misread as 11. A literal
   # inside a macro argument, such as a Boost.Test assertion's, follows the same rule.
   readability-uppercase-literal-suffix.IgnoreMacros: 'false'
+  # A third party library is included through its public header, such as glm/vec3.hpp or
+  # vulkan/vulkan.h, while the check names the internal header that declares a symbol. The
+  # check reads no mapping between the two, so it ignores every header installed outside the
+  # tree, the same trees the header filter above excludes. It still checks the tree's own
+  # headers and the standard library's.
+  misc-include-cleaner.IgnoreHeaders: '(vcpkg_installed|vendor|VulkanSDK|Microsoft Visual Studio|Windows Kits)[\\/].*'

@@ -5,6 +5,8 @@
 
 #include "Emitter.h"
 
+#include <api/render/offline/sl/runtime/Instruction.h>
+#include <api/render/offline/sl/runtime/Register.h>
 #include <api/render/offline/sl/syntax/Assignment.h>
 #include <api/render/offline/sl/syntax/Binary.h>
 #include <api/render/offline/sl/syntax/Block.h>
@@ -30,10 +32,12 @@
 #include <api/render/offline/sl/syntax/Variable.h>
 #include <api/render/offline/sl/syntax/While.h>
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
 #include "Builtins.h"
+#include "Symbol.h"
 #include "Types.h"
 
 namespace v3d::render::offline::sl {

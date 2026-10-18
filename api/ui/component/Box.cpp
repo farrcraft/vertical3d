@@ -5,6 +5,10 @@
 
 #include "Box.h"
 
+#include <api/ui/Component.h>
+
+#include "Type.h"
+
 namespace v3d::ui::component {
 
 Box::Box(Type type) :

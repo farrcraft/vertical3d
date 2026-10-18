@@ -6,8 +6,11 @@
 #include "Sight.h"
 
 #include <api/grid/LineOfSight.h>
+#include <api/grid/TileCoord.h>
+#include <api/grid/TileGrid.h>
 
 #include <algorithm>
+#include <cstddef>
 
 namespace odyssey::tile {
 

@@ -5,7 +5,10 @@
 
 #include "Picture.h"
 
+#include "Terrain.h"
 #include "TileCoord.h"
+#include "TileGrid.h"
+#include "Unknown.h"
 
 #include <algorithm>
 #include <cstddef>

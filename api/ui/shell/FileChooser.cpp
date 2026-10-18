@@ -5,6 +5,8 @@
 
 #include "FileChooser.h"
 
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/TextBox.h>

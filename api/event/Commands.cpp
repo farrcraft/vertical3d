@@ -5,6 +5,10 @@
 
 #include "Commands.h"
 
+#include "Event.h"
+#include "State.h"
+
+#include <cstddef>
 #include <map>
 #include <string>
 #include <utility>

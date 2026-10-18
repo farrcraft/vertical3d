@@ -5,13 +5,18 @@
 
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 

@@ -5,6 +5,8 @@
 
 #include "SceneUniforms.h"
 
+#include "Settings.h"
+
 #include <cstddef>
 
 #include <glm/geometric.hpp>

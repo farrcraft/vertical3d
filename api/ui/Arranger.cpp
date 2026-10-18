@@ -6,22 +6,21 @@
 #include "Arranger.h"
 
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/DrawOrder.h>
 #include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
-#include <api/ui/component/Icon.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/TabBar.h>
-#include <api/ui/component/TabPage.h>
-#include <api/ui/component/TextBox.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/Type.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
+#include <api/ui/paint/Text.h>
 #include <api/ui/style/Resolver.h>
 
 #include <algorithm>

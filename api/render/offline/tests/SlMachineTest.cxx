@@ -6,9 +6,14 @@
 #include <api/render/offline/sl/Compiler.h>
 #include <api/render/offline/sl/Emitter.h>
 #include <api/render/offline/sl/Parser.h>
+#include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/Instruction.h>
 #include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Program.h>
+#include <api/render/offline/sl/runtime/Register.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 
+#include <cstddef>
 #include <sstream>
 #include <string>
 #include <vector>

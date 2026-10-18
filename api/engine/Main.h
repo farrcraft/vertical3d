@@ -13,6 +13,6 @@
  * translation unit, so no other file includes this header.
  **/
 
-#include <api/engine/Application.h>
+#include <api/engine/Application.h>  // IWYU pragma: export
 
 #include <SDL3/SDL_main.h>

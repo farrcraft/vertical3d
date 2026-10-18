@@ -9,7 +9,9 @@
 #include <api/asset/Migration.h>
 #include <api/asset/Writer.h>
 #include <api/asset/kind/Json.h>
+#include <api/log/Logger.h>
 
+#include <optional>
 #include <string>
 
 #include "Application.h"

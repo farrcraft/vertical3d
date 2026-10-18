@@ -5,6 +5,9 @@
 
 #include "Parameters.h"
 
+#include "Declaration.h"
+
+#include <cstddef>
 #include <map>
 #include <string>
 #include <vector>

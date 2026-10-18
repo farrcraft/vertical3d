@@ -4,21 +4,24 @@
  **/
 
 #include "RenderMan.h"
+#include "Polygon.h"
 #include "Renderer.h"
 
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Arguments.h>
+#include <api/render/offline/rib/Parameters.h>
 
 #include <stdarg.h>
 #include <string.h>
 
 #include <algorithm>
-#include <cmath>
+#include <cstddef>
 #include <deque>
 #include <string>
 #include <vector>
 
 #include "RenderContext.h"
+#include "Vertex.h"
 
 #include <glm/gtc/type_ptr.hpp>
 

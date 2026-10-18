@@ -5,6 +5,11 @@
 
 #include "Model.h"
 
+#include <api/type/animation/Clip.h>
+
+#include "Skeleton.h"
+
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 

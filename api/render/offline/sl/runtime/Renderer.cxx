@@ -5,6 +5,10 @@
 
 #include "Renderer.h"
 
+#include <api/render/offline/Texture.h>
+
+#include "Value.h"
+
 #include <string>
 #include <vector>
 

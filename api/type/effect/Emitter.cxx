@@ -5,7 +5,10 @@
 
 #include "Emitter.h"
 
+#include <api/type/Random.h>
+
 #include "Particle.h"
+#include "State.h"
 
 #include <algorithm>
 #include <cmath>

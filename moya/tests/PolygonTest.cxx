@@ -3,7 +3,9 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/geometry/AABBox.h>
 #include <moya/libmoya/Polygon.h>
+#include <moya/libmoya/Vertex.h>
 
 #include <boost/test/unit_test.hpp>
 

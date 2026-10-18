@@ -5,8 +5,20 @@
 
 #include "FullScreen.h"
 
+#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
+#include <api/render/realtime/vulkan/pipeline/Material.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
+#include <cstdint>
 #include <sstream>
 #include <stdexcept>
 #include <vector>

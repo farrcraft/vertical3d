@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/canvas/Line.h>
+#include <api/type/camera/Camera.h>
 #include <vertical3d/src/view/ConstructionPlane.h>
 
 #include <algorithm>

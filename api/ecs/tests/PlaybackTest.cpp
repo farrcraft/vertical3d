@@ -6,6 +6,8 @@
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Playback.h>
 
+#include <cstdint>
+
 #include <boost/test/unit_test.hpp>
 
 #include <entt/entt.hpp>

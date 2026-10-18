@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Manager.h>
 #include <api/config/Config.h>
 #include <api/config/Type.h>
 #include <api/log/Logger.h>

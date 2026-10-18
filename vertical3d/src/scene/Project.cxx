@@ -11,7 +11,9 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Face.h>
 #include <api/brep/HalfEdge.h>
+#include <api/brep/Index.h>
 #include <api/brep/Vertex.h>
+#include <api/log/Logger.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -20,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "Scene.h"
 #include "SceneVisitor.h"
 
 #include <boost/json.hpp>

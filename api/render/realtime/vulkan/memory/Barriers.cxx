@@ -6,6 +6,7 @@
 #include "Barriers.h"
 
 #include <cstdint>
+#include <initializer_list>
 
 namespace v3d::render::realtime::vulkan::memory {
 

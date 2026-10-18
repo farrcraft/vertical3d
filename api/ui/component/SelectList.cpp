@@ -5,9 +5,17 @@
 
 #include "SelectList.h"
 
+#include <api/event/Event.h>
+#include <api/event/Type.h>
+#include <api/ui/Component.h>
+
+#include "Type.h"
+
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::ui::component {

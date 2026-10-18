@@ -6,6 +6,7 @@
 #include <api/asset/Writer.h>
 
 #include <fstream>
+#include <ios>
 #include <limits>
 #include <sstream>
 #include <string>

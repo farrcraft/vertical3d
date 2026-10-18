@@ -5,7 +5,13 @@
 
 #include "ScaleManipulator.h"
 
+#include <api/brep/BRep.h>
+#include <api/render/realtime/canvas/Line.h>
+#include <vertical3d/src/view/ViewPort.h>
+
 #include <algorithm>
+
+#include "Manipulator.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>

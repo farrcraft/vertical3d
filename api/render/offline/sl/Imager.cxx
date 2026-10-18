@@ -5,7 +5,13 @@
 
 #include "Imager.h"
 
+#include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/sl/Globals.h>
+#include <api/render/offline/sl/runtime/Program.h>
+#include <api/render/offline/sl/runtime/Renderer.h>
+
+#include "Instance.h"
+#include "Types.h"
 
 #include <glm/vec3.hpp>
 

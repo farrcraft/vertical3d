@@ -5,7 +5,14 @@
 
 #include "Bar.h"
 
+#include <api/event/Event.h>
+#include <api/type/geometry/Bound2D.h>
+#include <api/ui/Component.h>
 #include <api/ui/component/Type.h>
+
+#include "Item.h"
+#include "Menu.h"
+#include "Type.h"
 
 #include <cstddef>
 #include <string>

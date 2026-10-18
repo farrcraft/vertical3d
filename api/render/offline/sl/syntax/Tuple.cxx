@@ -5,6 +5,10 @@
 
 #include "Tuple.h"
 
+#include <api/render/offline/Position.h>
+
+#include "Expression.h"
+
 namespace v3d::render::offline::sl::syntax {
 
 Tuple::Tuple(const v3d::render::offline::Position & at) :

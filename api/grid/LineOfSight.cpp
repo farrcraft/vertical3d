@@ -5,6 +5,9 @@
 
 #include "LineOfSight.h"
 
+#include "TileCoord.h"
+#include "TileGrid.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>

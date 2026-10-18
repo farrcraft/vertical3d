@@ -6,6 +6,10 @@
 #include "Pathfinding.h"
 
 #include "DistanceField.h"
+#include "ReachableTile.h"
+#include "TileCoord.h"
+#include "TileFilter.h"
+#include "TileGrid.h"
 
 #include <algorithm>
 #include <array>

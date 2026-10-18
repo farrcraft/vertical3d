@@ -5,6 +5,10 @@
 
 #include "Bar.h"
 
+#include <api/ui/Component.h>
+
+#include "Type.h"
+
 #include <algorithm>
 
 namespace v3d::ui::component {

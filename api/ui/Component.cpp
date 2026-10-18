@@ -5,10 +5,16 @@
 
 #include "Component.h"
 
+#include <api/type/geometry/Bound2D.h>
+#include <api/ui/component/Type.h>
+
+#include "Layout.h"
+
 #include <algorithm>
 #include <atomic>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::ui {

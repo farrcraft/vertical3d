@@ -5,8 +5,21 @@
 
 #include "Textures.h"
 
+#include <api/image/Image.h>
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/memory/TextureFactory.h>
+#include <api/render/realtime/vulkan/memory/Uploader.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
+#include <api/render/realtime/vulkan/pipeline/Material.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/pipeline/Sampler.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
+#include "Handle.h"
+
+#include <cstdint>
 #include <map>
 #include <vector>
 

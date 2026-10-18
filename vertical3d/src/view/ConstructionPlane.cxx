@@ -5,6 +5,9 @@
 
 #include "ConstructionPlane.h"
 
+#include <api/render/realtime/canvas/Line.h>
+#include <api/type/camera/Camera.h>
+
 namespace v3d::editor {
 
 namespace {

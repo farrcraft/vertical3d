@@ -5,6 +5,10 @@
 
 #include "Png.h"
 
+#include <api/image/Image.h>
+#include <api/image/Reader.h>
+#include <api/log/Logger.h>
+
 #pragma pack(push, 1)
 
 #include <png.h>
@@ -13,8 +17,8 @@
 
 #include <csetjmp>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
-#include <string>
 #include <vector>
 
 namespace v3d::image::reader {

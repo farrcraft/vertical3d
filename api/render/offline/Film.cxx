@@ -7,8 +7,12 @@
 
 #include <api/type/Checked.h>
 
+#include "FrameBuffer.h"
+#include "Sampling.h"
+
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <optional>

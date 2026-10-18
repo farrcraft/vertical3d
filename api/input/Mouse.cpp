@@ -6,6 +6,7 @@
 #include "Mouse.h"
 
 #include <api/event/Source.h>
+#include <api/event/State.h>
 #include <api/event/kind/MouseButton.h>
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/MouseWheel.h>

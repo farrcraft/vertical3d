@@ -5,9 +5,12 @@
 
 #include <api/log/Logger.h>
 #include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/sl/Imager.h>
+#include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/sl/Types.h>
 
 #include <cstdio>
 #include <fstream>

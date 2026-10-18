@@ -3,7 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/BRep.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/SceneVisitor.h>
 
 #include <vector>
 

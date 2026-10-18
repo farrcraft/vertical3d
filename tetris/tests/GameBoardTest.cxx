@@ -3,7 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/log/Logger.h>
 #include <tetris/src/GameBoard.h>
+#include <tetris/src/Piece.h>
+#include <tetris/src/Tetrad.h>
 
 #include <vector>
 

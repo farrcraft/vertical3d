@@ -2,7 +2,7 @@
 
 Drafted 2026-10-16. This plan clears the thirteen clang-tidy checks that are disabled until their
 sites are fixed, and closes the test gaps that need no new hardware.
-[TODO.md](../TODO.md#the-clang-tidy-backlog) lists each check with its number of sites.
+The table under steps 5 to 17 lists each check with the number of sites it was expected to report.
 
 Each entry this plan takes stays in TODO.md until the step that fixes it lands, and is then
 deleted there. A check's row is deleted when the check is enabled.
@@ -58,7 +58,7 @@ names it as the one Python file in the tree.
 
 ### Steps 5 to 17 — One check each
 
-**Steps 5 to 16 done; 17 open.**
+**Done.**
 
 - Steps 5 to 8 shared one discovery pass and one verification pass. Several files carried sites
   of more than one check.
@@ -124,6 +124,15 @@ names it as the one Python file in the tree.
   assertion lowercase, so `.clang-tidy` turns that off. clang-tidy reports a macro argument's
   literal where it is written, so one script uppercased every reported suffix. The reference
   documents' examples and `examples/starter` follow the same spelling.
+- Step 17 found 5754 missing and 780 unused includes. Most named a third party library's
+  internal header, such as `glm/detail/type_vec3.hpp` for `glm::vec3`. The check reads no
+  mapping from those to the public headers, so `.clang-tidy` ignores every header installed
+  outside the tree, by location. That left 1468 insertions and 89 removals in the tree's own
+  headers and the standard library's.
+- clang-tidy's fix writes the tree's headers in quotes, so a script applied them instead, in
+  the include order cpplint requires. `Main.h` exports `Application.h`, and the two sources
+  that only compile their header keep it with a pragma.
+- No removed include was needed, and the tree built at the first pass.
 
 Each step follows the same procedure:
 
@@ -133,7 +142,7 @@ Each step follows the same procedure:
 - Remove the check from `.clang-tidy`'s disabled list and delete its row in TODO.md.
 - Verify with the real `.clang-tidy` and warnings as errors, then run `ctest`.
 - Update the enabled-check count in [Linting.md](../contributing/Linting.md),
-  [TODO.md](../TODO.md#the-clang-tidy-backlog) and `CLAUDE.md`.
+  TODO.md and `CLAUDE.md`.
 
 | Step | Check | Sites |
 |---|---|---|
@@ -151,7 +160,6 @@ Each step follows the same procedure:
 | 16 | `readability-uppercase-literal-suffix` | 4156 |
 | 17 | `misc-include-cleaner` | 3346 |
 
-TODO.md holds the current counts.
 
 - **Step 9** changes function signatures. A fix that reorders parameters changes every caller,
   including callers outside this tree. Prefer a distinct type for one of the swappable

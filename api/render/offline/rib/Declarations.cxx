@@ -5,6 +5,8 @@
 
 #include "Declarations.h"
 
+#include "Declaration.h"
+#include "Requests.h"
 #include "Words.h"
 
 #include <map>

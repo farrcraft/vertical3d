@@ -6,6 +6,7 @@
 #include <api/audio/AudioClip.h>
 
 #include <fstream>
+#include <ios>
 #include <string>
 
 #include <boost/test/unit_test.hpp>

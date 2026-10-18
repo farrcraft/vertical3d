@@ -5,6 +5,10 @@
 
 #include "IsometricController.h"
 
+#include <api/event/Event.h>
+#include <api/event/State.h>
+#include <api/type/camera/Isometric.h>
+
 #include <string>
 #include <string_view>
 #include <utility>

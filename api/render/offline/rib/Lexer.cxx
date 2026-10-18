@@ -7,7 +7,11 @@
 
 #include <api/render/offline/Characters.h>
 
+#include "Token.h"
+
 #include <cstdlib>
+#include <ios>
+#include <iosfwd>
 #include <istream>
 #include <string>
 

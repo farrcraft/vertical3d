@@ -5,6 +5,16 @@
 
 #include "PongRenderer.h"
 
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Window.h>
+#include <api/ui/Engine.h>
+#include <api/ui/shell/Screen.h>
+#include <api/ui/shell/StatisticsOverlay.h>
+
+#include "PongScene.h"
+
 #include <string>
 
 #include <boost/lexical_cast.hpp>

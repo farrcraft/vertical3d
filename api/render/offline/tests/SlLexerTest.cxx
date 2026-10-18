@@ -6,6 +6,7 @@
 #include <api/render/offline/sl/Lexer.h>
 #include <api/render/offline/sl/Token.h>
 
+#include <cstddef>
 #include <sstream>
 #include <string>
 #include <vector>

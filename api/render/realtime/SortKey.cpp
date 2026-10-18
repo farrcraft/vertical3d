@@ -5,6 +5,8 @@
 
 #include "SortKey.h"
 
+#include <cstdint>
+
 namespace v3d::render::realtime {
 
 /**

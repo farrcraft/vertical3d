@@ -6,6 +6,7 @@
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>

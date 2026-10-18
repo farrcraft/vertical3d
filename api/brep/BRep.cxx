@@ -5,8 +5,14 @@
 
 #include "BRep.h"
 
-#include <algorithm>
+#include <api/type/geometry/AABBox.h>
+
+#include "Face.h"
+#include "HalfEdge.h"
+#include "Index.h"
+
 #include <cassert>
+#include <cstddef>
 #include <string>
 #include <vector>
 

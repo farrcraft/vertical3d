@@ -5,6 +5,10 @@
 
 #include "Arguments.h"
 
+#include "Declaration.h"
+#include "Declarations.h"
+#include "Parameters.h"
+
 #include <string>
 #include <vector>
 

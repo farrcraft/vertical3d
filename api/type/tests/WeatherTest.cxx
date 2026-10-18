@@ -9,7 +9,6 @@
 #include <api/type/effect/Weather.h>
 
 #include <cmath>
-#include <limits>
 
 #include <boost/test/unit_test.hpp>
 

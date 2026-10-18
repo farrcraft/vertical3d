@@ -6,6 +6,9 @@
 #include "Sphere.h"
 
 #include <api/render/offline/Units.h>
+#include <api/render/offline/rib/Requests.h>
+#include <api/type/geometry/Line.h>
+#include <api/type/geometry/Ray.h>
 
 #include <algorithm>
 #include <cmath>
@@ -15,6 +18,9 @@
 #include <glm/matrix.hpp>
 
 #include "Hit.h"
+#include "Intersection.h"
+#include "Pose.h"
+#include "Primitive.h"
 
 namespace v3d::render::offline::trace {
 

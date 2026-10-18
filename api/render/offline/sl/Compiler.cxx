@@ -17,7 +17,6 @@
 #include <api/render/offline/sl/syntax/ExpressionStatement.h>
 #include <api/render/offline/sl/syntax/For.h>
 #include <api/render/offline/sl/syntax/Function.h>
-#include <api/render/offline/sl/syntax/Index.h>
 #include <api/render/offline/sl/syntax/Jump.h>
 #include <api/render/offline/sl/syntax/Lighting.h>
 #include <api/render/offline/sl/syntax/Parameter.h>
@@ -31,6 +30,7 @@
 #include <api/render/offline/sl/syntax/While.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <vector>
 

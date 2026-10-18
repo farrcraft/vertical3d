@@ -8,6 +8,7 @@
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/sl/Types.h>
 #include <api/render/offline/trace/Hit.h>
 #include <api/render/offline/trace/HitShader.h>
 #include <api/render/offline/trace/Tracer.h>

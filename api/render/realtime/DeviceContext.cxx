@@ -5,6 +5,22 @@
 
 #include "DeviceContext.h"
 
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/DepthBuffer.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/memory/Uploader.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/renderer/Line.h>
+#include <api/render/realtime/vulkan/renderer/Quad.h>
+#include <api/render/realtime/vulkan/renderer/World.h>
+
+#include "Textures.h"
+
+#include <cstdint>
+
 #include <boost/make_shared.hpp>
 
 namespace v3d::render::realtime {

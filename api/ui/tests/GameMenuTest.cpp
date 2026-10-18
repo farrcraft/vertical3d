@@ -5,7 +5,12 @@
 
 #include <api/event/Commands.h>
 #include <api/event/Engine.h>
+#include <api/event/Event.h>
+#include <api/event/State.h>
+#include <api/event/Type.h>
+#include <api/log/Logger.h>
 #include <api/ui/Engine.h>
+#include <api/ui/component/menu/Menu.h>
 #include <api/ui/shell/GameMenu.h>
 
 #include <string>

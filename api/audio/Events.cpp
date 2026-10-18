@@ -5,7 +5,7 @@
 
 #include "Events.h"
 
-#include <stdexcept>
+#include <api/log/Logger.h>
 
 #include "NullEvents.h"
 #ifdef V3D_AUDIO_FMOD

@@ -122,10 +122,20 @@ Turn it on with `-DV3D_CLANG_TIDY=ON`. It is off by default for the same cost re
 list is in [.clang-tidy](../../.clang-tidy). The clang-tidy executable comes with the MSVC install,
 under `VC/Tools/Llvm/x64/bin`.
 
-`.clang-tidy` enables four check families and subtracts 8 checks by name. The tree is clean at
-the 198 that remain. [TODO.md](../TODO.md#the-clang-tidy-backlog) lists what each subtracted
-check reports, except seven that the `.clang-tidy` comment marks as settled. To remove a line from
-that list, fix what the check reports. Do not widen the exclusion.
+`.clang-tidy` enables four check families and subtracts 7 checks by name. The tree is clean at
+the 199 that remain. Each subtraction is settled, and the `.clang-tidy` comment says why. A new
+finding is fixed, never answered by widening an exclusion or an option.
+
+`misc-include-cleaner` ignores every header installed outside the tree: vcpkg, the vendored
+trees, the Vulkan SDK and the toolchain. A library such as glm or Vulkan is included through its
+public header, and the check would otherwise ask for the internal header that declares each
+symbol. It checks the tree's own headers and the standard library's. Two pragmas answer it:
+
+- `// IWYU pragma: export` on an include makes the including header provide what that include
+  provides. `api/engine/Main.h` exports `Application.h`, so an app's `main` that calls `run<T>`
+  uses `Main.h`.
+- `// IWYU pragma: keep` keeps an include the check finds unused. A source file that exists only
+  to compile its header on its own keeps that include this way.
 
 Each `tests` directory has a `.clang-tidy` of its own. It inherits the root file and turns off
 `readability-magic-numbers`, because a test's literal is the value it expects. A new tests

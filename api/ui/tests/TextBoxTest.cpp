@@ -4,6 +4,9 @@
  **/
 
 #include <api/event/Context.h>
+#include <api/event/Engine.h>
+#include <api/event/Event.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>

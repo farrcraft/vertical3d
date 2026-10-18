@@ -5,18 +5,18 @@
 
 #include "ComponentRenderer.h"
 
+#include <api/type/geometry/Bound2D.h>
+#include <api/ui/Component.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Image.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Bar.h>
-#include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/Icon.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/Panel.h>
-#include <api/ui/component/RadioButton.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/Slider.h>
@@ -25,14 +25,15 @@
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/Type.h>
+#include <api/ui/component/menu/Item.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Type.h>
 #include <api/ui/style/Button.h>
+#include <api/ui/style/Resolver.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
-#include <api/ui/style/property/Color.h>
 #include <api/ui/style/property/Image.h>
-#include <api/ui/style/property/Number.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -41,7 +42,9 @@
 #include <utility>
 #include <vector>
 
+#include "Dressing.h"
 #include "Painter.h"
+#include "Text.h"
 
 namespace v3d::ui::paint {
 

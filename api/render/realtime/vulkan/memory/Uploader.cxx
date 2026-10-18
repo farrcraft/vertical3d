@@ -5,9 +5,12 @@
 
 #include "Uploader.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
+#include <api/render/realtime/vulkan/frame/CommandPool.h>
 
 #include <cstdint>
+#include <functional>
 #include <vector>
 
 #include <boost/make_shared.hpp>

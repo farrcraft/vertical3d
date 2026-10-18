@@ -5,8 +5,11 @@
 
 #include "TileGrid.h"
 
+#include "TileCoord.h"
+
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <optional>
 #include <stdexcept>
 #include <string>

@@ -5,8 +5,12 @@
 
 #include "DescriptorPool.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 

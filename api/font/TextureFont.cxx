@@ -17,6 +17,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cwchar>
 #include <iterator>
 #include <string>
 

@@ -5,8 +5,15 @@
 
 #include "Headless.h"
 
+#include <api/log/Logger.h>
+#include <api/render/realtime/DeviceContext.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/device/Instance.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
+
+#include <cstdint>
+#include <exception>
 #include <iostream>
-#include <sstream>
 #include <stdexcept>
 #include <vector>
 

@@ -3,12 +3,19 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/BRep.h>
+#include <api/brep/Index.h>
 #include <api/brep/Topology.h>
+#include <api/brep/Vertex.h>
+#include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/Picker.h>
+#include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <optional>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>

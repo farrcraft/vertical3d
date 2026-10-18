@@ -6,6 +6,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
+#include <api/ui/Layout.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Bar.h>
 #include <api/ui/component/HorizontalBox.h>

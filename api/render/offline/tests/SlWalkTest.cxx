@@ -5,7 +5,9 @@
 
 #include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/syntax/Block.h>
+#include <api/render/offline/sl/syntax/Expression.h>
 #include <api/render/offline/sl/syntax/Shader.h>
+#include <api/render/offline/sl/syntax/Statement.h>
 #include <api/render/offline/sl/syntax/Walk.h>
 
 #include <sstream>

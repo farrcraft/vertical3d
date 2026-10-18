@@ -5,6 +5,9 @@
 
 #include "MouseWheel.h"
 
+#include <api/event/Context.h>
+#include <api/event/Event.h>
+
 namespace v3d::event::kind {
 /**
  **/

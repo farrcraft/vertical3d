@@ -5,6 +5,7 @@
 
 #include "Memory.h"
 
+#include <cstdint>
 #include <optional>
 
 namespace v3d::render::realtime::vulkan::memory {

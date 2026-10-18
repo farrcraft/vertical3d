@@ -6,14 +6,20 @@
 #include "Controller.h"
 
 #include <api/config/Type.h>
-#include <api/engine/Feature.h>
+#include <api/engine/Engine.h>
+#include <api/engine/Statistics.h>
+#include <api/event/kind/MouseMotion.h>
 #include <api/input/MouseState.h>
 #include <api/render/realtime/Window.h>
+#include <api/render/realtime/vulkan/frame/Timings.h>
+#include <api/ui/Engine.h>
+#include <api/ui/Immediate.h>
+#include <api/ui/shell/GameMenu.h>
+#include <api/ui/shell/StatisticsOverlay.h>
 #include <voxel/src/engine/Nanoseconds.h>
 #include <voxel/src/game/GameState.h>
 #include <voxel/src/game/Player.h>
 
-#include <functional>
 #include <string>
 #include <utility>
 

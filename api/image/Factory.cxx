@@ -13,12 +13,18 @@
 #include <api/image/writer/Jpeg.h>
 #include <api/image/writer/Png.h>
 #include <api/image/writer/Tga.h>
+#include <api/log/Logger.h>
+
+#include "Image.h"
+#include "Reader.h"
+#include "Writer.h"
 
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
 #include <map>
 #include <string>
+#include <string_view>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>

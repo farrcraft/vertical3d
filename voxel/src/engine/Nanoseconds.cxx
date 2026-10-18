@@ -5,6 +5,7 @@
 
 #include "Nanoseconds.h"
 
+#include <cstdint>
 #include <limits>
 
 namespace {

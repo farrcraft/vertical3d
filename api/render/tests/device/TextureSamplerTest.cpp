@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>

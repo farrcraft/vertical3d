@@ -5,7 +5,6 @@
 
 #include "Piece.h"
 
-#include <iostream>
 #include <string>
 
 Piece::Piece(ColorType type) : color_(type) {

@@ -5,8 +5,12 @@
 
 #include "ChunkMeshBuilder.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/vulkan/memory/Uploader.h>
 #include <voxel/src/voxel/MeshCache.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <span>
 #include <vector>

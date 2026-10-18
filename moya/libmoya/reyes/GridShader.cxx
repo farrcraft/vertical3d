@@ -5,7 +5,15 @@
 
 #include "GridShader.h"
 
+#include <api/render/offline/Texture.h>
+#include <api/render/offline/sl/Globals.h>
+#include <api/render/offline/sl/Instance.h>
+#include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/sl/runtime/Value.h>
 #include <moya/libmoya/RenderContext.h>
+#include <moya/libmoya/Vertex.h>
+
+#include "MicroPolygonGrid.h"
 
 #include <string>
 #include <vector>

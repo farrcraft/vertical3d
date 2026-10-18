@@ -5,8 +5,14 @@
 
 #include "ViewPort.h"
 
+#include <api/render/realtime/canvas/Line.h>
+#include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/WireframeVisitor.h>
+
+#include "ConstructionPlane.h"
 
 #include <string>
 

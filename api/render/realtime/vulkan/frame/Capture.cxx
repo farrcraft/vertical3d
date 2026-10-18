@@ -7,12 +7,18 @@
 
 #include <api/image/Image.h>
 #include <api/image/writer/Png.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/memory/Barriers.h>
+#include <api/render/realtime/vulkan/memory/Buffer.h>
 
 #include "Swapchain.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/make_shared.hpp>

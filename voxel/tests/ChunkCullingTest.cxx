@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/geometry/AABBox.h>
+#include <api/type/geometry/Frustum.h>
 #include <voxel/src/engine/Camera.h>
 #include <voxel/src/voxel/ChunkCulling.h>
 

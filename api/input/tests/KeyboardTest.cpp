@@ -3,13 +3,18 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Context.h>
+#include <api/event/Event.h>
 #include <api/event/Source.h>
+#include <api/event/State.h>
 #include <api/event/kind/KeyDown.h>
 #include <api/event/kind/KeyUp.h>
+#include <api/input/KeyState.h>
 #include <api/input/Keyboard.h>
 #include <api/input/Mouse.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 

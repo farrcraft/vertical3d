@@ -4,6 +4,9 @@
  **/
 
 #include <api/brep/BRep.h>
+#include <api/brep/Face.h>
+#include <api/brep/HalfEdge.h>
+#include <api/brep/Index.h>
 #include <api/brep/Topology.h>
 #include <api/type/geometry/AABBox.h>
 

@@ -7,6 +7,7 @@
 
 #include <api/asset/Json.h>
 #include <api/event/Engine.h>
+#include <api/event/Event.h>
 #include <api/log/Logger.h>
 #include <api/ui/component/Bar.h>
 #include <api/ui/component/Box.h>
@@ -29,6 +30,7 @@
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Type.h>
 #include <api/ui/style/Button.h>
 #include <api/ui/style/Property.h>
 #include <api/ui/style/Style.h>
@@ -41,6 +43,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <exception>
 #include <limits>
 #include <optional>
 #include <string>
@@ -49,6 +52,7 @@
 
 #include "Component.h"
 #include "Container.h"
+#include "Layout.h"
 #include "Length.h"
 
 #include <boost/json/value_to.hpp>

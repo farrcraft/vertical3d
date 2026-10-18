@@ -6,16 +6,25 @@
 #include "World.h"
 
 #include <api/asset/Json.h>
+#include <api/asset/Manager.h>
+#include <api/asset/Worker.h>
+#include <api/asset/kind/Json.h>
+#include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
+#include <api/log/Logger.h>
 #include <api/type/Checked.h>
+
+#include "Sight.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <expected>
-#include <limits>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 

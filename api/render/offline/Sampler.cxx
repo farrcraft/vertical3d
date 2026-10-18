@@ -7,6 +7,8 @@
 
 #include <api/type/Random.h>
 
+#include "Sampling.h"
+
 #include <cmath>
 #include <cstdint>
 #include <utility>

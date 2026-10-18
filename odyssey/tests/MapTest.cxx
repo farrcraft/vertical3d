@@ -3,10 +3,14 @@
  * Copyright (c) 2026 Joshua Farr (josh@farrcraft.com)
  **/
 
+#include <api/asset/Type.h>
+#include <api/asset/kind/Json.h>
 #include <api/grid/Pathfinding.h>
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
+#include <api/log/Logger.h>
 #include <odyssey/tile/Map.h>
+#include <odyssey/tile/Tile.h>
 
 #include <string>
 #include <vector>

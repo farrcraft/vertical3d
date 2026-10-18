@@ -6,6 +6,7 @@
 #include "Property.h"
 
 #include <string>
+#include <string_view>
 
 namespace v3d::ui::style {
 

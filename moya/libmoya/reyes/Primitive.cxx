@@ -5,6 +5,12 @@
 
 #include "Primitive.h"
 
+#include <api/render/offline/MovingTransform.h>
+#include <api/type/geometry/AABBox.h>
+#include <moya/libmoya/Shading.h>
+
+#include "MicroPolygonGrid.h"
+
 namespace v3d::moya::reyes {
 
 Primitive::Primitive() {

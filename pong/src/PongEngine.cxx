@@ -5,17 +5,22 @@
 
 #include "PongEngine.h"
 
+#include <api/audio/Engine.h>
 #include <api/audio/Loaders.h>
 #include <api/config/Type.h>
 #include <api/ecs/Previous.h>
-#include <api/ecs/component/Color3.h>
 #include <api/ecs/component/Position1D.h>
 #include <api/ecs/component/Position2D.h>
-#include <api/engine/Feature.h>
+#include <api/engine/Engine.h>
+#include <api/engine/Settings.h>
+#include <api/engine/Statistics.h>
+#include <api/event/Event.h>
+#include <api/event/Source.h>
+#include <api/event/State.h>
+#include <api/ui/Engine.h>
+#include <api/ui/shell/GameMenu.h>
 
 #include <array>
-#include <iostream>
-#include <map>
 #include <utility>
 #include <string>
 #include <string_view>

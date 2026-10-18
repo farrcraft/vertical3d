@@ -6,8 +6,12 @@
 #include "TextureFactory.h"
 
 #include <api/image/Image.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/pipeline/Sampler.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -15,6 +19,7 @@
 #include "Barriers.h"
 #include "Buffer.h"
 #include "Image.h"
+#include "Uploader.h"
 
 #include <boost/make_shared.hpp>
 

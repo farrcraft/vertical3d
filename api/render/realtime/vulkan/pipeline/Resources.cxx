@@ -5,6 +5,16 @@
 
 #include "Resources.h"
 
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+
+#include "Material.h"
+#include "Pipeline.h"
+#include "Texture.h"
+
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <set>
 

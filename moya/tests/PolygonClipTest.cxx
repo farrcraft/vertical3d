@@ -6,8 +6,10 @@
 #include <api/type/geometry/Frustum.h>
 #include <api/type/geometry/Plane.h>
 #include <moya/libmoya/Polygon.h>
+#include <moya/libmoya/Vertex.h>
 
 #include <cmath>
+#include <cstddef>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>

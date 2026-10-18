@@ -5,9 +5,9 @@
 
 #include "Tetrad.h"
 
-#include <iostream>
 #include <cassert>
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
 
 Tetrad::Tetrad(const ShapeInfo & shape) : orientation_(0), shape_(shape), initialized_(true) {

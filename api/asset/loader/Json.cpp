@@ -5,12 +5,16 @@
 
 #include "Json.h"
 
+#include <api/asset/Asset.h>
 #include <api/asset/File.h>
+#include <api/asset/Loader.h>
 #include <api/asset/Type.h>
 #include <api/asset/kind/Json.h>
+#include <api/log/Logger.h>
 
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>

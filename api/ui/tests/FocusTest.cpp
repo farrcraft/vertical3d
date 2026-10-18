@@ -4,6 +4,7 @@
  **/
 
 #include <api/event/Engine.h>
+#include <api/log/Logger.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Panel.h>
@@ -13,7 +14,6 @@
 
 #include <string>
 #include <string_view>
-#include <vector>
 
 #include <boost/test/unit_test.hpp>
 

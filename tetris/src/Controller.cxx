@@ -6,10 +6,15 @@
 #include "Controller.h"
 
 #include <api/config/Type.h>
-#include <api/engine/Feature.h>
+#include <api/engine/Engine.h>
+#include <api/engine/Statistics.h>
+#include <api/event/Event.h>
+#include <api/ui/Engine.h>
+#include <api/ui/shell/GameMenu.h>
 
 #include <string>
 
+#include "Tetrad.h"
 #include "TetrisScene.h"
 #include "Renderer.h"
 

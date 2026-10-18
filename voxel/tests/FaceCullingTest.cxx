@@ -4,6 +4,7 @@
  **/
 
 #include <voxel/src/voxel/FaceCulling.h>
+#include <voxel/src/voxel/Voxel.h>
 
 #include <boost/test/unit_test.hpp>
 

@@ -5,11 +5,21 @@
 
 #include "Reader.h"
 
+#include <api/log/Logger.h>
+#include <api/render/offline/Sampling.h>
 #include <api/type/Checked.h>
 
+#include "Declaration.h"
+#include "Handler.h"
+#include "Lexer.h"
+#include "Parameters.h"
+#include "Token.h"
+
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
+#include <ios>
 #include <istream>
 #include <limits>
 #include <optional>

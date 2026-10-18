@@ -5,6 +5,10 @@
 
 #include "Key.h"
 
+#include <api/event/Context.h>
+#include <api/event/Event.h>
+#include <api/event/State.h>
+
 #include <string>
 
 namespace v3d::event::kind {

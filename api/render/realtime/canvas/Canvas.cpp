@@ -6,10 +6,12 @@
 #include "Canvas.h"
 
 #include <api/font/TextBuffer.h>
+#include <api/render/realtime/Handle.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 namespace v3d::render::realtime::canvas {

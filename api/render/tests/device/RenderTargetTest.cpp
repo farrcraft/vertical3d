@@ -5,6 +5,7 @@
 
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Frame.h>
@@ -16,6 +17,7 @@
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <vector>

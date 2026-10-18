@@ -5,7 +5,16 @@
 
 #include "Menu.h"
 
+#include <api/event/Event.h>
+#include <api/ui/Component.h>
+#include <api/ui/component/Type.h>
 #include <api/ui/input/Command.h>
+
+#include "Item.h"
+#include "Type.h"
+
+#include <cassert>
+#include <cstddef>
 
 namespace v3d::ui::component::menu {
 Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :

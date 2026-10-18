@@ -6,10 +6,17 @@
 #include "Bindings.h"
 
 #include <api/asset/Json.h>
+#include <api/log/Logger.h>
+
+#include "Engine.h"
+#include "Event.h"
+#include "State.h"
+#include "Type.h"
 
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/json.hpp>

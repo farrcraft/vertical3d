@@ -5,6 +5,10 @@
 
 #include "Variable.h"
 
+#include <api/render/offline/Position.h>
+
+#include "Expression.h"
+
 #include <string>
 
 namespace v3d::render::offline::sl::syntax {

@@ -4,6 +4,7 @@
  **/
 
 #include <api/render/offline/sl/Parser.h>
+#include <api/render/offline/sl/Types.h>
 #include <api/render/offline/sl/syntax/Assignment.h>
 #include <api/render/offline/sl/syntax/Binary.h>
 #include <api/render/offline/sl/syntax/Cast.h>
@@ -18,6 +19,7 @@
 #include <api/render/offline/sl/syntax/Ternary.h>
 #include <api/render/offline/sl/syntax/Tuple.h>
 
+#include <cstddef>
 #include <sstream>
 #include <string>
 #include <vector>

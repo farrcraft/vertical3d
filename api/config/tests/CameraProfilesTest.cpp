@@ -6,6 +6,7 @@
 #include <api/config/CameraProfiles.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 
 #include <string>
 

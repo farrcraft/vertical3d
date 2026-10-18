@@ -5,6 +5,8 @@
 
 #include "DepthOrder.h"
 
+#include "World.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>

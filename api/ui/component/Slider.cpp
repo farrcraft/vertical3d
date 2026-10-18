@@ -5,6 +5,10 @@
 
 #include "Slider.h"
 
+#include <api/event/Event.h>
+#include <api/event/Type.h>
+#include <api/ui/Component.h>
+
 #include <algorithm>
 #include <cmath>
 

@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Asset.h>
 #include <api/asset/Manager.h>
 #include <api/asset/Loader.h>
 #include <api/asset/Type.h>
@@ -11,9 +12,11 @@
 #include <api/asset/media/loader/Image.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/DecodedModel.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
@@ -24,6 +27,7 @@
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <string_view>

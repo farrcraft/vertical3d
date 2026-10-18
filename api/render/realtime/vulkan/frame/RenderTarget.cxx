@@ -5,9 +5,17 @@
 
 #include "RenderTarget.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/memory/Barriers.h>
+#include <api/render/realtime/vulkan/memory/Image.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
+#include <api/render/realtime/vulkan/pipeline/Sampler.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
+#include "DepthBuffer.h"
+#include "Ring.h"
+
+#include <cstdint>
 #include <stdexcept>
 #include <utility>
 #include <vector>

@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Asset.h>
 #include <api/asset/Manager.h>
 #include <api/asset/Type.h>
 #include <api/asset/kind/Json.h>

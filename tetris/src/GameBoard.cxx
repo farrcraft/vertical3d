@@ -5,11 +5,17 @@
 
 #include "GameBoard.h"
 
+#include <api/asset/Manager.h>
 #include <api/asset/kind/Text.h>
 #include <api/asset/Type.h>
+#include <api/log/Logger.h>
+
+#include "Piece.h"
+#include "Tetrad.h"
 
 #include <cstdlib>
 #include <ctime>
+#include <exception>
 #include <sstream>
 #include <string>
 #include <vector>

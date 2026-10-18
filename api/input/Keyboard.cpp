@@ -6,6 +6,7 @@
 #include "Keyboard.h"
 
 #include <api/event/Source.h>
+#include <api/event/State.h>
 #include <api/event/kind/KeyDown.h>
 #include <api/event/kind/KeyUp.h>
 #include <api/event/kind/TextInput.h>

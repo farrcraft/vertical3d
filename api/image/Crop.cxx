@@ -5,6 +5,8 @@
 
 #include "Crop.h"
 
+#include "Image.h"
+
 namespace v3d::image {
 
 /**

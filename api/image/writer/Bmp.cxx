@@ -5,14 +5,20 @@
 
 #include "Bmp.h"
 
+#include <api/image/Image.h>
+#include <api/image/Writer.h>
 #include <api/image/format/BmpFileHeader.h>
 #include <api/image/format/BmpInfoHeader.h>
 #include <api/image/format/BmpRgbQuad.h>
 #include <api/image/Channels.h>
+#include <api/log/Logger.h>
 
+#include <cstdint>
 #include <cstring>
 #include <fstream>
+#include <ios>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/make_shared.hpp>

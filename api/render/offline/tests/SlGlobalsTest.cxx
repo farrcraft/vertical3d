@@ -4,9 +4,15 @@
  **/
 
 #include <api/log/Logger.h>
+#include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/sl/Globals.h>
+#include <api/render/offline/sl/Instance.h>
+#include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Value.h>
 
 #include <string>
 #include <vector>

@@ -8,9 +8,20 @@
 #include <api/asset/Manager.h>
 #include <api/asset/Worker.h>
 #include <api/image/Image.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/DeviceContext.h>
+#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/vulkan/memory/TextureFactory.h>
+#include <api/type/Model.h>
+
+#include "DecodedModel.h"
+#include "Handle.h"
+#include "Textures.h"
 
 #include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <expected>
 #include <map>
 #include <optional>
 #include <set>

@@ -3,10 +3,12 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include "MicroPolygon.h"
+
+#include <moya/libmoya/Vertex.h>
+
 #include <array>
 #include <cassert>
-
-#include "MicroPolygon.h"
 
 namespace v3d::moya::reyes {
 

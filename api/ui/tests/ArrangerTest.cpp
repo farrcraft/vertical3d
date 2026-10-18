@@ -6,7 +6,6 @@
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
 #include <api/ui/Component.h>
-#include <api/ui/Container.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/HorizontalBox.h>
@@ -15,6 +14,7 @@
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/VerticalBox.h>
+#include <api/ui/paint/Text.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>

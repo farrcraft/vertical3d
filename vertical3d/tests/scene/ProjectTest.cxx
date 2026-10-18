@@ -3,12 +3,17 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/BRep.h>
+#include <api/brep/Index.h>
+#include <api/log/Logger.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/SceneVisitor.h>
 
 #include <cstddef>
 #include <fstream>
+#include <ios>
 #include <iterator>
 #include <string>
 #include <vector>

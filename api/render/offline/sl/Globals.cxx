@@ -6,6 +6,10 @@
 #include "Globals.h"
 
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Program.h>
+
+#include "Placed.h"
 
 #include <vector>
 

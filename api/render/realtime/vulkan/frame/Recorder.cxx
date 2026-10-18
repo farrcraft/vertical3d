@@ -5,7 +5,13 @@
 
 #include "Recorder.h"
 
+#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/memory/Barriers.h>
+#include <api/render/realtime/vulkan/pipeline/Material.h>
+#include <api/render/realtime/vulkan/pipeline/Pipeline.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -14,7 +20,9 @@
 #include <stdexcept>
 #include <vector>
 
+#include "FrameUniforms.h"
 #include "RenderTarget.h"
+#include "Timings.h"
 
 #include <boost/shared_ptr.hpp>
 

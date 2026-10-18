@@ -5,11 +5,13 @@
 
 #include <api/image/Compare.h>
 #include <api/image/Factory.h>
+#include <api/image/Image.h>
 #include <api/log/Logger.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
+#include <ios>
 #include <string>
 #include <vector>
 

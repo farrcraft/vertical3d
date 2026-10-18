@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/font/TextureFont.h>
 #include <api/font/TextureFontCache.h>
 #include <api/image/TextureAtlas.h>
 #include <api/log/Logger.h>

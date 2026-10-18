@@ -3,7 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/BRep.h>
+#include <api/log/Logger.h>
+#include <api/render/offline/rib/Handler.h>
+#include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
+#include <api/render/offline/rib/Requests.h>
+#include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/Scene.h>

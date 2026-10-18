@@ -5,6 +5,8 @@
 
 #include "TransformCommand.h"
 
+#include <api/brep/BRep.h>
+
 #include <string>
 
 #include <boost/shared_ptr.hpp>

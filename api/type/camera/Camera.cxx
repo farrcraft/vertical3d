@@ -5,9 +5,12 @@
 
 #include "Camera.h"
 
-#include <iostream>
+#include <api/type/geometry/Plane.h>
+#include <api/type/geometry/Ray.h>
+
 #include <algorithm>
 #include <cmath>
+#include <optional>
 
 #include <glm/gtc/quaternion.hpp>
 

@@ -5,9 +5,14 @@
 
 #include "Presenter.h"
 
+#include <api/log/Logger.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
+#include "Ring.h"
+#include "Swapchain.h"
+
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include <boost/make_shared.hpp>

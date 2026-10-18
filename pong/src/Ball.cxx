@@ -6,12 +6,10 @@
 #include "Ball.h"
 
 #include <api/ecs/Previous.h>
-#include <api/ecs/component/Color3.h>
 #include <api/ecs/component/Position2D.h>
 #include <pong/src/component/Direction.h>
 #include <pong/src/component/Size.h>
 
-#include <cmath>
 
 Ball::Ball(entt::registry* registry) : registry_(registry) {
     id_ = registry->create();

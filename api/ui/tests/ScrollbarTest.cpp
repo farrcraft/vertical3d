@@ -4,7 +4,7 @@
  **/
 
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/ui/Container.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/paint/ComponentRenderer.h>

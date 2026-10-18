@@ -6,11 +6,14 @@
 #include "StatisticsOverlay.h"
 
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/paint/TextRenderer.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <iomanip>
+#include <ios>
 #include <sstream>
 #include <string>
 #include <vector>

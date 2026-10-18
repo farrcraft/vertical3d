@@ -7,6 +7,7 @@
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 
+#include <cstdlib>
 #include <string>
 #include <utility>
 

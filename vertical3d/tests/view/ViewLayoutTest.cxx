@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Type.h>
+#include <api/asset/kind/Json.h>
+#include <api/log/Logger.h>
 #include <vertical3d/src/view/ViewLayout.h>
 
 #include <string>

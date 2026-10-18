@@ -6,7 +6,9 @@
 #include "CameraProfiles.h"
 
 #include <api/asset/Json.h>
+#include <api/log/Logger.h>
 #include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 
 #include <optional>
 #include <string>

@@ -5,6 +5,8 @@
 
 #include <api/type/camera/ArcBall.h>
 
+#include <cmath>
+
 #include <boost/test/unit_test.hpp>
 
 namespace {

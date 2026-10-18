@@ -5,6 +5,18 @@
 
 #include "Scene.h"
 
+#include <api/render/offline/MovingTransform.h>
+#include <api/render/offline/sl/Placed.h>
+#include <api/type/geometry/Ray.h>
+
+#include "Hit.h"
+#include "Intersection.h"
+#include "Pose.h"
+#include "Primitive.h"
+#include "Sphere.h"
+#include "Triangle.h"
+
+#include <cstddef>
 #include <limits>
 #include <vector>
 

@@ -6,8 +6,14 @@
 #include "Engine.h"
 
 #include <api/asset/Json.h>
+#include <api/asset/Manager.h>
+#include <api/asset/Type.h>
 #include <api/audio/kind/Sound.h>
 #include <api/event/kind/Sound.h>
+#include <api/log/Logger.h>
+
+#include "AudioClip.h"
+#include "Play.h"
 
 #include <SDL3_mixer/SDL_mixer.h>
 

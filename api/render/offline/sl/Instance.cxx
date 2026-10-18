@@ -5,7 +5,18 @@
 
 #include "Instance.h"
 
+#include <api/log/Logger.h>
+#include <api/render/offline/rib/Declaration.h>
+#include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/sl/runtime/Instruction.h>
+#include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Register.h>
+#include <api/render/offline/sl/runtime/Value.h>
+
+#include "Types.h"
+
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <vector>
 

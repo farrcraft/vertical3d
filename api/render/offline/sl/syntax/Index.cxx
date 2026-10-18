@@ -5,6 +5,10 @@
 
 #include "Index.h"
 
+#include <api/render/offline/Position.h>
+
+#include "Expression.h"
+
 namespace v3d::render::offline::sl::syntax {
 
 Index::Index(const Parts & parts, const v3d::render::offline::Position & at) :

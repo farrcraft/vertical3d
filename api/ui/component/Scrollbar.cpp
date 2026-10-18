@@ -5,9 +5,12 @@
 
 #include "Scrollbar.h"
 
+#include <api/ui/Component.h>
+
 #include <algorithm>
 
 #include "SelectList.h"
+#include "Type.h"
 
 namespace v3d::ui::component {
 

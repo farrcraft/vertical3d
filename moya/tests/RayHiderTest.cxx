@@ -3,12 +3,22 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/log/Logger.h>
+#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/trace/Hit.h>
+#include <api/render/offline/trace/Sphere.h>
+#include <api/render/offline/trace/Triangle.h>
+#include <api/type/geometry/Ray.h>
+#include <moya/libmoya/FrameBuffer.h>
+#include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RayHider.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/RenderMan.h>
+#include <moya/libmoya/Renderer.h>
+#include <moya/libmoya/Vertex.h>
 
 #include <array>
 #include <sstream>

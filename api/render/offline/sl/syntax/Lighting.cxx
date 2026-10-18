@@ -5,6 +5,10 @@
 
 #include "Lighting.h"
 
+#include <api/render/offline/Position.h>
+
+#include "Statement.h"
+
 namespace v3d::render::offline::sl::syntax {
 
 Lighting::Lighting(Construct construct, const v3d::render::offline::Position & at) :

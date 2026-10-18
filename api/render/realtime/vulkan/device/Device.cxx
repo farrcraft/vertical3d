@@ -5,8 +5,14 @@
 
 #include "Device.h"
 
-#include "Result.h"
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
 
+#include "Instance.h"
+#include "Result.h"
+#include "Surface.h"
+
+#include <cstdint>
 #include <cstring>
 #include <set>
 #include <sstream>

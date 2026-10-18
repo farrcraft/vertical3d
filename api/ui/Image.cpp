@@ -5,6 +5,8 @@
 
 #include "Image.h"
 
+#include <api/render/realtime/Handle.h>
+
 namespace v3d::ui {
 
 Image::Image() noexcept : uv0(0.0F, 0.0F), uv1(1.0F, 1.0F) {

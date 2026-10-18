@@ -5,7 +5,13 @@
 
 #include "Engine.h"
 
+#include "Context.h"
+#include "Event.h"
+#include "Mapper.h"
+#include "Source.h"
+
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/make_shared.hpp>

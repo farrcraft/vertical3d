@@ -6,24 +6,31 @@
 #include "Inference.h"
 
 #include <api/render/offline/sl/syntax/Assignment.h>
+#include <api/render/offline/sl/syntax/Block.h>
 #include <api/render/offline/sl/syntax/Call.h>
 #include <api/render/offline/sl/syntax/Conditional.h>
 #include <api/render/offline/sl/syntax/Declaration.h>
 #include <api/render/offline/sl/syntax/Declarator.h>
+#include <api/render/offline/sl/syntax/Expression.h>
 #include <api/render/offline/sl/syntax/ExpressionStatement.h>
 #include <api/render/offline/sl/syntax/For.h>
 #include <api/render/offline/sl/syntax/Function.h>
 #include <api/render/offline/sl/syntax/Jump.h>
 #include <api/render/offline/sl/syntax/Lighting.h>
+#include <api/render/offline/sl/syntax/Shader.h>
+#include <api/render/offline/sl/syntax/Statement.h>
 #include <api/render/offline/sl/syntax/Variable.h>
 #include <api/render/offline/sl/syntax/Walk.h>
 #include <api/render/offline/sl/syntax/While.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <vector>
 
 #include "Builtins.h"
+#include "Symbol.h"
+#include "Types.h"
 
 namespace v3d::render::offline::sl {
 

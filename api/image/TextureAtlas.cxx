@@ -5,7 +5,15 @@
 
 #include "TextureAtlas.h"
 
+#include <api/log/Logger.h>
+
 #include <algorithm>
+#include <cassert>
+#include <climits>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <stdexcept>
 #include <string>
 
 #include <boost/shared_ptr.hpp>

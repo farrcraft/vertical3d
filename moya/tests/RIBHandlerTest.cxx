@@ -4,9 +4,13 @@
  **/
 
 #include <api/log/Logger.h>
+#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/trace/Sphere.h>
+#include <moya/libmoya/FrameBuffer.h>
 #include <moya/libmoya/RIBHandler.h>
+#include <moya/libmoya/Renderer.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>

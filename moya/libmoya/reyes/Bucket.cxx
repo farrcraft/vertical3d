@@ -5,7 +5,7 @@
 
 #include "Bucket.h"
 
-#include <moya/libmoya/FrameBuffer.h>
+#include <api/render/offline/MovingTransform.h>
 #include <moya/libmoya/RenderContext.h>
 
 #include <algorithm>
@@ -18,6 +18,10 @@
 
 #include "Footprint.h"
 #include "GridShader.h"
+#include "MicroPolygon.h"
+#include "MicroPolygonGrid.h"
+#include "Primitive.h"
+#include "Samples.h"
 
 namespace v3d::moya::reyes {
 

@@ -5,6 +5,10 @@
 
 #include "Loader.h"
 
+#include <api/log/Logger.h>
+
+#include "Type.h"
+
 namespace v3d::asset {
 /**
     **/

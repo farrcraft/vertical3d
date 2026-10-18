@@ -4,6 +4,7 @@
  **/
 
 #include <api/event/Engine.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
@@ -11,6 +12,7 @@
 #include <api/ui/Length.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/TabBar.h>
+#include <api/ui/component/TabPage.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
 #include <string>

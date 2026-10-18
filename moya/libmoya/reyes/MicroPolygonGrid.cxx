@@ -5,6 +5,10 @@
 
 #include "MicroPolygonGrid.h"
 
+#include <moya/libmoya/Vertex.h>
+
+#include "MicroPolygon.h"
+
 #include <cassert>
 #include <vector>
 

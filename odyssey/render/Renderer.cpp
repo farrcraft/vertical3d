@@ -5,12 +5,22 @@
 
 #include "Renderer.h"
 
+#include <api/asset/Manager.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Window.h>
+#include <odyssey/engine/Player.h>
 #include <odyssey/engine/Unit.h>
+#include <odyssey/tile/Map.h>
+#include <odyssey/tile/Sight.h>
+#include <odyssey/tile/Tile.h>
+#include <odyssey/tile/World.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 
 #include <glm/vec2.hpp>

@@ -6,11 +6,16 @@
 #include "Meshes.h"
 
 #include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/MeshRegistry.h>
+#include <api/render/realtime/Pass.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/vulkan/renderer/Lit.h>
 
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
+
+#include "Poses.h"
 
 #include <cstddef>
 #include <cstdint>

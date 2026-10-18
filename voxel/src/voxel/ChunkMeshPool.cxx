@@ -5,6 +5,9 @@
 
 #include "ChunkMeshPool.h"
 
+#include <api/render/realtime/vulkan/memory/Mesh.h>
+
+#include <cstddef>
 #include <utility>
 
 ChunkMeshPool::Entry::Entry() :

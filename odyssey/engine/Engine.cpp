@@ -5,12 +5,20 @@
 
 #include "Engine.h"
 
+#include <api/asset/Worker.h>
+#include <api/engine/Engine.h>
+#include <api/event/Event.h>
+#include <api/event/State.h>
+#include <api/event/kind/MouseMotion.h>
 #include <api/grid/TileCoord.h>
-#include <api/engine/Feature.h>
 #include <api/grid/Pathfinding.h>
 #include <api/grid/TileGrid.h>
+#include <odyssey/render/Renderer.h>
+#include <odyssey/system/Movement.h>
+#include <odyssey/tile/World.h>
 
 #include "Path.h"
+#include "Player.h"
 #include "Unit.h"
 
 #include <cstddef>

@@ -5,9 +5,17 @@
 
 #include "TextBox.h"
 
+#include <api/event/Event.h>
+#include <api/event/Type.h>
+#include <api/ui/Component.h>
+#include <api/ui/paint/Text.h>
+
+#include "Type.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace v3d::ui::component {

@@ -5,8 +5,14 @@
 
 #include "Ring.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
+#include "CommandPool.h"
+#include "Timings.h"
+
+#include <cstdint>
+#include <functional>
 #include <utility>
 
 #include <boost/make_shared.hpp>
