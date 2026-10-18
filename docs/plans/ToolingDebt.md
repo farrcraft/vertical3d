@@ -44,8 +44,16 @@ tolerance to zero. If it is not, say beside the case that lavapipe is the reason
 each build. The field that differs is the vertex stage, through a second test shader,
 `flat.vert`. On the authoring GPU, a different cull mode, depth compare, topology or colour
 format also added an entry. Whether lavapipe keys on fixed function state is up to it, so the
-case does not rely on that. The case fails when `build()` passes no cache. It has not yet run on
-lavapipe, so the first CI run on a PR checks it, alongside step 2.
+case does not rely on that. The case fails when `build()` passes no cache.
+
+Its first CI run, on PR 21, failed: lavapipe's cache held its 32-byte header after every build.
+The specification lets an implementation keep nothing in a cache, so the case now names lavapipe
+by its driver ID and checks only the validation layer there. Keying on the driver rather than on
+an empty cache keeps the null-cache mutation failing on every other driver, which was checked
+again on the authoring GPU.
+
+Step 2 sets the grade tolerance to zero in the same push, so the next CI run either passes or
+prints how far lavapipe is from exact.
 
 ### Step 4 — The glTF fixture generators in TypeScript
 

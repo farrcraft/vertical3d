@@ -57,6 +57,20 @@ void describe(Builder* builder) {
 }
 
 /**
+ * Whether the device is lavapipe, which keeps nothing in a pipeline cache. Its cache holds only
+ * the header whatever is built against it.
+ **/
+bool keepsNoCache(const v3d::test::Headless& headless) {
+    VkPhysicalDeviceDriverProperties driver{};
+    driver.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+    VkPhysicalDeviceProperties2 properties{};
+    properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    properties.pNext = &driver;
+    vkGetPhysicalDeviceProperties2(headless.device->physical(), &properties);
+    return driver.driverID == VK_DRIVER_ID_MESA_LLVMPIPE;
+}
+
+/**
  * How many bytes the cache would write out, which grows by an entry each time a build
  * compiles something the cache did not already hold.
  **/
@@ -347,6 +361,10 @@ BOOST_AUTO_TEST_CASE(a_builder_given_no_layout_still_builds_its_own) {
  * implementation that caches at all. Whether fixed function state such as the cull mode is part
  * of the cache's key is left to the implementation.
  *
+ * An implementation may keep nothing in a cache, and lavapipe keeps nothing. On lavapipe the
+ * case builds one pipeline and checks the validation layer, but not the cache's size. Every
+ * other driver has to grow the cache, so a build that passes no cache still fails there.
+ *
  * Covers the base: 3dd24da7 brought the builder's cache argument. Checked by passing a null
  * cache to vkCreateGraphicsPipelines in build(), which leaves the cache empty and fails this
  * case.
@@ -362,6 +380,11 @@ BOOST_AUTO_TEST_CASE(the_same_pipeline_is_compiled_into_the_cache_once) {
     first.colourFormat(colourFormat);
     buildAndDestroy(headless, first, cache);
     const std::size_t once = held(headless, *cache);
+    if (keepsNoCache(headless)) {
+        BOOST_TEST_MESSAGE("lavapipe keeps nothing in a pipeline cache, so its size was not checked");
+        BOOST_CHECK(headless.silent());
+        return;
+    }
     BOOST_CHECK_GT(once, empty);
 
     Builder again(headless.device);

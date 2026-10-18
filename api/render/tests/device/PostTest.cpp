@@ -358,11 +358,8 @@ BOOST_AUTO_TEST_CASE(a_pass_destroyed_after_its_source_is_queued_draws_it) {
 }
 
 /**
- * The identity table leaves a scene as it was, to within the filtering the implementation does
- * between entries. In exact arithmetic the result is the input, because every entry is its own
- * position and a linear blend of neighbours is the input. The precision of a filter's weights
- * is left to the implementation, so the case allows one step in any channel and has no
- * reference picture.
+ * The identity table leaves a scene as it was. Every entry is its own position, so a linear
+ * blend of neighbours is the input, and the result matches it exactly in every channel.
  **/
 BOOST_AUTO_TEST_CASE(the_identity_grade_leaves_the_scene_within_a_step) {
     const uint32_t size = 64;
@@ -376,7 +373,7 @@ BOOST_AUTO_TEST_CASE(the_identity_grade_leaves_the_scene_within_a_step) {
 
     const int most = largest(picture, texels);
     BOOST_TEST_MESSAGE("the identity grade moved a channel by at most " << most);
-    BOOST_CHECK_LE(most, 1);
+    BOOST_CHECK_EQUAL(most, 0);
 }
 
 /**
@@ -400,7 +397,7 @@ BOOST_AUTO_TEST_CASE(a_strip_grades_the_scene) {
     }
     const int most = largest(picture, inverted);
     BOOST_TEST_MESSAGE("the inverting grade missed the complement by at most " << most);
-    BOOST_CHECK_LE(most, 1);
+    BOOST_CHECK_EQUAL(most, 0);
 }
 
 /**
@@ -421,7 +418,7 @@ BOOST_AUTO_TEST_CASE(a_strip_grades_an_srgb_scene_as_it_looks) {
         BOOST_REQUIRE(picture);
         const int most = largest(picture, complement(texels));
         BOOST_TEST_MESSAGE(path << " missed the complement by at most " << most);
-        BOOST_CHECK_LE(most, 1);
+        BOOST_CHECK_EQUAL(most, 0);
     }
     BOOST_CHECK(headless.silent());
 }
@@ -445,7 +442,7 @@ BOOST_AUTO_TEST_CASE(the_identity_grade_leaves_an_srgb_scene_within_a_step) {
     BOOST_CHECK(headless.silent());
     const int most = largest(picture, texels);
     BOOST_TEST_MESSAGE("the identity grade moved an sRGB channel by at most " << most);
-    BOOST_CHECK_LE(most, 1);
+    BOOST_CHECK_EQUAL(most, 0);
 }
 
 /**
@@ -479,7 +476,7 @@ BOOST_AUTO_TEST_CASE(a_replaced_table_regrades_its_sources) {
     BOOST_REQUIRE(picture);
     const int most = largest(picture, complement(texels));
     BOOST_TEST_MESSAGE("the replaced grade missed the complement by at most " << most);
-    BOOST_CHECK_LE(most, 1);
+    BOOST_CHECK_EQUAL(most, 0);
 }
 
 /**
