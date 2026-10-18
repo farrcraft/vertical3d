@@ -135,10 +135,10 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [13](#step-13--opacity-under-the-reyes-hider) | Opacity under the reyes hider | `moya` | — | done |
 | [14](#step-14--a-displacement-shader-reaches-the-renderer) | A displacement shader compiles and reaches the renderer | `api/render/offline`, `moya` | — | done |
 | [15](#step-15--displacement-under-the-reyes-hider) | Displacement under the reyes hider | `moya` | — | done |
-| [16](#step-16--the-record-displacement-under-the-ray-hider) | The record: displacement under the ray hider | `docs/adr` | **0095** | open |
+| [16](#step-16--the-record-displacement-under-the-ray-hider) | The record: displacement under the ray hider | `docs/adr` | **0095** | done |
 | [17](#step-17--displacement-under-the-ray-hider) | Displacement under the ray hider, as 0095 decides | `api/render/offline`, `moya` | 0095 | open |
 | [18](#step-18--solar-with-an-angle) | `solar` with an angle | `api/render/offline`, `moya` | — | done |
-| [19](#step-19--the-traced-scene-only-when-something-traces) | The reyes hider fills the traced scene only when something traces | `api/render/offline`, `moya` | — | open |
+| [19](#step-19--the-traced-scene-only-when-something-traces) | The reyes hider fills the traced scene only when something traces | `api/render/offline`, `moya` | — | held |
 | [20](#step-20--the-command-line-wins-over-option-limits) | The command line wins over `Option "limits"` | `moya` | — | done |
 | [21](#step-21--the-documents) | The offline documents state the new rules | `docs` | — | open |
 
@@ -602,6 +602,9 @@ the displaced picture.
 
 ### Step 16 — The record: displacement under the ray hider
 
+**Done.** ADR-0095 is written as the recommendation below, and the decision was agreed. It is
+accepted when step 17 lands.
+
 **ADR-0095.** The ray tracer intersects triangles and spheres. It does not tessellate.
 
 **The options the record weighs:**
@@ -646,6 +649,15 @@ from the loop.
 cone's nearest edge.
 
 ### Step 19 — The traced scene only when something traces
+
+**Held, with the agreement to hold it.** The plan's own test cannot hold: every standard light
+that has a direction calls `transmission()`, so a scene of `matte` surfaces under a point light
+already traces. Only a scene with no shadowing light gains. Even then the triangles are made as
+the scene is read, because a shader bound later may trace and its rays must see what came
+before. Nothing casts a ray in such a scene, and the hierarchy is built on the first ray, so
+the step would save only the memory the triangles hold while the picture renders. It is due when
+a large scene with no shadowing light shows that memory. When the plan closes it moves to
+TODO.md with that trigger.
 
 * **A compiled program says whether it calls `trace()` or `transmission()`.** The compiler sets
   this from the built-ins it calls.
