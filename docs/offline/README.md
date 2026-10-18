@@ -112,8 +112,8 @@ Background: [ADR-0078](../adr/0078-offline-moya-is-the-one-renderer-ray-tracing-
 [TODO.md](../TODO.md#offline-rendering) holds the open work and when each item becomes due:
 
 - Area lights render as point lights.
-- Displacement shaders are refused and `calculatenormal` is a stub, so neither displacement nor
-  bump mapping is possible.
+- Displacement shaders are refused, and a traced hit has no derivatives, so bump mapping works
+  under the reyes hider only.
 - The reyes hider ignores `Oi`, so translucent surfaces render opaque under `"hidden"`.
 - `trace::Scene::nearest` tests every primitive; there is no acceleration structure.
 

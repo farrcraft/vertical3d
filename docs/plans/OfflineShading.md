@@ -126,7 +126,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [4](#step-4--the-record-the-acceleration-structure) | The record: the acceleration structure | `docs/adr` | **0092** | done |
 | [5](#step-5--a-bounding-volume-hierarchy-in-the-traced-scene) | Primitive bounds, and the structure in `trace::Scene` | `api/render/offline` | 0092 | done |
 | [6](#step-6--the-record-how-a-hider-supplies-derivatives) | The record: how a hider supplies derivatives | `docs/adr` | **0093** | done |
-| [7](#step-7--derivatives-under-the-reyes-hider) | `Du`, `Dv`, `Deriv`, `area` and `calculatenormal`, under the reyes hider | `api/render/offline`, `moya` | 0093 | open |
+| [7](#step-7--derivatives-under-the-reyes-hider) | `Du`, `Dv`, `Deriv`, `area` and `calculatenormal`, under the reyes hider | `api/render/offline`, `moya` | 0093 | done |
 | [8](#step-8--derivatives-under-the-ray-hider) | The same built-ins under the ray hider | `api/render/offline` | 0093 | open |
 | [9](#step-9--held-traced-hits-shaded-in-batches) | Traced hits shaded in batches | `api/render/offline`, `moya` | — | held |
 | [10](#step-10--the-record-how-an-area-light-is-sampled) | The record: how an area light is sampled | `docs/adr` | **0094** | open |
@@ -355,6 +355,15 @@ points. `calculatenormal` is the cross product of `P`'s two derivatives.
   the hiders.
 
 ### Step 7 — Derivatives under the reyes hider
+
+**Done.** `Renderer::Shape` names a batch's layout: lone points, a grid, or the stencil step 8
+uses. The library implements the five built-ins over it, and `GridShader` answers with its
+grid. The derivative cases are in `SlDerivativeTest.cxx`, over a stand-in renderer of each
+layout, so the stencil is tested before the ray hider uses it. `GridShaderTest.cxx` checks the
+grid's shape and a bumped plane against normals worked out by hand. `reference-bump.png` is a
+plane bumped by noise, from code and from `reference-bump.rib`, through the `bumpy.sl` fixture.
+`calculatenormal` points the way a diced polygon's `Ng` does, so it needs no flip. ADR-0093 is
+accepted.
 
 * **`Du`, `Dv`, `Deriv` and `area`** are declared in `sl/Builtins.cxx` and implemented in the
   library, for floats, colours, points and vectors.

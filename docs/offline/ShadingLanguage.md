@@ -148,13 +148,29 @@ files on disk.
 - **Each built-in's `Signature` names its `Body`**, and the machine dispatches on the body, not
   the name. A function cannot be declared without saying what implements it.
   - `SOURCE` is written in SL and inlined.
-  - `STUB` returns its default value and is reported once. `shadow` and `calculatenormal` are
-    the two stubs.
+  - `STUB` returns its default value and is reported once. `shadow` is the one stub.
   - Every other body is implemented in C++ in the machine.
 - **`diffuse`, `specular` and `phong` are SL source** in `sl::Builtins`, written over
   `illuminance`, as the standard defines them. A shader that calls one has it copied into its
   own function list before anything else runs, so later stages see one kind of function. A
   shader's own definition of the name wins.
+- **`Du`, `Dv`, `Deriv`, `area` and `calculatenormal` difference neighbouring shading points.**
+  A derivative is the difference to the neighbouring point along u or v, divided by the step
+  `du` or `dv` between them. The renderer says how its batch lies on the surface through
+  `Renderer::shape()`. A grid's neighbour is the next vertex, or the previous one on the last row
+  or column. A batch of lone points has none, and every derivative there is zero.
+  - `Du` and `Dv` take a float, a colour or a position. A position's derivative is a vector.
+  - A uniform value's derivative is zero, because it is the same at every point.
+  - `Deriv(num, den)` is RI's `Du(num) / Du(den) + Dv(num) / Dv(den)`. A term is dropped where
+    `den` does not change in that direction, so `Deriv(f, u)` is `Du(f) / Du(u)`.
+  - `area(P)` is the area of the patch one step along u and one along v span: the length of
+    `(Du(P) * du) ^ (Dv(P) * dv)`.
+  - `calculatenormal(P)` is `Du(P) ^ Dv(P)`. On a diced polygon it points the way `Ng` does,
+    because dicing runs u along the first edge and v along the last.
+  - A derivative is first order, so on a curved surface it is as good as the grid is fine.
+
+  Background: [ADR-0093](../adr/0093-offline-derivatives-from-neighbouring-shading-points.md)
+
 - **`ambient()` is C++.** An ambient light uses neither `illuminate` nor `solar`, so it has no
   direction, and an `illuminance` loop cannot reach it.
 - **`solar` is lit along its axis.** An angle other than 0 would let `L` be any direction inside a

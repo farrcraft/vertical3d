@@ -10,6 +10,7 @@
 
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Parser.h"
@@ -133,7 +134,19 @@ std::vector<Signature> build() {
     table.push_back(writing("fresnel", Body::FRESNEL, 3, { Argument::POINTLIKE, Argument::POINTLIKE,
         Argument::FLOAT, Argument::FLOAT, Argument::FLOAT, Argument::POINTLIKE, Argument::POINTLIKE }));
     table.push_back(declare("depth", Body::DEPTH, Type::FLOAT, { Argument::POINT }));
-    table.push_back(shading("calculatenormal", Body::STUB, Type::NORMAL, { Argument::POINT }));
+
+    // the derivatives. Each is varying, because a uniform value's derivative is zero at every
+    // point but a varying one's is not. A derivative of a position is a direction
+    for (const auto & entry : { std::make_pair("Du", Body::DU), std::make_pair("Dv", Body::DV) }) {
+        table.push_back(shading(entry.first, entry.second, Type::FLOAT, { Argument::FLOAT }));
+        table.push_back(shading(entry.first, entry.second, Type::COLOR, { Argument::COLOR }));
+        table.push_back(shading(entry.first, entry.second, Type::VECTOR, { Argument::POINTLIKE }));
+    }
+    table.push_back(shading("Deriv", Body::DERIV, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
+    table.push_back(shading("Deriv", Body::DERIV, Type::COLOR, { Argument::COLOR, Argument::FLOAT }));
+    table.push_back(shading("Deriv", Body::DERIV, Type::VECTOR, { Argument::POINTLIKE, Argument::FLOAT }));
+    table.push_back(shading("area", Body::AREA, Type::FLOAT, { Argument::POINT }));
+    table.push_back(shading("calculatenormal", Body::CALCULATENORMAL, Type::NORMAL, { Argument::POINT }));
 
     // the component accessors and their setters
     const struct { const char* name; Body body; } readers[] = {

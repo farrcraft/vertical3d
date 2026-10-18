@@ -1,6 +1,6 @@
 # ADR-0093: Offline: derivatives from neighbouring shading points
 
-**Status**: proposed
+**Status**: accepted
 **Date**: 2026-10-18
 **Documented in**: [offline/ShadingLanguage.md](../offline/ShadingLanguage.md)
 

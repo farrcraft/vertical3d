@@ -54,6 +54,11 @@ const char* FOCUS_RENDERED = "data_out/reference-focus.png";
 const char* FOCUS_SCENE = "data/reference-focus.rib";
 const char* FOCUS_RIB_RENDERED = "data_out/reference-focus-rib.png";
 
+const char* BUMP = "data/reference-bump.png";
+const char* BUMP_RENDERED = "data_out/reference-bump.png";
+const char* BUMP_SCENE = "data/reference-bump.rib";
+const char* BUMP_RIB_RENDERED = "data_out/reference-bump-rib.png";
+
 const char* MOTION = "data/reference-motion.png";
 const char* MOTION_RENDERED = "data_out/reference-motion.png";
 const char* MOTION_SCENE = "data/reference-motion.rib";
@@ -1111,6 +1116,64 @@ BOOST_AUTO_TEST_CASE(reference_motion_without_a_cache_test) {
     const v3d::render::offline::FrameBuffer & cachedImage = *cached.framebuffer()->planes();
     const v3d::render::offline::FrameBuffer & uncachedImage = *uncached.framebuffer()->planes();
     BOOST_CHECK_EQUAL(largest(cachedImage, uncachedImage, {.from = 0, .to = cachedImage.width() - 1}), 0.0F);
+}
+
+/*
+    The same scene as data/reference-bump.rib: a plane facing the camera, bumped by noise in
+    its own space and lit low across its face, so the bumps show as light and shade. A plane
+    with no bumps would be one flat colour.
+*/
+void bumpScene(v3d::moya::RenderContext & rc) {
+    rc.imageResolution({64, 48}, 1.0F);
+    pixelCentres(rc);
+    rc.clipping({.hither = 1.0F, .yon = 100.0F});
+    rc.searchpath("data:&");
+    rc.prepareWorld();
+
+    typedef v3d::render::offline::rib::Declaration Declaration;
+    v3d::render::offline::rib::ParameterList ambient;
+    put(&ambient, "intensity", Declaration::Type::FLOAT, { 0.1F });
+    rc.lightSource({.shader = "ambientlight", .handle = "0"}, ambient);
+    v3d::render::offline::rib::ParameterList low;
+    put(&low, "intensity", Declaration::Type::FLOAT, { 1.0F });
+    put(&low, "to", Declaration::Type::POINT, { 0.8F, -0.3F, 0.6F });
+    rc.lightSource({.shader = "distantlight", .handle = "1"}, low);
+
+    rc.color(glm::vec3(0.85F, 0.8F, 0.7F));
+    rc.surface("bumpy", v3d::render::offline::rib::ParameterList());
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-1.2F, -0.9F, 5.0F));
+    polygon->addVertex(vertex(-1.2F, 0.9F, 5.0F));
+    polygon->addVertex(vertex(1.2F, 0.9F, 5.0F));
+    polygon->addVertex(vertex(1.2F, -0.9F, 5.0F));
+    rc.addPolygon(polygon);
+}
+
+/**
+ * A bumped plane under the reyes hider. calculatenormal differences the bumped points across
+ * each grid, so the shading follows the bumps.
+ **/
+BOOST_AUTO_TEST_CASE(moya_bump_reference_test) {
+    v3d::moya::RenderContext rc;
+    bumpScene(rc);
+    rc.render();
+
+    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), BUMP, BUMP_RENDERED);
+}
+
+/**
+ * The same bumped plane said in RIB, against the same committed picture.
+ **/
+BOOST_AUTO_TEST_CASE(moya_bump_reference_from_rib_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(BUMP_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+        BUMP, BUMP_RIB_RENDERED);
 }
 
 };  // namespace

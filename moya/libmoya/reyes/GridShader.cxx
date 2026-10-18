@@ -9,6 +9,7 @@
 #include <api/render/offline/sl/Globals.h>
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/sl/runtime/Value.h>
 #include <api/render/offline/trace/Scene.h>
 #include <moya/libmoya/RenderContext.h>
@@ -90,6 +91,18 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
     return false;
 }
 
+v3d::render::offline::sl::runtime::Renderer::Shape GridShader::shape() const {
+    Shape grid;
+    grid.layout = Shape::Layout::GRID;
+    grid.along = size_;
+    grid.across = size_;
+    // the same step shade() gives the shader as du and dv
+    const float span = size_ > 1 ? static_cast<float>(size_ - 1) : 1.0F;
+    grid.du = 1.0F / span;
+    grid.dv = grid.du;
+    return grid;
+}
+
 const v3d::render::offline::Texture* GridShader::texture(const std::string & name) {
     return context_->textures().find(name);
 }
@@ -147,6 +160,7 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     shading_ = &shading;
     placement_ = shading.placement;
     batch_ = batch;
+    size_ = size;
     toWorld_ = glm::inverse(context_->coordinateSystem("camera"));
     const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld_)));
     planes_.assign(batch, glm::vec3(0.0F));

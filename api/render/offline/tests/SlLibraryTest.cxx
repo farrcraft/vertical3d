@@ -752,16 +752,13 @@ BOOST_AUTO_TEST_CASE(sllibrary_colour_cast_space_test) {
 }
 
 /**
- * calculatenormal needs the derivatives of the grid it is shading, and no renderer supplies
- * them. It is a stub that reports itself rather than returning a plausible value. A plausible
- * value would make a scene render wrong silently.
+ * calculatenormal differences the batch's neighbouring points. Without a renderer the batch's
+ * points are not neighbours, so the normal is zero, and nothing is reported.
  **/
-BOOST_AUTO_TEST_CASE(sllibrary_calculatenormal_is_a_stub_test) {
+BOOST_AUTO_TEST_CASE(sllibrary_calculatenormal_without_neighbours_is_zero_test) {
     const Shaded shaded("normal answer = calculatenormal(P);", 4);
     BOOST_CHECK_SMALL(shaded.triple("answer").z, 0.0001F);
-    BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 1U);
-    BOOST_CHECK_EQUAL(shaded.machine().reports()[0],
-        "'calculatenormal' is declared and does nothing yet, so it answers its default");
+    BOOST_CHECK(shaded.machine().reports().empty());
 }
 
 /**
@@ -784,7 +781,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_bodies_test) {
         }
     }
     BOOST_CHECK(declared == written);
-    BOOST_CHECK(stubs == std::set<std::string>({ "calculatenormal", "shadow" }));
+    BOOST_CHECK(stubs == std::set<std::string>({ "shadow" }));
 }
 
 };  // namespace

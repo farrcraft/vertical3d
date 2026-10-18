@@ -61,6 +61,11 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
         std::vector<char>* reached, bool* ambient) override;
     const v3d::render::offline::Texture* texture(const std::string & name) override;
     /**
+     * The grid being shaded: vertex (i, j) is batch point (i * size) + j, with u along i and v
+     * along j, a step of 1 / (size - 1) apart.
+     **/
+    Shape shape() const override;
+    /**
      * Both trace through the context's traced scene, in world space, at the shutter's open. A
      * grid is shaded once for all of its samples, so it has no single time of its own.
      **/
@@ -101,6 +106,8 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
      **/
     glm::mat4x4 placement_ = glm::mat4x4(1.0F);
     unsigned int batch_ = 1;
+    /** The grid's points a side. **/
+    unsigned int size_ = 1;
     std::map<const v3d::render::offline::sl::runtime::Program*, Run> runs_;
     /** What casts the rays, into the context's traced scene. **/
     v3d::render::offline::trace::Tracer tracer_;

@@ -54,7 +54,9 @@ Only `Polygon` and `PointsPolygons` reach this pass. Spheres are not diced.
   polygon with more than four vertices loses the rest, which gives a wrong grid for a concave
   polygon.
 - **The grid is shaded**: `moya::reyes::GridShader` runs the surface shader once over all of the
-  grid's vertices and leaves `Ci` on each.
+  grid's vertices and leaves `Ci` on each. It answers `Renderer::shape()` with the grid, so a
+  derivative differences a vertex with the next one along u or v, or the previous one on the
+  last row or column. Vertex (i, j) is batch point `i * size + j`, at u = i / (size - 1).
 - **The grid is hidden into the samples.** Each micropolygon takes the colour shaded at its
   first corner. It is tested against each sample in the pixels its bound touches, as two
   triangles, and its depth is interpolated at the sample. The nearest micropolygon wins the

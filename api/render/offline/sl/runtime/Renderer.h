@@ -7,6 +7,7 @@
 
 #include <api/render/offline/Texture.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -30,6 +31,33 @@ namespace v3d::render::offline::sl::runtime {
  **/
 class Renderer {
  public:
+    /**
+     * How the points of a batch lie on the surface. The derivative built-ins read it: a
+     * derivative is the difference to a neighbouring point, divided by the step in u or v
+     * between the two.
+     **/
+    class Shape final {
+     public:
+        enum class Layout : std::uint8_t {
+            /** Points that are not neighbours, such as a single hit. Every derivative is zero. **/
+            LONE,
+            /**
+             * A grid of `along` points in u by `across` points in v. The point at u index i
+             * and v index j is batch point (i * across) + j.
+             **/
+            GRID,
+            /** Three points: one, then one a step along u from it, then one a step along v. **/
+            STENCIL
+        };
+
+        Layout layout = Layout::LONE;
+        unsigned int along = 1;
+        unsigned int across = 1;
+        /** The step in u and in v between two neighbours. **/
+        float du = 0.0F;
+        float dv = 0.0F;
+    };
+
     virtual ~Renderer() = default;
 
     /**
@@ -69,6 +97,9 @@ class Renderer {
      * the divide. This answers true for "screen", "raster" and "NDC", and false for any other.
      **/
     virtual bool projected(const std::string & name) const;
+
+    /** How the batch being shaded lies on the surface: lone points, unless a renderer says so. **/
+    virtual Shape shape() const;
 
     /**
      * How many light sources are shining on the batch being shaded.

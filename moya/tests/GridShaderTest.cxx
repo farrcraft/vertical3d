@@ -5,17 +5,20 @@
 
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/sl/runtime/Renderer.h>
 #include <moya/libmoya/Shading.h>
 #include <moya/libmoya/Vertex.h>
 #include <moya/libmoya/reyes/GridShader.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/reyes/MicroPolygonGrid.h>
 
+#include <cmath>
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
@@ -281,6 +284,91 @@ BOOST_AUTO_TEST_CASE(moya_ndc_runs_down_from_the_top_test) {
     const glm::vec4 corner = ndc * (glm::inverse(raster) * glm::vec4(64.0F, 48.0F, 1.0F, 1.0F));
     BOOST_CHECK_CLOSE(corner.x, 1.0F, 0.1F);
     BOOST_CHECK_CLOSE(corner.y, 1.0F, 0.1F);
+}
+
+
+/**
+ * A grid of five vertices a side over the plane z = 5, facing the camera. Vertex (i, j) is at
+ * x = j * 0.25 and y = i * 0.25, so u runs up y and v runs along x, and Du(P) ^ Dv(P) points
+ * at the camera, along -z, as the normal does.
+ **/
+v3d::moya::reyes::MicroPolygonGrid plane() {
+    v3d::moya::reyes::MicroPolygonGrid grid(5);
+    for (unsigned int i = 0; i < 5; i++) {
+        for (unsigned int j = 0; j < 5; j++) {
+            v3d::moya::Vertex vert;
+            vert.point(glm::vec3(static_cast<float>(j) * 0.25F, static_cast<float>(i) * 0.25F, 5.0F));
+            vert.normal(glm::vec3(0.0F, 0.0F, -1.0F));
+            vert.geometricNormal(glm::vec3(0.0F, 0.0F, -1.0F));
+            vert.color(glm::vec3(1.0F));
+            grid.addVertex(vert, i, j);
+        }
+    }
+    return grid;
+}
+
+/**
+ * The grid shader answers a derivative with the grid it is shading: its size a side, and the
+ * step between two neighbours that it gives the shader as du and dv.
+ **/
+BOOST_AUTO_TEST_CASE(moya_the_grid_is_the_shape_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.surface("constant", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid grid = plane();
+    rc.shader().shade(rc.shading(), &grid);
+
+    const v3d::render::offline::sl::runtime::Renderer::Shape shape = rc.shader().shape();
+    BOOST_CHECK(shape.layout == v3d::render::offline::sl::runtime::Renderer::Shape::Layout::GRID);
+    BOOST_CHECK_EQUAL(shape.along, 5U);
+    BOOST_CHECK_EQUAL(shape.across, 5U);
+    BOOST_CHECK_CLOSE(shape.du, 0.25F, 0.001F);
+    BOOST_CHECK_CLOSE(shape.dv, 0.25F, 0.001F);
+}
+
+/**
+ * The normal of a plane bumped by a sine of s, against the same worked out by hand.
+ *
+ * s is u, which is i / 4. The bumped point is P + A sin(2 pi s) N, so its z is
+ * 5 - A sin(2 pi s), and only along u does it change. Du(Pb) is (0, 1, dz), where dz is the
+ * change in z to the next vertex, or from the previous one on the last row, times 4. Dv(Pb)
+ * is (1, 0, 0). Their cross product is (0, dz, -1), which is normalised.
+ **/
+BOOST_AUTO_TEST_CASE(moya_a_bumped_plane_test) {
+    const float amplitude = 0.1F;
+    const float pi = 3.14159265F;
+    const auto height = [&](unsigned int row) {
+        return 5.0F - (amplitude * std::sin(2.0F * pi * static_cast<float>(row) / 4.0F));
+    };
+
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.searchpath("data:&");
+    ParameterList bumped;
+    add(&bumped, "amplitude", Declaration::Type::FLOAT, { amplitude });
+    rc.surface("bumpnormal", bumped);
+    v3d::moya::reyes::MicroPolygonGrid grid = plane();
+    rc.shader().shade(rc.shading(), &grid);
+
+    ParameterList still;
+    add(&still, "amplitude", Declaration::Type::FLOAT, { 0.0F });
+    rc.surface("bumpnormal", still);
+    v3d::moya::reyes::MicroPolygonGrid flat = plane();
+    rc.shader().shade(rc.shading(), &flat);
+
+    for (const unsigned int row : { 0U, 1U, 4U }) {
+        BOOST_TEST_CONTEXT("vertex " << row << ", 2") {
+            const float dz = (row < 4 ? height(row + 1) - height(row) : height(row) - height(row - 1)) * 4.0F;
+            const glm::vec3 expected = glm::normalize(glm::vec3(0.0F, dz, -1.0F));
+            const glm::vec3 shaded = (grid.vertex(row, 2).color() * 2.0F) - glm::vec3(1.0F);
+            BOOST_TEST(glm::length(shaded - expected) < 1.0e-3F);
+            // unbumped, the plane's own normal
+            const glm::vec3 plain = (flat.vertex(row, 2).color() * 2.0F) - glm::vec3(1.0F);
+            BOOST_TEST(glm::length(plain - glm::vec3(0.0F, 0.0F, -1.0F)) < 1.0e-3F);
+        }
+    }
+    // the sine rises fastest at s = 0, so the bump tilts the normal most there
+    BOOST_TEST(std::fabs(((grid.vertex(0, 2).color() * 2.0F) - glm::vec3(1.0F)).y) > 0.2F);
 }
 
 };  // namespace

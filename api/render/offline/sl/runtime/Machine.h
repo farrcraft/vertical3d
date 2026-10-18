@@ -218,6 +218,12 @@ class Machine final {
      * the value in the wrong place.
      **/
     glm::mat4x4 space(const std::string & name);
+    /**
+     * The matrix a transform built-in applies: into the space its first argument names, or
+     * out of the first and into the second when it names two. `divided` is set when either
+     * space is projected.
+     **/
+    glm::mat4x4 between(const std::vector<const Value*> & given, bool* divided);
     /** Whether the renderer divides a point in the named space by w. False without a renderer. **/
     bool projected(const std::string & name) const;
     /** Push the lanes of the condition that are, or are not, non-zero. **/
