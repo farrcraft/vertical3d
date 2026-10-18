@@ -33,8 +33,6 @@ boost::json::object sample() {
     })").as_object();
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(json_read_test)
 
 BOOST_AUTO_TEST_CASE(a_string_member_is_read) {
@@ -129,3 +127,5 @@ BOOST_AUTO_TEST_CASE(an_array_read_points_into_the_object) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

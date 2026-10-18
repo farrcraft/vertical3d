@@ -7,6 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(halfEdge_test) {
     v3d::brep::HalfEdge edge;
 
@@ -49,3 +51,5 @@ BOOST_AUTO_TEST_CASE(halfedge_selection_test) {
     v3d::brep::HalfEdge other(3);
     BOOST_CHECK_EQUAL((edge == other), true);
 }
+
+};  // namespace

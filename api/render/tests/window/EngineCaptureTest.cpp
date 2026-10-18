@@ -35,8 +35,6 @@ std::size_t mismatches(const boost::shared_ptr<v3d::image::Image>& image, unsign
     return count;
 }
 
-};  // namespace
-
 /**
  * A capture holds the frame it was requested for, not the one before it.
  *
@@ -82,3 +80,5 @@ BOOST_AUTO_TEST_CASE(engine3d_capture_is_cleared_by_the_frame_that_writes_it_tes
     BOOST_TEST(!boost::filesystem::exists(path));
     BOOST_TEST(windowed.silent());
 }
+
+};  // namespace

@@ -35,8 +35,6 @@ const unsigned int chunkSize = 16;
  **/
 const unsigned int worldHeightInBlocks = 64;
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(chunk_ceiling_is_measured_in_blocks_test) {
     // the ceiling is in blocks, not chunks. A heightmap is scaled against it, so passing the
     // world's chunk count instead flattens terrain in a 64 block world to four blocks and
@@ -100,3 +98,5 @@ BOOST_AUTO_TEST_CASE(chunk_positions_its_blocks_in_the_world_test) {
     BOOST_CHECK_EQUAL(corner->position().y, static_cast<float>(position.y * chunkSize));
     BOOST_CHECK_EQUAL(corner->position().z, static_cast<float>(position.z * chunkSize));
 }
+
+};  // namespace

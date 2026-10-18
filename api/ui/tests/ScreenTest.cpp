@@ -27,8 +27,6 @@ boost::shared_ptr<v3d::asset::Manager> nowhere() {
     return boost::make_shared<v3d::asset::Manager>("no-such-directory/", boost::make_shared<v3d::log::Logger>());
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(screen_test)
 
 /**
@@ -125,3 +123,5 @@ BOOST_AUTO_TEST_CASE(a_screen_without_statistics_draws_nothing_for_none) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

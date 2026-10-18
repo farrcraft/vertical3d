@@ -31,8 +31,6 @@ Node node(const void* writes, const std::vector<const void*>& reads = {}) {
     return made;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(frame_test)
 
 /**
@@ -355,3 +353,5 @@ BOOST_AUTO_TEST_CASE(a_pass_keys_an_item_by_what_it_binds) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

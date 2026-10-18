@@ -18,8 +18,6 @@ namespace {
 
 const std::uint64_t millisecond = 1000000;
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(statistics_overlay_test)
 
 /**
@@ -135,3 +133,5 @@ BOOST_AUTO_TEST_CASE(a_named_device_is_the_top_line) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

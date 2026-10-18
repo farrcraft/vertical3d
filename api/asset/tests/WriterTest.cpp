@@ -52,8 +52,6 @@ std::string contents(const boost::filesystem::path& path) {
     return text.str();
 }
 
-};  // namespace
-
 /**
  * The serializer is pure, so what it produces has to parse back to what went in.
  *
@@ -221,3 +219,5 @@ BOOST_AUTO_TEST_CASE(writer_missing_directory_test) {
     const Sandbox sandbox("missing");
     BOOST_CHECK(!v3d::asset::writeFile(sandbox.file("absent") / "file.json", "bytes"));
 }
+
+};  // namespace

@@ -67,8 +67,6 @@ v3d::moya::reyes::MicroPolygonGrid facing(const Surface & surface) {
     return grid;
 }
 
-};  // namespace
-
 /**
  * `matte` over a grid under one distant light is the cosine of
  * the angle between the surface and the light, at every vertex of the grid at once.
@@ -283,3 +281,5 @@ BOOST_AUTO_TEST_CASE(moya_ndc_runs_down_from_the_top_test) {
     BOOST_CHECK_CLOSE(corner.x, 1.0f, 0.1f);
     BOOST_CHECK_CLOSE(corner.y, 1.0f, 0.1f);
 }
+
+};  // namespace

@@ -21,8 +21,6 @@ v3d::type::geometry::Plane zPlane() {
     return plane;
 }
 
-};  // namespace
-
 /**
  * The equation is the plane's only state, so a plane built from a normal and a point reports
  * back the normal and distance it was given rather than a second, separately written copy.
@@ -102,3 +100,5 @@ BOOST_AUTO_TEST_CASE(plane_const_subscript_test) {
     BOOST_TEST(reader[v3d::type::geometry::Plane::D] == -4.0f);
     BOOST_TEST(reader.signedDistance(glm::vec3(0.0f, 3.0f, 0.0f)) == 2.0f);
 }
+
+};  // namespace

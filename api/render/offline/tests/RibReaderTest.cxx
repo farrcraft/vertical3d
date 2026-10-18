@@ -207,8 +207,6 @@ bool read(const std::string & source, CountingHandler * handler, v3d::render::of
     return reader->read(stream, handler);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(ribreader_camera_requests_test) {
     CountingHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
@@ -811,3 +809,5 @@ BOOST_AUTO_TEST_CASE(ribreader_counts_and_handles_out_of_range_test) {
     BOOST_CHECK(!read("Illuminate 1e39 1\n", &handler, &second));
     BOOST_CHECK(second.error().contains("expected a light handle"));
 }
+
+};  // namespace

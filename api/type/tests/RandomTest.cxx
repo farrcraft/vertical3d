@@ -31,8 +31,6 @@ std::vector<uint64_t> draw(Random* random, int count) {
     return values;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(random_test)
 
 /**
@@ -179,3 +177,5 @@ BOOST_AUTO_TEST_CASE(random_a_direction_in_a_cone_test) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

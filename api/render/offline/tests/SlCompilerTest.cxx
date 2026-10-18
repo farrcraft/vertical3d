@@ -131,8 +131,6 @@ const char* const BACKGROUND =
 "    Oi = 1;\n"
 "}\n";
 
-};  // namespace
-
 /**
  * The nine shaders compiled into the library all pass the checker.
  **/
@@ -648,3 +646,5 @@ BOOST_AUTO_TEST_CASE(slcompiler_shadowing_test) {
     // the inner one takes the varying value and the outer one is untouched by it
     BOOST_CHECK(outer == Storage::UNIFORM);
 }
+
+};  // namespace

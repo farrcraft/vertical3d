@@ -95,8 +95,6 @@ std::vector<std::string> names(const v3d::ui::shell::FileChooser& chooser) {
     return found;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(file_chooser_test)
 
 /**
@@ -279,3 +277,5 @@ BOOST_AUTO_TEST_CASE(a_new_listing_has_nothing_chosen) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

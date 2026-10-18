@@ -91,8 +91,6 @@ float angleAboutZ(const glm::quat& rotation) {
     return 2.0f * std::atan2(rotation.z, rotation.w);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(animation_test)
 
 /**
@@ -297,3 +295,5 @@ BOOST_AUTO_TEST_CASE(animation_an_empty_clock_test) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

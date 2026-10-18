@@ -46,8 +46,6 @@ bool near(const glm::vec3& a, const glm::vec3& b) {
     return glm::length(a - b) < 1e-4f;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(isometric_controller_test)
 
 /**
@@ -178,3 +176,5 @@ BOOST_AUTO_TEST_CASE(a_destroyed_controller_stops_listening) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

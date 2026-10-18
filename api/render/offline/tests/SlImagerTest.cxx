@@ -46,8 +46,6 @@ FrameBuffer drawn() {
     return frame;
 }
 
-};  // namespace
-
 /**
  * `background` composites the frame over a constant colour where coverage says nothing was
  * drawn, and leaves the pixels that were drawn into alone. A scene uses it to set the colour
@@ -121,3 +119,5 @@ BOOST_AUTO_TEST_CASE(slimager_only_an_imager_test) {
     // the frame is unchanged
     BOOST_CHECK_SMALL(frame.value(0, 0, 0), 0.0001f);
 }
+
+};  // namespace

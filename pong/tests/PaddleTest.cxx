@@ -10,6 +10,8 @@
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(paddle_components_test) {
     entt::registry registry;
     Paddle paddle(&registry);
@@ -74,3 +76,5 @@ BOOST_AUTO_TEST_CASE(paddle_travel_test) {
     BOOST_TEST(!paddle.up());
     BOOST_TEST(paddle.down());
 }
+
+};  // namespace

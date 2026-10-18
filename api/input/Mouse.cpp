@@ -17,6 +17,8 @@
 
 namespace v3d::input {
 
+namespace {
+
 /**
  * Map an SDL mouse button index to a string representation.
  * These are the names a binding config uses, the way key names are for the keyboard.
@@ -38,6 +40,8 @@ std::string buttonEvent(unsigned int button) {
     }
     return std::string();
 }
+
+};  // namespace
 
 /**
  **/

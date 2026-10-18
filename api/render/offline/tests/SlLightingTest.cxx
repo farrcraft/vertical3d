@@ -175,8 +175,6 @@ light overhead() {
 }
 )";
 
-};  // namespace
-
 /**
  * A light shader's `solar` sets L against the direction the light travels, so that L points
  * from the surface toward the light in the illuminance body that reads it. Every point of
@@ -543,3 +541,5 @@ BOOST_AUTO_TEST_CASE(sllighting_lanes_leave_illuminance_at_different_lights_test
     BOOST_CHECK_CLOSE(broken.colour(0).g, 1.0f, 0.1f);
     BOOST_CHECK_CLOSE(broken.colour(1).g, 1.25f, 0.1f);
 }
+
+};  // namespace

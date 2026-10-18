@@ -9,6 +9,8 @@
 
 #include <glm/glm.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(vertex_test) {
     v3d::moya::Vertex vertex;
 
@@ -17,3 +19,5 @@ BOOST_AUTO_TEST_CASE(vertex_test) {
 
     BOOST_TEST((vertex.point() == point));
 }
+
+};  // namespace

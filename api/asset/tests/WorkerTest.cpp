@@ -39,8 +39,6 @@ bool drain(Worker* worker) {
     return true;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(worker_test)
 
 /**
@@ -193,3 +191,5 @@ BOOST_AUTO_TEST_CASE(destroying_a_worker_drops_what_has_not_started) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

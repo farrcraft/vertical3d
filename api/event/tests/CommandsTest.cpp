@@ -26,8 +26,6 @@ v3d::event::Event command(const std::string& context, const std::string& name, v
     return event;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(commands_test)
 
 /**
@@ -225,3 +223,5 @@ BOOST_AUTO_TEST_CASE(commands_lists_what_nothing_handles) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

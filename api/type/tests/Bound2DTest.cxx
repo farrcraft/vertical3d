@@ -7,6 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(bound2d_test) {
     v3d::type::geometry::Bound2D bound({.position = glm::vec2(2.0f, 5.0f), .size = glm::vec2(10.0f, 20.0f)});
 
@@ -69,3 +71,5 @@ BOOST_AUTO_TEST_CASE(bound2d_contains_test) {
     BOOST_TEST(!bound.contains(glm::vec2(10.5f, 5.0f)));
     BOOST_TEST(!bound.contains(glm::vec2(5.0f, -0.5f)));
 }
+
+};  // namespace

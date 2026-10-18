@@ -61,8 +61,6 @@ boost::shared_ptr<v3d::ui::component::SelectList> list(std::size_t rows, const g
     return component;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(select_list_test)
 
 /**
@@ -260,3 +258,5 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_list) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

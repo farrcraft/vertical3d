@@ -9,6 +9,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(constructionplane_geometry_test) {
     v3d::editor::ConstructionPlane grid;
     v3d::type::camera::Camera camera;
@@ -111,3 +113,5 @@ BOOST_AUTO_TEST_CASE(constructionplane_degenerate_test) {
     grid.spacing(1.0f);
     grid.draw(camera, nullptr);
 }
+
+};  // namespace

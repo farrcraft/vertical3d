@@ -29,7 +29,6 @@ std::vector<glm::vec3> quad(float z) {
     vertices.push_back(glm::vec3(0.0f, 1.0f, z));
     return vertices;
 }
-};  // namespace
 
 BOOST_AUTO_TEST_CASE(brep_empty_test) {
     v3d::brep::BRep mesh;
@@ -279,3 +278,5 @@ BOOST_AUTO_TEST_CASE(brep_face_uv_of_a_degenerate_face_test) {
     BOOST_CHECK_EQUAL((u == glm::vec3(7.0f)), true);
     BOOST_CHECK_EQUAL((v == glm::vec3(9.0f)), true);
 }
+
+};  // namespace

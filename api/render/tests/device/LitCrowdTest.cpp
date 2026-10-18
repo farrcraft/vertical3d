@@ -182,8 +182,6 @@ bool clear(const unsigned char* texel) {
     return texel[0] == 0 && texel[1] == 0 && texel[2] == 255;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(lit_crowd_test)
 
 /**
@@ -480,3 +478,5 @@ BOOST_AUTO_TEST_CASE(an_object_added_before_any_scene_is_refused) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

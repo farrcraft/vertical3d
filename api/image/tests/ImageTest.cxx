@@ -10,6 +10,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(image_test) {
     v3d::image::Image img24(glm::uvec2(2, 4), 24);
     BOOST_CHECK_EQUAL((img24.format() == v3d::image::Image::Format::RGB), true);
@@ -76,3 +78,5 @@ BOOST_AUTO_TEST_CASE(image_swap_red_blue_test) {
     const unsigned char turned[6] = { 3, 2, 1, 6, 5, 4 };
     BOOST_CHECK_EQUAL_COLLECTIONS(inPlace, inPlace + 6, turned, turned + 6);
 }
+
+};  // namespace

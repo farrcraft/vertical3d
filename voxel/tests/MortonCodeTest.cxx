@@ -7,6 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(morton_code_round_trip_test) {
     // every block position within a chunk, since the code is used as their key
     for (int x = 0; x < 16; x++) {
@@ -29,3 +31,5 @@ BOOST_AUTO_TEST_CASE(morton_code_is_one_to_one_test) {
     BOOST_CHECK_NE(MortonCode::encode(glm::ivec3(0, 1, 0)), MortonCode::encode(glm::ivec3(0, 0, 1)));
     BOOST_CHECK_EQUAL(MortonCode::encode(glm::ivec3(0, 0, 0)), 0u);
 }
+
+};  // namespace

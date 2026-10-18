@@ -12,6 +12,8 @@
 
 #include <glm/vec3.hpp>
 
+namespace {
+
 /**
  * SL's noise is in [0, 1], and is 0.5 on every lattice point, where improved noise is zero.
  **/
@@ -83,3 +85,5 @@ BOOST_AUTO_TEST_CASE(noise_far_and_not_finite_test) {
     const glm::vec3 beyond(2147484416.0f, 1.25f, 2.75f);
     BOOST_CHECK_EQUAL(v3d::render::offline::noise(beyond), v3d::render::offline::noise(period));
 }
+
+};  // namespace

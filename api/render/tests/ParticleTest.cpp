@@ -79,8 +79,6 @@ void draw(const entt::registry& registry, float alpha, canvas::World* canvas) {
     order.into(canvas);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(particle_test)
 
 /**
@@ -231,3 +229,5 @@ BOOST_AUTO_TEST_CASE(an_emitter_without_a_look_is_not_drawn) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -67,8 +67,6 @@ void checkSides(const Frustum & tested) {
     }
 }
 
-};  // namespace
-
 /**
  * A box inside every half space is inside the frustum.
  **/
@@ -155,3 +153,5 @@ BOOST_AUTO_TEST_CASE(frustum_planes_order_test) {
     BOOST_TEST((tested.planes()[5].classify(eye) == v3d::type::geometry::Plane::POSITIVE));
     BOOST_TEST((tested.planes()[4].classify(glm::vec3(0.0f, 0.0f, 2.0f)) == v3d::type::geometry::Plane::POSITIVE));
 }
+
+};  // namespace

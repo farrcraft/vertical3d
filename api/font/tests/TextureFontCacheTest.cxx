@@ -19,7 +19,6 @@ const wchar_t* const kPrintable =
 L" !\"#$%&'()*+,-./0123456789:;<=>?"
 L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
 L"`abcdefghijklmnopqrstuvwxyz{|}~";
-};  // namespace
 
 /**
  * TextureFontCache does not load anything: it owns the atlas the fonts share and keeps the
@@ -209,3 +208,5 @@ BOOST_AUTO_TEST_CASE(texturefont_packed_never_loads_test) {
     BOOST_CHECK(font->glyph(L'z') != nullptr);
     BOOST_CHECK(font->packed(L'z') != nullptr);
 }
+
+};  // namespace

@@ -17,8 +17,6 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
     return v;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(polygon_vertex_test) {
     v3d::moya::Polygon polygon;
 
@@ -154,3 +152,5 @@ BOOST_AUTO_TEST_CASE(polygon_degenerate_normal_test) {
 
     BOOST_TEST((empty.geometricNormal() == glm::vec3(0.0f)));
 }
+
+};  // namespace

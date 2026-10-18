@@ -37,8 +37,6 @@ void metric(const boost::shared_ptr<v3d::ui::style::Style>& target, const std::s
 constexpr glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
 constexpr glm::vec4 green(0.0f, 1.0f, 0.0f, 1.0f);
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(resolver_test)
 
 /**
@@ -364,3 +362,5 @@ BOOST_AUTO_TEST_CASE(the_immediate_layer_resets_what_the_new_theme_does_not_name
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

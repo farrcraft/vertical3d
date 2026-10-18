@@ -48,8 +48,6 @@ boost::shared_ptr<GameBoard> board() {
     return game;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(gameboard_fits_test) {
     boost::shared_ptr<GameBoard> game = board();
     Tetrad piece(bar());
@@ -199,3 +197,5 @@ BOOST_AUTO_TEST_CASE(gameboard_a_held_drop_does_not_flick_test) {
     BOOST_CHECK(game->dropTetrad(true));
     BOOST_CHECK(!game->dropTetrad());
 }
+
+};  // namespace

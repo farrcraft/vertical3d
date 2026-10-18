@@ -21,8 +21,6 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
     return v;
 }
 
-};  // namespace
-
 /**
  * The defaults a context starts on, which stand in for the RiFormat and bucketing options a
  * RIB file would otherwise set.
@@ -395,3 +393,5 @@ BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 55, 40), 0.45f, 0.01f);
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::COVERAGE, 55, 40), 1.0f, 0.01f);
 }
+
+};  // namespace

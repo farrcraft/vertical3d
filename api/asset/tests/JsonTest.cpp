@@ -20,8 +20,6 @@ boost::shared_ptr<v3d::asset::kind::Json> document(const std::string& name) {
     return boost::dynamic_pointer_cast<v3d::asset::kind::Json>(assets.loadTypeFromExt(name));
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(json_document_test) {
     auto asset = document("document.json");
     BOOST_TEST(static_cast<bool>(asset));
@@ -57,3 +55,5 @@ BOOST_AUTO_TEST_CASE(json_missing_document_test) {
 BOOST_AUTO_TEST_CASE(json_non_object_document_test) {
     BOOST_TEST(!document("array.json"));
 }
+
+};  // namespace

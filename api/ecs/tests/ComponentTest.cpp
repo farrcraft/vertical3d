@@ -23,6 +23,8 @@ static_assert(std::is_aggregate_v<v3d::ecs::component::Position2D>);
 static_assert(std::is_copy_constructible_v<v3d::ecs::component::Color3>);
 static_assert(std::is_copy_assignable_v<v3d::ecs::component::Position2D>);
 
+namespace {
+
 /**
  * A component left to its defaults is white, and at the origin.
  **/
@@ -65,3 +67,5 @@ BOOST_AUTO_TEST_CASE(component_registry_test) {
 
     BOOST_TEST(!registry.try_get<v3d::ecs::component::Position2D>(entity));
 }
+
+};  // namespace

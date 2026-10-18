@@ -8,6 +8,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 /**
  * What an app asks the engine for. Features combine into a set, and a set accepts only its
  * own enum.
@@ -44,3 +46,5 @@ BOOST_AUTO_TEST_CASE(feature_accumulate_test) {
     BOOST_CHECK(!devices.has(v3d::input::DeviceType::Keyboard));
     BOOST_CHECK(devices == v3d::input::DeviceTypes(v3d::input::DeviceType::Mouse));
 }
+
+};  // namespace

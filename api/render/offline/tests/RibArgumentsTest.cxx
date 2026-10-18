@@ -16,8 +16,6 @@ typedef v3d::render::offline::rib::Declaration Declaration;
 typedef v3d::render::offline::rib::Declarations Declarations;
 typedef v3d::render::offline::rib::ParameterList ParameterList;
 
-};  // namespace
-
 /**
  * The C interface passes a parameter list as two parallel arrays, and neither says how long
  * a value array is; only the declaration does. The reader resolves a file's parameters the
@@ -138,3 +136,5 @@ BOOST_AUTO_TEST_CASE(ribarguments_nulls_test) {
     arguments(declarations, 2, nullptr, nullptr, 1, &nothing);
     BOOST_CHECK_EQUAL(nothing.size(), 0u);
 }
+
+};  // namespace

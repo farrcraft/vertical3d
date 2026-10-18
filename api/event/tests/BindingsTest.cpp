@@ -41,8 +41,6 @@ struct Fixture {
     v3d::event::Bindings bindings;
 };
 
-};  // namespace
-
 /**
  * Every source bound to a command is found, and a document that does not describe its
  * bindings is refused without disturbing the ones already in place.
@@ -138,3 +136,5 @@ BOOST_FIXTURE_TEST_CASE(bindings_list_their_commands_test, Fixture) {
     BOOST_TEST(commands[0] == "game::up");
     BOOST_TEST(commands[1] == "ui::quit");
 }
+
+};  // namespace

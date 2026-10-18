@@ -7,6 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 /**
  * activeRenderContext hands back a reference into the stack, so a caller writing an option
  * through it is writing the context the renderer holds rather than a copy.
@@ -52,3 +54,5 @@ BOOST_AUTO_TEST_CASE(renderer_implicit_context_test) {
 
     BOOST_TEST(renderer.activeRenderContext().imageWidth() == 320u);
 }
+
+};  // namespace

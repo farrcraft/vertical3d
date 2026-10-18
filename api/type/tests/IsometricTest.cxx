@@ -36,8 +36,6 @@ glm::vec3 screen(v3d::type::camera::Camera* camera, const glm::vec3& point) {
     return camera->project(point, viewport);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(isometriccamera_defaults_test) {
     const v3d::type::camera::Isometric orbit;
 
@@ -260,3 +258,5 @@ BOOST_AUTO_TEST_CASE(isometriccamera_apply_ignores_a_null_camera_test) {
 
     orbit.apply(nullptr);
 }
+
+};  // namespace

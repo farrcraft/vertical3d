@@ -14,6 +14,8 @@
 using v3d::render::realtime::vulkan::memory::Allocation;
 using v3d::render::realtime::vulkan::memory::Allocator;
 
+namespace {
+
 /**
  * Memory no type offers is refused through the result rather than thrown, so the caller that
  * made the buffer is the one that destroys it. Protected memory is never host visible, so no
@@ -44,3 +46,5 @@ BOOST_AUTO_TEST_CASE(memory_no_type_offers_is_refused_without_throwing) {
         }
     }
 }
+
+};  // namespace

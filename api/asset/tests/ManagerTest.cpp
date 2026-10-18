@@ -20,8 +20,6 @@ boost::shared_ptr<v3d::asset::Manager> manager(const std::string& path = "data")
     return boost::make_shared<v3d::asset::Manager>(path, boost::make_shared<v3d::log::Logger>());
 }
 
-};  // namespace
-
 /**
  * A manager starts with the two loaders that read a document, and nothing else - the rest are
  * registered by api/asset/media and api/audio.
@@ -130,3 +128,5 @@ BOOST_AUTO_TEST_CASE(manager_missing_asset_test) {
 
     BOOST_TEST(!assets->loadTypeFromExt("absent.json"));
 }
+
+};  // namespace

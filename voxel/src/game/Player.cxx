@@ -7,6 +7,8 @@
 
 #include <voxel/src/engine/Camera.h>
 
+namespace {
+
 typedef struct Moves {
     Player::Movement move_;  // movement flag
     unsigned int axis_;  // vector position of movement
@@ -21,6 +23,8 @@ Moves possibleMoves[] = {
     { Player::MOVE_UP, 1, 1.0f },
     { Player::MOVE_DOWN, 1, -1.0f }
 };
+
+};  // namespace
 
 Player::Player(const glm::vec3 & pos) :
     position_(pos),

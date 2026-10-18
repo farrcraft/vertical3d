@@ -26,8 +26,6 @@ glm::mat4 quarterTurn() {
     return glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(linecanvas_test)
 
 /**
@@ -329,3 +327,5 @@ BOOST_AUTO_TEST_CASE(clearing_drops_the_clip_stack_with_the_stream) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

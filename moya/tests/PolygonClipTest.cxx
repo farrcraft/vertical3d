@@ -72,8 +72,6 @@ boost::shared_ptr<Splittable> tiltedTriangle() {
     return polygon;
 }
 
-};  // namespace
-
 /**
  * An edge the two plane tests disagree on still crosses the plane, at its kept end. The vertex
  * made for it is not the point left over from the edge clipped before it.
@@ -274,3 +272,5 @@ BOOST_AUTO_TEST_CASE(polygon_clip_carries_colour_and_normal_test) {
     }
     BOOST_TEST(found == 2u);
 }
+
+};  // namespace

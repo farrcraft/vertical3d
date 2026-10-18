@@ -29,8 +29,6 @@ glm::vec2 project(const v3d::render::realtime::canvas::Canvas& canvas, const glm
         (projection[1][1] * point.y) + projection[3][1]);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(canvas_test)
 
 /**
@@ -577,3 +575,5 @@ BOOST_AUTO_TEST_CASE(a_space_survives_a_clear) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

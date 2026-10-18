@@ -77,8 +77,6 @@ TileFilter blocking(std::vector<TileCoord> occupied) {
     };
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(tiledistance_is_chebyshev_test) {
     BOOST_CHECK_EQUAL(tileDistance(at(0, 0), at(0, 0)), 0);
     BOOST_CHECK_EQUAL(tileDistance(at(0, 0), at(3, 0)), 3);
@@ -514,3 +512,5 @@ BOOST_AUTO_TEST_CASE(distancefield_an_off_grid_tile_is_unreachable_test) {
     BOOST_CHECK_EQUAL(field.reaches(at(4, -1)), false);
     BOOST_CHECK_EQUAL(field.reaches(at(4, 9)), false);
 }
+
+};  // namespace

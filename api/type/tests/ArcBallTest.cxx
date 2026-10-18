@@ -14,7 +14,6 @@ const float kWidth = 640.0f;
 const float kHeight = 480.0f;
 const float kCentreX = (kWidth - 1.0f) * 0.5f;
 const float kCentreY = (kHeight - 1.0f) * 0.5f;
-};  // namespace
 
 BOOST_AUTO_TEST_CASE(arcball_test) {
     v3d::type::camera::ArcBall ball;
@@ -64,3 +63,5 @@ BOOST_AUTO_TEST_CASE(arcball_test) {
     BOOST_CHECK(std::isfinite(mapped[1]));
     BOOST_CHECK(std::isfinite(mapped[2]));
 }
+
+};  // namespace

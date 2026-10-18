@@ -34,8 +34,6 @@ std::vector<unsigned char> bytes(const std::string& path) {
     return encoded;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(imagereader_test) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
@@ -445,3 +443,5 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_rows_wider_than_a_pixel) {
         }
     }
 }
+
+};  // namespace

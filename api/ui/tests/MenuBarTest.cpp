@@ -141,8 +141,6 @@ void build(Fixture* fixture) {
     fixture->bar->add("View", view);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(menu_bar_test)
 
 /**
@@ -463,3 +461,5 @@ BOOST_AUTO_TEST_CASE(a_replaced_submenu_is_let_go) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

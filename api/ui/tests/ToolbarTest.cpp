@@ -96,8 +96,6 @@ struct Fixture final {
     v3d::ui::paint::ComponentRenderer renderer;
 };
 
-};  // namespace
-
 /**
  * A top toolbar is a row: it spans the canvas, and its buttons run left to right, each as
  * wide as its label plus the padding.
@@ -379,3 +377,5 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_name_that_is_not_a_string_is_ignored) {
     BOOST_TEST(bar->button(0)->name() == "select");
     BOOST_TEST(bar->button(1)->name().empty());
 }
+
+};  // namespace

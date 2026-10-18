@@ -82,8 +82,6 @@ float answer(const std::string & expression) {
     return Shaded("float answer = " + expression + ";").number("answer");
 }
 
-};  // namespace
-
 /**
  * The maths, each against the value the standard gives it. They share one loop over the
  * components in the machine, so a case per name checks that each name reaches its own body
@@ -723,3 +721,5 @@ BOOST_AUTO_TEST_CASE(sllibrary_bodies_test) {
     BOOST_CHECK(declared == written);
     BOOST_CHECK(stubs == std::set<std::string>({ "calculatenormal", "shadow" }));
 }
+
+};  // namespace

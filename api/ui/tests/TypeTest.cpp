@@ -27,8 +27,6 @@ namespace {
  **/
 const int beyond = 64;
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(type_test)
 
 /**
@@ -100,3 +98,5 @@ BOOST_AUTO_TEST_CASE(a_kind_is_answered_by_its_type) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

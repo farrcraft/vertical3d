@@ -18,8 +18,6 @@ std::optional<glm::ivec2> read(const char* document) {
     return v3d::config::windowSize(boost::json::parse(document).as_object());
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(a_window_document_gives_its_size_test) {
     BOOST_CHECK(read(R"({ "window": { "width": 800, "height": 600 } })") == glm::ivec2(800, 600));
 }
@@ -41,3 +39,5 @@ BOOST_AUTO_TEST_CASE(a_window_size_an_int_cannot_hold_is_refused_test) {
         }
     }
 }
+
+};  // namespace

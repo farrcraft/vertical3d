@@ -91,8 +91,6 @@ void adaptive(v3d::moya::RenderContext & rc) {
     rightTriangle(rc, 0.5625f);
 }
 
-};  // namespace
-
 /**
  * RI's default hider is the reyes one, named "hidden". A name moya has no hider for leaves the
  * hider as it was, so a scene written for another renderer still renders.
@@ -571,3 +569,5 @@ BOOST_AUTO_TEST_CASE(rayhider_motion_from_nothing_test) {
         }
     }
 }
+
+};  // namespace

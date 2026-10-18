@@ -51,8 +51,6 @@ class Floor final : public v3d::render::offline::trace::Primitive {
     }
 };
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(scene_test) {
     v3d::render::offline::trace::Scene scene;
 
@@ -237,3 +235,5 @@ BOOST_AUTO_TEST_CASE(scene_any_primitive_test) {
     BOOST_REQUIRE(scene.nearest(v3d::type::geometry::Ray({.origin = glm::vec3(0.0f, 0.0f, 5.0f), .direction = glm::vec3(0.0f, 0.0f, -1.0f)}), 5.0f, &hit));
     BOOST_CHECK(hit.primitive == scene.all<v3d::render::offline::trace::Triangle>()[0]);
 }
+
+};  // namespace

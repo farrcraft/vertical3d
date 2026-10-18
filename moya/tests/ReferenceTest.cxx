@@ -583,8 +583,6 @@ void slidingQuad(v3d::moya::RenderContext & rc) {
     quadAt(rc, corners);
 }
 
-};  // namespace
-
 /**
  * The second pass writes samples where the polygon is and leaves the rest of the planes at
  * what they were allocated with.
@@ -1104,3 +1102,5 @@ BOOST_AUTO_TEST_CASE(reference_motion_without_a_cache_test) {
     const v3d::render::offline::FrameBuffer & b = *uncached.framebuffer()->planes();
     BOOST_CHECK_EQUAL(largest(a, b, {.from = 0, .to = a.width() - 1}), 0.0f);
 }
+
+};  // namespace

@@ -7,6 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(aabbox_test) {
     v3d::type::geometry::AABBox box;
 
@@ -125,3 +127,5 @@ BOOST_AUTO_TEST_CASE(aabbox_contains_test) {
     BOOST_TEST(!unit.contains(glm::vec3(0.5f, 1.5f, 0.5f)));
     BOOST_TEST(!unit.contains(glm::vec3(0.5f, 0.5f, -0.5f)));
 }
+
+};  // namespace

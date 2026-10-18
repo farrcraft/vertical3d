@@ -12,6 +12,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(registry_test)
 
 /**
@@ -162,3 +164,5 @@ BOOST_AUTO_TEST_CASE(a_clear_refuses_every_earlier_handle) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

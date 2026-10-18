@@ -94,8 +94,6 @@ void idle(v3d::test::Headless* headless) {
     headless->submit(headless->context->ring()->begin());
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(release_test)
 
 /**
@@ -477,3 +475,5 @@ BOOST_AUTO_TEST_CASE(a_depth_texture_draws_on_a_canvas) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

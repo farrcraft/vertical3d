@@ -48,8 +48,6 @@ class FailingSystem final : public v3d::ecs::System {
     }
 };
 
-};  // namespace
-
 /**
  * A step reaches every entity carrying the component it views, and nothing else.
  **/
@@ -81,3 +79,5 @@ BOOST_AUTO_TEST_CASE(system_simulate_failure_test) {
 
     BOOST_TEST(!system->simulate(1.0f / 60.0f));
 }
+
+};  // namespace

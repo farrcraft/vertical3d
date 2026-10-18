@@ -103,8 +103,6 @@ constexpr TileCoord at(int x, int y) {
     return TileCoord{ x, y };
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(world_test)
 
 /**
@@ -328,3 +326,5 @@ BOOST_AUTO_TEST_CASE(a_world_that_cannot_be_read_is_refused) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

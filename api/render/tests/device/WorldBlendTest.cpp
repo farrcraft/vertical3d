@@ -107,8 +107,6 @@ glm::ivec4 at(v3d::image::Image* picture, uint32_t x) {
     return glm::ivec4(texel[0], texel[1], texel[2], texel[3]);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(world_blend_test)
 
 /**
@@ -140,3 +138,5 @@ BOOST_AUTO_TEST_CASE(an_additive_quad_adds_to_what_is_there) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

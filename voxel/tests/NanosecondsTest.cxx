@@ -11,6 +11,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 /**
  * A span in milliseconds becomes whole nanoseconds, with the fraction dropped.
  **/
@@ -43,3 +45,5 @@ BOOST_AUTO_TEST_CASE(nanoseconds_of_a_span_too_long_test) {
     BOOST_CHECK_EQUAL(nanoseconds(1.0e300), largest);
     BOOST_CHECK_EQUAL(nanoseconds(std::numeric_limits<double>::infinity()), largest);
 }
+
+};  // namespace

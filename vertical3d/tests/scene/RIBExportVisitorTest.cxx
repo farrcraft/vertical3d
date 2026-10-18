@@ -109,8 +109,6 @@ bool reimport(const std::string & source, ImportHandler * handler) {
     return reader.read(stream, handler);
 }
 
-};  // namespace
-
 /**
  * A cube out of the editor comes back as six faces of four corners, inside one world block.
  **/
@@ -204,3 +202,5 @@ BOOST_AUTO_TEST_CASE(ribexport_empty_scene_test) {
     BOOST_CHECK_EQUAL(handler.worlds_, 2u);
     BOOST_CHECK_EQUAL(handler.faces_, 0u);
 }
+
+};  // namespace

@@ -63,8 +63,6 @@ boost::shared_ptr<v3d::ui::component::menu::Menu> buildMenu(const std::vector<st
     return menu;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(component_renderer_test)
 
 /**
@@ -477,3 +475,5 @@ BOOST_AUTO_TEST_CASE(a_disabled_box_greys_the_label_it_holds) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

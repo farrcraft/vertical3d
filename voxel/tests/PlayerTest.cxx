@@ -9,6 +9,8 @@
 
 #include <glm/vec3.hpp>
 
+namespace {
+
 /**
  * A direction moves the player while it is held and stops when it is not. Saying a direction
  * is held twice keeps it held. A key released while the menu was up therefore stops the player
@@ -28,3 +30,5 @@ BOOST_AUTO_TEST_CASE(player_moves_while_a_direction_is_held_test) {
     player.tick(0.1f);
     BOOST_TEST(player.position().z == moved.z);
 }
+
+};  // namespace

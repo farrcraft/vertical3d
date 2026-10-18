@@ -23,8 +23,6 @@ VkSurfaceFormatKHR offered(VkFormat format, VkColorSpaceKHR space = VK_COLOR_SPA
     return entry;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(swapchain_format_test)
 
 /**
@@ -86,3 +84,5 @@ BOOST_AUTO_TEST_CASE(neither_available_takes_the_first_offered) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

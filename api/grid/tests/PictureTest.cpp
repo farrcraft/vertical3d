@@ -33,8 +33,6 @@ std::map<char, Terrain> legend() {
     };
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(picture_test)
 
 /**
@@ -152,3 +150,5 @@ BOOST_AUTO_TEST_CASE(the_tile_size_is_passed_through) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

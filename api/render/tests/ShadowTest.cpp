@@ -136,8 +136,6 @@ std::vector<glm::vec3> viewCorners(const glm::mat4& viewProjection, float distan
     return corners;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(shadow_test)
 
 /**
@@ -392,3 +390,5 @@ BOOST_AUTO_TEST_CASE(the_view_fit_refuses_what_it_cannot_fit) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

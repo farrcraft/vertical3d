@@ -184,8 +184,6 @@ std::vector<float> drawBeside(v3d::test::Headless* headless, const boost::shared
     return capture.depth();
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(depth_target_test)
 
 /**
@@ -301,3 +299,5 @@ BOOST_AUTO_TEST_CASE(a_combined_depth_format_moves_by_its_depth_aspect) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

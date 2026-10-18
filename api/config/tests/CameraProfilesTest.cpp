@@ -38,8 +38,6 @@ const char* const cameras =
 " \"aspect\": 1.33, \"near\": 0.1, \"far\": 100.0, \"adaptive\": \"none\"}"
 "]}";
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
     v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config(cameras)));
@@ -126,3 +124,5 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_vector_of_strings_test) {
     BOOST_CHECK_SMALL(eye[1], 0.001f);
     BOOST_CHECK_CLOSE(eye[2], -10.0f, 0.01f);
 }
+
+};  // namespace

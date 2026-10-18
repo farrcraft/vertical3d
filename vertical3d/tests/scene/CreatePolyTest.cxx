@@ -32,8 +32,6 @@ void checkUnitCentred(const boost::shared_ptr<v3d::brep::BRep>& mesh, bool flat)
     }
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(create_poly_cube_test) {
     boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
 
@@ -70,3 +68,5 @@ BOOST_AUTO_TEST_CASE(create_poly_cone_test) {
     BOOST_CHECK_EQUAL(cone->vertexCount(), 9u);
     checkUnitCentred(cone, false);
 }
+
+};  // namespace

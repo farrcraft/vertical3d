@@ -15,6 +15,8 @@
 #include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(ray_direction_test) {
     // the constructor normalises, so a distance along the ray is in the units its origin
     // and direction were given in
@@ -276,3 +278,5 @@ BOOST_AUTO_TEST_CASE(ray_that_is_not_a_number_misses_triangle_and_plane_test) {
         BOOST_CHECK_EQUAL(weights.y, -1.0f);
     }
 }
+
+};  // namespace

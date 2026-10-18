@@ -72,8 +72,6 @@ boost::shared_ptr<v3d::ui::component::TabBar> bar() {
     return component;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(tab_bar_test)
 
 /**
@@ -234,3 +232,5 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_strip_of_pages) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

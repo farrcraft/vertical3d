@@ -24,8 +24,6 @@ glm::vec3 apply(const glm::mat4& transform, const glm::vec3& point) {
     return glm::vec3(result);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(transform_identity_test) {
     v3d::dag::Transform transform;
 
@@ -83,3 +81,5 @@ BOOST_AUTO_TEST_CASE(transform_value_test) {
     BOOST_CHECK_EQUAL(value.scale.y, 2.0f);
     BOOST_CHECK_EQUAL((value.matrix() == transform.matrix()), true);
 }
+
+};  // namespace

@@ -8,6 +8,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(cameraprofile_test) {
     v3d::type::camera::Profile profile("test");
     profile.eye(glm::vec3(4.0f, 5.0f, 6.0f));
@@ -140,3 +142,5 @@ BOOST_AUTO_TEST_CASE(cameraprofile_basis_test) {
     BOOST_CHECK_CLOSE(profile.up()[2], 1.0f, 0.01f);
     BOOST_CHECK_SMALL(profile.up()[1], 0.001f);
 }
+
+};  // namespace

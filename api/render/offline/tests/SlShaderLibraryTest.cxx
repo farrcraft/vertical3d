@@ -53,8 +53,6 @@ glm::vec3 bound(const InstancePtr & instance, const std::string & name) {
     return machine.value(reg).triple(0);
 }
 
-};  // namespace
-
 /**
  * Every standard shader compiles with no shader files at all.
  **/
@@ -284,3 +282,5 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_shader_space_test) {
     BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("from")).triple(0).x, 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("from")).triple(0).y, 2.0f, 0.01f);
 }
+
+};  // namespace

@@ -30,8 +30,6 @@ ShaderLibrary & library() {
     return shaders;
 }
 
-};  // namespace
-
 /**
  * Defaults that fail fail the same way on every run, so the failure is reported once per
  * machine rather than once per run. A machine never prepared fails them every time.
@@ -119,3 +117,5 @@ BOOST_AUTO_TEST_CASE(slglobals_shine_test) {
         BOOST_CHECK_CLOSE(colour.triple(lane).g, 2.0f, 0.01f);
     }
 }
+
+};  // namespace

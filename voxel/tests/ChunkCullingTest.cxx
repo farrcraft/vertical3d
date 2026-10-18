@@ -26,8 +26,6 @@ Frustum view() {
     return Frustum(camera.projection() * camera.view());
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(chunk_culling_test)
 
 /**
@@ -63,3 +61,5 @@ BOOST_AUTO_TEST_CASE(a_chunk_across_the_near_plane_is_in_view) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

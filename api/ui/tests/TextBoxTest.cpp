@@ -101,8 +101,6 @@ boost::shared_ptr<v3d::ui::component::TextBox> box(const std::string& text) {
     return made;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(textbox_test)
 
 /**
@@ -630,3 +628,5 @@ BOOST_AUTO_TEST_CASE(the_selected_run_is_drawn_behind_the_text) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

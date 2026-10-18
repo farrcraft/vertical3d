@@ -13,6 +13,8 @@
 
 #include "Headless.h"
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(device_description_test)
 
 /**
@@ -38,3 +40,5 @@ BOOST_AUTO_TEST_CASE(a_device_describes_itself_as_its_driver_does) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

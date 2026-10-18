@@ -149,8 +149,6 @@ const char* const SPOTLIGHT =
 "    }\n"
 "}\n";
 
-};  // namespace
-
 /**
  * The four standard surface shaders parse, so a renderer can resolve `Surface "matte"` with
  * no shader files at all.
@@ -561,3 +559,5 @@ BOOST_AUTO_TEST_CASE(slparser_reports_a_lexer_error_test) {
     BOOST_CHECK_EQUAL(shaders.size(), 0u);
     BOOST_CHECK_EQUAL(error, "the C preprocessor is not run, so a '#' directive cannot be read at line 1, column 1");
 }
+
+};  // namespace

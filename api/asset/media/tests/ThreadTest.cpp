@@ -112,8 +112,6 @@ bool same(const boost::shared_ptr<v3d::asset::Asset>& expected, const boost::sha
     return true;
 }
 
-};  // namespace
-
 /**
  * One manager loads pictures and models on several threads at once, and every load matches
  * the same load made on one thread. This is what lets a worker thread load through the
@@ -159,3 +157,5 @@ BOOST_AUTO_TEST_CASE(thread_one_manager_loads_on_many_threads_test) {
 
     BOOST_TEST(mismatches.load() == 0U);
 }
+
+};  // namespace

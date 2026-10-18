@@ -20,8 +20,6 @@ unsigned char texel(v3d::image::TextureAtlas* atlas, int x, int y) {
     return atlas->image()->data()[(static_cast<size_t>(y) * size) + x];
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(textureatlas_region_is_the_size_asked_for) {
     boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::TextureAtlas atlas(size, size, 1, logger);
@@ -88,3 +86,5 @@ BOOST_AUTO_TEST_CASE(textureatlas_refuses_what_does_not_fit) {
     v3d::image::TextureAtlas tight(16, 16, 1, logger);
     BOOST_CHECK_EQUAL(tight.region(14, 14).x, -1);
 }
+
+};  // namespace

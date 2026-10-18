@@ -28,8 +28,6 @@ bool loads(const std::string& fixture) {
     return config.load(assets(fixture));
 }
 
-};  // namespace
-
 /**
  * The indirect form every app is on: config.json names a type and a file per entry, and each
  * named file is loaded as an asset of its own and filed under its type.
@@ -142,3 +140,5 @@ BOOST_AUTO_TEST_CASE(config_rejection_files_nothing_test) {
 
     BOOST_TEST(!config.get(v3d::config::Type::Window));
 }
+
+};  // namespace

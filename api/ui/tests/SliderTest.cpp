@@ -88,8 +88,6 @@ struct Fixture final {
     boost::shared_ptr<v3d::ui::input::Keys> keys;
 };
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(slider_test)
 
 /**
@@ -280,3 +278,5 @@ BOOST_AUTO_TEST_CASE(a_press_on_the_thumb_keeps_the_value) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

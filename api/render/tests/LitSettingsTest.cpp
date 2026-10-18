@@ -14,6 +14,8 @@ using v3d::render::realtime::lighting::SceneUniforms;
 
 namespace lighting = v3d::render::realtime::lighting;
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(lit_settings_test)
 
 /**
@@ -63,3 +65,5 @@ BOOST_AUTO_TEST_CASE(the_default_light_is_white) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -23,8 +23,6 @@ boost::json::object at(const boost::json::value& version) {
     return document;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(migration_test)
 
 /**
@@ -146,3 +144,5 @@ BOOST_AUTO_TEST_CASE(a_later_document_is_newer) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

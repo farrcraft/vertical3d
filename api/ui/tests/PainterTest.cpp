@@ -63,8 +63,6 @@ bool anythingInside(const v3d::render::realtime::canvas::Canvas& canvas, const g
         });
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(painter_test)
 
 /**
@@ -162,3 +160,5 @@ BOOST_AUTO_TEST_CASE(a_plate_with_no_border_is_one_shape) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

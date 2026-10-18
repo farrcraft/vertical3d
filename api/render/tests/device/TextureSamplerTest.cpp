@@ -27,8 +27,6 @@ const Sampler* samplerOf(const v3d::test::Headless& headless, const TextureHandl
     return texture->sampler.get();
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(texture_sampler_test)
 
 /**
@@ -55,3 +53,5 @@ BOOST_AUTO_TEST_CASE(textures_share_a_sampler_per_spec) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

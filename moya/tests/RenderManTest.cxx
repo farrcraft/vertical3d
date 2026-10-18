@@ -23,8 +23,6 @@ v3d::moya::RenderContext & context() {
     return *static_cast<v3d::moya::RenderContext*>(RiGetContext());
 }
 
-};  // namespace
-
 /**
  * The C interface and the RIB reader are the two ways into a render context, and neither
  * goes through the other: a va_list cannot be built at runtime, so a reader holding a
@@ -157,3 +155,5 @@ BOOST_AUTO_TEST_CASE(renderman_format_nonpositive_side_is_the_default_test) {
     BOOST_CHECK_EQUAL(context().imageHeight(), 240u);
     RiEnd();
 }
+
+};  // namespace

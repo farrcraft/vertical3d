@@ -102,8 +102,6 @@ std::size_t count(const Program & program, Opcode opcode) {
     return found;
 }
 
-};  // namespace
-
 /**
  * A hand-built program computes the same arithmetic over four points and over one, and
  * returns the same value at the point they share. A single traced hit is not a special case
@@ -728,3 +726,5 @@ BOOST_AUTO_TEST_CASE(slmachine_unprepared_test) {
     BOOST_CHECK(!machine.error().empty());
     BOOST_CHECK(!machine.initialise());
 }
+
+};  // namespace

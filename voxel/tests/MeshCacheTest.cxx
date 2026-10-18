@@ -24,8 +24,6 @@ boost::shared_ptr<Voxel> block(const glm::vec3& position) {
     return boost::make_shared<Voxel>(Voxel::BLOCK_TYPE_STONE, position);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(a_face_is_four_vertices_indexed_six_times_test) {
     // a face is four corners drawn as two triangles, so the six indices it emits name four
     // vertices between them - indices running 0, 1, 2, 3... would carry no information
@@ -110,3 +108,5 @@ BOOST_AUTO_TEST_CASE(every_face_of_a_block_fits_the_cache_test) {
     BOOST_CHECK_EQUAL(mesh->vertexCount(), 0u);
     BOOST_CHECK_EQUAL(mesh->triCount(), 0u);
 }
+
+};  // namespace

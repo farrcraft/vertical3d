@@ -62,8 +62,6 @@ boost::shared_ptr<v3d::ui::component::SelectList> list(const Rows& shape, const 
     return component;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(scrollbar_test)
 
 /**
@@ -319,3 +317,5 @@ BOOST_AUTO_TEST_CASE(a_bar_whose_list_has_gone_does_not_crash) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -7,6 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(events_test)
 
 /**
@@ -24,3 +26,5 @@ BOOST_AUTO_TEST_CASE(the_null_backend_plays_nothing_and_says_so) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

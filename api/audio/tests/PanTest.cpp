@@ -22,8 +22,6 @@ void checkGains(float pan, const v3d::audio::Stereo& expected) {
     }
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(pan_test)
 
 /**
@@ -66,3 +64,5 @@ BOOST_AUTO_TEST_CASE(a_pan_without_a_device_finds_no_voice) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -11,6 +11,8 @@
 
 using v3d::render::realtime::vulkan::frame::Retirement;
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(retirement_test)
 
 /**
@@ -65,3 +67,5 @@ BOOST_AUTO_TEST_CASE(what_is_held_is_destroyed_with_the_queue) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

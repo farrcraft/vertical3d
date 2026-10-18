@@ -30,8 +30,6 @@ v3d::render::offline::sl::syntax::StatementPtr last(const char* source) {
     return shaders[0]->body->statements.back();
 }
 
-};  // namespace
-
 /**
  * A `for` hands over its initialiser, condition, step and body in the order they are written,
  * each to the visitor for its kind.
@@ -70,3 +68,5 @@ BOOST_AUTO_TEST_CASE(slwalk_missing_test) {
     BOOST_CHECK_EQUAL(expressions, 1);
     BOOST_CHECK_EQUAL(statements, 1);
 }
+
+};  // namespace

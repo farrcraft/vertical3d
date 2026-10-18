@@ -19,8 +19,6 @@ using v3d::engine::Statistics;
 
 constexpr std::uint64_t MS = 1000000ULL;
 
-};  // namespace
-
 /**
  * Nothing has happened yet, so there is no mean to report rather than a mean of an array
  * of zeros.
@@ -159,3 +157,5 @@ BOOST_AUTO_TEST_CASE(statistics_row_mean_rolls_test) {
     }
     BOOST_CHECK_EQUAL(statistics.rows()[0].mean, 6 * MS);
 }
+
+};  // namespace

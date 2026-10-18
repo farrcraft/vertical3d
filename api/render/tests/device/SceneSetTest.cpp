@@ -101,8 +101,6 @@ void draw(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& 
     headless->submitAndWait(commands);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(scene_set_test)
 
 /**
@@ -183,3 +181,5 @@ BOOST_AUTO_TEST_CASE(a_scene_pipeline_in_a_pass_with_no_scene_throws) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -33,7 +33,6 @@ v3d::event::Source source(const boost::shared_ptr<v3d::event::Context>& context,
     const std::string& name, v3d::event::State state) {
     return v3d::event::Source(name, context, state);
 }
-};  // namespace
 
 BOOST_AUTO_TEST_CASE(engine_context_test) {
     boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
@@ -152,3 +151,5 @@ BOOST_AUTO_TEST_CASE(engine_a_key_is_heard_before_its_command_test) {
     BOOST_REQUIRE_EQUAL(order.heard_.size(), 3u);
     BOOST_TEST(order.heard_[2] == "key w");
 }
+
+};  // namespace

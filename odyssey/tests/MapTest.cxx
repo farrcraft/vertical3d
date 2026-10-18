@@ -38,8 +38,6 @@ const char* const room =
 "\"#####\""
 "]}";
 
-};  // namespace
-
 /**
  * The document is read as it is written: the first string is the northmost row, a
  * character is a tile, and the kinds land where the file put them.
@@ -149,3 +147,5 @@ BOOST_AUTO_TEST_CASE(map_off_the_board_test) {
     BOOST_CHECK(board->kind({-1, 0}) == odyssey::tile::Kind::Wall);
     BOOST_CHECK(board->kind({5, 5}) == odyssey::tile::Kind::Wall);
 }
+
+};  // namespace

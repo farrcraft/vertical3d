@@ -89,6 +89,10 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
   (` public:`, ` private:`).
 - **Do not indent a namespace body.** A continuation line at namespace scope also starts at
   column 0. [Linting.md](Linting.md#namespace-indentation) shows examples and explains why.
+- **What a header does not declare goes in an anonymous namespace.** That covers a source
+  file's own functions, variables and types, which then cannot collide with another file's.
+  Close it with `};  // namespace`. clang-tidy's `misc-use-internal-linkage` reports a
+  definition outside one.
 - **Use `boost::shared_ptr` and `boost::make_shared`**, not the `std` equivalents.
 - **Pass a non-trivial type by `const` reference**, including a `boost::shared_ptr` and a
   `std::string`. clang-tidy's `performance-unnecessary-value-param` also accepts a by-value

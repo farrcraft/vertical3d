@@ -90,8 +90,6 @@ void checkQuad(const canvas::World& canvas, std::size_t n, const canvas::World::
     }
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(sprite_test)
 
 /**
@@ -217,3 +215,5 @@ BOOST_AUTO_TEST_CASE(sprite_world_is_drawn_through_sprites) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

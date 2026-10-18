@@ -100,8 +100,6 @@ bool wrote(const std::vector<Written>& written, const std::string& text) {
         [&text](const Written& line) { return line.text == text; });
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(immediate_test)
 
 /**
@@ -1128,3 +1126,5 @@ BOOST_AUTO_TEST_CASE(the_wheel_turns_a_table_rather_than_the_window_holding_it) 
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -124,8 +124,6 @@ bool nearGrey(unsigned char value) {
     return value >= 0x7F && value <= 0x81;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(offscreen_frame_test)
 
 /**
@@ -499,3 +497,5 @@ BOOST_AUTO_TEST_CASE(a_grey_quad_reads_back_grey_from_a_unorm_target) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -12,6 +12,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 
+namespace {
+
 /**
  * An event: a name, the context it belongs to, the edge it happened on
  * and an optional parameter.
@@ -131,3 +133,5 @@ BOOST_AUTO_TEST_CASE(mouse_event_position_test) {
     BOOST_CHECK_EQUAL(moved.position()[0], press.position()[0]);
     BOOST_CHECK_EQUAL(moved.motion()[1], -1.0f);
 }
+
+};  // namespace

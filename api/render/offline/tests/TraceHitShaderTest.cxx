@@ -69,8 +69,6 @@ v3d::render::offline::trace::Hit at(const v3d::render::offline::trace::Scene & s
     return hit;
 }
 
-};  // namespace
-
 /**
  * `matte` over one distant light, against hand-worked maths.
  *
@@ -448,3 +446,5 @@ BOOST_AUTO_TEST_CASE(trace_a_hit_refuses_object_space_test) {
     BOOST_CHECK(shader.space("current", &matrix));
     BOOST_CHECK((matrix == glm::mat4x4(1.0f)));
 }
+
+};  // namespace

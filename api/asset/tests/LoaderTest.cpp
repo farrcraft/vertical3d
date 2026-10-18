@@ -34,10 +34,10 @@ Probe probe() {
     return Probe(boost::make_shared<v3d::log::Logger>());
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(loader_type_test) {
     auto loader = probe();
 
     BOOST_TEST((loader.type() == v3d::asset::Type::Text));
 }
+
+};  // namespace

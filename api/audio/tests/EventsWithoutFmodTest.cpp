@@ -9,6 +9,8 @@
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(events_without_fmod_test)
 
 #ifndef V3D_AUDIO_FMOD
@@ -29,3 +31,5 @@ BOOST_AUTO_TEST_CASE(events_hands_back_the_null_backend) {
 #endif
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

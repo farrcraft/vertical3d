@@ -7,6 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 /**
  * These are the names a config.json entry's "type" is written as. camera and layout are the
  * editor's alone; everything else is shared.
@@ -64,3 +66,5 @@ BOOST_AUTO_TEST_CASE(config_type_name_round_trip_test) {
     BOOST_TEST(v3d::config::typeName(v3d::config::Type::Unknown).empty());
     static_assert(v3d::config::typeName(v3d::config::Type::Sprite) == "sprite");
 }
+
+};  // namespace

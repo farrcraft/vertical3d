@@ -58,8 +58,6 @@ boost::shared_ptr<v3d::ui::component::Label> label(const Labelled& spec) {
     return component;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(layout_test)
 
 /**
@@ -456,3 +454,5 @@ BOOST_AUTO_TEST_CASE(a_component_that_does_not_ask_is_not_clipped) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

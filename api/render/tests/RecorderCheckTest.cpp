@@ -27,8 +27,6 @@ VkDescriptorSet someSet() {
     return reinterpret_cast<VkDescriptorSet>(&placeholder);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(recorder_check_test)
 
 /**
@@ -135,3 +133,5 @@ BOOST_AUTO_TEST_CASE(a_depth_pass_checks_the_depth_format) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

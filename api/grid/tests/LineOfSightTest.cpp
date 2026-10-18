@@ -96,8 +96,6 @@ std::string describe(TileCoord tile) {
     return "(" + std::to_string(tile.x) + ", " + std::to_string(tile.y) + ")";
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(lineofsight_open_ground_never_blocks_test) {
     const TileGrid grid = makeGrid();
 
@@ -273,3 +271,5 @@ BOOST_AUTO_TEST_CASE(sightline_reverses_exactly_over_every_pair_test) {
 
     BOOST_CHECK_EQUAL(wrong, "");
 }
+
+};  // namespace

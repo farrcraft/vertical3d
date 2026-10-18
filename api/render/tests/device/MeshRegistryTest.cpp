@@ -165,8 +165,6 @@ v3d::type::Model triangle(const std::string& texture) {
     return model;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(mesh_registry_test)
 
 /**
@@ -782,3 +780,5 @@ BOOST_AUTO_TEST_CASE(a_registry_destroyed_before_its_requests_finish) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

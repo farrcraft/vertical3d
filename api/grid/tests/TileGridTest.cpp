@@ -38,8 +38,6 @@ bool near(float a, float b) {
     return (a > b ? a - b : b - a) < tolerance;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(tilegrid_dimensions_test) {
     const TileGrid grid = makeGrid();
 
@@ -307,3 +305,5 @@ BOOST_AUTO_TEST_CASE(tilegrid_refuses_a_side_too_long_to_hold_test) {
     BOOST_CHECK_THROW(TileGrid(10, 1, huge), std::invalid_argument);
     BOOST_CHECK(!TileGrid::refusal(10, 1, 1.0f, glm::vec3(0.0f)));
 }
+
+};  // namespace

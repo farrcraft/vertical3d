@@ -23,8 +23,6 @@ bool same(const glm::vec3& a, const glm::vec3& b) {
     return glm::all(glm::epsilonEqual(a, b, 0.0001f));
 }
 
-};  // namespace
-
 /**
  * A point is scaled, then turned, then moved: (1, 0, 0) doubled, a quarter turn about Y, and
  * moved up by 5.
@@ -125,3 +123,5 @@ BOOST_AUTO_TEST_CASE(transform_an_infinite_rotation_is_no_rotation_test) {
     const glm::vec3 moved(transform.matrix() * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
     BOOST_TEST(same(moved, glm::vec3(1.0f, 0.0f, 0.0f)));
 }
+
+};  // namespace

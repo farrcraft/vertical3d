@@ -68,8 +68,6 @@ boost::shared_ptr<v3d::ui::component::Button> button(Fixture* fixture, const std
     return made;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(keyboard_drive_test)
 
 /**
@@ -395,3 +393,5 @@ BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_takes_no_key) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

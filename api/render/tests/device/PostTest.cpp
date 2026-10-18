@@ -211,8 +211,6 @@ int largest(const boost::shared_ptr<v3d::image::Image>& picture, const std::vect
     return most;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(post_test)
 
 /**
@@ -553,3 +551,5 @@ BOOST_AUTO_TEST_CASE(a_destroyed_grade_releases_its_table_and_sources) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

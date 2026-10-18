@@ -141,8 +141,6 @@ std::string drawCoincident(v3d::test::Headless* headless, Drawn drawn, std::opti
     return "neither";
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(depth_write_test)
 
 /**
@@ -193,3 +191,5 @@ BOOST_AUTO_TEST_CASE(a_pass_that_names_nothing_leaves_world_quads_unwritten) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

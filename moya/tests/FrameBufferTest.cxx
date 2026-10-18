@@ -19,8 +19,6 @@ v3d::type::geometry::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
     return b;
 }
 
-};  // namespace
-
 /**
  * An image that is a whole number of buckets across gets exactly that many.
  **/
@@ -57,3 +55,5 @@ BOOST_AUTO_TEST_CASE(framebuffer_negative_bound_test) {
     // is the same question from the other side
     buffer.addPrimitive(polygon, box(glm::vec3(9000.0f, 9000.0f, 0.0f), glm::vec3(9100.0f, 9100.0f, 0.0f)));
 }
+
+};  // namespace

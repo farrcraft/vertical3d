@@ -47,8 +47,6 @@ std::vector<uint8_t> entry(const std::vector<uint8_t>& table, std::size_t index)
         table.begin() + static_cast<std::ptrdiff_t>((index * 4) + 4));
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(grade_test)
 
 /**
@@ -83,3 +81,5 @@ BOOST_AUTO_TEST_CASE(a_strip_of_the_wrong_shape_is_no_table) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

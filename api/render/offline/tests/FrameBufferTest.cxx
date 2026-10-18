@@ -9,6 +9,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(framebuffer_plane_test) {
     v3d::render::offline::FrameBuffer buffer(4, 3, 4);
 
@@ -102,3 +104,5 @@ BOOST_AUTO_TEST_CASE(framebuffer_extra_plane_test) {
     BOOST_CHECK_EQUAL((*image)[1], 255);
     BOOST_CHECK_EQUAL((*image)[2], 255);
 }
+
+};  // namespace

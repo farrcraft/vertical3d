@@ -41,8 +41,6 @@ boost::shared_ptr<v3d::editor::TransformTool> tool(const boost::shared_ptr<v3d::
 
 constexpr glm::vec2 centre(200.0f, 200.0f);
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(transform_tool_mode_test) {
     boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
@@ -210,3 +208,5 @@ BOOST_AUTO_TEST_CASE(transform_tool_abandoned_gesture_test) {
     BOOST_CHECK_EQUAL(history->undo()->name(), "translate");
     BOOST_CHECK_SMALL(cube->translation().x, 0.001f);
 }
+
+};  // namespace

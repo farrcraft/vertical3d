@@ -56,8 +56,6 @@ struct StubEngine final {
     }
 };
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(application_test)
 
 /**
@@ -199,3 +197,5 @@ BOOST_AUTO_TEST_CASE(a_path_outside_the_ansi_code_page_is_written_and_read) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

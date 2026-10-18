@@ -48,8 +48,6 @@ glm::vec2 screen(const boost::shared_ptr<v3d::editor::ViewPort>& view, const glm
     return glm::vec2(projected[0], projected[1]);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(picker_object_test) {
     v3d::editor::Scene scene;
     boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
@@ -232,3 +230,5 @@ BOOST_AUTO_TEST_CASE(picker_empty_test) {
     BOOST_CHECK_EQUAL(picker.pick(scene, unsized, glm::vec2(0.0f, 0.0f),
         v3d::editor::SelectMask::Object).valid, false);
 }
+
+};  // namespace

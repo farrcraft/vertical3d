@@ -205,8 +205,6 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     return png.read(path);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(effects_test)
 
 /**
@@ -254,3 +252,5 @@ BOOST_AUTO_TEST_CASE(a_fire_is_drawn_among_sprites) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

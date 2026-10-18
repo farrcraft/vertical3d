@@ -33,8 +33,6 @@ std::vector<Token> lex(const std::string & source, std::string * error = nullptr
     return tokens;
 }
 
-};  // namespace
-
 /**
  * Every kind, in one shader-shaped line: a keyword, an identifier, a number, a string, an
  * operator and the punctuation that groups them.
@@ -308,3 +306,5 @@ BOOST_AUTO_TEST_CASE(sllexer_peek_test) {
     BOOST_CHECK_EQUAL(lexer.next().text(), "matte");
     BOOST_CHECK(lexer.peek().kind() == Token::Kind::END);
 }
+
+};  // namespace

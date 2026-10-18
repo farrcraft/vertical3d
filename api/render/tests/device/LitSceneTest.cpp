@@ -406,8 +406,6 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     BOOST_CHECK_EQUAL(at(0, 0), 1.0f);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(lit_scene_test)
 
 /**
@@ -1030,3 +1028,5 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

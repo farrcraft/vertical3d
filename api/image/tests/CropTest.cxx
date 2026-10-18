@@ -32,8 +32,6 @@ boost::shared_ptr<v3d::log::Logger> logger() {
     return boost::make_shared<v3d::log::Logger>();
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(crop_cuts_the_rectangle_asked_for) {
     const boost::shared_ptr<v3d::image::Image> source = painted(glm::uvec2(4, 4), 0);
     const boost::shared_ptr<v3d::image::Image> cut = v3d::image::crop(*source, 1, 1, 2, 2);
@@ -96,3 +94,5 @@ BOOST_AUTO_TEST_CASE(crop_is_the_inverse_of_an_atlas_blit) {
     BOOST_REQUIRE(back);
     BOOST_CHECK(v3d::image::compare(*back, *sprite, 0).match);
 }
+
+};  // namespace

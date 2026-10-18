@@ -28,8 +28,6 @@ boost::shared_ptr<v3d::brep::BRep> quad() {
     return mesh;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(wireframe_single_face_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
@@ -149,3 +147,5 @@ BOOST_AUTO_TEST_CASE(wireframe_no_canvas_test) {
     wireframe.visit(quad());
     wireframe.visit(boost::shared_ptr<v3d::brep::BRep>());
 }
+
+};  // namespace

@@ -10,6 +10,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(sortkey_test)
 
 /**
@@ -110,3 +112,5 @@ BOOST_AUTO_TEST_CASE(sorting_groups_by_pipeline_within_a_layer) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

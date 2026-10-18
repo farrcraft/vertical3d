@@ -16,8 +16,6 @@ namespace {
 
 typedef v3d::render::offline::rib::Declaration Declaration;
 
-};  // namespace
-
 /**
  * The type gives the float count of an element, per RI table 5.1.
  **/
@@ -216,3 +214,5 @@ BOOST_AUTO_TEST_CASE(parameterlist_matrix_convention_test) {
     BOOST_CHECK_EQUAL(moved.y, 3.0f);
     BOOST_CHECK_EQUAL(moved.z, 4.0f);
 }
+
+};  // namespace

@@ -29,8 +29,6 @@ const VkFormat colourFormat = VK_FORMAT_R8G8B8A8_UNORM;
 const uint32_t width = 64;
 const uint32_t height = 32;
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(timings_test)
 
 /**
@@ -107,3 +105,5 @@ BOOST_AUTO_TEST_CASE(a_frame_recorded_without_timings_times_nothing) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

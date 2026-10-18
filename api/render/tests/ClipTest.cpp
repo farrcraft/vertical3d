@@ -14,6 +14,8 @@
 using v3d::render::realtime::DrawItem;
 using v3d::render::realtime::vulkan::renderer::clip;
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(clip_test)
 
 /**
@@ -100,3 +102,5 @@ BOOST_AUTO_TEST_CASE(an_unbounded_rectangle_is_held_in_range) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

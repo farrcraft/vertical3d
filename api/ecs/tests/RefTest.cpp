@@ -9,6 +9,8 @@
 
 #include <entt/entt.hpp>
 
+namespace {
+
 /**
  * A reference to a destroyed entity reads null after EnTT has reused its index. The case
  * creates entities until one lands on the destroyed index, so a reference that compared only
@@ -52,3 +54,5 @@ BOOST_AUTO_TEST_CASE(ref_set_and_clear_test) {
     ref.clear();
     BOOST_TEST((ref.get(registry) == entt::null));
 }
+
+};  // namespace

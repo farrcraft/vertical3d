@@ -34,8 +34,6 @@ boost::shared_ptr<v3d::ui::paint::TextRenderer> renderer(const wchar_t* charcode
 // e with an acute accent, U+00E9, as UTF-8
 const char* const eAcute = "\xC3\xA9";
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(text_renderer_test)
 
 /**
@@ -117,3 +115,5 @@ BOOST_AUTO_TEST_CASE(a_multibyte_character_is_one_glyph) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

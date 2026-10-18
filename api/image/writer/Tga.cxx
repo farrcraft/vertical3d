@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+namespace {
+
 #pragma pack(push, 1)
 
 struct tga_header {
@@ -42,6 +44,8 @@ struct tga_footer {
 };
 
 #pragma pack(pop)
+
+};  // namespace
 
 namespace v3d::image::writer {
 /**

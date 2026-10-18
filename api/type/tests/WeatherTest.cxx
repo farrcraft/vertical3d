@@ -66,8 +66,6 @@ void run(const Emitter& emitter, Weather* weather, State* state, const Steps& st
     }
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(weather_test)
 
 /**
@@ -198,3 +196,5 @@ BOOST_AUTO_TEST_CASE(weather_a_target_that_is_not_a_number_is_ignored_test) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

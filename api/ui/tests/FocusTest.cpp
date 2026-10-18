@@ -64,8 +64,6 @@ std::string focusedName(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     return component ? std::string(component->name()) : std::string();
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(focus_test)
 
 /**
@@ -356,3 +354,5 @@ BOOST_AUTO_TEST_CASE(a_component_hidden_while_focused_lets_keys_through) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

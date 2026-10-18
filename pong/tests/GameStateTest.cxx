@@ -7,6 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 /**
  * The values a round starts on. The collision tests measure against the ball size, and
  * reaching the max score ends a game. The start speed is pixels per second, because the
@@ -51,3 +53,5 @@ BOOST_AUTO_TEST_CASE(game_state_pause_test) {
     state.pause(false);
     BOOST_TEST(!state.paused());
 }
+
+};  // namespace

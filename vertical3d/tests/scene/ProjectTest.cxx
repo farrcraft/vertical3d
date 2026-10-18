@@ -98,8 +98,6 @@ void same(const boost::shared_ptr<v3d::brep::BRep>& left, const boost::shared_pt
     BOOST_CHECK(left->rotation() == right->rotation());
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(project_round_trip_test) {
     const std::string path = scratch("v3d_round_trip.json");
 
@@ -326,3 +324,5 @@ BOOST_AUTO_TEST_CASE(project_default_transform_test) {
 
     boost::filesystem::remove(path);
 }
+
+};  // namespace

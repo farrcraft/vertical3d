@@ -41,8 +41,6 @@ void same(const glm::vec3 & found, const glm::vec3 & expected) {
     BOOST_CHECK_SMALL(found.b - expected.b, 0.0001f);
 }
 
-};  // namespace
-
 /**
  * A texel's centre samples to the texel, and s runs across and t down, so (0, 0) is the
  * image's upper left corner as RI has it.
@@ -132,3 +130,5 @@ BOOST_AUTO_TEST_CASE(searchpath_test) {
     BOOST_CHECK_EQUAL(appended[0], "there");
     BOOST_CHECK_EQUAL(appended[2], "here");
 }
+
+};  // namespace

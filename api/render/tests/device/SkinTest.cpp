@@ -180,8 +180,6 @@ Lit makeLit(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>
         headless->context->frameUniforms(), headless->context->textures(), colourFormat, target->depthFormat(), shadow);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(skin_test)
 
 /**
@@ -455,3 +453,5 @@ BOOST_AUTO_TEST_CASE(a_skinned_mesh_released_in_flight_outlives_its_frame) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

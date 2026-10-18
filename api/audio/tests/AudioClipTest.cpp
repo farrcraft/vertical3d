@@ -12,6 +12,8 @@
 
 #include "Wav.h"
 
+namespace {
+
 /**
  * A clip that read its file holds the wav it decoded.
  **/
@@ -57,3 +59,5 @@ BOOST_AUTO_TEST_CASE(audio_clip_empty_test) {
     BOOST_TEST(clip.audio() == nullptr);
     BOOST_CHECK_NO_THROW(clip.destroy());
 }
+
+};  // namespace

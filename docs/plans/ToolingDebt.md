@@ -58,7 +58,7 @@ names it as the one Python file in the tree.
 
 ### Steps 5 to 17 — One check each
 
-**Steps 5 to 10 done; 11 to 17 open.**
+**Steps 5 to 11 done; 12 to 17 open.**
 
 - Steps 5 to 8 shared one discovery pass and one verification pass. Several files carried sites
   of more than one check.
@@ -86,6 +86,12 @@ names it as the one Python file in the tree.
 - Boost.Test streams a one-byte unscoped enum as a character. The 35 assertions that would
   have printed one now compare without printing their operands, and
   [Testing.md](../contributing/Testing.md#traps) records the trap.
+- Step 11 found 1755 sites. 1740 were the structs that `BOOST_AUTO_TEST_CASE` declares, one
+  per case. Each of the 218 test files now puts everything after its includes in one anonymous
+  namespace. 169 of them already had one for their helpers, which now runs to the end of the
+  file. The other 15 sites were helpers in five sources, now in anonymous namespaces too.
+  clang-tidy's fix makes a definition `static`, which the tree does not use, so a script
+  applied this one.
 
 Each step follows the same procedure:
 

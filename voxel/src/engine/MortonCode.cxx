@@ -5,6 +5,8 @@
 
 #include "MortonCode.h"
 
+namespace {
+
 // http://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
 // "Insert" a 0 bit after each of the 16 low bits of x
 unsigned int Part1By1(unsigned int x) {
@@ -64,6 +66,8 @@ unsigned int DecodeMorton3Y(unsigned int code) {
 unsigned int DecodeMorton3Z(unsigned int code) {
   return Compact1By2(code >> 2);
 }
+
+};  // namespace
 
 unsigned int MortonCode::encode(const glm::ivec2 & vec) {
   return (Part1By1(vec.y) << 1) + Part1By1(vec.x);

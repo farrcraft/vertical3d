@@ -22,8 +22,6 @@ bool empty(const std::array<int, 4> & pixels) {
     return pixels[2] < pixels[0] || pixels[3] < pixels[1];
 }
 
-};  // namespace
-
 /**
  * A bound inside the frame touches every pixel it overlaps, including the ones it only enters.
  **/
@@ -125,3 +123,5 @@ BOOST_AUTO_TEST_CASE(shutter_slice_degenerate_shutter_test) {
     const unsigned int most = std::numeric_limits<unsigned int>::max();
     BOOST_CHECK_EQUAL(v3d::moya::reyes::shutterSlice(infinity, glm::vec2(0.0f, 1.0f), most), most - 1);
 }
+
+};  // namespace

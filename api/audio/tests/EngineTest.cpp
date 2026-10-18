@@ -47,8 +47,6 @@ struct Resolver {
     std::vector<std::string> asked_;
 };
 
-};  // namespace
-
 /**
  * The document is a list of clip ids over the sources that hold them. The library names a
  * source and the app resolves it - this library cannot reach the asset manager itself.
@@ -278,3 +276,5 @@ BOOST_AUTO_TEST_CASE(audio_engine_lets_the_dispatcher_go_test) {
     sound.shutdown();
     BOOST_CHECK(dispatcher->sink<v3d::event::kind::Sound>().empty());
 }
+
+};  // namespace

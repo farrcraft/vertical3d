@@ -78,8 +78,6 @@ void buildAndDestroy(const v3d::test::Headless& headless, const Builder& builder
     vkDestroyPipelineLayout(headless.device->handle(), built.layout, nullptr);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(pipeline_builder_test)
 
 /**
@@ -385,3 +383,5 @@ BOOST_AUTO_TEST_CASE(the_same_pipeline_is_compiled_into_the_cache_once) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -21,8 +21,6 @@ glm::mat4x4 translation(float x) {
     return glm::translate(glm::mat4x4(1.0f), glm::vec3(x, 0.0f, 0.0f));
 }
 
-};  // namespace
-
 /**
  * A still transformation returns its matrix exactly at every time, so a scene without a
  * motion block renders exactly as it would with no motion support.
@@ -186,3 +184,5 @@ BOOST_AUTO_TEST_CASE(moving_transform_a_small_scale_is_not_flat_test) {
     BOOST_CHECK(tiny.placeable());
     BOOST_CHECK(tiny.reference() == tiny.open());
 }
+
+};  // namespace

@@ -140,8 +140,6 @@ boost::shared_ptr<v3d::type::Model> load(const char* name) {
     return model ? model->model() : boost::shared_ptr<v3d::type::Model>();
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(gltf_merges_every_primitive_test) {
     boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
 
@@ -632,3 +630,5 @@ BOOST_AUTO_TEST_CASE(gltf_a_data_uri_states_its_own_type_test) {
     const v3d::image::Difference difference = v3d::image::compare(*embedded, *onDisk, 0);
     BOOST_CHECK_MESSAGE(difference.match, difference.description());
 }
+
+};  // namespace

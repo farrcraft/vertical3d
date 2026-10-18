@@ -31,8 +31,6 @@ boost::shared_ptr<v3d::image::Image> solid(const Solid& spec) {
     return image;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(compare_identical_test) {
     const boost::shared_ptr<v3d::image::Image> a = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 128});
     const boost::shared_ptr<v3d::image::Image> b = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 128});
@@ -95,3 +93,5 @@ BOOST_AUTO_TEST_CASE(compare_worst_pixel_test) {
     BOOST_CHECK(difference.description().contains("column 1"));
     BOOST_CHECK(difference.description().contains("row 1"));
 }
+
+};  // namespace

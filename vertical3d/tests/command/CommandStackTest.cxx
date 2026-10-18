@@ -57,8 +57,6 @@ boost::shared_ptr<CountingCommand> counter(const std::string& name) {
     return boost::make_shared<CountingCommand>(name);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(command_stack_empty_test) {
     v3d::editor::CommandStack stack;
 
@@ -244,3 +242,5 @@ BOOST_AUTO_TEST_CASE(placement_tolerance_test) {
     two.translation.x = 0.001f;
     BOOST_CHECK(!one.same(two));
 }
+
+};  // namespace

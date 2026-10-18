@@ -34,8 +34,6 @@ std::vector<Token> lex(const std::string & source, std::string * error = nullptr
     return tokens;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(riblexer_request_test) {
     std::vector<Token> tokens = lex("Format 640 480 1");
 
@@ -207,3 +205,5 @@ BOOST_AUTO_TEST_CASE(riblexer_reads_from_where_the_stream_stands_test) {
     v3d::render::offline::rib::Lexer lexer(stream);
     BOOST_CHECK_EQUAL(lexer.next().text(), "Format");
 }
+
+};  // namespace

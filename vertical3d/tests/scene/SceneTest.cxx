@@ -24,8 +24,6 @@ class CountingVisitor final : public v3d::editor::SceneVisitor {
     std::vector<unsigned int> visited;
 };
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(scene_empty_test) {
     v3d::editor::Scene scene;
 
@@ -105,3 +103,5 @@ BOOST_AUTO_TEST_CASE(scene_deselect_test) {
     BOOST_CHECK_EQUAL(mesh->selected(), false);
     BOOST_CHECK_EQUAL(mesh->edge(0)->selected(), false);
 }
+
+};  // namespace

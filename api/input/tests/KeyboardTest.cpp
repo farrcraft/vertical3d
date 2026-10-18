@@ -53,7 +53,6 @@ SDL_Event keyEvent(const Key& spec) {
     event.key.repeat = spec.repeat;
     return event;
 }
-};  // namespace
 
 BOOST_AUTO_TEST_CASE(keyboard_test) {
     boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
@@ -233,3 +232,5 @@ BOOST_AUTO_TEST_CASE(keyboard_name_table_test) {
     BOOST_TEST(v3d::input::isButtonName("left"));
     BOOST_TEST(!v3d::input::isButtonName("a"));
 }
+
+};  // namespace

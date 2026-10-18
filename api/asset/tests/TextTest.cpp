@@ -21,8 +21,6 @@ boost::shared_ptr<v3d::asset::Manager> manager() {
     return boost::make_shared<v3d::asset::Manager>("data", boost::make_shared<v3d::log::Logger>());
 }
 
-};  // namespace
-
 /**
  * The file is read as binary and sized from the stream, so the content is byte for byte what
  * is on disk - a shader source is the caller this matters to.
@@ -56,3 +54,5 @@ BOOST_AUTO_TEST_CASE(read_file_test) {
     const std::optional<std::string> empty = v3d::asset::readFile("data/empty.txt");
     BOOST_TEST(empty.value_or("not empty").empty());
 }
+
+};  // namespace

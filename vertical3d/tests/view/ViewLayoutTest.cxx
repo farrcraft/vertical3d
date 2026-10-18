@@ -35,8 +35,6 @@ const char* const quad =
 "{\"split\": \"horizontal\", \"children\": [{\"camera\": \"Left\"}, {\"camera\": \"Perspective\"}]}"
 "]}}}";
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(viewlayout_quad_test) {
     v3d::editor::ViewLayout layout(logger());
     BOOST_REQUIRE(layout.load(config(quad)));
@@ -155,3 +153,5 @@ BOOST_AUTO_TEST_CASE(viewlayout_rejects_a_nested_empty_split_test) {
         "{\"layout\": {\"root\": {\"split\": \"horizontal\", \"children\": "
         "[{\"camera\": \"Top\"}, {\"split\": \"vertical\", \"children\": []}]}}}")));
 }
+
+};  // namespace

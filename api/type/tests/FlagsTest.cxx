@@ -39,8 +39,6 @@ struct Combines : std::false_type {};
 template <typename E>
 struct Combines<E, std::void_t<decltype(std::declval<E>() | std::declval<E>())>> : std::true_type {};
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(flags_test)
 
 /**
@@ -111,3 +109,5 @@ BOOST_AUTO_TEST_CASE(flags_equality_test) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

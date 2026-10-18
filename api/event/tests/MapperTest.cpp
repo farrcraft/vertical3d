@@ -29,7 +29,6 @@ v3d::event::Event destination(const boost::shared_ptr<v3d::event::Context>& cont
     event.type(v3d::event::Type::Destination);
     return event;
 }
-};  // namespace
 
 BOOST_AUTO_TEST_CASE(mapper_test) {
     boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
@@ -155,3 +154,5 @@ BOOST_AUTO_TEST_CASE(mapper_sources_test) {
     // a name alone is not a command: the context is part of it
     BOOST_CHECK(mapper.sources("walkNorth").empty());
 }
+
+};  // namespace

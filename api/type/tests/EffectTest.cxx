@@ -61,8 +61,6 @@ bool equal(const std::vector<Particle>& a, const std::vector<Particle>& b) {
     return true;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(effect_test)
 
 /**
@@ -288,3 +286,5 @@ BOOST_AUTO_TEST_CASE(effect_particle_life_test) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -44,8 +44,6 @@ float quadAt(const canvas::World& canvas, std::size_t n) {
     return canvas.vertices()[n * 4].position.x;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(depth_order_test)
 
 /**
@@ -157,3 +155,5 @@ BOOST_AUTO_TEST_CASE(a_key_that_is_not_a_number_is_drawn_last) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

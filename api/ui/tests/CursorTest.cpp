@@ -96,8 +96,6 @@ struct Fixture final {
     boost::shared_ptr<v3d::ui::input::Cursor> cursor;
 };
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(cursor_test)
 
 /**
@@ -582,3 +580,5 @@ BOOST_AUTO_TEST_CASE(a_document_marks_a_strip_as_scenery) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

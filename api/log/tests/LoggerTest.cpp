@@ -16,6 +16,8 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 /**
  * One name in spdlog's global registry, and the levels a wrapper sets that a default logger
  * would not: debug to record everything, and a flush from info up so a process that stops
@@ -104,3 +106,5 @@ BOOST_AUTO_TEST_CASE(logger_open_falls_back_when_the_file_cannot_be_opened_test)
     v3d::log::Logger::open("v3d.log");
     boost::filesystem::remove(path);
 }
+
+};  // namespace

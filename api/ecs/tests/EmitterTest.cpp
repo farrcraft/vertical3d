@@ -13,6 +13,8 @@
 using v3d::ecs::component::Emitter;
 using v3d::ecs::component::Transform;
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(emitter_test)
 
 /**
@@ -53,3 +55,5 @@ BOOST_AUTO_TEST_CASE(emitter_without_a_transform_test) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

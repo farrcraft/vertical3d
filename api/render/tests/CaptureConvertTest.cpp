@@ -24,8 +24,6 @@ std::vector<unsigned char> texel(unsigned char a, unsigned char b, unsigned char
     return std::vector<unsigned char>{a, b, c, d};
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(capture_convert_test)
 
 /**
@@ -106,3 +104,5 @@ BOOST_AUTO_TEST_CASE(the_whole_image_is_converted) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

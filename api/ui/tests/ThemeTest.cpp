@@ -134,8 +134,6 @@ const char* const themedDocument = R"({
         "containers": [ { "name": "hud", "visible": true, "components": [] } ]
 })";
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(theme_test)
 
 /**
@@ -854,3 +852,5 @@ BOOST_AUTO_TEST_CASE(a_container_draws_its_labels_and_icons) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

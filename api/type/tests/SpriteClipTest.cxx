@@ -33,8 +33,6 @@ int showing(const SpriteClip& clip, float time) {
     return static_cast<int>(clip.frame(time).uv0.x * 4.0f);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(sprite_clip_test)
 
 /**
@@ -89,3 +87,5 @@ BOOST_AUTO_TEST_CASE(sprite_clip_refuses_what_it_cannot_show_test) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

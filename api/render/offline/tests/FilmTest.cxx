@@ -38,8 +38,6 @@ v3d::render::offline::Sampling box(const Box & filter) {
     return sampling;
 }
 
-};  // namespace
-
 /**
  * Each filter at its centre, at half its width and past it, against RI's formulas worked by
  * hand. A box and a triangle two pixels wide reach a pixel either side; the gaussian is
@@ -283,3 +281,5 @@ BOOST_AUTO_TEST_CASE(film_sampler_is_stratified_test) {
         BOOST_CHECK_EQUAL(count, 1u);
     }
 }
+
+};  // namespace

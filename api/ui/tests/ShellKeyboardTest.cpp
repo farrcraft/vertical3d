@@ -95,8 +95,6 @@ boost::shared_ptr<v3d::ui::component::TextBox> box(const std::string& value) {
     return made;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(shell_keyboard_test)
 
 /**
@@ -277,3 +275,5 @@ BOOST_AUTO_TEST_CASE(what_is_announced_is_what_is_focused) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

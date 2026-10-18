@@ -63,8 +63,6 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
     return ui;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(check_box_test)
 
 /**
@@ -203,3 +201,5 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_check_box_a_radio_button_and_a_clip) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

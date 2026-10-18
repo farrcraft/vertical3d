@@ -85,8 +85,6 @@ struct Fixture final {
     PongScene scene_;
 };
 
-};  // namespace
-
 /**
  * reset() centres both paddles and the ball and serves to the left, the state a round
  * begins in.
@@ -701,3 +699,5 @@ BOOST_AUTO_TEST_CASE(pong_scene_keys_leave_the_computer_paddle_alone_test) {
     BOOST_TEST(fixture.scene_.steer("rightPaddleUp", false));
     BOOST_TEST(fixture.scene_.right().up());
 }
+
+};  // namespace

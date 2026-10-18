@@ -100,8 +100,6 @@ std::string active(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     return std::string(level->active()->label());
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(game_menu_test)
 
 /**
@@ -348,3 +346,5 @@ BOOST_AUTO_TEST_CASE(the_menu_declares_its_own_commands) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -29,8 +29,6 @@ Playback walking() {
     return playback;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(playback_test)
 
 /**
@@ -223,3 +221,5 @@ BOOST_AUTO_TEST_CASE(playback_on_the_registry_test) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

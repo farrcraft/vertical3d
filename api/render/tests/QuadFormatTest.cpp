@@ -9,6 +9,8 @@
 
 using v3d::render::realtime::vulkan::renderer::Quad;
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(quad_format_test)
 
 /**
@@ -44,3 +46,5 @@ BOOST_AUTO_TEST_CASE(any_other_format_is_left_alone) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -38,8 +38,6 @@ boost::shared_ptr<v3d::editor::ViewPort> frontView() {
  **/
 constexpr glm::vec2 centre(200.0f, 200.0f);
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(manipulator_default_test) {
     v3d::editor::TranslateManipulator manipulator;
 
@@ -203,3 +201,5 @@ BOOST_AUTO_TEST_CASE(manipulator_scale_test) {
     manipulator.apply(cube, *view, centre, glm::vec2(centre.x - (handle * 20.0f), centre.y));
     BOOST_CHECK_GT(cube->scale().x, 0.0f);
 }
+
+};  // namespace

@@ -48,8 +48,6 @@ boost::shared_ptr<v3d::asset::Manager> root(const std::string& name, bool withAl
     return assets;
 }
 
-};  // namespace
-
 /**
  * A texture the file names is decoded from beside the file, and keyed by that path.
  **/
@@ -129,3 +127,5 @@ BOOST_AUTO_TEST_CASE(a_file_that_is_not_a_model_is_refused) {
 
     BOOST_CHECK_THROW(decodeModel(*assets, "models/albedo.png"), std::runtime_error);
 }
+
+};  // namespace

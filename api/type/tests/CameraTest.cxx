@@ -18,6 +18,8 @@
 #include <glm/mat3x3.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(camera_orthographic_test) {
     v3d::type::camera::Camera camera;
 
@@ -548,3 +550,5 @@ BOOST_AUTO_TEST_CASE(camera_a_turn_moves_the_normals_with_it_test) {
     const glm::vec3 viewZ(camera.view()[0][2], camera.view()[1][2], camera.view()[2][2]);
     BOOST_CHECK_SMALL(glm::length(viewZ - direction), 0.0001f);
 }
+
+};  // namespace

@@ -89,8 +89,6 @@ boost::shared_ptr<v3d::ui::component::HorizontalBox> grid(const Row& row,
     return box;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(arranger_test)
 
 /**
@@ -476,3 +474,5 @@ BOOST_AUTO_TEST_CASE(a_list_measures_its_rows_again_under_a_new_measure) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -38,6 +38,8 @@ Result run(Accumulator* accumulator, const std::vector<std::uint64_t>& frames) {
 
 }  // namespace
 
+namespace {
+
 /**
  * A frame shorter than a step makes no step due, but its time is kept rather than discarded,
  * unlike a millisecond delta that rounds to zero.
@@ -164,3 +166,5 @@ BOOST_AUTO_TEST_CASE(accumulator_steps_test) {
     accumulator.accumulate(0);
     BOOST_CHECK_EQUAL(accumulator.steps(), 0u);
 }
+
+};  // namespace

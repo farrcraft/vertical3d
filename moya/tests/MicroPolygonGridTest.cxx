@@ -20,8 +20,6 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
     return v;
 }
 
-};  // namespace
-
 /**
  * A grid's extent is fixed when it is made, so every point in it can be written to.
  **/
@@ -128,3 +126,5 @@ BOOST_AUTO_TEST_CASE(micropolygon_depth_is_interpolated_test) {
     BOOST_REQUIRE(v3d::moya::reyes::covers(falling, glm::vec2(3.0f, 2.0f), &b));
     BOOST_CHECK(b < a);
 }
+
+};  // namespace

@@ -104,8 +104,6 @@ std::vector<unsigned char> drawFrame(v3d::test::Headless* headless, const boost:
     return centre(headless, &capture, path);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(render_target_test)
 
 /**
@@ -245,3 +243,5 @@ BOOST_AUTO_TEST_CASE(only_a_swapchain_pass_wants_the_swapchain_depth) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

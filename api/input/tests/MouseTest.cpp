@@ -95,7 +95,6 @@ SDL_Event motionEvent(const Motion& spec) {
     event.motion.yrel = spec.dy;
     return event;
 }
-};  // namespace
 
 BOOST_AUTO_TEST_CASE(mouse_button_test) {
     boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
@@ -270,3 +269,5 @@ BOOST_AUTO_TEST_CASE(mouse_wheel_test) {
     mouse.flush();
     BOOST_CHECK_EQUAL(mouse.state().wheel(), 0.0f);
 }
+
+};  // namespace

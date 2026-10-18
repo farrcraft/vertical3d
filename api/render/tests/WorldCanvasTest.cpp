@@ -35,8 +35,6 @@ v3d::render::realtime::TextureHandle handle(uint32_t id) {
     return v3d::render::realtime::TextureHandle(id);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(worldcanvas_test)
 
 /**
@@ -225,3 +223,5 @@ BOOST_AUTO_TEST_CASE(clearing_returns_the_tint_to_white) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

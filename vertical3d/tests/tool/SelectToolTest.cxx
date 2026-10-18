@@ -58,8 +58,6 @@ std::size_t selectedComponents(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     return count;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(select_tool_object_test) {
     boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
@@ -176,3 +174,5 @@ BOOST_AUTO_TEST_CASE(select_tool_no_view_test) {
     BOOST_CHECK_EQUAL(cube->selected(), false);
     BOOST_CHECK_EQUAL(select.hit().valid, false);
 }
+
+};  // namespace

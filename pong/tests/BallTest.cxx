@@ -10,6 +10,8 @@
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
 
+namespace {
+
 /**
  * A ball is an entity in the app's registry rather than a value, so everything it holds is a
  * component read back through it.
@@ -84,3 +86,5 @@ BOOST_AUTO_TEST_CASE(ball_entities_are_distinct_test) {
     BOOST_TEST((first.position() == glm::vec2(1.0f, 1.0f)));
     BOOST_TEST((second.position() == glm::vec2(2.0f, 2.0f)));
 }
+
+};  // namespace

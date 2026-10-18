@@ -7,6 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(vertex_test) {
     v3d::brep::Vertex vertex;
     glm::vec3 vector(1.0f, 2.0f, 3.0f);
@@ -39,3 +41,5 @@ BOOST_AUTO_TEST_CASE(vertex_selection_test) {
     v3d::brep::Vertex other(glm::vec3(1.0f, 2.0f, 3.0f));
     BOOST_CHECK_EQUAL((vertex == other), true);
 }
+
+};  // namespace

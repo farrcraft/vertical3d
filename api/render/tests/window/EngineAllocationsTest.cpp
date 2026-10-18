@@ -24,8 +24,6 @@ Kind built(const v3d::test::Windowed& windowed) {
     return windowed.engine->context()->device()->allocator().kind();
 }
 
-};  // namespace
-
 /**
  * An engine asked for a suballocating device builds one, and draws through it.
  **/
@@ -45,3 +43,5 @@ BOOST_AUTO_TEST_CASE(engine3d_allocates_directly_by_default_test) {
     v3d::test::Windowed windowed;
     BOOST_TEST((built(windowed) == Kind::Direct));
 }
+
+};  // namespace

@@ -32,8 +32,6 @@ std::vector<VkDescriptorSetLayoutBinding> uniformBlock() {
     return std::vector<VkDescriptorSetLayoutBinding>{block};
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(descriptor_pool_test)
 
 /**
@@ -103,3 +101,5 @@ BOOST_AUTO_TEST_CASE(a_released_set_waits_for_the_frames_in_flight) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

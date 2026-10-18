@@ -28,7 +28,6 @@ struct OutputDirectory {
         boost::filesystem::create_directory("data_out");
     }
 };
-};  // namespace
 
 BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
     boost::shared_ptr<v3d::image::Image> img24 = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 2), 24);
@@ -407,3 +406,5 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_tga_too_wide_leaves_the_file_test, OutputDir
     BOOST_CHECK(!factory.write(filename, wide));
     BOOST_CHECK_EQUAL(boost::filesystem::file_size(filename), before);
 }
+
+};  // namespace

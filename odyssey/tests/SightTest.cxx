@@ -38,8 +38,6 @@ constexpr v3d::grid::TileCoord at(int x) {
     return v3d::grid::TileCoord{ x, 0 };
 }
 
-};  // namespace
-
 /**
  * A kind's cover decides sight: a crate is Cover::Half and is seen over, and a wall is
  * Cover::Full and is not. Both are impassable, so passability does not affect sight.
@@ -114,3 +112,5 @@ BOOST_AUTO_TEST_CASE(sight_off_the_board_test) {
     BOOST_CHECK(!seen.visible(at(8)));
     BOOST_CHECK(!seen.remembered(v3d::grid::TileCoord{1, 3}));
 }
+
+};  // namespace

@@ -112,8 +112,6 @@ const unsigned int INSIDE[][2] = {
     { 14, 40 }, { 42, 40 }, { 50, 40 }
 };
 
-};  // namespace
-
 /**
  * A scene reaches the render context through the handler, so a RIB file drives the offline
  * renderer.
@@ -747,3 +745,5 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
     BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 24) < 0.7f);
     BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 24) > 0.9f);
 }
+
+};  // namespace

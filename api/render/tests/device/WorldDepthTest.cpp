@@ -144,8 +144,6 @@ boost::shared_ptr<v3d::image::Image> drawn(const boost::shared_ptr<v3d::log::Log
     return png.read("data_out/" + name + ".png");
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(world_depth_test)
 
 /**
@@ -178,3 +176,5 @@ BOOST_AUTO_TEST_CASE(world_quads_are_ordered_by_their_caller_and_not_by_depth) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

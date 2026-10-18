@@ -40,8 +40,6 @@ void put(const v3d::engine::Settings& settings, const std::string& text) {
     BOOST_REQUIRE(v3d::asset::writeFile(settings.path(), text));
 }
 
-};  // namespace
-
 /**
  * A player who has never opened a settings screen is the common case, and it is not a
  * failure: every read gives back what the build ships.
@@ -193,3 +191,5 @@ BOOST_AUTO_TEST_CASE(settings_unreadable_version_test) {
         boost::filesystem::remove(settings.path());
     }
 }
+
+};  // namespace

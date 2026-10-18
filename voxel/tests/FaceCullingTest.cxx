@@ -12,8 +12,6 @@ namespace {
 const int chunkSize = 16;
 const int high = chunkSize - 1;
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(seam_lookup_moves_the_block_as_well_as_the_chunk_test) {
     // crossing a seam moves the block as well as the chunk. For a face looking out the high
     // side, the block against it is at 0 of the neighbour, not at 15. Carrying the
@@ -82,3 +80,5 @@ BOOST_AUTO_TEST_CASE(the_edge_of_the_world_has_no_chunk_beyond_it_test) {
     BOOST_CHECK(!neighbourAcrossSeam(Voxel::BLOCK_FACE_BACK, glm::ivec3(4, 4, 0), origin, chunkSize).crosses);
     BOOST_CHECK(!neighbourAcrossSeam(Voxel::BLOCK_FACE_BOTTOM, glm::ivec3(4, 0, 4), origin, chunkSize).crosses);
 }
+
+};  // namespace

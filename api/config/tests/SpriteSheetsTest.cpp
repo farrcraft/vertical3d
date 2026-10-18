@@ -43,8 +43,6 @@ const char* const sheets =
 " \"sprites\": [{\"name\": \"player\", \"x\": 0, \"y\": 0, \"width\": 32, \"height\": 64}]}"
 "]}";
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(sprite_sheets_load_test) {
     v3d::config::SpriteSheets loaded(logger());
     BOOST_REQUIRE_EQUAL(loaded.load(config(sheets)), true);
@@ -303,3 +301,5 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_load_keeps_the_last_of_a_repeated_name_test) 
     BOOST_CHECK_EQUAL(terrain.image(), "last.png");
     BOOST_CHECK_EQUAL(terrain.width(), 128);
 }
+
+};  // namespace

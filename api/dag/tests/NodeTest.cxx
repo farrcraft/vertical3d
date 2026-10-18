@@ -7,6 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(node_id_test) {
     v3d::dag::Node first;
     v3d::dag::Node second;
@@ -16,3 +18,5 @@ BOOST_AUTO_TEST_CASE(node_id_test) {
     BOOST_CHECK(second.id() > first.id());
     BOOST_CHECK(v3d::dag::Node::baseID() >= second.id());
 }
+
+};  // namespace

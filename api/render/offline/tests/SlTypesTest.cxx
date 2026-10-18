@@ -23,8 +23,6 @@ glm::mat4x4 placed() {
     return glm::rotate(matrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(sltypes_components_test) {
     BOOST_CHECK_EQUAL(v3d::render::offline::sl::components(Type::FLOAT), 1u);
     BOOST_CHECK_EQUAL(v3d::render::offline::sl::components(Type::POINT), 3u);
@@ -117,3 +115,5 @@ BOOST_AUTO_TEST_CASE(sltypes_ntransform_test) {
     BOOST_CHECK_CLOSE(asNormal.x, 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(asNormal.y, 0.5f, 0.01f);
 }
+
+};  // namespace

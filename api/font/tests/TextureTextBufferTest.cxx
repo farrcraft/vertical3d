@@ -49,8 +49,6 @@ float advanceOf(const boost::shared_ptr<v3d::font::TextureFont>& font, const std
     return pen.x;
 }
 
-};  // namespace
-
 /**
  * One atlas, drawn at more than one size.
  *
@@ -161,3 +159,5 @@ BOOST_AUTO_TEST_CASE(texturetextbuffer_newline_in_a_default_markup_moves_one_lin
 
     BOOST_CHECK_CLOSE(unsizedPen.y, sizedPen.y, 0.01f);
 }
+
+};  // namespace

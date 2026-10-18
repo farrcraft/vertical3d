@@ -7,6 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(face_test) {
     v3d::brep::Face face;
 
@@ -33,3 +35,5 @@ BOOST_AUTO_TEST_CASE(face_selection_test) {
     face.selected(false);
     BOOST_CHECK_EQUAL(face.selected(), false);
 }
+
+};  // namespace

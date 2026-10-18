@@ -96,6 +96,11 @@ includes, rather than reaching it through the library under test. Each suite's `
 defines `BOOST_TEST_MODULE` and nothing else. The exceptions are `render_device`, whose `main`
 checks for a device first, and `render_window`, whose `main` checks for a window.
 
+A test file puts everything after its includes in one anonymous namespace, its suites and cases
+as well as its fixtures and helpers. `BOOST_AUTO_TEST_CASE` declares a struct named after the
+case, so two files in one executable with the same suite and case names would otherwise define
+the same struct twice. clang-tidy's `misc-use-internal-linkage` reports a case outside one.
+
 A suite with fixture files copies a directory of them beside the executable in a `POST_BUILD`
 command, which the suite's `tests/CMakeLists.txt` writes. Most suites copy their `tests/data/`
 to `data/`. Three copy something else:

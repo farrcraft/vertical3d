@@ -106,8 +106,6 @@ SDL_Event keyUp(SDL_Keycode key) {
     return event;
 }
 
-};  // namespace
-
 /**
  * A mask of nothing builds the asset manager, the dispatcher and the event engine and stops
  * there: no config read, no input devices and no window, so the engine can be tested
@@ -675,3 +673,5 @@ BOOST_AUTO_TEST_CASE(engine_waits_while_the_window_is_minimized_test) {
     }
     SDL_QuitSubSystem(SDL_INIT_EVENTS);
 }
+
+};  // namespace

@@ -95,8 +95,6 @@ constexpr glm::vec4 INTERIOR(0.3f, 0.3f, 0.3f, 1.0f);
 constexpr glm::vec4 BORDER(0.8f, 0.8f, 0.9f, 1.0f);
 constexpr glm::vec4 HIGHLIGHT(0.2f, 0.6f, 1.0f, 0.4f);
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(overlay_tile_corners_bound_the_tile_test) {
     const TileGrid grid(4, 4);
     const std::array<glm::vec3, 4> corners = tileCorners(grid, at(2, 1));
@@ -255,3 +253,5 @@ BOOST_AUTO_TEST_CASE(overlay_fill_skips_tiles_off_the_grid_test) {
     fillTile(grid, at(0, 0), HIGHLIGHT, QuadSink());
     fillTiles(grid, range, HIGHLIGHT, QuadSink());
 }
+
+};  // namespace

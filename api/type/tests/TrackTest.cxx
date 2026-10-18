@@ -16,6 +16,8 @@
 
 using v3d::type::animation::Track;
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(track_test)
 
 /**
@@ -85,3 +87,5 @@ BOOST_AUTO_TEST_CASE(track_refuses_keys_it_cannot_sample_test) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

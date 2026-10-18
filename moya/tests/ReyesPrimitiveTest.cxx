@@ -10,6 +10,8 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+namespace {
+
 /**
  * A primitive is undiceable until the first pass has measured it against the grid size, so an
  * unmeasured one is routed through that measurement rather than assumed small enough to skip
@@ -82,3 +84,5 @@ BOOST_AUTO_TEST_CASE(reyes_primitive_place_test) {
     BOOST_TEST((primitive.color() == glm::vec3(1.0f, 0.0f, 0.0f)));
     BOOST_TEST((primitive.normal() == glm::vec3(0.0f, 1.0f, 0.0f)));
 }
+
+};  // namespace

@@ -26,8 +26,6 @@ boost::shared_ptr<Mesh> watched(const boost::shared_ptr<int>& owner) {
     return boost::shared_ptr<Mesh>(owner, static_cast<Mesh*>(nullptr));
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(chunk_mesh_pool_test)
 
 /**
@@ -69,3 +67,5 @@ BOOST_AUTO_TEST_CASE(a_new_chunk_retires_nothing) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

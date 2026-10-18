@@ -18,8 +18,6 @@ namespace {
 const float notANumber = std::numeric_limits<float>::quiet_NaN();
 const float infinity = std::numeric_limits<float>::infinity();
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(checked_test)
 
 BOOST_AUTO_TEST_CASE(a_count_within_its_range_is_truncated) {
@@ -81,3 +79,5 @@ BOOST_AUTO_TEST_CASE(an_integer_up_to_the_largest_int_is_defined) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

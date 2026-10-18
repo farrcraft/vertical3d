@@ -41,8 +41,6 @@ bool same(const Tetrad::ShapeInfo & a, const Tetrad::ShapeInfo & b) {
     return true;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(tetrad_rotation_test) {
     const Tetrad::ShapeInfo start = el();
 
@@ -121,3 +119,5 @@ BOOST_AUTO_TEST_CASE(tetrad_extent_test) {
 
     BOOST_CHECK_EQUAL(Tetrad().width(), 0u);
 }
+
+};  // namespace
