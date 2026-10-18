@@ -634,6 +634,8 @@ then takes the direction in its cone nearest the loop's axis. The reported case 
 `sllighting_solar_with_an_angle_chooses_its_direction_test`, and a second case runs the cone
 from a surface's illuminance loop to the light and back. The log case, which used the solar
 report as its example, now uses the report a `shadow` call makes.
+Leaving the cone out of the illuminance loop's call to the light fails the case that runs it
+from the loop.
 
 * **`Renderer::light` receives the surface's illuminance axis and angle**, and `Globals::shine`
   passes them to the light shader.
