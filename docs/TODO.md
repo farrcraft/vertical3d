@@ -71,12 +71,6 @@ takes them up, in the order the [OfflineShading roadmap](roadmap/OfflineShading.
 - The fix passes the surface's illuminance axis and angle to the light along with its position.
 - Due when a scene needs a sky or another wide distant light.
 
-[] **`offline::trace::Scene::nearest` tests every primitive.**
-
-- moya traces shadow rays, so every shadow ray from every grid point pays for the whole scene.
-- An acceleration structure goes inside `offline::trace`. Neither renderer needs to change.
-- Due when a scene takes a second to render. The test suites' timings would show it.
-
 [] **`offline::trace::Tracer` runs a shader once per hit.**
 
 - Each hit gets its own `HitShader` and its own run of the machine, so a ray-hidden image pays

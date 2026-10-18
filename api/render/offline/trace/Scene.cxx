@@ -7,8 +7,10 @@
 
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/sl/Placed.h>
+#include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Ray.h>
 
+#include "Hierarchy.h"
 #include "Hit.h"
 #include "Intersection.h"
 #include "Pose.h"
@@ -16,6 +18,7 @@
 #include "Sphere.h"
 #include "Triangle.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <limits>
 #include <vector>
@@ -26,6 +29,51 @@
 #include <glm/matrix.hpp>
 
 namespace v3d::render::offline::trace {
+
+namespace {
+
+/** How many steps a moving primitive's corners are followed through across its motion. **/
+constexpr int SWEEP_STEPS = 16;
+
+Hierarchy::Box still(const v3d::type::geometry::AABBox & stored) {
+    Hierarchy::Box box;
+    box.extend(stored.min());
+    box.extend(stored.max());
+    return box;
+}
+
+/**
+ * A box that holds a moving primitive at every time of its motion. The primitive at a time is
+ * its stored box's corners through that time's pose, so the box follows those corners across
+ * the motion. A rotation carries a corner along an arc between two steps, and the arc stays
+ * within one step's length of either end. The box is grown by the longest step to hold it.
+ **/
+Hierarchy::Box swept(const v3d::type::geometry::AABBox & stored, const v3d::render::offline::MovingTransform & motion) {
+    glm::vec3 corners[8];
+    stored.vertices(corners);
+    const glm::mat4x4 back = glm::inverse(motion.reference());
+    Hierarchy::Box box;
+    glm::vec3 previous[8];
+    float longest = 0.0F;
+    for (int step = 0; step <= SWEEP_STEPS; step++) {
+        const float u = static_cast<float>(step) / static_cast<float>(SWEEP_STEPS);
+        const float time = motion.times().x + (u * (motion.times().y - motion.times().x));
+        const glm::mat4x4 ahead = motion.at(time) * back;
+        for (std::size_t k = 0; k < 8; k++) {
+            const glm::vec3 placed(ahead * glm::vec4(corners[k], 1.0F));
+            box.extend(placed);
+            if (step > 0) {
+                longest = std::max(longest, glm::length(placed - previous[k]));
+            }
+            previous[k] = placed;
+        }
+    }
+    box.min -= glm::vec3(longest);
+    box.max += glm::vec3(longest);
+    return box;
+}
+
+};  // namespace
 
 Scene::Scene() {
 }
@@ -66,10 +114,12 @@ int Scene::motion(const v3d::render::offline::MovingTransform & placed) {
 void Scene::add(const boost::shared_ptr<Primitive> & primitive, const v3d::render::offline::MovingTransform & placed) {
     primitive->motion_ = motion(placed);
     primitives_.push_back(primitive);
+    built_ = false;
 }
 
 void Scene::add(const Triangle & triangle) {
     primitives_.push_back(boost::make_shared<Triangle>(triangle));
+    built_ = false;
 }
 
 void Scene::add(const Triangle & triangle, const v3d::render::offline::MovingTransform & placed) {
@@ -107,23 +157,54 @@ bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, 
     return nearest(ray, from, hit, poses(time));
 }
 
+void Scene::build() const {
+    std::vector<Hierarchy::Box> boxes;
+    std::vector<std::size_t> bounded;
+    unbounded_.clear();
+    for (std::size_t i = 0; i < primitives_.size(); i++) {
+        v3d::type::geometry::AABBox stored;
+        if (!primitives_[i]->bound(&stored)) {
+            unbounded_.push_back(i);
+            continue;
+        }
+        const int motion = primitives_[i]->motion();
+        boxes.push_back(motion >= 0 ? swept(stored, motions_[static_cast<std::size_t>(motion)]) : still(stored));
+        bounded.push_back(i);
+    }
+    hierarchy_.build(boxes);
+    bounded_ = bounded;
+    built_ = true;
+}
+
 bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, const Poses & poses) const {
+    if (!built_) {
+        build();
+    }
     const Primitive* met = nullptr;
+    std::size_t metIndex = std::numeric_limits<std::size_t>::max();
     Intersection nearest;
     nearest.distance = std::numeric_limits<float>::max();
-    for (const boost::shared_ptr<const Primitive> & primitive : primitives_) {
-        const int motion = primitive->motion();
+    // the hierarchy visits primitives in no fixed order, so a tie goes to the one added first
+    const auto test = [&](std::size_t index) {
+        const Primitive & primitive = *primitives_[index];
+        const int motion = primitive.motion();
         Pose pose;
         if (motion >= 0) {
-            pose.ahead = &poses.ahead[motion];
-            pose.backward = &poses.backward[motion];
+            pose.ahead = &poses.ahead[static_cast<std::size_t>(motion)];
+            pose.backward = &poses.backward[static_cast<std::size_t>(motion)];
         }
         Intersection found;
-        if (primitive->intersect(ray, from, pose, &found) && found.distance < nearest.distance) {
+        if (primitive.intersect(ray, from, pose, &found) &&
+            (found.distance < nearest.distance || (found.distance == nearest.distance && index < metIndex))) {
             nearest = found;
-            met = primitive.get();
+            met = &primitive;
+            metIndex = index;
         }
+    };
+    for (const std::size_t index : unbounded_) {
+        test(index);
     }
+    hierarchy_.walk(ray, from, &nearest.distance, [&](std::size_t item) { test(bounded_[item]); });
     if (met == nullptr) {
         return false;
     }

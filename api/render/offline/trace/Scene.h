@@ -9,12 +9,14 @@
 #include <api/render/offline/sl/Placed.h>
 #include <api/type/geometry/Ray.h>
 
+#include <cstddef>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
+#include "Hierarchy.h"
 #include "Hit.h"
 #include "Intersection.h"
 #include "Pose.h"
@@ -115,6 +117,11 @@ class Scene final {
     /**
      * The nearest primitive a ray meets beyond `from`, or false.
      *
+     * The primitives are held in a bounding volume hierarchy, which is built on the first call
+     * after a primitive was added. That makes the call cheap for a ray but not safe to make
+     * from two threads at once. A moving primitive's box holds it across the whole motion.
+     * Two hits at one distance resolve to the primitive added first.
+     *
      * @param from how far along the ray to start looking. Without it, a ray leaving a
      *        surface would meet the surface it left, so a shadow ray is offset rather
      *        than started at zero
@@ -146,7 +153,16 @@ class Scene final {
     /** The motion a primitive placed by this transformation is carried by, or -1. **/
     int motion(const v3d::render::offline::MovingTransform & placed);
 
+    /** Builds the hierarchy over every primitive with a bound, and lists those without one. **/
+    void build() const;
+
     std::vector<boost::shared_ptr<const Primitive>> primitives_;
+    // built by nearest() when it is first asked after an add, so a const query can build it
+    mutable Hierarchy hierarchy_;
+    mutable std::vector<std::size_t> unbounded_;
+    // the primitive each item of the hierarchy is
+    mutable std::vector<std::size_t> bounded_;
+    mutable bool built_ = false;
     std::vector<v3d::render::offline::MovingTransform> motions_;
     std::vector<v3d::render::offline::sl::Placed> lights_;
     glm::vec3 background_ = glm::vec3(0.0F);

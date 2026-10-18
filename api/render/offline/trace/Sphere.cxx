@@ -7,12 +7,15 @@
 
 #include <api/render/offline/Units.h>
 #include <api/render/offline/rib/Requests.h>
+#include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Line.h>
 #include <api/type/geometry/Ray.h>
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
+#include <glm/common.hpp>
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
@@ -99,6 +102,25 @@ bool Sphere::intersect(const v3d::type::geometry::Ray & ray, float from, const P
         glm::vec3(*pose.backward * glm::vec4(ray.origin(), 1.0F));
     const glm::vec3 direction = pose.backward == nullptr ? ray.direction() : glm::mat3(*pose.backward) * ray.direction();
     return intersects({.origin = origin, .direction = direction}, from, &found->distance, &found->point);
+}
+
+bool Sphere::bound(v3d::type::geometry::AABBox* box) const {
+    const float size = std::fabs(radius_);
+    v3d::type::geometry::AABBox own;
+    own.extents(glm::vec3(-size, -size, zmin_), glm::vec3(size, size, zmax_));
+    glm::vec3 corners[8];
+    own.vertices(corners);
+    // every corner, because under a rotation any of them can hold the extreme on an axis
+    const glm::mat4x4 placement = glm::inverse(toObject_);
+    glm::vec3 low(std::numeric_limits<float>::max());
+    glm::vec3 high(std::numeric_limits<float>::lowest());
+    for (const glm::vec3 & corner : corners) {
+        const glm::vec3 placed(placement * glm::vec4(corner, 1.0F));
+        low = glm::min(low, placed);
+        high = glm::max(high, placed);
+    }
+    box->extents(low, high);
+    return true;
 }
 
 void Sphere::describe(const Intersection & found, Hit* hit) const {

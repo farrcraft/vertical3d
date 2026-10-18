@@ -1,13 +1,14 @@
 # ADR-0092: Offline: a bounding volume hierarchy for traced rays
 
-**Status**: proposed
+**Status**: accepted
 **Date**: 2026-10-18
 **Documented in**: [offline/RayTracing.md](../offline/RayTracing.md)
 
 ## Context
 
-Both hiders trace shadow and reflection rays through one `trace::Scene`, and it tests every
-primitive for every ray. Area lights multiply the number of shadow rays per shading point. A
+Both hiders trace shadow and reflection rays through one `trace::Scene`. Testing every
+primitive for every ray costs time in proportion to the scene, and area lights multiply the
+number of shadow rays per shading point. A
 scene mixes scales: a ground quad hundreds of units wide sits beside triangles a fraction of a
 unit across. A moving primitive is stored at its reference pose, and a ray is tested against it
 at the ray's time. The structure has to hold still and moving primitives, and leave both

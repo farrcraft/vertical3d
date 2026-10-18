@@ -58,6 +58,8 @@ class Sphere final : public Primitive {
     bool intersect(const v3d::type::geometry::Ray & ray, float from, const Pose & pose,
         Intersection* found) const override;
     void describe(const Intersection & found, Hit* hit) const override;
+    /** The box around its own slab, [-r, r] by [-r, r] by [zmin, zmax], placed in world space. **/
+    bool bound(v3d::type::geometry::AABBox* box) const override;
 
  private:
     float radius_;

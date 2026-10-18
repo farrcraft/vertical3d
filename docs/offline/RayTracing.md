@@ -15,6 +15,22 @@ The ray hider casts every primary ray into it. Under either hider, a shader's `t
   derives from `trace::Primitive` and implements `intersect` and `describe`. `trace::Triangle`
   and `trace::Sphere` are the two kinds. A new kind is a new class, and the scene does not
   change.
+- **A ray is tested against the primitives near it, through a bounding volume hierarchy.**
+  `Scene::nearest` builds a `trace::Hierarchy` on its first call after a primitive was added,
+  with a binned surface area heuristic, and walks it nearest box first. A primitive gives its
+  box through `Primitive::bound()`. One that has no bound, such as an infinite plane, returns
+  false and is tested against every ray. The build happens inside a const query, so the scene is
+  not safe to trace from two threads at once.
+- **A moving primitive's box holds it across its whole motion.** Its stored box's corners are
+  followed through 16 steps of the motion, and the box is grown by the longest step, which
+  holds the arc a rotation carries a corner along. The primitive itself is still tested at the
+  ray's time.
+- **Two hits at one distance resolve to the primitive added first**, as a search through the
+  list in order would. Each box is grown by a small fraction of its size, so a hit that rounding
+  puts on a box's face is still inside it. The hierarchy therefore finds exactly the hit a
+  search of every primitive finds, and adding it changed no picture.
+
+Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md).
 - **Every primitive a scene gives moya is added to the traced scene as it arrives**, in world
   space, before any split or dice. A polygon becomes a fan of triangles, since RI defines a
   polygon as planar and convex. The reyes hider reads the scene for `trace()` and

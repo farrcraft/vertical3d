@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/render/offline/sl/Placed.h>
+#include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Ray.h>
 
 #include <vector>
@@ -46,6 +47,13 @@ class Primitive {
      * its surface parameters. The scene fills in where the hit is and what was hit.
      **/
     virtual void describe(const Intersection & found, Hit* hit) const = 0;
+
+    /**
+     * A box in world space that holds the primitive in the pose it is stored in, or false for
+     * a primitive with no bound, such as an infinite plane. The scene tests a primitive with
+     * no bound against every ray.
+     **/
+    virtual bool bound(v3d::type::geometry::AABBox* box) const;
 
     /** The colour that was current, which is SL's Cs. **/
     const glm::vec3 & colour() const;

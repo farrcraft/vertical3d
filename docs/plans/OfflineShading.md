@@ -124,7 +124,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [2](#step-2--rirotates-sign-checked-against-the-specification) | `RiRotate`'s sign checked against the specification's cube | `moya` | — | done |
 | [3](#step-3--projected-spaces-divide-by-w) | Projected spaces divide by w, and the ray hider answers them | `api/render/offline` | — | done |
 | [4](#step-4--the-record-the-acceleration-structure) | The record: the acceleration structure | `docs/adr` | **0092** | done |
-| [5](#step-5--a-bounding-volume-hierarchy-in-the-traced-scene) | Primitive bounds, and the structure in `trace::Scene` | `api/render/offline` | 0092 | open |
+| [5](#step-5--a-bounding-volume-hierarchy-in-the-traced-scene) | Primitive bounds, and the structure in `trace::Scene` | `api/render/offline` | 0092 | done |
 | [6](#step-6--the-record-how-a-hider-supplies-derivatives) | The record: how a hider supplies derivatives | `docs/adr` | **0093** | open |
 | [7](#step-7--derivatives-under-the-reyes-hider) | `Du`, `Dv`, `Deriv`, `area` and `calculatenormal`, under the reyes hider | `api/render/offline`, `moya` | 0093 | open |
 | [8](#step-8--derivatives-under-the-ray-hider) | The same built-ins under the ray hider | `api/render/offline` | 0093 | open |
@@ -280,6 +280,26 @@ heuristic**.
   the moving ones stay in a list. It is simpler, and a motion-blurred scene stays slow.
 
 ### Step 5 — A bounding volume hierarchy in the traced scene
+
+**Done.** `trace::Hierarchy` holds the boxes, and `Scene::nearest` walks it. `Primitive::bound()`
+returns false by default, so a primitive with no bound, like the test suite's infinite floor, is
+tested against every ray. A tie between two hits at one distance goes to the primitive added
+first, which keeps every answer equal to the linear search. The oracle in
+`TraceHierarchyTest.cxx` checks that for still and moving scenes. ADR-0092 is accepted.
+
+No committed picture changed. A Release render of a 70 by 70 heightfield, 9800 triangles at
+160 by 120 with a shadowing distant light, wrote the same bytes before and after:
+
+| | Before | After |
+|---|---|---|
+| Ray hider, Release | 31.0 s | 0.4 to 0.6 s |
+| Reyes hider, Release | 503 s | 4.8 s |
+| moya suite, Debug | 63 s | 46 s |
+| Offline suite, Debug | 2.7 s | 15 s |
+
+The offline suite is slower because the new oracle cases search every primitive for every ray
+in Debug. The Release build is `out/build/x64-Release`, configured over x64-Debug's vcpkg
+install with the manifest install off, as Build.md configures the starter.
 
 * **`trace::Primitive::bound()`** returns an `AABBox` in world space at the reference pose.
   `Triangle` bounds its corners. `Sphere` bounds its eight object-space corners under the inverse

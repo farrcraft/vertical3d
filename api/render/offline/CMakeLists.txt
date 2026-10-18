@@ -80,6 +80,7 @@ v3d_add_api_library(render_offline
 	"sl/Imager.h" "sl/Imager.cxx"
 	"trace/Pose.h"
 	"trace/Intersection.h"
+	"trace/Hierarchy.h" "trace/Hierarchy.cxx"
 	"trace/Primitive.h" "trace/Primitive.cxx"
 	"trace/Triangle.h" "trace/Triangle.cxx"
 	"trace/Sphere.h" "trace/Sphere.cxx"
