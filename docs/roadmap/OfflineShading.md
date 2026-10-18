@@ -24,12 +24,14 @@ The [OfflineShading plan](../plans/OfflineShading.md) takes up every section bel
   scene that never traces pays for it anyway.
 - **A transform into a projected space drops w.** `transform("screen", P)`, `"raster"`, `"NDC"`
   and `depth()` are right only under an orthographic camera.
-- **`RiRotate`'s sign is unverified.** moya passes the angle to `glm::rotate`, which follows the
-  right-hand rule. RI states rotations in a left-handed system.
+- **`RiRotate`'s sign is untested.** moya passes the angle to `glm::rotate`. The worked example
+  of a unit cube in the RenderMan Interface specification (RISpec 3.1, appendix D) names the face
+  each rotation gives, and `glm::rotate` gives each of them. No test pins it.
 - **`AreaLightSource` binds a shader to geometry**, but neither hider keeps geometry as a light.
   An area light renders as a point light.
 - **A reyes sample keeps only its nearest surface** and sets its opacity to one.
-- **Displacement shaders are refused, and `calculatenormal` is a stub.**
+- **Displacement shaders are refused.** `calculatenormal` is a stub, and `Du`, `Dv`, `Deriv` and
+  `area` are not declared.
 - **`solar` with an angle lights along its axis.** A light shader runs with the surface's
   position only, so it cannot choose a direction inside the cone.
 
@@ -37,9 +39,9 @@ The [OfflineShading plan](../plans/OfflineShading.md) takes up every section bel
 
 ### 1. Transformations that are known to be right
 
-- Settle `RiRotate`'s sign by rendering a scene whose correct picture is known from outside the
-  tree. Both hiders read the same transformation, so a picture this tree made agrees with itself
-  whether or not the sign is right.
+- Pin `RiRotate`'s sign with the specification's unit cube. Each face is one polygon under a
+  different rotation, and the specification names where each lands. A picture this tree made
+  cannot settle the sign, because both hiders read the same transformation.
 - Divide by w for the projected spaces, in the transform built-ins and in a cast.
 
 ### 2. An acceleration structure
@@ -51,14 +53,15 @@ needs an ADR.
 ### 3. Shading traced hits in batches
 
 `Tracer` batches the hits of a scanline that share a shader into one run of the machine, as the
-reyes hider shades a grid. This makes a traced hit a batch of more than one point, which step 6
-needs for bump mapping.
+reyes hider shades a grid. This is for speed alone. A scanline's hits lie on different primitives
+and are cast in different adaptive passes, so differences across them are not derivatives.
 
 ### 4. Area lights
 
 - A hider keeps the geometry an `AreaLightSource` names, and runs the light shader at points
   sampled on it.
-- Sampling a light's area works like sampling the lens disc, through the film's seeded samples.
+- The samples are seeded per shading point and per light, not from the film. The reyes hider
+  shades a grid before any film sample reaches it.
 - Shadows already work through the shared ray tracer, so soft shadows follow.
 
 ### 5. Opacity under the reyes hider
@@ -68,10 +71,12 @@ done. This is the ray hider's `see()` loop, applied to a sample's list of surfac
 
 ### 6. Displacement and bump mapping
 
-- **Bump mapping** needs derivatives across a batch of points. The reyes hider has them from a
-  grid. The ray hider has them after step 3.
-- **Displacement under the reyes hider** moves a grid after it is shaded, and grows the grid's
-  bound by `displacementbound`.
+- **Bump mapping** needs `Du`, `Dv`, `Deriv`, `area` and `calculatenormal`: differences across
+  neighbouring shading points. The reyes hider has them from a grid. The ray hider needs its own
+  neighbours for each hit, and how it gets them needs an ADR.
+- **Displacement under the reyes hider** runs the displacement shader on a grid after dicing and
+  before the surface shader, so the surface shader sees the moved `P` and `N`. It grows the
+  primitive's bound by `displacementbound`.
 - **Displacement under the ray hider** needs tessellation, which the ray tracer does not do. Where
   tessellation happens, and whether the ray hider supports displacement at all, needs an ADR.
 
@@ -81,22 +86,24 @@ These have no order against each other, or against steps 2 to 6.
 
 - `solar` receives the surface's illuminance axis and angle along with its position.
 - The reyes hider adds geometry to the traced scene only when some shader in the scene traces.
-- moya applies `--grid` and `--bucket` after the scene is read, so the command line overrides
-  the scene's `Option "limits"`.
+- moya's `--grid` and `--bucket` win over the scene's `Option "limits"`. The reader renders at
+  `WorldEnd`, so the command line has to win while the scene is read, not after it.
 
 ## The ordering
 
 ```
-1 Transformations ──> 2 Acceleration ──> 3 Batched hits ──> 6 Displacement and bump
-                            │
-                            └──────────> 4 Area lights
+1 Transformations ──> 2 Acceleration ──┬──> 3 Batched hits
+                                       └──> 4 Area lights
 1 ──> 5 Reyes opacity
+1 ──> 6 Displacement and bump
 7 The rest   (no order)
 ```
 
 ## What this needs decided
 
 - **The acceleration structure**: step 2, an ADR.
+- **How an area light is sampled, and from what seed**: step 4, an ADR.
+- **How each hider supplies derivatives**: step 6, an ADR.
 - **Displacement under the ray hider**: step 6, an ADR.
 
 ## Verification
@@ -104,7 +111,8 @@ These have no order against each other, or against steps 2 to 6.
 - The moya suite renders scenes on the CPU and compares them with committed PNGs, one set per
   hider, at a tolerance of 1. [Testing.md](../contributing/Testing.md#moya-references) describes
   it.
-- Step 1 is the exception. Its reference must come from outside the tree.
+- Step 1 is the exception. Its sign is checked against the specification's unit cube, not
+  against a picture.
 - Steps 2 and 3 must not change any committed picture. The suites' timings show whether they
   helped.
 - Steps 4 to 6 each add a reference scene, rendered by every hider that supports the feature.

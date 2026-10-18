@@ -21,23 +21,23 @@ and its section names the plan or roadmap that orders it.
 
 ## RiRotate's sign
 
-[] The sign of `RiRotate` is unverified.
+[] The sign of `RiRotate` is untested.
 
-- The RenderMan Interface (RI) states rotations in a left-handed coordinate system.
-- moya passes the angle straight to `glm::rotate`, which rotates counter-clockwise by the
-  right-hand rule.
-- Nothing in the tree can tell whether this is right. Both hiders read the same transformation,
-  so they always agree with each other. A reference picture made by the tree only agrees with
-  itself.
-- A scene lit by a rotated light did not reveal the difference either.
-- To settle it, render a scene whose correct picture is known from outside this tree.
+- moya passes the angle straight to `glm::rotate`.
+- A picture made by the tree cannot settle the sign. Both hiders read the same transformation,
+  so they always agree with each other.
+- The RenderMan Interface specification's unit cube (RISpec 3.1, appendix D) settles it. It
+  places one polygon at z = +0.5 under six rotations and names the face each one gives.
+  `Rotate 90 0 1 0` gives the right face and `Rotate 90 1 0 0` the bottom face. `glm::rotate`
+  gives both. A test of the cube would pin it.
 
 Background: [OfflineRenderingPhase3](plans/completed/OfflineRenderingPhase3.md#open-questions).
 
 ## Offline rendering
 
-Each of these waits until a scene needs it. [OfflineShading](roadmap/OfflineShading.md) orders
-them, along with RiRotate's sign above.
+Each of these waits until a scene needs it. The [OfflineShading plan](plans/OfflineShading.md)
+takes them up, along with RiRotate's sign above, in the order the
+[OfflineShading roadmap](roadmap/OfflineShading.md) gives.
 
 [] **A transform into a projected space does not divide by w.** `ptransform` drops w, so
 `transform("screen", P)`, `"raster"`, `"NDC"` and `depth()` are right under an orthographic
@@ -50,18 +50,21 @@ projection and not under a perspective one.
 
 - A RenderMan area light runs its light shader at points on a primitive.
 - `AreaLightSource` binds a shader to geometry, but neither hider keeps geometry as a light.
-- Sampling a light's area would work like sampling the film's lens disc.
+- The samples have to be seeded per shading point, not from the film. The reyes hider shades a
+  grid before any film sample reaches it.
 - Due when a scene needs soft shadows. Both hiders can already cast shadows through the shared
   ray tracer.
 
-[] **Displacement and bump mapping are not possible.** Displacement shaders are refused, and
-`calculatenormal` is a stub.
+[] **Displacement and bump mapping are not possible.** Displacement shaders are refused.
+`calculatenormal` is a stub, and `Du`, `Dv`, `Deriv` and `area` are not declared.
 
-- Under the reyes hider, displacement reaches into moya's dicing. It moves a grid after the grid
-  is shaded, and needs the grid's bound grown by `displacementbound`.
+- Under the reyes hider, displacement reaches into moya's dicing. The displacement shader runs on
+  a grid after dicing and before the surface shader, and the primitive's bound grows by
+  `displacementbound`.
 - Under the ray hider, displacement needs tessellation, which the ray tracer does not otherwise
   do.
-- Bump mapping needs derivatives across a batch of points. A traced hit is a batch of one.
+- Bump mapping needs derivatives across neighbouring shading points. A traced hit is a batch of
+  one, and the hits of a scanline lie on different primitives, so they are not neighbours.
 - Due when a scene needs surface detail that a texture cannot give.
 
 [] **The reyes hider ignores opacity (`Oi`).**
@@ -101,12 +104,13 @@ projection and not under a perspective one.
 - Each hit gets its own `HitShader` and its own run of the machine, so a ray-hidden image pays
   the machine's per-run cost once per pixel sample.
 - The fix batches the hits of a scanline that share a shader into one run, as the reyes hider
-  shades a grid.
+  shades a grid. It is for speed alone, and gives no derivatives.
 - Due when a ray-hidden scene's shading time shows it.
 
 [] **moya's `--grid` and `--bucket` do not override a scene's `Option "limits"`.** The driver
 applies them before reading the scene, so a scene that names its own sizes replaces them.
-Applying them again after the read would make the command line win.
+Applying them after the read is too late, because the reader renders at `WorldEnd`. The command
+line has to win while the scene is read.
 
 Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration).
 

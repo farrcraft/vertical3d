@@ -120,7 +120,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 
 | | What | Where | ADR | State |
 |---|---|---|---|---|
-| [1](#step-1--what-the-roadmap-got-wrong) | The roadmap and TODO.md corrected | `docs` | — | open |
+| [1](#step-1--what-the-roadmap-got-wrong) | The roadmap and TODO.md corrected | `docs` | — | done |
 | [2](#step-2--rirotates-sign-checked-against-the-specification) | `RiRotate`'s sign checked against the specification's cube | `moya` | — | open |
 | [3](#step-3--projected-spaces-divide-by-w) | Projected spaces divide by w, and the ray hider answers them | `api/render/offline` | — | open |
 | [4](#step-4--the-record-the-acceleration-structure) | The record: the acceleration structure | `docs/adr` | **0092** | open |
@@ -178,6 +178,9 @@ Steps 18 to 20 can land at any point.
 ---
 
 ### Step 1 — What the roadmap got wrong
+
+**Done.** The roadmap and TODO.md state each point below, and TODO.md's offline section names
+this plan.
 
 **Documents only.** Nothing changes a picture.
 
