@@ -4,6 +4,7 @@ v3d_add_test(render_offline
 	"TestMain.cxx"
 	"FrameBufferTest.cxx"
 	"FilmTest.cxx"
+	"AreaTest.cxx"
 	"MovingTransformTest.cxx"
 	"TextureTest.cxx"
 	"NoiseTest.cxx"

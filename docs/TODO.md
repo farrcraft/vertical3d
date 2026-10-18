@@ -27,7 +27,7 @@ takes them up, in the order the [OfflineShading roadmap](roadmap/OfflineShading.
 [] **Area lights render as point lights.**
 
 - A RenderMan area light runs its light shader at points on a primitive.
-- `AreaLightSource` binds a shader to geometry, but neither hider keeps geometry as a light.
+- moya keeps an area light's geometry, as `offline::Area`, but neither hider shines from it.
 - The samples have to be seeded per shading point, not from the film. The reyes hider shades a
   grid before any film sample reaches it.
 - Due when a scene needs soft shadows. Both hiders can already cast shadows through the shared

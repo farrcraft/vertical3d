@@ -8,6 +8,7 @@
 #include <api/type/Random.h>
 
 #include "Sampling.h"
+#include "Uniform.h"
 
 #include <cmath>
 #include <cstdint>
@@ -17,30 +18,6 @@
 namespace v3d::render::offline {
 
 namespace {
-
-/**
- * Shirley's concentric map from the unit square onto the unit disc, which keeps a stratified
- * square stratified on the disc.
- **/
-glm::vec2 disc(const glm::vec2 & square) {
-    constexpr float pi = 3.14159265358979F;
-    // the square's diagonals cut the disc into four quarters, and this is half the angle of one
-    constexpr float halfQuarter = pi / 4.0F;
-    const glm::vec2 centred = square * 2.0F - glm::vec2(1.0F);
-    if (centred.x == 0.0F && centred.y == 0.0F) {
-        return glm::vec2(0.0F);
-    }
-    float radius = 0.0F;
-    float angle = 0.0F;
-    if (std::fabs(centred.x) > std::fabs(centred.y)) {
-        radius = centred.x;
-        angle = halfQuarter * (centred.y / centred.x);
-    } else {
-        radius = centred.y;
-        angle = (pi / 2.0F) - (halfQuarter * (centred.x / centred.y));
-    }
-    return glm::vec2(radius * std::cos(angle), radius * std::sin(angle));
-}
 
 /**
  * Where in a stratum a sample falls: its centre when the axis has one stratum, and anywhere
@@ -98,7 +75,7 @@ std::vector<Sampler::Sample> Sampler::pixel(unsigned int column, unsigned int ro
         const glm::vec2 square(
             (static_cast<float>(across) + jitter(nx, &random)) / static_cast<float>(nx),
             (static_cast<float>(down) + jitter(ny, &random)) / static_cast<float>(ny));
-        samples[k].lens = disc(square);
+        samples[k].lens = uniform::disc(square);
     }
     return samples;
 }

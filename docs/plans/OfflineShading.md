@@ -130,7 +130,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [8](#step-8--derivatives-under-the-ray-hider) | The same built-ins under the ray hider | `api/render/offline` | 0093 | done |
 | [9](#step-9--held-traced-hits-shaded-in-batches) | Traced hits shaded in batches | `api/render/offline`, `moya` | — | held |
 | [10](#step-10--the-record-how-an-area-light-is-sampled) | The record: how an area light is sampled | `docs/adr` | **0094** | done |
-| [11](#step-11--an-area-light-keeps-its-geometry) | An area light keeps its geometry | `api/render/offline`, `moya` | 0094 | open |
+| [11](#step-11--an-area-light-keeps-its-geometry) | An area light keeps its geometry | `api/render/offline`, `moya` | 0094 | done |
 | [12](#step-12--area-lights-shine-from-their-surface) | Area lights shine from points on their surface | `api/render/offline`, `moya` | 0094 | open |
 | [13](#step-13--opacity-under-the-reyes-hider) | Opacity under the reyes hider | `moya` | — | open |
 | [14](#step-14--a-displacement-shader-reaches-the-renderer) | A displacement shader compiles and reaches the renderer | `api/render/offline`, `moya` | — | open |
@@ -452,6 +452,15 @@ accepted when step 12 lands.
   deterministic, and it bands the same way.
 
 ### Step 11 — An area light keeps its geometry
+
+**Done.** `offline::Area` holds an area light's triangles and spheres in world space, samples a
+point on them evenly by area, and keys its samples on the light's handle. `sl::Placed` carries
+it, so both hiders' light lists reach it. moya's handler and `RiAreaLightSourceV` both call
+`RenderContext::areaLightSource`, and the attribute block saves and restores which area light
+is open. The concentric disc map is now `uniform::disc`, beside `uniform::triangle` and
+`uniform::sphere`. No other primitive is drawn by moya, so the report for one under an area
+light has nothing to report. The cases showed that `AttributeEnd` switches an area light off,
+as RI does for any light made in a block. `Illuminate` switches it on again.
 
 * **moya's handler overrides `areaLightSource`.** The geometry that follows it in the attribute
   block is added to the light as well as to the scene. `RiAreaLightSourceV` does the same.

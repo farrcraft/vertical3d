@@ -15,6 +15,8 @@ v3d_add_api_library(render_offline
 	"FrameBuffer.h" "FrameBuffer.cxx"
 	"Sampling.h" "Sampling.cxx"
 	"Sampler.h" "Sampler.cxx"
+	"Uniform.h" "Uniform.cxx"
+	"Area.h" "Area.cxx"
 	"Film.h" "Film.cxx"
 	"MovingTransform.h" "MovingTransform.cxx"
 	"SearchPath.h" "SearchPath.cxx"

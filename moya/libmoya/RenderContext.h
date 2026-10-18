@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/offline/Area.h>
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
@@ -234,6 +235,17 @@ class RenderContext {
         void lightSource(const v3d::render::offline::rib::LightSource & request,
             const v3d::render::offline::rib::ParameterList & parameters);
         /**
+         * maps to RiAreaLightSource()
+         * A light, as lightSource() makes one, that also keeps the geometry declared after it
+         * in the same attribute block: every polygon and sphere, in world space, whichever
+         * hider draws them. That geometry renders as a surface too. Geometry after the block
+         * ends does not join it.
+         **/
+        void areaLightSource(const v3d::render::offline::rib::LightSource & request,
+            const v3d::render::offline::rib::ParameterList & parameters);
+        /** The geometry of the area light being declared, or null outside its attribute block. **/
+        const boost::shared_ptr<v3d::render::offline::Area> & areaLight() const;
+        /**
          * maps to RiIlluminate()
          **/
         void illuminate(const std::string & handle, bool on);
@@ -390,6 +402,7 @@ class RenderContext {
              * frame, and AttributeEnd restores only this set.
              **/
             std::vector<std::string> lit;
+            boost::shared_ptr<v3d::render::offline::Area> areaLight;
         };
 
         /**
@@ -401,7 +414,12 @@ class RenderContext {
             std::string handle;
             v3d::render::offline::sl::InstancePtr shader;
             glm::mat4x4 placement = glm::mat4x4(1.0F);
+            /** The geometry an area light shines from, or null for any other light. **/
+            boost::shared_ptr<v3d::render::offline::Area> area;
         };
+
+        /** The area light the geometry being declared joins, until its attribute block ends. **/
+        boost::shared_ptr<v3d::render::offline::Area> areaLight_;
 
         std::string name_;
         std::vector<v3d::render::offline::MovingTransform> transforms_;

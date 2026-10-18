@@ -156,4 +156,33 @@ BOOST_AUTO_TEST_CASE(renderman_format_nonpositive_side_is_the_default_test) {
     RiEnd();
 }
 
+/**
+ * RiAreaLightSource keeps the geometry declared after it in the same attribute block. A unit
+ * quad inside the block joins the light, and one after the block does not.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_an_area_light_keeps_its_geometry_test) {
+    RiBegin(RI_NULL);
+    RiFormat(64, 48, 1.0F);
+    RiClipping(1.0F, 100.0F);
+    RiWorldBegin();
+    RiAttributeBegin();
+    RtLightHandle area = RiAreaLightSource(const_cast<char*>("pointlight"), RI_NULL);
+    BOOST_REQUIRE(area != nullptr);
+    RtPoint quad[4] = { { 0.0F, 0.0F, 5.0F }, { 1.0F, 0.0F, 5.0F }, { 1.0F, 1.0F, 5.0F }, { 0.0F, 1.0F, 5.0F } };
+    RiPolygon(4, const_cast<char*>("P"), static_cast<RtPointer>(quad), RI_NULL);
+    BOOST_REQUIRE(context().areaLight());
+    RiAttributeEnd();
+    BOOST_CHECK(!context().areaLight());
+    // the block's end switched the light off, as it does any light made inside one
+    RiIlluminate(area, RI_TRUE);
+    RiPolygon(4, const_cast<char*>("P"), static_cast<RtPointer>(quad), RI_NULL);
+
+    const v3d::moya::Shading shading = context().shading();
+    BOOST_REQUIRE_EQUAL(shading.lights.size(), 1U);
+    BOOST_REQUIRE(shading.lights[0].area);
+    BOOST_CHECK_CLOSE(shading.lights[0].area->area(), 1.0F, 0.01F);
+    RiWorldEnd();
+    RiEnd();
+}
+
 };  // namespace

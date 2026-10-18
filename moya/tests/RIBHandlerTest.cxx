@@ -12,6 +12,7 @@
 #include <moya/libmoya/FrameBuffer.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/Renderer.h>
+#include <moya/libmoya/Shading.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -787,6 +788,47 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_rotations_build_the_specification_cube_test
             BOOST_TEST(glm::length(centre - centres[face]) < 1.0e-5F);
         }
     }
+}
+
+/**
+ * AreaLightSource in a file keeps the geometry after it in the same attribute block, polygons
+ * and spheres alike, in world space. Geometry after the block, and an ordinary light, do not
+ * join it.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_an_area_light_keeps_its_geometry_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    // read up to WorldEnd, so the lights are still on to be read back
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "Hider \"raytrace\"\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "LightSource \"distantlight\" 1\n"
+        "AttributeBegin\n"
+        "AreaLightSource \"pointlight\" 2\n"
+        "Translate 0 0 5\n"
+        "Polygon \"P\" [0 0 0  2 0 0  2 1 0  0 1 0]\n"
+        "Sphere 0.5 -0.5 0.5 360\n"
+        "AttributeEnd\n"
+        // which lights are on is an attribute, so the block's end switched the area light
+        // off, and a scene switches it on again for what follows
+        "Illuminate 2 1\n"
+        "Polygon \"P\" [0 0 6  1 0 6  1 1 6  0 1 6]\n", &handler));
+
+    const v3d::moya::Shading shading = handler.context().shading();
+    BOOST_REQUIRE_EQUAL(shading.lights.size(), 2U);
+    BOOST_CHECK(!shading.lights[0].area);
+    BOOST_REQUIRE(shading.lights[1].area);
+    // the quad's two units and the sphere's four pi a quarter
+    const float pi = 3.14159265F;
+    BOOST_CHECK_CLOSE(shading.lights[1].area->area(), 2.0F + pi, 0.01F);
+    // a point on it is on the quad, five units out, or on the sphere around (0, 0, 5)
+    const glm::vec3 point = shading.lights[1].area->sample(glm::vec2(0.1F, 0.5F));
+    BOOST_CHECK_CLOSE(point.z, 5.0F, 0.01F);
+    BOOST_CHECK(!handler.context().areaLight());
 }
 
 };  // namespace

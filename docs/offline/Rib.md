@@ -80,7 +80,12 @@ accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"s
   names is the texture, read through `image::Factory`, so a scene should name the image itself,
   not a converted file.
 - **`AreaLightSource` becomes an ordinary light** unless a handler overrides
-  `Handler::areaLightSource`. moya does not.
+  `Handler::areaLightSource`. moya overrides it, and `RiAreaLightSource` does the same.
+- **An area light keeps the geometry declared after it in the same attribute block.** Every
+  polygon and sphere there joins it, in world space, whichever hider draws them, and also
+  renders as a surface. A sphere joins whole, whatever slab and sweep it was cut to. Geometry
+  after the block does not join. The block's end also switches the light off, as it does any
+  light made inside one. `Illuminate` switches it on again for what follows.
 - **A primitive repeated inside a motion block is a deformation, which moya does not build.**
   The reader hands the later poses to `Handler::deformation()`, which returns null unless a
   renderer overrides it, and lists them in `Reader::unsupported()`. The primitive is drawn at

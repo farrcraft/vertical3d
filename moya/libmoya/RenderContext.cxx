@@ -7,6 +7,7 @@
 
 #include <api/image/Factory.h>
 #include <api/log/Logger.h>
+#include <api/render/offline/Area.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
@@ -379,6 +380,7 @@ void RenderContext::attributeBegin() {
     saved.surface = surface_;
     saved.surfacePlacement = surfacePlacement_;
     saved.lit = lit_;
+    saved.areaLight = areaLight_;
     attributes_.push_back(saved);
 }
 
@@ -396,6 +398,7 @@ void RenderContext::attributeEnd() {
     // only the set of lights that are on is restored. A light lasts for the frame, not
     // for the block that created it
     lit_ = saved.lit;
+    areaLight_ = saved.areaLight;
     attributes_.pop_back();
 }
 
@@ -587,6 +590,21 @@ void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & r
     illuminate(request.handle, true);
 }
 
+void RenderContext::areaLightSource(const v3d::render::offline::rib::LightSource & request,
+    const v3d::render::offline::rib::ParameterList & parameters) {
+    const std::size_t before = lights_.size();
+    lightSource(request, parameters);
+    if (lights_.size() == before) {
+        return;
+    }
+    lights_.back().area = boost::make_shared<v3d::render::offline::Area>(request.handle);
+    areaLight_ = lights_.back().area;
+}
+
+const boost::shared_ptr<v3d::render::offline::Area> & RenderContext::areaLight() const {
+    return areaLight_;
+}
+
 void RenderContext::illuminate(const std::string & handle, bool on) {
     const std::vector<std::string>::iterator found = std::find(lit_.begin(), lit_.end(), handle);
     if (on && found == lit_.end()) {
@@ -629,6 +647,7 @@ Shading RenderContext::shading() {
         v3d::render::offline::sl::Placed shining;
         shining.shader = light.shader;
         shining.placement = light.placement;
+        shining.area = light.area;
         state.lights.push_back(shining);
     }
     return state;
@@ -700,6 +719,9 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
         }
         shade(&triangle, state);
         traced_.add(triangle, transform_);
+        if (areaLight_) {
+            areaLight_->add(points[0], points[1], points[2]);
+        }
     }
 }
 
@@ -714,6 +736,10 @@ void RenderContext::shade(v3d::render::offline::trace::Primitive* primitive, con
 }
 
 bool RenderContext::addSphere(const v3d::render::offline::rib::Sphere & shape) {
+    // an area light keeps its sphere whichever hider draws it, and the reyes hider draws none
+    if (areaLight_ && shape.radius > 0.0F) {
+        areaLight_->add({.placement = transform_.reference(), .radius = shape.radius});
+    }
     if (!hider_->traces()) {
         return false;
     }

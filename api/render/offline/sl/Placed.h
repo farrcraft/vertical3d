@@ -5,7 +5,11 @@
 
 #pragma once
 
+#include <api/render/offline/Area.h>
+
 #include "Instance.h"
+
+#include <boost/shared_ptr.hpp>
 
 #include <glm/mat4x4.hpp>
 
@@ -23,6 +27,11 @@ class Placed final {
  public:
     InstancePtr shader;
     glm::mat4x4 placement = glm::mat4x4(1.0F);
+    /**
+     * For an area light, the geometry it shines from, in world space. Null for every other
+     * light and for a surface.
+     **/
+    boost::shared_ptr<const v3d::render::offline::Area> area;
 };
 
 };  // namespace v3d::render::offline::sl
