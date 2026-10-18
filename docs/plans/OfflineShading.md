@@ -583,6 +583,9 @@ Three things the plan did not foresee:
 `calculatenormal` differences each grid alone, so the normals at the edges of two pieces of the
 plane differ a little, and the picture shows fine seams where they meet.
 
+Dropping the displaced P that `displace` writes back fails the constant displacement case and
+the displaced picture.
+
 * **A grid is displaced after dicing and before the surface shader**, in `Bucket::render`. The
   surface shader sees the moved `P` and the `N` the displacement shader left.
 * **A primitive's bound grows by its `displacementbound`** before it is culled and before the
