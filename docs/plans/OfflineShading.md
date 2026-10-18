@@ -129,7 +129,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [7](#step-7--derivatives-under-the-reyes-hider) | `Du`, `Dv`, `Deriv`, `area` and `calculatenormal`, under the reyes hider | `api/render/offline`, `moya` | 0093 | done |
 | [8](#step-8--derivatives-under-the-ray-hider) | The same built-ins under the ray hider | `api/render/offline` | 0093 | done |
 | [9](#step-9--held-traced-hits-shaded-in-batches) | Traced hits shaded in batches | `api/render/offline`, `moya` | — | held |
-| [10](#step-10--the-record-how-an-area-light-is-sampled) | The record: how an area light is sampled | `docs/adr` | **0094** | open |
+| [10](#step-10--the-record-how-an-area-light-is-sampled) | The record: how an area light is sampled | `docs/adr` | **0094** | done |
 | [11](#step-11--an-area-light-keeps-its-geometry) | An area light keeps its geometry | `api/render/offline`, `moya` | 0094 | open |
 | [12](#step-12--area-lights-shine-from-their-surface) | Area lights shine from points on their surface | `api/render/offline`, `moya` | 0094 | open |
 | [13](#step-13--opacity-under-the-reyes-hider) | Opacity under the reyes hider | `moya` | — | open |
@@ -425,6 +425,9 @@ into one run of the machine. After step 8, batching is about speed alone.
 * When the plan closes with this step still held, it moves to TODO.md with its trigger.
 
 ### Step 10 — The record: how an area light is sampled
+
+**Done.** ADR-0094 is written as the recommendation below, and the decision was agreed. It is
+accepted when step 12 lands.
 
 **ADR-0094.**
 
