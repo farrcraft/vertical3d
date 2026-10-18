@@ -184,6 +184,12 @@ class RenderContext {
         void concatTransform(const glm::mat4x4 & trans);
 
         void translate(float dx, float dy, float dz);
+        /**
+         * maps to RiRotate()
+         * The angle is in degrees. A positive angle turns +z towards +x about y, and +z
+         * towards -y about x. RI's unit cube example needs that sign to put each face where
+         * it names it.
+         **/
         void rotate(float angle, const glm::vec3 & axis);
         void scale(float sx, float sy, float sz);
 

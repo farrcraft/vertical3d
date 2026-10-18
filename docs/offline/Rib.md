@@ -56,6 +56,10 @@ accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"s
   major under a row vector convention. glm stores column major under a column vector
   convention. `glm::make_mat4` over the sixteen floats is therefore the whole conversion. This
   applies to `Transform`, `ConcatTransform`, `RtMatrix` and the editor's export alike.
+- **`Rotate` takes degrees, and a positive angle turns +z towards +x about y and towards -y
+  about x.** This is the sign the unit cube in the RenderMan Interface specification's RIB entity
+  file example needs to put each face where it names it. A moya case reads that cube and checks
+  each face's centre.
 - **A parameter is typed by a declaration, or it is dropped.** The reader declares RI's
   standard names, including `Option "trace"`'s `maxdepth` and `Option "searchpath"`'s `shader`
   and `texture`, and nothing else. A shader parameter outside that set needs `Declare` or an

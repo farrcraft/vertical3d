@@ -19,25 +19,10 @@ the condition that makes the work due.
 An open plan or roadmap may order entries from here. The entry stays here until the work lands,
 and its section names the plan or roadmap that orders it.
 
-## RiRotate's sign
-
-[] The sign of `RiRotate` is untested.
-
-- moya passes the angle straight to `glm::rotate`.
-- A picture made by the tree cannot settle the sign. Both hiders read the same transformation,
-  so they always agree with each other.
-- The RenderMan Interface specification's unit cube (RISpec 3.1, appendix D) settles it. It
-  places one polygon at z = +0.5 under six rotations and names the face each one gives.
-  `Rotate 90 0 1 0` gives the right face and `Rotate 90 1 0 0` the bottom face. `glm::rotate`
-  gives both. A test of the cube would pin it.
-
-Background: [OfflineRenderingPhase3](plans/completed/OfflineRenderingPhase3.md#open-questions).
-
 ## Offline rendering
 
 Each of these waits until a scene needs it. The [OfflineShading plan](plans/OfflineShading.md)
-takes them up, along with RiRotate's sign above, in the order the
-[OfflineShading roadmap](roadmap/OfflineShading.md) gives.
+takes them up, in the order the [OfflineShading roadmap](roadmap/OfflineShading.md) gives.
 
 [] **A transform into a projected space does not divide by w.** `ptransform` drops w, so
 `transform("screen", P)`, `"raster"`, `"NDC"` and `depth()` are right under an orthographic

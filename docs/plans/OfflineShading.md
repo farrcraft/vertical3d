@@ -121,7 +121,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | | What | Where | ADR | State |
 |---|---|---|---|---|
 | [1](#step-1--what-the-roadmap-got-wrong) | The roadmap and TODO.md corrected | `docs` | — | done |
-| [2](#step-2--rirotates-sign-checked-against-the-specification) | `RiRotate`'s sign checked against the specification's cube | `moya` | — | open |
+| [2](#step-2--rirotates-sign-checked-against-the-specification) | `RiRotate`'s sign checked against the specification's cube | `moya` | — | done |
 | [3](#step-3--projected-spaces-divide-by-w) | Projected spaces divide by w, and the ray hider answers them | `api/render/offline` | — | open |
 | [4](#step-4--the-record-the-acceleration-structure) | The record: the acceleration structure | `docs/adr` | **0092** | open |
 | [5](#step-5--a-bounding-volume-hierarchy-in-the-traced-scene) | Primitive bounds, and the structure in `trace::Scene` | `api/render/offline` | 0092 | open |
@@ -203,6 +203,12 @@ this plan.
 **Tests:** none. The suites pass and the references are untouched.
 
 ### Step 2 — `RiRotate`'s sign, checked against the specification
+
+**Done.** `moya_ribhandler_rotations_build_the_specification_cube_test` reads
+`spec-cube.rib` and finds every face where the specification names it. With the angle negated in
+`RenderContext::rotate`, the right, left, bottom and top faces fail, and the far and near faces
+pass, as they should. The rule is stated on `RenderContext::rotate` and in
+[Rib.md](../offline/Rib.md). The TODO entry is deleted. No picture changed.
 
 **The specification's unit cube is the test.** Its RIB goes into `moya/tests/data/` as
 `spec-cube.rib`, with a camera and a `Format` added. Each face is the same polygon at z = +0.5

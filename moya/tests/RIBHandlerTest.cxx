@@ -8,12 +8,14 @@
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/trace/Sphere.h>
+#include <api/render/offline/trace/Triangle.h>
 #include <moya/libmoya/FrameBuffer.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/Renderer.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -745,6 +747,46 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
     // the left edge leans away from the light and the right faces it
     BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 24) < 0.7F);
     BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 24) > 0.9F);
+}
+
+
+/**
+ * The RenderMan Interface specification's unit cube pins RiRotate's sign. Its RIB entity file
+ * example draws one polygon at z = +0.5, the far face in the left-handed camera space, under
+ * six rotations, and names the face each one gives. The traced scene holds every polygon in
+ * world space as two triangles, the second sharing the first's diagonal, so the midpoint of the
+ * first triangle's a and c is the face's centre.
+ *
+ * Covers the base: e0859388 gave RenderContext::rotate its present sign. Checked by negating the
+ * angle there, which fails this case on the right, left, bottom and top faces.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_rotations_build_the_specification_cube_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(reader.read("data/spec-cube.rib", &handler));
+
+    const std::vector<const v3d::render::offline::trace::Triangle*> triangles =
+        handler.context().traced().all<v3d::render::offline::trace::Triangle>();
+    BOOST_REQUIRE_EQUAL(triangles.size(), 12U);
+
+    // the faces in the order the file draws them, as the specification names them
+    const char* names[] = { "far", "right", "near", "left", "bottom", "top" };
+    const glm::vec3 centres[] = {
+        { 0.0F, 0.0F, 0.5F }, { 0.5F, 0.0F, 0.0F }, { 0.0F, 0.0F, -0.5F },
+        { -0.5F, 0.0F, 0.0F }, { 0.0F, -0.5F, 0.0F }, { 0.0F, 0.5F, 0.0F }
+    };
+    // the camera sits five units back, so the cube's centre is five units along +z
+    const glm::mat4x4 toCamera = handler.context().traced().view();
+    const glm::vec3 cube(0.0F, 0.0F, 5.0F);
+    for (std::size_t face = 0; face < 6; face++) {
+        BOOST_TEST_CONTEXT("the " << names[face] << " face") {
+            const v3d::render::offline::trace::Triangle & first = *triangles[face * 2];
+            const glm::vec3 world = 0.5F * (first.a() + first.c());
+            const glm::vec3 centre = glm::vec3(toCamera * glm::vec4(world, 1.0F)) - cube;
+            BOOST_TEST(glm::length(centre - centres[face]) < 1.0e-5F);
+        }
+    }
 }
 
 };  // namespace

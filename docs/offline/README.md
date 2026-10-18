@@ -117,9 +117,6 @@ Background: [ADR-0078](../adr/0078-offline-moya-is-the-one-renderer-ray-tracing-
 - The reyes hider ignores `Oi`, so translucent surfaces render opaque under `"hidden"`.
 - `trace::Scene::nearest` tests every primitive; there is no acceleration structure.
 
-[TODO.md](../TODO.md#rirotates-sign) also holds an open question: whether moya applies `Rotate`
-with the sign RI intends.
-
 Also not built, with no open item:
 
 - Volume shaders, the `shadow()` built-in and shadow maps.
