@@ -66,7 +66,7 @@ boost::shared_ptr<v3d::ui::component::SelectList> list(std::size_t rows, const g
 BOOST_AUTO_TEST_SUITE(select_list_test)
 
 /**
- * The rows go under the plate's clip, so a list holding more than it shows draws inside its
+ * The rows go under the list's clip, so a list holding more than it shows draws inside its
  * own box, and the row height the style resolved to is left on the list.
  **/
 BOOST_AUTO_TEST_CASE(the_rows_are_cut_off_at_the_list) {

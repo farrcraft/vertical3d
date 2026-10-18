@@ -167,8 +167,8 @@ BOOST_AUTO_TEST_CASE(the_caret_moves_by_characters_not_by_bytes) {
 }
 
 /**
- * A limit refuses an insertion whole rather than truncating it, because half a pasted path
- * is worse than none of it and cutting utf-8 by bytes can split a character.
+ * A limit refuses an insertion whole and does not truncate it, so a paste never lands half
+ * a path, and utf-8 is never cut inside a character.
  **/
 BOOST_AUTO_TEST_CASE(a_limit_refuses_an_insertion_whole) {
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abc");
@@ -452,7 +452,7 @@ BOOST_AUTO_TEST_CASE(a_selection_lands_on_character_boundaries) {
 }
 
 /**
- * A press puts the caret where it landed, through the Measure ui::Cursor is given. It is
+ * A press puts the caret where it landed, through the Measure input::Cursor is given. It is
  * measured against the pen the last draw left on the box, so a ui routed before it is drawn
  * places nothing.
  **/
@@ -501,8 +501,8 @@ BOOST_AUTO_TEST_CASE(a_drag_selects_the_run_it_crosses) {
 }
 
 /**
- * A cursor given no Measure names no text, so a press focuses the box and leaves the caret
- * where it was.
+ * A cursor given no Measure cannot find a character, so a press focuses the box and leaves
+ * the caret where it was.
  **/
 BOOST_AUTO_TEST_CASE(a_cursor_with_no_measure_leaves_the_caret_alone) {
     Fixture fixture;
@@ -550,8 +550,8 @@ BOOST_AUTO_TEST_CASE(the_chords_cut_copy_and_paste_the_selection) {
 }
 
 /**
- * A cut with nowhere to hand the run does not take it out, because a cut that loses the text
- * is worse than one that did not happen - and a paste with nothing to read puts nothing in.
+ * A cut with no clipboard to write to leaves the text in place, so the text is never lost.
+ * A paste with nothing to read inserts nothing.
  **/
 BOOST_AUTO_TEST_CASE(a_router_with_no_clipboard_still_edits_everything_else) {
     const Fixture fixture;

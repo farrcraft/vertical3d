@@ -37,13 +37,13 @@ namespace v3d::ui::shell {
  * side would be a library cycle. Engine3D is forward-declared so that no api/ui header names
  * a Vulkan type.
  *
- * What is drawn into the canvas, and which pass it is submitted to, stay the app's. The
- * passes themselves stay the app's too: begin() begins the frame and sizes the canvas, and
- * the app fills it and submits it where it likes.
+ * The app decides what is drawn into the canvas and which pass it is submitted to. begin()
+ * begins the frame and sizes the canvas, and the app fills the canvas and submits it.
  *
- * Everything that closes over the font's size is rebuilt by scale(), so a component renderer
- * this hands out is one to draw with now and not to keep. The immediate layer is the same one
- * across a rescale, given the new text, so what it remembers between frames survives.
+ * scale() rebuilds everything that captures the font's size, so draw with the component
+ * renderer this returns, and do not keep a reference to it. The immediate layer is kept
+ * across a rescale and given the new text callbacks, so the state it holds between frames
+ * survives.
  **/
 class Screen final {
  public:
@@ -55,7 +55,7 @@ class Screen final {
 
     struct Options final {
         float size { paint::TextRenderer::baseSize };  /**< the font's size at a scale of one **/
-        Dress dress;              /**< the dressing; a line height of 1.4 sizes when empty **/
+        Dress dress;              /**< fills the dressing. When empty, sets only the line height, to 1.4 sizes **/
         bool statistics { true }; /**< build a statistics overlay **/
         bool immediate { false }; /**< build an immediate layer over the same text **/
     };
@@ -79,20 +79,21 @@ class Screen final {
      * Begin a frame: size the canvas to it, and clear the canvas.
      *
      * @return false when there is no frame to draw into, because the window is minimised or
-     *         there is no renderer. The frame has already been presented empty, so the app
-     *         draws nothing and returns
+     *         there is no renderer. The app then draws nothing and returns. For a minimised
+     *         window, the empty frame has already been presented
      **/
     bool begin();
 
     /**
      * @return whether the last begin() found the frame a different size from the one before,
-     *         which the first one always does. This is when an app resizes what is its own
+     *         which the first one always does. An app resizes its own resources when this is
+     *         true
      **/
     bool resized() const noexcept;
 
     /**
-     * Draw text larger or smaller, rebuilding what closes over its size. The dressing is
-     * filled in again for the new size, and the theme is given back to what is rebuilt.
+     * Draw text larger or smaller, rebuilding what captures its size. The dressing is
+     * filled in again for the new size, and the theme is set again on what is rebuilt.
      *
      * @param factor how much larger than Options::size, from a little above zero
      **/
@@ -106,8 +107,8 @@ class Screen final {
     float size() const noexcept;
 
     /**
-     * Dress the component renderer and the immediate layer from a theme, and keep it for
-     * what scale() rebuilds.
+     * Set a theme on the component renderer and the immediate layer, and keep it for what
+     * scale() rebuilds.
      **/
     void theme(const boost::shared_ptr<style::Theme>& theme);
 

@@ -10,8 +10,8 @@
 namespace v3d::ui::paint {
 
 /**
- * The default colours that the retained and the immediate ui share, so that the two draw
- * with one look until a theme says otherwise.
+ * The default colours of both the retained and the immediate ui, so that the two look the
+ * same. A theme overrides them.
  **/
 
 /** the background of a panel or a window, slightly see-through **/

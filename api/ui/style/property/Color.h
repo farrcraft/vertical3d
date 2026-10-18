@@ -14,15 +14,16 @@
 namespace v3d::ui::style::property {
 
 /**
- * A vGUI style property that defines a single color.
+ * A style property that defines a single colour.
  *
  * The colour carries its own alpha. The ui is drawn over whatever the app has already
- * drawn, so a translucent panel is set by its colour rather than by a blend mode.
+ * drawn, and a translucent panel gets its translucency from this alpha, not from a blend
+ * mode.
  */
 class Color : public Property {
  public:
     /**
-     * @param name the property name, which a style is asked for by - "panel", "text"
+     * @param name the name a style looks the property up by, such as "panel" or "text"
      * @param value the colour, with alpha
      */
     Color(const std::string& name, const glm::vec4& value);

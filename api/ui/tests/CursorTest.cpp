@@ -196,8 +196,8 @@ BOOST_AUTO_TEST_CASE(a_list_chooses_the_row_under_the_cursor) {
 }
 
 /**
- * A tab bar owns which page is up, the way a list owns which row is chosen, so a click on a
- * tab changes the page and sends nothing.
+ * A tab bar holds which page is chosen and carries no command, so a click on a tab changes
+ * the page and sends nothing.
  **/
 BOOST_AUTO_TEST_CASE(a_tab_bar_changes_its_page_and_sends_nothing) {
     Fixture fixture;
@@ -479,8 +479,8 @@ BOOST_AUTO_TEST_CASE(a_disabled_box_takes_what_it_holds_with_it) {
 
 /**
  * A strip is offered a press before the tree, and takes one anywhere on it, its empty run
- * included. A button the tree holds under a strip is out of reach while the strip is a
- * control.
+ * included. A button the tree holds under a strip is out of reach while the strip is
+ * pickable.
  **/
 BOOST_AUTO_TEST_CASE(a_strip_takes_a_press_before_the_tree) {
     Fixture fixture;
@@ -504,7 +504,7 @@ BOOST_AUTO_TEST_CASE(a_strip_takes_a_press_before_the_tree) {
 }
 
 /**
- * A strip marked as scenery is offered nothing: a press on its empty run and on its button
+ * A strip set not pickable is offered nothing: a press on its empty run and on its button
  * both reach the tree under it, and the cursor moving over it lights nothing of the strip's.
  **/
 BOOST_AUTO_TEST_CASE(a_strip_that_is_not_pickable_lets_a_press_through) {
@@ -558,8 +558,8 @@ BOOST_AUTO_TEST_CASE(a_disabled_strip_takes_nothing) {
 }
 
 /**
- * A document marks a strip as scenery the way it marks anything else, a menu bar included,
- * though a menu bar's box is the renderer's and is not read.
+ * A document sets a strip not pickable the way it does for any other component, a menu bar
+ * included, though a menu bar's box is placed by the renderer and is not read.
  **/
 BOOST_AUTO_TEST_CASE(a_document_marks_a_strip_as_scenery) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();

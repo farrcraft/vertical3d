@@ -73,17 +73,16 @@ void Arranger::walk(v3d::render::realtime::canvas::Canvas* canvas, const boost::
         return;
     }
 
-    // a component that holds more than it can show clips what it holds to its own box. Only
-    // when it asks, because a menu drops a panel out of the strip it came from.
-    // A clip is the canvas's, so a layout pass with no canvas has nothing to push it onto
+    // a component with clip() set clips what it holds to its own box. A clip is pushed onto
+    // the canvas, so a layout pass with no canvas clips nothing
     const bool cut = component->clip() && canvas != nullptr;
     if (cut) {
         canvas->clip(component->position(), component->position() + component->size());
     }
 
-    // forEachDrawn decides which children are walked, and in what order. A tab bar walks the
-    // chosen page only, so a page that is not up has no box. A flow box walks its children in
-    // the order it holds them. Anything else walks by depth. What is here is where each goes
+    // forEachDrawn decides which children are visited, and in what order. This loop decides
+    // each child's box: a tab bar's chosen page fills the room under the strip, a flow box's
+    // children take the boxes arrange() wrote, and any other child resolves its own layout
     const component::Traits kind = component::traits(component->type());
     const auto* tabs = kind.pages ? static_cast<const component::TabBar*>(component.get()) : nullptr;
     const auto* box = kind.flow ? static_cast<const component::Box*>(component.get()) : nullptr;
@@ -119,8 +118,8 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
                 return glm::vec2(0.0F, 0.0F);
             }
             const float line = measure_(label->text());
-            // a label given a width wraps to it, and what it makes of the other axis is the
-            // height of the rows it came to, which an Auto height is offered
+            // a label given a width wraps to it. Its natural height is then the height of the
+            // rows it wraps into, which an Auto height resolves to
             if (component.layout().width.unit() == Length::Unit::Auto) {
                 return glm::vec2(line, styles_.base().lineHeight);
             }
@@ -130,8 +129,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
                 styles_.base().lineHeight * static_cast<float>(std::max<std::size_t>(rows, 1)));
         }
         case component::Type::Icon:
-            // an icon given no size is a square the height of a strip, which is the one
-            // size the ui has that is not derived from a string
+            // an icon given no size is a square the height of a strip
             return glm::vec2(styles_.base().barHeight, styles_.base().barHeight);
         case component::Type::Button: {
             const auto* button = dynamic_cast<const component::Button*>(&component);
@@ -146,9 +144,8 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
             if (box == nullptr) {
                 return glm::vec2(0.0F, 0.0F);
             }
-            // its own style class, because the mark it is asking room for is drawn at the
-            // size that class names - laying out against the base would size the row for a
-            // mark of a different size than the one drawn in it
+            // measured with its own style class, because the mark is drawn at the size that
+            // class sets, which can differ from the base
             const paint::Dressing& dress = styles_.resolve(
                 component.type() == component::Type::RadioButton
                     ? style::Resolver::Class::Radio : style::Resolver::Class::CheckBox,
@@ -158,15 +155,15 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
             return glm::vec2(dress.markSize + text, std::max(dress.markSize, dress.lineHeight));
         }
         case component::Type::SelectList: {
-            // a list decides how wide its widest row is and nothing about how tall it is:
-            // how many rows it shows is what it was given room for
+            // a list's natural width is its widest row. Its height is the room it is offered,
+            // and that decides how many rows it shows
             auto* list = dynamic_cast<component::SelectList*>(&component);
             if (list == nullptr) {
                 return glm::vec2(0.0F, 0.0F);
             }
-            // measuring every row is what this costs, and the answer only changes when the
-            // rows or the measure do. The list keeps it against this arranger, which holds
-            // one measure, and forgets it when it is given new rows
+            // this measures every row, and the result changes only when the rows or the
+            // measure do. The list caches it against this arranger's serial, because an
+            // arranger holds one measure, and drops it when it is given new rows
             float widest = list->widest(serial_);
             if (widest < 0.0F) {
                 widest = 0.0F;
@@ -180,9 +177,8 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
                 room.size().y);
         }
         case component::Type::TextBox: {
-            // a box is as wide as the room it is in and as tall as the line it holds: the
-            // text it will be typed into is not what should size it, or it would grow
-            // under the caret
+            // a text box is as wide as the room it is in and as tall as one line. Its text
+            // does not size it, so it does not grow as it is typed into
             const paint::Dressing& dress = styles_.resolve(style::Resolver::Class::TextBox, component.style());
             return glm::vec2(room.size().x, dress.lineHeight + dress.padding);
         }
@@ -191,8 +187,8 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
             return glm::vec2(room.size().x,
                 styles_.resolve(style::Resolver::Class::Slider, component.style()).markSize);
         case component::Type::Scrollbar: {
-            // a scrollbar decides how thick it is and nothing about how long: its length
-            // is the box it runs down, which is its parent's rather than its own
+            // a scrollbar's natural size sets only its thickness. Its length is the room it
+            // is offered
             const auto* bar = dynamic_cast<const component::Scrollbar*>(&component);
             if (bar == nullptr) {
                 return glm::vec2(0.0F, 0.0F);
@@ -213,8 +209,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
         case component::Type::TabPage:
         case component::Type::Toolbar:
         case component::Type::Undefined:
-            // a panel and a bar decide nothing for themselves, so an Auto extent on one is
-            // the room it is in
+            // these have no natural size, so an Auto extent on one is the room it is in
             break;
     }
     // every enumerator is handled above and the switch carries no default, so C4062 names
@@ -238,8 +233,7 @@ void Arranger::arrange(const component::Box& box, const v3d::type::geometry::Bou
 
     for (const boost::shared_ptr<Component>& child : box.children()) {
         if (!child || !child->visible()) {
-            // a hidden row leaves no gap behind it, so a list of however many rows there are
-            // reads as one
+            // a hidden child leaves no gap, so the visible ones close up
             boxes->push_back(v3d::type::geometry::Bound2D({.position = bounds.position(), .size = glm::vec2(0.0F, 0.0F)}));
             continue;
         }
@@ -266,8 +260,8 @@ void Arranger::arrange(const component::Box& box, const v3d::type::geometry::Bou
 /**
  **/
 glm::vec2 Arranger::box(const Component& component, const v3d::type::geometry::Bound2D& room) const {
-    // a box that wraps is as long as the line it is given and as deep as the lines its
-    // children come to. One that does not decides nothing, as a panel does
+    // a box that wraps is as long as the line it is given, and as deep as the lines its
+    // children fill. A box that does not wrap has no natural size, like a panel
     const auto* flow = component::traits(component.type()).flow ? static_cast<const component::Box*>(&component) : nullptr;
     if (flow == nullptr || !flow->wrap()) {
         return room.size();
@@ -370,8 +364,8 @@ glm::vec2 Arranger::stack(const Container& container,
         if (top) {
             taken.y += row;
         } else {
-            // what the strip will be drawn at rather than the box it was last drawn in,
-            // which is nothing until it has been drawn once
+            // the width the strip will be drawn at, not the box it was last drawn in, which
+            // is empty until it has been drawn once
             taken.x += widest(*bar) + styles_.base().padding + ruleWidth;
         }
     }
@@ -391,8 +385,8 @@ v3d::type::geometry::Bound2D Arranger::page(const component::TabBar& bar) const 
 /**
  **/
 float Arranger::extent(const component::Button& button) const {
-    // what the button asks a strip for, which is the icon it names rather than the
-    // texture it holds - a strip is laid out before anything has been resolved
+    // sized by whether the button names an icon, not by whether the icon has been resolved,
+    // because a strip is laid out before anything has been resolved
     if (!button.icon().empty()) {
         return styles_.base().iconSize;
     }
@@ -525,10 +519,10 @@ void Arranger::centred(component::menu::Menu& level, const glm::vec2& room) cons
 /**
  **/
 v3d::type::geometry::Bound2D Arranger::lineRoom(bool vertical, const v3d::type::geometry::Bound2D& bounds) {
-    // along the line the children share the room, so none of them is offered any of it. An
-    // Auto extent there is what the child makes of itself, and a child that makes nothing of
-    // itself asks for nothing. Across the line each is offered the whole of it, which
-    // stretch() then enforces
+    // the children share the room along the line, so none of them is offered any of it. An
+    // Auto extent along the line is the child's natural size, and a child with no natural
+    // size takes nothing. Across the line each child is offered the whole room, and
+    // stretch() makes each child fill it
     const glm::vec2 extent = bounds.size();
     return v3d::type::geometry::Bound2D({.position = bounds.position(), .size = vertical ? glm::vec2(extent.x, 0.0F) : glm::vec2(0.0F, extent.y)});
 }

@@ -540,7 +540,8 @@ BOOST_AUTO_TEST_CASE(a_window_cuts_what_it_holds_off_at_its_edges) {
     ui.endWindow();
     ui.end();
 
-    // the plate and the title bar are drawn before the clip opens, and what goes in it after
+    // the window's background and title bar are drawn before the clip opens, and what goes in
+    // it after
     const std::vector<v3d::render::realtime::canvas::Canvas::Batch>& batches = canvas.batches();
     BOOST_REQUIRE(batches.size() >= 2U);
     BOOST_CHECK(!batches.front().clipped);
@@ -833,7 +834,7 @@ BOOST_AUTO_TEST_CASE(a_given_width_cannot_exceed_the_row) {
 
 /**
  * An app asks the layer whether a click has already been spent before it acts on one of its
- * own, as ui::Cursor does for the retained tree.
+ * own, as input::Cursor's return values do for the retained tree.
  **/
 BOOST_AUTO_TEST_CASE(the_layer_says_when_it_wants_the_cursor) {
     std::vector<Written> written;

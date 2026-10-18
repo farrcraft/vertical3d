@@ -16,8 +16,8 @@ namespace v3d::ui::component {
  * belongs to.
  *
  * It derives from CheckBox because it holds the same state under a different mark. A
- * click sends a command and marks nothing. Whatever handles the command checks this one
- * and clears the rest of its group; nothing here clears them.
+ * click sends a command and marks nothing. Whatever handles the command checks this button
+ * and clears the others in its group. Nothing in this library clears them.
  *
  * The mark and the outline are the "radio" style class the component names.
  **/

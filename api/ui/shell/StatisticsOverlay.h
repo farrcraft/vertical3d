@@ -29,9 +29,9 @@ class StatisticsOverlay final {
     /**
      * One frame's measurements, in the units engine::Statistics reports them in.
      *
-     * The numbers are copied rather than read from a Statistics because api/ui sits below
-     * api/engine and nothing here can name that class. Which is also why the loop hands
-     * this over instead of the overlay reaching for it.
+     * The numbers are copies, not a Statistics, because api/ui sits below api/engine and
+     * nothing here can name that class. For the same reason, the loop passes a Sample to
+     * draw() instead of the overlay reading the statistics itself.
      **/
     struct Sample final {
         /**
@@ -44,18 +44,15 @@ class StatisticsOverlay final {
 
         std::uint64_t mean { 0 };  /**< the mean frame over the window, in nanoseconds **/
         std::uint64_t last { 0 };  /**< the last frame, in nanoseconds **/
-        unsigned int steps { 0 };  /**< simulation steps the last frame owed **/
+        unsigned int steps { 0 };  /**< simulation steps due in the last frame **/
         std::vector<Span> spans;   /**< drawn a line each, under the frame's own lines **/
     };
 
     /**
-     * How many lines are drawn, which lines() fills.
+     * How many lines lines() returns for a frame.
      **/
     static constexpr std::size_t rows = 3;
 
-    /**
-     * @param text the renderer the lines are drawn with, which decides their size
-     **/
     /**
      * @param text the font the readout is drawn with. Its atlas holds distance field glyphs
      *        at a base size, scaled to the size this draws
@@ -96,9 +93,9 @@ class StatisticsOverlay final {
     void draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample);
 
     /**
-     * The lines that are drawn, top to bottom.
+     * The frame's lines, top to bottom.
      *
-     * Separate from draw() so that what a sample reads as can be tested without a font,
+     * Separate from draw() so that the text a sample produces can be tested without a font,
      * a device or a window.
      **/
     static std::array<std::string, rows> lines(const Sample& sample);

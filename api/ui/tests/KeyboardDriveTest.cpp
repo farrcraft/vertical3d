@@ -33,9 +33,9 @@
 namespace {
 
 /**
- * A ui engine holding one container, and the key router over it. Nothing draws: which
- * component a key reaches is the focus's to say, and the focus is given by the engine
- * rather than by a box anything was drawn in.
+ * A ui engine holding one container, and an input::Keys over it. Nothing draws, because the
+ * focus decides which component a key reaches, and the engine sets the focus without
+ * reading any drawn box.
  **/
 struct Fixture final {
     Fixture() :
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(a_screen_with_nothing_focusable_is_left_alone) {
 
 /**
  * A return and a space send a focused button's command - the same command a click sends,
- * because both routers ask ui::command() for it.
+ * because input::Keys and input::Cursor both get it from input::command().
  **/
 BOOST_AUTO_TEST_CASE(a_return_and_a_space_activate_a_button) {
     Fixture fixture;
@@ -254,9 +254,8 @@ BOOST_AUTO_TEST_CASE(the_arrows_step_through_a_list) {
 }
 
 /**
- * A list does not wrap. Running off the end is how a keyboard reaches the last row and stays
- * there; a wrap would take the user back to the top instead, which is not what an arrow means
- * in a list. The key that moved nothing is not taken, so it goes on to the app.
+ * A list does not wrap, so holding an arrow stops at the last row. The key that moved nothing
+ * is not taken, so it goes on to the app.
  **/
 BOOST_AUTO_TEST_CASE(a_list_does_not_wrap_at_either_end) {
     const Fixture fixture;

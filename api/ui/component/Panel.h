@@ -10,12 +10,11 @@
 namespace v3d::ui::component {
 
 /**
- * A box - a filled rectangle with a border, and the thing every plate, track and backdrop
- * is made of.
+ * A filled rectangle with a border, used for backgrounds and backdrops.
  *
- * It carries no colours of its own: what it is filled with, what its border is drawn in
- * and how far its corners are rounded are the "panel" style class the component names.
- * A panel with no style draws in the renderer's defaults.
+ * A panel holds no colours of its own. Its fill, its border colour and its corner radius
+ * come from the "panel" style class the component names. A panel with no style draws in
+ * the renderer's defaults.
  **/
 class Panel : public Component {
  public:

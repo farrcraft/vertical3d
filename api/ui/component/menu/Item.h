@@ -28,19 +28,20 @@ class Menu;
  * - submenu - activating the item replaces the active menu with its submenu
  * - input - an action item that takes one input when activated, before it dispatches its
  *   event. The input becomes the item's value, and the event carries it as its data.
- * - numeric_input - the same as an input type except restricted to number input types only
+ * - numeric_input - an input item meant for a number. The library handles it as it handles
+ *   input, and does not check the value
  * - key_input - an input type that uses a key name as the value
  *
  * A check or radio item does not own the state it shows. Activating one dispatches its
- * event like an action item and marks nothing; whatever answers the command sets
- * checked(), so the mark cannot disagree with what the item reports.
+ * event like an action item and marks nothing. Whatever handles the command sets
+ * checked(), so the mark always matches the state the handler holds.
  *
- * An input type item's value is appended to its label by text(), so a label ending in a separator
+ * text() appends an input item's value to its label, so a label ending in a separator
  * ("Rounds: ") reads as 'Rounds: 5'.
  *
- * Activating an input type item puts its menu into capture rather than dispatching: what
+ * Activating an input item puts its menu into capture instead of dispatching. What
  * Menu::capture() is then given becomes the item's value, and the item's event carries it.
- * A key input ends at the first key it is given, because a binding is one key; the other two
+ * A key input ends at the first key it is given, because a binding is one key. The other two
  * end at the next activation, which the ui::selectMenu binding sends.
  **/
 class Item : public Component {
@@ -49,9 +50,6 @@ class Item : public Component {
      * Construct a new menu item
      * @param type the type of menu item
      * @param label the label of the menu item
-     * @param cmd the name of the command
-     * @param scope the scope of the command
-     * @param param the command paramater
      */
     Item(menu::ItemType type, const std::string & label);
     ~Item() override;
@@ -122,7 +120,7 @@ class Item : public Component {
       */
     void checked(bool on);
     /**
-      * Get whether the item is checked. An item of any other type is never checked.
+      * Get whether the item is checked. Any item type returns what checked(bool) last set.
       * @return whether the item draws its mark
       */
     bool checked() const;

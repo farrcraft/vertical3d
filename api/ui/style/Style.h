@@ -18,14 +18,6 @@ namespace v3d::ui::style {
 class Property;
 
 /**
- * One entry of a theme: the properties a component of a given class and name is drawn with.
- *
- * A style is keyed by the pair rather than by either half, so a theme can carry a default
- * for every button and an override for one of them. The properties themselves are
- * typed - a colour, a number, a font, an image - and are read back through the free
- * functions below rather than by casting at the call site.
- */
-/**
  * What a style applies to: a component's own style name and its class, such as "button".
  */
 struct Selector {
@@ -33,6 +25,14 @@ struct Selector {
     std::string className;
 };
 
+/**
+ * One entry of a theme: the properties a component of a given class and name is drawn with.
+ *
+ * A style is keyed by the pair, not by either half, so a theme can carry a default for every
+ * button and an override for one of them. The properties are typed (a colour, a number, a
+ * font, an image), and readColour() and readMetric() below read them without a cast at the
+ * call site.
+ */
 class Style {
  public:
     explicit Style(const Selector& selector);
@@ -95,12 +95,12 @@ void readMetric(const boost::shared_ptr<Style>& target, const std::string& name,
 /**
  * The values a theme wrote over a dressing, and what each held before.
  *
- * A theme names only some values. The next theme starts from what was there before any theme
- * rather than from what the last one left, so a value the new theme is silent on goes back to
- * its default, and no theme at all puts every value back.
+ * A theme names only some values. The next theme starts from the values before any theme,
+ * not from what the last one left. A value the new theme does not set goes back to its
+ * default, and no theme at all puts every value back.
  *
- * It records the field rather than its address, so a dressing that is copied keeps working.
- * A value written over a themed one by the app is put back with it.
+ * It records the field, not its address, so a dressing that is copied keeps working.
+ * restore() also replaces any value the app wrote over a themed one.
  *
  * @param D the dressing the values are in
  **/

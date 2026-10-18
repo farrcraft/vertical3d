@@ -29,11 +29,12 @@ namespace v3d::ui::input {
 namespace {
 
 /**
- * The strips of a container, in the order the cursor is offered them - which is the
- * reverse of the order they are drawn, because an open menu drops a panel over a toolbar.
+ * Collect a container's menu bars and toolbars. The cursor offers a point to the menu bars
+ * before the toolbars, the reverse of the draw order, because an open menu drops a panel
+ * over a toolbar.
  *
- * A strip is left out on the same terms the tree's pick leaves a component out: hidden,
- * disabled, or not pickable.
+ * A strip that is hidden, disabled or not pickable is left out, as Container::pick() leaves
+ * out such a component.
  **/
 void strips(const boost::shared_ptr<Container>& container,
     std::vector<boost::shared_ptr<component::menu::Bar>>* bars,
@@ -54,14 +55,13 @@ void strips(const boost::shared_ptr<Container>& container,
 }
 
 /**
- * Light a component up, or put it back to normal.
+ * Set a component's hover state on or off.
  *
- * A button is the only component that has a state to write, and it is the state a
- * Toolbar writes onto the buttons it holds, so a button in a tree lights up the way one
- * on a strip does rather than by a second mechanism.
+ * A button is the only component with a hover state. A Toolbar writes the same state onto
+ * its buttons, so a button in the tree is highlighted the same way as one on a toolbar.
  *
- * A button that cannot be used is left alone in both directions. Its hover state is
- * transient and being disabled is not, so the one must never overwrite the other.
+ * A button that cannot be used is left alone in both directions, so a transient hover never
+ * overwrites its disabled look.
  **/
 void lit(const boost::shared_ptr<Component>& component, bool on) {
     if (!component || component->type() != component::Type::Button || !usable(*component)) {
@@ -102,8 +102,8 @@ void Cursor::hover(const boost::shared_ptr<Component>& component) {
 }
 
 bool Cursor::motion(const glm::vec2& point) {
-    // a press that has not come up goes on being followed wherever the cursor is, so a
-    // thumb dragged off the bar it started on is not lost
+    // a held press follows the cursor wherever it goes, so a thumb dragged off the bar it
+    // started on is not lost
     const boost::shared_ptr<Component> holding = held_.lock();
     if (holding) {
         follow(holding, point);
@@ -130,8 +130,8 @@ bool Cursor::motion(const glm::vec2& point) {
             if (!bar) {
                 continue;
             }
-            // every strip hears about it either way, so that a button the cursor has left,
-            // or that an open panel now covers, stops drawing its hover
+            // every toolbar is told either way, so that a button the cursor has left, or
+            // that an open panel now covers, stops drawing its hover
             if (taken) {
                 bar->leave();
             } else {
@@ -143,8 +143,8 @@ bool Cursor::motion(const glm::vec2& point) {
             taken = static_cast<bool>(over);
         }
     }
-    // a strip that took the point covers whatever is under it, so the tree is left with
-    // nothing hovered rather than with what the cursor would have been over
+    // a strip that took the point covers whatever is under it, so nothing in the tree is
+    // hovered
     hover(over);
     return taken;
 }
@@ -157,7 +157,7 @@ bool Cursor::press(const glm::vec2& point) {
     // off whatever had it
     ui_->focus(boost::shared_ptr<Component>());
     // any_of stops at the first container that takes the press, so a press never reaches
-    // more than one ui
+    // more than one container
     return std::ranges::any_of(ui_->containers(),
         [this, &point](const boost::shared_ptr<Container>& container) {
             return container && container->visible() && press(container, point);
@@ -253,8 +253,7 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
             break;
         }
         case component::Type::TabBar: {
-            // a tab bar owns which page is up, the way a list owns which row is chosen, so
-            // there is nothing to send
+            // a tab bar carries no command. A press on a tab only changes the chosen page
             const boost::shared_ptr<component::TabBar> bar =
                 boost::dynamic_pointer_cast<component::TabBar>(component);
             const int tab = bar->at(point);
@@ -264,8 +263,8 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
             return;
         }
         case component::Type::Scrollbar:
-            // absolute rather than relative, so a bar picked anywhere on its track jumps to
-            // what was clicked and then follows the cursor until the press comes up
+            // absolute, not relative: a press anywhere on the track jumps the bar there, and
+            // the bar then follows the cursor until the press comes up
             boost::dynamic_pointer_cast<component::Scrollbar>(component)->drag(point);
             return;
         case component::Type::Slider:
@@ -276,8 +275,8 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
             }
             return;
         case component::Type::TextBox:
-            // a press says "type here", and where in the text it landed says where - so the
-            // caret goes there and the anchor with it, leaving a drag to select from it
+            // the caret and the selection anchor both move to where the press landed in the
+            // text, so a drag then selects from there
             place(boost::dynamic_pointer_cast<component::TextBox>(component), point, false);
             return;
         case component::Type::Bar:
@@ -295,8 +294,8 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
         case component::Type::Toolbar:
         case component::Type::Undefined:
         case component::Type::VerticalBox:
-            // nothing here owns a place a press moves it to, so the press is the command and
-            // nothing else, and it falls out of the switch into dispatch()
+            // a press does not move anything inside these, so it only sends the command,
+            // through dispatch() after the switch
             break;
     }
     dispatch(component);
@@ -305,16 +304,16 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
 void Cursor::place(const boost::shared_ptr<component::TextBox>& box, const glm::vec2& point,
     bool extend) const {
     if (!box || !measure_) {
-        // a cursor with no Measure names no text, which leaves the caret where it was
+        // a cursor with no Measure cannot find a character, so the caret stays where it was
         return;
     }
     box->caret(box->at(point, measure_), extend);
 }
 
 void Cursor::dispatch(const boost::shared_ptr<Component>& component) const {
-    // a component does not own the state it shows: the click sends the command and marks
-    // nothing, and whatever handles it sets checked(). ui::command() decides which
-    // components carry one, for a key and a click alike
+    // a component does not own the state it shows. The click sends the command and marks
+    // nothing, and whatever handles the command sets checked(). input::command() decides
+    // which components carry a command, for a key and a click alike
     send(dispatcher_.get(), command(component));
 }
 

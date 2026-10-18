@@ -297,7 +297,6 @@ BOOST_AUTO_TEST_CASE(toolbar_two_columns_stand_side_by_side_on_the_first_frame) 
 
     fixture.renderer.draw(&fixture.canvas, container);
 
-    // through the base, because a strip's own size() is its button count
     const v3d::ui::Component& left = *first;
     const v3d::ui::Component& right = *second;
     BOOST_TEST(left.position().x == 0.0F);

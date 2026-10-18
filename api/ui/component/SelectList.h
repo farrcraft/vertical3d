@@ -18,22 +18,22 @@ namespace v3d::ui::component {
  * A list of rows with one of them chosen, cut off at its own box and scrolled through
  * when it holds more rows than it can show.
  *
- * Unlike a check box, a list does own what it shows: the rows are its, and which one is
- * chosen is a place in them rather than a state some command owns. What a click means is
- * still the app's - the list is told which row was clicked and sends its command, and
- * whatever handles the command decides what choosing that row does.
+ * Unlike a check box, a list holds what it shows. The rows belong to the list, and the
+ * chosen row is a position in them. The app still decides what a click means. A press
+ * selects the clicked row and sends the list's command, and whatever handles the command
+ * decides what choosing that row does.
  *
- * The row height is set by whatever draws the list, so a list that has never been drawn
- * cannot say which row a point is on. The pixel values here, such as the scroll offset and
- * the content height, are meaningless until then.
+ * The renderer sets the row height when it draws the list, so a list that has never been
+ * drawn cannot say which row a point is on. The pixel values here, such as the scroll
+ * offset and the content height, are meaningless until then.
  *
- * The plate, the rows and the highlight behind the chosen one are the "list" style class
- * the component names.
+ * The background, the rows and the highlight behind the chosen one are the "list" style
+ * class the component names.
  **/
 class SelectList : public Component {
  public:
     /**
-     * What selected() answers when no row is chosen.
+     * What selected() returns when no row is chosen.
      **/
     static const int none = -1;
 
@@ -72,8 +72,14 @@ class SelectList : public Component {
     void rowHeight(float height);
     float rowHeight() const noexcept;
 
+    /** A width, and the key naming the measure it was taken with. **/
+    struct Measured {
+        float width = 0.0F;
+        std::uint64_t measure = 0;
+    };
+
     /**
-     * How wide the widest row is when it is drawn, left here by whatever measured it.
+     * How wide the widest row is when it is drawn, stored here by whatever measured it.
      *
      * Sizing a list to its content means measuring every row, and the result changes only
      * when the rows or the measure do. The width is kept with the key of the measure that
@@ -83,12 +89,6 @@ class SelectList : public Component {
      * @param measure a key naming the measure, which is never zero
      * @return the width, or a negative number when nothing has measured it with that key
      **/
-    /** A width, and the key naming the measure it was taken with. **/
-    struct Measured {
-        float width = 0.0F;
-        std::uint64_t measure = 0;
-    };
-
     void widest(const Measured& measured) noexcept;
     float widest(std::uint64_t measure) const noexcept;
 

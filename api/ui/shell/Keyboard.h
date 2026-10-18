@@ -24,33 +24,32 @@ class Engine;
 namespace v3d::ui::shell {
 
 /**
- * The platform half of ui::Keys: what turns an SDL event into the two calls that router
- * takes, and what an app's Engine::onEvent() hands every event to.
+ * The platform side of input::Keys. It turns an SDL event into a press() or a text() call
+ * on input::Keys, and an app's Engine::onEvent() passes it every event.
  *
- * It decodes the event, reads the modifiers off it, supplies the clipboard and starts the
- * platform composing, none of which ui::Keys does itself.
+ * It decodes the event, reads the modifiers from it, supplies the clipboard and turns the
+ * platform's text input on and off. input::Keys does none of these itself.
  *
  * A key the ui takes returns true. The app returns that from Engine::onEvent(), so the input
  * engine does not also map the key to its bound command.
  * Only a key going down is ever taken. A release always goes through, so a key held when a
  * box took the focus is still seen to come up and nothing is left stuck down.
  *
- * **Text input follows the focus.** The platform composes nothing until it is asked to, so
- * this turns it on while a text box holds the keyboard and off again after. It follows
- * ui::Engine::onFocus() rather than checking per event, because the focus also moves under
- * a mouse press this class never sees.
+ * **Text input follows the focus.** The platform composes no text until text input is on,
+ * so this turns it on while a text box holds the keyboard and off again after. It listens
+ * through ui::Engine::onFocus() instead of checking on each event, because the focus also
+ * moves on a mouse press, which this class never sees.
  *
- * The cursor stays the app's: ui::Cursor takes points rather than events, and an app routes
- * a press to it itself.
+ * The app handles the cursor itself. input::Cursor takes points, not events, so an app
+ * passes a press to it directly.
  **/
 class Keyboard final {
  public:
     /**
-     * @param ui where the focus lives, and what announces it moving
+     * @param ui where the focus is held, and what reports it moving
      * @param dispatcher where a focused component's event is sent
-     * @param window what composes text, turned on and off as the focus reaches a text box
-     *        and leaves it. Given none, it still edits: everything but the characters
-     *        arrives as a key
+     * @param window whose text input is turned on as the focus reaches a text box, and off
+     *        as it leaves. Without a window the keys still edit, but no characters arrive
      **/
     Keyboard(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
         const boost::shared_ptr<v3d::render::realtime::Window>& window);
@@ -69,21 +68,21 @@ class Keyboard final {
     bool event(const SDL_Event& event);
 
     /**
-     * The router underneath, for an app that has a key of its own to route - one that
-     * arrived from somewhere other than the event loop, or a test driving the ui.
+     * The input::Keys underneath, for an app with a key that did not come from the event
+     * loop, or for a test driving the ui.
      **/
     input::Keys& keys() noexcept;
 
     /**
-     * The platform's clipboard, which the four chords a text box acts on read and
-     * write. Public because it is the pair to hand any other ui::Keys an app builds.
+     * The platform's clipboard, which a text box's cut, copy and paste read and write.
+     * Public so that an app can pass it to any other input::Keys it builds.
      **/
     static input::Keys::Clipboard clipboard();
 
  private:
     /**
-     * Compose text for as long as something is focused that is typed into, and not
-     * otherwise. Called with wherever the focus landed.
+     * Turn text input on while the focused component takes typed text, and off otherwise.
+     * Called with the newly focused component.
      **/
     void follow(const boost::shared_ptr<Component>& focused);
 

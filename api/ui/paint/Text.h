@@ -19,17 +19,14 @@ namespace v3d::ui::paint {
  * The callbacks this library measures and draws text through, so that it names no font
  * type.
  *
- * Both ways of writing a ui take this pair: ComponentRenderer for the retained components
- * and Immediate for the layer of calls. Neither names a font type, so neither costs a
- * device to test, and one TextRenderer supplies both.
+ * ComponentRenderer, for the retained components, and Immediate, for the immediate ui, both
+ * take this pair. Neither names a font type, so neither needs a device to test, and one
+ * TextRenderer supplies both. The pair is declared here, not on either class, so that both
+ * classes take the same types.
  *
- * They are declared here rather than on either class so that they are one type rather than
- * two that happen to have the same signature - a pair built for one side would otherwise
- * only work on the other by coincidence.
- *
- * They take a view rather than a string because what is measured and written is usually
- * already held by a component, and building a string to hand one over is an allocation per
- * label per frame. The view has to outlive the call and nothing keeps it.
+ * They take a view, not a string, because a component usually already holds the text, and
+ * building a string would allocate once per label per frame. The caller keeps the text alive
+ * for the length of the call. The callee does not keep the view.
  **/
 
 /**
@@ -46,11 +43,11 @@ typedef std::function<void(std::string_view, const glm::vec2&, const glm::vec4&)
  * Break a line at the spaces that do not fit a width.
  *
  * Greedy: a word goes on the current line if it fits, and starts a new one if it does not.
- * A single word wider than the whole width is left over the edge rather than split, which
- * is the lesser of the two wrong answers for a name or a path.
+ * A single word wider than the whole width runs past the edge and is not split, so a name
+ * or a path stays whole.
  *
- * @param width the room a row has, or nothing at all when it is not positive, which is one
- *        row holding the whole line
+ * @param width the room a row has. A width that is not positive puts the whole line on one
+ *        row
  * @return one row per line, and no rows at all for a line holding nothing but spaces
  **/
 std::vector<std::string> wrap(std::string_view line, float width, const Measure& measure);

@@ -30,7 +30,7 @@ namespace v3d::ui::component::menu {
  * The bar tests the cursor against the bounds a renderer left on the components, so
  * nothing is hit until something has been drawn.
  *
- * It is pickable from the start, and one marked otherwise is offered nothing.
+ * It is pickable from the start. The cursor skips a menu bar that is set not pickable.
  **/
 class Bar : public Component {
  public:
@@ -130,9 +130,9 @@ class Bar : public Component {
     bool press(const glm::vec2& cursor);
 
     /**
-     * Find an item anywhere in the bar by the command it sends, so that whatever answers
-     * a command can mark the item that names it.
-     * @param command the item's event as Event::str() gives it - "context::name"
+     * Find an item anywhere in the bar by the command it sends, so that whatever handles
+     * a command can mark the item that sends it.
+     * @param command the item's event as Event::str() returns it, such as "context::name"
      * @return the item, or null when no item sends that command
      **/
     boost::shared_ptr<Item> find(const std::string& command) const;

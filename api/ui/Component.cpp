@@ -22,16 +22,13 @@ namespace v3d::ui {
 namespace {
 
 /**
- * The next id to hand out. Atomic because a component may be built anywhere, and private
- * because an id is only ever read back - nothing outside a constructor has a use for the
- * counter itself.
+ * The next id to hand out. Atomic because a component may be built on any thread.
  **/
 std::atomic<unsigned int> nextID { 0 };
 
 };  // namespace
 
-// in declaration order, so that a member added later cannot quietly be initialised from
-// one that has not been yet
+// in declaration order, so that no member is initialised from one that is not yet set
 Component::Component(component::Type type) :
     parent_(nullptr),
     position_(0.0F, 0.0F),

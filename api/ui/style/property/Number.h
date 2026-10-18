@@ -12,13 +12,13 @@
 namespace v3d::ui::style::property {
 
 /**
- * A style property that defines a single number - a height, a padding, a width. Metrics
- * come from the theme the same way colours do.
+ * A style property that defines a single number, such as a height, a padding or a width.
+ * A theme supplies these metrics the same way it supplies colours.
  */
 class Number : public Property {
  public:
     /**
-     * @param name the property name, which a style is asked for by - "bar-height"
+     * @param name the name a style looks the property up by, such as "bar-height"
      * @param value the number
      */
     Number(const std::string& name, float value);

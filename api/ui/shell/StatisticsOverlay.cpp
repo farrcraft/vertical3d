@@ -30,13 +30,12 @@ const float margin = 8.0F;
 const float padding = 6.0F;
 
 /**
- * A line's height as a multiple of the size the font was rasterized at. Nothing scales a
- * glyph, so this is the only thing that decides how far apart the lines sit.
+ * A line's height as a multiple of the size the readout is drawn at.
  **/
 const float lineSpacing = 1.3F;
 
 /**
- * Translucent so that what is being measured stays visible under the numbers.
+ * The background is translucent, so that the scene stays visible under the numbers.
  **/
 constexpr glm::vec4 background(0.0F, 0.0F, 0.0F, 0.6F);
 constexpr glm::vec4 foreground(0.9F, 0.9F, 0.9F, 1.0F);

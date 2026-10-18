@@ -28,15 +28,15 @@ Keyboard::Keyboard(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<
     if (ui_) {
         ui_->onFocus([this](const boost::shared_ptr<Component>& focused) { follow(focused); });
     }
-    // start composing to match whatever is focused now, whatever the window was left doing
+    // set text input to match whatever is focused now, whatever state the window was left in
     follow(ui_ ? ui_->focused() : boost::shared_ptr<Component>());
 }
 
 /**
  **/
 Keyboard::~Keyboard() {
-    // the engine holds a callback that captured this, and it outlives this whenever an app
-    // keeps the ui and rebuilds this adapter
+    // the engine holds a callback that captured this object. The engine outlives it when an
+    // app keeps the ui and builds a new Keyboard
     if (ui_) {
         ui_->onFocus(Engine::Focused());
     }
@@ -88,20 +88,20 @@ bool Keyboard::event(const SDL_Event& event) {
     case SDL_EVENT_TEXT_INPUT:
         return keys_.text(event.text.text);
     case SDL_EVENT_KEY_DOWN: {
-        // one table, shared with the device that binds the same key - api/input's
+        // api/input's key names, the same table the key bindings use
         const std::string name = v3d::input::keyName(event.key.key);
         if (name.empty()) {
             return false;  // a key the api has no name for is nothing the ui could act on
         }
-        // the modifiers come off the event rather than from the keyboard's held state,
-        // because what a key meant is what was down as it arrived
+        // the modifiers are read from the event, not from the keyboard's current state,
+        // because what counts is what was held when the key went down
         const bool shifted = (event.key.mod & SDL_KMOD_SHIFT) != 0;
         const bool controlled = (event.key.mod & SDL_KMOD_CTRL) != 0;
         return keys_.press(name, shifted, controlled, event.key.repeat);
     }
     default:
-        // a release is never taken: a key held as a box took the focus still has to be seen
-        // to come up, or api/input holds it down for the rest of the run
+        // a release is never taken. A key held while a box took the focus must still be seen
+        // to come up, or api/input treats it as held for the rest of the run
         return false;
     }
 }

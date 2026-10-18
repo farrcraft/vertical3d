@@ -16,11 +16,12 @@ namespace v3d::ui::component {
  * The box only says how its children are arranged. The renderer places them as it draws,
  * in the same pass that lays out every other box.
  *
- * A child's own layout is what sizes it along the line; across the line it is either the
- * size it asks for or, when the box stretches, the whole width of the box.
+ * A child's own layout sizes it along the line. Across the line, a child is the size it
+ * asks for, or the box's whole extent when the box stretches.
  *
- * A box that wraps starts a new line where the next child would not fit, so a grid of slots is
- * one box rather than a box of rows. It then sizes itself across its lines from them.
+ * A box that wraps starts a new line where the next child would not fit, so a grid of slots
+ * is one box, not a box of rows. Its size across the lines is the depth of the lines its
+ * children fill.
  **/
 class Box : public Component {
  public:
@@ -33,8 +34,8 @@ class Box : public Component {
     float spacing() const noexcept;
 
     /**
-     * Whether a child is widened to the box across the direction it flows in, so a list of
-     * rows reads as rows. False by default.
+     * Whether each child is widened to the box's extent across the line, so that the rows
+     * of a list are all one width. False by default.
      **/
     void stretch(bool fill);
     bool stretch() const noexcept;

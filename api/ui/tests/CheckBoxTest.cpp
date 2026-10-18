@@ -100,8 +100,8 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
 }
 
 /**
- * The mark is what checked() adds, so an unchecked box is the plate alone and a checked one
- * is the plate and the mark over it.
+ * checked() adds the mark, so an unchecked box is the box alone and a checked one is the box
+ * with the mark over it.
  **/
 BOOST_AUTO_TEST_CASE(the_mark_is_drawn_only_when_the_box_is_checked) {
     const v3d::ui::paint::ComponentRenderer renderer = build(nullptr);

@@ -31,7 +31,7 @@ class Menu : public Component {
         * Make the next item in the menu active.
         * If the last item in the menu is already active, it will wrap around
         * to the first item.
-        * @return false on wrap around
+        * @return false on wrap around, while a capture is open, or when the level is empty
         */
     bool next();
     /**
@@ -58,7 +58,7 @@ class Menu : public Component {
         */
     size_t count() const;
 
-    // use a [] operator to get individual items instead
+    // the item at an index, which must be less than count()
     boost::shared_ptr<Item> & operator[](size_t index);
 
     /**
@@ -77,9 +77,9 @@ class Menu : public Component {
     /**
       * Activate the active item of the current menu level.
       *
-      * A submenu item descends a level and an action item dispatches its bound event. An
-      * input item begins capturing instead: navigation stops moving, what is fed to
-      * capture() becomes the item's value, and the item's event is sent carrying it.
+      * A submenu item descends a level. An action, check or radio item dispatches its bound
+      * event. An input item begins capturing instead: navigation stops moving, what is fed
+      * to capture() becomes the item's value, and the item's event is sent carrying it.
       *
       * An activation arriving while a capture is open ends the capture, so this call both
       * starts and finishes one.
@@ -89,15 +89,14 @@ class Menu : public Component {
     /**
      * Give a capture in progress its value.
      *
-     * A key input is finished by the first value it is given - a binding is one key, so
-     * there is nothing to wait for and the event goes out here. The other input types
-     * hold what they were last given and wait for the activation that ends them, because
-     * a string or a number is built up rather than pressed.
+     * A key input is finished by the first value it is given, because a binding is one key.
+     * Its event is sent here. The other input types hold the last value they were given and
+     * wait for the activation that ends them, because a string or a number is built up over
+     * several keys.
      *
-     * What a value means is the app's: this takes whatever it is fed and puts it on the
-     * item, and the item's event carries it as its data. For a key input that is a
-     * key name, per api/input/Keyboard.cpp's table, because a key name is what a binding
-     * document holds.
+     * The app decides what a value means. This puts the value on the item, and the item's
+     * event carries it as its data. For a key input the value is a key name from the table
+     * in api/input/Keyboard.cpp, because a binding document holds key names.
      *
      * @return whether a capture took it, which is false when none is open
      **/
@@ -148,9 +147,8 @@ class Menu : public Component {
     int active_;  // the active item in this menu, or -1 when there is none
     boost::weak_ptr<Menu> level_;
     boost::weak_ptr<Menu> parent_;  // if this is a submenu it will have a parent menu
-    // the item being captured into, held here rather than on the level it belongs to
-    // because level_ is, and both are state of the menu as a whole rather than of one of
-    // its levels
+    // the item being captured into. Like level_, it is held on the root menu, not on the
+    // level the item belongs to
     boost::shared_ptr<Item> capture_;
 };
 

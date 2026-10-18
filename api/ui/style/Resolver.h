@@ -24,8 +24,9 @@ class Style;
 class Theme;
 
 /**
- * The style of a class a component names, or the first of that class the theme holds when
- * it names none - so that a theme can dress every panel without every panel naming one.
+ * The style of a class that a component names. When the component names none, this is the
+ * first style of that class the theme holds, so a theme can style every panel without every
+ * panel naming a style.
  *
  * @return the style, or null when the theme holds none of that class
  **/
@@ -46,9 +47,9 @@ boost::shared_ptr<Style> lookup(const boost::shared_ptr<Theme>& theme,
 class Resolver final {
  public:
     /**
-     * The style classes a component is dressed by. An enum rather than a string, because
-     * it keys a per-frame lookup and the set is closed: each class is one this library
-     * reads named properties from.
+     * The style classes a component is drawn with. An enum, not a string, because it keys a
+     * per-frame lookup, and the set is fixed: each class is one this library reads named
+     * properties from.
      **/
     enum class Class : std::uint8_t {
         Panel,
@@ -73,8 +74,8 @@ class Resolver final {
     boost::shared_ptr<Theme> theme() const noexcept;
 
     /**
-     * The defaults every class is resolved from - what a theme's "ui" style names, and
-     * what a theme naming nothing draws in.
+     * The defaults every class is resolved from: the values a theme's "ui" style sets, and
+     * otherwise the built-in defaults.
      *
      * The non-const overload clears the cache, because the caller is about to change the
      * values it was computed from. Calling it every frame disables the cache, so read
@@ -92,28 +93,26 @@ class Resolver final {
     /**
      * The colours and metrics a component of this class, naming this style, is drawn with.
      *
-     * @param name what the component's style() gives, which may be empty - a component
-     *      naming no style is dressed by whichever style of the class the theme holds
-     *      first, so that a theme can dress every button without every button naming it
+     * @param name what the component's style() returns, which may be empty. A component
+     *      naming no style is drawn with the first style of the class the theme holds
      **/
     const paint::Dressing& resolve(Class className, const std::string_view& name) const;
 
     /**
-     * The style itself, for what a Dressing does not carry: the nine images a button is
-     * skinned from, which are handles rather than colours.
+     * The active theme's style of a class, as style::lookup() finds it. Not cached.
      *
-     * Not cached, because it is requested once per button rather than once per component,
-     * and a button's style is chosen by state as well as by name. Class::Button resolves
-     * only a button's focus ring. Like every other class, it takes the first style of the
-     * class, because the ring shows keyboard focus rather than the button's state.
+     * A button's skin is chosen by state as well as by name, so ComponentRenderer searches
+     * the theme for it directly. Class::Button resolves only a button's focus ring. Like
+     * every other class, it takes the first matching style of the class, because the ring
+     * shows keyboard focus, not the button's state.
      **/
     boost::shared_ptr<Style> lookup(const std::string& className,
         const std::string_view& name) const;
 
     /**
-     * The style class a theme names the immediate layer's colours and metrics in.
+     * The style class that holds the immediate ui's colours and metrics in a theme.
      *
-     * Separate from the retained side's "ui" class, because the two use the same keys at
+     * Separate from the retained ui's "ui" class, because the two use the same keys at
      * different sizes. A hud is read at a glance and a tool panel is read closely, so
      * their line heights and paddings differ by about a factor of two.
      **/

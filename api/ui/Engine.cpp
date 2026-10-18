@@ -48,8 +48,8 @@ bool Engine::load(const boost::json::object& config) {
     containers_ = std::move(loader.containers());
     themes_ = std::move(loader.themes());
 
-    // the first theme loaded is active unless the document named one, so a config carrying
-    // a single theme needs no field at all
+    // the first theme loaded is active unless the document names one, so a config with a
+    // single theme needs no field for it
     activeTheme_ = themes_.empty() ? nullptr : themes_.front();
     if (!loader.active().empty()) {
         activeTheme(loader.active());
@@ -91,8 +91,8 @@ std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::
 
     const boost::shared_ptr<component::Icon> icon = boost::dynamic_pointer_cast<component::Icon>(component);
     const boost::shared_ptr<component::Button> button = boost::dynamic_pointer_cast<component::Button>(component);
-    // a strip's buttons are its own rather than children, so they are not reached by the
-    // traversal below and are taken here
+    // a toolbar's buttons are not its children, so the loop over children below does not
+    // reach them
     const boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
     if (icon) {
         if (resolveIcon(resolve, std::string(icon->source()), icon)) {
@@ -111,9 +111,8 @@ std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::
         }
     }
 
-    // a container holds only what was added to it, and Loader gives a nested component to its
-    // parent rather than to the container, so an icon inside a panel or a box is reached from
-    // here and from nowhere else
+    // Loader adds a nested component to its parent, not to the container, so an icon inside a
+    // panel or a box is reached only through this loop
     for (const boost::shared_ptr<Component>& child : component->children()) {
         resolved += resolveComponentImages(resolve, child);
     }
@@ -169,8 +168,7 @@ boost::shared_ptr<style::Theme> Engine::theme(const std::string_view& name) cons
 /**
  **/
 void Engine::focus(const boost::shared_ptr<Component>& component) {
-    // a component that cannot be used is nothing to focus, the same answer one that never
-    // asked to be focusable gets
+    // a component that is not focusable, or not usable, is treated as null
     const boost::shared_ptr<Component> wanted =
         component && component->focusable() && usable(*component) ? component : boost::shared_ptr<Component>();
     const boost::shared_ptr<Component> was = focused_.lock();
@@ -184,8 +182,8 @@ void Engine::focus(const boost::shared_ptr<Component>& component) {
         wanted->focused(true);
     }
     focused_ = wanted;
-    // after both components have been told, so that a listener asking focused() is answered
-    // the move rather than the middle of it
+    // called after both components' flags are set, so a listener that calls focused() sees
+    // the finished move
     if (moved_) {
         moved_(wanted);
     }
@@ -216,8 +214,8 @@ bool Engine::reachable(const boost::shared_ptr<Component>& component) const {
 namespace {
 
 /**
- * Collect what can be focused, in draw order - forEachDrawn's, so a
- * control on a tab page that is not up is not one.
+ * Collect what can be focused, in draw order. forEachDrawn skips a tab page that is not
+ * chosen, so a control on one is left out.
  **/
 void focusable(const boost::shared_ptr<Component>& component,
     std::vector<boost::shared_ptr<Component>>* found) {
@@ -272,9 +270,9 @@ bool Engine::focusNext(bool forward) {
     }
     const auto here = std::find(order.begin(), order.end(), was);
     if (here == order.end()) {
-        // what held the focus is no longer reachable: hidden, disabled or taken out of the
-        // tree since it took it. There is no place in the order to move on from, so the order
-        // starts again rather than leaving the focus somewhere tab cannot get it back
+        // the focused component is not reachable: it was hidden, disabled or taken out of the
+        // tree. There is no place in the order to move on from, so the order starts again at
+        // one end
         focus(forward ? order.front() : order.back());
         return true;
     }

@@ -32,10 +32,9 @@ L"`abcdefghijklmnopqrstuvwxyz{|}~";
 
 const char* const TextRenderer::defaultFont = "fonts/NotoSans-Regular.ttf";
 
-// chosen by packing printable ascii and seeing what fit rather than by arithmetic. 48 with
-// a spread of 8 is the largest of the pairs tried that still fits a 512 atlas: 48 and 12
-// does not, and 64 and 8 does not. A charset or a base that needs more passes larger
-// atlas dimensions
+// found by packing printable ascii, not by arithmetic. 48 with a spread of 8 is the largest
+// pair tried that fits a 512 atlas: 48 with 12 does not, and 64 with 8 does not. A charset
+// or a base that needs more passes larger atlas dimensions
 const float TextRenderer::baseSize = 48.0F;
 const unsigned int TextRenderer::defaultSpread = 8;
 const unsigned int TextRenderer::defaultAtlas = 512;
@@ -57,20 +56,20 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     cache_ = boost::make_shared<v3d::font::TextureFontCache>(atlas.x, atlas.y, 1, logger);
     markup_.size_ = size_;
 
-    // the face is opened here rather than loaded as an asset: what it is rasterized at is this
-    // renderer's to say, and the manager only says where the file is
+    // the face is opened here, not loaded as an asset, because this renderer chooses the
+    // size it is rasterized at. The manager only supplies the file's path
     const boost::shared_ptr<v3d::font::TextureFont> face =
         boost::make_shared<v3d::font::TextureFont>(assetManager->path(font), markup_.size_, logger, spread);
     face->atlas(cache_->atlas());
     if (!face->loadGlyphs(charcodes)) {
         // a face that would not open packs nothing, and one that opened into an atlas too
-        // small packs some. Drawing what did fit would be text with characters missing,
-        // measured short, laid out around the short measure
+        // small packs only some glyphs. Either way nothing is drawn, so no text is shown
+        // with characters missing
         logger->get()->error("{} could not be packed at size {}, so nothing drawn through it will have text", font, size_);
         return;
     }
-    // the opaque white square a line or a background is drawn with. The text buffer asks
-    // for it with every glyph, so it is packed now rather than after the upload
+    // the opaque white square a line or a background is drawn with. The text buffer looks it
+    // up with every glyph, so it is packed now, before the upload
     face->glyph(static_cast<wchar_t>(-1));
     cache_->add(face);
     markup_.font_ = face;

@@ -31,7 +31,8 @@ namespace {
 constexpr float LINE_SPACING = 1.4F;
 
 /**
- * The dressing an app gets when it names none: a line of text and the gap after it.
+ * The Dress used when an app passes none. It sets only the line height, which covers a line
+ * of text and the gap after it.
  **/
 void lineHeight(paint::Dressing* dressing, float size) {
     dressing->lineHeight = size * LINE_SPACING;
@@ -85,8 +86,8 @@ void Screen::build() {
         } else {
             immediate_ = boost::make_shared<Immediate>(text_->measure(drawn), text_->write(&canvas_, drawn));
         }
-        // the immediate layer has a dressing of its own kind, which the app's dress does not
-        // fill, so only the line height is carried across
+        // the immediate layer has its own Dressing type, which the app's Dress does not fill,
+        // so only the line height is copied across
         immediate_->dressing().lineHeight = components_->dressing().lineHeight;
         immediate_->theme(theme_);
     }

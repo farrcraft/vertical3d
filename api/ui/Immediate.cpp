@@ -318,7 +318,7 @@ Immediate::Id Immediate::identify(const std::string& label) const {
         value ^= static_cast<std::uint64_t>(static_cast<unsigned char>(letter));
         value *= hashPrime;
     }
-    // an id of zero is what "nothing" is, so the one label that hashes to it moves along
+    // an id of zero means "nothing", so a label that hashes to zero is given 1 instead
     return value == 0 ? 1 : value;
 }
 
@@ -402,8 +402,8 @@ glm::vec4 Immediate::face(bool lit, bool hovered) const {
 
 void Immediate::label(const std::string& line, const glm::vec2& min, const glm::vec2& size,
     const glm::vec4& colour) const {
-    // the baseline sits three quarters of the way down a row, which is where a font with
-    // ordinary descenders looks centred
+    // the baseline sits a quarter of a line below the box's middle, which is three quarters
+    // of the way down a box one line tall. A font with ordinary descenders looks centred there
     const glm::vec2 pen(min.x, min.y + ((size.y + (dressing_.lineHeight * 0.5F)) * 0.5F));
     write_(line, pen, colour);
 }
@@ -432,9 +432,9 @@ bool Immediate::window(const std::string& title, const v3d::type::geometry::Boun
         }
     }
 
-    // the drag is kept as a displacement rather than a position, so a caller that moves its
-    // window every frame is followed rather than fought. The bar is kept on the canvas
-    // because the bar is the only thing that drags one back
+    // the drag is kept as a displacement, not a position, so a window that its caller moves
+    // every frame still follows the caller. The title bar is kept on the canvas, because the
+    // bar is the only way to drag a window back
     const glm::vec2 room = glm::max(glm::vec2(static_cast<float>(canvas_->width()) - size.x,
         static_cast<float>(canvas_->height()) - dressing_.barHeight), glm::vec2(0.0F, 0.0F));
     const glm::vec2 min = glm::clamp(position + retained.offset, glm::vec2(0.0F, 0.0F), room);
@@ -893,8 +893,8 @@ void Immediate::nextRow() {
     if (!table_.open) {
         return;
     }
-    // the rows are what the region holds, so the first of them is where it starts - which
-    // is below the header when there is one and at the top of the table when there is not
+    // the scrolled region holds the rows, so it starts at the first row: below the header
+    // when there is one, and at the top of the table when there is not
     tableBody();
     table_.column = 0;
     row_.margin = columnStart(0);
@@ -906,8 +906,8 @@ void Immediate::nextColumn() {
         return;
     }
     table_.column++;
-    // staying on the row is what sameLine() already does; the column start is where the
-    // next widget lands rather than wherever the last one ended
+    // sameLine() keeps the next widget on the row. Setting lastRight puts it at the column's
+    // start, not wherever the last widget ended
     row_.sameLine = true;
     row_.lastRight = columnStart(table_.column) - dressing_.spacing;
 }
@@ -923,8 +923,8 @@ void Immediate::endTable() {
         const float bottom = table_.top + table_.height;
         closeScroll({.id = table_.id, .scroll = table_.scroll, .contentTop = table_.contentTop, .bodyMax = glm::vec2(table_.right, bottom)},
             Bar::WhenNeeded);
-        // what follows the table is under the region rather than under the rows, which are
-        // as tall as they are however tall the table was asked to be
+        // what follows the table goes under the region, not under the rows, because the rows
+        // can be shorter or taller than the height the table was given
         row_.penY = bottom + dressing_.spacing;
     }
     table_.open = false;

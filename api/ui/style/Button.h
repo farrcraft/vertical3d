@@ -18,11 +18,11 @@ namespace v3d::ui::style {
 class Button : public Style {
  public:
     /**
-     * Which look the style dresses, which a theme names with "state".
+     * Which look of a button the style applies to. A theme names it with "state".
      *
-     * Separate from component::Button::ButtonState. Three of these looks are the transient
-     * state the cursor writes. The fourth is a disabled component, which the cursor never
-     * changes.
+     * Separate from component::Button::ButtonState. Normal, Hover and Press match the
+     * transient state the cursor writes. Disabled is for a disabled component, which the
+     * cursor never changes.
      */
     enum class State : std::uint8_t {
         Normal,

@@ -417,7 +417,7 @@ BOOST_AUTO_TEST_CASE(a_component_that_clips_cuts_its_children_to_its_box) {
     container.add(outer);
     build().draw(&canvas, container);
 
-    // the parent's plate, then the child's under the clip
+    // the parent's quads, then the child's under the clip
     BOOST_REQUIRE(canvas.batches().size() >= 2U);
     BOOST_CHECK(!canvas.batches().front().clipped);
     const v3d::render::realtime::canvas::Canvas::Batch& cut = canvas.batches().back();
@@ -432,8 +432,8 @@ BOOST_AUTO_TEST_CASE(a_component_that_clips_cuts_its_children_to_its_box) {
 }
 
 /**
- * Clipping is what a component asked for and not the default, because a menu drops a panel
- * out of the strip it came from and a badge sits half outside its plate.
+ * Clipping is off by default and a component turns it on, because a menu drops a panel out
+ * of the strip it came from, and a badge can sit half outside its panel.
  **/
 BOOST_AUTO_TEST_CASE(a_component_that_does_not_ask_is_not_clipped) {
     v3d::render::realtime::canvas::Canvas canvas;

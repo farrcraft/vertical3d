@@ -51,9 +51,9 @@ namespace v3d::ui::paint {
 namespace {
 
 /**
- * The colour a component's own text is drawn in: what it would be drawn in, or the theme's
- * disabled colour when the component - or anything holding it - cannot be used. An icon is
- * tinted with the same colour, so one key greys both a label and the picture beside it.
+ * The colour a component's own text is drawn in: the given colour, or the theme's disabled
+ * colour when the component, or anything holding it, cannot be used. An icon is tinted with
+ * the same colour, so disabling a box greys both a label and the picture beside it.
  **/
 glm::vec4 ink(const Component& component, const Dressing& dress, const glm::vec4& colour) {
     return usable(component) ? colour : dress.disabledText;
@@ -62,7 +62,7 @@ glm::vec4 ink(const Component& component, const Dressing& dress, const glm::vec4
 /**
  * The colour a menu item's label is written in, in a centred menu and in a dropped panel
  * alike. An item that cannot be used, or one in a menu that cannot be, is written in the
- * disabled colour even while it is the active one, because navigation refuses to activate it.
+ * disabled colour even while it is the active one, because navigation does not activate it.
  **/
 glm::vec4 itemInk(const boost::shared_ptr<component::menu::Item>& item, const Dressing& dress, bool selected) {
     if (!item || !usable(*item)) {
@@ -72,8 +72,8 @@ glm::vec4 itemInk(const boost::shared_ptr<component::menu::Item>& item, const Dr
 }
 
 /**
- * Which of a theme's button styles a button is dressed by. A button that cannot be used
- * takes the disabled one whatever the cursor last wrote on it.
+ * Which of a theme's button styles a button is drawn with. A button that cannot be used
+ * takes the disabled one, whatever state the cursor last wrote on it.
  **/
 style::Button::State look(const component::Button& button) noexcept {
     if (!usable(button)) {
@@ -88,12 +88,12 @@ style::Button::State look(const component::Button& button) noexcept {
 }
 
 /**
- * The style class a component is dressed by, which is the class its focus ring is read
- * off - or nothing for one drawn out of the base alone.
+ * The style class a component's focus ring is read from, or nothing for a component drawn
+ * with the base dressing alone.
  *
- * The only place the two enums meet. Resolver::Class is not checked against Type, so this
- * switch defines which type reads which class. Every enumerator is named and there is no
- * default, so a component added to Type is a build error here.
+ * Resolver::Class is not checked against Type, so this switch defines which type rings in
+ * which class. Every enumerator is named and there is no default, so a component added to
+ * Type is a build error here.
  **/
 std::optional<style::Resolver::Class> ringed(component::Type type) noexcept {
     switch (type) {
@@ -117,8 +117,8 @@ std::optional<style::Resolver::Class> ringed(component::Type type) noexcept {
         case component::Type::Toolbar:
         case component::Type::Undefined:
         case component::Type::VerticalBox:
-            // a label, an icon, a box and the strips have no class of their own: the base
-            // is what dresses them, and the base is what rings them
+            // a label, an icon, a box and the strips have no class of their own. They are
+            // drawn and ringed with the base dressing
             break;
     }
     return std::nullopt;
@@ -259,8 +259,8 @@ void ComponentRenderer::paint(v3d::render::realtime::canvas::Canvas* canvas,
         case component::Type::MenuItem:
         case component::Type::Toolbar:
             // types that draw nothing here. A box draws nothing of its own, and a tab page is a
-            // box whose bar draws the strip above it. A strip places and draws its own contents
-            // through the ComponentRenderer::draw overload the ui engine calls instead
+            // box whose bar draws the strip above it. A menu and the strips are drawn by their
+            // own draw overloads, which draw(Container) calls
             break;
     }
     ring(canvas, component);
@@ -328,8 +328,8 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         if (component->type() == component::Type::Menu) {
             draw(canvas, boost::dynamic_pointer_cast<component::menu::Menu>(component));
         } else {
-            // everything else is a box: it is laid out against the canvas, and whatever it
-            // holds is laid out against it
+            // every other component is laid out against the canvas, and whatever it holds is
+            // laid out against it
             arranger_.walk(canvas, component,
                 component->layout().resolve(area, arranger_.natural(*component, area)),
                 [this](v3d::render::realtime::canvas::Canvas* target, const boost::shared_ptr<Component>& each) {
@@ -406,8 +406,8 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         canvas->rect(min, min + size, button->checked() ? base().highlight : base().hover);
     }
 
-    // an icon is what the button says instead of its label, not as well as it. The label
-    // stays on the component for whatever measures it before an image has been resolved
+    // a resolved icon is drawn instead of the label, not as well as it. Until the image has
+    // been resolved, the button draws its label
     const v3d::ui::Image& picture = button->image();
     if (picture.valid()) {
         const float side = std::min(base().iconSize, std::min(size.x, size.y));
@@ -504,8 +504,8 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     const glm::vec2 max = min + slider->size();
     plateBox(canvas, min, max, dress.radius, dress.borderWidth, {.inside = dress.track, .outline = dress.border});
 
-    // the thumb is a square as tall as the track, and its centre runs between the two ends
-    // less half of it, so it never hangs off either
+    // the thumb is a square as tall as the track. Its left edge travels from the start of
+    // the track to the end less one side, so it never hangs off either end
     const float side = slider->size().y;
     const float travel = std::max(0.0F, slider->size().x - side);
     const float left = min.x + (travel * slider->fraction());
@@ -575,7 +575,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     plateBox(canvas, min, min + size, dress.radius, width, {.inside = dress.panel, .outline = dress.border});
 
     // the row height comes from the style, and the list needs it to find the row under a
-    // point, so it is stored on the list while drawing, like a box
+    // point, so it is stored on the list while drawing, as the list's box is
     list->rowHeight(row);
     if (list->items().empty() || row <= 0.0F) {
         return;
@@ -627,8 +627,8 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     const std::string text(box->text());
     if (text.empty() && !box->focused()) {
-        // the placeholder says what the box is for and is not what it holds, so it is
-        // dropped the moment there is something to type into
+        // the placeholder says what the box is for. It is shown only while the box is empty
+        // and does not have the focus
         box->pen(low.x);
         write_(box->placeholder(), glm::vec2(low.x, min.y + (size.y * widgetBaseline)), dress.placeholder);
         canvas->unclip();
@@ -647,8 +647,9 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     box->pen(pen.x);
 
     if (box->selected()) {
-        // behind the line, which is still drawn whole in one colour: three runs would be
-        // measured as three, and where a caret falls is the measure of one prefix
+        // the highlight goes behind the line, and the line is still drawn whole in one
+        // colour. Three separate runs could measure differently from the one prefix that
+        // places the caret
         const std::string_view line(text);
         const float from = measure_(line.substr(0, std::min(box->anchor(), box->caret())));
         const float to = measure_(line.substr(0, std::max(box->anchor(), box->caret())));
@@ -720,8 +721,8 @@ bool ComponentRenderer::skin(v3d::render::realtime::canvas::Canvas* canvas, cons
         return false;
     }
 
-    // a button's styles are told apart by the look they dress as well as by name, so the
-    // set is walked rather than asked for one
+    // a theme's button styles differ by state as well as by name, so the matching set is
+    // searched for the one whose state matches
     const style::Button::State wanted = look(button);
     boost::shared_ptr<style::Style> target;
     for (const boost::shared_ptr<style::Style>& candidate : theme->getStyleSet(std::string(button.style()), "button")) {

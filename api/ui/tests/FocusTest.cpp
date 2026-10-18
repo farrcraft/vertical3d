@@ -251,9 +251,8 @@ BOOST_AUTO_TEST_CASE(a_disabled_subtree_is_skipped) {
 }
 
 /**
- * A disabled component is nothing to focus, which is the answer one that never asked to be
- * focusable gets - and a component inside a disabled box is no different, though it is
- * enabled itself.
+ * A disabled component cannot be focused, the same as one that is not focusable. Nor can a
+ * component inside a disabled box, though it is enabled itself.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_component_cannot_be_focused) {
     const Fixture fixture(ONE_CONTAINER);

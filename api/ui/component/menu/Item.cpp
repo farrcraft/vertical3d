@@ -44,8 +44,8 @@ void Item::submenu(const boost::shared_ptr<Menu>& sub) {
         return;
     }
     sub->parent(menu_);
-    // the submenu inherits from the item that opens it, so disabling the item, or the menu it
-    // is in, disables what the submenu holds
+    // the item becomes the submenu's parent, so disabling the item, or the menu it is in,
+    // disables what the submenu holds
     adopt(*sub);
 }
 

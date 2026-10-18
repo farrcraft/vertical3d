@@ -427,7 +427,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
 
     BOOST_REQUIRE_EQUAL(written.size(), 1U);
     BOOST_CHECK(written.front().colour == greyed);
-    // no plate under it either: a disabled button is never lit
+    // no highlight under it either: a disabled button is never lit
     BOOST_CHECK(canvas.empty());
 }
 

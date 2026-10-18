@@ -13,8 +13,8 @@
 namespace v3d::ui::paint {
 
 /**
- * The boxes this library is drawn out of, shared by the two ways of writing a ui: the
- * retained components and the immediate mode layer.
+ * The boxes this library is drawn out of, shared by the retained components and the
+ * immediate ui.
  *
  * A rounded box is three bands and four wedges, all of them batched on the 2D canvas, so a
  * corner radius costs no draw of its own.
@@ -42,20 +42,23 @@ void strokeBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
     float radius, float width, const glm::vec4& colour);
 
 /**
- * Fill a box inside an outline, both rounded.
- *
- * The outline is traced around the fill rather than drawn as a box behind it, because
- * what is inside usually carries an alpha: an outline behind it would show through as a
- * tint over the whole plate, and whatever the plate covers would not show through at all.
- *
- * @param width how thick the outline is; nothing is traced when it is zero
- * @param colours what the box is filled with, and what its outline is
+ * What a box is filled with, and what its outline is drawn in.
  **/
 struct Plate {
     glm::vec4 inside{1.0F};
     glm::vec4 outline{1.0F};
 };
 
+/**
+ * Fill a box inside an outline, both rounded.
+ *
+ * The outline is traced around the fill, not drawn as a box behind it, because the fill
+ * usually carries an alpha. An outline behind it would tint the whole box, and would hide
+ * whatever the box covers.
+ *
+ * @param width how thick the outline is. Nothing is traced when it is zero
+ * @param colours what the box is filled with, and what its outline is
+ **/
 void plateBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, float width, const Plate& colours);
 

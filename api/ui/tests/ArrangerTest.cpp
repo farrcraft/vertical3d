@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(a_tree_is_laid_out_without_being_drawn) {
 
 /**
  * The paint is called once per component, in the order the layout pass reaches them: a parent
- * before what it holds, so a child is drawn over its plate.
+ * before what it holds, so a child is drawn over its parent.
  **/
 BOOST_AUTO_TEST_CASE(the_paint_is_called_once_per_component_parent_first) {
     const v3d::ui::style::Resolver styles;

@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(a_key_reaches_the_focused_box) {
 }
 
 /**
- * A character is not a key: what the platform composed goes in at the caret whole, with
+ * A composed character arrives as text, not as a key. It goes in at the caret whole, with
  * shift already applied to it.
  **/
 BOOST_AUTO_TEST_CASE(a_composed_character_goes_in_at_the_caret) {

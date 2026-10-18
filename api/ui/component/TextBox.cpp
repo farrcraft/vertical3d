@@ -150,9 +150,9 @@ bool TextBox::insert(std::string_view value) {
         return false;
     }
     const std::pair<std::size_t, std::size_t> span = run();
-    // refused whole rather than truncated: half a pasted path is worse than none of it,
-    // and truncating utf-8 by bytes can cut a character in two. Measured against what the
-    // text would become, so replacing a selection makes room for what replaces it
+    // refused whole, not truncated, so a paste never lands half a path, and utf-8 is never
+    // cut inside a character. Measured against what the text would become, so replacing a
+    // selection makes room for what replaces it
     if (limit_ > 0 && text_.size() - (span.second - span.first) + value.size() > limit_) {
         return false;
     }
@@ -165,8 +165,7 @@ bool TextBox::insert(std::string_view value) {
 
 bool TextBox::backspace() {
     if (removeSelection()) {
-        // a selection is what a backspace takes out when there is one, so the character
-        // before the caret is only reached by a box with nothing selected
+        // with a selection, a backspace removes only the selection
         return true;
     }
     if (caret_ == 0) {
@@ -256,9 +255,9 @@ std::size_t TextBox::at(const glm::vec2& point, const paint::Measure& measure) c
         return 0;
     }
 
-    // every boundary in turn, taking the one whose character the point is past the middle
-    // of: the left half of a character puts the caret before it and the right half after,
-    // so a click between two letters lands between them
+    // step through the boundaries, and stop at the first character whose middle the point
+    // is not past. The left half of a character puts the caret before it and the right
+    // half after, so a click between two letters lands between them
     std::size_t found = 0;
     float before = 0.0F;
     std::size_t offset = 0;
@@ -285,8 +284,8 @@ float TextBox::pen() const noexcept {
 
 void TextBox::event(const v3d::event::Event& destination) {
     event_ = destination;
-    // marked as a command here rather than by the caller, as Button and menu::Item do, because a
-    // listener that accepts only Destination events drops an unmarked one
+    // marked as a Destination event here, not by the caller, because a listener that accepts
+    // only Destination events drops an unmarked one
     event_.type(v3d::event::Type::Destination);
 }
 

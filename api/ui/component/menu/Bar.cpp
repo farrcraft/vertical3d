@@ -23,7 +23,8 @@ namespace v3d::ui::component::menu {
 /**
  **/
 Bar::Bar() : Component(component::Type::MenuBar), hover_(-1), open_(-1) {
-    // a strip is a control unless a document says it is scenery, which lets a press through
+    // pickable unless a document sets it otherwise, and a menu bar that is not pickable lets
+    // a press through
     pickable(true);
 }
 
@@ -38,7 +39,7 @@ Bar::~Bar() {
 /**
  **/
 void Bar::add(const std::string& label, const boost::shared_ptr<Menu>& menu) {
-    // opening a label shows its menu, so a label without one is not added
+    // opening a label shows its menu, so a label with no menu is not added
     if (!menu) {
         return;
     }
@@ -101,8 +102,8 @@ void Bar::open(int index) {
     }
     open_ = index;
     panels_.push_back(menus_[index]);
-    // nothing in the panel is under the cursor yet, and an item left active by the last
-    // time it was open would be highlighted where the cursor is not
+    // nothing in the panel is under the cursor yet, so clear the item left active the last
+    // time the panel was open
     panels_.front()->active(-1);
 }
 
@@ -148,7 +149,7 @@ int Bar::labelAt(const glm::vec2& cursor) const {
 int Bar::itemAt(const boost::shared_ptr<Menu>& panel, const glm::vec2& cursor) {
     for (std::size_t index = 0; index < panel->count(); index++) {
         const boost::shared_ptr<Item>& item = (*panel)[index];
-        // an item that cannot be used is not offered the cursor, like a disabled strip button
+        // an item that cannot be used is not offered the cursor, like a disabled toolbar button
         if (item && usable(*item) && within(*item, cursor)) {
             return static_cast<int>(index);
         }
@@ -259,8 +260,8 @@ boost::shared_ptr<Item> Bar::find(const boost::shared_ptr<Menu>& menu, const std
         if (!item) {
             continue;
         }
-        // an item is only bound when its config gave both a command and a context, and
-        // Event::str() dereferences the context
+        // an item is bound only when its config gave both a command and a context, so an
+        // item with no context sends no command and is not matched
         const v3d::event::Event event = item->event();
         if (event.context() && event.str() == command) {
             return item;

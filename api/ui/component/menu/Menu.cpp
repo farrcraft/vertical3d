@@ -108,8 +108,7 @@ bool Menu::previous() {
 }
 
 bool Menu::up() {
-    // backing out of a capture is what it means here, rather than leaving the level the
-    // item being captured into sits on
+    // while a capture is open, up() cancels the capture and stays on the same level
     if (capture_) {
         cancel();
         return true;
@@ -159,8 +158,8 @@ boost::shared_ptr<Item>& Menu::operator[](size_t index) {
  **/
 bool Menu::dispatch(const boost::shared_ptr<Item>& item) const {
     v3d::event::Event event = item->event();
-    // an item is only bound to an event when its config gave both a command and a context.
-    // a disabled item sends nothing
+    // an item is bound to an event only when its config gave both a command and a context.
+    // A disabled item sends nothing
     if (!usable(*item)) {
         return false;
     }
@@ -189,7 +188,7 @@ bool Menu::capture(const v3d::event::EventData& value) {
     }
     capture_->value(value);
 
-    // a binding is one key, so the first one given is the whole answer
+    // a binding is one key, so the first value given finishes a key input
     if (capture_->itemType() == menu::ItemType::KeyInput) {
         const boost::shared_ptr<Item> item = capture_;
         capture_.reset();

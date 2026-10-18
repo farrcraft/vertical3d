@@ -257,7 +257,6 @@ BOOST_AUTO_TEST_CASE(the_cursor_opens_a_flyout_from_a_submenu_item) {
 
     fixture.draw();
     const boost::shared_ptr<v3d::ui::component::menu::Menu>& flyout = fixture.bar->panels().back();
-    // through the bound, because a menu's own size() is its item count
     const v3d::type::geometry::Bound2D bounds = panel->bound();
     BOOST_CHECK_CLOSE(flyout->position().x, bounds.position().x + bounds.size().x, 0.01F);
     BOOST_CHECK_CLOSE(flyout->position().y, shading->position().y, 0.01F);
@@ -347,7 +346,7 @@ BOOST_AUTO_TEST_CASE(a_check_item_draws_a_mark_only_when_it_is_checked) {
 
 /**
  * An item is findable by the command it sends, however deep it is, and an unbound one is
- * skipped rather than dereferenced - a submenu item has no event.
+ * skipped. A submenu item has no event.
  **/
 BOOST_AUTO_TEST_CASE(an_item_is_found_by_the_command_it_sends) {
     Fixture fixture;

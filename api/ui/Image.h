@@ -27,8 +27,8 @@ struct Image final {
      **/
     Image() noexcept;
     /**
-     * The whole of a texture. Implicit, so a resolver with no sheets may answer a bare
-     * handle.
+     * The whole of a texture. Implicit, so a resolver with no sprite sheets can return a
+     * bare handle.
      *
      * @param tex the texture
      **/

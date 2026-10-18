@@ -14,8 +14,7 @@
 
 namespace v3d::ui::style {
 /**
- * A vGUI theme.
- * Themes consist of a name and a collection of styles.
+ * A named collection of styles.
  */
 class Theme {
  public:

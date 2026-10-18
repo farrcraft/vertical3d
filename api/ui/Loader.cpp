@@ -66,8 +66,8 @@ namespace {
 /**
  * Read a fixed length array of numbers - a position, a size, a colour.
  *
- * @param fallback what to answer with when the field is absent or the wrong length,
- *      so every one of these is optional
+ * @param fallback what to return when the field is absent, the wrong length or holds
+ *      something that is not a number, so every one of these is optional
  **/
 template <typename T, std::size_t N>
 T numbers(const boost::json::object& entry, const std::string& field, const T& fallback) {
@@ -90,7 +90,7 @@ T numbers(const boost::json::object& entry, const std::string& field, const T& f
 
 /**
  * Read one length: a number is pixels, and a string ending in % is a fraction of the
- * parent. Anything else is left as it was, which is Auto for a component naming nothing.
+ * parent. Anything else returns the fallback, which is Auto for a component naming nothing.
  **/
 Length length(const boost::json::value& value, const Length& fallback) {
     if (value.is_string()) {
@@ -127,7 +127,7 @@ void lengths(const boost::json::object& entry, const std::string& field, Length*
 
 /**
  * The alignment names a style property may carry. An unrecognised one, or one that is not a
- * string, is no alignment rather than an error, which is the only sensible reading of a hint.
+ * string, reads as no alignment, not as an error, because an alignment is only a hint.
  **/
 style::Property::Alignment alignment(const boost::json::object& entry) {
     const std::optional<std::string> named = v3d::asset::readString(entry, "align");
@@ -243,7 +243,8 @@ const boost::json::array* requiredArray(const v3d::log::Logger& logger, const bo
 }
 
 /**
- * @return whether the entry carries the field as a boolean, and what it holds
+ * @return the field's value when the entry carries it as a boolean, and otherwise the
+ *      fallback
  **/
 bool flag(const boost::json::object& entry, const std::string& field, bool fallback) {
     if (!entry.contains(field) || !entry.at(field).is_bool()) {
@@ -313,8 +314,8 @@ bool Loader::loadThemes(const boost::json::object& doc) {
             return false;
         }
         active_ = *named;
-        // named here and resolved by whoever takes the themes, so that a document naming a
-        // theme it does not carry is refused rather than half loaded
+        // Engine makes the named theme active. It is checked here, so that a document naming
+        // a theme it does not carry is refused, not half loaded
         const bool known = std::any_of(themes_.begin(), themes_.end(),
             [this](const boost::shared_ptr<style::Theme>& theme) { return theme->name() == active_; });
         if (!known) {
@@ -406,8 +407,8 @@ boost::shared_ptr<Component> Loader::buildComponent(const std::string& component
         case component::Type::VerticalBox:
             return loadFlowBox(componentType, entry);
         case component::Type::MenuItem:
-            // built by the menu that holds it rather than named as a component of its own, so
-            // parse() never answers this and a config that spelled it lands on Undefined below
+            // built by the menu that holds it, not named as a component of its own, so parse()
+            // never returns this, and a config that names it is handled as Undefined
         case component::Type::Undefined:
             break;
     }
@@ -430,8 +431,8 @@ boost::shared_ptr<Component> Loader::loadComponent(const boost::json::object& en
     }
 
     component->name(componentName);
-    // a menu and a menu bar are placed entirely by the renderer, so reading a box onto one
-    // would be read and then written over. What else they carry is read like anything's
+    // the renderer places a menu and a menu bar itself, so a layout read onto one would be
+    // ignored. Their other attributes are read as for any component
     const component::Type type = component::parse(componentType);
     if (type != component::Type::Menu && type != component::Type::MenuBar) {
         loadLayout(entry, &component->layout());
@@ -440,8 +441,8 @@ boost::shared_ptr<Component> Loader::loadComponent(const boost::json::object& en
     if (!loadChildren(entry, component)) {
         return nullptr;
     }
-    // which tab is up is a place in the pages, so it can only be read once the pages the
-    // children array named are there
+    // the chosen tab is an index into the pages, so it is read only after the children
+    // array has added them
     if (type == component::Type::TabBar) {
         if (const std::optional<int> selected = optionalInt(*logger_, entry, "selected", 0)) {
             boost::static_pointer_cast<component::TabBar>(component)->selected(*selected);
@@ -528,7 +529,7 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
         } else if (stateName == "press") {
             state = style::Button::State::Press;
         } else if (stateName == "disabled" || stateName == "inactive") {
-            // both names dress a component that is not enabled
+            // both names apply to a component that is not enabled
             state = style::Button::State::Disabled;
         } else if (stateName != "normal") {
             logger_->get()->error("A button style has no state [{}]", stateName);
@@ -547,8 +548,8 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
 }
 
 bool Loader::loadProperties(const boost::json::object& entry, const boost::shared_ptr<style::Style>& target) {
-    // the four arrays are the four property classes a style is asked for by, so what a
-    // property is read as is where it was written rather than a field it carries
+    // each array holds one property class, so the array a property is written in, not a
+    // field on the property, decides what it is read as
     static const char* const classes[] = { "colors", "numbers", "fonts", "images" };
 
     for (const char* const section : classes) {
@@ -728,8 +729,8 @@ boost::shared_ptr<component::Scrollbar> Loader::loadScrollbar(const boost::json:
     if (optionalString(*logger_, entry, "direction") == "horizontal") {
         bar->direction(component::Scrollbar::Direction::Horizontal);
     }
-    // what there is to scroll is written by whatever fills the thing being scrolled, so a
-    // range in the config is a starting one rather than the truth
+    // whatever fills the scrolled component sets the real range, so a range in the config
+    // is only a starting one
     const std::optional<float> content = optionalNumber(*logger_, entry, "content");
     const std::optional<float> page = optionalNumber(*logger_, entry, "page");
     if (content && page) {
@@ -761,8 +762,7 @@ boost::shared_ptr<component::SelectList> Loader::loadSelectList(const boost::jso
         }
         list->items(rows);
     }
-    // the rows a list holds are usually its app's rather than its config's, so a config
-    // that names none is a list something else fills
+    // the app usually fills a list's rows, so a config may name none
     if (const std::optional<int> selected = optionalInt(*logger_, entry, "selected", -1)) {
         list->selected(*selected);
     }
@@ -831,7 +831,7 @@ void Loader::loadCheckBox(const boost::json::object& entry, const boost::shared_
     if (const std::optional<std::string> value = optionalString(*logger_, entry, "label")) {
         box->label(*value);
     }
-    // a mark in the config is the state the ui starts in; after that, whatever handles
+    // "checked" in the config is the state the ui starts in. After that, whatever handles
     // the command sets it
     box->checked(flag(entry, "checked", false));
     const v3d::event::Event command = loadCommand(entry);
@@ -938,7 +938,7 @@ boost::shared_ptr<component::menu::Menu> Loader::loadMenu(const boost::json::obj
 
         if (menuItem->itemType() == component::menu::ItemType::Submenu) {
             const boost::shared_ptr<component::menu::Menu> submenu = loadMenu(menuItemConfig);
-            if (!submenu) {  // submenu(null) would fault setting the parent
+            if (!submenu) {  // a submenu that fails to load fails the whole menu
                 return nullptr;
             }
             menuItem->submenu(submenu);
@@ -982,7 +982,7 @@ boost::shared_ptr<component::Toolbar> Loader::loadToolbar(const boost::json::obj
             logger_->get()->error("Unrecognized toolbar button config");
             return nullptr;
         }
-        // a button in a strip is read the same way a button in a container is, so "enabled",
+        // a toolbar button is read the same way as a button in a container, so "enabled",
         // "style", "name" and "visible" on one mean what they mean anywhere else
         const boost::shared_ptr<component::Button> button = loadButton(buttonIterator->as_object());
         loadAttributes(buttonIterator->as_object(), button);

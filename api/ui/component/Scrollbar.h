@@ -19,17 +19,17 @@ class SelectList;
 /**
  * A track with a thumb on it, saying which part of something taller than its box is shown.
  *
- * The bar does the arithmetic, not the input handling. An app that picked one calls drag()
- * with where the cursor is and reads offset(). The offset is how far to translate whatever
- * the bar scrolls. What it scrolls is a separate component that clips its children. The bar
- * does not hold it, because the two are laid out side by side.
+ * The bar does the arithmetic, not the input handling. input::Cursor calls drag() with
+ * where the cursor is, and the app reads offset(). The offset is how far to translate
+ * whatever the bar scrolls. What it scrolls is a separate component that clips its
+ * children. The bar does not hold it, because the two are laid out side by side.
  *
- * A bar can instead be told which list it scrolls, and then it holds no range of its own.
- * The content, the page and the offset are the list's, and dragging the thumb moves the
- * list. An unbound bar keeps a range of its own, so it can also scroll something with no
- * component behind it.
+ * A bar can instead be bound to a list with scrolls(), and then it holds no range of its
+ * own. The content, the page and the offset are the list's, and dragging the thumb moves
+ * the list. An unbound bar keeps a range of its own, so it can also scroll something with
+ * no component behind it.
  *
- * The track and the thumb are drawn in the "bar" style class the component names.
+ * The track and the thumb are drawn in the "scrollbar" style class the component names.
  **/
 class Scrollbar : public Component {
  public:
@@ -65,9 +65,9 @@ class Scrollbar : public Component {
      * drag() and scroll() move the list. Pass nothing to unbind it, which puts back
      * whatever range it was last given.
      *
-     * Held weakly, the way ui::Engine holds the focus: the list belongs to its container,
-     * and a bar outliving one that was unloaded should not keep it alive. A bar whose list
-     * has gone reads as its own range again rather than crashing.
+     * Held weakly, because the list belongs to its container. The bar must not keep alive a
+     * list whose container was unloaded. A bar whose list has been destroyed uses its own
+     * range again.
      **/
     void scrolls(const boost::shared_ptr<SelectList>& list);
 
@@ -94,9 +94,8 @@ class Scrollbar : public Component {
     float offset() const noexcept;
 
     /**
-     * Move by a wheel notch's worth, or by whatever else asked. The same clamp as
-     * offset(), written this way so a caller does not have to read the offset to add to
-     * it.
+     * Move the offset by a distance, such as a wheel notch, with the same clamp as
+     * offset(). The caller does not have to read the offset to add to it.
      **/
     void scroll(float distance);
 
@@ -153,9 +152,10 @@ class Scrollbar : public Component {
 };
 
 /**
- * The length of a scrollbar's thumb: as much of the track as what is shown is of the whole,
- * so the thumb shows how much there is as well as where the view sits. Never shorter than
- * Scrollbar::minimumThumb. The component and the immediate layer both use this.
+ * The length of a scrollbar's thumb. The thumb's share of the track is the shown part's
+ * share of the whole, so the thumb shows how much there is as well as where the view sits.
+ * Never shorter than Scrollbar::minimumThumb, unless the track is. Both the Scrollbar
+ * component and the immediate ui use this.
  **/
 float thumbLength(float track, float shown, float whole) noexcept;
 
@@ -175,8 +175,8 @@ struct Thumb {
 float thumbStart(const Thumb& thumb) noexcept;
 
 /**
- * The offset a drag to a point along the track asks for. The cursor holds the middle of the
- * thumb, so what is under it stays under it.
+ * The offset that puts the middle of the thumb at a point along the track, so the part of
+ * the thumb under the cursor stays under it.
  **/
 float dragOffset(float track, float length, float along, float span) noexcept;
 

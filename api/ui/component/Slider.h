@@ -15,10 +15,10 @@ namespace v3d::ui::component {
 /**
  * A value between a minimum and a maximum, moved in steps, drawn as a track with a thumb.
  *
- * Unlike a scrollbar it holds a value in its own units rather than an offset into content
- * it does not hold, and its thumb does not say how much of anything is shown. It owns the
- * value, the way a list owns which row is chosen. It sends its command each time the value
- * changes, by a press, a drag or a key, so whatever answers reads value() back.
+ * Unlike a scrollbar, it holds a value in its own units, not an offset into content, and
+ * its thumb does not show how much of anything is visible. It holds the value, the way a
+ * list holds which row is chosen. It sends its command each time a press, a drag or a key
+ * changes the value, and whatever handles the command reads value().
  *
  * The track, the fill up to the thumb and the thumb are the "slider" style class the
  * component names.
