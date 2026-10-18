@@ -66,6 +66,7 @@ content went. Numbers are never reused.
 | [0076](0076-offline-seeded-samples-resolved-by-one-shared-film.md) | Offline: seeded samples resolved by one shared film | accepted |
 | [0077](0077-offline-one-shared-ray-tracer.md) | Offline: one shared ray tracer | superseded by 0078 |
 | [0078](0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md) | Offline: moya is the one renderer, ray tracing is a hider | accepted |
+| [0092](0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md) | Offline: a bounding volume hierarchy for traced rays | proposed |
 
 ## User interface
 
