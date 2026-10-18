@@ -300,3 +300,9 @@ ninja -C out/build/starter
   [Testing.md](Testing.md#traps).
 - **LNK1163 names a corrupt object file**, not a code problem. Delete the `.obj` it names and
   build again.
+- **An executable that crashes before `main` can be a corrupt incremental link.** A Debug link is
+  incremental, and it can write an executable whose kernel32 import table is partly zeroed. The
+  loader then binds none of kernel32's imports. The program faults in the C runtime's startup,
+  before even `--help` prints anything, and the faulting module is "unknown". Deleting the
+  `.obj` files does not help, because the relink reuses the `.ilk`. Delete the target's `.exe`,
+  `.ilk` and `.pdb`, and build again.
