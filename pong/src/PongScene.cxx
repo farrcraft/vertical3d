@@ -193,11 +193,11 @@ void PongScene::scorePoint(const glm::vec2& ballPosition) {
     // reposition the ball in the center of the screen
     const float mid_y = height / 2.0f;
     const float mid_x = width / 2.0f;
-    glm::vec2 v(mid_x, mid_y);
+    const glm::vec2 v(mid_x, mid_y);
     ball_.position(v);
     // last winner serves the ball, at the start speed
     const float speed = gameState_.ballStartSpeed();
-    glm::vec2 dir(speed * victor, 0.0f);
+    const glm::vec2 dir(speed * victor, 0.0f);
     ball_.direction(dir);
 
     // reset the default paddle positions
@@ -272,11 +272,11 @@ void PongScene::reset() {
     right_.offset(width - right_.size());
 
     // this is the ball's starting position
-    glm::vec2 v(mid_x, mid_y);
+    const glm::vec2 v(mid_x, mid_y);
     ball_.position(v);
     // ... and direction
-    float speed = gameState_.ballStartSpeed();
-    glm::vec2 dir(-speed, 0.0f);
+    const float speed = gameState_.ballStartSpeed();
+    const glm::vec2 dir(-speed, 0.0f);
     ball_.direction(dir);
     // ... and size
     ball_.size(gameState_.ballSize());

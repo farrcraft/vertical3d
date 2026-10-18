@@ -19,7 +19,7 @@ typedef v3d::render::offline::sl::Type Type;
  * and ntransform agree.
  **/
 glm::mat4x4 placed() {
-    glm::mat4x4 matrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(10.0f, 20.0f, 30.0f));
+    const glm::mat4x4 matrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(10.0f, 20.0f, 30.0f));
     return glm::rotate(matrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 }
 

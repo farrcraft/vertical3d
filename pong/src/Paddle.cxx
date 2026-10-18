@@ -26,7 +26,7 @@ Paddle::Paddle(entt::registry* registry) :
 }
 
 glm::vec3 Paddle::color() const {
-    v3d::ecs::component::Color3& color = registry_->get<v3d::ecs::component::Color3>(id_);
+    const v3d::ecs::component::Color3& color = registry_->get<v3d::ecs::component::Color3>(id_);
     return color.value;
 }
 
@@ -51,7 +51,7 @@ void Paddle::offset(const float off) {
 }
 
 float Paddle::position() const {
-    v3d::ecs::component::Position1D& component = registry_->get<v3d::ecs::component::Position1D>(id_);
+    const v3d::ecs::component::Position1D& component = registry_->get<v3d::ecs::component::Position1D>(id_);
     return component.value;
 }
 
@@ -64,7 +64,7 @@ void Paddle::settle() {
 }
 
 float Paddle::offset() const {
-    Offset& component = registry_->get<Offset>(id_);
+    const Offset& component = registry_->get<Offset>(id_);
     return component.offset_;
 }
 
@@ -78,17 +78,17 @@ void Paddle::reset() {
 }
 
 bool Paddle::up() {
-    Travel& travel = registry_->get<Travel>(id_);
+    const Travel& travel = registry_->get<Travel>(id_);
     return travel.up_;
 }
 
 bool Paddle::down() {
-    Travel& travel = registry_->get<Travel>(id_);
+    const Travel& travel = registry_->get<Travel>(id_);
     return travel.down_;
 }
 
 int Paddle::score() {
-    Score& component = registry_->get<Score>(id_);
+    const Score& component = registry_->get<Score>(id_);
     return component.score_;
 }
 
@@ -108,11 +108,11 @@ void Paddle::score(int s) {
 }
 
 float Paddle::size() const {
-    PaddleSize& paddle = registry_->get<PaddleSize>(id_);
+    const PaddleSize& paddle = registry_->get<PaddleSize>(id_);
     return paddle.size_;
 }
 
 float Paddle::length() const {
-    PaddleSize& paddle = registry_->get<PaddleSize>(id_);
+    const PaddleSize& paddle = registry_->get<PaddleSize>(id_);
     return paddle.length_;
 }

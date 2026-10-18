@@ -24,7 +24,7 @@ namespace {
  * pixels and the middle of the view is the middle of a unit primitive.
  **/
 boost::shared_ptr<v3d::editor::ViewPort> frontView() {
-    v3d::type::camera::Profile profile("front");
+    const v3d::type::camera::Profile profile("front");
     boost::shared_ptr<v3d::editor::ViewPort> view = boost::make_shared<v3d::editor::ViewPort>("front", profile);
     view->resize(glm::vec4(0.0f, 0.0f, 400.0f, 400.0f));
     return view;
@@ -59,11 +59,11 @@ std::size_t selectedComponents(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_object_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     scene->add(cube);
 
-    boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
+    const boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
     BOOST_CHECK(select->mask() == v3d::editor::SelectMask::Object);
 
     select->button(1, true, glm::vec2(200.0f, 200.0f));
@@ -84,15 +84,15 @@ BOOST_AUTO_TEST_CASE(select_tool_object_test) {
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_one_object_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> first = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> first = v3d::editor::create_poly_cube();
     first->translation(glm::vec3(-0.75f, 0.0f, 0.0f));
     scene->add(first);
-    boost::shared_ptr<v3d::brep::BRep> second = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::brep::BRep> second = v3d::editor::create_poly_cube();
     second->translation(glm::vec3(0.75f, 0.0f, 0.0f));
     scene->add(second);
 
-    boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
+    const boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
 
     // 0.75 world units either side of the middle, at two hundred pixels to the unit
     select->button(1, true, glm::vec2(50.0f, 200.0f));
@@ -106,11 +106,11 @@ BOOST_AUTO_TEST_CASE(select_tool_one_object_test) {
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_component_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     scene->add(cube);
 
-    boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
+    const boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
     select->activate("face");
     BOOST_CHECK(select->mask() == v3d::editor::SelectMask::Face);
 
@@ -140,11 +140,11 @@ BOOST_AUTO_TEST_CASE(select_tool_component_test) {
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_mask_change_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     scene->add(cube);
 
-    boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
+    const boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
     select->button(1, true, glm::vec2(200.0f, 200.0f));
     select->activate("face");
     select->button(1, true, glm::vec2(200.0f, 200.0f));
@@ -163,8 +163,8 @@ BOOST_AUTO_TEST_CASE(select_tool_mask_change_test) {
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_no_view_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     scene->add(cube);
 
     // the cursor is over no view until it has moved into one, and a click then picks

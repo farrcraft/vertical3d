@@ -40,7 +40,7 @@ Tetrad::ShapeInfo bar() {
 }
 
 boost::shared_ptr<GameBoard> board() {
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     boost::shared_ptr<GameBoard> game = boost::make_shared<GameBoard>(logger);
     std::vector<Tetrad::ShapeInfo> shapes;
     shapes.push_back(dot());
@@ -49,8 +49,8 @@ boost::shared_ptr<GameBoard> board() {
 }
 
 BOOST_AUTO_TEST_CASE(gameboard_fits_test) {
-    boost::shared_ptr<GameBoard> game = board();
-    Tetrad piece(bar());
+    const boost::shared_ptr<GameBoard> game = board();
+    const Tetrad piece(bar());
 
     BOOST_CHECK_EQUAL(game->fits(piece, glm::ivec2(0, 0)), true);
     // hard against either wall is still inside it
@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(gameboard_fits_test) {
 }
 
 BOOST_AUTO_TEST_CASE(gameboard_row_clear_test) {
-    boost::shared_ptr<GameBoard> game = board();
+    const boost::shared_ptr<GameBoard> game = board();
     const unsigned int bottom = game->rows() - 1;
     const unsigned int last = game->columns() - 1;
 
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(gameboard_row_clear_test) {
 }
 
 BOOST_AUTO_TEST_CASE(gameboard_incomplete_row_test) {
-    boost::shared_ptr<GameBoard> game = board();
+    const boost::shared_ptr<GameBoard> game = board();
     const unsigned int bottom = game->rows() - 1;
 
     // one short of a full row: nothing clears, and the block that lands stays put
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(gameboard_incomplete_row_test) {
 }
 
 BOOST_AUTO_TEST_CASE(gameboard_game_over_test) {
-    boost::shared_ptr<GameBoard> game = board();
+    const boost::shared_ptr<GameBoard> game = board();
 
     // the whole well full, so the next spawn has nowhere to go
     for (unsigned int row = 0; row < game->rows(); row++) {
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(gameboard_game_over_test) {
 }
 
 BOOST_AUTO_TEST_CASE(gameboard_load_test) {
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     GameBoard game(logger);
 
     BOOST_CHECK_EQUAL(game.load(std::vector<Tetrad::ShapeInfo>()), false);
@@ -164,8 +164,8 @@ BOOST_AUTO_TEST_CASE(gameboard_load_test) {
  * drops a tetrad the same distance however that second is divided up.
  **/
 BOOST_AUTO_TEST_CASE(gameboard_fall_rate_is_a_duration_test) {
-    boost::shared_ptr<GameBoard> coarse = board();
-    boost::shared_ptr<GameBoard> fine = board();
+    const boost::shared_ptr<GameBoard> coarse = board();
+    const boost::shared_ptr<GameBoard> fine = board();
 
     coarse->update(0.0f);
     fine->update(0.0f);
@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE(gameboard_fall_rate_is_a_duration_test) {
  * rather than flicking it on and off at the repeat rate.
  **/
 BOOST_AUTO_TEST_CASE(gameboard_a_held_drop_does_not_flick_test) {
-    boost::shared_ptr<GameBoard> game = board();
+    const boost::shared_ptr<GameBoard> game = board();
     BOOST_CHECK(game->dropTetrad());
     BOOST_CHECK(game->dropTetrad(true));
     BOOST_CHECK(game->dropTetrad(true));

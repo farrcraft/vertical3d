@@ -817,7 +817,7 @@ BOOST_AUTO_TEST_CASE(a_given_width_cannot_exceed_the_row) {
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(200, 300));
     v3d::ui::Immediate ui = build(&written);
-    float fraction = 0.5f;
+    const float fraction = 0.5f;
 
     ui.begin(&canvas, hover(glm::vec2(-1.0f, -1.0f)));
     ui.nextItemWidth(10000.0f);

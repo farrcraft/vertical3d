@@ -27,12 +27,12 @@ void Ball::direction(const glm::vec2 & dir) {
 }
 
 glm::vec2 Ball::direction() const {
-    Direction& component = registry_->get<Direction>(id_);
+    const Direction& component = registry_->get<Direction>(id_);
     return component.direction_;
 }
 
 glm::vec2 Ball::position() const {
-    v3d::ecs::component::Position2D& component = registry_->get<v3d::ecs::component::Position2D>(id_);
+    const v3d::ecs::component::Position2D& component = registry_->get<v3d::ecs::component::Position2D>(id_);
     return component.value;
 }
 
@@ -50,13 +50,13 @@ void Ball::settle() {
 }
 
 void Ball::move(float step) {
-    Direction& direction = registry_->get<Direction>(id_);
+    const Direction& direction = registry_->get<Direction>(id_);
     v3d::ecs::component::Position2D& position = registry_->get<v3d::ecs::component::Position2D>(id_);
     position.value += direction.direction_ * step;
 }
 
 float Ball::size() const {
-    Size& sz = registry_->get<Size>(id_);
+    const Size& sz = registry_->get<Size>(id_);
     return sz.size_;
 }
 

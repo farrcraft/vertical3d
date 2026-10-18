@@ -26,7 +26,7 @@ struct Result {
 Result run(Accumulator* accumulator, const std::vector<std::uint64_t>& frames) {
     Result result;
     for (std::uint64_t frame : frames) {
-        unsigned int owed = accumulator->accumulate(frame);
+        const unsigned int owed = accumulator->accumulate(frame);
         result.worst = (owed > result.worst) ? owed : result.worst;
         while (accumulator->drain()) {
             result.steps++;
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(accumulator_jitter_test) {
     for (int i = 0; i < 144; ++i) {
         frames.push_back((i % 2 == 0) ? 6000000ULL : 7000000ULL);
     }
-    Result result = run(&accumulator, frames);
+    const Result result = run(&accumulator, frames);
 
     // 72 frames of 6 ms and 72 of 7 ms is 936 ms, which is 56 whole steps of 16.667 ms
     BOOST_CHECK_EQUAL(result.steps, 56u);
@@ -101,8 +101,8 @@ BOOST_AUTO_TEST_CASE(accumulator_pacing_test) {
     const std::uint64_t second = 1000000000ULL;
 
     Accumulator smooth;
-    std::vector<std::uint64_t> even(60, second / 60);
-    Result a = run(&smooth, even);
+    const std::vector<std::uint64_t> even(60, second / 60);
+    const Result a = run(&smooth, even);
 
     Accumulator ragged;
     std::vector<std::uint64_t> uneven;
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(accumulator_pacing_test) {
         uneven.push_back(second / 120);
         uneven.push_back(second / 40);
     }
-    Result b = run(&ragged, uneven);
+    const Result b = run(&ragged, uneven);
 
     BOOST_CHECK_EQUAL(a.steps, b.steps);
     BOOST_CHECK_EQUAL(a.simulated, b.simulated);
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(accumulator_pacing_test) {
  **/
 BOOST_AUTO_TEST_CASE(accumulator_clamp_test) {
     Accumulator accumulator;
-    unsigned int owed = accumulator.accumulate(30000000000ULL);
+    const unsigned int owed = accumulator.accumulate(30000000000ULL);
     BOOST_CHECK_EQUAL(owed, static_cast<unsigned int>(Accumulator::clamp / Accumulator::step));
     BOOST_CHECK_EQUAL(owed, 15u);
 

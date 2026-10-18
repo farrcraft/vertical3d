@@ -22,12 +22,12 @@ typedef v3d::render::offline::rib::ParameterList ParameterList;
  * same way, so both paths into a render context agree.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_typed_by_declaration_test) {
-    Declarations declarations;
+    const Declarations declarations;
     float roughness = 0.3f;
     float colour[3] = { 0.25f, 0.5f, 0.75f };
 
-    const char* tokens[] = { "roughness", "specularcolor" };
-    const void* values[] = { &roughness, colour };
+    const char* const tokens[] = { "roughness", "specularcolor" };
+    const void* const values[] = { &roughness, colour };
 
     ParameterList list;
     arguments(declarations, 2, tokens, values, 1, &list);
@@ -42,10 +42,10 @@ BOOST_AUTO_TEST_CASE(ribarguments_typed_by_declaration_test) {
  * does in a file.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_inline_declaration_test) {
-    Declarations declarations;
+    const Declarations declarations;
     float squish = 5.0f;
-    const char* tokens[] = { "uniform float squish" };
-    const void* values[] = { &squish };
+    const char* const tokens[] = { "uniform float squish" };
+    const void* const values[] = { &squish };
 
     ParameterList list;
     arguments(declarations, 1, tokens, values, 1, &list);
@@ -58,10 +58,10 @@ BOOST_AUTO_TEST_CASE(ribarguments_inline_declaration_test) {
  * same number, not as its bit pattern.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_integers_test) {
-    Declarations declarations;
+    const Declarations declarations;
     const int samples[2] = { 3, -2 };
-    const char* tokens[] = { "uniform integer[2] samples" };
-    const void* values[] = { samples };
+    const char* const tokens[] = { "uniform integer[2] samples" };
+    const void* const values[] = { samples };
 
     ParameterList list;
     arguments(declarations, 1, tokens, values, 1, &list);
@@ -74,11 +74,11 @@ BOOST_AUTO_TEST_CASE(ribarguments_integers_test) {
  * A string parameter's array is an array of pointers to characters, as RtString is.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_strings_test) {
-    Declarations declarations;
+    const Declarations declarations;
     const char* name = "myball";
-    const char* text[] = { name };
-    const void* values[] = { static_cast<const void*>(text) };
-    const char* tokens[] = { "name" };
+    const char* const text[] = { name };
+    const void* const values[] = { static_cast<const void*>(text) };
+    const char* const tokens[] = { "name" };
 
     ParameterList list;
     arguments(declarations, 1, tokens, values, 1, &list);
@@ -90,11 +90,11 @@ BOOST_AUTO_TEST_CASE(ribarguments_strings_test) {
  * values on a quad and as one on a shader request.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_varying_takes_the_vertices_test) {
-    Declarations declarations;
+    const Declarations declarations;
     float points[12] = { 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
                          1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f };
-    const char* tokens[] = { "P" };
-    const void* values[] = { points };
+    const char* const tokens[] = { "P" };
+    const void* const values[] = { points };
 
     ParameterList list;
     arguments(declarations, 1, tokens, values, 4, &list);
@@ -106,10 +106,10 @@ BOOST_AUTO_TEST_CASE(ribarguments_varying_takes_the_vertices_test) {
  * past. The caller receives the list of those names.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_undeclared_is_dropped_test) {
-    Declarations declarations;
+    const Declarations declarations;
     float veins = 1.0f;
-    const char* tokens[] = { "veins", "roughness" };
-    const void* values[] = { &veins, &veins };
+    const char* const tokens[] = { "veins", "roughness" };
+    const void* const values[] = { &veins, &veins };
 
     std::vector<std::string> unresolved;
     ParameterList list;
@@ -125,9 +125,9 @@ BOOST_AUTO_TEST_CASE(ribarguments_undeclared_is_dropped_test) {
  * through it would crash the render.
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_nulls_test) {
-    Declarations declarations;
-    const char* tokens[] = { nullptr, "roughness" };
-    const void* values[] = { nullptr, nullptr };
+    const Declarations declarations;
+    const char* const tokens[] = { nullptr, "roughness" };
+    const void* const values[] = { nullptr, nullptr };
 
     ParameterList list;
     arguments(declarations, 2, tokens, values, 1, &list);

@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(wireframe_pairs_drawn_once_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     wireframe.visit(cube);
 
     // 24 half edges paired into the cube's 12 edges - a half edge and its pair are one
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(wireframe_transform_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
-    boost::shared_ptr<v3d::brep::BRep> mesh = quad();
+    const boost::shared_ptr<v3d::brep::BRep> mesh = quad();
     mesh->translation(glm::vec3(10.0f, 0.0f, 0.0f));
     wireframe.visit(mesh);
 
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
-    boost::shared_ptr<v3d::brep::BRep> mesh = quad();
+    const boost::shared_ptr<v3d::brep::BRep> mesh = quad();
     wireframe.visit(mesh);
     const glm::vec4 unselected = canvas.vertices()[0].colour;
 
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(wireframe_selected_face_is_outlined_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     wireframe.visit(cube);
     const glm::vec4 unselected = canvas.vertices()[0].colour;
 

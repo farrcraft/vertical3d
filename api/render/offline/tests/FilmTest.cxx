@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(film_filter_weights_test) {
 BOOST_AUTO_TEST_CASE(film_uniform_test) {
     v3d::render::offline::Sampling sampling;
     sampling.samples = glm::uvec2(3, 3);
-    v3d::render::offline::Sampler sampler(sampling);
+    const v3d::render::offline::Sampler sampler(sampling);
     v3d::render::offline::Film film(4, 3, sampling);
 
     const glm::vec3 colour(0.25f, 0.5f, 0.75f);
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(film_uniform_test) {
  **/
 BOOST_AUTO_TEST_CASE(film_half_coverage_test) {
     const v3d::render::offline::Sampling sampling = box({.samples = 2, .width = 1.0f});
-    v3d::render::offline::Sampler sampler(sampling);
+    const v3d::render::offline::Sampler sampler(sampling);
     v3d::render::offline::Film film(1, 1, sampling);
 
     const std::vector<v3d::render::offline::Sampler::Sample> samples = sampler.pixel(0, 0);
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(film_half_coverage_test) {
  **/
 BOOST_AUTO_TEST_CASE(film_one_sample_is_exact_test) {
     const v3d::render::offline::Sampling sampling = box({.samples = 1, .width = 1.0f});
-    v3d::render::offline::Sampler sampler(sampling);
+    const v3d::render::offline::Sampler sampler(sampling);
     v3d::render::offline::Film film(3, 2, sampling);
 
     for (unsigned int row = 0; row < 2; row++) {
@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE(film_sampler_is_stratified_test) {
         BOOST_REQUIRE(i < 3 && j < 2);
         cells[(j * 3) + i]++;
     }
-    for (unsigned int count : cells) {
+    for (const unsigned int count : cells) {
         BOOST_CHECK_EQUAL(count, 1u);
     }
 }

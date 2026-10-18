@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_SUITE(linecanvas_test)
  * costs neither an upload nor an item.
  **/
 BOOST_AUTO_TEST_CASE(an_empty_canvas_has_nothing_to_draw) {
-    v3d::render::realtime::canvas::Line canvas;
+    const v3d::render::realtime::canvas::Line canvas;
 
     BOOST_CHECK(canvas.empty());
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 0);

@@ -75,7 +75,7 @@ Picker::Hit Picker::pick(const Scene& scene, const ViewPort& view, const glm::ve
     cursor_ = cursor;
     nearest_ = 0.0f;
 
-    boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     const glm::vec4& region = view.region();
     if (!camera || region.z <= 0.0f || region.w <= 0.0f) {
         return hit_;

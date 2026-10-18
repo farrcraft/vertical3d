@@ -90,7 +90,7 @@ Instance::Instance(const boost::shared_ptr<v3d::log::Logger>& logger, const std:
         createInfo.ppEnabledLayerNames = &validationLayer;
     }
 
-    VkResult result = vkCreateInstance(&createInfo, nullptr, &instance_);
+    const VkResult result = vkCreateInstance(&createInfo, nullptr, &instance_);
     check(result, "Unable to create vulkan instance");
 
     logger_->get()->info("Created vulkan instance with {} extension(s), validation {}",
@@ -171,7 +171,7 @@ void Instance::createMessenger() {
     info.pfnUserCallback = report;
     info.pUserData = this;
 
-    VkResult result = create(instance_, &info, nullptr, &messenger_);
+    const VkResult result = create(instance_, &info, nullptr, &messenger_);
     if (result != VK_SUCCESS) {
         logger_->get()->warn("Unable to create the vulkan debug messenger - {}", resultString(result));
         messenger_ = VK_NULL_HANDLE;

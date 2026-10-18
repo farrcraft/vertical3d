@@ -69,7 +69,7 @@ void Presenter::createSync() {
     // counted by the ring, not by the chain
     for (uint32_t index = 0; index < ring_->framesInFlight(); index++) {
         VkSemaphore semaphore = VK_NULL_HANDLE;
-        VkResult result = vkCreateSemaphore(device_->handle(), &semaphoreInfo, nullptr, &semaphore);
+        const VkResult result = vkCreateSemaphore(device_->handle(), &semaphoreInfo, nullptr, &semaphore);
         device::check(result, "Unable to create a vulkan semaphore");
         imageAvailable_.push_back(semaphore);
     }
@@ -96,7 +96,7 @@ void Presenter::reset() {
 
     for (std::size_t index = 0; index < swapchain_->length(); index++) {
         VkSemaphore semaphore = VK_NULL_HANDLE;
-        VkResult result = vkCreateSemaphore(device_->handle(), &semaphoreInfo, nullptr, &semaphore);
+        const VkResult result = vkCreateSemaphore(device_->handle(), &semaphoreInfo, nullptr, &semaphore);
         device::check(result, "Unable to create a vulkan semaphore");
         renderFinished_.push_back(semaphore);
     }
@@ -126,7 +126,7 @@ Presenter::Status Presenter::acquire(Acquisition* acquisition) {
     ring_->waitFrame();
 
     uint32_t image = 0;
-    VkResult result = vkAcquireNextImageKHR(device_->handle(), swapchain_->handle(), UINT64_MAX, imageAvailable_[ring_->frame()],
+    const VkResult result = vkAcquireNextImageKHR(device_->handle(), swapchain_->handle(), UINT64_MAX, imageAvailable_[ring_->frame()],
         VK_NULL_HANDLE, &image);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         // the semaphore was not signalled, so nothing is left waiting by giving up here

@@ -83,13 +83,13 @@ void TetrisRenderer::loadPieces(const boost::shared_ptr<v3d::asset::Manager>& as
 
     for (const char* const colour : colours) {
         const std::string name = std::string("pieces/") + colour + ".tga";
-        boost::shared_ptr<v3d::asset::media::kind::Image> asset =
+        const boost::shared_ptr<v3d::asset::media::kind::Image> asset =
             assetManager->load<v3d::asset::media::kind::Image>(name, v3d::asset::Type::ImageTga);
         if (!asset || !asset->image()) {
             logger_->get()->error("unable to load the piece texture {}", name);
             continue;
         }
-        boost::shared_ptr<v3d::image::Image> image = asset->image();
+        const boost::shared_ptr<v3d::image::Image> image = asset->image();
         if (image->format() != v3d::image::Image::Format::RGB) {
             logger_->get()->error("the piece texture {} is not 24 bit, which is what the atlas packs", name);
             continue;
@@ -179,7 +179,7 @@ void TetrisRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& stati
 
     screen_->draw(ui_.get(), statistics);
 
-    boost::shared_ptr<v3d::render::realtime::Pass> pass =
+    const boost::shared_ptr<v3d::render::realtime::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);
     engine_.quads()->submit(screen_->canvas(), pass.get());
 
@@ -247,7 +247,7 @@ void TetrisRenderer::drawTetrad(const Tetrad& tetrad, const glm::vec2& origin, f
 /**
  **/
 void TetrisRenderer::drawBlock(const std::string& colour, const glm::vec2& min, float cell) {
-    std::map<std::string, Sprite>::const_iterator sprite = sprites_.find(colour);
+    const std::map<std::string, Sprite>::const_iterator sprite = sprites_.find(colour);
     if (sprite == sprites_.end()) {
         return;
     }

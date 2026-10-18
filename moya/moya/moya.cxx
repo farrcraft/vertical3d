@@ -113,7 +113,7 @@ int run(int argc, char *argv[]) {
 
     // RiBegin and RiEnd have no RIB equivalent - the standard says they are implied at the
     // start and end of a file - so the handler creates and destroys the context
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::moya::Renderer renderer;
     v3d::moya::RIBHandler handler(&renderer);
 

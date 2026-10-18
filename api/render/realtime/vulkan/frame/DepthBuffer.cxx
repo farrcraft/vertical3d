@@ -55,7 +55,7 @@ VkFormat DepthBuffer::chooseFormat(VkPhysicalDevice device, bool sampled) {
         // so a sampled buffer requires its format to support both
         wanted |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
     }
-    for (VkFormat format : candidates) {
+    for (const VkFormat format : candidates) {
         VkFormatProperties properties{};
         vkGetPhysicalDeviceFormatProperties(device, format, &properties);
         if ((properties.optimalTilingFeatures & wanted) == wanted) {
@@ -125,7 +125,7 @@ void DepthBuffer::destroy() {
  **/
 void DepthBuffer::recreate(uint32_t width, uint32_t height) {
     // a frame in flight may still be testing against the image about to go away
-    VkResult result = vkDeviceWaitIdle(device_->handle());
+    const VkResult result = vkDeviceWaitIdle(device_->handle());
     device::check(result, "Unable to wait for the vulkan device before recreating the depth buffer");
     destroy();
     create(width, height);

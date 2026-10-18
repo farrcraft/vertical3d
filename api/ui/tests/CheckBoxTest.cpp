@@ -53,7 +53,7 @@ v3d::ui::paint::ComponentRenderer build(std::vector<Written>* written) {
  * the time it reaches the loader.
  **/
 boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher),
         dispatcher,
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_SUITE(check_box_test)
  **/
 BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer = build(&written);
+    const v3d::ui::paint::ComponentRenderer renderer = build(&written);
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
 
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
  * is the plate and the mark over it.
  **/
 BOOST_AUTO_TEST_CASE(the_mark_is_drawn_only_when_the_box_is_checked) {
-    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
+    const v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
 
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(the_mark_is_drawn_only_when_the_box_is_checked) {
  * the same state as a check box.
  **/
 BOOST_AUTO_TEST_CASE(a_radio_button_is_a_check_box_with_a_round_mark) {
-    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
+    const v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::canvas::Canvas square;
     v3d::render::realtime::canvas::Canvas round;
     square.resize(glm::uvec2(400, 300));

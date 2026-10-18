@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(polygon_clip_an_edge_that_ends_past_the_plane_test) {
     glm::vec3 hit;
     BOOST_REQUIRE(!plane.intersectEdge(cutEnd(), keptEnd(), &hit));
 
-    boost::shared_ptr<Splittable> polygon = tiltedTriangle();
+    const boost::shared_ptr<Splittable> polygon = tiltedTriangle();
     polygon->clip(plane);
 
     // the crossing of the third edge, the crossing of this one, its kept end, the third corner
@@ -97,9 +97,9 @@ BOOST_AUTO_TEST_CASE(polygon_clip_an_edge_that_ends_past_the_plane_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_split_an_edge_that_ends_past_the_plane_test) {
     const v3d::type::geometry::Plane plane = tiltedPlane();
-    boost::shared_ptr<Splittable> polygon = tiltedTriangle();
-    boost::shared_ptr<v3d::moya::Polygon> negative = boost::make_shared<v3d::moya::Polygon>();
-    boost::shared_ptr<v3d::moya::Polygon> positive = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<Splittable> polygon = tiltedTriangle();
+    const boost::shared_ptr<v3d::moya::Polygon> negative = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> positive = boost::make_shared<v3d::moya::Polygon>();
 
     polygon->split(plane, negative, positive);
 
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(polygon_split_an_edge_that_ends_past_the_plane_test) {
  * The clip rewrites the polygon it is called on, so the polygon itself comes out clipped.
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_rewrites_the_polygon_test) {
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     polygon->addVertex(vertex(0.0f, 0.0f, -1.0f));
     polygon->addVertex(vertex(1.0f, 0.0f, -1.0f));
     polygon->addVertex(vertex(1.0f, 0.0f, 1.0f));
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(polygon_clip_rewrites_the_polygon_test) {
  * A polygon wholly inside the kept half space survives the clip with its vertices.
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_keeps_an_inside_polygon_test) {
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     polygon->addVertex(vertex(0.0f, 0.0f, 1.0f));
     polygon->addVertex(vertex(1.0f, 0.0f, 1.0f));
     polygon->addVertex(vertex(1.0f, 1.0f, 2.0f));
@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(polygon_clip_keeps_an_inside_polygon_test) {
  * the first one, so the polygon is left alone rather than indexed off the front.
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_degenerate_polygon_test) {
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
 
     polygon->clip(zPlane());
     BOOST_TEST(polygon->vertexCount() == 0u);

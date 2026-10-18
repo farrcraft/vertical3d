@@ -685,14 +685,14 @@ RtVoid RiPolygon(RtInt nverts, ...) {
 
     RtToken name = va_arg(ap, RtToken);
     std::string token;
-    boost::shared_ptr<v3d::moya::Polygon> poly(new v3d::moya::Polygon);
+    const boost::shared_ptr<v3d::moya::Polygon> poly(new v3d::moya::Polygon);
     while (name != RI_NULL) {
         token = name;
         RtPointer p = va_arg(ap, RtPointer);
         if (token == RI_P) {
             // p contains RtPoint points[nverts]
             v3d::moya::Vertex v;
-            RtPoint *points = static_cast<RtPoint*>(p);
+            const RtPoint *points = static_cast<RtPoint*>(p);
             for (int i = 0; i < nverts; i++) {
                 v.point(glm::vec3(points[i][0], points[i][1], points[i][2]));
                 poly->addVertex(v);

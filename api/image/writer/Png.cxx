@@ -55,7 +55,7 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
 
     // open the file
     FILE* fp;
-    errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "wb");
+    const errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "wb");
     if (err != 0) {
         return false;
     }

@@ -43,7 +43,7 @@ const char* const room =
  * character is a tile, and the kinds land where the file put them.
  **/
 BOOST_AUTO_TEST_CASE(map_load_test) {
-    boost::shared_ptr<odyssey::tile::Map> board = map();
+    const boost::shared_ptr<odyssey::tile::Map> board = map();
     BOOST_REQUIRE(board->load(document(room)));
 
     BOOST_REQUIRE(board->loaded());
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(map_load_test) {
  * chosen: the grid stores them but does not define what a crate is.
  **/
 BOOST_AUTO_TEST_CASE(map_kinds_carry_cover_test) {
-    boost::shared_ptr<odyssey::tile::Map> board = map();
+    const boost::shared_ptr<odyssey::tile::Map> board = map();
     BOOST_REQUIRE(board->load(document("{\"tiles\": [\"#.o\"]}")));
 
     BOOST_CHECK(!board->grid()->passable({0, 0}));
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(map_kinds_carry_cover_test) {
  * actually searched for it.
  **/
 BOOST_AUTO_TEST_CASE(map_is_routable_test) {
-    boost::shared_ptr<odyssey::tile::Map> board = map();
+    const boost::shared_ptr<odyssey::tile::Map> board = map();
     BOOST_REQUIRE(board->load(document(room)));
 
     const v3d::grid::TileCoord goal{3, 1};
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(map_is_routable_test) {
  * be played on is worse than one that did not load.
  **/
 BOOST_AUTO_TEST_CASE(map_start_defaults_to_floor_test) {
-    boost::shared_ptr<odyssey::tile::Map> board = map();
+    const boost::shared_ptr<odyssey::tile::Map> board = map();
     BOOST_REQUIRE(board->load(document("{\"tiles\": [\"##\", \"#.\"]}")));
 
     BOOST_CHECK(board->start() == v3d::grid::TileCoord({1, 1}));
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(map_start_defaults_to_floor_test) {
  * loaded before survives the attempt.
  **/
 BOOST_AUTO_TEST_CASE(map_rejects_test) {
-    boost::shared_ptr<odyssey::tile::Map> board = map();
+    const boost::shared_ptr<odyssey::tile::Map> board = map();
     BOOST_REQUIRE(board->load(document(room)));
 
     BOOST_CHECK(!board->load(document("{}")));
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(map_rejects_test) {
  * the same shape TileGrid::passable() has for the same reason.
  **/
 BOOST_AUTO_TEST_CASE(map_off_the_board_test) {
-    boost::shared_ptr<odyssey::tile::Map> board = map();
+    const boost::shared_ptr<odyssey::tile::Map> board = map();
     BOOST_REQUIRE(board->load(document(room)));
 
     BOOST_CHECK(board->kind({-1, 0}) == odyssey::tile::Kind::Wall);

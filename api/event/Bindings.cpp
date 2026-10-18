@@ -67,7 +67,7 @@ bool Bindings::build() {
         return false;
     }
 
-    boost::shared_ptr<Mapper> mapper = boost::make_shared<Mapper>("global");
+    const boost::shared_ptr<Mapper> mapper = boost::make_shared<Mapper>("global");
     for (const boost::json::value& item : *mappings) {
         if (!item.is_object()) {
             logger_->get()->error("Unrecognized mapping");

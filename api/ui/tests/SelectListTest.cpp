@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(an_offset_starts_the_rows_further_down) {
  * scrolled at all.
  **/
 BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_the_box_does_not_show) {
-    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
+    const v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
 
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_the_box_does_not_show) {
  * unscrolled. A list that has never been drawn returns no row.
  **/
 BOOST_AUTO_TEST_CASE(a_point_names_the_row_under_it) {
-    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
+    const v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
 
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(replacing_the_rows_keeps_a_choice_that_survives) {
  **/
 BOOST_AUTO_TEST_CASE(the_chosen_row_is_drawn_differently) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer = build(&written);
+    const v3d::ui::paint::ComponentRenderer renderer = build(&written);
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
 
@@ -243,8 +243,8 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_list) {
   ]
 })";
 
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
         boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(ui->load(boost::json::parse(document).as_object()));

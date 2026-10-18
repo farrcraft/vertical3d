@@ -70,7 +70,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
     engine_.initialize(window);
     engine_.clearColour(clearColour);
 
-    boost::shared_ptr<v3d::asset::media::kind::Image> asset =
+    const boost::shared_ptr<v3d::asset::media::kind::Image> asset =
         assetManager->load<v3d::asset::media::kind::Image>(spriteName);
     if (!asset || !asset->image()) {
         // the loader has already said which file it could not read. An unset handle draws
@@ -116,7 +116,7 @@ void Renderer::draw() {
     drawWorld(topLeft);
     drawPlayer(topLeft);
 
-    boost::shared_ptr<v3d::render::realtime::Pass> pass =
+    const boost::shared_ptr<v3d::render::realtime::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);
     engine_.quads()->submit(canvas_, pass.get());
 

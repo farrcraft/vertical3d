@@ -43,7 +43,7 @@ std::size_t mismatches(const boost::shared_ptr<v3d::image::Image>& image, unsign
  * and never green.
  **/
 BOOST_AUTO_TEST_CASE(engine3d_capture_writes_the_frame_it_presents_test) {
-    v3d::test::Windowed windowed;
+    const v3d::test::Windowed windowed;
     const std::string path = "data_out/engine3d_capture.png";
     boost::filesystem::remove(path);
 
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(engine3d_capture_writes_the_frame_it_presents_test) {
  * A request is answered by one frame, and the frame after it writes nothing.
  **/
 BOOST_AUTO_TEST_CASE(engine3d_capture_is_cleared_by_the_frame_that_writes_it_test) {
-    v3d::test::Windowed windowed;
+    const v3d::test::Windowed windowed;
     const std::string path = "data_out/engine3d_capture_once.png";
     boost::filesystem::remove(path);
 

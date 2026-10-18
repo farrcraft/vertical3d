@@ -66,7 +66,7 @@ float Plane::distance(void) const {
     point (x, y, z) that satisfies this equation lies on the plane.
 */
 void Plane::calculate(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 & C) {
-    glm::vec3 n = glm::normalize(glm::cross((B - A), (C - A)));  // normal = AB*AC
+    const glm::vec3 n = glm::normalize(glm::cross((B - A), (C - A)));  // normal = AB*AC
     set(n, glm::dot(n, A));
 }
 
@@ -84,7 +84,7 @@ int Plane::classify(const glm::vec3 & point) const {
         Ax + By + Cz + D = 0
         Ax + By + Cz = -D
     */
-    float dist = signedDistance(point);
+    const float dist = signedDistance(point);
 
     if (dist < 0.0) {
         return NEGATIVE;
@@ -104,7 +104,7 @@ int Plane::classify(const AABBox & aabb) const {
     aabb.vertices(corners);
     int inside = 8;  // start with all 8 points inside
     for (unsigned int i = 0; i < 8; i++) {
-        int side = classify(corners[i]);
+        const int side = classify(corners[i]);
         if (side == NEGATIVE) {
             inside--;
         }
@@ -131,14 +131,14 @@ float Plane::operator[] (unsigned int i) const {
 
 
 bool Plane::intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * hitPoint) const {
-    glm::vec3 direction = B - A;
-    float denom = glm::dot(normal(), direction);
+    const glm::vec3 direction = B - A;
+    const float denom = glm::dot(normal(), direction);
     if (denom == 0.0) {
         return false;
     }
-    float tval = (distance() - (glm::dot(normal(), A))) / denom;
+    const float tval = (distance() - (glm::dot(normal(), A))) / denom;
     if (tval >= 0.0 && tval <= 1.0) {
-        glm::vec3 hit = A + (direction * tval);
+        const glm::vec3 hit = A + (direction * tval);
         hitPoint->x = hit.x;
         hitPoint->y = hit.y;
         hitPoint->z = hit.z;

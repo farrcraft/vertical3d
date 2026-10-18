@@ -245,7 +245,8 @@ BOOST_AUTO_TEST_CASE(sllighting_a_report_reaches_the_log_test) {
                 return;
             }
         }
-    } restore;
+    };
+    const Restore restore{};
     BOOST_REQUIRE(v3d::log::Logger::open(path));
     {
         std::string error;

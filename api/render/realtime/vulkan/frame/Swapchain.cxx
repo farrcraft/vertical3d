@@ -47,7 +47,7 @@ Swapchain::~Swapchain() {
  **/
 void Swapchain::recreate(uint32_t width, uint32_t height) {
     // the images cannot go away while the queues are still reading them
-    VkResult result = vkDeviceWaitIdle(device_->handle());
+    const VkResult result = vkDeviceWaitIdle(device_->handle());
     device::check(result, "Unable to wait for the vulkan device before recreating the swapchain");
     destroy();
     create(width, height);
@@ -167,7 +167,7 @@ VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>
 /**
  **/
 VkPresentModeKHR Swapchain::choosePresentMode(const std::vector<VkPresentModeKHR>& modes) {
-    for (VkPresentModeKHR mode : modes) {
+    for (const VkPresentModeKHR mode : modes) {
         if (mode == VK_PRESENT_MODE_MAILBOX_KHR) {
             return mode;
         }
@@ -301,7 +301,7 @@ void Swapchain::createViews() {
         createInfo.subresourceRange.layerCount = 1;
 
         VkImageView view = VK_NULL_HANDLE;
-        VkResult result = vkCreateImageView(device_->handle(), &createInfo, nullptr, &view);
+        const VkResult result = vkCreateImageView(device_->handle(), &createInfo, nullptr, &view);
         device::check(result, "Unable to create a view onto a vulkan swapchain image");
         views_.push_back(view);
     }

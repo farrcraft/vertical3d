@@ -65,7 +65,7 @@ bool Menu::next() {
     if (capture_) {
         return false;
     }
-    boost::shared_ptr<Menu> lvl = level();
+    const boost::shared_ptr<Menu> lvl = level();
     if (!lvl || lvl->items_.empty()) {
         return false;
     }
@@ -82,7 +82,7 @@ bool Menu::previous() {
     if (capture_) {
         return false;
     }
-    boost::shared_ptr<Menu> lvl = level();
+    const boost::shared_ptr<Menu> lvl = level();
     if (!lvl || lvl->items_.empty()) {
         return false;
     }
@@ -105,7 +105,7 @@ bool Menu::up() {
         cancel();
         return true;
     }
-    boost::shared_ptr<Menu> lvl = level();
+    const boost::shared_ptr<Menu> lvl = level();
     if (!lvl) {
         return false;
     }
@@ -120,16 +120,16 @@ bool Menu::down() {
     if (capture_) {
         return false;
     }
-    boost::shared_ptr<Menu> lvl = level();
+    const boost::shared_ptr<Menu> lvl = level();
     if (!lvl) {
         return false;
     }
-    boost::shared_ptr<Item> item = lvl->active();
+    const boost::shared_ptr<Item> item = lvl->active();
     // a disabled item, or one in a disabled menu, is not opened
     if (!item || !usable(*item)) {
         return false;
     }
-    boost::shared_ptr<Menu> sm = item->submenu();
+    const boost::shared_ptr<Menu> sm = item->submenu();
     if (sm) {
         level_ = sm;
         return true;
@@ -201,11 +201,11 @@ void Menu::activate() {
         return;
     }
 
-    boost::shared_ptr<Menu> lvl = level();
+    const boost::shared_ptr<Menu> lvl = level();
     if (!lvl) {
         return;
     }
-    boost::shared_ptr<Item> item = lvl->active();
+    const boost::shared_ptr<Item> item = lvl->active();
     // a disabled item, or one in a disabled menu, does nothing. An input item would otherwise
     // open a capture and swallow the next key
     if (item && !usable(*item)) {

@@ -84,7 +84,7 @@ bool Windowed::silent() const {
  **/
 bool windowAvailable() {
     try {
-        Windowed windowed;
+        const Windowed windowed;
         return true;
     } catch (const std::exception& error) {
         // the console rather than the logger, which writes to a file beside the executable

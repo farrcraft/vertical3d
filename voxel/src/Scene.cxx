@@ -27,9 +27,9 @@ Scene::Scene() {
 
     // block dimensions of the world / chunk size
     const size_t chunkSize = 16;
-    unsigned int worldHeight = 64 / chunkSize;
-    unsigned int worldWidth = 256 / chunkSize;
-    unsigned int worldDepth = 256 / chunkSize;
+    const unsigned int worldHeight = 64 / chunkSize;
+    const unsigned int worldWidth = 256 / chunkSize;
+    const unsigned int worldDepth = 256 / chunkSize;
 
     unsigned int hash = 0;
 
@@ -38,7 +38,7 @@ Scene::Scene() {
     for (unsigned int x = 0; x < worldWidth; x++) {
         for (unsigned int y = 0; y < worldHeight; y++) {
             for (unsigned int z = 0; z < worldDepth; z++) {
-                glm::ivec3 pos(x, y, z);
+                const glm::ivec3 pos(x, y, z);
                 // Chunk scales the heightmap against a ceiling measured in blocks, so it
                 // takes the world's block height, not its chunk count.
                 chunk.reset(new Chunk(&terrain, pos, static_cast<unsigned int>(worldHeight * chunkSize)));

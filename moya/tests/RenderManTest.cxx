@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(renderman_declare_test) {
     RiSurface(const_cast<char*>("matte"), const_cast<char*>("squish"), &squish, RI_NULL);
 
     // matte declares no "squish", so the library dropped it and matte is still matte
-    v3d::moya::Shading shading = context().shading();
+    const v3d::moya::Shading shading = context().shading();
     BOOST_REQUIRE(shading.surface);
     BOOST_CHECK_EQUAL(shading.surface->name(), "matte");
     RiEnd();

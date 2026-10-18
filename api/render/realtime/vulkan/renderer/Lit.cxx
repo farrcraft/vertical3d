@@ -304,7 +304,7 @@ void Lit::reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, const R
     while (size < needed) {
         size *= 2;
     }
-    boost::shared_ptr<memory::Buffer> grown = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, .bytes = size});
+    const boost::shared_ptr<memory::Buffer> grown = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, .bytes = size});
     if (*buffer) {
         if (kept > 0) {
             std::vector<unsigned char> bytes(static_cast<std::size_t>(kept));

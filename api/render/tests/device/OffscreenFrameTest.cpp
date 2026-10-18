@@ -84,7 +84,7 @@ std::vector<unsigned char> rgba(unsigned char r, unsigned char g, unsigned char 
  **/
 std::vector<unsigned char> greyQuad(VkFormat format, const std::string& path) {
     v3d::test::Headless headless(format, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, format);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, format);
 
     Canvas canvas;
     canvas.resize(glm::uvec2(width, height));
@@ -94,7 +94,7 @@ std::vector<unsigned char> greyQuad(VkFormat format, const std::string& path) {
         glm::vec4(grey, grey, grey, 1.0f));
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    const boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     headless.context->quads()->submit(canvas, pass.get());
 
@@ -111,7 +111,7 @@ std::vector<unsigned char> greyQuad(VkFormat format, const std::string& path) {
 
     BOOST_CHECK(headless.silent());
     BOOST_REQUIRE(capture.write(path));
-    boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, path);
+    const boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, path);
     BOOST_REQUIRE(picture);
     return texel(picture, width / 2, height / 2);
 }
@@ -134,16 +134,16 @@ BOOST_AUTO_TEST_SUITE(offscreen_frame_test)
 BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    const boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 
     Capture capture(headless.device, headless.logger);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::Target described = describe(target);
+    const Recorder::Target described = describe(target);
     Recorder::record(commands, frame, described, *headless.context->resources(), headless.context->frameUniforms().get());
 
     Capture::Source source;
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
     BOOST_CHECK(headless.silent());
 
     BOOST_REQUIRE(capture.write("data_out/offscreen_cleared.png"));
-    boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, "data_out/offscreen_cleared.png");
+    const boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, "data_out/offscreen_cleared.png");
     BOOST_REQUIRE(picture);
     BOOST_CHECK_EQUAL(picture->width(), width);
     BOOST_CHECK_EQUAL(picture->height(), height);
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
 BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     Canvas canvas;
     canvas.resize(glm::uvec2(width, height));
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    const boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
     headless.context->quads()->submit(canvas, pass.get());
@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     Capture capture(headless.device, headless.logger);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::Target described = describe(target);
+    const Recorder::Target described = describe(target);
     Recorder::record(commands, frame, described, *headless.context->resources(), headless.context->frameUniforms().get());
 
     Capture::Source source;
@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
 BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     // 32 by 16, which is the size the quad below covers in pixels
     const uint32_t textureWidth = 32;
@@ -271,7 +271,7 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
         glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), uploaded);
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    const boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
     headless.context->quads()->submit(canvas, pass.get());
@@ -279,7 +279,7 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     Capture capture(headless.device, headless.logger);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::Target described = describe(target);
+    const Recorder::Target described = describe(target);
     Recorder::record(commands, frame, described, *headless.context->resources(), headless.context->frameUniforms().get());
 
     Capture::Source source;
@@ -311,16 +311,16 @@ BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
     BOOST_REQUIRE(headless.device->allocator().kind() ==
         v3d::render::realtime::vulkan::memory::Allocator::Kind::Suballocated);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    const boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 
     Capture capture(headless.device, headless.logger);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::Target described = describe(target);
+    const Recorder::Target described = describe(target);
     Recorder::record(commands, frame, described, *headless.context->resources(), headless.context->frameUniforms().get());
 
     Capture::Source source;
@@ -335,7 +335,7 @@ BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
     BOOST_CHECK(headless.silent());
 
     BOOST_REQUIRE(capture.write("data_out/offscreen_suballocated.png"));
-    boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, "data_out/offscreen_suballocated.png");
+    const boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, "data_out/offscreen_suballocated.png");
     BOOST_REQUIRE(picture);
     for (uint32_t y = 0; y < height; y++) {
         for (uint32_t x = 0; x < width; x++) {
@@ -355,7 +355,7 @@ BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
  **/
 BOOST_AUTO_TEST_CASE(a_clip_is_cut_to_the_pass_viewport) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     // the region is the middle of the target: 32 by 16 at 16, 8
     const uint32_t regionX = 16;
@@ -374,7 +374,7 @@ BOOST_AUTO_TEST_CASE(a_clip_is_cut_to_the_pass_viewport) {
     canvas.unclip();
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("colour");
+    const boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->viewport(glm::vec4(static_cast<float>(regionX), static_cast<float>(regionY), static_cast<float>(regionWidth),
         static_cast<float>(regionHeight)));
     pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
@@ -394,7 +394,7 @@ BOOST_AUTO_TEST_CASE(a_clip_is_cut_to_the_pass_viewport) {
     BOOST_CHECK(headless.silent());
 
     BOOST_REQUIRE(capture.write("data_out/offscreen_clipped_viewport.png"));
-    boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, "data_out/offscreen_clipped_viewport.png");
+    const boost::shared_ptr<v3d::image::Image> picture = written(headless.logger, "data_out/offscreen_clipped_viewport.png");
     BOOST_REQUIRE(picture);
     for (uint32_t y = regionY; y < regionY + regionHeight; y++) {
         for (uint32_t x = regionX; x < regionX + regionWidth; x++) {

@@ -32,7 +32,7 @@ void Retirement::retire(uint64_t last, std::function<void()> destroy) {
 void Retirement::collect(uint64_t begun) {
     // entries are retired in the order frames are counted, so the ones due are at the front
     while (!entries_.empty() && entries_.front().last + framesInFlight_ <= begun) {
-        std::function<void()> destroy = std::move(entries_.front().destroy);
+        const std::function<void()> destroy = std::move(entries_.front().destroy);
         entries_.pop_front();
         destroy();
     }
@@ -42,7 +42,7 @@ void Retirement::collect(uint64_t begun) {
  **/
 void Retirement::flush() {
     while (!entries_.empty()) {
-        std::function<void()> destroy = std::move(entries_.front().destroy);
+        const std::function<void()> destroy = std::move(entries_.front().destroy);
         entries_.pop_front();
         destroy();
     }

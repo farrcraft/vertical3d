@@ -10,8 +10,8 @@
 namespace {
 
 BOOST_AUTO_TEST_CASE(node_id_test) {
-    v3d::dag::Node first;
-    v3d::dag::Node second;
+    const v3d::dag::Node first;
+    const v3d::dag::Node second;
 
     // the selection model keys on the id, so two nodes never share one
     BOOST_CHECK(first.id() != second.id());

@@ -61,7 +61,7 @@ void RenderContext::initialize() {
     textures_ = boost::make_shared<v3d::render::offline::Textures>(logger_);
 
     // the predefined coordinate systems start as the identity
-    glm::mat4x4 def(1.0f);
+    const glm::mat4x4 def(1.0f);
     coordinateSystems_["object"] = def;
     coordinateSystems_["world"] = def;
     coordinateSystems_["camera"] = def;
@@ -134,8 +134,8 @@ void RenderContext::prepareWorld() {
         y is negated because raster space has its origin at the upper left corner and
         counts downward. image::Image stores its rows in the same order, top row first.
     */
-    float x = static_cast<float>(xres_) / 2.0f;
-    float y = static_cast<float>(yres_) / 2.0f;
+    const float x = static_cast<float>(xres_) / 2.0f;
+    const float y = static_cast<float>(yres_) / 2.0f;
     raster = glm::scale(raster, glm::vec3(x, -y, 1.0f));
     raster = glm::translate(raster, glm::vec3(1.0f, -1.0f, 1.0f));
 
@@ -233,12 +233,12 @@ glm::mat4x4 RenderContext::projectionMatrix() const {
             tz = (far + near) / (far - near)
         */
 
-        float far = far_;
-        float near = near_;
+        const float far = far_;
+        const float near = near_;
 
-        float tx = ((right + left) / (right - left));
-        float ty = ((top + bottom) / (top - bottom));
-        float tz = (far + near) / (far - near);
+        const float tx = ((right + left) / (right - left));
+        const float ty = ((top + bottom) / (top - bottom));
+        const float tz = (far + near) / (far - near);
 
         projection[0][0] = 2.0f / (right - left);
         projection[1][0] = 0.0;
@@ -873,7 +873,7 @@ void RenderContext::render() {
         return;
     }
 
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = frameBuffer_->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = frameBuffer_->planes();
     hider_->render(this, planes.get());
 
     if (imager_) {

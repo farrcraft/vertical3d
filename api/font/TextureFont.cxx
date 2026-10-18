@@ -156,7 +156,7 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
     underlineThickness_ = std::max(underlineThickness_, 1.0f);
 
     // metrics are 26.6 fixed point, which already carries fractional pixels
-    FT_Size_Metrics metrics = freetype_->face_->size->metrics;
+    const FT_Size_Metrics metrics = freetype_->face_->size->metrics;
     ascender_ = static_cast<float>(metrics.ascender) / 64.0f;
     descender_ = static_cast<float>(metrics.descender) / 64.0f;
     height_ = static_cast<float>(metrics.height) / 64.0f;
@@ -206,7 +206,7 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::packed(wchar_t charcode) cons
 }
 
 boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
-    wchar_t lineCode = static_cast<wchar_t>(-1);
+    const wchar_t lineCode = static_cast<wchar_t>(-1);
 
     boost::shared_ptr<Glyph> glyph = packed(charcode);
     if (glyph) {
@@ -214,7 +214,7 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
     }
     // -1 is used for line drawing (overline, underline, strikethrough) and background
     if (charcode == lineCode) {
-        glm::ivec4 region = atlas_->region(4, 4);
+        const glm::ivec4 region = atlas_->region(4, 4);
 
         if (region.x < 0) {
             logger_->get()->error("Texture atlas is full!");
@@ -231,8 +231,8 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
 
         atlas_->region(glm::ivec4(region.x, region.y, 4, 4), data, 0);
 
-        float width = static_cast<float>(atlas_->width());
-        float height = static_cast<float>(atlas_->height());
+        const float width = static_cast<float>(atlas_->width());
+        const float height = static_cast<float>(atlas_->height());
 
         glyph->charcode_ = lineCode;
 
@@ -452,7 +452,7 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
 
     unsigned int missed = 0;
     for (unsigned int i = 0; i < wcslen(charcodes); ++i) {
-        FT_UInt glyphIndex = FT_Get_Char_Index(freetype_->face_, charcodes[i]);
+        const FT_UInt glyphIndex = FT_Get_Char_Index(freetype_->face_, charcodes[i]);
         const FT_Int32 flags = glyphLoadFlags(freetype_->library_, outline_, hinting_ != 0,
             atlas_->depth(), lcdFiltering_ != 0, lcdWeights_, sdf);
 
@@ -492,16 +492,16 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
 
         const unsigned int w = rendered.width / atlas_->depth();
         const unsigned int h = rendered.rows;
-        glm::ivec4 region = atlas_->region(w, h);
+        const glm::ivec4 region = atlas_->region(w, h);
         if (region.x < 0) {
             missed++;
             continue;
         }
-        unsigned int x = region.x;
-        unsigned int y = region.y;
+        const unsigned int x = region.x;
+        const unsigned int y = region.y;
         atlas_->region(glm::ivec4(x, y, w, h), rendered.bitmap.buffer, rendered.bitmap.pitch);
 
-        boost::shared_ptr<Glyph> glyph = createGlyph();
+        const boost::shared_ptr<Glyph> glyph = createGlyph();
         glyph->charcode_ = charcodes[i];
         glyph->width_ = w;
         glyph->height_ = h;
@@ -509,8 +509,8 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
         glyph->outlineThickness_ = outlineThickness_;
         glyph->offset_.x = rendered.left;
         glyph->offset_.y = rendered.top;
-        size_t width = atlas_->width();
-        size_t height = atlas_->height();
+        const size_t width = atlas_->width();
+        const size_t height = atlas_->height();
         glyph->st_[0].s = static_cast<float>(x) / static_cast<float>(width);
         glyph->st_[0].t = static_cast<float>(y) / static_cast<float>(height);
         glyph->st_[1].s = static_cast<float>(x + glyph->width_) / static_cast<float>(width);

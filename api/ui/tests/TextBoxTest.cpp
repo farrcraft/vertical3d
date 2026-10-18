@@ -320,7 +320,7 @@ BOOST_AUTO_TEST_CASE(a_box_is_sized_by_its_room_and_not_by_its_text) {
  * exists to be typed into - unlike a panel, which must not take a press off the scene.
  **/
 BOOST_AUTO_TEST_CASE(a_loaded_box_asks_for_the_press_and_the_keyboard) {
-    Fixture fixture;
+    const Fixture fixture;
     BOOST_REQUIRE(fixture.ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "form", "visible": true, "components": [
             { "name": "search", "type": "textbox", "text": "abc", "placeholder": "Search", "limit": 8 } ] } ] })").as_object()));
 
@@ -520,7 +520,7 @@ BOOST_AUTO_TEST_CASE(a_cursor_with_no_measure_leaves_the_caret_alone) {
  * type, so the two calls come from outside it.
  **/
 BOOST_AUTO_TEST_CASE(the_chords_cut_copy_and_paste_the_selection) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
     fixture.container->add(field);
     fixture.ui->focus(field);
@@ -551,7 +551,7 @@ BOOST_AUTO_TEST_CASE(the_chords_cut_copy_and_paste_the_selection) {
  * is worse than one that did not happen - and a paste with nothing to read puts nothing in.
  **/
 BOOST_AUTO_TEST_CASE(a_router_with_no_clipboard_still_edits_everything_else) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::input::Keys> alone =
         boost::make_shared<v3d::ui::input::Keys>(fixture.ui, fixture.dispatcher);
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
@@ -574,7 +574,7 @@ BOOST_AUTO_TEST_CASE(a_router_with_no_clipboard_still_edits_everything_else) {
  * is typing.
  **/
 BOOST_AUTO_TEST_CASE(a_chord_the_box_does_not_answer_reaches_the_app) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
     fixture.container->add(field);
     fixture.ui->focus(field);
@@ -589,7 +589,7 @@ BOOST_AUTO_TEST_CASE(a_chord_the_box_does_not_answer_reaches_the_app) {
  * Shift and a caret key selects the run it travelled, the keyboard equivalent of a drag.
  **/
 BOOST_AUTO_TEST_CASE(shift_and_a_caret_key_selects) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
     fixture.container->add(field);
     fixture.ui->focus(field);

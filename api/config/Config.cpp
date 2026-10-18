@@ -24,7 +24,7 @@ Config::Config(const boost::shared_ptr<v3d::log::Logger>& logger) :
 /**
  **/
 bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
-    boost::shared_ptr<v3d::asset::kind::Json> config = assetManager->load<v3d::asset::kind::Json>("config.json");
+    const boost::shared_ptr<v3d::asset::kind::Json> config = assetManager->load<v3d::asset::kind::Json>("config.json");
     if (!config) {
         return false;
     }

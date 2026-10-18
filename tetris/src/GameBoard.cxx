@@ -196,7 +196,7 @@ bool GameBoard::fits(const Tetrad & tetrad, const glm::ivec2 & cell) const {
 
 Tetrad GameBoard::randomTetrad() {
     // pick a shape
-    size_t shapeCount = shapes_.size();
+    const size_t shapeCount = shapes_.size();
     size_t num = rand() % shapeCount;  // NOLINT
 
     Tetrad piece(shapes_[num]);

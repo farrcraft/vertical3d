@@ -97,8 +97,8 @@ SDL_Event motionEvent(const Motion& spec) {
 }
 
 BOOST_AUTO_TEST_CASE(mouse_button_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("mouse");
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("mouse");
     v3d::input::Mouse mouse(context, dispatcher);
 
     Recorder recorder;
@@ -147,8 +147,8 @@ BOOST_AUTO_TEST_CASE(mouse_button_test) {
 }
 
 BOOST_AUTO_TEST_CASE(mouse_motion_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("mouse");
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("mouse");
     v3d::input::Mouse mouse(context, dispatcher);
 
     Recorder recorder;
@@ -235,8 +235,8 @@ BOOST_AUTO_TEST_CASE(mousestate_test) {
  * frame saw are accumulated and cleared with the button edges.
  **/
 BOOST_AUTO_TEST_CASE(mouse_wheel_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("mouse");
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("mouse");
     v3d::input::Mouse mouse(context, dispatcher);
 
     Recorder recorder;

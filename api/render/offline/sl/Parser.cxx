@@ -386,9 +386,9 @@ syntax::StatementPtr Parser::parseKeywordStatement(const Token & keyword) {
 syntax::StatementPtr Parser::parseConditional() {
     const Token keyword = expect(Token::Kind::KEYWORD, "if");
     expect(Token::Kind::PUNCTUATION, "(");
-    syntax::ExpressionPtr condition = parseExpression();
+    const syntax::ExpressionPtr condition = parseExpression();
     expect(Token::Kind::PUNCTUATION, ")");
-    syntax::StatementPtr whenTrue = parseStatement();
+    const syntax::StatementPtr whenTrue = parseStatement();
     syntax::StatementPtr whenFalse;
     // an else binds to the nearest if, so it is taken here rather than by an outer one
     if (accept(Token::Kind::KEYWORD, "else")) {
@@ -401,7 +401,7 @@ syntax::StatementPtr Parser::parseConditional() {
 syntax::StatementPtr Parser::parseWhile() {
     const Token keyword = expect(Token::Kind::KEYWORD, "while");
     expect(Token::Kind::PUNCTUATION, "(");
-    syntax::ExpressionPtr condition = parseExpression();
+    const syntax::ExpressionPtr condition = parseExpression();
     expect(Token::Kind::PUNCTUATION, ")");
     return boost::make_shared<syntax::While>(condition, parseStatement(), keyword.position());
 }
@@ -480,12 +480,12 @@ syntax::StatementPtr Parser::parseDeclaration(Storage storage, Type type, const 
 
 syntax::StatementPtr Parser::parseSimpleStatement() {
     const Token opening = peek();
-    syntax::ExpressionPtr expression = parseExpression();
+    const syntax::ExpressionPtr expression = parseExpression();
     if (!assignment(peek())) {
         return boost::make_shared<syntax::ExpressionStatement>(expression, opening.position());
     }
     const Token op = next();
-    syntax::ExpressionPtr value = parseExpression();
+    const syntax::ExpressionPtr value = parseExpression();
     return boost::make_shared<syntax::Assignment>(op.text(), syntax::Assignment::Sides{.target = expression, .value = value},
         opening.position());
 }
@@ -517,9 +517,9 @@ syntax::ExpressionPtr Parser::parseTernary() {
         return condition;
     }
     // right associative, so the arms are ternaries themselves rather than one level down
-    syntax::ExpressionPtr whenTrue = parseTernary();
+    const syntax::ExpressionPtr whenTrue = parseTernary();
     expect(Token::Kind::OPERATOR, ":");
-    syntax::ExpressionPtr whenFalse = parseTernary();
+    const syntax::ExpressionPtr whenFalse = parseTernary();
     return boost::make_shared<syntax::Ternary>(
         syntax::Ternary::Branches{.condition = condition, .whenTrue = whenTrue, .whenFalse = whenFalse}, question.position());
 }
@@ -637,7 +637,7 @@ syntax::ExpressionPtr Parser::parsePostfix() {
         if (!accept(Token::Kind::PUNCTUATION, "[")) {
             return expression;
         }
-        syntax::ExpressionPtr index = parseExpression();
+        const syntax::ExpressionPtr index = parseExpression();
         expect(Token::Kind::PUNCTUATION, "]");
         expression = boost::make_shared<syntax::Index>(syntax::Index::Parts{.array = expression, .index = index}, bracket.position());
     }

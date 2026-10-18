@@ -34,7 +34,7 @@ std::vector<Event> Mapper::destinations(const Event& source) const {
     auto begin = mappings_.lower_bound(first);
     auto end = mappings_.upper_bound(last);
     for (auto it = begin; it != end; ++it) {
-        State bound = it->first.state();
+        const State bound = it->first.state();
         if (bound == State::Any || bound == source.state()) {
             found.push_back(it->second);
         }

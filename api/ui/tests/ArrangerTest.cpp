@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_SUITE(arranger_test)
  * A tree can be laid out with no canvas and nothing to paint it.
  **/
 BOOST_AUTO_TEST_CASE(a_tree_is_laid_out_without_being_drawn) {
-    v3d::ui::style::Resolver styles;
+    const v3d::ui::style::Resolver styles;
     const v3d::ui::Arranger arranger(measure(), styles);
 
     const boost::shared_ptr<v3d::ui::component::Panel> plate =
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(a_tree_is_laid_out_without_being_drawn) {
  * before what it holds, so a child is drawn over its plate.
  **/
 BOOST_AUTO_TEST_CASE(the_paint_is_called_once_per_component_parent_first) {
-    v3d::ui::style::Resolver styles;
+    const v3d::ui::style::Resolver styles;
     const v3d::ui::Arranger arranger(measure(), styles);
 
     const boost::shared_ptr<v3d::ui::component::VerticalBox> box =
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(the_paint_is_called_once_per_component_parent_first) {
  * A hidden component is neither placed nor painted, and nothing it holds is either.
  **/
 BOOST_AUTO_TEST_CASE(a_hidden_component_is_not_walked) {
-    v3d::ui::style::Resolver styles;
+    const v3d::ui::style::Resolver styles;
     const v3d::ui::Arranger arranger(measure(), styles);
 
     const boost::shared_ptr<v3d::ui::component::Panel> plate =
@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_room_from_its_own_class) {
  * first pass, because layout never reads a box an earlier pass wrote.
  **/
 BOOST_AUTO_TEST_CASE(an_auto_extent_is_the_room_on_the_first_walk) {
-    v3d::ui::style::Resolver styles;
+    const v3d::ui::style::Resolver styles;
     const v3d::ui::Arranger arranger(measure(), styles);
 
     const boost::shared_ptr<v3d::ui::component::Panel> plate =
@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE(an_auto_extent_is_the_room_on_the_first_walk) {
  * inside that panel.
  **/
 BOOST_AUTO_TEST_CASE(an_auto_position_is_the_corner_of_the_parent) {
-    v3d::ui::style::Resolver styles;
+    const v3d::ui::style::Resolver styles;
     const v3d::ui::Arranger arranger(measure(), styles);
 
     const boost::shared_ptr<v3d::ui::component::Panel> plate =
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(a_scrollbar_is_as_long_as_the_box_it_runs_down) {
  * nothing. Across the line it is offered the whole width.
  **/
 BOOST_AUTO_TEST_CASE(an_auto_extent_along_a_flow_is_not_the_whole_line) {
-    v3d::ui::style::Resolver styles;
+    const v3d::ui::style::Resolver styles;
     const v3d::ui::Arranger arranger(measure(), styles);
 
     const boost::shared_ptr<v3d::ui::component::VerticalBox> column =
@@ -304,7 +304,7 @@ BOOST_AUTO_TEST_CASE(an_auto_extent_along_a_flow_is_not_the_whole_line) {
  * than against the size before it.
  **/
 BOOST_AUTO_TEST_CASE(a_second_walk_lands_where_the_first_did) {
-    v3d::ui::style::Resolver styles;
+    const v3d::ui::style::Resolver styles;
     const v3d::ui::Arranger arranger(measure(), styles);
 
     const boost::shared_ptr<v3d::ui::component::Panel> plate =
@@ -375,7 +375,7 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_wraps_to_it) {
  * and a sixth would run to 328.
  **/
 BOOST_AUTO_TEST_CASE(a_box_that_wraps_starts_a_new_line) {
-    v3d::ui::style::Resolver styles;
+    const v3d::ui::style::Resolver styles;
     const v3d::ui::Arranger arranger(measure(), styles);
     std::vector<boost::shared_ptr<v3d::ui::component::Panel>> cells;
     const boost::shared_ptr<v3d::ui::component::HorizontalBox> box = grid({.width = 280.0f, .cells = 20}, &cells);
@@ -396,7 +396,7 @@ BOOST_AUTO_TEST_CASE(a_box_that_wraps_starts_a_new_line) {
  * four rows of 48 and three gaps of 8.
  **/
 BOOST_AUTO_TEST_CASE(a_box_that_wraps_is_as_deep_as_its_lines) {
-    v3d::ui::style::Resolver styles;
+    const v3d::ui::style::Resolver styles;
     const v3d::ui::Arranger arranger(measure(), styles);
     std::vector<boost::shared_ptr<v3d::ui::component::Panel>> cells;
     const boost::shared_ptr<v3d::ui::component::HorizontalBox> box = grid({.width = 280.0f, .cells = 20}, &cells);
@@ -415,7 +415,7 @@ BOOST_AUTO_TEST_CASE(a_box_that_wraps_is_as_deep_as_its_lines) {
  * after it starts below it.
  **/
 BOOST_AUTO_TEST_CASE(a_child_longer_than_the_line_has_a_line_of_its_own) {
-    v3d::ui::style::Resolver styles;
+    const v3d::ui::style::Resolver styles;
     const v3d::ui::Arranger arranger(measure(), styles);
     std::vector<boost::shared_ptr<v3d::ui::component::Panel>> cells;
     const boost::shared_ptr<v3d::ui::component::HorizontalBox> box = grid({.width = 100.0f, .cells = 1}, &cells);
@@ -438,7 +438,7 @@ BOOST_AUTO_TEST_CASE(a_child_longer_than_the_line_has_a_line_of_its_own) {
  * its natural size.
  **/
 BOOST_AUTO_TEST_CASE(a_box_that_does_not_wrap_is_as_it_was) {
-    v3d::ui::style::Resolver styles;
+    const v3d::ui::style::Resolver styles;
     const v3d::ui::Arranger arranger(measure(), styles);
     std::vector<boost::shared_ptr<v3d::ui::component::Panel>> cells;
     const boost::shared_ptr<v3d::ui::component::HorizontalBox> box = grid({.width = 280.0f, .cells = 6}, &cells);
@@ -457,7 +457,7 @@ BOOST_AUTO_TEST_CASE(a_box_that_does_not_wrap_is_as_it_was) {
  * builds a new measure over the same tree, and the list's width has to follow it.
  **/
 BOOST_AUTO_TEST_CASE(a_list_measures_its_rows_again_under_a_new_measure) {
-    v3d::ui::style::Resolver styles;
+    const v3d::ui::style::Resolver styles;
     const boost::shared_ptr<v3d::ui::component::SelectList> list =
         boost::make_shared<v3d::ui::component::SelectList>();
     list->items({"ab", "abcdef"});

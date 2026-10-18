@@ -14,7 +14,7 @@ std::string Difference::description() const {
     if (!reason.empty()) {
         return reason;
     }
-    std::string where = "worst pixel at column " + std::to_string(column) +
+    const std::string where = "worst pixel at column " + std::to_string(column) +
         ", row " + std::to_string(row) +
         ", channel " + std::to_string(channel) +
         " differs by " + std::to_string(delta) +
@@ -43,9 +43,9 @@ Difference compare(const Image & a, const Image & b, unsigned int tolerance) {
     const unsigned int channels = a.bpp() / 8;
     for (unsigned int row = 0; row < a.height(); row++) {
         for (unsigned int column = 0; column < a.width(); column++) {
-            unsigned int index = ((row * a.width()) + column) * channels;
+            const unsigned int index = ((row * a.width()) + column) * channels;
             for (unsigned int channel = 0; channel < channels; channel++) {
-                int delta = std::abs(static_cast<int>(a[index + channel]) - static_cast<int>(b[index + channel]));
+                const int delta = std::abs(static_cast<int>(a[index + channel]) - static_cast<int>(b[index + channel]));
                 if (static_cast<unsigned int>(delta) > difference.delta) {
                     difference.delta = static_cast<unsigned int>(delta);
                     difference.column = column;

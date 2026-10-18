@@ -27,7 +27,7 @@ namespace {
  * along +z, so world x runs right across the view and world y runs up it.
  **/
 boost::shared_ptr<v3d::editor::ViewPort> frontView() {
-    v3d::type::camera::Profile profile("front");
+    const v3d::type::camera::Profile profile("front");
     boost::shared_ptr<v3d::editor::ViewPort> view = boost::make_shared<v3d::editor::ViewPort>("front", profile);
     view->resize(glm::vec4(0.0f, 0.0f, 400.0f, 400.0f));
     return view;
@@ -39,7 +39,7 @@ boost::shared_ptr<v3d::editor::ViewPort> frontView() {
 constexpr glm::vec2 centre(200.0f, 200.0f);
 
 BOOST_AUTO_TEST_CASE(manipulator_default_test) {
-    v3d::editor::TranslateManipulator manipulator;
+    const v3d::editor::TranslateManipulator manipulator;
 
     // both halves of the state are initialised - a manipulator whose coordinate space was
     // never written would be in one or the other at random
@@ -49,9 +49,9 @@ BOOST_AUTO_TEST_CASE(manipulator_default_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_grab_test) {
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
-    boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
-    v3d::editor::TranslateManipulator manipulator;
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
+    const v3d::editor::TranslateManipulator manipulator;
 
     // the centre handle sits where all three axes meet, so a click on the origin finds it
     // rather than whichever axis happened to be tested first
@@ -77,8 +77,8 @@ BOOST_AUTO_TEST_CASE(manipulator_grab_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_translate_axis_test) {
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
-    boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::TranslateManipulator manipulator;
     manipulator.axis(v3d::editor::Manipulator::Axis::X);
     manipulator.active(true);
@@ -103,8 +103,8 @@ BOOST_AUTO_TEST_CASE(manipulator_translate_axis_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_translate_free_test) {
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
-    boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::TranslateManipulator manipulator;
     manipulator.axis(v3d::editor::Manipulator::Axis::None);
     manipulator.active(true);
@@ -118,9 +118,9 @@ BOOST_AUTO_TEST_CASE(manipulator_translate_free_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_rotate_grab_test) {
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
-    boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
-    v3d::editor::RotateManipulator manipulator;
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
+    const v3d::editor::RotateManipulator manipulator;
 
     // this view looks along z, so the z ring faces the camera and the other two are edge on.
     // The rim of the z ring at three o'clock is also where the edge on y ring's projection
@@ -146,8 +146,8 @@ BOOST_AUTO_TEST_CASE(manipulator_rotate_grab_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_rotate_test) {
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
-    boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::RotateManipulator manipulator;
     manipulator.axis(v3d::editor::Manipulator::Axis::Z);
     manipulator.active(true);
@@ -170,8 +170,8 @@ BOOST_AUTO_TEST_CASE(manipulator_rotate_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_scale_test) {
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
-    boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::ScaleManipulator manipulator;
 
     // a scale is a vector in the object's own axes, so the handles are the object's axes

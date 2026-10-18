@@ -73,7 +73,7 @@ PipelineHandle scenePipeline(v3d::test::Headless* headless, VkDescriptorSetLayou
 void draw(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& target, PipelineHandle pipeline,
     VkDescriptorSet scene, Capture* capture) {
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("scene");
+    const boost::shared_ptr<Pass> pass = frame.pass("scene");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pass->scene(scene);
 
@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_SUITE(scene_set_test)
  **/
 BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     VkDescriptorSetLayoutBinding block{};
     block.binding = 0;
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
 
     BOOST_REQUIRE(capture.write("data_out/scene_set.png"));
     v3d::image::reader::Png png(headless.logger);
-    boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/scene_set.png");
+    const boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/scene_set.png");
     BOOST_REQUIRE(picture);
     const unsigned char* pixels = picture->data();
     for (uint32_t texel = 0; texel < width * height; texel++) {
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
  **/
 BOOST_AUTO_TEST_CASE(a_scene_pipeline_in_a_pass_with_no_scene_throws) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     VkDescriptorSetLayoutBinding block{};
     block.binding = 0;

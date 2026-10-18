@@ -99,7 +99,7 @@ std::vector<float> drawDepth(v3d::test::Headless* headless, const boost::shared_
     buffer.write(vertices.data(), vertices.size() * sizeof(float));
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("shadow");
+    const boost::shared_ptr<Pass> pass = frame.pass("shadow");
     pass->target(target);
     pass->depth(true);
     pass->clearColour(glm::vec4(0.0f));
@@ -151,7 +151,7 @@ std::vector<float> drawBeside(v3d::test::Headless* headless, const boost::shared
     if (!depthFirst) {
         without = frame.pass("without");
     }
-    boost::shared_ptr<Pass> with = frame.pass("with");
+    const boost::shared_ptr<Pass> with = frame.pass("with");
     if (depthFirst) {
         without = frame.pass("without");
     }
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_SUITE(depth_target_test)
  **/
 BOOST_AUTO_TEST_CASE(a_depth_only_target_holds_the_depth_drawn) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, VK_FORMAT_UNDEFINED, true, true);
     BOOST_REQUIRE(target->image() == VK_NULL_HANDLE);
     if (target->depthFormat() != VK_FORMAT_D32_SFLOAT) {
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE(a_depth_only_target_holds_the_depth_drawn) {
  **/
 BOOST_AUTO_TEST_CASE(a_pass_bias_moves_the_depth_drawn) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, VK_FORMAT_UNDEFINED, true, true);
     if (target->depthFormat() != VK_FORMAT_D32_SFLOAT) {
         BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
@@ -244,7 +244,7 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_beside_one_with_it) {
     for (const bool depthFirst : {false, true}) {
         BOOST_TEST_CONTEXT("the pass with depth " << (depthFirst ? "first" : "second")) {
             v3d::test::Headless headless(colourFormat, width, height);
-            boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device,
+            const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device,
                 headless.context->ring(), width, height, VK_FORMAT_UNDEFINED, true, true);
             if (target->depthFormat() != VK_FORMAT_D32_SFLOAT) {
                 BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");

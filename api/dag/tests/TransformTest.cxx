@@ -20,12 +20,12 @@ bool near(const glm::vec3& a, const glm::vec3& b) {
 }
 
 glm::vec3 apply(const glm::mat4& transform, const glm::vec3& point) {
-    glm::vec4 result = transform * glm::vec4(point, 1.0f);
+    const glm::vec4 result = transform * glm::vec4(point, 1.0f);
     return glm::vec3(result);
 }
 
 BOOST_AUTO_TEST_CASE(transform_identity_test) {
-    v3d::dag::Transform transform;
+    const v3d::dag::Transform transform;
 
     BOOST_CHECK_EQUAL(near(transform.translation(), glm::vec3(0.0f, 0.0f, 0.0f)), true);
     BOOST_CHECK_EQUAL(near(transform.scale(), glm::vec3(1.0f, 1.0f, 1.0f)), true);

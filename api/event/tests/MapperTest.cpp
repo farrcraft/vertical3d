@@ -31,8 +31,8 @@ v3d::event::Event destination(const boost::shared_ptr<v3d::event::Context>& cont
 }
 
 BOOST_AUTO_TEST_CASE(mapper_test) {
-    boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
-    boost::shared_ptr<v3d::event::Context> game = boost::make_shared<v3d::event::Context>("pong");
+    const boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<v3d::event::Context> game = boost::make_shared<v3d::event::Context>("pong");
 
     v3d::event::Mapper mapper("global");
     BOOST_CHECK_EQUAL(mapper.name(), "global");
@@ -51,13 +51,13 @@ BOOST_AUTO_TEST_CASE(mapper_test) {
     BOOST_CHECK_EQUAL(mapper.destinations(source(keyboard, "q", v3d::event::State::Pressed)).size(), 0u);
 
     // and neither does the same name in another context
-    boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");
+    const boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");
     BOOST_CHECK_EQUAL(mapper.destinations(source(mouse, "w", v3d::event::State::Pressed)).size(), 0u);
 }
 
 BOOST_AUTO_TEST_CASE(mapper_edge_test) {
-    boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
-    boost::shared_ptr<v3d::event::Context> ui = boost::make_shared<v3d::event::Context>("ui");
+    const boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<v3d::event::Context> ui = boost::make_shared<v3d::event::Context>("ui");
 
     v3d::event::Mapper mapper("global");
     mapper.map(source(keyboard, "escape", v3d::event::State::Pressed), destination(ui, "showGameMenu"));
@@ -73,9 +73,9 @@ BOOST_AUTO_TEST_CASE(mapper_edge_test) {
 }
 
 BOOST_AUTO_TEST_CASE(mapper_multiple_bindings_test) {
-    boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
-    boost::shared_ptr<v3d::event::Context> game = boost::make_shared<v3d::event::Context>("pong");
-    boost::shared_ptr<v3d::event::Context> ui = boost::make_shared<v3d::event::Context>("ui");
+    const boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<v3d::event::Context> game = boost::make_shared<v3d::event::Context>("pong");
+    const boost::shared_ptr<v3d::event::Context> ui = boost::make_shared<v3d::event::Context>("ui");
 
     v3d::event::Mapper mapper("global");
 
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(mapper_multiple_bindings_test) {
     mapper.map(source(keyboard, "arrow_up", v3d::event::State::Any), destination(game, "rightPaddleUp"));
     mapper.map(source(keyboard, "arrow_up", v3d::event::State::Pressed), destination(ui, "menuPrevious"));
 
-    std::vector<v3d::event::Event> pressed = mapper.destinations(source(keyboard, "arrow_up", v3d::event::State::Pressed));
+    const std::vector<v3d::event::Event> pressed = mapper.destinations(source(keyboard, "arrow_up", v3d::event::State::Pressed));
     BOOST_CHECK_EQUAL(pressed.size(), 2u);
 
     // on release only the edgeless binding answers
@@ -100,8 +100,8 @@ BOOST_AUTO_TEST_CASE(mapper_multiple_bindings_test) {
 }
 
 BOOST_AUTO_TEST_CASE(mapper_parameter_test) {
-    boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
-    boost::shared_ptr<v3d::event::Context> ui = boost::make_shared<v3d::event::Context>("ui");
+    const boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<v3d::event::Context> ui = boost::make_shared<v3d::event::Context>("ui");
 
     v3d::event::Mapper mapper("global");
 
@@ -129,8 +129,8 @@ BOOST_AUTO_TEST_CASE(mapper_parameter_test) {
  * parameter, and nothing for a destination nothing drives.
  **/
 BOOST_AUTO_TEST_CASE(mapper_sources_test) {
-    boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
-    boost::shared_ptr<v3d::event::Context> game = boost::make_shared<v3d::event::Context>("game");
+    const boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<v3d::event::Context> game = boost::make_shared<v3d::event::Context>("game");
 
     v3d::event::Mapper mapper("global");
     v3d::event::Event north = destination(game, "walkNorth");
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(mapper_sources_test) {
     mapper.map(source(keyboard, "arrow_up", v3d::event::State::Pressed), destination(game, "walkNorth"));
     mapper.map(source(keyboard, "s", v3d::event::State::Any), destination(game, "walkSouth"));
 
-    std::vector<v3d::event::Event> found = mapper.sources("game::walkNorth");
+    const std::vector<v3d::event::Event> found = mapper.sources("game::walkNorth");
     BOOST_REQUIRE_EQUAL(found.size(), 2u);
     std::vector<std::string> names;
     names.reserve(found.size());

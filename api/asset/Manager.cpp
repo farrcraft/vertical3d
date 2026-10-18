@@ -55,7 +55,7 @@ std::string Manager::path(std::string_view name) const {
 /**
  **/
 boost::shared_ptr<Asset> Manager::load(std::string_view name, asset::Type t) {
-    boost::shared_ptr<Loader> loader = resolveLoader(t);
+    const boost::shared_ptr<Loader> loader = resolveLoader(t);
     if (!loader) {
         logger_->get()->error("Nothing is registered to load {} as type {}", name, static_cast<int>(t));
         return boost::shared_ptr<Asset>();

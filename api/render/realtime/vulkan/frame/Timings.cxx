@@ -35,7 +35,7 @@ Timings::Timings(const boost::shared_ptr<device::Device>& device, uint32_t frame
         if (result != VK_SUCCESS) {
             // the destructor does not run for a constructor that throws, so the pools
             // already made are destroyed here
-            for (Slot& made : slots_) {
+            for (const Slot& made : slots_) {
                 if (made.pool != VK_NULL_HANDLE) {
                     vkDestroyQueryPool(device_->handle(), made.pool, nullptr);
                 }
@@ -49,7 +49,7 @@ Timings::Timings(const boost::shared_ptr<device::Device>& device, uint32_t frame
 /**
  **/
 Timings::~Timings() {
-    for (Slot& slot : slots_) {
+    for (const Slot& slot : slots_) {
         if (slot.pool != VK_NULL_HANDLE) {
             vkDestroyQueryPool(device_->handle(), slot.pool, nullptr);
         }

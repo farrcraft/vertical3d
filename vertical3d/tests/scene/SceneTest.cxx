@@ -42,8 +42,8 @@ BOOST_AUTO_TEST_CASE(scene_empty_test) {
 BOOST_AUTO_TEST_CASE(scene_add_test) {
     v3d::editor::Scene scene;
 
-    boost::shared_ptr<v3d::brep::BRep> first = boost::make_shared<v3d::brep::BRep>();
-    boost::shared_ptr<v3d::brep::BRep> second = boost::make_shared<v3d::brep::BRep>();
+    const boost::shared_ptr<v3d::brep::BRep> first = boost::make_shared<v3d::brep::BRep>();
+    const boost::shared_ptr<v3d::brep::BRep> second = boost::make_shared<v3d::brep::BRep>();
 
     const unsigned int firstID = scene.add(first);
     const unsigned int secondID = scene.add(second);
@@ -70,8 +70,8 @@ BOOST_AUTO_TEST_CASE(scene_add_test) {
 BOOST_AUTO_TEST_CASE(scene_visit_order_test) {
     v3d::editor::Scene scene;
 
-    boost::shared_ptr<v3d::brep::BRep> first = boost::make_shared<v3d::brep::BRep>();
-    boost::shared_ptr<v3d::brep::BRep> second = boost::make_shared<v3d::brep::BRep>();
+    const boost::shared_ptr<v3d::brep::BRep> first = boost::make_shared<v3d::brep::BRep>();
+    const boost::shared_ptr<v3d::brep::BRep> second = boost::make_shared<v3d::brep::BRep>();
     scene.add(first);
     scene.add(second);
 
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(scene_visit_order_test) {
 BOOST_AUTO_TEST_CASE(scene_deselect_test) {
     v3d::editor::Scene scene;
 
-    boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
+    const boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
     std::vector<glm::vec3> quad;
     quad.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
     quad.push_back(glm::vec3(1.0f, 0.0f, 0.0f));

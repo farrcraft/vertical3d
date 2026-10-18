@@ -286,7 +286,7 @@ BOOST_AUTO_TEST_CASE(camera_project_test) {
     // and unproject takes a screen point back to where it came from. Both measure y
     // downward from the top of the viewport, so a point off the centre line round trips too
     glm::vec3 world(0.5f, 0.25f, 1.0f);
-    glm::vec3 screen = camera.project(world, viewport);
+    const glm::vec3 screen = camera.project(world, viewport);
     glm::vec3 roundTrip = camera.unproject(screen, viewport);
     BOOST_CHECK_CLOSE(roundTrip[0], world[0], 0.1f);
     BOOST_CHECK_CLOSE(roundTrip[1], world[1], 0.1f);
@@ -302,8 +302,8 @@ BOOST_AUTO_TEST_CASE(camera_ray_test) {
 
     // an orthographic camera casts a ray parallel to its direction of view from wherever
     // the click was, so an off centre click does not tilt it
-    v3d::type::geometry::Ray centre = camera.ray(glm::vec2(320.0f, 240.0f), viewport);
-    v3d::type::geometry::Ray corner = camera.ray(glm::vec2(0.0f, 0.0f), viewport);
+    const v3d::type::geometry::Ray centre = camera.ray(glm::vec2(320.0f, 240.0f), viewport);
+    const v3d::type::geometry::Ray corner = camera.ray(glm::vec2(0.0f, 0.0f), viewport);
     BOOST_CHECK_CLOSE(centre.direction()[2], 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(corner.direction()[2], 1.0f, 0.01f);
     BOOST_CHECK_LT(corner.origin()[0], centre.origin()[0]);
@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE(camera_ray_test) {
     // screen and cast back sits on the ray it came from
     glm::vec3 world(0.5f, 0.25f, 5.0f);
     glm::vec3 screen = camera.project(world, viewport);
-    v3d::type::geometry::Ray back = camera.ray(glm::vec2(screen[0], screen[1]), viewport);
+    const v3d::type::geometry::Ray back = camera.ray(glm::vec2(screen[0], screen[1]), viewport);
     glm::vec3 along = back.point(glm::length(world - back.origin()));
     BOOST_CHECK_CLOSE(along[0], world[0], 0.1f);
     BOOST_CHECK_CLOSE(along[1], world[1], 0.1f);
@@ -323,8 +323,8 @@ BOOST_AUTO_TEST_CASE(camera_ray_test) {
     perspective.orthographic(false);
     perspective.createProjection();
     perspective.createView();
-    v3d::type::geometry::Ray middle = perspective.ray(glm::vec2(320.0f, 240.0f), viewport);
-    v3d::type::geometry::Ray edge = perspective.ray(glm::vec2(0.0f, 240.0f), viewport);
+    const v3d::type::geometry::Ray middle = perspective.ray(glm::vec2(320.0f, 240.0f), viewport);
+    const v3d::type::geometry::Ray edge = perspective.ray(glm::vec2(0.0f, 240.0f), viewport);
     BOOST_CHECK_SMALL(middle.direction()[0], 0.001f);
     BOOST_CHECK_LT(edge.direction()[0], -0.1f);
 }

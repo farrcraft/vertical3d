@@ -163,7 +163,7 @@ boost::shared_ptr<v3d::image::Image> drawStrips(v3d::test::Headless* headless, c
 
     const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("lit");
+    const boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
     pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
@@ -198,9 +198,9 @@ BOOST_AUTO_TEST_SUITE(lit_crowd_test)
 BOOST_AUTO_TEST_CASE(every_entity_sharing_a_mesh_is_drawn_where_it_stands) {
     const uint32_t mapSize = 1024;
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true);
-    boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         mapSize, mapSize, VK_FORMAT_UNDEFINED, true, true);
 
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
@@ -232,8 +232,8 @@ BOOST_AUTO_TEST_CASE(every_entity_sharing_a_mesh_is_drawn_where_it_stands) {
         headless.context->textures()->depthTexture(*map));
 
     Frame frame;
-    boost::shared_ptr<Pass> drawn = frame.pass("lit");
-    boost::shared_ptr<Pass> casting = frame.pass("shadow");
+    const boost::shared_ptr<Pass> drawn = frame.pass("lit");
+    const boost::shared_ptr<Pass> casting = frame.pass("shadow");
     casting->target(map);
     casting->depth(true);
     casting->scene(scene);
@@ -280,7 +280,7 @@ BOOST_AUTO_TEST_CASE(every_entity_sharing_a_mesh_is_drawn_where_it_stands) {
  **/
 BOOST_AUTO_TEST_CASE(each_skinned_entity_sharing_a_mesh_takes_its_own_pose) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true);
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
@@ -359,7 +359,7 @@ BOOST_AUTO_TEST_CASE(entities_sharing_a_mesh_are_drawn_in_one_draw_per_part) {
             }
         }
         Frame frame;
-        boost::shared_ptr<Pass> pass = frame.pass("lit");
+        const boost::shared_ptr<Pass> pass = frame.pass("lit");
         pass->target(target);
         pass->depth(true);
         pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
@@ -408,7 +408,7 @@ BOOST_AUTO_TEST_CASE(a_crowd_larger_than_the_object_buffer_draws_every_object) {
     const uint32_t size = 512;
     const int side = 24;
     v3d::test::Headless headless(colourFormat, size, size);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, colourFormat, true);
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     const MeshHandle crate = meshes.add("crate", v3d::test::cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
@@ -431,7 +431,7 @@ BOOST_AUTO_TEST_CASE(a_crowd_larger_than_the_object_buffer_draws_every_object) {
     boost::shared_ptr<v3d::image::Image> picture;
     for (int drawn = 1; drawn <= 2; drawn++) {
         Frame frame;
-        boost::shared_ptr<Pass> pass = frame.pass("lit");
+        const boost::shared_ptr<Pass> pass = frame.pass("lit");
         pass->target(target);
         pass->depth(true);
         pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
@@ -469,7 +469,7 @@ BOOST_AUTO_TEST_CASE(a_crowd_larger_than_the_object_buffer_draws_every_object) {
  * belong to.
  **/
 BOOST_AUTO_TEST_CASE(an_object_added_before_any_scene_is_refused) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
     Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
         headless.context->frameUniforms(), headless.context->textures(), colourFormat,
         v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()), VK_FORMAT_UNDEFINED);

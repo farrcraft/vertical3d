@@ -31,7 +31,7 @@ std::string userPath(const std::string& org, const std::string& app) {
     // called at the very start of an app's startup
     char* path = SDL_GetPrefPath(org.c_str(), app.c_str());
     if (path == nullptr) {
-        v3d::log::Logger logger;
+        const v3d::log::Logger logger;
         logger.get()->error("no user directory for {}/{} - {}", org, app, SDL_GetError());
         return std::string();
     }

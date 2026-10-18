@@ -72,8 +72,8 @@ BOOST_AUTO_TEST_CASE(command_stack_empty_test) {
 
 BOOST_AUTO_TEST_CASE(command_stack_undo_redo_test) {
     v3d::editor::CommandStack stack;
-    boost::shared_ptr<CountingCommand> first = counter("first");
-    boost::shared_ptr<CountingCommand> second = counter("second");
+    const boost::shared_ptr<CountingCommand> first = counter("first");
+    const boost::shared_ptr<CountingCommand> second = counter("second");
 
     // a command arrives already done, so pushing must not do it again
     stack.push(first);
@@ -82,14 +82,14 @@ BOOST_AUTO_TEST_CASE(command_stack_undo_redo_test) {
     BOOST_CHECK_EQUAL(second->redone, 0);
     BOOST_CHECK_EQUAL(stack.undoDepth(), 2u);
 
-    boost::shared_ptr<v3d::editor::Command> undone = stack.undo();
+    const boost::shared_ptr<v3d::editor::Command> undone = stack.undo();
     BOOST_CHECK(undone == second);
     BOOST_CHECK_EQUAL(second->undone, 1);
     BOOST_CHECK_EQUAL(first->undone, 0);
     BOOST_CHECK_EQUAL(stack.undoDepth(), 1u);
     BOOST_CHECK_EQUAL(stack.redoDepth(), 1u);
 
-    boost::shared_ptr<v3d::editor::Command> redone = stack.redo();
+    const boost::shared_ptr<v3d::editor::Command> redone = stack.redo();
     BOOST_CHECK(redone == second);
     BOOST_CHECK_EQUAL(second->redone, 1);
     BOOST_CHECK_EQUAL(stack.undoDepth(), 2u);
@@ -103,8 +103,8 @@ BOOST_AUTO_TEST_CASE(command_stack_undo_redo_test) {
 
 BOOST_AUTO_TEST_CASE(command_stack_branch_test) {
     v3d::editor::CommandStack stack;
-    boost::shared_ptr<CountingCommand> first = counter("first");
-    boost::shared_ptr<CountingCommand> second = counter("second");
+    const boost::shared_ptr<CountingCommand> first = counter("first");
+    const boost::shared_ptr<CountingCommand> second = counter("second");
 
     stack.push(first);
     stack.undo();
@@ -120,9 +120,9 @@ BOOST_AUTO_TEST_CASE(command_stack_branch_test) {
 
 BOOST_AUTO_TEST_CASE(command_stack_capacity_test) {
     v3d::editor::CommandStack stack(2);
-    boost::shared_ptr<CountingCommand> first = counter("first");
-    boost::shared_ptr<CountingCommand> second = counter("second");
-    boost::shared_ptr<CountingCommand> third = counter("third");
+    const boost::shared_ptr<CountingCommand> first = counter("first");
+    const boost::shared_ptr<CountingCommand> second = counter("second");
+    const boost::shared_ptr<CountingCommand> third = counter("third");
 
     stack.push(first);
     stack.push(second);
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(command_stack_capacity_test) {
 
 BOOST_AUTO_TEST_CASE(command_stack_clear_test) {
     v3d::editor::CommandStack stack;
-    boost::shared_ptr<CountingCommand> first = counter("first");
+    const boost::shared_ptr<CountingCommand> first = counter("first");
 
     stack.push(first);
     stack.clear();
@@ -155,11 +155,11 @@ BOOST_AUTO_TEST_CASE(command_stack_clear_test) {
 }
 
 BOOST_AUTO_TEST_CASE(create_command_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     const unsigned int id = cube->id();
 
-    boost::shared_ptr<v3d::editor::CreateCommand> command =
+    const boost::shared_ptr<v3d::editor::CreateCommand> command =
         boost::make_shared<v3d::editor::CreateCommand>(scene, cube, "cube");
     BOOST_CHECK_EQUAL(command->name(), "create cube");
 
@@ -181,9 +181,9 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
 }
 
 BOOST_AUTO_TEST_CASE(create_command_selection_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> plane = v3d::editor::create_poly_plane();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> plane = v3d::editor::create_poly_plane();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
 
     plane->selected(true);
     scene->add(plane);
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
 }
 
 BOOST_AUTO_TEST_CASE(transform_command_test) {
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
 
     const v3d::editor::Placement before = v3d::editor::Placement::of(*cube);
 
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE(transform_command_test) {
 }
 
 BOOST_AUTO_TEST_CASE(placement_tolerance_test) {
-    v3d::editor::Placement one;
+    const v3d::editor::Placement one;
     v3d::editor::Placement two;
 
     // the default placement is the one a mesh is built with

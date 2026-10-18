@@ -28,7 +28,7 @@ void settle(const v3d::test::Windowed& windowed) {
  * without a validation error, rebuilding the chain for each new size.
  **/
 BOOST_AUTO_TEST_CASE(window_goes_full_screen_and_back_test) {
-    v3d::test::Windowed windowed;
+    const v3d::test::Windowed windowed;
     BOOST_TEST(!windowed.window->fullscreen());
 
     BOOST_REQUIRE(windowed.window->fullscreen(true));

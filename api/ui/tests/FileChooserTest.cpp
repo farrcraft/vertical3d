@@ -63,7 +63,7 @@ class Sandbox final {
  * label, under the names a chooser looks for by default.
  **/
 boost::shared_ptr<v3d::ui::Engine> chooserUi() {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
     const char* const document = R"({

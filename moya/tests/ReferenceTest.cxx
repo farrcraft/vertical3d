@@ -120,7 +120,7 @@ void scene(v3d::moya::RenderContext & rc) {
     // picture goes through the language by both routes
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     polygon->addVertex(vertex(-0.7f, -0.2f, 5.0f));
     polygon->addVertex(vertex(0.3f, -0.2f, 5.0f));
     polygon->addVertex(vertex(0.3f, 0.8f, 5.0f));
@@ -141,7 +141,7 @@ v3d::moya::Vertex shaded(float x, float y, float z, const glm::vec3 & normal) {
 
 void quad(v3d::moya::RenderContext & rc, float left, float right,
     const glm::vec3 & outer, const glm::vec3 & inner) {
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     polygon->addVertex(shaded(left, -0.8f, 5.0f, outer));
     polygon->addVertex(shaded(right, -0.8f, 5.0f, inner));
     polygon->addVertex(shaded(right, 0.8f, 5.0f, inner));
@@ -224,7 +224,7 @@ void focusScene(v3d::moya::RenderContext & rc, bool lens) {
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 
     rc.color(glm::vec3(0.9f, 0.2f, 0.2f));
-    boost::shared_ptr<v3d::moya::Polygon> near = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> near = boost::make_shared<v3d::moya::Polygon>();
     near->addVertex(vertex(-1.5f, -1.0f, 4.0f));
     near->addVertex(vertex(-0.2f, -1.0f, 4.0f));
     near->addVertex(vertex(-0.2f, 1.0f, 4.0f));
@@ -232,7 +232,7 @@ void focusScene(v3d::moya::RenderContext & rc, bool lens) {
     rc.addPolygon(near);
 
     rc.color(glm::vec3(0.2f, 0.4f, 0.9f));
-    boost::shared_ptr<v3d::moya::Polygon> far = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> far = boost::make_shared<v3d::moya::Polygon>();
     far->addVertex(vertex(0.5f, -2.5f, 10.0f));
     far->addVertex(vertex(4.0f, -2.5f, 10.0f));
     far->addVertex(vertex(4.0f, 2.5f, 10.0f));
@@ -296,7 +296,7 @@ void motionCamera(v3d::moya::RenderContext & rc) {
 }
 
 void quadAt(v3d::moya::RenderContext & rc, const glm::vec3 (&corners)[4]) {
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     for (const glm::vec3 & corner : corners) {
         polygon->addVertex(vertex(corner.x, corner.y, corner.z));
     }
@@ -362,9 +362,9 @@ void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int co
  **/
 void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* reference,
     const char* output) {
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
-    boost::shared_ptr<v3d::image::Image> committed = factory.read(reference);
+    const boost::shared_ptr<v3d::image::Image> committed = factory.read(reference);
     if (committed == nullptr) {
         boost::filesystem::create_directory("data_out");
         factory.write(output, rendered);
@@ -373,7 +373,7 @@ void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* re
         std::string("cannot read the reference image ") + reference +
         " - what was rendered is in " + output);
 
-    v3d::image::Difference difference = v3d::image::compare(*rendered, *committed, 1);
+    const v3d::image::Difference difference = v3d::image::compare(*rendered, *committed, 1);
     if (!difference.match) {
         boost::filesystem::create_directory("data_out");
         factory.write(output, rendered);
@@ -437,7 +437,7 @@ void triangleScene(v3d::moya::RenderContext & rc) {
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
     rc.color(glm::vec3(0.9f, 0.2f, 0.2f));
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     polygon->addVertex(vertex(-0.8f, -0.6f, 2.0f));
     polygon->addVertex(vertex(0.8f, -0.6f, 2.0f));
     polygon->addVertex(vertex(0.0f, 0.7f, 2.0f));
@@ -592,7 +592,7 @@ BOOST_AUTO_TEST_CASE(moya_renders_a_polygon_test) {
     scene(rc);
     rc.render();
 
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
 
     // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8]
     BOOST_TEST(planes->value(v3d::moya::FrameBuffer::RED, 24, 16) == 1.0f);
@@ -614,13 +614,13 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
     scene(rc);
     rc.render();
 
-    boost::shared_ptr<v3d::image::Image> rendered =
+    const boost::shared_ptr<v3d::image::Image> rendered =
         rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS);
 
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
-    boost::shared_ptr<v3d::image::Image> reference = factory.read(REFERENCE);
+    const boost::shared_ptr<v3d::image::Image> reference = factory.read(REFERENCE);
     if (reference == nullptr) {
         // write what was rendered, so a missing reference can be inspected, or committed when
         // it is being regenerated on purpose
@@ -631,7 +631,7 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
         std::string("cannot read the reference image ") + REFERENCE + " - what was rendered is in " + RENDERED);
 
     // the tolerance is for float rounding across compilers, not for "close enough"
-    v3d::image::Difference difference = v3d::image::compare(*rendered, *reference, 1);
+    const v3d::image::Difference difference = v3d::image::compare(*rendered, *reference, 1);
     if (!difference.match) {
         boost::filesystem::create_directory("data_out");
         factory.write(RENDERED, rendered);
@@ -654,15 +654,15 @@ BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(RIB_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    boost::shared_ptr<v3d::image::Image> rendered =
+    const boost::shared_ptr<v3d::image::Image> rendered =
         handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS);
 
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
-    boost::shared_ptr<v3d::image::Image> reference = factory.read(REFERENCE);
+    const boost::shared_ptr<v3d::image::Image> reference = factory.read(REFERENCE);
     BOOST_REQUIRE(reference != nullptr);
 
-    v3d::image::Difference difference = v3d::image::compare(*rendered, *reference, 1);
+    const v3d::image::Difference difference = v3d::image::compare(*rendered, *reference, 1);
     if (!difference.match) {
         boost::filesystem::create_directory("data_out");
         factory.write(RIB_RENDERED, rendered);
@@ -934,7 +934,7 @@ BOOST_AUTO_TEST_CASE(moya_motion_spreads_linearly_test) {
 BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
     for (const char* hider : HIDERS) {
         BOOST_TEST_CONTEXT("hider " << hider) {
-            boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/textured.rib", .hider = hider});
+            const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/textured.rib", .hider = hider});
 
             // red counts the block across and green the block down, and blue is the same in each
             for (unsigned int across = 0; across < 4; across++) {
@@ -960,7 +960,7 @@ BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
  * traced through the same scene the ray hider uses, so it falls where the ray hider's does.
  **/
 BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = SHADOW_SCENE});
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = SHADOW_SCENE});
     check(planes->image(v3d::moya::FrameBuffer::CHANNELS), SHADOW, SHADOW_RIB_RENDERED);
 
     /*
@@ -969,7 +969,7 @@ BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
         light's shadow alone, a region lit by both, and the imager's background. An edge moves
         by up to a micropolygon, so only the insides are pinned.
     */
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> traced = read({.file = SHADOW_SCENE, .hider = "raytrace"});
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> traced = read({.file = SHADOW_SCENE, .hider = "raytrace"});
     const unsigned int pixels[][2] = { { 40, 30 }, { 24, 40 }, { 56, 26 }, { 8, 8 }, { 2, 2 } };
     for (const auto & pixel : pixels) {
         BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
@@ -1076,7 +1076,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_spheres_reference_test) {
  * cosine of that - a value neither the geometry's colour nor no shading could produce.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_lit_quad_test) {
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/raytrace-lit-quad.rib"});
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/raytrace-lit-quad.rib"});
 
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.70710678f, 0.5f);
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 0.70710678f, 0.5f);

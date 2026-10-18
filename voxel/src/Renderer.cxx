@@ -305,12 +305,12 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     if (!screen_->begin()) {
         return;
     }
-    v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
+    const v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
     if (screen_->resized()) {
         resize(glm::ivec2(static_cast<int>(canvas.width()), static_cast<int>(canvas.height())));
     }
 
-    boost::shared_ptr<v3d::render::realtime::Pass> terrain = engine_.frame()->pass(terrainPass);
+    const boost::shared_ptr<v3d::render::realtime::Pass> terrain = engine_.frame()->pass(terrainPass);
     terrain->depth(true);
     // one item per chunk through one pipeline and one material, so what the sort does here
     // is order them front to back for the depth test
@@ -326,7 +326,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
 
     // a second pass rather than more items in the first: the terrain is depth tested and
     // sorted front to back, and the text over it is painter ordered and must not be
-    boost::shared_ptr<v3d::render::realtime::Pass> overlay = engine_.frame()->pass(overlayPass);
+    const boost::shared_ptr<v3d::render::realtime::Pass> overlay = engine_.frame()->pass(overlayPass);
     overlay->keepColour();
     overlay->depth(false);
     engine_.quads()->submit(canvas, overlay.get());

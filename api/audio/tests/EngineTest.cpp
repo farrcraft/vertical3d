@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_add_clip_test) {
     v3dtest::writeWav("hit.wav");
 
     auto sound = engine();
-    boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
+    const boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
     BOOST_REQUIRE(clip->load("hit.wav"));
     BOOST_TEST(sound->addClip(clip, "hit"));
 
@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_without_initialize_test) {
     v3dtest::writeWav("hit.wav");
 
     auto sound = engine();
-    boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
+    const boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
     BOOST_REQUIRE(clip->load("hit.wav"));
     BOOST_TEST(sound->addClip(clip, "hit"));
     BOOST_CHECK_NO_THROW(sound->shutdown());
@@ -200,7 +200,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_play_without_a_device_test) {
     v3dtest::writeWav("hit.wav");
 
     auto sound = engine();
-    boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
+    const boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
     BOOST_REQUIRE(clip->load("hit.wav"));
     BOOST_TEST(sound->addClip(clip, "hit"));
 
@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_twice_after_a_play_without_a_device_t
     v3dtest::writeWav("hit.wav");
 
     auto sound = engine();
-    boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
+    const boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
     BOOST_REQUIRE(clip->load("hit.wav"));
     BOOST_TEST(sound->addClip(clip, "hit"));
     BOOST_CHECK(sound->play("hit", v3d::audio::Play()) == v3d::audio::Voice::None);
@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_twice_after_a_play_without_a_device_t
  * audio subsystem starts, whether or not a device opens.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_lets_the_dispatcher_go_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     {
         v3d::audio::Engine sound(boost::make_shared<v3d::log::Logger>(), dispatcher);
         sound.initialize();

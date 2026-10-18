@@ -122,7 +122,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
 
     const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("lit");
+    const boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
     pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_SUITE(skin_test)
  * skeleton, and a static entity is not posed at all.
  **/
 BOOST_AUTO_TEST_CASE(poses_are_laid_end_to_end) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
     const boost::shared_ptr<v3d::asset::Manager> manager = assets(headless);
     MeshRegistry meshes(headless.logger, headless.context, manager);
     const MeshHandle strip = meshes.load(STRIP);
@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE(poses_are_laid_end_to_end) {
  * is the identity; one whose mesh was released is not posed.
  **/
 BOOST_AUTO_TEST_CASE(an_entity_with_nothing_playing_stands_at_rest) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     const MeshHandle strip = meshes.load(STRIP);
     const MeshHandle doomed = meshes.add("doomed", *boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(
@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE(an_entity_with_nothing_playing_stands_at_rest) {
  **/
 BOOST_AUTO_TEST_CASE(a_skin_at_rest_draws_its_unskinned_mesh) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true);
     const boost::shared_ptr<v3d::asset::Manager> manager = assets(headless);
     MeshRegistry meshes(headless.logger, headless.context, manager);
@@ -271,7 +271,7 @@ BOOST_AUTO_TEST_CASE(a_skin_at_rest_draws_its_unskinned_mesh) {
  **/
 BOOST_AUTO_TEST_CASE(a_bent_strip_is_drawn_and_silent) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true);
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     Lit lit = makeLit(&headless, target, VK_FORMAT_UNDEFINED);
@@ -305,7 +305,7 @@ BOOST_AUTO_TEST_CASE(a_bent_strip_is_drawn_and_silent) {
  **/
 BOOST_AUTO_TEST_CASE(an_exported_rig_is_drawn_mid_clip) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true);
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     Lit lit = makeLit(&headless, target, VK_FORMAT_UNDEFINED);
@@ -344,7 +344,7 @@ BOOST_AUTO_TEST_CASE(an_exported_rig_is_drawn_mid_clip) {
 BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     const uint32_t size = 16;
     v3d::test::Headless headless(colourFormat, size, size);
-    boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, VK_FORMAT_UNDEFINED, true, true);
     if (map->depthFormat() != VK_FORMAT_D32_SFLOAT) {
         BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
@@ -388,7 +388,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("shadow");
+    const boost::shared_ptr<Pass> pass = frame.pass("shadow");
     pass->target(map);
     pass->depth(true);
     pass->scene(lit.scene(lighting::pack(lighting::Settings(), light, 1.0f / size),
@@ -422,7 +422,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
  **/
 BOOST_AUTO_TEST_CASE(a_skinned_mesh_released_in_flight_outlives_its_frame) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true);
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     Lit lit = makeLit(&headless, target, VK_FORMAT_UNDEFINED);
@@ -432,7 +432,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_mesh_released_in_flight_outlives_its_frame) {
     lay(&registry, strip);
     const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("lit");
+    const boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
     pass->scene(lit.scene(lighting::pack(lighting::Settings(), glm::mat4(1.0f), 0.0f),

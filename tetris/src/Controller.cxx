@@ -66,7 +66,7 @@ bool Controller::start() {
         return false;
     }
 
-    boost::shared_ptr<v3d::render::realtime::Window> win = window();
+    const boost::shared_ptr<v3d::render::realtime::Window> win = window();
     renderer_ = boost::make_shared<TetrisRenderer>(win, logger(), assets());
     renderer_->scene(scene_);
     renderer_->ui(vgui_);
@@ -133,7 +133,7 @@ void Controller::rotate(Tetrad::RotationDirection direction) {
     const int row = static_cast<int>(position.second);
     const int column = static_cast<int>(position.first);
     const int kicks[] = { 0, -1, 1, -2, 2 };
-    for (int kick : kicks) {
+    for (const int kick : kicks) {
         if (board->fits(turned, glm::ivec2(column + kick, row))) {
             turned.position(Tetrad::PositionType(static_cast<unsigned int>(column + kick), position.second));
             piece = turned;

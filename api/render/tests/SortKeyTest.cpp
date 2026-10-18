@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_SUITE(sortkey_test)
  * rather than landing somewhere arbitrary.
  **/
 BOOST_AUTO_TEST_CASE(default_key_is_zero) {
-    v3d::render::realtime::SortKey key;
+    const v3d::render::realtime::SortKey key;
 
     BOOST_CHECK_EQUAL(key.packed(), 0u);
 }

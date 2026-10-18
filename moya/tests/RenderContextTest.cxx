@@ -26,7 +26,7 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
  * RIB file would otherwise set.
  **/
 BOOST_AUTO_TEST_CASE(render_context_defaults_test) {
-    v3d::moya::RenderContext rc;
+    const v3d::moya::RenderContext rc;
 
     BOOST_TEST(rc.bucketWidth() == 16u);
     BOOST_TEST(rc.bucketHeight() == 16u);
@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(render_context_image_resolution_test) {
  * given and is not itself an option.
  **/
 BOOST_AUTO_TEST_CASE(render_context_named_test) {
-    v3d::moya::RenderContext rc(std::string("scene.rib"));
+    const v3d::moya::RenderContext rc(std::string("scene.rib"));
 
     BOOST_TEST(rc.imageWidth() == 320u);
     BOOST_TEST(rc.gridSize() == 256u);
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(render_context_named_test) {
  **/
 BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
     v3d::moya::RenderContext rc;
-    glm::mat4x4 identity(1.0f);
+    const glm::mat4x4 identity(1.0f);
 
     const char* reserved[] = { "object", "world", "camera", "screen", "raster", "NDC" };
     for (const auto* name : reserved) {
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
  **/
 BOOST_AUTO_TEST_CASE(render_context_coordinate_system_test) {
     v3d::moya::RenderContext rc;
-    glm::mat4x4 scaled(3.0f);
+    const glm::mat4x4 scaled(3.0f);
 
     rc.setTransform(scaled);
     rc.saveCoordinateSystem("world");
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(render_context_rotate_test) {
     rc.saveCoordinateSystem("object");
 
     // the angle is in degrees, as RiRotate takes it
-    glm::mat4x4 composed = rc.coordinateSystem("object");
+    const glm::mat4x4 composed = rc.coordinateSystem("object");
     glm::vec3 turned = glm::vec3(composed * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
     BOOST_TEST(turned.x == 0.0f, boost::test_tools::tolerance(0.0001f));
     BOOST_TEST(turned.y == 1.0f, boost::test_tools::tolerance(0.0001f));
@@ -134,8 +134,8 @@ BOOST_AUTO_TEST_CASE(render_context_scale_test) {
     rc.scale(2.0f, 3.0f, 4.0f);
     rc.saveCoordinateSystem("object");
 
-    glm::mat4x4 composed = rc.coordinateSystem("object");
-    glm::vec3 scaled = glm::vec3(composed * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    const glm::mat4x4 composed = rc.coordinateSystem("object");
+    const glm::vec3 scaled = glm::vec3(composed * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
     BOOST_TEST((scaled == glm::vec3(2.0f, 3.0f, 4.0f)));
 }
 
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(render_context_buckets_a_polygon_test) {
     v3d::moya::RenderContext rc;
     rc.prepareWorld();
 
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     polygon->addVertex(vertex(-0.9f, -0.9f, 5.0f));
     polygon->addVertex(vertex(0.9f, -0.9f, 5.0f));
     polygon->addVertex(vertex(0.9f, 0.9f, 5.0f));
@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
     v3d::moya::RenderContext rc;
     rc.prepareWorld();
 
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     polygon->addVertex(vertex(-0.9f, -0.9f, 5.0f));
     polygon->addVertex(vertex(0.9f, -0.9f, 5.0f));
     polygon->addVertex(vertex(0.9f, 0.9f, 5.0f));
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(render_context_face_normal_test) {
     v3d::moya::RenderContext rc;
     rc.prepareWorld();
 
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     polygon->addVertex(vertex(-0.01f, -0.01f, 5.0f));
     polygon->addVertex(vertex(0.01f, -0.01f, 5.0f));
     polygon->addVertex(vertex(0.01f, 0.01f, 5.0f));
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(render_context_normal_override_test) {
     v3d::moya::RenderContext rc;
     rc.prepareWorld();
 
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     for (int i = 0; i < 3; i++) {
         v3d::moya::Vertex v = vertex(i == 1 ? 0.01f : -0.01f, i == 2 ? 0.01f : -0.01f, 5.0f);
         v.normal(glm::vec3(0.0f, 1.0f, 0.0f));
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE(render_context_normal_inverse_transpose_test) {
     rc.prepareWorld();
     rc.scale(1.0f, 2.0f, 1.0f);
 
-    boost::shared_ptr<v3d::moya::Polygon> polygon = diagonal();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = diagonal();
     rc.addPolygon(polygon);
 
     BOOST_REQUIRE(polygon->diceable());
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE(render_context_dice_interpolates_normal_test) {
     v3d::moya::RenderContext rc;
     rc.prepareWorld();
 
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     const glm::vec3 corners[4] = {
         glm::vec3(-0.01f, -0.01f, 5.0f), glm::vec3(0.01f, -0.01f, 5.0f),
         glm::vec3(0.01f, 0.01f, 5.0f), glm::vec3(-0.01f, 0.01f, 5.0f)
@@ -335,7 +335,7 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
     v3d::moya::RenderContext rc;
     rc.prepareWorld();
 
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     polygon->addVertex(vertex(-0.9f, -0.9f, 5.0f));
     polygon->addVertex(vertex(0.9f, -0.9f, 5.0f));
     polygon->addVertex(vertex(0.9f, 0.9f, 5.0f));
@@ -376,7 +376,7 @@ BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
         { 0.15f, 0.25f, 0.45f }, std::vector<std::string>());
     rc.imager("background", list);
 
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     polygon->addVertex(vertex(-0.7f, -0.2f, 5.0f));
     polygon->addVertex(vertex(0.3f, -0.2f, 5.0f));
     polygon->addVertex(vertex(0.3f, 0.8f, 5.0f));
@@ -384,7 +384,7 @@ BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
     rc.addPolygon(polygon);
     rc.render();
 
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
     // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8], so this is inside
     // it and keeps the colour the hider wrote
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 24, 16), 1.0f, 0.01f);

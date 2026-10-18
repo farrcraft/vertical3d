@@ -415,7 +415,7 @@ void Compiler::checkCallGraph() {
             const std::size_t current = stack.back();
             if (colour[current] == 0) {
                 colour[current] = 1;
-                for (int called : calls_[current]) {
+                for (const int called : calls_[current]) {
                     const std::size_t next = static_cast<std::size_t>(called);
                     if (colour[next] == 1) {
                         const syntax::Function & function = shader_->functions[next];
@@ -568,7 +568,7 @@ void Compiler::checkAssignment(const syntax::StatementPtr & statement) {
 }
 
 void Compiler::checkLighting(const syntax::StatementPtr & statement) {
-    syntax::Lighting & lighting = static_cast<syntax::Lighting &>(*statement);
+    const syntax::Lighting & lighting = static_cast<syntax::Lighting &>(*statement);
     const bool surface = shader_->type == ShaderType::SURFACE;
     if (lighting.construct == syntax::Lighting::Construct::ILLUMINANCE) {
         if (!surface) {
@@ -639,7 +639,7 @@ Type Compiler::checkVariable(const syntax::ExpressionPtr & expression) {
         throw fail("'" + variable.name + "' is not declared", expression->line, expression->column);
     }
     if (depth_ == 0) {
-        for (int index : lighting_) {
+        for (const int index : lighting_) {
             if (index == variable.symbol) {
                 throw fail("'" + variable.name + "' is set by a light and means nothing outside an "
                     "'illuminance' body", expression->line, expression->column);

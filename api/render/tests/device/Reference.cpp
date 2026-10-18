@@ -38,10 +38,10 @@ void checkReference(const boost::shared_ptr<v3d::log::Logger>& logger,
     BOOST_REQUIRE_MESSAGE(capture->write(rendered), "the capture wrote no " + rendered);
 
     v3d::image::reader::Png png(logger);
-    boost::shared_ptr<v3d::image::Image> drawn = png.read(rendered);
+    const boost::shared_ptr<v3d::image::Image> drawn = png.read(rendered);
     BOOST_REQUIRE_MESSAGE(drawn != nullptr, "cannot read back " + rendered);
 
-    boost::shared_ptr<v3d::image::Image> reference = png.read(committed);
+    const boost::shared_ptr<v3d::image::Image> reference = png.read(committed);
     // a missing reference fails rather than being written from what was drawn, which would
     // pass every time
     BOOST_REQUIRE_MESSAGE(reference != nullptr,

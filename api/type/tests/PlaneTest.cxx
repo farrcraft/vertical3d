@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(plane_representation_test) {
  * classify reads a plane that was filled in.
  **/
 BOOST_AUTO_TEST_CASE(plane_from_three_points_test) {
-    v3d::type::geometry::Plane plane(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(1.0f, 0.0f, 2.0f), glm::vec3(1.0f, 1.0f, 2.0f));
+    const v3d::type::geometry::Plane plane(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(1.0f, 0.0f, 2.0f), glm::vec3(1.0f, 1.0f, 2.0f));
 
     BOOST_TEST((plane.classify(glm::vec3(0.0f, 0.0f, 5.0f)) == v3d::type::geometry::Plane::POSITIVE));
     BOOST_TEST((plane.classify(glm::vec3(0.0f, 0.0f, 0.0f)) == v3d::type::geometry::Plane::NEGATIVE));
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(plane_from_three_points_test) {
  * where the plane is.
  **/
 BOOST_AUTO_TEST_CASE(plane_intersect_edge_test) {
-    v3d::type::geometry::Plane plane = zPlane();
+    const v3d::type::geometry::Plane plane = zPlane();
 
     glm::vec3 hit;
     BOOST_TEST(plane.intersectEdge(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 0.0f, 1.0f), &hit));

@@ -327,7 +327,7 @@ bool Loader::loadTheme(const boost::json::object& entry) {
         return false;
     }
     const std::string& themeName = *named;
-    boost::shared_ptr<style::Theme> theme = boost::make_shared<style::Theme>(themeName);
+    const boost::shared_ptr<style::Theme> theme = boost::make_shared<style::Theme>(themeName);
 
     // a theme with no styles in it is legal and draws in the defaults
     if (entry.contains("styles")) {
@@ -567,7 +567,7 @@ bool Loader::loadProperties(const boost::json::object& entry, const boost::share
             const std::string& name = *named;
 
             std::string propertyClass;
-            boost::shared_ptr<style::Property> loaded = loadProperty(section, property, name, &propertyClass);
+            const boost::shared_ptr<style::Property> loaded = loadProperty(section, property, name, &propertyClass);
             if (!loaded) {
                 return false;
             }
@@ -887,7 +887,7 @@ boost::shared_ptr<component::menu::Bar> Loader::loadMenuBar(const boost::json::o
             return nullptr;
         }
         const std::string& label = *labelled;
-        boost::shared_ptr<component::menu::Menu> menu = loadMenu(menuConfig);
+        const boost::shared_ptr<component::menu::Menu> menu = loadMenu(menuConfig);
         if (!menu) {
             return nullptr;
         }
@@ -923,7 +923,7 @@ boost::shared_ptr<component::menu::Menu> Loader::loadMenu(const boost::json::obj
 
         const v3d::event::Event command = loadCommand(menuItemConfig);
 
-        boost::shared_ptr<component::menu::Item> menuItem = boost::make_shared<component::menu::Item>(component::menu::stringToType(*itemType), *label);
+        const boost::shared_ptr<component::menu::Item> menuItem = boost::make_shared<component::menu::Item>(component::menu::stringToType(*itemType), *label);
         // the owning menu has to be set before the submenu below, which reads it to find its parent
         menuItem->menu(menu);
         if (command.context()) {
@@ -933,7 +933,7 @@ boost::shared_ptr<component::menu::Menu> Loader::loadMenu(const boost::json::obj
         menu->addItem(menuItem);
 
         if (menuItem->itemType() == component::menu::ItemType::Submenu) {
-            boost::shared_ptr<component::menu::Menu> submenu = loadMenu(menuItemConfig);
+            const boost::shared_ptr<component::menu::Menu> submenu = loadMenu(menuItemConfig);
             if (!submenu) {  // submenu(null) would fault setting the parent
                 return nullptr;
             }

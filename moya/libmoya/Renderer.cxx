@@ -26,7 +26,7 @@ void Renderer::createRenderContext(const std::string & name) {
                      "All Rights Reserved" << "\n";
     }
 
-    RenderContext context(name);
+    const RenderContext context(name);
     contexts_.push_back(context);
 }
 

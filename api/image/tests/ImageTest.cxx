@@ -13,10 +13,10 @@
 namespace {
 
 BOOST_AUTO_TEST_CASE(image_test) {
-    v3d::image::Image img24(glm::uvec2(2, 4), 24);
+    const v3d::image::Image img24(glm::uvec2(2, 4), 24);
     BOOST_CHECK_EQUAL((img24.format() == v3d::image::Image::Format::RGB), true);
 
-    v3d::image::Image img32(glm::uvec2(1, 5), 32);
+    const v3d::image::Image img32(glm::uvec2(1, 5), 32);
     BOOST_CHECK_EQUAL((img32.format() == v3d::image::Image::Format::RGBA), true);
 
     BOOST_CHECK_EQUAL(img24.width(), 2u);

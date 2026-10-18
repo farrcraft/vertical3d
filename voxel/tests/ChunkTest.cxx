@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(chunk_column_scales_with_the_heightmap_test) {
     Chunk edge(&terrain, glm::ivec3(0, 2, 0), worldHeightInBlocks);
     BOOST_CHECK_EQUAL(edge.blocks().size(), chunkSize * chunkSize);
 
-    Chunk above(&terrain, glm::ivec3(0, 3, 0), worldHeightInBlocks);
+    const Chunk above(&terrain, glm::ivec3(0, 3, 0), worldHeightInBlocks);
     BOOST_CHECK(above.empty());
 }
 

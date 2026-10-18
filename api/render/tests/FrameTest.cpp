@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_SUITE(frame_test)
  * A frame starts with no passes at all - the engine adds the one it draws through.
  **/
 BOOST_AUTO_TEST_CASE(frame_starts_empty) {
-    v3d::render::realtime::Frame frame;
+    const v3d::render::realtime::Frame frame;
 
     BOOST_CHECK_EQUAL(frame.passes().size(), 0);
 }
@@ -49,9 +49,9 @@ BOOST_AUTO_TEST_CASE(frame_starts_empty) {
 BOOST_AUTO_TEST_CASE(passes_are_created_once_and_kept_in_order) {
     v3d::render::realtime::Frame frame;
 
-    boost::shared_ptr<v3d::render::realtime::Pass> scene = frame.pass("scene");
-    boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame.pass("overlay");
-    boost::shared_ptr<v3d::render::realtime::Pass> again = frame.pass("scene");
+    const boost::shared_ptr<v3d::render::realtime::Pass> scene = frame.pass("scene");
+    const boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame.pass("overlay");
+    const boost::shared_ptr<v3d::render::realtime::Pass> again = frame.pass("scene");
 
     BOOST_CHECK_EQUAL(frame.passes().size(), 2);
     BOOST_CHECK(scene == again);
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE(items_keep_submission_order) {
 BOOST_AUTO_TEST_CASE(reset_empties_the_queues_and_keeps_the_passes) {
     v3d::render::realtime::Frame frame;
 
-    boost::shared_ptr<v3d::render::realtime::Pass> pass = frame.pass("colour");
+    const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
     pass->submit(v3d::render::realtime::DrawItem());
     pass->submit(v3d::render::realtime::DrawItem());
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(reset_empties_the_queues_and_keeps_the_passes) {
  * A draw item defaults to one instance, since every draw is at least that.
  **/
 BOOST_AUTO_TEST_CASE(a_draw_item_defaults_to_one_instance) {
-    v3d::render::realtime::DrawItem item;
+    const v3d::render::realtime::DrawItem item;
 
     BOOST_CHECK_EQUAL(item.instances, 1);
     BOOST_CHECK_EQUAL(item.vertices, 0);
@@ -249,11 +249,11 @@ BOOST_AUTO_TEST_CASE(sorting_a_pass_is_stable) {
 BOOST_AUTO_TEST_CASE(sorting_is_configured_per_pass) {
     v3d::render::realtime::Frame frame;
 
-    boost::shared_ptr<v3d::render::realtime::Pass> scene = frame.pass("scene");
+    const boost::shared_ptr<v3d::render::realtime::Pass> scene = frame.pass("scene");
     scene->depth(true);
     scene->sort(true);
 
-    boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame.pass("overlay");
+    const boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame.pass("overlay");
 
     BOOST_CHECK(scene->depth());
     BOOST_CHECK(scene->sorts());

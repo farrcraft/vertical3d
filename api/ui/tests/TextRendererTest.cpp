@@ -22,8 +22,8 @@ namespace {
  * handle without a device, since nothing here draws to one.
  **/
 boost::shared_ptr<v3d::ui::paint::TextRenderer> renderer(const wchar_t* charcodes) {
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
-    boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>("data", logger);
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>("data", logger);
     const v3d::ui::paint::TextRenderer::Upload upload = [](const boost::shared_ptr<v3d::image::Image>&) {
         return v3d::render::realtime::TextureHandle(1);
     };

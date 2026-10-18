@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_SUITE(world_test)
  * tile in a region not loaded cannot be entered.
  **/
 BOOST_AUTO_TEST_CASE(the_start_region_loads_at_once) {
-    Fixture fixture("world_start");
+    const Fixture fixture("world_start");
     BOOST_REQUIRE(fixture.world->load(document(twoRegions)));
 
     BOOST_CHECK_EQUAL(fixture.world->regions(), 2U);
@@ -289,7 +289,7 @@ BOOST_AUTO_TEST_CASE(a_world_destroyed_before_its_loads_arrive) {
  * The view keeps the player as near the middle of the screen as the world's edges allow.
  **/
 BOOST_AUTO_TEST_CASE(the_view_follows_the_player_inside_the_world) {
-    Fixture fixture("world_view");
+    const Fixture fixture("world_view");
     BOOST_REQUIRE(fixture.world->load(document(twoRegions)));
     const TileCoord screen = at(4, 2);
 
@@ -305,7 +305,7 @@ BOOST_AUTO_TEST_CASE(the_view_follows_the_player_inside_the_world) {
  * is not a whole number, or a start that names no region is refused.
  **/
 BOOST_AUTO_TEST_CASE(a_world_that_cannot_be_read_is_refused) {
-    Fixture fixture("world_refused");
+    const Fixture fixture("world_refused");
     const char* const overlapping =
         "{\"regions\": ["
         "{\"file\": \"west.json\", \"corner\": {\"x\": 0, \"y\": 0}, \"size\": {\"x\": 6, \"y\": 4}},"

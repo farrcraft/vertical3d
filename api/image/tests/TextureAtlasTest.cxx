@@ -21,7 +21,7 @@ unsigned char texel(v3d::image::TextureAtlas* atlas, int x, int y) {
 }
 
 BOOST_AUTO_TEST_CASE(textureatlas_region_is_the_size_asked_for) {
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::TextureAtlas atlas(size, size, 1, logger);
 
     const glm::ivec4 region = atlas.region(8, 6);
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(textureatlas_region_is_the_size_asked_for) {
  * because the atlas clears its image at construction.
  **/
 BOOST_AUTO_TEST_CASE(textureatlas_regions_do_not_touch) {
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::TextureAtlas atlas(size, size, 1, logger);
 
     const unsigned int side = 8;
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(textureatlas_regions_do_not_touch) {
 }
 
 BOOST_AUTO_TEST_CASE(textureatlas_refuses_what_does_not_fit) {
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::TextureAtlas atlas(16, 16, 1, logger);
 
     // the gutter is charged against the sheet, so a 16 square holds a 12 region and not a 14

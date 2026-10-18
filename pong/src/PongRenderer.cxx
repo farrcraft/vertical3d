@@ -93,7 +93,7 @@ void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statist
     screen_->draw(ui_.get(), statistics);
 
     // the menu in front of the court, as a layer of its own
-    boost::shared_ptr<v3d::render::realtime::Pass> pass =
+    const boost::shared_ptr<v3d::render::realtime::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);
     engine_.quads()->submit(court_, pass.get(), 0);
     engine_.quads()->submit(ui, pass.get(), 1);

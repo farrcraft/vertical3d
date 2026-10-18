@@ -70,7 +70,7 @@ bool Engine::initialize() {
 
     logger_->get()->info("Initializing engine...");
 
-    std::string dataPath = appPath_ + std::string("data/");
+    const std::string dataPath = appPath_ + std::string("data/");
     assetManager_ = boost::make_shared<v3d::asset::Manager>(dataPath, logger_);
     v3d::asset::media::registerLoaders(*assetManager_, logger_);
 
@@ -158,7 +158,7 @@ bool Engine::openWindow() {
     int width = -1;
     int height = -1;
     if (features_.has(Feature::Config)) {
-        boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
+        const boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
         if (windowConfig) {
             // as with the bindings, a window document that cannot be read makes startup
             // return false rather than throw
@@ -385,8 +385,8 @@ bool Engine::eventLoop() {
             continue;
         }
         // tick the game, telling it how long the last frame took
-        uint64_t now = SDL_GetTicksNS();
-        uint64_t elapsed = now - lastTick;
+        const uint64_t now = SDL_GetTicksNS();
+        const uint64_t elapsed = now - lastTick;
         lastTick = now;
         if (!tick(static_cast<unsigned int>(elapsed / SDL_NS_PER_MS))) {
             return false;

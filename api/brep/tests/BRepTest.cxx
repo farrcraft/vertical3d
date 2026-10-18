@@ -43,14 +43,14 @@ BOOST_AUTO_TEST_CASE(brep_empty_test) {
     BOOST_CHECK(mesh.face(0) == nullptr);
 
     // and an empty mesh bounds an empty box at the origin
-    v3d::type::geometry::AABBox bound = mesh.bound();
+    const v3d::type::geometry::AABBox bound = mesh.bound();
     BOOST_CHECK_EQUAL((bound.min() == glm::vec3(0.0f)), true);
     BOOST_CHECK_EQUAL((bound.max() == glm::vec3(0.0f)), true);
 }
 
 BOOST_AUTO_TEST_CASE(brep_face_test) {
-    boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
-    glm::vec3 normal(0.0f, 0.0f, 1.0f);
+    const boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
+    const glm::vec3 normal(0.0f, 0.0f, 1.0f);
     mesh->addFace(quad(0.0f), normal);
 
     BOOST_CHECK_EQUAL(mesh->vertexCount(), 4u);
@@ -58,14 +58,14 @@ BOOST_AUTO_TEST_CASE(brep_face_test) {
     BOOST_CHECK_EQUAL(mesh->faceCount(), 1u);
 
     // the face points at the first of its edges
-    v3d::brep::Face* face = mesh->face(0);
+    const v3d::brep::Face* face = mesh->face(0);
     BOOST_REQUIRE(face != nullptr);
     BOOST_CHECK_EQUAL(face->edge(), 0u);
     BOOST_CHECK_EQUAL((face->normal() == normal), true);
 
     // whose half edges form a closed ring, all of them belonging to that face
     for (unsigned int index = 0; index < 4; ++index) {
-        v3d::brep::HalfEdge* edge = mesh->edge(index);
+        const v3d::brep::HalfEdge* edge = mesh->edge(index);
         BOOST_REQUIRE(edge != nullptr);
         BOOST_CHECK_EQUAL(edge->face(), 0u);
         BOOST_CHECK_EQUAL(edge->next(), (index + 1) % 4);
@@ -77,13 +77,13 @@ BOOST_AUTO_TEST_CASE(brep_face_test) {
     BOOST_CHECK_EQUAL(v3d::brep::BRep::INVALID_ID, v3d::brep::INVALID_ID);
 
     // the bound spans the quad
-    v3d::type::geometry::AABBox bound = mesh->bound();
+    const v3d::type::geometry::AABBox bound = mesh->bound();
     BOOST_CHECK_EQUAL((bound.min() == glm::vec3(0.0f, 0.0f, 0.0f)), true);
     BOOST_CHECK_EQUAL((bound.max() == glm::vec3(1.0f, 1.0f, 0.0f)), true);
 }
 
 BOOST_AUTO_TEST_CASE(brep_face_loop_test) {
-    boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
+    const boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
     mesh->addFace(quad(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
     // the loop walks the ring once and then stops
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(brep_face_loop_test) {
 }
 
 BOOST_AUTO_TEST_CASE(brep_shared_vertex_test) {
-    boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
+    const boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
     mesh->addFace(quad(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
     // a second face over the same four points reuses the vertices it already has, but
@@ -121,14 +121,14 @@ BOOST_AUTO_TEST_CASE(brep_shared_vertex_test) {
     BOOST_CHECK_EQUAL(mesh->vertexCount(), 8u);
     BOOST_CHECK_EQUAL(mesh->faceCount(), 3u);
 
-    v3d::type::geometry::AABBox bound = mesh->bound();
+    const v3d::type::geometry::AABBox bound = mesh->bound();
     BOOST_CHECK_EQUAL((bound.min() == glm::vec3(0.0f, 0.0f, 0.0f)), true);
     BOOST_CHECK_EQUAL((bound.max() == glm::vec3(1.0f, 1.0f, 2.0f)), true);
 }
 
 BOOST_AUTO_TEST_CASE(brep_identity_test) {
     v3d::brep::BRep first;
-    v3d::brep::BRep second;
+    const v3d::brep::BRep second;
 
     // a mesh is a dag::Node, so it has an id for the selection model to key on
     BOOST_CHECK(first.id() != second.id());
@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(brep_identity_test) {
 
     // and a dag::Transform, so its geometry is described about its own origin
     first.translation(glm::vec3(4.0f, 0.0f, 0.0f));
-    glm::vec4 placed = first.matrix() * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    const glm::vec4 placed = first.matrix() * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
     BOOST_CHECK_CLOSE(placed.x, 5.0f, 0.01f);
 }
 

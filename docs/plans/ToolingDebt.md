@@ -58,7 +58,7 @@ names it as the one Python file in the tree.
 
 ### Steps 5 to 17 — One check each
 
-**Steps 5 to 11 done; 12 to 17 open.**
+**Steps 5 to 12 done; 13 to 17 open.**
 
 - Steps 5 to 8 shared one discovery pass and one verification pass. Several files carried sites
   of more than one check.
@@ -92,6 +92,12 @@ names it as the one Python file in the tree.
   file. The other 15 sites were helpers in five sources, now in anonymous namespaces too.
   clang-tidy's fix makes a definition `static`, which the tree does not use, so a script
   applied this one.
+- Step 12 found 1313 sites. clang-tidy's fix applied them, and a script then moved each
+  `const` in front of its type, since the fix writes `float const x`. The fix run also
+  applied clang's own fixes, such as reordered member initialisers, and those were dropped.
+  Where two sources reached one header it inserted `const` twice, and on an array of pointers
+  it made the pointee `const` a second time. Those 25 lines and one guard object declared
+  with its struct were fixed by hand.
 
 Each step follows the same procedure:
 

@@ -347,7 +347,7 @@ BOOST_AUTO_TEST_CASE(a_bar_fills_a_fraction_of_its_track) {
 
     v3d::ui::Container container("hud", true);
     container.add(bar);
-    v3d::ui::paint::ComponentRenderer renderer = build();
+    const v3d::ui::paint::ComponentRenderer renderer = build();
 
     renderer.draw(&canvas, container);
     // the four runs of the outline and the track, and nothing filled

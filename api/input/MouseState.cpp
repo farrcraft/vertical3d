@@ -20,7 +20,7 @@ MouseState::MouseState() : position_(0.0f, 0.0f), wheel_(0.0f) {
 /**
  **/
 bool MouseState::held(std::string_view button) const {
-    std::vector<std::string>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
+    const std::vector<std::string>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
     return iter != buttons_.end();
 }
 
@@ -47,7 +47,7 @@ void MouseState::flush() {
 /**
  **/
 bool MouseState::operator() (const std::string& button) {
-    std::vector<std::string>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
+    const std::vector<std::string>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
     bool held = true;
     if (iter != buttons_.end()) {
         buttons_.erase(iter);
@@ -68,7 +68,7 @@ bool MouseState::operator() (const std::string& button) {
 /**
  **/
 glm::vec2 MouseState::operator() (const glm::vec2& p) {
-    glm::vec2 previous = position_;
+    const glm::vec2 previous = position_;
     position_ = p;
     return previous;
 }

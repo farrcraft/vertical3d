@@ -404,7 +404,7 @@ bool Bucket::render(RenderContext & rc) {
     // bucket, so the loop reads the size each time around rather than caching it
     for (size_t i = 0; i < primitives_.size(); i++) {
         // a copy, because split() may append to primitives_ and so move the entry it came from
-        boost::shared_ptr<Primitive> prim = primitives_[i];
+        const boost::shared_ptr<Primitive> prim = primitives_[i];
         if (prim->diceable()) {
             boost::shared_ptr<MicroPolygonGrid> grid;
             while (prim->dice(grid, rc)) {

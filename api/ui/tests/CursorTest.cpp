@@ -394,7 +394,7 @@ BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
  * and do nothing in an app that routes it.
  **/
 BOOST_AUTO_TEST_CASE(a_command_is_sent_as_a_destination) {
-    Fixture fixture;
+    const Fixture fixture;
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();

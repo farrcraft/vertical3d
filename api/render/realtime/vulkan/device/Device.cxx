@@ -175,7 +175,7 @@ Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
         // without a surface there is nothing to be presentable to, and no handle to ask with
         if (surface_ && !families.hasPresent) {
             VkBool32 presentable = VK_FALSE;
-            VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface_->handle(), &presentable);
+            const VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface_->handle(), &presentable);
             if (result == VK_SUCCESS && presentable == VK_TRUE) {
                 families.present = index;
                 families.hasPresent = true;
@@ -278,7 +278,7 @@ void Device::selectPhysical() {
             continue;
         }
 
-        QueueFamilies families = findFamilies(device);
+        const QueueFamilies families = findFamilies(device);
         if (!families.complete(presenting())) {
             continue;
         }
@@ -324,7 +324,7 @@ void Device::createLogical() {
     }
 
     std::vector<VkDeviceQueueCreateInfo> queueInfos;
-    for (uint32_t family : uniqueFamilies) {
+    for (const uint32_t family : uniqueFamilies) {
         VkDeviceQueueCreateInfo queueInfo{};
         queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueInfo.queueFamilyIndex = family;
@@ -364,7 +364,7 @@ void Device::createLogical() {
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
 
-    VkResult result = vkCreateDevice(physical_, &createInfo, nullptr, &device_);
+    const VkResult result = vkCreateDevice(physical_, &createInfo, nullptr, &device_);
     check(result, "Unable to create a logical vulkan device");
 
     vkGetDeviceQueue(device_, families_.graphics, 0, &graphicsQueue_);

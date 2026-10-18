@@ -30,14 +30,14 @@ struct OutputDirectory {
 };
 
 BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
-    boost::shared_ptr<v3d::image::Image> img24 = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 2), 24);
+    const boost::shared_ptr<v3d::image::Image> img24 = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 2), 24);
     for (unsigned int pixel = 0; pixel < 4; ++pixel) {
         (*img24)[(pixel * 3) + 0] = 0;
         (*img24)[(pixel * 3) + 1] = 0;
         (*img24)[(pixel * 3) + 2] = 0xff;
     }
 
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
     // each lossless format round trips exactly
@@ -46,7 +46,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
         BOOST_TEST_CONTEXT(filename) {
             BOOST_CHECK_EQUAL(factory.write(filename, img24), true);
 
-            boost::shared_ptr<v3d::image::Image> image = factory.read(filename);
+            const boost::shared_ptr<v3d::image::Image> image = factory.read(filename);
             BOOST_REQUIRE(image != nullptr);
             BOOST_CHECK_EQUAL(image->width(), 2u);
             BOOST_CHECK_EQUAL(image->height(), 2u);
@@ -58,9 +58,9 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
     }
 
     // jpeg is lossy, so the blue comes back a shade off
-    std::string jpgFilename("data_out/test_write.jpg");
+    const std::string jpgFilename("data_out/test_write.jpg");
     BOOST_CHECK_EQUAL(factory.write(jpgFilename, img24), true);
-    boost::shared_ptr<v3d::image::Image> imageJpg = factory.read(jpgFilename);
+    const boost::shared_ptr<v3d::image::Image> imageJpg = factory.read(jpgFilename);
     BOOST_REQUIRE(imageJpg != nullptr);
     BOOST_CHECK_EQUAL(imageJpg->width(), 2u);
     BOOST_CHECK_EQUAL(imageJpg->height(), 2u);
@@ -84,11 +84,11 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
  **/
 BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
     // two rows of one pixel: red on top, green below
-    boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(glm::uvec2(1, 2), 24);
+    const boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(glm::uvec2(1, 2), 24);
     (*image)[0] = 0xff; (*image)[1] = 0; (*image)[2] = 0;
     (*image)[3] = 0; (*image)[4] = 0xff; (*image)[5] = 0;
 
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
     const char* lossless[] = { "data_out/test_orientation.tga", "data_out/test_orientation.png",
@@ -97,7 +97,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
         BOOST_TEST_CONTEXT(filename) {
             BOOST_REQUIRE_EQUAL(factory.write(filename, image), true);
 
-            boost::shared_ptr<v3d::image::Image> read = factory.read(filename);
+            const boost::shared_ptr<v3d::image::Image> read = factory.read(filename);
             BOOST_REQUIRE(read != nullptr);
             BOOST_REQUIRE_EQUAL(read->height(), 2u);
             // the top row is still the red one
@@ -122,7 +122,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
  **/
 BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
     const unsigned int side = 8;
-    boost::shared_ptr<v3d::image::Image> image =
+    const boost::shared_ptr<v3d::image::Image> image =
         boost::make_shared<v3d::image::Image>(glm::uvec2(side, side), 24);
     for (unsigned int row = 0; row < side; ++row) {
         for (unsigned int column = 0; column < side; ++column) {
@@ -134,7 +134,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
         }
     }
 
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
     const char* written = "data_out/test_orientation_written.jpg";
@@ -201,7 +201,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
         fclose(fp);
     }
 
-    boost::shared_ptr<v3d::image::Image> read = factory.read(encoded);
+    const boost::shared_ptr<v3d::image::Image> read = factory.read(encoded);
     BOOST_REQUIRE(read != nullptr);
     BOOST_REQUIRE_EQUAL(read->height(), side);
     // row 0 is the top of the picture, which is the red band
@@ -254,10 +254,10 @@ BOOST_FIXTURE_TEST_CASE(imagereader_greyscale_jpeg_test, OutputDirectory) {
         fclose(fp);
     }
 
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
-    boost::shared_ptr<v3d::image::Image> read = factory.read(greyscale);
+    const boost::shared_ptr<v3d::image::Image> read = factory.read(greyscale);
     BOOST_REQUIRE(read != nullptr);
     BOOST_REQUIRE_EQUAL(read->width(), side);
     BOOST_REQUIRE_EQUAL(read->height(), side);
@@ -287,14 +287,14 @@ BOOST_FIXTURE_TEST_CASE(imagereader_greyscale_jpeg_test, OutputDirectory) {
  **/
 BOOST_FIXTURE_TEST_CASE(imagewriter_grey_test, OutputDirectory) {
     const unsigned int side = 4;
-    boost::shared_ptr<v3d::image::Image> grey =
+    const boost::shared_ptr<v3d::image::Image> grey =
         boost::make_shared<v3d::image::Image>(glm::uvec2(side, side), 8);
     BOOST_REQUIRE((grey->format() == v3d::image::Image::Format::Grey));
     for (unsigned int i = 0; i < side * side; ++i) {
         (*grey)[i] = static_cast<unsigned char>(i * 16);
     }
 
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
     struct Expectation {
@@ -337,12 +337,12 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_grey_test, OutputDirectory) {
 }
 
 BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, OutputDirectory) {
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
     // red at half opacity: a jpeg has nowhere to put the alpha, and libjpeg's default
     // handler would end the process rather than refuse four components under JCS_RGB
-    boost::shared_ptr<v3d::image::Image> rgba = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 2), 32);
+    const boost::shared_ptr<v3d::image::Image> rgba = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 2), 32);
     for (unsigned int pixel = 0; pixel < 4; ++pixel) {
         (*rgba)[(pixel * 4) + 0] = 0xff;
         (*rgba)[(pixel * 4) + 1] = 0;
@@ -354,7 +354,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, Out
     for (const char* filename : names) {
         BOOST_TEST_CONTEXT(filename) {
             BOOST_REQUIRE_EQUAL(factory.write(filename, rgba), true);
-            boost::shared_ptr<v3d::image::Image> read = factory.read(filename);
+            const boost::shared_ptr<v3d::image::Image> read = factory.read(filename);
             BOOST_REQUIRE(read != nullptr);
             BOOST_CHECK_EQUAL(read->bpp(), 24u);
             BOOST_CHECK_GE((*read)[0], 0xfd);
@@ -369,7 +369,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, Out
  * reordered and the alpha is carried across rather than left as the zero a fresh buffer holds.
  **/
 BOOST_FIXTURE_TEST_CASE(imagewriter_tga_alpha_test, OutputDirectory) {
-    boost::shared_ptr<v3d::image::Image> img32 = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 1), 32);
+    const boost::shared_ptr<v3d::image::Image> img32 = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 1), 32);
     for (unsigned int pixel = 0; pixel < 2; ++pixel) {
         (*img32)[(pixel * 4) + 0] = 0x10;
         (*img32)[(pixel * 4) + 1] = 0x20;
@@ -379,7 +379,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_tga_alpha_test, OutputDirectory) {
     v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(factory.write("data_out/alpha.tga", img32));
 
-    boost::shared_ptr<v3d::image::Image> image = factory.read("data_out/alpha.tga");
+    const boost::shared_ptr<v3d::image::Image> image = factory.read("data_out/alpha.tga");
     BOOST_REQUIRE(image != nullptr);
     BOOST_REQUIRE_EQUAL(image->bpp(), 32u);
     BOOST_CHECK_EQUAL((*image)[0], 0x10);
@@ -396,13 +396,13 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_tga_too_wide_leaves_the_file_test, OutputDir
     v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
     const std::string filename = "data_out/too_wide.tga";
 
-    boost::shared_ptr<v3d::image::Image> small = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 1), 8);
+    const boost::shared_ptr<v3d::image::Image> small = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 1), 8);
     BOOST_REQUIRE(factory.write(filename, small));
     const boost::uintmax_t before = boost::filesystem::file_size(filename);
     BOOST_REQUIRE(before > 0u);
 
     // one row of one byte a pixel, so the picture is wide and still costs only 64 KiB
-    boost::shared_ptr<v3d::image::Image> wide = boost::make_shared<v3d::image::Image>(glm::uvec2(65536, 1), 8);
+    const boost::shared_ptr<v3d::image::Image> wide = boost::make_shared<v3d::image::Image>(glm::uvec2(65536, 1), 8);
     BOOST_CHECK(!factory.write(filename, wide));
     BOOST_CHECK_EQUAL(boost::filesystem::file_size(filename), before);
 }

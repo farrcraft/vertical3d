@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(scene_test) {
     scene.background(glm::vec3(0.0f, 0.0f, 1.0f));
     BOOST_CHECK_EQUAL(scene.background().b, 1.0f);
 
-    v3d::render::offline::trace::Triangle triangle({glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 1.0f)}, glm::vec3(1.0f, 0.0f, 0.0f));
+    const v3d::render::offline::trace::Triangle triangle({glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 1.0f)}, glm::vec3(1.0f, 0.0f, 0.0f));
     scene.add(triangle);
 
     BOOST_REQUIRE_EQUAL(scene.all<v3d::render::offline::trace::Triangle>().size(), 1u);
@@ -79,20 +79,20 @@ BOOST_AUTO_TEST_CASE(scene_test) {
  * shades with.
  **/
 BOOST_AUTO_TEST_CASE(triangle_geometric_normal_test) {
-    v3d::render::offline::trace::Triangle triangle({glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)}, glm::vec3(1.0f));
+    const v3d::render::offline::trace::Triangle triangle({glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)}, glm::vec3(1.0f));
 
     BOOST_TEST((triangle.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
     BOOST_TEST((triangle.shadingNormal(0.0f, 0.0f) == glm::vec3(0.0f, 0.0f, 1.0f)));
     BOOST_TEST((triangle.shadingNormal(0.3f, 0.3f) == glm::vec3(0.0f, 0.0f, 1.0f)));
 
     // the winding decides which way it faces
-    v3d::render::offline::trace::Triangle reversed({glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)}, glm::vec3(1.0f));
+    const v3d::render::offline::trace::Triangle reversed({glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)}, glm::vec3(1.0f));
 
     BOOST_TEST((reversed.geometricNormal() == glm::vec3(0.0f, 0.0f, -1.0f)));
 
     // a triangle with no area lies in no plane and returns zero rather than normalising a
     // zero vector
-    v3d::render::offline::trace::Triangle degenerate({glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(2.0f, 0.0f, 0.0f)}, glm::vec3(1.0f));
+    const v3d::render::offline::trace::Triangle degenerate({glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(2.0f, 0.0f, 0.0f)}, glm::vec3(1.0f));
 
     BOOST_TEST((degenerate.geometricNormal() == glm::vec3(0.0f)));
 }
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(triangle_geometric_normal_test) {
  **/
 BOOST_AUTO_TEST_CASE(triangle_shading_normal_test) {
     const glm::vec3 leaning = glm::normalize(glm::vec3(1.0f, 0.0f, 1.0f));
-    v3d::render::offline::trace::Triangle triangle({glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)},
+    const v3d::render::offline::trace::Triangle triangle({glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)},
         glm::vec3(1.0f), {leaning, glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f)});
 
     BOOST_TEST((triangle.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));

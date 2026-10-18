@@ -22,7 +22,7 @@ BOOST_AUTO_TEST_CASE(polygon_vertex_test) {
 
     BOOST_TEST(polygon.vertexCount() == 0u);
 
-    glm::vec3 point(2.0f, 5.0f, 7.0f);
+    const glm::vec3 point(2.0f, 5.0f, 7.0f);
     polygon.addVertex(vertex(point.x, point.y, point.z));
 
     BOOST_TEST(polygon.vertexCount() == 1u);
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(polygon_bound_test) {
     polygon.addVertex(vertex(3.0f, -2.0f, 5.0f));
     polygon.addVertex(vertex(0.0f, 1.0f, -7.0f));
 
-    v3d::type::geometry::AABBox bound = polygon.bound();
+    const v3d::type::geometry::AABBox bound = polygon.bound();
 
     BOOST_TEST((bound.min() == glm::vec3(-1.0f, -2.0f, -7.0f)));
     BOOST_TEST((bound.max() == glm::vec3(3.0f, 4.0f, 5.0f)));
@@ -93,9 +93,9 @@ BOOST_AUTO_TEST_CASE(polygon_bound_test) {
  * one rather than as whatever the first vertex would have seeded it with.
  **/
 BOOST_AUTO_TEST_CASE(polygon_empty_bound_test) {
-    v3d::moya::Polygon polygon;
+    const v3d::moya::Polygon polygon;
 
-    v3d::type::geometry::AABBox bound = polygon.bound();
+    const v3d::type::geometry::AABBox bound = polygon.bound();
 
     BOOST_TEST((bound.min() == glm::vec3(0.0f, 0.0f, 0.0f)));
     BOOST_TEST((bound.max() == glm::vec3(0.0f, 0.0f, 0.0f)));
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(polygon_degenerate_normal_test) {
 
     BOOST_TEST((collinear.geometricNormal() == glm::vec3(0.0f)));
 
-    v3d::moya::Polygon empty;
+    const v3d::moya::Polygon empty;
 
     BOOST_TEST((empty.geometricNormal() == glm::vec3(0.0f)));
 }

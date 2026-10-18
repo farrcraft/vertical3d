@@ -37,8 +37,8 @@ void Style::className(const std::string& str) {
 
 boost::shared_ptr<Property> Style::property(const std::string& name, const std::string& class_name) const {
     boost::shared_ptr<Property> prop;
-    std::pair<std::string, std::string> key(name, class_name);
-    std::map<std::pair<std::string, std::string>, boost::shared_ptr<Property> >::const_iterator iter = properties_.find(key);
+    const std::pair<std::string, std::string> key(name, class_name);
+    const std::map<std::pair<std::string, std::string>, boost::shared_ptr<Property> >::const_iterator iter = properties_.find(key);
     if (iter != properties_.end()) {
         prop = iter->second;
     }
@@ -46,7 +46,7 @@ boost::shared_ptr<Property> Style::property(const std::string& name, const std::
 }
 
 void Style::addProperty(const boost::shared_ptr<Property>& prop, const std::string& class_name) {
-    std::pair<std::string, std::string> key(prop->name(), class_name);
+    const std::pair<std::string, std::string> key(prop->name(), class_name);
     properties_[key] = prop;
 }
 

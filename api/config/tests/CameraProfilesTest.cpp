@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
     BOOST_CHECK(profiles.has("Perspective"));
     BOOST_CHECK(!profiles.has("Nothing"));
 
-    v3d::type::camera::Profile top = profiles.get("Top");
+    const v3d::type::camera::Profile top = profiles.get("Top");
     BOOST_CHECK_EQUAL(top.orthographic(), true);
     BOOST_CHECK_CLOSE(top.orthoZoom(), 10.0f, 0.01f);
     BOOST_CHECK_CLOSE(top.clipping()[0], 0.1f, 0.01f);
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
     BOOST_CHECK_EQUAL(top.adaptiveProjection(), true);
     BOOST_CHECK_EQUAL(top.adaptivePosition(), true);
 
-    v3d::type::camera::Profile perspective = profiles.get("Perspective");
+    const v3d::type::camera::Profile perspective = profiles.get("Perspective");
     BOOST_CHECK_EQUAL(perspective.orthographic(), false);
     BOOST_CHECK_CLOSE(perspective.fov(), 60.0f, 0.01f);
     BOOST_CHECK_EQUAL(perspective.adaptiveProjection(), false);
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_orientation_test) {
     v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config(cameras)));
 
-    v3d::type::camera::Profile top = profiles.get("Top");
+    const v3d::type::camera::Profile top = profiles.get("Top");
     BOOST_CHECK_CLOSE(top.direction()[1], -1.0f, 0.01f);
     BOOST_CHECK_CLOSE(top.up()[2], 1.0f, 0.01f);
     BOOST_CHECK_CLOSE(top.right()[0], 1.0f, 0.01f);
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_defaults_test) {
     v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config("{\"cameras\": [{\"name\": \"Bare\"}]}")));
 
-    v3d::type::camera::Profile bare = profiles.get("Bare");
+    const v3d::type::camera::Profile bare = profiles.get("Bare");
     BOOST_CHECK_EQUAL(bare.name(), "Bare");
     BOOST_CHECK_EQUAL(bare.orthographic(), true);
 

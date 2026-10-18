@@ -52,7 +52,7 @@ std::string Item::text() const {
     if (!hasValue_) {
         return label_;
     }
-    std::string value = std::visit([](auto&& held) -> std::string {
+    const std::string value = std::visit([](auto&& held) -> std::string {
         using T = std::decay_t<decltype(held)>;
         if constexpr (std::is_same_v<T, std::string>) {
             return held;

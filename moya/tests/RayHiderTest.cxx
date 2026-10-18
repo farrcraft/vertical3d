@@ -46,7 +46,7 @@ void frame(v3d::moya::RenderContext & rc) {
 
 void triangle(v3d::moya::RenderContext & rc, const std::array<glm::vec3, 3> & corners, const glm::vec3 & colour) {
     rc.color(colour);
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     for (const glm::vec3 & corner : corners) {
         v3d::moya::Vertex vertex;
         vertex.point(corner);
@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(rayhider_nearest_hit_test) {
  **/
 BOOST_AUTO_TEST_CASE(rayhider_depth_matches_reyes_test) {
     float depth[2] = { 0.0f, 0.0f };
-    const char* hiders[2] = { "hidden", "raytrace" };
+    const char* const hiders[2] = { "hidden", "raytrace" };
     for (unsigned int i = 0; i < 2; i++) {
         v3d::moya::RenderContext rc;
         frame(rc);
@@ -493,7 +493,7 @@ BOOST_AUTO_TEST_CASE(rayhider_inverts_the_projection_test) {
  * both hiders, and the two agree to within the reyes hider's micropolygon size.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_vertex_colours_test) {
-    const char* hiders[2] = { "hidden", "raytrace" };
+    const char* const hiders[2] = { "hidden", "raytrace" };
     glm::vec3 seen[2][2];
     for (unsigned int i = 0; i < 2; i++) {
         v3d::moya::RenderContext rc;
@@ -502,7 +502,7 @@ BOOST_AUTO_TEST_CASE(rayhider_vertex_colours_test) {
         rc.prepareWorld();
         rc.surface("constant", v3d::render::offline::rib::ParameterList());
         rc.color(glm::vec3(1.0f));
-        boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+        const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
         const glm::vec3 corners[3] = { glm::vec3(-1.0f, -1.0f, 1.0f), glm::vec3(1.0f, -1.0f, 1.0f),
             glm::vec3(-1.0f, 1.0f, 1.0f) };
         const glm::vec3 colours[3] = { glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f),

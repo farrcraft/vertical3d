@@ -126,7 +126,7 @@ void Camera::lookAt(const Aim& aim) {
 }
 
 void Camera::move(float dx, float dy, float dz) {
-    glm::vec3 eye = calculateMovement(glm::vec3(dx, dy, dz));
+    const glm::vec3 eye = calculateMovement(glm::vec3(dx, dy, dz));
     position(eye);
 }
 
@@ -174,11 +174,11 @@ void Camera::perspective(const Lens& lens) {
     // Construct a projection matrix based on the horizontal field of view
     // 'fovx' rather than the more traditional vertical field of view 'fovy'.
 
-    float e = 1.0f / tanf(glm::radians(fovx) / 2.0f);
-    float aspectInv = 1.0f / aspect;
-    float fovy = 2.0f * atanf(aspectInv / e);
-    float xScale = 1.0f / tanf(0.5f * fovy);
-    float yScale = xScale / aspectInv;
+    const float e = 1.0f / tanf(glm::radians(fovx) / 2.0f);
+    const float aspectInv = 1.0f / aspect;
+    const float fovy = 2.0f * atanf(aspectInv / e);
+    const float xScale = 1.0f / tanf(0.5f * fovy);
+    const float yScale = xScale / aspectInv;
 
     projection_[0][0] = xScale;
     projection_[0][1] = 0.0f;
@@ -365,7 +365,7 @@ void Camera::updatePosition(const glm::vec3 &direction, float elapsedTimeSec) {
     // assumed here to somewhat simplify the calculations. The direction vector
     // is in the range [-1,1].
 
-    glm::vec3 displacement = calculateDisplacement(direction, elapsedTimeSec);
+    const glm::vec3 displacement = calculateDisplacement(direction, elapsedTimeSec);
     move(displacement.x, displacement.y, displacement.z);  // NOLINT(build/include_what_you_use) - the method, not std::move
 
     // Continuously update the camera's velocity vector even if the camera

@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_CASE(aabbox_test) {
     v3d::type::geometry::AABBox box;
 
     // set box minimum
-    glm::vec3 minimum(5.0f, 4.0f, 3.0f);
+    const glm::vec3 minimum(5.0f, 4.0f, 3.0f);
     box.min(minimum);
 
     // test box minimum set/get
@@ -21,7 +21,7 @@ BOOST_AUTO_TEST_CASE(aabbox_test) {
     BOOST_CHECK_EQUAL((minimum == min_check), true);
 
     // set box maximum
-    glm::vec3 maximum(10.0f, 15.0f, 20.0f);
+    const glm::vec3 maximum(10.0f, 15.0f, 20.0f);
     box.max(maximum);
 
     // test box maximum set/get
@@ -64,12 +64,12 @@ BOOST_AUTO_TEST_CASE(aabbox_test) {
 
     glm::vec3 vertices[8];
     box.vertices(vertices);
-    glm::vec3 v0(1.0f, 27.0f, 34.0f);
-    glm::vec3 v1(17.0f, 3.0f, 7.0f);
-    glm::vec3 v2(17.0f, 27.0f, 7.0f);
-    glm::vec3 v3(1.0f, 27.0f, 7.0f);
-    glm::vec3 v4(17.0f, 3.0f, 34.0f);
-    glm::vec3 v5(1.0f, 3.0f, 34.0f);
+    const glm::vec3 v0(1.0f, 27.0f, 34.0f);
+    const glm::vec3 v1(17.0f, 3.0f, 7.0f);
+    const glm::vec3 v2(17.0f, 27.0f, 7.0f);
+    const glm::vec3 v3(1.0f, 27.0f, 7.0f);
+    const glm::vec3 v4(17.0f, 3.0f, 34.0f);
+    const glm::vec3 v5(1.0f, 3.0f, 34.0f);
     BOOST_CHECK_EQUAL((v0 == vertices[0]), true);
     BOOST_CHECK_EQUAL((v1 == vertices[1]), true);
     BOOST_CHECK_EQUAL((v2 == vertices[2]), true);

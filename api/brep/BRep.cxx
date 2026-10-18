@@ -29,13 +29,13 @@ Index BRep::addVertex(const glm::vec3& v) {
             return index;
         }
     }
-    Vertex vert(v);
+    const Vertex vert(v);
     vertices_.push_back(vert);
     return static_cast<Index>(vertices_.size() - 1);
 }
 
 Index BRep::addEdge(Index vertex) {
-    HalfEdge e(vertex);
+    const HalfEdge e(vertex);
     /*
     Index index = 0;
     for (; index < _edges.size(); index++)
@@ -91,7 +91,7 @@ void BRep::addFace(const std::vector<glm::vec3>& vertices, const glm::vec3& norm
 
     // add face
     Index face;
-    Face f(normal, edges[0]);
+    const Face f(normal, edges[0]);
     faces_.push_back(f);
     face = static_cast<Index>(faces_.size() - 1);
 

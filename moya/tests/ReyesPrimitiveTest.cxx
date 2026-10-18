@@ -18,7 +18,7 @@ namespace {
  * it.
  **/
 BOOST_AUTO_TEST_CASE(reyes_primitive_default_diceable_test) {
-    v3d::moya::reyes::Primitive primitive;
+    const v3d::moya::reyes::Primitive primitive;
 
     BOOST_TEST(!primitive.diceable());
 }

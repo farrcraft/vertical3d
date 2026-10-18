@@ -46,7 +46,7 @@ class Sandbox {
 };
 
 std::string contents(const boost::filesystem::path& path) {
-    std::ifstream file(path.c_str(), std::ios::binary);
+    const std::ifstream file(path.c_str(), std::ios::binary);
     std::ostringstream text;
     text << file.rdbuf();
     return text.str();
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(writer_readable_test) {
  * A double too large for a float prints as the double it is, and parses back to it.
  **/
 BOOST_AUTO_TEST_CASE(writer_double_beyond_float_range_test) {
-    boost::json::array numbers{ 1e300, -1e300, 1e39 };
+    const boost::json::array numbers{ 1e300, -1e300, 1e39 };
     const std::string text = v3d::asset::serializeDocument(numbers);
     BOOST_CHECK(text.find("inf") == std::string::npos);
 

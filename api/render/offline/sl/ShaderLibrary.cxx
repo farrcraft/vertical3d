@@ -186,7 +186,7 @@ std::string ShaderLibrary::file(const std::string & name, std::string* where) co
         path += "/";
         path += name;
         path += ".sl";
-        std::ifstream stream(path.c_str());
+        const std::ifstream stream(path.c_str());
         if (!stream.is_open()) {
             continue;
         }

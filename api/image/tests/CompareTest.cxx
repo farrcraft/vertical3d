@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(compare_identical_test) {
     const boost::shared_ptr<v3d::image::Image> a = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 128});
     const boost::shared_ptr<v3d::image::Image> b = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 128});
 
-    v3d::image::Difference difference = v3d::image::compare(*a, *b, 0);
+    const v3d::image::Difference difference = v3d::image::compare(*a, *b, 0);
     BOOST_CHECK_EQUAL(difference.match, true);
     BOOST_CHECK_EQUAL(difference.delta, 0u);
     BOOST_CHECK(difference.reason.empty());
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(compare_dimensions_test) {
     const boost::shared_ptr<v3d::image::Image> a = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 0});
     const boost::shared_ptr<v3d::image::Image> b = solid({.size = glm::uvec2(2, 3), .bpp = 24, .value = 0});
 
-    v3d::image::Difference difference = v3d::image::compare(*a, *b, 255);
+    const v3d::image::Difference difference = v3d::image::compare(*a, *b, 255);
     // a tolerance wide enough to admit anything still does not admit a different picture
     BOOST_CHECK_EQUAL(difference.match, false);
     BOOST_CHECK(difference.reason.contains("dimensions"));
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(compare_format_test) {
     const boost::shared_ptr<v3d::image::Image> a = solid({.size = glm::uvec2(2, 2), .bpp = 24, .value = 0});
     const boost::shared_ptr<v3d::image::Image> b = solid({.size = glm::uvec2(2, 2), .bpp = 32, .value = 0});
 
-    v3d::image::Difference difference = v3d::image::compare(*a, *b, 255);
+    const v3d::image::Difference difference = v3d::image::compare(*a, *b, 255);
     BOOST_CHECK_EQUAL(difference.match, false);
     BOOST_CHECK(difference.reason.contains("formats"));
 }
@@ -67,11 +67,11 @@ BOOST_AUTO_TEST_CASE(compare_tolerance_test) {
     (*b)[11] = 102;
 
     // a difference of exactly the tolerance is a match
-    v3d::image::Difference within = v3d::image::compare(*a, *b, 2);
+    const v3d::image::Difference within = v3d::image::compare(*a, *b, 2);
     BOOST_CHECK_EQUAL(within.match, true);
 
     // and one above it is not
-    v3d::image::Difference beyond = v3d::image::compare(*a, *b, 1);
+    const v3d::image::Difference beyond = v3d::image::compare(*a, *b, 1);
     BOOST_CHECK_EQUAL(beyond.match, false);
 }
 
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(compare_worst_pixel_test) {
     (*b)[1] = 105;
     (*b)[10] = 60;
 
-    v3d::image::Difference difference = v3d::image::compare(*a, *b, 0);
+    const v3d::image::Difference difference = v3d::image::compare(*a, *b, 0);
     BOOST_CHECK_EQUAL(difference.match, false);
     BOOST_CHECK_EQUAL(difference.delta, 40u);
     BOOST_CHECK_EQUAL(difference.column, 1u);

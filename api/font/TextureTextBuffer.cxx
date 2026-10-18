@@ -36,8 +36,8 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         // newlines don't actually generate any vertex data
         return;
     }
-    boost::shared_ptr<TextureFont::Glyph> glyph = markup.font_->glyph(current);
-    boost::shared_ptr<TextureFont::Glyph> black = markup.font_->glyph(static_cast<wchar_t>(-1));
+    const boost::shared_ptr<TextureFont::Glyph> glyph = markup.font_->glyph(current);
+    const boost::shared_ptr<TextureFont::Glyph> black = markup.font_->glyph(static_cast<wchar_t>(-1));
     if (!glyph) {
         return;
     }
@@ -58,12 +58,12 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     const float underlineThickness = markup.font_->underlineThickness() * scale;
     unsigned int vcount = 0;
     unsigned int icount = 0;
-    size_t istart = indices().size();
-    size_t vstart = vertices().size();
+    const size_t istart = indices().size();
+    const size_t vstart = vertices().size();
 
     if (lines && markup.backgroundColor_.a > 0.0f) {
-        glm::vec2 xy0(pen->x, pen->y + descender);
-        glm::vec2 xy1(pen->x + advance, xy0.y + height + linegap);
+        const glm::vec2 xy0(pen->x, pen->y + descender);
+        const glm::vec2 xy1(pen->x + advance, xy0.y + height + linegap);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.backgroundColor_, markup.gamma_);
 
@@ -72,8 +72,8 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     }
 
     if (lines && markup.underline_) {
-        glm::vec2 xy0(pen->x, pen->y + underlinePosition);
-        glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
+        const glm::vec2 xy0(pen->x, pen->y + underlinePosition);
+        const glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.underlineColor_, markup.gamma_);
 
@@ -82,8 +82,8 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     }
 
     if (lines && markup.overline_) {
-        glm::vec2 xy0(pen->x, pen->y + ascender);
-        glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
+        const glm::vec2 xy0(pen->x, pen->y + ascender);
+        const glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.overlineColor_, markup.gamma_);
 
@@ -92,8 +92,8 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     }
 
     if (lines && markup.strikethrough_) {
-        glm::vec2 xy0(pen->x, pen->y + (ascender * .33f));
-        glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
+        const glm::vec2 xy0(pen->x, pen->y + (ascender * .33f));
+        const glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.strikethroughColor_, markup.gamma_);
 
@@ -107,8 +107,8 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     const float glyphWidth = static_cast<float>(glyph->width_) * scale;
     const float glyphHeight = static_cast<float>(glyph->height_) * scale;
     const float bottom = pen->y + glyphHeight - (static_cast<float>(glyph->offset_.y) * scale);
-    glm::vec2 xy0(pen->x + (static_cast<float>(glyph->offset_.x) * scale), static_cast<float>(static_cast<int>(bottom)));
-    glm::vec2 xy1(xy0.x + glyphWidth, static_cast<float>(static_cast<int>(xy0.y - glyphHeight)));
+    const glm::vec2 xy0(pen->x + (static_cast<float>(glyph->offset_.x) * scale), static_cast<float>(static_cast<int>(bottom)));
+    const glm::vec2 xy1(xy0.x + glyphWidth, static_cast<float>(static_cast<int>(xy0.y - glyphHeight)));
 
     addQuad(xy0, xy1, glyph->st_[0], glyph->st_[1], markup.foregroundColor_, markup.gamma_);
 

@@ -111,9 +111,9 @@ boost::shared_ptr<v3d::image::Image> invertingStrip() {
 boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const boost::shared_ptr<v3d::image::Image>& strip,
     const std::vector<unsigned char>& texels, uint32_t size, const std::string& path, VkFormat sceneFormat = colourFormat,
     VkFormat outputFormat = colourFormat) {
-    boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
         size, size, sceneFormat);
-    boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
         size, size, outputFormat);
     const TextureHandle uploaded = headless->context->textures()->texture(texels.data(), size, size, 4);
 
@@ -128,12 +128,12 @@ boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const 
 
     // the grade is made first and reads the scene, so the frame draws the scene ahead of it
     Frame frame;
-    boost::shared_ptr<Pass> post = frame.pass("grade");
+    const boost::shared_ptr<Pass> post = frame.pass("grade");
     post->target(output);
     post->reads(scene);
     graded.submit(source, post.get());
 
-    boost::shared_ptr<Pass> drawn = frame.pass("scene");
+    const boost::shared_ptr<Pass> drawn = frame.pass("scene");
     drawn->target(scene);
     drawn->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     headless->context->quads()->submit(canvas, drawn.get());
@@ -163,12 +163,12 @@ VkCommandBuffer recordGrade(v3d::test::Headless* headless, const Grade& graded, 
         sweepTexture);
 
     Frame frame;
-    boost::shared_ptr<Pass> post = frame.pass("grade");
+    const boost::shared_ptr<Pass> post = frame.pass("grade");
     post->target(output);
     post->reads(scene);
     graded.submit(source, post.get());
 
-    boost::shared_ptr<Pass> drawn = frame.pass("scene");
+    const boost::shared_ptr<Pass> drawn = frame.pass("scene");
     drawn->target(scene);
     drawn->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     headless->context->quads()->submit(canvas, drawn.get());
@@ -223,9 +223,9 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
     const uint32_t width = 64;
     const uint32_t height = 32;
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat);
-    boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat);
 
     FullScreen::Spec spec;
@@ -243,12 +243,12 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
     canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
     Frame frame;
-    boost::shared_ptr<Pass> post = frame.pass("copy");
+    const boost::shared_ptr<Pass> post = frame.pass("copy");
     post->target(output);
     post->reads(scene);
     copy.submit(source, post.get());
 
-    boost::shared_ptr<Pass> drawn = frame.pass("scene");
+    const boost::shared_ptr<Pass> drawn = frame.pass("scene");
     drawn->target(scene);
     drawn->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     headless.context->quads()->submit(canvas, drawn.get());
@@ -274,7 +274,7 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
 BOOST_AUTO_TEST_CASE(a_source_released_twice_hands_its_set_back_once) {
     const uint32_t size = 16;
     v3d::test::Headless headless(colourFormat, size, size);
-    boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, colourFormat);
 
     FullScreen::Spec spec;
@@ -313,7 +313,7 @@ BOOST_AUTO_TEST_CASE(a_source_released_twice_hands_its_set_back_once) {
 BOOST_AUTO_TEST_CASE(a_pass_destroyed_after_its_source_is_queued_draws_it) {
     const uint32_t size = 16;
     v3d::test::Headless headless(colourFormat, size, size);
-    boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, colourFormat);
     std::vector<unsigned char> texels;
     for (uint32_t texel = 0; texel < size * size; texel++) {
@@ -330,7 +330,7 @@ BOOST_AUTO_TEST_CASE(a_pass_destroyed_after_its_source_is_queued_draws_it) {
     const MaterialHandle source = copy->source({texture});
 
     Frame frame;
-    boost::shared_ptr<Pass> post = frame.pass("copy");
+    const boost::shared_ptr<Pass> post = frame.pass("copy");
     post->target(output);
     copy->submit(source, post.get());
     BOOST_CHECK(copy->release(source));
@@ -366,7 +366,7 @@ BOOST_AUTO_TEST_CASE(the_identity_grade_leaves_the_scene_within_a_step) {
     v3d::test::Headless headless(colourFormat, size, size);
     const std::vector<unsigned char> texels = sweep(size);
 
-    boost::shared_ptr<v3d::image::Image> picture =
+    const boost::shared_ptr<v3d::image::Image> picture =
         grade(&headless, boost::shared_ptr<v3d::image::Image>(), texels, size, "data_out/grade_identity.png");
     BOOST_REQUIRE(picture);
     BOOST_CHECK(headless.silent());
@@ -385,7 +385,7 @@ BOOST_AUTO_TEST_CASE(a_strip_grades_the_scene) {
     v3d::test::Headless headless(colourFormat, size, size);
     const std::vector<unsigned char> texels = sweep(size);
 
-    boost::shared_ptr<v3d::image::Image> picture = grade(&headless, invertingStrip(), texels, size, "data_out/grade_inverted.png");
+    const boost::shared_ptr<v3d::image::Image> picture = grade(&headless, invertingStrip(), texels, size, "data_out/grade_inverted.png");
     BOOST_REQUIRE(picture);
     BOOST_CHECK(headless.silent());
 
@@ -414,7 +414,7 @@ BOOST_AUTO_TEST_CASE(a_strip_grades_an_srgb_scene_as_it_looks) {
 
     for (const VkFormat output : {srgb, colourFormat}) {
         const std::string path = output == srgb ? "data_out/grade_srgb_inverted.png" : "data_out/grade_srgb_to_unorm_inverted.png";
-        boost::shared_ptr<v3d::image::Image> picture = grade(&headless, invertingStrip(), texels, size, path, srgb, output);
+        const boost::shared_ptr<v3d::image::Image> picture = grade(&headless, invertingStrip(), texels, size, path, srgb, output);
         BOOST_REQUIRE(picture);
         const int most = largest(picture, complement(texels));
         BOOST_TEST_MESSAGE(path << " missed the complement by at most " << most);
@@ -436,7 +436,7 @@ BOOST_AUTO_TEST_CASE(the_identity_grade_leaves_an_srgb_scene_within_a_step) {
     v3d::test::Headless headless(srgb, size, size);
     const std::vector<unsigned char> texels = sweep(size);
 
-    boost::shared_ptr<v3d::image::Image> picture =
+    const boost::shared_ptr<v3d::image::Image> picture =
         grade(&headless, boost::shared_ptr<v3d::image::Image>(), texels, size, "data_out/grade_srgb_identity.png", srgb, srgb);
     BOOST_REQUIRE(picture);
     BOOST_CHECK(headless.silent());
@@ -454,9 +454,9 @@ BOOST_AUTO_TEST_CASE(a_replaced_table_regrades_its_sources) {
     const uint32_t size = 64;
     v3d::test::Headless headless(colourFormat, size, size);
     const std::vector<unsigned char> texels = sweep(size);
-    boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, colourFormat);
-    boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, colourFormat);
     const TextureHandle uploaded = headless.context->textures()->texture(texels.data(), size, size, 4);
 
@@ -491,9 +491,9 @@ BOOST_AUTO_TEST_CASE(a_table_replaced_after_a_submit_keeps_the_frame_silent) {
     const uint32_t size = 64;
     v3d::test::Headless headless(colourFormat, size, size);
     const std::vector<unsigned char> texels = sweep(size);
-    boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, colourFormat);
-    boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, colourFormat);
     const TextureHandle uploaded = headless.context->textures()->texture(texels.data(), size, size, 4);
 
@@ -529,7 +529,7 @@ BOOST_AUTO_TEST_CASE(a_table_replaced_after_a_submit_keeps_the_frame_silent) {
 BOOST_AUTO_TEST_CASE(a_destroyed_grade_releases_its_table_and_sources) {
     const uint32_t size = 16;
     v3d::test::Headless headless(colourFormat, size, size);
-    boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, colourFormat);
     const std::size_t before = headless.context->resources()->textureCount();
 

@@ -73,7 +73,7 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         break;
     }
     case SDL_EVENT_MOUSE_MOTION: {
-        glm::vec2 position(event.motion.x, event.motion.y);
+        const glm::vec2 position(event.motion.x, event.motion.y);
         state_(position);
         dispatcher_->trigger<v3d::event::kind::MouseMotion>(
             v3d::event::kind::MouseMotion({.position = position, .motion = glm::vec2(event.motion.xrel, event.motion.yrel)}, context_));

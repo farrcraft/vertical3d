@@ -23,7 +23,7 @@ namespace {
  * pixels and the middle of the view is the middle of a unit primitive.
  **/
 boost::shared_ptr<v3d::editor::ViewPort> frontView() {
-    v3d::type::camera::Profile profile("front");
+    const v3d::type::camera::Profile profile("front");
     boost::shared_ptr<v3d::editor::ViewPort> view = boost::make_shared<v3d::editor::ViewPort>("front", profile);
     view->resize(glm::vec4(0.0f, 0.0f, 400.0f, 400.0f));
     return view;
@@ -42,8 +42,8 @@ boost::shared_ptr<v3d::editor::TransformTool> tool(const boost::shared_ptr<v3d::
 constexpr glm::vec2 centre(200.0f, 200.0f);
 
 BOOST_AUTO_TEST_CASE(transform_tool_mode_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
 
     // nothing is drawn until a mode asks for it, and the tool starts in the one that draws
     // nothing
@@ -70,12 +70,12 @@ BOOST_AUTO_TEST_CASE(transform_tool_mode_test) {
 }
 
 BOOST_AUTO_TEST_CASE(transform_tool_drag_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     cube->selected(true);
     scene->add(cube);
 
-    boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
+    const boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
     transform->activate("translate");
 
     // a press on the x handle grabs it, and the press goes to this tool rather than to the
@@ -97,12 +97,12 @@ BOOST_AUTO_TEST_CASE(transform_tool_drag_test) {
 }
 
 BOOST_AUTO_TEST_CASE(transform_tool_miss_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     cube->selected(true);
     scene->add(cube);
 
-    boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
+    const boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
     transform->activate("translate");
 
     // a press away from every handle is not a drag, so the same press can go on to select
@@ -118,12 +118,12 @@ BOOST_AUTO_TEST_CASE(transform_tool_miss_test) {
 }
 
 BOOST_AUTO_TEST_CASE(transform_tool_mode_change_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     cube->selected(true);
     scene->add(cube);
 
-    boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
+    const boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
     transform->activate("translate");
     transform->button(1, true, glm::vec2(centre.x + 45.0f, centre.y));
     BOOST_CHECK_EQUAL(transform->dragging(), true);
@@ -136,13 +136,13 @@ BOOST_AUTO_TEST_CASE(transform_tool_mode_change_test) {
 }
 
 BOOST_AUTO_TEST_CASE(transform_tool_history_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     cube->selected(true);
     scene->add(cube);
 
-    boost::shared_ptr<v3d::editor::CommandStack> history = boost::make_shared<v3d::editor::CommandStack>();
-    boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
+    const boost::shared_ptr<v3d::editor::CommandStack> history = boost::make_shared<v3d::editor::CommandStack>();
+    const boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
     transform->commands(history);
     transform->activate("translate");
 
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_history_test) {
     BOOST_CHECK_EQUAL(history->undoDepth(), 1u);
     BOOST_CHECK_CLOSE(cube->translation().x, 0.5f, 0.5f);
 
-    boost::shared_ptr<v3d::editor::Command> undone = history->undo();
+    const boost::shared_ptr<v3d::editor::Command> undone = history->undo();
     BOOST_CHECK(undone);
     BOOST_CHECK_EQUAL(undone->name(), "translate");
     BOOST_CHECK_SMALL(cube->translation().x, 0.001f);
@@ -166,13 +166,13 @@ BOOST_AUTO_TEST_CASE(transform_tool_history_test) {
 }
 
 BOOST_AUTO_TEST_CASE(transform_tool_no_gesture_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     cube->selected(true);
     scene->add(cube);
 
-    boost::shared_ptr<v3d::editor::CommandStack> history = boost::make_shared<v3d::editor::CommandStack>();
-    boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
+    const boost::shared_ptr<v3d::editor::CommandStack> history = boost::make_shared<v3d::editor::CommandStack>();
+    const boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
     transform->commands(history);
     transform->activate("translate");
 
@@ -188,13 +188,13 @@ BOOST_AUTO_TEST_CASE(transform_tool_no_gesture_test) {
 }
 
 BOOST_AUTO_TEST_CASE(transform_tool_abandoned_gesture_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     cube->selected(true);
     scene->add(cube);
 
-    boost::shared_ptr<v3d::editor::CommandStack> history = boost::make_shared<v3d::editor::CommandStack>();
-    boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
+    const boost::shared_ptr<v3d::editor::CommandStack> history = boost::make_shared<v3d::editor::CommandStack>();
+    const boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
     transform->commands(history);
     transform->activate("translate");
 

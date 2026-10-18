@@ -27,7 +27,7 @@ boost::shared_ptr<v3d::asset::kind::Json> document(const std::string& text) {
  * @param glyphs the row's characters, in the map document's own alphabet
  **/
 boost::shared_ptr<v3d::grid::TileGrid> row(const std::string& glyphs) {
-    boost::shared_ptr<odyssey::tile::Map> board =
+    const boost::shared_ptr<odyssey::tile::Map> board =
         boost::make_shared<odyssey::tile::Map>(boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(board->load(document("{\"tiles\": [\"" + glyphs + "\"]}")));
     // the grid outlives the map it was read from

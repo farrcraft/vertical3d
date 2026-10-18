@@ -101,19 +101,19 @@ void same(const boost::shared_ptr<v3d::brep::BRep>& left, const boost::shared_pt
 BOOST_AUTO_TEST_CASE(project_round_trip_test) {
     const std::string path = scratch("v3d_round_trip.json");
 
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     cube->translation(glm::vec3(1.5f, -2.0f, 0.25f));
     cube->scale(glm::vec3(2.0f, 0.5f, 1.0f));
     cube->rotation(glm::angleAxis(0.75f, glm::normalize(glm::vec3(0.0f, 1.0f, 1.0f))));
 
-    boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
     written->add(cube);
 
     v3d::editor::Project project(logger());
     project.name("round trip");
     BOOST_REQUIRE_EQUAL(project.write(path, written), true);
 
-    boost::shared_ptr<v3d::editor::Scene> read = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> read = boost::make_shared<v3d::editor::Scene>();
     v3d::editor::Project reader(logger());
     BOOST_REQUIRE_EQUAL(reader.read(path, read), true);
 
@@ -129,19 +129,19 @@ BOOST_AUTO_TEST_CASE(project_round_trip_test) {
 BOOST_AUTO_TEST_CASE(project_order_and_selection_test) {
     const std::string path = scratch("v3d_order.json");
 
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
-    boost::shared_ptr<v3d::brep::BRep> cone = v3d::editor::create_poly_cone();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::brep::BRep> cone = v3d::editor::create_poly_cone();
     cube->selected(true);
     cone->face(0)->selected(true);
 
-    boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
     written->add(cube);
     written->add(cone);
 
-    v3d::editor::Project project(logger());
+    const v3d::editor::Project project(logger());
     BOOST_REQUIRE_EQUAL(project.write(path, written), true);
 
-    boost::shared_ptr<v3d::editor::Scene> read = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> read = boost::make_shared<v3d::editor::Scene>();
     BOOST_REQUIRE_EQUAL(v3d::editor::Project(logger()).read(path, read), true);
     BOOST_REQUIRE_EQUAL(read->count(), 2u);
 
@@ -161,11 +161,11 @@ BOOST_AUTO_TEST_CASE(project_order_and_selection_test) {
 BOOST_AUTO_TEST_CASE(project_read_replaces_the_scene_test) {
     const std::string path = scratch("v3d_empty.json");
 
-    boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
-    v3d::editor::Project project(logger());
+    const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
+    const v3d::editor::Project project(logger());
     BOOST_REQUIRE_EQUAL(project.write(path, written), true);
 
-    boost::shared_ptr<v3d::editor::Scene> read = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> read = boost::make_shared<v3d::editor::Scene>();
     read->add(v3d::editor::create_poly_cube());
     BOOST_REQUIRE_EQUAL(v3d::editor::Project(logger()).read(path, read), true);
 
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE(project_read_replaces_the_scene_test) {
 BOOST_AUTO_TEST_CASE(project_written_form_test) {
     const std::string path = scratch("v3d_form.json");
 
-    boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
     written->add(v3d::editor::create_poly_plane());
 
     v3d::editor::Project project(logger());
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(project_written_form_test) {
 BOOST_AUTO_TEST_CASE(project_failed_write_keeps_the_previous_project_test) {
     const std::string path = scratch("v3d_kept.json");
 
-    boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
     written->add(v3d::editor::create_poly_plane());
     v3d::editor::Project project(logger());
     project.name("kept");
@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(project_failed_write_keeps_the_previous_project_test) {
 }
 
 BOOST_AUTO_TEST_CASE(project_missing_file_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     scene->add(v3d::editor::create_poly_cube());
 
     v3d::editor::Project project(logger());
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE(project_missing_file_test) {
 BOOST_AUTO_TEST_CASE(project_rejects_malformed_test) {
     const std::string path = scratch("v3d_malformed.json");
 
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     scene->add(v3d::editor::create_poly_cube());
     v3d::editor::Project project(logger());
 
@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE(project_rejects_malformed_test) {
 BOOST_AUTO_TEST_CASE(project_rejects_dangling_reference_test) {
     const std::string path = scratch("v3d_dangling.json");
 
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     v3d::editor::Project project(logger());
 
     // one vertex and an edge naming a second that is not there. The wireframe and the picker
@@ -309,7 +309,7 @@ BOOST_AUTO_TEST_CASE(project_rejects_dangling_reference_test) {
 BOOST_AUTO_TEST_CASE(project_default_transform_test) {
     const std::string path = scratch("v3d_no_transform.json");
 
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     v3d::editor::Project project(logger());
 
     // a hand written mesh with no placement sits at the origin, unturned and unscaled

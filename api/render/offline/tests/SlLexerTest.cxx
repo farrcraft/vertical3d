@@ -21,7 +21,7 @@ std::vector<Token> lex(const std::string & source, std::string * error = nullptr
     v3d::render::offline::sl::Lexer lexer(stream);
     std::vector<Token> tokens;
     for (;;) {
-        Token token = lexer.next();
+        const Token token = lexer.next();
         if (token.kind() == Token::Kind::END) {
             break;
         }
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(sllexer_keyword_set_test) {
  * The three lighting constructs are keywords rather than calls, because they take a body.
  **/
 BOOST_AUTO_TEST_CASE(sllexer_lighting_keywords_test) {
-    std::vector<Token> tokens = lex("illuminance illuminate solar");
+    const std::vector<Token> tokens = lex("illuminance illuminate solar");
 
     BOOST_REQUIRE_EQUAL(tokens.size(), 3u);
     for (const Token & token : tokens) {
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE(sllexer_position_test) {
 
 BOOST_AUTO_TEST_CASE(sllexer_unterminated_string_test) {
     std::string error;
-    std::vector<Token> tokens = lex("string space = \"world;\n", &error);
+    const std::vector<Token> tokens = lex("string space = \"world;\n", &error);
 
     BOOST_CHECK(tokens.size() == 3u);
     BOOST_CHECK_EQUAL(error, "unterminated string starting at line 1, column 16");
@@ -248,7 +248,7 @@ BOOST_AUTO_TEST_CASE(sllexer_unterminated_string_test) {
 
 BOOST_AUTO_TEST_CASE(sllexer_unterminated_block_comment_test) {
     std::string error;
-    std::vector<Token> tokens = lex("a\n  /* opened and never closed\nb", &error);
+    const std::vector<Token> tokens = lex("a\n  /* opened and never closed\nb", &error);
 
     BOOST_CHECK_EQUAL(tokens.size(), 1u);
     BOOST_CHECK_EQUAL(error, "unterminated block comment starting at line 2, column 3");
@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(sllexer_unterminated_block_comment_test) {
  **/
 BOOST_AUTO_TEST_CASE(sllexer_preprocessor_test) {
     std::string error;
-    std::vector<Token> tokens = lex("#include \"common.h\"\nsurface matte() {}", &error);
+    const std::vector<Token> tokens = lex("#include \"common.h\"\nsurface matte() {}", &error);
 
     BOOST_CHECK_EQUAL(tokens.size(), 0u);
     BOOST_CHECK_EQUAL(error, "the C preprocessor is not run, so a '#' directive cannot be read at line 1, column 1");

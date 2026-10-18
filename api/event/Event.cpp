@@ -18,7 +18,7 @@ Event::Event(const std::string& name) :
 }
 
 bool Event::operator <(const Event& rhs) const {
-    int order = str().compare(rhs.str());
+    const int order = str().compare(rhs.str());
     if (order != 0) {
         return order < 0;
     }

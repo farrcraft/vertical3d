@@ -60,7 +60,7 @@ boost::shared_ptr<Container> GameMenu::container() const {
 /**
  **/
 boost::shared_ptr<component::menu::Menu> GameMenu::menu() const {
-    boost::shared_ptr<Container> holder = container();
+    const boost::shared_ptr<Container> holder = container();
     if (!holder) {
         return boost::shared_ptr<component::menu::Menu>();
     }
@@ -70,14 +70,14 @@ boost::shared_ptr<component::menu::Menu> GameMenu::menu() const {
 /**
  **/
 bool GameMenu::visible() const {
-    boost::shared_ptr<Container> holder = container();
+    const boost::shared_ptr<Container> holder = container();
     return holder && holder->visible();
 }
 
 /**
  **/
 void GameMenu::toggle() {
-    boost::shared_ptr<Container> holder = container();
+    const boost::shared_ptr<Container> holder = container();
     if (!holder) {
         return;
     }
@@ -90,7 +90,7 @@ void GameMenu::toggle() {
         return;
     }
 
-    boost::shared_ptr<component::menu::Menu> active = menu();
+    const boost::shared_ptr<component::menu::Menu> active = menu();
     if (active && active->up()) {
         return;
     }
@@ -106,7 +106,7 @@ bool GameMenu::capturing() const {
     if (!visible()) {
         return false;
     }
-    boost::shared_ptr<component::menu::Menu> active = menu();
+    const boost::shared_ptr<component::menu::Menu> active = menu();
     return active && active->capturing();
 }
 
@@ -116,7 +116,7 @@ bool GameMenu::capture(const v3d::event::EventData& value) {
     if (!visible()) {
         return false;
     }
-    boost::shared_ptr<component::menu::Menu> active = menu();
+    const boost::shared_ptr<component::menu::Menu> active = menu();
     if (!active) {
         return false;
     }
@@ -129,7 +129,7 @@ bool GameMenu::navigate(const std::string_view& command) {
     if (!visible()) {
         return false;
     }
-    boost::shared_ptr<component::menu::Menu> active = menu();
+    const boost::shared_ptr<component::menu::Menu> active = menu();
     if (!active) {
         return false;
     }

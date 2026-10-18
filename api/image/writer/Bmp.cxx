@@ -70,13 +70,13 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
         pad++;
     }
 
-    unsigned int channels = img->bpp() / 8;
+    const unsigned int channels = img->bpp() / 8;
     iheader.imageSize_ = img->width() * img->height() * channels;
 
     // size of the image data including the per row boundary padding
-    uint64_t rows = img->height();
-    uint64_t rowBytes = static_cast<uint64_t>(width);
-    uint64_t size = static_cast<uint64_t>(pad) * rows;
+    const uint64_t rows = img->height();
+    const uint64_t rowBytes = static_cast<uint64_t>(width);
+    const uint64_t size = static_cast<uint64_t>(pad) * rows;
 
     fheader.size_ = static_cast<uint32_t>(fheader.offset_ + size);
 

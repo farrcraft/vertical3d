@@ -179,7 +179,7 @@ boost::shared_ptr<memory::Image> RenderTarget::createColour(const VkExtent2D& ex
 void RenderTarget::ready(const std::vector<Slot>& slots, const VkExtent2D& extent) const {
     // a clear by rendering rather than by transfer, because attachment usage is what every
     // target's images already have
-    memory::Uploader uploader(device_);
+    const memory::Uploader uploader(device_);
     uploader.oneShot([&slots, &extent](VkCommandBuffer commands) {
         for (const Slot& slot : slots) {
             const bool depth = slot.depth && slot.depth->sampled();

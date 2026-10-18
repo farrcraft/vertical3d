@@ -24,7 +24,7 @@ namespace {
  * responding has already written what it was doing.
  **/
 BOOST_AUTO_TEST_CASE(logger_registers_under_one_name_test) {
-    v3d::log::Logger logger;
+    const v3d::log::Logger logger;
 
     BOOST_TEST(static_cast<bool>(logger.get()));
     BOOST_CHECK_EQUAL(logger.get()->name(), std::string("v3d-logger"));
@@ -38,8 +38,8 @@ BOOST_AUTO_TEST_CASE(logger_registers_under_one_name_test) {
  * Loggers. The second takes over the one already registered rather than ending the process.
  **/
 BOOST_AUTO_TEST_CASE(logger_second_instance_shares_the_first_test) {
-    v3d::log::Logger first;
-    v3d::log::Logger second;
+    const v3d::log::Logger first;
+    const v3d::log::Logger second;
 
     BOOST_TEST(first.get().get() == second.get().get());
 }
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(logger_second_instance_shares_the_first_test) {
  * level without throwing.
  **/
 BOOST_AUTO_TEST_CASE(logger_writes_at_every_level_test) {
-    v3d::log::Logger logger;
+    const v3d::log::Logger logger;
 
     BOOST_CHECK_NO_THROW(logger.get()->debug("debug {}", 1));
     BOOST_CHECK_NO_THROW(logger.get()->info("info {}", "text"));
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(logger_open_moves_the_log_test) {
     BOOST_TEST(v3d::log::Logger::open(path));
     {
         // a handle keeps the file open, so it is let go of before the file is removed below
-        v3d::log::Logger logger;
+        const v3d::log::Logger logger;
         logger.get()->info("written to the moved log");
         logger.get()->flush();
     }
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(logger_open_falls_back_when_the_file_cannot_be_opened_test)
     bool opened = true;
     BOOST_CHECK_NO_THROW(opened = v3d::log::Logger::open(path));
     BOOST_TEST(!opened);
-    v3d::log::Logger logger;
+    const v3d::log::Logger logger;
     BOOST_CHECK_NO_THROW(logger.get()->info("still logging"));
 
     v3d::log::Logger::open("v3d.log");

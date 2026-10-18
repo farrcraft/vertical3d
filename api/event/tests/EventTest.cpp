@@ -19,7 +19,7 @@ namespace {
  * and an optional parameter.
  **/
 BOOST_AUTO_TEST_CASE(event_test) {
-    boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
 
     v3d::event::Event event("myevent", keyboard);
     BOOST_CHECK_EQUAL(event.name(), "myevent");
@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_CASE(event_test) {
     BOOST_CHECK_EQUAL(event.str(), "keyboard::myevent");
 
     // an event with no context is just its name
-    v3d::event::Event bare("bare");
+    const v3d::event::Event bare("bare");
     BOOST_CHECK_EQUAL(bare.str(), "bare");
     BOOST_CHECK(bare.context() == nullptr);
 
@@ -43,10 +43,10 @@ BOOST_AUTO_TEST_CASE(event_test) {
 }
 
 BOOST_AUTO_TEST_CASE(event_data_test) {
-    boost::shared_ptr<v3d::event::Context> ui = boost::make_shared<v3d::event::Context>("ui");
+    const boost::shared_ptr<v3d::event::Context> ui = boost::make_shared<v3d::event::Context>("ui");
 
     // an event carries no parameter unless one is given to it
-    v3d::event::Event plain("setMaxScore", ui);
+    const v3d::event::Event plain("setMaxScore", ui);
     BOOST_CHECK(!plain.data());
 
     v3d::event::Event numeric("setMaxScore", ui);
@@ -66,23 +66,23 @@ BOOST_AUTO_TEST_CASE(event_data_test) {
 }
 
 BOOST_AUTO_TEST_CASE(event_ordering_test) {
-    boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
-    boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");
+    const boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");
 
     // events order by context and name first, which keeps every binding on one key
     // together in the mapper's multimap
-    v3d::event::Event escape("escape", keyboard);
-    v3d::event::Event ret("return", keyboard);
+    const v3d::event::Event escape("escape", keyboard);
+    const v3d::event::Event ret("return", keyboard);
     BOOST_CHECK(escape < ret);
     BOOST_CHECK(!(ret < escape));
 
     // the same name in two contexts is two different events
-    v3d::event::Event left("left", keyboard);
-    v3d::event::Event mouseLeft("left", mouse);
+    const v3d::event::Event left("left", keyboard);
+    const v3d::event::Event mouseLeft("left", mouse);
     BOOST_CHECK((left < mouseLeft) || (mouseLeft < left));
 
     // and the edge orders within one identity, so a run of bindings on one key is contiguous
-    v3d::event::Event any("escape", keyboard);
+    const v3d::event::Event any("escape", keyboard);
     v3d::event::Event pressed("escape", keyboard);
     pressed.state(v3d::event::State::Pressed);
     v3d::event::Event released("escape", keyboard);
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(event_state_name_test) {
  * the SDL event to the event dispatched from it.
  **/
 BOOST_AUTO_TEST_CASE(mouse_event_position_test) {
-    boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");
+    const boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");
 
     const v3d::event::kind::MouseButton press("left", glm::vec2(4.0f, 9.0f), mouse, true);
     BOOST_CHECK_EQUAL(press.button(), "left");

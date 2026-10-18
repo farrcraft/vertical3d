@@ -76,7 +76,7 @@ bool Controller::start() {
 
     scene_ = boost::make_shared<Scene>();
 
-    boost::shared_ptr<v3d::render::realtime::Window> win = window();
+    const boost::shared_ptr<v3d::render::realtime::Window> win = window();
     renderer_ = boost::make_shared<Renderer>(scene_, win, logger(), assets());
     renderer_->ui(vgui_);
 

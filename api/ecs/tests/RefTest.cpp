@@ -19,7 +19,7 @@ namespace {
 BOOST_AUTO_TEST_CASE(ref_reads_null_after_the_index_is_reused_test) {
     entt::registry registry;
     const entt::entity held = registry.create();
-    v3d::ecs::Ref ref(held);
+    const v3d::ecs::Ref ref(held);
     BOOST_TEST((ref.get(registry) == held));
 
     registry.destroy(held);

@@ -464,7 +464,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_victory_test) {
  * win is silent and logged as a clip that cannot be played.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_plays_only_clips_its_sounds_document_holds_test) {
-    std::ifstream file("data/sounds.json");
+    const std::ifstream file("data/sounds.json");
     BOOST_REQUIRE(file.is_open());
     std::stringstream text;
     text << file.rdbuf();

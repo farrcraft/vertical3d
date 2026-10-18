@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_SUITE(device_description_test)
  * that was never filled in.
  **/
 BOOST_AUTO_TEST_CASE(a_device_describes_itself_as_its_driver_does) {
-    v3d::test::Headless headless(VK_FORMAT_R8G8B8A8_UNORM, 4, 4);
+    const v3d::test::Headless headless(VK_FORMAT_R8G8B8A8_UNORM, 4, 4);
     VkPhysicalDeviceProperties properties{};
     vkGetPhysicalDeviceProperties(headless.device->physical(), &properties);
 

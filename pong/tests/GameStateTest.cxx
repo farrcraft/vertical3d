@@ -15,7 +15,7 @@ namespace {
  * scene advances by a fixed step rather than by a frame.
  **/
 BOOST_AUTO_TEST_CASE(game_state_defaults_test) {
-    GameState state;
+    const GameState state;
 
     BOOST_TEST(state.ballSize() == 10.0f);
     BOOST_TEST(state.ballStartSpeed() == 60.0f);

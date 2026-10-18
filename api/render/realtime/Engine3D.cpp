@@ -148,7 +148,7 @@ void Engine3D::renderFrame() {
         return;
     }
 
-    boost::shared_ptr<vulkan::frame::Presenter> presenter = context_->presenter();
+    const boost::shared_ptr<vulkan::frame::Presenter> presenter = context_->presenter();
 
     vulkan::frame::Presenter::Acquisition acquisition;
     const vulkan::frame::Presenter::Status status = presenter->acquire(&acquisition);

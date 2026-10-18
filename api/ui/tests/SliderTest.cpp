@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(the_keys_move_a_slider) {
  * A document names a slider's range, its step, its value and its command.
  **/
 BOOST_AUTO_TEST_CASE(a_document_names_a_slider) {
-    Fixture fixture(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
+    const Fixture fixture(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
         { "type": "slider", "name": "music", "minimum": 0, "maximum": 100, "step": 5, "value": 62,
           "context": "settings", "command": "music" }
     ] } ] })");
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(a_document_names_a_slider) {
  * than failing the load.
  **/
 BOOST_AUTO_TEST_CASE(a_slider_key_that_is_not_a_number_takes_its_default) {
-    Fixture fixture(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
+    const Fixture fixture(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
         { "type": "slider", "name": "music", "minimum": "low", "maximum": 1e300, "step": [ 5 ], "value": true }
     ] } ] })");
     const boost::shared_ptr<v3d::ui::component::Slider> slider =

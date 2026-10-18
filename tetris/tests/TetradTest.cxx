@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(tetrad_counterclockwise_test) {
 }
 
 BOOST_AUTO_TEST_CASE(tetrad_normalize_test) {
-    Tetrad::ShapeInfo shape = el();
+    const Tetrad::ShapeInfo shape = el();
     // push it away from the corner
     Tetrad::ShapeInfo moved = shape;
     for (unsigned int i = 0; i < 4; i++) {
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(tetrad_normalize_test) {
     // a turn leaves the result normalised too, so a shape never drifts out of the corner
     Tetrad piece(shape);
     piece.rotate(Tetrad::CLOCKWISE);
-    Tetrad::ShapeInfo turned = piece.shape();
+    const Tetrad::ShapeInfo turned = piece.shape();
     Tetrad::ShapeInfo again = turned;
     Tetrad::normalize(&again);
     BOOST_CHECK_EQUAL(same(turned, again), true);
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(tetrad_assignment_test) {
 BOOST_AUTO_TEST_CASE(tetrad_extent_test) {
     // the L is three tall and two wide, so an extent that ignored the minimum occupied row
     // and column would report three for both
-    Tetrad piece(el());
+    const Tetrad piece(el());
     BOOST_CHECK_EQUAL(piece.width(), 2u);
     BOOST_CHECK_EQUAL(piece.height(), 3u);
 

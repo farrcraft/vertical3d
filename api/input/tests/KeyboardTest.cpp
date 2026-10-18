@@ -55,8 +55,8 @@ SDL_Event keyEvent(const Key& spec) {
 }
 
 BOOST_AUTO_TEST_CASE(keyboard_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
     v3d::input::Keyboard keyboard(context, dispatcher);
 
     Recorder recorder;
@@ -171,8 +171,8 @@ BOOST_AUTO_TEST_CASE(keystate_edge_test) {
  * Keyboard::state() sees the same frame the events arrived in.
  **/
 BOOST_AUTO_TEST_CASE(keyboard_flush_clears_the_edge_it_recorded) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
     v3d::input::Keyboard keyboard(context, dispatcher);
 
     keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_Q}));
@@ -190,8 +190,8 @@ BOOST_AUTO_TEST_CASE(keyboard_flush_clears_the_edge_it_recorded) {
 }
 
 BOOST_AUTO_TEST_CASE(keyboard_held_key_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
     v3d::input::Keyboard keyboard(context, dispatcher);
 
     Recorder recorder;

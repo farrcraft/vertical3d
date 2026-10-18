@@ -35,11 +35,11 @@ v3d::event::Source source(const boost::shared_ptr<v3d::event::Context>& context,
 }
 
 BOOST_AUTO_TEST_CASE(engine_context_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     v3d::event::Engine engine(dispatcher);
 
     // a name resolves to a context, and the same name to the same one
-    boost::shared_ptr<v3d::event::Context> keyboard = engine.resolveContext("keyboard");
+    const boost::shared_ptr<v3d::event::Context> keyboard = engine.resolveContext("keyboard");
     BOOST_REQUIRE(keyboard != nullptr);
     BOOST_CHECK_EQUAL(keyboard->name(), "keyboard");
     BOOST_CHECK_EQUAL(engine.resolveContext("keyboard"), keyboard);
@@ -49,16 +49,16 @@ BOOST_AUTO_TEST_CASE(engine_context_test) {
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     v3d::event::Engine engine(dispatcher);
 
     Recorder recorder;
     dispatcher->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
-    boost::shared_ptr<v3d::event::Context> keyboard = engine.resolveContext("keyboard");
-    boost::shared_ptr<v3d::event::Context> game = engine.resolveContext("pong");
+    const boost::shared_ptr<v3d::event::Context> keyboard = engine.resolveContext("keyboard");
+    const boost::shared_ptr<v3d::event::Context> game = engine.resolveContext("pong");
 
-    boost::shared_ptr<v3d::event::Mapper> mapper = boost::make_shared<v3d::event::Mapper>("global");
+    const boost::shared_ptr<v3d::event::Mapper> mapper = boost::make_shared<v3d::event::Mapper>("global");
     v3d::event::Event bound("leftPaddleUp", game);
     bound.type(v3d::event::Type::Destination);
     mapper->map(source(keyboard, "w", v3d::event::State::Any), bound);
@@ -91,9 +91,9 @@ BOOST_AUTO_TEST_CASE(engine_mapping_test) {
 }
 
 BOOST_AUTO_TEST_CASE(engine_lets_the_dispatcher_go_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     {
-        v3d::event::Engine engine(dispatcher);
+        const v3d::event::Engine engine(dispatcher);
         BOOST_CHECK(!dispatcher->sink<v3d::event::Unclaimed>().empty());
     }
     // the dispatcher outlives the engine, and a delegate to it would be a dangling call
@@ -127,11 +127,11 @@ struct Order {
  * also consume it, as a key capture does, and then its bindings send nothing.
  **/
 BOOST_AUTO_TEST_CASE(engine_a_key_is_heard_before_its_command_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     v3d::event::Engine engine(dispatcher);
 
-    boost::shared_ptr<v3d::event::Context> keyboard = engine.resolveContext("keyboard");
-    boost::shared_ptr<v3d::event::Mapper> mapper = boost::make_shared<v3d::event::Mapper>("global");
+    const boost::shared_ptr<v3d::event::Context> keyboard = engine.resolveContext("keyboard");
+    const boost::shared_ptr<v3d::event::Mapper> mapper = boost::make_shared<v3d::event::Mapper>("global");
     v3d::event::Event bound("up", engine.resolveContext("game"));
     bound.type(v3d::event::Type::Destination);
     mapper->map(source(keyboard, "w", v3d::event::State::Any), bound);

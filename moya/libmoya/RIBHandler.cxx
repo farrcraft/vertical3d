@@ -55,7 +55,7 @@ boost::shared_ptr<Polygon> build(const std::vector<glm::vec3> & points,
     const std::vector<glm::vec3> & colors, const std::vector<glm::vec3> & normals,
     const std::vector<float> & st, const std::vector<unsigned int> & indices) {
     boost::shared_ptr<Polygon> polygon = boost::make_shared<Polygon>();
-    for (unsigned int index : indices) {
+    for (const unsigned int index : indices) {
         if (index >= points.size()) {
             continue;
         }
@@ -331,7 +331,7 @@ void RIBHandler::pointsPolygons(const v3d::render::offline::rib::PointsPolygons 
     const std::vector<glm::vec3> normals = parameters.points("N");
     const std::vector<float> & st = parameters.floats("st");
     std::size_t offset = 0;
-    for (unsigned int count : request.counts) {
+    for (const unsigned int count : request.counts) {
         if (offset + count > indices.size()) {
             return;
         }

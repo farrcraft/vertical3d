@@ -731,7 +731,7 @@ bool Immediate::tab(const std::string& label) {
     if (canvas_ == nullptr || !tabs_.open) {
         return false;
     }
-    Retained& retained = retain(tabs_.id);
+    const Retained& retained = retain(tabs_.id);
     const unsigned int index = tabs_.index++;
     const glm::vec2 size(measure_(label) + (dressing_.padding * 2.0f), dressing_.barHeight);
     const glm::vec2 min(tabs_.pen, tabs_.top);

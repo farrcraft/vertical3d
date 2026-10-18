@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_SUITE(canvas_test)
  * costs neither an upload nor a batch.
  **/
 BOOST_AUTO_TEST_CASE(an_empty_canvas_has_nothing_to_draw) {
-    v3d::render::realtime::canvas::Canvas canvas;
+    const v3d::render::realtime::canvas::Canvas canvas;
 
     BOOST_CHECK(canvas.empty());
     BOOST_CHECK_EQUAL(canvas.batches().size(), 0);
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(the_projection_puts_the_origin_at_the_top_left) {
  * by zero - a window can report no area before the first resize.
  **/
 BOOST_AUTO_TEST_CASE(an_unsized_canvas_has_a_finite_projection) {
-    v3d::render::realtime::canvas::Canvas canvas;
+    const v3d::render::realtime::canvas::Canvas canvas;
 
     const glm::mat4 projection = canvas.projection();
 
@@ -293,7 +293,7 @@ BOOST_AUTO_TEST_CASE(empty_text_adds_no_batch) {
     v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white);
-    v3d::font::TextBuffer buffer;
+    const v3d::font::TextBuffer buffer;
     canvas.text(buffer, v3d::render::realtime::TextureHandle(9));
 
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1);

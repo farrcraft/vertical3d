@@ -44,7 +44,7 @@ namespace {
  * the time it reaches the loader.
  **/
 boost::shared_ptr<v3d::ui::Engine> load(const std::string& document, bool* loaded) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher),
         dispatcher,
@@ -569,7 +569,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
  * an unlit flat button is only its label.
  **/
 BOOST_AUTO_TEST_CASE(a_button_with_no_skin_is_drawn_flat) {
-    v3d::ui::paint::ComponentRenderer drawing = renderer();
+    const v3d::ui::paint::ComponentRenderer drawing = renderer();
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
 
@@ -591,7 +591,7 @@ BOOST_AUTO_TEST_CASE(a_button_with_no_skin_is_drawn_flat) {
  * never resolved draws nothing at all.
  **/
 BOOST_AUTO_TEST_CASE(an_icon_draws_the_texture_it_was_resolved_to) {
-    v3d::ui::paint::ComponentRenderer drawing = renderer();
+    const v3d::ui::paint::ComponentRenderer drawing = renderer();
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
 
@@ -796,7 +796,7 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
  **/
 BOOST_AUTO_TEST_CASE(an_unresolved_icon_leaves_the_label_drawn) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer drawing(
+    const v3d::ui::paint::ComponentRenderer drawing(
         [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             written.push_back(Written{ std::string(text), pen, colour });
@@ -832,7 +832,7 @@ BOOST_AUTO_TEST_CASE(a_container_draws_its_labels_and_icons) {
     BOOST_REQUIRE(loaded);
     ui->resolveImages([](const std::string&) { return v3d::render::realtime::TextureHandle(2); });
 
-    v3d::ui::paint::ComponentRenderer drawing = renderer();
+    const v3d::ui::paint::ComponentRenderer drawing = renderer();
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
     drawing.draw(&canvas, *ui);

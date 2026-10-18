@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
         return;
     }
 
-    boost::shared_ptr<RenderTarget> target =
+    const boost::shared_ptr<RenderTarget> target =
         boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
     Recorder::Target described;
     described.image = target->image();
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
  **/
 BOOST_AUTO_TEST_CASE(a_frame_recorded_without_timings_times_nothing) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target =
+    const boost::shared_ptr<RenderTarget> target =
         boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
     Recorder::Target described;
     described.image = target->image();

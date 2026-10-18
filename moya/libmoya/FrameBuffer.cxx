@@ -37,7 +37,7 @@ void FrameBuffer::allocate() {
     for (unsigned int i = 0; i < bucketColumns_; i++) {
         std::vector<reyes::Bucket> vb;
         for (unsigned int j = 0; j < bucketRows_; j++) {
-            reyes::Bucket b;
+            const reyes::Bucket b;
             vb.push_back(b);
         }
         buckets_.push_back(vb);
@@ -87,8 +87,8 @@ void FrameBuffer::addPrimitive(const boost::shared_ptr<reyes::Primitive> & primi
 
     // a primitive straddling the top or left edge has a negative corner, and converting that
     // to an unsigned bucket index is undefined behaviour
-    float left = std::max(0.0f, min[0]);
-    float top = std::max(0.0f, min[1]);
+    const float left = std::max(0.0f, min[0]);
+    const float top = std::max(0.0f, min[1]);
 
     // the primitive goes in the bucket that holds the upper left corner of its bound
     unsigned int i = static_cast<unsigned int>(left) / bucketSize_[0];

@@ -61,7 +61,7 @@ Builder& Builder::shader(VkShaderStageFlagBits stage, const uint32_t* code, std:
     info.pCode = code;
 
     VkShaderModule module = VK_NULL_HANDLE;
-    VkResult result = vkCreateShaderModule(device_->handle(), &info, nullptr, &module);
+    const VkResult result = vkCreateShaderModule(device_->handle(), &info, nullptr, &module);
     device::check(result, "Unable to create a shader module for the " + name_ + " pipeline");
     modules_.push_back(module);
 
@@ -290,7 +290,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     layout.pPushConstantRanges = built.pushStages != 0 ? &push : nullptr;
 
     if (ownsLayout) {
-        VkResult result = vkCreatePipelineLayout(device, &layout, nullptr, &built.layout);
+        const VkResult result = vkCreatePipelineLayout(device, &layout, nullptr, &built.layout);
         device::check(result, "Unable to create the " + name_ + " pipeline layout");
     } else {
         built.layout = layout_;

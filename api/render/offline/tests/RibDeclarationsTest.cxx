@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(ribdeclaration_defaults_and_arrays_test) {
  * The standard variables are declared before a file says anything.
  **/
 BOOST_AUTO_TEST_CASE(ribdeclarations_standard_variables_test) {
-    v3d::render::offline::rib::Declarations declarations;
+    const v3d::render::offline::rib::Declarations declarations;
     std::string name;
     Declaration declaration;
 
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(ribdeclarations_declare_then_use_test) {
  * The inline form types a parameter where it is used and does not enter the table.
  **/
 BOOST_AUTO_TEST_CASE(ribdeclarations_inline_form_test) {
-    v3d::render::offline::rib::Declarations declarations;
+    const v3d::render::offline::rib::Declarations declarations;
     std::string name;
     Declaration declaration;
 

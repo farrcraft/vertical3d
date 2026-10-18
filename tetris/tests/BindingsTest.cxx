@@ -21,7 +21,7 @@ namespace {
  * never started, so this needs no window.
  **/
 BOOST_AUTO_TEST_CASE(every_binding_sends_a_handled_command) {
-    std::ifstream file("data/mappings.json");
+    const std::ifstream file("data/mappings.json");
     BOOST_REQUIRE(file.is_open());
     std::stringstream text;
     text << file.rdbuf();

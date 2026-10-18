@@ -333,7 +333,7 @@ bool Project::read(const std::string& path, const boost::shared_ptr<Scene>& scen
             logger_->get()->error("{} holds something that is not a mesh", path);
             return false;
         }
-        boost::shared_ptr<v3d::brep::BRep> mesh = readMesh(value.as_object(), path, logger_);
+        const boost::shared_ptr<v3d::brep::BRep> mesh = readMesh(value.as_object(), path, logger_);
         if (!mesh) {
             return false;
         }

@@ -27,7 +27,7 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
 
     // open the file
     FILE* fp;
-    errno_t err = fopen_s(&fp, path.c_str(), "wb");
+    const errno_t err = fopen_s(&fp, path.c_str(), "wb");
     if (err != 0) {
         return false;
     }

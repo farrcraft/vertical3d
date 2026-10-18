@@ -64,7 +64,7 @@ std::size_t Engine::resolveThemeImages(const Resolve& resolve) {
     for (const boost::shared_ptr<style::Theme>& theme : themes_) {
         for (const boost::shared_ptr<style::Style>& target : theme->getStyleSet("", "")) {
             for (const boost::shared_ptr<style::Property>& property : target->getPropertySet("", "image")) {
-                boost::shared_ptr<style::property::Image> image =
+                const boost::shared_ptr<style::property::Image> image =
                     boost::dynamic_pointer_cast<style::property::Image>(property);
                 if (!image) {
                     continue;
@@ -89,11 +89,11 @@ std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::
     }
     std::size_t resolved = 0;
 
-    boost::shared_ptr<component::Icon> icon = boost::dynamic_pointer_cast<component::Icon>(component);
-    boost::shared_ptr<component::Button> button = boost::dynamic_pointer_cast<component::Button>(component);
+    const boost::shared_ptr<component::Icon> icon = boost::dynamic_pointer_cast<component::Icon>(component);
+    const boost::shared_ptr<component::Button> button = boost::dynamic_pointer_cast<component::Button>(component);
     // a strip's buttons are its own rather than children, so they are not reached by the
     // traversal below and are taken here
-    boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
+    const boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
     if (icon) {
         if (resolveIcon(resolve, std::string(icon->source()), icon)) {
             resolved++;
@@ -297,7 +297,7 @@ boost::shared_ptr<style::Theme> Engine::activeTheme() const {
 /**
  **/
 bool Engine::activeTheme(const std::string_view& name) {
-    boost::shared_ptr<style::Theme> found = theme(name);
+    const boost::shared_ptr<style::Theme> found = theme(name);
     if (!found) {
         logger_->get()->error("No such ui theme [{}]", name);
         return false;

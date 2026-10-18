@@ -14,7 +14,7 @@ namespace {
 BOOST_AUTO_TEST_CASE(vertex_test) {
     v3d::moya::Vertex vertex;
 
-    glm::vec3 point(7.0f, 12.0f, -13.0f);
+    const glm::vec3 point(7.0f, 12.0f, -13.0f);
     vertex.point(point);
 
     BOOST_TEST((vertex.point() == point));

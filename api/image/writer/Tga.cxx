@@ -88,8 +88,8 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
 
     file.write(reinterpret_cast<char*>(&fheader), sizeof(fheader));
 
-    unsigned int bytespp = fheader.bpp_ / 8;
-    unsigned int size = fheader.width_ * fheader.height_ * bytespp;
+    const unsigned int bytespp = fheader.bpp_ / 8;
+    const unsigned int size = fheader.width_ * fheader.height_ * bytespp;
     std::vector<unsigned char> scratch(size);
     const unsigned char* data = img->data();
 

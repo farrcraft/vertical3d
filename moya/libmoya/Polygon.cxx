@@ -48,7 +48,7 @@ bool progress(const boost::shared_ptr<Polygon> & piece, const v3d::type::geometr
         return false;
     }
     glm::vec3 was = parent.max() - parent.min();
-    v3d::type::geometry::AABBox bound = piece->bound();
+    const v3d::type::geometry::AABBox bound = piece->bound();
     glm::vec3 is = bound.max() - bound.min();
     return is[0] < was[0] || is[1] < was[1] || is[2] < was[2];
 }
@@ -335,8 +335,8 @@ void Polygon::split(RenderContext & rc) {
     plane.calculate(pn, pop);
 
     // the two halves of the first cut. A half that receives no vertices stays empty
-    boost::shared_ptr<Polygon> p1(new Polygon());
-    boost::shared_ptr<Polygon> p2(new Polygon());
+    const boost::shared_ptr<Polygon> p1(new Polygon());
+    const boost::shared_ptr<Polygon> p2(new Polygon());
     split(plane, p1, p2);
 
     // the second cutting plane is perpendicular to the polygon's plane and to the first
@@ -345,10 +345,10 @@ void Polygon::split(RenderContext & rc) {
     plane.calculate(pn, pop);
 
     // each half is cut again, into quarters
-    boost::shared_ptr<Polygon> pf1(new Polygon());
-    boost::shared_ptr<Polygon> pf2(new Polygon());
-    boost::shared_ptr<Polygon> pf3(new Polygon());
-    boost::shared_ptr<Polygon> pf4(new Polygon());
+    const boost::shared_ptr<Polygon> pf1(new Polygon());
+    const boost::shared_ptr<Polygon> pf2(new Polygon());
+    const boost::shared_ptr<Polygon> pf3(new Polygon());
+    const boost::shared_ptr<Polygon> pf4(new Polygon());
     p1->split(plane, pf1, pf2);
     p2->split(plane, pf3, pf4);
 
@@ -384,7 +384,7 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderCont
         bound is wider or taller than the square root of the grid size times the shading
         rate, so one grid covers what reaches here.
     */
-    unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));
+    const unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));
     grid.reset(new reyes::MicroPolygonGrid(across + 1));
 
     /*
@@ -394,7 +394,7 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderCont
         dicing would avoid that.
     */
     const size_t fourth = vertices_.size() > 3 ? 3 : 2;
-    glm::vec3 corners[4] = {
+    const glm::vec3 corners[4] = {
         vertices_[0].point(),
         vertices_[1].point(),
         vertices_[2].point(),
@@ -402,7 +402,7 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderCont
     };
     // colour interpolates the same way the position does, so a "Cs" given per vertex
     // reaches the grid. It is the geometry's colour rather than a shaded one
-    glm::vec3 colors[4] = {
+    const glm::vec3 colors[4] = {
         vertices_[0].color(),
         vertices_[1].color(),
         vertices_[2].color(),
@@ -410,7 +410,7 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderCont
     };
     // the shading normal interpolates the same way, so a surface given a varying "N" is
     // shaded smooth rather than faceted
-    glm::vec3 normals[4] = {
+    const glm::vec3 normals[4] = {
         vertices_[0].normal(),
         vertices_[1].normal(),
         vertices_[2].normal(),
@@ -433,9 +433,9 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderCont
     const unsigned int size = grid->size();
     const float span = static_cast<float>(size - 1);
     for (unsigned int i = 0; i < size; i++) {
-        float u = static_cast<float>(i) / span;
+        const float u = static_cast<float>(i) / span;
         for (unsigned int j = 0; j < size; j++) {
-            float w = static_cast<float>(j) / span;
+            const float w = static_cast<float>(j) / span;
             Vertex vert;
             vert.point(corners[0] * ((1.0f - u) * (1.0f - w)) +
                        corners[1] * (u * (1.0f - w)) +

@@ -43,9 +43,9 @@ boost::shared_ptr<Image> Tga::read(const unsigned char* data, std::size_t size) 
     // the six useful bytes after the signature
     const unsigned char* header = data + sizeof(rgbTGAheader);
 
-    unsigned int width = (header[1] * 256) + header[0];  // Determine The TGA Width (highbyte*256+lowbyte)
-    unsigned int height = (header[3] * 256) + header[2];  // Determine The TGA Height (highbyte*256+lowbyte)
-    unsigned int bpp = header[4];  // Grab The TGA's Bits Per Pixel (24 or 32)
+    const unsigned int width = (header[1] * 256) + header[0];  // Determine The TGA Width (highbyte*256+lowbyte)
+    const unsigned int height = (header[3] * 256) + header[2];  // Determine The TGA Height (highbyte*256+lowbyte)
+    const unsigned int bpp = header[4];  // Grab The TGA's Bits Per Pixel (24 or 32)
 
     if (width == 0 ||  // Is The Width Zero
         height == 0 ||  // Is The Height Zero

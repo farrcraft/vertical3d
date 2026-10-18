@@ -82,11 +82,11 @@ int run(const char* executable, const std::string& name, Args&&... args) {
             exitStatus = EXIT_FAILURE;
         }
     } catch (const std::exception& error) {
-        v3d::log::Logger logger;
+        const v3d::log::Logger logger;
         logger.get()->error("{} failed: {}", name, error.what());
         exitStatus = EXIT_FAILURE;
     } catch (...) {
-        v3d::log::Logger logger;
+        const v3d::log::Logger logger;
         logger.get()->error("{} failed with something that is not a std::exception", name);
         exitStatus = EXIT_FAILURE;
     }
@@ -99,11 +99,11 @@ int run(const char* executable, const std::string& name, Args&&... args) {
             exitStatus = EXIT_FAILURE;
         }
     } catch (const std::exception& error) {
-        v3d::log::Logger logger;
+        const v3d::log::Logger logger;
         logger.get()->error("{} failed to shut down: {}", name, error.what());
         exitStatus = EXIT_FAILURE;
     } catch (...) {
-        v3d::log::Logger logger;
+        const v3d::log::Logger logger;
         logger.get()->error("{} failed to shut down with something that is not a std::exception", name);
         exitStatus = EXIT_FAILURE;
     }

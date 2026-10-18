@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_SUITE(texture_sampler_test)
  * texture would give the two repeating ones different samplers.
  **/
 BOOST_AUTO_TEST_CASE(textures_share_a_sampler_per_spec) {
-    v3d::test::Headless headless(VK_FORMAT_R8G8B8A8_UNORM, 4, 4);
+    const v3d::test::Headless headless(VK_FORMAT_R8G8B8A8_UNORM, 4, 4);
     const unsigned char texel[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
     Sampler::Spec repeating;

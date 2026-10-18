@@ -119,7 +119,7 @@ bool PongEngine::start() {
     if (ui != nullptr && !vgui_->load(*ui)) {
         return false;
     }
-    boost::shared_ptr<v3d::render::realtime::Window> win = window();
+    const boost::shared_ptr<v3d::render::realtime::Window> win = window();
     renderer_ = boost::make_shared<PongRenderer>(win, logger(), assets());
     scene_ = boost::make_shared<PongScene>(&registry_, dispatcher());
     renderer_->scene(scene_);

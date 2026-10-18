@@ -22,7 +22,7 @@ std::vector<Token> lex(const std::string & source, std::string * error = nullptr
     v3d::render::offline::rib::Lexer lexer(stream);
     std::vector<Token> tokens;
     for (;;) {
-        Token token = lexer.next();
+        const Token token = lexer.next();
         if (token.kind() == Token::Kind::END) {
             break;
         }
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(riblexer_string_test) {
 
 BOOST_AUTO_TEST_CASE(riblexer_unterminated_string_test) {
     std::string error;
-    std::vector<Token> tokens = lex("Surface \"plastic", &error);
+    const std::vector<Token> tokens = lex("Surface \"plastic", &error);
 
     BOOST_CHECK_EQUAL(tokens.size(), 1u);
     BOOST_CHECK(error.contains("unterminated string"));

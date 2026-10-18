@@ -15,9 +15,9 @@ namespace {
  * transform lands where the transform says rather than where its geometry was built.
  **/
 void checkUnitCentred(const boost::shared_ptr<v3d::brep::BRep>& mesh, bool flat) {
-    v3d::type::geometry::AABBox bound = mesh->bound();
-    glm::vec3 min = bound.min();
-    glm::vec3 max = bound.max();
+    const v3d::type::geometry::AABBox bound = mesh->bound();
+    const glm::vec3 min = bound.min();
+    const glm::vec3 max = bound.max();
 
     BOOST_CHECK_SMALL(min.x + max.x, 0.0001f);
     BOOST_CHECK_SMALL(min.y + max.y, 0.0001f);
@@ -33,7 +33,7 @@ void checkUnitCentred(const boost::shared_ptr<v3d::brep::BRep>& mesh, bool flat)
 }
 
 BOOST_AUTO_TEST_CASE(create_poly_cube_test) {
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
 
     BOOST_CHECK_EQUAL(cube->faceCount(), 6u);
     BOOST_CHECK_EQUAL(cube->vertexCount(), 8u);
@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(create_poly_cube_test) {
 }
 
 BOOST_AUTO_TEST_CASE(create_poly_plane_test) {
-    boost::shared_ptr<v3d::brep::BRep> plane = v3d::editor::create_poly_plane();
+    const boost::shared_ptr<v3d::brep::BRep> plane = v3d::editor::create_poly_plane();
 
     BOOST_CHECK_EQUAL(plane->faceCount(), 1u);
     BOOST_CHECK_EQUAL(plane->vertexCount(), 4u);
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(create_poly_plane_test) {
 }
 
 BOOST_AUTO_TEST_CASE(create_poly_cylinder_test) {
-    boost::shared_ptr<v3d::brep::BRep> cylinder = v3d::editor::create_poly_cylinder();
+    const boost::shared_ptr<v3d::brep::BRep> cylinder = v3d::editor::create_poly_cylinder();
 
     // eight walls and no caps, as the extrude and split operations expect
     BOOST_CHECK_EQUAL(cylinder->faceCount(), 8u);
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(create_poly_cylinder_test) {
 }
 
 BOOST_AUTO_TEST_CASE(create_poly_cone_test) {
-    boost::shared_ptr<v3d::brep::BRep> cone = v3d::editor::create_poly_cone();
+    const boost::shared_ptr<v3d::brep::BRep> cone = v3d::editor::create_poly_cone();
 
     BOOST_CHECK_EQUAL(cone->faceCount(), 8u);
     // eight around the base and the apex

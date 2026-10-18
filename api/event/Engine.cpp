@@ -19,7 +19,7 @@ Engine::Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher) : dispatch
 /**
  **/
 void Engine::addMapper(const boost::shared_ptr<Mapper>& mapper) {
-    std::string mapperName(mapper->name());
+    const std::string mapperName(mapper->name());
     mappers_[mapperName] = mapper;
 }
 

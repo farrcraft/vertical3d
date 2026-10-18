@@ -10,7 +10,7 @@
 namespace {
 
 BOOST_AUTO_TEST_CASE(bound2d_test) {
-    v3d::type::geometry::Bound2D bound({.position = glm::vec2(2.0f, 5.0f), .size = glm::vec2(10.0f, 20.0f)});
+    const v3d::type::geometry::Bound2D bound({.position = glm::vec2(2.0f, 5.0f), .size = glm::vec2(10.0f, 20.0f)});
 
     // test constructor & get position
     glm::vec2 position = bound.position();
@@ -22,14 +22,14 @@ BOOST_AUTO_TEST_CASE(bound2d_test) {
     BOOST_CHECK_EQUAL(size[0], 10.0f);
     BOOST_CHECK_EQUAL(size[1], 20.0f);
 
-    v3d::type::geometry::Bound2D bound2({.position = position, .size = size});
+    const v3d::type::geometry::Bound2D bound2({.position = position, .size = size});
 
     // test 2nd constructor form
-    glm::vec2 position2 = bound2.position();
+    const glm::vec2 position2 = bound2.position();
     BOOST_CHECK_EQUAL((position == position2), true);
 
     // test 2nd constructor form
-    glm::vec2 size2 = bound2.size();
+    const glm::vec2 size2 = bound2.size();
     BOOST_CHECK_EQUAL((size == size2), true);
 
     // test contains

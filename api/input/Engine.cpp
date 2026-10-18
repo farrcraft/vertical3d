@@ -18,12 +18,12 @@ Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const b
     dispatcher_(dispatcher) {
     // add keyboard & mouse devices
     if (devices.has(DeviceType::Keyboard)) {
-        boost::shared_ptr<v3d::event::Context> keyboardContext = eventEngine->resolveContext("keyboard");
+        const boost::shared_ptr<v3d::event::Context> keyboardContext = eventEngine->resolveContext("keyboard");
         keyboard_ = boost::make_shared<Keyboard>(keyboardContext, dispatcher_);
         devices_.push_back(keyboard_);
     }
     if (devices.has(DeviceType::Mouse)) {
-        boost::shared_ptr<v3d::event::Context> mouseContext = eventEngine->resolveContext("mouse");
+        const boost::shared_ptr<v3d::event::Context> mouseContext = eventEngine->resolveContext("mouse");
         mouse_ = boost::make_shared<Mouse>(mouseContext, dispatcher_);
         devices_.push_back(mouse_);
     }

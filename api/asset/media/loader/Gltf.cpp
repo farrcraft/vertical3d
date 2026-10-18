@@ -638,7 +638,7 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
     logger_->get()->info("Looking for gltf asset at: {}", name);
 
     const std::string path(name);
-    cgltf_options options{};
+    const cgltf_options options{};
     cgltf_data* data = nullptr;
 
     if (cgltf_parse_file(&options, path.c_str(), &data) != cgltf_result_success) {
@@ -663,7 +663,7 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
     }
 
     const std::vector<const cgltf_node*> starts = roots(*data);
-    boost::shared_ptr<v3d::type::Model> model = boost::make_shared<v3d::type::Model>();
+    const boost::shared_ptr<v3d::type::Model> model = boost::make_shared<v3d::type::Model>();
 
     // the first skin a mesh is bound to is the model's; a model has one skeleton
     Rig rig;
@@ -787,7 +787,7 @@ boost::shared_ptr<v3d::image::Image> Gltf::decodeEmbedded(const cgltf_image& ima
         decoded--;
     }
 
-    cgltf_options options{};
+    const cgltf_options options{};
     void* bytes = nullptr;
     if (cgltf_load_buffer_base64(&options, decoded, comma + 1, &bytes) != cgltf_result_success || bytes == nullptr) {
         logger_->get()->error("The base colour texture of {} could not be decoded out of its data uri", model);

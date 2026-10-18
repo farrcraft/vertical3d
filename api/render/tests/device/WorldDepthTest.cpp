@@ -93,7 +93,7 @@ void overlapping(canvas::World* canvas, bool nearFirst) {
  * committed for that submission order.
  **/
 void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::string& name) {
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
         headless->device, headless->context->ring(), width, height, colourFormat, true);
     BOOST_REQUIRE(target->depthView() != VK_NULL_HANDLE);
 
@@ -101,7 +101,7 @@ void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::stri
     overlapping(&canvas, nearFirst);
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("world");
+    const boost::shared_ptr<Pass> pass = frame.pass("world");
     pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     pass->depth(true);
     pass->camera(glm::mat4x4(1.0f), pixels());
@@ -167,8 +167,8 @@ BOOST_AUTO_TEST_CASE(world_quads_are_ordered_by_their_caller_and_not_by_depth) {
     drawAndCheck(&headless, true, "world_near_first");
     drawAndCheck(&headless, false, "world_far_first");
 
-    boost::shared_ptr<v3d::image::Image> nearFirst = drawn(headless.logger, "world_near_first");
-    boost::shared_ptr<v3d::image::Image> farFirst = drawn(headless.logger, "world_far_first");
+    const boost::shared_ptr<v3d::image::Image> nearFirst = drawn(headless.logger, "world_near_first");
+    const boost::shared_ptr<v3d::image::Image> farFirst = drawn(headless.logger, "world_far_first");
     BOOST_REQUIRE(nearFirst != nullptr);
     BOOST_REQUIRE(farFirst != nullptr);
     // the overlap is the far quad's colour in one and the near quad's in the other

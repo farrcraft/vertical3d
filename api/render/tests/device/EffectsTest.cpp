@@ -176,10 +176,10 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     canvas.tint(glm::vec4(1.0f, 0.75f, 0.55f, 1.0f));
     order.into(&canvas);
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
         width, height, colourFormat, false);
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("world");
+    const boost::shared_ptr<Pass> pass = frame.pass("world");
     pass->target(target);
     pass->clearColour(glm::vec4(0.15f, 0.2f, 0.3f, 1.0f));
     pass->camera(camera.view(), camera.projection());

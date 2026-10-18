@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(slglobals_surface_test) {
  **/
 BOOST_AUTO_TEST_CASE(slglobals_absent_test) {
     const Globals globals;
-    Machine machine;
+    const Machine machine;
     BOOST_CHECK_CLOSE(globals.colour(machine, 0, glm::vec3(0.3f)).r, 0.3f, 0.01f);
     BOOST_CHECK_CLOSE(globals.alpha(machine, 0, 0.7f), 0.7f, 0.01f);
 }

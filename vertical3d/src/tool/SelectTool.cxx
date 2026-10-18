@@ -129,7 +129,7 @@ void SelectTool::selectObject(unsigned int id) {
     if (id == 0) {
         return;
     }
-    boost::shared_ptr<v3d::brep::BRep> mesh = scene_->mesh(id);
+    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->mesh(id);
     if (!mesh) {
         return;
     }
@@ -139,7 +139,7 @@ void SelectTool::selectObject(unsigned int id) {
 /**
  **/
 void SelectTool::selectComponent(const Picker::Hit& hit) {
-    boost::shared_ptr<v3d::brep::BRep> mesh = scene_->mesh(hit.mesh);
+    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->mesh(hit.mesh);
     if (!mesh) {
         return;
     }
@@ -147,13 +147,13 @@ void SelectTool::selectComponent(const Picker::Hit& hit) {
     // read before clearing: clicking the same component twice deselects it
     bool wanted = true;
     if (hit.kind == SelectMask::Vertex) {
-        v3d::brep::Vertex* vertex = mesh->vertex(hit.component);
+        const v3d::brep::Vertex* vertex = mesh->vertex(hit.component);
         wanted = vertex != nullptr && !vertex->selected();
     } else if (hit.kind == SelectMask::Edge) {
-        v3d::brep::HalfEdge* edge = mesh->edge(hit.component);
+        const v3d::brep::HalfEdge* edge = mesh->edge(hit.component);
         wanted = edge != nullptr && !edge->selected();
     } else if (hit.kind == SelectMask::Face) {
-        v3d::brep::Face* face = mesh->face(hit.component);
+        const v3d::brep::Face* face = mesh->face(hit.component);
         wanted = face != nullptr && !face->selected();
     }
 

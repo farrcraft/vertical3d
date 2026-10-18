@@ -24,7 +24,7 @@ namespace {
 BOOST_AUTO_TEST_CASE(memory_no_type_offers_is_refused_without_throwing) {
     for (const Allocator::Kind kind : { Allocator::Kind::Direct, Allocator::Kind::Suballocated }) {
         BOOST_TEST_CONTEXT((kind == Allocator::Kind::Direct ? "direct" : "suballocated")) {
-            v3d::test::Headless headless(VK_FORMAT_R8G8B8A8_UNORM, 4, 4, kind);
+            const v3d::test::Headless headless(VK_FORMAT_R8G8B8A8_UNORM, 4, 4, kind);
 
             VkBufferCreateInfo info{};
             info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

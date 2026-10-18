@@ -88,8 +88,8 @@ void Player::tick(float step) {
             dir[static_cast<glm::length_t>(possibleMoves[i].axis_)] = possibleMoves[i].magnitude_;
         }
     }
-    glm::vec3 displacement = camera_->calculateDisplacement(dir, step);
-    glm::vec3 position = camera_->calculateMovement(displacement);
+    const glm::vec3 displacement = camera_->calculateDisplacement(dir, step);
+    const glm::vec3 position = camera_->calculateMovement(displacement);
     if (!checkWorldCollision(position)) {
         camera_->position(position);
 

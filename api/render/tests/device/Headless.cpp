@@ -20,12 +20,12 @@ namespace v3d::test {
  **/
 bool deviceAvailable() {
     try {
-        boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+        const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
         // no windowing extensions: the probe tests whether anything can draw, not whether
         // anything can present
-        boost::shared_ptr<render::realtime::vulkan::device::Instance> instance =
+        const boost::shared_ptr<render::realtime::vulkan::device::Instance> instance =
             boost::make_shared<render::realtime::vulkan::device::Instance>(logger, std::vector<const char*>());
-        render::realtime::vulkan::device::Device device(logger, instance);
+        const render::realtime::vulkan::device::Device device(logger, instance);
         return device.handle() != VK_NULL_HANDLE;
     } catch (const std::exception& error) {
         // the console rather than the logger, which writes to a file beside the executable.

@@ -145,7 +145,7 @@ const float defaultCorner = 8.0f;
  *      such image or nothing has resolved it
  **/
 v3d::ui::Image image(const boost::shared_ptr<style::Style>& target, const std::string& name) {
-    boost::shared_ptr<style::property::Image> property =
+    const boost::shared_ptr<style::property::Image> property =
         boost::dynamic_pointer_cast<style::property::Image>(target->property(name, "image"));
     return property ? property->image() : v3d::ui::Image();
 }

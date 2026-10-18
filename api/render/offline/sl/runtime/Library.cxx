@@ -539,7 +539,7 @@ void Machine::builtin(const Instruction & instruction) {
     site.body = body;
     std::vector<const Value*> given;
     given.reserve(instruction.arguments.size());
-    for (int reg : instruction.arguments) {
+    for (const int reg : instruction.arguments) {
         given.push_back(&file_[static_cast<std::size_t>(reg)]);
     }
     site.given = &given;

@@ -23,7 +23,7 @@ Wav::Wav(const boost::shared_ptr<v3d::log::Logger>& logger) : v3d::asset::Loader
  **/
 boost::shared_ptr<v3d::asset::Asset> Wav::load(std::string_view name) {
     logger_->get()->info("Looking for wav asset at: {}", name);
-    boost::shared_ptr<AudioClip> clip = boost::make_shared<AudioClip>();
+    const boost::shared_ptr<AudioClip> clip = boost::make_shared<AudioClip>();
     // an asset holding no clip is indistinguishable from a loaded one until a consumer
     // dereferences it, so a read that failed comes back as no asset at all
     if (!clip->load(name)) {

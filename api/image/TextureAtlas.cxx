@@ -33,7 +33,7 @@ TextureAtlas::TextureAtlas(unsigned int width, unsigned int height, unsigned int
     used_(0),
     logger_(logger) {
     if (depth != 1 && depth != 3 && depth != 4) {
-        std::string err = "Invalid texture atlas depth - must be 1, 3, or 4";
+        const std::string err = "Invalid texture atlas depth - must be 1, 3, or 4";
         logger_->get()->error(err);
         throw std::runtime_error(err);
     }
@@ -83,7 +83,7 @@ glm::ivec4 TextureAtlas::allocate(unsigned int width, unsigned int height) {
     int bestIndex = -1;
     glm::ivec4 region(0, 0, width, height);
     for (unsigned int i = 0; i < nodes_.size(); ++i) {
-        int y = fit(i, glm::uvec2(width, height));
+        const int y = fit(i, glm::uvec2(width, height));
         if (y >= 0) {
             node = nodes_[i];
             if (((y + static_cast<int>(height)) < bestHeight) ||
@@ -115,7 +115,7 @@ glm::ivec4 TextureAtlas::allocate(unsigned int width, unsigned int height) {
         prev = nodes_[i - 1];
 
         if (nodes_[i].x < (prev.x + prev.z)) {
-            int shrink = prev.x + prev.z - nodes_[i].x;
+            const int shrink = prev.x + prev.z - nodes_[i].x;
             nodes_[i].x += shrink;
             nodes_[i].z -= shrink;
             if (nodes_[i].z <= 0) {
@@ -139,7 +139,7 @@ int TextureAtlas::fit(unsigned int index, const glm::uvec2& size) {
     const unsigned int width = size.x;
     const unsigned int height = size.y;
     glm::ivec3 node = nodes_[index];
-    int x = node.x;
+    const int x = node.x;
     if ((x + width) > (width_ - 1)) {
         return -1;
     }
@@ -180,7 +180,7 @@ void TextureAtlas::region(const glm::ivec4& area, unsigned char* data, unsigned 
     assert(y < (height_ - 1));
     assert((y + height) <= (height_ - 1));
 
-    size_t charsize = sizeof(char);
+    const size_t charsize = sizeof(char);
     unsigned char* imgData = image_->data();
     for (unsigned int i = 0; i < height; ++i) {
         memcpy(imgData + (((static_cast<size_t>(y + i) * width_) + x) * charsize * depth_),

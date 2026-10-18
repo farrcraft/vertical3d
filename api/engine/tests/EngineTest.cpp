@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(engine_registers_mappings_test) {
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
-    boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
+    const boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "w", v3d::event::State::Pressed));
 
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(engine_mapping_state_test) {
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
-    boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
+    const boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
 
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "escape", v3d::event::State::Pressed));
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(engine_mapping_param_test) {
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
-    boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
+    const boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
 
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "1", v3d::event::State::Pressed));
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);

@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE(a_bar_that_was_never_drawn_scrolls_nowhere) {
  * with nowhere to go.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_draws_its_track_alone) {
-    v3d::ui::paint::ComponentRenderer renderer(
+    const v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_with_nothing_to_scroll_draws_no_thumb) {
     BOOST_CHECK(!component->scrollable());
     BOOST_CHECK_CLOSE(component->thumb(), 50.0f, 0.001f);
 
-    v3d::ui::paint::ComponentRenderer renderer(
+    const v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
     v3d::render::realtime::canvas::Canvas canvas;

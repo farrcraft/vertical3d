@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_SUITE(pipeline_builder_test)
  * pipeline that writes no colour.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_with_no_colour_attachment_compiles) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
     Builder builder(headless.device);
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(a_pipeline_with_no_colour_attachment_compiles) {
  * none or one. Nothing in this tree draws into two, so only this case covers it.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_with_two_colour_attachments_compiles) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
     Builder builder(headless.device);
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(a_pipeline_with_two_colour_attachments_compiles) {
  * a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state below checks it instead.
  **/
 BOOST_AUTO_TEST_CASE(a_depth_only_pipeline_with_a_bias_compiles) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
     Builder builder(headless.device);
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(a_depth_only_pipeline_with_a_bias_compiles) {
  * than to a value and so has no reference picture.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_with_named_blend_factors_compiles) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
     Builder builder(headless.device);
@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE(a_pipeline_with_named_blend_factors_compiles) {
  * no colour, while the default means the caller set nothing, and the two must not be confused.
  **/
 BOOST_AUTO_TEST_CASE(a_colour_format_nobody_named_is_still_an_error) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
     Builder builder(headless.device);
@@ -201,7 +201,7 @@ BOOST_AUTO_TEST_CASE(a_colour_format_nobody_named_is_still_an_error) {
  * the state from the builder.
  **/
 BOOST_AUTO_TEST_CASE(a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     Builder biased(headless.device);
     describe(&biased);
@@ -232,7 +232,7 @@ BOOST_AUTO_TEST_CASE(a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state) 
  * a precision rather than to a value, so it has no reference picture.
  **/
 BOOST_AUTO_TEST_CASE(blend_factors_reach_the_attachment_as_named) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     Builder named(headless.device);
     describe(&named);
@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE(blend_factors_reach_the_attachment_as_named) {
  * a double free.
  **/
 BOOST_AUTO_TEST_CASE(one_layout_the_caller_owns_serves_every_pipeline_given_it) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
 
@@ -313,7 +313,7 @@ BOOST_AUTO_TEST_CASE(one_layout_the_caller_owns_serves_every_pipeline_given_it) 
  * A builder given no layout builds its own, so two such builders give two different layouts.
  **/
 BOOST_AUTO_TEST_CASE(a_builder_given_no_layout_still_builds_its_own) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
 
@@ -352,7 +352,7 @@ BOOST_AUTO_TEST_CASE(a_builder_given_no_layout_still_builds_its_own) {
  * case.
  **/
 BOOST_AUTO_TEST_CASE(the_same_pipeline_is_compiled_into_the_cache_once) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
     const std::size_t empty = held(headless, *cache);

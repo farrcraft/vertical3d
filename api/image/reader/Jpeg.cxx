@@ -65,7 +65,7 @@ boost::shared_ptr<Image> Jpeg::read(const unsigned char* encoded, std::size_t si
     jpeg_calc_output_dimensions(&cinfo);
 
     // Create decompressor output buffer.
-    JDIMENSION row_width = cinfo.output_width * cinfo.output_components;
+    const JDIMENSION row_width = cinfo.output_width * cinfo.output_components;
     JSAMPARRAY buffer;
     JDIMENSION buffer_height;
     buffer = (*cinfo.mem->alloc_sarray)

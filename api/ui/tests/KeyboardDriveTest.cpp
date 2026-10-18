@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(a_screen_is_started_off_by_focusing_its_first_control) {
  * A ui holding nothing focusable stays as it was, so a hud leaves the movement keys alone.
  **/
 BOOST_AUTO_TEST_CASE(a_screen_with_nothing_focusable_is_left_alone) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Panel> plate =
         boost::make_shared<v3d::ui::component::Panel>();
     fixture.container->add(plate);
@@ -256,7 +256,7 @@ BOOST_AUTO_TEST_CASE(the_arrows_step_through_a_list) {
  * in a list. The key that moved nothing is not taken, so it goes on to the app.
  **/
 BOOST_AUTO_TEST_CASE(a_list_does_not_wrap_at_either_end) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::SelectList> list =
         boost::make_shared<v3d::ui::component::SelectList>();
     list->items({"red", "green"});
@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE(a_list_does_not_wrap_at_either_end) {
  * with a click on a tab.
  **/
 BOOST_AUTO_TEST_CASE(the_arrows_turn_the_pages_of_a_tab_bar) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TabBar> bar =
         boost::make_shared<v3d::ui::component::TabBar>();
     bar->add(boost::make_shared<v3d::ui::component::TabPage>());
@@ -301,7 +301,7 @@ BOOST_AUTO_TEST_CASE(the_arrows_turn_the_pages_of_a_tab_bar) {
  * line, the page keys by what the page shows, and home and end run to the ends.
  **/
 BOOST_AUTO_TEST_CASE(the_keys_move_a_scrollbar_by_a_line_and_by_a_page) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
         boost::make_shared<v3d::ui::component::Scrollbar>();
     bar->range(1000.0f, 200.0f);
@@ -333,7 +333,7 @@ BOOST_AUTO_TEST_CASE(the_keys_move_a_scrollbar_by_a_line_and_by_a_page) {
  * A horizontal bar reads the other pair of arrows as "along", the way a tab bar does.
  **/
 BOOST_AUTO_TEST_CASE(a_horizontal_scrollbar_takes_the_sideways_arrows) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
         boost::make_shared<v3d::ui::component::Scrollbar>();
     bar->direction(v3d::ui::component::Scrollbar::Direction::Horizontal);
@@ -356,7 +356,7 @@ BOOST_AUTO_TEST_CASE(a_horizontal_scrollbar_takes_the_sideways_arrows) {
  * says how tall a row is drawn and a range of pixels cannot.
  **/
 BOOST_AUTO_TEST_CASE(a_bound_bar_steps_by_a_row_of_the_list_it_scrolls) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::SelectList> list =
         boost::make_shared<v3d::ui::component::SelectList>();
     list->items({"one", "two", "three", "four", "five", "six"});
@@ -379,7 +379,7 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_steps_by_a_row_of_the_list_it_scrolls) {
  * while the bar holds the focus.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_takes_no_key) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
         boost::make_shared<v3d::ui::component::Scrollbar>();
     bar->range(100.0f, 100.0f);

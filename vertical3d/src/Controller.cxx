@@ -153,7 +153,7 @@ bool Controller::buildUi() {
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher(), window());
     chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui_);
 
-    boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
+    const boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
     if (!container) {
         logger()->get()->error("The ui config has no {} container", uiContainer);
         return false;
@@ -166,7 +166,7 @@ bool Controller::buildUi() {
 
     toolbars_.clear();
     for (const boost::shared_ptr<v3d::ui::Component>& component : container->components()) {
-        boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
             boost::dynamic_pointer_cast<v3d::ui::component::Toolbar>(component);
         if (bar) {
             toolbars_.push_back(bar);
@@ -182,14 +182,14 @@ void Controller::syncUi() {
         return;
     }
     auto mark = [this](const char* command, bool on) {
-        boost::shared_ptr<v3d::ui::component::menu::Item> item = menu_->find(command);
+        const boost::shared_ptr<v3d::ui::component::menu::Item> item = menu_->find(command);
         if (item) {
             item->checked(on);
         }
         // a command may be on a menu, on a toolbar or on both, and both show the editor's
         // flag rather than keeping one each
         for (const boost::shared_ptr<v3d::ui::component::Toolbar>& bar : toolbars_) {
-            boost::shared_ptr<v3d::ui::component::Button> button = bar->find(command);
+            const boost::shared_ptr<v3d::ui::component::Button> button = bar->find(command);
             if (button) {
                 button->checked(on);
             }
@@ -310,7 +310,7 @@ void Controller::createPoly(const std::string& name) {
     }
 
     // the command does the creating, so making a mesh and redoing one run the same code
-    boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, mesh, name);
+    const boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, mesh, name);
     command->redo();
     history_->push(command);
     logger()->get()->info("created a {} - {} meshes", name, scene_->count());

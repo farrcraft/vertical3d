@@ -102,7 +102,7 @@ struct Fixture final {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_row_layout) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
     const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
 
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(toolbar_row_layout) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_column_layout) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
     const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
 
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(toolbar_column_layout) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_press_sends_its_command) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
     fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
 
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(toolbar_press_sends_its_command) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_unbound_button_sends_nothing) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
     fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
 
@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(toolbar_unbound_button_sends_nothing) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_hover_follows_the_cursor) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
     fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
 
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(toolbar_hover_follows_the_cursor) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_marks_by_command) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
 
     boost::shared_ptr<v3d::ui::component::Button> found = bar->find("test::object");
@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(toolbar_marks_by_command) {
 
     BOOST_TEST(!bar->find("test::missing"));
 
-    boost::shared_ptr<v3d::ui::component::Button> plain = bar->button(2);
+    const boost::shared_ptr<v3d::ui::component::Button> plain = bar->button(2);
     plain->checked(true);
     BOOST_TEST(!plain->checked());
 }
@@ -240,11 +240,11 @@ BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
     Fixture fixture;
     const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
 
-    boost::shared_ptr<v3d::ui::component::menu::Bar> menu =
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> menu =
         boost::make_shared<v3d::ui::component::menu::Bar>();
-    boost::shared_ptr<v3d::ui::component::Toolbar> top =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> top =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
-    boost::shared_ptr<v3d::ui::component::Toolbar> left =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> left =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
 
     v3d::ui::Container container("editor", true);
@@ -307,7 +307,7 @@ BOOST_AUTO_TEST_CASE(toolbar_two_columns_stand_side_by_side_on_the_first_frame) 
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_strip_disables_its_buttons) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
     fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
 
@@ -325,7 +325,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_strip_disables_its_buttons) {
  **/
 BOOST_AUTO_TEST_CASE(a_hidden_button_takes_no_room_and_no_press) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
     bar->button(0)->visible(false);
     fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));

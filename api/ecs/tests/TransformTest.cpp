@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(transform_about_y_hand_test) {
  * Position and scale are mixed, and the ends are the ends.
  **/
 BOOST_AUTO_TEST_CASE(transform_interpolate_test) {
-    v3d::ecs::component::Transform from;
+    const v3d::ecs::component::Transform from;
     v3d::ecs::component::Transform to;
     to.position = glm::vec3(4.0f, 0.0f, -8.0f);
     to.scale = glm::vec3(3.0f);

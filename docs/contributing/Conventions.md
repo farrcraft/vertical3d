@@ -94,6 +94,11 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
   Close it with `};  // namespace`. clang-tidy's `misc-use-internal-linkage` reports a
   definition outside one.
 - **Use `boost::shared_ptr` and `boost::make_shared`**, not the `std` equivalents.
+- **A local that is never modified is `const`**, and so is what a pointer points to when it is
+  only read through. `const` goes before the type: `const float x`, `const auto& item`. An
+  array of pointers that are not reassigned is `const char* const names[]`. clang-tidy's
+  `misc-const-correctness` reports a local that could be `const`. Its fix puts the `const`
+  after the type, so do not apply that fix as it stands.
 - **Pass a non-trivial type by `const` reference**, including a `boost::shared_ptr` and a
   `std::string`. clang-tidy's `performance-unnecessary-value-param` also accepts a by-value
   parameter that is moved from, but this tree uses the `const` reference in both cases.

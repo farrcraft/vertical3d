@@ -50,7 +50,7 @@ glm::vec3 Camera::unproject(const glm::vec3& point, const int viewport[4]) const
     glm::mat4x4 inv;
     m = projection() * view();
     inv = glm::inverse(m);
-    float w = (inv[0][3] * p[0]) + (inv[1][3] * p[1]) + (inv[2][3] * p[2]) + inv[3][3];
+    const float w = (inv[0][3] * p[0]) + (inv[1][3] * p[1]) + (inv[2][3] * p[2]) + inv[3][3];
 
     return ((inv * p) / w);
 }
@@ -138,13 +138,13 @@ void Camera::createProjection() {  // active scene bound
         */
         const float near = profile_.clipping()[0];
         const float far = profile_.clipping()[1];
-        float ymax = near * tan(profile_.fov() * glm::pi<float>() / 360.0f);
-        float xmax = ymax * aspect;
+        const float ymax = near * tan(profile_.fov() * glm::pi<float>() / 360.0f);
+        const float xmax = ymax * aspect;
 
-        float x = near / xmax;
-        float y = near / ymax;
-        float C = far / (far - near);
-        float D = -(far * near) / (far - near);
+        const float x = near / xmax;
+        const float y = near / ymax;
+        const float C = far / (far - near);
+        const float D = -(far * near) / (far - near);
 
         projection_[0][0] = x;
         projection_[1][0] = 0.0f;
@@ -178,17 +178,17 @@ void Camera::createProjection() {  // active scene bound
             right, top and bottom are points on the respective clipping planes.
         */
         aspect *= profile_.orthoZoom();
-        float left = -1.0f * aspect;
-        float right = 1.0f * aspect;
-        float top = 1.0f * profile_.orthoZoom();
-        float bottom = -1.0f * profile_.orthoZoom();
-        float far_val = profile_.clipping()[1];
-        float near_val = profile_.clipping()[0];
+        const float left = -1.0f * aspect;
+        const float right = 1.0f * aspect;
+        const float top = 1.0f * profile_.orthoZoom();
+        const float bottom = -1.0f * profile_.orthoZoom();
+        const float far_val = profile_.clipping()[1];
+        const float near_val = profile_.clipping()[0];
 
-        float tx = -(right + left) / (right - left);
+        const float tx = -(right + left) / (right - left);
         // the y flip takes the sign of ty with it
-        float ty = (top + bottom) / (top - bottom);
-        float tz = -near_val / (far_val - near_val);
+        const float ty = (top + bottom) / (top - bottom);
+        const float tz = -near_val / (far_val - near_val);
 
         projection_[0][0] = 2.0f / (right - left);
         projection_[1][0] = 0.0f;
@@ -213,7 +213,7 @@ void Camera::createView() {
     // a world point is translated to the eye and then rotated into the camera's axes.
     // The rotation applied is the profile's inverse, which for a pure rotation is its
     // transpose, and it has to come after the translation or it turns the eye offset too
-    glm::vec3 e = -profile_.eye();
+    const glm::vec3 e = -profile_.eye();
     // the basis lookat() built when it is still the rotation in force, and the rotation
     // cast back to a matrix when anything else has set it since. The two agree to about
     // 2e-6 of an element; the cached one is the same arithmetic glm::lookAt does, so a

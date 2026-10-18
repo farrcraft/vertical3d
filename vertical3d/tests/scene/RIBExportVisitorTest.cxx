@@ -113,7 +113,7 @@ bool reimport(const std::string & source, ImportHandler * handler) {
  * A cube out of the editor comes back as six faces of four corners, inside one world block.
  **/
 BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     scene->add(v3d::editor::create_poly_cube());
 
     const std::string exported = exportScene(scene, false);
@@ -142,8 +142,8 @@ BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
  * Two meshes are two attribute blocks, each with its own placement.
  **/
 BOOST_AUTO_TEST_CASE(ribexport_placement_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> first = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> first = v3d::editor::create_poly_cube();
     first->translation(glm::vec3(3.0f, 4.0f, 5.0f));
     scene->add(first);
     scene->add(v3d::editor::create_poly_plane());
@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(ribexport_placement_test) {
  * left for a reader to derive from the frame aspect.
  **/
 BOOST_AUTO_TEST_CASE(ribexport_camera_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
 
     ImportHandler orthographic;
     BOOST_REQUIRE(reimport(exportScene(scene, true), &orthographic));
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(ribexport_camera_test) {
  * An empty scene is still a valid file: a header, a camera and an empty world block.
  **/
 BOOST_AUTO_TEST_CASE(ribexport_empty_scene_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
 
     ImportHandler handler;
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));

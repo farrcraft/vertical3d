@@ -12,8 +12,8 @@ Chunk::Chunk(TerrainMap * terrain, glm::ivec3 chunkPosition, unsigned int ceilin
     dirty_(false),
     empty_(false),
     size_(16) {
-    float maxTerrainHeight = 255.0f;
-    float voxelHeight = static_cast<float>(ceiling);
+    const float maxTerrainHeight = 255.0f;
+    const float voxelHeight = static_cast<float>(ceiling);
     unsigned int hash = 0;
     chunkPosition *= size_;
     unsigned int allocated = 0;
@@ -22,11 +22,11 @@ Chunk::Chunk(TerrainMap * terrain, glm::ivec3 chunkPosition, unsigned int ceilin
     Voxel::BlockType chunkBlockType = static_cast<Voxel::BlockType>(rand() % 16 + 1); //  NOLINT
 
     for (unsigned int x = 0; x < size_; x++) {
-        float posX = static_cast<float>(x + chunkPosition.x);
+        const float posX = static_cast<float>(x + chunkPosition.x);
         for (unsigned int z = 0; z < size_; z++) {
-            float posZ = static_cast<float>(z + chunkPosition.z);
+            const float posZ = static_cast<float>(z + chunkPosition.z);
             // height is in the range [0.0-255.0]
-            float height = terrain->height(glm::uvec2(x + chunkPosition.x, z + chunkPosition.z));
+            const float height = terrain->height(glm::uvec2(x + chunkPosition.x, z + chunkPosition.z));
             unsigned int blockHeight = 0;
             if (height > 0.0f) {
                 // scale into the range of the world ceiling
@@ -34,13 +34,13 @@ Chunk::Chunk(TerrainMap * terrain, glm::ivec3 chunkPosition, unsigned int ceilin
             }
 
             for (unsigned y = 0; y < size_; y++) {
-                float posY = static_cast<float>(y + chunkPosition.y);
+                const float posY = static_cast<float>(y + chunkPosition.y);
                 if ((y + chunkPosition.y) <= blockHeight) {
                     hash = MortonCode::encode(glm::ivec3(x, y, z));
-                    glm::vec3 position(posX, posY, posZ);
+                    const glm::vec3 position(posX, posY, posZ);
                     // Voxel::BlockType type = Voxel::BLOCK_TYPE_DIRT;
 
-                    boost::shared_ptr<Voxel> voxel(new Voxel(chunkBlockType, position));
+                    const boost::shared_ptr<Voxel> voxel(new Voxel(chunkBlockType, position));
                     blocks_[hash] = voxel;
                     allocated++;
                 }
@@ -59,7 +59,7 @@ glm::ivec3 Chunk::position() const {
 }
 
 bool Chunk::active(glm::ivec3 blockPosition) const {
-    unsigned int hash = MortonCode::encode(blockPosition);
+    const unsigned int hash = MortonCode::encode(blockPosition);
     return blocks_.contains(hash);
 }
 

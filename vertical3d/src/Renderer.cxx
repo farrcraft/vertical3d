@@ -126,7 +126,7 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     ui_->resolveImages([this](const std::string& source) -> v3d::render::realtime::TextureHandle {
         const v3d::asset::Type type = source.ends_with(".png")
             ? v3d::asset::Type::ImagePng : v3d::asset::Type::ImageTga;
-        boost::shared_ptr<v3d::asset::media::kind::Image> asset =
+        const boost::shared_ptr<v3d::asset::media::kind::Image> asset =
             assetManager_->load<v3d::asset::media::kind::Image>(source, type);
         if (!asset || !asset->image()) {
             return v3d::render::realtime::TextureHandle();
@@ -154,12 +154,12 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
     if (!screen_->begin()) {
         return;
     }
-    boost::shared_ptr<v3d::render::realtime::Frame> frame = engine_.frame();
+    const boost::shared_ptr<v3d::render::realtime::Frame> frame = engine_.frame();
     if (!frame) {
         return;
     }
 
-    boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Line> lines = engine_.lines();
+    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Line> lines = engine_.lines();
 
     // a view with no scene still draws its grid: an empty document is not an error
     const Scene empty;
@@ -173,7 +173,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
 
         view->draw(scene, manipulator_.get(), &canvases_[index], &overlays_[index]);
 
-        boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(view->name());
+        const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(view->name());
         pass->viewport(view->region());
         pass->clearColour(background_);
         // every view depth tests, so a wireframe is occluded by what is in front of it.
@@ -183,7 +183,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
 
         // the handles are drawn over what the scene pass left, without a depth test, so
         // a handle lying in the plane of the grid is not hidden by it
-        boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame->pass(view->name() + handleSuffix);
+        const boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame->pass(view->name() + handleSuffix);
         overlay->viewport(view->region());
         overlay->keepColour();
         overlay->depth(false);
@@ -209,14 +209,14 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
     // the overlay draws onto the same canvas, so this runs for it whether or not there is
     // a ui to draw as well
     screen_->draw(ui_.get(), statistics);
-    v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
+    const v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
     if (canvas.empty()) {
         return;
     }
 
     // over the whole window rather than a view, and over what every view left. A canvas
     // carries its own projection, so this pass needs no camera
-    boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(uiPass);
+    const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(uiPass);
     pass->keepColour();
     pass->depth(false);
     engine_.quads()->submit(canvas, pass.get());

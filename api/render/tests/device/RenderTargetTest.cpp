@@ -54,7 +54,7 @@ std::vector<unsigned char> centre(v3d::test::Headless* headless, Capture* captur
         return std::vector<unsigned char>();
     }
     v3d::image::reader::Png png(headless->logger);
-    boost::shared_ptr<v3d::image::Image> picture = png.read(path);
+    const boost::shared_ptr<v3d::image::Image> picture = png.read(path);
     if (!picture) {
         return std::vector<unsigned char>();
     }
@@ -79,13 +79,13 @@ std::vector<unsigned char> drawFrame(v3d::test::Headless* headless, const boost:
         handles[slots->previous()]);
 
     Frame frame;
-    boost::shared_ptr<Pass> reader = frame.pass("reader");
+    const boost::shared_ptr<Pass> reader = frame.pass("reader");
     reader->target(output);
     reader->reads(slots);
     reader->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     headless->context->quads()->submit(canvas, reader.get());
 
-    boost::shared_ptr<Pass> writer = frame.pass("writer");
+    const boost::shared_ptr<Pass> writer = frame.pass("writer");
     writer->target(slots);
     writer->clearColour(colour);
 
@@ -118,9 +118,9 @@ BOOST_AUTO_TEST_CASE(a_target_per_frame_reads_the_frame_before) {
     const uint32_t frames = headless.context->ring()->framesInFlight();
     BOOST_REQUIRE_GT(frames, 1U);
 
-    boost::shared_ptr<RenderTarget> slots = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> slots = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, false, false, frames);
-    boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat);
     BOOST_REQUIRE_EQUAL(slots->images(), frames);
 
@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(a_target_per_frame_reads_the_frame_before) {
  * that is not the one before.
  **/
 BOOST_AUTO_TEST_CASE(a_target_holds_one_image_or_one_per_frame) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
     const uint32_t frames = headless.context->ring()->framesInFlight();
     BOOST_CHECK_THROW(RenderTarget(headless.device, headless.context->ring(), width, height, colourFormat, false, false,
         frames + 1), std::runtime_error);
@@ -162,8 +162,8 @@ BOOST_AUTO_TEST_CASE(a_target_holds_one_image_or_one_per_frame) {
  * and size and can still be recreated at a valid size.
  **/
 BOOST_AUTO_TEST_CASE(a_failed_recreate_leaves_the_target_as_it_was) {
-    v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true);
     VkImage image = target->image();
     VkImageView view = target->view();
@@ -192,8 +192,8 @@ BOOST_AUTO_TEST_CASE(a_failed_recreate_leaves_the_target_as_it_was) {
  * recorder, naming the pass that drew it.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
-    v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, VK_FORMAT_B8G8R8A8_UNORM);
 
     Builder builder(headless.device);
@@ -213,7 +213,7 @@ BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
     item.vertices = 3;
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("mismatched");
+    const boost::shared_ptr<Pass> pass = frame.pass("mismatched");
     pass->target(target);
     pass->submit(item);
 
@@ -227,12 +227,12 @@ BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
  * whose only depth test is into a target of its own does not create it.
  **/
 BOOST_AUTO_TEST_CASE(only_a_swapchain_pass_wants_the_swapchain_depth) {
-    v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height,
+    const v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height,
         colourFormat, true);
 
     Frame frame;
-    boost::shared_ptr<Pass> offscreen = frame.pass("offscreen");
+    const boost::shared_ptr<Pass> offscreen = frame.pass("offscreen");
     offscreen->target(target);
     offscreen->depth(true);
     frame.pass("overlay");

@@ -67,7 +67,7 @@ v3d::grid::Cover cover(Kind kind) {
  **/
 std::map<char, v3d::grid::Terrain> legend() {
     std::map<char, v3d::grid::Terrain> terrain;
-    for (char glyph : {floorGlyph, wallGlyph, crateGlyph}) {
+    for (const char glyph : {floorGlyph, wallGlyph, crateGlyph}) {
         const Kind kind = kindFromGlyph(glyph);
         terrain[glyph] = v3d::grid::Terrain{passable(kind), cover(kind)};
     }
@@ -136,7 +136,7 @@ bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document, const 
     std::vector<Kind> kinds;
     kinds.reserve(width * lines.size());
     for (const std::string& line : lines) {
-        for (char glyph : line) {
+        for (const char glyph : line) {
             kinds.push_back(kindFromGlyph(glyph));
         }
     }

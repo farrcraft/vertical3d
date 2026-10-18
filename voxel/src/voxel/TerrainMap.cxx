@@ -20,7 +20,7 @@ class TerrainMap::Noise {
 
 
 void TerrainMap::Noise::generate() {
-    noise::module::Perlin perlinModule;
+    const noise::module::Perlin perlinModule;
     noise::utils::NoiseMap heightMap;
     noise::utils::NoiseMapBuilderPlane heightMapBuilder;
 

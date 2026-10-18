@@ -51,7 +51,7 @@ boost::shared_ptr<v3d::ui::component::TabPage> page(const std::string& label, co
     component->name(label);
     component->label(label);
 
-    boost::shared_ptr<v3d::ui::component::Label> text = boost::make_shared<v3d::ui::component::Label>();
+    const boost::shared_ptr<v3d::ui::component::Label> text = boost::make_shared<v3d::ui::component::Label>();
     text->name(holds);
     text->text(holds);
     component->add(text);
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_SUITE(tab_bar_test)
  **/
 BOOST_AUTO_TEST_CASE(only_the_chosen_page_is_drawn) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer = build(&written);
+    const v3d::ui::paint::ComponentRenderer renderer = build(&written);
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
 
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
  * and nothing under it.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_with_no_pages_shows_nothing) {
-    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
+    const v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
 
@@ -215,8 +215,8 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_strip_of_pages) {
   ]
 })";
 
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
         boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(ui->load(boost::json::parse(document).as_object()));
