@@ -286,6 +286,9 @@ returns false by default, so a primitive with no bound, like the test suite's in
 tested against every ray. A tie between two hits at one distance goes to the primitive added
 first, which keeps every answer equal to the linear search. The oracle in
 `TraceHierarchyTest.cxx` checks that for still and moving scenes. ADR-0092 is accepted.
+The new cases fail to build without the change, which proves little, so the hierarchy was also
+broken by hand twice. With moving primitives boxed at their stored pose, the moving case fails
+at two of its three times. With a tie given to the primitive added last, the tie case fails.
 
 No committed picture changed. A Release render of a 70 by 70 heightfield, 9800 triangles at
 160 by 120 with a shadowing distant light, wrote the same bytes before and after:
