@@ -51,7 +51,7 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
         fclose(fp);
         // what was written is an incomplete jpeg, so the file is removed
         std::remove(path.c_str());
-        logger_->get()->error("JpegWriter::write - the encoder refused {}", path);
+        logger()->get()->error("JpegWriter::write - the encoder refused {}", path);
         return false;
     }
 #pragma warning(pop)

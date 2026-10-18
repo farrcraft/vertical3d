@@ -234,31 +234,31 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
     format::bmp_info_header iheader;
     memset(&iheader, 0, sizeof(format::bmp_info_header));
     if (length < sizeof(format::bmp_file_header) + sizeof(format::bmp_info_header)) {
-        logger_->get()->error("BMPReader::read - error reading bmp headers!");
+        logger()->get()->error("BMPReader::read - error reading bmp headers!");
         return empty_ptr;
     }
     memcpy(&fheader, encoded, sizeof(format::bmp_file_header));
     memcpy(&iheader, encoded + sizeof(format::bmp_file_header), sizeof(format::bmp_info_header));
 
     if (fheader.type_ != 19778) {
-        logger_->get()->error("BMPReader::read - bad header magic number!");
+        logger()->get()->error("BMPReader::read - bad header magic number!");
         return empty_ptr;
     }
     // checked before anything is sized from it. The row arithmetic below needs a whole number
     // of bytes a pixel, and a conversion written for the layout
-    if (!supported(iheader, logger_)) {
+    if (!supported(iheader, logger())) {
         return empty_ptr;
     }
-    logHeaders(logger_, fheader, iheader, iheader.bits_ == 8 ? 256 : 0);
+    logHeaders(logger(), fheader, iheader, iheader.bits_ == 8 ? 256 : 0);
 
     Masks masks;
     if (!readMasks(encoded, length, iheader, &masks)) {
-        logger_->get()->error("BMPReader::read - error reading bmp masks!");
+        logger()->get()->error("BMPReader::read - error reading bmp masks!");
         return empty_ptr;
     }
     std::vector<format::bmp_rgb_quad> colors;
     if (iheader.bits_ == 8 && !readPalette(encoded, length, iheader, &colors)) {
-        logger_->get()->error("BMPReader::read - error reading bmp colors!");
+        logger()->get()->error("BMPReader::read - error reading bmp colors!");
         return empty_ptr;
     }
 
@@ -274,7 +274,7 @@ boost::shared_ptr<Image> Bmp::read(const unsigned char* encoded, std::size_t len
     // the pixels are where the file header says, which is after the palette or the masks
     const std::size_t start = fheader.offset_;
     if (start > length || length - start < layout.pad * layout.rows) {
-        logger_->get()->error("BMPReader::read - error reading bmp data!");
+        logger()->get()->error("BMPReader::read - error reading bmp data!");
         return empty_ptr;
     }
 

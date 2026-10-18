@@ -60,14 +60,14 @@ bool Engine::start() {
         return false;
     }
 
-    player_ = boost::make_shared<Player>(&registry_);
+    player_ = boost::make_shared<Player>(&registry());
     const v3d::grid::TileCoord start = world_->start();
-    registry_.replace<v3d::grid::TileCoord>(player_->entity(), start.x, start.y);
-    registry_.emplace<odyssey::engine::Path>(player_->entity());
+    registry().replace<v3d::grid::TileCoord>(player_->entity(), start.x, start.y);
+    registry().emplace<odyssey::engine::Path>(player_->entity());
 
-    movementSystem_ = boost::make_shared<odyssey::system::Movement>(&registry_);
+    movementSystem_ = boost::make_shared<odyssey::system::Movement>(&registry());
 
-    renderer_ = boost::make_shared<odyssey::render::Renderer>(window(), logger(), assets(), &registry_);
+    renderer_ = boost::make_shared<odyssey::render::Renderer>(window(), logger(), assets(), &registry());
     renderer_->player(player_);
     renderer_->world(world_);
 
@@ -85,7 +85,7 @@ void Engine::handleMotion(const v3d::event::kind::MouseMotion& event) {
 /**
  **/
 v3d::grid::TileCoord Engine::playerTile() const {
-    return registry_.get<v3d::grid::TileCoord>(player_->entity());
+    return registry().get<v3d::grid::TileCoord>(player_->entity());
 }
 
 /**
@@ -107,7 +107,7 @@ void Engine::walkToCursor() {
     for (v3d::grid::TileCoord& tile : route) {
         tile = world_->world(*region, tile);
     }
-    odyssey::engine::Path& path = registry_.get<odyssey::engine::Path>(player_->entity());
+    odyssey::engine::Path& path = registry().get<odyssey::engine::Path>(player_->entity());
     path.tiles = std::move(route);
     // findPath returns the tile the mover is standing on first, so the walk starts at 1
     path.next = 1;
@@ -117,7 +117,7 @@ void Engine::walkToCursor() {
 /**
  **/
 void Engine::step(int dx, int dy) {
-    odyssey::engine::Path& path = registry_.get<odyssey::engine::Path>(player_->entity());
+    odyssey::engine::Path& path = registry().get<odyssey::engine::Path>(player_->entity());
     if (!path.tiles.empty()) {
         // a key interrupts a walk rather than fighting it for the next tile
         path.tiles.clear();
@@ -130,7 +130,7 @@ void Engine::step(int dx, int dy) {
     if (!world_->passable(to)) {
         return;
     }
-    registry_.replace<v3d::grid::TileCoord>(player_->entity(), to.x, to.y);
+    registry().replace<v3d::grid::TileCoord>(player_->entity(), to.x, to.y);
 }
 
 /**

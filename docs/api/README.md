@@ -201,7 +201,7 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 ### Entities
 
 - **Registry** — the `entt::registry` that holds an app's entities and their components. The
-  game engine holds it as `registry_`. See [ECS.md](ECS.md).
+  game engine holds it, and an app reaches it through `registry()`. See [ECS.md](ECS.md).
 - **Component (ECS)** — a plain value attached to an entity, such as `ecs::component::Transform`.
   See [ECS.md](ECS.md).
 - **System** — `ecs::System`, a class that advances some entities by one simulation step. See

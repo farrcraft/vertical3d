@@ -267,10 +267,11 @@ class Engine {
     Statistics::Scope measure(std::string_view name);
 
     /**
-     * The registry that holds all of an app's entities. Protected and writable on purpose,
-     * so every system the app runs can reach it.
+     * The registry that holds all of an app's entities. Writable, so every system the app
+     * runs can reach it.
      **/
-    entt::registry registry_;
+    entt::registry& registry() noexcept;
+    const entt::registry& registry() const noexcept;
 
     /**
      * Bind a command to a different key than the config gave it, keeping the context and
@@ -315,6 +316,8 @@ class Engine {
      bool loadConfig();
      void startInput();
      bool openWindow();
+
+     entt::registry registry_;
 
      // the bindings from the binding config, read by held() and rebuilt by rebind()
      boost::shared_ptr<v3d::event::Bindings> bindings_;

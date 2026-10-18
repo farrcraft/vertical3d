@@ -155,7 +155,7 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
         // the text the platform composed, which is separate from which key moved: one
         // character can take several keys, and one key can produce different characters.
         // It is not a source event, so no command can be bound to a typed letter
-        dispatcher_->trigger<v3d::event::kind::TextInput>(v3d::event::kind::TextInput(event.text.text, context_));
+        dispatcher()->trigger<v3d::event::kind::TextInput>(v3d::event::kind::TextInput(event.text.text, context()));
         return true;
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
@@ -170,9 +170,9 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
             state_(name);
         }
         if (pressed) {
-            dispatcher_->trigger<v3d::event::kind::KeyDown>(v3d::event::kind::KeyDown(name, context_));
+            dispatcher()->trigger<v3d::event::kind::KeyDown>(v3d::event::kind::KeyDown(name, context()));
         } else {
-            dispatcher_->trigger<v3d::event::kind::KeyUp>(v3d::event::kind::KeyUp(name, context_));
+            dispatcher()->trigger<v3d::event::kind::KeyUp>(v3d::event::kind::KeyUp(name, context()));
         }
         break;
     default:
@@ -182,10 +182,10 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
     // trigger an event source event so any mappers can propogate any mapped events.
     // the edge is carried as the event's state, not as its data - data is the binding's
     // parameter, and the two would otherwise overwrite each other.
-    v3d::event::Source source(name, context_, pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
+    v3d::event::Source source(name, context(), pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
     // only a press can repeat, so a release is never marked as one
     source.repeat(pressed && event.key.repeat);
-    v3d::event::publish(*dispatcher_, source);
+    v3d::event::publish(*dispatcher(), source);
 
     return true;
 }

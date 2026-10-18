@@ -16,6 +16,10 @@ namespace v3d::image {
 Reader::Reader(const boost::shared_ptr<v3d::log::Logger>& logger) : logger_(logger) {
 }
 
+const boost::shared_ptr<v3d::log::Logger>& Reader::logger() const noexcept {
+    return logger_;
+}
+
 /**
  **/
 boost::shared_ptr<Image> Reader::read(std::string_view filename) {

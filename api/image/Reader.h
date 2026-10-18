@@ -52,7 +52,13 @@ class Reader {
         virtual boost::shared_ptr<Image> read(const unsigned char* data, std::size_t size);
 
  protected:
-     boost::shared_ptr<v3d::log::Logger> logger_;
+    /**
+     * @return the log a format reports a failure to
+     **/
+    const boost::shared_ptr<v3d::log::Logger>& logger() const noexcept;
+
+ private:
+    boost::shared_ptr<v3d::log::Logger> logger_;
 };
 
 };  // namespace v3d::image

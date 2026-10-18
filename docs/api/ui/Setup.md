@@ -78,7 +78,7 @@ the document is malformed. `container(name)` returns a loaded container, and
 event from the app's `onEvent()`:
 
 ```cpp
-uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher_, window());
+uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher(), window());
 
 bool App::onEvent(const SDL_Event& event) {
     return uiKeys_->event(event);

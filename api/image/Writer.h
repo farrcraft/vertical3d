@@ -24,7 +24,13 @@ class Writer {
 
     virtual bool write(std::string_view filename, const boost::shared_ptr<Image> & img);
  protected:
-     boost::shared_ptr<v3d::log::Logger> logger_;
+    /**
+     * @return the log a format reports a failure to
+     **/
+    const boost::shared_ptr<v3d::log::Logger>& logger() const noexcept;
+
+ private:
+    boost::shared_ptr<v3d::log::Logger> logger_;
 };
 
 };  // namespace v3d::image

@@ -121,7 +121,7 @@ bool PongEngine::start() {
     }
     const boost::shared_ptr<v3d::render::realtime::Window> win = window();
     renderer_ = boost::make_shared<PongRenderer>(win, logger(), assets());
-    scene_ = boost::make_shared<PongScene>(&registry_, dispatcher());
+    scene_ = boost::make_shared<PongScene>(&registry(), dispatcher());
     renderer_->scene(scene_);
     renderer_->ui(vgui_);
 
@@ -142,8 +142,8 @@ bool PongEngine::simulate(float step) {
     }
     // where the ball and paddles were before this step moves them, so the renderer can
     // interpolate between the two steps
-    v3d::ecs::snapshot<v3d::ecs::component::Position2D>(registry_);
-    v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry_);
+    v3d::ecs::snapshot<v3d::ecs::component::Position2D>(registry());
+    v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry());
     // the paddles follow the keys held now rather than the presses and releases that arrived,
     // so a key held through the menu or a change of mode moves its paddle as soon as it can
     for (const std::string_view command : PongScene::paddleCommands) {

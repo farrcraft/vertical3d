@@ -48,9 +48,13 @@ class Loader {
      **/
     Loader(Type t, const boost::shared_ptr<v3d::log::Logger>& logger);
 
-    boost::shared_ptr<v3d::log::Logger> logger_;
+    /**
+     * @return the log a loader reports a failed load to
+     **/
+    const boost::shared_ptr<v3d::log::Logger>& logger() const noexcept;
 
  private:
+    boost::shared_ptr<v3d::log::Logger> logger_;
     Type type_;
 };
 };  // namespace v3d::asset

@@ -475,6 +475,14 @@ const boost::shared_ptr<entt::dispatcher>& Engine::dispatcher() const noexcept {
     return dispatcher_;
 }
 
+entt::registry& Engine::registry() noexcept {
+    return registry_;
+}
+
+const entt::registry& Engine::registry() const noexcept {
+    return registry_;
+}
+
 const boost::shared_ptr<v3d::event::Engine>& Engine::events() const noexcept {
     return eventEngine_;
 }

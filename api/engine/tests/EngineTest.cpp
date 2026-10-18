@@ -47,8 +47,15 @@ class TestEngine final : public v3d::engine::Engine {
         return take_;
     }
 
-    bool take_ = false;
-    std::vector<Uint32> offered_;
+    // whether onEvent() takes the events offered to it
+    void take(bool value) {
+        take_ = value;
+    }
+
+    // the type of each event onEvent() was offered, in order
+    const std::vector<Uint32>& offered() const {
+        return offered_;
+    }
 
  protected:
     v3d::engine::Features features() const override {
@@ -57,6 +64,8 @@ class TestEngine final : public v3d::engine::Engine {
 
  private:
     v3d::engine::Features features_;
+    bool take_ = false;
+    std::vector<Uint32> offered_;
 };
 
 /**
@@ -224,7 +233,7 @@ BOOST_AUTO_TEST_CASE(engine_declined_event_reaches_the_bindings_test) {
 
     engine.offer(keyDown(SDLK_W));
 
-    BOOST_REQUIRE_EQUAL(engine.offered_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(engine.offered().size(), 1u);
     BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "leftPaddleUp");
 }
@@ -236,14 +245,14 @@ BOOST_AUTO_TEST_CASE(engine_declined_event_reaches_the_bindings_test) {
 BOOST_AUTO_TEST_CASE(engine_taken_event_is_not_mapped_test) {
     TestEngine engine(appPath("good"), boundFeature);
     BOOST_REQUIRE(engine.initialize());
-    engine.take_ = true;
+    engine.take(true);
 
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
     engine.offer(keyDown(SDLK_W));
 
-    BOOST_CHECK_EQUAL(engine.offered_.size(), 1u);
+    BOOST_CHECK_EQUAL(engine.offered().size(), 1u);
     BOOST_CHECK_EQUAL(recorder.events_.size(), 0u);
 }
 
@@ -262,7 +271,7 @@ BOOST_AUTO_TEST_CASE(engine_quit_survives_a_taken_event_test) {
 
     TestEngine taking(appPath("good"), boundFeature);
     BOOST_REQUIRE(taking.initialize());
-    taking.take_ = true;
+    taking.take(true);
     taking.offer(quit);
     BOOST_CHECK(taking.quitting());
 }

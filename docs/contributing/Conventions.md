@@ -99,6 +99,10 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
   array of pointers that are not reassigned is `const char* const names[]`. clang-tidy's
   `misc-const-correctness` reports a local that could be `const`. Its fix puts the `const`
   after the type, so do not apply that fix as it stands.
+- **A class keeps its data members private.** A derived class reaches its base's state through a
+  protected accessor, such as `logger()` or `registry()`. A struct whose data members are all
+  public is a record, and is exempt. clang-tidy's `misc-non-private-member-variables-in-classes`
+  reports a protected data member, and a public one in a class that also has private data.
 - **Pass a non-trivial type by `const` reference**, including a `boost::shared_ptr` and a
   `std::string`. clang-tidy's `performance-unnecessary-value-param` also accepts a by-value
   parameter that is moved from, but this tree uses the `const` reference in both cases.

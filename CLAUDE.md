@@ -64,7 +64,7 @@ Neither `ninja` nor `ctest` is on a plain shell's PATH: those two lines need a d
 environment, and `scripts\build.cmd` and `scripts\test.cmd` are the same commands with one
 entered. [docs/contributing/Build.md](docs/contributing/Build.md) covers configuring from a cold
 tree, the options, and what has to be installed first. The tree is clean at cpplint, at `/W4`
-with `/WX`, at `/analyze` and at the 194 clang-tidy checks left enabled, so **every finding is a
+with `/WX`, at `/analyze` and at the 195 clang-tidy checks left enabled, so **every finding is a
 new one**.
 
 ## Rules that cost the most when broken

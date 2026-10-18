@@ -43,6 +43,17 @@ class Device {
     virtual void flush() {}
 
  protected:
+    /**
+     * @return the event context this device's events are raised in
+     **/
+    const boost::shared_ptr<v3d::event::Context>& context() const noexcept;
+
+    /**
+     * @return the dispatcher this device raises its events through
+     **/
+    const boost::shared_ptr<entt::dispatcher>& dispatcher() const noexcept;
+
+ private:
     boost::shared_ptr<v3d::event::Context> context_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
 };

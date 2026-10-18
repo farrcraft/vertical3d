@@ -1,7 +1,7 @@
 # The check list clang-tidy runs under -DV3D_CLANG_TIDY=ON. Four families are enabled and
 # named checks are subtracted, rather than the live checks being listed one by one: a name
 # clang-tidy does not recognise is not an error, so a list that has gone stale turns findings
-# on and fails loudly instead of quietly covering less. 194 of the 206 checks in these families
+# on and fails loudly instead of quietly covering less. 195 of the 206 checks in these families
 # are live, and the tree is clean at all of them.
 #
 # The cppcoreguidelines, modernize and google families are not enabled at all. Each argues with
@@ -46,7 +46,6 @@ Checks: >
   -misc-include-cleaner,
   -misc-multiple-inheritance,
   -misc-no-recursion,
-  -misc-non-private-member-variables-in-classes,
   -readability-ambiguous-smartptr-reset-call,
   -readability-container-contains,
   -readability-identifier-length,
@@ -82,3 +81,7 @@ CheckOptions:
   # or a container allocates. The check matches the exact type, so without this every lambda that
   # captures a string has a move constructor that may throw.
   bugprone-exception-escape.IgnoredExceptions: 'bad_array_new_length'
+  # A class whose data members are all public is a plain record, built with designated
+  # initialisers and read field by field. The check is for a class that keeps an invariant
+  # over its members, so a mix of public and private data, or protected data, is reported.
+  misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: 'true'

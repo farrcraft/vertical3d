@@ -635,20 +635,20 @@ Gltf::Gltf(const boost::shared_ptr<v3d::log::Logger>& logger) :
 /**
  **/
 boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
-    logger_->get()->info("Looking for gltf asset at: {}", name);
+    logger()->get()->info("Looking for gltf asset at: {}", name);
 
     const std::string path(name);
     const cgltf_options options{};
     cgltf_data* data = nullptr;
 
     if (cgltf_parse_file(&options, path.c_str(), &data) != cgltf_result_success) {
-        logger_->get()->error("Could not parse gltf asset: {}", name);
+        logger()->get()->error("Could not parse gltf asset: {}", name);
         return boost::shared_ptr<Asset>();
     }
     // a .gltf points at its buffers and a .glb carries them; either way nothing can be read
     // out of an accessor until they are resolved
     if (cgltf_load_buffers(&options, data, path.c_str()) != cgltf_result_success) {
-        logger_->get()->error("Could not load the buffers of gltf asset: {}", name);
+        logger()->get()->error("Could not load the buffers of gltf asset: {}", name);
         cgltf_free(data);
         return boost::shared_ptr<Asset>();
     }
@@ -657,7 +657,7 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
     // requires a primitive's attributes to share one count, and a sampler's output to match its
     // input. It does not compare a skin's inverse bind matrices with its joints.
     if (cgltf_validate(data) != cgltf_result_success) {
-        logger_->get()->error("Gltf asset failed validation: {}", name);
+        logger()->get()->error("Gltf asset failed validation: {}", name);
         cgltf_free(data);
         return boost::shared_ptr<Asset>();
     }
@@ -671,7 +671,7 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
         const cgltf_skin* skin = firstSkin(*start);
         if (skin != nullptr && skin->joints_count > 0) {
             if (!bindsEveryJoint(*skin)) {
-                logger_->get()->error("The skin of gltf asset {} does not give each of its joints an inverse bind matrix",
+                logger()->get()->error("The skin of gltf asset {} does not give each of its joints an inverse bind matrix",
                     name);
                 cgltf_free(data);
                 return boost::shared_ptr<Asset>();
@@ -713,24 +713,24 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
     cgltf_free(data);
 
     if (dropped.skins) {
-        logger_->get()->warn("{} binds meshes to more than one skin. The first is kept, and a mesh bound to another "
+        logger()->get()->warn("{} binds meshes to more than one skin. The first is kept, and a mesh bound to another "
             "follows a joint of it rigidly", name);
     }
     if (dropped.influences) {
-        logger_->get()->warn("{} gives some vertices more than four influences, and only the first four are kept", name);
+        logger()->get()->warn("{} gives some vertices more than four influences, and only the first four are kept", name);
     }
     if (dropped.channels) {
-        logger_->get()->warn("{} animates nodes that are not joints of its skeleton, which no clip keeps", name);
+        logger()->get()->warn("{} animates nodes that are not joints of its skeleton, which no clip keeps", name);
     }
     if (dropped.unweighted) {
-        logger_->get()->warn("{} has skinned vertices with no weight, which follow the skeleton's first root", name);
+        logger()->get()->warn("{} has skinned vertices with no weight, which follow the skeleton's first root", name);
     }
     if (dropped.lines) {
-        logger_->get()->warn("{} has primitives of points or lines, which a model of triangles leaves out", name);
+        logger()->get()->warn("{} has primitives of points or lines, which a model of triangles leaves out", name);
     }
 
     if (model->empty()) {
-        logger_->get()->error("No geometry in gltf asset: {}", name);
+        logger()->get()->error("No geometry in gltf asset: {}", name);
         return boost::shared_ptr<Asset>();
     }
 
@@ -744,20 +744,20 @@ boost::shared_ptr<v3d::image::Image> Gltf::decodeEmbedded(const cgltf_image& ima
 
     const std::string kind = readerFor(image);
     if (kind.empty()) {
-        logger_->get()->warn("The base colour texture of {} is embedded as {}, which is not a format glTF "
+        logger()->get()->warn("The base colour texture of {} is embedded as {}, which is not a format glTF "
             "allows embedded, so the model has no texture", model,
             image.mime_type == nullptr ? "nothing in particular" : image.mime_type);
         return empty;
     }
 
-    v3d::image::Factory factory(logger_);
+    v3d::image::Factory factory(logger());
 
     // a .glb keeps its images in its own buffer, which cgltf_load_buffers has already
     // resolved by the time this runs
     if (image.buffer_view != nullptr) {
         const unsigned char* bytes = cgltf_buffer_view_data(image.buffer_view);
         if (bytes == nullptr) {
-            logger_->get()->error("The embedded base colour texture of {} has no bytes behind it", model);
+            logger()->get()->error("The embedded base colour texture of {} has no bytes behind it", model);
             return empty;
         }
         return factory.read(bytes, static_cast<std::size_t>(image.buffer_view->size), kind);
@@ -770,13 +770,13 @@ boost::shared_ptr<v3d::image::Image> Gltf::decodeEmbedded(const cgltf_image& ima
     }
     const char* comma = std::strchr(image.uri, ',');
     if (comma == nullptr || comma - image.uri < 7 || std::strncmp(comma - 7, ";base64", 7) != 0) {
-        logger_->get()->error("The base colour texture of {} is a data uri that is not base64", model);
+        logger()->get()->error("The base colour texture of {} is a data uri that is not base64", model);
         return empty;
     }
     // four base64 characters carry three bytes, less however many the padding stands in for
     const std::size_t encoded = std::strlen(comma + 1);
     if (encoded == 0 || encoded % 4 != 0) {
-        logger_->get()->error("The base colour texture of {} is a data uri of the wrong length", model);
+        logger()->get()->error("The base colour texture of {} is a data uri of the wrong length", model);
         return empty;
     }
     std::size_t decoded = encoded / 4 * 3;
@@ -790,7 +790,7 @@ boost::shared_ptr<v3d::image::Image> Gltf::decodeEmbedded(const cgltf_image& ima
     const cgltf_options options{};
     void* bytes = nullptr;
     if (cgltf_load_buffer_base64(&options, decoded, comma + 1, &bytes) != cgltf_result_success || bytes == nullptr) {
-        logger_->get()->error("The base colour texture of {} could not be decoded out of its data uri", model);
+        logger()->get()->error("The base colour texture of {} could not be decoded out of its data uri", model);
         return empty;
     }
     boost::shared_ptr<v3d::image::Image> result =

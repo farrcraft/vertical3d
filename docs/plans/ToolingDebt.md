@@ -58,7 +58,7 @@ names it as the one Python file in the tree.
 
 ### Steps 5 to 17 — One check each
 
-**Steps 5 to 12 done; 13 to 17 open.**
+**Steps 5 to 13 done; 14 to 17 open.**
 
 - Steps 5 to 8 shared one discovery pass and one verification pass. Several files carried sites
   of more than one check.
@@ -98,6 +98,15 @@ names it as the one Python file in the tree.
   Where two sources reached one header it inserted `const` twice, and on an array of pointers
   it made the pointee `const` a second time. Those 25 lines and one guard object declared
   with its struct were fixed by hand.
+- Step 13 found 12 sites once a class whose data members are all public was exempted, which
+  `.clang-tidy` now does through the check's option. Ten were protected members of api base
+  classes: the loggers of `asset::Loader`, `image::Reader` and `image::Writer`, the context and
+  dispatcher of `input::Device`, the registries of `ecs::System` and `engine::Engine`, and the
+  name and type of `asset::Asset`. Each is private behind a protected accessor of the same name,
+  and `Asset` already had public ones. `Engine::registry()` returns the registry writable, so an
+  app still owns its entities as before. The other two were test doubles that mixed public and
+  private data.
+- A class outside the tree that derives from one of those bases has to call the accessor.
 
 Each step follows the same procedure:
 

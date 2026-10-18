@@ -27,6 +27,12 @@ class System {
     virtual bool simulate(float step) = 0;
 
  protected:
+    /**
+     * @return the registry holding the entities this system works on
+     **/
+    entt::registry* registry() const noexcept;
+
+ private:
     entt::registry* registry_;
 };
 

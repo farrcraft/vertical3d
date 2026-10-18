@@ -24,7 +24,7 @@ class CountingSystem final : public v3d::ecs::System {
 
     bool simulate(float /* step */) override {
         ticks_++;
-        registry_->view<v3d::ecs::component::Position1D>().each(
+        registry()->view<v3d::ecs::component::Position1D>().each(
             [](v3d::ecs::component::Position1D& position) {
                 position.value = position.value + 1.0f;
             });

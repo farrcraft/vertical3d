@@ -68,15 +68,15 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         }
         const glm::vec2 position(event.button.x, event.button.y);
         state_(position);
-        dispatcher_->trigger<v3d::event::kind::MouseButton>(
-            v3d::event::kind::MouseButton(buttonName, position, context_, pressed));
+        dispatcher()->trigger<v3d::event::kind::MouseButton>(
+            v3d::event::kind::MouseButton(buttonName, position, context(), pressed));
         break;
     }
     case SDL_EVENT_MOUSE_MOTION: {
         const glm::vec2 position(event.motion.x, event.motion.y);
         state_(position);
-        dispatcher_->trigger<v3d::event::kind::MouseMotion>(
-            v3d::event::kind::MouseMotion({.position = position, .motion = glm::vec2(event.motion.xrel, event.motion.yrel)}, context_));
+        dispatcher()->trigger<v3d::event::kind::MouseMotion>(
+            v3d::event::kind::MouseMotion({.position = position, .motion = glm::vec2(event.motion.xrel, event.motion.yrel)}, context()));
         return true;  // motion is not a bindable source event - it has no discrete name
     }
     case SDL_EVENT_MOUSE_WHEEL: {
@@ -84,8 +84,8 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         // reads what the whole flick came to
         const glm::vec2 notches(event.wheel.x, event.wheel.y);
         state_.wheel(notches.y);
-        dispatcher_->trigger<v3d::event::kind::MouseWheel>(
-            v3d::event::kind::MouseWheel({.notches = notches, .position = glm::vec2(event.wheel.mouse_x, event.wheel.mouse_y)}, context_));
+        dispatcher()->trigger<v3d::event::kind::MouseWheel>(
+            v3d::event::kind::MouseWheel({.notches = notches, .position = glm::vec2(event.wheel.mouse_x, event.wheel.mouse_y)}, context()));
         return true;  // a turn has no discrete name either, so nothing binds to one
     }
     default:
@@ -94,7 +94,7 @@ bool Mouse::handleEvent(const SDL_Event& event) {
 
     // trigger a source event so any mappers can propagate a mapped event, the same way
     // the keyboard does. The edge is the event's state, not its data.
-    v3d::event::publish(*dispatcher_, v3d::event::Source(buttonName, context_,
+    v3d::event::publish(*dispatcher(), v3d::event::Source(buttonName, context(),
         pressed ? v3d::event::State::Pressed : v3d::event::State::Released));
 
     return true;

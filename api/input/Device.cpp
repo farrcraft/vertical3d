@@ -12,4 +12,12 @@ Device::Device(const boost::shared_ptr<v3d::event::Context>& context, const boos
     dispatcher_(dispatcher) {
 }
 
+const boost::shared_ptr<v3d::event::Context>& Device::context() const noexcept {
+    return context_;
+}
+
+const boost::shared_ptr<entt::dispatcher>& Device::dispatcher() const noexcept {
+    return dispatcher_;
+}
+
 };  // namespace v3d::input

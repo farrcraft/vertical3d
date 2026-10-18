@@ -22,13 +22,13 @@ Image::Image(Type type, const boost::shared_ptr<v3d::log::Logger>& logger) : Loa
 /**
  **/
 boost::shared_ptr<Asset> Image::load(std::string_view name) {
-    logger_->get()->info("Looking for image asset at: {}", name);
-    v3d::image::Factory factory(logger_);
+    logger()->get()->info("Looking for image asset at: {}", name);
+    v3d::image::Factory factory(logger());
     const boost::shared_ptr<v3d::image::Image> image = factory.read(name);
     // an asset holding no image is indistinguishable from a loaded one until a
     // consumer dereferences it, so a read that failed comes back as no asset at all
     if (!image) {
-        logger_->get()->error("Could not read image asset: {}", name);
+        logger()->get()->error("Could not read image asset: {}", name);
         return boost::shared_ptr<Asset>();
     }
     return boost::make_shared<kind::Image>(std::string(name), type(), image);

@@ -15,18 +15,18 @@ drawing entities between simulation steps. How entities are drawn is in
 
 ## The registry
 
-`v3d::engine::Engine` holds one `entt::registry` by value, as the protected member `registry_`.
-An app's engine subclass inherits it. There is no accessor, so only the subclass reaches it
-directly, and it passes the registry to whatever else needs it: a pointer for a system, a
-reference for the render functions.
+`v3d::engine::Engine` holds one `entt::registry` by value. An app's engine subclass reaches it
+through `registry()`, which is protected and returns it writable. Nothing outside the subclass
+reaches it directly, so the subclass passes the registry to whatever else needs it: a pointer for
+a system, a reference for the render functions.
 
 An entity's components are added by the class that owns the entity's id, and read back through
 the registry:
 
 ```cpp
-registry_.emplace<v3d::ecs::component::Position2D>(id_, glm::vec2(0.0f));
+registry().emplace<v3d::ecs::component::Position2D>(id_, glm::vec2(0.0f));
 ...
-auto& position = registry_.get<v3d::ecs::component::Position2D>(id_);
+auto& position = registry().get<v3d::ecs::component::Position2D>(id_);
 position.value += velocity * step;
 ```
 
@@ -47,7 +47,7 @@ v3d::ecs::Ref selected_;
 ...
 selected_.set(clicked);
 ...
-const entt::entity target = selected_.get(registry_);   // entt::null once it is destroyed
+const entt::entity target = selected_.get(registry());   // entt::null once it is destroyed
 if (target != entt::null) { ... }
 ```
 
@@ -198,10 +198,10 @@ The rules:
 
 ```cpp
 bool MyEngine::simulate(float step) {
-    v3d::ecs::snapshot<v3d::ecs::component::Transform>(registry_);
-    v3d::ecs::snapshot<v3d::ecs::component::Playback>(registry_);
+    v3d::ecs::snapshot<v3d::ecs::component::Transform>(registry());
+    v3d::ecs::snapshot<v3d::ecs::component::Playback>(registry());
     // ... move things ...
-    v3d::ecs::component::advance(registry_, step);
+    v3d::ecs::component::advance(registry(), step);
     return true;
 }
 ```

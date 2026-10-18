@@ -116,14 +116,17 @@ class CountingPng final : public v3d::asset::Loader {
     }
 
     boost::shared_ptr<v3d::asset::Asset> load(std::string_view name) override {
-        loads++;
+        loads_++;
         return png_.load(name);
     }
 
-    unsigned int loads = 0;
+    unsigned int loads() const {
+        return loads_;
+    }
 
  private:
     v3d::asset::media::loader::Image png_;
+    unsigned int loads_ = 0;
 };
 
 /**
@@ -380,7 +383,7 @@ BOOST_AUTO_TEST_CASE(an_uploaded_albedo_is_not_read_again) {
     const MeshHandle crate = meshes.add("crate", triangle("pixel.png"));
     const MeshHandle barrel = meshes.add("barrel", triangle("pixel.png"));
 
-    BOOST_CHECK_EQUAL(png->loads, 1U);
+    BOOST_CHECK_EQUAL(png->loads(), 1U);
     BOOST_CHECK(meshes.resolve(crate)->parts.at(0).texture == meshes.resolve(barrel)->parts.at(0).texture);
     BOOST_CHECK(headless.silent());
 }
