@@ -15,18 +15,18 @@ namespace v3d::ui::paint {
  **/
 
 /** the background of a panel or a window, slightly see-through **/
-constexpr glm::vec4 PANEL_COLOR{0.05f, 0.06f, 0.09f, 0.92f};
+constexpr glm::vec4 PANEL_COLOR{0.05F, 0.06F, 0.09F, 0.92F};
 /** an outline **/
-constexpr glm::vec4 EDGE_COLOR{0.35f, 0.38f, 0.45f, 1.0f};
+constexpr glm::vec4 EDGE_COLOR{0.35F, 0.38F, 0.45F, 1.0F};
 /** ordinary text **/
-constexpr glm::vec4 TEXT_COLOR{0.78f, 0.80f, 0.84f, 1.0f};
+constexpr glm::vec4 TEXT_COLOR{0.78F, 0.80F, 0.84F, 1.0F};
 /** text that is disabled, or a placeholder **/
-constexpr glm::vec4 DIM_TEXT_COLOR{0.45f, 0.47f, 0.52f, 1.0f};
+constexpr glm::vec4 DIM_TEXT_COLOR{0.45F, 0.47F, 0.52F, 1.0F};
 /** what is drawn behind a selected item **/
-constexpr glm::vec4 HIGHLIGHT_COLOR{0.16f, 0.34f, 0.58f, 1.0f};
+constexpr glm::vec4 HIGHLIGHT_COLOR{0.16F, 0.34F, 0.58F, 1.0F};
 /** the filled part of a bar **/
-constexpr glm::vec4 FILL_COLOR{0.30f, 0.62f, 0.36f, 1.0f};
+constexpr glm::vec4 FILL_COLOR{0.30F, 0.62F, 0.36F, 1.0F};
 /** a raised surface: a widget in the immediate ui, a hovered toolbar button in the retained one **/
-constexpr glm::vec4 RAISED_COLOR{0.16f, 0.18f, 0.24f, 1.0f};
+constexpr glm::vec4 RAISED_COLOR{0.16F, 0.18F, 0.24F, 1.0F};
 
 };  // namespace v3d::ui::paint

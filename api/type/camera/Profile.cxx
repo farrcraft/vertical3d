@@ -15,10 +15,10 @@ namespace v3d::type::camera {
 
 Profile::Profile(const std::string& name) :
     name_(name),
-    eye_(0.0f, 0.0f, -1.0f),
-    direction_(0.0f, 0.0f, 1.0f),
-    right_(1.0f, 0.0f, 0.0f),
-    up_(0.0f, 1.0f, 0.0f),
+    eye_(0.0F, 0.0F, -1.0F),
+    direction_(0.0F, 0.0F, 1.0F),
+    right_(1.0F, 0.0F, 0.0F),
+    up_(0.0F, 1.0F, 0.0F),
     hand_(Hand::UpCrossDirection),
     orthoZoom_(DEFAULT_ORTHO_ZOOM),
     pixelAspect_(DEFAULT_PIXEL_ASPECT),
@@ -29,7 +29,7 @@ Profile::Profile(const std::string& name) :
     size_(),
     // glm leaves the quaternion uninitialized, and Camera::createView casts it before
     // anything else has a chance to set it
-rotation_(1.0f, 0.0f, 0.0f, 0.0f),
+rotation_(1.0F, 0.0F, 0.0F, 0.0F),
 basisValid_(false) {
 }
 
@@ -47,7 +47,7 @@ Profile::Profile(const std::string& name, const Frame& frame) :
     fov_(DEFAULT_FOV),
     options_(OPTION_ORTHOGRAPHIC),
     size_(),
-    rotation_(1.0f, 0.0f, 0.0f, 0.0f),
+    rotation_(1.0F, 0.0F, 0.0F, 0.0F),
     basisValid_(false) {
 }
 

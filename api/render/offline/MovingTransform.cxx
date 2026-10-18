@@ -20,7 +20,7 @@ namespace v3d::render::offline {
 namespace {
 
 /** The least determinant, relative to the basis lengths, that counts as invertible. **/
-constexpr float SMALLEST_DETERMINANT = 1.0e-6f;
+constexpr float SMALLEST_DETERMINANT = 1.0e-6F;
 
 /**
  * A matrix as a translation, a rotation and a scale along each axis, with any shear folded
@@ -37,7 +37,7 @@ class Parts {
             basis[axis] /= scale[axis];
         }
         // a reflection is a negative scale, kept on x so the rest is a rotation
-        if (glm::determinant(basis) < 0.0f) {
+        if (glm::determinant(basis) < 0.0F) {
             scale.x = -scale.x;
             basis[0] = -basis[0];
         }
@@ -57,12 +57,12 @@ class Parts {
 bool invertible(const glm::mat4x4 & matrix) {
     const glm::mat3 basis(matrix);
     const float lengths = glm::length(basis[0]) * glm::length(basis[1]) * glm::length(basis[2]);
-    return lengths > 0.0f && std::fabs(glm::determinant(basis)) > SMALLEST_DETERMINANT * lengths;
+    return lengths > 0.0F && std::fabs(glm::determinant(basis)) > SMALLEST_DETERMINANT * lengths;
 }
 
 };  // namespace
 
-MovingTransform::MovingTransform() : MovingTransform(glm::mat4x4(1.0f)) {
+MovingTransform::MovingTransform() : MovingTransform(glm::mat4x4(1.0F)) {
 }
 
 MovingTransform::MovingTransform(const glm::mat4x4 & still) :
@@ -97,17 +97,17 @@ glm::mat4x4 MovingTransform::at(float time) const {
     if (!moving_ || !(times_.y > times_.x)) {
         return open_;
     }
-    const float u = std::clamp((time - times_.x) / (times_.y - times_.x), 0.0f, 1.0f);
-    if (u <= 0.0f) {
+    const float u = std::clamp((time - times_.x) / (times_.y - times_.x), 0.0F, 1.0F);
+    if (u <= 0.0F) {
         return open_;
     }
-    if (u >= 1.0f) {
+    if (u >= 1.0F) {
         return close_;
     }
     if (linear_) {
-        return open_ * (1.0f - u) + close_ * u;
+        return open_ * (1.0F - u) + close_ * u;
     }
-    glm::mat4x4 result = glm::translate(glm::mat4x4(1.0f), glm::mix(openTranslation_, closeTranslation_, u));
+    glm::mat4x4 result = glm::translate(glm::mat4x4(1.0F), glm::mix(openTranslation_, closeTranslation_, u));
     result = result * glm::mat4_cast(glm::slerp(openRotation_, closeRotation_, u));
     return glm::scale(result, glm::mix(openScale_, closeScale_, u));
 }

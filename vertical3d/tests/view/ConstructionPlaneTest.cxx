@@ -17,12 +17,12 @@ BOOST_AUTO_TEST_CASE(constructionplane_geometry_test) {
     v3d::render::realtime::canvas::Line canvas;
 
     grid.lines(4);
-    grid.spacing(1.0f);
+    grid.spacing(1.0F);
     grid.draw(camera, &canvas);
 
     // one line each way per division, plus the one that closes the square, and two vertices
     // per segment because a line list shares nothing
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 2u * 2u * (4u + 1u));
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 2U * 2U * (4U + 1U));
 }
 
 BOOST_AUTO_TEST_CASE(constructionplane_extent_test) {
@@ -33,25 +33,25 @@ BOOST_AUTO_TEST_CASE(constructionplane_extent_test) {
     // the grid is centred on the origin, so a grid four lines across at unit spacing runs
     // from -2 to 2 in both directions
     grid.lines(4);
-    grid.spacing(1.0f);
+    grid.spacing(1.0F);
     grid.draw(camera, &canvas);
 
-    float minU = 0.0f;
-    float maxU = 0.0f;
-    float minV = 0.0f;
-    float maxV = 0.0f;
+    float minU = 0.0F;
+    float maxU = 0.0F;
+    float minV = 0.0F;
+    float maxV = 0.0F;
     for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
         minU = std::min(minU, vertex.position.x);
         maxU = std::max(maxU, vertex.position.x);
         minV = std::min(minV, vertex.position.y);
         maxV = std::max(maxV, vertex.position.y);
     }
-    BOOST_CHECK_CLOSE(minU, -2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(maxU, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(minU, -2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(maxU, 2.0F, 0.01F);
     // a default camera is orthographic and looks along +z, so its own right and up are x
     // and y - the grid lies in the plane the view faces
-    BOOST_CHECK_CLOSE(minV, -2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(maxV, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(minV, -2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(maxV, 2.0F, 0.01F);
 }
 
 BOOST_AUTO_TEST_CASE(constructionplane_perspective_plane_test) {
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_perspective_plane_test) {
 
     BOOST_REQUIRE(!canvas.empty());
     for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
-        BOOST_CHECK_SMALL(vertex.position.y, 0.001f);
+        BOOST_CHECK_SMALL(vertex.position.y, 0.001F);
     }
 }
 
@@ -79,18 +79,18 @@ BOOST_AUTO_TEST_CASE(constructionplane_emphasis_test) {
     // interval in the major colour, and everything else in the minor one
     grid.lines(4);
     grid.intervals(2);
-    grid.spacing(1.0f);
+    grid.spacing(1.0F);
     grid.draw(camera, &canvas);
 
     unsigned int distinct = 0;
-    glm::vec4 seen(-1.0f);
+    glm::vec4 seen(-1.0F);
     for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
         if (vertex.colour != seen) {
             distinct++;
             seen = vertex.colour;
         }
     }
-    BOOST_CHECK_GT(distinct, 1u);
+    BOOST_CHECK_GT(distinct, 1U);
 }
 
 BOOST_AUTO_TEST_CASE(constructionplane_degenerate_test) {
@@ -105,12 +105,12 @@ BOOST_AUTO_TEST_CASE(constructionplane_degenerate_test) {
     BOOST_CHECK(canvas.empty());
 
     grid.lines(10);
-    grid.spacing(0.0f);
+    grid.spacing(0.0F);
     grid.draw(camera, &canvas);
     BOOST_CHECK(canvas.empty());
 
     // a null canvas is not dereferenced
-    grid.spacing(1.0f);
+    grid.spacing(1.0F);
     grid.draw(camera, nullptr);
 }
 

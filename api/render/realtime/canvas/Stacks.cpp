@@ -19,7 +19,7 @@ TransformStack::TransformStack() {
  **/
 void TransformStack::reset() {
     transforms_.clear();
-    transforms_.push_back(glm::mat4(1.0f));
+    transforms_.push_back(glm::mat4(1.0F));
 }
 
 /**
@@ -92,7 +92,7 @@ bool ClipStack::clipped() const noexcept {
 /**
  **/
 glm::vec4 ClipStack::top() const noexcept {
-    return clips_.empty() ? glm::vec4(0.0f) : clips_.back();
+    return clips_.empty() ? glm::vec4(0.0F) : clips_.back();
 }
 
 };  // namespace v3d::render::realtime::canvas

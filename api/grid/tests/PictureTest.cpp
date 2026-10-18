@@ -72,10 +72,10 @@ BOOST_AUTO_TEST_CASE(an_unknown_glyph_is_handed_back) {
         return;
     }
     const v3d::grid::TileGrid& grid = *picture.grid;
-    BOOST_REQUIRE_EQUAL(picture.unknown.size(), 1u);
+    BOOST_REQUIRE_EQUAL(picture.unknown.size(), 1U);
     BOOST_CHECK_EQUAL(picture.unknown[0].glyph, '@');
     const std::vector<TileCoord>& at = picture.unknown[0].tiles;
-    BOOST_REQUIRE_EQUAL(at.size(), 2u);
+    BOOST_REQUIRE_EQUAL(at.size(), 2U);
     BOOST_CHECK(at[0] == TileCoord({0, 0}));
     BOOST_CHECK(at[1] == TileCoord({1, 1}));
     BOOST_CHECK(!grid.passable({0, 0}));
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(a_picture_that_is_not_a_rectangle_is_refused) {
  * is refused with a reason rather than thrown.
  **/
 BOOST_AUTO_TEST_CASE(a_tile_size_that_is_not_positive_is_refused) {
-    const float sizes[] = {0.0f, -1.0f, std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(),
+    const float sizes[] = {0.0F, -1.0F, std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(),
         std::numeric_limits<float>::max()};
     for (const float size : sizes) {
         v3d::grid::Picture picture;
@@ -121,16 +121,16 @@ BOOST_AUTO_TEST_CASE(a_tile_size_that_is_not_positive_is_refused) {
  * than thrown.
  **/
 BOOST_AUTO_TEST_CASE(a_picture_is_placed_by_its_corner) {
-    const v3d::grid::Picture placed = v3d::grid::fromPicture({"..", ".."}, legend(), 1.0f, glm::vec3(20.0f, 0.0f, -4.0f));
+    const v3d::grid::Picture placed = v3d::grid::fromPicture({"..", ".."}, legend(), 1.0F, glm::vec3(20.0F, 0.0F, -4.0F));
     if (!placed.grid) {
         BOOST_ERROR("the picture was refused: " << placed.error);
         return;
     }
-    BOOST_CHECK(placed.grid->worldMin() == glm::vec3(20.0f, 0.0f, -4.0f));
+    BOOST_CHECK(placed.grid->worldMin() == glm::vec3(20.0F, 0.0F, -4.0F));
 
     v3d::grid::Picture refused;
-    BOOST_CHECK_NO_THROW(refused = v3d::grid::fromPicture({"."}, legend(), 1.0f,
-        glm::vec3(std::numeric_limits<float>::infinity(), 0.0f, 0.0f)));
+    BOOST_CHECK_NO_THROW(refused = v3d::grid::fromPicture({"."}, legend(), 1.0F,
+        glm::vec3(std::numeric_limits<float>::infinity(), 0.0F, 0.0F)));
     BOOST_CHECK(!refused.grid.has_value());
     BOOST_CHECK(!refused.error.empty());
 }
@@ -139,14 +139,14 @@ BOOST_AUTO_TEST_CASE(a_picture_is_placed_by_its_corner) {
  * The tile size reaches the grid.
  **/
 BOOST_AUTO_TEST_CASE(the_tile_size_is_passed_through) {
-    const v3d::grid::Picture picture = v3d::grid::fromPicture({"."}, legend(), 2.0f);
+    const v3d::grid::Picture picture = v3d::grid::fromPicture({"."}, legend(), 2.0F);
 
     if (!picture.grid) {
         BOOST_ERROR("the picture was refused: " << picture.error);
         return;
     }
     const v3d::grid::TileGrid& grid = *picture.grid;
-    BOOST_CHECK_EQUAL(grid.tileSize(), 2.0f);
+    BOOST_CHECK_EQUAL(grid.tileSize(), 2.0F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

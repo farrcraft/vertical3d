@@ -48,11 +48,11 @@ class Tracer final {
     class Seen final {
      public:
         /** Premultiplied, as Ci is, with the background already behind it. **/
-        glm::vec3 colour = glm::vec3(0.0f);
-        glm::vec3 opacity = glm::vec3(0.0f);
+        glm::vec3 colour = glm::vec3(0.0F);
+        glm::vec3 opacity = glm::vec3(0.0F);
         /** Whether the ray hit anything, and the distance to the first hit. **/
         bool hit = false;
-        float distance = 0.0f;
+        float distance = 0.0F;
     };
     Seen see(const v3d::type::geometry::Ray & ray);
 

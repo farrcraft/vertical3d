@@ -27,8 +27,8 @@ typedef v3d::render::offline::rib::ParameterList ParameterList;
  * A context with a camera and nothing in it, ready for a shader and some lights.
  **/
 void prepare(v3d::moya::RenderContext* rc) {
-    rc->imageResolution({64, 48}, 1.0f);
-    rc->clipping({.hither = 1.0f, .yon = 100.0f});
+    rc->imageResolution({64, 48}, 1.0F);
+    rc->clipping({.hither = 1.0F, .yon = 100.0F});
     rc->prepareWorld();
 }
 
@@ -46,8 +46,8 @@ void add(ParameterList* list, const std::string & name, Declaration::Type type,
  **/
 /** Which way a grid faces, and its colour. **/
 struct Surface {
-    glm::vec3 normal{0.0f, 0.0f, -1.0f};
-    glm::vec3 colour{1.0f};
+    glm::vec3 normal{0.0F, 0.0F, -1.0F};
+    glm::vec3 colour{1.0F};
 };
 
 v3d::moya::reyes::MicroPolygonGrid facing(const Surface & surface) {
@@ -57,7 +57,7 @@ v3d::moya::reyes::MicroPolygonGrid facing(const Surface & surface) {
     for (unsigned int i = 0; i < 2; i++) {
         for (unsigned int j = 0; j < 2; j++) {
             v3d::moya::Vertex vert;
-            vert.point(glm::vec3(static_cast<float>(i), static_cast<float>(j), 5.0f));
+            vert.point(glm::vec3(static_cast<float>(i), static_cast<float>(j), 5.0F));
             vert.normal(normal);
             vert.geometricNormal(normal);
             vert.color(colour);
@@ -81,30 +81,30 @@ BOOST_AUTO_TEST_CASE(moya_matte_under_one_light_test) {
     rc.lightSource({.shader = "distantlight", .handle = "key"}, ParameterList());
     rc.surface("matte", ParameterList());
     const v3d::moya::Shading shading = rc.shading();
-    BOOST_REQUIRE_EQUAL(shading.lights.size(), 1u);
+    BOOST_REQUIRE_EQUAL(shading.lights.size(), 1U);
 
-    v3d::moya::reyes::MicroPolygonGrid straight = facing({.normal = glm::vec3(0.0f, 0.0f, -1.0f), .colour = glm::vec3(1.0f)});
+    v3d::moya::reyes::MicroPolygonGrid straight = facing({.normal = glm::vec3(0.0F, 0.0F, -1.0F), .colour = glm::vec3(1.0F)});
     rc.shader().shade(shading, &straight);
     for (unsigned int i = 0; i < 2; i++) {
         for (unsigned int j = 0; j < 2; j++) {
-            BOOST_CHECK_CLOSE(straight.vertex(i, j).color().r, 1.0f, 0.1f);
+            BOOST_CHECK_CLOSE(straight.vertex(i, j).color().r, 1.0F, 0.1F);
         }
     }
 
     // sixty degrees off the light, whose cosine is a half
     v3d::moya::reyes::MicroPolygonGrid tilted =
-        facing({.normal = glm::vec3(0.8660254f, 0.0f, -0.5f), .colour = glm::vec3(1.0f)});
+        facing({.normal = glm::vec3(0.8660254F, 0.0F, -0.5F), .colour = glm::vec3(1.0F)});
     rc.shader().shade(shading, &tilted);
-    BOOST_CHECK_CLOSE(tilted.vertex(0, 0).color().r, 0.5f, 0.1f);
+    BOOST_CHECK_CLOSE(tilted.vertex(0, 0).color().r, 0.5F, 0.1F);
 
     /*
         A surface whose normal points away from the camera is shaded as though it did not.
         matte turns it with faceforward, so a polygon wound the other way is not simply
         black.
     */
-    v3d::moya::reyes::MicroPolygonGrid backwards = facing({.normal = glm::vec3(0.0f, 0.0f, 1.0f), .colour = glm::vec3(1.0f)});
+    v3d::moya::reyes::MicroPolygonGrid backwards = facing({.normal = glm::vec3(0.0F, 0.0F, 1.0F), .colour = glm::vec3(1.0F)});
     rc.shader().shade(shading, &backwards);
-    BOOST_CHECK_CLOSE(backwards.vertex(0, 0).color().r, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(backwards.vertex(0, 0).color().r, 1.0F, 0.1F);
 }
 
 /**
@@ -117,13 +117,13 @@ BOOST_AUTO_TEST_CASE(moya_a_light_behind_the_surface_test) {
     prepare(&rc);
     ParameterList behind;
     // aimed back toward the camera, so it shines on the far side of a surface facing it
-    add(&behind, "to", Declaration::Type::POINT, { 0.0f, 0.0f, -1.0f });
+    add(&behind, "to", Declaration::Type::POINT, { 0.0F, 0.0F, -1.0F });
     rc.lightSource({.shader = "distantlight", .handle = "back"}, behind);
     rc.surface("matte", ParameterList());
 
-    v3d::moya::reyes::MicroPolygonGrid grid = facing({.normal = glm::vec3(0.0f, 0.0f, -1.0f), .colour = glm::vec3(1.0f)});
+    v3d::moya::reyes::MicroPolygonGrid grid = facing({.normal = glm::vec3(0.0F, 0.0F, -1.0F), .colour = glm::vec3(1.0F)});
     rc.shader().shade(rc.shading(), &grid);
-    BOOST_CHECK_SMALL(grid.vertex(0, 0).color().r, 0.0001f);
+    BOOST_CHECK_SMALL(grid.vertex(0, 0).color().r, 0.0001F);
 }
 
 /**
@@ -136,19 +136,19 @@ BOOST_AUTO_TEST_CASE(moya_constant_is_the_flat_colour_test) {
     rc.surface("constant", ParameterList());
 
     v3d::moya::reyes::MicroPolygonGrid grid =
-        facing({.normal = glm::vec3(0.0f, 0.0f, -1.0f), .colour = glm::vec3(0.25f, 0.5f, 0.75f)});
+        facing({.normal = glm::vec3(0.0F, 0.0F, -1.0F), .colour = glm::vec3(0.25F, 0.5F, 0.75F)});
     rc.shader().shade(rc.shading(), &grid);
-    BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().r, 0.25f, 0.1f);
-    BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().g, 0.5f, 0.1f);
-    BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().b, 0.75f, 0.1f);
+    BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().r, 0.25F, 0.1F);
+    BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().g, 0.5F, 0.1F);
+    BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().b, 0.75F, 0.1F);
 
     // and a scene that names no surface at all draws the same thing
     v3d::moya::RenderContext bare;
     prepare(&bare);
     v3d::moya::reyes::MicroPolygonGrid unnamed =
-        facing({.normal = glm::vec3(0.0f, 0.0f, -1.0f), .colour = glm::vec3(0.25f, 0.5f, 0.75f)});
+        facing({.normal = glm::vec3(0.0F, 0.0F, -1.0F), .colour = glm::vec3(0.25F, 0.5F, 0.75F)});
     bare.shader().shade(bare.shading(), &unnamed);
-    BOOST_CHECK_CLOSE(unnamed.vertex(1, 1).color().b, 0.75f, 0.1f);
+    BOOST_CHECK_CLOSE(unnamed.vertex(1, 1).color().b, 0.75F, 0.1F);
 }
 
 /**
@@ -163,32 +163,32 @@ BOOST_AUTO_TEST_CASE(moya_two_lights_test) {
 
     ParameterList fill;
     // aimed along negative x, so L - which points at the light - is along positive x
-    add(&fill, "to", Declaration::Type::POINT, { -1.0f, 0.0f, 0.0f });
-    add(&fill, "intensity", Declaration::Type::FLOAT, { 0.5f });
-    add(&fill, "lightcolor", Declaration::Type::COLOR, { 0.0f, 1.0f, 0.0f });
+    add(&fill, "to", Declaration::Type::POINT, { -1.0F, 0.0F, 0.0F });
+    add(&fill, "intensity", Declaration::Type::FLOAT, { 0.5F });
+    add(&fill, "lightcolor", Declaration::Type::COLOR, { 0.0F, 1.0F, 0.0F });
     rc.lightSource({.shader = "distantlight", .handle = "fill"}, fill);
     rc.surface("matte", ParameterList());
 
     // halfway between the two, so each is at forty five degrees
-    const glm::vec3 normal(0.70710678f, 0.0f, -0.70710678f);
-    const float cosine = 0.70710678f;
+    const glm::vec3 normal(0.70710678F, 0.0F, -0.70710678F);
+    const float cosine = 0.70710678F;
 
-    v3d::moya::reyes::MicroPolygonGrid both = facing({.normal = normal, .colour = glm::vec3(1.0f)});
+    v3d::moya::reyes::MicroPolygonGrid both = facing({.normal = normal, .colour = glm::vec3(1.0F)});
     rc.shader().shade(rc.shading(), &both);
-    BOOST_CHECK_CLOSE(both.vertex(0, 0).color().r, cosine, 0.1f);
-    BOOST_CHECK_CLOSE(both.vertex(0, 0).color().g, cosine + (0.5f * cosine), 0.1f);
+    BOOST_CHECK_CLOSE(both.vertex(0, 0).color().r, cosine, 0.1F);
+    BOOST_CHECK_CLOSE(both.vertex(0, 0).color().g, cosine + (0.5F * cosine), 0.1F);
 
     rc.illuminate("fill", false);
-    v3d::moya::reyes::MicroPolygonGrid one = facing({.normal = normal, .colour = glm::vec3(1.0f)});
+    v3d::moya::reyes::MicroPolygonGrid one = facing({.normal = normal, .colour = glm::vec3(1.0F)});
     rc.shader().shade(rc.shading(), &one);
-    BOOST_CHECK_CLOSE(one.vertex(0, 0).color().r, cosine, 0.1f);
+    BOOST_CHECK_CLOSE(one.vertex(0, 0).color().r, cosine, 0.1F);
     // the green the fill added is gone, so switching the light off changed the picture
-    BOOST_CHECK_CLOSE(one.vertex(0, 0).color().g, cosine, 0.1f);
+    BOOST_CHECK_CLOSE(one.vertex(0, 0).color().g, cosine, 0.1F);
 
     rc.illuminate("fill", true);
-    v3d::moya::reyes::MicroPolygonGrid back = facing({.normal = normal, .colour = glm::vec3(1.0f)});
+    v3d::moya::reyes::MicroPolygonGrid back = facing({.normal = normal, .colour = glm::vec3(1.0F)});
     rc.shader().shade(rc.shading(), &back);
-    BOOST_CHECK_CLOSE(back.vertex(0, 0).color().g, cosine + (0.5f * cosine), 0.1f);
+    BOOST_CHECK_CLOSE(back.vertex(0, 0).color().g, cosine + (0.5F * cosine), 0.1F);
 }
 
 /**
@@ -204,9 +204,9 @@ BOOST_AUTO_TEST_CASE(moya_illuminate_is_an_attribute_test) {
 
     rc.attributeBegin();
     rc.illuminate("key", false);
-    BOOST_CHECK_EQUAL(rc.shading().lights.size(), 0u);
+    BOOST_CHECK_EQUAL(rc.shading().lights.size(), 0U);
     rc.attributeEnd();
-    BOOST_CHECK_EQUAL(rc.shading().lights.size(), 1u);
+    BOOST_CHECK_EQUAL(rc.shading().lights.size(), 1U);
 }
 
 /**
@@ -218,11 +218,11 @@ BOOST_AUTO_TEST_CASE(moya_a_light_is_placed_test) {
     v3d::moya::RenderContext rc;
     prepare(&rc);
     // two units in front of the surface, on the camera's side of it
-    rc.translate(0.0f, 0.0f, 3.0f);
+    rc.translate(0.0F, 0.0F, 3.0F);
     rc.lightSource({.shader = "pointlight", .handle = "bulb"}, ParameterList());
     rc.surface("matte", ParameterList());
 
-    v3d::moya::reyes::MicroPolygonGrid grid = facing({.normal = glm::vec3(0.0f, 0.0f, -1.0f), .colour = glm::vec3(1.0f)});
+    v3d::moya::reyes::MicroPolygonGrid grid = facing({.normal = glm::vec3(0.0F, 0.0F, -1.0F), .colour = glm::vec3(1.0F)});
     rc.shader().shade(rc.shading(), &grid);
 
     /*
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE(moya_a_light_is_placed_test) {
         the cosine against the normal is one and the falloff is a quarter. A light left at
         the origin would be five units away and a twenty fifth as bright.
     */
-    BOOST_CHECK_CLOSE(grid.vertex(0, 0).color().r, 0.25f, 1.0f);
+    BOOST_CHECK_CLOSE(grid.vertex(0, 0).color().r, 0.25F, 1.0F);
 }
 
 /**
@@ -242,19 +242,19 @@ BOOST_AUTO_TEST_CASE(moya_a_light_runs_in_its_own_space_test) {
     v3d::moya::RenderContext rc;
     prepare(&rc);
     rc.attributeBegin();
-    rc.translate(0.0f, 0.0f, 3.0f);
+    rc.translate(0.0F, 0.0F, 3.0F);
     rc.lightSource({.shader = "pointlight", .handle = "bulb"}, ParameterList());
     rc.attributeEnd();
     // whether a light is on is an attribute, so the block's end switched it off again
     rc.illuminate("bulb", true);
     rc.surface("matte", ParameterList());
 
-    v3d::moya::reyes::MicroPolygonGrid grid = facing({.normal = glm::vec3(0.0f, 0.0f, -1.0f), .colour = glm::vec3(1.0f)});
+    v3d::moya::reyes::MicroPolygonGrid grid = facing({.normal = glm::vec3(0.0F, 0.0F, -1.0F), .colour = glm::vec3(1.0F)});
     rc.shader().shade(rc.shading(), &grid);
 
     // two units away as above; taking the surface's space for the light's would put the
     // light at the origin, five units away
-    BOOST_CHECK_CLOSE(grid.vertex(0, 0).color().r, 0.25f, 1.0f);
+    BOOST_CHECK_CLOSE(grid.vertex(0, 0).color().r, 0.25F, 1.0F);
 }
 
 /**
@@ -265,21 +265,21 @@ BOOST_AUTO_TEST_CASE(moya_a_light_runs_in_its_own_space_test) {
 BOOST_AUTO_TEST_CASE(moya_ndc_runs_down_from_the_top_test) {
     v3d::moya::RenderContext rc;
     prepare(&rc);
-    glm::mat4x4 raster(1.0f);
-    glm::mat4x4 ndc(1.0f);
+    glm::mat4x4 raster(1.0F);
+    glm::mat4x4 ndc(1.0F);
     BOOST_REQUIRE(rc.shader().space("raster", &raster));
     BOOST_REQUIRE(rc.shader().space("NDC", &ndc));
 
     // a quarter of the way across the top row, back in camera space, where y is up
-    const glm::vec4 top = glm::inverse(raster) * glm::vec4(16.0f, 0.0f, 1.0f, 1.0f);
-    BOOST_CHECK_GT(top.y, 0.0f);
+    const glm::vec4 top = glm::inverse(raster) * glm::vec4(16.0F, 0.0F, 1.0F, 1.0F);
+    BOOST_CHECK_GT(top.y, 0.0F);
     const glm::vec4 high = ndc * top;
-    BOOST_CHECK_CLOSE(high.x, 0.25f, 0.1f);
-    BOOST_CHECK_SMALL(high.y, 0.0001f);
+    BOOST_CHECK_CLOSE(high.x, 0.25F, 0.1F);
+    BOOST_CHECK_SMALL(high.y, 0.0001F);
 
-    const glm::vec4 corner = ndc * (glm::inverse(raster) * glm::vec4(64.0f, 48.0f, 1.0f, 1.0f));
-    BOOST_CHECK_CLOSE(corner.x, 1.0f, 0.1f);
-    BOOST_CHECK_CLOSE(corner.y, 1.0f, 0.1f);
+    const glm::vec4 corner = ndc * (glm::inverse(raster) * glm::vec4(64.0F, 48.0F, 1.0F, 1.0F));
+    BOOST_CHECK_CLOSE(corner.x, 1.0F, 0.1F);
+    BOOST_CHECK_CLOSE(corner.y, 1.0F, 0.1F);
 }
 
 };  // namespace

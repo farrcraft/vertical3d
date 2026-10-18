@@ -15,7 +15,7 @@ namespace v3d::render::realtime {
 
 namespace {
 
-constexpr glm::vec4 DEFAULT_CLEAR_COLOUR{0.06f, 0.07f, 0.10f, 1.0f};
+constexpr glm::vec4 DEFAULT_CLEAR_COLOUR{0.06F, 0.07F, 0.10F, 1.0F};
 
 };  // namespace
 

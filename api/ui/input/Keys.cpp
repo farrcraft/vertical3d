@@ -308,7 +308,7 @@ bool Keys::nudge(const boost::shared_ptr<component::Scrollbar>& bar, std::string
     } else if (key == "pageup") {
         bar->scroll(-bar->page());
     } else if (key == "home") {
-        bar->offset(0.0f);
+        bar->offset(0.0F);
     } else if (key == "end") {
         bar->offset(bar->maximum());
     } else {
@@ -325,8 +325,8 @@ bool Keys::slide(const boost::shared_ptr<component::Slider>& slider, std::string
     }
     // a step, or a hundredth of the range for a slider that has none; a page is ten of them
     const float span = slider->maximum() - slider->minimum();
-    const float line = slider->step() > 0.0f ? slider->step() : span / 100.0f;
-    const float page = std::max(line, span / 10.0f);
+    const float line = slider->step() > 0.0F ? slider->step() : span / 100.0F;
+    const float page = std::max(line, span / 10.0F);
     float to = slider->value();
     if (key == "arrow_right") {
         to += line;

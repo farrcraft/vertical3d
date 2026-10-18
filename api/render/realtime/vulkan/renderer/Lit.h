@@ -56,7 +56,7 @@ class Lit final {
         glm::vec4 baseColour;
         float outline;        /**< how far the outline hull is pushed out, and zero for the cel pass **/
         uint32_t firstJoint;  /**< where the object's palette starts, for a skinned pipeline **/
-        float padding[2] = {0.0f, 0.0f};
+        float padding[2] = {0.0F, 0.0F};
     };
 
     /**

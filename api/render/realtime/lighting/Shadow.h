@@ -21,14 +21,14 @@ namespace v3d::render::realtime::lighting {
  * The smallest radius fitShadow() returns, in world units. shadowLight() divides by the radius,
  * so a fit never returns zero or less.
  **/
-inline constexpr float minimumShadowRadius = 0.01f;
+inline constexpr float minimumShadowRadius = 0.01F;
 
 /**
  * A sphere a directional light's shadow map is fitted to.
  **/
 struct ShadowBounds final {
-    glm::vec3 centre{0.0f};
-    float radius = 0.0f;
+    glm::vec3 centre{0.0F};
+    float radius = 0.0F;
 };
 
 /**
@@ -37,8 +37,8 @@ struct ShadowBounds final {
  * positions are read.
  **/
 struct ShadowFit final {
-    float margin = 0.0f;
-    float alpha = 1.0f;
+    float margin = 0.0F;
+    float alpha = 1.0F;
 };
 
 /**

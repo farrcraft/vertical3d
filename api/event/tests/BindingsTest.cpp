@@ -47,11 +47,11 @@ struct Fixture {
  **/
 BOOST_FIXTURE_TEST_CASE(bindings_load_test, Fixture) {
     BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
-    BOOST_TEST(bindings.sources("game::up").size() == 2u);
+    BOOST_TEST(bindings.sources("game::up").size() == 2U);
     BOOST_TEST(bindings.sources("game::down").empty());
 
     BOOST_TEST(!bindings.load(boost::json::parse(R"({"bindings": []})").as_object()));
-    BOOST_TEST(bindings.sources("game::up").size() == 2u);
+    BOOST_TEST(bindings.sources("game::up").size() == 2U);
 }
 
 /**
@@ -64,7 +64,7 @@ BOOST_FIXTURE_TEST_CASE(bindings_rebind_test, Fixture) {
     BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
     BOOST_REQUIRE(bindings.rebind("ui::quit", "escape"));
     const std::vector<v3d::event::Event> quit = bindings.sources("ui::quit");
-    BOOST_REQUIRE_EQUAL(quit.size(), 1u);
+    BOOST_REQUIRE_EQUAL(quit.size(), 1U);
     BOOST_TEST(quit[0].name() == "escape");
 }
 
@@ -74,8 +74,8 @@ BOOST_FIXTURE_TEST_CASE(bindings_rebind_test, Fixture) {
  **/
 BOOST_FIXTURE_TEST_CASE(bindings_known_test, Fixture) {
     BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
-    BOOST_TEST(asked.size() == 3u);
-    BOOST_TEST(bindings.sources("ui::quit").size() == 1u);
+    BOOST_TEST(asked.size() == 3U);
+    BOOST_TEST(bindings.sources("ui::quit").size() == 1U);
 }
 
 /**
@@ -94,11 +94,11 @@ BOOST_FIXTURE_TEST_CASE(bindings_refuse_a_value_that_is_not_a_string_test, Fixtu
     BOOST_TEST(!bindings.load(boost::json::parse(R"({"mappings": [
         {"source": {"name": "w", "context": "keyboard", "state": 1}, "destination": {"name": "up", "context": "game"}}
     ]})").as_object()));
-    BOOST_TEST(bindings.sources("game::up").size() == 2u);
+    BOOST_TEST(bindings.sources("game::up").size() == 2U);
 
     // the document kept is the one that loaded, so a rebind still rebuilds from it
     BOOST_TEST(bindings.rebind("ui::quit", "escape"));
-    BOOST_TEST(bindings.sources("game::up").size() == 2u);
+    BOOST_TEST(bindings.sources("game::up").size() == 2U);
 }
 
 /**
@@ -120,7 +120,7 @@ BOOST_FIXTURE_TEST_CASE(bindings_refuse_a_param_beyond_an_int_test, Fixture) {
          "destination": {"name": "up", "context": "game", "param": -7}}
     ]})").as_object()));
     const std::vector<v3d::event::Event> sources = bindings.sources("game::up");
-    BOOST_REQUIRE_EQUAL(sources.size(), 1u);
+    BOOST_REQUIRE_EQUAL(sources.size(), 1U);
 }
 
 /**
@@ -132,7 +132,7 @@ BOOST_FIXTURE_TEST_CASE(bindings_list_their_commands_test, Fixture) {
 
     BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
     const std::vector<std::string> commands = bindings.commands();
-    BOOST_REQUIRE_EQUAL(commands.size(), 2u);
+    BOOST_REQUIRE_EQUAL(commands.size(), 2U);
     BOOST_TEST(commands[0] == "game::up");
     BOOST_TEST(commands[1] == "ui::quit");
 }

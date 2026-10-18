@@ -27,15 +27,15 @@ namespace {
 float closest(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target) {
     const glm::vec2 along = to - from;
     const float length = glm::dot(along, along);
-    if (length <= 0.0f) {
-        return 0.0f;
+    if (length <= 0.0F) {
+        return 0.0F;
     }
     const float u = glm::dot(target - from, along) / length;
-    if (u < 0.0f) {
-        return 0.0f;
+    if (u < 0.0F) {
+        return 0.0F;
     }
-    if (u > 1.0f) {
-        return 1.0f;
+    if (u > 1.0F) {
+        return 1.0F;
     }
     return u;
 }
@@ -57,9 +57,9 @@ Picker::Picker(float tolerance) :
     tolerance_(tolerance),
     mask_(SelectMask::Object),
     camera_(nullptr),
-    cursor_(0.0f, 0.0f),
-    model_(1.0f),
-    nearest_(0.0f) {
+    cursor_(0.0F, 0.0F),
+    model_(1.0F),
+    nearest_(0.0F) {
     viewport_[0] = 0;
     viewport_[1] = 0;
     viewport_[2] = 0;
@@ -73,11 +73,11 @@ Picker::Hit Picker::pick(const Scene& scene, const ViewPort& view, const glm::ve
     hit_.kind = mask;
     mask_ = mask;
     cursor_ = cursor;
-    nearest_ = 0.0f;
+    nearest_ = 0.0F;
 
     const boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     const glm::vec4& region = view.region();
-    if (!camera || region.z <= 0.0f || region.w <= 0.0f) {
+    if (!camera || region.z <= 0.0F || region.w <= 0.0F) {
         return hit_;
     }
 
@@ -136,7 +136,7 @@ void Picker::surface(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     // be in world space and hits on differently scaled meshes stay comparable
     const v3d::type::geometry::Ray local = ray_.transformed(glm::inverse(model_));
 
-    float distance = 0.0f;
+    float distance = 0.0F;
     if (!local.intersects(mesh->bound(), &distance)) {
         return;
     }
@@ -177,7 +177,7 @@ void Picker::vertices(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
             continue;
         }
         glm::vec2 position;
-        float depth = 0.0f;
+        float depth = 0.0F;
         if (!screen(vertex->point(), &position, &depth)) {
             continue;
         }
@@ -210,8 +210,8 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
 
             glm::vec2 start;
             glm::vec2 end;
-            float startDepth = 0.0f;
-            float endDepth = 0.0f;
+            float startDepth = 0.0F;
+            float endDepth = 0.0F;
             if (!screen(from, &start, &startDepth) || !screen(to, &end, &endDepth)) {
                 continue;
             }
@@ -228,13 +228,13 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
 /**
  **/
 bool Picker::screen(const glm::vec3& point, glm::vec2* position, float* depth) const {
-    const glm::vec3 world(model_ * glm::vec4(point, 1.0f));
+    const glm::vec3 world(model_ * glm::vec4(point, 1.0F));
     const glm::vec3 projected = camera_->project(world, viewport_);
 
     // outside the depth range is behind the near plane or beyond the far one. A point
     // behind a perspective camera divides by a negative w and lands beyond one, so it
     // is rejected here rather than looking like a hit in front
-    if (projected[2] < 0.0f || projected[2] > 1.0f) {
+    if (projected[2] < 0.0F || projected[2] > 1.0F) {
         return false;
     }
 

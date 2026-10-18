@@ -22,7 +22,7 @@
 
 namespace {
 
-const float characterWidth = 10.0f;
+const float characterWidth = 10.0F;
 
 /**
  * What the renderer asked to be written, so a test can read the rows back without a font.
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(the_rows_are_cut_off_at_the_list) {
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
 
-    const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(40, glm::vec2(120.0f, 100.0f));
+    const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(40, glm::vec2(120.0F, 100.0F));
     // a row is chosen so that something is drawn under the clip: the rest of a row is text,
     // and text is the app's to draw
     saves->selected(0);
@@ -81,12 +81,12 @@ BOOST_AUTO_TEST_CASE(the_rows_are_cut_off_at_the_list) {
     container.add(saves);
     renderer.draw(&canvas, container);
 
-    BOOST_CHECK_CLOSE(saves->rowHeight(), renderer.dressing().lineHeight, 0.001f);
-    BOOST_CHECK_CLOSE(saves->content(), renderer.dressing().lineHeight * 40.0f, 0.001f);
+    BOOST_CHECK_CLOSE(saves->rowHeight(), renderer.dressing().lineHeight, 0.001F);
+    BOOST_CHECK_CLOSE(saves->content(), renderer.dressing().lineHeight * 40.0F, 0.001F);
 
     const v3d::render::realtime::canvas::Canvas::Batch& rows = canvas.batches().back();
     BOOST_REQUIRE(rows.clipped);
-    BOOST_CHECK_CLOSE(rows.clip.w, saves->position().y + 100.0f - renderer.dressing().borderWidth, 0.001f);
+    BOOST_CHECK_CLOSE(rows.clip.w, saves->position().y + 100.0F - renderer.dressing().borderWidth, 0.001F);
 
     // and only the rows the box has room for are written, not all forty
     BOOST_CHECK(!written.empty());
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(an_offset_starts_the_rows_further_down) {
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
 
-    const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(40, glm::vec2(120.0f, 100.0f));
+    const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(40, glm::vec2(120.0F, 100.0F));
     v3d::ui::Container container("panel", true);
     container.add(saves);
     renderer.draw(&canvas, container);
@@ -111,12 +111,12 @@ BOOST_AUTO_TEST_CASE(an_offset_starts_the_rows_further_down) {
     BOOST_CHECK_EQUAL(written.front().text, "row 0");
 
     written.clear();
-    saves->offset(renderer.dressing().lineHeight * 5.0f);
+    saves->offset(renderer.dressing().lineHeight * 5.0F);
     renderer.draw(&canvas, container);
 
     BOOST_REQUIRE(!written.empty());
     BOOST_CHECK_EQUAL(written.front().text, "row 5");
-    BOOST_CHECK_CLOSE(written.front().pen.y, saves->position().y + (renderer.dressing().lineHeight * 0.7f), 0.001f);
+    BOOST_CHECK_CLOSE(written.front().pen.y, saves->position().y + (renderer.dressing().lineHeight * 0.7F), 0.001F);
 }
 
 /**
@@ -128,20 +128,20 @@ BOOST_AUTO_TEST_CASE(the_offset_is_clamped_to_what_the_box_does_not_show) {
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
 
-    const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(10, glm::vec2(120.0f, 100.0f));
+    const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(10, glm::vec2(120.0F, 100.0F));
     v3d::ui::Container container("panel", true);
     container.add(saves);
     renderer.draw(&canvas, container);
 
-    saves->offset(10000.0f);
-    BOOST_CHECK_CLOSE(saves->offset(), saves->content() - 100.0f, 0.001f);
+    saves->offset(10000.0F);
+    BOOST_CHECK_CLOSE(saves->offset(), saves->content() - 100.0F, 0.001F);
 
-    const boost::shared_ptr<v3d::ui::component::SelectList> few = list(2, glm::vec2(120.0f, 100.0f));
+    const boost::shared_ptr<v3d::ui::component::SelectList> few = list(2, glm::vec2(120.0F, 100.0F));
     v3d::ui::Container roomy("roomy", true);
     roomy.add(few);
     renderer.draw(&canvas, roomy);
-    few->offset(50.0f);
-    BOOST_CHECK_CLOSE(few->offset(), 0.0f, 0.001f);
+    few->offset(50.0F);
+    BOOST_CHECK_CLOSE(few->offset(), 0.0F, 0.001F);
 }
 
 /**
@@ -154,24 +154,24 @@ BOOST_AUTO_TEST_CASE(a_point_names_the_row_under_it) {
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
 
-    const boost::shared_ptr<v3d::ui::component::SelectList> undrawn = list(10, glm::vec2(120.0f, 100.0f));
-    BOOST_CHECK_EQUAL(undrawn->at(glm::vec2(10.0f, 10.0f)), v3d::ui::component::SelectList::none);
+    const boost::shared_ptr<v3d::ui::component::SelectList> undrawn = list(10, glm::vec2(120.0F, 100.0F));
+    BOOST_CHECK_EQUAL(undrawn->at(glm::vec2(10.0F, 10.0F)), v3d::ui::component::SelectList::none);
 
-    const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(40, glm::vec2(120.0f, 100.0f));
-    saves->layout().x = v3d::ui::Length(20.0f, v3d::ui::Length::Unit::Pixels);
-    saves->layout().y = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
+    const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(40, glm::vec2(120.0F, 100.0F));
+    saves->layout().x = v3d::ui::Length(20.0F, v3d::ui::Length::Unit::Pixels);
+    saves->layout().y = v3d::ui::Length(30.0F, v3d::ui::Length::Unit::Pixels);
     v3d::ui::Container container("panel", true);
     container.add(saves);
     renderer.draw(&canvas, container);
 
     const float row = saves->rowHeight();
-    BOOST_CHECK_EQUAL(saves->at(glm::vec2(30.0f, 30.0f + (row * 0.5f))), 0);
-    BOOST_CHECK_EQUAL(saves->at(glm::vec2(30.0f, 30.0f + (row * 2.5f))), 2);
+    BOOST_CHECK_EQUAL(saves->at(glm::vec2(30.0F, 30.0F + (row * 0.5F))), 0);
+    BOOST_CHECK_EQUAL(saves->at(glm::vec2(30.0F, 30.0F + (row * 2.5F))), 2);
     // outside the box, and past the last row that fits
-    BOOST_CHECK_EQUAL(saves->at(glm::vec2(300.0f, 40.0f)), v3d::ui::component::SelectList::none);
+    BOOST_CHECK_EQUAL(saves->at(glm::vec2(300.0F, 40.0F)), v3d::ui::component::SelectList::none);
 
-    saves->offset(row * 5.0f);
-    BOOST_CHECK_EQUAL(saves->at(glm::vec2(30.0f, 30.0f + (row * 0.5f))), 5);
+    saves->offset(row * 5.0F);
+    BOOST_CHECK_EQUAL(saves->at(glm::vec2(30.0F, 30.0F + (row * 0.5F))), 5);
 }
 
 /**
@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE(the_chosen_row_is_drawn_differently) {
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
 
-    const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(4, glm::vec2(120.0f, 100.0f));
+    const boost::shared_ptr<v3d::ui::component::SelectList> saves = list(4, glm::vec2(120.0F, 100.0F));
     v3d::ui::Container container("panel", true);
     container.add(saves);
     renderer.draw(&canvas, container);

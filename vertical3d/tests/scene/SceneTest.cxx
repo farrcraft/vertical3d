@@ -27,13 +27,13 @@ class CountingVisitor final : public v3d::editor::SceneVisitor {
 BOOST_AUTO_TEST_CASE(scene_empty_test) {
     v3d::editor::Scene scene;
 
-    BOOST_CHECK_EQUAL(scene.count(), 0u);
+    BOOST_CHECK_EQUAL(scene.count(), 0U);
     BOOST_CHECK_EQUAL(static_cast<bool>(scene.mesh(1)), false);
     BOOST_CHECK_EQUAL(scene.remove(1), false);
 
     CountingVisitor visitor;
     scene.accept(&visitor);
-    BOOST_CHECK_EQUAL(visitor.visited.size(), 0u);
+    BOOST_CHECK_EQUAL(visitor.visited.size(), 0U);
 
     // an empty scene is an unopened document, not an error
     scene.accept(nullptr);
@@ -48,23 +48,23 @@ BOOST_AUTO_TEST_CASE(scene_add_test) {
     const unsigned int firstID = scene.add(first);
     const unsigned int secondID = scene.add(second);
 
-    BOOST_CHECK_EQUAL(scene.count(), 2u);
+    BOOST_CHECK_EQUAL(scene.count(), 2U);
     BOOST_CHECK_EQUAL(firstID, first->id());
     BOOST_CHECK(firstID != secondID);
 
     // a mesh is found by the id its node base carries, not by where it sits
     BOOST_CHECK_EQUAL(scene.mesh(secondID).get(), second.get());
     BOOST_CHECK_EQUAL(scene.remove(firstID), true);
-    BOOST_CHECK_EQUAL(scene.count(), 1u);
+    BOOST_CHECK_EQUAL(scene.count(), 1U);
     BOOST_CHECK_EQUAL(scene.mesh(secondID).get(), second.get());
     BOOST_CHECK_EQUAL(static_cast<bool>(scene.mesh(firstID)), false);
 
     // an empty pointer is not a mesh, and adding one leaves the scene alone
-    BOOST_CHECK_EQUAL(scene.add(boost::shared_ptr<v3d::brep::BRep>()), 0u);
-    BOOST_CHECK_EQUAL(scene.count(), 1u);
+    BOOST_CHECK_EQUAL(scene.add(boost::shared_ptr<v3d::brep::BRep>()), 0U);
+    BOOST_CHECK_EQUAL(scene.count(), 1U);
 
     scene.clear();
-    BOOST_CHECK_EQUAL(scene.count(), 0u);
+    BOOST_CHECK_EQUAL(scene.count(), 0U);
 }
 
 BOOST_AUTO_TEST_CASE(scene_visit_order_test) {
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(scene_visit_order_test) {
     CountingVisitor visitor;
     scene.accept(&visitor);
 
-    BOOST_REQUIRE_EQUAL(visitor.visited.size(), 2u);
+    BOOST_REQUIRE_EQUAL(visitor.visited.size(), 2U);
     BOOST_CHECK_EQUAL(visitor.visited[0], first->id());
     BOOST_CHECK_EQUAL(visitor.visited[1], second->id());
 }
@@ -88,11 +88,11 @@ BOOST_AUTO_TEST_CASE(scene_deselect_test) {
 
     const boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
     std::vector<glm::vec3> quad;
-    quad.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
-    quad.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
-    quad.push_back(glm::vec3(1.0f, 1.0f, 0.0f));
-    quad.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
-    mesh->addFace(quad, glm::vec3(0.0f, 0.0f, 1.0f));
+    quad.push_back(glm::vec3(0.0F, 0.0F, 0.0F));
+    quad.push_back(glm::vec3(1.0F, 0.0F, 0.0F));
+    quad.push_back(glm::vec3(1.0F, 1.0F, 0.0F));
+    quad.push_back(glm::vec3(0.0F, 1.0F, 0.0F));
+    mesh->addFace(quad, glm::vec3(0.0F, 0.0F, 1.0F));
     mesh->selected(true);
     mesh->edge(0)->selected(true);
     scene.add(mesh);

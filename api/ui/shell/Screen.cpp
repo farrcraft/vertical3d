@@ -19,7 +19,7 @@ namespace {
 /**
  * The height of a line of text, as a multiple of the text's size.
  **/
-constexpr float LINE_SPACING = 1.4f;
+constexpr float LINE_SPACING = 1.4F;
 
 /**
  * The dressing an app gets when it names none: a line of text and the gap after it.
@@ -36,7 +36,7 @@ Screen::Screen(v3d::render::realtime::Engine3D* engine, const boost::shared_ptr<
     const boost::shared_ptr<v3d::log::Logger>& logger, const Options& options) :
     engine_(engine),
     options_(options),
-    scale_(1.0f),
+    scale_(1.0F),
     resized_(false) {
     if (!options_.dress) {
         options_.dress = lineHeight;
@@ -113,7 +113,7 @@ bool Screen::resized() const noexcept {
 /**
  **/
 void Screen::scale(float factor) {
-    if (factor <= 0.0f || factor == scale_) {
+    if (factor <= 0.0F || factor == scale_) {
         return;
     }
     scale_ = factor;

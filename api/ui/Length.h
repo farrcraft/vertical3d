@@ -41,8 +41,8 @@ class Length final {
      * that axis itself, which Auto resolves to.
      **/
     struct Basis {
-        float extent = 0.0f;
-        float own = 0.0f;
+        float extent = 0.0F;
+        float own = 0.0F;
     };
 
     /**

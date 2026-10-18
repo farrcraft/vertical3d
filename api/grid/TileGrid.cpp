@@ -37,14 +37,14 @@ std::string_view toString(Cover cover) {
 
 TileGrid::TileGrid(int width, int height, float tileSize) :
     TileGrid(width, height, tileSize,
-        glm::vec3(-0.5f * static_cast<float>(width) * tileSize, 0.0f, -0.5f * static_cast<float>(height) * tileSize)) {
+        glm::vec3(-0.5F * static_cast<float>(width) * tileSize, 0.0F, -0.5F * static_cast<float>(height) * tileSize)) {
 }
 
 TileGrid::TileGrid(int width, int height, float tileSize, const glm::vec3& corner) :
     width_(width),
     height_(height),
     tileSize_(tileSize),
-    corner_(corner.x, 0.0f, corner.z) {
+    corner_(corner.x, 0.0F, corner.z) {
     const std::optional<std::string> refused = refusal(width, height, tileSize, corner);
     if (refused) {
         throw std::invalid_argument("TileGrid " + *refused);
@@ -73,8 +73,8 @@ bool TileGrid::contains(TileCoord tile) const {
 
 glm::vec3 TileGrid::tileToWorld(TileCoord tile) const {
     const glm::vec3 corner = worldMin();
-    return glm::vec3(corner.x + ((static_cast<float>(tile.x) + 0.5f) * tileSize_), 0.0f,
-        corner.z + ((static_cast<float>(tile.y) + 0.5f) * tileSize_));
+    return glm::vec3(corner.x + ((static_cast<float>(tile.x) + 0.5F) * tileSize_), 0.0F,
+        corner.z + ((static_cast<float>(tile.y) + 0.5F) * tileSize_));
 }
 
 TileCoord TileGrid::worldToTile(const glm::vec3& position) const {
@@ -88,7 +88,7 @@ std::optional<std::string> TileGrid::refusal(int width, int height, float tileSi
         return "dimensions must be positive, got " + std::to_string(width) + "x" + std::to_string(height);
     }
     // a NaN fails every comparison, so the test is written to fail it
-    if (!(tileSize > 0.0f) || !std::isfinite(tileSize)) {
+    if (!(tileSize > 0.0F) || !std::isfinite(tileSize)) {
         return "tile size must be a finite positive number, got " + std::to_string(tileSize);
     }
     if (!std::isfinite(static_cast<float>(std::max(width, height)) * tileSize)) {

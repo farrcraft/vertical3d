@@ -166,7 +166,7 @@ class Manipulator {
      * How many times the tolerance the centre handle reaches, so that it can be picked
      * where the axes crowd it.
      **/
-    static constexpr float centreReach = 1.5f;
+    static constexpr float centreReach = 1.5F;
 
     /**
      * What the coordinate space means to this manipulator. Scale overrides it: a non
@@ -203,9 +203,9 @@ class Manipulator {
      * axes, with forward along +z.
      **/
     struct Basis {
-        glm::vec3 right{1.0f, 0.0f, 0.0f};
-        glm::vec3 up{0.0f, 1.0f, 0.0f};
-        glm::vec3 forward{0.0f, 0.0f, 1.0f};  /**< into the screen **/
+        glm::vec3 right{1.0F, 0.0F, 0.0F};
+        glm::vec3 up{0.0F, 1.0F, 0.0F};
+        glm::vec3 forward{0.0F, 0.0F, 1.0F};  /**< into the screen **/
     };
 
     static Basis basis(const ViewPort& view);

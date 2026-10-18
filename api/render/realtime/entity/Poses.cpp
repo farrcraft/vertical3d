@@ -29,8 +29,8 @@ namespace {
 /** A clip, how far into it the playback is, how long it lasts, and whether it loops. **/
 struct Track {
     uint32_t clip = 0;
-    float time = 0.0f;
-    float duration = 0.0f;
+    float time = 0.0F;
+    float duration = 0.0F;
     bool loops = false;
 };
 
@@ -52,7 +52,7 @@ type::animation::Pose sampled(const MeshRegistry::Skin& skin, const Track& track
  **/
 type::animation::Pose posed(const MeshRegistry::Skin& skin, const ecs::component::Playback& playback) {
     type::animation::Pose current = sampled(skin, {.clip = playback.clip, .time = playback.time, .duration = playback.duration, .loops = playback.loops});
-    if (playback.from == ecs::component::Playback::none || playback.fade >= 1.0f) {
+    if (playback.from == ecs::component::Playback::none || playback.fade >= 1.0F) {
         return current;
     }
     const type::animation::Pose leaving =

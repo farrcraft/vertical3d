@@ -36,7 +36,7 @@ unsigned int coverage(const v3d::render::offline::FrameBuffer & planes) {
     unsigned int covered = 0;
     for (unsigned int row = 0; row < planes.height(); row++) {
         for (unsigned int column = 0; column < planes.width(); column++) {
-            if (planes.value(v3d::moya::FrameBuffer::RED, column, row) > 0.5f) {
+            if (planes.value(v3d::moya::FrameBuffer::RED, column, row) > 0.5F) {
                 covered++;
             }
         }
@@ -127,10 +127,10 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_test) {
         "WorldBegin\n"
         "WorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().imageWidth(), 64u);
-    BOOST_CHECK_EQUAL(handler.context().imageHeight(), 48u);
+    BOOST_CHECK_EQUAL(handler.context().imageWidth(), 64U);
+    BOOST_CHECK_EQUAL(handler.context().imageHeight(), 48U);
     BOOST_REQUIRE(handler.context().framebuffer());
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64U);
 }
 
 /**
@@ -148,19 +148,19 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_sampling_test) {
         "WorldBegin\n"
         "WorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().sampling().samples.x, 4u);
-    BOOST_CHECK_EQUAL(handler.context().sampling().samples.y, 4u);
-    BOOST_CHECK_EQUAL(handler.context().sampling().fstop, 8.0f);
-    BOOST_CHECK_CLOSE(handler.context().sampling().focalLength, 0.1f, 1.0e-4f);
-    BOOST_CHECK_EQUAL(handler.context().sampling().focalDistance, 3.0f);
+    BOOST_CHECK_EQUAL(handler.context().sampling().samples.x, 4U);
+    BOOST_CHECK_EQUAL(handler.context().sampling().samples.y, 4U);
+    BOOST_CHECK_EQUAL(handler.context().sampling().fstop, 8.0F);
+    BOOST_CHECK_CLOSE(handler.context().sampling().focalLength, 0.1F, 1.0e-4F);
+    BOOST_CHECK_EQUAL(handler.context().sampling().focalDistance, 3.0F);
 
     v3d::moya::Renderer plainRenderer;
     v3d::moya::RIBHandler silent(&plainRenderer);
     BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &silent));
-    BOOST_CHECK_EQUAL(silent.context().sampling().samples.x, 2u);
-    BOOST_CHECK_EQUAL(silent.context().sampling().samples.y, 2u);
+    BOOST_CHECK_EQUAL(silent.context().sampling().samples.x, 2U);
+    BOOST_CHECK_EQUAL(silent.context().sampling().samples.y, 2U);
     BOOST_CHECK(silent.context().sampling().filter == v3d::render::offline::Filter::Gaussian);
-    BOOST_CHECK_EQUAL(silent.context().sampling().width.x, 2.0f);
+    BOOST_CHECK_EQUAL(silent.context().sampling().width.x, 2.0F);
     BOOST_CHECK(silent.context().sampling().pinhole());
 }
 
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_polygon_test) {
         "Polygon \"P\" [-0.2 -0.2 5  0.2 -0.2 5  0.2 0.2 5  -0.2 0.2 5]\n"
         "WorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1U);
 }
 
 /**
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_transform_test) {
         "WorldEnd\n", &handler));
 
     // it survived the hither-yon cull, which it could not have at a depth of zero
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1U);
 }
 
 /**
@@ -225,9 +225,9 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_color_test) {
         "WorldEnd\n", &handler));
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 1.0f);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::GREEN, 32, 24), 0.0f);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 0.0f);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::GREEN, 32, 24), 0.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 0.0F);
 }
 
 /**
@@ -258,10 +258,10 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_attribute_block_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
     // the screen window is [-4/3, 4/3] by [-1, 1] on a 64 by 48 frame, so -0.5 in x lands at
     // column 20 and +0.5 at column 44
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 20, 24), 1.0f);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 20, 24), 0.0f);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 44, 24), 1.0f);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 44, 24), 0.0f);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 20, 24), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 20, 24), 0.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 44, 24), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 44, 24), 0.0F);
 }
 
 /**
@@ -286,12 +286,12 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
     unsigned int covered = 0;
     for (unsigned int row = 0; row < 48; row++) {
         for (unsigned int column = 0; column < 64; column++) {
-            if (planes->value(v3d::moya::FrameBuffer::RED, column, row) > 0.5f) {
+            if (planes->value(v3d::moya::FrameBuffer::RED, column, row) > 0.5F) {
                 covered++;
             }
         }
     }
-    BOOST_CHECK_GT(covered, 0u);
+    BOOST_CHECK_GT(covered, 0U);
 
     // the same quad twice as far away covers a quarter of the pixels under a perspective
     // projection, and the same pixels under an identity matrix
@@ -310,13 +310,13 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
     unsigned int distantCovered = 0;
     for (unsigned int row = 0; row < 48; row++) {
         for (unsigned int column = 0; column < 64; column++) {
-            if (distantPlanes->value(v3d::moya::FrameBuffer::RED, column, row) > 0.5f) {
+            if (distantPlanes->value(v3d::moya::FrameBuffer::RED, column, row) > 0.5F) {
                 distantCovered++;
             }
         }
     }
-    BOOST_CHECK_GT(distantCovered, 0u);
-    BOOST_CHECK_CLOSE(static_cast<float>(covered) / static_cast<float>(distantCovered), 4.0f, 15.0f);
+    BOOST_CHECK_GT(distantCovered, 0U);
+    BOOST_CHECK_CLOSE(static_cast<float>(covered) / static_cast<float>(distantCovered), 4.0F, 15.0F);
 }
 
 /**
@@ -340,20 +340,20 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_test) {
 
     unsigned int columns = 0;
     for (unsigned int column = 0; column < 64; column++) {
-        if (planes->value(v3d::moya::FrameBuffer::RED, column, 24) > 0.5f) {
+        if (planes->value(v3d::moya::FrameBuffer::RED, column, 24) > 0.5F) {
             columns++;
         }
     }
     unsigned int rows = 0;
     for (unsigned int row = 0; row < 48; row++) {
-        if (planes->value(v3d::moya::FrameBuffer::RED, 32, row) > 0.5f) {
+        if (planes->value(v3d::moya::FrameBuffer::RED, 32, row) > 0.5F) {
             rows++;
         }
     }
 
-    BOOST_CHECK_GT(columns, 0u);
+    BOOST_CHECK_GT(columns, 0U);
     // one pixel of slack for where the edges land against the sample centres
-    BOOST_CHECK_LE(columns > rows ? columns - rows : rows - columns, 1u);
+    BOOST_CHECK_LE(columns > rows ? columns - rows : rows - columns, 1U);
 }
 
 /**
@@ -379,8 +379,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_explicit_screen_window_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
     // a window of [-2, 2] means the quad nearly fills the frame; the default [-4/3, 4/3] by
     // [-1, 1] would have clipped it away at the top and bottom
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 1), 1.0f);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 46), 1.0f);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 1), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 46), 1.0F);
 }
 
 /**
@@ -395,9 +395,9 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_limits_test) {
         "Option \"limits\" \"bucketsize\" [6 6]\n"
         "Option \"limits\" \"gridsize\" [18]\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().bucketWidth(), 6u);
-    BOOST_CHECK_EQUAL(handler.context().bucketHeight(), 6u);
-    BOOST_CHECK_EQUAL(handler.context().gridSize(), 18u);
+    BOOST_CHECK_EQUAL(handler.context().bucketWidth(), 6U);
+    BOOST_CHECK_EQUAL(handler.context().bucketHeight(), 6U);
+    BOOST_CHECK_EQUAL(handler.context().gridSize(), 18U);
 }
 
 /**
@@ -409,16 +409,16 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_trace_depth_test) {
     v3d::moya::RIBHandler handler(&renderer);
 
     BOOST_REQUIRE(read("Option \"trace\" \"maxdepth\" [5]\n", &handler));
-    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 5u);
+    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 5U);
 
     BOOST_REQUIRE(read("Option \"trace\" \"maxdepth\" [-3]\n", &handler));
-    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 5u);
+    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 5U);
 
     BOOST_REQUIRE(read("Option \"trace\" \"maxdepth\" [1e30]\n", &handler));
-    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 16u);
+    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 16U);
 
     BOOST_REQUIRE(read("Option \"trace\" \"maxdepth\" [0]\n", &handler));
-    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 0u);
+    BOOST_CHECK_EQUAL(handler.context().traced().traceDepth(), 0U);
 }
 
 /**
@@ -443,7 +443,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_transform_block_test) {
         "WorldEnd\n", &handler));
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 1.0f);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 1.0F);
 }
 
 /**
@@ -478,7 +478,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
         "Polygon \"P\" [-0.2 -0.2 5  0.2 -0.2 5  0.2 0.2 5  -0.2 0.2 5]\n"
         "WorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1U);
     BOOST_TEST(heard.said("does not dice spheres"));
 }
 
@@ -511,9 +511,9 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
         "WorldEnd\n", &handler));
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 1.0f, 0.01f);
-    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, 32, 24), 1.0e-6f);
-    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 1.0e-6f);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 1.0F, 0.01F);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, 32, 24), 1.0e-6F);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 1.0e-6F);
 }
 
 /**
@@ -527,8 +527,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_override_test) {
 
     BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 8u);
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 4u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 8U);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 4U);
 }
 
 /**
@@ -544,8 +544,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_refuses_a_side_out_of_range_test
 
     BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64u);
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 48u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64U);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 48U);
 }
 
 /**
@@ -558,8 +558,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_format_nonpositive_side_is_the_default_test
 
     BOOST_REQUIRE(read("Format 64 0 1\nFormat 70000 16 1\nWorldBegin\nWorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64u);
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 240u);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64U);
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 240U);
 }
 
 /**
@@ -582,7 +582,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_sphere_with_no_size_is_skipped_test) {
         "Sphere 1 -1 1 360\n"
         "WorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().traced().all<v3d::render::offline::trace::Sphere>().size(), 1u);
+    BOOST_CHECK_EQUAL(handler.context().traced().all<v3d::render::offline::trace::Sphere>().size(), 1U);
 }
 
 /**
@@ -606,7 +606,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_motion_flat_at_both_ends_test) {
         v3d::moya::RIBHandler handler(&renderer);
         BOOST_REQUIRE(read(flat + "Polygon \"P\" [-0.5 -0.5 2  0.5 -0.5 2  0.5 0.5 2  -0.5 0.5 2]\nWorldEnd\n",
             &handler));
-        BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 0u);
+        BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 0U);
     }
     {
         v3d::moya::Renderer renderer;
@@ -640,9 +640,9 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
         "WorldEnd\n", &handler));
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
-    BOOST_CHECK_GT(coverage(*planes), 0u);
+    BOOST_CHECK_GT(coverage(*planes), 0U);
     // the centre of column 56, row 7 is near x = 1.02 and y = 0.69, which is inside the quad
-    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 56, 7), 0.5f);
+    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 56, 7), 0.5F);
 }
 
 /**
@@ -666,8 +666,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_after_projection_test) {
         "WorldEnd\n", &handler));
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
-    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 16, 32), 0.5f);
-    BOOST_CHECK_LT(planes->value(v3d::moya::FrameBuffer::RED, 48, 32), 0.5f);
+    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 16, 32), 0.5F);
+    BOOST_CHECK_LT(planes->value(v3d::moya::FrameBuffer::RED, 48, 32), 0.5F);
 }
 
 /**
@@ -687,8 +687,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_repeated_head_polygon_splits_test) {
         "WorldEnd\n", &handler));
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
-    BOOST_CHECK_GT(coverage(*planes), 0u);
-    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.5f);
+    BOOST_CHECK_GT(coverage(*planes), 0U);
+    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.5F);
 }
 
 /**
@@ -707,16 +707,16 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_colour_test) {
         BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
             for (unsigned int channel = 0; channel < 3; channel++) {
                 BOOST_CHECK_SMALL(split->value(channel, pixel[0], pixel[1]) - whole->value(channel, pixel[0], pixel[1]),
-                    0.03f);
+                    0.03F);
             }
         }
     }
     // the colours do vary across it, so the comparison is not of two flat pictures. The
     // lower left corner is red and the upper right blue
-    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 40) > 0.8f);
-    BOOST_TEST(split->value(v3d::moya::FrameBuffer::BLUE, 14, 40) < 0.2f);
-    BOOST_TEST(split->value(v3d::moya::FrameBuffer::BLUE, 50, 8) > 0.8f);
-    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 8) < 0.2f);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 40) > 0.8F);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::BLUE, 14, 40) < 0.2F);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::BLUE, 50, 8) > 0.8F);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 8) < 0.2F);
 }
 
 /**
@@ -738,12 +738,12 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
     for (const auto & pixel : INSIDE) {
         BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
             BOOST_CHECK_SMALL(split->value(v3d::moya::FrameBuffer::RED, pixel[0], pixel[1]) -
-                whole->value(v3d::moya::FrameBuffer::RED, pixel[0], pixel[1]), 0.04f);
+                whole->value(v3d::moya::FrameBuffer::RED, pixel[0], pixel[1]), 0.04F);
         }
     }
     // the left edge leans away from the light and the right faces it
-    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 24) < 0.7f);
-    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 24) > 0.9f);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 24) < 0.7F);
+    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 24) > 0.9F);
 }
 
 };  // namespace

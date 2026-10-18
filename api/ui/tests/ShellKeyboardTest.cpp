@@ -150,8 +150,8 @@ BOOST_AUTO_TEST_CASE(shift_rides_on_the_event) {
 
     BOOST_CHECK(fixture.seam->event(keyDown({.key = SDLK_LEFT, .mod = SDL_KMOD_LSHIFT})));
     BOOST_CHECK(field->selected());
-    BOOST_CHECK_EQUAL(field->caret(), 2u);
-    BOOST_CHECK_EQUAL(field->anchor(), 3u);
+    BOOST_CHECK_EQUAL(field->caret(), 2U);
+    BOOST_CHECK_EQUAL(field->anchor(), 3U);
 }
 
 /**
@@ -166,8 +166,8 @@ BOOST_AUTO_TEST_CASE(control_rides_on_the_event) {
 
     BOOST_CHECK(fixture.seam->event(keyDown({.key = SDLK_A, .mod = SDL_KMOD_LCTRL})));
     BOOST_CHECK(field->selected());
-    BOOST_CHECK_EQUAL(field->caret(), 3u);
-    BOOST_CHECK_EQUAL(field->anchor(), 0u);
+    BOOST_CHECK_EQUAL(field->caret(), 3U);
+    BOOST_CHECK_EQUAL(field->anchor(), 0U);
 }
 
 /**
@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE(the_focus_move_is_announced) {
     fixture.ui->focus(field);  // the same component again is not a move
     fixture.ui->focus(boost::shared_ptr<v3d::ui::Component>());
 
-    BOOST_REQUIRE_EQUAL(landed.size(), 2u);
+    BOOST_REQUIRE_EQUAL(landed.size(), 2U);
     BOOST_CHECK_EQUAL(landed[0], "field");
     BOOST_CHECK_EQUAL(landed[1], "-");
 }
@@ -269,7 +269,7 @@ BOOST_AUTO_TEST_CASE(what_is_announced_is_what_is_focused) {
     fixture.container->add(plate);
     fixture.ui->focus(plate);
 
-    BOOST_REQUIRE_EQUAL(landed.size(), 1u);
+    BOOST_REQUIRE_EQUAL(landed.size(), 1U);
     BOOST_CHECK(!landed.front());
     BOOST_CHECK(!fixture.ui->focused());
 }

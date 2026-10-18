@@ -26,13 +26,13 @@ constexpr unsigned int ringSides = 48;
 /**
  * The centre handle's box, as a fraction of a ring's radius.
  **/
-constexpr float centreSize = 0.06f;
+constexpr float centreSize = 0.06F;
 
 /**
  * Radians a pixel, for the tumble the centre handle drives. A drag the width of a
  * handle turns the object about a third of a turn.
  **/
-constexpr float tumbleRate = 0.0075f;
+constexpr float tumbleRate = 0.0075F;
 
 /**
  * How face on a ring has to be before a click can be meant for it, as the cosine of
@@ -44,14 +44,14 @@ constexpr float tumbleRate = 0.0075f;
  * whose shape the user cannot even see. An axis view is the case that matters: two
  * of the three rings are exactly edge on there, and only the third can be turned.
  **/
-constexpr float faceOn = 0.15f;
+constexpr float faceOn = 0.15F;
 
 /**
  * An angle brought back into the half turn either side of zero, so a sweep across
  * the line where atan2 wraps is a small rotation rather than a whole turn.
  **/
 float wrap(float angle) {
-    const float turn = 2.0f * glm::pi<float>();
+    const float turn = 2.0F * glm::pi<float>();
     while (angle > glm::pi<float>()) {
         angle -= turn;
     }
@@ -78,9 +78,9 @@ float RotateManipulator::ringDistance(const Placement& placement, const glm::vec
 
     glm::vec2 start;
     bool started = false;
-    float nearest = -1.0f;
+    float nearest = -1.0F;
     for (unsigned int step = 0; step <= ringSides; step++) {
-        const float angle = 2.0f * glm::pi<float>() * static_cast<float>(step) /
+        const float angle = 2.0F * glm::pi<float>() * static_cast<float>(step) /
             static_cast<float>(ringSides);
         const glm::vec3 point = placement.origin +
             (first * std::cos(angle) + second * std::sin(angle)) * placement.size;
@@ -101,7 +101,7 @@ float RotateManipulator::ringDistance(const Placement& placement, const glm::vec
         if (distance > tolerance) {
             continue;
         }
-        if (nearest < 0.0f || distance < nearest) {
+        if (nearest < 0.0F || distance < nearest) {
             nearest = distance;
         }
     }
@@ -135,14 +135,14 @@ bool RotateManipulator::grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
 
     const Axis axes[3] = { Axis::X, Axis::Y, Axis::Z };
     bool found = false;
-    float nearest = 0.0f;
+    float nearest = 0.0F;
     for (const Axis handle : axes) {
         const glm::vec3 unit = direction(seat, handle);
         if (std::fabs(glm::dot(unit, forward)) < faceOn) {
             continue;
         }
         const float distance = ringDistance(seat, unit, view, cursor);
-        if (distance < 0.0f) {
+        if (distance < 0.0F) {
             continue;
         }
         if (found && distance >= nearest) {
@@ -186,20 +186,20 @@ float RotateManipulator::swept(const ViewPort& view, const Placement& placement,
     const glm::vec2& from, const glm::vec2& to) {
     glm::vec2 root;
     if (!project(view, placement.origin, &root)) {
-        return 0.0f;
+        return 0.0F;
     }
 
     const glm::vec2 before = from - root;
     const glm::vec2 after = to - root;
     // a gesture that starts on the origin has no angle about it
-    if (glm::length(before) < 1.0f || glm::length(after) < 1.0f) {
-        return 0.0f;
+    if (glm::length(before) < 1.0F || glm::length(after) < 1.0F) {
+        return 0.0F;
     }
 
     const float angle = wrap(std::atan2(after.y, after.x) - std::atan2(before.y, before.x));
 
     const glm::vec3 forward = basis(view).forward;
-    return glm::dot(direction(placement, axis), forward) > 0.0f ? -angle : angle;
+    return glm::dot(direction(placement, axis), forward) > 0.0F ? -angle : angle;
 }
 
 /**
@@ -214,7 +214,7 @@ void RotateManipulator::apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, co
         return;
     }
 
-    glm::quat turn(1.0f, 0.0f, 0.0f, 0.0f);
+    glm::quat turn(1.0F, 0.0F, 0.0F, 0.0F);
     if (axis() == Axis::None) {
         const Basis axes = basis(view);
         const glm::vec3& right = axes.right;
@@ -226,7 +226,7 @@ void RotateManipulator::apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, co
     } else {
         const glm::vec3 unit = direction(seat, axis());
         const float angle = swept(view, seat, axis(), from, to);
-        if (angle == 0.0f) {
+        if (angle == 0.0F) {
             return;
         }
         turn = glm::angleAxis(angle, glm::normalize(unit));

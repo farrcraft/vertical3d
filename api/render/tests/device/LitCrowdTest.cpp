@@ -87,10 +87,10 @@ entt::entity stand(entt::registry* registry, const MeshHandle& mesh, const glm::
  * -z, and part way through its bend. The bend swings the strip's far end towards -x.
  **/
 struct Laid {
-    float x = 0.0f;          /**< where it lies on x **/
+    float x = 0.0F;          /**< where it lies on x **/
     uint32_t bend = 0;       /**< the clip it plays **/
-    float duration = 1.0f;   /**< how long the clip lasts **/
-    float through = 0.0f;    /**< how far into the clip it stands, as a fraction **/
+    float duration = 1.0F;   /**< how long the clip lasts **/
+    float through = 0.0F;    /**< how far into the clip it stands, as a fraction **/
 };
 
 void lay(entt::registry* registry, const MeshHandle& strip, const Laid& laid) {
@@ -100,12 +100,12 @@ void lay(entt::registry* registry, const MeshHandle& strip, const Laid& laid) {
     const float through = laid.through;
     const entt::entity entity = registry->create();
     Transform transform;
-    transform.position = glm::vec3(x, 0.0f, 0.0f);
-    transform.rotation = glm::angleAxis(-glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
+    transform.position = glm::vec3(x, 0.0F, 0.0F);
+    transform.rotation = glm::angleAxis(-glm::half_pi<float>(), glm::vec3(1.0F, 0.0F, 0.0F));
     registry->emplace<Transform>(entity, transform);
     registry->emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{strip, false});
     Playback playback;
-    v3d::ecs::component::play(&playback, {.clip = bend, .duration = duration, .loops = false, .fade = 0.0f});
+    v3d::ecs::component::play(&playback, {.clip = bend, .duration = duration, .loops = false, .fade = 0.0F});
     v3d::ecs::component::advance(&playback, duration * through);
     registry->emplace<Playback>(entity, playback);
 }
@@ -114,9 +114,9 @@ v3d::type::camera::Camera camera(const glm::vec3& target, float zoom) {
     v3d::type::camera::Isometric orbit;
     orbit.target(target);
     orbit.zoom(zoom);
-    orbit.elevation(1.0471976f);
+    orbit.elevation(1.0471976F);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
+    camera.profile().clipping(glm::vec2(0.1F, 100.0F));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
@@ -144,10 +144,10 @@ boost::shared_ptr<v3d::image::Image> readBack(v3d::test::Headless* headless, VkC
  * The pixel a point in the world lands on.
  **/
 const unsigned char* at(v3d::image::Image& picture, const v3d::type::camera::Camera& camera, const glm::vec3& point) {
-    const glm::vec4 clip = camera.projection() * camera.view() * glm::vec4(point, 1.0f);
+    const glm::vec4 clip = camera.projection() * camera.view() * glm::vec4(point, 1.0F);
     const glm::vec2 ndc = glm::vec2(clip) / clip.w;
-    const int x = static_cast<int>(((ndc.x * 0.5f) + 0.5f) * static_cast<float>(picture.width()));
-    const int y = static_cast<int>(((ndc.y * 0.5f) + 0.5f) * static_cast<float>(picture.height()));
+    const int x = static_cast<int>(((ndc.x * 0.5F) + 0.5F) * static_cast<float>(picture.width()));
+    const int y = static_cast<int>(((ndc.y * 0.5F) + 0.5F) * static_cast<float>(picture.height()));
     BOOST_REQUIRE(x >= 0 && x < static_cast<int>(picture.width()) && y >= 0 && y < static_cast<int>(picture.height()));
     return picture.data() + (((static_cast<std::size_t>(y) * picture.width()) + static_cast<std::size_t>(x)) * 4);
 }
@@ -157,20 +157,20 @@ const unsigned char* at(v3d::image::Image& picture, const v3d::type::camera::Cam
  **/
 boost::shared_ptr<v3d::image::Image> drawStrips(v3d::test::Headless* headless, const entt::registry& registry,
     const MeshRegistry& meshes, Lit* lit, const boost::shared_ptr<RenderTarget>& target, const std::string& path) {
-    const v3d::type::camera::Camera view = camera(glm::vec3(0.0f, 0.0f, -1.5f), 6.0f);
+    const v3d::type::camera::Camera view = camera(glm::vec3(0.0F, 0.0F, -1.5F), 6.0F);
     lighting::Settings settings;
-    settings.outline = 0.05f;
+    settings.outline = 0.05F;
 
-    const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0f, meshes);
+    const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0F, meshes);
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     pass->camera(view.view(), view.projection());
-    pass->scene(lit->scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f),
+    pass->scene(lit->scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F),
         v3d::render::realtime::TextureHandle(), poses.palette()));
-    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, lit, settings.outline, pass.get(), poses);
+    v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, lit, settings.outline, pass.get(), poses);
 
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
@@ -205,30 +205,30 @@ BOOST_AUTO_TEST_CASE(every_entity_sharing_a_mesh_is_drawn_where_it_stands) {
 
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     const MeshHandle pair = meshes.add("pair", v3d::test::twoCubes());
-    const MeshHandle ground = meshes.add("ground", v3d::test::cube(glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)));
+    const MeshHandle ground = meshes.add("ground", v3d::test::cube(glm::vec4(0.5F, 0.5F, 0.5F, 1.0F)));
     Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
         headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), map->depthFormat());
 
     entt::registry registry;
-    stand(&registry, ground, glm::vec3(0.0f, -0.05f, 0.0f), glm::vec3(12.0f, 0.1f, 8.0f), false);
+    stand(&registry, ground, glm::vec3(0.0F, -0.05F, 0.0F), glm::vec3(12.0F, 0.1F, 8.0F), false);
     std::vector<glm::vec3> places;
-    for (const float z : {-1.5f, 1.5f}) {
-        for (const float x : {-3.0f, 0.0f, 3.0f}) {
-            places.emplace_back(x, 0.5f, z);
-            stand(&registry, pair, places.back(), glm::vec3(1.0f), true);
+    for (const float z : {-1.5F, 1.5F}) {
+        for (const float x : {-3.0F, 0.0F, 3.0F}) {
+            places.emplace_back(x, 0.5F, z);
+            stand(&registry, pair, places.back(), glm::vec3(1.0F), true);
         }
     }
 
-    const v3d::type::camera::Camera view = camera(glm::vec3(0.0f), 6.0f);
+    const v3d::type::camera::Camera view = camera(glm::vec3(0.0F), 6.0F);
     lighting::Settings settings;
-    settings.outline = 0.05f;
-    const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, {.margin = 2.0f});
+    settings.outline = 0.05F;
+    const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, {.margin = 2.0F});
     if (!bounds) {
         BOOST_ERROR("a crowd that casts gave no fit");
         return;
     }
     const glm::mat4 light = lighting::shadowLight(settings.light, *bounds);
-    VkDescriptorSet scene = lit.scene(lighting::pack(settings, light, 1.0f / static_cast<float>(mapSize)),
+    VkDescriptorSet scene = lit.scene(lighting::pack(settings, light, 1.0F / static_cast<float>(mapSize)),
         headless.context->textures()->depthTexture(*map));
 
     Frame frame;
@@ -238,15 +238,15 @@ BOOST_AUTO_TEST_CASE(every_entity_sharing_a_mesh_is_drawn_where_it_stands) {
     casting->depth(true);
     casting->scene(scene);
     casting->depthBias(settings.constantBias, settings.slopeBias);
-    v3d::render::realtime::entity::casters(registry, 1.0f, meshes, &lit, casting.get());
+    v3d::render::realtime::entity::casters(registry, 1.0F, meshes, &lit, casting.get());
 
     drawn->reads(map);
     drawn->target(target);
     drawn->depth(true);
-    drawn->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    drawn->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     drawn->camera(view.view(), view.projection());
     drawn->scene(scene);
-    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, drawn.get());
+    v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, drawn.get());
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
@@ -258,8 +258,8 @@ BOOST_AUTO_TEST_CASE(every_entity_sharing_a_mesh_is_drawn_where_it_stands) {
     // the top of each cube faces the light and nothing stands over it, so it is in the lit band
     // of its part's colour, which is pure in its channel
     for (const glm::vec3& place : places) {
-        const unsigned char* red = at(*picture, view, place + glm::vec3(-0.75f, 0.5f, 0.0f));
-        const unsigned char* green = at(*picture, view, place + glm::vec3(0.75f, 0.5f, 0.0f));
+        const unsigned char* red = at(*picture, view, place + glm::vec3(-0.75F, 0.5F, 0.0F));
+        const unsigned char* green = at(*picture, view, place + glm::vec3(0.75F, 0.5F, 0.0F));
         BOOST_TEST_MESSAGE("at " << place.x << "," << place.z << " red " << int(red[0]) << "," << int(red[1]) << ","
             << int(red[2]) << " green " << int(green[0]) << "," << int(green[1]) << "," << int(green[2]));
         BOOST_CHECK(red[0] > 200 && red[1] < 10 && red[2] < 10);
@@ -291,12 +291,12 @@ BOOST_AUTO_TEST_CASE(each_skinned_entity_sharing_a_mesh_takes_its_own_pose) {
     const float duration = meshes.resolve(strip)->skin->clips[*bend].duration;
 
     entt::registry both;
-    lay(&both, strip, {.x = -3.0f, .bend = *bend, .duration = duration, .through = 0.5f});
-    lay(&both, strip, {.x = 3.0f, .bend = *bend, .duration = duration, .through = 0.25f});
+    lay(&both, strip, {.x = -3.0F, .bend = *bend, .duration = duration, .through = 0.5F});
+    lay(&both, strip, {.x = 3.0F, .bend = *bend, .duration = duration, .through = 0.25F});
     entt::registry left;
-    lay(&left, strip, {.x = -3.0f, .bend = *bend, .duration = duration, .through = 0.5f});
+    lay(&left, strip, {.x = -3.0F, .bend = *bend, .duration = duration, .through = 0.5F});
     entt::registry right;
-    lay(&right, strip, {.x = 3.0f, .bend = *bend, .duration = duration, .through = 0.25f});
+    lay(&right, strip, {.x = 3.0F, .bend = *bend, .duration = duration, .through = 0.25F});
 
     const boost::shared_ptr<v3d::image::Image> pair = drawStrips(&headless, both, meshes, &lit, target, "data_out/lit_crowd_strips.png");
     const boost::shared_ptr<v3d::image::Image> alone = drawStrips(&headless, left, meshes, &lit, target, "data_out/lit_crowd_strips_left.png");
@@ -346,26 +346,26 @@ BOOST_AUTO_TEST_CASE(entities_sharing_a_mesh_are_drawn_in_one_draw_per_part) {
         shared.push_back(copy == 0 ? meshes.add("pair", v3d::test::twoCubes()) : shared.front());
     }
 
-    const v3d::type::camera::Camera view = camera(glm::vec3(0.0f), 6.0f);
+    const v3d::type::camera::Camera view = camera(glm::vec3(0.0F), 6.0F);
     lighting::Settings settings;
-    settings.outline = 0.05f;
+    settings.outline = 0.05F;
 
     const auto draw = [&](const std::vector<MeshHandle>& handles, const std::string& path, std::size_t* items) {
         entt::registry registry;
         std::size_t next = 0;
-        for (const float z : {-1.5f, 1.5f}) {
-            for (const float x : {-3.0f, 0.0f, 3.0f}) {
-                stand(&registry, handles[next++], glm::vec3(x, 0.5f, z), glm::vec3(1.0f), false);
+        for (const float z : {-1.5F, 1.5F}) {
+            for (const float x : {-3.0F, 0.0F, 3.0F}) {
+                stand(&registry, handles[next++], glm::vec3(x, 0.5F, z), glm::vec3(1.0F), false);
             }
         }
         Frame frame;
         const boost::shared_ptr<Pass> pass = frame.pass("lit");
         pass->target(target);
         pass->depth(true);
-        pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+        pass->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
         pass->camera(view.view(), view.projection());
-        pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
-        v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, pass.get());
+        pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F)));
+        v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
         *items = pass->items().size();
 
         VkCommandBuffer commands = headless.context->ring()->begin();
@@ -411,7 +411,7 @@ BOOST_AUTO_TEST_CASE(a_crowd_larger_than_the_object_buffer_draws_every_object) {
     const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, colourFormat, true);
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
-    const MeshHandle crate = meshes.add("crate", v3d::test::cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
+    const MeshHandle crate = meshes.add("crate", v3d::test::cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F)));
     Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
         headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
 
@@ -419,14 +419,14 @@ BOOST_AUTO_TEST_CASE(a_crowd_larger_than_the_object_buffer_draws_every_object) {
     std::vector<glm::vec3> places;
     for (int row = 0; row < side; row++) {
         for (int column = 0; column < side; column++) {
-            places.emplace_back(static_cast<float>(column) - 11.5f, 0.3f, static_cast<float>(row) - 11.5f);
-            stand(&registry, crate, places.back(), glm::vec3(0.6f), false);
+            places.emplace_back(static_cast<float>(column) - 11.5F, 0.3F, static_cast<float>(row) - 11.5F);
+            stand(&registry, crate, places.back(), glm::vec3(0.6F), false);
         }
     }
 
-    const v3d::type::camera::Camera view = camera(glm::vec3(0.0f), 13.0f);
+    const v3d::type::camera::Camera view = camera(glm::vec3(0.0F), 13.0F);
     lighting::Settings settings;
-    settings.outline = 0.0f;
+    settings.outline = 0.0F;
 
     boost::shared_ptr<v3d::image::Image> picture;
     for (int drawn = 1; drawn <= 2; drawn++) {
@@ -434,10 +434,10 @@ BOOST_AUTO_TEST_CASE(a_crowd_larger_than_the_object_buffer_draws_every_object) {
         const boost::shared_ptr<Pass> pass = frame.pass("lit");
         pass->target(target);
         pass->depth(true);
-        pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+        pass->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
         pass->camera(view.view(), view.projection());
-        pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
-        v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, pass.get());
+        pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F)));
+        v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
         // every cube shares one mesh of one part, so the walk is one draw of every instance
         BOOST_CHECK_EQUAL(pass->items().size(), 1U);
 
@@ -455,7 +455,7 @@ BOOST_AUTO_TEST_CASE(a_crowd_larger_than_the_object_buffer_draws_every_object) {
 
     std::size_t red = 0;
     for (const glm::vec3& place : places) {
-        const unsigned char* top = at(*picture, view, place + glm::vec3(0.0f, 0.3f, 0.0f));
+        const unsigned char* top = at(*picture, view, place + glm::vec3(0.0F, 0.3F, 0.0F));
         if (top[0] > 200 && top[1] < 10 && top[2] < 10) {
             red++;
         }

@@ -28,7 +28,7 @@ namespace {
 /**
  * A fixed width per character, so a label's width is predictable.
  **/
-const float characterWidth = 10.0f;
+const float characterWidth = 10.0F;
 
 /**
  * Where the labels went, so a test can check the layout without a font or a device.
@@ -98,7 +98,7 @@ struct Fixture final {
      * The middle of a component, which is where a click on it lands.
      **/
     static glm::vec2 centre(const v3d::ui::Component& component) {
-        return component.position() + component.size() * 0.5f;
+        return component.position() + component.size() * 0.5F;
     }
 
     /**
@@ -106,7 +106,7 @@ struct Fixture final {
      **/
     glm::vec2 label(std::size_t index) const {
         const v3d::type::geometry::Bound2D bounds = bar->bound(index);
-        return bounds.position() + bounds.size() * 0.5f;
+        return bounds.position() + bounds.size() * 0.5F;
     }
 
     boost::shared_ptr<entt::dispatcher> dispatcher;
@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE(a_bar_that_has_not_been_drawn_takes_no_press) {
     Fixture fixture;
     build(&fixture);
 
-    BOOST_CHECK(!fixture.bar->press(glm::vec2(20.0f, 10.0f)));
+    BOOST_CHECK(!fixture.bar->press(glm::vec2(20.0F, 10.0F)));
     BOOST_CHECK(!fixture.bar->active());
 }
 
@@ -257,8 +257,8 @@ BOOST_AUTO_TEST_CASE(the_cursor_opens_a_flyout_from_a_submenu_item) {
     const boost::shared_ptr<v3d::ui::component::menu::Menu>& flyout = fixture.bar->panels().back();
     // through the bound, because a menu's own size() is its item count
     const v3d::type::geometry::Bound2D bounds = panel->bound();
-    BOOST_CHECK_CLOSE(flyout->position().x, bounds.position().x + bounds.size().x, 0.01f);
-    BOOST_CHECK_CLOSE(flyout->position().y, shading->position().y, 0.01f);
+    BOOST_CHECK_CLOSE(flyout->position().x, bounds.position().x + bounds.size().x, 0.01F);
+    BOOST_CHECK_CLOSE(flyout->position().y, shading->position().y, 0.01F);
 
     // the item in the flyout is drawn, and a press on it sends its command
     BOOST_CHECK(fixture.bar->press(Fixture::centre(*(*flyout)[0])));
@@ -304,7 +304,7 @@ BOOST_AUTO_TEST_CASE(a_press_elsewhere_dismisses_an_open_bar_and_nothing_more) {
     build(&fixture);
     fixture.draw();
 
-    const glm::vec2 elsewhere(400.0f, 400.0f);
+    const glm::vec2 elsewhere(400.0F, 400.0F);
     BOOST_CHECK(!fixture.bar->press(elsewhere));
 
     fixture.bar->press(fixture.label(0));

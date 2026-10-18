@@ -27,7 +27,7 @@ namespace v3d::font {
 namespace {
 
 // metrics and advances are 26.6 fixed point, 64 units to the pixel
-constexpr float FIXED_POINT_SCALE = 64.0f;
+constexpr float FIXED_POINT_SCALE = 64.0F;
 // the face is loaded at this many times its horizontal resolution, and the transform matrix
 // scales x back down by the same factor
 constexpr FT_UInt HORIZONTAL_OVERSAMPLE = 64;
@@ -134,7 +134,7 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
     ascender_(0),
     descender_(0),
     outline_(OUTLINE_TYPE_NONE),
-    outlineThickness_(0.0f),
+    outlineThickness_(0.0F),
     hinting_(1),
     lcdFiltering_(1),
     logger_(logger) {
@@ -142,9 +142,9 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
     std::copy(defaultLcdWeights.begin(), defaultLcdWeights.end(), std::begin(lcdWeights_));
 
     // what the face would have set, for a face that does not open
-    underlinePosition_ = 0.0f;
-    underlineThickness_ = 0.0f;
-    linegap_ = 0.0f;
+    underlinePosition_ = 0.0F;
+    underlineThickness_ = 0.0F;
+    linegap_ = 0.0F;
 
     freetype_ = boost::make_shared<Freetype>(logger);
 
@@ -159,12 +159,12 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
     // the face's units are 26.6 fixed point and scaled by the horizontal oversample of the
     // transform matrix loadFace sets
     underlinePosition_ = static_cast<float>(freetype_->face_->underline_position) / (FIXED_POINT_SCALE * static_cast<float>(HORIZONTAL_OVERSAMPLE)) * size_;
-    underlinePosition_ = underlinePosition_ < 0.0f ? std::ceil(underlinePosition_ - 0.5f) : std::floor(underlinePosition_ + 0.5f);
-    underlinePosition_ = std::min(underlinePosition_, -2.0f);
+    underlinePosition_ = underlinePosition_ < 0.0F ? std::ceil(underlinePosition_ - 0.5F) : std::floor(underlinePosition_ + 0.5F);
+    underlinePosition_ = std::min(underlinePosition_, -2.0F);
 
     underlineThickness_ = static_cast<float>(freetype_->face_->underline_thickness) / (FIXED_POINT_SCALE * static_cast<float>(HORIZONTAL_OVERSAMPLE)) * size_;
-    underlineThickness_ = underlineThickness_ < 0.0f ? std::ceil(underlineThickness_ - 0.5f) : std::floor(underlineThickness_ + 0.5f);
-    underlineThickness_ = std::max(underlineThickness_, 1.0f);
+    underlineThickness_ = underlineThickness_ < 0.0F ? std::ceil(underlineThickness_ - 0.5F) : std::floor(underlineThickness_ + 0.5F);
+    underlineThickness_ = std::max(underlineThickness_, 1.0F);
 
     // metrics are 26.6 fixed point, which already carries fractional pixels
     const FT_Size_Metrics metrics = freetype_->face_->size->metrics;
@@ -192,12 +192,12 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::createGlyph() {
     glyph->outlineThickness_ = 0.0;
     glyph->offset_.x = 0;
     glyph->offset_.y = 0;
-    glyph->advance_.x = 0.0f;
-    glyph->advance_.y = 0.0f;
-    glyph->st_[0].s = 0.0f;
-    glyph->st_[0].t = 0.0f;
-    glyph->st_[1].s = 0.0f;
-    glyph->st_[1].t = 0.0f;
+    glyph->advance_.x = 0.0F;
+    glyph->advance_.y = 0.0F;
+    glyph->st_[0].s = 0.0F;
+    glyph->st_[0].t = 0.0F;
+    glyph->st_[1].s = 0.0F;
+    glyph->st_[1].t = 0.0F;
 
     return glyph;
 }

@@ -22,18 +22,18 @@ namespace v3d::render::offline::sl {
  **/
 class Point final {
  public:
-    glm::vec3 position = glm::vec3(0.0f);   /**< P **/
-    glm::vec3 normal = glm::vec3(0.0f);     /**< N **/
-    glm::vec3 geometric = glm::vec3(0.0f);  /**< Ng **/
-    glm::vec3 incident = glm::vec3(0.0f);   /**< I **/
-    glm::vec3 colour = glm::vec3(1.0f);     /**< Cs **/
-    glm::vec3 opacity = glm::vec3(1.0f);    /**< Os, and Oi until the shader sets it **/
-    float s = 0.0f;
-    float t = 0.0f;
-    float u = 0.0f;
-    float v = 0.0f;
-    float du = 0.0f;                        /**< zero for a hider with no neighbouring point to difference **/
-    float dv = 0.0f;
+    glm::vec3 position = glm::vec3(0.0F);   /**< P **/
+    glm::vec3 normal = glm::vec3(0.0F);     /**< N **/
+    glm::vec3 geometric = glm::vec3(0.0F);  /**< Ng **/
+    glm::vec3 incident = glm::vec3(0.0F);   /**< I **/
+    glm::vec3 colour = glm::vec3(1.0F);     /**< Cs **/
+    glm::vec3 opacity = glm::vec3(1.0F);    /**< Os, and Oi until the shader sets it **/
+    float s = 0.0F;
+    float t = 0.0F;
+    float u = 0.0F;
+    float v = 0.0F;
+    float du = 0.0F;                        /**< zero for a hider with no neighbouring point to difference **/
+    float dv = 0.0F;
 };
 
 /**

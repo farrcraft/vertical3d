@@ -33,7 +33,7 @@ float edge(const glm::vec3 & from, const glm::vec3 & to, const glm::vec2 & point
 bool triangle(const glm::vec3 & p0, const glm::vec3 & p1, const glm::vec3 & p2, const glm::vec2 & point, float * depth) {
     const float area = edge(p0, p1, glm::vec2(p2));
     // edge-on to the camera, or collapsed to a line by the projection: it covers nothing
-    if (area == 0.0f) {
+    if (area == 0.0F) {
         return false;
     }
     // each weight is the sub-triangle opposite a corner, signed the way the whole one is, so
@@ -41,7 +41,7 @@ bool triangle(const glm::vec3 & p0, const glm::vec3 & p1, const glm::vec3 & p2, 
     const float wa = edge(p1, p2, point) / area;
     const float wb = edge(p2, p0, point) / area;
     const float wc = edge(p0, p1, point) / area;
-    if (wa < 0.0f || wb < 0.0f || wc < 0.0f) {
+    if (wa < 0.0F || wb < 0.0F || wc < 0.0F) {
         return false;
     }
     *depth = (wa * p0.z) + (wb * p1.z) + (wc * p2.z);

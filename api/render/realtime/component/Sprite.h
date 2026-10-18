@@ -22,10 +22,10 @@ namespace v3d::render::realtime::component {
  **/
 struct Sprite final {
     TextureHandle texture;               /**< unset for an untextured quad drawn against white **/
-    glm::vec2 uv0{0.0f, 0.0f};           /**< the region's top-left, as SpriteSheets::uv hands it out **/
-    glm::vec2 uv1{1.0f, 1.0f};           /**< the region's bottom-right **/
-    glm::vec2 size{1.0f, 1.0f};          /**< width by height in world units, before the transform's scale **/
-    glm::vec4 tint{1.0f, 1.0f, 1.0f, 1.0f};
+    glm::vec2 uv0{0.0F, 0.0F};           /**< the region's top-left, as SpriteSheets::uv hands it out **/
+    glm::vec2 uv1{1.0F, 1.0F};           /**< the region's bottom-right **/
+    glm::vec2 size{1.0F, 1.0F};          /**< width by height in world units, before the transform's scale **/
+    glm::vec4 tint{1.0F, 1.0F, 1.0F, 1.0F};
 };
 
 };  // namespace v3d::render::realtime::component

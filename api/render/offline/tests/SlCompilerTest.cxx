@@ -610,7 +610,7 @@ BOOST_AUTO_TEST_CASE(slcompiler_symbol_order_test) {
     std::vector<Symbol> symbols;
     BOOST_CHECK_EQUAL(compile("surface s(float Ka = 1;) { float a = Ka; Ci = Cs; }", &symbols), "");
 
-    BOOST_REQUIRE(symbols.size() > 3u);
+    BOOST_REQUIRE(symbols.size() > 3U);
     BOOST_CHECK(symbols.front().role == Symbol::Role::GLOBAL);
     BOOST_CHECK_EQUAL(symbols.front().name, "P");
     BOOST_CHECK(symbols[symbols.size() - 2].role == Symbol::Role::PARAMETER);

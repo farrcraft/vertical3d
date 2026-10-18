@@ -70,9 +70,9 @@ class RenderContext {
         static constexpr unsigned int defaultWidth = 320;
         static constexpr unsigned int defaultHeight = 240;
         /** RI's default frame aspect ratio, the aspect of defaultWidth by defaultHeight. **/
-        static constexpr float defaultFrameAspectRatio = 4.0f / 3.0f;
+        static constexpr float defaultFrameAspectRatio = 4.0F / 3.0F;
         /** RI's default "fov" for a "perspective" projection, in degrees. **/
-        static constexpr float defaultFov = 90.0f;
+        static constexpr float defaultFov = 90.0F;
 
         /**
          * maps to RiFormat(xres, yres, aspect)
@@ -359,19 +359,19 @@ class RenderContext {
          * RI_EPSILON and RI_INFINITY, because RenderMan.h is the C interface and is not
          * included here.
          */
-        static constexpr float riEpsilon = 1.0e-10f;
-        static constexpr float riInfinity = 1.0e38f;
+        static constexpr float riEpsilon = 1.0e-10F;
+        static constexpr float riInfinity = 1.0e38F;
         /**
          * What RiAttributeBegin saves and RiAttributeEnd puts back.
          **/
         class Attributes {
          public:
             v3d::render::offline::MovingTransform transform;
-            glm::vec3 color = glm::vec3(1.0f);
-            glm::vec3 opacity = glm::vec3(1.0f);
-            float shadingRate = 1.0f;
+            glm::vec3 color = glm::vec3(1.0F);
+            glm::vec3 opacity = glm::vec3(1.0F);
+            float shadingRate = 1.0F;
             v3d::render::offline::sl::InstancePtr surface;
-            glm::mat4x4 surfacePlacement = glm::mat4x4(1.0f);
+            glm::mat4x4 surfacePlacement = glm::mat4x4(1.0F);
             /**
              * Which lights are switched on, by handle. The lights themselves last for the
              * frame, and AttributeEnd restores only this set.
@@ -387,7 +387,7 @@ class RenderContext {
          public:
             std::string handle;
             v3d::render::offline::sl::InstancePtr shader;
-            glm::mat4x4 placement = glm::mat4x4(1.0f);
+            glm::mat4x4 placement = glm::mat4x4(1.0F);
         };
 
         std::string name_;
@@ -408,7 +408,7 @@ class RenderContext {
         boost::shared_ptr<reyes::GridShader> shader_;
         std::vector<LightSource> lights_;
         v3d::render::offline::sl::InstancePtr surface_;
-        glm::mat4x4 surfacePlacement_ = glm::mat4x4(1.0f);
+        glm::mat4x4 surfacePlacement_ = glm::mat4x4(1.0F);
         std::vector<std::string> lit_;
         v3d::render::offline::trace::Scene traced_;
         /** The lights that are on, in world space, and the handles and count they came from. **/
@@ -421,18 +421,18 @@ class RenderContext {
         // camera options
         unsigned int xres_ = defaultWidth;
         unsigned int yres_ = defaultHeight;
-        float pixelAspect_ = 1.0f;
-        float crop_[4] = { 0.0f, 1.0f, 0.0f, 1.0f };  // RiCropWindow's default; nothing sets or reads it
+        float pixelAspect_ = 1.0F;
+        float crop_[4] = { 0.0F, 1.0F, 0.0F, 1.0F };  // RiCropWindow's default; nothing sets or reads it
         float frameAspect_ = defaultFrameAspectRatio;
-        float screen_[4] = { -defaultFrameAspectRatio, defaultFrameAspectRatio, -1.0f, 1.0f };  // the screen window: left, right, bottom, top
+        float screen_[4] = { -defaultFrameAspectRatio, defaultFrameAspectRatio, -1.0F, 1.0F };  // the screen window: left, right, bottom, top
         // RiFormat sets the frame aspect, and the frame aspect sets the screen window. Once a
         // scene names the frame aspect or the screen window, that one stops following. A named
         // projection means prepareWorld() only rebuilds the screen transform
         bool frameAspectNamed_ = false;
         bool screenNamed_ = false;
         bool projectionNamed_ = false;
-        glm::vec3 color_ = glm::vec3(1.0f);
-        glm::vec3 opacity_ = glm::vec3(1.0f);
+        glm::vec3 color_ = glm::vec3(1.0F);
+        glm::vec3 opacity_ = glm::vec3(1.0F);
         std::string projection_ = "orthographic";
         float fov_ = defaultFov;
         boost::shared_ptr<Hider> hider_;
@@ -461,7 +461,7 @@ class RenderContext {
         unsigned int gridSize_ = 256;
         static constexpr unsigned int defaultMotionCacheLog2 = 20;
         std::size_t motionCache_ = std::size_t(1) << defaultMotionCacheLog2;
-        float shadingRate_ = 1.0f;
+        float shadingRate_ = 1.0F;
 };
 
 /**

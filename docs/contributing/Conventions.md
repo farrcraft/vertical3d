@@ -115,6 +115,9 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
   parameters, `s` and `t` for texture coordinates, `i`, `j` and `k` for a loop counter, `n` for a
   count parameter and `e` for a caught exception. clang-tidy's `readability-identifier-length`
   reports any other name shorter than two letters.
+- **A literal's suffix is in capitals:** `1.0F`, `16U`, `0xFFULL`. A lowercase `l` reads as the
+  digit 1. clang-tidy's `readability-uppercase-literal-suffix` reports a lowercase suffix,
+  inside a macro argument too.
 - **Pass a non-trivial type by `const` reference**, including a `boost::shared_ptr` and a
   `std::string`. clang-tidy's `performance-unnecessary-value-param` also accepts a by-value
   parameter that is moved from, but this tree uses the `const` reference in both cases.

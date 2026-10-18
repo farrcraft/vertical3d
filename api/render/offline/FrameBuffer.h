@@ -42,7 +42,7 @@ class FrameBuffer final {
     /** A plane, and the value every pixel of it is set to. **/
     struct Fill {
         unsigned int plane = 0;
-        float value = 0.0f;
+        float value = 0.0F;
     };
 
     /**

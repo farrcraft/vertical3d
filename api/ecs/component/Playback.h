@@ -29,17 +29,17 @@ struct Playback final {
     static constexpr uint32_t none = std::numeric_limits<uint32_t>::max();
 
     uint32_t clip{ none };
-    float time{ 0.0f };      /**< seconds in, unwrapped when the clip loops - Clock::sample() wraps it **/
-    float duration{ 0.0f };
+    float time{ 0.0F };      /**< seconds in, unwrapped when the clip loops - Clock::sample() wraps it **/
+    float duration{ 0.0F };
     bool loops{ true };
 
     uint32_t from{ none };   /**< the clip being faded out of, or none **/
-    float fromTime{ 0.0f };
-    float fromDuration{ 0.0f };
+    float fromTime{ 0.0F };
+    float fromDuration{ 0.0F };
     bool fromLoops{ true };
 
-    float fade{ 1.0f };      /**< how far the fade into clip has gone, 1 when it has finished or there is none **/
-    float fadeDuration{ 0.0f };
+    float fade{ 1.0F };      /**< how far the fade into clip has gone, 1 when it has finished or there is none **/
+    float fadeDuration{ 0.0F };
 };
 
 /**
@@ -52,9 +52,9 @@ struct Playback final {
  **/
 struct Start {
     uint32_t clip = Playback::none;
-    float duration = 0.0f;
+    float duration = 0.0F;
     bool loops = false;
-    float fade = 0.0f;
+    float fade = 0.0F;
 };
 
 void play(Playback* playback, const Start& start);

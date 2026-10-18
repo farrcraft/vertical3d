@@ -45,20 +45,20 @@ const uint32_t height = 16;
  * quad's corners land on pixel boundaries and every pixel is wholly in or out of it.
  **/
 glm::mat4x4 pixels() {
-    glm::mat4x4 projection(1.0f);
-    projection[0][0] = 2.0f / static_cast<float>(width);
-    projection[1][1] = 2.0f / static_cast<float>(height);
-    projection[3][0] = -1.0f;
-    projection[3][1] = -1.0f;
+    glm::mat4x4 projection(1.0F);
+    projection[0][0] = 2.0F / static_cast<float>(width);
+    projection[1][1] = 2.0F / static_cast<float>(height);
+    projection[3][0] = -1.0F;
+    projection[3][1] = -1.0F;
     return projection;
 }
 
 canvas::World::Corners rect(float minX, float maxX) {
     return canvas::World::Corners{
-        glm::vec3(minX, 0.0f, 0.5f),
-        glm::vec3(maxX, 0.0f, 0.5f),
-        glm::vec3(maxX, static_cast<float>(height), 0.5f),
-        glm::vec3(minX, static_cast<float>(height), 0.5f)
+        glm::vec3(minX, 0.0F, 0.5F),
+        glm::vec3(maxX, 0.0F, 0.5F),
+        glm::vec3(maxX, static_cast<float>(height), 0.5F),
+        glm::vec3(minX, static_cast<float>(height), 0.5F)
     };
 }
 
@@ -74,8 +74,8 @@ boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, cons
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("world");
     pass->target(target);
-    pass->clearColour(glm::vec4(0.2f, 0.4f, 0.0f, 1.0f));
-    pass->camera(glm::mat4x4(1.0f), pixels());
+    pass->clearColour(glm::vec4(0.2F, 0.4F, 0.0F, 1.0F));
+    pass->camera(glm::mat4x4(1.0F), pixels());
     headless->context->worldQuads()->submit(canvas, pass.get(), 0, blend);
 
     VkCommandBuffer commands = headless->context->ring()->begin();
@@ -121,8 +121,8 @@ BOOST_AUTO_TEST_CASE(an_additive_quad_adds_to_what_is_there) {
     v3d::test::Headless headless(colourFormat, width, height);
 
     canvas::World canvas;
-    canvas.quad(rect(0.0f, 16.0f), glm::vec4(0.4f, 0.4f, 0.8f, 1.0f));
-    canvas.quad(rect(16.0f, 32.0f), glm::vec4(0.4f, 0.4f, 0.8f, 0.5f));
+    canvas.quad(rect(0.0F, 16.0F), glm::vec4(0.4F, 0.4F, 0.8F, 1.0F));
+    canvas.quad(rect(16.0F, 32.0F), glm::vec4(0.4F, 0.4F, 0.8F, 0.5F));
 
     const boost::shared_ptr<v3d::image::Image> added = blended(&headless, canvas, World::Blend::Additive, "world_additive");
     BOOST_CHECK(headless.silent());

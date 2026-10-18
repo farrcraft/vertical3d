@@ -134,7 +134,7 @@ class CountingPng final : public v3d::asset::Loader {
  **/
 v3d::type::Model twoParts(const std::string& first, const std::string& second) {
     v3d::type::Model model;
-    const glm::vec3 corners[6] = {{0, 0, 0.5f}, {1, 0, 0.5f}, {0, 1, 0.5f}, {1, 0, 0.5f}, {1, 1, 0.5f}, {0, 1, 0.5f}};
+    const glm::vec3 corners[6] = {{0, 0, 0.5F}, {1, 0, 0.5F}, {0, 1, 0.5F}, {1, 0, 0.5F}, {1, 1, 0.5F}, {0, 1, 0.5F}};
     for (const glm::vec3& corner : corners) {
         v3d::type::Model::Vertex vertex;
         vertex.position = corner;
@@ -157,9 +157,9 @@ v3d::type::Model twoParts(const std::string& first, const std::string& second) {
 v3d::type::Model triangle(const std::string& texture) {
     v3d::type::Model model;
     model.vertices().resize(3);
-    model.vertices()[0].position = glm::vec3(-0.5f, -0.5f, 0.5f);
-    model.vertices()[1].position = glm::vec3(0.5f, -0.5f, 0.5f);
-    model.vertices()[2].position = glm::vec3(0.0f, 0.5f, 0.5f);
+    model.vertices()[0].position = glm::vec3(-0.5F, -0.5F, 0.5F);
+    model.vertices()[1].position = glm::vec3(0.5F, -0.5F, 0.5F);
+    model.vertices()[2].position = glm::vec3(0.0F, 0.5F, 0.5F);
     model.indices() = {0, 1, 2};
     v3d::type::Model::Material material;
     material.baseColourTexture = texture;
@@ -273,10 +273,10 @@ BOOST_AUTO_TEST_CASE(a_file_in_parts_is_an_entry_in_parts) {
     BOOST_REQUIRE_EQUAL(entry->parts.size(), 2U);
     BOOST_CHECK_EQUAL(entry->parts[0].firstIndex, 0U);
     BOOST_CHECK_EQUAL(entry->parts[0].indexCount, 6U);
-    BOOST_CHECK(entry->parts[0].baseColour == glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    BOOST_CHECK(entry->parts[0].baseColour == glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
     BOOST_CHECK_EQUAL(entry->parts[1].firstIndex, 6U);
     BOOST_CHECK_EQUAL(entry->parts[1].indexCount, 3U);
-    BOOST_CHECK(entry->parts[1].baseColour == glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    BOOST_CHECK(entry->parts[1].baseColour == glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     BOOST_CHECK(headless.silent());
 }
 
@@ -555,7 +555,7 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     DrawItem item;
     item.pipeline = pipeline;
     item.material = entry->parts[0].material;

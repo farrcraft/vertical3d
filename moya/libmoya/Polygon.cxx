@@ -27,7 +27,7 @@ namespace {
  * The least length of the cross product of two edges from a polygon's first vertex that gives
  * the polygon a normal.
  **/
-constexpr float SMALLEST_SPANNED_AREA = 1.0e-8f;
+constexpr float SMALLEST_SPANNED_AREA = 1.0e-8F;
 
 Vertex crossing(const Vertex & start, const Vertex & end, const glm::vec3 & hit);
 
@@ -106,7 +106,7 @@ glm::vec3 Polygon::geometricNormal(void) const {
             return across / area;
         }
     }
-    return glm::vec3(0.0f);
+    return glm::vec3(0.0F);
 }
 
 void Polygon::clip(const v3d::type::geometry::Plane & plane) {
@@ -201,7 +201,7 @@ bool between(const glm::vec3 & from, const glm::vec3 & to, float along, glm::vec
     // interpolating unit normals does not give a unit one back
     const glm::vec3 mixed = from + (to - from) * along;
     const float length = glm::length(mixed);
-    if (!(length > 0.0f)) {
+    if (!(length > 0.0F)) {
         return false;
     }
     *normal = mixed / length;
@@ -217,11 +217,11 @@ Vertex crossing(const Vertex & start, const Vertex & end, const glm::vec3 & hit)
     Vertex vert;
     vert.point(hit);
     const float span = glm::length(end.point() - start.point());
-    const float along = span > 0.0f ? glm::length(hit - start.point()) / span : 0.0f;
+    const float along = span > 0.0F ? glm::length(hit - start.point()) / span : 0.0F;
     if (start.hasColor() && end.hasColor()) {
         vert.color(start.color() + (end.color() - start.color()) * along);
     }
-    glm::vec3 normal(0.0f);
+    glm::vec3 normal(0.0F);
     if (start.hasNormal() && end.hasNormal() && between(start.normal(), end.normal(), along, &normal)) {
         vert.normal(normal);
     }
@@ -316,13 +316,13 @@ void Polygon::split(RenderContext & rc) {
     // the plane of the polygon, and an edge in it: the normal of the first cutting plane is
     // perpendicular to both. A polygon with no plane, every vertex on one line, has no area
     const glm::vec3 surfaceNormal = geometricNormal();
-    if (surfaceNormal == glm::vec3(0.0f)) {
+    if (surfaceNormal == glm::vec3(0.0F)) {
         return;
     }
     // the edge is taken from the first vertex that differs from the head. A repeated head
     // gives a zero edge, which names no cutting plane. A polygon with a plane has such a vertex
-    glm::vec3 v0(0.0f);
-    for (size_t i = 1; i < vertices_.size() && v0 == glm::vec3(0.0f); i++) {
+    glm::vec3 v0(0.0F);
+    for (size_t i = 1; i < vertices_.size() && v0 == glm::vec3(0.0F); i++) {
         v0 = vertices_[0].point() - vertices_[i].point();
     }
 
@@ -443,27 +443,27 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderCont
         for (unsigned int j = 0; j < size; j++) {
             const float w = static_cast<float>(j) / span;
             Vertex vert;
-            vert.point(corners[0] * ((1.0f - u) * (1.0f - w)) +
-                       corners[1] * (u * (1.0f - w)) +
+            vert.point(corners[0] * ((1.0F - u) * (1.0F - w)) +
+                       corners[1] * (u * (1.0F - w)) +
                        corners[2] * (u * w) +
-                       corners[3] * ((1.0f - u) * w));
-            vert.color(colors[0] * ((1.0f - u) * (1.0f - w)) +
-                       colors[1] * (u * (1.0f - w)) +
+                       corners[3] * ((1.0F - u) * w));
+            vert.color(colors[0] * ((1.0F - u) * (1.0F - w)) +
+                       colors[1] * (u * (1.0F - w)) +
                        colors[2] * (u * w) +
-                       colors[3] * ((1.0f - u) * w));
-            const glm::vec3 normal = normals[0] * ((1.0f - u) * (1.0f - w)) +
-                                     normals[1] * (u * (1.0f - w)) +
+                       colors[3] * ((1.0F - u) * w));
+            const glm::vec3 normal = normals[0] * ((1.0F - u) * (1.0F - w)) +
+                                     normals[1] * (u * (1.0F - w)) +
                                      normals[2] * (u * w) +
-                                     normals[3] * ((1.0f - u) * w);
+                                     normals[3] * ((1.0F - u) * w);
             // interpolating unit normals does not give a unit one back
             const float length = glm::length(normal);
-            vert.normal(length > 0.0f ? normal / length : geometric);
+            vert.normal(length > 0.0F ? normal / length : geometric);
             vert.geometricNormal(geometric);
             if (textured) {
-                vert.st(st[0] * ((1.0f - u) * (1.0f - w)) +
-                        st[1] * (u * (1.0f - w)) +
+                vert.st(st[0] * ((1.0F - u) * (1.0F - w)) +
+                        st[1] * (u * (1.0F - w)) +
                         st[2] * (u * w) +
-                        st[3] * ((1.0f - u) * w));
+                        st[3] * ((1.0F - u) * w));
             }
             grid->addVertex(vert, i, j);
         }

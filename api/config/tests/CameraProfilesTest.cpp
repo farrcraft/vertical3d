@@ -42,22 +42,22 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
     v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config(cameras)));
 
-    BOOST_REQUIRE_EQUAL(profiles.names().size(), 2u);
+    BOOST_REQUIRE_EQUAL(profiles.names().size(), 2U);
     BOOST_CHECK_EQUAL(profiles.names()[0], "Top");
     BOOST_CHECK(profiles.has("Perspective"));
     BOOST_CHECK(!profiles.has("Nothing"));
 
     const v3d::type::camera::Profile top = profiles.get("Top");
     BOOST_CHECK_EQUAL(top.orthographic(), true);
-    BOOST_CHECK_CLOSE(top.orthoZoom(), 10.0f, 0.01f);
-    BOOST_CHECK_CLOSE(top.clipping()[0], 0.1f, 0.01f);
-    BOOST_CHECK_CLOSE(top.clipping()[1], 100.0f, 0.01f);
+    BOOST_CHECK_CLOSE(top.orthoZoom(), 10.0F, 0.01F);
+    BOOST_CHECK_CLOSE(top.clipping()[0], 0.1F, 0.01F);
+    BOOST_CHECK_CLOSE(top.clipping()[1], 100.0F, 0.01F);
     BOOST_CHECK_EQUAL(top.adaptiveProjection(), true);
     BOOST_CHECK_EQUAL(top.adaptivePosition(), true);
 
     const v3d::type::camera::Profile perspective = profiles.get("Perspective");
     BOOST_CHECK_EQUAL(perspective.orthographic(), false);
-    BOOST_CHECK_CLOSE(perspective.fov(), 60.0f, 0.01f);
+    BOOST_CHECK_CLOSE(perspective.fov(), 60.0F, 0.01F);
     BOOST_CHECK_EQUAL(perspective.adaptiveProjection(), false);
 }
 
@@ -68,17 +68,17 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_orientation_test) {
     BOOST_REQUIRE(profiles.load(config(cameras)));
 
     const v3d::type::camera::Profile top = profiles.get("Top");
-    BOOST_CHECK_CLOSE(top.direction()[1], -1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(top.up()[2], 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(top.right()[0], 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(top.direction()[1], -1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(top.up()[2], 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(top.right()[0], 1.0F, 0.01F);
 
     // and the camera it makes sees the origin straight ahead, ten units along its own +z
     v3d::type::camera::Camera camera(top);
     camera.createView();
-    glm::vec4 origin = camera.view() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    BOOST_CHECK_SMALL(origin[0], 0.001f);
-    BOOST_CHECK_SMALL(origin[1], 0.001f);
-    BOOST_CHECK_CLOSE(origin[2], 10.0f, 0.01f);
+    glm::vec4 origin = camera.view() * glm::vec4(0.0F, 0.0F, 0.0F, 1.0F);
+    BOOST_CHECK_SMALL(origin[0], 0.001F);
+    BOOST_CHECK_SMALL(origin[1], 0.001F);
+    BOOST_CHECK_CLOSE(origin[2], 10.0F, 0.01F);
 }
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_defaults_test) {
@@ -120,9 +120,9 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_vector_of_strings_test) {
     BOOST_CHECK(profiles.has("a"));
 
     const glm::vec3 eye = profiles.get("a").eye();
-    BOOST_CHECK_SMALL(eye[0], 0.001f);
-    BOOST_CHECK_SMALL(eye[1], 0.001f);
-    BOOST_CHECK_CLOSE(eye[2], -10.0f, 0.01f);
+    BOOST_CHECK_SMALL(eye[0], 0.001F);
+    BOOST_CHECK_SMALL(eye[1], 0.001F);
+    BOOST_CHECK_CLOSE(eye[2], -10.0F, 0.01F);
 }
 
 };  // namespace

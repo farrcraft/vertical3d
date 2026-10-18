@@ -24,7 +24,7 @@ namespace v3d::grid {
  * wherever depth testing is on. A centimetre clears it. Everything drawn over one grid
  * shares the lift, or one layer of the overlay sinks into another.
  **/
-constexpr float OVERLAY_LIFT = 0.01f;
+constexpr float OVERLAY_LIFT = 0.01F;
 
 /**
  * Where a segment of the overlay goes, and in what colour.

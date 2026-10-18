@@ -23,7 +23,7 @@ void DepthOrder::clear() {
  **/
 void DepthOrder::quad(float key, const World::Corners& corners, const glm::vec4& colour) {
     // what World does with an untextured quad, so the two draw it the same way
-    quad(key, corners, glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), colour, TextureHandle());
+    quad(key, corners, glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), colour, TextureHandle());
 }
 
 /**

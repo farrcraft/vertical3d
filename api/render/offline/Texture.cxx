@@ -31,7 +31,7 @@ int wrap(const Axis & axis) {
 
 Texture::Texture(const v3d::image::Image & image) :
     width_(image.width()), height_(image.height()) {
-    const unsigned int channels = image.bpp() / 8u;
+    const unsigned int channels = image.bpp() / 8U;
     texels_.reserve(static_cast<std::size_t>(width_) * height_);
     for (unsigned int i = 0; i < width_ * height_; i++) {
         const unsigned int at = i * channels;
@@ -60,24 +60,24 @@ const glm::vec3 & Texture::texel(int column, int row) const {
 glm::vec3 Texture::sample(float s, float t) const {
     // a coordinate that is not finite names no texel
     if (texels_.empty() || !std::isfinite(s) || !std::isfinite(t)) {
-        return glm::vec3(0.0f);
+        return glm::vec3(0.0F);
     }
     // the texture repeats, so a coordinate is taken into one repeat first: a large one would
     // otherwise overflow the integer texel index
     s -= std::floor(s);
     t -= std::floor(t);
     // texel centres are at half a texel in, so a position is measured from the first one
-    const float x = (s * static_cast<float>(width_)) - 0.5f;
-    const float y = (t * static_cast<float>(height_)) - 0.5f;
+    const float x = (s * static_cast<float>(width_)) - 0.5F;
+    const float y = (t * static_cast<float>(height_)) - 0.5F;
     const float left = std::floor(x);
     const float top = std::floor(y);
     const float across = x - left;
     const float down = y - top;
     const int column = static_cast<int>(left);
     const int row = static_cast<int>(top);
-    const glm::vec3 upper = texel(column, row) * (1.0f - across) + texel(column + 1, row) * across;
-    const glm::vec3 lower = texel(column, row + 1) * (1.0f - across) + texel(column + 1, row + 1) * across;
-    return upper * (1.0f - down) + lower * down;
+    const glm::vec3 upper = texel(column, row) * (1.0F - across) + texel(column + 1, row) * across;
+    const glm::vec3 lower = texel(column, row + 1) * (1.0F - across) + texel(column + 1, row + 1) * across;
+    return upper * (1.0F - down) + lower * down;
 }
 
 };  // namespace v3d::render::offline

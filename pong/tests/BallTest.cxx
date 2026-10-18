@@ -20,17 +20,17 @@ BOOST_AUTO_TEST_CASE(ball_components_test) {
     entt::registry registry;
     Ball ball(&registry);
 
-    BOOST_TEST((ball.position() == glm::vec2(0.0f, 0.0f)));
-    BOOST_TEST((ball.direction() == glm::vec2(0.0f, 0.0f)));
-    BOOST_TEST(ball.size() == 1.0f);
+    BOOST_TEST((ball.position() == glm::vec2(0.0F, 0.0F)));
+    BOOST_TEST((ball.direction() == glm::vec2(0.0F, 0.0F)));
+    BOOST_TEST(ball.size() == 1.0F);
 
-    ball.position(glm::vec2(3.0f, 4.0f));
-    ball.direction(glm::vec2(-1.0f, 0.5f));
-    ball.size(10.0f);
+    ball.position(glm::vec2(3.0F, 4.0F));
+    ball.direction(glm::vec2(-1.0F, 0.5F));
+    ball.size(10.0F);
 
-    BOOST_TEST((ball.position() == glm::vec2(3.0f, 4.0f)));
-    BOOST_TEST((ball.direction() == glm::vec2(-1.0f, 0.5f)));
-    BOOST_TEST(ball.size() == 10.0f);
+    BOOST_TEST((ball.position() == glm::vec2(3.0F, 4.0F)));
+    BOOST_TEST((ball.direction() == glm::vec2(-1.0F, 0.5F)));
+    BOOST_TEST(ball.size() == 10.0F);
 }
 
 /**
@@ -40,14 +40,14 @@ BOOST_AUTO_TEST_CASE(ball_move_test) {
     entt::registry registry;
     Ball ball(&registry);
 
-    ball.position(glm::vec2(10.0f, 10.0f));
-    ball.direction(glm::vec2(2.0f, -1.0f));
+    ball.position(glm::vec2(10.0F, 10.0F));
+    ball.direction(glm::vec2(2.0F, -1.0F));
 
-    ball.move(1.0f);
-    BOOST_TEST((ball.position() == glm::vec2(12.0f, 9.0f)));
+    ball.move(1.0F);
+    BOOST_TEST((ball.position() == glm::vec2(12.0F, 9.0F)));
 
-    ball.move(1.0f);
-    BOOST_TEST((ball.position() == glm::vec2(14.0f, 8.0f)));
+    ball.move(1.0F);
+    BOOST_TEST((ball.position() == glm::vec2(14.0F, 8.0F)));
 }
 
 /**
@@ -59,17 +59,17 @@ BOOST_AUTO_TEST_CASE(ball_move_scales_by_the_step_test) {
     Ball whole(&registry);
     Ball halves(&registry);
 
-    whole.position(glm::vec2(0.0f, 0.0f));
-    whole.direction(glm::vec2(60.0f, -30.0f));
-    halves.position(glm::vec2(0.0f, 0.0f));
-    halves.direction(glm::vec2(60.0f, -30.0f));
+    whole.position(glm::vec2(0.0F, 0.0F));
+    whole.direction(glm::vec2(60.0F, -30.0F));
+    halves.position(glm::vec2(0.0F, 0.0F));
+    halves.direction(glm::vec2(60.0F, -30.0F));
 
-    whole.move(1.0f / 60.0f);
-    halves.move(1.0f / 120.0f);
-    halves.move(1.0f / 120.0f);
+    whole.move(1.0F / 60.0F);
+    halves.move(1.0F / 120.0F);
+    halves.move(1.0F / 120.0F);
 
-    BOOST_TEST(whole.position().x == halves.position().x, boost::test_tools::tolerance(0.0001f));
-    BOOST_TEST(whole.position().y == halves.position().y, boost::test_tools::tolerance(0.0001f));
+    BOOST_TEST(whole.position().x == halves.position().x, boost::test_tools::tolerance(0.0001F));
+    BOOST_TEST(whole.position().y == halves.position().y, boost::test_tools::tolerance(0.0001F));
 }
 
 /**
@@ -80,11 +80,11 @@ BOOST_AUTO_TEST_CASE(ball_entities_are_distinct_test) {
     Ball first(&registry);
     Ball second(&registry);
 
-    first.position(glm::vec2(1.0f, 1.0f));
-    second.position(glm::vec2(2.0f, 2.0f));
+    first.position(glm::vec2(1.0F, 1.0F));
+    second.position(glm::vec2(2.0F, 2.0F));
 
-    BOOST_TEST((first.position() == glm::vec2(1.0f, 1.0f)));
-    BOOST_TEST((second.position() == glm::vec2(2.0f, 2.0f)));
+    BOOST_TEST((first.position() == glm::vec2(1.0F, 1.0F)));
+    BOOST_TEST((second.position() == glm::vec2(2.0F, 2.0F)));
 }
 
 };  // namespace

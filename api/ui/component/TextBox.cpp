@@ -35,7 +35,7 @@ TextBox::TextBox() :
     caret_(0),
     anchor_(0),
     limit_(0),
-    pen_(0.0f) {
+    pen_(0.0F) {
     // a control is pickable and focusable from the start; a plain component is neither, so a
     // panel laid over a scene lets presses through
     pickable(true);
@@ -244,7 +244,7 @@ std::size_t TextBox::at(const glm::vec2& point, const paint::Measure& measure) c
         return 0;
     }
     const float into = point.x - pen_;
-    if (into <= 0.0f) {
+    if (into <= 0.0F) {
         return 0;
     }
 
@@ -252,12 +252,12 @@ std::size_t TextBox::at(const glm::vec2& point, const paint::Measure& measure) c
     // of: the left half of a character puts the caret before it and the right half after,
     // so a click between two letters lands between them
     std::size_t found = 0;
-    float before = 0.0f;
+    float before = 0.0F;
     std::size_t offset = 0;
     while (offset < text_.size()) {
         const std::size_t after = forward(offset);
         const float width = measure(std::string_view(text_).substr(0, after));
-        if (into < (before + width) * 0.5f) {
+        if (into < (before + width) * 0.5F) {
             break;
         }
         found = after;

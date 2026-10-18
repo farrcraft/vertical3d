@@ -8,11 +8,11 @@
 namespace {
 
 // the side of the ball's box, in court units
-constexpr float DEFAULT_BALL_SIZE = 10.0f;
+constexpr float DEFAULT_BALL_SIZE = 10.0F;
 constexpr int DEFAULT_MAX_SCORE = 5;
 // court units per second: a served ball crosses the 800 unit court in a little over
 // thirteen seconds
-constexpr float BALL_START_SPEED = 60.0f;
+constexpr float BALL_START_SPEED = 60.0F;
 
 };  // namespace
 

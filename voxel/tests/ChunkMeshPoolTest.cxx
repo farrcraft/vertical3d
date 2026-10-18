@@ -38,10 +38,10 @@ BOOST_AUTO_TEST_CASE(a_replaced_mesh_is_retired_not_destroyed) {
 
     const boost::shared_ptr<int> first = boost::make_shared<int>(1);
     const boost::shared_ptr<int> second = boost::make_shared<int>(2);
-    pool.add(7, watched(first), glm::vec3(0.0f), 16.0f);
+    pool.add(7, watched(first), glm::vec3(0.0F), 16.0F);
     BOOST_CHECK(retired.empty());
 
-    pool.add(7, watched(second), glm::vec3(0.0f), 16.0f);
+    pool.add(7, watched(second), glm::vec3(0.0F), 16.0F);
     BOOST_REQUIRE_EQUAL(retired.size(), 1U);
     // the pool's entry is gone, and the retire function holds the only other reference
     BOOST_CHECK_EQUAL(first.use_count(), 2);
@@ -59,8 +59,8 @@ BOOST_AUTO_TEST_CASE(a_new_chunk_retires_nothing) {
     ChunkMeshPool pool([&retired](const std::function<void()>&) { retired++; });
 
     const boost::shared_ptr<int> owner = boost::make_shared<int>(1);
-    pool.add(1, watched(owner), glm::vec3(0.0f), 16.0f);
-    pool.add(2, watched(owner), glm::vec3(16.0f, 0.0f, 0.0f), 16.0f);
+    pool.add(1, watched(owner), glm::vec3(0.0F), 16.0F);
+    pool.add(2, watched(owner), glm::vec3(16.0F, 0.0F, 0.0F), 16.0F);
 
     BOOST_CHECK_EQUAL(retired, 0U);
     BOOST_CHECK_EQUAL(pool.entries().size(), 2U);

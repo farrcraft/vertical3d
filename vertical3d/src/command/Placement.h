@@ -20,9 +20,9 @@ namespace v3d::editor {
  * which manipulator made it.
  **/
 struct Placement {
-    glm::vec3 translation{ 0.0f, 0.0f, 0.0f };
-    glm::quat rotation{ 1.0f, 0.0f, 0.0f, 0.0f };
-    glm::vec3 scale{ 1.0f, 1.0f, 1.0f };
+    glm::vec3 translation{ 0.0F, 0.0F, 0.0F };
+    glm::quat rotation{ 1.0F, 0.0F, 0.0F, 0.0F };
+    glm::vec3 scale{ 1.0F, 1.0F, 1.0F };
 
     /**
      **/

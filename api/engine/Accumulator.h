@@ -28,7 +28,7 @@ class Accumulator final {
      * The same step in seconds, as simulate() receives it and as a velocity is
      * expressed against.
      **/
-    static constexpr float seconds = 1.0f / 60.0f;
+    static constexpr float seconds = 1.0F / 60.0F;
 
     /**
      * The longest frame real time is taken from. A window drag or a breakpoint produces a

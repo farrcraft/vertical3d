@@ -39,10 +39,10 @@ Use it for sprites standing on a ground plane, particles and tile highlights.
 ```cpp
 canvas::World world;
 world.clear();
-world.tint(glm::vec4(1.0f, 0.8f, 0.6f, 1.0f));   // multiplies every quad added after it
+world.tint(glm::vec4(1.0F, 0.8F, 0.6F, 1.0F));   // multiplies every quad added after it
 canvas::World::Corners corners = {a, b, c, d};  // in order around the edge
 world.quad(corners, colour);
-world.quad(corners, uv0, uv1, glm::vec4(1.0f), textureHandle);   // uv0 at the first corner, uv1 at the third
+world.quad(corners, uv0, uv1, glm::vec4(1.0F), textureHandle);   // uv0 at the first corner, uv1 at the third
 
 renderer_->worldQuads()->submit(world, pass.get(), 0, vulkan::renderer::World::Blend::Alpha);
 ```

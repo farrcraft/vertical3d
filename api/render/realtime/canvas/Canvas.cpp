@@ -19,7 +19,7 @@ namespace {
 // two triangles
 constexpr uint32_t QUAD_INDICES = 6;
 // the sweep of a whole circle, in radians
-constexpr float FULL_TURN = 6.283185307179586f;
+constexpr float FULL_TURN = 6.283185307179586F;
 
 };  // namespace
 
@@ -28,7 +28,7 @@ constexpr float FULL_TURN = 6.283185307179586f;
 Canvas::Batch::Batch() noexcept :
 text(false),
 clipped(false),
-clip(0.0f),
+clip(0.0F),
 firstIndex(0),
 indices(0) {
 }
@@ -38,7 +38,7 @@ indices(0) {
 Canvas::Canvas() :
     width_(0),
     height_(0),
-    space_(0.0f, 0.0f),
+    space_(0.0F, 0.0F),
     fit_(Fit::Stretch) {
 }
 
@@ -74,7 +74,7 @@ uint32_t Canvas::height() const noexcept {
 /**
  **/
 void Canvas::space(const glm::vec2& size, Fit fit) {
-    space_ = size.x > 0.0f && size.y > 0.0f ? size : glm::vec2(0.0f, 0.0f);
+    space_ = size.x > 0.0F && size.y > 0.0F ? size : glm::vec2(0.0F, 0.0F);
     fit_ = fit;
 }
 
@@ -89,19 +89,19 @@ glm::vec2 Canvas::space() const noexcept {
 glm::vec4 Canvas::viewport() const noexcept {
     const float width = static_cast<float>(width_);
     const float height = static_cast<float>(height_);
-    if (space_.x <= 0.0f || fit_ == Fit::Stretch) {
-        return glm::vec4(0.0f, 0.0f, width, height);
+    if (space_.x <= 0.0F || fit_ == Fit::Stretch) {
+        return glm::vec4(0.0F, 0.0F, width, height);
     }
     const float scale = std::min(width / space_.x, height / space_.y);
     const glm::vec2 size = space_ * scale;
-    return glm::vec4((width - size.x) * 0.5f, (height - size.y) * 0.5f, size.x, size.y);
+    return glm::vec4((width - size.x) * 0.5F, (height - size.y) * 0.5F, size.x, size.y);
 }
 
 /**
  **/
 glm::vec2 Canvas::toSpace(const glm::vec2& pixel) const noexcept {
     const glm::vec4 area = viewport();
-    if (space_.x <= 0.0f || area.z <= 0.0f || area.w <= 0.0f) {
+    if (space_.x <= 0.0F || area.z <= 0.0F || area.w <= 0.0F) {
         return pixel;
     }
     return (pixel - glm::vec2(area.x, area.y)) * space_ / glm::vec2(area.z, area.w);
@@ -110,7 +110,7 @@ glm::vec2 Canvas::toSpace(const glm::vec2& pixel) const noexcept {
 /**
  **/
 glm::vec2 Canvas::toPixels(const glm::vec2& point) const noexcept {
-    if (space_.x <= 0.0f) {
+    if (space_.x <= 0.0F) {
         return point;
     }
     const glm::vec4 area = viewport();
@@ -122,23 +122,23 @@ glm::vec2 Canvas::toPixels(const glm::vec2& point) const noexcept {
 glm::mat4 Canvas::projection() const {
     // pixels to clip space, origin top left: scaled to the two units clip space spans and
     // shifted back by one. y is not flipped - vulkan's y already points down
-    const float width = width_ > 0 ? static_cast<float>(width_) : 1.0f;
-    const float height = height_ > 0 ? static_cast<float>(height_) : 1.0f;
+    const float width = width_ > 0 ? static_cast<float>(width_) : 1.0F;
+    const float height = height_ > 0 ? static_cast<float>(height_) : 1.0F;
 
-    glm::mat4 projection(1.0f);
+    glm::mat4 projection(1.0F);
     const glm::vec4 area = viewport();
-    if (space_.x <= 0.0f || area.z <= 0.0f || area.w <= 0.0f) {
-        projection[0][0] = 2.0f / width;
-        projection[1][1] = 2.0f / height;
-        projection[3][0] = -1.0f;
-        projection[3][1] = -1.0f;
+    if (space_.x <= 0.0F || area.z <= 0.0F || area.w <= 0.0F) {
+        projection[0][0] = 2.0F / width;
+        projection[1][1] = 2.0F / height;
+        projection[3][0] = -1.0F;
+        projection[3][1] = -1.0F;
         return projection;
     }
     // the space into its viewport's pixels, then those pixels to clip space as above
-    projection[0][0] = 2.0f * area.z / (space_.x * width);
-    projection[1][1] = 2.0f * area.w / (space_.y * height);
-    projection[3][0] = (2.0f * area.x / width) - 1.0f;
-    projection[3][1] = (2.0f * area.y / height) - 1.0f;
+    projection[0][0] = 2.0F * area.z / (space_.x * width);
+    projection[1][1] = 2.0F * area.w / (space_.y * height);
+    projection[3][0] = (2.0F * area.x / width) - 1.0F;
+    projection[3][1] = (2.0F * area.y / height) - 1.0F;
     return projection;
 }
 
@@ -242,7 +242,7 @@ void Canvas::quad(uint32_t first) {
 void Canvas::rect(const glm::vec2& min, const glm::vec2& max, const glm::vec4& colour) {
     // an unset handle means the renderer's white texture, so untextured quads all batch
     // together
-    rect(min, max, glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), colour, TextureHandle());
+    rect(min, max, glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), colour, TextureHandle());
 }
 
 /**
@@ -262,7 +262,7 @@ void Canvas::rect(const glm::vec2& min, const glm::vec2& max, const glm::vec2& u
 /**
  **/
 void Canvas::circle(const glm::vec2& centre, float radius, unsigned int sides, const glm::vec4& colour) {
-    arc({.centre = centre, .radius = radius, .sides = sides, .start = 0.0f, .sweep = FULL_TURN}, colour);
+    arc({.centre = centre, .radius = radius, .sides = sides, .start = 0.0F, .sweep = FULL_TURN}, colour);
 }
 
 void Canvas::ring(const Ring& shape, const glm::vec4& colour) {
@@ -272,10 +272,10 @@ void Canvas::ring(const Ring& shape, const glm::vec4& colour) {
     const unsigned int sides = shape.sides;
     const float start = shape.start;
     const float sweep = shape.sweep;
-    if (sides < 1 || outer <= 0.0f) {
+    if (sides < 1 || outer <= 0.0F) {
         return;
     }
-    if (inner <= 0.0f) {
+    if (inner <= 0.0F) {
         arc({.centre = centre, .radius = outer, .sides = sides, .start = start, .sweep = sweep}, colour);
         return;
     }
@@ -286,8 +286,8 @@ void Canvas::ring(const Ring& shape, const glm::vec4& colour) {
     for (unsigned int side = 0; side <= sides; side++) {
         const float angle = start + (step * static_cast<float>(side));
         const glm::vec2 direction(std::cos(angle), std::sin(angle));
-        vertex({.position = centre + direction * outer, .uv = glm::vec2(0.5f, 0.5f), .colour = colour});
-        vertex({.position = centre + direction * inner, .uv = glm::vec2(0.5f, 0.5f), .colour = colour});
+        vertex({.position = centre + direction * outer, .uv = glm::vec2(0.5F, 0.5F), .colour = colour});
+        vertex({.position = centre + direction * inner, .uv = glm::vec2(0.5F, 0.5F), .colour = colour});
     }
 
     // two triangles per segment, over the pair of vertices at each end of it
@@ -315,12 +315,12 @@ void Canvas::arc(const Arc& shape, const glm::vec4& colour) {
     open(TextureHandle());
 
     const uint32_t centreIndex = static_cast<uint32_t>(vertices_.size());
-    vertex({.position = centre, .uv = glm::vec2(0.5f, 0.5f), .colour = colour});
+    vertex({.position = centre, .uv = glm::vec2(0.5F, 0.5F), .colour = colour});
 
     const float step = sweep / static_cast<float>(sides);
     for (unsigned int side = 0; side <= sides; side++) {
         const float angle = start + (step * static_cast<float>(side));
-        vertex({.position = centre + glm::vec2(std::cos(angle) * radius, std::sin(angle) * radius), .uv = glm::vec2(0.5f, 0.5f), .colour = colour});
+        vertex({.position = centre + glm::vec2(std::cos(angle) * radius, std::sin(angle) * radius), .uv = glm::vec2(0.5F, 0.5F), .colour = colour});
     }
 
     // a fan written out as triangles, so it batches with the quads around it. A full turn

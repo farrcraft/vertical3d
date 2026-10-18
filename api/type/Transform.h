@@ -16,9 +16,9 @@ namespace v3d::type {
  * editor mesh are placed by it, so the composition is written once.
  **/
 struct Transform final {
-    glm::vec3 position{0.0f};
+    glm::vec3 position{0.0F};
     glm::quat rotation = glm::identity<glm::quat>();
-    glm::vec3 scale{1.0f};
+    glm::vec3 scale{1.0F};
 
     /**
      * @return the model matrix, scaling first, then rotating, then moving into place. Scale

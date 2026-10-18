@@ -24,10 +24,10 @@ const uint32_t poolSize = 32;
 /**
  **/
 FrameUniforms::Camera::Camera() noexcept :
-view(1.0f),
-projection(1.0f),
-viewProjection(1.0f),
-viewport(0.0f, 0.0f, 0.0f, 0.0f) {
+view(1.0F),
+projection(1.0F),
+viewProjection(1.0F),
+viewport(0.0F, 0.0F, 0.0F, 0.0F) {
 }
 
 /**

@@ -198,9 +198,9 @@ BOOST_AUTO_TEST_CASE(sllighting_solar_test) {
 
     BOOST_REQUIRE(scene.light(0, surface, &direction, &colour, &reached, &ambient));
     BOOST_CHECK(!ambient);
-    BOOST_CHECK_CLOSE(direction.triple(2).z, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(colour.triple(2).r, 1.0f, 0.01f);
-    BOOST_REQUIRE_EQUAL(reached.size(), 3u);
+    BOOST_CHECK_CLOSE(direction.triple(2).z, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(colour.triple(2).r, 1.0F, 0.01F);
+    BOOST_REQUIRE_EQUAL(reached.size(), 3U);
     BOOST_CHECK(reached[0] != 0 && reached[2] != 0);
 }
 
@@ -221,8 +221,8 @@ BOOST_AUTO_TEST_CASE(sllighting_solar_angle_is_reported_test) {
     machine.prepare(program, 2);
     BOOST_REQUIRE(machine.run());
 
-    BOOST_CHECK_CLOSE(machine.value(program.symbol("L")).triple(0).z, 1.0f, 0.01f);
-    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1u);
+    BOOST_CHECK_CLOSE(machine.value(program.symbol("L")).triple(0).z, 1.0F, 0.01F);
+    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1U);
     BOOST_CHECK_EQUAL(machine.reports()[0], "solar with an angle is lit along its axis only, as if the angle were 0");
 }
 
@@ -296,8 +296,8 @@ BOOST_AUTO_TEST_CASE(sllighting_illuminate_cone_test) {
     surface.reset(v3d::render::offline::sl::Type::POINT,
         v3d::render::offline::sl::Storage::VARYING, 2);
     // one point under the light and one well off to the side of the cone
-    surface.triple(0, glm::vec3(0.0f, 0.0f, 0.0f));
-    surface.triple(1, glm::vec3(5.0f, 0.0f, 0.0f));
+    surface.triple(0, glm::vec3(0.0F, 0.0F, 0.0F));
+    surface.triple(1, glm::vec3(5.0F, 0.0F, 0.0F));
     Value direction;
     direction.reset(v3d::render::offline::sl::Type::VECTOR,
         v3d::render::offline::sl::Storage::VARYING, 2);
@@ -310,12 +310,12 @@ BOOST_AUTO_TEST_CASE(sllighting_illuminate_cone_test) {
     BOOST_REQUIRE(scene.light(0, surface, &direction, &colour, &reached, &ambient));
     BOOST_CHECK(!ambient);
     // L points at the light, two units up from the point below it
-    BOOST_CHECK_CLOSE(direction.triple(0).z, 2.0f, 0.01f);
-    BOOST_REQUIRE_EQUAL(reached.size(), 2u);
+    BOOST_CHECK_CLOSE(direction.triple(0).z, 2.0F, 0.01F);
+    BOOST_REQUIRE_EQUAL(reached.size(), 2U);
     BOOST_CHECK(reached[0] != 0);
     BOOST_CHECK(reached[1] == 0);
     // the point outside the cone never had Cl set, because the body did not run for it
-    BOOST_CHECK_SMALL(colour.triple(1).r, 0.0001f);
+    BOOST_CHECK_SMALL(colour.triple(1).r, 0.0001F);
 }
 
 /**
@@ -328,16 +328,16 @@ BOOST_AUTO_TEST_CASE(sllighting_diffuse_is_the_cosine_test) {
     scene.add(OVERHEAD, 3);
 
     Lit lit("Ci = diffuse(N);", &scene, 3);
-    lit.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    lit.normal(0, glm::vec3(0.0F, 0.0F, 1.0F));
     // 60 degrees off the light, whose cosine is a half
-    lit.normal(1, glm::vec3(0.8660254f, 0.0f, 0.5f));
+    lit.normal(1, glm::vec3(0.8660254F, 0.0F, 0.5F));
     // facing away, so the illuminance cone of PI/2 leaves the light out of the sum entirely
-    lit.normal(2, glm::vec3(0.0f, 0.0f, -1.0f));
+    lit.normal(2, glm::vec3(0.0F, 0.0F, -1.0F));
     lit.run();
 
-    BOOST_CHECK_CLOSE(lit.colour(0).r, 1.0f, 0.1f);
-    BOOST_CHECK_CLOSE(lit.colour(1).g, 0.5f, 0.1f);
-    BOOST_CHECK_SMALL(lit.colour(2).b, 0.0001f);
+    BOOST_CHECK_CLOSE(lit.colour(0).r, 1.0F, 0.1F);
+    BOOST_CHECK_CLOSE(lit.colour(1).g, 0.5F, 0.1F);
+    BOOST_CHECK_SMALL(lit.colour(2).b, 0.0001F);
 }
 
 /**
@@ -362,13 +362,13 @@ BOOST_AUTO_TEST_CASE(sllighting_two_lights_test) {
         "}\n"
         "Ci = sum;", &scene, 1);
     // halfway between the two lights, so each contributes its own cosine
-    lit.normal(0, glm::vec3(0.70710678f, 0.0f, 0.70710678f));
+    lit.normal(0, glm::vec3(0.70710678F, 0.0F, 0.70710678F));
     lit.run();
 
     // the white light overhead, at 45 degrees
-    BOOST_CHECK_CLOSE(lit.colour(0).r, 0.70710678f, 0.1f);
+    BOOST_CHECK_CLOSE(lit.colour(0).r, 0.70710678F, 0.1F);
     // the white one plus the green one, each at 45 degrees
-    BOOST_CHECK_CLOSE(lit.colour(0).g, 0.70710678f + (0.25f * 0.70710678f), 0.1f);
+    BOOST_CHECK_CLOSE(lit.colour(0).g, 0.70710678F + (0.25F * 0.70710678F), 0.1F);
 }
 
 /**
@@ -386,15 +386,15 @@ BOOST_AUTO_TEST_CASE(sllighting_illuminance_cone_test) {
         "}\n", 1);
 
     Lit facing("color sum = 0;\nilluminance(P, N, 1.5707963) { sum += Cl; }\nCi = sum;", &scene, 1);
-    facing.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    facing.normal(0, glm::vec3(0.0F, 0.0F, 1.0F));
     facing.run();
     // only the one overhead is in front of the surface
-    BOOST_CHECK_CLOSE(facing.colour(0).r, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(facing.colour(0).r, 1.0F, 0.1F);
 
     Lit both("color sum = 0;\nilluminance(P) { sum += Cl; }\nCi = sum;", &scene, 1);
-    both.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    both.normal(0, glm::vec3(0.0F, 0.0F, 1.0F));
     both.run();
-    BOOST_CHECK_CLOSE(both.colour(0).r, 1.5f, 0.1f);
+    BOOST_CHECK_CLOSE(both.colour(0).r, 1.5F, 0.1F);
 }
 
 /**
@@ -411,16 +411,16 @@ BOOST_AUTO_TEST_CASE(sllighting_ambient_test) {
         "}\n", 1);
 
     Lit lit("Ci = ambient();", &scene, 1);
-    lit.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    lit.normal(0, glm::vec3(0.0F, 0.0F, 1.0F));
     lit.run();
     // the distant light overhead is not in it, however brightly it shines
-    BOOST_CHECK_CLOSE(lit.colour(0).r, 0.2f, 0.1f);
+    BOOST_CHECK_CLOSE(lit.colour(0).r, 0.2F, 0.1F);
 
     Lit summed("color sum = 0;\nilluminance(P) { sum += Cl; }\nCi = sum;", &scene, 1);
-    summed.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    summed.normal(0, glm::vec3(0.0F, 0.0F, 1.0F));
     summed.run();
     // the ambient one is not in the illuminance loop
-    BOOST_CHECK_CLOSE(summed.colour(0).r, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(summed.colour(0).r, 1.0F, 0.1F);
 }
 
 /**
@@ -433,8 +433,8 @@ BOOST_AUTO_TEST_CASE(sllighting_transmission_without_a_renderer_test) {
     Lit lit("Ci = transmission(P, point (0, 0, 10)) * color (1, 1, 1);", &scene, 4);
     lit.run();
 
-    BOOST_CHECK_CLOSE(lit.colour(0).r, 1.0f, 0.1f);
-    BOOST_REQUIRE_EQUAL(lit.machine().reports().size(), 1u);
+    BOOST_CHECK_CLOSE(lit.colour(0).r, 1.0F, 0.1F);
+    BOOST_REQUIRE_EQUAL(lit.machine().reports().size(), 1U);
     BOOST_CHECK_EQUAL(lit.machine().reports()[0],
         "'transmission' has nothing to cast a shadow here, so all the light gets through");
 }
@@ -448,8 +448,8 @@ BOOST_AUTO_TEST_CASE(sllighting_trace_without_a_renderer_test) {
     Lit lit("Ci = trace(P, vector (0, 0, 1));", &scene, 4);
     lit.run();
 
-    BOOST_CHECK_SMALL(lit.colour(0).r, 0.0001f);
-    BOOST_REQUIRE_EQUAL(lit.machine().reports().size(), 1u);
+    BOOST_CHECK_SMALL(lit.colour(0).r, 0.0001F);
+    BOOST_REQUIRE_EQUAL(lit.machine().reports().size(), 1U);
     BOOST_CHECK_EQUAL(lit.machine().reports()[0],
         "'trace' is not answered by this renderer, so a ray comes back black");
 }
@@ -466,14 +466,14 @@ BOOST_AUTO_TEST_CASE(sllighting_specular_test) {
     // the surface faces the light and the viewer is where the light is, so the half angle
     // vector is the normal and the highlight is at its brightest whatever the roughness
     Lit lit("Ci = specular(N, vector (0, 0, 1), 0.1);", &scene, 1);
-    lit.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    lit.normal(0, glm::vec3(0.0F, 0.0F, 1.0F));
     lit.run();
-    BOOST_CHECK_CLOSE(lit.colour(0).r, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(lit.colour(0).r, 1.0F, 0.1F);
 
     Lit dulled("Ci = phong(N, vector (0, 0, 1), 4);", &scene, 1);
-    dulled.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    dulled.normal(0, glm::vec3(0.0F, 0.0F, 1.0F));
     dulled.run();
-    BOOST_CHECK_CLOSE(dulled.colour(0).r, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(dulled.colour(0).r, 1.0F, 0.1F);
 }
 
 /**
@@ -498,16 +498,16 @@ BOOST_AUTO_TEST_CASE(sllighting_return_and_break_leave_illuminance_test) {
         "    return color (9, 9, 9);\n"
         "}\n"
         "Ci = first();", &scene, 1);
-    returned.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    returned.normal(0, glm::vec3(0.0F, 0.0F, 1.0F));
     returned.run();
-    BOOST_CHECK_CLOSE(returned.colour(0).r, 1.0f, 0.1f);
-    BOOST_CHECK_CLOSE(returned.colour(0).g, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(returned.colour(0).r, 1.0F, 0.1F);
+    BOOST_CHECK_CLOSE(returned.colour(0).g, 1.0F, 0.1F);
 
     Lit broken("color sum = 0;\nilluminance(P) { sum += Cl; break; }\nCi = sum;", &scene, 1);
-    broken.normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
+    broken.normal(0, glm::vec3(0.0F, 0.0F, 1.0F));
     broken.run();
-    BOOST_CHECK_CLOSE(broken.colour(0).r, 1.0f, 0.1f);
-    BOOST_CHECK_CLOSE(broken.colour(0).g, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(broken.colour(0).r, 1.0F, 0.1F);
+    BOOST_CHECK_CLOSE(broken.colour(0).g, 1.0F, 0.1F);
 }
 
 /**
@@ -528,19 +528,19 @@ BOOST_AUTO_TEST_CASE(sllighting_lanes_leave_illuminance_at_different_lights_test
     Lit skipped("color sum = 0;\nilluminance(P) { if (xcomp(P) > 0) { continue; } sum += Cl; }\nCi = sum;", &scene, 2);
     Lit broken("color sum = 0;\nilluminance(P) { sum += Cl; if (xcomp(P) > 0) { break; } }\nCi = sum;", &scene, 2);
     for (Lit* lit : { &skipped, &broken }) {
-        lit->position(0, glm::vec3(1.0f, 0.0f, 0.0f));
-        lit->position(1, glm::vec3(-1.0f, 0.0f, 0.0f));
-        lit->normal(0, glm::vec3(0.0f, 0.0f, 1.0f));
-        lit->normal(1, glm::vec3(0.0f, 0.0f, 1.0f));
+        lit->position(0, glm::vec3(1.0F, 0.0F, 0.0F));
+        lit->position(1, glm::vec3(-1.0F, 0.0F, 0.0F));
+        lit->normal(0, glm::vec3(0.0F, 0.0F, 1.0F));
+        lit->normal(1, glm::vec3(0.0F, 0.0F, 1.0F));
         lit->run();
     }
 
     // the first lane continues past every light, and the second sums both
-    BOOST_CHECK_SMALL(skipped.colour(0).g, 0.0001f);
-    BOOST_CHECK_CLOSE(skipped.colour(1).g, 1.25f, 0.1f);
+    BOOST_CHECK_SMALL(skipped.colour(0).g, 0.0001F);
+    BOOST_CHECK_CLOSE(skipped.colour(1).g, 1.25F, 0.1F);
     // the first lane breaks after the first light, and the second sums both
-    BOOST_CHECK_CLOSE(broken.colour(0).g, 1.0f, 0.1f);
-    BOOST_CHECK_CLOSE(broken.colour(1).g, 1.25f, 0.1f);
+    BOOST_CHECK_CLOSE(broken.colour(0).g, 1.0F, 0.1F);
+    BOOST_CHECK_CLOSE(broken.colour(1).g, 1.25F, 0.1F);
 }
 
 };  // namespace

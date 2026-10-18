@@ -25,8 +25,8 @@ typedef std::array<float, 4> Cubic;
  * radius from one to two. Doubling scales every weight alike, and the film divides by the total
  * weight.
  **/
-constexpr Cubic CATMULL_ROM_INNER{3.0f, -5.0f, 0.0f, 2.0f};
-constexpr Cubic CATMULL_ROM_OUTER{-1.0f, 5.0f, -8.0f, 4.0f};
+constexpr Cubic CATMULL_ROM_INNER{3.0F, -5.0F, 0.0F, 2.0F};
+constexpr Cubic CATMULL_ROM_OUTER{-1.0F, 5.0F, -8.0F, 4.0F};
 
 /** A cubic at a radius, given the radius and its square. **/
 float evaluate(const Cubic & cubic, float radius, float radiusSquared) {
@@ -53,43 +53,43 @@ bool filterNamed(const std::string & name, Filter * filter) {
 }
 
 float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width) {
-    const glm::vec2 half = width * 0.5f;
+    const glm::vec2 half = width * 0.5F;
     if (!(std::fabs(offset.x) <= half.x) || !(std::fabs(offset.y) <= half.y)) {
-        return 0.0f;
+        return 0.0F;
     }
     switch (kind) {
     case Filter::Box:
-        return 1.0f;
+        return 1.0F;
     case Filter::Triangle:
-        return (1.0f - (std::fabs(offset.x) / half.x)) * (1.0f - (std::fabs(offset.y) / half.y));
+        return (1.0F - (std::fabs(offset.x) / half.x)) * (1.0F - (std::fabs(offset.y) / half.y));
     case Filter::CatmullRom: {
         // radial and not scaled by the width. The kernel reaches zero two pixels out, so a
         // width under four cuts it off at the box tested above, which is RI's rule for every
         // filter
         const float radiusSquared = (offset.x * offset.x) + (offset.y * offset.y);
         const float radius = std::sqrt(radiusSquared);
-        if (radius >= 2.0f) {
-            return 0.0f;
+        if (radius >= 2.0F) {
+            return 0.0F;
         }
-        if (radius < 1.0f) {
+        if (radius < 1.0F) {
             return evaluate(CATMULL_ROM_INNER, radius, radiusSquared);
         }
         return evaluate(CATMULL_ROM_OUTER, radius, radiusSquared);
     }
     case Filter::Gaussian: {
         // scaled so that the edge of the width is two standard deviations out
-        const float x = offset.x * 2.0f / width.x;
-        const float y = offset.y * 2.0f / width.y;
-        return std::exp(-2.0f * ((x * x) + (y * y)));
+        const float x = offset.x * 2.0F / width.x;
+        const float y = offset.y * 2.0F / width.y;
+        return std::exp(-2.0F * ((x * x) + (y * y)));
     }
     case Filter::Sinc: {
-        const float pi = 3.14159265358979f;
-        const float x = offset.x == 0.0f ? 1.0f : std::sin(pi * offset.x) / (pi * offset.x);
-        const float y = offset.y == 0.0f ? 1.0f : std::sin(pi * offset.y) / (pi * offset.y);
+        const float pi = 3.14159265358979F;
+        const float x = offset.x == 0.0F ? 1.0F : std::sin(pi * offset.x) / (pi * offset.x);
+        const float y = offset.y == 0.0F ? 1.0F : std::sin(pi * offset.y) / (pi * offset.y);
         return x * y;
     }
     }
-    return 0.0f;
+    return 0.0F;
 }
 
 bool resolution(float side) {
@@ -97,21 +97,21 @@ bool resolution(float side) {
 }
 
 std::optional<uint32_t> formatSide(float side) {
-    if (side <= 0.0f && std::isfinite(side)) {
+    if (side <= 0.0F && std::isfinite(side)) {
         return 0;
     }
     return v3d::type::toCount(side, {.minimum = 1, .maximum = largestResolution});
 }
 
 bool filterWidth(const glm::vec2 & width) {
-    const bool wide = width.x > 0.0f && std::isfinite(width.x);
-    const bool tall = width.y > 0.0f && std::isfinite(width.y);
+    const bool wide = width.x > 0.0F && std::isfinite(width.x);
+    const bool tall = width.y > 0.0F && std::isfinite(width.y);
     return wide && tall;
 }
 
 unsigned int sampleCount(float rate) {
     // the comparison is written so that a NaN takes one sample too
-    if (!(rate >= 1.0f)) {
+    if (!(rate >= 1.0F)) {
         return 1;
     }
     // capped so that the count fits the conversion, and a pixel's grid of samples fits an
@@ -123,11 +123,11 @@ unsigned int sampleCount(float rate) {
 }
 
 float Sampling::lensRadius() const {
-    return pinhole() ? 0.0f : focalLength / (2.0f * fstop);
+    return pinhole() ? 0.0F : focalLength / (2.0F * fstop);
 }
 
 bool Sampling::pinhole() const {
-    return !(fstop > 0.0f) || std::isinf(fstop) || !(focalLength > 0.0f) || !(focalDistance > 0.0f);
+    return !(fstop > 0.0F) || std::isinf(fstop) || !(focalLength > 0.0F) || !(focalDistance > 0.0F);
 }
 
 };  // namespace v3d::render::offline

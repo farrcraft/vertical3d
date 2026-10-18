@@ -34,8 +34,8 @@ std::vector<Index> faceLoop(const BRep & mesh, Index face);
 
 /** Where an edge starts and where it ends. **/
 struct Segment {
-    glm::vec3 from{0.0f};
-    glm::vec3 to{0.0f};
+    glm::vec3 from{0.0F};
+    glm::vec3 to{0.0F};
 };
 
 /**

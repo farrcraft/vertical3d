@@ -44,8 +44,8 @@ class FrameBuffer {
 
     /** The size of a bucket and of the whole image, in pixels. **/
     struct Sizes {
-        glm::uvec2 bucket{0u};
-        glm::uvec2 image{0u};
+        glm::uvec2 bucket{0U};
+        glm::uvec2 image{0U};
     };
 
     explicit FrameBuffer(const Sizes & sizes);

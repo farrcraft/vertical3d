@@ -87,7 +87,7 @@ class Primitive {
     int motion_ = -1;
     v3d::render::offline::sl::Placed surface_;
     Lights lights_;
-    glm::vec3 opacity_ = glm::vec3(1.0f);
+    glm::vec3 opacity_ = glm::vec3(1.0F);
     glm::vec3 colour_;
 };
 

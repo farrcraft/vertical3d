@@ -47,19 +47,19 @@ BOOST_AUTO_TEST_CASE(engine3d_capture_writes_the_frame_it_presents_test) {
     const std::string path = "data_out/engine3d_capture.png";
     boost::filesystem::remove(path);
 
-    windowed.engine->clearColour(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    windowed.engine->clearColour(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
     windowed.engine->renderFrame();
 
-    windowed.engine->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+    windowed.engine->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
     BOOST_REQUIRE(windowed.engine->capture(path));
     windowed.engine->renderFrame();
 
     v3d::image::reader::Png png(windowed.logger);
     const boost::shared_ptr<v3d::image::Image> written = png.read(path);
     BOOST_REQUIRE_MESSAGE(written != nullptr, "the frame wrote no readable " + path);
-    BOOST_TEST(written->width() > 0u);
-    BOOST_TEST(written->height() > 0u);
-    BOOST_TEST(mismatches(written, 0, 255, 0, 255) == 0u);
+    BOOST_TEST(written->width() > 0U);
+    BOOST_TEST(written->height() > 0U);
+    BOOST_TEST(mismatches(written, 0, 255, 0, 255) == 0U);
     BOOST_TEST(windowed.silent());
 }
 

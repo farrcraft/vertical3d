@@ -14,7 +14,7 @@ namespace {
 
 /** An image's size and depth, and the value every byte of it holds. **/
 struct Solid {
-    glm::uvec2 size{1u};
+    glm::uvec2 size{1U};
     uint8_t bpp = 24;
     unsigned char value = 0;
 };
@@ -25,7 +25,7 @@ boost::shared_ptr<v3d::image::Image> solid(const Solid& spec) {
     const uint8_t bpp = spec.bpp;
     const unsigned char value = spec.value;
     boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(glm::uvec2(width, height), bpp);
-    for (uint32_t i = 0; i < width * height * (bpp / 8u); i++) {
+    for (uint32_t i = 0; i < width * height * (bpp / 8U); i++) {
         (*image)[i] = value;
     }
     return image;
@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(compare_identical_test) {
 
     const v3d::image::Difference difference = v3d::image::compare(*expected, *actual, 0);
     BOOST_CHECK_EQUAL(difference.match, true);
-    BOOST_CHECK_EQUAL(difference.delta, 0u);
+    BOOST_CHECK_EQUAL(difference.delta, 0U);
     BOOST_CHECK(difference.reason.empty());
 }
 
@@ -84,10 +84,10 @@ BOOST_AUTO_TEST_CASE(compare_worst_pixel_test) {
 
     const v3d::image::Difference difference = v3d::image::compare(*expected, *actual, 0);
     BOOST_CHECK_EQUAL(difference.match, false);
-    BOOST_CHECK_EQUAL(difference.delta, 40u);
-    BOOST_CHECK_EQUAL(difference.column, 1u);
-    BOOST_CHECK_EQUAL(difference.row, 1u);
-    BOOST_CHECK_EQUAL(difference.channel, 1u);
+    BOOST_CHECK_EQUAL(difference.delta, 40U);
+    BOOST_CHECK_EQUAL(difference.column, 1U);
+    BOOST_CHECK_EQUAL(difference.row, 1U);
+    BOOST_CHECK_EQUAL(difference.channel, 1U);
 
     // and says so in one line, rather than only that the images differed
     BOOST_CHECK(difference.description().contains("column 1"));

@@ -121,7 +121,7 @@ bool Scene::nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, 
     if (motion >= 0) {
         const glm::mat3 normals = glm::transpose(glm::inverse(glm::mat3(poses.ahead[motion])));
         hit->normal = glm::normalize(normals * hit->normal);
-        if (glm::length(hit->geometric) > 0.0f) {
+        if (glm::length(hit->geometric) > 0.0F) {
             hit->geometric = glm::normalize(normals * hit->geometric);
         }
     }

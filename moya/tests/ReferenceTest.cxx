@@ -92,7 +92,7 @@ const char* HIDERS[] = { "hidden", "raytrace" };
 void pixelCentres(v3d::moya::RenderContext & rc) {
     rc.sampling().samples = glm::uvec2(1, 1);
     rc.sampling().filter = v3d::render::offline::Filter::Box;
-    rc.sampling().width = glm::vec2(1.0f, 1.0f);
+    rc.sampling().width = glm::vec2(1.0F, 1.0F);
 }
 
 v3d::moya::Vertex vertex(float x, float y, float z) {
@@ -110,21 +110,21 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
     purpose. Any other change to the picture fails the test.
 */
 void scene(v3d::moya::RenderContext & rc) {
-    rc.imageResolution({64, 48}, 1.0f);
+    rc.imageResolution({64, 48}, 1.0F);
     pixelCentres(rc);
     // the defaults are RI_EPSILON and RI_INFINITY, which leave the orthographic depth
     // scale at about 2e-38 and collapse every z onto the near plane
-    rc.clipping({.hither = 1.0f, .yon = 100.0f});
+    rc.clipping({.hither = 1.0F, .yon = 100.0F});
     rc.prepareWorld();
     // the shader that means no shading, built rather than defaulted to, so that this
     // picture goes through the language by both routes
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(-0.7f, -0.2f, 5.0f));
-    polygon->addVertex(vertex(0.3f, -0.2f, 5.0f));
-    polygon->addVertex(vertex(0.3f, 0.8f, 5.0f));
-    polygon->addVertex(vertex(-0.7f, 0.8f, 5.0f));
+    polygon->addVertex(vertex(-0.7F, -0.2F, 5.0F));
+    polygon->addVertex(vertex(0.3F, -0.2F, 5.0F));
+    polygon->addVertex(vertex(0.3F, 0.8F, 5.0F));
+    polygon->addVertex(vertex(-0.7F, 0.8F, 5.0F));
     rc.addPolygon(polygon);
 }
 
@@ -142,10 +142,10 @@ v3d::moya::Vertex shaded(float x, float y, float z, const glm::vec3 & normal) {
 void quad(v3d::moya::RenderContext & rc, float left, float right,
     const glm::vec3 & outer, const glm::vec3 & inner) {
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(shaded(left, -0.8f, 5.0f, outer));
-    polygon->addVertex(shaded(right, -0.8f, 5.0f, inner));
-    polygon->addVertex(shaded(right, 0.8f, 5.0f, inner));
-    polygon->addVertex(shaded(left, 0.8f, 5.0f, outer));
+    polygon->addVertex(shaded(left, -0.8F, 5.0F, outer));
+    polygon->addVertex(shaded(right, -0.8F, 5.0F, inner));
+    polygon->addVertex(shaded(right, 0.8F, 5.0F, inner));
+    polygon->addVertex(shaded(left, 0.8F, 5.0F, outer));
     rc.addPolygon(polygon);
 }
 
@@ -169,39 +169,39 @@ void put(v3d::render::offline::rib::ParameterList* list, const std::string & nam
     the RI defaults unless the caller says otherwise.
 */
 void shadedScene(v3d::moya::RenderContext & rc) {
-    rc.imageResolution({64, 48}, 1.0f);
-    rc.clipping({.hither = 1.0f, .yon = 100.0f});
+    rc.imageResolution({64, 48}, 1.0F);
+    rc.clipping({.hither = 1.0F, .yon = 100.0F});
     rc.prepareWorld();
 
     typedef v3d::render::offline::rib::Declaration Declaration;
     v3d::render::offline::rib::ParameterList distant;
-    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.8f });
-    put(&distant, "to", Declaration::Type::POINT, { 0.6f, -0.4f, 1.0f });
+    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.8F });
+    put(&distant, "to", Declaration::Type::POINT, { 0.6F, -0.4F, 1.0F });
     rc.lightSource({.shader = "distantlight", .handle = "1"}, distant);
 
     v3d::render::offline::rib::ParameterList bulb;
-    put(&bulb, "intensity", Declaration::Type::FLOAT, { 4.0f });
+    put(&bulb, "intensity", Declaration::Type::FLOAT, { 4.0F });
     rc.pushTransform();
-    rc.translate(-1.0f, 1.0f, 2.0f);
+    rc.translate(-1.0F, 1.0F, 2.0F);
     rc.lightSource({.shader = "pointlight", .handle = "2"}, bulb);
     rc.popTransform();
 
-    const glm::vec3 tilted(-0.9f, 0.0f, -0.436f);
-    const glm::vec3 square(0.0f, 0.0f, -1.0f);
+    const glm::vec3 tilted(-0.9F, 0.0F, -0.436F);
+    const glm::vec3 square(0.0F, 0.0F, -1.0F);
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.9f, 0.4f, 0.2f));
+    rc.color(glm::vec3(0.9F, 0.4F, 0.2F));
     rc.surface("matte", v3d::render::offline::rib::ParameterList());
-    quad(rc, -1.2f, -0.1f, tilted, square);
+    quad(rc, -1.2F, -0.1F, tilted, square);
     rc.attributeEnd();
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.3f, 0.5f, 0.9f));
+    rc.color(glm::vec3(0.3F, 0.5F, 0.9F));
     v3d::render::offline::rib::ParameterList plastic;
-    put(&plastic, "roughness", Declaration::Type::FLOAT, { 0.08f });
-    put(&plastic, "Ks", Declaration::Type::FLOAT, { 0.6f });
+    put(&plastic, "roughness", Declaration::Type::FLOAT, { 0.08F });
+    put(&plastic, "Ks", Declaration::Type::FLOAT, { 0.6F });
     rc.surface("plastic", plastic);
-    quad(rc, 0.1f, 1.2f, square, glm::vec3(0.9f, 0.0f, -0.436f));
+    quad(rc, 0.1F, 1.2F, square, glm::vec3(0.9F, 0.0F, -0.436F));
     rc.attributeEnd();
 }
 
@@ -211,32 +211,32 @@ void shadedScene(v3d::moya::RenderContext & rc) {
     or a pinhole.
 */
 void focusScene(v3d::moya::RenderContext & rc, bool lens) {
-    rc.imageResolution({64, 48}, 1.0f);
+    rc.imageResolution({64, 48}, 1.0F);
     rc.sampling().samples = glm::uvec2(4, 4);
     if (lens) {
-        rc.sampling().fstop = 1.0f;
-        rc.sampling().focalLength = 0.5f;
-        rc.sampling().focalDistance = 4.0f;
+        rc.sampling().fstop = 1.0F;
+        rc.sampling().focalLength = 0.5F;
+        rc.sampling().focalDistance = 4.0F;
     }
-    rc.projection("perspective", 40.0f);
-    rc.clipping({.hither = 0.1f, .yon = 100.0f});
+    rc.projection("perspective", 40.0F);
+    rc.clipping({.hither = 0.1F, .yon = 100.0F});
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 
-    rc.color(glm::vec3(0.9f, 0.2f, 0.2f));
+    rc.color(glm::vec3(0.9F, 0.2F, 0.2F));
     const boost::shared_ptr<v3d::moya::Polygon> near = boost::make_shared<v3d::moya::Polygon>();
-    near->addVertex(vertex(-1.5f, -1.0f, 4.0f));
-    near->addVertex(vertex(-0.2f, -1.0f, 4.0f));
-    near->addVertex(vertex(-0.2f, 1.0f, 4.0f));
-    near->addVertex(vertex(-1.5f, 1.0f, 4.0f));
+    near->addVertex(vertex(-1.5F, -1.0F, 4.0F));
+    near->addVertex(vertex(-0.2F, -1.0F, 4.0F));
+    near->addVertex(vertex(-0.2F, 1.0F, 4.0F));
+    near->addVertex(vertex(-1.5F, 1.0F, 4.0F));
     rc.addPolygon(near);
 
-    rc.color(glm::vec3(0.2f, 0.4f, 0.9f));
+    rc.color(glm::vec3(0.2F, 0.4F, 0.9F));
     const boost::shared_ptr<v3d::moya::Polygon> far = boost::make_shared<v3d::moya::Polygon>();
-    far->addVertex(vertex(0.5f, -2.5f, 10.0f));
-    far->addVertex(vertex(4.0f, -2.5f, 10.0f));
-    far->addVertex(vertex(4.0f, 2.5f, 10.0f));
-    far->addVertex(vertex(0.5f, 2.5f, 10.0f));
+    far->addVertex(vertex(0.5F, -2.5F, 10.0F));
+    far->addVertex(vertex(4.0F, -2.5F, 10.0F));
+    far->addVertex(vertex(4.0F, 2.5F, 10.0F));
+    far->addVertex(vertex(0.5F, 2.5F, 10.0F));
     rc.addPolygon(far);
 }
 
@@ -254,7 +254,7 @@ unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned 
     unsigned int count = 0;
     for (unsigned int column = run.from; column <= run.to; column++) {
         const float value = planes.value(coverage, column, run.row);
-        if (value > 0.02f && value < 0.98f) {
+        if (value > 0.02F && value < 0.98F) {
             count++;
         }
     }
@@ -272,7 +272,7 @@ struct Columns {
 
 float largest(const v3d::render::offline::FrameBuffer & first, const v3d::render::offline::FrameBuffer & second,
     const Columns & columns) {
-    float worst = 0.0f;
+    float worst = 0.0F;
     for (unsigned int plane = 0; plane < first.planes(); plane++) {
         for (unsigned int row = 0; row < first.height(); row++) {
             for (unsigned int column = columns.from; column <= columns.to; column++) {
@@ -287,10 +287,10 @@ float largest(const v3d::render::offline::FrameBuffer & first, const v3d::render
  * The orthographic camera of the other references, with the shutter open from 0 to 1.
  **/
 void motionCamera(v3d::moya::RenderContext & rc) {
-    rc.imageResolution({64, 48}, 1.0f);
+    rc.imageResolution({64, 48}, 1.0F);
     rc.sampling().samples = glm::uvec2(4, 4);
-    rc.sampling().shutter = glm::vec2(0.0f, 1.0f);
-    rc.clipping({.hither = 0.1f, .yon = 100.0f});
+    rc.sampling().shutter = glm::vec2(0.0F, 1.0F);
+    rc.clipping({.hither = 0.1F, .yon = 100.0F});
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 }
@@ -311,28 +311,28 @@ void motionScene(v3d::moya::RenderContext & rc) {
     motionCamera(rc);
 
     rc.attributeBegin();
-    rc.motionBegin({ 0.0f, 1.0f });
-    rc.translate(0.0f, 0.0f, 0.0f);
-    rc.translate(0.5f, 0.0f, 0.0f);
+    rc.motionBegin({ 0.0F, 1.0F });
+    rc.translate(0.0F, 0.0F, 0.0F);
+    rc.translate(0.5F, 0.0F, 0.0F);
     rc.motionEnd();
-    rc.color(glm::vec3(0.9f, 0.8f, 0.2f));
+    rc.color(glm::vec3(0.9F, 0.8F, 0.2F));
     const glm::vec3 slid[4] = {
-        glm::vec3(-1.2f, 0.1f, 5.0f), glm::vec3(-0.4f, 0.1f, 5.0f),
-        glm::vec3(-0.4f, 0.8f, 5.0f), glm::vec3(-1.2f, 0.8f, 5.0f)
+        glm::vec3(-1.2F, 0.1F, 5.0F), glm::vec3(-0.4F, 0.1F, 5.0F),
+        glm::vec3(-0.4F, 0.8F, 5.0F), glm::vec3(-1.2F, 0.8F, 5.0F)
     };
     quadAt(rc, slid);
     rc.attributeEnd();
 
     rc.attributeBegin();
-    rc.translate(0.6f, -0.4f, 5.0f);
-    rc.motionBegin({ 0.0f, 1.0f });
-    rc.rotate(0.0f, {0.0f, 0.0f, 1.0f});
-    rc.rotate(90.0f, {0.0f, 0.0f, 1.0f});
+    rc.translate(0.6F, -0.4F, 5.0F);
+    rc.motionBegin({ 0.0F, 1.0F });
+    rc.rotate(0.0F, {0.0F, 0.0F, 1.0F});
+    rc.rotate(90.0F, {0.0F, 0.0F, 1.0F});
     rc.motionEnd();
-    rc.color(glm::vec3(0.2f, 0.7f, 0.9f));
+    rc.color(glm::vec3(0.2F, 0.7F, 0.9F));
     const glm::vec3 turned[4] = {
-        glm::vec3(-0.35f, -0.15f, 0.0f), glm::vec3(0.35f, -0.15f, 0.0f),
-        glm::vec3(0.35f, 0.15f, 0.0f), glm::vec3(-0.35f, 0.15f, 0.0f)
+        glm::vec3(-0.35F, -0.15F, 0.0F), glm::vec3(0.35F, -0.15F, 0.0F),
+        glm::vec3(0.35F, 0.15F, 0.0F), glm::vec3(-0.35F, 0.15F, 0.0F)
     };
     quadAt(rc, turned);
     rc.attributeEnd();
@@ -345,16 +345,16 @@ void motionScene(v3d::moya::RenderContext & rc) {
  * pixel from 8, falls a twelfth a pixel from 32, and is whole between.
  **/
 void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, unsigned int row) {
-    BOOST_CHECK_EQUAL(planes.value(coverage, 7, row), 0.0f);
+    BOOST_CHECK_EQUAL(planes.value(coverage, 7, row), 0.0F);
     for (unsigned int k = 0; k < 12; k++) {
         BOOST_TEST_CONTEXT("pixel " << 8 + k << " and " << 32 + k) {
-            const float rising = (static_cast<float>(k) + 0.5f) / 12.0f;
-            BOOST_CHECK_SMALL(planes.value(coverage, 8 + k, row) - rising, 0.1f);
-            BOOST_CHECK_SMALL(planes.value(coverage, 32 + k, row) - (1.0f - rising), 0.1f);
+            const float rising = (static_cast<float>(k) + 0.5F) / 12.0F;
+            BOOST_CHECK_SMALL(planes.value(coverage, 8 + k, row) - rising, 0.1F);
+            BOOST_CHECK_SMALL(planes.value(coverage, 32 + k, row) - (1.0F - rising), 0.1F);
         }
     }
-    BOOST_CHECK_CLOSE(planes.value(coverage, 25, row), 1.0f, 1.0e-4f);
-    BOOST_CHECK_EQUAL(planes.value(coverage, 44, row), 0.0f);
+    BOOST_CHECK_CLOSE(planes.value(coverage, 25, row), 1.0F, 1.0e-4F);
+    BOOST_CHECK_EQUAL(planes.value(coverage, 44, row), 0.0F);
 }
 
 /**
@@ -414,10 +414,10 @@ boost::shared_ptr<v3d::image::Image> picture(const v3d::moya::RenderContext & rc
  **/
 void raytraceCamera(v3d::moya::RenderContext & rc) {
     rc.hider("raytrace");
-    rc.imageResolution({64, 48}, 1.0f);
-    rc.clipping({.hither = 0.001f, .yon = 100.0f});
+    rc.imageResolution({64, 48}, 1.0F);
+    rc.clipping({.hither = 0.001F, .yon = 100.0F});
     rc.projection("orthographic");
-    rc.setTransform(glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+    rc.setTransform(glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, 0.0F, 1.0F)));
 }
 
 void background(v3d::moya::RenderContext & rc, const glm::vec3 & colour) {
@@ -433,14 +433,14 @@ void background(v3d::moya::RenderContext & rc, const glm::vec3 & colour) {
 void triangleScene(v3d::moya::RenderContext & rc) {
     raytraceCamera(rc);
     pixelCentres(rc);
-    background(rc, glm::vec3(0.15f, 0.25f, 0.45f));
+    background(rc, glm::vec3(0.15F, 0.25F, 0.45F));
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
-    rc.color(glm::vec3(0.9f, 0.2f, 0.2f));
+    rc.color(glm::vec3(0.9F, 0.2F, 0.2F));
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(-0.8f, -0.6f, 2.0f));
-    polygon->addVertex(vertex(0.8f, -0.6f, 2.0f));
-    polygon->addVertex(vertex(0.0f, 0.7f, 2.0f));
+    polygon->addVertex(vertex(-0.8F, -0.6F, 2.0F));
+    polygon->addVertex(vertex(0.8F, -0.6F, 2.0F));
+    polygon->addVertex(vertex(0.0F, 0.7F, 2.0F));
     rc.addPolygon(polygon);
 }
 
@@ -452,42 +452,42 @@ void triangleScene(v3d::moya::RenderContext & rc) {
 void raytraceShadedScene(v3d::moya::RenderContext & rc) {
     typedef v3d::render::offline::rib::Declaration Declaration;
     raytraceCamera(rc);
-    background(rc, glm::vec3(0.05f, 0.06f, 0.1f));
+    background(rc, glm::vec3(0.05F, 0.06F, 0.1F));
     rc.prepareWorld();
 
     v3d::render::offline::rib::ParameterList fill;
-    put(&fill, "intensity", Declaration::Type::FLOAT, { 0.18f });
+    put(&fill, "intensity", Declaration::Type::FLOAT, { 0.18F });
     rc.lightSource({.shader = "ambientlight", .handle = "0"}, fill);
     v3d::render::offline::rib::ParameterList distant;
-    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.9f });
-    put(&distant, "to", Declaration::Type::POINT, { 0.7f, -0.7f, 1.0f });
+    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.9F });
+    put(&distant, "to", Declaration::Type::POINT, { 0.7F, -0.7F, 1.0F });
     rc.lightSource({.shader = "distantlight", .handle = "1"}, distant);
     v3d::render::offline::rib::ParameterList lamp;
-    put(&lamp, "intensity", Declaration::Type::FLOAT, { 1.2f });
+    put(&lamp, "intensity", Declaration::Type::FLOAT, { 1.2F });
     rc.pushTransform();
-    rc.translate(-0.6f, 0.5f, 1.2f);
+    rc.translate(-0.6F, 0.5F, 1.2F);
     rc.lightSource({.shader = "pointlight", .handle = "2"}, lamp);
     rc.popTransform();
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.8f, 0.75f, 0.6f));
+    rc.color(glm::vec3(0.8F, 0.75F, 0.6F));
     rc.surface("matte", v3d::render::offline::rib::ParameterList());
     const glm::vec3 floor[4] = {
-        glm::vec3(-1.15f, -1.2f, 3.0f), glm::vec3(1.15f, -1.2f, 3.0f),
-        glm::vec3(1.15f, 1.2f, 3.0f), glm::vec3(-1.15f, 1.2f, 3.0f)
+        glm::vec3(-1.15F, -1.2F, 3.0F), glm::vec3(1.15F, -1.2F, 3.0F),
+        glm::vec3(1.15F, 1.2F, 3.0F), glm::vec3(-1.15F, 1.2F, 3.0F)
     };
     quadAt(rc, floor);
     rc.attributeEnd();
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.2f, 0.45f, 0.8f));
+    rc.color(glm::vec3(0.2F, 0.45F, 0.8F));
     v3d::render::offline::rib::ParameterList shiny;
-    put(&shiny, "roughness", Declaration::Type::FLOAT, { 0.1f });
-    put(&shiny, "Ks", Declaration::Type::FLOAT, { 0.5f });
+    put(&shiny, "roughness", Declaration::Type::FLOAT, { 0.1F });
+    put(&shiny, "Ks", Declaration::Type::FLOAT, { 0.5F });
     rc.surface("plastic", shiny);
     const glm::vec3 panel[4] = {
-        glm::vec3(-0.5f, -0.45f, 2.2f), glm::vec3(0.35f, -0.45f, 2.2f),
-        glm::vec3(0.35f, 0.4f, 2.2f), glm::vec3(-0.5f, 0.4f, 2.2f)
+        glm::vec3(-0.5F, -0.45F, 2.2F), glm::vec3(0.35F, -0.45F, 2.2F),
+        glm::vec3(0.35F, 0.4F, 2.2F), glm::vec3(-0.5F, 0.4F, 2.2F)
     };
     quadAt(rc, panel);
     rc.attributeEnd();
@@ -501,60 +501,60 @@ void raytraceShadedScene(v3d::moya::RenderContext & rc) {
 void spheresScene(v3d::moya::RenderContext & rc) {
     typedef v3d::render::offline::rib::Declaration Declaration;
     rc.hider("raytrace");
-    rc.imageResolution({64, 48}, 1.0f);
-    rc.clipping({.hither = 0.1f, .yon = 100.0f});
-    rc.projection("perspective", 40.0f);
+    rc.imageResolution({64, 48}, 1.0F);
+    rc.clipping({.hither = 0.1F, .yon = 100.0F});
+    rc.projection("perspective", 40.0F);
     // the floor's shader is a fixture beside the scene rather than one of the standard ones
     rc.searchpath("data:&");
     rc.prepareWorld();
 
     v3d::render::offline::rib::ParameterList fill;
-    put(&fill, "intensity", Declaration::Type::FLOAT, { 0.2f });
+    put(&fill, "intensity", Declaration::Type::FLOAT, { 0.2F });
     rc.lightSource({.shader = "ambientlight", .handle = "0"}, fill);
     v3d::render::offline::rib::ParameterList distant;
-    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.9f });
-    put(&distant, "to", Declaration::Type::POINT, { 0.4f, -1.0f, 0.6f });
+    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.9F });
+    put(&distant, "to", Declaration::Type::POINT, { 0.4F, -1.0F, 0.6F });
     rc.lightSource({.shader = "distantlight", .handle = "1"}, distant);
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.85f, 0.8f, 0.7f));
+    rc.color(glm::vec3(0.85F, 0.8F, 0.7F));
     v3d::render::offline::rib::ParameterList checks;
-    put(&checks, "size", Declaration::Type::FLOAT, { 0.5f });
+    put(&checks, "size", Declaration::Type::FLOAT, { 0.5F });
     rc.surface("checked", checks);
     const glm::vec3 floor[4] = {
-        glm::vec3(-4.0f, -1.0f, 2.0f), glm::vec3(4.0f, -1.0f, 2.0f),
-        glm::vec3(4.0f, -1.0f, 12.0f), glm::vec3(-4.0f, -1.0f, 12.0f)
+        glm::vec3(-4.0F, -1.0F, 2.0F), glm::vec3(4.0F, -1.0F, 2.0F),
+        glm::vec3(4.0F, -1.0F, 12.0F), glm::vec3(-4.0F, -1.0F, 12.0F)
     };
     quadAt(rc, floor);
     rc.attributeEnd();
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.35f, 0.5f, 0.75f));
+    rc.color(glm::vec3(0.35F, 0.5F, 0.75F));
     rc.surface("matte", v3d::render::offline::rib::ParameterList());
     const glm::vec3 wall[4] = {
-        glm::vec3(-4.0f, -1.0f, 12.0f), glm::vec3(4.0f, -1.0f, 12.0f),
-        glm::vec3(4.0f, 4.0f, 12.0f), glm::vec3(-4.0f, 4.0f, 12.0f)
+        glm::vec3(-4.0F, -1.0F, 12.0F), glm::vec3(4.0F, -1.0F, 12.0F),
+        glm::vec3(4.0F, 4.0F, 12.0F), glm::vec3(-4.0F, 4.0F, 12.0F)
     };
     quadAt(rc, wall);
     rc.attributeEnd();
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.9f, 0.85f, 0.7f));
+    rc.color(glm::vec3(0.9F, 0.85F, 0.7F));
     v3d::render::offline::rib::ParameterList mirror;
-    put(&mirror, "Ka", Declaration::Type::FLOAT, { 0.1f });
-    put(&mirror, "Ks", Declaration::Type::FLOAT, { 0.6f });
-    put(&mirror, "Kr", Declaration::Type::FLOAT, { 0.8f });
+    put(&mirror, "Ka", Declaration::Type::FLOAT, { 0.1F });
+    put(&mirror, "Ks", Declaration::Type::FLOAT, { 0.6F });
+    put(&mirror, "Kr", Declaration::Type::FLOAT, { 0.8F });
     rc.surface("shinymetal", mirror);
-    rc.translate(-1.1f, -0.28f, 6.0f);
-    BOOST_REQUIRE(rc.addSphere({.radius = 0.7f, .zmin = -0.7f, .zmax = 0.7f, .thetamax = 360.0f}));
+    rc.translate(-1.1F, -0.28F, 6.0F);
+    BOOST_REQUIRE(rc.addSphere({.radius = 0.7F, .zmin = -0.7F, .zmax = 0.7F, .thetamax = 360.0F}));
     rc.attributeEnd();
 
     rc.attributeBegin();
-    rc.color(glm::vec3(1.0f));
-    rc.opacity(glm::vec3(0.3f));
+    rc.color(glm::vec3(1.0F));
+    rc.opacity(glm::vec3(0.3F));
     rc.surface("glass", v3d::render::offline::rib::ParameterList());
-    rc.translate(1.1f, -0.28f, 5.5f);
-    BOOST_REQUIRE(rc.addSphere({.radius = 0.7f, .zmin = -0.7f, .zmax = 0.7f, .thetamax = 360.0f}));
+    rc.translate(1.1F, -0.28F, 5.5F);
+    BOOST_REQUIRE(rc.addSphere({.radius = 0.7F, .zmin = -0.7F, .zmax = 0.7F, .thetamax = 360.0F}));
     rc.attributeEnd();
 }
 
@@ -563,22 +563,22 @@ void spheresScene(v3d::moya::RenderContext & rc) {
  * box, which is twelve pixels at this frame.
  **/
 void slidingQuad(v3d::moya::RenderContext & rc) {
-    rc.imageResolution({64, 48}, 1.0f);
+    rc.imageResolution({64, 48}, 1.0F);
     rc.sampling().samples = glm::uvec2(8, 8);
     rc.sampling().filter = v3d::render::offline::Filter::Box;
-    rc.sampling().width = glm::vec2(1.0f);
-    rc.sampling().shutter = glm::vec2(0.0f, 1.0f);
-    rc.clipping({.hither = 0.1f, .yon = 100.0f});
+    rc.sampling().width = glm::vec2(1.0F);
+    rc.sampling().shutter = glm::vec2(0.0F, 1.0F);
+    rc.clipping({.hither = 0.1F, .yon = 100.0F});
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 
-    rc.motionBegin({ 0.0f, 1.0f });
-    rc.translate(0.0f, 0.0f, 0.0f);
-    rc.translate(0.5f, 0.0f, 0.0f);
+    rc.motionBegin({ 0.0F, 1.0F });
+    rc.translate(0.0F, 0.0F, 0.0F);
+    rc.translate(0.5F, 0.0F, 0.0F);
     rc.motionEnd();
     const glm::vec3 corners[4] = {
-        glm::vec3(-1.0f, -0.5f, 5.0f), glm::vec3(0.0f, -0.5f, 5.0f),
-        glm::vec3(0.0f, 0.5f, 5.0f), glm::vec3(-1.0f, 0.5f, 5.0f)
+        glm::vec3(-1.0F, -0.5F, 5.0F), glm::vec3(0.0F, -0.5F, 5.0F),
+        glm::vec3(0.0F, 0.5F, 5.0F), glm::vec3(-1.0F, 0.5F, 5.0F)
     };
     quadAt(rc, corners);
 }
@@ -595,14 +595,14 @@ BOOST_AUTO_TEST_CASE(moya_renders_a_polygon_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
 
     // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8]
-    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::RED, 24, 16) == 1.0f);
-    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::BLUE, 24, 16) == 1.0f);
+    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::RED, 24, 16) == 1.0F);
+    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::BLUE, 24, 16) == 1.0F);
     // and nothing outside it
-    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::RED, 55, 40) == 0.0f);
+    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::RED, 55, 40) == 0.0F);
 
     // a covered pixel took a depth from the geometry rather than keeping the one it was
     // cleared to
-    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::DEPTH, 24, 16) < 2.0f);
+    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::DEPTH, 24, 16) < 2.0F);
 }
 
 /**
@@ -696,7 +696,7 @@ BOOST_AUTO_TEST_CASE(moya_no_display_writes_nothing_test) {
     scene(rc);
     rc.render();
 
-    BOOST_TEST(rc.framebuffer()->planes()->value(v3d::moya::FrameBuffer::RED, 24, 16) == 1.0f);
+    BOOST_TEST(rc.framebuffer()->planes()->value(v3d::moya::FrameBuffer::RED, 24, 16) == 1.0F);
 }
 
 /**
@@ -843,7 +843,7 @@ BOOST_AUTO_TEST_CASE(moya_in_focus_is_sharp_test) {
             lens.render();
 
             BOOST_CHECK_SMALL(largest(*pinhole.framebuffer()->planes(), *lens.framebuffer()->planes(), {.from = 0, .to = 30}),
-                1.0f / 255.0f);
+                1.0F / 255.0F);
         }
     }
 }
@@ -862,21 +862,21 @@ BOOST_AUTO_TEST_CASE(moya_out_of_focus_spreads_test) {
             pinhole.hider(hider);
             focusScene(pinhole, false);
             pinhole.sampling().filter = v3d::render::offline::Filter::Box;
-            pinhole.sampling().width = glm::vec2(1.0f);
+            pinhole.sampling().width = glm::vec2(1.0F);
             pinhole.render();
             v3d::moya::RenderContext lens;
             lens.hider(hider);
             focusScene(lens, true);
             lens.sampling().filter = v3d::render::offline::Filter::Box;
-            lens.sampling().width = glm::vec2(1.0f);
+            lens.sampling().width = glm::vec2(1.0F);
             lens.render();
 
             const unsigned int coverage = v3d::moya::FrameBuffer::COVERAGE;
             const unsigned int sharp = partial(*pinhole.framebuffer()->planes(), coverage, {.row = 24, .from = 30, .to = 45});
             const unsigned int blurred = partial(*lens.framebuffer()->planes(), coverage, {.row = 24, .from = 30, .to = 45});
-            BOOST_CHECK_LE(sharp, 2u);
-            BOOST_CHECK_GE(blurred, 4u);
-            BOOST_CHECK_LE(blurred, 7u);
+            BOOST_CHECK_LE(sharp, 2U);
+            BOOST_CHECK_GE(blurred, 4U);
+            BOOST_CHECK_LE(blurred, 7U);
         }
     }
 }
@@ -941,16 +941,16 @@ BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
                 for (unsigned int down = 0; down < 4; down++) {
                     const unsigned int column = 20 + (8 * across);
                     const unsigned int row = 12 + (8 * down);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, column, row) - (85.0f * across / 255.0f),
-                        1.0f / 255.0f);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, column, row) - (85.0f * down / 255.0f),
-                        1.0f / 255.0f);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, column, row) - (128.0f / 255.0f),
-                        1.0f / 255.0f);
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, column, row) - (85.0F * across / 255.0F),
+                        1.0F / 255.0F);
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, column, row) - (85.0F * down / 255.0F),
+                        1.0F / 255.0F);
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, column, row) - (128.0F / 255.0F),
+                        1.0F / 255.0F);
                 }
             }
             // and outside the quad is the background
-            BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 4, 4), 0.0f);
+            BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 4, 4), 0.0F);
         }
     }
 }
@@ -975,7 +975,7 @@ BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
         BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
             for (unsigned int channel = 0; channel < 3; channel++) {
                 BOOST_CHECK_SMALL(planes->value(channel, pixel[0], pixel[1]) - traced->value(channel, pixel[0], pixel[1]),
-                    1.5f / 255.0f);
+                    1.5F / 255.0F);
             }
         }
     }
@@ -1078,10 +1078,10 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_spheres_reference_test) {
 BOOST_AUTO_TEST_CASE(moya_raytrace_lit_quad_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/raytrace-lit-quad.rib"});
 
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.70710678f, 0.5f);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 0.70710678f, 0.5f);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.70710678F, 0.5F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 0.70710678F, 0.5F);
     // and nothing outside the quad
-    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, 2, 2), 0.0001f);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, 2, 2), 0.0001F);
 }
 
 /**
@@ -1100,7 +1100,7 @@ BOOST_AUTO_TEST_CASE(reference_motion_without_a_cache_test) {
 
     const v3d::render::offline::FrameBuffer & cachedImage = *cached.framebuffer()->planes();
     const v3d::render::offline::FrameBuffer & uncachedImage = *uncached.framebuffer()->planes();
-    BOOST_CHECK_EQUAL(largest(cachedImage, uncachedImage, {.from = 0, .to = cachedImage.width() - 1}), 0.0f);
+    BOOST_CHECK_EQUAL(largest(cachedImage, uncachedImage, {.from = 0, .to = cachedImage.width() - 1}), 0.0F);
 }
 
 };  // namespace

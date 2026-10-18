@@ -27,7 +27,7 @@ constexpr int FOLD_SHIFT = 31;
 
 // unit() keeps the top 24 bits of a draw, the precision of a float, and scales them by 2^-24
 constexpr int UNIT_DISCARDED_BITS = 40;
-constexpr float UNIT_SCALE = 0x1.0p-24f;
+constexpr float UNIT_SCALE = 0x1.0p-24F;
 
 };  // namespace
 
@@ -86,12 +86,12 @@ glm::vec3 Random::inside(const glm::vec3& minimum, const glm::vec3& maximum) noe
 glm::vec3 Random::cone(const glm::vec3& axis, float angle) noexcept {
     // a height drawn evenly between the cap's rim and its pole spreads directions evenly over
     // the cap's area, by Archimedes' hat-box theorem
-    const float height = 1.0f - (unit() * (1.0f - std::cos(angle)));
+    const float height = 1.0F - (unit() * (1.0F - std::cos(angle)));
     const float around = unit() * glm::two_pi<float>();
-    const float radius = std::sqrt(std::max(0.0f, 1.0f - (height * height)));
+    const float radius = std::sqrt(std::max(0.0F, 1.0F - (height * height)));
 
     const glm::vec3 pole = glm::normalize(axis);
-    const glm::vec3 other = std::abs(pole.x) < 0.9f ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
+    const glm::vec3 other = std::abs(pole.x) < 0.9F ? glm::vec3(1.0F, 0.0F, 0.0F) : glm::vec3(0.0F, 1.0F, 0.0F);
     const glm::vec3 first = glm::normalize(glm::cross(pole, other));
     const glm::vec3 second = glm::cross(pole, first);
     return (pole * height) + (first * (radius * std::cos(around))) + (second * (radius * std::sin(around)));

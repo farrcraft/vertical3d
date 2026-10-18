@@ -337,7 +337,7 @@ class Immediate {
      **/
     struct TableShape {
         unsigned int columns = 1;
-        float height = 0.0f;
+        float height = 0.0F;
     };
 
     bool table(const std::string& id, const TableShape& shape);
@@ -526,8 +526,8 @@ class Immediate {
     struct Scrolled {
         Id id = 0;
         Id scroll = 0;
-        float contentTop = 0.0f;
-        glm::vec2 bodyMax{0.0f};
+        float contentTop = 0.0F;
+        glm::vec2 bodyMax{0.0F};
     };
 
     void closeScroll(const Scrolled& region, Bar bar);

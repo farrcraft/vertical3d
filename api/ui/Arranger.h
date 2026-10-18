@@ -184,7 +184,7 @@ class Arranger final {
      * How wide a flyout panel's mark column is, as a fraction of a line - the room on each
      * side of its labels for a check mark and a submenu arrow.
      **/
-    static constexpr float markColumn = 0.9f;
+    static constexpr float markColumn = 0.9F;
 
  private:
     /**

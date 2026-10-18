@@ -11,14 +11,14 @@
 
 namespace v3d::ui::component {
 
-const float Scrollbar::minimumThumb = 16.0f;
-const float Scrollbar::lineStep = 16.0f;
+const float Scrollbar::minimumThumb = 16.0F;
+const float Scrollbar::lineStep = 16.0F;
 
 Scrollbar::Scrollbar() :
     Component(Type::Scrollbar),
-    content_(0.0f),
-    page_(0.0f),
-    offset_(0.0f),
+    content_(0.0F),
+    page_(0.0F),
+    offset_(0.0F),
     direction_(Direction::Vertical) {
     // pickable for its drag and focusable for its keys, which a plain component is not
     pickable(true);
@@ -42,8 +42,8 @@ boost::shared_ptr<SelectList> Scrollbar::scrolls() const {
 }
 
 void Scrollbar::range(float content, float page) {
-    content_ = std::max(content, 0.0f);
-    page_ = std::max(page, 0.0f);
+    content_ = std::max(content, 0.0F);
+    page_ = std::max(page, 0.0F);
     offset(offset());
 }
 
@@ -65,7 +65,7 @@ void Scrollbar::offset(float distance) {
         list->offset(distance);  // the list clamps against its own content
         return;
     }
-    offset_ = std::clamp(distance, 0.0f, maximum());
+    offset_ = std::clamp(distance, 0.0F, maximum());
 }
 
 float Scrollbar::offset() const noexcept {
@@ -78,17 +78,17 @@ void Scrollbar::scroll(float distance) {
 }
 
 float Scrollbar::maximum() const noexcept {
-    return std::max(content() - page(), 0.0f);
+    return std::max(content() - page(), 0.0F);
 }
 
 bool Scrollbar::scrollable() const noexcept {
-    return maximum() > 0.0f;
+    return maximum() > 0.0F;
 }
 
 float Scrollbar::line() const noexcept {
     const boost::shared_ptr<SelectList> list = scrolled_.lock();
-    const float row = list ? list->rowHeight() : 0.0f;
-    return row > 0.0f ? row : lineStep;
+    const float row = list ? list->rowHeight() : 0.0F;
+    return row > 0.0F ? row : lineStep;
 }
 
 float Scrollbar::track() const noexcept {
@@ -104,7 +104,7 @@ float Scrollbar::thumbStart() const noexcept {
 }
 
 void Scrollbar::drag(const glm::vec2& point) {
-    if (track() - thumb() <= 0.0f) {
+    if (track() - thumb() <= 0.0F) {
         return;
     }
     const float origin = direction_ == Direction::Vertical ? position().y : position().x;
@@ -113,7 +113,7 @@ void Scrollbar::drag(const glm::vec2& point) {
 }
 
 float thumbLength(float track, float shown, float whole) noexcept {
-    if (whole <= 0.0f || shown >= whole) {
+    if (whole <= 0.0F || shown >= whole) {
         return track;
     }
     return std::clamp(track * (shown / whole), std::min(Scrollbar::minimumThumb, track), track);
@@ -125,18 +125,18 @@ float thumbStart(const Thumb& thumb) noexcept {
     const float offset = thumb.offset;
     const float span = thumb.span;
     const float room = track - length;
-    if (room <= 0.0f || span <= 0.0f) {
-        return 0.0f;
+    if (room <= 0.0F || span <= 0.0F) {
+        return 0.0F;
     }
     return room * (offset / span);
 }
 
 float dragOffset(float track, float length, float along, float span) noexcept {
     const float room = track - length;
-    if (room <= 0.0f) {
-        return 0.0f;
+    if (room <= 0.0F) {
+        return 0.0F;
     }
-    return span * std::clamp((along - (length * 0.5f)) / room, 0.0f, 1.0f);
+    return span * std::clamp((along - (length * 0.5F)) / room, 0.0F, 1.0F);
 }
 
 };  // namespace v3d::ui::component

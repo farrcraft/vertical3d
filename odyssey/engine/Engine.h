@@ -103,7 +103,7 @@ class Engine final : public v3d::engine::Engine {
     // hand it
     boost::shared_ptr<v3d::asset::Worker> worker_;
     boost::shared_ptr<odyssey::tile::World> world_;
-    glm::vec2 cursor_{0.0f, 0.0f};
+    glm::vec2 cursor_{0.0F, 0.0F};
     boost::shared_ptr<odyssey::render::Renderer> renderer_;
     boost::shared_ptr<odyssey::system::Movement> movementSystem_;
     // the dispatcher holds a delegate to this object; this lets it go when the object does

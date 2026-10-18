@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE(a_destruction_waits_for_the_frames_in_flight) {
 
     retirement.collect(7);
     BOOST_CHECK(destroyed);
-    BOOST_CHECK_EQUAL(retirement.pending(), 0u);
+    BOOST_CHECK_EQUAL(retirement.pending(), 0U);
 }
 
 /**
@@ -46,10 +46,10 @@ BOOST_AUTO_TEST_CASE(only_what_is_due_is_collected) {
 
     retirement.collect(3);
 
-    BOOST_REQUIRE_EQUAL(destroyed.size(), 2u);
+    BOOST_REQUIRE_EQUAL(destroyed.size(), 2U);
     BOOST_CHECK_EQUAL(destroyed[0], 1);
     BOOST_CHECK_EQUAL(destroyed[1], 2);
-    BOOST_CHECK_EQUAL(retirement.pending(), 1u);
+    BOOST_CHECK_EQUAL(retirement.pending(), 1U);
 }
 
 /**

@@ -37,12 +37,12 @@ namespace v3d::moya {
 namespace {
 
 /** The least w a point is divided by. A point at or below it is at or behind the eye. **/
-constexpr float SMALLEST_W = 1.0e-6f;
+constexpr float SMALLEST_W = 1.0e-6F;
 
 };  // namespace
 
 glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point) {
-    const glm::vec4 projected = matrix * glm::vec4(point, 1.0f);
+    const glm::vec4 projected = matrix * glm::vec4(point, 1.0F);
     if (projected.w <= SMALLEST_W) {
         return glm::vec3(projected);
     }
@@ -68,7 +68,7 @@ void RenderContext::initialize() {
     textures_ = boost::make_shared<v3d::render::offline::Textures>(logger_);
 
     // the predefined coordinate systems start as the identity
-    const glm::mat4x4 def(1.0f);
+    const glm::mat4x4 def(1.0F);
     coordinateSystems_["object"] = def;
     coordinateSystems_["world"] = def;
     coordinateSystems_["camera"] = def;
@@ -130,10 +130,10 @@ void RenderContext::prepareWorld() {
     // are this camera's
     traced_.view(coordinateSystems_["camera"]);
     // inside the world block the current transformation is object to world
-    transform_.replace(glm::mat4x4(1.0f));
+    transform_.replace(glm::mat4x4(1.0F));
 
     // set raster transformation
-    glm::mat4x4 raster(1.0f);
+    glm::mat4x4 raster(1.0F);
     /*
         The screen transform maps to the canonical volume [-1, 1], and the raster transform
         takes that to [0, xres] by [0, yres].
@@ -141,10 +141,10 @@ void RenderContext::prepareWorld() {
         y is negated because raster space has its origin at the upper left corner and
         counts downward. image::Image stores its rows in the same order, top row first.
     */
-    const float x = static_cast<float>(xres_) / 2.0f;
-    const float y = static_cast<float>(yres_) / 2.0f;
-    raster = glm::scale(raster, glm::vec3(x, -y, 1.0f));
-    raster = glm::translate(raster, glm::vec3(1.0f, -1.0f, 1.0f));
+    const float x = static_cast<float>(xres_) / 2.0F;
+    const float y = static_cast<float>(yres_) / 2.0F;
+    raster = glm::scale(raster, glm::vec3(x, -y, 1.0F));
+    raster = glm::translate(raster, glm::vec3(1.0F, -1.0F, 1.0F));
 
     coordinateSystems_["raster"] = raster;
 
@@ -184,7 +184,7 @@ void RenderContext::projection(std::string name, float fov) {
     screenTransform();
 
     // what the scene sets from here to WorldBegin is the world to camera transformation
-    transform_.replace(glm::mat4x4(1.0f));
+    transform_.replace(glm::mat4x4(1.0F));
 }
 
 void RenderContext::screenTransform() {
@@ -205,7 +205,7 @@ glm::mat4x4 RenderContext::projectionMatrix() const {
     const float top = screen_[3];
 
     // the identity, because an unsupported projection takes none of the branches below
-    glm::mat4x4 projection(1.0f);
+    glm::mat4x4 projection(1.0F);
     if (projection_ == "perspective") {
         /*
             RI states fov as the full angle between screen space (-1, 0) and (1, 0), so a
@@ -216,15 +216,15 @@ glm::mat4x4 RenderContext::projectionMatrix() const {
             system would write. Depth runs [-1, 1] to match the orthographic branch, and
             the frustum cull in addPolygon() reads the same range.
         */
-        const float tangent = std::tan(glm::radians(fov_) / 2.0f);
-        projection = glm::mat4x4(0.0f);
-        projection[0][0] = 2.0f / ((right - left) * tangent);
-        projection[1][1] = 2.0f / ((top - bottom) * tangent);
+        const float tangent = std::tan(glm::radians(fov_) / 2.0F);
+        projection = glm::mat4x4(0.0F);
+        projection[0][0] = 2.0F / ((right - left) * tangent);
+        projection[1][1] = 2.0F / ((top - bottom) * tangent);
         projection[2][0] = -(right + left) / (right - left);
         projection[2][1] = -(top + bottom) / (top - bottom);
         projection[2][2] = (far_ + near_) / (far_ - near_);
-        projection[2][3] = 1.0f;
-        projection[3][2] = -2.0f * far_ * near_ / (far_ - near_);
+        projection[2][3] = 1.0F;
+        projection[3][2] = -2.0F * far_ * near_ / (far_ - near_);
     } else if (projection_ == "orthographic") {
         /*
             The screen window maps to [-1, 1] on x and y, and [near, far] maps to [-1, 1]
@@ -247,19 +247,19 @@ glm::mat4x4 RenderContext::projectionMatrix() const {
         const float ty = ((top + bottom) / (top - bottom));
         const float tz = (far + near) / (far - near);
 
-        projection[0][0] = 2.0f / (right - left);
+        projection[0][0] = 2.0F / (right - left);
         projection[1][0] = 0.0;
         projection[2][0] = 0.0;
         projection[3][0] = -tx;
         projection[0][1] = 0.0;
-        projection[1][1] = 2.0f / (top - bottom);
+        projection[1][1] = 2.0F / (top - bottom);
         projection[2][1] = 0.0;
         projection[3][1] = -ty;
         projection[0][2] = 0.0;
         projection[1][2] = 0.0;
         // positive, because the interface looks down +z. The negated form is for a right
         // handed system, and here it would put the whole clip range behind the near plane
-        projection[2][2] = 2.0f / (far - near);
+        projection[2][2] = 2.0F / (far - near);
         projection[3][2] = -tz;
         projection[0][3] = 0.0;
         projection[1][3] = 0.0;
@@ -299,7 +299,7 @@ bool RenderContext::imageResolution(const glm::ivec2 & resolution, float aspect)
     }
     xres_ = width;
     yres_ = height;
-    pixelAspect_ = aspect > 0.0f && std::isfinite(aspect) ? aspect : 1.0f;
+    pixelAspect_ = aspect > 0.0F && std::isfinite(aspect) ? aspect : 1.0F;
     if (!frameAspectNamed_) {
         frameAspectRatio(static_cast<float>(xres_) * pixelAspect_ / static_cast<float>(yres_));
         frameAspectNamed_ = false;
@@ -315,10 +315,10 @@ void RenderContext::frameAspectRatio(float aspect) {
     }
     // the RI default: the shorter side spans [-1, 1] and the longer spans [-a, a], so that
     // a frame which is not square does not stretch a square window across itself
-    if (frameAspect_ >= 1.0f) {
-        screenWindow({.left = -frameAspect_, .right = frameAspect_, .bottom = -1.0f, .top = 1.0f});
+    if (frameAspect_ >= 1.0F) {
+        screenWindow({.left = -frameAspect_, .right = frameAspect_, .bottom = -1.0F, .top = 1.0F});
     } else {
-        screenWindow({.left = -1.0f, .right = 1.0f, .bottom = -1.0f / frameAspect_, .top = 1.0f / frameAspect_});
+        screenWindow({.left = -1.0F, .right = 1.0F, .bottom = -1.0F / frameAspect_, .top = 1.0F / frameAspect_});
     }
     screenNamed_ = false;
 }
@@ -386,7 +386,7 @@ void RenderContext::setCoordinateSystem(const std::string& name) {
 }
 
 void RenderContext::setIdentityTransform() {
-    transform_.replace(glm::mat4(1.0f));
+    transform_.replace(glm::mat4(1.0F));
 }
 
 void RenderContext::setTransform(const glm::mat4x4& trans) {
@@ -457,24 +457,24 @@ glm::mat4x4 RenderContext::coordinateSystem(const std::string& name) {
 }
 
 void RenderContext::translate(float dx, float dy, float dz) {
-    transform_.concat(glm::translate(glm::mat4x4(1.0f), glm::vec3(dx, dy, dz)));
+    transform_.concat(glm::translate(glm::mat4x4(1.0F), glm::vec3(dx, dy, dz)));
 }
 
 // RiRotate takes its angle in degrees and glm takes radians
 void RenderContext::rotate(float angle, const glm::vec3 & axis) {
-    transform_.concat(glm::rotate(glm::mat4x4(1.0f), glm::radians(angle), axis));
+    transform_.concat(glm::rotate(glm::mat4x4(1.0F), glm::radians(angle), axis));
 }
 
 void RenderContext::scale(float sx, float sy, float sz) {
-    transform_.concat(glm::scale(glm::mat4x4(1.0f), glm::vec3(sx, sy, sz)));
+    transform_.concat(glm::scale(glm::mat4x4(1.0F), glm::vec3(sx, sy, sz)));
 }
 
 namespace {
 
 /** An axis aligned box, by its least and greatest corners. **/
 struct Bound {
-    glm::vec3 min{0.0f};
-    glm::vec3 max{0.0f};
+    glm::vec3 min{0.0F};
+    glm::vec3 max{0.0F};
 };
 
 /**
@@ -496,7 +496,7 @@ glm::vec3 boxCorner(const glm::vec3 & min, const glm::vec3 & max, int index) {
 Bound transformBound(const glm::mat4x4 & transform, const Bound & object) {
     Bound bound{.min = glm::vec3(std::numeric_limits<float>::max()), .max = glm::vec3(std::numeric_limits<float>::lowest())};
     for (int k = 0; k < 8; k++) {
-        const glm::vec3 corner(transform * glm::vec4(boxCorner(object.min, object.max, k), 1.0f));
+        const glm::vec3 corner(transform * glm::vec4(boxCorner(object.min, object.max, k), 1.0F));
         bound.min = glm::min(bound.min, corner);
         bound.max = glm::max(bound.max, corner);
     }
@@ -663,8 +663,8 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
         v3d::render::offline::trace::Triangle::Corners points;
         v3d::render::offline::trace::Triangle::Corners normals;
         for (std::size_t k = 0; k < 3; k++) {
-            points[k] = glm::vec3(toWorld * glm::vec4(corners[k].point(), 1.0f));
-            normals[k] = corners[k].hasNormal() ? glm::normalize(toWorldNormal * corners[k].normal()) : glm::vec3(0.0f);
+            points[k] = glm::vec3(toWorld * glm::vec4(corners[k].point(), 1.0F));
+            normals[k] = corners[k].hasNormal() ? glm::normalize(toWorldNormal * corners[k].normal()) : glm::vec3(0.0F);
         }
         const bool shaded = corners[0].hasNormal() && corners[1].hasNormal() && corners[2].hasNormal();
         v3d::render::offline::trace::Triangle triangle = shaded ?
@@ -695,7 +695,7 @@ bool RenderContext::addSphere(const v3d::render::offline::rib::Sphere & shape) {
     if (!hider_->traces()) {
         return false;
     }
-    if (!(shape.radius > 0.0f)) {
+    if (!(shape.radius > 0.0F)) {
         logger_->get()->warn("a sphere of radius {} is not drawn", shape.radius);
         return true;
     }
@@ -806,7 +806,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     bool projected = false;
     for (int k = 0; k < 8; k++) {
         const glm::vec3 corner = boxCorner(bound_min, bound_max, k);
-        if ((screen * glm::vec4(corner, 1.0f)).w <= SMALLEST_W) {
+        if ((screen * glm::vec4(corner, 1.0F)).w <= SMALLEST_W) {
             poly->diceable(false);
             continue;
         }
@@ -818,8 +818,8 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     if (!projected) {
         // no corner is in front of the eye. The primitive is split, and its pieces are
         // bucketed again, so the first bucket holds it until then
-        raster_min = glm::vec3(0.0f);
-        raster_max = glm::vec3(0.0f);
+        raster_min = glm::vec3(0.0F);
+        raster_max = glm::vec3(0.0F);
     }
     bound_min = raster_min;
     bound_max = raster_max;
@@ -847,7 +847,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         const glm::mat3x3 toEyeNormal = glm::transpose(glm::inverse(glm::mat3x3(toEye)));
         for (unsigned int i = 0; i < poly->vertexCount(); i++) {
             Vertex pv = poly->vertex(i);
-            pv.point(glm::vec3(toEye * glm::vec4(pv.point(), 1.0f)));
+            pv.point(glm::vec3(toEye * glm::vec4(pv.point(), 1.0F)));
             pv.normal(glm::normalize(toEyeNormal * pv.normal()));
             pv.geometricNormal(glm::normalize(toEyeNormal * pv.geometricNormal()));
             (*poly)[i] = pv;

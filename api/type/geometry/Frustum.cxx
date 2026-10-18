@@ -37,12 +37,12 @@ Plane rowPlane(const glm::mat4& matrix, unsigned int row, float wWeight, float r
 */
 Frustum::Frustum(const glm::mat4& viewProjection, Depth depth) :
     planes_{
-        rowPlane(viewProjection, 0, 1.0f, 1.0f),
-        rowPlane(viewProjection, 0, 1.0f, -1.0f),
-        rowPlane(viewProjection, 1, 1.0f, 1.0f),
-        rowPlane(viewProjection, 1, 1.0f, -1.0f),
-        rowPlane(viewProjection, 2, depth == Depth::ZeroToOne ? 0.0f : 1.0f, 1.0f),
-        rowPlane(viewProjection, 2, 1.0f, -1.0f)
+        rowPlane(viewProjection, 0, 1.0F, 1.0F),
+        rowPlane(viewProjection, 0, 1.0F, -1.0F),
+        rowPlane(viewProjection, 1, 1.0F, 1.0F),
+        rowPlane(viewProjection, 1, 1.0F, -1.0F),
+        rowPlane(viewProjection, 2, depth == Depth::ZeroToOne ? 0.0F : 1.0F, 1.0F),
+        rowPlane(viewProjection, 2, 1.0F, -1.0F)
     } {
 }
 

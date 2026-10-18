@@ -59,7 +59,7 @@ class Picker final : public SceneVisitor {
      * How far from a vertex or an edge, in pixels, a click still counts as being on it
      * when no tolerance is given.
      **/
-    static constexpr float defaultTolerance = 5.0f;
+    static constexpr float defaultTolerance = 5.0F;
 
     /**
      * @param tolerance how far from a vertex or an edge, in pixels, still counts as
@@ -118,7 +118,7 @@ class Picker final : public SceneVisitor {
     struct Candidate {
         unsigned int mesh = 0;
         unsigned int component = 0;
-        float distance = 0.0f;
+        float distance = 0.0F;
     };
 
     void offer(const Candidate& candidate);

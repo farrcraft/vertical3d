@@ -123,7 +123,7 @@ boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const 
     Canvas canvas;
     canvas.resize(glm::uvec2(size, size));
     canvas.clear();
-    canvas.rect(glm::vec2(0.0f), glm::vec2(static_cast<float>(size)), glm::vec2(0.0f), glm::vec2(1.0f), glm::vec4(1.0f),
+    canvas.rect(glm::vec2(0.0F), glm::vec2(static_cast<float>(size)), glm::vec2(0.0F), glm::vec2(1.0F), glm::vec4(1.0F),
         uploaded);
 
     // the grade is made first and reads the scene, so the frame draws the scene ahead of it
@@ -135,7 +135,7 @@ boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const 
 
     const boost::shared_ptr<Pass> drawn = frame.pass("scene");
     drawn->target(scene);
-    drawn->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    drawn->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless->context->quads()->submit(canvas, drawn.get());
 
     Capture capture(headless->device, headless->logger);
@@ -159,7 +159,7 @@ VkCommandBuffer recordGrade(v3d::test::Headless* headless, const Grade& graded, 
     Canvas canvas;
     canvas.resize(glm::uvec2(size, size));
     canvas.clear();
-    canvas.rect(glm::vec2(0.0f), glm::vec2(static_cast<float>(size)), glm::vec2(0.0f), glm::vec2(1.0f), glm::vec4(1.0f),
+    canvas.rect(glm::vec2(0.0F), glm::vec2(static_cast<float>(size)), glm::vec2(0.0F), glm::vec2(1.0F), glm::vec4(1.0F),
         sweepTexture);
 
     Frame frame;
@@ -170,7 +170,7 @@ VkCommandBuffer recordGrade(v3d::test::Headless* headless, const Grade& graded, 
 
     const boost::shared_ptr<Pass> drawn = frame.pass("scene");
     drawn->target(scene);
-    drawn->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    drawn->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless->context->quads()->submit(canvas, drawn.get());
 
     VkCommandBuffer commands = headless->context->ring()->begin();
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
     Canvas canvas;
     canvas.resize(glm::uvec2(width, height));
     canvas.clear();
-    canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    canvas.rect(glm::vec2(16.0F, 8.0F), glm::vec2(48.0F, 24.0F), glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
 
     Frame frame;
     const boost::shared_ptr<Pass> post = frame.pass("copy");
@@ -250,7 +250,7 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
 
     const boost::shared_ptr<Pass> drawn = frame.pass("scene");
     drawn->target(scene);
-    drawn->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    drawn->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, drawn.get());
 
     Capture capture(headless.device, headless.logger);

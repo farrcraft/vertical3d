@@ -42,9 +42,9 @@ class Model final {
      * The device does not enforce it.
      **/
     struct Vertex final {
-        glm::vec3 position{ 0.0f, 0.0f, 0.0f };
-        glm::vec3 normal{ 0.0f, 0.0f, 0.0f };
-        glm::vec2 uv{ 0.0f, 0.0f };
+        glm::vec3 position{ 0.0F, 0.0F, 0.0F };
+        glm::vec3 normal{ 0.0F, 0.0F, 0.0F };
+        glm::vec2 uv{ 0.0F, 0.0F };
     };
 
     /**
@@ -54,7 +54,7 @@ class Model final {
      * asset manager, which holds where assets live and what is already loaded.
      **/
     struct Material final {
-        glm::vec4 baseColour{ 1.0f, 1.0f, 1.0f, 1.0f };
+        glm::vec4 baseColour{ 1.0F, 1.0F, 1.0F, 1.0F };
 
         /**
          * What the base colour is multiplied by, named the way the model file named it and
@@ -69,7 +69,7 @@ class Model final {
      **/
     struct Influence final {
         glm::u16vec4 joints{ 0, 0, 0, 0 };  /**< into the skeleton's joints **/
-        glm::vec4 weights{ 0.0f };
+        glm::vec4 weights{ 0.0F };
     };
 
     /**

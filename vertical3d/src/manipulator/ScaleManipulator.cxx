@@ -19,15 +19,15 @@ namespace {
  * The box at the tip of a handle, and the one at the centre, as a fraction of a
  * handle's length.
  **/
-constexpr float tipSize = 0.07f;
-constexpr float centreSize = 0.06f;
+constexpr float tipSize = 0.07F;
+constexpr float centreSize = 0.06F;
 
 /**
  * The smallest a scale factor is allowed to become. A drag that ran past zero would
  * turn the object inside out and could never be dragged back, the handle having no
  * length left to grab.
  **/
-constexpr float minimum = 0.01f;
+constexpr float minimum = 0.01F;
 
 };  // namespace
 
@@ -73,7 +73,7 @@ void ScaleManipulator::apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
         return;
     }
     const Placement seat = placement(mesh, view);
-    if (!seat.valid || seat.size <= 0.0f) {
+    if (!seat.valid || seat.size <= 0.0F) {
         return;
     }
 
@@ -82,10 +82,10 @@ void ScaleManipulator::apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
         // one gesture scales all three axes: dragging right or up grows the object, as
         // dragging a corner handle outward would
         const glm::vec2 delta = to - from;
-        const float factor = 1.0f + ((delta.x - delta.y) / handlePixels);
+        const float factor = 1.0F + ((delta.x - delta.y) / handlePixels);
         scale *= factor;
     } else {
-        const float factor = 1.0f + (along(view, seat, axis(), from, to) / seat.size);
+        const float factor = 1.0F + (along(view, seat, axis(), from, to) / seat.size);
         switch (axis()) {
         case Axis::X:
             scale.x *= factor;

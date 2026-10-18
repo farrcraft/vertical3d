@@ -18,7 +18,7 @@ namespace v3d::editor {
  **/
 ViewPort::ViewPort(const std::string& name, const v3d::type::camera::Profile& profile) :
     name_(name),
-    region_(0.0f, 0.0f, 0.0f, 0.0f),
+    region_(0.0F, 0.0F, 0.0F, 0.0F),
     showFlags_(SHOW_GRID | SHOW_MESH | SHOW_HANDLE) {
     camera_ = boost::make_shared<v3d::type::camera::Camera>(profile);
 }
@@ -40,8 +40,8 @@ const std::string& ViewPort::name() const noexcept {
 void ViewPort::resize(const glm::vec4& region) {
     region_ = region;
 
-    const unsigned int width = static_cast<unsigned int>(region.z > 0.0f ? region.z : 0.0f);
-    const unsigned int height = static_cast<unsigned int>(region.w > 0.0f ? region.w : 0.0f);
+    const unsigned int width = static_cast<unsigned int>(region.z > 0.0F ? region.z : 0.0F);
+    const unsigned int height = static_cast<unsigned int>(region.w > 0.0F ? region.w : 0.0F);
     camera_->profile().size(glm::uvec2(width, height));
     if (height > 0) {
         camera_->profile().pixelAspect(static_cast<float>(width) / static_cast<float>(height));

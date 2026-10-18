@@ -59,9 +59,9 @@ BOOST_AUTO_TEST_CASE(a_registered_resource_resolves) {
 BOOST_AUTO_TEST_CASE(slots_are_handed_out_in_order) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;
 
-    BOOST_CHECK_EQUAL(registry.add("first").id(), 0u);
-    BOOST_CHECK_EQUAL(registry.add("second").id(), 1u);
-    BOOST_CHECK_EQUAL(registry.add("third").id(), 2u);
+    BOOST_CHECK_EQUAL(registry.add("first").id(), 0U);
+    BOOST_CHECK_EQUAL(registry.add("second").id(), 1U);
+    BOOST_CHECK_EQUAL(registry.add("third").id(), 2U);
 }
 
 /**

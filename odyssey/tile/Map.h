@@ -43,7 +43,7 @@ class Map final {
     /**
      * A tile's edge in world units. One, so that a world position's whole part names its tile.
      **/
-    static constexpr float TILE_SIZE = 1.0f;
+    static constexpr float TILE_SIZE = 1.0F;
 
     /**
      * @param logger where a malformed document is reported

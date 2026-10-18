@@ -20,133 +20,133 @@ namespace {
 BOOST_AUTO_TEST_CASE(ray_direction_test) {
     // the constructor normalises, so a distance along the ray is in the units its origin
     // and direction were given in
-    const v3d::type::geometry::Ray ray({.origin = glm::vec3(1.0f, 2.0f, 3.0f), .direction = glm::vec3(0.0f, 0.0f, 5.0f)});
-    BOOST_CHECK_CLOSE(ray.direction()[2], 1.0f, 0.01f);
-    BOOST_CHECK_EQUAL(ray.origin()[0], 1.0f);
+    const v3d::type::geometry::Ray ray({.origin = glm::vec3(1.0F, 2.0F, 3.0F), .direction = glm::vec3(0.0F, 0.0F, 5.0F)});
+    BOOST_CHECK_CLOSE(ray.direction()[2], 1.0F, 0.01F);
+    BOOST_CHECK_EQUAL(ray.origin()[0], 1.0F);
 
-    glm::vec3 along = ray.point(2.0f);
-    BOOST_CHECK_CLOSE(along[2], 5.0f, 0.01f);
-    BOOST_CHECK_CLOSE(along[0], 1.0f, 0.01f);
+    glm::vec3 along = ray.point(2.0F);
+    BOOST_CHECK_CLOSE(along[2], 5.0F, 0.01F);
+    BOOST_CHECK_CLOSE(along[0], 1.0F, 0.01F);
 
     // a zero direction is left alone rather than dividing by zero
-    const v3d::type::geometry::Ray degenerate({.origin = glm::vec3(0.0f), .direction = glm::vec3(0.0f)});
-    BOOST_CHECK_EQUAL(degenerate.direction()[0], 0.0f);
-    BOOST_CHECK_EQUAL(degenerate.direction()[2], 0.0f);
+    const v3d::type::geometry::Ray degenerate({.origin = glm::vec3(0.0F), .direction = glm::vec3(0.0F)});
+    BOOST_CHECK_EQUAL(degenerate.direction()[0], 0.0F);
+    BOOST_CHECK_EQUAL(degenerate.direction()[2], 0.0F);
 }
 
 BOOST_AUTO_TEST_CASE(ray_transformed_test) {
-    const v3d::type::geometry::Ray ray({.origin = glm::vec3(0.0f, 0.0f, -10.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
+    const v3d::type::geometry::Ray ray({.origin = glm::vec3(0.0F, 0.0F, -10.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)});
 
     // the origin moves as a point and the direction as a vector, so a translation leaves
     // the direction alone
-    const glm::mat4 moved = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 3.0f, 0.0f));
+    const glm::mat4 moved = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 3.0F, 0.0F));
     const v3d::type::geometry::Ray translated = ray.transformed(moved);
-    BOOST_CHECK_CLOSE(translated.origin()[1], 3.0f, 0.01f);
-    BOOST_CHECK_CLOSE(translated.direction()[2], 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(translated.origin()[1], 3.0F, 0.01F);
+    BOOST_CHECK_CLOSE(translated.direction()[2], 1.0F, 0.01F);
 
     // a scale is not renormalised away: the direction is halved, so the distance to a
     // given point is the same number it was in the space the ray came from
-    const glm::mat4 halved = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
+    const glm::mat4 halved = glm::scale(glm::mat4(1.0F), glm::vec3(0.5F, 0.5F, 0.5F));
     const v3d::type::geometry::Ray scaled = ray.transformed(halved);
-    BOOST_CHECK_CLOSE(scaled.direction()[2], 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(scaled.origin()[2], -5.0f, 0.01f);
-    BOOST_CHECK_CLOSE(scaled.point(10.0f)[2], 0.0f, 0.01f);
+    BOOST_CHECK_CLOSE(scaled.direction()[2], 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(scaled.origin()[2], -5.0F, 0.01F);
+    BOOST_CHECK_CLOSE(scaled.point(10.0F)[2], 0.0F, 0.01F);
 }
 
 BOOST_AUTO_TEST_CASE(ray_triangle_test) {
-    const glm::vec3 p0(-1.0f, -1.0f, 0.0f);
-    const glm::vec3 p1(1.0f, -1.0f, 0.0f);
-    const glm::vec3 p2(0.0f, 1.0f, 0.0f);
+    const glm::vec3 p0(-1.0F, -1.0F, 0.0F);
+    const glm::vec3 p1(1.0F, -1.0F, 0.0F);
+    const glm::vec3 p2(0.0F, 1.0F, 0.0F);
 
-    float distance = 0.0f;
+    float distance = 0.0F;
 
     // straight through the middle
-    const v3d::type::geometry::Ray hit({.origin = glm::vec3(0.0f, 0.0f, -5.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
+    const v3d::type::geometry::Ray hit({.origin = glm::vec3(0.0F, 0.0F, -5.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)});
     BOOST_CHECK_EQUAL(hit.intersects(p0, p1, p2, &distance), true);
-    BOOST_CHECK_CLOSE(distance, 5.0f, 0.01f);
+    BOOST_CHECK_CLOSE(distance, 5.0F, 0.01F);
 
     // from behind, which a modeller picks as readily as the front
-    const v3d::type::geometry::Ray behind({.origin = glm::vec3(0.0f, 0.0f, 5.0f), .direction = glm::vec3(0.0f, 0.0f, -1.0f)});
+    const v3d::type::geometry::Ray behind({.origin = glm::vec3(0.0F, 0.0F, 5.0F), .direction = glm::vec3(0.0F, 0.0F, -1.0F)});
     BOOST_CHECK_EQUAL(behind.intersects(p0, p1, p2, &distance), true);
-    BOOST_CHECK_CLOSE(distance, 5.0f, 0.01f);
+    BOOST_CHECK_CLOSE(distance, 5.0F, 0.01F);
 
     // outside the triangle but in its plane's way
-    const v3d::type::geometry::Ray beside({.origin = glm::vec3(3.0f, 0.0f, -5.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
+    const v3d::type::geometry::Ray beside({.origin = glm::vec3(3.0F, 0.0F, -5.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)});
     BOOST_CHECK_EQUAL(beside.intersects(p0, p1, p2, nullptr), false);
 
     // pointing away from it - a half line, not a line
-    const v3d::type::geometry::Ray away({.origin = glm::vec3(0.0f, 0.0f, -5.0f), .direction = glm::vec3(0.0f, 0.0f, -1.0f)});
+    const v3d::type::geometry::Ray away({.origin = glm::vec3(0.0F, 0.0F, -5.0F), .direction = glm::vec3(0.0F, 0.0F, -1.0F)});
     BOOST_CHECK_EQUAL(away.intersects(p0, p1, p2, nullptr), false);
 
     // edge on, where the barycentric solution is meaningless
-    const v3d::type::geometry::Ray edgeOn({.origin = glm::vec3(0.0f, 0.0f, 0.0f), .direction = glm::vec3(1.0f, 0.0f, 0.0f)});
+    const v3d::type::geometry::Ray edgeOn({.origin = glm::vec3(0.0F, 0.0F, 0.0F), .direction = glm::vec3(1.0F, 0.0F, 0.0F)});
     BOOST_CHECK_EQUAL(edgeOn.intersects(p0, p1, p2, nullptr), false);
 }
 
 BOOST_AUTO_TEST_CASE(ray_triangle_barycentric_test) {
     // a right triangle on the z = 0 plane, so a weight reads straight off a coordinate
-    const glm::vec3 p0(0.0f, 0.0f, 0.0f);
-    const glm::vec3 p1(4.0f, 0.0f, 0.0f);
-    const glm::vec3 p2(0.0f, 4.0f, 0.0f);
+    const glm::vec3 p0(0.0F, 0.0F, 0.0F);
+    const glm::vec3 p1(4.0F, 0.0F, 0.0F);
+    const glm::vec3 p2(0.0F, 4.0F, 0.0F);
 
-    float distance = 0.0f;
-    glm::vec2 weights(0.0f);
+    float distance = 0.0F;
+    glm::vec2 weights(0.0F);
 
     // a hit at p1 itself weighs p1 alone
-    const v3d::type::geometry::Ray corner({.origin = glm::vec3(4.0f, 0.0f, -2.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
+    const v3d::type::geometry::Ray corner({.origin = glm::vec3(4.0F, 0.0F, -2.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)});
     BOOST_CHECK_EQUAL(corner.intersects(p0, p1, p2, &distance, &weights), true);
-    BOOST_CHECK_CLOSE(distance, 2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(weights.x, 1.0f, 0.01f);
-    BOOST_CHECK_SMALL(weights.y, 0.0001f);
+    BOOST_CHECK_CLOSE(distance, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(weights.x, 1.0F, 0.01F);
+    BOOST_CHECK_SMALL(weights.y, 0.0001F);
 
     // (1, 2) is p0 + (1/4)(p1 - p0) + (1/2)(p2 - p0), so p0 carries the remaining quarter
-    const v3d::type::geometry::Ray inside({.origin = glm::vec3(1.0f, 2.0f, -2.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
+    const v3d::type::geometry::Ray inside({.origin = glm::vec3(1.0F, 2.0F, -2.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)});
     BOOST_CHECK_EQUAL(inside.intersects(p0, p1, p2, &distance, &weights), true);
-    BOOST_CHECK_CLOSE(weights.x, 0.25f, 0.01f);
-    BOOST_CHECK_CLOSE(weights.y, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(1.0f - weights.x - weights.y, 0.25f, 0.01f);
+    BOOST_CHECK_CLOSE(weights.x, 0.25F, 0.01F);
+    BOOST_CHECK_CLOSE(weights.y, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(1.0F - weights.x - weights.y, 0.25F, 0.01F);
 
     // the weights are of p1 and p2 in that order, not of the two the ray happens to be
     // nearer: swapping the triangle's last two corners swaps them
     BOOST_CHECK_EQUAL(inside.intersects(p0, p2, p1, &distance, &weights), true);
-    BOOST_CHECK_CLOSE(weights.x, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(weights.y, 0.25f, 0.01f);
+    BOOST_CHECK_CLOSE(weights.x, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(weights.y, 0.25F, 0.01F);
 
     // a miss writes nothing, so what the caller had stands
-    weights = glm::vec2(-1.0f);
-    const v3d::type::geometry::Ray beside({.origin = glm::vec3(5.0f, 5.0f, -2.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
+    weights = glm::vec2(-1.0F);
+    const v3d::type::geometry::Ray beside({.origin = glm::vec3(5.0F, 5.0F, -2.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)});
     BOOST_CHECK_EQUAL(beside.intersects(p0, p1, p2, &distance, &weights), false);
-    BOOST_CHECK_EQUAL(weights.x, -1.0f);
-    BOOST_CHECK_EQUAL(weights.y, -1.0f);
+    BOOST_CHECK_EQUAL(weights.x, -1.0F);
+    BOOST_CHECK_EQUAL(weights.y, -1.0F);
 
     // the overload without them returns what the overload with them returns
-    const v3d::type::geometry::Ray same({.origin = glm::vec3(1.0f, 2.0f, -2.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
-    float plain = 0.0f;
+    const v3d::type::geometry::Ray same({.origin = glm::vec3(1.0F, 2.0F, -2.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)});
+    float plain = 0.0F;
     BOOST_CHECK_EQUAL(same.intersects(p0, p1, p2, &plain), true);
-    BOOST_CHECK_CLOSE(plain, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(plain, 2.0F, 0.01F);
 }
 
 BOOST_AUTO_TEST_CASE(ray_box_test) {
     v3d::type::geometry::AABBox box;
-    box.extents(glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    box.extents(glm::vec3(-1.0F, -1.0F, -1.0F), glm::vec3(1.0F, 1.0F, 1.0F));
 
-    float distance = 0.0f;
+    float distance = 0.0F;
 
-    const v3d::type::geometry::Ray hit({.origin = glm::vec3(0.0f, 0.0f, -5.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
+    const v3d::type::geometry::Ray hit({.origin = glm::vec3(0.0F, 0.0F, -5.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)});
     BOOST_CHECK_EQUAL(hit.intersects(box, &distance), true);
-    BOOST_CHECK_CLOSE(distance, 4.0f, 0.01f);
+    BOOST_CHECK_CLOSE(distance, 4.0F, 0.01F);
 
     // a ray that starts inside hits at zero rather than missing
-    const v3d::type::geometry::Ray inside({.origin = glm::vec3(0.0f, 0.0f, 0.0f), .direction = glm::vec3(0.0f, 1.0f, 0.0f)});
+    const v3d::type::geometry::Ray inside({.origin = glm::vec3(0.0F, 0.0F, 0.0F), .direction = glm::vec3(0.0F, 1.0F, 0.0F)});
     BOOST_CHECK_EQUAL(inside.intersects(box, &distance), true);
-    BOOST_CHECK_EQUAL(distance, 0.0f);
+    BOOST_CHECK_EQUAL(distance, 0.0F);
 
     // parallel to a pair of slabs and outside them
-    const v3d::type::geometry::Ray parallel({.origin = glm::vec3(0.0f, 5.0f, -5.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
+    const v3d::type::geometry::Ray parallel({.origin = glm::vec3(0.0F, 5.0F, -5.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)});
     BOOST_CHECK_EQUAL(parallel.intersects(box, nullptr), false);
 
     // pointing away
-    const v3d::type::geometry::Ray away({.origin = glm::vec3(0.0f, 0.0f, -5.0f), .direction = glm::vec3(0.0f, 0.0f, -1.0f)});
+    const v3d::type::geometry::Ray away({.origin = glm::vec3(0.0F, 0.0F, -5.0F), .direction = glm::vec3(0.0F, 0.0F, -1.0F)});
     BOOST_CHECK_EQUAL(away.intersects(box, nullptr), false);
 }
 
@@ -157,55 +157,55 @@ namespace {
  **/
 v3d::type::geometry::Plane ground(float y) {
     v3d::type::geometry::Plane plane;
-    plane.calculate(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, y, 0.0f));
+    plane.calculate(glm::vec3(0.0F, 1.0F, 0.0F), glm::vec3(0.0F, y, 0.0F));
     return plane;
 }
 
 };  // namespace
 
 BOOST_AUTO_TEST_CASE(ray_plane_test) {
-    float distance = 0.0f;
+    float distance = 0.0F;
 
     // straight down onto the ground lands directly below, as far away as the ground is
-    const v3d::type::geometry::Ray down({.origin = glm::vec3(1.0f, 10.0f, 2.0f), .direction = glm::vec3(0.0f, -1.0f, 0.0f)});
-    BOOST_TEST(down.intersects(ground(3.0f), &distance));
-    BOOST_CHECK_CLOSE(distance, 7.0f, 0.01f);
+    const v3d::type::geometry::Ray down({.origin = glm::vec3(1.0F, 10.0F, 2.0F), .direction = glm::vec3(0.0F, -1.0F, 0.0F)});
+    BOOST_TEST(down.intersects(ground(3.0F), &distance));
+    BOOST_CHECK_CLOSE(distance, 7.0F, 0.01F);
     glm::vec3 hit = down.point(distance);
-    BOOST_CHECK_CLOSE(hit[0], 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(hit[1], 3.0f, 0.01f);
-    BOOST_CHECK_CLOSE(hit[2], 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(hit[0], 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(hit[1], 3.0F, 0.01F);
+    BOOST_CHECK_CLOSE(hit[2], 2.0F, 0.01F);
 
     // a ray running alongside the ground never reaches it, and neither does one lying in it
-    const v3d::type::geometry::Ray parallel({.origin = glm::vec3(0.0f, 10.0f, 0.0f), .direction = glm::vec3(1.0f, 0.0f, 0.0f)});
-    BOOST_TEST(!parallel.intersects(ground(3.0f), &distance));
-    const v3d::type::geometry::Ray lying({.origin = glm::vec3(0.0f, 3.0f, 0.0f), .direction = glm::vec3(1.0f, 0.0f, 0.0f)});
-    BOOST_TEST(!lying.intersects(ground(3.0f), &distance));
+    const v3d::type::geometry::Ray parallel({.origin = glm::vec3(0.0F, 10.0F, 0.0F), .direction = glm::vec3(1.0F, 0.0F, 0.0F)});
+    BOOST_TEST(!parallel.intersects(ground(3.0F), &distance));
+    const v3d::type::geometry::Ray lying({.origin = glm::vec3(0.0F, 3.0F, 0.0F), .direction = glm::vec3(1.0F, 0.0F, 0.0F)});
+    BOOST_TEST(!lying.intersects(ground(3.0F), &distance));
 
     // a ray pointing at the sky would have to run backwards to reach the ground
-    const v3d::type::geometry::Ray up({.origin = glm::vec3(0.0f, 10.0f, 0.0f), .direction = glm::vec3(0.0f, 1.0f, 1.0f)});
-    BOOST_TEST(!up.intersects(ground(3.0f), nullptr));
+    const v3d::type::geometry::Ray up({.origin = glm::vec3(0.0F, 10.0F, 0.0F), .direction = glm::vec3(0.0F, 1.0F, 1.0F)});
+    BOOST_TEST(!up.intersects(ground(3.0F), nullptr));
 
     // and one coming up from below crosses it from the other side
-    const v3d::type::geometry::Ray under({.origin = glm::vec3(0.0f, -1.0f, 0.0f), .direction = glm::vec3(0.0f, 1.0f, 0.0f)});
-    BOOST_TEST(under.intersects(ground(3.0f), &distance));
-    BOOST_CHECK_CLOSE(distance, 4.0f, 0.01f);
+    const v3d::type::geometry::Ray under({.origin = glm::vec3(0.0F, -1.0F, 0.0F), .direction = glm::vec3(0.0F, 1.0F, 0.0F)});
+    BOOST_TEST(under.intersects(ground(3.0F), &distance));
+    BOOST_CHECK_CLOSE(distance, 4.0F, 0.01F);
 }
 
 BOOST_AUTO_TEST_CASE(ray_plane_unnormalised_test) {
     // a normal ten units long scales the plane's equation and the ray's approach to it alike,
     // so the crossing is where it would be for a unit normal
     v3d::type::geometry::Plane plane;
-    plane[v3d::type::geometry::Plane::A] = 0.0f;
-    plane[v3d::type::geometry::Plane::B] = 10.0f;
-    plane[v3d::type::geometry::Plane::C] = 0.0f;
-    plane[v3d::type::geometry::Plane::D] = -30.0f;
+    plane[v3d::type::geometry::Plane::A] = 0.0F;
+    plane[v3d::type::geometry::Plane::B] = 10.0F;
+    plane[v3d::type::geometry::Plane::C] = 0.0F;
+    plane[v3d::type::geometry::Plane::D] = -30.0F;
 
-    const v3d::type::geometry::Ray slanted({.origin = glm::vec3(0.0f, 7.0f, 0.0f), .direction = glm::vec3(1.0f, -1.0f, 0.0f)});
-    float distance = 0.0f;
+    const v3d::type::geometry::Ray slanted({.origin = glm::vec3(0.0F, 7.0F, 0.0F), .direction = glm::vec3(1.0F, -1.0F, 0.0F)});
+    float distance = 0.0F;
     BOOST_TEST(slanted.intersects(plane, &distance));
     glm::vec3 hit = slanted.point(distance);
-    BOOST_CHECK_CLOSE(hit[0], 4.0f, 0.01f);
-    BOOST_CHECK_SMALL(hit[1] - 3.0f, 0.0001f);
+    BOOST_CHECK_CLOSE(hit[0], 4.0F, 0.01F);
+    BOOST_CHECK_SMALL(hit[1] - 3.0F, 0.0001F);
 }
 
 /**
@@ -216,27 +216,27 @@ BOOST_AUTO_TEST_CASE(ray_plane_unnormalised_test) {
  **/
 BOOST_AUTO_TEST_CASE(ray_plane_orthographic_pick_test) {
     v3d::type::camera::Camera camera;
-    camera.profile().eye(glm::vec3(10.0f, 10.0f, 10.0f));
-    camera.profile().up(glm::vec3(0.0f, 1.0f, 0.0f));
-    camera.profile().lookat(glm::vec3(0.0f, 0.0f, 0.0f));
+    camera.profile().eye(glm::vec3(10.0F, 10.0F, 10.0F));
+    camera.profile().up(glm::vec3(0.0F, 1.0F, 0.0F));
+    camera.profile().lookat(glm::vec3(0.0F, 0.0F, 0.0F));
     camera.createProjection();
     camera.createView();
 
     int viewport[4] = { 0, 0, 640, 480 };
-    const v3d::type::geometry::Ray left = camera.ray(glm::vec2(200.0f, 240.0f), viewport);
-    const v3d::type::geometry::Ray right = camera.ray(glm::vec2(440.0f, 240.0f), viewport);
+    const v3d::type::geometry::Ray left = camera.ray(glm::vec2(200.0F, 240.0F), viewport);
+    const v3d::type::geometry::Ray right = camera.ray(glm::vec2(440.0F, 240.0F), viewport);
 
-    float leftDistance = 0.0f;
-    float rightDistance = 0.0f;
-    BOOST_TEST(left.intersects(ground(0.0f), &leftDistance));
-    BOOST_TEST(right.intersects(ground(0.0f), &rightDistance));
+    float leftDistance = 0.0F;
+    float rightDistance = 0.0F;
+    BOOST_TEST(left.intersects(ground(0.0F), &leftDistance));
+    BOOST_TEST(right.intersects(ground(0.0F), &rightDistance));
 
     const glm::vec3 leftHit = left.point(leftDistance);
     const glm::vec3 rightHit = right.point(rightDistance);
-    BOOST_CHECK_SMALL(leftHit[1], 0.001f);
-    BOOST_CHECK_SMALL(rightHit[1], 0.001f);
-    BOOST_CHECK_GT(glm::length(rightHit - leftHit), 0.1f);
-    BOOST_CHECK_CLOSE(leftDistance, rightDistance, 0.01f);
+    BOOST_CHECK_SMALL(leftHit[1], 0.001F);
+    BOOST_CHECK_SMALL(rightHit[1], 0.001F);
+    BOOST_CHECK_GT(glm::length(rightHit - leftHit), 0.1F);
+    BOOST_CHECK_CLOSE(leftDistance, rightDistance, 0.01F);
 }
 
 /**
@@ -245,12 +245,12 @@ BOOST_AUTO_TEST_CASE(ray_plane_orthographic_pick_test) {
  **/
 BOOST_AUTO_TEST_CASE(ray_that_is_not_a_number_misses_test) {
     v3d::type::geometry::AABBox box;
-    box.extents(glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    box.extents(glm::vec3(-1.0F, -1.0F, -1.0F), glm::vec3(1.0F, 1.0F, 1.0F));
 
     const float nan = std::nanf("");
-    const v3d::type::geometry::Ray lost({.origin = glm::vec3(0.0f, 0.0f, -5.0f), .direction = glm::vec3(nan, 0.0f, 1.0f)});
+    const v3d::type::geometry::Ray lost({.origin = glm::vec3(0.0F, 0.0F, -5.0F), .direction = glm::vec3(nan, 0.0F, 1.0F)});
     BOOST_CHECK(!lost.intersects(box, nullptr));
-    const v3d::type::geometry::Ray nowhere({.origin = glm::vec3(nan, 0.0f, -5.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
+    const v3d::type::geometry::Ray nowhere({.origin = glm::vec3(nan, 0.0F, -5.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)});
     BOOST_CHECK(!nowhere.intersects(box, nullptr));
 }
 
@@ -260,22 +260,22 @@ BOOST_AUTO_TEST_CASE(ray_that_is_not_a_number_misses_test) {
  **/
 BOOST_AUTO_TEST_CASE(ray_that_is_not_a_number_misses_triangle_and_plane_test) {
     const float nan = std::nanf("");
-    const v3d::type::geometry::Ray lost({.origin = glm::vec3(0.25f, 0.25f, -5.0f), .direction = glm::vec3(nan, 0.0f, 1.0f)});
-    const v3d::type::geometry::Ray nowhere({.origin = glm::vec3(nan, 0.25f, -5.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)});
-    const glm::vec3 p0(0.0f, 0.0f, 0.0f);
-    const glm::vec3 p1(1.0f, 0.0f, 0.0f);
-    const glm::vec3 p2(0.0f, 1.0f, 0.0f);
+    const v3d::type::geometry::Ray lost({.origin = glm::vec3(0.25F, 0.25F, -5.0F), .direction = glm::vec3(nan, 0.0F, 1.0F)});
+    const v3d::type::geometry::Ray nowhere({.origin = glm::vec3(nan, 0.25F, -5.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)});
+    const glm::vec3 p0(0.0F, 0.0F, 0.0F);
+    const glm::vec3 p1(1.0F, 0.0F, 0.0F);
+    const glm::vec3 p2(0.0F, 1.0F, 0.0F);
     const v3d::type::geometry::Plane facing(p0, p1, p2);
 
     for (const v3d::type::geometry::Ray & ray : {lost, nowhere}) {
-        float distance = -1.0f;
-        glm::vec2 weights(-1.0f);
+        float distance = -1.0F;
+        glm::vec2 weights(-1.0F);
         BOOST_CHECK(!ray.intersects(p0, p1, p2, &distance));
         BOOST_CHECK(!ray.intersects(p0, p1, p2, &distance, &weights));
         BOOST_CHECK(!ray.intersects(facing, &distance));
-        BOOST_CHECK_EQUAL(distance, -1.0f);
-        BOOST_CHECK_EQUAL(weights.x, -1.0f);
-        BOOST_CHECK_EQUAL(weights.y, -1.0f);
+        BOOST_CHECK_EQUAL(distance, -1.0F);
+        BOOST_CHECK_EQUAL(weights.x, -1.0F);
+        BOOST_CHECK_EQUAL(weights.y, -1.0F);
     }
 }
 

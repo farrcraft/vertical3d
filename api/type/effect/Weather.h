@@ -23,13 +23,13 @@ namespace v3d::type::effect {
  * +y is up.
  **/
 struct Weather final {
-    static constexpr float DEFAULT_EASE = 0.25f;
+    static constexpr float DEFAULT_EASE = 0.25F;
 
-    float density{ 0.0f };       /**< particles a second per square unit of ground, at full intensity **/
-    float intensity{ 0.0f };     /**< how much of the density is falling, from 0 to 1 **/
-    float target{ 0.0f };        /**< the intensity it is easing towards **/
+    float density{ 0.0F };       /**< particles a second per square unit of ground, at full intensity **/
+    float intensity{ 0.0F };     /**< how much of the density is falling, from 0 to 1 **/
+    float target{ 0.0F };        /**< the intensity it is easing towards **/
     float ease{ DEFAULT_EASE };  /**< how far the intensity moves towards its target a second **/
-    glm::vec3 wind{ 0.0f };      /**< an acceleration added to the emitter's **/
+    glm::vec3 wind{ 0.0F };      /**< an acceleration added to the emitter's **/
 };
 
 /**

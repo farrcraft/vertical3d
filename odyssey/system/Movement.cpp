@@ -17,7 +17,7 @@ namespace {
  * costs the same as an orthogonal one, so it takes the same time. A walk therefore keeps a
  * steady pace rather than slowing down around corners.
  **/
-constexpr float secondsPerTile = 0.15f;
+constexpr float secondsPerTile = 0.15F;
 
 };  // namespace
 
@@ -42,7 +42,7 @@ bool Movement::simulate(float step) {
         if (path.next >= path.tiles.size()) {
             path.tiles.clear();
             path.next = 0;
-            path.elapsed = 0.0f;
+            path.elapsed = 0.0F;
         }
     }
     return true;

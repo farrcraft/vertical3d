@@ -85,7 +85,7 @@ class SelectList : public Component {
      **/
     /** A width, and the key naming the measure it was taken with. **/
     struct Measured {
-        float width = 0.0f;
+        float width = 0.0F;
         std::uint64_t measure = 0;
     };
 

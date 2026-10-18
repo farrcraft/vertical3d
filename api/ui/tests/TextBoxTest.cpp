@@ -27,7 +27,7 @@
 
 namespace {
 
-const float characterWidth = 10.0f;
+const float characterWidth = 10.0F;
 
 /**
  * A fixed width per byte, so where a character falls is arithmetic rather than a font. The
@@ -184,27 +184,27 @@ BOOST_AUTO_TEST_CASE(a_limit_refuses_an_insertion_whole) {
 BOOST_AUTO_TEST_CASE(a_press_gives_and_takes_the_focus) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("");
-    fixture.place(field, glm::vec2(100.0f, 50.0f), glm::vec2(200.0f, 30.0f));
+    fixture.place(field, glm::vec2(100.0F, 50.0F), glm::vec2(200.0F, 30.0F));
     const boost::shared_ptr<v3d::ui::component::Panel> plate =
         boost::make_shared<v3d::ui::component::Panel>();
     plate->pickable(true);
-    fixture.place(plate, glm::vec2(0.0f, 200.0f), glm::vec2(200.0f, 100.0f));
+    fixture.place(plate, glm::vec2(0.0F, 200.0F), glm::vec2(200.0F, 100.0F));
     fixture.draw();
 
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(150.0f, 60.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(150.0F, 60.0F)));
     BOOST_CHECK_EQUAL(fixture.ui->focused(), field);
     BOOST_CHECK(field->focused());
 
     // a press on something that never asked to be focusable takes the keyboard off rather
     // than moving it onto that component
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(50.0f, 250.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(50.0F, 250.0F)));
     BOOST_CHECK(!fixture.ui->focused());
     BOOST_CHECK(!field->focused());
 
     // and so does a press on nothing at all
-    fixture.cursor->press(glm::vec2(150.0f, 60.0f));
+    fixture.cursor->press(glm::vec2(150.0F, 60.0F));
     BOOST_REQUIRE(fixture.ui->focused());
-    fixture.cursor->press(glm::vec2(700.0f, 500.0f));
+    fixture.cursor->press(glm::vec2(700.0F, 500.0F));
     BOOST_CHECK(!fixture.ui->focused());
 }
 
@@ -215,14 +215,14 @@ BOOST_AUTO_TEST_CASE(a_press_gives_and_takes_the_focus) {
 BOOST_AUTO_TEST_CASE(a_key_goes_to_the_focused_component_or_to_nobody) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("ab");
-    fixture.place(field, glm::vec2(100.0f, 50.0f), glm::vec2(200.0f, 30.0f));
+    fixture.place(field, glm::vec2(100.0F, 50.0F), glm::vec2(200.0F, 30.0F));
     fixture.draw();
 
     BOOST_CHECK(!fixture.keys->press("backspace"));
     BOOST_CHECK(!fixture.keys->text("c"));
     BOOST_CHECK_EQUAL(field->text(), "ab");
 
-    fixture.cursor->press(glm::vec2(150.0f, 60.0f));
+    fixture.cursor->press(glm::vec2(150.0F, 60.0F));
 
     BOOST_CHECK(fixture.keys->text("c"));
     BOOST_CHECK_EQUAL(field->text(), "abc");
@@ -240,9 +240,9 @@ BOOST_AUTO_TEST_CASE(a_key_goes_to_the_focused_component_or_to_nobody) {
 BOOST_AUTO_TEST_CASE(a_character_key_is_taken_and_a_command_key_is_not) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("");
-    fixture.place(field, glm::vec2(100.0f, 50.0f), glm::vec2(200.0f, 30.0f));
+    fixture.place(field, glm::vec2(100.0F, 50.0F), glm::vec2(200.0F, 30.0F));
     fixture.draw();
-    fixture.cursor->press(glm::vec2(150.0f, 60.0f));
+    fixture.cursor->press(glm::vec2(150.0F, 60.0F));
 
     BOOST_CHECK(fixture.keys->press("w"));
     BOOST_CHECK(fixture.keys->press("space"));
@@ -263,9 +263,9 @@ BOOST_AUTO_TEST_CASE(a_return_sends_the_command_and_an_escape_leaves_the_box) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("hello");
     field->event(v3d::event::Event("submit", fixture.context));
-    fixture.place(field, glm::vec2(100.0f, 50.0f), glm::vec2(200.0f, 30.0f));
+    fixture.place(field, glm::vec2(100.0F, 50.0F), glm::vec2(200.0F, 30.0F));
     fixture.draw();
-    fixture.cursor->press(glm::vec2(150.0f, 60.0f));
+    fixture.cursor->press(glm::vec2(150.0F, 60.0F));
 
     BOOST_CHECK(fixture.keys->press("return"));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
@@ -284,13 +284,13 @@ BOOST_AUTO_TEST_CASE(only_one_component_is_focused) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> first = box("");
     const boost::shared_ptr<v3d::ui::component::TextBox> second = box("");
-    fixture.place(first, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 30.0f));
-    fixture.place(second, glm::vec2(0.0f, 100.0f), glm::vec2(200.0f, 30.0f));
+    fixture.place(first, glm::vec2(0.0F, 0.0F), glm::vec2(200.0F, 30.0F));
+    fixture.place(second, glm::vec2(0.0F, 100.0F), glm::vec2(200.0F, 30.0F));
     fixture.draw();
 
-    fixture.cursor->press(glm::vec2(50.0f, 10.0f));
+    fixture.cursor->press(glm::vec2(50.0F, 10.0F));
     BOOST_CHECK(first->focused());
-    fixture.cursor->press(glm::vec2(50.0f, 110.0f));
+    fixture.cursor->press(glm::vec2(50.0F, 110.0F));
     BOOST_CHECK(!first->focused());
     BOOST_CHECK(second->focused());
     BOOST_CHECK_EQUAL(fixture.ui->focused(), second);
@@ -310,9 +310,9 @@ BOOST_AUTO_TEST_CASE(a_box_is_sized_by_its_room_and_not_by_its_text) {
     field->text("a very long line of text indeed");
     fixture.draw();
 
-    BOOST_CHECK_CLOSE(field->size().x, empty.x, 0.001f);
-    BOOST_CHECK_CLOSE(field->size().y, empty.y, 0.001f);
-    BOOST_CHECK_CLOSE(field->size().x, 800.0f, 0.001f);
+    BOOST_CHECK_CLOSE(field->size().x, empty.x, 0.001F);
+    BOOST_CHECK_CLOSE(field->size().y, empty.y, 0.001F);
+    BOOST_CHECK_CLOSE(field->size().x, 800.0F, 0.001F);
 }
 
 /**
@@ -456,21 +456,21 @@ BOOST_AUTO_TEST_CASE(a_selection_lands_on_character_boundaries) {
 BOOST_AUTO_TEST_CASE(a_press_puts_the_caret_where_it_landed) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
-    fixture.place(field, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 24.0f));
+    fixture.place(field, glm::vec2(0.0F, 0.0F), glm::vec2(200.0F, 24.0F));
     fixture.draw();
 
     const float pen = field->pen();
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(pen + 22.0f, 12.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(pen + 22.0F, 12.0F)));
     BOOST_CHECK_EQUAL(field->caret(), 2U);
     BOOST_CHECK(!field->selected());
-    BOOST_CHECK(fixture.cursor->release(glm::vec2(pen + 22.0f, 12.0f)));
+    BOOST_CHECK(fixture.cursor->release(glm::vec2(pen + 22.0F, 12.0F)));
 
     // left of the first character is the start of the text, and past the last is the end
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(pen - 5.0f, 12.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(pen - 5.0F, 12.0F)));
     BOOST_CHECK_EQUAL(field->caret(), 0U);
-    fixture.cursor->release(glm::vec2(pen - 5.0f, 12.0f));
+    fixture.cursor->release(glm::vec2(pen - 5.0F, 12.0F));
 
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(pen + 100.0f, 12.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(pen + 100.0F, 12.0F)));
     BOOST_CHECK_EQUAL(field->caret(), 5U);
 }
 
@@ -481,19 +481,19 @@ BOOST_AUTO_TEST_CASE(a_press_puts_the_caret_where_it_landed) {
 BOOST_AUTO_TEST_CASE(a_drag_selects_the_run_it_crosses) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
-    fixture.place(field, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 24.0f));
+    fixture.place(field, glm::vec2(0.0F, 0.0F), glm::vec2(200.0F, 24.0F));
     fixture.draw();
 
     const float pen = field->pen();
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(pen + 2.0f, 12.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(pen + 2.0F, 12.0F)));
     BOOST_CHECK_EQUAL(field->caret(), 0U);
 
-    BOOST_CHECK(fixture.cursor->motion(glm::vec2(pen + 32.0f, 12.0f)));
+    BOOST_CHECK(fixture.cursor->motion(glm::vec2(pen + 32.0F, 12.0F)));
     BOOST_CHECK_EQUAL(field->selection(), "abc");
     BOOST_CHECK_EQUAL(field->anchor(), 0U);
 
     // and the release settles it where the cursor ended rather than dropping the run
-    BOOST_CHECK(fixture.cursor->release(glm::vec2(pen + 22.0f, 12.0f)));
+    BOOST_CHECK(fixture.cursor->release(glm::vec2(pen + 22.0F, 12.0F)));
     BOOST_CHECK_EQUAL(field->selection(), "ab");
 }
 
@@ -506,11 +506,11 @@ BOOST_AUTO_TEST_CASE(a_cursor_with_no_measure_leaves_the_caret_alone) {
     const boost::shared_ptr<v3d::ui::input::Cursor> blind =
         boost::make_shared<v3d::ui::input::Cursor>(fixture.ui, fixture.dispatcher);
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
-    fixture.place(field, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 24.0f));
+    fixture.place(field, glm::vec2(0.0F, 0.0F), glm::vec2(200.0F, 24.0F));
     fixture.draw();
 
     field->caret(1);
-    BOOST_CHECK(blind->press(glm::vec2(field->pen() + 42.0f, 12.0f)));
+    BOOST_CHECK(blind->press(glm::vec2(field->pen() + 42.0F, 12.0F)));
     BOOST_CHECK_EQUAL(fixture.ui->focused(), field);
     BOOST_CHECK_EQUAL(field->caret(), 1U);
 }
@@ -616,7 +616,7 @@ BOOST_AUTO_TEST_CASE(the_selected_run_is_drawn_behind_the_text) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abcde");
     field->focused(true);
-    fixture.place(field, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 24.0f));
+    fixture.place(field, glm::vec2(0.0F, 0.0F), glm::vec2(200.0F, 24.0F));
     fixture.draw();
     const std::size_t plain = fixture.canvas.vertices().size();
     const std::size_t batches = fixture.canvas.batches().size();

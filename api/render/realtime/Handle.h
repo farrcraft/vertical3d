@@ -84,7 +84,7 @@ class Handle final {
     }
 
  private:
-    static const uint32_t invalid = 0xFFFFFFFFu;
+    static const uint32_t invalid = 0xFFFFFFFFU;
 
     uint32_t id_;
     uint32_t generation_;

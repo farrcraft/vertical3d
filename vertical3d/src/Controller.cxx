@@ -41,7 +41,7 @@ Controller::Controller(const std::string& path) :
     v3d::engine::Engine(path),
     path_(path),
     projectPath_(boost::filesystem::path(path) / "project.json"),
-    cursor_(0.0f, 0.0f),
+    cursor_(0.0F, 0.0F),
     uiGrab_(false) {
     registerCommands();
 }
@@ -484,10 +484,10 @@ void Controller::drag(bool pressed) {
 void Controller::layoutViews(int width, int height) {
     // the menu bar and the toolbars cover strips along two edges, and the views divide
     // what is left
-    const glm::vec2 inset = renderer_ ? renderer_->insets() : glm::vec2(0.0f, 0.0f);
+    const glm::vec2 inset = renderer_ ? renderer_->insets() : glm::vec2(0.0F, 0.0F);
     layout_->resize(glm::vec4(inset.x, inset.y,
-        std::max(0.0f, static_cast<float>(width) - inset.x),
-        std::max(0.0f, static_cast<float>(height) - inset.y)));
+        std::max(0.0F, static_cast<float>(width) - inset.x),
+        std::max(0.0F, static_cast<float>(height) - inset.y)));
     const std::vector<ViewLayout::View>& regions = layout_->views();
     for (std::size_t index = 0; index < views_.size() && index < regions.size(); index++) {
         views_[index]->resize(regions[index].region);

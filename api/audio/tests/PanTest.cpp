@@ -28,8 +28,8 @@ BOOST_AUTO_TEST_SUITE(pan_test)
  * A centred sound plays both sides at full gain, exactly as a sound with no pan does.
  **/
 BOOST_AUTO_TEST_CASE(a_centred_pan_leaves_both_sides_whole) {
-    checkGains(0.0f, {.left = 1.0f, .right = 1.0f});
-    BOOST_CHECK_EQUAL(v3d::audio::Play().pan, 0.0f);
+    checkGains(0.0F, {.left = 1.0F, .right = 1.0F});
+    BOOST_CHECK_EQUAL(v3d::audio::Play().pan, 0.0F);
 }
 
 /**
@@ -37,10 +37,10 @@ BOOST_AUTO_TEST_CASE(a_centred_pan_leaves_both_sides_whole) {
  * to silence at the end of the range.
  **/
 BOOST_AUTO_TEST_CASE(a_pan_keeps_its_side_whole_and_fades_the_other) {
-    checkGains(-1.0f, {.left = 1.0f, .right = 0.0f});
-    checkGains(1.0f, {.left = 0.0f, .right = 1.0f});
-    checkGains(0.5f, {.left = 0.5f, .right = 1.0f});
-    checkGains(-0.25f, {.left = 1.0f, .right = 0.75f});
+    checkGains(-1.0F, {.left = 1.0F, .right = 0.0F});
+    checkGains(1.0F, {.left = 0.0F, .right = 1.0F});
+    checkGains(0.5F, {.left = 0.5F, .right = 1.0F});
+    checkGains(-0.25F, {.left = 1.0F, .right = 0.75F});
 }
 
 /**
@@ -48,10 +48,10 @@ BOOST_AUTO_TEST_CASE(a_pan_keeps_its_side_whole_and_fades_the_other) {
  * position converted badly by a game still gives gains between silence and full.
  **/
 BOOST_AUTO_TEST_CASE(a_pan_outside_the_range_is_clamped) {
-    checkGains(3.0f, {.left = 0.0f, .right = 1.0f});
-    checkGains(-7.0f, {.left = 1.0f, .right = 0.0f});
-    checkGains(std::numeric_limits<float>::quiet_NaN(), {.left = 1.0f, .right = 1.0f});
-    checkGains(std::numeric_limits<float>::infinity(), {.left = 1.0f, .right = 1.0f});
+    checkGains(3.0F, {.left = 0.0F, .right = 1.0F});
+    checkGains(-7.0F, {.left = 1.0F, .right = 0.0F});
+    checkGains(std::numeric_limits<float>::quiet_NaN(), {.left = 1.0F, .right = 1.0F});
+    checkGains(std::numeric_limits<float>::infinity(), {.left = 1.0F, .right = 1.0F});
 }
 
 /**
@@ -59,8 +59,8 @@ BOOST_AUTO_TEST_CASE(a_pan_outside_the_range_is_clamped) {
  **/
 BOOST_AUTO_TEST_CASE(a_pan_without_a_device_finds_no_voice) {
     v3d::audio::Engine sound(boost::make_shared<v3d::log::Logger>(), boost::make_shared<entt::dispatcher>());
-    BOOST_TEST(!sound.pan(v3d::audio::Voice::None, 0.5f));
-    BOOST_TEST(!sound.pan(v3d::audio::Voice{1}, -0.5f));
+    BOOST_TEST(!sound.pan(v3d::audio::Voice::None, 0.5F));
+    BOOST_TEST(!sound.pan(v3d::audio::Voice{1}, -0.5F));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

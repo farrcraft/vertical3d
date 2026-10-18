@@ -16,10 +16,10 @@ namespace v3d::ui::component {
  **/
 Slider::Slider() :
     Component(Type::Slider),
-    minimum_(0.0f),
-    maximum_(1.0f),
-    step_(0.0f),
-    value_(0.0f) {
+    minimum_(0.0F),
+    maximum_(1.0F),
+    step_(0.0F),
+    value_(0.0F) {
     // pickable for its drag and focusable for its keys, which a plain component is not
     pickable(true);
     focusable(true);
@@ -33,7 +33,7 @@ void Slider::range(const Range& range) {
     const float step = range.step;
     minimum_ = std::min(minimum, maximum);
     maximum_ = std::max(minimum, maximum);
-    step_ = std::max(step, 0.0f);
+    step_ = std::max(step, 0.0F);
     value_ = snapped(value_);
 }
 
@@ -73,13 +73,13 @@ float Slider::value() const noexcept {
  **/
 float Slider::fraction() const noexcept {
     const float span = maximum_ - minimum_;
-    return span > 0.0f ? (value_ - minimum_) / span : 0.0f;
+    return span > 0.0F ? (value_ - minimum_) / span : 0.0F;
 }
 
 /**
  **/
 bool Slider::drag(const glm::vec2& point) {
-    if (size().x <= 0.0f) {
+    if (size().x <= 0.0F) {
         // never drawn, so there is no track to read a point against
         return false;
     }
@@ -88,9 +88,9 @@ bool Slider::drag(const glm::vec2& point) {
     // press on the thumb's centre therefore lands on the value that drew it there
     const float side = size().y;
     const float travel = size().x - side;
-    const float along = travel > 0.0f
-        ? std::clamp((point.x - position().x - (side * 0.5f)) / travel, 0.0f, 1.0f)
-        : std::clamp((point.x - position().x) / size().x, 0.0f, 1.0f);
+    const float along = travel > 0.0F
+        ? std::clamp((point.x - position().x - (side * 0.5F)) / travel, 0.0F, 1.0F)
+        : std::clamp((point.x - position().x) / size().x, 0.0F, 1.0F);
     return value(minimum_ + (along * (maximum_ - minimum_)));
 }
 
@@ -116,7 +116,7 @@ float Slider::snapped(float set) const noexcept {
         return maximum_;
     }
     float clamped = std::max(set, minimum_);
-    if (step_ > 0.0f) {
+    if (step_ > 0.0F) {
         clamped = std::min(minimum_ + (std::round((clamped - minimum_) / step_) * step_), maximum_);
     }
     return clamped;

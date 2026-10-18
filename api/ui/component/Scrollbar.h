@@ -163,10 +163,10 @@ float thumbLength(float track, float shown, float whole) noexcept;
  * A scrollbar's track and its thumb's length, and the offset into the span it shows.
  **/
 struct Thumb {
-    float track = 0.0f;
-    float length = 0.0f;
-    float offset = 0.0f;
-    float span = 0.0f;
+    float track = 0.0F;
+    float length = 0.0F;
+    float offset = 0.0F;
+    float span = 0.0F;
 };
 
 /**

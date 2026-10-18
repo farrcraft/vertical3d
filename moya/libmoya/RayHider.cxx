@@ -82,8 +82,8 @@ glm::vec3 RayHider::unproject(const glm::vec2 & raster, float z) const {
     const float b0 = (raster.x * ((matrix[2][3] * z) + matrix[3][3])) - ((matrix[2][0] * z) + matrix[3][0]);
     const float b1 = (raster.y * ((matrix[2][3] * z) + matrix[3][3])) - ((matrix[2][1] * z) + matrix[3][1]);
     const float determinant = (a00 * a11) - (a01 * a10);
-    if (determinant == 0.0f) {
-        return glm::vec3(0.0f, 0.0f, z);
+    if (determinant == 0.0F) {
+        return glm::vec3(0.0F, 0.0F, z);
     }
     return glm::vec3(((b0 * a11) - (a01 * b1)) / determinant, ((a00 * b1) - (b0 * a10)) / determinant, z);
 }
@@ -99,21 +99,21 @@ v3d::type::geometry::Ray RayHider::ray(const v3d::render::offline::Sampler::Samp
         // the eye, so the point at depth one is the direction. A lens moves the eye across
         // the lens and aims at the point that line reaches on the plane of focus, so that
         // plane stays sharp and nothing else does
-        direction = unproject(raster, 1.0f);
-        origin = glm::vec3(0.0f);
+        direction = unproject(raster, 1.0F);
+        origin = glm::vec3(0.0F);
         const float radius = sampling.lensRadius();
-        if (radius > 0.0f) {
+        if (radius > 0.0F) {
             const glm::vec3 focus = direction * sampling.focalDistance;
-            origin = glm::vec3(radius * lens, 0.0f);
+            origin = glm::vec3(radius * lens, 0.0F);
             direction = focus - origin;
         }
         // started on the near plane, which clips anything nearer the eye
         origin += direction * (camera_.hither / direction.z);
     } else {
         origin = unproject(raster, camera_.hither);
-        direction = glm::vec3(0.0f, 0.0f, 1.0f);
+        direction = glm::vec3(0.0F, 0.0F, 1.0F);
     }
-    return v3d::type::geometry::Ray({.origin = glm::vec3(toWorld_ * glm::vec4(origin, 1.0f)), .direction = glm::vec3(toWorld_ * glm::vec4(direction, 0.0f))});
+    return v3d::type::geometry::Ray({.origin = glm::vec3(toWorld_ * glm::vec4(origin, 1.0F)), .direction = glm::vec3(toWorld_ * glm::vec4(direction, 0.0F))});
 }
 
 void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer* planes) {
@@ -160,14 +160,14 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
                     if (seen.hit) {
                         // the depth plane holds raster space z, as the reyes hider's does
                         const glm::vec3 point = traced.origin() + traced.direction() * seen.distance;
-                        const glm::vec3 eye(camera_.toCamera * glm::vec4(point, 1.0f));
+                        const glm::vec3 eye(camera_.toCamera * glm::vec4(point, 1.0F));
                         sample.depth = project(camera_.toRaster, eye).z;
                     }
                     film.add(sample);
                     spread.add(sample.colour);
                 }
                 taken += static_cast<unsigned int>(set.size());
-                if (!(sampling.variance > 0.0f) || taken >= 4 * set.size() || spread.settled(sampling.variance)) {
+                if (!(sampling.variance > 0.0F) || taken >= 4 * set.size() || spread.settled(sampling.variance)) {
                     break;
                 }
             }

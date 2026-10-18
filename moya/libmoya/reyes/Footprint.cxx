@@ -21,7 +21,7 @@ std::array<int, 4> footprint(const glm::vec3 & min, const glm::vec3 & max, int c
     // the pixel a coordinate falls in, held within one pixel of the frame before it is made an
     // integer
     const auto pixel = [](float coordinate, int count) {
-        const float held = std::clamp(std::floor(coordinate), -1.0f, static_cast<float>(count));
+        const float held = std::clamp(std::floor(coordinate), -1.0F, static_cast<float>(count));
         return static_cast<int>(held);  // checked: not NaN above, and held within [-1, count]
     };
     // a sample may be anywhere in its pixel, so every pixel the bound touches

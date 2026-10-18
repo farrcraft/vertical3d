@@ -27,7 +27,7 @@ std::vector<unsigned char> bytes(const std::string& path) {
     file.seekg(0, std::ifstream::end);
     const std::streamoff length = file.tellg();
     file.seekg(0, std::ifstream::beg);
-    std::vector<unsigned char> encoded(length > 0 ? static_cast<std::size_t>(length) : 0u);
+    std::vector<unsigned char> encoded(length > 0 ? static_cast<std::size_t>(length) : 0U);
     if (!encoded.empty()) {
         file.read(reinterpret_cast<char*>(encoded.data()), length);
     }
@@ -42,9 +42,9 @@ BOOST_AUTO_TEST_CASE(imagereader_test) {
     const std::string bmpFilename("data/2x2x24_red.bmp");
     const boost::shared_ptr<v3d::image::Image> image = factory.read(bmpFilename);
     BOOST_REQUIRE(image != empty_ptr);
-    BOOST_CHECK_EQUAL(image->width(), 2u);
-    BOOST_CHECK_EQUAL(image->height(), 2u);
-    BOOST_CHECK_EQUAL(image->bpp(), 24u);
+    BOOST_CHECK_EQUAL(image->width(), 2U);
+    BOOST_CHECK_EQUAL(image->height(), 2U);
+    BOOST_CHECK_EQUAL(image->bpp(), 24U);
     BOOST_CHECK_EQUAL((*image)[0], 0xff);
     BOOST_CHECK_EQUAL((*image)[1], 0);
     BOOST_CHECK_EQUAL((*image)[2], 0);
@@ -62,9 +62,9 @@ BOOST_AUTO_TEST_CASE(imagereader_test) {
     const std::string jpgFilename("data/2x2x24_green.jpg");
     const boost::shared_ptr<v3d::image::Image> jpgImage = factory.read(jpgFilename);
     BOOST_REQUIRE(jpgImage != empty_ptr);
-    BOOST_CHECK_EQUAL(jpgImage->width(), 2u);
-    BOOST_CHECK_EQUAL(jpgImage->height(), 2u);
-    BOOST_CHECK_EQUAL(jpgImage->bpp(), 24u);
+    BOOST_CHECK_EQUAL(jpgImage->width(), 2U);
+    BOOST_CHECK_EQUAL(jpgImage->height(), 2U);
+    BOOST_CHECK_EQUAL(jpgImage->bpp(), 24U);
     BOOST_CHECK_EQUAL((*jpgImage)[0], 0);
     BOOST_CHECK_EQUAL((*jpgImage)[1], 0xff);
     BOOST_CHECK_EQUAL((*jpgImage)[2], 0x1);
@@ -97,9 +97,9 @@ BOOST_AUTO_TEST_CASE(imagereader_test) {
     const std::string pngFilename("data/2x2x24_blue.png");
     const boost::shared_ptr<v3d::image::Image> pngImage = factory.read(pngFilename);
     BOOST_REQUIRE(pngImage != empty_ptr);
-    BOOST_CHECK_EQUAL(pngImage->width(), 2u);
-    BOOST_CHECK_EQUAL(pngImage->height(), 2u);
-    BOOST_CHECK_EQUAL(pngImage->bpp(), 24u);
+    BOOST_CHECK_EQUAL(pngImage->width(), 2U);
+    BOOST_CHECK_EQUAL(pngImage->height(), 2U);
+    BOOST_CHECK_EQUAL(pngImage->bpp(), 24U);
     BOOST_CHECK_EQUAL((*pngImage)[0], 0);
     BOOST_CHECK_EQUAL((*pngImage)[1], 0x0);
     BOOST_CHECK_EQUAL((*pngImage)[2], 0xff);
@@ -117,9 +117,9 @@ BOOST_AUTO_TEST_CASE(imagereader_test) {
     const std::string tgaFilename("data/2x2x24_blue.tga");
     const boost::shared_ptr<v3d::image::Image> tgaImage = factory.read(tgaFilename);
     BOOST_REQUIRE(tgaImage != empty_ptr);
-    BOOST_CHECK_EQUAL(tgaImage->width(), 2u);
-    BOOST_CHECK_EQUAL(tgaImage->height(), 2u);
-    BOOST_CHECK_EQUAL(tgaImage->bpp(), 24u);
+    BOOST_CHECK_EQUAL(tgaImage->width(), 2U);
+    BOOST_CHECK_EQUAL(tgaImage->height(), 2U);
+    BOOST_CHECK_EQUAL(tgaImage->bpp(), 24U);
     BOOST_CHECK_EQUAL((*tgaImage)[0], 0);
     BOOST_CHECK_EQUAL((*tgaImage)[1], 0x0);
     BOOST_CHECK_EQUAL((*tgaImage)[2], 0xff);
@@ -134,8 +134,8 @@ BOOST_AUTO_TEST_CASE(imagereader_tga_orientation_test) {
     // down, and a uniformly coloured fixture cannot tell the difference
     const boost::shared_ptr<v3d::image::Image> image = factory.read(std::string("data/2x2x24_rows.tga"));
     BOOST_REQUIRE(image);
-    BOOST_CHECK_EQUAL(image->width(), 2u);
-    BOOST_CHECK_EQUAL(image->height(), 2u);
+    BOOST_CHECK_EQUAL(image->width(), 2U);
+    BOOST_CHECK_EQUAL(image->height(), 2U);
 
     // first row red
     BOOST_CHECK_EQUAL((*image)[0], 0xff);
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_reads_32_bits_through_its_masks) {
 
     const boost::shared_ptr<v3d::image::Image> image = factory.read("data/2x2x32_green.bmp");
     BOOST_REQUIRE(image);
-    BOOST_CHECK_EQUAL(image->bpp(), 32u);
+    BOOST_CHECK_EQUAL(image->bpp(), 32U);
     for (unsigned int pixel = 0; pixel < 4; ++pixel) {
         BOOST_TEST_CONTEXT("pixel " << pixel) {
             BOOST_CHECK_EQUAL((*image)[pixel * 4], 0);
@@ -385,7 +385,7 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_reads_16_bits) {
 
     // a green of six bits at full, and a red of five bits at half
     const std::vector<unsigned char> masked =
-        bitmap(2, 16, { 0xF800u, 0x07E0u, 0x001Fu }, { { 0xE0, 0x07, 0x00, 0x80 } });
+        bitmap(2, 16, { 0xF800U, 0x07E0U, 0x001FU }, { { 0xE0, 0x07, 0x00, 0x80 } });
     const boost::shared_ptr<v3d::image::Image> packed = factory.read(masked.data(), masked.size(), "bmp");
     BOOST_REQUIRE(packed);
     BOOST_CHECK_EQUAL((*packed)[0], 0);
@@ -406,7 +406,7 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_keeps_a_used_alpha) {
     const std::vector<unsigned char> bytes = bitmap(2, 32, {}, { { 0, 0, 255, 0x80, 255, 0, 0, 0 } });
     const boost::shared_ptr<v3d::image::Image> image = factory.read(bytes.data(), bytes.size(), "bmp");
     BOOST_REQUIRE(image);
-    BOOST_CHECK_EQUAL(image->bpp(), 32u);
+    BOOST_CHECK_EQUAL(image->bpp(), 32U);
     BOOST_CHECK_EQUAL((*image)[0], 255);
     BOOST_CHECK_EQUAL((*image)[3], 0x80);
     BOOST_CHECK_EQUAL((*image)[6], 255);

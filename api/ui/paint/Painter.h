@@ -52,8 +52,8 @@ void strokeBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
  * @param colours what the box is filled with, and what its outline is
  **/
 struct Plate {
-    glm::vec4 inside{1.0f};
-    glm::vec4 outline{1.0f};
+    glm::vec4 inside{1.0F};
+    glm::vec4 outline{1.0F};
 };
 
 void plateBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,

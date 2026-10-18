@@ -24,7 +24,7 @@
 
 namespace {
 
-const float characterWidth = 10.0f;
+const float characterWidth = 10.0F;
 
 struct Written final {
     std::string text;
@@ -65,8 +65,8 @@ boost::shared_ptr<v3d::ui::component::TabBar> bar() {
     boost::shared_ptr<v3d::ui::component::TabBar> component =
         boost::make_shared<v3d::ui::component::TabBar>();
     component->name("panels");
-    component->layout().width = v3d::ui::Length(200.0f, v3d::ui::Length::Unit::Pixels);
-    component->layout().height = v3d::ui::Length(150.0f, v3d::ui::Length::Unit::Pixels);
+    component->layout().width = v3d::ui::Length(200.0F, v3d::ui::Length::Unit::Pixels);
+    component->layout().height = v3d::ui::Length(150.0F, v3d::ui::Length::Unit::Pixels);
     component->add(page("Turn", "turn 3"));
     component->add(page("Entities", "42 entities"));
     return component;
@@ -113,8 +113,8 @@ BOOST_AUTO_TEST_CASE(the_page_is_laid_out_under_the_strip) {
     canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels = bar();
-    panels->layout().x = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
-    panels->layout().y = v3d::ui::Length(40.0f, v3d::ui::Length::Unit::Pixels);
+    panels->layout().x = v3d::ui::Length(30.0F, v3d::ui::Length::Unit::Pixels);
+    panels->layout().y = v3d::ui::Length(40.0F, v3d::ui::Length::Unit::Pixels);
     v3d::ui::Container container("hud", true);
     container.add(panels);
     renderer.draw(&canvas, container);
@@ -122,13 +122,13 @@ BOOST_AUTO_TEST_CASE(the_page_is_laid_out_under_the_strip) {
     const boost::shared_ptr<v3d::ui::component::TabPage> up = panels->page();
     BOOST_REQUIRE(up);
     BOOST_CHECK(up->position().y > panels->position().y + renderer.dressing().barHeight);
-    BOOST_CHECK_CLOSE(up->position().x, panels->position().x, 0.001f);
-    BOOST_CHECK_CLOSE(up->size().x, 200.0f, 0.001f);
+    BOOST_CHECK_CLOSE(up->position().x, panels->position().x, 0.001F);
+    BOOST_CHECK_CLOSE(up->size().x, 200.0F, 0.001F);
 
     // and the page that is not up was never placed
     const std::vector<boost::shared_ptr<v3d::ui::component::TabPage>> pages = panels->pages();
     BOOST_REQUIRE_EQUAL(pages.size(), 2U);
-    BOOST_CHECK_CLOSE(pages[1]->size().x, 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(pages[1]->size().x, 0.0F, 0.001F);
 }
 
 /**
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
     canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels = bar();
-    BOOST_CHECK_EQUAL(panels->at(glm::vec2(10.0f, 10.0f)), v3d::ui::component::TabBar::none);
+    BOOST_CHECK_EQUAL(panels->at(glm::vec2(10.0F, 10.0F)), v3d::ui::component::TabBar::none);
 
     v3d::ui::Container container("hud", true);
     container.add(panels);
@@ -150,13 +150,13 @@ BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
     BOOST_REQUIRE_EQUAL(panels->tabs().size(), 2U);
     const v3d::type::geometry::Bound2D& first = panels->tabs()[0];
     const v3d::type::geometry::Bound2D& second = panels->tabs()[1];
-    BOOST_CHECK_CLOSE(first.size().x, (4.0f * characterWidth) + renderer.dressing().padding, 0.001f);
-    BOOST_CHECK(second.position().x > first.position().x + first.size().x - 1.0f);
+    BOOST_CHECK_CLOSE(first.size().x, (4.0F * characterWidth) + renderer.dressing().padding, 0.001F);
+    BOOST_CHECK(second.position().x > first.position().x + first.size().x - 1.0F);
 
-    BOOST_CHECK_EQUAL(panels->at(first.position() + first.size() * 0.5f), 0);
-    BOOST_CHECK_EQUAL(panels->at(second.position() + second.size() * 0.5f), 1);
+    BOOST_CHECK_EQUAL(panels->at(first.position() + first.size() * 0.5F), 0);
+    BOOST_CHECK_EQUAL(panels->at(second.position() + second.size() * 0.5F), 1);
     // past the last tab, on the empty part of the strip
-    BOOST_CHECK_EQUAL(panels->at(glm::vec2(panels->position().x + 190.0f, panels->position().y + 2.0f)),
+    BOOST_CHECK_EQUAL(panels->at(glm::vec2(panels->position().x + 190.0F, panels->position().y + 2.0F)),
         v3d::ui::component::TabBar::none);
 }
 
@@ -171,8 +171,8 @@ BOOST_AUTO_TEST_CASE(a_bar_with_no_pages_shows_nothing) {
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels =
         boost::make_shared<v3d::ui::component::TabBar>();
-    panels->layout().width = v3d::ui::Length(200.0f, v3d::ui::Length::Unit::Pixels);
-    panels->layout().height = v3d::ui::Length(150.0f, v3d::ui::Length::Unit::Pixels);
+    panels->layout().width = v3d::ui::Length(200.0F, v3d::ui::Length::Unit::Pixels);
+    panels->layout().height = v3d::ui::Length(150.0F, v3d::ui::Length::Unit::Pixels);
     panels->selected(0);
 
     BOOST_CHECK_EQUAL(panels->selected(), v3d::ui::component::TabBar::none);

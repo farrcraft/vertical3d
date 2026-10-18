@@ -30,14 +30,14 @@ class Film final {
      **/
     struct Sample {
         /** In raster space, in pixels from the image's upper left. **/
-        glm::vec2 raster { 0.0f, 0.0f };
+        glm::vec2 raster { 0.0F, 0.0F };
         /**
          * Premultiplied by its opacity, as Ci is. A miss's colour is filtered in too, and is
          * black unless a renderer has a background of its own.
          **/
-        glm::vec3 colour { 0.0f, 0.0f, 0.0f };
-        glm::vec3 opacity { 0.0f, 0.0f, 0.0f };
-        float depth { 0.0f };
+        glm::vec3 colour { 0.0F, 0.0F, 0.0F };
+        glm::vec3 opacity { 0.0F, 0.0F, 0.0F };
+        float depth { 0.0F };
         /** Whether the sample hit a surface. Coverage counts these samples. **/
         bool hit { false };
     };
@@ -92,7 +92,7 @@ class Film final {
         glm::dvec3 opacity { 0.0, 0.0, 0.0 };
         double coverage { 0.0 };
         double weight { 0.0 };
-        float depth { 0.0f };
+        float depth { 0.0F };
         bool hit { false };
     };
 

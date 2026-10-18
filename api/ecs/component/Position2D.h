@@ -14,7 +14,7 @@ namespace v3d::ecs::component {
  * copy, and written directly, since simulation sets it every step.
  **/
 struct Position2D final {
-    glm::vec2 value{0.0f};
+    glm::vec2 value{0.0F};
 };
 
 /**

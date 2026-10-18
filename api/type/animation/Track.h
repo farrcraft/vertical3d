@@ -39,8 +39,8 @@ class Track final {
      * A track that is the same value at every time.
      **/
     explicit Track(const T& constant) :
-        keys_{Key{0.0f, constant}},
-        period_(0.0f) {
+        keys_{Key{0.0F, constant}},
+        period_(0.0F) {
     }
 
     /**
@@ -48,20 +48,20 @@ class Track final {
      * @param period the length time wraps over, or zero for a track that does not wrap
      * @throw std::invalid_argument for no keys, keys out of order, or a key outside the period
      **/
-    explicit Track(const std::vector<Key>& keys, float period = 0.0f) :
+    explicit Track(const std::vector<Key>& keys, float period = 0.0F) :
         keys_(keys),
         period_(period) {
         if (keys_.empty()) {
             throw std::invalid_argument("a track needs at least one key");
         }
-        if (period_ < 0.0f) {
+        if (period_ < 0.0F) {
             throw std::invalid_argument("a track's period cannot be negative");
         }
         for (std::size_t key = 0; key < keys_.size(); key++) {
             if (key > 0 && !(keys_[key - 1].time < keys_[key].time)) {
                 throw std::invalid_argument("a track's keys must rise in time");
             }
-            if (period_ > 0.0f && (keys_[key].time < 0.0f || keys_[key].time >= period_)) {
+            if (period_ > 0.0F && (keys_[key].time < 0.0F || keys_[key].time >= period_)) {
                 throw std::invalid_argument("a wrapping track's keys must lie within its period");
             }
         }
@@ -78,15 +78,15 @@ class Track final {
         if (!std::isfinite(time)) {
             return first.value;
         }
-        if (period_ > 0.0f) {
+        if (period_ > 0.0F) {
             time = std::fmod(time, period_);
-            if (time < 0.0f) {
+            if (time < 0.0F) {
                 time += period_;
             }
             // across the wrap, from the last key to the first one a period later
             if (time < first.time || time >= last.time) {
                 const float span = first.time + period_ - last.time;
-                if (!(span > 0.0f)) {
+                if (!(span > 0.0F)) {
                     return last.value;
                 }
                 const float since = time >= last.time ? time - last.time : time + period_ - last.time;

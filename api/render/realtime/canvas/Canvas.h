@@ -212,11 +212,11 @@ class Canvas final {
      * begins, and the sweep how far round it goes.
      **/
     struct Arc {
-        glm::vec2 centre{0.0f};
-        float radius = 0.0f;
+        glm::vec2 centre{0.0F};
+        float radius = 0.0F;
         unsigned int sides = 0;
-        float start = 0.0f;
-        float sweep = 0.0f;
+        float start = 0.0F;
+        float sweep = 0.0F;
     };
 
     void arc(const Arc& shape, const glm::vec4& colour);
@@ -232,12 +232,12 @@ class Canvas final {
      * the hole it leaves.
      **/
     struct Ring {
-        glm::vec2 centre{0.0f};
-        float outer = 0.0f;
-        float inner = 0.0f;
+        glm::vec2 centre{0.0F};
+        float outer = 0.0F;
+        float inner = 0.0F;
         unsigned int sides = 0;
-        float start = 0.0f;
-        float sweep = 0.0f;
+        float start = 0.0F;
+        float sweep = 0.0F;
     };
 
     void ring(const Ring& shape, const glm::vec4& colour);

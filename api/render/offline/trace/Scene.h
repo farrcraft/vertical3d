@@ -109,7 +109,7 @@ class Scene final {
     /**
      * The same at a time, for a caller tracing one ray rather than every ray of a sample.
      **/
-    bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, float time = 0.0f) const;
+    bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, float time = 0.0F) const;
 
     const glm::vec3 & background() const;
     void background(const glm::vec3 & colour);
@@ -123,14 +123,14 @@ class Scene final {
     void traceDepth(unsigned int depth);
 
  private:
-    glm::mat4x4 view_ = glm::mat4x4(1.0f);
+    glm::mat4x4 view_ = glm::mat4x4(1.0F);
     /** The motion a primitive placed by this transformation is carried by, or -1. **/
     int motion(const v3d::render::offline::MovingTransform & placed);
 
     std::vector<boost::shared_ptr<const Primitive>> primitives_;
     std::vector<v3d::render::offline::MovingTransform> motions_;
     std::vector<v3d::render::offline::sl::Placed> lights_;
-    glm::vec3 background_ = glm::vec3(0.0f);
+    glm::vec3 background_ = glm::vec3(0.0F);
     unsigned int traceDepth_ = 2;
 };
 

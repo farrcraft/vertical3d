@@ -21,21 +21,21 @@ namespace {
  * square stratified on the disc.
  **/
 glm::vec2 disc(const glm::vec2 & square) {
-    constexpr float pi = 3.14159265358979f;
+    constexpr float pi = 3.14159265358979F;
     // the square's diagonals cut the disc into four quarters, and this is half the angle of one
-    constexpr float halfQuarter = pi / 4.0f;
-    const glm::vec2 centred = square * 2.0f - glm::vec2(1.0f);
-    if (centred.x == 0.0f && centred.y == 0.0f) {
-        return glm::vec2(0.0f);
+    constexpr float halfQuarter = pi / 4.0F;
+    const glm::vec2 centred = square * 2.0F - glm::vec2(1.0F);
+    if (centred.x == 0.0F && centred.y == 0.0F) {
+        return glm::vec2(0.0F);
     }
-    float radius = 0.0f;
-    float angle = 0.0f;
+    float radius = 0.0F;
+    float angle = 0.0F;
     if (std::fabs(centred.x) > std::fabs(centred.y)) {
         radius = centred.x;
         angle = halfQuarter * (centred.y / centred.x);
     } else {
         radius = centred.y;
-        angle = (pi / 2.0f) - (halfQuarter * (centred.x / centred.y));
+        angle = (pi / 2.0F) - (halfQuarter * (centred.x / centred.y));
     }
     return glm::vec2(radius * std::cos(angle), radius * std::sin(angle));
 }
@@ -45,7 +45,7 @@ glm::vec2 disc(const glm::vec2 & square) {
  * in it otherwise.
  **/
 float jitter(unsigned int strata, v3d::type::Random * random) {
-    return strata == 1 ? 0.5f : random->unit();
+    return strata == 1 ? 0.5F : random->unit();
 }
 
 };  // namespace
@@ -61,7 +61,7 @@ std::vector<Sampler::Sample> Sampler::pixel(unsigned int column, unsigned int ro
     // splitmix64 mixes its seed, so the position alone is a good one; a pass is folded in by
     // the golden ratio constant so that each pass is a sequence of its own
     const uint64_t seed = ((static_cast<uint64_t>(row) << 32) | column) ^
-        (static_cast<uint64_t>(pass) * 0x9E3779B97F4A7C15ull);
+        (static_cast<uint64_t>(pass) * 0x9E3779B97F4A7C15ULL);
     v3d::type::Random random(seed);
 
     std::vector<Sample> samples(count);

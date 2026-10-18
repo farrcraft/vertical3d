@@ -32,52 +32,52 @@ struct Declare {
 struct Format {
     unsigned int width = 0;
     unsigned int height = 0;
-    float pixelAspect = 1.0f;
+    float pixelAspect = 1.0F;
 };
 
 /**
  * RiScreenWindow: the screen space rectangle the image covers.
  **/
 struct ScreenWindow {
-    float left = -1.0f;
-    float right = 1.0f;
-    float bottom = -1.0f;
-    float top = 1.0f;
+    float left = -1.0F;
+    float right = 1.0F;
+    float bottom = -1.0F;
+    float top = 1.0F;
 };
 
 /**
  * RiCropWindow: the part of the image to render, as fractions of it.
  **/
 struct CropWindow {
-    float xmin = 0.0f;
-    float xmax = 1.0f;
-    float ymin = 0.0f;
-    float ymax = 1.0f;
+    float xmin = 0.0F;
+    float xmax = 1.0F;
+    float ymin = 0.0F;
+    float ymax = 1.0F;
 };
 
 /**
  * RiClipping: the camera space depths of the near and far clipping planes.
  **/
 struct Clipping {
-    float hither = 0.0f;
-    float yon = 0.0f;
+    float hither = 0.0F;
+    float yon = 0.0F;
 };
 
 /**
  * RiDepthOfField. An infinite fstop is a pinhole camera.
  **/
 struct DepthOfField {
-    float fstop = 0.0f;
-    float focalLength = 0.0f;
-    float focalDistance = 0.0f;
+    float fstop = 0.0F;
+    float focalLength = 0.0F;
+    float focalDistance = 0.0F;
 };
 
 /**
  * RiShutter: when the shutter opens and closes.
  **/
 struct Shutter {
-    float open = 0.0f;
-    float close = 0.0f;
+    float open = 0.0F;
+    float close = 0.0F;
 };
 
 /**
@@ -109,8 +109,8 @@ struct MakeTexture {
     std::string swrap;
     std::string twrap;
     std::string filter;  /**< the name of the filter the texture is made with **/
-    float swidth = 1.0f;
-    float twidth = 1.0f;
+    float swidth = 1.0F;
+    float twidth = 1.0F;
 };
 
 /**
@@ -127,11 +127,11 @@ struct PointsPolygons {
  **/
 struct Sphere {
     /** The thetamax of a whole turn, which closes the sphere. **/
-    static constexpr float FULL_THETAMAX = 360.0f;
+    static constexpr float FULL_THETAMAX = 360.0F;
 
-    float radius = 1.0f;
-    float zmin = -1.0f;
-    float zmax = 1.0f;
+    float radius = 1.0F;
+    float zmin = -1.0F;
+    float zmax = 1.0F;
     float thetamax = FULL_THETAMAX;
 };
 

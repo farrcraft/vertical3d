@@ -151,7 +151,7 @@ void readTransform(const boost::json::object& entry, const boost::shared_ptr<v3d
         return;
     }
     const boost::json::object& transform = entry.at("transform").as_object();
-    float values[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    float values[4] = { 0.0F, 0.0F, 0.0F, 0.0F };
     if (numbers(transform, "translation", 3, values)) {
         mesh->translation(glm::vec3(values[0], values[1], values[2]));
     }
@@ -166,7 +166,7 @@ void readTransform(const boost::json::object& entry, const boost::shared_ptr<v3d
 bool readVertices(const boost::json::array& points, const std::string& path,
     const boost::shared_ptr<v3d::brep::BRep>& mesh, const boost::shared_ptr<v3d::log::Logger>& logger) {
     for (const boost::json::value& point : points) {
-        float values[3] = { 0.0f, 0.0f, 0.0f };
+        float values[3] = { 0.0F, 0.0F, 0.0F };
         if (!numbers(point, 3, values)) {
             logger->get()->error("A vertex in {} is not three numbers", path);
             return false;
@@ -211,7 +211,7 @@ bool readFaces(const boost::json::array& faces, const std::string& path,
             return false;
         }
         const boost::json::object& record = faceEntry.as_object();
-        float normal[3] = { 0.0f, 0.0f, 0.0f };
+        float normal[3] = { 0.0F, 0.0F, 0.0F };
         v3d::brep::Index edge = 0;
         if (!numbers(record, "normal", 3, normal) || !index(record, "edge", &edge)) {
             logger->get()->error("A face in {} is missing its normal or its edge", path);

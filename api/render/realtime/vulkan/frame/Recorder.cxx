@@ -100,8 +100,8 @@ VkDescriptorSet writeCamera(FrameUniforms* uniforms, const Pass& pass, const Rec
     camera.viewProjection = camera.projection * camera.view;
     camera.viewport.x = pass.viewport().x;
     camera.viewport.y = pass.viewport().y;
-    camera.viewport.z = pass.viewport().z > 0.0f ? pass.viewport().z : static_cast<float>(into.extent.width);
-    camera.viewport.w = pass.viewport().w > 0.0f ? pass.viewport().w : static_cast<float>(into.extent.height);
+    camera.viewport.z = pass.viewport().z > 0.0F ? pass.viewport().z : static_cast<float>(into.extent.width);
+    camera.viewport.w = pass.viewport().w > 0.0F ? pass.viewport().w : static_cast<float>(into.extent.height);
     return uniforms->write(camera);
 }
 
@@ -238,14 +238,14 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& 
     depthAttachment.loadOp = pass.clears() ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     // far is one - the projections in api/type are not reversed depth
-    depthAttachment.clearValue.depthStencil.depth = 1.0f;
+    depthAttachment.clearValue.depthStencil.depth = 1.0F;
 
     // the region a pass draws into, which is the whole image until something asks for less
     VkRect2D area{};
     area.offset.x = static_cast<int32_t>(pass.viewport().x);
     area.offset.y = static_cast<int32_t>(pass.viewport().y);
-    area.extent.width = pass.viewport().z > 0.0f ? static_cast<uint32_t>(pass.viewport().z) : target.extent.width;
-    area.extent.height = pass.viewport().w > 0.0f ? static_cast<uint32_t>(pass.viewport().w) : target.extent.height;
+    area.extent.width = pass.viewport().z > 0.0F ? static_cast<uint32_t>(pass.viewport().z) : target.extent.width;
+    area.extent.height = pass.viewport().w > 0.0F ? static_cast<uint32_t>(pass.viewport().w) : target.extent.height;
 
     VkRenderingInfo rendering{};
     rendering.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
@@ -265,8 +265,8 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& 
     viewport.y = static_cast<float>(area.offset.y);
     viewport.width = static_cast<float>(area.extent.width);
     viewport.height = static_cast<float>(area.extent.height);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
+    viewport.minDepth = 0.0F;
+    viewport.maxDepth = 1.0F;
     vkCmdSetViewport(commands, 0, 1, &viewport);
     vkCmdSetScissor(commands, 0, 1, &area);
 

@@ -38,8 +38,8 @@ glm::quat asQuat(const glm::vec4& value) {
 /** The key a segment starts at, how far through it to sample, and how long it lasts. **/
 struct Segment {
     std::size_t key = 0;
-    float u = 0.0f;
-    float span = 0.0f;
+    float u = 0.0F;
+    float span = 0.0F;
 };
 
 glm::vec4 hermite(const Channel& channel, const Segment& segment) {
@@ -53,9 +53,9 @@ glm::vec4 hermite(const Channel& channel, const Segment& segment) {
     const glm::vec4 in = channel.values[(key + 1) * 3] * span;
     const glm::vec4 to = channel.values[((key + 1) * 3) + 1];
     // the cubic Hermite basis functions
-    const float fromWeight = (2.0f * u3) - (3.0f * u2) + 1.0f;
-    const float outWeight = u3 - (2.0f * u2) + u;
-    const float toWeight = (-2.0f * u3) + (3.0f * u2);
+    const float fromWeight = (2.0F * u3) - (3.0F * u2) + 1.0F;
+    const float outWeight = u3 - (2.0F * u2) + u;
+    const float toWeight = (-2.0F * u3) + (3.0F * u2);
     const float inWeight = u3 - u2;
     return fromWeight * from + outWeight * out + toWeight * to + inWeight * in;
 }
@@ -100,7 +100,7 @@ void sampleChannel(const Channel& channel, float time, Pose::Joint* joint) {
     // the key at or before the time, and the one after it
     const std::size_t key = static_cast<std::size_t>(std::distance(times.begin(), std::upper_bound(times.begin(), times.end(), time))) - 1;
     const float span = times[key + 1] - times[key];
-    const float u = span > 0.0f ? (time - times[key]) / span : 0.0f;
+    const float u = span > 0.0F ? (time - times[key]) / span : 0.0F;
 
     switch (channel.interpolation) {
         case Channel::Interpolation::Step:

@@ -89,13 +89,13 @@ std::vector<unsigned char> greyQuad(VkFormat format, const std::string& path) {
     Canvas canvas;
     canvas.resize(glm::uvec2(width, height));
     canvas.clear();
-    const float grey = 128.0f / 255.0f;
-    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)),
-        glm::vec4(grey, grey, grey, 1.0f));
+    const float grey = 128.0F / 255.0F;
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(static_cast<float>(width), static_cast<float>(height)),
+        glm::vec4(grey, grey, grey, 1.0F));
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, pass.get());
 
     Capture capture(headless.device, headless.logger);
@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
-    pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
 
     Capture capture(headless.device, headless.logger);
 
@@ -194,11 +194,11 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     canvas.clear();
     // a quarter of the target, away from every edge, so that a wrong transform shows up as a
     // pixel that should have been background and is not
-    canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    canvas.rect(glm::vec2(16.0F, 8.0F), glm::vec2(48.0F, 24.0F), glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
 
     headless.context->quads()->submit(canvas, pass.get());
 
@@ -267,12 +267,12 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     canvas.resize(glm::uvec2(width, height));
     canvas.clear();
     // white, so the vertex colour multiplies the texel by one and the picture is the texture
-    canvas.rect(glm::vec2(16.0f, 8.0f), glm::vec2(48.0f, 24.0f),
-        glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), uploaded);
+    canvas.rect(glm::vec2(16.0F, 8.0F), glm::vec2(48.0F, 24.0F),
+        glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), glm::vec4(1.0F, 1.0F, 1.0F, 1.0F), uploaded);
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
 
     headless.context->quads()->submit(canvas, pass.get());
 
@@ -315,7 +315,7 @@ BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
-    pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
 
     Capture capture(headless.device, headless.logger);
 
@@ -368,16 +368,16 @@ BOOST_AUTO_TEST_CASE(a_clip_is_cut_to_the_pass_viewport) {
     Canvas canvas;
     canvas.resize(glm::uvec2(regionWidth, regionHeight));
     canvas.clear();
-    canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(24.0f, 12.0f));
-    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(regionWidth), static_cast<float>(regionHeight)),
-        glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    canvas.clip(glm::vec2(0.0F, 0.0F), glm::vec2(24.0F, 12.0F));
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(static_cast<float>(regionWidth), static_cast<float>(regionHeight)),
+        glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
     canvas.unclip();
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->viewport(glm::vec4(static_cast<float>(regionX), static_cast<float>(regionY), static_cast<float>(regionWidth),
         static_cast<float>(regionHeight)));
-    pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, pass.get());
 
     Capture capture(headless.device, headless.logger);

@@ -158,13 +158,13 @@ BOOST_AUTO_TEST_CASE(engine_registers_mappings_test) {
     const boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "w", v3d::event::State::Pressed));
 
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1U);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "leftPaddleUp");
     BOOST_CHECK_EQUAL(recorder.events_[0].context()->name(), "pong");
 
     // an unbound key produces nothing
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "q", v3d::event::State::Pressed));
-    BOOST_CHECK_EQUAL(recorder.events_.size(), 1u);
+    BOOST_CHECK_EQUAL(recorder.events_.size(), 1U);
 }
 
 /**
@@ -180,15 +180,15 @@ BOOST_AUTO_TEST_CASE(engine_mapping_state_test) {
     const boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
 
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "escape", v3d::event::State::Pressed));
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1U);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "quit");
 
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "escape", v3d::event::State::Released));
-    BOOST_CHECK_EQUAL(recorder.events_.size(), 1u);
+    BOOST_CHECK_EQUAL(recorder.events_.size(), 1U);
 
     // the unstated binding takes both edges
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "w", v3d::event::State::Released));
-    BOOST_CHECK_EQUAL(recorder.events_.size(), 2u);
+    BOOST_CHECK_EQUAL(recorder.events_.size(), 2U);
 }
 
 /**
@@ -205,17 +205,17 @@ BOOST_AUTO_TEST_CASE(engine_mapping_param_test) {
     const boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
 
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "1", v3d::event::State::Pressed));
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1U);
     BOOST_REQUIRE(recorder.events_[0].data());
     BOOST_CHECK_EQUAL(std::get<std::string>(recorder.events_[0].data().get()), "cube");
 
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "2", v3d::event::State::Pressed));
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 2u);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 2U);
     BOOST_REQUIRE(recorder.events_[1].data());
     BOOST_CHECK_EQUAL(std::get<int>(recorder.events_[1].data().get()), 3);
 
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "g", v3d::event::State::Pressed));
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 3u);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 3U);
     BOOST_REQUIRE(recorder.events_[2].data());
     BOOST_CHECK(std::get<bool>(recorder.events_[2].data().get()));
 }
@@ -233,8 +233,8 @@ BOOST_AUTO_TEST_CASE(engine_declined_event_reaches_the_bindings_test) {
 
     engine.offer(keyDown(SDLK_W));
 
-    BOOST_REQUIRE_EQUAL(engine.offered().size(), 1u);
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(engine.offered().size(), 1U);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1U);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "leftPaddleUp");
 }
 
@@ -252,8 +252,8 @@ BOOST_AUTO_TEST_CASE(engine_taken_event_is_not_mapped_test) {
 
     engine.offer(keyDown(SDLK_W));
 
-    BOOST_CHECK_EQUAL(engine.offered().size(), 1u);
-    BOOST_CHECK_EQUAL(recorder.events_.size(), 0u);
+    BOOST_CHECK_EQUAL(engine.offered().size(), 1U);
+    BOOST_CHECK_EQUAL(recorder.events_.size(), 0U);
 }
 
 /**
@@ -494,11 +494,11 @@ BOOST_AUTO_TEST_CASE(engine_checks_a_binding_document_test) {
         {"source": {"name": "escape", "context": "keyboard"}, "destination": {"name": "quit", "context": "ui"}}
     ]})").as_object();
     const std::vector<std::string> unhandled = engine.unhandled(document);
-    BOOST_REQUIRE_EQUAL(unhandled.size(), 1u);
+    BOOST_REQUIRE_EQUAL(unhandled.size(), 1U);
     BOOST_CHECK_EQUAL(unhandled[0], "game::toggleFS");
 
     const std::vector<std::string> unread = engine.unhandled(boost::json::parse(R"({"bindings": []})").as_object());
-    BOOST_REQUIRE_EQUAL(unread.size(), 1u);
+    BOOST_REQUIRE_EQUAL(unread.size(), 1U);
     BOOST_CHECK_EQUAL(unread[0], "mappings");
 }
 

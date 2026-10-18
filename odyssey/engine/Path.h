@@ -33,7 +33,7 @@ struct Path final {
      * Seconds spent on the step in progress. Movement is a tile at a time rather than a
      * position between two, so this accumulates until a whole step is due.
      **/
-    float elapsed{0.0f};
+    float elapsed{0.0F};
 };
 
 };  // namespace odyssey::engine

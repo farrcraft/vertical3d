@@ -67,7 +67,7 @@ bool Reader::numbers(Lexer * lexer, unsigned int count, std::vector<float> * out
         lexer->next();
     }
     for (unsigned int i = 0; i < count; i++) {
-        float value = 0.0f;
+        float value = 0.0F;
         if (!number(lexer, &value)) {
             return false;
         }
@@ -239,9 +239,9 @@ Reader::Result Reader::namedRequest(const std::string & name, Lexer * lexer, Han
  * Reads the RI options: what the picture is and what the scene calls things.
  **/
 Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float arg1 = 0.0f;
-    float arg2 = 0.0f;
-    float arg3 = 0.0f;
+    float arg1 = 0.0F;
+    float arg2 = 0.0F;
+    float arg3 = 0.0F;
     std::string first;
     std::string second;
 
@@ -275,7 +275,7 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
             logger_->get()->warn("RIB Format {} {} {} is not a picture size and was skipped", arg1, arg2, arg3);
             return Result::Handled;
         }
-        handler->format({.width = *width, .height = *height, .pixelAspect = arg3 > 0.0f && std::isfinite(arg3) ? arg3 : 1.0f});
+        handler->format({.width = *width, .height = *height, .pixelAspect = arg3 > 0.0F && std::isfinite(arg3) ? arg3 : 1.0F});
         return Result::Handled;
     }
     return Result::Unhandled;
@@ -285,10 +285,10 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
  * Reads the camera: what the projection is and what of it reaches the picture.
  **/
 Reader::Result Reader::cameraRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float arg1 = 0.0f;
-    float arg2 = 0.0f;
-    float arg3 = 0.0f;
-    float arg4 = 0.0f;
+    float arg1 = 0.0F;
+    float arg2 = 0.0F;
+    float arg3 = 0.0F;
+    float arg4 = 0.0F;
 
     if (name == "FrameAspectRatio") {
         if (!number(lexer, &arg1)) {
@@ -325,7 +325,7 @@ Reader::Result Reader::cameraRequest(const std::string & name, Lexer * lexer, Ha
  * Reads where the picture goes and the frame it belongs to.
  **/
 Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float arg1 = 0.0f;
+    float arg1 = 0.0F;
     std::string first;
     std::string second;
     std::string third;
@@ -364,14 +364,14 @@ Reader::Result Reader::displayRequest(const std::string & name, Lexer * lexer, H
  * Reads the lens and the shutter: the depth of field, and when the shutter opens and closes.
  **/
 Reader::Result Reader::lensRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float arg1 = 0.0f;
-    float arg2 = 0.0f;
-    float arg3 = 0.0f;
+    float arg1 = 0.0F;
+    float arg2 = 0.0F;
+    float arg3 = 0.0F;
 
     if (name == "DepthOfField") {
         // the form with no arguments sets a pinhole
         if (lexer->peek().kind() != Kind::NUMBER) {
-            handler->depthOfField({.fstop = std::numeric_limits<float>::infinity(), .focalLength = 0.0f, .focalDistance = 0.0f});
+            handler->depthOfField({.fstop = std::numeric_limits<float>::infinity(), .focalLength = 0.0F, .focalDistance = 0.0F});
             return Result::Handled;
         }
         if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3)) {
@@ -394,8 +394,8 @@ Reader::Result Reader::lensRequest(const std::string & name, Lexer * lexer, Hand
  * Reads how a pixel is sampled and filtered.
  **/
 Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float arg1 = 0.0f;
-    float arg2 = 0.0f;
+    float arg1 = 0.0F;
+    float arg2 = 0.0F;
     std::string first;
 
     if (name == "PixelSamples") {
@@ -473,7 +473,7 @@ Reader::Result Reader::blockRequest(const std::string & name, Lexer * lexer, Han
  * Reads the current transformation.
  **/
 Reader::Result Reader::transformRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    glm::mat4x4 transformation(1.0f);
+    glm::mat4x4 transformation(1.0F);
     std::vector<float> triple;
 
     if (name == "Identity") {
@@ -554,7 +554,7 @@ Reader::Result Reader::motionRequest(const std::string & name, Lexer * lexer, Ha
  * Reads the attributes a primitive is submitted under.
  **/
 Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float arg1 = 0.0f;
+    float arg1 = 0.0F;
     std::vector<float> triple;
 
     if (name == "Color") {
@@ -604,19 +604,19 @@ Reader::Result Reader::shaderRequest(const std::string & name, Lexer * lexer, Ha
         return Result::Handled;
     }
     if (name == "Illuminate") {
-        float on = 0.0f;
+        float on = 0.0F;
         if (!handle(lexer, &first) || !number(lexer, &on)) {
             return Result::Failed;
         }
-        handler->illuminate(first, on != 0.0f);
+        handler->illuminate(first, on != 0.0F);
         return Result::Handled;
     }
     if (name == "MakeTexture") {
         std::string swrap;
         std::string twrap;
         std::string filter;
-        float swidth = 0.0f;
-        float twidth = 0.0f;
+        float swidth = 0.0F;
+        float twidth = 0.0F;
         if (!text(lexer, &first) || !text(lexer, &second) || !text(lexer, &swrap) || !text(lexer, &twrap) ||
             !text(lexer, &filter) || !number(lexer, &swidth) || !number(lexer, &twidth) || !parameters(lexer, 1, &list)) {
             return Result::Failed;
@@ -646,10 +646,10 @@ bool Reader::handle(Lexer * lexer, std::string * value) {
  * Reads the geometry.
  **/
 Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer, Handler * handler) {
-    float arg1 = 0.0f;
-    float arg2 = 0.0f;
-    float arg3 = 0.0f;
-    float arg4 = 0.0f;
+    float arg1 = 0.0F;
+    float arg2 = 0.0F;
+    float arg3 = 0.0F;
+    float arg4 = 0.0F;
     ParameterList list;
 
     if (name == "Polygon") {

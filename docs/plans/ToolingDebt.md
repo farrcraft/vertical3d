@@ -58,7 +58,7 @@ names it as the one Python file in the tree.
 
 ### Steps 5 to 17 — One check each
 
-**Steps 5 to 15 done; 16 and 17 open.**
+**Steps 5 to 16 done; 17 open.**
 
 - Steps 5 to 8 shared one discovery pass and one verification pass. Several files carried sites
   of more than one check.
@@ -119,6 +119,11 @@ names it as the one Python file in the tree.
   letters and allow the conventional single letters: `x`, `y`, `z`, `w`, `u`, `v`, `s` and `t`,
   plus the defaults `i`, `j`, `k`, `n` and `e`. That left 391 sites, mostly `a`, `b`, `c`, `p`,
   `m`, `d`, `e` and `f`, and each was renamed by hand for what it holds.
+- Step 16 found 13573 sites: 12712 float `f` suffixes, 860 `u` and one `ull`. The check's
+  default skips a literal inside a macro argument, which would have left every Boost.Test
+  assertion lowercase, so `.clang-tidy` turns that off. clang-tidy reports a macro argument's
+  literal where it is written, so one script uppercased every reported suffix. The reference
+  documents' examples and `examples/starter` follow the same spelling.
 
 Each step follows the same procedure:
 
@@ -153,7 +158,7 @@ TODO.md holds the current counts.
   parameters.
 - **Step 13** makes members private. A struct with only public data members is exempted through
   the check's options, which is not an exclusion.
-- **Step 16** is mechanical, and clang-tidy's own fix applies it.
+- **Step 16** is mechanical. A script uppercases each suffix the check reports.
 
 ### Step 18 — Close the plan
 

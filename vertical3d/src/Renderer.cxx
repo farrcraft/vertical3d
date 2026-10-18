@@ -25,7 +25,7 @@ namespace {
 /**
  * What every viewport clears to.
  **/
-constexpr glm::vec4 background(0.16f, 0.17f, 0.19f, 1.0f);
+constexpr glm::vec4 background(0.16F, 0.17F, 0.19F, 1.0F);
 
 /**
  * What a view's handle pass is called, on the end of the view's own name.
@@ -44,20 +44,20 @@ const char* const uiPass = "ui";
  * this, so the editor scales by one number. Glyphs are distance fields, so a new scale
  * does not need a rebuilt atlas.
  **/
-const float uiScale = 1.0f;
+const float uiScale = 1.0F;
 
 /**
  * The size the ui text is drawn at, and what the bar and its rows are sized from.
  **/
-const float fontSize = 15.0f * uiScale;
+const float fontSize = 15.0F * uiScale;
 
 /**
  * The ui's spacing, each a multiple of the text size.
  **/
-constexpr float lineHeightScale = 1.5f;
-constexpr float paddingScale = 1.4f;
-constexpr float barHeightScale = 1.8f;
-constexpr float panelPaddingScale = 0.3f;
+constexpr float lineHeightScale = 1.5F;
+constexpr float paddingScale = 1.4F;
+constexpr float barHeightScale = 1.8F;
+constexpr float panelPaddingScale = 0.3F;
 
 };  // namespace
 
@@ -151,7 +151,7 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
  **/
 glm::vec2 Renderer::insets() const {
     if (!ui_) {
-        return glm::vec2(0.0f, 0.0f);
+        return glm::vec2(0.0F, 0.0F);
     }
     return screen_->components().insets(*ui_);
 }

@@ -17,7 +17,7 @@ SelectTool::SelectTool(const boost::shared_ptr<Scene>& scene, const boost::share
     scene_(scene),
     logger_(logger),
     mask_(SelectMask::Object),
-    cursor_(0.0f, 0.0f) {
+    cursor_(0.0F, 0.0F) {
 }
 
 /**

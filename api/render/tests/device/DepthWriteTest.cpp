@@ -49,11 +49,11 @@ const uint32_t height = 32;
  * down over [0, height), and z into the screen over [0, 1].
  **/
 glm::mat4x4 pixels() {
-    glm::mat4x4 projection(1.0f);
-    projection[0][0] = 2.0f / static_cast<float>(width);
-    projection[1][1] = 2.0f / static_cast<float>(height);
-    projection[3][0] = -1.0f;
-    projection[3][1] = -1.0f;
+    glm::mat4x4 projection(1.0F);
+    projection[0][0] = 2.0F / static_cast<float>(width);
+    projection[1][1] = 2.0F / static_cast<float>(height);
+    projection[3][0] = -1.0F;
+    projection[3][1] = -1.0F;
     return projection;
 }
 
@@ -80,29 +80,29 @@ std::string drawCoincident(v3d::test::Headless* headless, Drawn drawn, std::opti
     const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
         headless->device, headless->context->ring(), width, height, colourFormat, true);
 
-    const glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
-    const glm::vec4 green(0.0f, 1.0f, 0.0f, 1.0f);
+    const glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
+    const glm::vec4 green(0.0F, 1.0F, 0.0F, 1.0F);
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("coincident");
     pass->target(target);
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     pass->depth(true);
     pass->depthWrite(write);
-    pass->camera(glm::mat4x4(1.0f), pixels());
+    pass->camera(glm::mat4x4(1.0F), pixels());
 
     canvas::Line lines;
     canvas::World quads;
     if (drawn == Drawn::Lines) {
-        lines.line(glm::vec3(0.0f, 16.5f, 0.5f), glm::vec3(64.0f, 16.5f, 0.5f), red);
-        lines.line(glm::vec3(0.0f, 16.5f, 0.5f), glm::vec3(64.0f, 16.5f, 0.5f), green);
+        lines.line(glm::vec3(0.0F, 16.5F, 0.5F), glm::vec3(64.0F, 16.5F, 0.5F), red);
+        lines.line(glm::vec3(0.0F, 16.5F, 0.5F), glm::vec3(64.0F, 16.5F, 0.5F), green);
         headless->context->lines()->submit(lines, pass.get());
     } else {
         const canvas::World::Corners band{
-            glm::vec3(0.0f, 8.0f, 0.5f),
-            glm::vec3(64.0f, 8.0f, 0.5f),
-            glm::vec3(64.0f, 24.0f, 0.5f),
-            glm::vec3(0.0f, 24.0f, 0.5f)
+            glm::vec3(0.0F, 8.0F, 0.5F),
+            glm::vec3(64.0F, 8.0F, 0.5F),
+            glm::vec3(64.0F, 24.0F, 0.5F),
+            glm::vec3(0.0F, 24.0F, 0.5F)
         };
         quads.quad(band, red);
         quads.quad(band, green);

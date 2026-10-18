@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE(json_document_test) {
     BOOST_TEST(doc.contains("name"));
     BOOST_TEST(boost::json::value_to<std::string>(doc.at("name")) == "fixture");
     BOOST_TEST(doc.at("count").as_int64() == 3);
-    BOOST_TEST(doc.at("items").as_array().size() == 3u);
+    BOOST_TEST(doc.at("items").as_array().size() == 3U);
     BOOST_TEST(doc.at("nested").as_object().at("flag").as_bool());
 }
 

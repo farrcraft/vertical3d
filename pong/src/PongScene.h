@@ -22,13 +22,13 @@ class PongScene {
      * The court, in its own units. The rules are written against it, and the renderer maps it
      * onto a canvas with its own coordinate space, fitted to whatever the window is.
      **/
-    static constexpr float width = 800.0f;
-    static constexpr float height = 600.0f;
+    static constexpr float width = 800.0F;
+    static constexpr float height = 600.0F;
     /**
      * The thickness of the top and bottom walls, in court units. The ball turns at a wall's
      * face, and a paddle stops with its end against one.
      **/
-    static constexpr float wall = 15.0f;
+    static constexpr float wall = 15.0F;
 
     explicit PongScene(entt::registry* registry, const boost::shared_ptr<entt::dispatcher> & dispatcher);
     ~PongScene();

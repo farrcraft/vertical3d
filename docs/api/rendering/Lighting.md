@@ -51,7 +51,7 @@ be built in the camera's hand too: pass the hand to `lighting::shadowLight()`.
 ```cpp
 lighting::Settings settings;
 const glm::mat4 light = lighting::shadowLight(settings.light, bounds);
-VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0f / mapSize),
+VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0F / mapSize),
     context->textures()->depthTexture(*map));
 
 boost::shared_ptr<Pass> pass = frame->pass("lit");       // may be created first
@@ -138,7 +138,7 @@ frame and pass the same `Poses` to all three:
 
 ```cpp
 const entity::Poses poses = entity::poses(registry, alpha(), meshes);
-VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0f / mapSize),
+VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0F / mapSize),
     context->textures()->depthTexture(*map), poses.palette());
 entity::casters(registry, alpha(), meshes, &lit, casting.get(), poses);
 entity::meshes(registry, alpha(), meshes, &lit, settings.outline, pass.get(), poses);

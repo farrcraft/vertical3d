@@ -75,14 +75,14 @@ std::vector<unsigned char> drawFrame(v3d::test::Headless* headless, const boost:
     Canvas canvas;
     canvas.resize(glm::uvec2(width, height));
     canvas.clear();
-    canvas.rect(glm::vec2(0.0f), glm::vec2(width, height), glm::vec2(0.0f), glm::vec2(1.0f), glm::vec4(1.0f),
+    canvas.rect(glm::vec2(0.0F), glm::vec2(width, height), glm::vec2(0.0F), glm::vec2(1.0F), glm::vec4(1.0F),
         handles[slots->previous()]);
 
     Frame frame;
     const boost::shared_ptr<Pass> reader = frame.pass("reader");
     reader->target(output);
     reader->reads(slots);
-    reader->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    reader->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     headless->context->quads()->submit(canvas, reader.get());
 
     const boost::shared_ptr<Pass> writer = frame.pass("writer");
@@ -132,12 +132,12 @@ BOOST_AUTO_TEST_CASE(a_target_per_frame_reads_the_frame_before) {
 
     VkImage first = slots->image();
     const std::vector<unsigned char> unwritten =
-        drawFrame(&headless, slots, handles, output, glm::vec4(1.0f, 0.0f, 0.0f, 1.0f), "data_out/target_first.png");
+        drawFrame(&headless, slots, handles, output, glm::vec4(1.0F, 0.0F, 0.0F, 1.0F), "data_out/target_first.png");
     VkImage second = slots->image();
     const std::vector<unsigned char> red =
-        drawFrame(&headless, slots, handles, output, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), "data_out/target_second.png");
+        drawFrame(&headless, slots, handles, output, glm::vec4(0.0F, 1.0F, 0.0F, 1.0F), "data_out/target_second.png");
     const std::vector<unsigned char> green =
-        drawFrame(&headless, slots, handles, output, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), "data_out/target_third.png");
+        drawFrame(&headless, slots, handles, output, glm::vec4(0.0F, 0.0F, 0.0F, 1.0F), "data_out/target_third.png");
 
     BOOST_CHECK(headless.silent());
     BOOST_CHECK(first != second);
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
         .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0})
         .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
         .colourFormat(colourFormat);
-    const std::vector<float> triangle{-1.0f, -1.0f, 0.5f, 3.0f, -1.0f, 0.5f, -1.0f, 3.0f, 0.5f};
+    const std::vector<float> triangle{-1.0F, -1.0F, 0.5F, 3.0F, -1.0F, 0.5F, -1.0F, 3.0F, 0.5F};
     Buffer buffer(headless.device, {.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, .bytes = triangle.size() * sizeof(float)});
     buffer.write(triangle.data(), triangle.size() * sizeof(float));
 

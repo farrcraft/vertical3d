@@ -14,12 +14,12 @@ namespace v3d::type::camera {
 
 namespace {
 
-constexpr glm::vec3 UP(0.0f, 1.0f, 0.0f);
+constexpr glm::vec3 UP(0.0F, 1.0F, 0.0F);
 
 /**
  * A quarter turn per azimuth step.
  **/
-constexpr float QUARTER_TURN = 1.57079632679489661923f;
+constexpr float QUARTER_TURN = 1.57079632679489661923F;
 
 /**
  * The step index reduced into [0, AZIMUTHS), for a negative index as well as a positive
@@ -32,7 +32,7 @@ int wrap(int index) {
 
 };  // namespace
 
-Isometric::Isometric() : target_(0.0f, 0.0f, 0.0f) {
+Isometric::Isometric() : target_(0.0F, 0.0F, 0.0F) {
 }
 
 void Isometric::rotate(int steps) {
@@ -54,7 +54,7 @@ void Isometric::pan(const glm::vec2& delta) {
 glm::vec3 Isometric::forward() const {
     const float angle = static_cast<float>(azimuth_) * QUARTER_TURN;
     // the eye sits at +x of the target at azimuth zero, so the view runs the other way
-    return glm::vec3(-std::cos(angle), 0.0f, -std::sin(angle));
+    return glm::vec3(-std::cos(angle), 0.0F, -std::sin(angle));
 }
 
 glm::vec3 Isometric::right() const {

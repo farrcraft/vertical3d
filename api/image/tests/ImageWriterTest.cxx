@@ -48,9 +48,9 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
 
             const boost::shared_ptr<v3d::image::Image> image = factory.read(filename);
             BOOST_REQUIRE(image != nullptr);
-            BOOST_CHECK_EQUAL(image->width(), 2u);
-            BOOST_CHECK_EQUAL(image->height(), 2u);
-            BOOST_CHECK_EQUAL(image->bpp(), 24u);
+            BOOST_CHECK_EQUAL(image->width(), 2U);
+            BOOST_CHECK_EQUAL(image->height(), 2U);
+            BOOST_CHECK_EQUAL(image->bpp(), 24U);
             BOOST_CHECK_EQUAL((*image)[0], 0);
             BOOST_CHECK_EQUAL((*image)[1], 0);
             BOOST_CHECK_EQUAL((*image)[2], 0xff);
@@ -62,9 +62,9 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
     BOOST_CHECK_EQUAL(factory.write(jpgFilename, img24), true);
     const boost::shared_ptr<v3d::image::Image> imageJpg = factory.read(jpgFilename);
     BOOST_REQUIRE(imageJpg != nullptr);
-    BOOST_CHECK_EQUAL(imageJpg->width(), 2u);
-    BOOST_CHECK_EQUAL(imageJpg->height(), 2u);
-    BOOST_CHECK_EQUAL(imageJpg->bpp(), 24u);
+    BOOST_CHECK_EQUAL(imageJpg->width(), 2U);
+    BOOST_CHECK_EQUAL(imageJpg->height(), 2U);
+    BOOST_CHECK_EQUAL(imageJpg->bpp(), 24U);
     BOOST_CHECK_EQUAL((*imageJpg)[0], 0);
     BOOST_CHECK_EQUAL((*imageJpg)[1], 0);
     BOOST_CHECK_GE((*imageJpg)[2], 0xfd);
@@ -99,7 +99,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
 
             const boost::shared_ptr<v3d::image::Image> read = factory.read(filename);
             BOOST_REQUIRE(read != nullptr);
-            BOOST_REQUIRE_EQUAL(read->height(), 2u);
+            BOOST_REQUIRE_EQUAL(read->height(), 2U);
             // the top row is still the red one
             BOOST_CHECK_EQUAL((*read)[0], 0xff);
             BOOST_CHECK_EQUAL((*read)[1], 0);
@@ -356,7 +356,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, Out
             BOOST_REQUIRE_EQUAL(factory.write(filename, rgba), true);
             const boost::shared_ptr<v3d::image::Image> read = factory.read(filename);
             BOOST_REQUIRE(read != nullptr);
-            BOOST_CHECK_EQUAL(read->bpp(), 24u);
+            BOOST_CHECK_EQUAL(read->bpp(), 24U);
             BOOST_CHECK_GE((*read)[0], 0xfd);
             BOOST_CHECK_LE((*read)[1], 2);
             BOOST_CHECK_LE((*read)[2], 2);
@@ -381,7 +381,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_tga_alpha_test, OutputDirectory) {
 
     const boost::shared_ptr<v3d::image::Image> image = factory.read("data_out/alpha.tga");
     BOOST_REQUIRE(image != nullptr);
-    BOOST_REQUIRE_EQUAL(image->bpp(), 32u);
+    BOOST_REQUIRE_EQUAL(image->bpp(), 32U);
     BOOST_CHECK_EQUAL((*image)[0], 0x10);
     BOOST_CHECK_EQUAL((*image)[2], 0x30);
     BOOST_CHECK_EQUAL((*image)[3], 0x80);
@@ -399,7 +399,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_tga_too_wide_leaves_the_file_test, OutputDir
     const boost::shared_ptr<v3d::image::Image> small = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 1), 8);
     BOOST_REQUIRE(factory.write(filename, small));
     const boost::uintmax_t before = boost::filesystem::file_size(filename);
-    BOOST_REQUIRE(before > 0u);
+    BOOST_REQUIRE(before > 0U);
 
     // one row of one byte a pixel, so the picture is wide and still costs only 64 KiB
     const boost::shared_ptr<v3d::image::Image> wide = boost::make_shared<v3d::image::Image>(glm::uvec2(65536, 1), 8);

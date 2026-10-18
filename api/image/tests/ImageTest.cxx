@@ -19,9 +19,9 @@ BOOST_AUTO_TEST_CASE(image_test) {
     const v3d::image::Image img32(glm::uvec2(1, 5), 32);
     BOOST_CHECK_EQUAL((img32.format() == v3d::image::Image::Format::RGBA), true);
 
-    BOOST_CHECK_EQUAL(img24.width(), 2u);
-    BOOST_CHECK_EQUAL(img24.height(), 4u);
-    BOOST_CHECK_EQUAL(img24.bpp(), 24u);
+    BOOST_CHECK_EQUAL(img24.width(), 2U);
+    BOOST_CHECK_EQUAL(img24.height(), 4U);
+    BOOST_CHECK_EQUAL(img24.bpp(), 24U);
 
     // an image's shape is what it was made with, since the buffer was sized for it
     v3d::image::Image img(glm::uvec2(2, 2), 24);

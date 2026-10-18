@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(findpath_to_where_you_stand_is_that_tile_alone_test) {
 
     const std::vector<TileCoord> path = findPath(grid, CENTRE, CENTRE);
 
-    BOOST_CHECK_EQUAL(path.size(), 1u);
+    BOOST_CHECK_EQUAL(path.size(), 1U);
     BOOST_CHECK_EQUAL(path.front() == CENTRE, true);
 }
 
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(findpath_orthogonal_run_test) {
 
     const std::vector<TileCoord> path = findPath(grid, at(0, 0), at(4, 0));
 
-    BOOST_CHECK_EQUAL(path.size(), 5u);
+    BOOST_CHECK_EQUAL(path.size(), 5U);
     BOOST_CHECK_EQUAL(path.front() == at(0, 0), true);
     BOOST_CHECK_EQUAL(path.back() == at(4, 0), true);
     BOOST_CHECK_EQUAL(contiguous(path), true);
@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(findpath_diagonal_run_costs_one_per_tile_test) {
     const std::vector<TileCoord> path = findPath(grid, at(0, 0), at(4, 4));
 
     // four steps, not eight: this one assertion checks that movement is 8 way
-    BOOST_CHECK_EQUAL(path.size(), 5u);
+    BOOST_CHECK_EQUAL(path.size(), 5U);
     BOOST_CHECK_EQUAL(path.back() == at(4, 4), true);
     BOOST_CHECK_EQUAL(contiguous(path), true);
 }
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(findpath_off_axis_goal_costs_the_longer_axis_test) {
 
     const std::vector<TileCoord> path = findPath(grid, at(0, 0), at(5, 2));
 
-    BOOST_CHECK_EQUAL(path.size(), 6u);
+    BOOST_CHECK_EQUAL(path.size(), 6U);
     BOOST_CHECK_EQUAL(path.back() == at(5, 2), true);
     BOOST_CHECK_EQUAL(contiguous(path), true);
 }
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(findpath_routes_around_an_impassable_tile_test) {
 
     const std::vector<TileCoord> path = findPath(grid, at(0, 0), at(2, 0));
 
-    BOOST_CHECK_EQUAL(path.size(), 3u);
+    BOOST_CHECK_EQUAL(path.size(), 3U);
     BOOST_CHECK_EQUAL(path.back() == at(2, 0), true);
     BOOST_CHECK_EQUAL(contiguous(path), true);
     BOOST_CHECK_EQUAL(contains(path, at(1, 0)), false);
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(findpath_rounding_an_offset_wall_is_free_test) {
     // the four rows of detour are absorbed by the four columns of travel it already had to
     // make. with 8 way movement at a flat cost, a wall adds cost only when the way round
     // leaves the diagonal envelope
-    BOOST_CHECK_EQUAL(path.size(), 9u);
+    BOOST_CHECK_EQUAL(path.size(), 9U);
 }
 
 BOOST_AUTO_TEST_CASE(findpath_a_wall_costs_when_the_way_round_leaves_the_envelope_test) {
@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE(findpath_a_wall_costs_when_the_way_round_leaves_the_envelop
     BOOST_CHECK_EQUAL(contains(path, at(4, 0)), true);
 
     // four steps up to the gap and four back down, against two in a straight line
-    BOOST_CHECK_EQUAL(path.size(), 9u);
+    BOOST_CHECK_EQUAL(path.size(), 9U);
 }
 
 BOOST_AUTO_TEST_CASE(findpath_an_enclosed_goal_has_no_path_test) {
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE(findpath_the_start_is_never_tested_test) {
     // whoever is already there
     const std::vector<TileCoord> path = findPath(grid, CENTRE, at(6, 4), blocking({ CENTRE }));
 
-    BOOST_CHECK_EQUAL(path.size(), 3u);
+    BOOST_CHECK_EQUAL(path.size(), 3U);
     BOOST_CHECK_EQUAL(path.front() == CENTRE, true);
     BOOST_CHECK_EQUAL(path.back() == at(6, 4), true);
 }
@@ -279,7 +279,7 @@ BOOST_AUTO_TEST_CASE(findpath_a_single_blocked_corner_can_still_be_cut_test) {
     // of the wall is allowed
     const std::vector<TileCoord> path = findPath(grid, at(3, 3), at(4, 4));
 
-    BOOST_CHECK_EQUAL(path.size(), 2u);
+    BOOST_CHECK_EQUAL(path.size(), 2U);
     BOOST_CHECK_EQUAL(path.back() == at(4, 4), true);
 }
 
@@ -288,7 +288,7 @@ BOOST_AUTO_TEST_CASE(reachabletiles_a_budget_of_nothing_reaches_where_you_stand_
 
     const std::vector<ReachableTile> reached = reachableTiles(grid, CENTRE, 0);
 
-    BOOST_CHECK_EQUAL(reached.size(), 1u);
+    BOOST_CHECK_EQUAL(reached.size(), 1U);
     BOOST_CHECK_EQUAL(reached.front().tile == CENTRE, true);
     BOOST_CHECK_EQUAL(reached.front().cost, 0);
 }
@@ -297,8 +297,8 @@ BOOST_AUTO_TEST_CASE(reachabletiles_an_open_budget_reaches_a_square_test) {
     const TileGrid grid = makeGrid();
 
     // Chebyshev distance, so the set is a square rather than a diamond. 2 * 2 + 1 = 5
-    BOOST_CHECK_EQUAL(reachableTiles(grid, CENTRE, 2).size(), 25u);
-    BOOST_CHECK_EQUAL(reachableTiles(grid, CENTRE, 3).size(), 49u);
+    BOOST_CHECK_EQUAL(reachableTiles(grid, CENTRE, 2).size(), 25U);
+    BOOST_CHECK_EQUAL(reachableTiles(grid, CENTRE, 3).size(), 49U);
 }
 
 BOOST_AUTO_TEST_CASE(reachabletiles_cost_is_chebyshev_on_open_ground_test) {
@@ -317,7 +317,7 @@ BOOST_AUTO_TEST_CASE(reachabletiles_is_clipped_by_the_edge_test) {
     // a 5x5 square anchored in the corner keeps only the quadrant that is on the map
     const std::vector<ReachableTile> reached = reachableTiles(grid, at(0, 0), 2);
 
-    BOOST_CHECK_EQUAL(reached.size(), 9u);
+    BOOST_CHECK_EQUAL(reached.size(), 9U);
     BOOST_CHECK_EQUAL(costOf(reached, at(-1, 0)), -1);
 }
 
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE(reachabletiles_excludes_impassable_tiles_test) {
 
     const std::vector<ReachableTile> reached = reachableTiles(grid, CENTRE, 2);
 
-    BOOST_CHECK_EQUAL(reached.size(), 24u);
+    BOOST_CHECK_EQUAL(reached.size(), 24U);
     BOOST_CHECK_EQUAL(costOf(reached, at(5, 4)), -1);
 }
 
@@ -337,7 +337,7 @@ BOOST_AUTO_TEST_CASE(reachabletiles_excludes_tiles_the_filter_blocks_test) {
     const std::vector<ReachableTile> reached =
         reachableTiles(grid, CENTRE, 2, blocking({ at(5, 4), at(3, 4) }));
 
-    BOOST_CHECK_EQUAL(reached.size(), 23u);
+    BOOST_CHECK_EQUAL(reached.size(), 23U);
     BOOST_CHECK_EQUAL(costOf(reached, at(5, 4)), -1);
     BOOST_CHECK_EQUAL(costOf(reached, at(3, 4)), -1);
 }
@@ -378,7 +378,7 @@ BOOST_AUTO_TEST_CASE(reachabletiles_a_walled_off_tile_is_not_reached_test) {
 
     const std::vector<ReachableTile> reached = reachableTiles(grid, CENTRE, 8);
 
-    BOOST_CHECK_EQUAL(reached.size(), 1u);
+    BOOST_CHECK_EQUAL(reached.size(), 1U);
     BOOST_CHECK_EQUAL(reached.front().tile == CENTRE, true);
 }
 

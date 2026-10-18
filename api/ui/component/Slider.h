@@ -33,9 +33,9 @@ class Slider : public Component {
      * continuous.
      **/
     struct Range {
-        float minimum = 0.0f;
-        float maximum = 1.0f;
-        float step = 0.0f;
+        float minimum = 0.0F;
+        float maximum = 1.0F;
+        float step = 0.0F;
     };
 
     /**

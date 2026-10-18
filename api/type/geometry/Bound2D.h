@@ -18,8 +18,8 @@ class Bound2D {
      * The top left corner of a bounded area, and its width and height.
      **/
     struct Area {
-        glm::vec2 position{0.0f};
-        glm::vec2 size{0.0f};
+        glm::vec2 position{0.0F};
+        glm::vec2 size{0.0F};
     };
 
     explicit Bound2D(const Area & area);

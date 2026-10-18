@@ -88,13 +88,13 @@ BOOST_AUTO_TEST_CASE(gameboard_row_clear_test) {
     game->piece(0, bottom - 2, Piece(Piece::COLOR_PURPLE));
 
     // spawn, then steer the one cell piece over the gap and let it fall into it
-    game->update(0.0f);
+    game->update(0.0F);
     game->currentTetrad().position(Tetrad::PositionType(last, 0));
     for (unsigned int i = 0; i < 64 && game->score() == 0; i++) {
-        game->update(1.0f);
+        game->update(1.0F);
     }
 
-    BOOST_CHECK_EQUAL(game->score(), 100u);
+    BOOST_CHECK_EQUAL(game->score(), 100U);
     // the completed row is gone rather than merely emptied, so what was two rows above the
     // gap is now one row above the floor
     BOOST_CHECK(game->piece(0, bottom).color() == Piece::COLOR_EMPTY);
@@ -111,13 +111,13 @@ BOOST_AUTO_TEST_CASE(gameboard_incomplete_row_test) {
         game->piece(column, bottom, Piece(Piece::COLOR_GREEN));
     }
 
-    game->update(0.0f);
+    game->update(0.0F);
     game->currentTetrad().position(Tetrad::PositionType(game->columns() - 1, 0));
     for (unsigned int i = 0; i < 64; i++) {
-        game->update(1.0f);
+        game->update(1.0F);
     }
 
-    BOOST_CHECK_EQUAL(game->score(), 0u);
+    BOOST_CHECK_EQUAL(game->score(), 0U);
     BOOST_CHECK(game->piece(0, bottom).color() == Piece::COLOR_GREEN);
 }
 
@@ -131,12 +131,12 @@ BOOST_AUTO_TEST_CASE(gameboard_game_over_test) {
         }
     }
 
-    game->update(0.0f);
+    game->update(0.0F);
     BOOST_CHECK_EQUAL(game->over(), true);
 
     // a game that is over does not keep running
     const unsigned int score = game->score();
-    game->update(10.0f);
+    game->update(10.0F);
     BOOST_CHECK_EQUAL(game->score(), score);
 }
 
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(gameboard_load_test) {
     shapes.push_back(offset);
     BOOST_REQUIRE_EQUAL(game.load(shapes), true);
 
-    game.update(0.0f);
+    game.update(0.0F);
     BOOST_CHECK_EQUAL(game.currentTetrad().shape().layout_[0][0], 1);
 }
 
@@ -167,17 +167,17 @@ BOOST_AUTO_TEST_CASE(gameboard_fall_rate_is_a_duration_test) {
     const boost::shared_ptr<GameBoard> coarse = board();
     const boost::shared_ptr<GameBoard> fine = board();
 
-    coarse->update(0.0f);
-    fine->update(0.0f);
+    coarse->update(0.0F);
+    fine->update(0.0F);
     coarse->currentTetrad().position(Tetrad::PositionType(0, 0));
     fine->currentTetrad().position(Tetrad::PositionType(0, 0));
 
     // four seconds, at 60 Hz and at 240 Hz
     for (unsigned int i = 0; i < 240; i++) {
-        coarse->update(1.0f / 60.0f);
+        coarse->update(1.0F / 60.0F);
     }
     for (unsigned int i = 0; i < 960; i++) {
-        fine->update(1.0f / 240.0f);
+        fine->update(1.0F / 240.0F);
     }
 
     BOOST_CHECK_EQUAL(coarse->currentTetrad().position().second,

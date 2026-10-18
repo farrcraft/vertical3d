@@ -12,7 +12,7 @@
 namespace v3d::grid {
 
 std::array<glm::vec3, 4> tileCorners(const TileGrid& grid, TileCoord tile) {
-    const float half = 0.5f * grid.tileSize();
+    const float half = 0.5F * grid.tileSize();
     const glm::vec3 centre = grid.tileToWorld(tile);
     const float lift = centre.y + OVERLAY_LIFT;
 

@@ -25,7 +25,7 @@ namespace v3d::render::realtime::component {
  * as Sprite holds its own.
  **/
 struct Particles final {
-    static constexpr float DEFAULT_STRETCH = 0.05f;
+    static constexpr float DEFAULT_STRETCH = 0.05F;
 
     /**
      * Which way a particle's quad lies.
@@ -37,8 +37,8 @@ struct Particles final {
 
     TextureHandle texture;               /**< unset for an untextured quad drawn against white **/
     boost::shared_ptr<const type::animation::SpriteClip> clip;  /**< shared, since every particle of every emitter plays it **/
-    glm::vec2 uv0{0.0f, 0.0f};           /**< the region drawn when there is no clip **/
-    glm::vec2 uv1{1.0f, 1.0f};
+    glm::vec2 uv0{0.0F, 0.0F};           /**< the region drawn when there is no clip **/
+    glm::vec2 uv1{1.0F, 1.0F};
 
     /**
      * Whether the clip runs once over a particle's whole life, however long that is, or plays by

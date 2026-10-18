@@ -104,7 +104,7 @@ void DepthBuffer::create(uint32_t width, uint32_t height) {
         // outside what was rendered is lit, not shadowed, so the border is the far plane
         sampler.address = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
         sampler.border = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        sampler.maxLod = 1.0f;
+        sampler.maxLod = 1.0F;
         sampler_ = boost::make_shared<pipeline::Sampler>(device_, sampler);
     }
 

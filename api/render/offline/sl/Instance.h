@@ -80,7 +80,7 @@ class Instance final {
      *         machine's error() says why
      **/
     [[nodiscard]] bool write(runtime::Machine* machine,
-        const glm::mat4x4 & placement = glm::mat4x4(1.0f)) const;
+        const glm::mat4x4 & placement = glm::mat4x4(1.0F)) const;
 
  private:
     /**

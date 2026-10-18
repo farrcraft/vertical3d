@@ -27,7 +27,7 @@ HitShader::HitShader(Tracer* tracer, const Hit & hit) :
 bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
     // a hit's current space is world space, because that is where the scene is
     if (name == "current" || name == "world") {
-        *matrix = glm::mat4x4(1.0f);
+        *matrix = glm::mat4x4(1.0F);
         return true;
     }
     if (name == "shader") {
@@ -123,7 +123,7 @@ glm::vec3 HitShader::shade(glm::vec3* opacity) {
     point.u = hit_.u;
     point.v = hit_.v;
     held.globals.surface(&held.machine, 0, point);
-    held.globals.eye(&held.machine, tracer_->scene() == nullptr ? glm::vec3(0.0f) : tracer_->scene()->eye());
+    held.globals.eye(&held.machine, tracer_->scene() == nullptr ? glm::vec3(0.0F) : tracer_->scene()->eye());
 
     if (!held.machine.run()) {
         // drawn as if it had no shader, so its opacity still applies

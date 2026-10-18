@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(logger_writes_at_every_level_test) {
 
     BOOST_CHECK_NO_THROW(logger.get()->debug("debug {}", 1));
     BOOST_CHECK_NO_THROW(logger.get()->info("info {}", "text"));
-    BOOST_CHECK_NO_THROW(logger.get()->warn("warn {:.2f}", 1.5f));
+    BOOST_CHECK_NO_THROW(logger.get()->warn("warn {:.2f}", 1.5F));
     BOOST_CHECK_NO_THROW(logger.get()->error("error {} {}", 1, 2));
     BOOST_CHECK_NO_THROW(logger.get()->flush());
 }

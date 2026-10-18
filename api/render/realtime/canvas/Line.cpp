@@ -14,7 +14,7 @@ namespace v3d::render::realtime::canvas {
 
 namespace {
 
-const float twoPi = 6.283185307179586f;
+const float twoPi = 6.283185307179586F;
 
 };  // namespace
 
@@ -22,7 +22,7 @@ const float twoPi = 6.283185307179586f;
  **/
 Line::Batch::Batch() noexcept :
 clipped(false),
-clip(0.0f),
+clip(0.0F),
 firstVertex(0),
 vertices(0) {
 }

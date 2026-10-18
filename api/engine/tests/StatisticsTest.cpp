@@ -26,10 +26,10 @@ constexpr std::uint64_t MS = 1000000ULL;
 BOOST_AUTO_TEST_CASE(statistics_empty_test) {
     Statistics statistics;
 
-    BOOST_CHECK_EQUAL(statistics.frames(), 0u);
-    BOOST_CHECK_EQUAL(statistics.last(), 0u);
-    BOOST_CHECK_EQUAL(statistics.mean(), 0u);
-    BOOST_CHECK_EQUAL(statistics.steps(), 0u);
+    BOOST_CHECK_EQUAL(statistics.frames(), 0U);
+    BOOST_CHECK_EQUAL(statistics.last(), 0U);
+    BOOST_CHECK_EQUAL(statistics.mean(), 0U);
+    BOOST_CHECK_EQUAL(statistics.steps(), 0U);
 }
 
 /**
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(statistics_partial_window_test) {
 
     statistics.frame(std::chrono::nanoseconds(20 * MS), 1);
     BOOST_CHECK_EQUAL(statistics.mean(), 15 * MS);
-    BOOST_CHECK_EQUAL(statistics.frames(), 2u);
+    BOOST_CHECK_EQUAL(statistics.frames(), 2U);
 }
 
 /**
@@ -73,13 +73,13 @@ BOOST_AUTO_TEST_CASE(statistics_steps_test) {
     Statistics statistics;
 
     statistics.frame(std::chrono::nanoseconds(Accumulator::step), accumulator.accumulate(Accumulator::step));
-    BOOST_CHECK_EQUAL(statistics.steps(), 1u);
+    BOOST_CHECK_EQUAL(statistics.steps(), 1U);
     while (accumulator.drain()) {
     }
 
     const std::uint64_t stall = 30000 * MS;
     statistics.frame(std::chrono::nanoseconds(stall), accumulator.accumulate(stall));
-    BOOST_CHECK_EQUAL(statistics.steps(), 15u);
+    BOOST_CHECK_EQUAL(statistics.steps(), 15U);
     // the frame is recorded as it was measured, not as the accumulator clamped it
     BOOST_CHECK_EQUAL(statistics.last(), stall);
 }
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(statistics_scope_test) {
     statistics.frame(std::chrono::nanoseconds(16 * MS), 1);
 
     const std::vector<Statistics::Row> rows = statistics.rows();
-    BOOST_REQUIRE_EQUAL(rows.size(), 1u);
+    BOOST_REQUIRE_EQUAL(rows.size(), 1U);
     BOOST_CHECK_EQUAL(rows[0].name, "chunks");
     BOOST_CHECK_EQUAL(rows[0].last, 3 * MS);
     BOOST_CHECK_EQUAL(rows[0].mean, 3 * MS);
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(statistics_scopes_of_one_name_add_up_test) {
     statistics.frame(std::chrono::nanoseconds(16 * MS), 1);
 
     const std::vector<Statistics::Row> rows = statistics.rows();
-    BOOST_REQUIRE_EQUAL(rows.size(), 2u);
+    BOOST_REQUIRE_EQUAL(rows.size(), 2U);
     BOOST_CHECK_EQUAL(rows[0].name, "physics");
     BOOST_CHECK_EQUAL(rows[0].last, 3 * MS);
     BOOST_CHECK_EQUAL(rows[1].name, "audio");
@@ -147,8 +147,8 @@ BOOST_AUTO_TEST_CASE(statistics_row_mean_rolls_test) {
     statistics.frame(std::chrono::nanoseconds(16 * MS), 1);
 
     const std::vector<Statistics::Row> rows = statistics.rows();
-    BOOST_REQUIRE_EQUAL(rows.size(), 1u);
-    BOOST_CHECK_EQUAL(rows[0].last, 0u);
+    BOOST_REQUIRE_EQUAL(rows.size(), 1U);
+    BOOST_CHECK_EQUAL(rows[0].last, 0U);
     BOOST_CHECK_EQUAL(rows[0].mean, 2 * MS);
 
     for (std::size_t frame = 0; frame < Statistics::window; frame++) {

@@ -18,12 +18,12 @@ typedef struct Moves {
 } Moves;
 
 Moves possibleMoves[] = {
-    { Player::MOVE_FORWARD, 2, 1.0f },
-    { Player::MOVE_BACKWARD, 2, -1.0f },
-    { Player::MOVE_RIGHT, 0, 1.0f },
-    { Player::MOVE_LEFT, 0, -1.0f },
-    { Player::MOVE_UP, 1, 1.0f },
-    { Player::MOVE_DOWN, 1, -1.0f }
+    { Player::MOVE_FORWARD, 2, 1.0F },
+    { Player::MOVE_BACKWARD, 2, -1.0F },
+    { Player::MOVE_RIGHT, 0, 1.0F },
+    { Player::MOVE_LEFT, 0, -1.0F },
+    { Player::MOVE_UP, 1, 1.0F },
+    { Player::MOVE_DOWN, 1, -1.0F }
 };
 
 /**
@@ -31,8 +31,8 @@ Moves possibleMoves[] = {
  * second squared. The camera's velocity is constant here - nothing calls updateVelocity -
  * so the walk is the linear term and the acceleration is a small addition on top of it.
  **/
-constexpr glm::vec3 PLAYER_ACCELERATION(8.0f, 8.0f, 8.0f);
-constexpr glm::vec3 PLAYER_VELOCITY(12.0f, 12.0f, 12.0f);
+constexpr glm::vec3 PLAYER_ACCELERATION(8.0F, 8.0F, 8.0F);
+constexpr glm::vec3 PLAYER_VELOCITY(12.0F, 12.0F, 12.0F);
 
 };  // namespace
 
@@ -69,7 +69,7 @@ void Player::move(Movement direction, bool held) {
                 velocity[static_cast<glm::length_t>(possibleMoves[i].axis_)] = possibleMoves[i].magnitude_;
                 movement_ |= direction;
             } else {
-                velocity[static_cast<glm::length_t>(possibleMoves[i].axis_)] = 0.0f;
+                velocity[static_cast<glm::length_t>(possibleMoves[i].axis_)] = 0.0F;
                 movement_ &= ~direction;
             }
             camera_->currentVelocity(velocity.x, velocity.y, velocity.z);
@@ -79,17 +79,17 @@ void Player::move(Movement direction, bool held) {
 }
 
 void Player::look(float heading, float pitch) {
-    const float cameraRotationSpeed = 0.01f;
+    const float cameraRotationSpeed = 0.01F;
 
     heading *= cameraRotationSpeed;
     pitch *= cameraRotationSpeed;
 
-    camera_->rotate(heading, pitch, 0.0f);
+    camera_->rotate(heading, pitch, 0.0F);
 }
 
 void Player::tick(float step) {
     // update player position based on current movement flags
-    glm::vec3 dir(0.0f, 0.0f, 0.0f);
+    glm::vec3 dir(0.0F, 0.0F, 0.0F);
     for (unsigned int i = 0; i < std::size(possibleMoves); i++) {
         if ((movement_ & possibleMoves[i].move_) != 0) {
             dir[static_cast<glm::length_t>(possibleMoves[i].axis_)] = possibleMoves[i].magnitude_;

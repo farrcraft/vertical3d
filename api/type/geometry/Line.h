@@ -18,8 +18,8 @@ namespace v3d::type::geometry {
  * The direction keeps whatever length it is given. Ray normalises it.
  **/
 struct Line {
-    glm::vec3 origin{0.0f};
-    glm::vec3 direction{0.0f, 0.0f, 1.0f};
+    glm::vec3 origin{0.0F};
+    glm::vec3 direction{0.0F, 0.0F, 1.0F};
 };
 
 };  // namespace v3d::type::geometry

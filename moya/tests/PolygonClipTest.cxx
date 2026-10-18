@@ -28,7 +28,7 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
  **/
 v3d::type::geometry::Plane zPlane() {
     v3d::type::geometry::Plane plane;
-    plane.calculate(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    plane.calculate(glm::vec3(0.0F, 0.0F, 1.0F), glm::vec3(0.0F, 0.0F, 0.0F));
     return plane;
 }
 
@@ -39,16 +39,16 @@ v3d::type::geometry::Plane zPlane() {
  **/
 v3d::type::geometry::Plane tiltedPlane() {
     v3d::type::geometry::Plane plane;
-    plane.set(glm::vec3(-0.522197902f, 0.622982621f, 0.582410455f), 0.0900339484f);
+    plane.set(glm::vec3(-0.522197902F, 0.622982621F, 0.582410455F), 0.0900339484F);
     return plane;
 }
 
 glm::vec3 cutEnd() {
-    return glm::vec3(1.35210562f, -1.14019823f, 2.00327873f);
+    return glm::vec3(1.35210562F, -1.14019823F, 2.00327873F);
 }
 
 glm::vec3 keptEnd() {
-    return glm::vec3(-3.20165992f, -0.251474023f, -2.44707513f);
+    return glm::vec3(-3.20165992F, -0.251474023F, -2.44707513F);
 }
 
 /**
@@ -64,7 +64,7 @@ class Splittable final : public v3d::moya::Polygon {
  * A triangle with that edge, and a third corner well inside the kept half space.
  **/
 boost::shared_ptr<Splittable> tiltedTriangle() {
-    const glm::vec3 inside = keptEnd() + glm::vec3(-0.522197902f, 0.622982621f, 0.582410455f) * 2.0f;
+    const glm::vec3 inside = keptEnd() + glm::vec3(-0.522197902F, 0.622982621F, 0.582410455F) * 2.0F;
     boost::shared_ptr<Splittable> polygon = boost::make_shared<Splittable>();
     polygon->addVertex(vertex(cutEnd().x, cutEnd().y, cutEnd().z));
     polygon->addVertex(vertex(keptEnd().x, keptEnd().y, keptEnd().z));
@@ -87,8 +87,8 @@ BOOST_AUTO_TEST_CASE(polygon_clip_an_edge_that_ends_past_the_plane_test) {
     polygon->clip(plane);
 
     // the crossing of the third edge, the crossing of this one, its kept end, the third corner
-    BOOST_REQUIRE_EQUAL(polygon->vertexCount(), 4u);
-    BOOST_TEST(glm::distance(polygon->vertex(1).point(), keptEnd()) < 1.0e-4f);
+    BOOST_REQUIRE_EQUAL(polygon->vertexCount(), 4U);
+    BOOST_TEST(glm::distance(polygon->vertex(1).point(), keptEnd()) < 1.0e-4F);
 }
 
 /**
@@ -103,13 +103,13 @@ BOOST_AUTO_TEST_CASE(polygon_split_an_edge_that_ends_past_the_plane_test) {
 
     polygon->split(plane, negative, positive);
 
-    BOOST_TEST(negative->vertexCount() >= 3u);
-    BOOST_TEST(positive->vertexCount() >= 3u);
+    BOOST_TEST(negative->vertexCount() >= 3U);
+    BOOST_TEST(positive->vertexCount() >= 3U);
     for (size_t i = 0; i < negative->vertexCount(); i++) {
-        BOOST_TEST(plane.signedDistance(negative->vertex(i).point()) <= 1.0e-4f);
+        BOOST_TEST(plane.signedDistance(negative->vertex(i).point()) <= 1.0e-4F);
     }
     for (size_t i = 0; i < positive->vertexCount(); i++) {
-        BOOST_TEST(plane.signedDistance(positive->vertex(i).point()) >= -1.0e-4f);
+        BOOST_TEST(plane.signedDistance(positive->vertex(i).point()) >= -1.0e-4F);
     }
 }
 
@@ -118,17 +118,17 @@ BOOST_AUTO_TEST_CASE(polygon_split_an_edge_that_ends_past_the_plane_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_rewrites_the_polygon_test) {
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(0.0f, 0.0f, -1.0f));
-    polygon->addVertex(vertex(1.0f, 0.0f, -1.0f));
-    polygon->addVertex(vertex(1.0f, 0.0f, 1.0f));
-    polygon->addVertex(vertex(0.0f, 0.0f, 1.0f));
+    polygon->addVertex(vertex(0.0F, 0.0F, -1.0F));
+    polygon->addVertex(vertex(1.0F, 0.0F, -1.0F));
+    polygon->addVertex(vertex(1.0F, 0.0F, 1.0F));
+    polygon->addVertex(vertex(0.0F, 0.0F, 1.0F));
 
     polygon->clip(zPlane());
 
     // the half of the quad below z = 0 is gone, and nothing that survived is below it
-    BOOST_TEST(polygon->vertexCount() > 0u);
+    BOOST_TEST(polygon->vertexCount() > 0U);
     for (size_t i = 0; i < polygon->vertexCount(); i++) {
-        BOOST_TEST(polygon->vertex(i).point().z >= 0.0f);
+        BOOST_TEST(polygon->vertex(i).point().z >= 0.0F);
     }
 }
 
@@ -137,13 +137,13 @@ BOOST_AUTO_TEST_CASE(polygon_clip_rewrites_the_polygon_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_keeps_an_inside_polygon_test) {
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(0.0f, 0.0f, 1.0f));
-    polygon->addVertex(vertex(1.0f, 0.0f, 1.0f));
-    polygon->addVertex(vertex(1.0f, 1.0f, 2.0f));
+    polygon->addVertex(vertex(0.0F, 0.0F, 1.0F));
+    polygon->addVertex(vertex(1.0F, 0.0F, 1.0F));
+    polygon->addVertex(vertex(1.0F, 1.0F, 2.0F));
 
     polygon->clip(zPlane());
 
-    BOOST_TEST(polygon->vertexCount() == 3u);
+    BOOST_TEST(polygon->vertexCount() == 3U);
 }
 
 /**
@@ -154,13 +154,13 @@ BOOST_AUTO_TEST_CASE(polygon_clip_degenerate_polygon_test) {
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
 
     polygon->clip(zPlane());
-    BOOST_TEST(polygon->vertexCount() == 0u);
+    BOOST_TEST(polygon->vertexCount() == 0U);
 
-    polygon->addVertex(vertex(0.0f, 0.0f, 1.0f));
-    polygon->addVertex(vertex(1.0f, 0.0f, 1.0f));
+    polygon->addVertex(vertex(0.0F, 0.0F, 1.0F));
+    polygon->addVertex(vertex(1.0F, 0.0F, 1.0F));
 
     polygon->clip(zPlane());
-    BOOST_TEST(polygon->vertexCount() == 2u);
+    BOOST_TEST(polygon->vertexCount() == 2U);
 }
 
 /**
@@ -168,21 +168,21 @@ BOOST_AUTO_TEST_CASE(polygon_clip_degenerate_polygon_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_frustum_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(-3.0f, -3.0f, 0.0f));
-    polygon.addVertex(vertex(3.0f, -3.0f, 0.0f));
-    polygon.addVertex(vertex(0.0f, 3.0f, 0.0f));
+    polygon.addVertex(vertex(-3.0F, -3.0F, 0.0F));
+    polygon.addVertex(vertex(3.0F, -3.0F, 0.0F));
+    polygon.addVertex(vertex(0.0F, 3.0F, 0.0F));
 
-    const v3d::type::geometry::Frustum frustum(glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
+    const v3d::type::geometry::Frustum frustum(glm::ortho(-1.0F, 1.0F, -1.0F, 1.0F, -1.0F, 1.0F),
         v3d::type::geometry::Frustum::Depth::MinusOneToOne);
     v3d::moya::clip(polygon, frustum);
 
-    BOOST_TEST(polygon.vertexCount() >= 3u);
+    BOOST_TEST(polygon.vertexCount() >= 3U);
     for (size_t i = 0; i < polygon.vertexCount(); i++) {
         const glm::vec3 point = polygon.vertex(i).point();
-        BOOST_TEST(point.x >= -1.0001f);
-        BOOST_TEST(point.x <= 1.0001f);
-        BOOST_TEST(point.y >= -1.0001f);
-        BOOST_TEST(point.y <= 1.0001f);
+        BOOST_TEST(point.x >= -1.0001F);
+        BOOST_TEST(point.x <= 1.0001F);
+        BOOST_TEST(point.y >= -1.0001F);
+        BOOST_TEST(point.y <= 1.0001F);
     }
 }
 
@@ -192,9 +192,9 @@ BOOST_AUTO_TEST_CASE(polygon_clip_frustum_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_carries_texture_coordinates_test) {
     v3d::moya::Polygon polygon;
-    const glm::vec3 corners[3] = { glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 1.0f, 1.0f) };
-    const glm::vec2 st[3] = { glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 0.0f), glm::vec2(0.0f, 1.0f) };
+    const glm::vec3 corners[3] = { glm::vec3(0.0F, 0.0F, -1.0F), glm::vec3(1.0F, 0.0F, 1.0F),
+        glm::vec3(0.0F, 1.0F, 1.0F) };
+    const glm::vec2 st[3] = { glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 0.0F), glm::vec2(0.0F, 1.0F) };
     for (unsigned int k = 0; k < 3; k++) {
         v3d::moya::Vertex v = vertex(corners[k].x, corners[k].y, corners[k].z);
         v.st(st[k]);
@@ -203,14 +203,14 @@ BOOST_AUTO_TEST_CASE(polygon_clip_carries_texture_coordinates_test) {
 
     polygon.clip(zPlane());
 
-    BOOST_REQUIRE(polygon.vertexCount() > 0u);
+    BOOST_REQUIRE(polygon.vertexCount() > 0U);
     for (size_t i = 0; i < polygon.vertexCount(); i++) {
         const v3d::moya::Vertex & v = polygon.vertex(i);
         BOOST_TEST_CONTEXT("vertex " << i) {
             BOOST_REQUIRE(v.hasTexCoord());
             // every vertex on the plane is half way along an edge from the first corner
-            if (std::fabs(v.point().z) < 1.0e-5f) {
-                BOOST_CHECK_CLOSE(v.st().x + v.st().y, 0.5f, 0.01f);
+            if (std::fabs(v.point().z) < 1.0e-5F) {
+                BOOST_CHECK_CLOSE(v.st().x + v.st().y, 0.5F, 0.01F);
             }
         }
     }
@@ -223,12 +223,12 @@ BOOST_AUTO_TEST_CASE(polygon_clip_carries_texture_coordinates_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_clip_carries_colour_and_normal_test) {
     v3d::moya::Polygon polygon;
-    const glm::vec3 corners[3] = { glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 1.0f, 1.0f) };
-    const glm::vec3 colours[3] = { glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f) };
-    const glm::vec3 normals[3] = { glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f) };
+    const glm::vec3 corners[3] = { glm::vec3(0.0F, 0.0F, -1.0F), glm::vec3(1.0F, 0.0F, 1.0F),
+        glm::vec3(0.0F, 1.0F, 1.0F) };
+    const glm::vec3 colours[3] = { glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F),
+        glm::vec3(0.0F, 0.0F, 1.0F) };
+    const glm::vec3 normals[3] = { glm::vec3(0.0F, 0.0F, 1.0F), glm::vec3(1.0F, 0.0F, 0.0F),
+        glm::vec3(0.0F, 1.0F, 0.0F) };
     for (unsigned int k = 0; k < 3; k++) {
         v3d::moya::Vertex v = vertex(corners[k].x, corners[k].y, corners[k].z);
         v.color(colours[k]);
@@ -245,32 +245,32 @@ BOOST_AUTO_TEST_CASE(polygon_clip_carries_colour_and_normal_test) {
     unsigned int found = 0;
     for (size_t i = 0; i < polygon.vertexCount(); i++) {
         const v3d::moya::Vertex & v = polygon.vertex(i);
-        if (std::fabs(v.point().z) > 1.0e-4f) {
+        if (std::fabs(v.point().z) > 1.0e-4F) {
             continue;
         }
         BOOST_TEST_CONTEXT("vertex " << i) {
             BOOST_REQUIRE(v.hasColor());
-            if (v.point().x > 0.25f) {
+            if (v.point().x > 0.25F) {
                 // on the edge to the second corner, which has no normal
-                BOOST_TEST(v.color().x == 0.5f, boost::test_tools::tolerance(0.0001f));
-                BOOST_TEST(v.color().y == 0.5f, boost::test_tools::tolerance(0.0001f));
-                BOOST_CHECK_SMALL(v.color().z, 1.0e-4f);
+                BOOST_TEST(v.color().x == 0.5F, boost::test_tools::tolerance(0.0001F));
+                BOOST_TEST(v.color().y == 0.5F, boost::test_tools::tolerance(0.0001F));
+                BOOST_CHECK_SMALL(v.color().z, 1.0e-4F);
                 BOOST_TEST(!v.hasNormal());
             } else {
                 // on the edge to the third corner
-                BOOST_TEST(v.color().x == 0.5f, boost::test_tools::tolerance(0.0001f));
-                BOOST_CHECK_SMALL(v.color().y, 1.0e-4f);
-                BOOST_TEST(v.color().z == 0.5f, boost::test_tools::tolerance(0.0001f));
+                BOOST_TEST(v.color().x == 0.5F, boost::test_tools::tolerance(0.0001F));
+                BOOST_CHECK_SMALL(v.color().y, 1.0e-4F);
+                BOOST_TEST(v.color().z == 0.5F, boost::test_tools::tolerance(0.0001F));
                 BOOST_REQUIRE(v.hasNormal());
-                const float half = std::sqrt(0.5f);
-                BOOST_CHECK_SMALL(v.normal().x, 1.0e-4f);
-                BOOST_TEST(v.normal().y == half, boost::test_tools::tolerance(0.0001f));
-                BOOST_TEST(v.normal().z == half, boost::test_tools::tolerance(0.0001f));
+                const float half = std::sqrt(0.5F);
+                BOOST_CHECK_SMALL(v.normal().x, 1.0e-4F);
+                BOOST_TEST(v.normal().y == half, boost::test_tools::tolerance(0.0001F));
+                BOOST_TEST(v.normal().z == half, boost::test_tools::tolerance(0.0001F));
             }
             found++;
         }
     }
-    BOOST_TEST(found == 2u);
+    BOOST_TEST(found == 2U);
 }
 
 };  // namespace

@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(chunk_ceiling_is_measured_in_blocks_test) {
     // the ceiling is in blocks, not chunks. A heightmap is scaled against it, so passing the
     // world's chunk count instead flattens terrain in a 64 block world to four blocks and
     // leaves every chunk above the first empty
-    FlatTerrain terrain(255.0f);
+    FlatTerrain terrain(255.0F);
 
     Chunk full(&terrain, glm::ivec3(0, 1, 0), worldHeightInBlocks);
     BOOST_CHECK(!full.empty());
@@ -48,13 +48,13 @@ BOOST_AUTO_TEST_CASE(chunk_ceiling_is_measured_in_blocks_test) {
     // passing the chunk count instead leaves the same chunk empty
     Chunk starved(&terrain, glm::ivec3(0, 1, 0), worldHeightInBlocks / chunkSize);
     BOOST_CHECK(starved.empty());
-    BOOST_CHECK_EQUAL(starved.blocks().size(), 0u);
+    BOOST_CHECK_EQUAL(starved.blocks().size(), 0U);
 }
 
 BOOST_AUTO_TEST_CASE(chunk_column_scales_with_the_heightmap_test) {
     // half height over a 64 block ceiling is 32 blocks, so the chunk holding blocks 32 to 47
     // gets its bottom layer and nothing above it
-    FlatTerrain terrain(128.0f);
+    FlatTerrain terrain(128.0F);
 
     Chunk below(&terrain, glm::ivec3(0, 0, 0), worldHeightInBlocks);
     BOOST_CHECK_EQUAL(below.blocks().size(), chunkSize * chunkSize * chunkSize);
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(chunk_column_scales_with_the_heightmap_test) {
 }
 
 BOOST_AUTO_TEST_CASE(chunk_hides_faces_between_its_own_blocks_test) {
-    FlatTerrain terrain(255.0f);
+    FlatTerrain terrain(255.0F);
     Chunk chunk(&terrain, glm::ivec3(0, 0, 0), worldHeightInBlocks);
 
     // a block surrounded by its own chunk contributes no geometry at all
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(chunk_hides_faces_between_its_own_blocks_test) {
 }
 
 BOOST_AUTO_TEST_CASE(chunk_positions_its_blocks_in_the_world_test) {
-    FlatTerrain terrain(255.0f);
+    FlatTerrain terrain(255.0F);
     const glm::ivec3 position(2, 1, 3);
     Chunk chunk(&terrain, position, worldHeightInBlocks);
 

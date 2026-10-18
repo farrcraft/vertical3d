@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(writer_round_trip_test) {
     BOOST_CHECK(read.at("nothing").is_null());
 
     const boost::json::array& scale = read.at("scale").as_array();
-    BOOST_REQUIRE_EQUAL(scale.size(), 3u);
+    BOOST_REQUIRE_EQUAL(scale.size(), 3U);
     BOOST_CHECK_EQUAL(scale[0].to_number<double>(), 1.5);
     BOOST_CHECK_EQUAL(scale[1].to_number<double>(), 2.0);
     BOOST_CHECK_EQUAL(scale[2].to_number<double>(), 0.25);
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(writer_round_trip_test) {
  **/
 BOOST_AUTO_TEST_CASE(writer_readable_test) {
     boost::json::object root;
-    root["coordinate"] = static_cast<double>(0.1f);
+    root["coordinate"] = static_cast<double>(0.1F);
     BOOST_CHECK_EQUAL(v3d::asset::serializeDocument(root), "{ \"coordinate\": 0.1 }");
 
     boost::json::object vector;
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(writer_double_beyond_float_range_test) {
     BOOST_REQUIRE(!error);
     BOOST_REQUIRE(parsed.is_array());
     const boost::json::array& read = parsed.as_array();
-    BOOST_REQUIRE_EQUAL(read.size(), 3u);
+    BOOST_REQUIRE_EQUAL(read.size(), 3U);
     BOOST_CHECK_CLOSE(read[0].to_number<double>(), 1e300, 1e-9);
     BOOST_CHECK_CLOSE(read[1].to_number<double>(), -1e300, 1e-9);
     BOOST_CHECK_CLOSE(read[2].to_number<double>(), 1e39, 1e-9);

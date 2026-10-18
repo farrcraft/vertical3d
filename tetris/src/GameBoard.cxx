@@ -27,7 +27,7 @@ const unsigned int boardColumns = 10;
 /**
  * Seconds a tetrad rests on each row.
  **/
-constexpr float fallRate = 0.8f;
+constexpr float fallRate = 0.8F;
 
 /**
  * Lines of the shapes file that describe one tetrad: four bitmap rows and a texture name.
@@ -280,7 +280,7 @@ void GameBoard::update(float step) {
     }
 
     nextMove_ -= step;
-    if (nextMove_ > 0.0f) {
+    if (nextMove_ > 0.0F) {
         return;
     }
     nextMove_ = fastFall_ ? (fallRate_ / static_cast<float>(fastFallMultiplier_)) : fallRate_;

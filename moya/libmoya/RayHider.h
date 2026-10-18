@@ -38,14 +38,14 @@ class RayHider final : public Hider {
     class Camera final {
      public:
         /** The world to camera transformation. **/
-        glm::mat4x4 toCamera = glm::mat4x4(1.0f);
+        glm::mat4x4 toCamera = glm::mat4x4(1.0F);
         /**
          * Camera to raster. A ray is solved from it, and a hit's depth is projected through it.
          **/
-        glm::mat4x4 toRaster = glm::mat4x4(1.0f);
+        glm::mat4x4 toRaster = glm::mat4x4(1.0F);
         bool perspective = false;
         /** Where a primary ray starts, in camera space z. **/
-        float hither = 0.0f;
+        float hither = 0.0F;
         unsigned int width = 0;
         unsigned int height = 0;
     };
@@ -85,7 +85,7 @@ class RayHider final : public Hider {
     glm::vec3 unproject(const glm::vec2 & raster, float z) const;
 
     Camera camera_;
-    glm::mat4x4 toWorld_ = glm::mat4x4(1.0f);
+    glm::mat4x4 toWorld_ = glm::mat4x4(1.0F);
     std::vector<unsigned int> taken_;
 };
 

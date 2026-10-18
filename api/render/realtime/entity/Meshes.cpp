@@ -115,7 +115,7 @@ void submit(const std::vector<Placed>& group, PipelineHandle pipeline, float out
 void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
     float outline, Pass* pass, const Poses& poses) {
     const std::vector<std::vector<Placed>> groups = gather(registry, alpha, meshes, poses, false);
-    const bool outlined = outline > 0.0f;
+    const bool outlined = outline > 0.0F;
 
     // two walks rather than one, so every hull is in the pass before any surface
     for (int walk = outlined ? 0 : 1; walk < 2; walk++) {
@@ -124,7 +124,7 @@ void meshes(const entt::registry& registry, float alpha, const MeshRegistry& mes
             const bool skinned = static_cast<bool>(group.front().entry->skin);
             const PipelineHandle surface = skinned ? lit->skinnedCel() : lit->cel();
             const PipelineHandle hull = skinned ? lit->skinnedOutline() : lit->outline();
-            submit(group, surfaces ? surface : hull, surfaces ? 0.0f : outline, lit, pass);
+            submit(group, surfaces ? surface : hull, surfaces ? 0.0F : outline, lit, pass);
         }
     }
 }
@@ -135,7 +135,7 @@ void casters(const entt::registry& registry, float alpha, const MeshRegistry& me
     Pass* pass, const Poses& poses) {
     for (const std::vector<Placed>& group : gather(registry, alpha, meshes, poses, true)) {
         const PipelineHandle pipeline = group.front().entry->skin ? lit->skinnedShadow() : lit->shadow();
-        submit(group, pipeline, 0.0f, lit, pass);
+        submit(group, pipeline, 0.0F, lit, pass);
     }
 }
 

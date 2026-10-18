@@ -58,12 +58,12 @@ void draw(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& 
     Canvas canvas;
     canvas.resize(glm::uvec2(width, height));
     canvas.clear();
-    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
-        glm::vec4(1.0f), texture);
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F),
+        glm::vec4(1.0F), texture);
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless->context->quads()->submit(canvas, pass.get());
 
     VkCommandBuffer commands = headless->context->ring()->begin();
@@ -138,12 +138,12 @@ BOOST_AUTO_TEST_CASE(a_sprite_whose_texture_is_released_after_it_is_queued_draws
     Canvas canvas;
     canvas.resize(glm::uvec2(width, height));
     canvas.clear();
-    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
-        glm::vec4(1.0f), texture);
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F),
+        glm::vec4(1.0F), texture);
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, pass.get());
 
     BOOST_CHECK(headless.context->textures()->release(texture));
@@ -339,7 +339,7 @@ BOOST_AUTO_TEST_CASE(a_stream_holds_what_one_frame_asked_for) {
 
     for (std::size_t frame = 0; frame < frames * 2; ++frame) {
         const v3d::render::realtime::vulkan::frame::StreamRing::Geometry grown = stream.claim({.vertexBytes = 1000, .indexBytes = 8});
-        BOOST_CHECK_GE(grown.vertices->size(), 1000u);
+        BOOST_CHECK_GE(grown.vertices->size(), 1000U);
         idle(&headless);
     }
     BOOST_CHECK_EQUAL(stream.held(), 2 * frames);
@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE(a_skipped_frame_gives_its_claims_back) {
         stream.claim({.vertexBytes = 16, .indexBytes = 8});
         headless.context->ring()->skip();
     }
-    BOOST_CHECK_EQUAL(stream.held(), 2u);
+    BOOST_CHECK_EQUAL(stream.held(), 2U);
     BOOST_CHECK(headless.silent());
 }
 
@@ -405,11 +405,11 @@ BOOST_AUTO_TEST_CASE(a_frame_begun_again_restarts_its_claims) {
 
     stream.claim({.vertexBytes = 16, .indexBytes = 8});
     headless.submit(headless.context->ring()->begin());
-    BOOST_CHECK_EQUAL(stream.held(), 1u);
+    BOOST_CHECK_EQUAL(stream.held(), 1U);
 
     const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim({.vertexBytes = 16, .indexBytes = 8});
     BOOST_CHECK(next.vertices != nullptr);
-    BOOST_CHECK_EQUAL(stream.held(), 2u);
+    BOOST_CHECK_EQUAL(stream.held(), 2U);
     headless.context->ring()->waitIdle();
     BOOST_CHECK(headless.silent());
 }
@@ -432,7 +432,7 @@ BOOST_AUTO_TEST_CASE(a_claim_on_the_next_slot_starts_from_its_front) {
 
     const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim({.vertexBytes = 16, .indexBytes = 8});
     BOOST_CHECK(next.vertices != nullptr);
-    BOOST_CHECK_EQUAL(stream.held(), 2u);
+    BOOST_CHECK_EQUAL(stream.held(), 2U);
     headless.context->ring()->waitIdle();
     BOOST_CHECK(headless.silent());
 }
@@ -452,14 +452,14 @@ BOOST_AUTO_TEST_CASE(a_depth_texture_draws_on_a_canvas) {
     Canvas canvas;
     canvas.resize(glm::uvec2(width, height));
     canvas.clear();
-    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
-        glm::vec4(1.0f), depth);
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F),
+        glm::vec4(1.0F), depth);
 
     Frame frame;
     const boost::shared_ptr<Pass> drawn = frame.pass("colour");
     drawn->target(into);
     drawn->reads(source);
-    drawn->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    drawn->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, drawn.get());
     const boost::shared_ptr<Pass> cleared = frame.pass("depth");
     cleared->target(source);

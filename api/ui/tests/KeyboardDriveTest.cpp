@@ -304,24 +304,24 @@ BOOST_AUTO_TEST_CASE(the_keys_move_a_scrollbar_by_a_line_and_by_a_page) {
     const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
         boost::make_shared<v3d::ui::component::Scrollbar>();
-    bar->range(1000.0f, 200.0f);
+    bar->range(1000.0F, 200.0F);
     fixture.container->add(bar);
     fixture.ui->focus(bar);
 
     BOOST_CHECK(fixture.keys->press("arrow_down"));
-    BOOST_CHECK_CLOSE(bar->offset(), v3d::ui::component::Scrollbar::lineStep, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), v3d::ui::component::Scrollbar::lineStep, 0.001F);
     BOOST_CHECK(fixture.keys->press("arrow_up"));
-    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0F, 0.001F);
 
     BOOST_CHECK(fixture.keys->press("pagedown"));
-    BOOST_CHECK_CLOSE(bar->offset(), 200.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), 200.0F, 0.001F);
     BOOST_CHECK(fixture.keys->press("pageup"));
-    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0F, 0.001F);
 
     BOOST_CHECK(fixture.keys->press("end"));
-    BOOST_CHECK_CLOSE(bar->offset(), bar->maximum(), 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), bar->maximum(), 0.001F);
     BOOST_CHECK(fixture.keys->press("home"));
-    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0F, 0.001F);
 
     // a bar carries no command, so a return and a space are left for whatever it scrolls
     BOOST_CHECK(!fixture.keys->press("return"));
@@ -337,18 +337,18 @@ BOOST_AUTO_TEST_CASE(a_horizontal_scrollbar_takes_the_sideways_arrows) {
     const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
         boost::make_shared<v3d::ui::component::Scrollbar>();
     bar->direction(v3d::ui::component::Scrollbar::Direction::Horizontal);
-    bar->range(500.0f, 100.0f);
+    bar->range(500.0F, 100.0F);
     fixture.container->add(bar);
     fixture.ui->focus(bar);
 
     BOOST_CHECK(fixture.keys->press("arrow_right"));
-    BOOST_CHECK_CLOSE(bar->offset(), v3d::ui::component::Scrollbar::lineStep, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), v3d::ui::component::Scrollbar::lineStep, 0.001F);
     BOOST_CHECK(fixture.keys->press("arrow_left"));
-    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0F, 0.001F);
 
     // and the pair it does not read as along is not its, so it reaches the app
     BOOST_CHECK(!fixture.keys->press("arrow_down"));
-    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0F, 0.001F);
 }
 
 /**
@@ -360,8 +360,8 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_steps_by_a_row_of_the_list_it_scrolls) {
     const boost::shared_ptr<v3d::ui::component::SelectList> list =
         boost::make_shared<v3d::ui::component::SelectList>();
     list->items({"one", "two", "three", "four", "five", "six"});
-    list->rowHeight(20.0f);
-    list->size(glm::vec2(100.0f, 40.0f));
+    list->rowHeight(20.0F);
+    list->size(glm::vec2(100.0F, 40.0F));
     const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
         boost::make_shared<v3d::ui::component::Scrollbar>();
     bar->scrolls(list);
@@ -369,9 +369,9 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_steps_by_a_row_of_the_list_it_scrolls) {
     fixture.ui->focus(bar);
 
     BOOST_CHECK(fixture.keys->press("arrow_down"));
-    BOOST_CHECK_CLOSE(list->offset(), 20.0f, 0.001f);
+    BOOST_CHECK_CLOSE(list->offset(), 20.0F, 0.001F);
     BOOST_CHECK(fixture.keys->press("end"));
-    BOOST_CHECK_CLOSE(list->offset(), list->content() - list->size().y, 0.001f);
+    BOOST_CHECK_CLOSE(list->offset(), list->content() - list->size().y, 0.001F);
 }
 
 /**
@@ -382,7 +382,7 @@ BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_takes_no_key) {
     const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
         boost::make_shared<v3d::ui::component::Scrollbar>();
-    bar->range(100.0f, 100.0f);
+    bar->range(100.0F, 100.0F);
     fixture.container->add(bar);
     fixture.ui->focus(bar);
 

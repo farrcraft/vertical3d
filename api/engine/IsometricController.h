@@ -38,8 +38,8 @@ struct IsometricCommands final {
  * How fast an IsometricController moves the orbit while a command is held.
  **/
 struct IsometricSpeeds final {
-    float pan = 10.0f;   /**< world units a second **/
-    float zoom = 10.0f;  /**< orthographic half height a second **/
+    float pan = 10.0F;   /**< world units a second **/
+    float zoom = 10.0F;  /**< orthographic half height a second **/
 };
 
 /**

@@ -16,8 +16,8 @@
 namespace {
 
 // a paddle's thickness and its length along the side it moves on, in court units
-constexpr float PADDLE_THICKNESS = 15.0f;
-constexpr float PADDLE_LENGTH = 50.0f;
+constexpr float PADDLE_THICKNESS = 15.0F;
+constexpr float PADDLE_LENGTH = 50.0F;
 
 };  // namespace
 
@@ -25,11 +25,11 @@ Paddle::Paddle(entt::registry* registry) :
     registry_(registry) {
     id_ = registry->create();
     // create the components attached to paddle entity
-    registry->emplace<v3d::ecs::component::Position1D>(id_, 0.0f);
-    registry->emplace<v3d::ecs::component::Color3>(id_, glm::vec3(1.0f));
+    registry->emplace<v3d::ecs::component::Position1D>(id_, 0.0F);
+    registry->emplace<v3d::ecs::component::Color3>(id_, glm::vec3(1.0F));
     registry->emplace<Score>(id_, 0);
     registry->emplace<Travel>(id_, false, false);
-    registry->emplace<Offset>(id_, 0.0f);
+    registry->emplace<Offset>(id_, 0.0F);
     registry->emplace<PaddleSize>(id_, PADDLE_THICKNESS, PADDLE_LENGTH);
 }
 

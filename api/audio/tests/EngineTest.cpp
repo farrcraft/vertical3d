@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_load_test) {
     ]})"), std::ref(resolve)));
 
     // every source the document named reached the resolver, in the order it listed them
-    BOOST_REQUIRE_EQUAL(resolve.asked_.size(), 2u);
+    BOOST_REQUIRE_EQUAL(resolve.asked_.size(), 2U);
     BOOST_CHECK_EQUAL(resolve.asked_[0], "hit.wav");
     BOOST_CHECK_EQUAL(resolve.asked_[1], "score.wav");
 }
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_load_missing_clip_test) {
         {"clip_id": "gone", "file": "nowhere.wav"}
     ]})"), std::ref(resolve)));
 
-    BOOST_CHECK_EQUAL(resolve.asked_.size(), 2u);
+    BOOST_CHECK_EQUAL(resolve.asked_.size(), 2U);
     // the clip that resolved was filed, and the one that did not was never filed
     BOOST_TEST(sound->has("hit"));
     BOOST_TEST(!sound->has("gone"));
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_play_without_a_device_test) {
     bed.bus = "ambience";
     bed.loops = -1;
     bed.fadeInMs = 500;
-    bed.gain = 0.4f;
+    bed.gain = 0.4F;
     BOOST_CHECK(sound->play("hit", bed) == v3d::audio::Voice::None);
     BOOST_TEST(!sound->playClip("hit"));
 
@@ -217,12 +217,12 @@ BOOST_AUTO_TEST_CASE(audio_engine_play_without_a_device_test) {
     BOOST_TEST(!sound->playing(v3d::audio::Voice::None));
     BOOST_TEST(!sound->playing(v3d::audio::Voice{1}));
     BOOST_TEST(!sound->stop(v3d::audio::Voice{1}));
-    BOOST_TEST(!sound->gain(v3d::audio::Voice{1}, 0.5f));
+    BOOST_TEST(!sound->gain(v3d::audio::Voice{1}, 0.5F));
 
     // a bus volume without a device is a false return rather than a crash, so a settings
     // screen on a machine with no sound card still works
-    BOOST_TEST(!sound->busGain("music", 0.5f));
-    BOOST_TEST(!sound->busGain("", 0.5f));
+    BOOST_TEST(!sound->busGain("music", 0.5F));
+    BOOST_TEST(!sound->busGain("", 0.5F));
     BOOST_CHECK_NO_THROW(sound->stopAll(250));
 }
 
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(audio_play_defaults_are_a_one_shot_test) {
     BOOST_CHECK_EQUAL(once.bus, "");
     BOOST_CHECK_EQUAL(once.loops, 0);
     BOOST_CHECK_EQUAL(once.fadeInMs, 0);
-    BOOST_CHECK_CLOSE(once.gain, 1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(once.gain, 1.0F, 0.001F);
 }
 
 /**

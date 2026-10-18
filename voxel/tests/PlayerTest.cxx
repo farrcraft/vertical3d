@@ -17,17 +17,17 @@ namespace {
  * once the menu closes, rather than leaving the player moving until the key is pressed again.
  **/
 BOOST_AUTO_TEST_CASE(player_moves_while_a_direction_is_held_test) {
-    Player player(glm::vec3(0.0f));
+    Player player(glm::vec3(0.0F));
 
     player.move(Player::MOVE_FORWARD, true);
     player.move(Player::MOVE_FORWARD, true);
-    player.tick(0.1f);
+    player.tick(0.1F);
     const glm::vec3 moved = player.position();
-    BOOST_TEST(moved.z != 0.0f);
+    BOOST_TEST(moved.z != 0.0F);
 
     player.move(Player::MOVE_FORWARD, false);
     player.move(Player::MOVE_FORWARD, false);
-    player.tick(0.1f);
+    player.tick(0.1F);
     BOOST_TEST(player.position().z == moved.z);
 }
 

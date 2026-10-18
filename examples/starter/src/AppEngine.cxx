@@ -30,7 +30,7 @@ bool AppEngine::start() {
     if (!renderer_->initialize(window())) {
         return false;
     }
-    renderer_->clearColour(glm::vec4(0.1f, 0.1f, 0.15f, 1.0f));
+    renderer_->clearColour(glm::vec4(0.1F, 0.1F, 0.15F, 1.0F));
 
     return true;
 }
@@ -51,9 +51,9 @@ bool AppEngine::render() {
     }
 
     canvas_.clear();
-    canvas_.rect(glm::vec2(40.0f, 40.0f),
-        glm::vec2(static_cast<float>(size.x) - 40.0f, static_cast<float>(size.y) - 40.0f),
-        glm::vec4(0.9f, 0.4f, 0.2f, 1.0f));
+    canvas_.rect(glm::vec2(40.0F, 40.0F),
+        glm::vec2(static_cast<float>(size.x) - 40.0F, static_cast<float>(size.y) - 40.0F),
+        glm::vec4(0.9F, 0.4F, 0.2F, 1.0F));
 
     boost::shared_ptr<v3d::render::realtime::Pass> pass = renderer_->frame()->pass(v3d::render::realtime::Engine3D::colourPass);
     renderer_->quads()->submit(canvas_, pass.get());

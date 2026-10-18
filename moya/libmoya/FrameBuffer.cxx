@@ -87,8 +87,8 @@ void FrameBuffer::addPrimitive(const boost::shared_ptr<reyes::Primitive> & primi
 
     // a primitive straddling the top or left edge has a negative corner, and converting that
     // to an unsigned bucket index is undefined behaviour
-    const float left = std::max(0.0f, min[0]);
-    const float top = std::max(0.0f, min[1]);
+    const float left = std::max(0.0F, min[0]);
+    const float top = std::max(0.0F, min[1]);
 
     // the primitive goes in the bucket that holds the upper left corner of its bound
     unsigned int column = static_cast<unsigned int>(left) / bucketSize_[0];

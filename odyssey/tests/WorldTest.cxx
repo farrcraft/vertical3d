@@ -143,10 +143,10 @@ BOOST_AUTO_TEST_CASE(an_approached_region_loads_placed_by_its_corner) {
     BOOST_CHECK(!fixture.world->loading(1));
 
     const v3d::grid::TileGrid& grid = *fixture.world->map(1)->grid();
-    BOOST_CHECK(grid.worldMin() == glm::vec3(6.0f, 0.0f, 0.0f));
+    BOOST_CHECK(grid.worldMin() == glm::vec3(6.0F, 0.0F, 0.0F));
     for (int y = 0; y < 4; y++) {
         for (int x = 6; x < 12; x++) {
-            const glm::vec3 centre(static_cast<float>(x) + 0.5f, 0.0f, static_cast<float>(y) + 0.5f);
+            const glm::vec3 centre(static_cast<float>(x) + 0.5F, 0.0F, static_cast<float>(y) + 0.5F);
             BOOST_CHECK(grid.worldToTile(centre) == fixture.world->local(1, at(x, y)));
             BOOST_CHECK(fixture.world->world(1, fixture.world->local(1, at(x, y))) == at(x, y));
         }

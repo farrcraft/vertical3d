@@ -302,7 +302,7 @@ bool Engine::pan(Voice voice, float value) {
 
 bool Engine::place(MIX_Track* track, float pan) {
     const Stereo gains = stereo(pan);
-    if (gains.left == 1.0f && gains.right == 1.0f) {
+    if (gains.left == 1.0F && gains.right == 1.0F) {
         return MIX_SetTrackStereo(track, nullptr);
     }
     const MIX_StereoGains mixed{gains.left, gains.right};

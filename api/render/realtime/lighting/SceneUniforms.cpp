@@ -34,12 +34,12 @@ static_assert(sizeof(SceneUniforms) == offsetof(SceneUniforms, shadowColour) + V
 SceneUniforms pack(const Settings& settings, const glm::mat4& lightViewProjection, float texel) {
     SceneUniforms uniforms;
     uniforms.light = glm::vec4(glm::normalize(settings.light), settings.fill);
-    uniforms.thresholds = glm::vec4(settings.shadowThreshold, settings.litThreshold, 0.0f, 0.0f);
-    uniforms.bands = glm::vec4(settings.bands, 0.0f);
+    uniforms.thresholds = glm::vec4(settings.shadowThreshold, settings.litThreshold, 0.0F, 0.0F);
+    uniforms.bands = glm::vec4(settings.bands, 0.0F);
     uniforms.lightViewProjection = lightViewProjection;
-    uniforms.shadow = glm::vec4(texel, settings.shadowStrength, settings.normalBias, 0.0f);
-    uniforms.colour = glm::vec4(settings.colour, 0.0f);
-    uniforms.shadowColour = glm::vec4(settings.shadowColour, 0.0f);
+    uniforms.shadow = glm::vec4(texel, settings.shadowStrength, settings.normalBias, 0.0F);
+    uniforms.colour = glm::vec4(settings.colour, 0.0F);
+    uniforms.shadowColour = glm::vec4(settings.shadowColour, 0.0F);
     return uniforms;
 }
 

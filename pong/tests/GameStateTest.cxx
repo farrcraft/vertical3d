@@ -17,8 +17,8 @@ namespace {
 BOOST_AUTO_TEST_CASE(game_state_defaults_test) {
     const GameState state;
 
-    BOOST_TEST(state.ballSize() == 10.0f);
-    BOOST_TEST(state.ballStartSpeed() == 60.0f);
+    BOOST_TEST(state.ballSize() == 10.0F);
+    BOOST_TEST(state.ballStartSpeed() == 60.0F);
     BOOST_TEST(state.maxScore() == 5);
     BOOST_TEST(state.coop());
     BOOST_TEST(!state.paused());
@@ -33,12 +33,12 @@ BOOST_AUTO_TEST_CASE(game_state_reset_test) {
 
     state.coop(false);
     state.maxScore(11);
-    state.ballStartSpeed(4.0f);
+    state.ballStartSpeed(4.0F);
     state.pause(true);
 
     state.reset();
 
-    BOOST_TEST(state.ballStartSpeed() == 60.0f);
+    BOOST_TEST(state.ballStartSpeed() == 60.0F);
     BOOST_TEST(state.paused());
     BOOST_TEST(!state.coop());
     BOOST_TEST(state.maxScore() == 11);

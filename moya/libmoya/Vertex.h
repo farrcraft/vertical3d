@@ -69,11 +69,11 @@ class Vertex {
  private:
     // a grid is filled in by writing over default constructed vertices, so every member
     // starts at zero and a vertex not yet written reads as zero
-    glm::vec3 point_ = glm::vec3(0.0f);
-    glm::vec3 color_ = glm::vec3(0.0f);
-    glm::vec3 normal_ = glm::vec3(0.0f);
-    glm::vec3 geometric_ = glm::vec3(0.0f);
-    glm::vec2 st_ = glm::vec2(0.0f);
+    glm::vec3 point_ = glm::vec3(0.0F);
+    glm::vec3 color_ = glm::vec3(0.0F);
+    glm::vec3 normal_ = glm::vec3(0.0F);
+    glm::vec3 geometric_ = glm::vec3(0.0F);
+    glm::vec2 st_ = glm::vec2(0.0F);
     unsigned int bits_ = 0;
 };
 };  // namespace v3d::moya

@@ -147,7 +147,7 @@ class TextRenderer {
      *
      * @param size the size it will be drawn at, defaulting to the one the atlas holds
      **/
-    float width(std::string_view text, float size = 0.0f) const;
+    float width(std::string_view text, float size = 0.0F) const;
 
     /**
      * Lay a string out at the pen and append its glyphs to a canvas.
@@ -160,12 +160,12 @@ class TextRenderer {
      * @param size the size to draw at, defaulting to the one the atlas holds
      **/
     void draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour,
-        float size = 0.0f);
+        float size = 0.0F);
 
     /**
      * @return width() at a size, as the callback both ways of writing a ui take
      **/
-    Measure measure(float size = 0.0f) const;
+    Measure measure(float size = 0.0F) const;
 
     /**
      * @return draw() at a size, as the callback both ways of writing a ui take, against one canvas
@@ -177,7 +177,7 @@ class TextRenderer {
      * with each string. A ui at one size and a heading at another are two callback pairs
      * from one TextRenderer, and one atlas serves both.
      **/
-    Write write(v3d::render::realtime::canvas::Canvas* canvas, float size = 0.0f);
+    Write write(v3d::render::realtime::canvas::Canvas* canvas, float size = 0.0F);
 
  private:
     /**

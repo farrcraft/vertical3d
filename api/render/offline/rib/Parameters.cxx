@@ -84,7 +84,7 @@ std::string ParameterList::string(const std::string & name) const {
 glm::mat4x4 ParameterList::matrix(const std::string & name) const {
     const std::vector<float> & values = floats(name);
     if (values.size() < 16) {
-        return glm::mat4x4(1.0f);
+        return glm::mat4x4(1.0F);
     }
     return glm::make_mat4(values.data());
 }

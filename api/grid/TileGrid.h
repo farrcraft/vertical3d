@@ -67,7 +67,7 @@ class TileGrid {
      * occupants of adjacent tiles read as two. At 1.0 a figure of that height overhangs
      * its own tile.
      **/
-    static constexpr float DEFAULT_TILE_SIZE = 1.5f;
+    static constexpr float DEFAULT_TILE_SIZE = 1.5F;
 
     /**
      * @param width tiles along world +X
@@ -172,7 +172,7 @@ class TileGrid {
     int width_{0};
     int height_{0};
     float tileSize_{DEFAULT_TILE_SIZE};
-    glm::vec3 corner_{0.0f};  /**< the world position of the minimum corner, on Y = 0 **/
+    glm::vec3 corner_{0.0F};  /**< the world position of the minimum corner, on Y = 0 **/
 
     /**
      * Row major, y * width + x. A byte per tile rather than std::vector<bool>, whose proxy

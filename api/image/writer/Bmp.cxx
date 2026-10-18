@@ -33,7 +33,7 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     // one carries a ramp whose nth entry is the grey n. That makes the index and the grey
     // the same number, and the pixel data goes out unchanged.
     const bool grey = img->format() == v3d::image::Image::Format::Grey;
-    const uint32_t shades = grey ? 256u : 0u;
+    const uint32_t shades = grey ? 256U : 0U;
 
     std::fstream file;
     file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);

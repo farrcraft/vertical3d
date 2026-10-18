@@ -15,7 +15,7 @@ namespace {
  * How far apart two placements may be and still be the same one. A drag is measured
  * in world units of a scene whose primitives are one unit across.
  **/
-const float tolerance = 1e-6f;
+const float tolerance = 1e-6F;
 
 /**
  **/

@@ -84,13 +84,13 @@ class Triangle final : public Primitive {
     glm::vec3 nb_;
     glm::vec3 nc_;
     glm::vec3 geometric_;
-    glm::vec2 sta_ = glm::vec2(0.0f, 0.0f);
-    glm::vec2 stb_ = glm::vec2(1.0f, 0.0f);
-    glm::vec2 stc_ = glm::vec2(0.0f, 1.0f);
+    glm::vec2 sta_ = glm::vec2(0.0F, 0.0F);
+    glm::vec2 stb_ = glm::vec2(1.0F, 0.0F);
+    glm::vec2 stc_ = glm::vec2(0.0F, 1.0F);
     bool coloured_ = false;
-    glm::vec3 ca_ = glm::vec3(0.0f);
-    glm::vec3 cb_ = glm::vec3(0.0f);
-    glm::vec3 cc_ = glm::vec3(0.0f);
+    glm::vec3 ca_ = glm::vec3(0.0F);
+    glm::vec3 cb_ = glm::vec3(0.0F);
+    glm::vec3 cc_ = glm::vec3(0.0F);
 };
 
 };  // namespace v3d::render::offline::trace

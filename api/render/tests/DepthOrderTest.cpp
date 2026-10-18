@@ -23,17 +23,17 @@ namespace canvas = v3d::render::realtime::canvas;
 
 namespace {
 
-constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
 
 /**
  * A unit square on the ground plane, so the first vertex a quad writes says which quad it was.
  **/
 canvas::World::Corners tile(float x, float z) {
     return {
-        glm::vec3(x, 0.0f, z),
-        glm::vec3(x + 1.0f, 0.0f, z),
-        glm::vec3(x + 1.0f, 0.0f, z + 1.0f),
-        glm::vec3(x, 0.0f, z + 1.0f)
+        glm::vec3(x, 0.0F, z),
+        glm::vec3(x + 1.0F, 0.0F, z),
+        glm::vec3(x + 1.0F, 0.0F, z + 1.0F),
+        glm::vec3(x, 0.0F, z + 1.0F)
     };
 }
 
@@ -51,17 +51,17 @@ BOOST_AUTO_TEST_SUITE(depth_order_test)
  **/
 BOOST_AUTO_TEST_CASE(quads_come_out_furthest_first) {
     DepthOrder order;
-    order.quad(1.0f, tile(0.0f, 0.0f), white);
-    order.quad(2.0f, tile(1.0f, 0.0f), white);
-    order.quad(3.0f, tile(2.0f, 0.0f), white);
+    order.quad(1.0F, tile(0.0F, 0.0F), white);
+    order.quad(2.0F, tile(1.0F, 0.0F), white);
+    order.quad(3.0F, tile(2.0F, 0.0F), white);
 
     canvas::World canvas;
     order.into(&canvas);
 
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 12u);
-    BOOST_CHECK_EQUAL(quadAt(canvas, 0), 2.0f);
-    BOOST_CHECK_EQUAL(quadAt(canvas, 1), 1.0f);
-    BOOST_CHECK_EQUAL(quadAt(canvas, 2), 0.0f);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 12U);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 0), 2.0F);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 1), 1.0F);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 2), 0.0F);
 }
 
 /**
@@ -72,15 +72,15 @@ BOOST_AUTO_TEST_CASE(equal_keys_are_grouped_by_texture) {
     const TextureHandle firstTexture(1);
     const TextureHandle secondTexture(2);
     DepthOrder order;
-    order.quad(5.0f, tile(0.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, firstTexture);
-    order.quad(5.0f, tile(1.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, secondTexture);
-    order.quad(5.0f, tile(2.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, firstTexture);
-    order.quad(5.0f, tile(3.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), white, secondTexture);
+    order.quad(5.0F, tile(0.0F, 0.0F), glm::vec2(0.0F), glm::vec2(1.0F), white, firstTexture);
+    order.quad(5.0F, tile(1.0F, 0.0F), glm::vec2(0.0F), glm::vec2(1.0F), white, secondTexture);
+    order.quad(5.0F, tile(2.0F, 0.0F), glm::vec2(0.0F), glm::vec2(1.0F), white, firstTexture);
+    order.quad(5.0F, tile(3.0F, 0.0F), glm::vec2(0.0F), glm::vec2(1.0F), white, secondTexture);
 
     canvas::World canvas;
     order.into(&canvas);
 
-    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2u);
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2U);
     BOOST_CHECK(canvas.batches()[0].texture == firstTexture);
     BOOST_CHECK(canvas.batches()[1].texture == secondTexture);
 }
@@ -91,17 +91,17 @@ BOOST_AUTO_TEST_CASE(equal_keys_are_grouped_by_texture) {
  **/
 BOOST_AUTO_TEST_CASE(exact_equals_keep_their_submission_order) {
     DepthOrder order;
-    order.quad(1.0f, tile(0.0f, 0.0f), white);
-    order.quad(1.0f, tile(1.0f, 0.0f), white);
-    order.quad(1.0f, tile(2.0f, 0.0f), white);
+    order.quad(1.0F, tile(0.0F, 0.0F), white);
+    order.quad(1.0F, tile(1.0F, 0.0F), white);
+    order.quad(1.0F, tile(2.0F, 0.0F), white);
 
     canvas::World canvas;
     order.into(&canvas);
 
-    BOOST_CHECK_EQUAL(quadAt(canvas, 0), 0.0f);
-    BOOST_CHECK_EQUAL(quadAt(canvas, 1), 1.0f);
-    BOOST_CHECK_EQUAL(quadAt(canvas, 2), 2.0f);
-    BOOST_CHECK_EQUAL(canvas.batches().size(), 1u);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 0), 0.0F);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 1), 1.0F);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 2), 2.0F);
+    BOOST_CHECK_EQUAL(canvas.batches().size(), 1U);
 }
 
 /**
@@ -110,13 +110,13 @@ BOOST_AUTO_TEST_CASE(exact_equals_keep_their_submission_order) {
  **/
 BOOST_AUTO_TEST_CASE(the_canvas_transform_applies) {
     DepthOrder order;
-    order.quad(1.0f, tile(0.0f, 0.0f), white);
+    order.quad(1.0F, tile(0.0F, 0.0F), white);
 
     canvas::World canvas;
-    canvas.translate(glm::vec3(10.0f, 0.0f, 0.0f));
+    canvas.translate(glm::vec3(10.0F, 0.0F, 0.0F));
     order.into(&canvas);
 
-    BOOST_CHECK_EQUAL(quadAt(canvas, 0), 10.0f);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 0), 10.0F);
 }
 
 /**
@@ -125,14 +125,14 @@ BOOST_AUTO_TEST_CASE(the_canvas_transform_applies) {
  **/
 BOOST_AUTO_TEST_CASE(an_order_handed_to_a_tinted_canvas_is_tinted) {
     DepthOrder order;
-    order.quad(1.0f, tile(0.0f, 0.0f), glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
+    order.quad(1.0F, tile(0.0F, 0.0F), glm::vec4(1.0F, 1.0F, 1.0F, 0.5F));
 
     canvas::World canvas;
-    canvas.tint(glm::vec4(0.25f, 0.5f, 1.0f, 1.0f));
+    canvas.tint(glm::vec4(0.25F, 0.5F, 1.0F, 1.0F));
     order.into(&canvas);
 
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4u);
-    BOOST_TEST((canvas.vertices()[0].colour == glm::vec4(0.25f, 0.5f, 1.0f, 0.5f)));
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_TEST((canvas.vertices()[0].colour == glm::vec4(0.25F, 0.5F, 1.0F, 0.5F)));
 }
 
 /**
@@ -140,18 +140,18 @@ BOOST_AUTO_TEST_CASE(an_order_handed_to_a_tinted_canvas_is_tinted) {
  **/
 BOOST_AUTO_TEST_CASE(a_key_that_is_not_a_number_is_drawn_last) {
     DepthOrder order;
-    order.quad(std::nanf(""), tile(0.0f, 0.0f), white);
-    order.quad(1.0f, tile(1.0f, 0.0f), white);
-    order.quad(std::nanf(""), tile(2.0f, 0.0f), white);
-    order.quad(2.0f, tile(3.0f, 0.0f), white);
+    order.quad(std::nanf(""), tile(0.0F, 0.0F), white);
+    order.quad(1.0F, tile(1.0F, 0.0F), white);
+    order.quad(std::nanf(""), tile(2.0F, 0.0F), white);
+    order.quad(2.0F, tile(3.0F, 0.0F), white);
 
     canvas::World canvas;
     order.into(&canvas);
 
-    BOOST_CHECK_EQUAL(quadAt(canvas, 0), 3.0f);
-    BOOST_CHECK_EQUAL(quadAt(canvas, 1), 1.0f);
-    BOOST_CHECK_EQUAL(quadAt(canvas, 2), 0.0f);
-    BOOST_CHECK_EQUAL(quadAt(canvas, 3), 2.0f);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 0), 3.0F);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 1), 1.0F);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 2), 0.0F);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 3), 2.0F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

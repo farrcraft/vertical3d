@@ -22,7 +22,7 @@ namespace v3d::render::offline::sl {
 class Placed final {
  public:
     InstancePtr shader;
-    glm::mat4x4 placement = glm::mat4x4(1.0f);
+    glm::mat4x4 placement = glm::mat4x4(1.0F);
 };
 
 };  // namespace v3d::render::offline::sl

@@ -76,16 +76,16 @@ bool edgeSelected(const BRep & mesh, Index edge) {
 
 glm::vec3 center(const BRep & mesh, Index face) {
     const std::vector<Index> loop = faceLoop(mesh, face);
-    glm::vec3 sum(0.0f);
-    float count = 0.0f;
+    glm::vec3 sum(0.0F);
+    float count = 0.0F;
     for (const Index entry : loop) {
         const Vertex* vertex = mesh.vertex(mesh.edge(entry)->vertex());
         if (vertex != nullptr) {
             sum += vertex->point();
-            count += 1.0f;
+            count += 1.0F;
         }
     }
-    return count > 0.0f ? sum / count : sum;
+    return count > 0.0F ? sum / count : sum;
 }
 
 void faceUV(const BRep & mesh, Index face, glm::vec3* u, glm::vec3* v) {
@@ -105,10 +105,10 @@ void faceUV(const BRep & mesh, Index face, glm::vec3* u, glm::vec3* v) {
         sides.push_back(end->point() - after->point());
     }
     // the first side that has a length, and the first side after it that is not parallel to it
-    constexpr float PARALLEL = 1e-10f;
+    constexpr float PARALLEL = 1e-10F;
     for (std::size_t first = 0; first < sides.size(); first++) {
         const float firstLength = glm::dot(sides[first], sides[first]);
-        if (firstLength <= 0.0f) {
+        if (firstLength <= 0.0F) {
             continue;
         }
         for (std::size_t second = first + 1; second < sides.size(); second++) {

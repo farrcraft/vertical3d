@@ -16,9 +16,9 @@ const int SelectList::none;
 
 SelectList::SelectList() :
     Component(Type::SelectList),
-    offset_(0.0f),
-    rowHeight_(0.0f),
-    widest_(-1.0f),
+    offset_(0.0F),
+    rowHeight_(0.0F),
+    widest_(-1.0F),
     measured_(0),
     selected_(none) {
     // a control is pickable and focusable from the start; a plain component is neither, so a
@@ -29,7 +29,7 @@ SelectList::SelectList() :
 
 void SelectList::items(const std::vector<std::string>& rows) {
     items_ = rows;
-    widest_ = -1.0f;
+    widest_ = -1.0F;
     measured_ = 0;
     selected(selected_);
     offset(offset_);
@@ -42,7 +42,7 @@ void SelectList::widest(const Measured& measured) noexcept {
 }
 
 float SelectList::widest(std::uint64_t measure) const noexcept {
-    return measure == measured_ ? widest_ : -1.0f;
+    return measure == measured_ ? widest_ : -1.0F;
 }
 
 const std::vector<std::string>& SelectList::items() const noexcept {
@@ -66,8 +66,8 @@ std::string_view SelectList::selection() const {
 
 void SelectList::offset(float pixels) {
     // what the box does not show, which is nothing until something has drawn one
-    const float hidden = std::max(content() - size().y, 0.0f);
-    offset_ = std::clamp(pixels, 0.0f, hidden);
+    const float hidden = std::max(content() - size().y, 0.0F);
+    offset_ = std::clamp(pixels, 0.0F, hidden);
 }
 
 float SelectList::offset() const noexcept {
@@ -75,7 +75,7 @@ float SelectList::offset() const noexcept {
 }
 
 void SelectList::rowHeight(float height) {
-    rowHeight_ = std::max(height, 0.0f);
+    rowHeight_ = std::max(height, 0.0F);
 }
 
 float SelectList::rowHeight() const noexcept {
@@ -87,7 +87,7 @@ float SelectList::content() const noexcept {
 }
 
 int SelectList::at(const glm::vec2& point) const {
-    if (rowHeight_ <= 0.0f || items_.empty()) {
+    if (rowHeight_ <= 0.0F || items_.empty()) {
         return none;
     }
     const glm::vec2 min = position();

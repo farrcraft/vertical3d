@@ -20,11 +20,11 @@ namespace {
 boost::shared_ptr<v3d::brep::BRep> quad() {
     boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
     std::vector<glm::vec3> points;
-    points.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
-    points.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
-    points.push_back(glm::vec3(1.0f, 1.0f, 0.0f));
-    points.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
-    mesh->addFace(points, glm::vec3(0.0f, 0.0f, 1.0f));
+    points.push_back(glm::vec3(0.0F, 0.0F, 0.0F));
+    points.push_back(glm::vec3(1.0F, 0.0F, 0.0F));
+    points.push_back(glm::vec3(1.0F, 1.0F, 0.0F));
+    points.push_back(glm::vec3(0.0F, 1.0F, 0.0F));
+    mesh->addFace(points, glm::vec3(0.0F, 0.0F, 1.0F));
     return mesh;
 }
 
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(wireframe_single_face_test) {
     wireframe.visit(quad());
 
     // four edges, two vertices each, and the loop closes
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 8u);
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 8U);
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_pairs_drawn_once_test) {
@@ -47,8 +47,8 @@ BOOST_AUTO_TEST_CASE(wireframe_pairs_drawn_once_test) {
 
     // 24 half edges paired into the cube's 12 edges - a half edge and its pair are one
     // segment, and drawing both would double every line the modeller sees
-    BOOST_CHECK_EQUAL(cube->edgeCount(), 24u);
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 24u);
+    BOOST_CHECK_EQUAL(cube->edgeCount(), 24U);
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 24U);
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_transform_test) {
@@ -56,18 +56,18 @@ BOOST_AUTO_TEST_CASE(wireframe_transform_test) {
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
     const boost::shared_ptr<v3d::brep::BRep> mesh = quad();
-    mesh->translation(glm::vec3(10.0f, 0.0f, 0.0f));
+    mesh->translation(glm::vec3(10.0F, 0.0F, 0.0F));
     wireframe.visit(mesh);
 
     // the mesh is drawn through its own transform, so its geometry stays about its origin
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8u);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8U);
     for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
-        BOOST_CHECK(vertex.position.x >= 9.9f);
-        BOOST_CHECK(vertex.position.x <= 11.1f);
+        BOOST_CHECK(vertex.position.x >= 9.9F);
+        BOOST_CHECK(vertex.position.x <= 11.1F);
     }
 
     // the transform is popped, so the next mesh does not inherit it
-    BOOST_CHECK_SMALL(canvas.transform()[3][0], 0.0001f);
+    BOOST_CHECK_SMALL(canvas.transform()[3][0], 0.0001F);
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
             highlighted++;
         }
     }
-    BOOST_CHECK_EQUAL(highlighted, 2u);
+    BOOST_CHECK_EQUAL(highlighted, 2U);
 }
 
 /**
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(wireframe_selected_face_is_outlined_test) {
             }
         }
         // four edges of two vertices each
-        BOOST_CHECK_EQUAL(highlighted, 8u);
+        BOOST_CHECK_EQUAL(highlighted, 8U);
     }
 }
 
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(wireframe_scene_test) {
     scene.add(quad());
     scene.accept(&wireframe);
 
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 16u);
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 16U);
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_no_canvas_test) {

@@ -18,7 +18,7 @@ namespace v3d::editor {
 /**
  **/
 ViewLayout::View::View() :
-region(0.0f, 0.0f, 0.0f, 0.0f) {
+region(0.0F, 0.0F, 0.0F, 0.0F) {
 }
 
 /**
@@ -129,7 +129,7 @@ bool ViewLayout::loadNode(const boost::json::object& entry, Node* into) {
 /**
  **/
 void ViewLayout::resize(int width, int height) {
-    resize(glm::vec4(0.0f, 0.0f,
+    resize(glm::vec4(0.0F, 0.0F,
         static_cast<float>(width > 0 ? width : 0),
         static_cast<float>(height > 0 ? height : 0)));
 }
@@ -138,8 +138,8 @@ void ViewLayout::resize(int width, int height) {
  **/
 void ViewLayout::resize(const glm::vec4& region) {
     place(root_, glm::vec4(region.x, region.y,
-        region.z > 0.0f ? region.z : 0.0f,
-        region.w > 0.0f ? region.w : 0.0f));
+        region.z > 0.0F ? region.z : 0.0F,
+        region.w > 0.0F ? region.w : 0.0F));
 }
 
 /**
@@ -166,10 +166,10 @@ void ViewLayout::place(const Node& node, const glm::vec4& region) {
         glm::vec4 child = region;
         if (node.vertical) {
             child.y = offset;
-            child.w = extent > 0.0f ? extent : 0.0f;
+            child.w = extent > 0.0F ? extent : 0.0F;
         } else {
             child.x = offset;
-            child.z = extent > 0.0f ? extent : 0.0f;
+            child.z = extent > 0.0F ? extent : 0.0F;
         }
         place(node.children[index], child);
         offset += extent;

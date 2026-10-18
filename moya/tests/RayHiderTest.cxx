@@ -34,14 +34,14 @@ const unsigned int SIZE = 16;
 
 void frame(v3d::moya::RenderContext & rc) {
     rc.hider("raytrace");
-    rc.imageResolution({SIZE, SIZE}, 1.0f);
-    rc.clipping({.hither = 0.001f, .yon = 100.0f});
+    rc.imageResolution({SIZE, SIZE}, 1.0F);
+    rc.clipping({.hither = 0.001F, .yon = 100.0F});
     rc.projection("orthographic");
-    rc.setTransform(glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+    rc.setTransform(glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, 0.0F, 1.0F)));
     // a sample at each pixel centre, given back exactly, so a pixel is what its centre hit
     rc.sampling().samples = glm::uvec2(1, 1);
     rc.sampling().filter = v3d::render::offline::Filter::Box;
-    rc.sampling().width = glm::vec2(1.0f, 1.0f);
+    rc.sampling().width = glm::vec2(1.0F, 1.0F);
 }
 
 void triangle(v3d::moya::RenderContext & rc, const std::array<glm::vec3, 3> & corners, const glm::vec3 & colour) {
@@ -59,8 +59,8 @@ void triangle(v3d::moya::RenderContext & rc, const std::array<glm::vec3, 3> & co
  * A right triangle with its vertical edge at x = 0.5 and its horizontal one at y = -0.5, so a
  * pixel either side of each edge is half a pixel away from it.
  **/
-void rightTriangle(v3d::moya::RenderContext & rc, float edge = 0.5f) {
-    triangle(rc, {glm::vec3(-1.5f, -0.5f, 1.0f), glm::vec3(edge, -0.5f, 1.0f), glm::vec3(edge, 1.5f, 1.0f)}, glm::vec3(1.0f, 0.0f, 0.0f));
+void rightTriangle(v3d::moya::RenderContext & rc, float edge = 0.5F) {
+    triangle(rc, {glm::vec3(-1.5F, -0.5F, 1.0F), glm::vec3(edge, -0.5F, 1.0F), glm::vec3(edge, 1.5F, 1.0F)}, glm::vec3(1.0F, 0.0F, 0.0F));
 }
 
 void checkPixel(const v3d::render::offline::FrameBuffer & planes,
@@ -85,10 +85,10 @@ bool read(const std::string & source, v3d::moya::RIBHandler * handler) {
 void adaptive(v3d::moya::RenderContext & rc) {
     frame(rc);
     rc.sampling() = v3d::render::offline::Sampling();
-    rc.sampling().variance = 0.001f;
+    rc.sampling().variance = 0.001F;
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
-    rightTriangle(rc, 0.5625f);
+    rightTriangle(rc, 0.5625F);
 }
 
 /**
@@ -127,8 +127,8 @@ BOOST_AUTO_TEST_CASE(rayhider_empty_scene_test) {
     rc.render();
 
     const v3d::render::offline::FrameBuffer & planes = *rc.framebuffer()->planes();
-    checkPixel(planes, 8, 8, glm::vec3(0.0f));
-    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 8, 8), 0.0f);
+    checkPixel(planes, 8, 8, glm::vec3(0.0F));
+    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 8, 8), 0.0F);
 }
 
 BOOST_AUTO_TEST_CASE(rayhider_triangle_test) {
@@ -140,8 +140,8 @@ BOOST_AUTO_TEST_CASE(rayhider_triangle_test) {
     rc.render();
 
     const v3d::render::offline::FrameBuffer & planes = *rc.framebuffer()->planes();
-    const glm::vec3 red(1.0f, 0.0f, 0.0f);
-    const glm::vec3 nothing(0.0f);
+    const glm::vec3 red(1.0F, 0.0F, 0.0F);
+    const glm::vec3 nothing(0.0F);
     // inside, near the middle of the frame
     checkPixel(planes, 8, 8, red);
     // outside, past the hypotenuse in the upper left corner
@@ -165,8 +165,8 @@ BOOST_AUTO_TEST_CASE(rayhider_buckets_nothing_test) {
     rc.prepareWorld();
     rightTriangle(rc);
 
-    BOOST_CHECK_EQUAL(rc.framebuffer()->primitiveCount(), 0u);
-    BOOST_CHECK_EQUAL(rc.traced().all<v3d::render::offline::trace::Triangle>().size(), 1u);
+    BOOST_CHECK_EQUAL(rc.framebuffer()->primitiveCount(), 0U);
+    BOOST_CHECK_EQUAL(rc.traced().all<v3d::render::offline::trace::Triangle>().size(), 1U);
 }
 
 BOOST_AUTO_TEST_CASE(rayhider_nearest_hit_test) {
@@ -175,11 +175,11 @@ BOOST_AUTO_TEST_CASE(rayhider_nearest_hit_test) {
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 
-    const glm::vec3 closer(1.0f, 0.0f, 0.0f);
-    const glm::vec3 further(0.0f, 1.0f, 0.0f);
+    const glm::vec3 closer(1.0F, 0.0F, 0.0F);
+    const glm::vec3 further(0.0F, 1.0F, 0.0F);
     // two triangles over the same pixel, the first one further from the camera
-    triangle(rc, {glm::vec3(-1.0f, -1.0f, 5.0f), glm::vec3(1.0f, -1.0f, 5.0f), glm::vec3(0.0f, 1.0f, 5.0f)}, further);
-    triangle(rc, {glm::vec3(-1.0f, -1.0f, 2.0f), glm::vec3(1.0f, -1.0f, 2.0f), glm::vec3(0.0f, 1.0f, 2.0f)}, closer);
+    triangle(rc, {glm::vec3(-1.0F, -1.0F, 5.0F), glm::vec3(1.0F, -1.0F, 5.0F), glm::vec3(0.0F, 1.0F, 5.0F)}, further);
+    triangle(rc, {glm::vec3(-1.0F, -1.0F, 2.0F), glm::vec3(1.0F, -1.0F, 2.0F), glm::vec3(0.0F, 1.0F, 2.0F)}, closer);
     rc.render();
 
     // the nearer one wins whichever order they were given in
@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE(rayhider_nearest_hit_test) {
  * thing whichever drew it.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_depth_matches_reyes_test) {
-    float depth[2] = { 0.0f, 0.0f };
+    float depth[2] = { 0.0F, 0.0F };
     const char* const hiders[2] = { "hidden", "raytrace" };
     for (unsigned int i = 0; i < 2; i++) {
         v3d::moya::RenderContext rc;
@@ -199,11 +199,11 @@ BOOST_AUTO_TEST_CASE(rayhider_depth_matches_reyes_test) {
         rc.hider(hiders[i]);
         rc.prepareWorld();
         rc.surface("constant", v3d::render::offline::rib::ParameterList());
-        triangle(rc, {glm::vec3(-1.0f, -1.0f, 5.0f), glm::vec3(1.0f, -1.0f, 5.0f), glm::vec3(0.0f, 1.0f, 5.0f)}, glm::vec3(1.0f));
+        triangle(rc, {glm::vec3(-1.0F, -1.0F, 5.0F), glm::vec3(1.0F, -1.0F, 5.0F), glm::vec3(0.0F, 1.0F, 5.0F)}, glm::vec3(1.0F));
         rc.render();
         depth[i] = rc.framebuffer()->planes()->value(Planes::DEPTH, 8, 8);
     }
-    BOOST_CHECK_CLOSE(depth[1], depth[0], 0.01f);
+    BOOST_CHECK_CLOSE(depth[1], depth[0], 0.01F);
 }
 
 /**
@@ -221,10 +221,10 @@ BOOST_AUTO_TEST_CASE(rayhider_sampled_edge_coverage_test) {
     const v3d::render::offline::FrameBuffer & planes = *rc.framebuffer()->planes();
     const float inside = planes.value(Planes::COVERAGE, 11, 8);
     const float outside = planes.value(Planes::COVERAGE, 12, 8);
-    BOOST_CHECK(inside > 0.5f && inside < 1.0f);
-    BOOST_CHECK(outside > 0.0f && outside < 0.5f);
-    BOOST_CHECK_CLOSE(planes.value(Planes::COVERAGE, 8, 8), 1.0f, 1.0e-4f);
-    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 0, 15), 0.0f);
+    BOOST_CHECK(inside > 0.5F && inside < 1.0F);
+    BOOST_CHECK(outside > 0.0F && outside < 0.5F);
+    BOOST_CHECK_CLOSE(planes.value(Planes::COVERAGE, 8, 8), 1.0F, 1.0e-4F);
+    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 0, 15), 0.0F);
 }
 
 /**
@@ -236,17 +236,17 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_sampling_test) {
     adaptive(rc);
     rc.render();
 
-    BOOST_CHECK_EQUAL(rc.samplesTaken({5, 8}), 4u);
-    BOOST_CHECK_EQUAL(rc.samplesTaken({14, 8}), 4u);
-    BOOST_CHECK_GT(rc.samplesTaken({12, 8}), 4u);
-    BOOST_CHECK_LE(rc.samplesTaken({12, 8}), 16u);
+    BOOST_CHECK_EQUAL(rc.samplesTaken({5, 8}), 4U);
+    BOOST_CHECK_EQUAL(rc.samplesTaken({14, 8}), 4U);
+    BOOST_CHECK_GT(rc.samplesTaken({12, 8}), 4U);
+    BOOST_CHECK_LE(rc.samplesTaken({12, 8}), 16U);
 
     // and a variance of zero, the default, takes the first set everywhere
     v3d::moya::RenderContext plain;
     adaptive(plain);
-    plain.sampling().variance = 0.0f;
+    plain.sampling().variance = 0.0F;
     plain.render();
-    BOOST_CHECK_EQUAL(plain.samplesTaken({12, 8}), 4u);
+    BOOST_CHECK_EQUAL(plain.samplesTaken({12, 8}), 4U);
 }
 
 /**
@@ -293,8 +293,8 @@ BOOST_AUTO_TEST_CASE(rayhider_off_centre_screen_window_test) {
         "WorldEnd\n", &handler));
 
     const v3d::render::offline::FrameBuffer & planes = *handler.context().framebuffer()->planes();
-    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 3, 8), 1.0f);
-    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 12, 8), 0.0f);
+    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 3, 8), 1.0F);
+    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 12, 8), 0.0F);
 }
 
 /**
@@ -319,9 +319,9 @@ BOOST_AUTO_TEST_CASE(rayhider_scaling_camera_test) {
 
     // screen x = 2 * world x, so the quad covers screen x over [0, 1], which is columns 8 to 15
     const v3d::render::offline::FrameBuffer & planes = *handler.context().framebuffer()->planes();
-    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 9, 8), 1.0f);
-    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 14, 8), 1.0f);
-    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 6, 8), 0.0f);
+    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 9, 8), 1.0F);
+    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 14, 8), 1.0F);
+    BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 6, 8), 0.0F);
 }
 
 /**
@@ -344,9 +344,9 @@ BOOST_AUTO_TEST_CASE(rayhider_polygon_is_fanned_test) {
 
     const std::vector<const v3d::render::offline::trace::Triangle*> triangles =
         handler.context().traced().all<v3d::render::offline::trace::Triangle>();
-    BOOST_REQUIRE_EQUAL(triangles.size(), 2u);
-    BOOST_CHECK_EQUAL(triangles[0]->a().x, 0.0f);
-    BOOST_CHECK_EQUAL(triangles[0]->a().z, 2.0f);
+    BOOST_REQUIRE_EQUAL(triangles.size(), 2U);
+    BOOST_CHECK_EQUAL(triangles[0]->a().x, 0.0F);
+    BOOST_CHECK_EQUAL(triangles[0]->a().z, 2.0F);
 }
 
 /**
@@ -366,11 +366,11 @@ BOOST_AUTO_TEST_CASE(rayhider_normals_test) {
 
     const std::vector<const v3d::render::offline::trace::Triangle*> triangles =
         handler.context().traced().all<v3d::render::offline::trace::Triangle>();
-    BOOST_REQUIRE_EQUAL(triangles.size(), 2u);
-    BOOST_TEST((triangles[0]->geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
-    BOOST_TEST((triangles[0]->shadingNormal(0.25f, 0.25f) == glm::vec3(0.0f, 0.0f, 1.0f)));
-    BOOST_TEST((triangles[1]->shadingNormal(0.25f, 0.25f) == glm::vec3(0.0f, 1.0f, 0.0f)));
-    BOOST_TEST((triangles[1]->geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_REQUIRE_EQUAL(triangles.size(), 2U);
+    BOOST_TEST((triangles[0]->geometricNormal() == glm::vec3(0.0F, 0.0F, 1.0F)));
+    BOOST_TEST((triangles[0]->shadingNormal(0.25F, 0.25F) == glm::vec3(0.0F, 0.0F, 1.0F)));
+    BOOST_TEST((triangles[1]->shadingNormal(0.25F, 0.25F) == glm::vec3(0.0F, 1.0F, 0.0F)));
+    BOOST_TEST((triangles[1]->geometricNormal() == glm::vec3(0.0F, 0.0F, 1.0F)));
 }
 
 /**
@@ -391,15 +391,15 @@ BOOST_AUTO_TEST_CASE(rayhider_normal_inverse_transpose_test) {
 
     const std::vector<const v3d::render::offline::trace::Triangle*> triangles =
         handler.context().traced().all<v3d::render::offline::trace::Triangle>();
-    BOOST_REQUIRE_EQUAL(triangles.size(), 1u);
+    BOOST_REQUIRE_EQUAL(triangles.size(), 1U);
     // (1, 1, 0) under the inverse transpose of a scale of two in y has its y halved
-    const glm::vec3 expected = glm::normalize(glm::vec3(1.0f, 0.5f, 0.0f));
-    const glm::vec3 shading = triangles[0]->shadingNormal(0.25f, 0.25f);
-    BOOST_TEST(shading.x == expected.x, boost::test_tools::tolerance(0.0001f));
-    BOOST_TEST(shading.y == expected.y, boost::test_tools::tolerance(0.0001f));
+    const glm::vec3 expected = glm::normalize(glm::vec3(1.0F, 0.5F, 0.0F));
+    const glm::vec3 shading = triangles[0]->shadingNormal(0.25F, 0.25F);
+    BOOST_TEST(shading.x == expected.x, boost::test_tools::tolerance(0.0001F));
+    BOOST_TEST(shading.y == expected.y, boost::test_tools::tolerance(0.0001F));
     // the "N" given was the polygon's own plane, so the plane the moved points lie in agrees
-    BOOST_TEST(triangles[0]->geometricNormal().x == expected.x, boost::test_tools::tolerance(0.0001f));
-    BOOST_TEST(triangles[0]->geometricNormal().y == expected.y, boost::test_tools::tolerance(0.0001f));
+    BOOST_TEST(triangles[0]->geometricNormal().x == expected.x, boost::test_tools::tolerance(0.0001F));
+    BOOST_TEST(triangles[0]->geometricNormal().y == expected.y, boost::test_tools::tolerance(0.0001F));
 }
 
 /**
@@ -420,13 +420,13 @@ BOOST_AUTO_TEST_CASE(rayhider_sphere_test) {
         "WorldEnd\n", &handler));
 
     const v3d::render::offline::trace::Scene & scene = handler.context().traced();
-    BOOST_REQUIRE_EQUAL(scene.all<v3d::render::offline::trace::Sphere>().size(), 1u);
-    BOOST_CHECK_CLOSE(scene.all<v3d::render::offline::trace::Sphere>()[0]->colour().g, 0.4f, 0.001f);
-    BOOST_CHECK_CLOSE(scene.all<v3d::render::offline::trace::Sphere>()[0]->opacity().r, 0.5f, 0.001f);
+    BOOST_REQUIRE_EQUAL(scene.all<v3d::render::offline::trace::Sphere>().size(), 1U);
+    BOOST_CHECK_CLOSE(scene.all<v3d::render::offline::trace::Sphere>()[0]->colour().g, 0.4F, 0.001F);
+    BOOST_CHECK_CLOSE(scene.all<v3d::render::offline::trace::Sphere>()[0]->opacity().r, 0.5F, 0.001F);
 
     v3d::render::offline::trace::Hit hit;
-    BOOST_REQUIRE(scene.nearest(v3d::type::geometry::Ray({.origin = glm::vec3(0.0f), .direction = glm::vec3(0.0f, 0.0f, 1.0f)}), 0.0f, &hit));
-    BOOST_CHECK_CLOSE(hit.distance, 4.0f, 0.001f);
+    BOOST_REQUIRE(scene.nearest(v3d::type::geometry::Ray({.origin = glm::vec3(0.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)}), 0.0F, &hit));
+    BOOST_CHECK_CLOSE(hit.distance, 4.0F, 0.001F);
 }
 
 /**
@@ -450,12 +450,12 @@ BOOST_AUTO_TEST_CASE(rayhider_lights_per_primitive_test) {
 
     const std::vector<const v3d::render::offline::trace::Triangle*> triangles =
         handler.context().traced().all<v3d::render::offline::trace::Triangle>();
-    BOOST_REQUIRE_EQUAL(triangles.size(), 3u);
+    BOOST_REQUIRE_EQUAL(triangles.size(), 3U);
     BOOST_REQUIRE(triangles[0]->lights());
-    BOOST_CHECK_EQUAL(triangles[0]->lights()->size(), 2u);
+    BOOST_CHECK_EQUAL(triangles[0]->lights()->size(), 2U);
     BOOST_CHECK(triangles[1]->lights() == triangles[0]->lights());
     BOOST_REQUIRE(triangles[2]->lights());
-    BOOST_CHECK_EQUAL(triangles[2]->lights()->size(), 1u);
+    BOOST_CHECK_EQUAL(triangles[2]->lights()->size(), 1U);
 }
 
 /**
@@ -465,26 +465,26 @@ BOOST_AUTO_TEST_CASE(rayhider_lights_per_primitive_test) {
  **/
 BOOST_AUTO_TEST_CASE(rayhider_inverts_the_projection_test) {
     v3d::moya::RenderContext rc;
-    rc.imageResolution({32, 16}, 1.0f);
-    rc.screenWindow({.left = -0.5f, .right = 1.5f, .bottom = -1.0f, .top = 1.0f});
-    rc.clipping({.hither = 0.1f, .yon = 100.0f});
-    rc.projection("perspective", 60.0f);
+    rc.imageResolution({32, 16}, 1.0F);
+    rc.screenWindow({.left = -0.5F, .right = 1.5F, .bottom = -1.0F, .top = 1.0F});
+    rc.clipping({.hither = 0.1F, .yon = 100.0F});
+    rc.projection("perspective", 60.0F);
 
     v3d::moya::RayHider::Camera camera;
     camera.toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
     camera.perspective = true;
-    camera.hither = 0.1f;
+    camera.hither = 0.1F;
     camera.width = 32;
     camera.height = 16;
     v3d::moya::RayHider hider;
     hider.camera(camera);
 
-    for (const glm::vec2 & raster : { glm::vec2(3.5f, 2.5f), glm::vec2(30.0f, 14.0f), glm::vec2(16.0f, 8.0f) }) {
-        const v3d::type::geometry::Ray ray = hider.ray({.raster = raster, .lens = glm::vec2(0.0f)}, rc.sampling());
-        BOOST_CHECK_CLOSE(ray.origin().z, 0.1f, 0.01f);
-        const glm::vec3 projected = v3d::moya::project(camera.toRaster, ray.origin() + ray.direction() * 5.0f);
-        BOOST_CHECK_CLOSE(projected.x, raster.x, 0.01f);
-        BOOST_CHECK_CLOSE(projected.y, raster.y, 0.01f);
+    for (const glm::vec2 & raster : { glm::vec2(3.5F, 2.5F), glm::vec2(30.0F, 14.0F), glm::vec2(16.0F, 8.0F) }) {
+        const v3d::type::geometry::Ray ray = hider.ray({.raster = raster, .lens = glm::vec2(0.0F)}, rc.sampling());
+        BOOST_CHECK_CLOSE(ray.origin().z, 0.1F, 0.01F);
+        const glm::vec3 projected = v3d::moya::project(camera.toRaster, ray.origin() + ray.direction() * 5.0F);
+        BOOST_CHECK_CLOSE(projected.x, raster.x, 0.01F);
+        BOOST_CHECK_CLOSE(projected.y, raster.y, 0.01F);
     }
 }
 
@@ -501,12 +501,12 @@ BOOST_AUTO_TEST_CASE(rayhider_vertex_colours_test) {
         rc.hider(hiders[i]);
         rc.prepareWorld();
         rc.surface("constant", v3d::render::offline::rib::ParameterList());
-        rc.color(glm::vec3(1.0f));
+        rc.color(glm::vec3(1.0F));
         const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-        const glm::vec3 corners[3] = { glm::vec3(-1.0f, -1.0f, 1.0f), glm::vec3(1.0f, -1.0f, 1.0f),
-            glm::vec3(-1.0f, 1.0f, 1.0f) };
-        const glm::vec3 colours[3] = { glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 1.0f) };
+        const glm::vec3 corners[3] = { glm::vec3(-1.0F, -1.0F, 1.0F), glm::vec3(1.0F, -1.0F, 1.0F),
+            glm::vec3(-1.0F, 1.0F, 1.0F) };
+        const glm::vec3 colours[3] = { glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F),
+            glm::vec3(0.0F, 0.0F, 1.0F) };
         for (unsigned int k = 0; k < 3; k++) {
             v3d::moya::Vertex vertex;
             vertex.point(corners[k]);
@@ -526,14 +526,14 @@ BOOST_AUTO_TEST_CASE(rayhider_vertex_colours_test) {
     }
     // the ray hider shades each pixel centre exactly. The one near the red corner is at
     // x = y = -0.8125, which is 0.09375 of the way to each of the other two corners
-    BOOST_CHECK_CLOSE(seen[1][0].r, 0.8125f, 0.1f);
-    BOOST_CHECK_CLOSE(seen[1][0].g, 0.09375f, 0.1f);
-    BOOST_CHECK_CLOSE(seen[1][0].b, 0.09375f, 0.1f);
-    BOOST_CHECK_CLOSE(seen[1][1].g, 0.78125f, 0.1f);
+    BOOST_CHECK_CLOSE(seen[1][0].r, 0.8125F, 0.1F);
+    BOOST_CHECK_CLOSE(seen[1][0].g, 0.09375F, 0.1F);
+    BOOST_CHECK_CLOSE(seen[1][0].b, 0.09375F, 0.1F);
+    BOOST_CHECK_CLOSE(seen[1][1].g, 0.78125F, 0.1F);
     // the reyes hider shades the corners of micropolygons and blends across each one, so it
     // is close to the exact colour rather than equal to it
     for (unsigned int k = 0; k < 2; k++) {
-        BOOST_CHECK_SMALL(glm::length(seen[1][k] - seen[0][k]), 0.1f);
+        BOOST_CHECK_SMALL(glm::length(seen[1][k] - seen[0][k]), 0.1F);
     }
 }
 
@@ -565,7 +565,7 @@ BOOST_AUTO_TEST_CASE(rayhider_motion_from_nothing_test) {
                 "WorldEnd\n", &handler));
 
             const v3d::render::offline::FrameBuffer & planes = *handler.context().framebuffer()->planes();
-            BOOST_CHECK_GT(planes.value(Planes::COVERAGE, 8, 8), 0.9f);
+            BOOST_CHECK_GT(planes.value(Planes::COVERAGE, 8, 8), 0.9F);
         }
     }
 }

@@ -8,12 +8,12 @@
 namespace v3d::render::offline {
 
 /** Pi, the radians in half a turn. **/
-constexpr float PI = 3.14159265358979323846f;
+constexpr float PI = 3.14159265358979323846F;
 
 /** The degrees in half a turn. An angle in degrees times PI over this is the angle in radians. **/
-constexpr float HALF_TURN_DEGREES = 180.0f;
+constexpr float HALF_TURN_DEGREES = 180.0F;
 
 /** The byte that holds a channel value of one in an 8-bit image. **/
-constexpr float BYTE_SCALE = 255.0f;
+constexpr float BYTE_SCALE = 255.0F;
 
 };  // namespace v3d::render::offline

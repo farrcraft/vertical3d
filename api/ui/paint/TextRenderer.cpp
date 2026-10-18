@@ -28,7 +28,7 @@ const char* const TextRenderer::defaultFont = "fonts/NotoSans-Regular.ttf";
 // a spread of 8 is the largest of the pairs tried that still fits a 512 atlas: 48 and 12
 // does not, and 64 and 8 does not. A charset or a base that needs more passes larger
 // atlas dimensions
-const float TextRenderer::baseSize = 48.0f;
+const float TextRenderer::baseSize = 48.0F;
 const unsigned int TextRenderer::defaultSpread = 8;
 const unsigned int TextRenderer::defaultAtlas = 512;
 
@@ -88,8 +88,8 @@ float TextRenderer::size() const noexcept {
 /**
  **/
 float TextRenderer::ratio(float size) const noexcept {
-    if (size <= 0.0f || size_ <= 0.0f) {
-        return 1.0f;
+    if (size <= 0.0F || size_ <= 0.0F) {
+        return 1.0F;
     }
     return size / size_;
 }
@@ -198,9 +198,9 @@ boost::shared_ptr<v3d::font::TextureFont::Glyph> TextRenderer::packed(char32_t p
  **/
 float TextRenderer::width(std::string_view text, float size) const {
     if (!loaded()) {
-        return 0.0f;
+        return 0.0F;
     }
-    float width = 0.0f;
+    float width = 0.0F;
     std::size_t index = 0;
     while (index < text.size()) {
         const boost::shared_ptr<v3d::font::TextureFont::Glyph> glyph = packed(next(text, &index));
@@ -221,7 +221,7 @@ void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, std::stri
     buffer_->clear();
     markup_.foregroundColor_ = colour;
     // the markup's size against the font's is what the layout scales its metrics by
-    markup_.size_ = size > 0.0f ? size : size_;
+    markup_.size_ = size > 0.0F ? size : size_;
 
     // only code points with a packed glyph reach the layout, so it never packs one after
     // the upload. A newline has no glyph and is kept, since it moves the pen

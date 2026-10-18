@@ -26,13 +26,13 @@ namespace v3d::moya {
 class Shading final {
  public:
     v3d::render::offline::sl::InstancePtr surface;
-    glm::mat4x4 placement = glm::mat4x4(1.0f);
+    glm::mat4x4 placement = glm::mat4x4(1.0F);
     /**
      * The opacity that was current, SL's Os. The colour travels on the vertices because a
      * primitive may carry its own varying "Cs". moya reads no varying "Os", so this single
      * value covers the whole primitive.
      **/
-    glm::vec3 opacity = glm::vec3(1.0f);
+    glm::vec3 opacity = glm::vec3(1.0F);
     /**
      * The lights that were switched on, each with the space the scene instanced it in. A
      * light shader states `from` and `to` in that space and shades points in eye space.

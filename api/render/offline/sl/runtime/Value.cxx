@@ -18,7 +18,7 @@ void Value::reset(Type type, Storage storage, unsigned int batch) {
     if (width_ == 0) {
         width_ = 1;
     }
-    numbers_.assign(static_cast<std::size_t>(width_) * sl::components(type), 0.0f);
+    numbers_.assign(static_cast<std::size_t>(width_) * sl::components(type), 0.0F);
     text_.clear();
 }
 
@@ -47,7 +47,7 @@ unsigned int Value::lane(unsigned int point) const {
 float Value::component(unsigned int point, unsigned int index) const {
     const unsigned int wide = components();
     if (wide == 0 || index >= wide) {
-        return 0.0f;
+        return 0.0F;
     }
     return numbers_[(static_cast<std::size_t>(lane(point)) * wide) + index];
 }
@@ -87,7 +87,7 @@ glm::mat4x4 Value::matrix(unsigned int point) const {
         // a float is that multiple of the identity, as in "matrix 1"
         return glm::mat4x4(component(point, 0));
     }
-    glm::mat4x4 value(1.0f);
+    glm::mat4x4 value(1.0F);
     for (int column = 0; column < 4; column++) {
         for (int row = 0; row < 4; row++) {
             value[column][row] = component(point, static_cast<unsigned int>((column * 4) + row));
@@ -128,7 +128,7 @@ void Value::assign(const Value & other, unsigned int point) {
         // a float replicates into every component, as in "color c = 1"
         const float single = other.number(point);
         for (unsigned int i = 0; i < wide; i++) {
-            component(point, i, i < 3 || wide != 16 ? single : 0.0f);
+            component(point, i, i < 3 || wide != 16 ? single : 0.0F);
         }
         if (wide == 16) {
             matrix(point, glm::mat4x4(single));

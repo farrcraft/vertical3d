@@ -21,24 +21,24 @@ namespace {
 /**
  * The three axis colours, and the colour a handle takes while it is the active one.
  **/
-constexpr glm::vec4 xColour(0.90f, 0.28f, 0.32f, 1.0f);
-constexpr glm::vec4 yColour(0.42f, 0.82f, 0.35f, 1.0f);
-constexpr glm::vec4 zColour(0.32f, 0.55f, 0.95f, 1.0f);
-constexpr glm::vec4 centreColour(0.80f, 0.82f, 0.86f, 1.0f);
-constexpr glm::vec4 activeColour(1.0f, 0.86f, 0.25f, 1.0f);
+constexpr glm::vec4 xColour(0.90F, 0.28F, 0.32F, 1.0F);
+constexpr glm::vec4 yColour(0.42F, 0.82F, 0.35F, 1.0F);
+constexpr glm::vec4 zColour(0.32F, 0.55F, 0.95F, 1.0F);
+constexpr glm::vec4 centreColour(0.80F, 0.82F, 0.86F, 1.0F);
+constexpr glm::vec4 activeColour(1.0F, 0.86F, 0.25F, 1.0F);
 
 };  // namespace
 
-const float Manipulator::handlePixels = 90.0f;
-const float Manipulator::tolerance = 6.0f;
+const float Manipulator::handlePixels = 90.0F;
+const float Manipulator::tolerance = 6.0F;
 
 /**
  **/
 Manipulator::Placement::Placement() :
 valid(false),
-origin(0.0f, 0.0f, 0.0f),
-orientation(1.0f, 0.0f, 0.0f, 0.0f),
-size(0.0f) {
+origin(0.0F, 0.0F, 0.0F),
+orientation(1.0F, 0.0F, 0.0F, 0.0F),
+size(0.0F) {
 }
 
 /**
@@ -107,7 +107,7 @@ Manipulator::Placement Manipulator::placement(const boost::shared_ptr<v3d::brep:
 
     const boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     const glm::vec4& region = view.region();
-    if (!camera || region.z <= 0.0f || region.w <= 0.0f) {
+    if (!camera || region.z <= 0.0F || region.w <= 0.0F) {
         return placement;
     }
 
@@ -116,25 +116,25 @@ Manipulator::Placement Manipulator::placement(const boost::shared_ptr<v3d::brep:
     camera->createView();
 
     placement.origin = mesh->translation();
-    placement.orientation = effective() == Space::Local ? mesh->rotation() : glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+    placement.orientation = effective() == Space::Local ? mesh->rotation() : glm::quat(1.0F, 0.0F, 0.0F, 0.0F);
     placement.size = handlePixels * unitsPerPixel(view, placement.origin);
-    placement.valid = placement.size > 0.0f;
+    placement.valid = placement.size > 0.0F;
     return placement;
 }
 
 /**
  **/
 glm::vec3 Manipulator::direction(const Placement& placement, Axis axis) {
-    glm::vec3 unit(0.0f, 0.0f, 0.0f);
+    glm::vec3 unit(0.0F, 0.0F, 0.0F);
     switch (axis) {
     case Axis::X:
-        unit.x = 1.0f;
+        unit.x = 1.0F;
         break;
     case Axis::Y:
-        unit.y = 1.0f;
+        unit.y = 1.0F;
         break;
     case Axis::Z:
-        unit.z = 1.0f;
+        unit.z = 1.0F;
         break;
     case Axis::None:
     default:
@@ -167,7 +167,7 @@ glm::vec4 Manipulator::colour(Axis axis) const {
 bool Manipulator::project(const ViewPort& view, const glm::vec3& point, glm::vec2* position) {
     const boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     const glm::vec4& region = view.region();
-    if (!camera || region.z <= 0.0f || region.w <= 0.0f) {
+    if (!camera || region.z <= 0.0F || region.w <= 0.0F) {
         return false;
     }
 
@@ -181,7 +181,7 @@ bool Manipulator::project(const ViewPort& view, const glm::vec3& point, glm::vec
     // outside the depth range is behind the near plane or beyond the far one, and a
     // point behind a perspective camera lands beyond it rather than looking like one in
     // front
-    if (projected.z < 0.0f || projected.z > 1.0f) {
+    if (projected.z < 0.0F || projected.z > 1.0F) {
         return false;
     }
     if (position != nullptr) {
@@ -195,8 +195,8 @@ bool Manipulator::project(const ViewPort& view, const glm::vec3& point, glm::vec
 float Manipulator::unitsPerPixel(const ViewPort& view, const glm::vec3& at) {
     const boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     const glm::vec4& region = view.region();
-    if (!camera || region.z <= 0.0f || region.w <= 0.0f) {
-        return 0.0f;
+    if (!camera || region.z <= 0.0F || region.w <= 0.0F) {
+        return 0.0F;
     }
 
     int viewport[4];
@@ -207,7 +207,7 @@ float Manipulator::unitsPerPixel(const ViewPort& view, const glm::vec3& at) {
 
     const glm::vec3 projected = camera->project(at, viewport);
     const glm::vec3 here = camera->unproject(projected, viewport);
-    const glm::vec3 next = camera->unproject(glm::vec3(projected.x + 1.0f, projected.y, projected.z), viewport);
+    const glm::vec3 next = camera->unproject(glm::vec3(projected.x + 1.0F, projected.y, projected.z), viewport);
     return glm::length(next - here);
 }
 
@@ -233,9 +233,9 @@ Manipulator::Basis Manipulator::basis(const ViewPort& view) {
 void Manipulator::perpendiculars(const glm::vec3& direction, glm::vec3* first, glm::vec3* second) {
     // cross with whichever world axis the direction is least aligned with, so the
     // product is never degenerate
-    glm::vec3 other(1.0f, 0.0f, 0.0f);
+    glm::vec3 other(1.0F, 0.0F, 0.0F);
     if (std::fabs(direction.x) > std::fabs(direction.y)) {
-        other = glm::vec3(0.0f, 1.0f, 0.0f);
+        other = glm::vec3(0.0F, 1.0F, 0.0F);
     }
     const glm::vec3 u = glm::normalize(glm::cross(direction, other));
     const glm::vec3 v = glm::normalize(glm::cross(direction, u));
@@ -252,14 +252,14 @@ void Manipulator::perpendiculars(const glm::vec3& direction, glm::vec3* first, g
 float Manipulator::distanceToSegment(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target) {
     const glm::vec2 along = to - from;
     const float length = glm::dot(along, along);
-    if (length <= 0.0f) {
+    if (length <= 0.0F) {
         return glm::distance(from, target);
     }
     float fraction = glm::dot(target - from, along) / length;
-    if (fraction < 0.0f) {
-        fraction = 0.0f;
-    } else if (fraction > 1.0f) {
-        fraction = 1.0f;
+    if (fraction < 0.0F) {
+        fraction = 0.0F;
+    } else if (fraction > 1.0F) {
+        fraction = 1.0F;
     }
     return glm::distance(from + along * fraction, target);
 }
@@ -273,15 +273,15 @@ float Manipulator::along(const ViewPort& view, const Placement& placement, Axis 
     glm::vec2 tip;
     if (!project(view, placement.origin, &root) ||
         !project(view, placement.origin + unit * placement.size, &tip)) {
-        return 0.0f;
+        return 0.0F;
     }
 
     const glm::vec2 screen = tip - root;
     const float length = glm::length(screen);
     // a handle pointing at the viewer projects to a point, which has no direction to
     // measure a drag along
-    if (length < 1.0f) {
-        return 0.0f;
+    if (length < 1.0F) {
+        return 0.0F;
     }
     return glm::dot(to - from, screen / length) * (placement.size / length);
 }
@@ -292,7 +292,7 @@ void Manipulator::marker(v3d::render::realtime::canvas::Line* canvas, const Plac
     const glm::vec3& at, float size, const glm::vec4& colour) {
     const glm::vec3 corner(size, size, size);
     canvas->push();
-    canvas->transform(glm::translate(glm::mat4(1.0f), at) * glm::mat4_cast(placement.orientation));
+    canvas->transform(glm::translate(glm::mat4(1.0F), at) * glm::mat4_cast(placement.orientation));
     canvas->box(-corner, corner, colour);
     canvas->pop();
 }
@@ -322,7 +322,7 @@ bool Manipulator::grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, const Vie
 
     const Axis axes[3] = { Axis::X, Axis::Y, Axis::Z };
     bool found = false;
-    float nearest = 0.0f;
+    float nearest = 0.0F;
     for (const Axis candidate : axes) {
         glm::vec2 tip;
         if (!project(view, seat.origin + direction(seat, candidate) * seat.size, &tip)) {

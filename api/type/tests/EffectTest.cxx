@@ -23,7 +23,7 @@ using v3d::type::effect::State;
 
 namespace {
 
-const float sixtieth = 1.0f / 60.0f;
+const float sixtieth = 1.0F / 60.0F;
 glm::quat unturned() {
     return glm::identity<glm::quat>();
 }
@@ -34,8 +34,8 @@ glm::quat unturned() {
  **/
 Emitter still() {
     Emitter emitter;
-    emitter.lifeMin = 100.0f;
-    emitter.lifeMax = 100.0f;
+    emitter.lifeMin = 100.0F;
+    emitter.lifeMax = 100.0F;
     return emitter;
 }
 
@@ -44,7 +44,7 @@ Emitter still() {
  **/
 void run(const Emitter& emitter, State* state, int steps) {
     for (int step = 0; step < steps; step++) {
-        v3d::type::effect::step(emitter, state, glm::vec3(0.0f), unturned(), sixtieth);
+        v3d::type::effect::step(emitter, state, glm::vec3(0.0F), unturned(), sixtieth);
     }
 }
 
@@ -70,15 +70,15 @@ BOOST_AUTO_TEST_SUITE(effect_test)
  **/
 BOOST_AUTO_TEST_CASE(effect_a_rate_spawns_what_it_owes_test) {
     Emitter emitter = still();
-    emitter.rate = 5.0f;
+    emitter.rate = 5.0F;
     State state(1);
 
     run(emitter, &state, 11);
-    BOOST_CHECK_EQUAL(state.particles.size(), 0u);
+    BOOST_CHECK_EQUAL(state.particles.size(), 0U);
     run(emitter, &state, 1);
-    BOOST_CHECK_EQUAL(state.particles.size(), 1u);
+    BOOST_CHECK_EQUAL(state.particles.size(), 1U);
     run(emitter, &state, 48);
-    BOOST_CHECK_EQUAL(state.particles.size(), 5u);
+    BOOST_CHECK_EQUAL(state.particles.size(), 5U);
 }
 
 /**
@@ -90,14 +90,14 @@ BOOST_AUTO_TEST_CASE(effect_a_burst_and_the_cap_test) {
     emitter.cap = 12;
     State state(1);
 
-    v3d::type::effect::burst(emitter, &state, glm::vec3(0.0f), unturned(), 8);
-    BOOST_CHECK_EQUAL(state.particles.size(), 8u);
-    v3d::type::effect::burst(emitter, &state, glm::vec3(0.0f), unturned(), 8);
-    BOOST_CHECK_EQUAL(state.particles.size(), 12u);
+    v3d::type::effect::burst(emitter, &state, glm::vec3(0.0F), unturned(), 8);
+    BOOST_CHECK_EQUAL(state.particles.size(), 8U);
+    v3d::type::effect::burst(emitter, &state, glm::vec3(0.0F), unturned(), 8);
+    BOOST_CHECK_EQUAL(state.particles.size(), 12U);
 
-    emitter.rate = 600.0f;
+    emitter.rate = 600.0F;
     run(emitter, &state, 10);
-    BOOST_CHECK_EQUAL(state.particles.size(), 12u);
+    BOOST_CHECK_EQUAL(state.particles.size(), 12U);
 }
 
 /**
@@ -106,17 +106,17 @@ BOOST_AUTO_TEST_CASE(effect_a_burst_and_the_cap_test) {
  **/
 BOOST_AUTO_TEST_CASE(effect_a_particle_falls_under_gravity_test) {
     Emitter emitter = still();
-    emitter.acceleration = glm::vec3(0.0f, -9.8f, 0.0f);
+    emitter.acceleration = glm::vec3(0.0F, -9.8F, 0.0F);
     State state(1);
-    v3d::type::effect::burst(emitter, &state, glm::vec3(0.0f), unturned(), 1);
+    v3d::type::effect::burst(emitter, &state, glm::vec3(0.0F), unturned(), 1);
 
     const int steps = 30;
     run(emitter, &state, steps);
 
     const float dt = sixtieth;
-    const float fallen = -9.8f * dt * dt * static_cast<float>(steps * (steps + 1)) / 2.0f;
-    BOOST_CHECK_CLOSE(state.particles[0].position.y, fallen, 1e-3f);
-    BOOST_CHECK_CLOSE(state.particles[0].velocity.y, -9.8f * dt * static_cast<float>(steps), 1e-3f);
+    const float fallen = -9.8F * dt * dt * static_cast<float>(steps * (steps + 1)) / 2.0F;
+    BOOST_CHECK_CLOSE(state.particles[0].position.y, fallen, 1e-3F);
+    BOOST_CHECK_CLOSE(state.particles[0].velocity.y, -9.8F * dt * static_cast<float>(steps), 1e-3F);
 }
 
 /**
@@ -124,9 +124,9 @@ BOOST_AUTO_TEST_CASE(effect_a_particle_falls_under_gravity_test) {
  **/
 BOOST_AUTO_TEST_CASE(effect_a_particle_dies_at_the_end_of_its_life_test) {
     Emitter emitter;
-    emitter.rate = 60.0f;
-    emitter.lifeMin = 0.25f;
-    emitter.lifeMax = 0.5f;
+    emitter.rate = 60.0F;
+    emitter.lifeMin = 0.25F;
+    emitter.lifeMax = 0.5F;
     State state(3);
 
     bool young = true;
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(effect_a_particle_dies_at_the_end_of_its_life_test) {
     BOOST_CHECK(young);
     BOOST_CHECK(!state.particles.empty());
 
-    emitter.rate = 0.0f;
+    emitter.rate = 0.0F;
     run(emitter, &state, 31);
     BOOST_CHECK(state.particles.empty());
 }
@@ -149,14 +149,14 @@ BOOST_AUTO_TEST_CASE(effect_a_particle_dies_at_the_end_of_its_life_test) {
  **/
 BOOST_AUTO_TEST_CASE(effect_a_seed_fixes_the_particles_test) {
     Emitter emitter;
-    emitter.rate = 30.0f;
+    emitter.rate = 30.0F;
     emitter.shape = Emitter::Shape::Box;
-    emitter.extent = glm::vec3(1.0f, 0.5f, 1.0f);
-    emitter.spread = 0.5f;
-    emitter.speedMin = 1.0f;
-    emitter.speedMax = 2.0f;
-    emitter.lifeMin = 0.5f;
-    emitter.lifeMax = 1.5f;
+    emitter.extent = glm::vec3(1.0F, 0.5F, 1.0F);
+    emitter.spread = 0.5F;
+    emitter.speedMin = 1.0F;
+    emitter.speedMax = 2.0F;
+    emitter.lifeMin = 0.5F;
+    emitter.lifeMax = 1.5F;
     State first(42);
     State second(42);
     State other(43);
@@ -178,17 +178,17 @@ BOOST_AUTO_TEST_CASE(effect_a_seed_fixes_the_particles_test) {
  **/
 BOOST_AUTO_TEST_CASE(effect_a_newborn_has_no_past_test) {
     Emitter emitter = still();
-    emitter.speedMin = 3.0f;
-    emitter.speedMax = 3.0f;
+    emitter.speedMin = 3.0F;
+    emitter.speedMax = 3.0F;
     State state(1);
 
-    v3d::type::effect::burst(emitter, &state, glm::vec3(2.0f, 0.0f, 0.0f), unturned(), 1);
-    BOOST_CHECK(state.particles[0].position == glm::vec3(2.0f, 0.0f, 0.0f));
+    v3d::type::effect::burst(emitter, &state, glm::vec3(2.0F, 0.0F, 0.0F), unturned(), 1);
+    BOOST_CHECK(state.particles[0].position == glm::vec3(2.0F, 0.0F, 0.0F));
     BOOST_CHECK(state.particles[0].previous == state.particles[0].position);
 
     run(emitter, &state, 1);
-    BOOST_CHECK(state.particles[0].previous == glm::vec3(2.0f, 0.0f, 0.0f));
-    BOOST_CHECK_CLOSE(state.particles[0].position.y, 3.0f * sixtieth, 1e-3f);
+    BOOST_CHECK(state.particles[0].previous == glm::vec3(2.0F, 0.0F, 0.0F));
+    BOOST_CHECK_CLOSE(state.particles[0].position.y, 3.0F * sixtieth, 1e-3F);
 
     // and each step after keeps where the one before left it
     const glm::vec3 first = state.particles[0].position;
@@ -202,13 +202,13 @@ BOOST_AUTO_TEST_CASE(effect_a_newborn_has_no_past_test) {
  **/
 BOOST_AUTO_TEST_CASE(effect_the_emitter_is_turned_test) {
     Emitter emitter = still();
-    emitter.speedMin = 1.0f;
-    emitter.speedMax = 1.0f;
+    emitter.speedMin = 1.0F;
+    emitter.speedMax = 1.0F;
     State state(1);
 
-    const glm::quat quarter = glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f));
-    v3d::type::effect::burst(emitter, &state, glm::vec3(0.0f), quarter, 1);
-    BOOST_CHECK_SMALL(glm::length(state.particles[0].velocity - glm::vec3(-1.0f, 0.0f, 0.0f)), 1e-6f);
+    const glm::quat quarter = glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0F, 0.0F, 1.0F));
+    v3d::type::effect::burst(emitter, &state, glm::vec3(0.0F), quarter, 1);
+    BOOST_CHECK_SMALL(glm::length(state.particles[0].velocity - glm::vec3(-1.0F, 0.0F, 0.0F)), 1e-6F);
 }
 
 /**
@@ -217,22 +217,22 @@ BOOST_AUTO_TEST_CASE(effect_the_emitter_is_turned_test) {
 BOOST_AUTO_TEST_CASE(effect_a_sphere_and_drag_test) {
     Emitter emitter = still();
     emitter.shape = Emitter::Shape::Sphere;
-    emitter.extent = glm::vec3(2.0f);
-    emitter.speedMin = 4.0f;
-    emitter.speedMax = 4.0f;
-    emitter.drag = 1.0f;
+    emitter.extent = glm::vec3(2.0F);
+    emitter.speedMin = 4.0F;
+    emitter.speedMax = 4.0F;
+    emitter.drag = 1.0F;
     emitter.cap = 1000;
     State state(5);
 
-    v3d::type::effect::burst(emitter, &state, glm::vec3(0.0f), unturned(), 1000);
+    v3d::type::effect::burst(emitter, &state, glm::vec3(0.0F), unturned(), 1000);
     bool inside = true;
     for (const Particle& particle : state.particles) {
-        inside = inside && glm::length(particle.position) <= 2.0f + 1e-5f;
+        inside = inside && glm::length(particle.position) <= 2.0F + 1e-5F;
     }
     BOOST_CHECK(inside);
 
     run(emitter, &state, 1);
-    BOOST_CHECK_CLOSE(glm::length(state.particles[0].velocity), 4.0f * (1.0f - sixtieth), 1e-3f);
+    BOOST_CHECK_CLOSE(glm::length(state.particles[0].velocity), 4.0F * (1.0F - sixtieth), 1e-3F);
 }
 
 /**
@@ -241,8 +241,8 @@ BOOST_AUTO_TEST_CASE(effect_a_sphere_and_drag_test) {
  **/
 BOOST_AUTO_TEST_CASE(effect_a_negative_rate_owes_nothing_test) {
     State state(1);
-    BOOST_CHECK_EQUAL(owing(&state, -5.0f, 1.0f), 0u);
-    BOOST_CHECK_EQUAL(owing(&state, 5.0f, 0.2f), 1u);
+    BOOST_CHECK_EQUAL(owing(&state, -5.0F, 1.0F), 0U);
+    BOOST_CHECK_EQUAL(owing(&state, 5.0F, 0.2F), 1U);
 }
 
 /**
@@ -251,11 +251,11 @@ BOOST_AUTO_TEST_CASE(effect_a_negative_rate_owes_nothing_test) {
  **/
 BOOST_AUTO_TEST_CASE(effect_a_rate_out_of_range_owes_a_count_test) {
     State infinite(1);
-    BOOST_CHECK_EQUAL(owing(&infinite, std::numeric_limits<float>::infinity(), 1.0f), 0u);
-    BOOST_CHECK_EQUAL(owing(&infinite, std::nanf(""), 1.0f), 0u);
+    BOOST_CHECK_EQUAL(owing(&infinite, std::numeric_limits<float>::infinity(), 1.0F), 0U);
+    BOOST_CHECK_EQUAL(owing(&infinite, std::nanf(""), 1.0F), 0U);
     // the largest count a float can hold below 2^32
     State huge(1);
-    BOOST_CHECK_EQUAL(owing(&huge, 1.0e30f, 1.0f), 4294967040u);
+    BOOST_CHECK_EQUAL(owing(&huge, 1.0e30F, 1.0F), 4294967040U);
 }
 
 /**
@@ -264,25 +264,25 @@ BOOST_AUTO_TEST_CASE(effect_a_rate_out_of_range_owes_a_count_test) {
  **/
 BOOST_AUTO_TEST_CASE(effect_particle_life_test) {
     Particle particle{};
-    particle.lifetime = 4.0f;
-    particle.age = 1.0f;
-    BOOST_CHECK_CLOSE(particle.life(), 0.25f, 0.0001f);
-    particle.age = 0.0f;
-    BOOST_CHECK_EQUAL(particle.life(), 0.0f);
-    particle.age = 4.0f;
-    BOOST_CHECK_EQUAL(particle.life(), 1.0f);
+    particle.lifetime = 4.0F;
+    particle.age = 1.0F;
+    BOOST_CHECK_CLOSE(particle.life(), 0.25F, 0.0001F);
+    particle.age = 0.0F;
+    BOOST_CHECK_EQUAL(particle.life(), 0.0F);
+    particle.age = 4.0F;
+    BOOST_CHECK_EQUAL(particle.life(), 1.0F);
 
     // past its lifetime, or with a negative age, the fraction is clamped
-    particle.age = 10.0f;
-    BOOST_CHECK_EQUAL(particle.life(), 1.0f);
-    particle.age = -1.0f;
-    BOOST_CHECK_EQUAL(particle.life(), 0.0f);
+    particle.age = 10.0F;
+    BOOST_CHECK_EQUAL(particle.life(), 1.0F);
+    particle.age = -1.0F;
+    BOOST_CHECK_EQUAL(particle.life(), 0.0F);
 
-    particle.age = 1.0f;
-    particle.lifetime = 0.0f;
-    BOOST_CHECK_EQUAL(particle.life(), 1.0f);
-    particle.lifetime = -2.0f;
-    BOOST_CHECK_EQUAL(particle.life(), 1.0f);
+    particle.age = 1.0F;
+    particle.lifetime = 0.0F;
+    BOOST_CHECK_EQUAL(particle.life(), 1.0F);
+    particle.lifetime = -2.0F;
+    BOOST_CHECK_EQUAL(particle.life(), 1.0F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

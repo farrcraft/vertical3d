@@ -30,10 +30,10 @@ uint16_t slot(uint32_t id) noexcept {
  **/
 Pass::Pass(const std::string& name) :
     name_(name),
-    clearColour_(0.0f, 0.0f, 0.0f, 1.0f),
-    viewport_(0.0f, 0.0f, 0.0f, 0.0f),
-    view_(1.0f),
-    projection_(1.0f),
+    clearColour_(0.0F, 0.0F, 0.0F, 1.0F),
+    viewport_(0.0F, 0.0F, 0.0F, 0.0F),
+    view_(1.0F),
+    projection_(1.0F),
     scene_(VK_NULL_HANDLE),
     clears_(true),
     depth_(false),

@@ -89,17 +89,17 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_standard_shaders_compile_test) {
 BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_over_the_defaults_test) {
     ShaderLibrary library(logger());
     ParameterList list;
-    add(&list, "Ks", Declaration::Type::FLOAT, { 0.8f });
+    add(&list, "Ks", Declaration::Type::FLOAT, { 0.8F });
 
     const InstancePtr shader = library.instance("plastic", ShaderType::SURFACE, list);
     BOOST_REQUIRE(shader);
-    BOOST_CHECK_CLOSE(bound(shader, "Ks").x, 0.8f, 0.01f);
+    BOOST_CHECK_CLOSE(bound(shader, "Ks").x, 0.8F, 0.01F);
     // the four the scene did not name keep what plastic declares
-    BOOST_CHECK_CLOSE(bound(shader, "Ka").x, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(bound(shader, "Kd").x, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(bound(shader, "roughness").x, 0.1f, 0.01f);
+    BOOST_CHECK_CLOSE(bound(shader, "Ka").x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(bound(shader, "Kd").x, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(bound(shader, "roughness").x, 0.1F, 0.01F);
     // "color specularcolor = 1" is a float promoted into a colour by replication
-    BOOST_CHECK_CLOSE(bound(shader, "specularcolor").b, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(bound(shader, "specularcolor").b, 1.0F, 0.01F);
 }
 
 /**
@@ -113,8 +113,8 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_expression_default_test) {
 
     const InstancePtr shader = library.instance("distantlight", ShaderType::LIGHT, none);
     BOOST_REQUIRE(shader);
-    BOOST_CHECK_SMALL(bound(shader, "from").z, 0.0001f);
-    BOOST_CHECK_CLOSE(bound(shader, "to").z, 1.0f, 0.01f);
+    BOOST_CHECK_SMALL(bound(shader, "from").z, 0.0001F);
+    BOOST_CHECK_CLOSE(bound(shader, "to").z, 1.0F, 0.01F);
 }
 
 /**
@@ -124,13 +124,13 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_expression_default_test) {
 BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_a_colour_test) {
     ShaderLibrary library(logger());
     ParameterList list;
-    add(&list, "lightcolor", Declaration::Type::COLOR, { 0.25f, 0.5f, 0.75f });
+    add(&list, "lightcolor", Declaration::Type::COLOR, { 0.25F, 0.5F, 0.75F });
 
     const InstancePtr shader = library.instance("ambientlight", ShaderType::LIGHT, list);
     BOOST_REQUIRE(shader);
-    BOOST_CHECK_CLOSE(bound(shader, "lightcolor").r, 0.25f, 0.01f);
-    BOOST_CHECK_CLOSE(bound(shader, "lightcolor").g, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(bound(shader, "lightcolor").b, 0.75f, 0.01f);
+    BOOST_CHECK_CLOSE(bound(shader, "lightcolor").r, 0.25F, 0.01F);
+    BOOST_CHECK_CLOSE(bound(shader, "lightcolor").g, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(bound(shader, "lightcolor").b, 0.75F, 0.01F);
 }
 
 /**
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_a_matrix_from_a_float_test) {
     ShaderLibrary library(logger());
     library.searchpath(".");
     ParameterList list;
-    add(&list, "m", Declaration::Type::FLOAT, { 2.0f });
+    add(&list, "m", Declaration::Type::FLOAT, { 2.0F });
     const InstancePtr shader = library.instance("diagonal", ShaderType::SURFACE, list);
     BOOST_REQUIRE(shader);
     BOOST_REQUIRE_EQUAL(shader->name(), "diagonal");
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_a_matrix_from_a_float_test) {
     BOOST_REQUIRE(reg >= 0);
     const v3d::render::offline::sl::runtime::Value & matrix = machine.value(reg);
     for (unsigned int i = 0; i < 16; i++) {
-        BOOST_CHECK_EQUAL(matrix.component(0, i), i % 5 == 0 ? 2.0f : 0.0f);
+        BOOST_CHECK_EQUAL(matrix.component(0, i), i % 5 == 0 ? 2.0F : 0.0F);
     }
 
     std::remove("diagonal.sl");
@@ -173,13 +173,13 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_a_matrix_from_a_float_test) {
 BOOST_AUTO_TEST_CASE(slshaderlibrary_unbindable_parameters_test) {
     ShaderLibrary library(logger());
     ParameterList list;
-    add(&list, "Kwhatever", Declaration::Type::FLOAT, { 3.0f });
-    add(&list, "Kd", Declaration::Type::MATRIX, std::vector<float>(16, 2.0f));
+    add(&list, "Kwhatever", Declaration::Type::FLOAT, { 3.0F });
+    add(&list, "Kd", Declaration::Type::MATRIX, std::vector<float>(16, 2.0F));
 
     const InstancePtr shader = library.instance("matte", ShaderType::SURFACE, list);
     BOOST_REQUIRE(shader);
     // a matrix does not coerce to a float, so Kd keeps what matte declares
-    BOOST_CHECK_CLOSE(bound(shader, "Kd").x, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(bound(shader, "Kd").x, 1.0F, 0.01F);
 }
 
 /**
@@ -221,14 +221,14 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_searchpath_test) {
     const InstancePtr shader = library.instance("matte", ShaderType::SURFACE, none);
     BOOST_REQUIRE(shader);
     // the file's default rather than the built-in's, which shows which one was compiled
-    BOOST_CHECK_CLOSE(bound(shader, "Kd").x, 7.0f, 0.01f);
+    BOOST_CHECK_CLOSE(bound(shader, "Kd").x, 7.0F, 0.01F);
 
     ShaderLibrary appended(logger());
     appended.searchpath("nowhere");
     appended.searchpath(".:&");
     const InstancePtr again = appended.instance("matte", ShaderType::SURFACE, none);
     BOOST_REQUIRE(again);
-    BOOST_CHECK_CLOSE(bound(again, "Kd").x, 7.0f, 0.01f);
+    BOOST_CHECK_CLOSE(bound(again, "Kd").x, 7.0F, 0.01F);
 
     std::remove("matte.sl");
 }
@@ -246,7 +246,7 @@ class Placed final : public v3d::render::offline::sl::runtime::Renderer {
         if (name != "shader") {
             return false;
         }
-        *matrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f));
+        *matrix = glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, -2.0F, 0.0F));
         return true;
     }
 };
@@ -265,7 +265,7 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_shader_space_test) {
     Placed renderer;
     ShaderLibrary library(logger());
     ParameterList list;
-    add(&list, "from", Declaration::Type::POINT, { 1.0f, 0.0f, 0.0f });
+    add(&list, "from", Declaration::Type::POINT, { 1.0F, 0.0F, 0.0F });
 
     const InstancePtr shader = library.instance("distantlight", ShaderType::LIGHT, list);
     BOOST_REQUIRE(shader);
@@ -273,14 +273,14 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_shader_space_test) {
     v3d::render::offline::sl::runtime::Machine machine;
     machine.renderer(&renderer);
     machine.prepare(shader->program(), 1);
-    BOOST_REQUIRE(shader->write(&machine, glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f))));
+    BOOST_REQUIRE(shader->write(&machine, glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, 2.0F, 0.0F))));
 
     // the default, computed against the renderer rather than against the identity
-    BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("to")).triple(0).y, 2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("to")).triple(0).z, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("to")).triple(0).y, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("to")).triple(0).z, 1.0F, 0.01F);
     // the bound one, which the scene stated in the same space
-    BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("from")).triple(0).x, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("from")).triple(0).y, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("from")).triple(0).x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(machine.value(shader->program().symbol("from")).triple(0).y, 2.0F, 0.01F);
 }
 
 };  // namespace

@@ -20,17 +20,17 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
 BOOST_AUTO_TEST_CASE(polygon_vertex_test) {
     v3d::moya::Polygon polygon;
 
-    BOOST_TEST(polygon.vertexCount() == 0u);
+    BOOST_TEST(polygon.vertexCount() == 0U);
 
-    const glm::vec3 point(2.0f, 5.0f, 7.0f);
+    const glm::vec3 point(2.0F, 5.0F, 7.0F);
     polygon.addVertex(vertex(point.x, point.y, point.z));
 
-    BOOST_TEST(polygon.vertexCount() == 1u);
+    BOOST_TEST(polygon.vertexCount() == 1U);
     BOOST_TEST((polygon.vertex(0).point() == point));
     BOOST_TEST((polygon[0].point() == point));
 
     polygon.removeVertex(0);
-    BOOST_TEST(polygon.vertexCount() == 0u);
+    BOOST_TEST(polygon.vertexCount() == 0U);
 }
 
 /**
@@ -39,24 +39,24 @@ BOOST_AUTO_TEST_CASE(polygon_vertex_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_vertex_reference_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(1.0f, 1.0f, 1.0f));
+    polygon.addVertex(vertex(1.0F, 1.0F, 1.0F));
 
-    polygon[0].point(glm::vec3(4.0f, 5.0f, 6.0f));
+    polygon[0].point(glm::vec3(4.0F, 5.0F, 6.0F));
 
-    BOOST_TEST((polygon.vertex(0).point() == glm::vec3(4.0f, 5.0f, 6.0f)));
+    BOOST_TEST((polygon.vertex(0).point() == glm::vec3(4.0F, 5.0F, 6.0F)));
 }
 
 BOOST_AUTO_TEST_CASE(polygon_remove_middle_vertex_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(0.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(1.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(2.0f, 0.0f, 0.0f));
+    polygon.addVertex(vertex(0.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(1.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(2.0F, 0.0F, 0.0F));
 
     polygon.removeVertex(1);
 
-    BOOST_TEST(polygon.vertexCount() == 2u);
-    BOOST_TEST((polygon.vertex(0).point() == glm::vec3(0.0f, 0.0f, 0.0f)));
-    BOOST_TEST((polygon.vertex(1).point() == glm::vec3(2.0f, 0.0f, 0.0f)));
+    BOOST_TEST(polygon.vertexCount() == 2U);
+    BOOST_TEST((polygon.vertex(0).point() == glm::vec3(0.0F, 0.0F, 0.0F)));
+    BOOST_TEST((polygon.vertex(1).point() == glm::vec3(2.0F, 0.0F, 0.0F)));
 }
 
 /**
@@ -64,12 +64,12 @@ BOOST_AUTO_TEST_CASE(polygon_remove_middle_vertex_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_clear_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(1.0f, 1.0f, 1.0f));
-    polygon.addVertex(vertex(2.0f, 2.0f, 2.0f));
+    polygon.addVertex(vertex(1.0F, 1.0F, 1.0F));
+    polygon.addVertex(vertex(2.0F, 2.0F, 2.0F));
 
     polygon.clear();
 
-    BOOST_TEST(polygon.vertexCount() == 0u);
+    BOOST_TEST(polygon.vertexCount() == 0U);
 }
 
 /**
@@ -78,14 +78,14 @@ BOOST_AUTO_TEST_CASE(polygon_clear_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_bound_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(-1.0f, 4.0f, 0.0f));
-    polygon.addVertex(vertex(3.0f, -2.0f, 5.0f));
-    polygon.addVertex(vertex(0.0f, 1.0f, -7.0f));
+    polygon.addVertex(vertex(-1.0F, 4.0F, 0.0F));
+    polygon.addVertex(vertex(3.0F, -2.0F, 5.0F));
+    polygon.addVertex(vertex(0.0F, 1.0F, -7.0F));
 
     const v3d::type::geometry::AABBox bound = polygon.bound();
 
-    BOOST_TEST((bound.min() == glm::vec3(-1.0f, -2.0f, -7.0f)));
-    BOOST_TEST((bound.max() == glm::vec3(3.0f, 4.0f, 5.0f)));
+    BOOST_TEST((bound.min() == glm::vec3(-1.0F, -2.0F, -7.0F)));
+    BOOST_TEST((bound.max() == glm::vec3(3.0F, 4.0F, 5.0F)));
 }
 
 /**
@@ -97,8 +97,8 @@ BOOST_AUTO_TEST_CASE(polygon_empty_bound_test) {
 
     const v3d::type::geometry::AABBox bound = polygon.bound();
 
-    BOOST_TEST((bound.min() == glm::vec3(0.0f, 0.0f, 0.0f)));
-    BOOST_TEST((bound.max() == glm::vec3(0.0f, 0.0f, 0.0f)));
+    BOOST_TEST((bound.min() == glm::vec3(0.0F, 0.0F, 0.0F)));
+    BOOST_TEST((bound.max() == glm::vec3(0.0F, 0.0F, 0.0F)));
 }
 
 /**
@@ -107,19 +107,19 @@ BOOST_AUTO_TEST_CASE(polygon_empty_bound_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_geometric_normal_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(0.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(1.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(0.0f, 1.0f, 0.0f));
+    polygon.addVertex(vertex(0.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(1.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(0.0F, 1.0F, 0.0F));
 
-    BOOST_TEST((polygon.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_TEST((polygon.geometricNormal() == glm::vec3(0.0F, 0.0F, 1.0F)));
 
     // the winding is what decides which way it faces, so reversing it reverses the normal
     v3d::moya::Polygon reversed;
-    reversed.addVertex(vertex(0.0f, 0.0f, 0.0f));
-    reversed.addVertex(vertex(0.0f, 1.0f, 0.0f));
-    reversed.addVertex(vertex(1.0f, 0.0f, 0.0f));
+    reversed.addVertex(vertex(0.0F, 0.0F, 0.0F));
+    reversed.addVertex(vertex(0.0F, 1.0F, 0.0F));
+    reversed.addVertex(vertex(1.0F, 0.0F, 0.0F));
 
-    BOOST_TEST((reversed.geometricNormal() == glm::vec3(0.0f, 0.0f, -1.0f)));
+    BOOST_TEST((reversed.geometricNormal() == glm::vec3(0.0F, 0.0F, -1.0F)));
 }
 
 /**
@@ -128,12 +128,12 @@ BOOST_AUTO_TEST_CASE(polygon_geometric_normal_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_geometric_normal_skips_collinear_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(0.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(1.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(2.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(0.0f, 1.0f, 0.0f));
+    polygon.addVertex(vertex(0.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(1.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(2.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(0.0F, 1.0F, 0.0F));
 
-    BOOST_TEST((polygon.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_TEST((polygon.geometricNormal() == glm::vec3(0.0F, 0.0F, 1.0F)));
 }
 
 /**
@@ -142,15 +142,15 @@ BOOST_AUTO_TEST_CASE(polygon_geometric_normal_skips_collinear_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_degenerate_normal_test) {
     v3d::moya::Polygon collinear;
-    collinear.addVertex(vertex(0.0f, 0.0f, 0.0f));
-    collinear.addVertex(vertex(1.0f, 0.0f, 0.0f));
-    collinear.addVertex(vertex(2.0f, 0.0f, 0.0f));
+    collinear.addVertex(vertex(0.0F, 0.0F, 0.0F));
+    collinear.addVertex(vertex(1.0F, 0.0F, 0.0F));
+    collinear.addVertex(vertex(2.0F, 0.0F, 0.0F));
 
-    BOOST_TEST((collinear.geometricNormal() == glm::vec3(0.0f)));
+    BOOST_TEST((collinear.geometricNormal() == glm::vec3(0.0F)));
 
     const v3d::moya::Polygon empty;
 
-    BOOST_TEST((empty.geometricNormal() == glm::vec3(0.0f)));
+    BOOST_TEST((empty.geometricNormal() == glm::vec3(0.0F)));
 }
 
 };  // namespace

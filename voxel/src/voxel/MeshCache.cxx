@@ -108,15 +108,15 @@ void MeshCache::extract(const boost::shared_ptr<Voxel> & voxel, unsigned int fac
     const unsigned int type = voxel->type();
 
     // front
-    const glm::vec3 p0 = glm::vec3(0.0f, 0.0f, 1.0f) + position;
-    const glm::vec3 p1 = glm::vec3(1.0f, 0.0f, 1.0f) + position;
-    const glm::vec3 p2 = glm::vec3(1.0f, 1.0f, 1.0f) + position;
-    const glm::vec3 p3 = glm::vec3(0.0f, 1.0f, 1.0f) + position;
+    const glm::vec3 p0 = glm::vec3(0.0F, 0.0F, 1.0F) + position;
+    const glm::vec3 p1 = glm::vec3(1.0F, 0.0F, 1.0F) + position;
+    const glm::vec3 p2 = glm::vec3(1.0F, 1.0F, 1.0F) + position;
+    const glm::vec3 p3 = glm::vec3(0.0F, 1.0F, 1.0F) + position;
     // back
-    const glm::vec3 p4 = glm::vec3(0.0f, 0.0f, 0.0f) + position;
-    const glm::vec3 p5 = glm::vec3(1.0f, 0.0f, 0.0f) + position;
-    const glm::vec3 p6 = glm::vec3(1.0f, 1.0f, 0.0f) + position;
-    const glm::vec3 p7 = glm::vec3(0.0f, 1.0f, 0.0f) + position;
+    const glm::vec3 p4 = glm::vec3(0.0F, 0.0F, 0.0F) + position;
+    const glm::vec3 p5 = glm::vec3(1.0F, 0.0F, 0.0F) + position;
+    const glm::vec3 p6 = glm::vec3(1.0F, 1.0F, 0.0F) + position;
+    const glm::vec3 p7 = glm::vec3(0.0F, 1.0F, 0.0F) + position;
 
     createFace({.type = type, .drawFaces = faces, .inFaces = Voxel::BLOCK_FACE_FRONT},  p0, p1, p2, p3);
     createFace({.type = type, .drawFaces = faces, .inFaces = Voxel::BLOCK_FACE_RIGHT},  p1, p5, p6, p2);

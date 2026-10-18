@@ -117,21 +117,21 @@ BOOST_AUTO_TEST_CASE(event_state_name_test) {
 BOOST_AUTO_TEST_CASE(mouse_event_position_test) {
     const boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");
 
-    const v3d::event::kind::MouseButton press("left", glm::vec2(4.0f, 9.0f), mouse, true);
+    const v3d::event::kind::MouseButton press("left", glm::vec2(4.0F, 9.0F), mouse, true);
     BOOST_CHECK_EQUAL(press.button(), "left");
     // the button names the event, so binding one is binding "left" - the same shape a key has
     BOOST_CHECK_EQUAL(press.name(), "left");
-    BOOST_CHECK_EQUAL(press.position()[0], 4.0f);
-    BOOST_CHECK_EQUAL(press.position()[1], 9.0f);
+    BOOST_CHECK_EQUAL(press.position()[0], 4.0F);
+    BOOST_CHECK_EQUAL(press.position()[1], 9.0F);
     BOOST_CHECK_EQUAL(press.pressed(), true);
     BOOST_CHECK(press.state() == v3d::event::State::Pressed);
 
-    const v3d::event::kind::MouseButton release("left", glm::vec2(4.0f, 9.0f), mouse, false);
+    const v3d::event::kind::MouseButton release("left", glm::vec2(4.0F, 9.0F), mouse, false);
     BOOST_CHECK(release.state() == v3d::event::State::Released);
 
-    const v3d::event::kind::MouseMotion moved({.position = glm::vec2(4.0f, 9.0f), .motion = glm::vec2(1.0f, -1.0f)}, mouse);
+    const v3d::event::kind::MouseMotion moved({.position = glm::vec2(4.0F, 9.0F), .motion = glm::vec2(1.0F, -1.0F)}, mouse);
     BOOST_CHECK_EQUAL(moved.position()[0], press.position()[0]);
-    BOOST_CHECK_EQUAL(moved.motion()[1], -1.0f);
+    BOOST_CHECK_EQUAL(moved.motion()[1], -1.0F);
 }
 
 };  // namespace

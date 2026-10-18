@@ -7,11 +7,11 @@
 
 namespace v3d::ui {
 
-Image::Image() noexcept : uv0(0.0f, 0.0f), uv1(1.0f, 1.0f) {
+Image::Image() noexcept : uv0(0.0F, 0.0F), uv1(1.0F, 1.0F) {
 }
 
 Image::Image(const v3d::render::realtime::TextureHandle& tex) noexcept :
-    texture(tex), uv0(0.0f, 0.0f), uv1(1.0f, 1.0f) {
+    texture(tex), uv0(0.0F, 0.0F), uv1(1.0F, 1.0F) {
 }
 
 Image::Image(const v3d::render::realtime::TextureHandle& tex, const Corners& corners) noexcept :

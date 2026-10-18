@@ -21,14 +21,14 @@ namespace {
  * How long a looping clip's unwrapped time may grow before whole loops are taken off it. A
  * float still resolves half a millisecond here, and loses that within the next few hours.
  **/
-const float rebaseAfter = 4096.0f;
+const float rebaseAfter = 4096.0F;
 
 /**
  * The earlier of two times of the same looping clip, moved back by whole loops when the later
  * one was rebased in between, so that the two still run forwards.
  **/
 float unrolled(const Playback& earlier, const Playback& later) {
-    if (!later.loops || later.duration <= 0.0f || earlier.time <= later.time) {
+    if (!later.loops || later.duration <= 0.0F || earlier.time <= later.time) {
         return earlier.time;
     }
     const float loops = std::ceil((earlier.time - later.time) / later.duration);
@@ -45,16 +45,16 @@ void play(Playback* playback, const Start& start) {
     if (playback->clip == clip) {
         return;
     }
-    const bool fading = fade > 0.0f && playback->clip != Playback::none;
+    const bool fading = fade > 0.0F && playback->clip != Playback::none;
     playback->from = fading ? playback->clip : Playback::none;
     playback->fromTime = playback->time;
     playback->fromDuration = playback->duration;
     playback->fromLoops = playback->loops;
-    playback->fade = fading ? 0.0f : 1.0f;
-    playback->fadeDuration = fading ? fade : 0.0f;
+    playback->fade = fading ? 0.0F : 1.0F;
+    playback->fadeDuration = fading ? fade : 0.0F;
 
     playback->clip = clip;
-    playback->time = 0.0f;
+    playback->time = 0.0F;
     playback->duration = duration;
     playback->loops = loops;
 }
@@ -75,8 +75,8 @@ void advance(Playback* playback, float step) {
     }
     const type::animation::Clock fading(playback->fromDuration, playback->fromLoops);
     playback->fromTime = fading.sample(fading.advance(playback->fromTime, step));
-    playback->fade = playback->fadeDuration > 0.0f ? std::min(1.0f, playback->fade + (step / playback->fadeDuration)) : 1.0f;
-    if (playback->fade >= 1.0f) {
+    playback->fade = playback->fadeDuration > 0.0F ? std::min(1.0F, playback->fade + (step / playback->fadeDuration)) : 1.0F;
+    if (playback->fade >= 1.0F) {
         playback->from = Playback::none;
     }
 }

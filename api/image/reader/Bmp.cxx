@@ -55,7 +55,7 @@ unsigned char channel(uint32_t pixel, uint32_t mask) {
         return 0;
     }
     uint32_t shift = 0;
-    while (((mask >> shift) & 1u) == 0) {
+    while (((mask >> shift) & 1U) == 0) {
         shift++;
     }
     const uint32_t width = static_cast<uint32_t>(std::popcount(mask));
@@ -63,8 +63,8 @@ unsigned char channel(uint32_t pixel, uint32_t mask) {
     if (width >= 8) {
         return static_cast<unsigned char>(value >> (width - 8));
     }
-    const uint32_t most = (1u << width) - 1u;
-    return static_cast<unsigned char>(((value * 255u) + (most / 2)) / most);
+    const uint32_t most = (1U << width) - 1U;
+    return static_cast<unsigned char>(((value * 255U) + (most / 2)) / most);
 }
 
 /**
@@ -78,9 +78,9 @@ struct Masks final {
 };
 
 // an uncompressed 16 bit file has five bits a channel
-constexpr Masks RGB555_MASKS{0x7C00u, 0x03E0u, 0x001Fu, 0u};
+constexpr Masks RGB555_MASKS{0x7C00U, 0x03E0U, 0x001FU, 0U};
 // and an uncompressed 32 bit file has eight, with alpha in the top byte
-constexpr Masks ARGB8888_MASKS{0x00FF0000u, 0x0000FF00u, 0x000000FFu, 0xFF000000u};
+constexpr Masks ARGB8888_MASKS{0x00FF0000U, 0x0000FF00U, 0x000000FFU, 0xFF000000U};
 // each mask after the info header is one word, in the order red, green, blue, alpha
 constexpr std::size_t MASK_SIZE = sizeof(uint32_t);
 
@@ -147,7 +147,7 @@ bool readMasks(const unsigned char* encoded, std::size_t length, const format::b
     masks->red = readWord(encoded + held);
     masks->green = readWord(encoded + held + MASK_SIZE);
     masks->blue = readWord(encoded + held + (2 * MASK_SIZE));
-    masks->alpha = alpha ? readWord(encoded + held + (3 * MASK_SIZE)) : 0u;
+    masks->alpha = alpha ? readWord(encoded + held + (3 * MASK_SIZE)) : 0U;
     return true;
 }
 

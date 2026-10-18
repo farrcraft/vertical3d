@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE(a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state) 
     BOOST_CHECK_EQUAL(plain.rasterization().depthBiasEnable, VK_FALSE);
     const std::vector<VkDynamicState> untouched = plain.dynamics();
     BOOST_CHECK(std::find(untouched.begin(), untouched.end(), VK_DYNAMIC_STATE_DEPTH_BIAS) == untouched.end());
-    BOOST_REQUIRE_EQUAL(untouched.size(), 2u);
+    BOOST_REQUIRE_EQUAL(untouched.size(), 2U);
     BOOST_CHECK_EQUAL(untouched[0], VK_DYNAMIC_STATE_VIEWPORT);
     BOOST_CHECK_EQUAL(untouched[1], VK_DYNAMIC_STATE_SCISSOR);
 }

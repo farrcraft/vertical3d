@@ -37,16 +37,16 @@ namespace {
 typedef Signature::Body Body;
 
 float sign(float value) {
-    if (value < 0.0f) {
-        return -1.0f;
+    if (value < 0.0F) {
+        return -1.0F;
     }
-    return value > 0.0f ? 1.0f : 0.0f;
+    return value > 0.0F ? 1.0F : 0.0F;
 }
 
 /** The bounds a value is clamped to. **/
 struct Range {
-    float low = 0.0f;
-    float high = 1.0f;
+    float low = 0.0F;
+    float high = 1.0F;
 };
 
 /**
@@ -66,12 +66,12 @@ float clamp(float value, const Range & range) {
  **/
 float smoothstep(float low, float high, float value) {
     if (high == low) {
-        return value < low ? 0.0f : 1.0f;
+        return value < low ? 0.0F : 1.0F;
     }
     // 3t^2 - 2t^3, as t^2 (3 - 2t)
-    constexpr float squareCoefficient = 3.0f;
-    constexpr float cubeCoefficient = 2.0f;
-    const float t = clamp((value - low) / (high - low), {.low = 0.0f, .high = 1.0f});
+    constexpr float squareCoefficient = 3.0F;
+    constexpr float cubeCoefficient = 2.0F;
+    const float t = clamp((value - low) / (high - low), {.low = 0.0F, .high = 1.0F});
     return t * t * (squareCoefficient - (cubeCoefficient * t));
 }
 
@@ -90,11 +90,11 @@ float once(Body body, float x) {
         case Body::CEIL:
             return std::ceil(x);
         case Body::ROUND:
-            return std::floor(x + 0.5f);
+            return std::floor(x + 0.5F);
         case Body::SQRT:
             // the root of a negative is not a number, and a shader that took one should
             // render black rather than render nothing at all
-            return x <= 0.0f ? 0.0f : std::sqrt(x);
+            return x <= 0.0F ? 0.0F : std::sqrt(x);
         case Body::EXP:
             return std::exp(x);
         case Body::LOG:
@@ -110,9 +110,9 @@ float once(Body body, float x) {
         case Body::TAN:
             return std::tan(x);
         case Body::ASIN:
-            return std::asin(clamp(x, {.low = -1.0f, .high = 1.0f}));
+            return std::asin(clamp(x, {.low = -1.0F, .high = 1.0F}));
         case Body::ACOS:
-            return std::acos(clamp(x, {.low = -1.0f, .high = 1.0f}));
+            return std::acos(clamp(x, {.low = -1.0F, .high = 1.0F}));
         default:
             return std::atan(x);
     }
@@ -131,7 +131,7 @@ float number(Body body, const float* given, std::size_t count) {
         case Body::MOD:
             // RI's mod takes the sign of the divisor rather than of the dividend, so that
             // mod(-1, 3) is 2 and a value decreasing past zero stays inside the period
-            return given[1] == 0.0f ? 0.0f : given[0] - (given[1] * std::floor(given[0] / given[1]));
+            return given[1] == 0.0F ? 0.0F : given[0] - (given[1] * std::floor(given[0] / given[1]));
         case Body::POW:
             return std::pow(given[0], given[1]);
         case Body::MIN:
@@ -143,7 +143,7 @@ float number(Body body, const float* given, std::size_t count) {
         case Body::MIX:
             return given[0] + ((given[1] - given[0]) * given[2]);
         case Body::STEP:
-            return given[1] < given[0] ? 0.0f : 1.0f;
+            return given[1] < given[0] ? 0.0F : 1.0F;
         case Body::SMOOTHSTEP:
             return smoothstep(given[0], given[1], given[2]);
         default:
@@ -155,7 +155,7 @@ glm::vec3 unit(const glm::vec3 & value) {
     // glm::normalize of a zero direction is not a number, and a shader that normalized one
     // should render black rather than render nothing at all
     const float length = glm::length(value);
-    return length == 0.0f ? value : value / length;
+    return length == 0.0F ? value : value / length;
 }
 
 /**
@@ -164,14 +164,14 @@ glm::vec3 unit(const glm::vec3 & value) {
  **/
 glm::vec3 faceforward(const glm::vec3 & normal, const glm::vec3 & incident,
     const glm::vec3 & reference) {
-    return glm::dot(-incident, reference) < 0.0f ? -normal : normal;
+    return glm::dot(-incident, reference) < 0.0F ? -normal : normal;
 }
 
 glm::vec3 refract(const glm::vec3 & incident, const glm::vec3 & normal, float eta) {
     const float cosine = glm::dot(incident, normal);
-    const float discriminant = 1.0f - (eta * eta * (1.0f - (cosine * cosine)));
+    const float discriminant = 1.0F - (eta * eta * (1.0F - (cosine * cosine)));
     // a negative discriminant is total internal reflection, where nothing is refracted
-    return discriminant < 0.0f ? glm::vec3(0.0f) : eta * incident - ((eta * cosine) + std::sqrt(discriminant)) * normal;
+    return discriminant < 0.0F ? glm::vec3(0.0F) : eta * incident - ((eta * cosine) + std::sqrt(discriminant)) * normal;
 }
 
 /**
@@ -192,7 +192,7 @@ class Site final {
     /** The arguments a body returns results through, for one that writes more than one. **/
     const std::vector<Value*>* outputs = nullptr;
     /** The matrix of a named coordinate space, for the bodies that take one. **/
-    glm::mat4x4 matrix = glm::mat4x4(1.0f);
+    glm::mat4x4 matrix = glm::mat4x4(1.0F);
     /** The image texture() reads, and where: its own arguments, or the shader's s and t. **/
     const Texture* texture = nullptr;
     const Value* s = nullptr;
@@ -220,19 +220,19 @@ void fresnel(const Site & site, unsigned int point) {
     const glm::vec3 normal = unit(site.argument(1).triple(point));
     const float eta = site.argument(2).number(point);
     const float cosine = std::fabs(glm::dot(incident, normal));
-    const float discriminant = 1.0f - (eta * eta * (1.0f - (cosine * cosine)));
-    float reflected = 1.0f;
-    if (discriminant > 0.0f) {
+    const float discriminant = 1.0F - (eta * eta * (1.0F - (cosine * cosine)));
+    float reflected = 1.0F;
+    if (discriminant > 0.0F) {
         const float through = std::sqrt(discriminant);
         const float across = ((eta * cosine) - through) / ((eta * cosine) + through);
         const float along = (cosine - (eta * through)) / (cosine + (eta * through));
-        reflected = 0.5f * ((across * across) + (along * along));
+        reflected = 0.5F * ((across * across) + (along * along));
     }
     const std::vector<Value*> & outputs = *site.outputs;
     outputs[0]->number(point, reflected);
-    outputs[1]->number(point, 1.0f - reflected);
+    outputs[1]->number(point, 1.0F - reflected);
     if (outputs.size() == 4) {
-        outputs[2]->triple(point, incident - 2.0f * glm::dot(incident, normal) * normal);
+        outputs[2]->triple(point, incident - 2.0F * glm::dot(incident, normal) * normal);
         outputs[3]->triple(point, refract(incident, normal, eta));
     }
 }
@@ -242,14 +242,14 @@ void fresnel(const Site & site, unsigned int point) {
  * rather than one grey one. The offsets are far apart and off the lattice.
  **/
 const float STREAMS[3][3] = {
-    { 0.0f, 0.0f, 0.0f }, { 31.416f, 47.853f, 12.793f }, { -73.218f, 9.631f, 58.437f }
+    { 0.0F, 0.0F, 0.0F }, { 31.416F, 47.853F, 12.793F }, { -73.218F, 9.631F, 58.437F }
 };
 
 void pattern(const Site & site, unsigned int point) {
     if (site.body == Body::TEXTURE) {
-        const float s = site.s == nullptr ? 0.0f : site.s->number(point);
-        const float t = site.t == nullptr ? 0.0f : site.t->number(point);
-        const glm::vec3 colour = site.texture == nullptr ? glm::vec3(0.0f) : site.texture->sample(s, t);
+        const float s = site.s == nullptr ? 0.0F : site.s->number(point);
+        const float t = site.t == nullptr ? 0.0F : site.t->number(point);
+        const glm::vec3 colour = site.texture == nullptr ? glm::vec3(0.0F) : site.texture->sample(s, t);
         if (site.target->components() == 1) {
             site.target->number(point, colour.r);
         } else {
@@ -258,12 +258,12 @@ void pattern(const Site & site, unsigned int point) {
         return;
     }
     // one float is a line through the noise and two are a plane of it
-    glm::vec3 at(0.0f);
+    glm::vec3 at(0.0F);
     if (site.count() == 1 && site.argument(0).components() == 3) {
         at = site.argument(0).triple(point);
     } else {
         at.x = site.argument(0).number(point);
-        at.y = site.count() > 1 ? site.argument(1).number(point) : 0.0f;
+        at.y = site.count() > 1 ? site.argument(1).number(point) : 0.0F;
     }
     for (unsigned int i = 0; i < site.target->components() && i < 3; i++) {
         const glm::vec3 stream(STREAMS[i][0], STREAMS[i][1], STREAMS[i][2]);
@@ -294,7 +294,7 @@ void geometry(const Site & site, unsigned int point) {
         case Body::REFLECT: {
             const glm::vec3 incident = site.argument(0).triple(point);
             const glm::vec3 normal = site.argument(1).triple(point);
-            site.target->triple(point, incident - 2.0f * glm::dot(incident, normal) * normal);
+            site.target->triple(point, incident - 2.0F * glm::dot(incident, normal) * normal);
             return;
         }
         default:
@@ -392,7 +392,7 @@ void matrices(const Site & site, unsigned int point) {
  * rather than a zero fill.
  **/
 void componentwise(const Site & site, unsigned int point) {
-    float given[3] = { 0.0f, 0.0f, 0.0f };
+    float given[3] = { 0.0F, 0.0F, 0.0F };
     const std::size_t count = site.count() < 3 ? site.count() : 3;
     for (unsigned int i = 0; i < site.target->components(); i++) {
         for (std::size_t which = 0; which < count; which++) {
@@ -628,7 +628,7 @@ void Machine::ambient(Value* target) {
     const unsigned int wide = target->storage() == Storage::VARYING ? batch_ : 1;
     for (unsigned int point = 0; point < wide; point++) {
         if (writable(*target, point)) {
-            target->triple(point, glm::vec3(0.0f));
+            target->triple(point, glm::vec3(0.0F));
         }
     }
     const unsigned int count = renderer_ == nullptr ? 0 : renderer_->lights();
@@ -665,7 +665,7 @@ void Machine::shadowed(bool ray, const Value & from, const Value & to, Value* ta
         something plausible.
     */
     const unsigned int wide = target->storage() == Storage::VARYING ? batch_ : 1;
-    const float answer = ray ? 0.0f : 1.0f;
+    const float answer = ray ? 0.0F : 1.0F;
     for (unsigned int point = 0; point < wide; point++) {
         if (writable(*target, point)) {
             target->triple(point, glm::vec3(answer));

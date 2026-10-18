@@ -156,7 +156,7 @@ boost::shared_ptr<const Map> World::read(const boost::shared_ptr<v3d::log::Logge
     v3d::grid::TileCoord size) {
     const boost::shared_ptr<v3d::asset::kind::Json> document = assets->load<v3d::asset::kind::Json>(file);
     boost::shared_ptr<Map> map = boost::make_shared<Map>(logger);
-    const glm::vec3 placed(static_cast<float>(corner.x) * Map::TILE_SIZE, 0.0f, static_cast<float>(corner.y) * Map::TILE_SIZE);
+    const glm::vec3 placed(static_cast<float>(corner.x) * Map::TILE_SIZE, 0.0F, static_cast<float>(corner.y) * Map::TILE_SIZE);
     if (!map->load(document, placed)) {
         logger->get()->error("the region {} could not be read", file);
         return nullptr;

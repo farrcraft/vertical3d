@@ -20,7 +20,7 @@ static_assert(v3d::ecs::Interpolable<v3d::ecs::component::Transform>);
 namespace {
 
 bool same(const glm::vec3& actual, const glm::vec3& expected) {
-    return glm::all(glm::epsilonEqual(actual, expected, 0.0001f));
+    return glm::all(glm::epsilonEqual(actual, expected, 0.0001F));
 }
 
 /**
@@ -29,22 +29,22 @@ bool same(const glm::vec3& actual, const glm::vec3& expected) {
  **/
 BOOST_AUTO_TEST_CASE(transform_matrix_order_test) {
     v3d::ecs::component::Transform transform;
-    transform.position = glm::vec3(0.0f, 5.0f, 0.0f);
+    transform.position = glm::vec3(0.0F, 5.0F, 0.0F);
     transform.rotation = v3d::ecs::component::aboutY(glm::half_pi<float>());
-    transform.scale = glm::vec3(2.0f);
+    transform.scale = glm::vec3(2.0F);
 
-    const glm::vec3 moved(transform.matrix() * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    const glm::vec3 moved(transform.matrix() * glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
 
-    BOOST_TEST(same(moved, glm::vec3(0.0f, 5.0f, -2.0f)));
+    BOOST_TEST(same(moved, glm::vec3(0.0F, 5.0F, -2.0F)));
 }
 
 /**
  * The hand of aboutY: a positive angle turns +Z towards +X, as glm::rotate about +Y does.
  **/
 BOOST_AUTO_TEST_CASE(transform_about_y_hand_test) {
-    const glm::vec3 turned = v3d::ecs::component::aboutY(glm::half_pi<float>()) * glm::vec3(0.0f, 0.0f, 1.0f);
+    const glm::vec3 turned = v3d::ecs::component::aboutY(glm::half_pi<float>()) * glm::vec3(0.0F, 0.0F, 1.0F);
 
-    BOOST_TEST(same(turned, glm::vec3(1.0f, 0.0f, 0.0f)));
+    BOOST_TEST(same(turned, glm::vec3(1.0F, 0.0F, 0.0F)));
 }
 
 /**
@@ -53,19 +53,19 @@ BOOST_AUTO_TEST_CASE(transform_about_y_hand_test) {
 BOOST_AUTO_TEST_CASE(transform_interpolate_test) {
     const v3d::ecs::component::Transform from;
     v3d::ecs::component::Transform to;
-    to.position = glm::vec3(4.0f, 0.0f, -8.0f);
-    to.scale = glm::vec3(3.0f);
-    to.rotation = v3d::ecs::component::aboutY(1.0f);
+    to.position = glm::vec3(4.0F, 0.0F, -8.0F);
+    to.scale = glm::vec3(3.0F);
+    to.rotation = v3d::ecs::component::aboutY(1.0F);
 
-    const v3d::ecs::component::Transform start = v3d::ecs::component::interpolate(from, to, 0.0f);
-    const v3d::ecs::component::Transform end = v3d::ecs::component::interpolate(from, to, 1.0f);
-    const v3d::ecs::component::Transform half = v3d::ecs::component::interpolate(from, to, 0.5f);
+    const v3d::ecs::component::Transform start = v3d::ecs::component::interpolate(from, to, 0.0F);
+    const v3d::ecs::component::Transform end = v3d::ecs::component::interpolate(from, to, 1.0F);
+    const v3d::ecs::component::Transform half = v3d::ecs::component::interpolate(from, to, 0.5F);
 
     BOOST_TEST(same(start.position, from.position));
     BOOST_TEST(same(end.position, to.position));
-    BOOST_TEST(same(half.position, glm::vec3(2.0f, 0.0f, -4.0f)));
-    BOOST_TEST(same(half.scale, glm::vec3(2.0f)));
-    BOOST_TEST(same(end.rotation * glm::vec3(0.0f, 0.0f, 1.0f), to.rotation * glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_TEST(same(half.position, glm::vec3(2.0F, 0.0F, -4.0F)));
+    BOOST_TEST(same(half.scale, glm::vec3(2.0F)));
+    BOOST_TEST(same(end.rotation * glm::vec3(0.0F, 0.0F, 1.0F), to.rotation * glm::vec3(0.0F, 0.0F, 1.0F)));
 }
 
 /**
@@ -75,12 +75,12 @@ BOOST_AUTO_TEST_CASE(transform_interpolate_test) {
 BOOST_AUTO_TEST_CASE(transform_interpolate_short_way_test) {
     v3d::ecs::component::Transform from;
     v3d::ecs::component::Transform to;
-    from.rotation = v3d::ecs::component::aboutY(glm::radians(170.0f));
-    to.rotation = v3d::ecs::component::aboutY(glm::radians(-170.0f));
+    from.rotation = v3d::ecs::component::aboutY(glm::radians(170.0F));
+    to.rotation = v3d::ecs::component::aboutY(glm::radians(-170.0F));
 
-    const glm::vec3 facing = v3d::ecs::component::interpolate(from, to, 0.5f).rotation * glm::vec3(0.0f, 0.0f, 1.0f);
+    const glm::vec3 facing = v3d::ecs::component::interpolate(from, to, 0.5F).rotation * glm::vec3(0.0F, 0.0F, 1.0F);
 
-    BOOST_TEST(same(facing, glm::vec3(0.0f, 0.0f, -1.0f)));
+    BOOST_TEST(same(facing, glm::vec3(0.0F, 0.0F, -1.0F)));
 }
 
 /**
@@ -92,12 +92,12 @@ BOOST_AUTO_TEST_CASE(transform_interpolated_test) {
     registry.emplace<v3d::ecs::component::Transform>(entity);
 
     v3d::ecs::snapshot<v3d::ecs::component::Transform>(registry);
-    registry.get<v3d::ecs::component::Transform>(entity).position = glm::vec3(0.0f, 0.0f, 10.0f);
+    registry.get<v3d::ecs::component::Transform>(entity).position = glm::vec3(0.0F, 0.0F, 10.0F);
 
     const v3d::ecs::component::Transform quarter =
-        v3d::ecs::interpolated<v3d::ecs::component::Transform>(registry, entity, 0.25f);
+        v3d::ecs::interpolated<v3d::ecs::component::Transform>(registry, entity, 0.25F);
 
-    BOOST_TEST(same(quarter.position, glm::vec3(0.0f, 0.0f, 2.5f)));
+    BOOST_TEST(same(quarter.position, glm::vec3(0.0F, 0.0F, 2.5F)));
 }
 
 /**
@@ -106,10 +106,10 @@ BOOST_AUTO_TEST_CASE(transform_interpolated_test) {
  **/
 BOOST_AUTO_TEST_CASE(transform_a_drifted_rotation_only_turns_test) {
     v3d::ecs::component::Transform transform;
-    transform.rotation = v3d::ecs::component::aboutY(glm::half_pi<float>()) * 1.5f;
+    transform.rotation = v3d::ecs::component::aboutY(glm::half_pi<float>()) * 1.5F;
 
-    const glm::vec3 moved(transform.matrix() * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-    BOOST_TEST(same(moved, glm::vec3(0.0f, 0.0f, -1.0f)));
+    const glm::vec3 moved(transform.matrix() * glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
+    BOOST_TEST(same(moved, glm::vec3(0.0F, 0.0F, -1.0F)));
 }
 
 /**
@@ -119,9 +119,9 @@ BOOST_AUTO_TEST_CASE(transform_a_drifted_rotation_only_turns_test) {
 BOOST_AUTO_TEST_CASE(transform_an_infinite_rotation_is_no_rotation_test) {
     v3d::ecs::component::Transform transform;
     const float inf = std::numeric_limits<float>::infinity();
-    transform.rotation = glm::quat(inf, 0.0f, 0.0f, 0.0f);
-    const glm::vec3 moved(transform.matrix() * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-    BOOST_TEST(same(moved, glm::vec3(1.0f, 0.0f, 0.0f)));
+    transform.rotation = glm::quat(inf, 0.0F, 0.0F, 0.0F);
+    const glm::vec3 moved(transform.matrix() * glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
+    BOOST_TEST(same(moved, glm::vec3(1.0F, 0.0F, 0.0F)));
 }
 
 };  // namespace

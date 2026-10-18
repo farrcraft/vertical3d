@@ -82,14 +82,14 @@ unsigned int sampleCount(float rate);
 struct Sampling final {
     glm::uvec2 samples { 2, 2 };
     Filter filter { Filter::Gaussian };
-    glm::vec2 width { 2.0f, 2.0f };
+    glm::vec2 width { 2.0F, 2.0F };
     /** 0 means no adaptive sampling. **/
-    float variance { 0.0f };
+    float variance { 0.0F };
     /** When the shutter opens and closes. **/
-    glm::vec2 shutter { 0.0f, 0.0f };
-    float fstop { 0.0f };
-    float focalLength { 0.0f };
-    float focalDistance { 0.0f };
+    glm::vec2 shutter { 0.0F, 0.0F };
+    float fstop { 0.0F };
+    float focalLength { 0.0F };
+    float focalDistance { 0.0F };
 
     /**
      * Whether the lens is a pinhole and nothing is out of focus. RI writes a pinhole as an

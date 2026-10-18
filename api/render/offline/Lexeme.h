@@ -62,7 +62,7 @@ class Lexeme {
  private:
     Kind kind_ = Kind::END;
     std::string text_;
-    float value_ = 0.0f;
+    float value_ = 0.0F;
     unsigned int line_ = 0;
     unsigned int column_ = 0;
 };

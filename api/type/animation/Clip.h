@@ -19,7 +19,7 @@ struct Pose;
  **/
 struct Clip final {
     std::string name;
-    float duration{ 0.0f };  /**< the last key of any channel **/
+    float duration{ 0.0F };  /**< the last key of any channel **/
     std::vector<Channel> channels;
 };
 

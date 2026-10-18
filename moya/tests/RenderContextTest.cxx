@@ -28,23 +28,23 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
 BOOST_AUTO_TEST_CASE(render_context_defaults_test) {
     const v3d::moya::RenderContext rc;
 
-    BOOST_TEST(rc.bucketWidth() == 16u);
-    BOOST_TEST(rc.bucketHeight() == 16u);
-    BOOST_TEST(rc.gridSize() == 256u);
-    BOOST_TEST(rc.shadingRate() == 1.0f);
-    BOOST_TEST(rc.imageWidth() == 320u);
-    BOOST_TEST(rc.imageHeight() == 240u);
-    BOOST_TEST(rc.pixelAspect() == 1.0f);
+    BOOST_TEST(rc.bucketWidth() == 16U);
+    BOOST_TEST(rc.bucketHeight() == 16U);
+    BOOST_TEST(rc.gridSize() == 256U);
+    BOOST_TEST(rc.shadingRate() == 1.0F);
+    BOOST_TEST(rc.imageWidth() == 320U);
+    BOOST_TEST(rc.imageHeight() == 240U);
+    BOOST_TEST(rc.pixelAspect() == 1.0F);
 }
 
 BOOST_AUTO_TEST_CASE(render_context_image_resolution_test) {
     v3d::moya::RenderContext rc;
 
-    rc.imageResolution({1024, 768}, 1.3f);
+    rc.imageResolution({1024, 768}, 1.3F);
 
-    BOOST_TEST(rc.imageWidth() == 1024u);
-    BOOST_TEST(rc.imageHeight() == 768u);
-    BOOST_TEST(rc.pixelAspect() == 1.3f);
+    BOOST_TEST(rc.imageWidth() == 1024U);
+    BOOST_TEST(rc.imageHeight() == 768U);
+    BOOST_TEST(rc.pixelAspect() == 1.3F);
 }
 
 /**
@@ -54,8 +54,8 @@ BOOST_AUTO_TEST_CASE(render_context_image_resolution_test) {
 BOOST_AUTO_TEST_CASE(render_context_named_test) {
     const v3d::moya::RenderContext rc(std::string("scene.rib"));
 
-    BOOST_TEST(rc.imageWidth() == 320u);
-    BOOST_TEST(rc.gridSize() == 256u);
+    BOOST_TEST(rc.imageWidth() == 320U);
+    BOOST_TEST(rc.gridSize() == 256U);
 }
 
 /**
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(render_context_named_test) {
  **/
 BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
     v3d::moya::RenderContext rc;
-    const glm::mat4x4 identity(1.0f);
+    const glm::mat4x4 identity(1.0F);
 
     const char* reserved[] = { "object", "world", "camera", "screen", "raster", "NDC" };
     for (const auto* name : reserved) {
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
  **/
 BOOST_AUTO_TEST_CASE(render_context_coordinate_system_test) {
     v3d::moya::RenderContext rc;
-    const glm::mat4x4 scaled(3.0f);
+    const glm::mat4x4 scaled(3.0F);
 
     rc.setTransform(scaled);
     rc.saveCoordinateSystem("world");
@@ -86,11 +86,11 @@ BOOST_AUTO_TEST_CASE(render_context_coordinate_system_test) {
 
     rc.setIdentityTransform();
     rc.saveCoordinateSystem("world");
-    BOOST_TEST((rc.coordinateSystem("world") == glm::mat4x4(1.0f)));
+    BOOST_TEST((rc.coordinateSystem("world") == glm::mat4x4(1.0F)));
 
     rc.setCoordinateSystem("world");
     rc.saveCoordinateSystem("object");
-    BOOST_TEST((rc.coordinateSystem("object") == glm::mat4x4(1.0f)));
+    BOOST_TEST((rc.coordinateSystem("object") == glm::mat4x4(1.0F)));
 }
 
 /**
@@ -101,12 +101,12 @@ BOOST_AUTO_TEST_CASE(render_context_translate_test) {
     v3d::moya::RenderContext rc;
 
     rc.setIdentityTransform();
-    rc.translate(1.0f, 2.0f, 3.0f);
-    rc.translate(1.0f, 2.0f, 3.0f);
+    rc.translate(1.0F, 2.0F, 3.0F);
+    rc.translate(1.0F, 2.0F, 3.0F);
     rc.saveCoordinateSystem("object");
 
     glm::mat4x4 composed = rc.coordinateSystem("object");
-    BOOST_TEST((glm::vec3(composed[3]) == glm::vec3(2.0f, 4.0f, 6.0f)));
+    BOOST_TEST((glm::vec3(composed[3]) == glm::vec3(2.0F, 4.0F, 6.0F)));
 }
 
 /**
@@ -117,26 +117,26 @@ BOOST_AUTO_TEST_CASE(render_context_rotate_test) {
     v3d::moya::RenderContext rc;
 
     rc.setIdentityTransform();
-    rc.rotate(90.0f, {0.0f, 0.0f, 1.0f});
+    rc.rotate(90.0F, {0.0F, 0.0F, 1.0F});
     rc.saveCoordinateSystem("object");
 
     // the angle is in degrees, as RiRotate takes it
     const glm::mat4x4 composed = rc.coordinateSystem("object");
-    glm::vec3 turned = glm::vec3(composed * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-    BOOST_TEST(turned.x == 0.0f, boost::test_tools::tolerance(0.0001f));
-    BOOST_TEST(turned.y == 1.0f, boost::test_tools::tolerance(0.0001f));
+    glm::vec3 turned = glm::vec3(composed * glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
+    BOOST_TEST(turned.x == 0.0F, boost::test_tools::tolerance(0.0001F));
+    BOOST_TEST(turned.y == 1.0F, boost::test_tools::tolerance(0.0001F));
 }
 
 BOOST_AUTO_TEST_CASE(render_context_scale_test) {
     v3d::moya::RenderContext rc;
 
     rc.setIdentityTransform();
-    rc.scale(2.0f, 3.0f, 4.0f);
+    rc.scale(2.0F, 3.0F, 4.0F);
     rc.saveCoordinateSystem("object");
 
     const glm::mat4x4 composed = rc.coordinateSystem("object");
-    const glm::vec3 scaled = glm::vec3(composed * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-    BOOST_TEST((scaled == glm::vec3(2.0f, 3.0f, 4.0f)));
+    const glm::vec3 scaled = glm::vec3(composed * glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
+    BOOST_TEST((scaled == glm::vec3(2.0F, 3.0F, 4.0F)));
 }
 
 /**
@@ -147,13 +147,13 @@ BOOST_AUTO_TEST_CASE(render_context_buckets_a_polygon_test) {
     rc.prepareWorld();
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(-0.9f, -0.9f, 5.0f));
-    polygon->addVertex(vertex(0.9f, -0.9f, 5.0f));
-    polygon->addVertex(vertex(0.9f, 0.9f, 5.0f));
-    polygon->addVertex(vertex(-0.9f, 0.9f, 5.0f));
+    polygon->addVertex(vertex(-0.9F, -0.9F, 5.0F));
+    polygon->addVertex(vertex(0.9F, -0.9F, 5.0F));
+    polygon->addVertex(vertex(0.9F, 0.9F, 5.0F));
+    polygon->addVertex(vertex(-0.9F, 0.9F, 5.0F));
     rc.addPolygon(polygon);
 
-    BOOST_TEST(rc.framebuffer()->primitiveCount() == 1u);
+    BOOST_TEST(rc.framebuffer()->primitiveCount() == 1U);
 }
 
 /**
@@ -167,10 +167,10 @@ BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
     rc.prepareWorld();
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(-0.9f, -0.9f, 5.0f));
-    polygon->addVertex(vertex(0.9f, -0.9f, 5.0f));
-    polygon->addVertex(vertex(0.9f, 0.9f, 5.0f));
-    polygon->addVertex(vertex(-0.9f, 0.9f, 5.0f));
+    polygon->addVertex(vertex(-0.9F, -0.9F, 5.0F));
+    polygon->addVertex(vertex(0.9F, -0.9F, 5.0F));
+    polygon->addVertex(vertex(0.9F, 0.9F, 5.0F));
+    polygon->addVertex(vertex(-0.9F, 0.9F, 5.0F));
     rc.addPolygon(polygon);
 
     rc.render();
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
         also checks that the count is reached at all, because a split that failed to shrink its
         input would be re-split without end.
     */
-    BOOST_TEST(rc.framebuffer()->primitiveCount() == 256u);
+    BOOST_TEST(rc.framebuffer()->primitiveCount() == 256U);
 }
 
 namespace {
@@ -194,9 +194,9 @@ namespace {
  **/
 boost::shared_ptr<v3d::moya::Polygon> diagonal() {
     boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(0.01f, 0.0f, 5.0f));
-    polygon->addVertex(vertex(0.0f, 0.01f, 5.0f));
-    polygon->addVertex(vertex(0.0f, 0.01f, 5.01f));
+    polygon->addVertex(vertex(0.01F, 0.0F, 5.0F));
+    polygon->addVertex(vertex(0.0F, 0.01F, 5.0F));
+    polygon->addVertex(vertex(0.0F, 0.01F, 5.01F));
     return polygon;
 }
 
@@ -211,9 +211,9 @@ BOOST_AUTO_TEST_CASE(render_context_face_normal_test) {
     rc.prepareWorld();
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(-0.01f, -0.01f, 5.0f));
-    polygon->addVertex(vertex(0.01f, -0.01f, 5.0f));
-    polygon->addVertex(vertex(0.01f, 0.01f, 5.0f));
+    polygon->addVertex(vertex(-0.01F, -0.01F, 5.0F));
+    polygon->addVertex(vertex(0.01F, -0.01F, 5.0F));
+    polygon->addVertex(vertex(0.01F, 0.01F, 5.0F));
     // nothing has written a shading normal yet, so the fill in supplies one
     BOOST_TEST(!polygon->vertex(0).hasNormal());
 
@@ -221,8 +221,8 @@ BOOST_AUTO_TEST_CASE(render_context_face_normal_test) {
 
     BOOST_REQUIRE(polygon->diceable());
     for (size_t i = 0; i < polygon->vertexCount(); i++) {
-        BOOST_TEST((polygon->vertex(i).geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
-        BOOST_TEST((polygon->vertex(i).normal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+        BOOST_TEST((polygon->vertex(i).geometricNormal() == glm::vec3(0.0F, 0.0F, 1.0F)));
+        BOOST_TEST((polygon->vertex(i).normal() == glm::vec3(0.0F, 0.0F, 1.0F)));
     }
 }
 
@@ -236,16 +236,16 @@ BOOST_AUTO_TEST_CASE(render_context_normal_override_test) {
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     for (int i = 0; i < 3; i++) {
-        v3d::moya::Vertex v = vertex(i == 1 ? 0.01f : -0.01f, i == 2 ? 0.01f : -0.01f, 5.0f);
-        v.normal(glm::vec3(0.0f, 1.0f, 0.0f));
+        v3d::moya::Vertex v = vertex(i == 1 ? 0.01F : -0.01F, i == 2 ? 0.01F : -0.01F, 5.0F);
+        v.normal(glm::vec3(0.0F, 1.0F, 0.0F));
         polygon->addVertex(v);
     }
     rc.addPolygon(polygon);
 
     BOOST_REQUIRE(polygon->diceable());
     for (size_t i = 0; i < polygon->vertexCount(); i++) {
-        BOOST_TEST((polygon->vertex(i).normal() == glm::vec3(0.0f, 1.0f, 0.0f)));
-        BOOST_TEST((polygon->vertex(i).geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+        BOOST_TEST((polygon->vertex(i).normal() == glm::vec3(0.0F, 1.0F, 0.0F)));
+        BOOST_TEST((polygon->vertex(i).geometricNormal() == glm::vec3(0.0F, 0.0F, 1.0F)));
     }
 }
 
@@ -257,7 +257,7 @@ BOOST_AUTO_TEST_CASE(render_context_normal_override_test) {
 BOOST_AUTO_TEST_CASE(render_context_normal_inverse_transpose_test) {
     v3d::moya::RenderContext rc;
     rc.prepareWorld();
-    rc.scale(1.0f, 2.0f, 1.0f);
+    rc.scale(1.0F, 2.0F, 1.0F);
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = diagonal();
     rc.addPolygon(polygon);
@@ -265,12 +265,12 @@ BOOST_AUTO_TEST_CASE(render_context_normal_inverse_transpose_test) {
     BOOST_REQUIRE(polygon->diceable());
     // the object plane is (1, 1, 0) normalised; the inverse transpose of a scale of two in y
     // halves that component, which is the plane the doubled points actually lie in
-    const glm::vec3 expected = glm::normalize(glm::vec3(1.0f, 0.5f, 0.0f));
+    const glm::vec3 expected = glm::normalize(glm::vec3(1.0F, 0.5F, 0.0F));
     for (size_t i = 0; i < polygon->vertexCount(); i++) {
         const glm::vec3 normal = polygon->vertex(i).geometricNormal();
-        BOOST_TEST(normal.x == expected.x, boost::test_tools::tolerance(0.0001f));
-        BOOST_TEST(normal.y == expected.y, boost::test_tools::tolerance(0.0001f));
-        BOOST_TEST(normal.z == expected.z, boost::test_tools::tolerance(0.0001f));
+        BOOST_TEST(normal.x == expected.x, boost::test_tools::tolerance(0.0001F));
+        BOOST_TEST(normal.y == expected.y, boost::test_tools::tolerance(0.0001F));
+        BOOST_TEST(normal.z == expected.z, boost::test_tools::tolerance(0.0001F));
     }
 
     // and the transformed vertices agree: the plane the normal names is the plane they are in
@@ -278,8 +278,8 @@ BOOST_AUTO_TEST_CASE(render_context_normal_inverse_transpose_test) {
     const glm::vec3 p1 = polygon->vertex(1).point();
     const glm::vec3 p2 = polygon->vertex(2).point();
     const glm::vec3 measured = glm::normalize(glm::cross(p1 - p0, p2 - p0));
-    BOOST_TEST(measured.x == expected.x, boost::test_tools::tolerance(0.0001f));
-    BOOST_TEST(measured.y == expected.y, boost::test_tools::tolerance(0.0001f));
+    BOOST_TEST(measured.x == expected.x, boost::test_tools::tolerance(0.0001F));
+    BOOST_TEST(measured.y == expected.y, boost::test_tools::tolerance(0.0001F));
 }
 
 /**
@@ -293,15 +293,15 @@ BOOST_AUTO_TEST_CASE(render_context_dice_interpolates_normal_test) {
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     const glm::vec3 corners[4] = {
-        glm::vec3(-0.01f, -0.01f, 5.0f), glm::vec3(0.01f, -0.01f, 5.0f),
-        glm::vec3(0.01f, 0.01f, 5.0f), glm::vec3(-0.01f, 0.01f, 5.0f)
+        glm::vec3(-0.01F, -0.01F, 5.0F), glm::vec3(0.01F, -0.01F, 5.0F),
+        glm::vec3(0.01F, 0.01F, 5.0F), glm::vec3(-0.01F, 0.01F, 5.0F)
     };
     for (int i = 0; i < 4; i++) {
         v3d::moya::Vertex v;
         v.point(corners[i]);
         // the first corner leans one way and the rest face front, so a midpoint of the grid
         // has to be between the two rather than either
-        v.normal(i == 0 ? glm::normalize(glm::vec3(1.0f, 0.0f, 1.0f)) : glm::vec3(0.0f, 0.0f, 1.0f));
+        v.normal(i == 0 ? glm::normalize(glm::vec3(1.0F, 0.0F, 1.0F)) : glm::vec3(0.0F, 0.0F, 1.0F));
         polygon->addVertex(v);
     }
     rc.addPolygon(polygon);
@@ -313,17 +313,17 @@ BOOST_AUTO_TEST_CASE(render_context_dice_interpolates_normal_test) {
 
     const unsigned int last = grid->size() - 1;
     // the corner that leans keeps its own normal, and one diagonally across from it does not
-    BOOST_TEST(grid->vertex(0, 0).normal().x > 0.7f);
-    BOOST_TEST(grid->vertex(last, last).normal().x == 0.0f, boost::test_tools::tolerance(0.0001f));
+    BOOST_TEST(grid->vertex(0, 0).normal().x > 0.7F);
+    BOOST_TEST(grid->vertex(last, last).normal().x == 0.0F, boost::test_tools::tolerance(0.0001F));
     // between them the normal is neither, and is still a unit vector
     const glm::vec3 middle = grid->vertex(last / 2, last / 2).normal();
-    BOOST_TEST(middle.x > 0.0f);
-    BOOST_TEST(middle.x < 0.7f);
-    BOOST_TEST(glm::length(middle) == 1.0f, boost::test_tools::tolerance(0.0001f));
+    BOOST_TEST(middle.x > 0.0F);
+    BOOST_TEST(middle.x < 0.7F);
+    BOOST_TEST(glm::length(middle) == 1.0F, boost::test_tools::tolerance(0.0001F));
 
     // Ng is the plane, everywhere on the grid
-    BOOST_TEST((grid->vertex(0, 0).geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
-    BOOST_TEST((grid->vertex(last, last).geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_TEST((grid->vertex(0, 0).geometricNormal() == glm::vec3(0.0F, 0.0F, 1.0F)));
+    BOOST_TEST((grid->vertex(last, last).geometricNormal() == glm::vec3(0.0F, 0.0F, 1.0F)));
 }
 
 /**
@@ -336,22 +336,22 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
     rc.prepareWorld();
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(-0.9f, -0.9f, 5.0f));
-    polygon->addVertex(vertex(0.9f, -0.9f, 5.0f));
-    polygon->addVertex(vertex(0.9f, 0.9f, 5.0f));
-    polygon->addVertex(vertex(-0.9f, 0.9f, 5.0f));
+    polygon->addVertex(vertex(-0.9F, -0.9F, 5.0F));
+    polygon->addVertex(vertex(0.9F, -0.9F, 5.0F));
+    polygon->addVertex(vertex(0.9F, 0.9F, 5.0F));
+    polygon->addVertex(vertex(-0.9F, 0.9F, 5.0F));
     rc.addPolygon(polygon);
 
     // too large for one grid, so the second pass splits it rather than dicing it - and the
     // plane it hands its pieces is the one it was placed with
     BOOST_REQUIRE(!polygon->diceable());
-    BOOST_TEST((polygon->normal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_TEST((polygon->normal() == glm::vec3(0.0F, 0.0F, 1.0F)));
 
     // the pieces reach the first pass again already placed, so they keep it. The render then
     // terminates with every piece bucketed, which would fail if a piece were re-measured
     // against the state of whatever came last
     rc.render();
-    BOOST_TEST(rc.framebuffer()->primitiveCount() == 256u);
+    BOOST_TEST(rc.framebuffer()->primitiveCount() == 256U);
 }
 
 /**
@@ -364,8 +364,8 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
  **/
 BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
     v3d::moya::RenderContext rc;
-    rc.imageResolution({64, 48}, 1.0f);
-    rc.clipping({.hither = 1.0f, .yon = 100.0f});
+    rc.imageResolution({64, 48}, 1.0F);
+    rc.clipping({.hither = 1.0F, .yon = 100.0F});
     rc.prepareWorld();
 
     v3d::render::offline::rib::ParameterList list;
@@ -373,25 +373,25 @@ BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
         v3d::render::offline::rib::Declaration(
             v3d::render::offline::rib::Declaration::Storage::UNIFORM,
             v3d::render::offline::rib::Declaration::Type::COLOR, 1),
-        { 0.15f, 0.25f, 0.45f }, std::vector<std::string>());
+        { 0.15F, 0.25F, 0.45F }, std::vector<std::string>());
     rc.imager("background", list);
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(-0.7f, -0.2f, 5.0f));
-    polygon->addVertex(vertex(0.3f, -0.2f, 5.0f));
-    polygon->addVertex(vertex(0.3f, 0.8f, 5.0f));
-    polygon->addVertex(vertex(-0.7f, 0.8f, 5.0f));
+    polygon->addVertex(vertex(-0.7F, -0.2F, 5.0F));
+    polygon->addVertex(vertex(0.3F, -0.2F, 5.0F));
+    polygon->addVertex(vertex(0.3F, 0.8F, 5.0F));
+    polygon->addVertex(vertex(-0.7F, 0.8F, 5.0F));
     rc.addPolygon(polygon);
     rc.render();
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
     // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8], so this is inside
     // it and keeps the colour the hider wrote
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 24, 16), 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 24, 16), 1.0F, 0.01F);
     // and this is outside it, where the imager is the whole of the pixel
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 55, 40), 0.15f, 0.01f);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 55, 40), 0.45f, 0.01f);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::COVERAGE, 55, 40), 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 55, 40), 0.15F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 55, 40), 0.45F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::COVERAGE, 55, 40), 1.0F, 0.01F);
 }
 
 };  // namespace

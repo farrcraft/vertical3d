@@ -74,7 +74,7 @@ void draw(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& 
     VkDescriptorSet scene, Capture* capture) {
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("scene");
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     pass->scene(scene);
 
     DrawItem item;
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
     block.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     DescriptorPool pool(headless.device, headless.context->ring(), std::vector<VkDescriptorSetLayoutBinding>{block}, 1, "scene");
 
-    const glm::vec4 colour(0.0f, 1.0f, 1.0f, 1.0f);
+    const glm::vec4 colour(0.0F, 1.0F, 1.0F, 1.0F);
     Buffer uniform(headless.device, {.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, .bytes = sizeof(colour)});
     uniform.write(&colour, sizeof(colour));
 

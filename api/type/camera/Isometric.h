@@ -43,7 +43,7 @@ class Isometric {
      * on screen rather than compressing it by a third, and a wall drawn at it reads as a
      * wall. Pass the true value to elevation() for the strict projection.
      **/
-    static constexpr float DEFAULT_ELEVATION = 0.78539816339744830961f;
+    static constexpr float DEFAULT_ELEVATION = 0.78539816339744830961F;
 
     /**
      * How far the eye sits from the target, in world units.
@@ -52,15 +52,15 @@ class Isometric {
      * the near and far planes cut. It has to clear the tallest thing between the eye and
      * the target.
      **/
-    static constexpr float DEFAULT_DISTANCE = 30.0f;
+    static constexpr float DEFAULT_DISTANCE = 30.0F;
 
     /**
      * The orthographic half height, in world units - half of what the viewport shows
      * vertically. Smaller is closer in.
      **/
-    static constexpr float DEFAULT_ZOOM = 10.0f;
-    static constexpr float MINIMUM_ZOOM = 2.0f;
-    static constexpr float MAXIMUM_ZOOM = 40.0f;
+    static constexpr float DEFAULT_ZOOM = 10.0F;
+    static constexpr float MINIMUM_ZOOM = 2.0F;
+    static constexpr float MAXIMUM_ZOOM = 40.0F;
 
     Isometric();
 

@@ -22,25 +22,25 @@ namespace {
 /**
  * An unselected mesh.
  **/
-constexpr glm::vec4 wire(0.78f, 0.80f, 0.84f, 1.0f);
+constexpr glm::vec4 wire(0.78F, 0.80F, 0.84F, 1.0F);
 
 /**
  * A mesh selected as a whole, which is object mode selection.
  **/
-constexpr glm::vec4 object(0.35f, 0.72f, 1.0f, 1.0f);
+constexpr glm::vec4 object(0.35F, 0.72F, 1.0F, 1.0F);
 
 /**
  * A selected component: an edge, the boundary of a selected face, or the marker
  * drawn at a selected vertex.
  **/
-constexpr glm::vec4 component(1.0f, 0.62f, 0.19f, 1.0f);
+constexpr glm::vec4 component(1.0F, 0.62F, 0.19F, 1.0F);
 
 /**
  * How big a selected vertex's marker is, as a fraction of the mesh's largest
  * dimension. A line canvas is world space, so the marker cannot be sized in pixels
  * and is sized against the mesh instead.
  **/
-constexpr float markerScale = 0.04f;
+constexpr float markerScale = 0.04F;
 
 };  // namespace
 
@@ -117,11 +117,11 @@ void WireframeVisitor::markers(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         return;
     }
 
-    float size = 0.0f;
+    float size = 0.0F;
     const v3d::type::geometry::AABBox bound = mesh->bound();
     const glm::vec3 extent = bound.max() - bound.min();
     size = std::max(std::max(extent.x, extent.y), extent.z) * markerScale;
-    if (size <= 0.0f) {
+    if (size <= 0.0F) {
         // a flat or degenerate mesh still gets a marker that can be seen
         size = markerScale;
     }

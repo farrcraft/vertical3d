@@ -69,6 +69,6 @@ class Plane {
         from the origin in [D]. distance(p) is then the equation applied to p. A separate
         stored normal and distance could disagree with it.
     */
-    float equation_[4] = { 0.0f, 0.0f, 0.0f, 0.0f };  // abcd
+    float equation_[4] = { 0.0F, 0.0F, 0.0F, 0.0F };  // abcd
 };
 };  // namespace v3d::type::geometry

@@ -18,9 +18,9 @@ namespace v3d::render::realtime::entity {
  * plane, or the view direction for a perspective one.
  **/
 struct Billboard {
-    glm::vec3 right{1.0f, 0.0f, 0.0f};
-    glm::vec3 up{0.0f, 1.0f, 0.0f};
-    glm::vec3 depthAxis{0.0f, 0.0f, 1.0f};
+    glm::vec3 right{1.0F, 0.0F, 0.0F};
+    glm::vec3 up{0.0F, 1.0F, 0.0F};
+    glm::vec3 depthAxis{0.0F, 0.0F, 1.0F};
 };
 
 };  // namespace v3d::render::realtime::entity

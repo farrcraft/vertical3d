@@ -23,8 +23,8 @@ constexpr unsigned int QUAD_INDICES = 6;
 };  // namespace
 
 TextureTextBuffer::TextureTextBuffer() :
-    ascender_(0.0f),
-    descender_(0.0f),
+    ascender_(0.0F),
+    descender_(0.0F),
     lineStart_(0) {
 }
 
@@ -33,7 +33,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         pen->x = origin_.x;
         // the same ratio as a glyph's metrics, so a markup with no size moves down one line
         // at the font's own size
-        const float lineScale = markup.size_ > 0.0f && markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
+        const float lineScale = markup.size_ > 0.0F && markup.font_->size() > 0.0F ? markup.size_ / markup.font_->size() : 1.0F;
         pen->y += (markup.font_->height() - markup.font_->descender()) * lineScale;
         /*
         descender_ = 0.0f;
@@ -55,7 +55,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     // every metric below is in pixels of the size the face was rasterized at, so another
     // size scales them by the ratio. A markup that sets no size, or the font's own, leaves
     // this at one
-    const float scale = markup.size_ > 0.0f && markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
+    const float scale = markup.size_ > 0.0F && markup.font_->size() > 0.0F ? markup.size_ / markup.font_->size() : 1.0F;
     const float advance = glyph->advance_.x * scale;
     const float height = markup.font_->height() * scale;
     const float descender = markup.font_->descender() * scale;
@@ -68,7 +68,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     const size_t istart = indices().size();
     const size_t vstart = vertices().size();
 
-    if (lines && markup.backgroundColor_.a > 0.0f) {
+    if (lines && markup.backgroundColor_.a > 0.0F) {
         const glm::vec2 xy0(pen->x, pen->y + descender);
         const glm::vec2 xy1(pen->x + advance, xy0.y + height + linegap);
 
@@ -130,10 +130,10 @@ void TextureTextBuffer::addQuad(const glm::vec2& xy0, const glm::vec2& xy1, cons
     const unsigned int vcount = static_cast<unsigned int>(vertices().size());
 
     // uv[0,1].t are flipped so y(0) can be top of screen (otherwise texture is upside down)
-    addVertex(glm::vec3(xy0.x, xy0.y, 0.0f), glm::vec2(uv0.s, uv1.t), color, xy0.x - static_cast<float>(static_cast<int>(xy0.x)), gamma);
-    addVertex(glm::vec3(xy0.x, xy1.y, 0.0f), glm::vec2(uv0.s, uv0.t), color, xy0.x - static_cast<float>(static_cast<int>(xy0.x)), gamma);
-    addVertex(glm::vec3(xy1.x, xy1.y, 0.0f), glm::vec2(uv1.s, uv0.t), color, xy1.x - static_cast<float>(static_cast<int>(xy1.x)), gamma);
-    addVertex(glm::vec3(xy1.x, xy0.y, 0.0f), glm::vec2(uv1.s, uv1.t), color, xy1.x - static_cast<float>(static_cast<int>(xy1.x)), gamma);
+    addVertex(glm::vec3(xy0.x, xy0.y, 0.0F), glm::vec2(uv0.s, uv1.t), color, xy0.x - static_cast<float>(static_cast<int>(xy0.x)), gamma);
+    addVertex(glm::vec3(xy0.x, xy1.y, 0.0F), glm::vec2(uv0.s, uv0.t), color, xy0.x - static_cast<float>(static_cast<int>(xy0.x)), gamma);
+    addVertex(glm::vec3(xy1.x, xy1.y, 0.0F), glm::vec2(uv1.s, uv0.t), color, xy1.x - static_cast<float>(static_cast<int>(xy1.x)), gamma);
+    addVertex(glm::vec3(xy1.x, xy0.y, 0.0F), glm::vec2(uv1.s, uv1.t), color, xy1.x - static_cast<float>(static_cast<int>(xy1.x)), gamma);
 
     // Use CCW winding so that the ortho matrix can put y(0) at the top of the screen
     // CW winding tri indices would be (0, 1, 2), (0, 2, 3)

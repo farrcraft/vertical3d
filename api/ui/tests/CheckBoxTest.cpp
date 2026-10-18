@@ -27,7 +27,7 @@ namespace {
 /**
  * A fixed width per character, so a label's natural width is predictable.
  **/
-const float characterWidth = 10.0f;
+const float characterWidth = 10.0F;
 
 /**
  * What the renderer asked to be written, so a test can read a row back without a font.
@@ -86,8 +86,8 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
 
     const v3d::ui::paint::Dressing& style = build(nullptr).dressing();
     BOOST_CHECK_CLOSE(box->size().x,
-        style.markSize + (style.padding * 0.5f) + (7.0f * characterWidth), 0.001f);
-    BOOST_CHECK_CLOSE(box->size().y, std::max(style.markSize, style.lineHeight), 0.001f);
+        style.markSize + (style.padding * 0.5F) + (7.0F * characterWidth), 0.001F);
+    BOOST_CHECK_CLOSE(box->size().y, std::max(style.markSize, style.lineHeight), 0.001F);
 
     // the label is written past the mark rather than over it
     BOOST_REQUIRE_EQUAL(written.size(), 1U);
@@ -196,8 +196,8 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_check_box_a_radio_button_and_a_clip) {
         boost::dynamic_pointer_cast<v3d::ui::component::Scrollbar>(container->get("bar"));
     BOOST_REQUIRE(bar);
     BOOST_CHECK(bar->direction() == v3d::ui::component::Scrollbar::Direction::Horizontal);
-    BOOST_CHECK_CLOSE(bar->maximum(), 300.0f, 0.001f);
-    BOOST_CHECK_CLOSE(bar->offset(), 50.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->maximum(), 300.0F, 0.001F);
+    BOOST_CHECK_CLOSE(bar->offset(), 50.0F, 0.001F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

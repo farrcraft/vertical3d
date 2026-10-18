@@ -49,8 +49,8 @@ v3d::render::offline::sl::syntax::ExpressionPtr only(const std::string & express
     std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders =
         parse("surface s() { Ci = " + expression + "; }", &error);
     BOOST_REQUIRE_EQUAL(error, "");
-    BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
-    BOOST_REQUIRE_EQUAL(shaders[0]->body->statements.size(), 1u);
+    BOOST_REQUIRE_EQUAL(shaders.size(), 1U);
+    BOOST_REQUIRE_EQUAL(shaders[0]->body->statements.size(), 1U);
     const Statement & statement = *shaders[0]->body->statements[0];
     BOOST_REQUIRE(statement.kind == Statement::Kind::ASSIGNMENT);
     return static_cast<const v3d::render::offline::sl::syntax::Assignment &>(statement).value;
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(slparser_standard_surface_shaders_test) {
         std::string error;
         std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(sources[i], &error);
         BOOST_CHECK_EQUAL(error, "");
-        BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
+        BOOST_REQUIRE_EQUAL(shaders.size(), 1U);
         BOOST_CHECK_EQUAL(shaders[0]->name, names[i]);
         BOOST_CHECK(shaders[0]->type == v3d::render::offline::sl::ShaderType::SURFACE);
         BOOST_CHECK(shaders[0]->supported());
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(slparser_standard_light_shaders_test) {
         std::string error;
         std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(sources[i], &error);
         BOOST_CHECK_EQUAL(error, "");
-        BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
+        BOOST_REQUIRE_EQUAL(shaders.size(), 1U);
         BOOST_CHECK_EQUAL(shaders[0]->name, names[i]);
         BOOST_CHECK(shaders[0]->type == v3d::render::offline::sl::ShaderType::LIGHT);
     }
@@ -195,9 +195,9 @@ BOOST_AUTO_TEST_CASE(slparser_parameters_test) {
         &error);
 
     BOOST_CHECK_EQUAL(error, "");
-    BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
+    BOOST_REQUIRE_EQUAL(shaders.size(), 1U);
     const std::vector<v3d::render::offline::sl::syntax::Parameter> & parameters = shaders[0]->parameters;
-    BOOST_REQUIRE_EQUAL(parameters.size(), 3u);
+    BOOST_REQUIRE_EQUAL(parameters.size(), 3U);
 
     BOOST_CHECK_EQUAL(parameters[0].name, "Ka");
     BOOST_CHECK(parameters[0].type == v3d::render::offline::sl::Type::FLOAT);
@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE(slparser_parameter_needs_a_default_test) {
     std::string error;
     const std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse("surface s(float Ka;) { }", &error);
 
-    BOOST_CHECK_EQUAL(shaders.size(), 0u);
+    BOOST_CHECK_EQUAL(shaders.size(), 0U);
     BOOST_CHECK_EQUAL(error, "expected '=' but found ';' at line 1, column 19");
 }
 
@@ -238,7 +238,7 @@ BOOST_AUTO_TEST_CASE(slparser_unsupported_shader_types_test) {
         "imager background(color bgcolor = 0;) { Ci = Ci + (1 - alpha) * bgcolor; }\n", &error);
 
     BOOST_CHECK_EQUAL(error, "");
-    BOOST_REQUIRE_EQUAL(shaders.size(), 3u);
+    BOOST_REQUIRE_EQUAL(shaders.size(), 3U);
     BOOST_CHECK(shaders[0]->type == v3d::render::offline::sl::ShaderType::DISPLACEMENT);
     BOOST_CHECK(!shaders[0]->supported());
     BOOST_CHECK(shaders[1]->type == v3d::render::offline::sl::ShaderType::VOLUME);
@@ -345,7 +345,7 @@ BOOST_AUTO_TEST_CASE(slparser_cast_and_tuple_test) {
     BOOST_CHECK(transform.type == v3d::render::offline::sl::Type::POINT);
     BOOST_CHECK_EQUAL(transform.space, "world");
     BOOST_REQUIRE(transform.operand->kind == Expression::Kind::TUPLE);
-    BOOST_CHECK_EQUAL(static_cast<const v3d::render::offline::sl::syntax::Tuple &>(*transform.operand).elements.size(), 3u);
+    BOOST_CHECK_EQUAL(static_cast<const v3d::render::offline::sl::syntax::Tuple &>(*transform.operand).elements.size(), 3U);
 
     // no space named is the shader's current one
     const v3d::render::offline::sl::syntax::ExpressionPtr plain = only("color (1, 0, 0)");
@@ -381,14 +381,14 @@ BOOST_AUTO_TEST_CASE(slparser_statements_test) {
         "}\n", &error);
 
     BOOST_CHECK_EQUAL(error, "");
-    BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
+    BOOST_REQUIRE_EQUAL(shaders.size(), 1U);
     const std::vector<v3d::render::offline::sl::syntax::StatementPtr> & body = shaders[0]->body->statements;
-    BOOST_REQUIRE_EQUAL(body.size(), 8u);
+    BOOST_REQUIRE_EQUAL(body.size(), 8U);
 
     BOOST_REQUIRE(body[0]->kind == Statement::Kind::DECLARATION);
     const v3d::render::offline::sl::syntax::Declaration & declaration =
         static_cast<const v3d::render::offline::sl::syntax::Declaration &>(*body[0]);
-    BOOST_REQUIRE_EQUAL(declaration.declarators.size(), 2u);
+    BOOST_REQUIRE_EQUAL(declaration.declarators.size(), 2U);
     BOOST_CHECK_EQUAL(declaration.declarators[0].name, "a");
     BOOST_REQUIRE(declaration.declarators[0].initialiser);
     // the second names no value, which is not the same as naming zero
@@ -424,7 +424,7 @@ BOOST_AUTO_TEST_CASE(slparser_dangling_else_test) {
         "surface s() { if (a) if (b) c = 1; else c = 2; }", &error);
 
     BOOST_CHECK_EQUAL(error, "");
-    BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
+    BOOST_REQUIRE_EQUAL(shaders.size(), 1U);
     const v3d::render::offline::sl::syntax::Conditional & outer =
         static_cast<const v3d::render::offline::sl::syntax::Conditional &>(*shaders[0]->body->statements[0]);
     // the else belongs to the inner if, so the outer one has none
@@ -442,12 +442,12 @@ BOOST_AUTO_TEST_CASE(slparser_lighting_constructs_test) {
         "surface s() { illuminance(P) { Ci = Ci + Cl; } }", &error);
 
     BOOST_CHECK_EQUAL(error, "");
-    BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
+    BOOST_REQUIRE_EQUAL(shaders.size(), 1U);
     BOOST_REQUIRE(shaders[0]->body->statements[0]->kind == Statement::Kind::LIGHTING);
     const v3d::render::offline::sl::syntax::Lighting & loop =
         static_cast<const v3d::render::offline::sl::syntax::Lighting &>(*shaders[0]->body->statements[0]);
     BOOST_CHECK(loop.construct == v3d::render::offline::sl::syntax::Lighting::Construct::ILLUMINANCE);
-    BOOST_CHECK_EQUAL(loop.arguments.size(), 1u);
+    BOOST_CHECK_EQUAL(loop.arguments.size(), 1U);
     BOOST_REQUIRE(loop.body);
     BOOST_CHECK(loop.body->kind == Statement::Kind::BLOCK);
 }
@@ -465,15 +465,15 @@ BOOST_AUTO_TEST_CASE(slparser_function_test) {
         "}\n", &error);
 
     BOOST_CHECK_EQUAL(error, "");
-    BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
-    BOOST_REQUIRE_EQUAL(shaders[0]->functions.size(), 1u);
+    BOOST_REQUIRE_EQUAL(shaders.size(), 1U);
+    BOOST_REQUIRE_EQUAL(shaders[0]->functions.size(), 1U);
     BOOST_CHECK_EQUAL(shaders[0]->functions[0].name, "sqr");
     BOOST_CHECK(shaders[0]->functions[0].type == v3d::render::offline::sl::Type::FLOAT);
-    BOOST_REQUIRE_EQUAL(shaders[0]->functions[0].parameters.size(), 1u);
+    BOOST_REQUIRE_EQUAL(shaders[0]->functions[0].parameters.size(), 1U);
     // a function's formals carry no default, the only difference between the two lists
     BOOST_CHECK(!shaders[0]->functions[0].parameters[0].defaultValue);
     // the function is not left in the body as a statement
-    BOOST_CHECK_EQUAL(shaders[0]->body->statements.size(), 1u);
+    BOOST_CHECK_EQUAL(shaders[0]->body->statements.size(), 1U);
 }
 
 BOOST_AUTO_TEST_CASE(slparser_nested_function_rejected_test) {
@@ -481,7 +481,7 @@ BOOST_AUTO_TEST_CASE(slparser_nested_function_rejected_test) {
     const std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse(
         "surface s() { if (a) { float sqr(float x) { return x; } } }", &error);
 
-    BOOST_CHECK_EQUAL(shaders.size(), 0u);
+    BOOST_CHECK_EQUAL(shaders.size(), 0U);
     BOOST_CHECK_EQUAL(error, "a function may only be defined at the top of a shader body at line 1, column 30");
 }
 
@@ -495,7 +495,7 @@ BOOST_AUTO_TEST_CASE(slparser_several_shaders_test) {
         parse(std::string(CONSTANT) + MATTE + AMBIENTLIGHT, &error);
 
     BOOST_CHECK_EQUAL(error, "");
-    BOOST_REQUIRE_EQUAL(shaders.size(), 3u);
+    BOOST_REQUIRE_EQUAL(shaders.size(), 3U);
     BOOST_CHECK_EQUAL(shaders[0]->name, "constant");
     BOOST_CHECK_EQUAL(shaders[1]->name, "matte");
     BOOST_CHECK_EQUAL(shaders[2]->name, "ambientlight");
@@ -506,7 +506,7 @@ BOOST_AUTO_TEST_CASE(slparser_empty_source_test) {
     const std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parse("  // nothing but a comment\n", &error);
 
     BOOST_CHECK_EQUAL(error, "");
-    BOOST_CHECK_EQUAL(shaders.size(), 0u);
+    BOOST_CHECK_EQUAL(shaders.size(), 0U);
 }
 
 /**
@@ -522,7 +522,7 @@ BOOST_AUTO_TEST_CASE(slparser_error_position_test) {
         "    Oi = Os;\n"
         "}\n", &error);
 
-    BOOST_CHECK_EQUAL(shaders.size(), 0u);
+    BOOST_CHECK_EQUAL(shaders.size(), 0U);
     BOOST_CHECK_EQUAL(error, "expected ';' but found 'Oi' at line 4, column 5");
 }
 
@@ -556,7 +556,7 @@ BOOST_AUTO_TEST_CASE(slparser_reports_a_lexer_error_test) {
     const std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders =
         parse("#include \"common.h\"\nsurface s() { }", &error);
 
-    BOOST_CHECK_EQUAL(shaders.size(), 0u);
+    BOOST_CHECK_EQUAL(shaders.size(), 0U);
     BOOST_CHECK_EQUAL(error, "the C preprocessor is not run, so a '#' directive cannot be read at line 1, column 1");
 }
 

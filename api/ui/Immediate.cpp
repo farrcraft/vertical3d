@@ -37,32 +37,32 @@ const std::uint64_t hashPrime = 1099511628211ULL;
 /**
  * How thick a separator and the line under a tab strip are.
  **/
-const float ruleWidth = 1.0f;
+const float ruleWidth = 1.0F;
 
 /**
  * How far a scrub moves the value for each pixel the cursor travels. One unit per pixel is
  * too fast to land on a number by hand and too slow to cross a wide range; a quarter is a
  * compromise between the two.
  **/
-const float scrubRate = 0.25f;
+const float scrubRate = 0.25F;
 
 /**
  * How far one notch of the wheel scrolls a window, as a multiple of a row. Three rows is
  * what a desktop scrolls by, and reads as a deliberate move rather than a nudge.
  **/
-const float wheelRows = 3.0f;
+const float wheelRows = 3.0F;
 
 /**
  * How far a press on a title bar has to travel before it moves the window instead of
  * folding it. Wide enough that a hand resting on the button does not drag,
  * and narrow enough that a move that was meant is never read as a fold.
  **/
-const float dragThreshold = 3.0f;
+const float dragThreshold = 3.0F;
 
 /**
  * The side of the square a bullet is drawn in, as a fraction of a row.
  **/
-const float bulletScale = 0.28f;
+const float bulletScale = 0.28F;
 
 /**
  * How many segments a bullet is drawn with.
@@ -72,29 +72,29 @@ const unsigned int bulletSides = 8;
 /**
  * The sizes a dressing starts with, in pixels.
  **/
-constexpr float defaultLineHeight = 18.0f;
-constexpr float defaultPadding = 6.0f;
-constexpr float defaultSpacing = 4.0f;
-constexpr float defaultBarHeight = 22.0f;
-constexpr float defaultRadius = 3.0f;
-constexpr float defaultIndent = 14.0f;
-constexpr float defaultScrollbarWidth = 10.0f;
+constexpr float defaultLineHeight = 18.0F;
+constexpr float defaultPadding = 6.0F;
+constexpr float defaultSpacing = 4.0F;
+constexpr float defaultBarHeight = 22.0F;
+constexpr float defaultRadius = 3.0F;
+constexpr float defaultIndent = 14.0F;
+constexpr float defaultScrollbarWidth = 10.0F;
 
 /**
  * The colours a dressing starts with that the retained ui does not share.
  **/
-constexpr glm::vec4 titleBarColor{0.12f, 0.14f, 0.19f, 1.0f};
-constexpr glm::vec4 hoverColor{0.22f, 0.25f, 0.33f, 1.0f};
-constexpr glm::vec4 ruleColor{0.24f, 0.26f, 0.32f, 1.0f};
+constexpr glm::vec4 titleBarColor{0.12F, 0.14F, 0.19F, 1.0F};
+constexpr glm::vec4 hoverColor{0.22F, 0.25F, 0.33F, 1.0F};
+constexpr glm::vec4 ruleColor{0.24F, 0.26F, 0.32F, 1.0F};
 
 };  // namespace
 
 Immediate::Input::Input() noexcept :
-cursor(0.0f, 0.0f),
+cursor(0.0F, 0.0F),
 down(false),
 pressed(false),
 released(false),
-wheel(0.0f) {
+wheel(0.0F) {
 }
 
 Immediate::Reaction::Reaction() noexcept :
@@ -106,9 +106,9 @@ clicked(false) {
 Immediate::Retained::Retained() noexcept :
 frame(0),
 tab(0),
-scroll(0.0f),
-content(0.0f),
-offset(0.0f, 0.0f),
+scroll(0.0F),
+content(0.0F),
+offset(0.0F, 0.0F),
 collapsed(false),
 dragging(false) {
 }
@@ -118,7 +118,7 @@ lineHeight(defaultLineHeight),
 padding(defaultPadding),
 spacing(defaultSpacing),
 barHeight(defaultBarHeight),
-borderWidth(1.0f),
+borderWidth(1.0F),
 radius(defaultRadius),
 indent(defaultIndent),
 scrollbarWidth(defaultScrollbarWidth),
@@ -126,7 +126,7 @@ panel(paint::PANEL_COLOR),
 border(paint::EDGE_COLOR),
 titleBar(titleBarColor),
 text(paint::TEXT_COLOR),
-activeText(1.0f, 1.0f, 1.0f, 1.0f),
+activeText(1.0F, 1.0F, 1.0F, 1.0F),
 dimText(paint::DIM_TEXT_COLOR),
 widget(paint::RAISED_COLOR),
 highlight(paint::HIGHLIGHT_COLOR),
@@ -136,24 +136,24 @@ rule(ruleColor) {
 }
 
 Immediate::Row::Row() noexcept :
-margin(0.0f),
-right(0.0f),
-penY(0.0f),
-top(0.0f),
-height(0.0f),
-lastRight(0.0f),
+margin(0.0F),
+right(0.0F),
+penY(0.0F),
+top(0.0F),
+height(0.0F),
+lastRight(0.0F),
 sameLine(false) {
 }
 
 Immediate::Window::Window() noexcept :
 open(false),
-margin(0.0f),
-right(0.0f),
+margin(0.0F),
+right(0.0F),
 id(0),
 scroll(0),
-bodyMin(0.0f, 0.0f),
-bodyMax(0.0f, 0.0f),
-contentTop(0.0f),
+bodyMin(0.0F, 0.0F),
+bodyMax(0.0F, 0.0F),
+contentTop(0.0F),
 scrolls(false),
 clipped(false) {
 }
@@ -161,8 +161,8 @@ clipped(false) {
 Immediate::TabStrip::TabStrip() noexcept :
 id(0),
 open(false),
-pen(0.0f),
-top(0.0f),
+pen(0.0F),
+top(0.0F),
 index(0),
 wanted(0),
 changed(false),
@@ -171,14 +171,14 @@ taken(false) {
 
 Immediate::Table::Table() noexcept :
 open(false),
-left(0.0f),
+left(0.0F),
 column(0),
 id(0),
 scroll(0),
-right(0.0f),
-height(0.0f),
-top(0.0f),
-contentTop(0.0f),
+right(0.0F),
+height(0.0F),
+top(0.0F),
+contentTop(0.0F),
 clipped(false) {
 }
 
@@ -186,13 +186,13 @@ Immediate::Immediate(const paint::Measure& measure, const paint::Write& write) :
     measure_(measure),
     write_(write),
     canvas_(nullptr),
-    previousCursor_(0.0f, 0.0f),
-    drag_(0.0f, 0.0f),
+    previousCursor_(0.0F, 0.0F),
+    drag_(0.0F, 0.0F),
     hovered_(0),
     hovering_(0),
     active_(0),
-    pressAt_(0.0f, 0.0f),
-    nextWidth_(0.0f),
+    pressAt_(0.0F, 0.0F),
+    nextWidth_(0.0F),
     frame_(0),
     disabled_(0),
     wheeled_(0) {
@@ -254,7 +254,7 @@ void Immediate::begin(v3d::render::realtime::canvas::Canvas* canvas, const Input
     frame_++;
     drag_ = input.cursor - previousCursor_;
     hovering_ = 0;
-    nextWidth_ = 0.0f;
+    nextWidth_ = 0.0F;
     ids_.clear();
     disabled_ = 0;
     window_.open = false;
@@ -264,9 +264,9 @@ void Immediate::begin(v3d::render::realtime::canvas::Canvas* canvas, const Input
     table_.open = false;
     table_.clipped = false;
     row_.sameLine = false;
-    row_.margin = 0.0f;
-    row_.penY = 0.0f;
-    row_.right = canvas == nullptr ? 0.0f : static_cast<float>(canvas->width());
+    row_.margin = 0.0F;
+    row_.penY = 0.0F;
+    row_.right = canvas == nullptr ? 0.0F : static_cast<float>(canvas->width());
 }
 
 void Immediate::end() {
@@ -342,9 +342,9 @@ float Immediate::itemWidth() {
     // past the last one rather than at the margin - place() has not run yet, so this
     // works out the same corner it will
     const float left = row_.sameLine ? row_.lastRight + dressing_.spacing : row_.margin;
-    const float rest = std::max(row_.right - left, 0.0f);
-    const float width = nextWidth_ > 0.0f ? std::min(nextWidth_, rest) : rest;
-    nextWidth_ = 0.0f;
+    const float rest = std::max(row_.right - left, 0.0F);
+    const float width = nextWidth_ > 0.0F ? std::min(nextWidth_, rest) : rest;
+    nextWidth_ = 0.0F;
     return width;
 }
 
@@ -355,7 +355,7 @@ glm::vec2 Immediate::place(const glm::vec2& size) {
         row_.sameLine = false;
     } else {
         row_.top = row_.penY;
-        row_.height = 0.0f;
+        row_.height = 0.0F;
         corner = glm::vec2(row_.margin, row_.top);
     }
     row_.lastRight = corner.x + size.x;
@@ -401,7 +401,7 @@ void Immediate::label(const std::string& line, const glm::vec2& min, const glm::
     const glm::vec4& colour) const {
     // the baseline sits three quarters of the way down a row, which is where a font with
     // ordinary descenders looks centred
-    const glm::vec2 pen(min.x, min.y + ((size.y + (dressing_.lineHeight * 0.5f)) * 0.5f));
+    const glm::vec2 pen(min.x, min.y + ((size.y + (dressing_.lineHeight * 0.5F)) * 0.5F));
     write_(line, pen, colour);
 }
 
@@ -433,19 +433,19 @@ bool Immediate::window(const std::string& title, const v3d::type::geometry::Boun
     // window every frame is followed rather than fought. The bar is kept on the canvas
     // because the bar is the only thing that drags one back
     const glm::vec2 room = glm::max(glm::vec2(static_cast<float>(canvas_->width()) - size.x,
-        static_cast<float>(canvas_->height()) - dressing_.barHeight), glm::vec2(0.0f, 0.0f));
-    const glm::vec2 min = glm::clamp(position + retained.offset, glm::vec2(0.0f, 0.0f), room);
+        static_cast<float>(canvas_->height()) - dressing_.barHeight), glm::vec2(0.0F, 0.0F));
+    const glm::vec2 min = glm::clamp(position + retained.offset, glm::vec2(0.0F, 0.0F), room);
     retained.offset = min - position;
 
     const glm::vec2 barMax(min.x + size.x, min.y + dressing_.barHeight);
     const glm::vec2 max = retained.collapsed ? barMax : min + size;
 
     glm::vec4 background = dressing_.panel;
-    background.a *= std::clamp(alpha, 0.0f, 1.0f);
+    background.a *= std::clamp(alpha, 0.0F, 1.0F);
     paint::plateBox(canvas_, min, max, dressing_.radius, dressing_.borderWidth, {.inside = background, .outline = dressing_.border});
     paint::fillBox(canvas_, min + glm::vec2(dressing_.borderWidth, dressing_.borderWidth),
         glm::vec2(barMax.x - dressing_.borderWidth, barMax.y), dressing_.radius, dressing_.titleBar);
-    label(title, min + glm::vec2(dressing_.padding, 0.0f), glm::vec2(size.x, dressing_.barHeight), dressing_.text);
+    label(title, min + glm::vec2(dressing_.padding, 0.0F), glm::vec2(size.x, dressing_.barHeight), dressing_.text);
 
     // a press that stayed put folds; one that moved has already moved the window this
     // frame and does not fold it as well
@@ -481,13 +481,13 @@ bool Immediate::window(const std::string& title, const v3d::type::geometry::Boun
 
     // whether there is a bar is decided by what the frame before this one drew, because how
     // tall the content is is only known once it has been drawn
-    const float view = std::max(window_.bodyMax.y - window_.contentTop, 0.0f);
+    const float view = std::max(window_.bodyMax.y - window_.contentTop, 0.0F);
     window_.scrolls = retained.content > view;
     if (window_.scrolls) {
         row_.right -= dressing_.scrollbarWidth + dressing_.spacing;
-        retained.scroll = std::clamp(retained.scroll, 0.0f, retained.content - view);
+        retained.scroll = std::clamp(retained.scroll, 0.0F, retained.content - view);
     } else {
-        retained.scroll = 0.0f;
+        retained.scroll = 0.0F;
     }
 
     row_.penY = window_.contentTop - retained.scroll;
@@ -528,31 +528,31 @@ void Immediate::closeScroll(const Scrolled& region, Bar bar) {
     Retained& retained = retain(id);
     // how tall what was drawn came to. The pen has the scroll taken out of it and the gap
     // after the last row left in, so both go back before it is a height
-    retained.content = std::max(row_.penY + retained.scroll - dressing_.spacing - contentTop, 0.0f);
+    retained.content = std::max(row_.penY + retained.scroll - dressing_.spacing - contentTop, 0.0F);
 
-    const float view = std::max(bodyMax.y - contentTop, 0.0f);
-    const float span = std::max(retained.content - view, 0.0f);
-    if (bar == Bar::Always || (bar == Bar::WhenNeeded && span > 0.0f)) {
+    const float view = std::max(bodyMax.y - contentTop, 0.0F);
+    const float span = std::max(retained.content - view, 0.0F);
+    if (bar == Bar::Always || (bar == Bar::WhenNeeded && span > 0.0F)) {
         scrollbar(scroll, glm::vec2(bodyMax.x - dressing_.scrollbarWidth, contentTop), bodyMax, view, span,
             &retained.scroll);
     }
-    if (wheeled_ == id && input_.wheel != 0.0f) {
+    if (wheeled_ == id && input_.wheel != 0.0F) {
         // a notch away from the reader shows what is above, which is a smaller offset
-        retained.scroll = std::clamp(retained.scroll - (input_.wheel * dressing_.lineHeight * wheelRows), 0.0f, span);
+        retained.scroll = std::clamp(retained.scroll - (input_.wheel * dressing_.lineHeight * wheelRows), 0.0F, span);
     }
 }
 
 void Immediate::scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, float view,
     float span, float* scroll) {
     const float track = max.y - min.y;
-    if (track <= 0.0f || view <= 0.0f) {
+    if (track <= 0.0F || view <= 0.0F) {
         return;
     }
 
     const float length = component::thumbLength(track, view, view + span);
 
     const Reaction reaction = interact(id, min, max);
-    if (reaction.held && track - length > 0.0f) {
+    if (reaction.held && track - length > 0.0F) {
         *scroll = component::dragOffset(track, length, input_.cursor.y - min.y, span);
     }
 
@@ -602,23 +602,23 @@ void Immediate::bulletText(const std::string& line) {
     }
     const glm::vec2 size(dressing_.indent + measure_(line), dressing_.lineHeight);
     const glm::vec2 corner = place(size);
-    const float radius = dressing_.lineHeight * bulletScale * 0.5f;
-    canvas_->circle(glm::vec2(corner.x + (dressing_.indent * 0.5f), corner.y + (dressing_.lineHeight * 0.5f)),
+    const float radius = dressing_.lineHeight * bulletScale * 0.5F;
+    canvas_->circle(glm::vec2(corner.x + (dressing_.indent * 0.5F), corner.y + (dressing_.lineHeight * 0.5F)),
         radius, bulletSides, ink(dressing_.text));
-    label(line, corner + glm::vec2(dressing_.indent, 0.0f), glm::vec2(size.x, size.y), ink(dressing_.text));
+    label(line, corner + glm::vec2(dressing_.indent, 0.0F), glm::vec2(size.x, size.y), ink(dressing_.text));
 }
 
 bool Immediate::button(const std::string& label) {
     if (canvas_ == nullptr) {
         return false;
     }
-    const glm::vec2 size(measure_(label) + (dressing_.padding * 2.0f), dressing_.barHeight);
+    const glm::vec2 size(measure_(label) + (dressing_.padding * 2.0F), dressing_.barHeight);
     const glm::vec2 min = place(size);
     const Id id = identify(label);
     const Reaction reaction = interact(id, min, min + size);
 
     paint::fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
-    this->label(label, min + glm::vec2(dressing_.padding, 0.0f), size,
+    this->label(label, min + glm::vec2(dressing_.padding, 0.0F), size,
         ink(reaction.hovered ? dressing_.activeText : dressing_.text));
     return reaction.clicked;
 }
@@ -633,7 +633,7 @@ bool Immediate::smallButton(const std::string& label) {
     const Reaction reaction = interact(id, min, min + size);
 
     paint::fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
-    this->label(label, min + glm::vec2(dressing_.padding * 0.5f, 0.0f), size,
+    this->label(label, min + glm::vec2(dressing_.padding * 0.5F, 0.0F), size,
         ink(reaction.hovered ? dressing_.activeText : dressing_.text));
     return reaction.clicked;
 }
@@ -648,11 +648,11 @@ bool Immediate::selectable(const std::string& label, bool selected) {
     const Reaction reaction = interact(id, min, min + size);
 
     if (selected) {
-        paint::fillBox(canvas_, min, min + size, 0.0f, dressing_.highlight);
+        paint::fillBox(canvas_, min, min + size, 0.0F, dressing_.highlight);
     } else if (reaction.hovered) {
-        paint::fillBox(canvas_, min, min + size, 0.0f, dressing_.hover);
+        paint::fillBox(canvas_, min, min + size, 0.0F, dressing_.hover);
     }
-    this->label(label, min + glm::vec2(dressing_.padding * 0.5f, 0.0f), size,
+    this->label(label, min + glm::vec2(dressing_.padding * 0.5F, 0.0F), size,
         ink(selected ? dressing_.activeText : dressing_.text));
     return reaction.clicked;
 }
@@ -667,7 +667,7 @@ bool Immediate::dragInt(const std::string& label, int* value, int low, int high)
     const Reaction reaction = interact(id, min, min + size);
 
     bool changed = false;
-    if (reaction.held && drag_.x != 0.0f) {
+    if (reaction.held && drag_.x != 0.0F) {
         const int moved = static_cast<int>(std::lround(drag_.x * scrubRate));
         if (moved != 0) {
             const int wanted = std::clamp(*value + moved, low, high);
@@ -679,7 +679,7 @@ bool Immediate::dragInt(const std::string& label, int* value, int low, int high)
     paint::fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
     std::string shown(label);
     shown.append("  ").append(std::to_string(*value));
-    this->label(shown, min + glm::vec2(dressing_.padding, 0.0f), size, ink(dressing_.text));
+    this->label(shown, min + glm::vec2(dressing_.padding, 0.0F), size, ink(dressing_.text));
     return changed;
 }
 
@@ -692,12 +692,12 @@ void Immediate::progressBar(float fraction, const std::string& overlay) {
     const glm::vec2 max = min + size;
 
     paint::fillBox(canvas_, min, max, dressing_.radius, dressing_.widget);
-    const float part = std::clamp(fraction, 0.0f, 1.0f);
-    if (part > 0.0f) {
+    const float part = std::clamp(fraction, 0.0F, 1.0F);
+    if (part > 0.0F) {
         paint::fillBox(canvas_, min, glm::vec2(min.x + (size.x * part), max.y), dressing_.radius, ink(dressing_.fill));
     }
     if (!overlay.empty()) {
-        const glm::vec2 corner(min.x + ((size.x - measure_(overlay)) * 0.5f), min.y);
+        const glm::vec2 corner(min.x + ((size.x - measure_(overlay)) * 0.5F), min.y);
         label(overlay, corner, size, ink(dressing_.activeText));
     }
 }
@@ -708,7 +708,7 @@ void Immediate::separator() {
     }
     const glm::vec2 size(row_.right - row_.margin, ruleWidth + dressing_.spacing);
     const glm::vec2 min = place(size);
-    const float middle = min.y + (dressing_.spacing * 0.5f);
+    const float middle = min.y + (dressing_.spacing * 0.5F);
     canvas_->rect(glm::vec2(min.x, middle), glm::vec2(min.x + size.x, middle + ruleWidth), dressing_.rule);
 }
 
@@ -752,7 +752,7 @@ bool Immediate::tab(const std::string& label) {
     }
     const Retained& retained = retain(tabs_.id);
     const unsigned int index = tabs_.index++;
-    const glm::vec2 size(measure_(label) + (dressing_.padding * 2.0f), dressing_.barHeight);
+    const glm::vec2 size(measure_(label) + (dressing_.padding * 2.0F), dressing_.barHeight);
     const glm::vec2 min(tabs_.pen, tabs_.top);
     tabs_.pen += size.x + dressing_.spacing;
 
@@ -766,7 +766,7 @@ bool Immediate::tab(const std::string& label) {
     tabs_.taken = tabs_.taken || selected;
 
     paint::fillBox(canvas_, min, min + size, dressing_.radius, face(selected, reaction.hovered));
-    this->label(label, min + glm::vec2(dressing_.padding, 0.0f), size,
+    this->label(label, min + glm::vec2(dressing_.padding, 0.0F), size,
         selected ? dressing_.activeText : dressing_.text);
     return selected;
 }
@@ -795,11 +795,11 @@ bool Immediate::table(const std::string& id, const TableShape& shape) {
     pushId(id);
     table_.open = true;
     table_.headers.clear();
-    table_.widths.assign(columns, 0.0f);
+    table_.widths.assign(columns, 0.0F);
     table_.left = row_.margin;
     table_.right = row_.right;
     table_.column = 0;
-    table_.height = std::max(height, 0.0f);
+    table_.height = std::max(height, 0.0F);
     table_.top = row_.penY;
     table_.contentTop = row_.penY;
     table_.clipped = false;
@@ -810,14 +810,14 @@ bool Immediate::table(const std::string& id, const TableShape& shape) {
     // is anything to scroll yet. The columns then do not re-flow when a row arrives. The
     // bar can also be drawn the frame the content overflows rather than the one after, as
     // a window's has to be
-    if (table_.height > 0.0f) {
+    if (table_.height > 0.0F) {
         row_.right -= dressing_.scrollbarWidth + dressing_.spacing;
     }
     return true;
 }
 
 void Immediate::tableBody() {
-    if (!table_.open || table_.height <= 0.0f || table_.clipped) {
+    if (!table_.open || table_.height <= 0.0F || table_.clipped) {
         return;
     }
     Retained& retained = retain(table_.id);
@@ -825,8 +825,8 @@ void Immediate::tableBody() {
 
     const glm::vec2 min(table_.left, table_.contentTop);
     const glm::vec2 max(table_.right, table_.top + table_.height);
-    const float view = std::max(max.y - min.y, 0.0f);
-    retained.scroll = std::clamp(retained.scroll, 0.0f, std::max(retained.content - view, 0.0f));
+    const float view = std::max(max.y - min.y, 0.0F);
+    retained.scroll = std::clamp(retained.scroll, 0.0F, std::max(retained.content - view, 0.0F));
 
     canvas_->clip(min, max);
     table_.clipped = true;
@@ -849,21 +849,21 @@ void Immediate::column(const std::string& label, float width) {
 
 float Immediate::columnStart(unsigned int index) const {
     // a column given no width of its own shares out what the named ones left
-    float named = 0.0f;
+    float named = 0.0F;
     unsigned int unnamed = 0;
     for (const float width : table_.widths) {
-        if (width > 0.0f) {
+        if (width > 0.0F) {
             named += width;
         } else {
             unnamed++;
         }
     }
-    const float spare = unnamed == 0 ? 0.0f
-        : std::max(0.0f, (row_.right - table_.left - named) / static_cast<float>(unnamed));
+    const float spare = unnamed == 0 ? 0.0F
+        : std::max(0.0F, (row_.right - table_.left - named) / static_cast<float>(unnamed));
 
     float start = table_.left;
     for (unsigned int column = 0; column < index && column < table_.widths.size(); column++) {
-        start += table_.widths[column] > 0.0f ? table_.widths[column] : spare;
+        start += table_.widths[column] > 0.0F ? table_.widths[column] : spare;
     }
     return start;
 }
@@ -877,10 +877,10 @@ void Immediate::headerRow() {
     // notched out of them. The two are the same edge for a table that does not scroll
     const glm::vec2 min(table_.left, row_.penY);
     const glm::vec2 max(table_.right, row_.penY + dressing_.lineHeight);
-    paint::fillBox(canvas_, min, max, 0.0f, dressing_.titleBar);
+    paint::fillBox(canvas_, min, max, 0.0F, dressing_.titleBar);
     for (std::size_t index = 0; index < table_.headers.size(); index++) {
-        const glm::vec2 corner(columnStart(static_cast<unsigned int>(index)) + (dressing_.padding * 0.5f), min.y);
-        label(table_.headers[index], corner, glm::vec2(0.0f, dressing_.lineHeight), dressing_.dimText);
+        const glm::vec2 corner(columnStart(static_cast<unsigned int>(index)) + (dressing_.padding * 0.5F), min.y);
+        label(table_.headers[index], corner, glm::vec2(0.0F, dressing_.lineHeight), dressing_.dimText);
     }
     row_.penY = max.y + dressing_.spacing;
     nextRow();

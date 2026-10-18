@@ -25,12 +25,12 @@ namespace {
  **/
 const char* const spriteName = "sample.png";
 
-constexpr glm::vec4 clearColour(0.05f, 0.05f, 0.07f, 1.0f);
-constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+constexpr glm::vec4 clearColour(0.05F, 0.05F, 0.07F, 1.0F);
+constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
 
-constexpr glm::vec4 wallColour(0.35f, 0.35f, 0.40f, 1.0f);
-constexpr glm::vec4 crateColour(0.45f, 0.33f, 0.18f, 1.0f);
-constexpr glm::vec4 floorColour(0.14f, 0.15f, 0.18f, 1.0f);
+constexpr glm::vec4 wallColour(0.35F, 0.35F, 0.40F, 1.0F);
+constexpr glm::vec4 crateColour(0.45F, 0.33F, 0.18F, 1.0F);
+constexpr glm::vec4 floorColour(0.14F, 0.15F, 0.18F, 1.0F);
 
 /**
  * A tile is drawn as its kind's colour. There is no tile artwork, so the kind is the only
@@ -54,13 +54,13 @@ glm::vec4 tileColour(odyssey::tile::Kind kind) {
  * Dimmed rather than recoloured, so a remembered wall still looks like a wall but is
  * visibly out of date.
  **/
-constexpr float rememberedLight = 0.4f;
+constexpr float rememberedLight = 0.4F;
 
 /**
  * A hairline of the clear colour around each tile, so a board of flat quads reads as a
  * grid rather than as one field of colour.
  **/
-constexpr float tileGap = 1.0f;
+constexpr float tileGap = 1.0F;
 
 };  // namespace
 
@@ -189,8 +189,8 @@ void Renderer::drawTile(int column, int row, const glm::vec4& colour) {
         static_cast<float>(column * odyssey::engine::unit::tile_width) + tileGap,
         static_cast<float>(row * odyssey::engine::unit::tile_height) + tileGap);
     const glm::vec2 max = min + glm::vec2(
-        static_cast<float>(odyssey::engine::unit::tile_width) - (2.0f * tileGap),
-        static_cast<float>(odyssey::engine::unit::tile_height) - (2.0f * tileGap));
+        static_cast<float>(odyssey::engine::unit::tile_width) - (2.0F * tileGap),
+        static_cast<float>(odyssey::engine::unit::tile_height) - (2.0F * tileGap));
     canvas_.rect(min, max, colour);
 }
 
@@ -215,7 +215,7 @@ void Renderer::drawPlayer(v3d::grid::TileCoord view) {
         static_cast<float>(odyssey::engine::unit::tile_width),
         static_cast<float>(odyssey::engine::unit::tile_height));
 
-    canvas_.rect(min, max, glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white, sprite_);
+    canvas_.rect(min, max, glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, sprite_);
 }
 
 };  // namespace odyssey::render

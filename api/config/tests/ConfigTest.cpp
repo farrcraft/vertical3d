@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(config_app_type_test) {
 
     auto menu = config.get("menu");
     BOOST_REQUIRE(menu);
-    BOOST_TEST(menu->document().at("items").as_array().size() == 2u);
+    BOOST_TEST(menu->document().at("items").as_array().size() == 2U);
     BOOST_TEST(!config.get("nothing"));
 }
 

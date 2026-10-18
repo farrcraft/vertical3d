@@ -26,7 +26,7 @@ void sprites(const entt::registry& registry, float alpha, const Billboard& billb
         const ecs::component::Transform transform =
             ecs::interpolated<ecs::component::Transform>(registry, entity, alpha);
         const glm::vec3& feet = transform.position;
-        const glm::vec3 across = right * (sprite.size.x * transform.scale.x * 0.5f);
+        const glm::vec3 across = right * (sprite.size.x * transform.scale.x * 0.5F);
         const glm::vec3 rise = up * (sprite.size.y * transform.scale.y);
 
         // around the perimeter from the top-left, so uv0 lands on corners[0]

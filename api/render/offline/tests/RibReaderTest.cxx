@@ -51,7 +51,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     }
     void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         projection_ = name;
-        fov_ = parameters.number("fov", 90.0f);
+        fov_ = parameters.number("fov", 90.0F);
         counts_["Projection"]++;
     }
     void clipping(const v3d::render::offline::rib::Clipping & request) override {
@@ -117,12 +117,12 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     }
     void surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         surface_ = name;
-        roughness_ = parameters.number("roughness", -1.0f);
+        roughness_ = parameters.number("roughness", -1.0F);
         counts_["Surface"]++;
     }
     void lightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         lights_.push_back(request.shader + "|" + request.handle + "|" +
-            std::to_string(parameters.number("intensity", -1.0f)));
+            std::to_string(parameters.number("intensity", -1.0F)));
         counts_["LightSource"]++;
     }
     void illuminate(const std::string & handle, bool on) override {
@@ -159,7 +159,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
 
     unsigned int count(const std::string & name) const {
         const std::map<std::string, unsigned int>::const_iterator found = counts_.find(name);
-        return found == counts_.end() ? 0u : found->second;
+        return found == counts_.end() ? 0U : found->second;
     }
 
     std::map<std::string, unsigned int> counts_;
@@ -174,28 +174,28 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     std::vector<glm::vec3> colors_;
     std::vector<unsigned int> perPolygon_;
     std::vector<unsigned int> indices_;
-    glm::mat4x4 transform_ = glm::mat4x4(1.0f);
-    glm::vec3 translate_ = glm::vec3(0.0f);
-    glm::vec3 color_ = glm::vec3(0.0f);
-    glm::vec3 lens_ = glm::vec3(0.0f);
-    glm::vec2 shutter_ = glm::vec2(0.0f);
-    glm::vec2 filterWidth_ = glm::vec2(0.0f);
+    glm::mat4x4 transform_ = glm::mat4x4(1.0F);
+    glm::vec3 translate_ = glm::vec3(0.0F);
+    glm::vec3 color_ = glm::vec3(0.0F);
+    glm::vec3 lens_ = glm::vec3(0.0F);
+    glm::vec2 shutter_ = glm::vec2(0.0F);
+    glm::vec2 filterWidth_ = glm::vec2(0.0F);
     glm::uvec2 samples_ = glm::uvec2(0);
     v3d::render::offline::Filter filter_ = v3d::render::offline::Filter::Box;
-    float variance_ = 0.0f;
+    float variance_ = 0.0F;
     std::string projection_;
     std::string display_;
     std::string surface_;
     std::string imager_;
     std::string hider_;
     std::string identifier_;
-    float version_ = 0.0f;
-    float pixelAspect_ = 0.0f;
-    float hither_ = 0.0f;
-    float yon_ = 0.0f;
-    float fov_ = 0.0f;
-    float roughness_ = 0.0f;
-    float radius_ = 0.0f;
+    float version_ = 0.0F;
+    float pixelAspect_ = 0.0F;
+    float hither_ = 0.0F;
+    float yon_ = 0.0F;
+    float fov_ = 0.0F;
+    float roughness_ = 0.0F;
+    float radius_ = 0.0F;
     unsigned int width_ = 0;
     unsigned int height_ = 0;
     unsigned int vertices_ = 0;
@@ -222,18 +222,18 @@ BOOST_AUTO_TEST_CASE(ribreader_camera_requests_test) {
         "WorldEnd\n"
         "FrameEnd\n", &handler, &reader));
 
-    BOOST_CHECK_CLOSE(handler.version_, 3.03f, 0.01f);
-    BOOST_CHECK_EQUAL(handler.width_, 640u);
-    BOOST_CHECK_EQUAL(handler.height_, 480u);
-    BOOST_CHECK_EQUAL(handler.pixelAspect_, 1.0f);
+    BOOST_CHECK_CLOSE(handler.version_, 3.03F, 0.01F);
+    BOOST_CHECK_EQUAL(handler.width_, 640U);
+    BOOST_CHECK_EQUAL(handler.height_, 480U);
+    BOOST_CHECK_EQUAL(handler.pixelAspect_, 1.0F);
     BOOST_CHECK_EQUAL(handler.projection_, "perspective");
-    BOOST_CHECK_EQUAL(handler.fov_, 45.0f);
-    BOOST_CHECK_EQUAL(handler.hither_, 1.0f);
-    BOOST_CHECK_EQUAL(handler.yon_, 100.0f);
+    BOOST_CHECK_EQUAL(handler.fov_, 45.0F);
+    BOOST_CHECK_EQUAL(handler.hither_, 1.0F);
+    BOOST_CHECK_EQUAL(handler.yon_, 100.0F);
     BOOST_CHECK_EQUAL(handler.display_, "out.png|file|rgb");
     BOOST_CHECK_EQUAL(handler.frame_, 1);
-    BOOST_CHECK_EQUAL(handler.count("WorldBegin"), 1u);
-    BOOST_CHECK_EQUAL(handler.count("WorldEnd"), 1u);
+    BOOST_CHECK_EQUAL(handler.count("WorldBegin"), 1U);
+    BOOST_CHECK_EQUAL(handler.count("WorldEnd"), 1U);
 }
 
 /**
@@ -246,12 +246,12 @@ BOOST_AUTO_TEST_CASE(ribreader_polygon_test) {
     BOOST_REQUIRE(read(
         "Polygon \"P\" [-1 -1 5  1 -1 5  1 1 5  -1 1 5]\n", &handler, &reader));
 
-    BOOST_CHECK_EQUAL(handler.count("Polygon"), 1u);
-    BOOST_CHECK_EQUAL(handler.vertices_, 4u);
-    BOOST_REQUIRE_EQUAL(handler.points_.size(), 4u);
-    BOOST_CHECK_EQUAL(handler.points_[2].x, 1.0f);
-    BOOST_CHECK_EQUAL(handler.points_[2].y, 1.0f);
-    BOOST_CHECK_EQUAL(handler.points_[2].z, 5.0f);
+    BOOST_CHECK_EQUAL(handler.count("Polygon"), 1U);
+    BOOST_CHECK_EQUAL(handler.vertices_, 4U);
+    BOOST_REQUIRE_EQUAL(handler.points_.size(), 4U);
+    BOOST_CHECK_EQUAL(handler.points_[2].x, 1.0F);
+    BOOST_CHECK_EQUAL(handler.points_[2].y, 1.0F);
+    BOOST_CHECK_EQUAL(handler.points_[2].z, 5.0F);
 }
 
 /**
@@ -266,9 +266,9 @@ BOOST_AUTO_TEST_CASE(ribreader_varying_parameter_test) {
         "Polygon \"P\" [0 0 1  1 0 1  1 1 1]\n"
         "        \"Cs\" [1 0 0  0 1 0  0 0 1]\n", &handler, &reader));
 
-    BOOST_CHECK_EQUAL(handler.vertices_, 3u);
-    BOOST_REQUIRE_EQUAL(handler.colors_.size(), 3u);
-    BOOST_CHECK_EQUAL(handler.colors_[2].z, 1.0f);
+    BOOST_CHECK_EQUAL(handler.vertices_, 3U);
+    BOOST_REQUIRE_EQUAL(handler.colors_.size(), 3U);
+    BOOST_CHECK_EQUAL(handler.colors_[2].z, 1.0F);
 }
 
 BOOST_AUTO_TEST_CASE(ribreader_points_polygons_test) {
@@ -278,11 +278,11 @@ BOOST_AUTO_TEST_CASE(ribreader_points_polygons_test) {
     BOOST_REQUIRE(read(
         "PointsPolygons [3 3] [0 1 2  0 2 3] \"P\" [0 0 0  1 0 0  1 1 0  0 1 0]\n", &handler, &reader));
 
-    BOOST_REQUIRE_EQUAL(handler.perPolygon_.size(), 2u);
-    BOOST_CHECK_EQUAL(handler.perPolygon_[0], 3u);
-    BOOST_REQUIRE_EQUAL(handler.indices_.size(), 6u);
-    BOOST_CHECK_EQUAL(handler.indices_[4], 2u);
-    BOOST_CHECK_EQUAL(handler.points_.size(), 4u);
+    BOOST_REQUIRE_EQUAL(handler.perPolygon_.size(), 2U);
+    BOOST_CHECK_EQUAL(handler.perPolygon_[0], 3U);
+    BOOST_REQUIRE_EQUAL(handler.indices_.size(), 6U);
+    BOOST_CHECK_EQUAL(handler.indices_[4], 2U);
+    BOOST_CHECK_EQUAL(handler.points_.size(), 4U);
 }
 
 /**
@@ -296,7 +296,7 @@ BOOST_AUTO_TEST_CASE(ribreader_unbracketed_parameter_test) {
     BOOST_REQUIRE(read("Surface \"plastic\" \"roughness\" .3\n", &handler, &reader));
 
     BOOST_CHECK_EQUAL(handler.surface_, "plastic");
-    BOOST_CHECK_CLOSE(handler.roughness_, 0.3f, 0.01f);
+    BOOST_CHECK_CLOSE(handler.roughness_, 0.3F, 0.01F);
 }
 
 BOOST_AUTO_TEST_CASE(ribreader_declare_then_use_test) {
@@ -307,9 +307,9 @@ BOOST_AUTO_TEST_CASE(ribreader_declare_then_use_test) {
         "Declare \"squish\" \"uniform float\"\n"
         "Surface \"marble\" \"squish\" 5\n", &handler, &reader));
 
-    BOOST_REQUIRE_EQUAL(handler.declared_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(handler.declared_.size(), 1U);
     BOOST_CHECK_EQUAL(handler.declared_[0], "squish");
-    BOOST_CHECK_EQUAL(handler.count("Surface"), 1u);
+    BOOST_CHECK_EQUAL(handler.count("Surface"), 1U);
     BOOST_CHECK(reader.error().empty());
 }
 
@@ -322,8 +322,8 @@ BOOST_AUTO_TEST_CASE(ribreader_undeclared_parameter_test) {
     CountingHandler bracketed;
     v3d::render::offline::rib::Reader first(boost::make_shared<v3d::log::Logger>());
     BOOST_CHECK(read("Surface \"marble\" \"veins\" [1 2 3]\nWorldBegin\n", &bracketed, &first));
-    BOOST_CHECK_EQUAL(bracketed.count("Surface"), 1u);
-    BOOST_CHECK_EQUAL(bracketed.count("WorldBegin"), 1u);
+    BOOST_CHECK_EQUAL(bracketed.count("Surface"), 1U);
+    BOOST_CHECK_EQUAL(bracketed.count("WorldBegin"), 1U);
 
     CountingHandler bare;
     v3d::render::offline::rib::Reader second(boost::make_shared<v3d::log::Logger>());
@@ -349,17 +349,17 @@ BOOST_AUTO_TEST_CASE(ribreader_sampling_requests_test) {
         "WorldEnd\n", &handler, &reader));
 
     BOOST_CHECK(reader.unrecognised().empty());
-    BOOST_CHECK_EQUAL(handler.samples_.x, 4u);
-    BOOST_CHECK_EQUAL(handler.samples_.y, 3u);
+    BOOST_CHECK_EQUAL(handler.samples_.x, 4U);
+    BOOST_CHECK_EQUAL(handler.samples_.y, 3U);
     BOOST_CHECK(handler.filter_ == v3d::render::offline::Filter::CatmullRom);
-    BOOST_CHECK_EQUAL(handler.filterWidth_.x, 3.0f);
-    BOOST_CHECK_EQUAL(handler.filterWidth_.y, 4.0f);
-    BOOST_CHECK_CLOSE(handler.variance_, 0.05f, 1.0e-4f);
-    BOOST_CHECK_EQUAL(handler.shutter_.x, 0.0f);
-    BOOST_CHECK_EQUAL(handler.shutter_.y, 0.5f);
-    BOOST_CHECK_EQUAL(handler.lens_.x, 8.0f);
-    BOOST_CHECK_CLOSE(handler.lens_.y, 0.1f, 1.0e-4f);
-    BOOST_CHECK_EQUAL(handler.lens_.z, 3.0f);
+    BOOST_CHECK_EQUAL(handler.filterWidth_.x, 3.0F);
+    BOOST_CHECK_EQUAL(handler.filterWidth_.y, 4.0F);
+    BOOST_CHECK_CLOSE(handler.variance_, 0.05F, 1.0e-4F);
+    BOOST_CHECK_EQUAL(handler.shutter_.x, 0.0F);
+    BOOST_CHECK_EQUAL(handler.shutter_.y, 0.5F);
+    BOOST_CHECK_EQUAL(handler.lens_.x, 8.0F);
+    BOOST_CHECK_CLOSE(handler.lens_.y, 0.1F, 1.0e-4F);
+    BOOST_CHECK_EQUAL(handler.lens_.z, 3.0F);
 }
 
 /**
@@ -374,8 +374,8 @@ BOOST_AUTO_TEST_CASE(ribreader_unknown_filter_test) {
         "PixelFilter \"mitchell\" 2 2\n"
         "PixelSamples 1 1\n", &handler, &reader));
 
-    BOOST_CHECK_EQUAL(handler.count("PixelFilter"), 0u);
-    BOOST_CHECK_EQUAL(handler.count("PixelSamples"), 1u);
+    BOOST_CHECK_EQUAL(handler.count("PixelFilter"), 0U);
+    BOOST_CHECK_EQUAL(handler.count("PixelSamples"), 1U);
     BOOST_CHECK(reader.unrecognised().empty());
 }
 
@@ -391,10 +391,10 @@ BOOST_AUTO_TEST_CASE(ribreader_pinhole_and_rate_test) {
         "DepthOfField\n"
         "PixelSamples 0.25 0\n", &handler, &reader));
 
-    BOOST_CHECK_EQUAL(handler.count("DepthOfField"), 1u);
+    BOOST_CHECK_EQUAL(handler.count("DepthOfField"), 1U);
     BOOST_CHECK(std::isinf(handler.lens_.x));
-    BOOST_CHECK_EQUAL(handler.samples_.x, 1u);
-    BOOST_CHECK_EQUAL(handler.samples_.y, 1u);
+    BOOST_CHECK_EQUAL(handler.samples_.x, 1U);
+    BOOST_CHECK_EQUAL(handler.samples_.y, 1U);
 
     // a rate too large for a pixel's grid of samples, or for the conversion, is capped
     BOOST_REQUIRE(read("PixelSamples 65536 1e39\n", &handler, &reader));
@@ -403,10 +403,10 @@ BOOST_AUTO_TEST_CASE(ribreader_pinhole_and_rate_test) {
 
     v3d::render::offline::Sampling sampling;
     sampling.fstop = handler.lens_.x;
-    sampling.focalLength = 0.1f;
-    sampling.focalDistance = 3.0f;
+    sampling.focalLength = 0.1F;
+    sampling.focalDistance = 3.0F;
     BOOST_CHECK(sampling.pinhole());
-    sampling.fstop = 8.0f;
+    sampling.fstop = 8.0F;
     BOOST_CHECK(!sampling.pinhole());
 }
 
@@ -426,12 +426,12 @@ BOOST_AUTO_TEST_CASE(ribreader_unrecognised_request_test) {
         "Polygon \"P\" [0 0 1  1 0 1  1 1 1]\n"
         "WorldEnd\n", &handler, &reader));
 
-    BOOST_REQUIRE_EQUAL(reader.unrecognised().size(), 2u);
+    BOOST_REQUIRE_EQUAL(reader.unrecognised().size(), 2U);
     BOOST_CHECK_EQUAL(reader.unrecognised()[0], "Sides");
     BOOST_CHECK_EQUAL(reader.unrecognised()[1], "Displacement");
     // everything after them still arrived
-    BOOST_CHECK_EQUAL(handler.count("WorldBegin"), 1u);
-    BOOST_CHECK_EQUAL(handler.vertices_, 3u);
+    BOOST_CHECK_EQUAL(handler.count("WorldBegin"), 1U);
+    BOOST_CHECK_EQUAL(handler.vertices_, 3U);
 }
 
 /**
@@ -451,7 +451,7 @@ BOOST_AUTO_TEST_CASE(ribreader_texture_requests_test) {
 
     BOOST_CHECK(reader.unrecognised().empty());
     BOOST_CHECK_EQUAL(handler.texturePath_, "maps:&");
-    BOOST_CHECK_EQUAL(handler.vertices_, 3u);
+    BOOST_CHECK_EQUAL(handler.vertices_, 3U);
 }
 
 /**
@@ -465,10 +465,10 @@ BOOST_AUTO_TEST_CASE(ribreader_transform_convention_test) {
     BOOST_REQUIRE(read(
         "Transform [1 0 0 0  0 1 0 0  0 0 1 0  2 3 4 1]\n", &handler, &reader));
 
-    const glm::vec4 moved = handler.transform_ * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    BOOST_CHECK_EQUAL(moved.x, 2.0f);
-    BOOST_CHECK_EQUAL(moved.y, 3.0f);
-    BOOST_CHECK_EQUAL(moved.z, 4.0f);
+    const glm::vec4 moved = handler.transform_ * glm::vec4(0.0F, 0.0F, 0.0F, 1.0F);
+    BOOST_CHECK_EQUAL(moved.x, 2.0F);
+    BOOST_CHECK_EQUAL(moved.y, 3.0F);
+    BOOST_CHECK_EQUAL(moved.z, 4.0F);
 }
 
 BOOST_AUTO_TEST_CASE(ribreader_graphics_state_test) {
@@ -483,12 +483,12 @@ BOOST_AUTO_TEST_CASE(ribreader_graphics_state_test) {
         "Sphere .5 0 .5 360\n"
         "AttributeEnd\n", &handler, &reader));
 
-    BOOST_CHECK_EQUAL(handler.count("AttributeBegin"), 1u);
-    BOOST_CHECK_EQUAL(handler.count("AttributeEnd"), 1u);
-    BOOST_CHECK_CLOSE(handler.color_.r, 0.9f, 0.01f);
-    BOOST_CHECK_EQUAL(handler.translate_.z, 3.0f);
+    BOOST_CHECK_EQUAL(handler.count("AttributeBegin"), 1U);
+    BOOST_CHECK_EQUAL(handler.count("AttributeEnd"), 1U);
+    BOOST_CHECK_CLOSE(handler.color_.r, 0.9F, 0.01F);
+    BOOST_CHECK_EQUAL(handler.translate_.z, 3.0F);
     BOOST_CHECK_EQUAL(handler.identifier_, "myball");
-    BOOST_CHECK_EQUAL(handler.radius_, 0.5f);
+    BOOST_CHECK_EQUAL(handler.radius_, 0.5F);
 }
 
 /**
@@ -523,19 +523,19 @@ BOOST_AUTO_TEST_CASE(ribreader_example_file_test) {
     BOOST_REQUIRE(reader.read("data/example.rib", &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    BOOST_CHECK_EQUAL(handler.count("FrameBegin"), 2u);
-    BOOST_CHECK_EQUAL(handler.count("FrameEnd"), 2u);
-    BOOST_CHECK_EQUAL(handler.count("WorldBegin"), 2u);
-    BOOST_CHECK_EQUAL(handler.count("Transform"), 2u);
-    BOOST_CHECK_EQUAL(handler.count("Sphere"), 4u);
-    BOOST_CHECK_EQUAL(handler.count("Polygon"), 1u);
-    BOOST_CHECK_EQUAL(handler.count("Option"), 2u);
-    BOOST_CHECK_EQUAL(handler.count("Declare"), 2u);
-    BOOST_CHECK_EQUAL(handler.count("LightSource"), 3u);
-    BOOST_CHECK_EQUAL(handler.count("Illuminate"), 2u);
-    BOOST_CHECK_EQUAL(handler.count("Imager"), 1u);
+    BOOST_CHECK_EQUAL(handler.count("FrameBegin"), 2U);
+    BOOST_CHECK_EQUAL(handler.count("FrameEnd"), 2U);
+    BOOST_CHECK_EQUAL(handler.count("WorldBegin"), 2U);
+    BOOST_CHECK_EQUAL(handler.count("Transform"), 2U);
+    BOOST_CHECK_EQUAL(handler.count("Sphere"), 4U);
+    BOOST_CHECK_EQUAL(handler.count("Polygon"), 1U);
+    BOOST_CHECK_EQUAL(handler.count("Option"), 2U);
+    BOOST_CHECK_EQUAL(handler.count("Declare"), 2U);
+    BOOST_CHECK_EQUAL(handler.count("LightSource"), 3U);
+    BOOST_CHECK_EQUAL(handler.count("Illuminate"), 2U);
+    BOOST_CHECK_EQUAL(handler.count("Imager"), 1U);
     // the floor polygon is the only geometry with vertices in the file
-    BOOST_CHECK_EQUAL(handler.vertices_, 4u);
+    BOOST_CHECK_EQUAL(handler.vertices_, 4U);
 
     // Displacement and ShadingRate are recognised by the standard and not by this reader
     BOOST_CHECK(!reader.unrecognised().empty());
@@ -556,10 +556,10 @@ BOOST_AUTO_TEST_CASE(ribreader_light_handles_test) {
         "Illuminate 1 0\n"
         "Illuminate \"fill\" 1\n", &handler, &reader));
 
-    BOOST_REQUIRE_EQUAL(handler.lights_.size(), 2u);
+    BOOST_REQUIRE_EQUAL(handler.lights_.size(), 2U);
     BOOST_CHECK_EQUAL(handler.lights_[0], "distantlight|1|2.000000");
     BOOST_CHECK_EQUAL(handler.lights_[1], "pointlight|fill|0.500000");
-    BOOST_REQUIRE_EQUAL(handler.illuminated_.size(), 2u);
+    BOOST_REQUIRE_EQUAL(handler.illuminated_.size(), 2U);
     BOOST_CHECK_EQUAL(handler.illuminated_[0], "1|off");
     BOOST_CHECK_EQUAL(handler.illuminated_[1], "fill|on");
 }
@@ -573,7 +573,7 @@ BOOST_AUTO_TEST_CASE(ribreader_area_light_test) {
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read("AreaLightSource \"arealight\" 3 \"intensity\" [4]\n", &handler, &reader));
-    BOOST_REQUIRE_EQUAL(handler.lights_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(handler.lights_.size(), 1U);
     BOOST_CHECK_EQUAL(handler.lights_[0], "arealight|3|4.000000");
 }
 
@@ -587,8 +587,8 @@ BOOST_AUTO_TEST_CASE(ribreader_imager_test) {
 
     BOOST_REQUIRE(read("Imager \"background\" \"background\" [0.1 0.2 0.3]\n", &handler, &reader));
     BOOST_CHECK_EQUAL(handler.imager_, "background");
-    BOOST_REQUIRE_EQUAL(handler.background_.size(), 1u);
-    BOOST_CHECK_CLOSE(handler.background_[0].b, 0.3f, 0.01f);
+    BOOST_REQUIRE_EQUAL(handler.background_.size(), 1U);
+    BOOST_CHECK_CLOSE(handler.background_[0].b, 0.3F, 0.01F);
 }
 
 /**
@@ -599,7 +599,7 @@ BOOST_AUTO_TEST_CASE(ribreader_hider_test) {
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read("Hider \"raytrace\"\n", &handler, &reader));
-    BOOST_CHECK_EQUAL(handler.count("Hider"), 1u);
+    BOOST_CHECK_EQUAL(handler.count("Hider"), 1U);
     BOOST_CHECK_EQUAL(handler.hider_, "raytrace");
     BOOST_CHECK(reader.unrecognised().empty());
 }
@@ -621,12 +621,12 @@ BOOST_AUTO_TEST_CASE(ribreader_motion_block_test) {
         "Polygon \"P\" [0 0 1  1 0 1  1 1 1]\n"
         "WorldEnd\n", &handler, &reader));
 
-    BOOST_CHECK_EQUAL(handler.count("MotionBegin"), 1u);
-    BOOST_CHECK_EQUAL(handler.count("MotionEnd"), 1u);
-    BOOST_CHECK_EQUAL(handler.count("Translate"), 2u);
-    BOOST_REQUIRE_EQUAL(handler.motionTimes_.size(), 2u);
-    BOOST_CHECK_EQUAL(handler.motionTimes_[1], 0.5f);
-    BOOST_CHECK_EQUAL(handler.count("Polygon"), 1u);
+    BOOST_CHECK_EQUAL(handler.count("MotionBegin"), 1U);
+    BOOST_CHECK_EQUAL(handler.count("MotionEnd"), 1U);
+    BOOST_CHECK_EQUAL(handler.count("Translate"), 2U);
+    BOOST_REQUIRE_EQUAL(handler.motionTimes_.size(), 2U);
+    BOOST_CHECK_EQUAL(handler.motionTimes_[1], 0.5F);
+    BOOST_CHECK_EQUAL(handler.count("Polygon"), 1U);
     BOOST_CHECK(reader.unsupported().empty());
 }
 
@@ -648,11 +648,11 @@ BOOST_AUTO_TEST_CASE(ribreader_deforming_motion_test) {
         "Color [0.5 0.5 0.5]\n"
         "WorldEnd\n", &handler, &reader));
 
-    BOOST_CHECK_EQUAL(handler.count("Polygon"), 1u);
-    BOOST_CHECK_EQUAL(handler.vertices_, 3u);
-    BOOST_REQUIRE_EQUAL(reader.unsupported().size(), 1u);
+    BOOST_CHECK_EQUAL(handler.count("Polygon"), 1U);
+    BOOST_CHECK_EQUAL(handler.vertices_, 3U);
+    BOOST_REQUIRE_EQUAL(reader.unsupported().size(), 1U);
     BOOST_CHECK_EQUAL(reader.unsupported()[0], "deforming Polygon");
-    BOOST_CHECK_EQUAL(handler.count("Color"), 1u);
+    BOOST_CHECK_EQUAL(handler.count("Color"), 1U);
 }
 
 namespace {
@@ -724,9 +724,9 @@ BOOST_AUTO_TEST_CASE(ribreader_capable_handler_test) {
 
     BOOST_CHECK_EQUAL(handler.made_, "grid.png|grid.tx|periodic|clamp|gaussian|2|3");
     BOOST_CHECK_EQUAL(handler.area_, "arealight|3");
-    BOOST_CHECK_EQUAL(handler.lights_, 0u);
-    BOOST_CHECK((handler.vertices_ == std::vector<unsigned int>{ 3u }));
-    BOOST_CHECK((handler.later_.vertices_ == std::vector<unsigned int>{ 4u }));
+    BOOST_CHECK_EQUAL(handler.lights_, 0U);
+    BOOST_CHECK((handler.vertices_ == std::vector<unsigned int>{ 3U }));
+    BOOST_CHECK((handler.later_.vertices_ == std::vector<unsigned int>{ 4U }));
     BOOST_CHECK(reader.unsupported().empty());
 }
 
@@ -747,15 +747,15 @@ BOOST_AUTO_TEST_CASE(ribreader_sizes_that_are_not_sizes_are_skipped_test) {
         "PixelFilter \"box\" 0 1\n"
         "FrameBegin 1e30\n"
         "FrameEnd\n", &handler, &reader));
-    BOOST_CHECK_EQUAL(handler.count("Format"), 0u);
-    BOOST_CHECK_EQUAL(handler.filterWidth_.x, 0.0f);
-    BOOST_CHECK_EQUAL(handler.count("PixelFilter"), 0u);
-    BOOST_CHECK_EQUAL(handler.count("FrameBegin"), 0u);
-    BOOST_CHECK_EQUAL(handler.count("FrameEnd"), 1u);
+    BOOST_CHECK_EQUAL(handler.count("Format"), 0U);
+    BOOST_CHECK_EQUAL(handler.filterWidth_.x, 0.0F);
+    BOOST_CHECK_EQUAL(handler.count("PixelFilter"), 0U);
+    BOOST_CHECK_EQUAL(handler.count("FrameBegin"), 0U);
+    BOOST_CHECK_EQUAL(handler.count("FrameEnd"), 1U);
 
     BOOST_REQUIRE(read("Format 64 48 1\nPixelFilter \"box\" 2 2\n", &handler, &reader));
-    BOOST_CHECK_EQUAL(handler.width_, 64u);
-    BOOST_CHECK_EQUAL(handler.filterWidth_.x, 2.0f);
+    BOOST_CHECK_EQUAL(handler.width_, 64U);
+    BOOST_CHECK_EQUAL(handler.filterWidth_.x, 2.0F);
 }
 
 /**
@@ -767,14 +767,14 @@ BOOST_AUTO_TEST_CASE(ribreader_format_nonpositive_side_asks_for_the_default_test
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read("Format -1 480 1\n", &handler, &reader));
-    BOOST_CHECK_EQUAL(handler.count("Format"), 1u);
-    BOOST_CHECK_EQUAL(handler.width_, 0u);
-    BOOST_CHECK_EQUAL(handler.height_, 480u);
+    BOOST_CHECK_EQUAL(handler.count("Format"), 1U);
+    BOOST_CHECK_EQUAL(handler.width_, 0U);
+    BOOST_CHECK_EQUAL(handler.height_, 480U);
 
     BOOST_REQUIRE(read("Format 640 0 1\n", &handler, &reader));
-    BOOST_CHECK_EQUAL(handler.count("Format"), 2u);
-    BOOST_CHECK_EQUAL(handler.width_, 640u);
-    BOOST_CHECK_EQUAL(handler.height_, 0u);
+    BOOST_CHECK_EQUAL(handler.count("Format"), 2U);
+    BOOST_CHECK_EQUAL(handler.width_, 640U);
+    BOOST_CHECK_EQUAL(handler.height_, 0U);
 }
 
 /**
@@ -786,13 +786,13 @@ BOOST_AUTO_TEST_CASE(ribreader_default_pixel_aspect_test) {
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(read("Format 640 480 -1\n", &handler, &reader));
-    BOOST_CHECK_EQUAL(handler.width_, 640u);
-    BOOST_CHECK_EQUAL(handler.height_, 480u);
-    BOOST_CHECK_EQUAL(handler.pixelAspect_, 1.0f);
+    BOOST_CHECK_EQUAL(handler.width_, 640U);
+    BOOST_CHECK_EQUAL(handler.height_, 480U);
+    BOOST_CHECK_EQUAL(handler.pixelAspect_, 1.0F);
 
     BOOST_REQUIRE(read("Format 320 240 1e39\n", &handler, &reader));
-    BOOST_CHECK_EQUAL(handler.width_, 320u);
-    BOOST_CHECK_EQUAL(handler.pixelAspect_, 1.0f);
+    BOOST_CHECK_EQUAL(handler.width_, 320U);
+    BOOST_CHECK_EQUAL(handler.pixelAspect_, 1.0F);
 }
 
 /**

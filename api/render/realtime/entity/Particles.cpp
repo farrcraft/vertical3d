@@ -45,9 +45,9 @@ void region(const component::Particles& look, const type::effect::Particle& part
  **/
 canvas::World::Corners corners(const glm::vec3& centre, const glm::vec3& along, float length,
     const glm::vec3& side, float width) {
-    const glm::vec3 head = centre + (along * (length * 0.5f));
-    const glm::vec3 tail = centre - (along * (length * 0.5f));
-    const glm::vec3 half = side * (width * 0.5f);
+    const glm::vec3 head = centre + (along * (length * 0.5F));
+    const glm::vec3 tail = centre - (along * (length * 0.5F));
+    const glm::vec3 half = side * (width * 0.5F);
     return { head - half, head + half, tail + half, tail - half };
 }
 
@@ -63,7 +63,7 @@ void particles(const entt::registry& registry, float alpha, const Billboard& bil
         const component::Particles& look = view.get<const component::Particles>(entity);
         for (const type::effect::Particle& particle : view.get<const ecs::component::Emitter>(entity).state.particles) {
             glm::vec3 centre = glm::mix(particle.previous, particle.position, alpha);
-            if (description.sway != 0.0f) {
+            if (description.sway != 0.0F) {
                 const float turns = particle.phase + (particle.age * description.swayRate);
                 centre += right * (description.sway * std::sin(turns * glm::two_pi<float>()));
             }
@@ -81,7 +81,7 @@ void particles(const entt::registry& registry, float alpha, const Billboard& bil
                 // the velocity as the camera sees it, in the right and up basis
                 const glm::vec2 seen(glm::dot(particle.velocity, right), glm::dot(particle.velocity, up));
                 const float speed = glm::length(seen);
-                if (speed > 0.0f) {
+                if (speed > 0.0F) {
                     const glm::vec2 heading = seen / speed;
                     along = (right * heading.x) + (up * heading.y);
                     side = (right * heading.y) - (up * heading.x);

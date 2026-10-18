@@ -28,8 +28,8 @@ std::atomic<unsigned int> nextID { 0 };
 // one that has not been yet
 Component::Component(component::Type type) :
     parent_(nullptr),
-    position_(0.0f, 0.0f),
-    size_(0.0f, 0.0f),
+    position_(0.0F, 0.0F),
+    size_(0.0F, 0.0F),
     zIndex_(0),
     id_(nextID++),
     visible_(true),

@@ -23,7 +23,7 @@ namespace {
  * tall, and there is no collision or gravity to lift a spawn that starts under the hills
  * back out of them.
  **/
-constexpr glm::vec3 SPAWN_POSITION(128.0f, 80.0f, 240.0f);
+constexpr glm::vec3 SPAWN_POSITION(128.0F, 80.0F, 240.0F);
 
 };  // namespace
 

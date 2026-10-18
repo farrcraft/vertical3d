@@ -38,12 +38,12 @@ and returns the world space coordinate
 glm::vec3 Camera::unproject(const glm::vec3& point, const int viewport[4]) const {
     glm::vec4 ndc;
     // normalize point to range [-1, 1]
-    ndc[0] = ((point[0] - static_cast<float>(viewport[0])) * 2.0f / static_cast<float>(viewport[2])) - 1.0f;
+    ndc[0] = ((point[0] - static_cast<float>(viewport[0])) * 2.0F / static_cast<float>(viewport[2])) - 1.0F;
     // clip space points y downward, the same way a screen coordinate does
-    ndc[1] = ((point[1] - static_cast<float>(viewport[1])) * 2.0f / static_cast<float>(viewport[3])) - 1.0f;
+    ndc[1] = ((point[1] - static_cast<float>(viewport[1])) * 2.0F / static_cast<float>(viewport[3])) - 1.0F;
     // depth is already the [0, 1] the projection wrote
     ndc[2] = point[2];
-    ndc[3] = 1.0f;
+    ndc[3] = 1.0F;
 
     // get inverse transformation matrix
     glm::mat4x4 transform;
@@ -62,17 +62,17 @@ returns the screen space coordinate
 */
 glm::vec3 Camera::project(const glm::vec3& point, const int viewport[4]) const {
     glm::vec4 projected;
-    projected = view() * glm::vec4(point, 1.0f);
+    projected = view() * glm::vec4(point, 1.0F);
     projected = projection() * projected;
 
     // the perspective divide. An orthographic projection leaves w at one
-    if (projected[3] != 0.0f) {
+    if (projected[3] != 0.0F) {
         projected /= projected[3];
     }
 
-    projected[0] = static_cast<float>(viewport[0]) + ((1.0f + projected[0]) * static_cast<float>(viewport[2]) / 2.0f);
+    projected[0] = static_cast<float>(viewport[0]) + ((1.0F + projected[0]) * static_cast<float>(viewport[2]) / 2.0F);
     // clip space y already points down, so this is a screen coordinate
-    projected[1] = static_cast<float>(viewport[1]) + ((1.0f + projected[1]) * static_cast<float>(viewport[3]) / 2.0f);
+    projected[1] = static_cast<float>(viewport[1]) + ((1.0F + projected[1]) * static_cast<float>(viewport[3]) / 2.0F);
 
     return projected;
 }
@@ -83,8 +83,8 @@ std::optional<glm::vec3> Camera::screenPoint(const glm::vec3& point, const int v
     }
     // w is the depth in front of the eye for a perspective camera, and one for an
     // orthographic one. A point at or behind the eye has no place on the screen
-    const glm::vec4 clip = projection() * (view() * glm::vec4(point, 1.0f));
-    if (clip[3] <= 0.0f) {
+    const glm::vec4 clip = projection() * (view() * glm::vec4(point, 1.0F));
+    if (clip[3] <= 0.0F) {
         return std::nullopt;
     }
     return project(point, viewport);
@@ -93,7 +93,7 @@ std::optional<glm::vec3> Camera::screenPoint(const glm::vec3& point, const int v
 std::optional<glm::vec3> Camera::pick(const glm::vec2& cursor, const int viewport[4],
     const geometry::Plane& plane) const {
     const geometry::Ray cast = ray(cursor, viewport);
-    float distance = 0.0f;
+    float distance = 0.0F;
     if (!cast.intersects(plane, &distance)) {
         return std::nullopt;
     }
@@ -103,8 +103,8 @@ std::optional<glm::vec3> Camera::pick(const glm::vec2& cursor, const int viewpor
 geometry::Ray Camera::ray(const glm::vec2& point, const int viewport[4]) const {
     // the two ends of the pixel's line through the frustum. Depth zero is the near
     // plane and one is the far one
-    const glm::vec3 from = unproject(glm::vec3(point.x, point.y, 0.0f), viewport);
-    const glm::vec3 to = unproject(glm::vec3(point.x, point.y, 1.0f), viewport);
+    const glm::vec3 from = unproject(glm::vec3(point.x, point.y, 0.0F), viewport);
+    const glm::vec3 to = unproject(glm::vec3(point.x, point.y, 1.0F), viewport);
     return geometry::Ray({.origin = from, .direction = to - from});
 }
 
@@ -138,7 +138,7 @@ void Camera::createProjection() {  // active scene bound
         */
         const float near = profile_.clipping()[0];
         const float far = profile_.clipping()[1];
-        const float ymax = near * tan(profile_.fov() * glm::pi<float>() / 360.0f);
+        const float ymax = near * tan(profile_.fov() * glm::pi<float>() / 360.0F);
         const float xmax = ymax * aspect;
 
         const float x = near / xmax;
@@ -147,22 +147,22 @@ void Camera::createProjection() {  // active scene bound
         const float depthOffset = -(far * near) / (far - near);
 
         projection_[0][0] = x;
-        projection_[1][0] = 0.0f;
-        projection_[2][0] = 0.0f;
-        projection_[3][0] = 0.0f;
-        projection_[0][1] = 0.0f;
+        projection_[1][0] = 0.0F;
+        projection_[2][0] = 0.0F;
+        projection_[3][0] = 0.0F;
+        projection_[0][1] = 0.0F;
         projection_[1][1] = -y;
-        projection_[2][1] = 0.0f;
-        projection_[3][1] = 0.0f;
-        projection_[0][2] = 0.0f;
-        projection_[1][2] = 0.0f;
+        projection_[2][1] = 0.0F;
+        projection_[3][1] = 0.0F;
+        projection_[0][2] = 0.0F;
+        projection_[1][2] = 0.0F;
         projection_[2][2] = depthScale;
         projection_[3][2] = depthOffset;
-        projection_[0][3] = 0.0f;
-        projection_[1][3] = 0.0f;
+        projection_[0][3] = 0.0F;
+        projection_[1][3] = 0.0F;
         // w is the view z, because the camera looks along +z
-        projection_[2][3] = 1.0f;
-        projection_[3][3] = 0.0f;
+        projection_[2][3] = 1.0F;
+        projection_[3][3] = 0.0F;
     } else {  // orthographic
         /*
             [2/(right-left)	 0					0				tx]
@@ -178,10 +178,10 @@ void Camera::createProjection() {  // active scene bound
             right, top and bottom are points on the respective clipping planes.
         */
         aspect *= profile_.orthoZoom();
-        const float left = -1.0f * aspect;
-        const float right = 1.0f * aspect;
-        const float top = 1.0f * profile_.orthoZoom();
-        const float bottom = -1.0f * profile_.orthoZoom();
+        const float left = -1.0F * aspect;
+        const float right = 1.0F * aspect;
+        const float top = 1.0F * profile_.orthoZoom();
+        const float bottom = -1.0F * profile_.orthoZoom();
         const float far_val = profile_.clipping()[1];
         const float near_val = profile_.clipping()[0];
 
@@ -190,22 +190,22 @@ void Camera::createProjection() {  // active scene bound
         const float ty = (top + bottom) / (top - bottom);
         const float tz = -near_val / (far_val - near_val);
 
-        projection_[0][0] = 2.0f / (right - left);
-        projection_[1][0] = 0.0f;
-        projection_[2][0] = 0.0f;
+        projection_[0][0] = 2.0F / (right - left);
+        projection_[1][0] = 0.0F;
+        projection_[2][0] = 0.0F;
         projection_[3][0] = tx;
-        projection_[0][1] = 0.0f;
-        projection_[1][1] = -2.0f / (top - bottom);
-        projection_[2][1] = 0.0f;
+        projection_[0][1] = 0.0F;
+        projection_[1][1] = -2.0F / (top - bottom);
+        projection_[2][1] = 0.0F;
         projection_[3][1] = ty;
-        projection_[0][2] = 0.0f;
-        projection_[1][2] = 0.0f;
-        projection_[2][2] = 1.0f / (far_val - near_val);
+        projection_[0][2] = 0.0F;
+        projection_[1][2] = 0.0F;
+        projection_[2][2] = 1.0F / (far_val - near_val);
         projection_[3][2] = tz;
-        projection_[0][3] = 0.0f;
-        projection_[1][3] = 0.0f;
-        projection_[2][3] = 0.0f;
-        projection_[3][3] = 1.0f;
+        projection_[0][3] = 0.0F;
+        projection_[1][3] = 0.0F;
+        projection_[2][3] = 0.0F;
+        projection_[3][3] = 1.0F;
     }
 }
 
@@ -224,8 +224,8 @@ void Camera::createView() {
         // the mirrored basis is the rotation with view x negated. A quaternion cannot carry
         // a mirror, so the negation is applied here. Applied on the left, so it mirrors the
         // view rather than the world the rotation is turning
-        glm::mat4x4 mirror(1.0f);
-        mirror[0][0] = -1.0f;
+        glm::mat4x4 mirror(1.0F);
+        mirror[0][0] = -1.0F;
         view_ = mirror * view_;
     }
 }
@@ -236,14 +236,14 @@ void Camera::createView() {
     pan and tilt are types of rotation with restrictions
 */
 void Camera::pan(float angle) {
-    profile_.turn(glm::angleAxis(angle, glm::vec3(0.0f, 1.0f, 0.0f)));
+    profile_.turn(glm::angleAxis(angle, glm::vec3(0.0F, 1.0F, 0.0F)));
 }
 
 /*
     tilt - move vertically around a fixed axis (camera's x axis) - look up/down
 */
 void Camera::tilt(float angle) {
-    profile_.turn(glm::angleAxis(angle, glm::vec3(1.0f, 0.0f, 0.0f)));
+    profile_.turn(glm::angleAxis(angle, glm::vec3(1.0F, 0.0F, 0.0F)));
 }
 
 /*
@@ -297,16 +297,16 @@ void Camera::orthographic(bool ortho) {
 
 float Camera::orthoFactorHorizontal() const {
     if (profile_.size()[0] == 0) {
-        return 0.0f;
+        return 0.0F;
     }
-    return (profile_.orthoZoom() * 2.0f * profile_.pixelAspect()) / static_cast<float>(profile_.size()[0]);
+    return (profile_.orthoZoom() * 2.0F * profile_.pixelAspect()) / static_cast<float>(profile_.size()[0]);
 }
 
 float Camera::orthoFactorVertical() const {
     if (profile_.size()[1] == 0) {
-        return 0.0f;
+        return 0.0F;
     }
-    return (profile_.orthoZoom() * 2.0f) / static_cast<float>(profile_.size()[1]);
+    return (profile_.orthoZoom() * 2.0F) / static_cast<float>(profile_.size()[1]);
 }
 
 void Camera::rotate(const glm::quat& new_rot) {

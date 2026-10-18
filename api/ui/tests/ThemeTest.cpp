@@ -60,7 +60,7 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& document, bool* loade
  **/
 v3d::ui::paint::ComponentRenderer renderer() {
     return v3d::ui::paint::ComponentRenderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 }
 
@@ -92,9 +92,9 @@ struct Uploader final {
 struct Sheet final {
     v3d::ui::Image operator()(const std::string& source) const {
         static const std::map<std::string, std::pair<glm::vec2, glm::vec2>> regions = {
-            { "items/wood", { glm::vec2(0.0f, 0.0f), glm::vec2(0.25f, 0.5f) } },
-            { "items/stone", { glm::vec2(0.25f, 0.0f), glm::vec2(0.5f, 0.5f) } },
-            { "skins/center", { glm::vec2(0.5f, 0.5f), glm::vec2(0.75f, 1.0f) } },
+            { "items/wood", { glm::vec2(0.0F, 0.0F), glm::vec2(0.25F, 0.5F) } },
+            { "items/stone", { glm::vec2(0.25F, 0.0F), glm::vec2(0.5F, 0.5F) } },
+            { "skins/center", { glm::vec2(0.5F, 0.5F), glm::vec2(0.75F, 1.0F) } },
         };
         const auto found = regions.find(source);
         if (found == regions.end()) {
@@ -155,12 +155,12 @@ BOOST_AUTO_TEST_CASE(a_theme_loads_its_styles_and_their_properties) {
     const boost::shared_ptr<v3d::ui::style::property::Color> panel =
         boost::dynamic_pointer_cast<v3d::ui::style::property::Color>(chrome.front()->property("panel", "color"));
     BOOST_REQUIRE(panel);
-    BOOST_CHECK_CLOSE(panel->value().a, 0.5f, 0.001f);
+    BOOST_CHECK_CLOSE(panel->value().a, 0.5F, 0.001F);
 
     const boost::shared_ptr<v3d::ui::style::property::Number> height =
         boost::dynamic_pointer_cast<v3d::ui::style::property::Number>(chrome.front()->property("bar-height", "number"));
     BOOST_REQUIRE(height);
-    BOOST_CHECK_CLOSE(height->value(), 40.0f, 0.001f);
+    BOOST_CHECK_CLOSE(height->value(), 40.0F, 0.001F);
 
     const std::vector<boost::shared_ptr<v3d::ui::style::Style>> labels = dark->getStyleSet("", "label");
     BOOST_REQUIRE_EQUAL(labels.size(), 1U);
@@ -239,11 +239,11 @@ BOOST_AUTO_TEST_CASE(a_theme_overrides_what_it_names_and_no_more) {
 
     drawing.theme(ui->theme("dark"));
 
-    BOOST_CHECK_CLOSE(drawing.dressing().panel.b, 0.3f, 0.001f);
-    BOOST_CHECK_CLOSE(drawing.dressing().barHeight, 40.0f, 0.001f);
+    BOOST_CHECK_CLOSE(drawing.dressing().panel.b, 0.3F, 0.001F);
+    BOOST_CHECK_CLOSE(drawing.dressing().barHeight, 40.0F, 0.001F);
     // the style named neither, so both are what they were
-    BOOST_CHECK_CLOSE(drawing.dressing().lineHeight, defaults.lineHeight, 0.001f);
-    BOOST_CHECK_CLOSE(drawing.dressing().border.r, defaults.border.r, 0.001f);
+    BOOST_CHECK_CLOSE(drawing.dressing().lineHeight, defaults.lineHeight, 0.001F);
+    BOOST_CHECK_CLOSE(drawing.dressing().border.r, defaults.border.r, 0.001F);
 }
 
 /**
@@ -259,8 +259,8 @@ BOOST_AUTO_TEST_CASE(a_nameless_theme_changes_nothing) {
     const v3d::ui::paint::Dressing defaults;
     drawing.theme(ui->activeTheme());
 
-    BOOST_CHECK_CLOSE(drawing.dressing().barHeight, defaults.barHeight, 0.001f);
-    BOOST_CHECK_CLOSE(drawing.dressing().panel.a, defaults.panel.a, 0.001f);
+    BOOST_CHECK_CLOSE(drawing.dressing().barHeight, defaults.barHeight, 0.001F);
+    BOOST_CHECK_CLOSE(drawing.dressing().panel.a, defaults.panel.a, 0.001F);
 }
 
 /**
@@ -394,9 +394,9 @@ BOOST_AUTO_TEST_CASE(a_container_holds_buttons_labels_and_icons) {
     BOOST_CHECK(button->toggle());
     BOOST_CHECK_EQUAL(button->style(), "flat");
     BOOST_CHECK(button->layout().x.unit() == v3d::ui::Length::Unit::Pixels);
-    BOOST_CHECK_CLOSE(button->layout().x.value(), 10.0f, 0.001f);
-    BOOST_CHECK_CLOSE(button->layout().height.value(), 30.0f, 0.001f);
-    BOOST_CHECK_CLOSE(button->position().x, 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(button->layout().x.value(), 10.0F, 0.001F);
+    BOOST_CHECK_CLOSE(button->layout().height.value(), 30.0F, 0.001F);
+    BOOST_CHECK_CLOSE(button->position().x, 0.0F, 0.001F);
     BOOST_CHECK_EQUAL(button->event().str(), "ui::quit");
 
     const boost::shared_ptr<v3d::ui::component::Label> label =
@@ -510,8 +510,8 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
     button->label("Go");
-    button->position(glm::vec2(10.0f, 20.0f));
-    button->size(glm::vec2(100.0f, 30.0f));
+    button->position(glm::vec2(10.0F, 20.0F));
+    button->size(glm::vec2(100.0F, 30.0F));
     drawing.draw(&canvas, button);
 
     // the centre and the top left corner, and nothing else the style did not name
@@ -520,8 +520,8 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
     BOOST_CHECK(canvas.batches().front().texture.valid());
 
     // the corner is drawn at the size the style's own number gives
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 10.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.x, 14.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 10.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.x, 14.0F, 0.001F);
 }
 
 /**
@@ -550,8 +550,8 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
     button->label("Continue");
-    button->position(glm::vec2(10.0f, 20.0f));
-    button->size(glm::vec2(100.0f, 30.0f));
+    button->position(glm::vec2(10.0F, 20.0F));
+    button->size(glm::vec2(100.0F, 30.0F));
 
     // an enabled button takes the normal style, which this theme does not carry
     drawing.draw(&canvas, button);
@@ -576,7 +576,7 @@ BOOST_AUTO_TEST_CASE(a_button_with_no_skin_is_drawn_flat) {
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
     button->label("Go");
-    button->size(glm::vec2(100.0f, 30.0f));
+    button->size(glm::vec2(100.0F, 30.0F));
 
     drawing.draw(&canvas, button);
     BOOST_CHECK(canvas.empty());
@@ -597,8 +597,8 @@ BOOST_AUTO_TEST_CASE(an_icon_draws_the_texture_it_was_resolved_to) {
 
     const boost::shared_ptr<v3d::ui::component::Icon> icon =
         boost::make_shared<v3d::ui::component::Icon>("skins/logo.tga");
-    icon->position(glm::vec2(4.0f, 8.0f));
-    icon->size(glm::vec2(32.0f, 16.0f));
+    icon->position(glm::vec2(4.0F, 8.0F));
+    icon->size(glm::vec2(32.0F, 16.0F));
 
     drawing.draw(&canvas, icon);
     BOOST_CHECK(canvas.empty());
@@ -607,8 +607,8 @@ BOOST_AUTO_TEST_CASE(an_icon_draws_the_texture_it_was_resolved_to) {
     drawing.draw(&canvas, icon);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 4.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.y, 24.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 4.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.y, 24.0F, 0.001F);
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1U);
     BOOST_CHECK_EQUAL(canvas.batches().front().texture.id(), 5U);
 }
@@ -635,33 +635,33 @@ BOOST_AUTO_TEST_CASE(an_image_resolved_to_part_of_a_sheet_draws_that_part) {
 
     v3d::ui::paint::ComponentRenderer drawing = renderer();
     drawing.theme(ui->theme("dark"));
-    drawing.dressing().iconSize = 20.0f;
+    drawing.dressing().iconSize = 20.0F;
 
     const boost::shared_ptr<v3d::ui::component::Icon> icon =
         boost::dynamic_pointer_cast<v3d::ui::component::Icon>(ui->container("hud")->get("slot"));
     BOOST_REQUIRE(icon);
-    icon->size(glm::vec2(32.0f, 32.0f));
+    icon->size(glm::vec2(32.0F, 32.0F));
     v3d::render::realtime::canvas::Canvas iconCanvas;
     iconCanvas.resize(glm::uvec2(800, 600));
     drawing.draw(&iconCanvas, icon);
     BOOST_REQUIRE_EQUAL(iconCanvas.vertices().size(), 4U);
     BOOST_CHECK_EQUAL(iconCanvas.batches().front().texture.id(), 9U);
-    BOOST_CHECK(iconCanvas.vertices()[0].uv == glm::vec2(0.0f, 0.0f));
-    BOOST_CHECK(iconCanvas.vertices()[2].uv == glm::vec2(0.25f, 0.5f));
+    BOOST_CHECK(iconCanvas.vertices()[0].uv == glm::vec2(0.0F, 0.0F));
+    BOOST_CHECK(iconCanvas.vertices()[2].uv == glm::vec2(0.25F, 0.5F));
 
     // the skin's centre is the first quad and the button's icon the one drawn over it
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::dynamic_pointer_cast<v3d::ui::component::Button>(ui->container("hud")->get("use"));
     BOOST_REQUIRE(button);
-    button->size(glm::vec2(100.0f, 30.0f));
+    button->size(glm::vec2(100.0F, 30.0F));
     v3d::render::realtime::canvas::Canvas buttonCanvas;
     buttonCanvas.resize(glm::uvec2(800, 600));
     drawing.draw(&buttonCanvas, button);
     BOOST_REQUIRE_EQUAL(buttonCanvas.vertices().size(), 2U * 4U);
-    BOOST_CHECK(buttonCanvas.vertices()[0].uv == glm::vec2(0.5f, 0.5f));
-    BOOST_CHECK(buttonCanvas.vertices()[2].uv == glm::vec2(0.75f, 1.0f));
-    BOOST_CHECK(buttonCanvas.vertices()[4].uv == glm::vec2(0.25f, 0.0f));
-    BOOST_CHECK(buttonCanvas.vertices()[6].uv == glm::vec2(0.5f, 0.5f));
+    BOOST_CHECK(buttonCanvas.vertices()[0].uv == glm::vec2(0.5F, 0.5F));
+    BOOST_CHECK(buttonCanvas.vertices()[2].uv == glm::vec2(0.75F, 1.0F));
+    BOOST_CHECK(buttonCanvas.vertices()[4].uv == glm::vec2(0.25F, 0.0F));
+    BOOST_CHECK(buttonCanvas.vertices()[6].uv == glm::vec2(0.5F, 0.5F));
 }
 
 /**
@@ -683,7 +683,7 @@ BOOST_AUTO_TEST_CASE(an_icon_given_a_new_source_keeps_it_across_a_resolve) {
     const boost::shared_ptr<v3d::ui::component::Icon> icon =
         boost::dynamic_pointer_cast<v3d::ui::component::Icon>(ui->container("hud")->get("slot"));
     BOOST_REQUIRE(icon);
-    BOOST_CHECK(icon->image().uv1 == glm::vec2(0.25f, 0.5f));
+    BOOST_CHECK(icon->image().uv1 == glm::vec2(0.25F, 0.5F));
 
     // naming the same source again keeps what it resolved to
     icon->source("items/wood");
@@ -693,12 +693,12 @@ BOOST_AUTO_TEST_CASE(an_icon_given_a_new_source_keeps_it_across_a_resolve) {
     BOOST_CHECK(!icon->image().valid());
 
     BOOST_CHECK_EQUAL(ui->resolveComponentImages(sheet, icon), 1U);
-    BOOST_CHECK(icon->image().uv0 == glm::vec2(0.25f, 0.0f));
+    BOOST_CHECK(icon->image().uv0 == glm::vec2(0.25F, 0.0F));
 
     ui->resolveImages(sheet);
     BOOST_CHECK_EQUAL(icon->source(), "items/stone");
-    BOOST_CHECK(icon->image().uv0 == glm::vec2(0.25f, 0.0f));
-    BOOST_CHECK(icon->image().uv1 == glm::vec2(0.5f, 0.5f));
+    BOOST_CHECK(icon->image().uv0 == glm::vec2(0.25F, 0.0F));
+    BOOST_CHECK(icon->image().uv1 == glm::vec2(0.5F, 0.5F));
 }
 
 /**
@@ -761,11 +761,11 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
 
     std::vector<Written> written;
     v3d::ui::paint::ComponentRenderer drawing(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             written.push_back(Written{ std::string(text), pen, colour });
         });
-    drawing.dressing().iconSize = 20.0f;
+    drawing.dressing().iconSize = 20.0F;
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
@@ -781,13 +781,13 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
 
     // the column is as wide as the icon, not as the label it would otherwise draw
     const v3d::ui::paint::Dressing& dressing = drawing.dressing();
-    BOOST_CHECK_CLOSE(bar->bound().size().x, dressing.iconSize + dressing.padding, 0.001f);
-    BOOST_CHECK_CLOSE(drawing.insets(*ui).x, dressing.iconSize + dressing.padding + 1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->bound().size().x, dressing.iconSize + dressing.padding, 0.001F);
+    BOOST_CHECK_CLOSE(drawing.insets(*ui).x, dressing.iconSize + dressing.padding + 1.0F, 0.001F);
 
     // and the icon is centred in the button's own box
     const v3d::type::geometry::Bound2D box = bar->button(0)->bound();
     BOOST_CHECK_CLOSE(canvas.vertices()[8].position.x,
-        box.position().x + ((box.size().x - dressing.iconSize) * 0.5f), 0.001f);
+        box.position().x + ((box.size().x - dressing.iconSize) * 0.5F), 0.001F);
 }
 
 /**
@@ -797,7 +797,7 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
 BOOST_AUTO_TEST_CASE(an_unresolved_icon_leaves_the_label_drawn) {
     std::vector<Written> written;
     const v3d::ui::paint::ComponentRenderer drawing(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             written.push_back(Written{ std::string(text), pen, colour });
         });
@@ -809,7 +809,7 @@ BOOST_AUTO_TEST_CASE(an_unresolved_icon_leaves_the_label_drawn) {
         boost::make_shared<v3d::ui::component::Button>();
     button->label("Select");
     button->icon("icons/select.png");
-    button->size(glm::vec2(40.0f, 24.0f));
+    button->size(glm::vec2(40.0F, 24.0F));
     drawing.draw(&canvas, button);
 
     BOOST_REQUIRE_EQUAL(written.size(), 1U);
@@ -844,7 +844,7 @@ BOOST_AUTO_TEST_CASE(a_container_draws_its_labels_and_icons) {
         boost::dynamic_pointer_cast<v3d::ui::component::Label>(ui->container("hud")->get("score"));
     BOOST_REQUIRE(label);
     // it was drawn, so it holds the bounds it was drawn in
-    BOOST_CHECK_CLOSE(label->bound().size().x, 50.0f, 0.001f);
+    BOOST_CHECK_CLOSE(label->bound().size().x, 50.0F, 0.001F);
 
     ui->container("hud")->get("logo")->visible(true);
     drawing.draw(&canvas, *ui);

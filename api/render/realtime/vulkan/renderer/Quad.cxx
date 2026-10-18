@@ -182,7 +182,7 @@ void Quad::submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer) {
         if (pipeline != nullptr && pipeline->pushStages != 0) {
             Push constants;
             constants.projection = projection;
-            constants.text = batch.text ? 1u : 0u;
+            constants.text = batch.text ? 1U : 0U;
             std::memcpy(item.push.data(), &constants, sizeof(constants));
             item.pushSize = sizeof(constants);
         }

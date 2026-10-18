@@ -68,11 +68,11 @@ const char* const debugTitle = "Debug";
  * The size the ui and the debug overlay are drawn at. Glyphs are distance fields, so the
  * atlas is scaled to this size rather than rasterized at it.
  **/
-const float fontSize = 18.0f;
+const float fontSize = 18.0F;
 
-constexpr glm::vec4 sky(0.4f, 0.6f, 0.9f, 1.0f);
-constexpr glm::vec4 textColour(0.95f, 0.95f, 0.95f, 1.0f);
-constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+constexpr glm::vec4 sky(0.4F, 0.6F, 0.9F, 1.0F);
+constexpr glm::vec4 textColour(0.95F, 0.95F, 0.95F, 1.0F);
+constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
 
 /**
  * How many chunks are remeshed in one tick. Meshing waits for its staging copy, so the
@@ -83,13 +83,13 @@ const size_t chunkUpdatesPerTick = 16;
 /**
  * The sun, in world space and well above a 256 block wide world.
  **/
-constexpr glm::vec4 sunPosition(128.0f, 200.0f, 128.0f, 1.0f);
-constexpr glm::vec4 ambientLight(0.4f, 0.4f, 0.4f, 1.0f);
+constexpr glm::vec4 sunPosition(128.0F, 200.0F, 128.0F, 1.0F);
+constexpr glm::vec4 ambientLight(0.4F, 0.4F, 0.4F, 1.0F);
 
 /**
  * The specular colour every block shares, with its shininess in the fourth component.
  **/
-constexpr glm::vec4 blockSpecular(0.8f, 0.8f, 0.8f, 100.0f);
+constexpr glm::vec4 blockSpecular(0.8F, 0.8F, 0.8F, 100.0F);
 
 /**
  * The farthest distance, in blocks, that a draw's depth key can hold.
@@ -101,33 +101,33 @@ constexpr float maxDepthKey = static_cast<float>(std::numeric_limits<uint16_t>::
  * drawn at. It is a fixed height, and a line taller for each span of the frame that was
  * timed.
  **/
-constexpr glm::vec2 debugPosition(20.0f, 20.0f);
-constexpr float debugWidth = 260.0f;
-constexpr float debugHeight = 154.0f;
-constexpr float debugLineHeight = 26.0f;
-constexpr float debugAlpha = 0.85f;
+constexpr glm::vec2 debugPosition(20.0F, 20.0F);
+constexpr float debugWidth = 260.0F;
+constexpr float debugHeight = 154.0F;
+constexpr float debugLineHeight = 26.0F;
+constexpr float debugAlpha = 0.85F;
 
 /**
  * The block palette, indexed by Voxel::BlockType less one - air is never meshed, so the
  * table starts at dirt.
  **/
 constexpr glm::vec3 palette[materialCount] = {
-    glm::vec3(0.9f, 0.5f, 0.3f),     // dirt
-    glm::vec3(0.13f, 0.56f, 0.19f),  // grass
-    glm::vec3(0.9f, 0.88f, 0.58f),   // sand
-    glm::vec3(0.75f, 0.75f, 0.75f),  // stone
-    glm::vec3(0.52f, 0.52f, 0.52f),  // gravel
-    glm::vec3(0.25f, 0.39f, 0.96f),  // water
-    glm::vec3(0.16f, 0.16f, 0.16f),  // ore
-    glm::vec3(0.5f, 0.29f, 0.02f),   // wood
-    glm::vec3(1.0f, 0.47f, 0.12f),   // lava
-    glm::vec3(0.76f, 0.87f, 1.0f),   // glass
-    glm::vec3(0.29f, 0.29f, 0.29f),  // bedrock
-    glm::vec3(0.86f, 0.86f, 0.86f),  // clay
-    glm::vec3(0.96f, 0.96f, 0.96f),  // ice
-    glm::vec3(0.85f, 0.81f, 0.56f),  // sandstone
-    glm::vec3(0.0f, 0.0f, 0.0f),     // obsidian
-    glm::vec3(0.91f, 0.91f, 0.91f)   // snow
+    glm::vec3(0.9F, 0.5F, 0.3F),     // dirt
+    glm::vec3(0.13F, 0.56F, 0.19F),  // grass
+    glm::vec3(0.9F, 0.88F, 0.58F),   // sand
+    glm::vec3(0.75F, 0.75F, 0.75F),  // stone
+    glm::vec3(0.52F, 0.52F, 0.52F),  // gravel
+    glm::vec3(0.25F, 0.39F, 0.96F),  // water
+    glm::vec3(0.16F, 0.16F, 0.16F),  // ore
+    glm::vec3(0.5F, 0.29F, 0.02F),   // wood
+    glm::vec3(1.0F, 0.47F, 0.12F),   // lava
+    glm::vec3(0.76F, 0.87F, 1.0F),   // glass
+    glm::vec3(0.29F, 0.29F, 0.29F),  // bedrock
+    glm::vec3(0.86F, 0.86F, 0.86F),  // clay
+    glm::vec3(0.96F, 0.96F, 0.96F),  // ice
+    glm::vec3(0.85F, 0.81F, 0.56F),  // sandstone
+    glm::vec3(0.0F, 0.0F, 0.0F),     // obsidian
+    glm::vec3(0.91F, 0.91F, 0.91F)   // snow
 };
 
 };  // namespace
@@ -194,13 +194,13 @@ void Renderer::createUniforms() {
     SceneUniforms uniforms{};
     uniforms.lightPosition = sunPosition;
     uniforms.ambient = ambientLight;
-    uniforms.diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    uniforms.specular = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    uniforms.diffuse = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
+    uniforms.specular = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
     for (unsigned int i = 0; i < materialCount; i++) {
         // a block reflects its own colour ambiently and diffusely and white specularly -
         // what varies between block types is the colour, not the finish
-        uniforms.materials[i].ambient = glm::vec4(palette[i], 1.0f);
-        uniforms.materials[i].diffuse = glm::vec4(palette[i], 1.0f);
+        uniforms.materials[i].ambient = glm::vec4(palette[i], 1.0F);
+        uniforms.materials[i].diffuse = glm::vec4(palette[i], 1.0F);
         uniforms.materials[i].specular = blockSpecular;
     }
 
@@ -285,7 +285,7 @@ void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
         item.pipeline = pipeline_;
         item.material = material_;
 
-        const glm::vec4 origin(entry.origin, 0.0f);
+        const glm::vec4 origin(entry.origin, 0.0F);
         std::memcpy(item.push.data(), &origin, sizeof(origin));
         item.pushSize = sizeof(origin);
 

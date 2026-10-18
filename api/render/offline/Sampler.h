@@ -26,11 +26,11 @@ class Sampler final {
      **/
     struct Sample {
         /** The position in raster space, in pixels from the image's upper left. **/
-        glm::vec2 raster { 0.0f, 0.0f };
+        glm::vec2 raster { 0.0F, 0.0F };
         /** When, between the shutter opening and closing. **/
-        float time { 0.0f };
+        float time { 0.0F };
         /** A point on the unit disc, which the lens scales by its radius. **/
-        glm::vec2 lens { 0.0f, 0.0f };
+        glm::vec2 lens { 0.0F, 0.0F };
     };
 
     explicit Sampler(const Sampling & sampling);

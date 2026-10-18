@@ -585,7 +585,7 @@ boost::shared_ptr<style::Property> Loader::loadProperty(const std::string& secti
     if (section == "colors") {
         *propertyClass = "color";
         return boost::make_shared<style::property::Color>(name,
-            numbers<glm::vec4, 4>(property, "value", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+            numbers<glm::vec4, 4>(property, "value", glm::vec4(1.0F, 1.0F, 1.0F, 1.0F)));
     }
     if (section == "numbers") {
         if (!property.contains("value") || !property.at("value").is_number()) {
@@ -708,7 +708,7 @@ boost::shared_ptr<component::Slider> Loader::loadSlider(const boost::json::objec
         const bool fits = value && std::abs(*value) <= static_cast<double>(std::numeric_limits<float>::max());
         return fits ? static_cast<float>(*value) : fallback;
     };
-    slider->range({.minimum = number("minimum", 0.0f), .maximum = number("maximum", 1.0f), .step = number("step", 0.0f)});
+    slider->range({.minimum = number("minimum", 0.0F), .maximum = number("maximum", 1.0F), .step = number("step", 0.0F)});
     slider->value(number("value", slider->minimum()));
     const v3d::event::Event command = loadCommand(entry);
     if (command.context()) {

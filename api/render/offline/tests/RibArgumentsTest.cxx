@@ -23,18 +23,18 @@ typedef v3d::render::offline::rib::ParameterList ParameterList;
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_typed_by_declaration_test) {
     const Declarations declarations;
-    float roughness = 0.3f;
-    float colour[3] = { 0.25f, 0.5f, 0.75f };
+    float roughness = 0.3F;
+    float colour[3] = { 0.25F, 0.5F, 0.75F };
 
     const char* const tokens[] = { "roughness", "specularcolor" };
     const void* const values[] = { &roughness, colour };
 
     ParameterList list;
     arguments(declarations, 2, tokens, values, 1, &list);
-    BOOST_CHECK_EQUAL(list.size(), 2u);
-    BOOST_CHECK_CLOSE(list.number("roughness", 0.0f), 0.3f, 0.01f);
-    BOOST_REQUIRE_EQUAL(list.floats("specularcolor").size(), 3u);
-    BOOST_CHECK_CLOSE(list.floats("specularcolor")[2], 0.75f, 0.01f);
+    BOOST_CHECK_EQUAL(list.size(), 2U);
+    BOOST_CHECK_CLOSE(list.number("roughness", 0.0F), 0.3F, 0.01F);
+    BOOST_REQUIRE_EQUAL(list.floats("specularcolor").size(), 3U);
+    BOOST_CHECK_CLOSE(list.floats("specularcolor")[2], 0.75F, 0.01F);
 }
 
 /**
@@ -43,14 +43,14 @@ BOOST_AUTO_TEST_CASE(ribarguments_typed_by_declaration_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_inline_declaration_test) {
     const Declarations declarations;
-    float squish = 5.0f;
+    float squish = 5.0F;
     const char* const tokens[] = { "uniform float squish" };
     const void* const values[] = { &squish };
 
     ParameterList list;
     arguments(declarations, 1, tokens, values, 1, &list);
     BOOST_CHECK(list.has("squish"));
-    BOOST_CHECK_CLOSE(list.number("squish", 0.0f), 5.0f, 0.01f);
+    BOOST_CHECK_CLOSE(list.number("squish", 0.0F), 5.0F, 0.01F);
 }
 
 /**
@@ -65,9 +65,9 @@ BOOST_AUTO_TEST_CASE(ribarguments_integers_test) {
 
     ParameterList list;
     arguments(declarations, 1, tokens, values, 1, &list);
-    BOOST_REQUIRE_EQUAL(list.floats("samples").size(), 2u);
-    BOOST_CHECK_EQUAL(list.floats("samples")[0], 3.0f);
-    BOOST_CHECK_EQUAL(list.floats("samples")[1], -2.0f);
+    BOOST_REQUIRE_EQUAL(list.floats("samples").size(), 2U);
+    BOOST_CHECK_EQUAL(list.floats("samples")[0], 3.0F);
+    BOOST_CHECK_EQUAL(list.floats("samples")[1], -2.0F);
 }
 
 /**
@@ -91,14 +91,14 @@ BOOST_AUTO_TEST_CASE(ribarguments_strings_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_varying_takes_the_vertices_test) {
     const Declarations declarations;
-    float points[12] = { 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-                         1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f };
+    float points[12] = { 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+                         1.0F, 1.0F, 0.0F, 0.0F, 1.0F, 0.0F };
     const char* const tokens[] = { "P" };
     const void* const values[] = { points };
 
     ParameterList list;
     arguments(declarations, 1, tokens, values, 4, &list);
-    BOOST_CHECK_EQUAL(list.points("P").size(), 4u);
+    BOOST_CHECK_EQUAL(list.points("P").size(), 4U);
 }
 
 /**
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(ribarguments_varying_takes_the_vertices_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribarguments_undeclared_is_dropped_test) {
     const Declarations declarations;
-    float veins = 1.0f;
+    float veins = 1.0F;
     const char* const tokens[] = { "veins", "roughness" };
     const void* const values[] = { &veins, &veins };
 
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(ribarguments_undeclared_is_dropped_test) {
     arguments(declarations, 2, tokens, values, 1, &list, &unresolved);
     BOOST_CHECK(!list.has("veins"));
     BOOST_CHECK(list.has("roughness"));
-    BOOST_REQUIRE_EQUAL(unresolved.size(), 1u);
+    BOOST_REQUIRE_EQUAL(unresolved.size(), 1U);
     BOOST_CHECK_EQUAL(unresolved[0], "veins");
 }
 
@@ -131,10 +131,10 @@ BOOST_AUTO_TEST_CASE(ribarguments_nulls_test) {
 
     ParameterList list;
     arguments(declarations, 2, tokens, values, 1, &list);
-    BOOST_CHECK_EQUAL(list.size(), 0u);
+    BOOST_CHECK_EQUAL(list.size(), 0U);
     ParameterList nothing;
     arguments(declarations, 2, nullptr, nullptr, 1, &nothing);
-    BOOST_CHECK_EQUAL(nothing.size(), 0u);
+    BOOST_CHECK_EQUAL(nothing.size(), 0U);
 }
 
 };  // namespace

@@ -48,11 +48,11 @@ const uint32_t height = 32;
  * no rounding, so the picture is exact on any conformant driver.
  **/
 glm::mat4x4 pixels() {
-    glm::mat4x4 projection(1.0f);
-    projection[0][0] = 2.0f / static_cast<float>(width);
-    projection[1][1] = 2.0f / static_cast<float>(height);
-    projection[3][0] = -1.0f;
-    projection[3][1] = -1.0f;
+    glm::mat4x4 projection(1.0F);
+    projection[0][0] = 2.0F / static_cast<float>(width);
+    projection[1][1] = 2.0F / static_cast<float>(height);
+    projection[3][0] = -1.0F;
+    projection[3][1] = -1.0F;
     return projection;
 }
 
@@ -68,8 +68,8 @@ canvas::World::Corners rect(float minX, float minY, float maxX, float maxY, floa
     };
 }
 
-constexpr glm::vec4 NEAR_COLOUR(1.0f, 0.0f, 0.0f, 1.0f);
-constexpr glm::vec4 FAR_COLOUR(0.0f, 0.0f, 1.0f, 1.0f);
+constexpr glm::vec4 NEAR_COLOUR(1.0F, 0.0F, 0.0F, 1.0F);
+constexpr glm::vec4 FAR_COLOUR(0.0F, 0.0F, 1.0F, 1.0F);
 
 /**
  * The two overlapping quads, submitted in the order given.
@@ -80,11 +80,11 @@ constexpr glm::vec4 FAR_COLOUR(0.0f, 0.0f, 1.0f, 1.0f);
 void overlapping(canvas::World* canvas, bool nearFirst) {
     canvas->clear();
     if (nearFirst) {
-        canvas->quad(rect(8.0f, 4.0f, 40.0f, 20.0f, 0.25f), NEAR_COLOUR);
-        canvas->quad(rect(24.0f, 12.0f, 56.0f, 28.0f, 0.75f), FAR_COLOUR);
+        canvas->quad(rect(8.0F, 4.0F, 40.0F, 20.0F, 0.25F), NEAR_COLOUR);
+        canvas->quad(rect(24.0F, 12.0F, 56.0F, 28.0F, 0.75F), FAR_COLOUR);
     } else {
-        canvas->quad(rect(24.0f, 12.0f, 56.0f, 28.0f, 0.75f), FAR_COLOUR);
-        canvas->quad(rect(8.0f, 4.0f, 40.0f, 20.0f, 0.25f), NEAR_COLOUR);
+        canvas->quad(rect(24.0F, 12.0F, 56.0F, 28.0F, 0.75F), FAR_COLOUR);
+        canvas->quad(rect(8.0F, 4.0F, 40.0F, 20.0F, 0.25F), NEAR_COLOUR);
     }
 }
 
@@ -102,9 +102,9 @@ void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::stri
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("world");
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     pass->depth(true);
-    pass->camera(glm::mat4x4(1.0f), pixels());
+    pass->camera(glm::mat4x4(1.0F), pixels());
 
     headless->context->worldQuads()->submit(canvas, pass.get());
 

@@ -58,17 +58,17 @@ const char* BLENDER = "blender_strip.glb";
  * chain a unit apart, with an armature standing the given distance along z above them.
  **/
 void checkSkeleton(const v3d::type::Skeleton& skeleton, float armature) {
-    BOOST_REQUIRE_EQUAL(skeleton.joints.size(), 3u);
+    BOOST_REQUIRE_EQUAL(skeleton.joints.size(), 3U);
     const char* const names[3] = {"root", "middle", "top"};
     for (std::size_t joint = 0; joint < 3; ++joint) {
         const v3d::type::Skeleton::Joint& read = skeleton.joints[joint];
         BOOST_CHECK_EQUAL(read.name, names[joint]);
         BOOST_CHECK_EQUAL(read.parent, static_cast<std::int32_t>(joint) - 1);
-        BOOST_CHECK(read.translation == glm::vec3(0.0f, joint == 0 ? 0.0f : 1.0f, 0.0f));
+        BOOST_CHECK(read.translation == glm::vec3(0.0F, joint == 0 ? 0.0F : 1.0F, 0.0F));
         BOOST_CHECK(read.rotation == glm::identity<glm::quat>());
-        BOOST_CHECK(read.scale == glm::vec3(1.0f));
-        const glm::vec3 bind(0.0f, static_cast<float>(joint), armature);
-        BOOST_CHECK(read.inverseBind == glm::translate(glm::mat4(1.0f), -bind));
+        BOOST_CHECK(read.scale == glm::vec3(1.0F));
+        const glm::vec3 bind(0.0F, static_cast<float>(joint), armature);
+        BOOST_CHECK(read.inverseBind == glm::translate(glm::mat4(1.0F), -bind));
     }
 }
 
@@ -78,13 +78,13 @@ void checkSkeleton(const v3d::type::Skeleton& skeleton, float armature) {
  **/
 void checkInfluences(const v3d::type::Model& model) {
     const std::vector<v3d::type::Model::Influence>& influences = model.influences();
-    BOOST_CHECK_EQUAL(influences[0].joints[0], 0u);
-    BOOST_CHECK_EQUAL(influences[4].joints[0], 0u);
-    BOOST_CHECK_EQUAL(influences[4].joints[1], 1u);
-    BOOST_CHECK_EQUAL(influences[6].joints[0], 1u);
-    BOOST_CHECK_EQUAL(influences[8].joints[0], 1u);
-    BOOST_CHECK_EQUAL(influences[8].joints[1], 2u);
-    BOOST_CHECK_EQUAL(influences[13].joints[0], 2u);
+    BOOST_CHECK_EQUAL(influences[0].joints[0], 0U);
+    BOOST_CHECK_EQUAL(influences[4].joints[0], 0U);
+    BOOST_CHECK_EQUAL(influences[4].joints[1], 1U);
+    BOOST_CHECK_EQUAL(influences[6].joints[0], 1U);
+    BOOST_CHECK_EQUAL(influences[8].joints[0], 1U);
+    BOOST_CHECK_EQUAL(influences[8].joints[1], 2U);
+    BOOST_CHECK_EQUAL(influences[13].joints[0], 2U);
 }
 
 /**
@@ -100,16 +100,16 @@ void checkParts(const v3d::type::Model& model) {
         {-3, 0, 1}, {-3, 1, 1}, {-4, 0, 1},  // B, under node 2 as well
     };
 
-    BOOST_REQUIRE_EQUAL(model.vertices().size(), 9u);
-    BOOST_REQUIRE_EQUAL(model.indices().size(), 9u);
-    BOOST_REQUIRE_EQUAL(model.parts().size(), 2u);
+    BOOST_REQUIRE_EQUAL(model.vertices().size(), 9U);
+    BOOST_REQUIRE_EQUAL(model.indices().size(), 9U);
+    BOOST_REQUIRE_EQUAL(model.parts().size(), 2U);
 
-    BOOST_CHECK_EQUAL(model.parts()[0].firstIndex, 0u);
-    BOOST_CHECK_EQUAL(model.parts()[0].indexCount, 6u);
-    BOOST_CHECK_EQUAL(model.parts()[0].material, 0u);
-    BOOST_CHECK_EQUAL(model.parts()[1].firstIndex, 6u);
-    BOOST_CHECK_EQUAL(model.parts()[1].indexCount, 3u);
-    BOOST_CHECK_EQUAL(model.parts()[1].material, 1u);
+    BOOST_CHECK_EQUAL(model.parts()[0].firstIndex, 0U);
+    BOOST_CHECK_EQUAL(model.parts()[0].indexCount, 6U);
+    BOOST_CHECK_EQUAL(model.parts()[0].material, 0U);
+    BOOST_CHECK_EQUAL(model.parts()[1].firstIndex, 6U);
+    BOOST_CHECK_EQUAL(model.parts()[1].indexCount, 3U);
+    BOOST_CHECK_EQUAL(model.parts()[1].material, 1U);
 
     for (std::size_t index = 0; index < 9; ++index) {
         BOOST_CHECK_MESSAGE(model.vertices()[index].position == placed[index],
@@ -145,8 +145,8 @@ BOOST_AUTO_TEST_CASE(gltf_merges_every_primitive_test) {
 
     BOOST_REQUIRE(model);
     // three triangles of three vertices, in one array and one index run
-    BOOST_CHECK_EQUAL(model->vertices().size(), 9u);
-    BOOST_CHECK_EQUAL(model->indices().size(), 9u);
+    BOOST_CHECK_EQUAL(model->vertices().size(), 9U);
+    BOOST_CHECK_EQUAL(model->indices().size(), 9U);
 }
 
 BOOST_AUTO_TEST_CASE(gltf_rebases_the_indices_of_later_primitives_test) {
@@ -167,9 +167,9 @@ BOOST_AUTO_TEST_CASE(gltf_synthesises_indices_for_a_primitive_without_them_test)
     // the third primitive is drawn straight out of its vertex array in the file. Its three
     // vertices are in the merge, and so is an index run reaching them - dropping either
     // would leave six of each
-    BOOST_CHECK_EQUAL(model->vertices().size(), 9u);
-    BOOST_CHECK_EQUAL(model->indices()[6], 6u);
-    BOOST_CHECK_EQUAL(model->indices()[8], 8u);
+    BOOST_CHECK_EQUAL(model->vertices().size(), 9U);
+    BOOST_CHECK_EQUAL(model->indices()[6], 6U);
+    BOOST_CHECK_EQUAL(model->indices()[8], 8U);
 }
 
 BOOST_AUTO_TEST_CASE(gltf_every_index_addresses_a_real_vertex_test) {
@@ -187,26 +187,26 @@ BOOST_AUTO_TEST_CASE(gltf_reads_the_vertex_attributes_test) {
 
     // the three triangles are stepped along x, so the position says which primitive a
     // vertex came from and in what order they were appended
-    BOOST_CHECK_CLOSE(model->vertices()[0].position.x, 0.0f, 0.01f);
-    BOOST_CHECK_CLOSE(model->vertices()[3].position.x, 2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(model->vertices()[6].position.x, 4.0f, 0.01f);
+    BOOST_CHECK_CLOSE(model->vertices()[0].position.x, 0.0F, 0.01F);
+    BOOST_CHECK_CLOSE(model->vertices()[3].position.x, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(model->vertices()[6].position.x, 4.0F, 0.01F);
 
     // every fixture normal points down +z, and the uvs are the same three per triangle
-    BOOST_CHECK_CLOSE(model->vertices()[0].normal.z, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(model->vertices()[8].normal.z, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(model->vertices()[1].uv.x, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(model->vertices()[2].uv.y, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(model->vertices()[0].normal.z, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(model->vertices()[8].normal.z, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(model->vertices()[1].uv.x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(model->vertices()[2].uv.y, 1.0F, 0.01F);
 }
 
 BOOST_AUTO_TEST_CASE(gltf_reads_the_base_colour_test) {
     const boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
     BOOST_REQUIRE(model);
-    BOOST_REQUIRE_EQUAL(model->materials().size(), 1u);
+    BOOST_REQUIRE_EQUAL(model->materials().size(), 1U);
 
-    BOOST_CHECK_CLOSE(model->materials()[0].baseColour.r, 0.25f, 0.01f);
-    BOOST_CHECK_CLOSE(model->materials()[0].baseColour.g, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(model->materials()[0].baseColour.b, 0.75f, 0.01f);
-    BOOST_CHECK_CLOSE(model->materials()[0].baseColour.a, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(model->materials()[0].baseColour.r, 0.25F, 0.01F);
+    BOOST_CHECK_CLOSE(model->materials()[0].baseColour.g, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(model->materials()[0].baseColour.b, 0.75F, 0.01F);
+    BOOST_CHECK_CLOSE(model->materials()[0].baseColour.a, 1.0F, 0.01F);
 }
 
 BOOST_AUTO_TEST_CASE(gltf_names_the_texture_rather_than_decoding_it_test) {
@@ -303,7 +303,7 @@ BOOST_AUTO_TEST_CASE(gltf_vertex_bytes_is_the_array_size_test) {
 
     // what a device buffer is made from: eight floats a vertex, and the loader fills them
     // all whether or not the file carried normals and uvs
-    BOOST_CHECK_EQUAL(model->vertexBytes(), model->vertices().size() * 8u * sizeof(float));
+    BOOST_CHECK_EQUAL(model->vertexBytes(), model->vertices().size() * 8U * sizeof(float));
     BOOST_CHECK_EQUAL(model->empty(), false);
 }
 
@@ -316,10 +316,10 @@ BOOST_AUTO_TEST_CASE(gltf_a_part_per_material_test) {
     BOOST_REQUIRE(model);
     checkParts(*model);
 
-    BOOST_REQUIRE_EQUAL(model->materials().size(), 2u);
-    BOOST_CHECK(model->materials()[0].baseColour == glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    BOOST_REQUIRE_EQUAL(model->materials().size(), 2U);
+    BOOST_CHECK(model->materials()[0].baseColour == glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
     BOOST_CHECK_EQUAL(model->materials()[0].baseColourTexture, "red.png");
-    BOOST_CHECK(model->materials()[1].baseColour == glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    BOOST_CHECK(model->materials()[1].baseColour == glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     BOOST_CHECK(model->materials()[1].baseColourTexture.empty());
 }
 
@@ -344,9 +344,9 @@ BOOST_AUTO_TEST_CASE(gltf_a_node_turns_the_normals_test) {
     BOOST_REQUIRE(model);
 
     for (const v3d::type::Model::Vertex& vertex : model->vertices()) {
-        BOOST_CHECK_SMALL(vertex.normal.x, 1e-6f);
-        BOOST_CHECK_CLOSE(vertex.normal.y, 1.0f, 1e-4f);
-        BOOST_CHECK_SMALL(vertex.normal.z, 1e-6f);
+        BOOST_CHECK_SMALL(vertex.normal.x, 1e-6F);
+        BOOST_CHECK_CLOSE(vertex.normal.y, 1.0F, 1e-4F);
+        BOOST_CHECK_SMALL(vertex.normal.z, 1e-6F);
     }
 }
 
@@ -366,10 +366,10 @@ BOOST_AUTO_TEST_CASE(gltf_one_material_is_one_part_test) {
     const boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
     BOOST_REQUIRE(model);
 
-    BOOST_REQUIRE_EQUAL(model->parts().size(), 1u);
-    BOOST_CHECK_EQUAL(model->parts()[0].firstIndex, 0u);
-    BOOST_CHECK_EQUAL(model->parts()[0].indexCount, 9u);
-    BOOST_CHECK_EQUAL(model->parts()[0].material, 0u);
+    BOOST_REQUIRE_EQUAL(model->parts().size(), 1U);
+    BOOST_CHECK_EQUAL(model->parts()[0].firstIndex, 0U);
+    BOOST_CHECK_EQUAL(model->parts()[0].indexCount, 9U);
+    BOOST_CHECK_EQUAL(model->parts()[0].material, 0U);
 }
 
 /**
@@ -390,8 +390,8 @@ BOOST_AUTO_TEST_CASE(gltf_a_static_model_has_no_skeleton_test) {
 BOOST_AUTO_TEST_CASE(gltf_reads_a_skeleton_test) {
     const boost::shared_ptr<v3d::type::Model> model = load(SKINNED);
     BOOST_REQUIRE(model);
-    checkSkeleton(model->skeleton(), 0.0f);
-    BOOST_CHECK(model->skeleton().root == glm::mat4(1.0f));
+    checkSkeleton(model->skeleton(), 0.0F);
+    BOOST_CHECK(model->skeleton().root == glm::mat4(1.0F));
 }
 
 /**
@@ -405,9 +405,9 @@ BOOST_AUTO_TEST_CASE(gltf_reads_the_influences_test) {
     checkInfluences(*model);
 
     const std::vector<v3d::type::Model::Influence>& influences = model->influences();
-    BOOST_CHECK(influences[0].weights == glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
-    BOOST_CHECK(influences[4].weights == glm::vec4(0.5f, 0.5f, 0.0f, 0.0f));
-    BOOST_CHECK(influences[13].weights == glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
+    BOOST_CHECK(influences[0].weights == glm::vec4(1.0F, 0.0F, 0.0F, 0.0F));
+    BOOST_CHECK(influences[4].weights == glm::vec4(0.5F, 0.5F, 0.0F, 0.0F));
+    BOOST_CHECK(influences[13].weights == glm::vec4(1.0F, 0.0F, 0.0F, 0.0F));
 }
 
 /**
@@ -419,8 +419,8 @@ BOOST_AUTO_TEST_CASE(gltf_a_skinned_mesh_is_not_placed_by_its_node_test) {
     BOOST_REQUIRE(model);
     BOOST_REQUIRE(!model->parts().empty());
 
-    BOOST_CHECK(model->vertices()[0].position == glm::vec3(-1.0f, 0.0f, 0.0f));
-    BOOST_CHECK(model->vertices()[13].position == glm::vec3(1.0f, 3.0f, 0.0f));
+    BOOST_CHECK(model->vertices()[0].position == glm::vec3(-1.0F, 0.0F, 0.0F));
+    BOOST_CHECK(model->vertices()[13].position == glm::vec3(1.0F, 3.0F, 0.0F));
 }
 
 /**
@@ -430,13 +430,13 @@ BOOST_AUTO_TEST_CASE(gltf_a_skinned_mesh_is_not_placed_by_its_node_test) {
 BOOST_AUTO_TEST_CASE(gltf_an_unskinned_mesh_follows_a_joint_test) {
     const boost::shared_ptr<v3d::type::Model> model = load(SKINNED);
     BOOST_REQUIRE(model);
-    BOOST_REQUIRE_EQUAL(model->parts().size(), 2u);
+    BOOST_REQUIRE_EQUAL(model->parts().size(), 2U);
 
     const v3d::type::Model::Part& tip = model->parts()[1];
     const std::uint32_t first = model->indices()[tip.firstIndex];
-    BOOST_CHECK(model->vertices()[first].position == glm::vec3(0.0f, 2.5f, 0.0f));
-    BOOST_CHECK_EQUAL(model->influences()[first].joints[0], 2u);
-    BOOST_CHECK(model->influences()[first].weights == glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
+    BOOST_CHECK(model->vertices()[first].position == glm::vec3(0.0F, 2.5F, 0.0F));
+    BOOST_CHECK_EQUAL(model->influences()[first].joints[0], 2U);
+    BOOST_CHECK(model->influences()[first].weights == glm::vec4(1.0F, 0.0F, 0.0F, 0.0F));
 }
 
 /**
@@ -447,16 +447,16 @@ BOOST_AUTO_TEST_CASE(gltf_an_unskinned_mesh_follows_a_joint_test) {
 BOOST_AUTO_TEST_CASE(gltf_a_skeleton_listed_child_first_is_reordered_test) {
     const boost::shared_ptr<v3d::type::Model> model = load(SHUFFLED);
     BOOST_REQUIRE(model);
-    checkSkeleton(model->skeleton(), 4.0f);
-    BOOST_CHECK(model->skeleton().root == glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 4.0f)));
+    checkSkeleton(model->skeleton(), 4.0F);
+    BOOST_CHECK(model->skeleton().root == glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, 4.0F)));
 
     BOOST_REQUIRE_EQUAL(model->influences().size(), model->vertices().size());
     checkInfluences(*model);
     for (const v3d::type::Model::Influence& influence : model->influences()) {
-        BOOST_CHECK_CLOSE(influence.weights.x + influence.weights.y + influence.weights.z + influence.weights.w, 1.0f, 1e-4f);
+        BOOST_CHECK_CLOSE(influence.weights.x + influence.weights.y + influence.weights.z + influence.weights.w, 1.0F, 1e-4F);
     }
-    BOOST_CHECK_CLOSE(model->influences()[4].weights.x, 0.5f, 0.5f);
-    BOOST_CHECK_CLOSE(model->influences()[4].weights.y, 0.5f, 0.5f);
+    BOOST_CHECK_CLOSE(model->influences()[4].weights.x, 0.5F, 0.5F);
+    BOOST_CHECK_CLOSE(model->influences()[4].weights.y, 0.5F, 0.5F);
 }
 
 /**
@@ -467,28 +467,28 @@ BOOST_AUTO_TEST_CASE(gltf_reads_the_clips_test) {
     using v3d::type::animation::Channel;
     const boost::shared_ptr<v3d::type::Model> model = load(SKINNED);
     BOOST_REQUIRE(model);
-    BOOST_REQUIRE_EQUAL(model->clips().size(), 3u);
+    BOOST_REQUIRE_EQUAL(model->clips().size(), 3U);
 
     const v3d::type::animation::Clip& bend = model->clips()[0];
     BOOST_CHECK_EQUAL(bend.name, "bend");
-    BOOST_CHECK_EQUAL(bend.duration, 1.0f);
-    BOOST_REQUIRE_EQUAL(bend.channels.size(), 1u);
-    BOOST_CHECK_EQUAL(bend.channels[0].joint, 1u);
+    BOOST_CHECK_EQUAL(bend.duration, 1.0F);
+    BOOST_REQUIRE_EQUAL(bend.channels.size(), 1U);
+    BOOST_CHECK_EQUAL(bend.channels[0].joint, 1U);
     BOOST_CHECK(bend.channels[0].path == Channel::Path::Rotation);
     BOOST_CHECK(bend.channels[0].interpolation == Channel::Interpolation::Linear);
 
     BOOST_CHECK_EQUAL(model->clips()[1].name, "step");
-    BOOST_REQUIRE_EQUAL(model->clips()[1].channels.size(), 1u);
+    BOOST_REQUIRE_EQUAL(model->clips()[1].channels.size(), 1U);
     BOOST_CHECK(model->clips()[1].channels[0].interpolation == Channel::Interpolation::Step);
 
     const v3d::type::animation::Clip& cubic = model->clips()[2];
     BOOST_CHECK_EQUAL(cubic.name, "cubic");
-    BOOST_REQUIRE_EQUAL(cubic.channels.size(), 1u);
-    BOOST_CHECK_EQUAL(cubic.channels[0].joint, 2u);
+    BOOST_REQUIRE_EQUAL(cubic.channels.size(), 1U);
+    BOOST_CHECK_EQUAL(cubic.channels[0].joint, 2U);
     BOOST_CHECK(cubic.channels[0].path == Channel::Path::Translation);
     BOOST_CHECK(cubic.channels[0].interpolation == Channel::Interpolation::CubicSpline);
     // an in tangent, a value and an out tangent for each of two keys
-    BOOST_CHECK_EQUAL(cubic.channels[0].values.size(), 6u);
+    BOOST_CHECK_EQUAL(cubic.channels[0].values.size(), 6U);
 }
 
 /**
@@ -501,16 +501,16 @@ BOOST_AUTO_TEST_CASE(gltf_a_clip_read_bends_the_skeleton_test) {
     BOOST_REQUIRE(!model->clips().empty());
 
     v3d::type::animation::Pose pose = v3d::type::animation::rest(model->skeleton());
-    v3d::type::animation::sample(model->clips()[0], 1.0f, &pose);
+    v3d::type::animation::sample(model->clips()[0], 1.0F, &pose);
     std::vector<glm::mat4> palette;
     v3d::type::animation::palette(model->skeleton(), pose, &palette);
-    BOOST_REQUIRE_EQUAL(palette.size(), 3u);
+    BOOST_REQUIRE_EQUAL(palette.size(), 3U);
 
     // the top joint's bind position, carried by its skinning matrix to where it stands now
-    const glm::vec4 top = palette[2] * glm::vec4(0.0f, 2.0f, 0.0f, 1.0f);
-    BOOST_CHECK_SMALL(top.x + 1.0f, 1e-5f);
-    BOOST_CHECK_SMALL(top.y - 1.0f, 1e-5f);
-    BOOST_CHECK_SMALL(top.z, 1e-5f);
+    const glm::vec4 top = palette[2] * glm::vec4(0.0F, 2.0F, 0.0F, 1.0F);
+    BOOST_CHECK_SMALL(top.x + 1.0F, 1e-5F);
+    BOOST_CHECK_SMALL(top.y - 1.0F, 1e-5F);
+    BOOST_CHECK_SMALL(top.z, 1e-5F);
 }
 
 /**
@@ -537,15 +537,15 @@ BOOST_AUTO_TEST_CASE(gltf_reads_a_blender_rig_test) {
     BOOST_REQUIRE(model);
 
     const v3d::type::Skeleton& skeleton = model->skeleton();
-    BOOST_REQUIRE_EQUAL(skeleton.joints.size(), 3u);
+    BOOST_REQUIRE_EQUAL(skeleton.joints.size(), 3U);
     const char* const names[3] = {"root", "middle", "top"};
     for (std::size_t joint = 0; joint < 3; ++joint) {
         BOOST_CHECK_EQUAL(skeleton.joints[joint].name, names[joint]);
         BOOST_CHECK_EQUAL(skeleton.joints[joint].parent, static_cast<std::int32_t>(joint) - 1);
     }
     // the armature's scale is above the skeleton, and the joints are in its unscaled units
-    BOOST_CHECK_CLOSE(skeleton.root[0][0], 0.01f, 1e-3f);
-    BOOST_CHECK_CLOSE(skeleton.joints[1].translation.y, 100.0f, 1e-3f);
+    BOOST_CHECK_CLOSE(skeleton.root[0][0], 0.01F, 1e-3F);
+    BOOST_CHECK_CLOSE(skeleton.joints[1].translation.y, 100.0F, 1e-3F);
 
     // the exporter's inverse bind matrices agree with its rest pose and its armature: at rest,
     // every joint's skinning matrix is the identity, to rounding
@@ -554,17 +554,17 @@ BOOST_AUTO_TEST_CASE(gltf_reads_a_blender_rig_test) {
     for (const glm::mat4& matrix : palette) {
         for (int column = 0; column < 4; ++column) {
             for (int row = 0; row < 4; ++row) {
-                BOOST_CHECK_SMALL(matrix[column][row] - (column == row ? 1.0f : 0.0f), 1e-4f);
+                BOOST_CHECK_SMALL(matrix[column][row] - (column == row ? 1.0F : 0.0F), 1e-4F);
             }
         }
     }
 
     BOOST_REQUIRE_EQUAL(model->influences().size(), model->vertices().size());
-    BOOST_REQUIRE_EQUAL(model->clips().size(), 2u);
+    BOOST_REQUIRE_EQUAL(model->clips().size(), 2U);
     BOOST_CHECK_EQUAL(model->clips()[0].name, "bend");
     BOOST_CHECK_EQUAL(model->clips()[1].name, "sway");
     // Blender keys from frame 1, so twenty four frames at 24 a second end at 25/24
-    BOOST_CHECK_CLOSE(model->clips()[0].duration, 25.0f / 24.0f, 1e-3f);
+    BOOST_CHECK_CLOSE(model->clips()[0].duration, 25.0F / 24.0F, 1e-3F);
 }
 
 /**
@@ -581,13 +581,13 @@ BOOST_AUTO_TEST_CASE(gltf_a_blender_clip_bends_the_rig_test) {
     v3d::type::animation::sample(model->clips()[0], model->clips()[0].duration, &pose);
     std::vector<glm::mat4> palette;
     v3d::type::animation::palette(model->skeleton(), pose, &palette);
-    BOOST_REQUIRE_EQUAL(palette.size(), 3u);
+    BOOST_REQUIRE_EQUAL(palette.size(), 3U);
 
-    const glm::vec4 top = palette[2] * glm::vec4(0.0f, 2.0f, 0.0f, 1.0f);
+    const glm::vec4 top = palette[2] * glm::vec4(0.0F, 2.0F, 0.0F, 1.0F);
     BOOST_TEST_MESSAGE("top is at " << top.x << ", " << top.y << ", " << top.z);
-    BOOST_CHECK_SMALL(top.x, 1e-3f);
-    BOOST_CHECK_SMALL(top.y - 1.0f, 1e-3f);
-    BOOST_CHECK_SMALL(top.z - 1.0f, 1e-3f);
+    BOOST_CHECK_SMALL(top.x, 1e-3F);
+    BOOST_CHECK_SMALL(top.y - 1.0F, 1e-3F);
+    BOOST_CHECK_SMALL(top.z - 1.0F, 1e-3F);
 }
 
 /**
@@ -600,14 +600,14 @@ BOOST_AUTO_TEST_CASE(gltf_strips_and_fans_become_lists_test) {
     const boost::shared_ptr<v3d::type::Model> model = load("primitive_modes.gltf");
     BOOST_REQUIRE(model);
 
-    BOOST_REQUIRE_EQUAL(model->indices().size(), 12u);
-    BOOST_CHECK_EQUAL(model->vertices().size(), 8u);
+    BOOST_REQUIRE_EQUAL(model->indices().size(), 12U);
+    BOOST_CHECK_EQUAL(model->vertices().size(), 8U);
     for (std::size_t first = 0; first < model->indices().size(); first += 3) {
         const glm::vec3 p0 = model->vertices()[model->indices()[first]].position;
         const glm::vec3 p1 = model->vertices()[model->indices()[first + 1]].position;
         const glm::vec3 p2 = model->vertices()[model->indices()[first + 2]].position;
         BOOST_TEST_CONTEXT("triangle " << first / 3) {
-            BOOST_CHECK_GT(glm::cross(p1 - p0, p2 - p0).z, 0.0f);
+            BOOST_CHECK_GT(glm::cross(p1 - p0, p2 - p0).z, 0.0F);
         }
     }
 

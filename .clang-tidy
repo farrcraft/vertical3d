@@ -1,7 +1,7 @@
 # The check list clang-tidy runs under -DV3D_CLANG_TIDY=ON. Four families are enabled and
 # named checks are subtracted, rather than the live checks being listed one by one: a name
 # clang-tidy does not recognise is not an error, so a list that has gone stale turns findings
-# on and fails loudly instead of quietly covering less. 197 of the 206 checks in these families
+# on and fails loudly instead of quietly covering less. 198 of the 206 checks in these families
 # are live, and the tree is clean at all of them.
 #
 # The cppcoreguidelines, modernize and google families are not enabled at all. Each argues with
@@ -54,8 +54,7 @@ Checks: >
   -readability-ambiguous-smartptr-reset-call,
   -readability-container-contains,
   -readability-make-member-function-const,
-  -readability-non-const-parameter,
-  -readability-uppercase-literal-suffix
+  -readability-non-const-parameter
 
 # A header is diagnosed wherever it is included from, so an api header is covered by whichever
 # library compiles it. The third party trees are not this repository's to fix, and each would
@@ -104,3 +103,6 @@ CheckOptions:
   readability-identifier-length.IgnoredVariableNames: '^[xyzwuvst]$'
   readability-identifier-length.IgnoredParameterNames: '^[nxyzwuvst]$'
   readability-identifier-length.IgnoredLoopCounterNames: '^[ijk_xyzwuvst]$'
+  # A literal's suffix is written in capitals, so a long 1L is not misread as 11. A literal
+  # inside a macro argument, such as a Boost.Test assertion's, follows the same rule.
+  readability-uppercase-literal-suffix.IgnoreMacros: 'false'

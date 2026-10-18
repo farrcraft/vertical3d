@@ -37,8 +37,8 @@ BOOST_AUTO_TEST_CASE(crop_cuts_the_rectangle_asked_for) {
     const boost::shared_ptr<v3d::image::Image> cut = v3d::image::crop(*source, 1, 1, 2, 2);
 
     BOOST_REQUIRE(cut);
-    BOOST_CHECK_EQUAL(cut->width(), 2u);
-    BOOST_CHECK_EQUAL(cut->height(), 2u);
+    BOOST_CHECK_EQUAL(cut->width(), 2U);
+    BOOST_CHECK_EQUAL(cut->height(), 2U);
     BOOST_CHECK_EQUAL(cut->bpp(), source->bpp());
 
     for (unsigned int row = 0; row < 2; ++row) {

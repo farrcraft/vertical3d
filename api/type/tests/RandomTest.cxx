@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(random_below_test) {
     for (const int count : hits) {
         BOOST_CHECK(count > 0);
     }
-    BOOST_CHECK_EQUAL(random.below(1), 0u);
+    BOOST_CHECK_EQUAL(random.below(1), 0U);
     BOOST_CHECK_THROW(random.below(0), std::invalid_argument);
 }
 
@@ -96,19 +96,19 @@ BOOST_AUTO_TEST_CASE(random_below_test) {
 BOOST_AUTO_TEST_CASE(random_floats_are_in_range_test) {
     Random random(7);
 
-    float lowest = 1.0f;
-    float highest = 0.0f;
+    float lowest = 1.0F;
+    float highest = 0.0F;
     bool inside = true;
     for (int draw = 0; draw < 1000000; draw++) {
         const float unit = random.unit();
         lowest = std::min(lowest, unit);
         highest = std::max(highest, unit);
-        const float ranged = random.range(-2.0f, 3.0f);
-        inside = inside && unit >= 0.0f && unit < 1.0f && ranged >= -2.0f && ranged < 3.0f;
+        const float ranged = random.range(-2.0F, 3.0F);
+        inside = inside && unit >= 0.0F && unit < 1.0F && ranged >= -2.0F && ranged < 3.0F;
     }
     BOOST_CHECK(inside);
-    BOOST_CHECK(lowest < 0.001f);
-    BOOST_CHECK(highest > 0.999f);
+    BOOST_CHECK(lowest < 0.001F);
+    BOOST_CHECK(highest > 0.999F);
 }
 
 /**
@@ -118,8 +118,8 @@ BOOST_AUTO_TEST_CASE(random_floats_are_in_range_test) {
 BOOST_AUTO_TEST_CASE(random_range_stays_below_high_when_rounding_test) {
     Random random(19);
 
-    const float low = 100000.0f;
-    const float high = 100000.5f;
+    const float low = 100000.0F;
+    const float high = 100000.5F;
     float highest = low;
     bool inside = true;
     for (int draw = 0; draw < 10000; draw++) {
@@ -137,8 +137,8 @@ BOOST_AUTO_TEST_CASE(random_range_stays_below_high_when_rounding_test) {
 BOOST_AUTO_TEST_CASE(random_a_point_in_a_box_test) {
     Random random(11);
 
-    const glm::vec3 minimum(-1.0f, 2.0f, 10.0f);
-    const glm::vec3 maximum(1.0f, 4.0f, 10.5f);
+    const glm::vec3 minimum(-1.0F, 2.0F, 10.0F);
+    const glm::vec3 maximum(1.0F, 4.0F, 10.5F);
     bool inside = true;
     for (int draw = 0; draw < 10000; draw++) {
         const glm::vec3 point = random.inside(minimum, maximum);
@@ -155,25 +155,25 @@ BOOST_AUTO_TEST_CASE(random_a_direction_in_a_cone_test) {
     Random random(13);
 
     const std::array<glm::vec3, 3> axes = {
-        glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(1.0f, -2.0f, 0.5f)
+        glm::vec3(0.0F, 1.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(1.0F, -2.0F, 0.5F)
     };
     const float angle = glm::quarter_pi<float>();
     for (const glm::vec3& axis : axes) {
-        float widest = 1.0f;
+        float widest = 1.0F;
         bool unit = true;
         for (int draw = 0; draw < 10000; draw++) {
             const glm::vec3 direction = random.cone(axis, angle);
-            unit = unit && std::abs(glm::length(direction) - 1.0f) < 1e-5f;
+            unit = unit && std::abs(glm::length(direction) - 1.0F) < 1e-5F;
             widest = std::min(widest, glm::dot(direction, glm::normalize(axis)));
         }
         BOOST_CHECK(unit);
-        BOOST_CHECK(widest >= std::cos(angle) - 1e-5f);
+        BOOST_CHECK(widest >= std::cos(angle) - 1e-5F);
         // and the draws reach out towards the rim rather than bunching at the pole
-        BOOST_CHECK(widest < std::cos(angle) + 0.01f);
+        BOOST_CHECK(widest < std::cos(angle) + 0.01F);
     }
 
-    const glm::vec3 straight = random.cone(glm::vec3(0.0f, 0.0f, 2.0f), 0.0f);
-    BOOST_CHECK_SMALL(glm::length(straight - glm::vec3(0.0f, 0.0f, 1.0f)), 1e-6f);
+    const glm::vec3 straight = random.cone(glm::vec3(0.0F, 0.0F, 2.0F), 0.0F);
+    BOOST_CHECK_SMALL(glm::length(straight - glm::vec3(0.0F, 0.0F, 1.0F)), 1e-6F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

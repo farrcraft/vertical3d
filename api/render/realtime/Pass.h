@@ -186,7 +186,7 @@ class Pass final {
      * whose pipeline was built with one, in a pass that names none, is an error at record
      * time. Otherwise Vulkan would draw with whatever bias was last set, and report nothing.
      **/
-    void depthBias(float constant, float slope, float clamp = 0.0f) noexcept;
+    void depthBias(float constant, float slope, float clamp = 0.0F) noexcept;
 
     /**
      * @return the bias the pass draws at, or nothing when it names none

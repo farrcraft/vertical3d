@@ -25,7 +25,7 @@ namespace v3d::render::realtime::lighting {
 namespace {
 
 // how far the light's projection reaches along its view, in radii of the bounds it covers
-constexpr float DEPTH_RADII = 4.0f;
+constexpr float DEPTH_RADII = 4.0F;
 
 /**
  * The light's own axes: its right, its up, and the direction it looks along, which is +z of its
@@ -42,7 +42,7 @@ Basis basis(const glm::vec3& towards) {
     out.along = -glm::normalize(towards);
     // an up parallel to the view has no right to cross into, which a light straight overhead
     // would give
-    const glm::vec3 up = std::abs(out.along.y) > 0.99f ? glm::vec3(0.0f, 0.0f, 1.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
+    const glm::vec3 up = std::abs(out.along.y) > 0.99F ? glm::vec3(0.0F, 0.0F, 1.0F) : glm::vec3(0.0F, 1.0F, 0.0F);
     out.right = glm::normalize(glm::cross(up, out.along));
     out.up = glm::cross(out.along, out.right);
     return out;
@@ -62,13 +62,13 @@ glm::mat4 shadowLight(const glm::vec3& towards, const ShadowBounds& bounds, type
     // the light looks from the light towards the centre
     const Basis axes = basis(towards);
     const glm::vec3 z = axes.along;
-    const glm::vec3 eye = centre - z * (radius * 2.0f);
+    const glm::vec3 eye = centre - z * (radius * 2.0F);
     const glm::vec3 y = axes.up;
     // the mirrored hand negates the right and keeps the up, as Camera::createView negates view x
     const glm::vec3 x = hand == type::camera::Profile::Hand::DirectionCrossUp ? -axes.right : axes.right;
 
     // the basis transposed, then the eye moved to the origin
-    glm::mat4 view(1.0f);
+    glm::mat4 view(1.0F);
     view[0][0] = x.x;
     view[1][0] = x.y;
     view[2][0] = x.z;
@@ -84,10 +84,10 @@ glm::mat4 shadowLight(const glm::vec3& towards, const ShadowBounds& bounds, type
 
     // a square box a radius either side, y flipped into Vulkan's clip space, and depth from
     // zero at the eye to one four radii along
-    glm::mat4 projection(1.0f);
-    projection[0][0] = 1.0f / radius;
-    projection[1][1] = -1.0f / radius;
-    projection[2][2] = 1.0f / (radius * DEPTH_RADII);
+    glm::mat4 projection(1.0F);
+    projection[0][0] = 1.0F / radius;
+    projection[1][1] = -1.0F / radius;
+    projection[2][2] = 1.0F / (radius * DEPTH_RADII);
 
     return projection * view;
 }
@@ -115,7 +115,7 @@ std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<
     }
     bounds.centre /= static_cast<float>(points.size());
 
-    float spread = 0.0f;
+    float spread = 0.0F;
     for (const glm::vec3& point : points) {
         spread = std::max(spread, glm::length(point - bounds.centre));
     }
@@ -127,11 +127,11 @@ std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<
  **/
 std::optional<ShadowBounds> fitShadowToView(const glm::mat4& viewProjection, float distance, const glm::vec3& towards, uint32_t texels) {
     // a NaN fails every comparison, so each test is written to fail it
-    if (!(distance > 0.0f) || !std::isfinite(distance) || !finite(towards) || !(glm::length(towards) > 0.0f) || texels < 4) {
+    if (!(distance > 0.0F) || !std::isfinite(distance) || !finite(towards) || !(glm::length(towards) > 0.0F) || texels < 4) {
         return std::nullopt;
     }
     const float determinant = glm::determinant(viewProjection);
-    if (!(std::abs(determinant) > 0.0f) || !std::isfinite(determinant)) {
+    if (!(std::abs(determinant) > 0.0F) || !std::isfinite(determinant)) {
         return std::nullopt;
     }
     const glm::mat4 inverse = glm::inverse(viewProjection);
@@ -140,10 +140,10 @@ std::optional<ShadowBounds> fitShadowToView(const glm::mat4& viewProjection, flo
     // cut at the distance
     std::array<glm::vec3, 8> corners;
     std::size_t next = 0;
-    for (const float x : {-1.0f, 1.0f}) {
-        for (const float y : {-1.0f, 1.0f}) {
-            const glm::vec4 nearClip = inverse * glm::vec4(x, y, 0.0f, 1.0f);
-            const glm::vec4 farClip = inverse * glm::vec4(x, y, 1.0f, 1.0f);
+    for (const float x : {-1.0F, 1.0F}) {
+        for (const float y : {-1.0F, 1.0F}) {
+            const glm::vec4 nearClip = inverse * glm::vec4(x, y, 0.0F, 1.0F);
+            const glm::vec4 farClip = inverse * glm::vec4(x, y, 1.0F, 1.0F);
             const glm::vec3 nearCorner = glm::vec3(nearClip) / nearClip.w;
             const glm::vec3 farCorner = glm::vec3(farClip) / farClip.w;
             const glm::vec3 edge = farCorner - nearCorner;
@@ -158,7 +158,7 @@ std::optional<ShadowBounds> fitShadowToView(const glm::mat4& viewProjection, flo
         bounds.centre += corner;
     }
     bounds.centre /= static_cast<float>(corners.size());
-    float spread = 0.0f;
+    float spread = 0.0F;
     for (const glm::vec3& corner : corners) {
         spread = std::max(spread, glm::length(corner - bounds.centre));
     }
@@ -169,11 +169,11 @@ std::optional<ShadowBounds> fitShadowToView(const glm::mat4& viewProjection, flo
     // the snap below moves the centre up to a texel along each of the map's two axes, so the
     // radius grows by the diagonal of a texel. A texel is two radii over the map's width, which
     // makes the radius spread / (1 - 2 * sqrt(2) / texels)
-    const float slack = 2.0f * std::sqrt(2.0f) / static_cast<float>(texels);
-    bounds.radius = std::max(spread / (1.0f - slack), minimumShadowRadius);
+    const float slack = 2.0F * std::sqrt(2.0F) / static_cast<float>(texels);
+    bounds.radius = std::max(spread / (1.0F - slack), minimumShadowRadius);
 
     const Basis axes = basis(towards);
-    const float texel = 2.0f * bounds.radius / static_cast<float>(texels);
+    const float texel = 2.0F * bounds.radius / static_cast<float>(texels);
     const float across = glm::dot(bounds.centre, axes.right);
     const float up = glm::dot(bounds.centre, axes.up);
     bounds.centre += axes.right * ((std::floor(across / texel) * texel) - across) + axes.up * ((std::floor(up / texel) * texel) - up);

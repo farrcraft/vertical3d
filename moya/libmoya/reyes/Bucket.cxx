@@ -48,8 +48,8 @@ class Placement {
  public:
     /** The lens a micropolygon is seen through: its radius, and the distance it focuses at. **/
     struct Lens {
-        float radius = 0.0f;
-        float focus = 0.0f;
+        float radius = 0.0F;
+        float focus = 0.0F;
     };
 
     Placement(const glm::mat4x4 & toRaster, const Lens & lens,
@@ -69,11 +69,11 @@ class Placement {
         }
         for (unsigned int k = 0; k < 4; k++) {
             still_[k] = project(toRaster_, eye[k]);
-            if (radius_ <= 0.0f) {
+            if (radius_ <= 0.0F) {
                 continue;
             }
-            across_[k] = project(toRaster_, lensed(eye[k], glm::vec2(1.0f, 0.0f))) - still_[k];
-            down_[k] = project(toRaster_, lensed(eye[k], glm::vec2(0.0f, 1.0f))) - still_[k];
+            across_[k] = project(toRaster_, lensed(eye[k], glm::vec2(1.0F, 0.0F))) - still_[k];
+            down_[k] = project(toRaster_, lensed(eye[k], glm::vec2(0.0F, 1.0F))) - still_[k];
         }
         stillBound();
     }
@@ -85,7 +85,7 @@ class Placement {
         if (motion_.moving()) {
             return moved(delta(sample.time), sample.lens);
         }
-        if (radius_ <= 0.0f) {
+        if (radius_ <= 0.0F) {
             return still_;
         }
         Corners corners;
@@ -140,17 +140,17 @@ class Placement {
      * An eye space point moved by a point on the unit lens.
      */
     glm::vec3 lensed(const glm::vec3 & point, const glm::vec2 & lens) const {
-        if (radius_ <= 0.0f) {
+        if (radius_ <= 0.0F) {
             return point;
         }
-        const glm::vec2 shift = lens * radius_ * (1.0f - (point.z / focus_));
+        const glm::vec2 shift = lens * radius_ * (1.0F - (point.z / focus_));
         return glm::vec3(point.x - shift.x, point.y - shift.y, point.z);
     }
 
     Corners moved(const glm::mat4x4 & delta, const glm::vec2 & lens) const {
         Corners corners;
         for (unsigned int k = 0; k < 4; k++) {
-            corners[k] = project(toRaster_, lensed(glm::vec3(delta * glm::vec4(eye_[k], 1.0f)), lens));
+            corners[k] = project(toRaster_, lensed(glm::vec3(delta * glm::vec4(eye_[k], 1.0F)), lens));
         }
         return corners;
     }
@@ -169,7 +169,7 @@ class Placement {
         for (const glm::vec2 & lens : EXTREMES) {
             sample.lens = lens;
             grow(at(sample));
-            if (radius_ <= 0.0f) {
+            if (radius_ <= 0.0F) {
                 break;
             }
         }
@@ -178,7 +178,7 @@ class Placement {
     void sweep() {
         min_ = glm::vec3(std::numeric_limits<float>::max());
         max_ = glm::vec3(-std::numeric_limits<float>::max());
-        stride_ = 0.0f;
+        stride_ = 0.0F;
         Corners previous;
         for (unsigned int i = 0; i <= STEPS; i++) {
             const float time = shutter_.x + ((shutter_.y - shutter_.x) * static_cast<float>(i) / STEPS);
@@ -190,13 +190,13 @@ class Placement {
                     stepMin_[i] = glm::min(stepMin_[i], corner);
                     stepMax_[i] = glm::max(stepMax_[i], corner);
                 }
-                if (radius_ <= 0.0f) {
+                if (radius_ <= 0.0F) {
                     break;
                 }
             }
             min_ = glm::min(min_, stepMin_[i]);
             max_ = glm::max(max_, stepMax_[i]);
-            const Corners centre = moved(moving, glm::vec2(0.0f));
+            const Corners centre = moved(moving, glm::vec2(0.0F));
             if (i > 0) {
                 for (unsigned int k = 0; k < 4; k++) {
                     stride_ = std::max(stride_, glm::length(glm::vec2(centre[k]) - glm::vec2(previous[k])));
@@ -204,16 +204,16 @@ class Placement {
             }
             previous = centre;
         }
-        min_ -= glm::vec3(stride_, stride_, 0.0f);
-        max_ += glm::vec3(stride_, stride_, 0.0f);
+        min_ -= glm::vec3(stride_, stride_, 0.0F);
+        max_ += glm::vec3(stride_, stride_, 0.0F);
     }
 
     /**
      * The centre of the lens and its four extremes, which bound every point on it.
      */
     static constexpr std::array EXTREMES{
-        glm::vec2(0.0f), glm::vec2(-1.0f, -1.0f), glm::vec2(1.0f, -1.0f),
-        glm::vec2(1.0f, 1.0f), glm::vec2(-1.0f, 1.0f)
+        glm::vec2(0.0F), glm::vec2(-1.0F, -1.0F), glm::vec2(1.0F, -1.0F),
+        glm::vec2(1.0F, 1.0F), glm::vec2(-1.0F, 1.0F)
     };
 
     glm::mat4x4 toRaster_;
@@ -226,14 +226,14 @@ class Placement {
     Corners still_;
     Corners across_;
     Corners down_;
-    glm::vec3 min_ { 0.0f };
-    glm::vec3 max_ { 0.0f };
+    glm::vec3 min_ { 0.0F };
+    glm::vec3 max_ { 0.0F };
 
     /** How many slices a moving micropolygon's shutter is measured in. **/
     static const unsigned int STEPS = 8;
     std::array<glm::vec3, STEPS + 1> stepMin_;
     std::array<glm::vec3, STEPS + 1> stepMax_;
-    float stride_ { 0.0f };
+    float stride_ { 0.0F };
 };
 
 /**
@@ -258,7 +258,7 @@ class Motions {
         int column = 0;
         int row = 0;
         unsigned int index = 0;
-        float time = 0.0f;
+        float time = 0.0F;
     };
 
     const glm::mat4x4 & at(const Key & key) {
@@ -311,12 +311,12 @@ void hide(const Placement & placement, const glm::vec3 & color, Samples * sample
                 }
                 const Corners corners = motions == nullptr ? placement.at(sample) :
                     placement.at(sample, motions->at({.column = column, .row = row, .index = k, .time = sample.time}));
-                float depth = 0.0f;
+                float depth = 0.0F;
                 if (!covers(corners, sample.raster, &depth) || (sample.hit && depth >= sample.depth)) {
                     continue;
                 }
                 sample.colour = color;
-                sample.opacity = glm::vec3(1.0f);
+                sample.opacity = glm::vec3(1.0F);
                 sample.depth = depth;
                 sample.hit = true;
             }
@@ -333,7 +333,7 @@ void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & 
     // to what is on its right, so the projection is on the right
     const glm::mat4x4 toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
     // an orthographic camera has no lens to blur through
-    const float radius = rc.perspective() ? rc.sampling().lensRadius() : 0.0f;
+    const float radius = rc.perspective() ? rc.sampling().lensRadius() : 0.0F;
     Placement placement(toRaster, {.radius = radius, .focus = rc.sampling().focalDistance}, primitive.motion(),
         rc.sampling().shutter);
     Samples & samples = rc.samples();

@@ -87,9 +87,9 @@ class Primitive {
 
  private:
         v3d::render::offline::MovingTransform motion_;
-        glm::mat4x4 placement_ = glm::mat4x4(1.0f);
-        glm::vec3 color_ = glm::vec3(1.0f);
-        glm::vec3 normal_ = glm::vec3(0.0f);
+        glm::mat4x4 placement_ = glm::mat4x4(1.0F);
+        glm::vec3 color_ = glm::vec3(1.0F);
+        glm::vec3 normal_ = glm::vec3(0.0F);
         Shading shading_;
         bool placed_ = false;
         /**

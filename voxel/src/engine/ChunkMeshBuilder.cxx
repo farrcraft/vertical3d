@@ -37,7 +37,7 @@ boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> ChunkMeshBuilder:
     const glm::vec3* positions = mesh->vertices();
     for (size_t i = 0; i < vertexCount; i++) {
         vertices[i].position = positions[i];
-        vertices[i].info = glm::vec2(0.0f, 0.0f);
+        vertices[i].info = glm::vec2(0.0F, 0.0F);
     }
 
     const glm::ivec3* tris = mesh->tris();

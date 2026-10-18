@@ -12,7 +12,7 @@ Chunk::Chunk(TerrainMap * terrain, glm::ivec3 chunkPosition, unsigned int ceilin
     dirty_(false),
     empty_(false),
     size_(16) {
-    const float maxTerrainHeight = 255.0f;
+    const float maxTerrainHeight = 255.0F;
     const float voxelHeight = static_cast<float>(ceiling);
     unsigned int hash = 0;
     chunkPosition *= size_;
@@ -28,7 +28,7 @@ Chunk::Chunk(TerrainMap * terrain, glm::ivec3 chunkPosition, unsigned int ceilin
             // height is in the range [0.0-255.0]
             const float height = terrain->height(glm::uvec2(x + chunkPosition.x, z + chunkPosition.z));
             unsigned int blockHeight = 0;
-            if (height > 0.0f) {
+            if (height > 0.0F) {
                 // scale into the range of the world ceiling
                 blockHeight = static_cast<unsigned int>((height / maxTerrainHeight) * voxelHeight);
             }

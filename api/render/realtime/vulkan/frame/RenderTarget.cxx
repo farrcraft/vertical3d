@@ -44,7 +44,7 @@ void clear(VkCommandBuffer commands, const Views& views, const VkExtent2D& exten
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     // the far plane, so a shadow map read before anything was drawn reports no shadow
-    depthAttachment.clearValue.depthStencil.depth = 1.0f;
+    depthAttachment.clearValue.depthStencil.depth = 1.0F;
 
     VkRenderingInfo rendering{};
     rendering.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;

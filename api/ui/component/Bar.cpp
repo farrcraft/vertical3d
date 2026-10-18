@@ -11,12 +11,12 @@ namespace v3d::ui::component {
 
 Bar::Bar() :
     Component(Type::Bar),
-    fraction_(0.0f),
+    fraction_(0.0F),
     direction_(Direction::Horizontal) {
 }
 
 void Bar::fraction(float fill) {
-    fraction_ = std::clamp(fill, 0.0f, 1.0f);
+    fraction_ = std::clamp(fill, 0.0F, 1.0F);
 }
 
 float Bar::fraction() const noexcept {

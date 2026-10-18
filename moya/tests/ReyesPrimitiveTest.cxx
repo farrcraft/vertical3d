@@ -54,14 +54,14 @@ BOOST_AUTO_TEST_CASE(reyes_primitive_flag_is_per_instance_test) {
 BOOST_AUTO_TEST_CASE(reyes_primitive_polygon_is_a_primitive_test) {
     v3d::moya::Polygon polygon;
     v3d::moya::Vertex vertex;
-    vertex.point(glm::vec3(2.0f, 3.0f, 4.0f));
+    vertex.point(glm::vec3(2.0F, 3.0F, 4.0F));
     polygon.addVertex(vertex);
 
     v3d::moya::reyes::Primitive* primitive = &polygon;
 
     primitive->diceable(true);
     BOOST_TEST(primitive->diceable());
-    BOOST_TEST((primitive->bound().max() == glm::vec3(2.0f, 3.0f, 4.0f)));
+    BOOST_TEST((primitive->bound().max() == glm::vec3(2.0F, 3.0F, 4.0F)));
 }
 
 /**
@@ -73,16 +73,16 @@ BOOST_AUTO_TEST_CASE(reyes_primitive_place_test) {
     v3d::moya::reyes::Primitive primitive;
 
     BOOST_TEST(!primitive.placed());
-    BOOST_TEST((primitive.normal() == glm::vec3(0.0f)));
+    BOOST_TEST((primitive.normal() == glm::vec3(0.0F)));
 
-    const glm::mat4x4 toEye = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, -4.0f));
-    primitive.place(toEye, glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f),
+    const glm::mat4x4 toEye = glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, 0.0F, -4.0F));
+    primitive.place(toEye, glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F),
         v3d::moya::Shading());
 
     BOOST_TEST(primitive.placed());
     BOOST_TEST((primitive.placement() == toEye));
-    BOOST_TEST((primitive.color() == glm::vec3(1.0f, 0.0f, 0.0f)));
-    BOOST_TEST((primitive.normal() == glm::vec3(0.0f, 1.0f, 0.0f)));
+    BOOST_TEST((primitive.color() == glm::vec3(1.0F, 0.0F, 0.0F)));
+    BOOST_TEST((primitive.normal() == glm::vec3(0.0F, 1.0F, 0.0F)));
 }
 
 };  // namespace

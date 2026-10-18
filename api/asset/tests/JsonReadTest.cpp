@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(an_array_read_points_into_the_object) {
     const boost::json::object object = sample();
     const boost::json::array* list = readArray(object, "list");
     BOOST_REQUIRE(list != nullptr);
-    BOOST_CHECK_EQUAL(list->size(), 3u);
+    BOOST_CHECK_EQUAL(list->size(), 3U);
     BOOST_CHECK_EQUAL(list, &object.at("list").as_array());
     BOOST_CHECK(readArray(object, "missing") == nullptr);
     BOOST_CHECK(readArray(object, "inner") == nullptr);

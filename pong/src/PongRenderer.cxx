@@ -16,23 +16,23 @@ namespace {
  * The size the ui and the scores are drawn at. Glyphs are distance fields, so the atlas
  * is scaled to this size rather than rasterized at it.
  **/
-const float fontSize = 28.0f;
+const float fontSize = 28.0F;
 
 // the court is drawn over black, so a window of another shape shows where it ends
-constexpr glm::vec4 barColour(0.0f, 0.0f, 0.0f, 1.0f);
-constexpr glm::vec4 courtColour(0.06f, 0.07f, 0.10f, 1.0f);
-constexpr glm::vec4 boardColour(0.35f, 0.35f, 0.35f, 1.0f);
-constexpr glm::vec4 ballColour(1.0f, 1.0f, 1.0f, 1.0f);
-constexpr glm::vec4 scoreColour(0.85f, 0.85f, 0.85f, 1.0f);
+constexpr glm::vec4 barColour(0.0F, 0.0F, 0.0F, 1.0F);
+constexpr glm::vec4 courtColour(0.06F, 0.07F, 0.10F, 1.0F);
+constexpr glm::vec4 boardColour(0.35F, 0.35F, 0.35F, 1.0F);
+constexpr glm::vec4 ballColour(1.0F, 1.0F, 1.0F, 1.0F);
+constexpr glm::vec4 scoreColour(0.85F, 0.85F, 0.85F, 1.0F);
 
 const unsigned int ballSides = 32;
 const unsigned int centreLineWidth = 14;
 
 // where the scores sit, as fractions of the court: a quarter of the way down, centred over
 // each half
-constexpr float scoreRow = 0.25f;
-constexpr float leftScoreColumn = 0.25f;
-constexpr float rightScoreColumn = 0.75f;
+constexpr float scoreRow = 0.25F;
+constexpr float leftScoreColumn = 0.25F;
+constexpr float rightScoreColumn = 0.75F;
 
 };  // namespace
 
@@ -112,16 +112,16 @@ void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statist
 void PongRenderer::drawBoard() {
     const float width = PongScene::width;
     const float height = PongScene::height;
-    const float half = centreLineWidth * 0.5f;
+    const float half = centreLineWidth * 0.5F;
     const float wall = PongScene::wall;
 
-    court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, height), courtColour);
+    court_.rect(glm::vec2(0.0F, 0.0F), glm::vec2(width, height), courtColour);
 
     // centre line
-    court_.rect(glm::vec2((width * 0.5f) - half, 0.0f), glm::vec2((width * 0.5f) + half, height), boardColour);
+    court_.rect(glm::vec2((width * 0.5F) - half, 0.0F), glm::vec2((width * 0.5F) + half, height), boardColour);
     // top and bottom walls
-    court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, wall), boardColour);
-    court_.rect(glm::vec2(0.0f, height - wall), glm::vec2(width, height), boardColour);
+    court_.rect(glm::vec2(0.0F, 0.0F), glm::vec2(width, wall), boardColour);
+    court_.rect(glm::vec2(0.0F, height - wall), glm::vec2(width, height), boardColour);
 }
 
 /**
@@ -141,7 +141,7 @@ void PongRenderer::drawScores() {
  **/
 void PongRenderer::drawBall(float alpha) {
     // size is the side of the box the scene collides, so it is the circle's diameter
-    court_.circle(scene_->ball().drawn(alpha), scene_->ball().size() / 2.0f, ballSides, ballColour);
+    court_.circle(scene_->ball().drawn(alpha), scene_->ball().size() / 2.0F, ballSides, ballColour);
 }
 
 /**
@@ -149,8 +149,8 @@ void PongRenderer::drawBall(float alpha) {
 void PongRenderer::drawPaddle(const Paddle& paddle, float alpha) {
     court_.push();
     // the paddle's position is the centre of its travel; its rectangle is drawn from the corner
-    court_.translate(glm::vec2(paddle.offset(), paddle.drawn(alpha) - (paddle.length() / 2.0f)));
+    court_.translate(glm::vec2(paddle.offset(), paddle.drawn(alpha) - (paddle.length() / 2.0F)));
     const glm::vec3 colour = paddle.color();
-    court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(paddle.size(), paddle.length()), glm::vec4(colour, 1.0f));
+    court_.rect(glm::vec2(0.0F, 0.0F), glm::vec2(paddle.size(), paddle.length()), glm::vec4(colour, 1.0F));
     court_.pop();
 }

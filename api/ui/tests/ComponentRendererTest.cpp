@@ -46,7 +46,7 @@ struct Written final {
 /**
  * A fixed width per character, so a label's width is predictable.
  **/
-const float characterWidth = 10.0f;
+const float characterWidth = 10.0F;
 
 /**
  * A menu of action items with the given labels, with its level pointing at itself the way
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_item_in_a_centred_menu_is_greyed) {
             line.colour = colour;
             written.push_back(line);
         });
-    const glm::vec4 greyed(0.3f, 0.3f, 0.3f, 1.0f);
+    const glm::vec4 greyed(0.3F, 0.3F, 0.3F, 1.0F);
     renderer.dressing().disabledText = greyed;
 
     v3d::render::realtime::canvas::Canvas canvas;
@@ -207,12 +207,12 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
     BOOST_REQUIRE(canvas.vertices().size() >= 8);
     // vertices 4..7 are the panel, drawn over the border: min at [4], max at [6]
     const float padding = renderer.dressing().padding;
-    const float expectedWidth = (10.0f * characterWidth) + (padding * 2.0f);
+    const float expectedWidth = (10.0F * characterWidth) + (padding * 2.0F);
     const float left = canvas.vertices()[4].position.x;
     const float right = canvas.vertices()[6].position.x;
 
-    BOOST_CHECK_CLOSE(right - left, expectedWidth, 0.01f);
-    BOOST_CHECK_CLOSE((left + right) * 0.5f, 400.0f, 0.01f);
+    BOOST_CHECK_CLOSE(right - left, expectedWidth, 0.01F);
+    BOOST_CHECK_CLOSE((left + right) * 0.5F, 400.0F, 0.01F);
 }
 
 /**
@@ -286,15 +286,15 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
     const boost::shared_ptr<v3d::ui::component::Label> wrapped =
         boost::make_shared<v3d::ui::component::Label>();
     wrapped->text("one two three four");
-    wrapped->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
-    wrapped->size(glm::vec2(100.0f, 40.0f));
+    wrapped->layout().width = v3d::ui::Length(100.0F, v3d::ui::Length::Unit::Pixels);
+    wrapped->size(glm::vec2(100.0F, 40.0F));
 
     renderer.draw(&canvas, wrapped);
     BOOST_REQUIRE_EQUAL(written.size(), 2);
     BOOST_CHECK_EQUAL(written[0].text, "one two");
     BOOST_CHECK_EQUAL(written[1].text, "three four");
     const v3d::ui::style::Resolver styles;
-    BOOST_CHECK_CLOSE(written[1].pen.y - written[0].pen.y, styles.base().lineHeight, 0.001f);
+    BOOST_CHECK_CLOSE(written[1].pen.y - written[0].pen.y, styles.base().lineHeight, 0.001F);
 
     written.clear();
     const boost::shared_ptr<v3d::ui::component::Label> single =
@@ -323,8 +323,8 @@ BOOST_AUTO_TEST_CASE(a_focused_component_is_ringed) {
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
     button->label("Start");
-    button->layout().width = v3d::ui::Length(120.0f, v3d::ui::Length::Unit::Pixels);
-    button->layout().height = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
+    button->layout().width = v3d::ui::Length(120.0F, v3d::ui::Length::Unit::Pixels);
+    button->layout().height = v3d::ui::Length(30.0F, v3d::ui::Length::Unit::Pixels);
 
     v3d::ui::Container container("screen", true);
     container.add(button);
@@ -352,16 +352,16 @@ BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
-    const glm::vec4 ringColour(0.0f, 1.0f, 0.0f, 1.0f);
+    const glm::vec4 ringColour(0.0F, 1.0F, 0.0F, 1.0F);
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
     const boost::shared_ptr<v3d::ui::style::Style> field =
         boost::make_shared<v3d::ui::style::Style>(v3d::ui::style::Selector{.name = "default", .className = "textbox"});
     field->addProperty(boost::make_shared<v3d::ui::style::property::Color>("focus", ringColour), "color");
-    field->addProperty(boost::make_shared<v3d::ui::style::property::Number>("focus-width", 2.0f), "number");
+    field->addProperty(boost::make_shared<v3d::ui::style::property::Number>("focus-width", 2.0F), "number");
     theme->addStyle(field);
     // the base first: taking it by reference drops whatever has been resolved from it
-    renderer.dressing().focus = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    renderer.dressing().focus = glm::vec4(1.0F, 0.0F, 0.0F, 1.0F);
     renderer.theme(theme);
 
     v3d::render::realtime::canvas::Canvas canvas;
@@ -369,8 +369,8 @@ BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
 
     const boost::shared_ptr<v3d::ui::component::TextBox> box =
         boost::make_shared<v3d::ui::component::TextBox>();
-    box->layout().width = v3d::ui::Length(120.0f, v3d::ui::Length::Unit::Pixels);
-    box->layout().height = v3d::ui::Length(24.0f, v3d::ui::Length::Unit::Pixels);
+    box->layout().width = v3d::ui::Length(120.0F, v3d::ui::Length::Unit::Pixels);
+    box->layout().height = v3d::ui::Length(24.0F, v3d::ui::Length::Unit::Pixels);
     box->focused(true);
 
     v3d::ui::Container container("screen", true);
@@ -401,8 +401,8 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
             written.push_back(line);
         });
 
-    const glm::vec4 ordinary(0.8f, 0.8f, 0.8f, 1.0f);
-    const glm::vec4 greyed(0.3f, 0.3f, 0.3f, 1.0f);
+    const glm::vec4 ordinary(0.8F, 0.8F, 0.8F, 1.0F);
+    const glm::vec4 greyed(0.3F, 0.3F, 0.3F, 1.0F);
     renderer.dressing().text = ordinary;
     renderer.dressing().disabledText = greyed;
 
@@ -412,7 +412,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
     button->label("Continue");
-    button->size(glm::vec2(120.0f, 30.0f));
+    button->size(glm::vec2(120.0F, 30.0F));
 
     renderer.draw(&canvas, button);
     BOOST_REQUIRE_EQUAL(written.size(), 1U);
@@ -448,8 +448,8 @@ BOOST_AUTO_TEST_CASE(a_disabled_box_greys_the_label_it_holds) {
             written.push_back(line);
         });
 
-    const glm::vec4 greyed(0.3f, 0.3f, 0.3f, 1.0f);
-    renderer.dressing().text = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
+    const glm::vec4 greyed(0.3F, 0.3F, 0.3F, 1.0F);
+    renderer.dressing().text = glm::vec4(0.8F, 0.8F, 0.8F, 1.0F);
     renderer.dressing().disabledText = greyed;
 
     v3d::render::realtime::canvas::Canvas canvas;
@@ -457,8 +457,8 @@ BOOST_AUTO_TEST_CASE(a_disabled_box_greys_the_label_it_holds) {
 
     const boost::shared_ptr<v3d::ui::component::Panel> group =
         boost::make_shared<v3d::ui::component::Panel>();
-    group->layout().width = v3d::ui::Length(200.0f, v3d::ui::Length::Unit::Pixels);
-    group->layout().height = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+    group->layout().width = v3d::ui::Length(200.0F, v3d::ui::Length::Unit::Pixels);
+    group->layout().height = v3d::ui::Length(100.0F, v3d::ui::Length::Unit::Pixels);
     group->enabled(false);
 
     const boost::shared_ptr<v3d::ui::component::Label> label =

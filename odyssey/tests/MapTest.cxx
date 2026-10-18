@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(map_is_routable_test) {
     BOOST_CHECK(path.back() == goal);
     // three tiles apart on open ground, but the wall between them makes it four steps
     BOOST_CHECK_EQUAL(v3d::grid::tileDistance(board->start(), goal), 2);
-    BOOST_CHECK_EQUAL(path.size() - 1, 4u);
+    BOOST_CHECK_EQUAL(path.size() - 1, 4U);
 
     // every tile of it is one the map says can be walked on
     for (const v3d::grid::TileCoord& tile : path) {

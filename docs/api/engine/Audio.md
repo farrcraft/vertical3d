@@ -29,7 +29,7 @@ The sound document lists clips by id:
   is not a file can be loaded with the overload of `load()` that takes a `Resolve` callback.
 - To play a one-shot from anywhere, publish a sound event:
   `dispatcher()->trigger(v3d::event::kind::Sound("hit"))`. The audio engine listens for it. A
-  second argument pans it: `Sound("hit", -0.5f)` sounds left of centre.
+  second argument pans it: `Sound("hit", -0.5F)` sounds left of centre.
 - `playClip(id)` also plays a one-shot. `play(id, how)` returns a `Voice` for a sound you need
   to control. A `Voice` is a scoped enum, so it cannot be passed where a fade or a level goes.
   `Voice::None` is no sound, which a failed `play()` returns. `audio::Play` sets the bus, the
@@ -61,7 +61,7 @@ events_ = v3d::audio::events(logger());                  // in start()
 events_->bank(path + "/Master.bank");
 events_->bank(path + "/Master.strings.bank");
 events_->play("event:/UI/Cancel");                       // a one shot
-events_->parameter("Intensity", 0.8f);                   // a global parameter
+events_->parameter("Intensity", 0.8F);                   // a global parameter
 events_->update();                                       // once a frame, in tick()
 ```
 

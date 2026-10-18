@@ -29,9 +29,9 @@ class Camera : public Aligned<16> {
     void lookAt(const glm::vec3 &target);
     /** Where the eye is, the point it looks at, and which way is up. **/
     struct Aim {
-        glm::vec3 eye{0.0f};
-        glm::vec3 target{0.0f, 0.0f, -1.0f};
-        glm::vec3 up{0.0f, 1.0f, 0.0f};
+        glm::vec3 eye{0.0F};
+        glm::vec3 target{0.0F, 0.0F, -1.0F};
+        glm::vec3 up{0.0F, 1.0F, 0.0F};
     };
 
     void lookAt(const Aim& aim);
@@ -42,14 +42,14 @@ class Camera : public Aligned<16> {
     void move(const glm::vec3 &direction, const glm::vec3 &amount);
 
     /** The lens a camera has until it is given one: degrees across, and the planes in blocks. **/
-    static constexpr float DEFAULT_FOVX = 90.0f;
-    static constexpr float DEFAULT_ZNEAR = 0.1f;
-    static constexpr float DEFAULT_ZFAR = 1000.0f;
+    static constexpr float DEFAULT_FOVX = 90.0F;
+    static constexpr float DEFAULT_ZNEAR = 0.1F;
+    static constexpr float DEFAULT_ZFAR = 1000.0F;
 
     /** The horizontal field of view in degrees, the aspect, and the near and far planes. **/
     struct Lens {
         float fovx = DEFAULT_FOVX;
-        float aspect = 1.0f;
+        float aspect = 1.0F;
         float znear = DEFAULT_ZNEAR;
         float zfar = DEFAULT_ZFAR;
     };

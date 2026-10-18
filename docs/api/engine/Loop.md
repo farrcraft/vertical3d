@@ -51,7 +51,7 @@ the arithmetic:
 
 - The loop measures each frame in nanoseconds with `SDL_GetTicksNS()`.
 - **The step is 60 Hz and is a constant.** It is not read from config and cannot change at run
-  time. `Accumulator::step` is 16,666,666 ns and `Accumulator::seconds` is `1.0f / 60.0f`.
+  time. `Accumulator::step` is 16,666,666 ns and `Accumulator::seconds` is `1.0F / 60.0F`.
 - **A frame longer than 250 ms is clamped to 250 ms, and the excess time is dropped.** A window
   drag or a breakpoint therefore slows the world for a moment, rather than making the loop run
   hundreds of steps to catch up.

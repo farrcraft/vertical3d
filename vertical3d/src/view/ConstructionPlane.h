@@ -77,8 +77,8 @@ class ConstructionPlane final {
      * an orthographic view and the ground plane under a perspective one.
      **/
     struct Axes {
-        glm::vec3 right{1.0f, 0.0f, 0.0f};
-        glm::vec3 up{0.0f, 0.0f, 1.0f};
+        glm::vec3 right{1.0F, 0.0F, 0.0F};
+        glm::vec3 up{0.0F, 0.0F, 1.0F};
     };
 
     static Axes axes(const v3d::type::camera::Camera& camera);

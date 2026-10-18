@@ -17,7 +17,7 @@
 namespace v3d::render::offline {
 
 FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, unsigned int planes) :
-    planes_(planes, plane_t(height, std::vector<float>(width, 0.0f))),
+    planes_(planes, plane_t(height, std::vector<float>(width, 0.0F))),
     width_(width),
     height_(height) {
 }
@@ -68,7 +68,7 @@ boost::shared_ptr<v3d::image::Image> FrameBuffer::image(unsigned int channels) c
                 // a value that is not a number is black, since converting it to a byte is
                 // undefined; the rest is clamped and truncated
                 const float stored = planes_[i][row][column];
-                const float v = std::isnan(stored) ? 0.0f : std::clamp(stored, 0.0f, 1.0f);
+                const float v = std::isnan(stored) ? 0.0F : std::clamp(stored, 0.0F, 1.0F);
                 data[index + i] = static_cast<unsigned char>(v * BYTE_SCALE);
             }
         }

@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
     described.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     Frame frame;
-    frame.pass("first")->clearColour(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    frame.pass("first")->clearColour(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
     const boost::shared_ptr<Pass> second = frame.pass("second");
     second->keepColour();
 
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
     }
 
     const std::vector<Timings::Timing>& spans = timings.last();
-    BOOST_REQUIRE_EQUAL(spans.size(), 2u);
+    BOOST_REQUIRE_EQUAL(spans.size(), 2U);
     BOOST_CHECK_EQUAL(spans[0].name, "first");
     BOOST_CHECK_EQUAL(spans[1].name, "second");
     for (const Timings::Timing& span : spans) {

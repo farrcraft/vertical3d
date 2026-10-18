@@ -99,7 +99,7 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
      * while that light runs, so a light's `point "shader" (0, 0, 0)` lands where the scene
      * placed it.
      **/
-    glm::mat4x4 placement_ = glm::mat4x4(1.0f);
+    glm::mat4x4 placement_ = glm::mat4x4(1.0F);
     unsigned int batch_ = 1;
     std::map<const v3d::render::offline::sl::runtime::Program*, Run> runs_;
     /** What casts the rays, into the context's traced scene. **/
@@ -108,7 +108,7 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
      * Camera space to world space, and each shading point's Ng in world space, which a traced
      * ray starts off.
      **/
-    glm::mat4x4 toWorld_ = glm::mat4x4(1.0f);
+    glm::mat4x4 toWorld_ = glm::mat4x4(1.0F);
     std::vector<glm::vec3> planes_;
 };
 

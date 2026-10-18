@@ -19,9 +19,9 @@ namespace v3d::config {
 namespace {
 
 // what a profile entry that leaves these out gets, where it differs from a new Profile
-constexpr float ENTRY_ZOOM = 10.0f;
-constexpr float ENTRY_NEAR = 0.1f;
-constexpr glm::vec3 ENTRY_EYE{0.0f, 0.0f, -10.0f};
+constexpr float ENTRY_ZOOM = 10.0F;
+constexpr float ENTRY_NEAR = 0.1F;
+constexpr glm::vec3 ENTRY_EYE{0.0F, 0.0F, -10.0F};
 
 /**
  * Read a three element array as a vector.
@@ -115,8 +115,8 @@ bool CameraProfiles::load(const boost::json::object& doc) {
         profile.eye(vector(entry, "eye", ENTRY_EYE));
         // up before lookat: lookat starts from the up vector and derives the other two
         // and the rotation from it, so an up that arrives afterwards is overwritten
-        profile.up(vector(entry, "up", glm::vec3(0.0f, 1.0f, 0.0f)));
-        profile.lookat(vector(entry, "lookat", glm::vec3(0.0f, 0.0f, 0.0f)));
+        profile.up(vector(entry, "up", glm::vec3(0.0F, 1.0F, 0.0F)));
+        profile.lookat(vector(entry, "lookat", glm::vec3(0.0F, 0.0F, 0.0F)));
 
         if (!profiles_.contains(name)) {
             names_.push_back(name);

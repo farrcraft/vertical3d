@@ -34,28 +34,28 @@ v3d::moya::RenderContext & context() {
  **/
 BOOST_AUTO_TEST_CASE(renderman_surface_and_lights_test) {
     RiBegin(RI_NULL);
-    RiFormat(64, 48, 1.0f);
-    RiClipping(1.0f, 100.0f);
+    RiFormat(64, 48, 1.0F);
+    RiClipping(1.0F, 100.0F);
     RiWorldBegin();
 
-    RtFloat intensity = 0.5f;
+    RtFloat intensity = 0.5F;
     RtLightHandle key = RiLightSource(const_cast<char*>("distantlight"),
         const_cast<char*>("intensity"), &intensity, RI_NULL);
     BOOST_REQUIRE(key != nullptr);
 
-    RtFloat roughness = 0.2f;
+    RtFloat roughness = 0.2F;
     RiSurface(const_cast<char*>("plastic"),
         const_cast<char*>("roughness"), &roughness, RI_NULL);
 
     v3d::moya::Shading shading = context().shading();
     BOOST_REQUIRE(shading.surface);
     BOOST_CHECK_EQUAL(shading.surface->name(), "plastic");
-    BOOST_REQUIRE_EQUAL(shading.lights.size(), 1u);
+    BOOST_REQUIRE_EQUAL(shading.lights.size(), 1U);
     BOOST_CHECK_EQUAL(shading.lights[0].shader->name(), "distantlight");
 
     // the handle the interface gave back is the one that turns the light off again
     RiIlluminate(key, RI_FALSE);
-    BOOST_CHECK_EQUAL(context().shading().lights.size(), 0u);
+    BOOST_CHECK_EQUAL(context().shading().lights.size(), 0U);
 
     RiWorldEnd();
     RiEnd();
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(renderman_declare_test) {
     RiBegin(RI_NULL);
     RiDeclare(const_cast<char*>("squish"), const_cast<char*>("uniform float"));
 
-    RtFloat squish = 5.0f;
+    RtFloat squish = 5.0F;
     RiSurface(const_cast<char*>("matte"), const_cast<char*>("squish"), &squish, RI_NULL);
 
     // matte declares no "squish", so the library dropped it and matte is still matte
@@ -85,25 +85,25 @@ BOOST_AUTO_TEST_CASE(renderman_declare_test) {
  **/
 BOOST_AUTO_TEST_CASE(renderman_sampling_test) {
     RiBegin(RI_NULL);
-    RiPixelSamples(4.0f, 4.0f);
-    RiPixelFilter(RiCatmullRomFilter, 3.0f, 3.0f);
-    RiDepthOfField(8.0f, 0.1f, 3.0f);
-    RiShutter(0.0f, 0.5f);
+    RiPixelSamples(4.0F, 4.0F);
+    RiPixelFilter(RiCatmullRomFilter, 3.0F, 3.0F);
+    RiDepthOfField(8.0F, 0.1F, 3.0F);
+    RiShutter(0.0F, 0.5F);
 
     const v3d::render::offline::Sampling & sampling = context().sampling();
-    BOOST_CHECK_EQUAL(sampling.samples.x, 4u);
-    BOOST_CHECK_EQUAL(sampling.samples.y, 4u);
+    BOOST_CHECK_EQUAL(sampling.samples.x, 4U);
+    BOOST_CHECK_EQUAL(sampling.samples.y, 4U);
     BOOST_CHECK(sampling.filter == v3d::render::offline::Filter::CatmullRom);
-    BOOST_CHECK_EQUAL(sampling.width.x, 3.0f);
-    BOOST_CHECK_EQUAL(sampling.fstop, 8.0f);
-    BOOST_CHECK_EQUAL(sampling.focalLength, 0.1f);
-    BOOST_CHECK_EQUAL(sampling.focalDistance, 3.0f);
-    BOOST_CHECK_EQUAL(sampling.shutter.x, 0.0f);
-    BOOST_CHECK_EQUAL(sampling.shutter.y, 0.5f);
+    BOOST_CHECK_EQUAL(sampling.width.x, 3.0F);
+    BOOST_CHECK_EQUAL(sampling.fstop, 8.0F);
+    BOOST_CHECK_EQUAL(sampling.focalLength, 0.1F);
+    BOOST_CHECK_EQUAL(sampling.focalDistance, 3.0F);
+    BOOST_CHECK_EQUAL(sampling.shutter.x, 0.0F);
+    BOOST_CHECK_EQUAL(sampling.shutter.y, 0.5F);
 
-    RiPixelFilter(nullptr, 1.0f, 1.0f);
+    RiPixelFilter(nullptr, 1.0F, 1.0F);
     BOOST_CHECK(context().sampling().filter == v3d::render::offline::Filter::CatmullRom);
-    BOOST_CHECK_EQUAL(context().sampling().width.x, 3.0f);
+    BOOST_CHECK_EQUAL(context().sampling().width.x, 3.0F);
     RiEnd();
 }
 
@@ -115,28 +115,28 @@ BOOST_AUTO_TEST_CASE(renderman_sampling_test) {
  **/
 BOOST_AUTO_TEST_CASE(renderman_refuses_what_the_reader_refuses_test) {
     RiBegin(RI_NULL);
-    RiPixelFilter(RiBoxFilter, 2.0f, 2.0f);
-    RiPixelFilter(RiGaussianFilter, std::nanf(""), 1.0f);
-    RiPixelFilter(RiGaussianFilter, 0.0f, 1.0f);
-    RiPixelFilter(RiGaussianFilter, 1.0f, -1.0f);
+    RiPixelFilter(RiBoxFilter, 2.0F, 2.0F);
+    RiPixelFilter(RiGaussianFilter, std::nanf(""), 1.0F);
+    RiPixelFilter(RiGaussianFilter, 0.0F, 1.0F);
+    RiPixelFilter(RiGaussianFilter, 1.0F, -1.0F);
     BOOST_CHECK(context().sampling().filter == v3d::render::offline::Filter::Box);
-    BOOST_CHECK_EQUAL(context().sampling().width.x, 2.0f);
-    BOOST_CHECK_EQUAL(context().sampling().width.y, 2.0f);
+    BOOST_CHECK_EQUAL(context().sampling().width.x, 2.0F);
+    BOOST_CHECK_EQUAL(context().sampling().width.y, 2.0F);
 
-    RiFormat(32, 16, 2.0f);
-    RiFormat(70000, 16, 1.0f);
-    RiFormat(32, 65537, 1.0f);
-    BOOST_CHECK_EQUAL(context().imageWidth(), 32u);
-    BOOST_CHECK_EQUAL(context().imageHeight(), 16u);
-    BOOST_CHECK_EQUAL(context().pixelAspect(), 2.0f);
+    RiFormat(32, 16, 2.0F);
+    RiFormat(70000, 16, 1.0F);
+    RiFormat(32, 65537, 1.0F);
+    BOOST_CHECK_EQUAL(context().imageWidth(), 32U);
+    BOOST_CHECK_EQUAL(context().imageHeight(), 16U);
+    BOOST_CHECK_EQUAL(context().pixelAspect(), 2.0F);
     RiFormat(32, 16, std::nanf(""));
-    BOOST_CHECK_EQUAL(context().pixelAspect(), 1.0f);
+    BOOST_CHECK_EQUAL(context().pixelAspect(), 1.0F);
     RiWorldBegin();
     RiWorldEnd();
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().framebuffer()->planes();
     BOOST_REQUIRE(planes);
-    BOOST_CHECK_EQUAL(planes->width(), 32u);
-    BOOST_CHECK_EQUAL(planes->height(), 16u);
+    BOOST_CHECK_EQUAL(planes->width(), 32U);
+    BOOST_CHECK_EQUAL(planes->height(), 16U);
     RiEnd();
 }
 
@@ -146,13 +146,13 @@ BOOST_AUTO_TEST_CASE(renderman_refuses_what_the_reader_refuses_test) {
  **/
 BOOST_AUTO_TEST_CASE(renderman_format_nonpositive_side_is_the_default_test) {
     RiBegin(RI_NULL);
-    RiFormat(-1, 16, 1.0f);
-    BOOST_CHECK_EQUAL(context().imageWidth(), 320u);
-    BOOST_CHECK_EQUAL(context().imageHeight(), 16u);
+    RiFormat(-1, 16, 1.0F);
+    BOOST_CHECK_EQUAL(context().imageWidth(), 320U);
+    BOOST_CHECK_EQUAL(context().imageHeight(), 16U);
 
-    RiFormat(32, 0, 1.0f);
-    BOOST_CHECK_EQUAL(context().imageWidth(), 32u);
-    BOOST_CHECK_EQUAL(context().imageHeight(), 240u);
+    RiFormat(32, 0, 1.0F);
+    BOOST_CHECK_EQUAL(context().imageWidth(), 32U);
+    BOOST_CHECK_EQUAL(context().imageHeight(), 240U);
     RiEnd();
 }
 

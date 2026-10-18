@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_SUITE(text_renderer_test)
  **/
 BOOST_AUTO_TEST_CASE(utf8_decodes_one_code_point_per_character) {
     const std::u32string decoded = v3d::ui::paint::TextRenderer::decode("a\xC3\xA9\xE2\x82\xAC\xF0\x9F\x98\x80");
-    BOOST_REQUIRE_EQUAL(decoded.size(), 4u);
+    BOOST_REQUIRE_EQUAL(decoded.size(), 4U);
     BOOST_CHECK(decoded[0] == U'a');
     BOOST_CHECK(decoded[1] == static_cast<char32_t>(0xE9));
     BOOST_CHECK(decoded[2] == static_cast<char32_t>(0x20AC));
@@ -56,19 +56,19 @@ BOOST_AUTO_TEST_CASE(malformed_utf8_decodes_as_replacement_characters) {
 
     // a lead byte with its continuation cut off
     const std::u32string truncated = v3d::ui::paint::TextRenderer::decode("\xC3");
-    BOOST_REQUIRE_EQUAL(truncated.size(), 1u);
+    BOOST_REQUIRE_EQUAL(truncated.size(), 1U);
     BOOST_CHECK(truncated[0] == replacement);
 
     // an overlong encoding of '/', then a character that is well formed
     const std::u32string overlong = v3d::ui::paint::TextRenderer::decode("\xC0\xAF" "b");
-    BOOST_REQUIRE_EQUAL(overlong.size(), 3u);
+    BOOST_REQUIRE_EQUAL(overlong.size(), 3U);
     BOOST_CHECK(overlong[0] == replacement);
     BOOST_CHECK(overlong[1] == replacement);
     BOOST_CHECK(overlong[2] == U'b');
 
     // an encoded surrogate
     const std::u32string surrogate = v3d::ui::paint::TextRenderer::decode("\xED\xA0\x80");
-    BOOST_REQUIRE_EQUAL(surrogate.size(), 3u);
+    BOOST_REQUIRE_EQUAL(surrogate.size(), 3U);
     BOOST_CHECK(surrogate[0] == replacement);
 }
 
@@ -81,20 +81,20 @@ BOOST_AUTO_TEST_CASE(a_character_that_is_not_packed_measures_and_draws_nothing) 
     BOOST_REQUIRE(text->loaded());
 
     const float letterWidth = text->width("a");
-    BOOST_REQUIRE(letterWidth > 0.0f);
+    BOOST_REQUIRE(letterWidth > 0.0F);
 
-    BOOST_CHECK_EQUAL(text->width(eAcute), 0.0f);
-    BOOST_CHECK_EQUAL(text->width(eAcute), 0.0f);
-    BOOST_CHECK_CLOSE(text->width(std::string("a") + eAcute), letterWidth, 0.01f);
+    BOOST_CHECK_EQUAL(text->width(eAcute), 0.0F);
+    BOOST_CHECK_EQUAL(text->width(eAcute), 0.0F);
+    BOOST_CHECK_CLOSE(text->width(std::string("a") + eAcute), letterWidth, 0.01F);
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(640, 480));
-    text->draw(&canvas, eAcute, glm::vec2(10.0f, 100.0f), glm::vec4(1.0f));
+    text->draw(&canvas, eAcute, glm::vec2(10.0F, 100.0F), glm::vec4(1.0F));
     BOOST_CHECK(canvas.empty());
 
     // one quad for the 'a', and nothing for the character after it
-    text->draw(&canvas, std::string("a") + eAcute, glm::vec2(10.0f, 100.0f), glm::vec4(1.0f));
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4u);
+    text->draw(&canvas, std::string("a") + eAcute, glm::vec2(10.0F, 100.0F), glm::vec4(1.0F));
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4U);
 }
 
 /**
@@ -105,13 +105,13 @@ BOOST_AUTO_TEST_CASE(a_multibyte_character_is_one_glyph) {
     BOOST_REQUIRE(text->loaded());
 
     const float one = text->width(eAcute);
-    BOOST_REQUIRE(one > 0.0f);
-    BOOST_CHECK_CLOSE(text->width(std::string(eAcute) + eAcute), one * 2.0f, 0.01f);
+    BOOST_REQUIRE(one > 0.0F);
+    BOOST_CHECK_CLOSE(text->width(std::string(eAcute) + eAcute), one * 2.0F, 0.01F);
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(640, 480));
-    text->draw(&canvas, eAcute, glm::vec2(10.0f, 100.0f), glm::vec4(1.0f));
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4u);
+    text->draw(&canvas, eAcute, glm::vec2(10.0F, 100.0F), glm::vec4(1.0F));
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4U);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(sllexer_kinds_test) {
     std::vector<Token> tokens = lex("surface plastic(float Ks = 0.5; string space = \"world\";) { }", &error);
 
     BOOST_CHECK_EQUAL(error, "");
-    BOOST_REQUIRE_EQUAL(tokens.size(), 16u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 16U);
     BOOST_CHECK(tokens[0].kind() == Token::Kind::KEYWORD);
     BOOST_CHECK_EQUAL(tokens[0].text(), "surface");
     BOOST_CHECK(tokens[1].kind() == Token::Kind::IDENTIFIER);
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(sllexer_kinds_test) {
     BOOST_CHECK(tokens[5].kind() == Token::Kind::OPERATOR);
     BOOST_CHECK_EQUAL(tokens[5].text(), "=");
     BOOST_CHECK(tokens[6].kind() == Token::Kind::NUMBER);
-    BOOST_CHECK_EQUAL(tokens[6].value(), 0.5f);
+    BOOST_CHECK_EQUAL(tokens[6].value(), 0.5F);
     BOOST_CHECK(tokens[11].kind() == Token::Kind::STRING);
     BOOST_CHECK_EQUAL(tokens[11].text(), "world");
     BOOST_CHECK(tokens[14].kind() == Token::Kind::PUNCTUATION);
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(sllexer_kinds_test) {
 BOOST_AUTO_TEST_CASE(sllexer_keyword_set_test) {
     std::vector<Token> tokens = lex("varying normal Nf; output noise diffuse mix");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 8u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 8U);
     BOOST_CHECK(tokens[0].kind() == Token::Kind::KEYWORD);
     BOOST_CHECK(tokens[1].kind() == Token::Kind::KEYWORD);
     BOOST_CHECK(tokens[2].kind() == Token::Kind::IDENTIFIER);
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(sllexer_keyword_set_test) {
 BOOST_AUTO_TEST_CASE(sllexer_lighting_keywords_test) {
     const std::vector<Token> tokens = lex("illuminance illuminate solar");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 3u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 3U);
     for (const Token & token : tokens) {
         BOOST_CHECK(token.kind() == Token::Kind::KEYWORD);
     }
@@ -100,16 +100,16 @@ BOOST_AUTO_TEST_CASE(sllexer_lighting_keywords_test) {
 BOOST_AUTO_TEST_CASE(sllexer_number_test) {
     std::vector<Token> tokens = lex("1 1.0 .5 2. 1e3 1.5E-2");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 6u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 6U);
     for (const Token & token : tokens) {
         BOOST_CHECK(token.kind() == Token::Kind::NUMBER);
     }
-    BOOST_CHECK_EQUAL(tokens[0].value(), 1.0f);
-    BOOST_CHECK_EQUAL(tokens[1].value(), 1.0f);
-    BOOST_CHECK_EQUAL(tokens[2].value(), 0.5f);
-    BOOST_CHECK_EQUAL(tokens[3].value(), 2.0f);
-    BOOST_CHECK_EQUAL(tokens[4].value(), 1000.0f);
-    BOOST_CHECK_CLOSE(tokens[5].value(), 0.015f, 0.01f);
+    BOOST_CHECK_EQUAL(tokens[0].value(), 1.0F);
+    BOOST_CHECK_EQUAL(tokens[1].value(), 1.0F);
+    BOOST_CHECK_EQUAL(tokens[2].value(), 0.5F);
+    BOOST_CHECK_EQUAL(tokens[3].value(), 2.0F);
+    BOOST_CHECK_EQUAL(tokens[4].value(), 1000.0F);
+    BOOST_CHECK_CLOSE(tokens[5].value(), 0.015F, 0.01F);
 }
 
 /**
@@ -119,12 +119,12 @@ BOOST_AUTO_TEST_CASE(sllexer_number_test) {
 BOOST_AUTO_TEST_CASE(sllexer_unsigned_number_test) {
     std::vector<Token> tokens = lex("a-1");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 3u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 3U);
     BOOST_CHECK(tokens[0].kind() == Token::Kind::IDENTIFIER);
     BOOST_CHECK(tokens[1].kind() == Token::Kind::OPERATOR);
     BOOST_CHECK_EQUAL(tokens[1].text(), "-");
     BOOST_CHECK(tokens[2].kind() == Token::Kind::NUMBER);
-    BOOST_CHECK_EQUAL(tokens[2].value(), 1.0f);
+    BOOST_CHECK_EQUAL(tokens[2].value(), 1.0F);
 }
 
 /**
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(sllexer_unsigned_number_test) {
 BOOST_AUTO_TEST_CASE(sllexer_string_test) {
     std::vector<Token> tokens = lex("\"two words\" \"a \\\"quote\\\" and a \\\\\" \"\\101\"");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 3u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 3U);
     BOOST_CHECK(tokens[0].kind() == Token::Kind::STRING);
     BOOST_CHECK_EQUAL(tokens[0].text(), "two words");
     BOOST_CHECK_EQUAL(tokens[1].text(), "a \"quote\" and a \\");
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(sllexer_string_test) {
 BOOST_AUTO_TEST_CASE(sllexer_operator_test) {
     std::vector<Token> tokens = lex("+ - * / = += -= *= /= == != < <= > >= && || ! ? : ^ .");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 22u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 22U);
     const char* const expected[] = {
         "+", "-", "*", "/", "=", "+=", "-=", "*=", "/=", "==", "!=",
         "<", "<=", ">", ">=", "&&", "||", "!", "?", ":", "^", "."
@@ -168,13 +168,13 @@ BOOST_AUTO_TEST_CASE(sllexer_operator_test) {
 BOOST_AUTO_TEST_CASE(sllexer_dot_test) {
     std::vector<Token> tokens = lex("a . b ^ c + .5");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 7u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 7U);
     BOOST_CHECK(tokens[1].kind() == Token::Kind::OPERATOR);
     BOOST_CHECK_EQUAL(tokens[1].text(), ".");
     BOOST_CHECK(tokens[3].kind() == Token::Kind::OPERATOR);
     BOOST_CHECK_EQUAL(tokens[3].text(), "^");
     BOOST_CHECK(tokens[6].kind() == Token::Kind::NUMBER);
-    BOOST_CHECK_EQUAL(tokens[6].value(), 0.5f);
+    BOOST_CHECK_EQUAL(tokens[6].value(), 0.5F);
 }
 
 /**
@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE(sllexer_comment_test) {
         "d /", &error);
 
     BOOST_CHECK_EQUAL(error, "");
-    BOOST_REQUIRE_EQUAL(tokens.size(), 6u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 6U);
     BOOST_CHECK_EQUAL(tokens[0].text(), "a");
     BOOST_CHECK(tokens[1].kind() == Token::Kind::OPERATOR);
     BOOST_CHECK_EQUAL(tokens[1].text(), "/");
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(sllexer_block_comment_is_flat_test) {
     std::vector<Token> tokens = lex("a /* /* // still a comment */ b */ c", &error);
 
     BOOST_CHECK_EQUAL(error, "");
-    BOOST_REQUIRE_EQUAL(tokens.size(), 5u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 5U);
     BOOST_CHECK_EQUAL(tokens[0].text(), "a");
     BOOST_CHECK_EQUAL(tokens[1].text(), "b");
     BOOST_CHECK(tokens[2].kind() == Token::Kind::OPERATOR);
@@ -229,20 +229,20 @@ BOOST_AUTO_TEST_CASE(sllexer_block_comment_is_flat_test) {
 BOOST_AUTO_TEST_CASE(sllexer_position_test) {
     std::vector<Token> tokens = lex("surface matte(\n    float Ka = 1;\n)");
 
-    BOOST_REQUIRE(tokens.size() > 5u);
-    BOOST_CHECK_EQUAL(tokens[0].line(), 1u);
-    BOOST_CHECK_EQUAL(tokens[0].column(), 1u);
-    BOOST_CHECK_EQUAL(tokens[1].column(), 9u);
+    BOOST_REQUIRE(tokens.size() > 5U);
+    BOOST_CHECK_EQUAL(tokens[0].line(), 1U);
+    BOOST_CHECK_EQUAL(tokens[0].column(), 1U);
+    BOOST_CHECK_EQUAL(tokens[1].column(), 9U);
     // the first token of the second line, indented four
-    BOOST_CHECK_EQUAL(tokens[3].line(), 2u);
-    BOOST_CHECK_EQUAL(tokens[3].column(), 5u);
+    BOOST_CHECK_EQUAL(tokens[3].line(), 2U);
+    BOOST_CHECK_EQUAL(tokens[3].column(), 5U);
 }
 
 BOOST_AUTO_TEST_CASE(sllexer_unterminated_string_test) {
     std::string error;
     const std::vector<Token> tokens = lex("string space = \"world;\n", &error);
 
-    BOOST_CHECK(tokens.size() == 3u);
+    BOOST_CHECK(tokens.size() == 3U);
     BOOST_CHECK_EQUAL(error, "unterminated string starting at line 1, column 16");
 }
 
@@ -250,7 +250,7 @@ BOOST_AUTO_TEST_CASE(sllexer_unterminated_block_comment_test) {
     std::string error;
     const std::vector<Token> tokens = lex("a\n  /* opened and never closed\nb", &error);
 
-    BOOST_CHECK_EQUAL(tokens.size(), 1u);
+    BOOST_CHECK_EQUAL(tokens.size(), 1U);
     BOOST_CHECK_EQUAL(error, "unterminated block comment starting at line 2, column 3");
 }
 
@@ -263,7 +263,7 @@ BOOST_AUTO_TEST_CASE(sllexer_preprocessor_test) {
     std::string error;
     const std::vector<Token> tokens = lex("#include \"common.h\"\nsurface matte() {}", &error);
 
-    BOOST_CHECK_EQUAL(tokens.size(), 0u);
+    BOOST_CHECK_EQUAL(tokens.size(), 0U);
     BOOST_CHECK_EQUAL(error, "the C preprocessor is not run, so a '#' directive cannot be read at line 1, column 1");
 }
 

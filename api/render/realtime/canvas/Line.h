@@ -142,10 +142,10 @@ class Line final {
      * nothing.
      **/
     struct Circle {
-        glm::vec3 centre{0.0f};
-        glm::vec3 axisU{1.0f, 0.0f, 0.0f};
-        glm::vec3 axisV{0.0f, 1.0f, 0.0f};
-        float radius = 1.0f;
+        glm::vec3 centre{0.0F};
+        glm::vec3 axisU{1.0F, 0.0F, 0.0F};
+        glm::vec3 axisV{0.0F, 1.0F, 0.0F};
+        float radius = 1.0F;
         unsigned int sides = 0;
     };
 

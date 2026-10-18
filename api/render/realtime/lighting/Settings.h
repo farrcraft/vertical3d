@@ -18,15 +18,15 @@ namespace v3d::render::realtime::lighting {
  * a thin outline and full strength shadows.
  **/
 struct Settings final {
-    static constexpr glm::vec3 DEFAULT_LIGHT{-0.45f, 0.62f, 0.64f};
-    static constexpr float DEFAULT_FILL = 0.35f;
-    static constexpr float DEFAULT_SHADOW_THRESHOLD = 0.26f;
-    static constexpr float DEFAULT_LIT_THRESHOLD = 0.70f;
-    static constexpr glm::vec3 DEFAULT_BANDS{0.30f, 0.55f, 1.0f};
-    static constexpr float DEFAULT_OUTLINE = 0.022f;
-    static constexpr float DEFAULT_CONSTANT_BIAS = 1.5f;
-    static constexpr float DEFAULT_SLOPE_BIAS = 2.75f;
-    static constexpr float DEFAULT_NORMAL_BIAS = 0.02f;
+    static constexpr glm::vec3 DEFAULT_LIGHT{-0.45F, 0.62F, 0.64F};
+    static constexpr float DEFAULT_FILL = 0.35F;
+    static constexpr float DEFAULT_SHADOW_THRESHOLD = 0.26F;
+    static constexpr float DEFAULT_LIT_THRESHOLD = 0.70F;
+    static constexpr glm::vec3 DEFAULT_BANDS{0.30F, 0.55F, 1.0F};
+    static constexpr float DEFAULT_OUTLINE = 0.022F;
+    static constexpr float DEFAULT_CONSTANT_BIAS = 1.5F;
+    static constexpr float DEFAULT_SLOPE_BIAS = 2.75F;
+    static constexpr float DEFAULT_NORMAL_BIAS = 0.02F;
 
     /**
      * Towards the key light, in world space - it need not be normalised. Keep it well off the
@@ -59,8 +59,8 @@ struct Settings final {
      * an amber light with blue shadows at dusk, a dim blue one at night. White leaves every
      * band as it is.
      **/
-    glm::vec3 colour{1.0f};
-    glm::vec3 shadowColour{1.0f};
+    glm::vec3 colour{1.0F};
+    glm::vec3 shadowColour{1.0F};
 
     /**
      * How far the outline hull is pushed out along each normal, in the model's units. Zero
@@ -86,7 +86,7 @@ struct Settings final {
      * How much of a band a shadow takes away. Zero still draws the shadow pass but ignores its
      * result, for comparing the scene with and without shadows.
      **/
-    float shadowStrength = 1.0f;
+    float shadowStrength = 1.0F;
 };
 
 };  // namespace v3d::render::realtime::lighting

@@ -88,17 +88,17 @@ class MovingTransform final {
 
     glm::mat4x4 open_;
     glm::mat4x4 close_;
-    glm::vec2 times_ { 0.0f, 0.0f };
+    glm::vec2 times_ { 0.0F, 0.0F };
     bool moving_ { false };
     /** Whether an end has no inverse, so at() blends the two matrices rather than their parts. **/
     bool linear_ { false };
 
-    glm::vec3 openTranslation_ { 0.0f };
-    glm::vec3 closeTranslation_ { 0.0f };
-    glm::vec3 openScale_ { 1.0f };
-    glm::vec3 closeScale_ { 1.0f };
-    glm::quat openRotation_ { 1.0f, 0.0f, 0.0f, 0.0f };
-    glm::quat closeRotation_ { 1.0f, 0.0f, 0.0f, 0.0f };
+    glm::vec3 openTranslation_ { 0.0F };
+    glm::vec3 closeTranslation_ { 0.0F };
+    glm::vec3 openScale_ { 1.0F };
+    glm::vec3 closeScale_ { 1.0F };
+    glm::quat openRotation_ { 1.0F, 0.0F, 0.0F, 0.0F };
+    glm::quat closeRotation_ { 1.0F, 0.0F, 0.0F, 0.0F };
 
     /** A block's state: the transformation when it opened, and each request's result so far. **/
     bool inBlock_ { false };

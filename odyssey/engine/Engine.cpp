@@ -111,7 +111,7 @@ void Engine::walkToCursor() {
     path.tiles = std::move(route);
     // findPath returns the tile the mover is standing on first, so the walk starts at 1
     path.next = 1;
-    path.elapsed = 0.0f;
+    path.elapsed = 0.0F;
 }
 
 /**
@@ -122,7 +122,7 @@ void Engine::step(int dx, int dy) {
         // a key interrupts a walk rather than fighting it for the next tile
         path.tiles.clear();
         path.next = 0;
-        path.elapsed = 0.0f;
+        path.elapsed = 0.0F;
         return;
     }
     const v3d::grid::TileCoord from = playerTile();

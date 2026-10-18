@@ -70,7 +70,7 @@ TransformTool::TransformTool(const boost::shared_ptr<Scene>& scene,
     scale_(boost::make_shared<ScaleManipulator>()),
     mode_(Mode::None),
     dragging_(false),
-    last_(0.0f, 0.0f) {
+    last_(0.0F, 0.0F) {
 }
 
 /**

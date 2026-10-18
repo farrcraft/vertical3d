@@ -24,7 +24,7 @@ An entity's components are added by the class that owns the entity's id, and rea
 the registry:
 
 ```cpp
-registry().emplace<v3d::ecs::component::Position2D>(id_, glm::vec2(0.0f));
+registry().emplace<v3d::ecs::component::Position2D>(id_, glm::vec2(0.0F));
 ...
 auto& position = registry().get<v3d::ecs::component::Position2D>(id_);
 position.value += velocity * step;

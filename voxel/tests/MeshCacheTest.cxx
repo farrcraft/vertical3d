@@ -28,11 +28,11 @@ BOOST_AUTO_TEST_CASE(a_face_is_four_vertices_indexed_six_times_test) {
     // a face is four corners drawn as two triangles, so the six indices it emits name four
     // vertices between them - indices running 0, 1, 2, 3... would carry no information
     const boost::shared_ptr<MeshCache> mesh = cache();
-    mesh->extract(block(glm::vec3(0.0f, 0.0f, 0.0f)), Voxel::BLOCK_FACE_FRONT, glm::vec3(0.0f));
+    mesh->extract(block(glm::vec3(0.0F, 0.0F, 0.0F)), Voxel::BLOCK_FACE_FRONT, glm::vec3(0.0F));
 
-    BOOST_CHECK_EQUAL(mesh->vertexCount(), 4u);
-    BOOST_CHECK_EQUAL(mesh->triCount(), 2u);
-    BOOST_CHECK_EQUAL(mesh->faceCount(), 1u);
+    BOOST_CHECK_EQUAL(mesh->vertexCount(), 4U);
+    BOOST_CHECK_EQUAL(mesh->triCount(), 2U);
+    BOOST_CHECK_EQUAL(mesh->faceCount(), 1U);
 
     // the two triangles share an edge, so between them they name one vertex twice
     const glm::ivec3 first = mesh->tris()[0];
@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(a_face_is_four_vertices_indexed_six_times_test) {
 
 BOOST_AUTO_TEST_CASE(a_face_records_its_triangles_direction_and_type_test) {
     const boost::shared_ptr<MeshCache> mesh = cache();
-    mesh->extract(block(glm::vec3(0.0f, 0.0f, 0.0f)), Voxel::BLOCK_FACE_TOP, glm::vec3(0.0f));
+    mesh->extract(block(glm::vec3(0.0F, 0.0F, 0.0F)), Voxel::BLOCK_FACE_TOP, glm::vec3(0.0F));
 
     // the vertex shader reads its normal and its material from the face
     const glm::ivec4 face = mesh->faces()[0];
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(faces_are_wound_counter_clockwise_from_outside_test) {
     // counter clockwise winding lets the pipeline cull back faces. Because the camera's
     // projection flips y, the pipeline's front face setting is clockwise
     const boost::shared_ptr<MeshCache> mesh = cache();
-    mesh->extract(block(glm::vec3(0.0f, 0.0f, 0.0f)), Voxel::BLOCK_FACE_FRONT, glm::vec3(0.0f));
+    mesh->extract(block(glm::vec3(0.0F, 0.0F, 0.0F)), Voxel::BLOCK_FACE_FRONT, glm::vec3(0.0F));
 
     const glm::ivec3 tri = mesh->tris()[0];
     const glm::vec3* vertices = mesh->vertices();
@@ -66,47 +66,47 @@ BOOST_AUTO_TEST_CASE(faces_are_wound_counter_clockwise_from_outside_test) {
         vertices[tri.z] - vertices[tri.x]));
 
     // the front face of a block looks down positive z
-    BOOST_CHECK_CLOSE(normal.z, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(normal.z, 1.0F, 0.01F);
 }
 
 BOOST_AUTO_TEST_CASE(the_chunk_origin_is_subtracted_test) {
     // a chunk's geometry is built around its own corner, so that where it sits in the world
     // stays a push constant rather than something baked into every vertex
     const boost::shared_ptr<MeshCache> mesh = cache();
-    const glm::vec3 origin(16.0f, 32.0f, 48.0f);
+    const glm::vec3 origin(16.0F, 32.0F, 48.0F);
     mesh->extract(block(origin), Voxel::BLOCK_FACE_BOTTOM, origin);
 
     const glm::vec3* vertices = mesh->vertices();
     for (size_t i = 0; i < mesh->vertexCount(); i++) {
-        BOOST_CHECK(vertices[i].x >= 0.0f && vertices[i].x <= 1.0f);
-        BOOST_CHECK(vertices[i].y >= 0.0f && vertices[i].y <= 1.0f);
-        BOOST_CHECK(vertices[i].z >= 0.0f && vertices[i].z <= 1.0f);
+        BOOST_CHECK(vertices[i].x >= 0.0F && vertices[i].x <= 1.0F);
+        BOOST_CHECK(vertices[i].y >= 0.0F && vertices[i].y <= 1.0F);
+        BOOST_CHECK(vertices[i].z >= 0.0F && vertices[i].z <= 1.0F);
     }
 }
 
 BOOST_AUTO_TEST_CASE(a_block_with_no_visible_faces_contributes_nothing_test) {
     const boost::shared_ptr<MeshCache> mesh = cache();
-    mesh->extract(block(glm::vec3(0.0f)), Voxel::BLOCK_FACE_NONE, glm::vec3(0.0f));
-    BOOST_CHECK_EQUAL(mesh->vertexCount(), 0u);
+    mesh->extract(block(glm::vec3(0.0F)), Voxel::BLOCK_FACE_NONE, glm::vec3(0.0F));
+    BOOST_CHECK_EQUAL(mesh->vertexCount(), 0U);
 
     // air is never meshed, whatever faces it is offered
-    mesh->extract(boost::make_shared<Voxel>(Voxel::BLOCK_TYPE_AIR, glm::vec3(0.0f)), Voxel::BLOCK_FACE_ALL, glm::vec3(0.0f));
-    BOOST_CHECK_EQUAL(mesh->vertexCount(), 0u);
+    mesh->extract(boost::make_shared<Voxel>(Voxel::BLOCK_TYPE_AIR, glm::vec3(0.0F)), Voxel::BLOCK_FACE_ALL, glm::vec3(0.0F));
+    BOOST_CHECK_EQUAL(mesh->vertexCount(), 0U);
 }
 
 BOOST_AUTO_TEST_CASE(every_face_of_a_block_fits_the_cache_test) {
     const boost::shared_ptr<MeshCache> mesh = cache();
-    mesh->extract(block(glm::vec3(0.0f)), Voxel::BLOCK_FACE_ALL, glm::vec3(0.0f));
+    mesh->extract(block(glm::vec3(0.0F)), Voxel::BLOCK_FACE_ALL, glm::vec3(0.0F));
 
-    BOOST_CHECK_EQUAL(mesh->faceCount(), 6u);
-    BOOST_CHECK_EQUAL(mesh->vertexCount(), 24u);
-    BOOST_CHECK_EQUAL(mesh->triCount(), 12u);
+    BOOST_CHECK_EQUAL(mesh->faceCount(), 6U);
+    BOOST_CHECK_EQUAL(mesh->vertexCount(), 24U);
+    BOOST_CHECK_EQUAL(mesh->triCount(), 12U);
 
     // a chunk is remeshed through reset, which keeps the allocation
     mesh->reset();
-    BOOST_CHECK_EQUAL(mesh->faceCount(), 0u);
-    BOOST_CHECK_EQUAL(mesh->vertexCount(), 0u);
-    BOOST_CHECK_EQUAL(mesh->triCount(), 0u);
+    BOOST_CHECK_EQUAL(mesh->faceCount(), 0U);
+    BOOST_CHECK_EQUAL(mesh->vertexCount(), 0U);
+    BOOST_CHECK_EQUAL(mesh->triCount(), 0U);
 }
 
 };  // namespace

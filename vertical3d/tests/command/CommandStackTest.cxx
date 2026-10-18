@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(command_stack_empty_test) {
 
     // a stack that is given nothing has recorded nothing
     stack.push(boost::shared_ptr<v3d::editor::Command>());
-    BOOST_CHECK_EQUAL(stack.undoDepth(), 0u);
+    BOOST_CHECK_EQUAL(stack.undoDepth(), 0U);
 }
 
 BOOST_AUTO_TEST_CASE(command_stack_undo_redo_test) {
@@ -80,19 +80,19 @@ BOOST_AUTO_TEST_CASE(command_stack_undo_redo_test) {
     stack.push(second);
     BOOST_CHECK_EQUAL(first->redone, 0);
     BOOST_CHECK_EQUAL(second->redone, 0);
-    BOOST_CHECK_EQUAL(stack.undoDepth(), 2u);
+    BOOST_CHECK_EQUAL(stack.undoDepth(), 2U);
 
     const boost::shared_ptr<v3d::editor::Command> undone = stack.undo();
     BOOST_CHECK(undone == second);
     BOOST_CHECK_EQUAL(second->undone, 1);
     BOOST_CHECK_EQUAL(first->undone, 0);
-    BOOST_CHECK_EQUAL(stack.undoDepth(), 1u);
-    BOOST_CHECK_EQUAL(stack.redoDepth(), 1u);
+    BOOST_CHECK_EQUAL(stack.undoDepth(), 1U);
+    BOOST_CHECK_EQUAL(stack.redoDepth(), 1U);
 
     const boost::shared_ptr<v3d::editor::Command> redone = stack.redo();
     BOOST_CHECK(redone == second);
     BOOST_CHECK_EQUAL(second->redone, 1);
-    BOOST_CHECK_EQUAL(stack.undoDepth(), 2u);
+    BOOST_CHECK_EQUAL(stack.undoDepth(), 2U);
     BOOST_CHECK(!stack.canRedo());
 
     // the whole history unwinds in order
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(command_stack_branch_test) {
     // redone
     stack.push(second);
     BOOST_CHECK(!stack.canRedo());
-    BOOST_CHECK_EQUAL(stack.undoDepth(), 1u);
+    BOOST_CHECK_EQUAL(stack.undoDepth(), 1U);
     BOOST_CHECK(stack.undo() == second);
 }
 
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(command_stack_capacity_test) {
     stack.push(third);
 
     // the oldest is dropped rather than the newest, and dropping it does not undo it
-    BOOST_CHECK_EQUAL(stack.undoDepth(), 2u);
+    BOOST_CHECK_EQUAL(stack.undoDepth(), 2U);
     BOOST_CHECK_EQUAL(first->undone, 0);
     BOOST_CHECK(stack.undo() == third);
     BOOST_CHECK(stack.undo() == second);
@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(command_stack_capacity_test) {
     // a capacity of none would be a stack that cannot record anything
     v3d::editor::CommandStack smallest(0);
     smallest.push(first);
-    BOOST_CHECK_EQUAL(smallest.undoDepth(), 1u);
+    BOOST_CHECK_EQUAL(smallest.undoDepth(), 1U);
 }
 
 BOOST_AUTO_TEST_CASE(command_stack_clear_test) {
@@ -165,18 +165,18 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
 
     // the command does the creating, so the first do and a redo run the same code
     command->redo();
-    BOOST_CHECK_EQUAL(scene->count(), 1u);
+    BOOST_CHECK_EQUAL(scene->count(), 1U);
     BOOST_CHECK(scene->selection() == cube);
 
     command->undo();
-    BOOST_CHECK_EQUAL(scene->count(), 0u);
+    BOOST_CHECK_EQUAL(scene->count(), 0U);
     BOOST_CHECK(!scene->selection());
     BOOST_CHECK(!cube->selected());
 
     // the mesh outlives its removal, so it comes back with the id that a command deeper in
     // the history still names
     command->redo();
-    BOOST_CHECK_EQUAL(scene->count(), 1u);
+    BOOST_CHECK_EQUAL(scene->count(), 1U);
     BOOST_CHECK(scene->mesh(id) == cube);
 }
 
@@ -206,9 +206,9 @@ BOOST_AUTO_TEST_CASE(transform_command_test) {
 
     const v3d::editor::Placement before = v3d::editor::Placement::of(*cube);
 
-    cube->translation(glm::vec3(1.0f, 2.0f, 3.0f));
-    cube->rotation(glm::angleAxis(1.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
-    cube->scale(glm::vec3(2.0f, 2.0f, 2.0f));
+    cube->translation(glm::vec3(1.0F, 2.0F, 3.0F));
+    cube->rotation(glm::angleAxis(1.0F, glm::vec3(0.0F, 1.0F, 0.0F)));
+    cube->scale(glm::vec3(2.0F, 2.0F, 2.0F));
     const v3d::editor::Placement after = v3d::editor::Placement::of(*cube);
 
     BOOST_CHECK(!before.same(after));
@@ -218,13 +218,13 @@ BOOST_AUTO_TEST_CASE(transform_command_test) {
 
     // a gesture is undone by restoring the whole placement, not only the part that moved
     command.undo();
-    BOOST_CHECK_SMALL(cube->translation().x, 0.001f);
-    BOOST_CHECK_CLOSE(cube->scale().x, 1.0f, 0.1f);
+    BOOST_CHECK_SMALL(cube->translation().x, 0.001F);
+    BOOST_CHECK_CLOSE(cube->scale().x, 1.0F, 0.1F);
     BOOST_CHECK(v3d::editor::Placement::of(*cube).same(before));
 
     command.redo();
     BOOST_CHECK(v3d::editor::Placement::of(*cube).same(after));
-    BOOST_CHECK_CLOSE(cube->translation().y, 2.0f, 0.1f);
+    BOOST_CHECK_CLOSE(cube->translation().y, 2.0F, 0.1F);
 }
 
 BOOST_AUTO_TEST_CASE(placement_tolerance_test) {
@@ -236,10 +236,10 @@ BOOST_AUTO_TEST_CASE(placement_tolerance_test) {
 
     // a gesture that measured nothing still composes a rotation, so the two ends of it
     // differ in the last bits without the object having moved
-    two.translation.x = 1e-9f;
+    two.translation.x = 1e-9F;
     BOOST_CHECK(one.same(two));
 
-    two.translation.x = 0.001f;
+    two.translation.x = 0.001F;
     BOOST_CHECK(!one.same(two));
 }
 

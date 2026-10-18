@@ -30,36 +30,36 @@ BOOST_AUTO_TEST_CASE(texturefontcache_test) {
 
     const boost::shared_ptr<v3d::image::TextureAtlas> atlas = cache.atlas();
     BOOST_REQUIRE(atlas != nullptr);
-    BOOST_CHECK_EQUAL(atlas->width(), 256u);
-    BOOST_CHECK_EQUAL(atlas->height(), 256u);
-    BOOST_CHECK_EQUAL(atlas->depth(), 1u);
+    BOOST_CHECK_EQUAL(atlas->width(), 256U);
+    BOOST_CHECK_EQUAL(atlas->height(), 256U);
+    BOOST_CHECK_EQUAL(atlas->depth(), 1U);
 
     // nothing is in the cache to begin with
-    BOOST_CHECK(cache.find(kTypeface, 12.0f) == nullptr);
+    BOOST_CHECK(cache.find(kTypeface, 12.0F) == nullptr);
 
     const boost::shared_ptr<v3d::font::TextureFont> font =
-        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 12.0f, logger);
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 12.0F, logger);
     font->atlas(atlas);
     cache.add(font);
 
     // a font is found by file and size together
-    BOOST_CHECK(cache.find(kTypeface, 12.0f) == font);
-    BOOST_CHECK(cache.find(kTypeface, 14.0f) == nullptr);
-    BOOST_CHECK(cache.find("data/fonts/DoesNotExist.ttf", 12.0f) == nullptr);
+    BOOST_CHECK(cache.find(kTypeface, 12.0F) == font);
+    BOOST_CHECK(cache.find(kTypeface, 14.0F) == nullptr);
+    BOOST_CHECK(cache.find("data/fonts/DoesNotExist.ttf", 12.0F) == nullptr);
 
     // a second size of the same face is a separate entry
     const boost::shared_ptr<v3d::font::TextureFont> larger =
-        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 14.0f, logger);
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 14.0F, logger);
     larger->atlas(atlas);
     cache.add(larger);
-    BOOST_CHECK(cache.find(kTypeface, 14.0f) == larger);
-    BOOST_CHECK(cache.find(kTypeface, 12.0f) == font);
+    BOOST_CHECK(cache.find(kTypeface, 14.0F) == larger);
+    BOOST_CHECK(cache.find(kTypeface, 12.0F) == font);
 
     // removing matches on the same key, and only removes once
     BOOST_CHECK_EQUAL(cache.remove(font), true);
-    BOOST_CHECK(cache.find(kTypeface, 12.0f) == nullptr);
+    BOOST_CHECK(cache.find(kTypeface, 12.0F) == nullptr);
     BOOST_CHECK_EQUAL(cache.remove(font), false);
-    BOOST_CHECK(cache.find(kTypeface, 14.0f) == larger);
+    BOOST_CHECK(cache.find(kTypeface, 14.0F) == larger);
 }
 
 BOOST_AUTO_TEST_CASE(texturefont_glyph_test) {
@@ -67,31 +67,31 @@ BOOST_AUTO_TEST_CASE(texturefont_glyph_test) {
     v3d::font::TextureFontCache cache(256, 256, 1, logger);
 
     const boost::shared_ptr<v3d::font::TextureFont> font =
-        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 12.0f, logger);
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 12.0F, logger);
     font->atlas(cache.atlas());
     cache.add(font);
 
     // the face's own metrics come off the file
-    BOOST_CHECK_EQUAL(font->size(), 12.0f);
+    BOOST_CHECK_EQUAL(font->size(), 12.0F);
     BOOST_CHECK_EQUAL(font->filename(), std::string(kTypeface));
-    BOOST_CHECK(font->ascender() > 0.0f);
-    BOOST_CHECK(font->descender() < 0.0f);
-    BOOST_CHECK(font->height() > 0.0f);
+    BOOST_CHECK(font->ascender() > 0.0F);
+    BOOST_CHECK(font->descender() < 0.0F);
+    BOOST_CHECK(font->height() > 0.0F);
 
     // glyphs are rendered into the shared atlas on demand
     BOOST_REQUIRE_EQUAL(font->loadGlyphs(L"abc"), true);
     const boost::shared_ptr<v3d::font::TextureFont::Glyph> glyph = font->glyph(L'a');
     BOOST_REQUIRE(glyph != nullptr);
     BOOST_CHECK_EQUAL(glyph->charcode_, L'a');
-    BOOST_CHECK(glyph->width_ > 0u);
-    BOOST_CHECK(glyph->height_ > 0u);
-    BOOST_CHECK(glyph->advance_[0] > 0.0f);
+    BOOST_CHECK(glyph->width_ > 0U);
+    BOOST_CHECK(glyph->height_ > 0U);
+    BOOST_CHECK(glyph->advance_[0] > 0.0F);
 
     // and their texture coordinates stay inside it
-    BOOST_CHECK(glyph->st_[0][0] >= 0.0f);
-    BOOST_CHECK(glyph->st_[1][0] <= 1.0f);
-    BOOST_CHECK(glyph->st_[0][1] >= 0.0f);
-    BOOST_CHECK(glyph->st_[1][1] <= 1.0f);
+    BOOST_CHECK(glyph->st_[0][0] >= 0.0F);
+    BOOST_CHECK(glyph->st_[1][0] <= 1.0F);
+    BOOST_CHECK(glyph->st_[0][1] >= 0.0F);
+    BOOST_CHECK(glyph->st_[1][1] <= 1.0F);
 }
 
 /**
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(texturefont_atlas_overflow_test) {
     v3d::font::TextureFontCache cache(64, 64, 1, logger);
 
     const boost::shared_ptr<v3d::font::TextureFont> font =
-        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0f, logger);
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0F, logger);
     font->atlas(cache.atlas());
 
     BOOST_CHECK_EQUAL(font->loadGlyphs(kPrintable), false);
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(texturefont_atlas_overflow_test) {
     // packing rather than the face or the charset
     v3d::font::TextureFontCache roomy(512, 512, 1, logger);
     const boost::shared_ptr<v3d::font::TextureFont> small =
-        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 12.0f, logger);
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 12.0F, logger);
     small->atlas(roomy.atlas());
     BOOST_CHECK_EQUAL(small->loadGlyphs(kPrintable), true);
 }
@@ -135,22 +135,22 @@ BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
 
     v3d::font::TextureFontCache roomy(512, 512, 1, logger);
     const boost::shared_ptr<v3d::font::TextureFont> field =
-        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0f, logger, 8);
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0F, logger, 8);
     field->atlas(roomy.atlas());
-    BOOST_CHECK_EQUAL(field->spread(), 8u);
+    BOOST_CHECK_EQUAL(field->spread(), 8U);
     BOOST_REQUIRE_EQUAL(field->loadGlyphs(kPrintable), true);
 
     // the same charset one step wider does not fit the same square, and says so
     v3d::font::TextureFontCache cramped(512, 512, 1, logger);
     const boost::shared_ptr<v3d::font::TextureFont> tooBig =
-        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0f, logger, 12);
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0F, logger, 12);
     tooBig->atlas(cramped.atlas());
     BOOST_CHECK_EQUAL(tooBig->loadGlyphs(kPrintable), false);
 
     // and it fits once the atlas is given the dimensions it needs
     v3d::font::TextureFontCache larger(1024, 1024, 1, logger);
     const boost::shared_ptr<v3d::font::TextureFont> wider =
-        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0f, logger, 12);
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0F, logger, 12);
     wider->atlas(larger.atlas());
     BOOST_CHECK_EQUAL(wider->loadGlyphs(kPrintable), true);
 
@@ -159,9 +159,9 @@ BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
     const boost::shared_ptr<v3d::font::TextureFontCache> plain =
         boost::make_shared<v3d::font::TextureFontCache>(512, 512, 1, logger);
     const boost::shared_ptr<v3d::font::TextureFont> coverage =
-        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0f, logger);
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 48.0F, logger);
     coverage->atlas(plain->atlas());
-    BOOST_CHECK_EQUAL(coverage->spread(), 0u);
+    BOOST_CHECK_EQUAL(coverage->spread(), 0U);
     BOOST_REQUIRE_EQUAL(coverage->loadGlyphs(kPrintable), true);
 
     const boost::shared_ptr<v3d::font::TextureFont::Glyph> wide = field->glyph(L'm');
@@ -173,13 +173,13 @@ BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
 
     // the advance is the face's own metric and is not a bitmap dimension, so the spread
     // must not have moved it - it is what a line of text is laid out along
-    BOOST_CHECK_CLOSE(wide->advance_.x, narrow->advance_.x, 0.01f);
+    BOOST_CHECK_CLOSE(wide->advance_.x, narrow->advance_.x, 0.01F);
 
     // and the coordinates still land inside the atlas they were packed into
-    BOOST_CHECK(wide->st_[0][0] >= 0.0f);
-    BOOST_CHECK(wide->st_[1][0] <= 1.0f);
-    BOOST_CHECK(wide->st_[0][1] >= 0.0f);
-    BOOST_CHECK(wide->st_[1][1] <= 1.0f);
+    BOOST_CHECK(wide->st_[0][0] >= 0.0F);
+    BOOST_CHECK(wide->st_[1][0] <= 1.0F);
+    BOOST_CHECK(wide->st_[0][1] >= 0.0F);
+    BOOST_CHECK(wide->st_[1][1] <= 1.0F);
 }
 
 /**
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(texturefont_packed_never_loads_test) {
     v3d::font::TextureFontCache cache(256, 256, 1, logger);
 
     const boost::shared_ptr<v3d::font::TextureFont> font =
-        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 12.0f, logger);
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 12.0F, logger);
     font->atlas(cache.atlas());
     BOOST_REQUIRE_EQUAL(font->loadGlyphs(L"a"), true);
 

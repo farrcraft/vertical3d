@@ -50,23 +50,23 @@ const uint32_t vertexShader[] =
  * every covered sample. Both values are exact in a 32 bit float, so the case compares equal
  * rather than near.
  **/
-const float nearDepth = 0.25f;
-const float farDepth = 0.75f;
+const float nearDepth = 0.25F;
+const float farDepth = 0.75F;
 
 /**
  * Two triangles spanning x from left to right and y from -0.5 to 0.5, at one depth.
  **/
 void quad(std::vector<float>* vertices, float left, float right, float depth) {
     vertices->insert(vertices->end(), {
-        left, -0.5f, depth, right, -0.5f, depth, right, 0.5f, depth,
-        left, -0.5f, depth, right, 0.5f, depth, left, 0.5f, depth
+        left, -0.5F, depth, right, -0.5F, depth, right, 0.5F, depth,
+        left, -0.5F, depth, right, 0.5F, depth, left, 0.5F, depth
     });
 }
 
 std::vector<float> quads() {
     std::vector<float> vertices;
-    quad(&vertices, -0.75f, -0.25f, nearDepth);
-    quad(&vertices, 0.25f, 0.75f, farDepth);
+    quad(&vertices, -0.75F, -0.25F, nearDepth);
+    quad(&vertices, 0.25F, 0.75F, farDepth);
     return vertices;
 }
 
@@ -102,9 +102,9 @@ std::vector<float> drawDepth(v3d::test::Headless* headless, const boost::shared_
     const boost::shared_ptr<Pass> pass = frame.pass("shadow");
     pass->target(target);
     pass->depth(true);
-    pass->clearColour(glm::vec4(0.0f));
+    pass->clearColour(glm::vec4(0.0F));
     if (bias) {
-        pass->depthBias(*bias, 0.0f);
+        pass->depthBias(*bias, 0.0F);
     }
 
     DrawItem item;
@@ -160,7 +160,7 @@ std::vector<float> drawBeside(v3d::test::Headless* headless, const boost::shared
     without->keepColour();
     with->target(target);
     with->depth(true);
-    with->clearColour(glm::vec4(0.0f));
+    with->clearColour(glm::vec4(0.0F));
 
     DrawItem item;
     item.pipeline = depthPipeline(headless, target->depthFormat(), false);
@@ -208,8 +208,8 @@ BOOST_AUTO_TEST_CASE(a_depth_only_target_holds_the_depth_drawn) {
     // the centre of each quad, a pixel between them, and a corner
     BOOST_CHECK_EQUAL(at(depths, 4, 8), nearDepth);
     BOOST_CHECK_EQUAL(at(depths, 11, 8), farDepth);
-    BOOST_CHECK_EQUAL(at(depths, 8, 8), 1.0f);
-    BOOST_CHECK_EQUAL(at(depths, 0, 0), 1.0f);
+    BOOST_CHECK_EQUAL(at(depths, 8, 8), 1.0F);
+    BOOST_CHECK_EQUAL(at(depths, 0, 0), 1.0F);
 }
 
 /**
@@ -225,14 +225,14 @@ BOOST_AUTO_TEST_CASE(a_pass_bias_moves_the_depth_drawn) {
         return;
     }
 
-    const std::vector<float> depths = drawDepth(&headless, target, 64.0f);
+    const std::vector<float> depths = drawDepth(&headless, target, 64.0F);
     BOOST_CHECK(headless.silent());
     BOOST_REQUIRE_EQUAL(depths.size(), static_cast<std::size_t>(width) * height);
 
     BOOST_CHECK_GT(at(depths, 4, 8), nearDepth);
     BOOST_CHECK_LT(at(depths, 4, 8), farDepth);
     BOOST_CHECK_GT(at(depths, 11, 8), farDepth);
-    BOOST_CHECK_EQUAL(at(depths, 0, 0), 1.0f);
+    BOOST_CHECK_EQUAL(at(depths, 0, 0), 1.0F);
 }
 
 /**
@@ -255,7 +255,7 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_beside_one_with_it) {
             BOOST_CHECK(headless.silent());
             BOOST_REQUIRE_EQUAL(depths.size(), static_cast<std::size_t>(width) * height);
             BOOST_CHECK_EQUAL(at(depths, 4, 8), nearDepth);
-            BOOST_CHECK_EQUAL(at(depths, 8, 8), 1.0f);
+            BOOST_CHECK_EQUAL(at(depths, 8, 8), 1.0F);
         }
     }
 }

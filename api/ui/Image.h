@@ -37,8 +37,8 @@ struct Image final {
      * The texture coordinates at the image's top left corner and at its bottom right corner.
      **/
     struct Corners {
-        glm::vec2 min{0.0f};
-        glm::vec2 max{1.0f};
+        glm::vec2 min{0.0F};
+        glm::vec2 max{1.0F};
     };
 
     /**

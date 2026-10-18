@@ -45,9 +45,9 @@ namespace {
 
 typedef Signature::Argument Argument;
 
-const unsigned int SURFACE = 1u << 0;
-const unsigned int LIGHT = 1u << 1;
-const unsigned int IMAGER = 1u << 2;
+const unsigned int SURFACE = 1U << 0;
+const unsigned int LIGHT = 1U << 1;
+const unsigned int IMAGER = 1U << 2;
 
 /**
  * A shader global: which shader types have it, and which of them may write it.

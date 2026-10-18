@@ -47,14 +47,14 @@ BOOST_AUTO_TEST_CASE(tetrad_rotation_test) {
     Tetrad piece(start);
     piece.rotate(Tetrad::CLOCKWISE);
     BOOST_CHECK_EQUAL(same(piece.shape(), start), false);
-    BOOST_CHECK_EQUAL(piece.orientation(), 1u);
+    BOOST_CHECK_EQUAL(piece.orientation(), 1U);
 
     // four turns the same way come back to where they started
     piece.rotate(Tetrad::CLOCKWISE);
     piece.rotate(Tetrad::CLOCKWISE);
     piece.rotate(Tetrad::CLOCKWISE);
     BOOST_CHECK_EQUAL(same(piece.shape(), start), true);
-    BOOST_CHECK_EQUAL(piece.orientation(), 0u);
+    BOOST_CHECK_EQUAL(piece.orientation(), 0U);
 }
 
 BOOST_AUTO_TEST_CASE(tetrad_counterclockwise_test) {
@@ -64,11 +64,11 @@ BOOST_AUTO_TEST_CASE(tetrad_counterclockwise_test) {
     Tetrad piece(start);
     piece.rotate(Tetrad::COUNTERCLOCKWISE);
     BOOST_CHECK_EQUAL(same(piece.shape(), start), false);
-    BOOST_CHECK_EQUAL(piece.orientation(), 3u);
+    BOOST_CHECK_EQUAL(piece.orientation(), 3U);
 
     piece.rotate(Tetrad::CLOCKWISE);
     BOOST_CHECK_EQUAL(same(piece.shape(), start), true);
-    BOOST_CHECK_EQUAL(piece.orientation(), 0u);
+    BOOST_CHECK_EQUAL(piece.orientation(), 0U);
 }
 
 BOOST_AUTO_TEST_CASE(tetrad_normalize_test) {
@@ -104,8 +104,8 @@ BOOST_AUTO_TEST_CASE(tetrad_assignment_test) {
     // assignment has to carry the position, which the copy constructor beside it does
     Tetrad copy;
     copy = piece;
-    BOOST_CHECK_EQUAL(copy.position().first, 4u);
-    BOOST_CHECK_EQUAL(copy.position().second, 7u);
+    BOOST_CHECK_EQUAL(copy.position().first, 4U);
+    BOOST_CHECK_EQUAL(copy.position().second, 7U);
     BOOST_CHECK_EQUAL(copy.initialized(), true);
     BOOST_CHECK_EQUAL(same(copy.shape(), piece.shape()), true);
 }
@@ -114,10 +114,10 @@ BOOST_AUTO_TEST_CASE(tetrad_extent_test) {
     // the L is three tall and two wide, so an extent that ignored the minimum occupied row
     // and column would report three for both
     const Tetrad piece(el());
-    BOOST_CHECK_EQUAL(piece.width(), 2u);
-    BOOST_CHECK_EQUAL(piece.height(), 3u);
+    BOOST_CHECK_EQUAL(piece.width(), 2U);
+    BOOST_CHECK_EQUAL(piece.height(), 3U);
 
-    BOOST_CHECK_EQUAL(Tetrad().width(), 0u);
+    BOOST_CHECK_EQUAL(Tetrad().width(), 0U);
 }
 
 };  // namespace

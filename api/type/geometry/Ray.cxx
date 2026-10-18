@@ -22,7 +22,7 @@ namespace {
  * ray running in the plane of the triangle, where the barycentric solution is
  * meaningless.
  **/
-constexpr float epsilon = 1e-7f;
+constexpr float epsilon = 1e-7F;
 
 /**
  * Whether every component of a ray's origin and direction is finite. Each intersection test
@@ -39,8 +39,8 @@ bool finite(const glm::vec3& origin, const glm::vec3& direction) {
 /**
  **/
 Ray::Ray() :
-    origin_(0.0f, 0.0f, 0.0f),
-    direction_(0.0f, 0.0f, 1.0f) {
+    origin_(0.0F, 0.0F, 0.0F),
+    direction_(0.0F, 0.0F, 1.0F) {
 }
 
 /**
@@ -76,8 +76,8 @@ glm::vec3 Ray::point(float distance) const {
  **/
 Ray Ray::transformed(const glm::mat4& transform) const {
     Ray moved;
-    moved.origin_ = glm::vec3(transform * glm::vec4(origin_, 1.0f));
-    moved.direction_ = glm::vec3(transform * glm::vec4(direction_, 0.0f));
+    moved.origin_ = glm::vec3(transform * glm::vec4(origin_, 1.0F));
+    moved.direction_ = glm::vec3(transform * glm::vec4(direction_, 0.0F));
     return moved;
 }
 
@@ -92,7 +92,7 @@ bool Ray::intersects(const AABBox& box, float* distance) const {
     }
 
     // not near/far: the windows headers define both as macros
-    float entryDistance = 0.0f;
+    float entryDistance = 0.0F;
     float exitDistance = std::numeric_limits<float>::max();
 
     for (int axis = 0; axis < 3; axis++) {
@@ -104,7 +104,7 @@ bool Ray::intersects(const AABBox& box, float* distance) const {
             }
             continue;
         }
-        const float inverse = 1.0f / direction_[axis];
+        const float inverse = 1.0F / direction_[axis];
         float entry = (min[axis] - origin_[axis]) * inverse;
         float exit = (max[axis] - origin_[axis]) * inverse;
         if (entry > exit) {
@@ -145,21 +145,21 @@ bool Ray::intersects(const glm::vec3& vertexA, const glm::vec3& vertexB, const g
         return false;
     }
 
-    const float inverse = 1.0f / determinant;
+    const float inverse = 1.0F / determinant;
     const glm::vec3 offset = origin_ - vertexA;
     const float weightB = glm::dot(offset, perpendicular) * inverse;
-    if (weightB < 0.0f || weightB > 1.0f) {
+    if (weightB < 0.0F || weightB > 1.0F) {
         return false;
     }
 
     const glm::vec3 across = glm::cross(offset, ab);
     const float weightC = glm::dot(direction_, across) * inverse;
-    if (weightC < 0.0f || weightB + weightC > 1.0f) {
+    if (weightC < 0.0F || weightB + weightC > 1.0F) {
         return false;
     }
 
     const float hit = glm::dot(ac, across) * inverse;
-    if (hit < 0.0f) {
+    if (hit < 0.0F) {
         return false;
     }
 
@@ -186,7 +186,7 @@ bool Ray::intersects(const Plane& plane, float* distance) const {
         return false;
     }
     const float hit = -plane.signedDistance(origin_) / approach;
-    if (hit < 0.0f) {
+    if (hit < 0.0F) {
         return false;
     }
 

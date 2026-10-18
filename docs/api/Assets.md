@@ -192,7 +192,7 @@ temporary is removed, and the function returns false.
 
 **The output is always readable, and there is no compact mode.** Scalars, short vectors, and
 objects of those stay on one line. Everything else is indented two spaces per level. A double
-that a float holds exactly prints as that float, so `0.1f` prints as `0.1` rather than
+that a float holds exactly prints as that float, so `0.1F` prints as `0.1` rather than
 `0.10000000149011612`. Any other double prints as a double, so `1e-50` and `123456789.123` keep
 their values. JSON has no form for infinity or NaN, so `writeDocument()` returns false for a
 document holding one and leaves the file untouched. Call `asset::serializeDocument()` by its full

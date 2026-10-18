@@ -63,12 +63,12 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
     std::vector<glm::mat4x4> placements_;
     std::vector<std::string> names_;
     std::vector<glm::vec3> points_;
-    glm::mat4x4 camera_ = glm::mat4x4(1.0f);
+    glm::mat4x4 camera_ = glm::mat4x4(1.0F);
     std::string projection_;
-    float right_ = 0.0f;
-    float top_ = 0.0f;
-    float hither_ = 0.0f;
-    float yon_ = 0.0f;
+    float right_ = 0.0F;
+    float top_ = 0.0F;
+    float hither_ = 0.0F;
+    float yon_ = 0.0F;
     unsigned int width_ = 0;
     unsigned int height_ = 0;
     unsigned int faces_ = 0;
@@ -80,11 +80,11 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
 v3d::type::camera::Camera camera(bool orthographic) {
     v3d::type::camera::Profile profile("export");
     profile.orthographic(orthographic);
-    profile.orthoZoom(2.0f);
-    profile.pixelAspect(4.0f / 3.0f);
-    profile.fov(50.0f);
-    profile.clipping(glm::vec2(0.5f, 250.0f));
-    profile.eye(glm::vec3(0.0f, 0.0f, -8.0f));
+    profile.orthoZoom(2.0F);
+    profile.pixelAspect(4.0F / 3.0F);
+    profile.fov(50.0F);
+    profile.clipping(glm::vec2(0.5F, 250.0F));
+    profile.eye(glm::vec3(0.0F, 0.0F, -8.0F));
 
     v3d::type::camera::Camera result(profile);
     result.profile().size(glm::uvec2(320, 240));
@@ -128,13 +128,13 @@ BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
     ImportHandler handler;
     BOOST_REQUIRE(reimport(exported, &handler));
 
-    BOOST_CHECK_EQUAL(handler.width_, 320u);
-    BOOST_CHECK_EQUAL(handler.height_, 240u);
-    BOOST_CHECK_EQUAL(handler.worlds_, 2u);
-    BOOST_CHECK_EQUAL(handler.blocks_, 1u);
-    BOOST_CHECK_EQUAL(handler.faces_, 6u);
-    BOOST_CHECK_EQUAL(handler.corners_, 24u);
-    BOOST_REQUIRE_EQUAL(handler.names_.size(), 1u);
+    BOOST_CHECK_EQUAL(handler.width_, 320U);
+    BOOST_CHECK_EQUAL(handler.height_, 240U);
+    BOOST_CHECK_EQUAL(handler.worlds_, 2U);
+    BOOST_CHECK_EQUAL(handler.blocks_, 1U);
+    BOOST_CHECK_EQUAL(handler.faces_, 6U);
+    BOOST_CHECK_EQUAL(handler.corners_, 24U);
+    BOOST_REQUIRE_EQUAL(handler.names_.size(), 1U);
     BOOST_CHECK_EQUAL(handler.names_[0], "mesh1");
 }
 
@@ -144,22 +144,22 @@ BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
 BOOST_AUTO_TEST_CASE(ribexport_placement_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     const boost::shared_ptr<v3d::brep::BRep> first = v3d::editor::create_poly_cube();
-    first->translation(glm::vec3(3.0f, 4.0f, 5.0f));
+    first->translation(glm::vec3(3.0F, 4.0F, 5.0F));
     scene->add(first);
     scene->add(v3d::editor::create_poly_plane());
 
     ImportHandler handler;
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
 
-    BOOST_CHECK_EQUAL(handler.blocks_, 2u);
-    BOOST_REQUIRE_EQUAL(handler.placements_.size(), 2u);
+    BOOST_CHECK_EQUAL(handler.blocks_, 2U);
+    BOOST_REQUIRE_EQUAL(handler.placements_.size(), 2U);
 
     // the placement carries the mesh's transform, and a transpose here would move the object
     // to where its axes point instead
-    const glm::vec4 moved = handler.placements_[0] * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    BOOST_CHECK_CLOSE(moved.x, 3.0f, 0.01f);
-    BOOST_CHECK_CLOSE(moved.y, 4.0f, 0.01f);
-    BOOST_CHECK_CLOSE(moved.z, 5.0f, 0.01f);
+    const glm::vec4 moved = handler.placements_[0] * glm::vec4(0.0F, 0.0F, 0.0F, 1.0F);
+    BOOST_CHECK_CLOSE(moved.x, 3.0F, 0.01F);
+    BOOST_CHECK_CLOSE(moved.y, 4.0F, 0.01F);
+    BOOST_CHECK_CLOSE(moved.z, 5.0F, 0.01F);
 }
 
 /**
@@ -172,23 +172,23 @@ BOOST_AUTO_TEST_CASE(ribexport_camera_test) {
     ImportHandler orthographic;
     BOOST_REQUIRE(reimport(exportScene(scene, true), &orthographic));
     BOOST_CHECK_EQUAL(orthographic.projection_, "orthographic");
-    BOOST_CHECK_CLOSE(orthographic.top_, 2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(orthographic.right_, 2.0f * 4.0f / 3.0f, 0.01f);
-    BOOST_CHECK_CLOSE(orthographic.hither_, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(orthographic.yon_, 250.0f, 0.01f);
+    BOOST_CHECK_CLOSE(orthographic.top_, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(orthographic.right_, 2.0F * 4.0F / 3.0F, 0.01F);
+    BOOST_CHECK_CLOSE(orthographic.hither_, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(orthographic.yon_, 250.0F, 0.01F);
 
     ImportHandler perspective;
     BOOST_REQUIRE(reimport(exportScene(scene, false), &perspective));
     BOOST_CHECK_EQUAL(perspective.projection_, "perspective");
-    BOOST_CHECK_CLOSE(perspective.top_, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(perspective.right_, 4.0f / 3.0f, 0.01f);
+    BOOST_CHECK_CLOSE(perspective.top_, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(perspective.right_, 4.0F / 3.0F, 0.01F);
 
     // a view matrix is the world to camera transformation, so it puts an eye eight units
     // back at the origin of camera space
-    const glm::vec4 eye = perspective.camera_ * glm::vec4(0.0f, 0.0f, -8.0f, 1.0f);
-    BOOST_CHECK_SMALL(eye.x, 0.01f);
-    BOOST_CHECK_SMALL(eye.y, 0.01f);
-    BOOST_CHECK_SMALL(eye.z, 0.01f);
+    const glm::vec4 eye = perspective.camera_ * glm::vec4(0.0F, 0.0F, -8.0F, 1.0F);
+    BOOST_CHECK_SMALL(eye.x, 0.01F);
+    BOOST_CHECK_SMALL(eye.y, 0.01F);
+    BOOST_CHECK_SMALL(eye.z, 0.01F);
 }
 
 /**
@@ -199,8 +199,8 @@ BOOST_AUTO_TEST_CASE(ribexport_empty_scene_test) {
 
     ImportHandler handler;
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
-    BOOST_CHECK_EQUAL(handler.worlds_, 2u);
-    BOOST_CHECK_EQUAL(handler.faces_, 0u);
+    BOOST_CHECK_EQUAL(handler.worlds_, 2U);
+    BOOST_CHECK_EQUAL(handler.faces_, 0U);
 }
 
 };  // namespace

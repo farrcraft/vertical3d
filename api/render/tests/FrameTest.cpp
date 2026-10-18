@@ -72,9 +72,9 @@ BOOST_AUTO_TEST_CASE(a_pass_clears_by_default) {
     pass.keepColour();
     BOOST_CHECK(!pass.clears());
 
-    pass.clearColour(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    pass.clearColour(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
     BOOST_CHECK(pass.clears());
-    BOOST_CHECK_EQUAL(pass.clearColour().r, 1.0f);
+    BOOST_CHECK_EQUAL(pass.clearColour().r, 1.0F);
 }
 
 /**
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(reset_empties_the_queues_and_keeps_the_passes) {
     v3d::render::realtime::Frame frame;
 
     const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame.pass("colour");
-    pass->clearColour(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
     pass->submit(v3d::render::realtime::DrawItem());
     pass->submit(v3d::render::realtime::DrawItem());
 
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(reset_empties_the_queues_and_keeps_the_passes) {
 
     BOOST_CHECK_EQUAL(frame.passes().size(), 1);
     BOOST_CHECK_EQUAL(pass->items().size(), 0);
-    BOOST_CHECK_EQUAL(pass->clearColour().g, 1.0f);
+    BOOST_CHECK_EQUAL(pass->clearColour().g, 1.0F);
 }
 
 /**
@@ -140,18 +140,18 @@ BOOST_AUTO_TEST_CASE(a_draw_item_defaults_to_one_instance) {
 BOOST_AUTO_TEST_CASE(a_pass_has_an_identity_camera_until_it_is_given_one) {
     v3d::render::realtime::Pass pass("scene");
 
-    BOOST_CHECK_EQUAL(pass.view()[3][3], 1.0f);
-    BOOST_CHECK_EQUAL(pass.view()[3][0], 0.0f);
-    BOOST_CHECK_EQUAL(pass.projection()[3][0], 0.0f);
+    BOOST_CHECK_EQUAL(pass.view()[3][3], 1.0F);
+    BOOST_CHECK_EQUAL(pass.view()[3][0], 0.0F);
+    BOOST_CHECK_EQUAL(pass.projection()[3][0], 0.0F);
 
-    glm::mat4 view(1.0f);
-    view[3][0] = 4.0f;
-    glm::mat4 projection(1.0f);
-    projection[3][1] = 7.0f;
+    glm::mat4 view(1.0F);
+    view[3][0] = 4.0F;
+    glm::mat4 projection(1.0F);
+    projection[3][1] = 7.0F;
     pass.camera(view, projection);
 
-    BOOST_CHECK_EQUAL(pass.view()[3][0], 4.0f);
-    BOOST_CHECK_EQUAL(pass.projection()[3][1], 7.0f);
+    BOOST_CHECK_EQUAL(pass.view()[3][0], 4.0F);
+    BOOST_CHECK_EQUAL(pass.projection()[3][1], 7.0F);
 }
 
 /**

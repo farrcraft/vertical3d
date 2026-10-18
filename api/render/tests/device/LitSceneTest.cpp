@@ -157,39 +157,39 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
 
     v3d::asset::media::registerLoaders(*assets, headless->logger);
     MeshRegistry meshes(headless->logger, headless->context, assets);
-    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
-    const MeshHandle ground = meshes.add("ground", cube(glm::vec4(1.0f)));
+    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F)));
+    const MeshHandle ground = meshes.add("ground", cube(glm::vec4(1.0F)));
 
     Lit lit(headless->device, headless->context->pipelineCache(), headless->context->resources(), headless->context->ring(),
         headless->context->frameUniforms(), headless->context->textures(), colourFormat, target->depthFormat(), map->depthFormat());
 
     entt::registry registry;
-    place(&registry, crate, glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(1.0f), true);
+    place(&registry, crate, glm::vec3(0.0F, 0.5F, 0.0F), glm::vec3(1.0F), true);
     // thin, and topped at zero, so the cube stands on it. It casts nothing, so the fit is the
     // cube's alone
-    place(&registry, ground, glm::vec3(0.0f, -0.05f, 0.0f), glm::vec3(6.0f, 0.1f, 6.0f), false);
+    place(&registry, ground, glm::vec3(0.0F, -0.05F, 0.0F), glm::vec3(6.0F, 0.1F, 6.0F), false);
 
     v3d::type::camera::Isometric orbit;
-    orbit.target(glm::vec3(0.0f));
-    orbit.zoom(3.0f);
+    orbit.target(glm::vec3(0.0F));
+    orbit.zoom(3.0F);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
+    camera.profile().clipping(glm::vec2(0.1F, 100.0F));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
 
     lighting::Settings settings;
-    settings.outline = 0.0f;
+    settings.outline = 0.0F;
     settings.shadowStrength = strength;
 
     const std::optional<lighting::ShadowBounds> bounds =
-        lighting::fitShadow(registry, {}, {.margin = 2.0f});
+        lighting::fitShadow(registry, {}, {.margin = 2.0F});
     if (!bounds) {
         BOOST_ERROR("a cube that casts gave no fit");
         return boost::shared_ptr<v3d::image::Image>();
     }
     const glm::mat4 light = lighting::shadowLight(settings.light, *bounds);
-    VkDescriptorSet scene = lit.scene(lighting::pack(settings, light, 1.0f / mapSize),
+    VkDescriptorSet scene = lit.scene(lighting::pack(settings, light, 1.0F / mapSize),
         headless->context->textures()->depthTexture(*map));
 
     for (int drawn = 1; ; drawn++) {
@@ -202,15 +202,15 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
         casting->depth(true);
         casting->scene(scene);
         casting->depthBias(settings.constantBias, settings.slopeBias);
-        v3d::render::realtime::entity::casters(registry, 1.0f, meshes, &lit, casting.get());
+        v3d::render::realtime::entity::casters(registry, 1.0F, meshes, &lit, casting.get());
 
         pass->reads(map);
         pass->target(target);
         pass->depth(true);
-        pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+        pass->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
         pass->camera(camera.view(), camera.projection());
         pass->scene(scene);
-        v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, pass.get());
+        v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
 
         VkCommandBuffer commands = headless->context->ring()->begin();
         Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
@@ -243,7 +243,7 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
 
     v3d::asset::media::registerLoaders(*assets, headless->logger);
     MeshRegistry meshes(headless->logger, headless->context, assets);
-    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
+    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F)));
 
     Lit lit(headless->device, headless->context->pipelineCache(), headless->context->resources(), headless->context->ring(),
         headless->context->frameUniforms(), headless->context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED,
@@ -258,12 +258,12 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
     // way round a face is on screen. Steeper than its default 45 degrees, so that the ray
     // through the centre of the picture meets the top face rather than an edge
     v3d::type::camera::Isometric orbit;
-    orbit.target(glm::vec3(0.0f));
-    orbit.zoom(1.5f);
-    orbit.elevation(1.0471976f);
+    orbit.target(glm::vec3(0.0F));
+    orbit.zoom(1.5F);
+    orbit.elevation(1.0471976F);
     orbit.hand(hand);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
+    camera.profile().clipping(glm::vec2(0.1F, 100.0F));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
@@ -271,7 +271,7 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
     // thicker than the default, which at this zoom is under a pixel and can cover no pixel
     // centre at all
     lighting::Settings settings;
-    settings.outline = 0.1f;
+    settings.outline = 0.1F;
 
     // the frame is built before it is begun, as an engine builds one during its tick. A scene
     // waits for its slot to be free, and a begun frame's fence is not signalled until it is
@@ -280,10 +280,10 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
     const boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     pass->camera(camera.view(), camera.projection());
-    pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
-    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, pass.get());
+    pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F)));
+    v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
 
     VkCommandBuffer commands = headless->context->ring()->begin();
     // the pass names its own target, so the frame is given no image
@@ -352,7 +352,7 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
 
     v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
-    const MeshHandle block = meshes.add("block", cube(glm::vec4(1.0f)));
+    const MeshHandle block = meshes.add("block", cube(glm::vec4(1.0F)));
     Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
         headless.context->frameUniforms(), headless.context->textures(), colourFormat,
         v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()), map->depthFormat(),
@@ -362,21 +362,21 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     // therefore a quarter of the way into its range, and one at z = 1 three quarters. Each
     // block is half a unit wide and spans the same rectangles as the depth target's two quads
     entt::registry registry;
-    const glm::vec3 scale(0.5f, 1.0f, 1.0f);
-    place(&registry, block, glm::vec3(-0.5f, 0.0f, -0.5f), scale, true);
-    place(&registry, block, glm::vec3(0.5f, 0.0f, 1.5f), scale, true);
-    place(&registry, block, glm::vec3(0.5f, 0.0f, 0.5f), scale, false);
+    const glm::vec3 scale(0.5F, 1.0F, 1.0F);
+    place(&registry, block, glm::vec3(-0.5F, 0.0F, -0.5F), scale, true);
+    place(&registry, block, glm::vec3(0.5F, 0.0F, 1.5F), scale, true);
+    place(&registry, block, glm::vec3(0.5F, 0.0F, 0.5F), scale, false);
 
-    const glm::mat4 light = lighting::shadowLight(glm::vec3(0.0f, 0.0f, -1.0f), {.centre = glm::vec3(0.0f), .radius = 1.0f}, hand);
+    const glm::mat4 light = lighting::shadowLight(glm::vec3(0.0F, 0.0F, -1.0F), {.centre = glm::vec3(0.0F), .radius = 1.0F}, hand);
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("shadow");
     pass->target(map);
     pass->depth(true);
-    pass->scene(lit.scene(lighting::pack(lighting::Settings(), light, 1.0f / size)));
+    pass->scene(lit.scene(lighting::pack(lighting::Settings(), light, 1.0F / size)));
     // the pipeline is biased, so the pass names a bias - none, so that the depths stay exact
-    pass->depthBias(0.0f, 0.0f);
-    v3d::render::realtime::entity::casters(registry, 1.0f, meshes, &lit, pass.get());
+    pass->depthBias(0.0F, 0.0F);
+    v3d::render::realtime::entity::casters(registry, 1.0F, meshes, &lit, pass.get());
     // the two that cast share a mesh, so they are one draw of two instances
     BOOST_CHECK_EQUAL(pass->items().size(), 1U);
 
@@ -400,10 +400,10 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     const auto at = [&depths, size](uint32_t x, uint32_t y) { return depths[(static_cast<std::size_t>(y) * size) + x]; };
     // the mirrored hand mirrors the map, so the two blocks change sides
     const bool mirrored = hand == v3d::type::camera::Profile::Hand::DirectionCrossUp;
-    BOOST_CHECK_EQUAL(at(mirrored ? 11 : 4, 8), 0.25f);
-    BOOST_CHECK_EQUAL(at(mirrored ? 4 : 11, 8), 0.75f);
-    BOOST_CHECK_EQUAL(at(8, 8), 1.0f);
-    BOOST_CHECK_EQUAL(at(0, 0), 1.0f);
+    BOOST_CHECK_EQUAL(at(mirrored ? 11 : 4, 8), 0.25F);
+    BOOST_CHECK_EQUAL(at(mirrored ? 4 : 11, 8), 0.75F);
+    BOOST_CHECK_EQUAL(at(8, 8), 1.0F);
+    BOOST_CHECK_EQUAL(at(0, 0), 1.0F);
 }
 
 BOOST_AUTO_TEST_SUITE(lit_scene_test)
@@ -452,17 +452,17 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
     v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
-    const MeshHandle red = meshes.add("red", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
-    const MeshHandle green = meshes.add("green", cube(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)));
+    const MeshHandle red = meshes.add("red", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F)));
+    const MeshHandle green = meshes.add("green", cube(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F)));
 
     Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
         headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
 
     v3d::type::camera::Isometric orbit;
-    orbit.target(glm::vec3(0.0f));
-    orbit.zoom(3.0f);
+    orbit.target(glm::vec3(0.0F));
+    orbit.zoom(3.0F);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
+    camera.profile().clipping(glm::vec2(0.1F, 100.0F));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
@@ -471,22 +471,22 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
     // exactly behind the near one
     entt::registry nearer;
     entt::registry farther;
-    place(&nearer, red, glm::vec3(0.0f), glm::vec3(1.0f), false);
-    place(&farther, green, camera.profile().direction() * 3.0f, glm::vec3(1.0f), false);
+    place(&nearer, red, glm::vec3(0.0F), glm::vec3(1.0F), false);
+    place(&farther, green, camera.profile().direction() * 3.0F, glm::vec3(1.0F), false);
 
     lighting::Settings settings;
-    settings.outline = 0.0f;
+    settings.outline = 0.0F;
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
     pass->depthWrite(false);
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     pass->camera(camera.view(), camera.projection());
-    pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
-    v3d::render::realtime::entity::meshes(nearer, 1.0f, meshes, &lit, settings.outline, pass.get());
-    v3d::render::realtime::entity::meshes(farther, 1.0f, meshes, &lit, settings.outline, pass.get());
+    pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F)));
+    v3d::render::realtime::entity::meshes(nearer, 1.0F, meshes, &lit, settings.outline, pass.get());
+    v3d::render::realtime::entity::meshes(farther, 1.0F, meshes, &lit, settings.outline, pass.get());
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
@@ -515,8 +515,8 @@ BOOST_AUTO_TEST_CASE(a_released_mesh_is_not_walked) {
         v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()), VK_FORMAT_UNDEFINED);
 
     entt::registry registry;
-    const MeshHandle kept = meshes.add("kept", cube(glm::vec4(1.0f)));
-    const MeshHandle released = meshes.add("released", cube(glm::vec4(1.0f)));
+    const MeshHandle kept = meshes.add("kept", cube(glm::vec4(1.0F)));
+    const MeshHandle released = meshes.add("released", cube(glm::vec4(1.0F)));
     for (const MeshHandle& handle : {kept, released}) {
         const entt::entity entity = registry.create();
         registry.emplace<Transform>(entity);
@@ -526,8 +526,8 @@ BOOST_AUTO_TEST_CASE(a_released_mesh_is_not_walked) {
 
     // the walk adds each draw's object to the frame's scene, so the scene is written first
     Pass pass("lit");
-    pass.scene(lit.scene(lighting::pack(lighting::Settings(), glm::mat4(1.0f), 0.0f)));
-    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, 0.1f, &pass);
+    pass.scene(lit.scene(lighting::pack(lighting::Settings(), glm::mat4(1.0F), 0.0F)));
+    v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, 0.1F, &pass);
 
     // an outline and a surface for the one that is left
     BOOST_CHECK_EQUAL(pass.items().size(), 2U);
@@ -558,7 +558,7 @@ BOOST_AUTO_TEST_CASE(a_caster_is_drawn_into_the_shadow_map_under_the_mirrored_ha
 BOOST_AUTO_TEST_CASE(a_shadow_map_is_shared_by_frames_in_flight) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    const boost::shared_ptr<v3d::image::Image> picture = drawShadowed(&headless, 1.0f, "data_out/lit_shadow_twice.png", 2);
+    const boost::shared_ptr<v3d::image::Image> picture = drawShadowed(&headless, 1.0F, "data_out/lit_shadow_twice.png", 2);
     BOOST_REQUIRE(picture);
     BOOST_CHECK(headless.silent());
 }
@@ -576,9 +576,9 @@ BOOST_AUTO_TEST_CASE(a_shadow_map_is_shared_by_frames_in_flight) {
 BOOST_AUTO_TEST_CASE(a_shadow_falls_on_the_ground) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    const boost::shared_ptr<v3d::image::Image> ignored = drawShadowed(&headless, 0.0f, "data_out/lit_unshadowed.png");
+    const boost::shared_ptr<v3d::image::Image> ignored = drawShadowed(&headless, 0.0F, "data_out/lit_unshadowed.png");
     BOOST_REQUIRE(ignored);
-    const boost::shared_ptr<v3d::image::Image> picture = drawShadowed(&headless, 1.0f, "data_out/lit_shadow.png");
+    const boost::shared_ptr<v3d::image::Image> picture = drawShadowed(&headless, 1.0F, "data_out/lit_shadow.png");
     BOOST_REQUIRE(picture);
     BOOST_CHECK(headless.silent());
 
@@ -621,9 +621,9 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
 
     v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
-    const MeshHandle ground = meshes.add("ground", cube(glm::vec4(0.55f, 0.6f, 0.5f, 1.0f)));
-    const MeshHandle figure = meshes.add("figure", cube(glm::vec4(0.8f, 0.3f, 0.2f, 1.0f)));
-    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(0.6f, 0.45f, 0.3f, 1.0f)));
+    const MeshHandle ground = meshes.add("ground", cube(glm::vec4(0.55F, 0.6F, 0.5F, 1.0F)));
+    const MeshHandle figure = meshes.add("figure", cube(glm::vec4(0.8F, 0.3F, 0.2F, 1.0F)));
+    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(0.6F, 0.45F, 0.3F, 1.0F)));
     const MeshHandle primitives = meshes.load("three_primitives.glb");
     const MeshHandle textured = meshes.load("embedded_texture.glb");
     BOOST_REQUIRE(meshes.resolve(primitives) != nullptr);
@@ -645,22 +645,22 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
         registry.emplace<Transform>(entity, transform);
         registry.emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{mesh, castsShadow});
     };
-    stand(ground, glm::vec3(0.0f, -0.05f, 0.0f), 0.0f, glm::vec3(14.0f, 0.1f, 14.0f), false);
-    stand(figure, glm::vec3(-1.0f, 0.9f, 0.5f), 0.3f, glm::vec3(0.6f, 1.8f, 0.4f), true);
-    stand(figure, glm::vec3(1.2f, 0.9f, -0.4f), -0.8f, glm::vec3(0.6f, 1.8f, 0.4f), true);
+    stand(ground, glm::vec3(0.0F, -0.05F, 0.0F), 0.0F, glm::vec3(14.0F, 0.1F, 14.0F), false);
+    stand(figure, glm::vec3(-1.0F, 0.9F, 0.5F), 0.3F, glm::vec3(0.6F, 1.8F, 0.4F), true);
+    stand(figure, glm::vec3(1.2F, 0.9F, -0.4F), -0.8F, glm::vec3(0.6F, 1.8F, 0.4F), true);
     // ten props, in a ring around the two, each turned its own way
     const MeshHandle props[3] = {crate, primitives, textured};
     for (int prop = 0; prop < 10; prop++) {
-        const float around = static_cast<float>(prop) * 0.6283185f;
-        const glm::vec3 at(std::cos(around) * 4.0f, 0.5f, std::sin(around) * 4.0f);
-        stand(props[prop % 3], at, around * 1.7f, glm::vec3(1.0f), true);
+        const float around = static_cast<float>(prop) * 0.6283185F;
+        const glm::vec3 at(std::cos(around) * 4.0F, 0.5F, std::sin(around) * 4.0F);
+        stand(props[prop % 3], at, around * 1.7F, glm::vec3(1.0F), true);
     }
 
     v3d::type::camera::Isometric orbit;
-    orbit.target(glm::vec3(0.0f));
-    orbit.zoom(6.0f);
+    orbit.target(glm::vec3(0.0F));
+    orbit.zoom(6.0F);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
+    camera.profile().clipping(glm::vec2(0.1F, 100.0F));
     camera.profile().pixelAspect(static_cast<float>(frameWidth) / static_cast<float>(frameHeight));
     orbit.apply(&camera);
     camera.createProjection();
@@ -668,13 +668,13 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
 
     // the default settings, and three metres of margin for a figure's height and its shadow
     const lighting::Settings settings;
-    const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, {.margin = 3.0f});
+    const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, {.margin = 3.0F});
     if (!bounds) {
         BOOST_ERROR("a scene with casters gave no fit");
         return;
     }
     const glm::mat4 light = lighting::shadowLight(settings.light, *bounds);
-    VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0f / static_cast<float>(mapSize)),
+    VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0F / static_cast<float>(mapSize)),
         headless.context->textures()->depthTexture(*map));
 
     Frame frame;
@@ -687,17 +687,17 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
     drawn->target(scene);
     drawn->depth(true);
     drawn->reads(map);
-    drawn->clearColour(glm::vec4(0.25f, 0.3f, 0.35f, 1.0f));
+    drawn->clearColour(glm::vec4(0.25F, 0.3F, 0.35F, 1.0F));
     drawn->camera(camera.view(), camera.projection());
     drawn->scene(sceneSet);
-    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, drawn.get());
+    v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, drawn.get());
 
     const boost::shared_ptr<Pass> casting = frame.pass("shadow");
     casting->target(map);
     casting->depth(true);
     casting->scene(sceneSet);
     casting->depthBias(settings.constantBias, settings.slopeBias);
-    v3d::render::realtime::entity::casters(registry, 1.0f, meshes, &lit, casting.get());
+    v3d::render::realtime::entity::casters(registry, 1.0F, meshes, &lit, casting.get());
 
     const std::vector<boost::shared_ptr<Pass>> ordered = frame.ordered();
     BOOST_REQUIRE_EQUAL(ordered.size(), 3U);
@@ -748,29 +748,29 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
         headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
 
     entt::registry registry;
-    place(&registry, pair, glm::vec3(0.0f), glm::vec3(1.0f), false);
+    place(&registry, pair, glm::vec3(0.0F), glm::vec3(1.0F), false);
 
     v3d::type::camera::Isometric orbit;
-    orbit.target(glm::vec3(0.0f));
-    orbit.zoom(2.5f);
-    orbit.elevation(1.0471976f);
+    orbit.target(glm::vec3(0.0F));
+    orbit.zoom(2.5F);
+    orbit.elevation(1.0471976F);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
+    camera.profile().clipping(glm::vec2(0.1F, 100.0F));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
 
     lighting::Settings settings;
-    settings.outline = 0.0f;
+    settings.outline = 0.0F;
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     pass->camera(camera.view(), camera.projection());
-    pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
-    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, pass.get());
+    pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F)));
+    v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
@@ -814,7 +814,7 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
 
     v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
-    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
+    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F)));
 
     Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
         headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
@@ -823,34 +823,34 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
         target->depthFormat());
 
     entt::registry registry;
-    place(&registry, crate, glm::vec3(0.0f), glm::vec3(1.0f), false);
+    place(&registry, crate, glm::vec3(0.0F), glm::vec3(1.0F), false);
 
     // the first case's camera, whose centre ray meets the cube's top face
     v3d::type::camera::Isometric orbit;
-    orbit.target(glm::vec3(0.0f));
-    orbit.zoom(1.5f);
-    orbit.elevation(1.0471976f);
+    orbit.target(glm::vec3(0.0F));
+    orbit.zoom(1.5F);
+    orbit.elevation(1.0471976F);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
+    camera.profile().clipping(glm::vec2(0.1F, 100.0F));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
 
     lighting::Settings settings;
-    settings.outline = 0.0f;
+    settings.outline = 0.0F;
 
     v3d::render::realtime::canvas::World ground;
-    ground.quad({glm::vec3(-8.0f, -1.0f, -8.0f), glm::vec3(8.0f, -1.0f, -8.0f), glm::vec3(8.0f, -1.0f, 8.0f),
-        glm::vec3(-8.0f, -1.0f, 8.0f)}, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+    ground.quad({glm::vec3(-8.0F, -1.0F, -8.0F), glm::vec3(8.0F, -1.0F, -8.0F), glm::vec3(8.0F, -1.0F, 8.0F),
+        glm::vec3(-8.0F, -1.0F, 8.0F)}, glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     pass->camera(camera.view(), camera.projection());
-    pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
-    v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, pass.get());
+    pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F)));
+    v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
     world.submit(ground, pass.get());
 
     VkCommandBuffer commands = headless.context->ring()->begin();
@@ -881,39 +881,39 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
     v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
-    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f)));
+    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0F)));
 
     entt::registry registry;
-    place(&registry, crate, glm::vec3(0.0f), glm::vec3(1.0f), false);
+    place(&registry, crate, glm::vec3(0.0F), glm::vec3(1.0F), false);
 
     v3d::type::camera::Isometric orbit;
-    orbit.target(glm::vec3(0.0f));
-    orbit.zoom(1.5f);
-    orbit.elevation(1.0471976f);
+    orbit.target(glm::vec3(0.0F));
+    orbit.zoom(1.5F);
+    orbit.elevation(1.0471976F);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
+    camera.profile().clipping(glm::vec2(0.1F, 100.0F));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
 
-    for (const glm::vec3& colour : {glm::vec3(1.0f), glm::vec3(1.0f, 0.0f, 0.0f)}) {
+    for (const glm::vec3& colour : {glm::vec3(1.0F), glm::vec3(1.0F, 0.0F, 0.0F)}) {
         const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
             width, height, colourFormat, true);
         Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
             headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
 
         lighting::Settings settings;
-        settings.outline = 0.0f;
+        settings.outline = 0.0F;
         settings.colour = colour;
 
         Frame frame;
         const boost::shared_ptr<Pass> pass = frame.pass("lit");
         pass->target(target);
         pass->depth(true);
-        pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+        pass->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
         pass->camera(camera.view(), camera.projection());
-        pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
-        v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, pass.get());
+        pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F)));
+        v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
 
         VkCommandBuffer commands = headless.context->ring()->begin();
         Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
@@ -924,8 +924,8 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
         const unsigned char* centre = picture->data() + (((static_cast<std::size_t>(height / 2) * width) + (width / 2)) * 4);
         BOOST_TEST_MESSAGE("centre " << int(centre[0]) << "," << int(centre[1]) << "," << int(centre[2]));
         BOOST_CHECK_EQUAL(static_cast<int>(centre[0]), 255);
-        BOOST_CHECK_EQUAL(static_cast<int>(centre[1]), colour.g > 0.0f ? 255 : 0);
-        BOOST_CHECK_EQUAL(static_cast<int>(centre[2]), colour.b > 0.0f ? 255 : 0);
+        BOOST_CHECK_EQUAL(static_cast<int>(centre[1]), colour.g > 0.0F ? 255 : 0);
+        BOOST_CHECK_EQUAL(static_cast<int>(centre[2]), colour.b > 0.0F ? 255 : 0);
     }
     BOOST_CHECK(headless.silent());
 }
@@ -943,53 +943,53 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
     v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
-    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
-    const MeshHandle ground = meshes.add("ground", cube(glm::vec4(1.0f)));
+    const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F)));
+    const MeshHandle ground = meshes.add("ground", cube(glm::vec4(1.0F)));
 
     entt::registry registry;
-    place(&registry, crate, glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(1.0f), false);
-    place(&registry, ground, glm::vec3(0.0f, -0.05f, 0.0f), glm::vec3(6.0f, 0.1f, 6.0f), false);
+    place(&registry, crate, glm::vec3(0.0F, 0.5F, 0.0F), glm::vec3(1.0F), false);
+    place(&registry, ground, glm::vec3(0.0F, -0.05F, 0.0F), glm::vec3(6.0F, 0.1F, 6.0F), false);
 
     v3d::type::camera::Isometric orbit;
-    orbit.target(glm::vec3(0.0f));
-    orbit.zoom(3.0f);
+    orbit.target(glm::vec3(0.0F));
+    orbit.zoom(3.0F);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(glm::vec2(0.1f, 100.0f));
+    camera.profile().clipping(glm::vec2(0.1F, 100.0F));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
 
     lighting::Settings settings;
-    settings.outline = 0.0f;
-    settings.colour = glm::vec3(0.45f, 0.55f, 0.9f);
-    settings.shadowColour = glm::vec3(0.3f, 0.3f, 0.6f);
+    settings.outline = 0.0F;
+    settings.colour = glm::vec3(0.45F, 0.55F, 0.9F);
+    settings.shadowColour = glm::vec3(0.3F, 0.3F, 0.6F);
 
     const entt::entity shower = registry.create();
-    v3d::ecs::component::Emitter& rain = registry.emplace<v3d::ecs::component::Emitter>(shower, 21u);
-    rain.description.direction = glm::vec3(0.0f, -1.0f, 0.0f);
-    rain.description.speedMin = 7.0f;
-    rain.description.speedMax = 9.0f;
-    rain.description.lifeMin = 10.0f;
-    rain.description.lifeMax = 10.0f;
+    v3d::ecs::component::Emitter& rain = registry.emplace<v3d::ecs::component::Emitter>(shower, 21U);
+    rain.description.direction = glm::vec3(0.0F, -1.0F, 0.0F);
+    rain.description.speedMin = 7.0F;
+    rain.description.speedMax = 9.0F;
+    rain.description.lifeMin = 10.0F;
+    rain.description.lifeMax = 10.0F;
     rain.description.cap = 4000;
-    rain.description.size = v3d::type::animation::Track<float>(0.03f);
-    rain.description.colour = v3d::type::animation::Track<glm::vec4>(glm::vec4(0.6f, 0.7f, 0.9f, 0.5f));
+    rain.description.size = v3d::type::animation::Track<float>(0.03F);
+    rain.description.colour = v3d::type::animation::Track<glm::vec4>(glm::vec4(0.6F, 0.7F, 0.9F, 0.5F));
     v3d::render::realtime::component::Particles look;
     look.facing = v3d::render::realtime::component::Particles::Facing::Velocity;
-    look.stretch = 0.04f;
+    look.stretch = 0.04F;
     registry.emplace<v3d::render::realtime::component::Particles>(shower, look);
 
     v3d::type::effect::Weather weather;
-    weather.density = 6.0f;
-    weather.intensity = 1.0f;
-    weather.target = 1.0f;
-    weather.wind = glm::vec3(1.5f, 0.0f, 0.0f);
+    weather.density = 6.0F;
+    weather.intensity = 1.0F;
+    weather.target = 1.0F;
+    weather.wind = glm::vec3(1.5F, 0.0F, 0.0F);
 
     std::vector<boost::shared_ptr<v3d::image::Image>> frames;
     for (int shot = 0; shot < 3; shot++) {
         for (int stepped = 0; stepped < 30; stepped++) {
-            v3d::type::effect::fall(rain.description, &weather, &rain.state, glm::vec3(-3.0f, 0.0f, -3.0f),
-                glm::vec3(3.0f, 6.0f, 3.0f), 1.0f / 60.0f);
+            v3d::type::effect::fall(rain.description, &weather, &rain.state, glm::vec3(-3.0F, 0.0F, -3.0F),
+                glm::vec3(3.0F, 6.0F, 3.0F), 1.0F / 60.0F);
         }
 
         const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
@@ -1002,7 +1002,7 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
 
         v3d::render::realtime::canvas::DepthOrder order;
         const glm::vec3 forward = camera.profile().direction();
-        v3d::render::realtime::entity::particles(registry, 1.0f, {.right = camera.profile().right(), .up = camera.profile().up(), .depthAxis = forward}, &order);
+        v3d::render::realtime::entity::particles(registry, 1.0F, {.right = camera.profile().right(), .up = camera.profile().up(), .depthAxis = forward}, &order);
         v3d::render::realtime::canvas::World drops;
         order.into(&drops);
 
@@ -1010,10 +1010,10 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
         const boost::shared_ptr<Pass> pass = frame.pass("lit");
         pass->target(target);
         pass->depth(true);
-        pass->clearColour(glm::vec4(0.02f, 0.02f, 0.05f, 1.0f));
+        pass->clearColour(glm::vec4(0.02F, 0.02F, 0.05F, 1.0F));
         pass->camera(camera.view(), camera.projection());
-        pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0f), 0.0f)));
-        v3d::render::realtime::entity::meshes(registry, 1.0f, meshes, &lit, settings.outline, pass.get());
+        pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F)));
+        v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
         world.submit(drops, pass.get(), 0, World::Blend::Additive);
 
         VkCommandBuffer commands = headless.context->ring()->begin();

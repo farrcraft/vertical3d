@@ -19,8 +19,8 @@ namespace {
 /**
  * The arrow head at the tip of a handle, as a fraction of the handle's length.
  **/
-constexpr float headLength = 0.22f;
-constexpr float headRadius = 0.07f;
+constexpr float headLength = 0.22F;
+constexpr float headRadius = 0.07F;
 
 /**
  * How many segments the head's ring is drawn with, and how many of them are joined
@@ -32,7 +32,7 @@ constexpr unsigned int headSpokes = 4;
 /**
  * The centre handle's box, as a fraction of a handle's length.
  **/
-constexpr float centreSize = 0.06f;
+constexpr float centreSize = 0.06F;
 
 };  // namespace
 
@@ -70,7 +70,7 @@ void TranslateManipulator::draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, 
         perpendiculars(unit, &first, &second);
         canvas->circle({.centre = base, .axisU = first, .axisV = second, .radius = radius, .sides = headSides}, tint);
         for (unsigned int spoke = 0; spoke < headSpokes; spoke++) {
-            const float angle = 2.0f * glm::pi<float>() * static_cast<float>(spoke) /
+            const float angle = 2.0F * glm::pi<float>() * static_cast<float>(spoke) /
                 static_cast<float>(headSpokes);
             const glm::vec3 rim = base + (first * std::cos(angle) + second * std::sin(angle)) * radius;
             canvas->line(rim, tip, tint);
@@ -92,7 +92,7 @@ void TranslateManipulator::apply(const boost::shared_ptr<v3d::brep::BRep>& mesh,
         return;
     }
 
-    glm::vec3 offset(0.0f, 0.0f, 0.0f);
+    glm::vec3 offset(0.0F, 0.0F, 0.0F);
     if (axis() == Axis::None) {
         // the centre handle: both components of the gesture move the object, in the
         // plane of the screen. Screen y points down, so a downward drag runs against

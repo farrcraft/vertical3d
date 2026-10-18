@@ -14,7 +14,7 @@ namespace v3d::input {
 
 /**
  **/
-MouseState::MouseState() : position_(0.0f, 0.0f), wheel_(0.0f) {
+MouseState::MouseState() : position_(0.0F, 0.0F), wheel_(0.0F) {
 }
 
 /**
@@ -41,7 +41,7 @@ bool MouseState::released(std::string_view button) const {
 void MouseState::flush() {
     pressed_.clear();
     released_.clear();
-    wheel_ = 0.0f;
+    wheel_ = 0.0F;
 }
 
 /**

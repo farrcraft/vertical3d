@@ -119,7 +119,7 @@ struct Dropped final {
 struct Placed final {
     const cgltf_primitive* primitive{ nullptr };
     Attributes attributes;
-    glm::mat4 world{ 1.0f };
+    glm::mat4 world{ 1.0F };
     bool skinned{ false };
     std::uint16_t joint{ 0 };  /**< the joint an unskinned primitive follows **/
 };
@@ -174,7 +174,7 @@ const cgltf_skin* firstSkin(const cgltf_node& node) {
 }
 
 glm::mat4 worldOf(const cgltf_node& node) {
-    glm::mat4 world(1.0f);
+    glm::mat4 world(1.0F);
     cgltf_node_transform_world(&node, glm::value_ptr(world));
     return world;
 }
@@ -371,18 +371,18 @@ void collect(const cgltf_node& node, const Rig& rig, std::vector<Bucket>* bucket
  **/
 v3d::type::Model::Influence influenceOf(const Attributes& attributes, cgltf_size index, const Rig& rig, Dropped* dropped) {
     v3d::type::Model::Influence influence;
-    influence.weights = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+    influence.weights = glm::vec4(1.0F, 0.0F, 0.0F, 0.0F);
     if (attributes.joints == nullptr || attributes.weights == nullptr) {
         dropped->unweighted = true;
         return influence;
     }
     cgltf_uint joints[4] = {0, 0, 0, 0};
-    glm::vec4 weights(0.0f);
+    glm::vec4 weights(0.0F);
     cgltf_accessor_read_uint(attributes.joints, index, joints, 4);
     // an integer weight reads as its normalised value
     cgltf_accessor_read_float(attributes.weights, index, glm::value_ptr(weights), 4);
     const float sum = weights.x + weights.y + weights.z + weights.w;
-    if (sum <= 0.0f) {
+    if (sum <= 0.0F) {
         dropped->unweighted = true;
         return influence;
     }
@@ -462,12 +462,12 @@ void appendPrimitive(const Placed& placed, const Rig& rig, v3d::type::Model* mod
     for (cgltf_size index = 0; index < count; ++index) {
         v3d::type::Model::Vertex& vertex = model->vertices()[baseVertex + index];
         cgltf_accessor_read_float(attributes.position, index, &vertex.position.x, 3);
-        vertex.position = glm::vec3(placed.world * glm::vec4(vertex.position, 1.0f));
+        vertex.position = glm::vec3(placed.world * glm::vec4(vertex.position, 1.0F));
         if (attributes.normal != nullptr) {
             cgltf_accessor_read_float(attributes.normal, index, &vertex.normal.x, 3);
             const glm::vec3 turned = normals * vertex.normal;
             const float length = glm::length(turned);
-            vertex.normal = length > 0.0f ? turned / length : turned;
+            vertex.normal = length > 0.0F ? turned / length : turned;
         }
         if (attributes.uv != nullptr) {
             cgltf_accessor_read_float(attributes.uv, index, &vertex.uv.x, 2);
@@ -479,7 +479,7 @@ void appendPrimitive(const Placed& placed, const Rig& rig, v3d::type::Model* mod
         for (cgltf_size index = 0; index < count; ++index) {
             v3d::type::Model::Influence influence;
             influence.joints[0] = placed.joint;
-            influence.weights = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+            influence.weights = glm::vec4(1.0F, 0.0F, 0.0F, 0.0F);
             model->influences().push_back(placed.skinned ? influenceOf(attributes, index, rig, dropped) : influence);
         }
     }
@@ -538,7 +538,7 @@ bool readChannel(const cgltf_animation_channel& source, const Rig& rig, v3d::typ
     // a translation or a scale is three floats and a rotation four; an integer rotation reads
     // as its normalised value
     const cgltf_size width = channel->path == Channel::Path::Rotation ? 4 : 3;
-    channel->values.assign(sampler.output->count, glm::vec4(0.0f));
+    channel->values.assign(sampler.output->count, glm::vec4(0.0F));
     for (cgltf_size value = 0; value < sampler.output->count; ++value) {
         cgltf_accessor_read_float(sampler.output, value, glm::value_ptr(channel->values[value]), width);
     }

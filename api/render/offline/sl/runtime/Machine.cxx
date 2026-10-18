@@ -30,21 +30,21 @@ const std::size_t LIMIT = 4000000;
 float compare(Opcode opcode, float left, float right) {
     switch (opcode) {
         case Opcode::LESS:
-            return left < right ? 1.0f : 0.0f;
+            return left < right ? 1.0F : 0.0F;
         case Opcode::LESS_EQUAL:
-            return left <= right ? 1.0f : 0.0f;
+            return left <= right ? 1.0F : 0.0F;
         case Opcode::GREATER:
-            return left > right ? 1.0f : 0.0f;
+            return left > right ? 1.0F : 0.0F;
         case Opcode::GREATER_EQUAL:
-            return left >= right ? 1.0f : 0.0f;
+            return left >= right ? 1.0F : 0.0F;
         case Opcode::EQUAL:
-            return left == right ? 1.0f : 0.0f;
+            return left == right ? 1.0F : 0.0F;
         case Opcode::NOT_EQUAL:
-            return left != right ? 1.0f : 0.0f;
+            return left != right ? 1.0F : 0.0F;
         case Opcode::AND:
-            return left != 0.0f && right != 0.0f ? 1.0f : 0.0f;
+            return left != 0.0F && right != 0.0F ? 1.0F : 0.0F;
         default:
-            return left != 0.0f || right != 0.0f ? 1.0f : 0.0f;
+            return left != 0.0F || right != 0.0F ? 1.0F : 0.0F;
     }
 }
 
@@ -58,7 +58,7 @@ float promoted(const Value & value, unsigned int point, unsigned int index, unsi
         return value.component(point, index);
     }
     if (wide == 16 && index % MATRIX_DIAGONAL_STRIDE != 0) {
-        return 0.0f;
+        return 0.0F;
     }
     return value.number(point);
 }
@@ -233,7 +233,7 @@ void Machine::compare(const Instruction & instruction) {
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     // a string holds no number, so two of them are equal or not by their text
     const bool text = left.type() == Type::STRING && right.type() == Type::STRING;
-    const float same = left.text() == right.text() ? 1.0f : 0.0f;
+    const float same = left.text() == right.text() ? 1.0F : 0.0F;
     // two colours, points or matrices are equal when every component is; a float on one side
     // is promoted as an assignment promotes it, so a matrix compares against a diagonal
     const bool whole = (instruction.opcode == Opcode::EQUAL || instruction.opcode == Opcode::NOT_EQUAL) &&
@@ -244,13 +244,13 @@ void Machine::compare(const Instruction & instruction) {
             continue;
         }
         if (text) {
-            target.number(point, instruction.opcode == Opcode::NOT_EQUAL ? 1.0f - same : same);
+            target.number(point, instruction.opcode == Opcode::NOT_EQUAL ? 1.0F - same : same);
         } else if (whole) {
             bool equal = true;
             for (unsigned int i = 0; i < wide && equal; i++) {
                 equal = promoted(left, point, i, wide) == promoted(right, point, i, wide);
             }
-            target.number(point, equal == (instruction.opcode == Opcode::EQUAL) ? 1.0f : 0.0f);
+            target.number(point, equal == (instruction.opcode == Opcode::EQUAL) ? 1.0F : 0.0F);
         } else {
             target.number(point, runtime::compare(instruction.opcode,
                 left.number(point), right.number(point)));
@@ -284,7 +284,7 @@ void Machine::unary(const Instruction & instruction) {
             continue;
         }
         if (instruction.opcode == Opcode::NOT) {
-            target.number(point, source.number(point) == 0.0f ? 1.0f : 0.0f);
+            target.number(point, source.number(point) == 0.0F ? 1.0F : 0.0F);
             continue;
         }
         for (unsigned int i = 0; i < target.components(); i++) {
@@ -294,7 +294,7 @@ void Machine::unary(const Instruction & instruction) {
 }
 
 glm::mat4x4 Machine::space(const std::string & name) {
-    glm::mat4x4 matrix(1.0f);
+    glm::mat4x4 matrix(1.0F);
     if (renderer_ == nullptr || !renderer_->space(name, &matrix)) {
         // the value still arrives, unchanged in the space it was already in
         report("the coordinate space \"" + name + "\" is not one this renderer knows");
@@ -310,7 +310,7 @@ void Machine::transform(const Instruction & instruction) {
     // the current one, so the cast applies the inverse of the matrix the renderer returns
     const bool geometric = pointlike(target.type());
     const glm::mat4x4 matrix = geometric ?
-        glm::inverse(space(file_[static_cast<std::size_t>(instruction.right)].text())) : glm::mat4x4(1.0f);
+        glm::inverse(space(file_[static_cast<std::size_t>(instruction.right)].text())) : glm::mat4x4(1.0F);
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     for (unsigned int point = 0; point < count; point++) {
         if (!writable(target, point)) {
@@ -347,7 +347,7 @@ bool Machine::inside(const glm::vec3 & direction, const std::vector<int> & cone,
     const glm::vec3 axis = file_[static_cast<std::size_t>(cone[first])].triple(point);
     const float angle = file_[static_cast<std::size_t>(cone[first + 1])].number(point);
     const float length = glm::length(direction) * glm::length(axis);
-    if (length == 0.0f) {
+    if (length == 0.0F) {
         return true;
     }
     return glm::dot(direction, axis) / length >= std::cos(angle);
@@ -409,7 +409,7 @@ bool Machine::illuminate(const Instruction & instruction, bool solar) {
         if (lanes[point] == 0) {
             continue;
         }
-        glm::vec3 toward(0.0f);
+        glm::vec3 toward(0.0F);
         if (given.empty()) {
             // solar with no axis is light from every direction at once, which has no L
             direction.triple(point, toward);
@@ -419,7 +419,7 @@ bool Machine::illuminate(const Instruction & instruction, bool solar) {
             direction.triple(point, toward);
             // an angle lets L be any direction inside a cone, chosen against the surface's own
             // cone, which a light shader is not given. The light comes along its axis instead
-            if (given.size() > 1 && file_[static_cast<std::size_t>(given[1])].number(point) != 0.0f) {
+            if (given.size() > 1 && file_[static_cast<std::size_t>(given[1])].number(point) != 0.0F) {
                 report("solar with an angle is lit along its axis only, as if the angle were 0");
             }
         } else {
@@ -449,7 +449,7 @@ void Machine::mask(const Instruction & instruction, bool wanted) {
     const Value & condition = file_[static_cast<std::size_t>(instruction.left)];
     std::vector<char> next = masks_.back();
     for (unsigned int point = 0; point < batch_; point++) {
-        if (next[point] != 0 && (condition.number(point) != 0.0f) != wanted) {
+        if (next[point] != 0 && (condition.number(point) != 0.0F) != wanted) {
             next[point] = 0;
         }
     }
@@ -460,7 +460,7 @@ void Machine::narrow(const Instruction & instruction) {
     Loop & loop = loops_.back();
     const Value & condition = file_[static_cast<std::size_t>(instruction.left)];
     for (unsigned int point = 0; point < batch_; point++) {
-        if (loop.lanes[point] != 0 && condition.number(point) == 0.0f) {
+        if (loop.lanes[point] != 0 && condition.number(point) == 0.0F) {
             loop.lanes[point] = 0;
         }
     }
@@ -600,7 +600,7 @@ bool Machine::execute(const Program & program, const Range & range) {
                 pc = static_cast<std::size_t>(instruction.target);
                 continue;
             case Opcode::JUMP_IF_ZERO:
-                if (file_[static_cast<std::size_t>(instruction.left)].number(0) == 0.0f) {
+                if (file_[static_cast<std::size_t>(instruction.left)].number(0) == 0.0F) {
                     pc = static_cast<std::size_t>(instruction.target);
                     continue;
                 }

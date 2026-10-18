@@ -68,7 +68,7 @@ Device::Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::s
     device_(VK_NULL_HANDLE),
     graphicsQueue_(VK_NULL_HANDLE),
     presentQueue_(VK_NULL_HANDLE),
-    timestampPeriod_(0.0f) {
+    timestampPeriod_(0.0F) {
     selectPhysical();
     createLogical();
     try {
@@ -316,7 +316,7 @@ void Device::selectPhysical() {
 /**
  **/
 void Device::createLogical() {
-    const float priority = 1.0f;
+    const float priority = 1.0F;
     std::set<uint32_t> uniqueFamilies;
     uniqueFamilies.insert(families_.graphics);
     if (presenting()) {

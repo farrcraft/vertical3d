@@ -33,11 +33,11 @@ class Profile {
         };
 
         /** The projection a new profile starts with. **/
-        static constexpr float DEFAULT_ORTHO_ZOOM = 1.0f;
-        static constexpr float DEFAULT_PIXEL_ASPECT = 1.33f;
-        static constexpr float DEFAULT_NEAR = 0.001f;
-        static constexpr float DEFAULT_FAR = 100.0f;
-        static constexpr float DEFAULT_FOV = 60.0f;
+        static constexpr float DEFAULT_ORTHO_ZOOM = 1.0F;
+        static constexpr float DEFAULT_PIXEL_ASPECT = 1.33F;
+        static constexpr float DEFAULT_NEAR = 0.001F;
+        static constexpr float DEFAULT_FAR = 100.0F;
+        static constexpr float DEFAULT_FOV = 60.0F;
 
         explicit Profile(const std::string & name);
         /**
@@ -49,10 +49,10 @@ class Profile {
         *	@param frame where the eye is, and its up, right and view directions.
         */
         struct Frame {
-            glm::vec3 eye{0.0f};
-            glm::vec3 up{0.0f, 1.0f, 0.0f};
-            glm::vec3 right{1.0f, 0.0f, 0.0f};
-            glm::vec3 direction{0.0f, 0.0f, -1.0f};
+            glm::vec3 eye{0.0F};
+            glm::vec3 up{0.0F, 1.0F, 0.0F};
+            glm::vec3 right{1.0F, 0.0F, 0.0F};
+            glm::vec3 direction{0.0F, 0.0F, -1.0F};
         };
 
         Profile(const std::string & name, const Frame & frame);

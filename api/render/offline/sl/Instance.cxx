@@ -144,7 +144,7 @@ void Instance::bind(const rib::ParameterList & parameters) {
             continue;
         }
         const std::vector<float> & values = parameters.floats(given);
-        held->values.assign(components(held->type), 0.0f);
+        held->values.assign(components(held->type), 0.0F);
         for (unsigned int component = 0; component < held->values.size(); component++) {
             // a float bound onto a colour replicates, as RI promotes it; "Color [1]" and a
             // one value "specularcolor" both rely on this. A float bound onto a matrix is the
@@ -186,7 +186,7 @@ bool Instance::write(runtime::Machine* machine, const glm::mat4x4 & placement) c
         const bool triple = held.values.size() == 3;
         const glm::vec3 place = triple ?
             moved(held.type, placement, glm::vec3(held.values[0], held.values[1], held.values[2])) :
-            glm::vec3(0.0f);
+            glm::vec3(0.0F);
         // a uniform parameter is one element and a varying one is the batch, and a scene
         // binds one value either way: every point of the batch gets it
         for (unsigned int point = 0; point < value.width(); point++) {

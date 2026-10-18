@@ -8,8 +8,8 @@
 #include <utility>
 
 ChunkMeshPool::Entry::Entry() :
-    origin(0.0f, 0.0f, 0.0f),
-    size(0.0f) {
+    origin(0.0F, 0.0F, 0.0F),
+    size(0.0F) {
 }
 
 ChunkMeshPool::ChunkMeshPool(Retire retire) :

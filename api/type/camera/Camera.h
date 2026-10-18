@@ -27,7 +27,7 @@ class Camera {
          *	scales the next step by the half height, so one that reached zero could never
          *	zoom back out.
          */
-        static constexpr float MINIMUM_ZOOM = 0.01f;
+        static constexpr float MINIMUM_ZOOM = 0.01F;
 
         Camera();
         explicit Camera(const Profile & profile);
@@ -172,8 +172,8 @@ class Camera {
 
  private:
         glm::vec3 lookAt_;
-        glm::mat4x4 projection_{1.0f};
-        glm::mat4x4 view_{1.0f};  // viewing transformation, identity until createView()
+        glm::mat4x4 projection_{1.0F};
+        glm::mat4x4 view_{1.0F};  // viewing transformation, identity until createView()
         Profile profile_;
 };
 

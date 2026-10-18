@@ -9,7 +9,7 @@ namespace v3d::ui::component {
 
 Box::Box(Type type) :
     Component(type),
-    spacing_(0.0f),
+    spacing_(0.0F),
     stretch_(false),
     wrap_(false) {
 }

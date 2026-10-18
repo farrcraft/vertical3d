@@ -8,7 +8,7 @@ document is in [README.md](README.md#two-ways-to-write-a-ui).
 ```cpp
 v3d::ui::Immediate* layer = screen_->immediate();
 layer->begin(&screen_->canvas(), input);
-if (layer->window("Debug", glm::vec2(20, 20), glm::vec2(260, 180), 0.85f)) {
+if (layer->window("Debug", glm::vec2(20, 20), glm::vec2(260, 180), 0.85F)) {
     layer->text("chunks " + std::to_string(count));
     if (layer->button("Reset")) {
         reset();
@@ -78,7 +78,7 @@ a click on it reaches the scene. `Immediate::block(min, max)` claims a rectangle
 without drawing in it:
 
 ```cpp
-ui.block(glm::vec2(0.0f), glm::vec2(width, height));   // the backdrop's rectangle
+ui.block(glm::vec2(0.0F), glm::vec2(width, height));   // the backdrop's rectangle
 ```
 
 The rectangle counts toward `capturing()` as a window does. It takes the cursor from whatever the

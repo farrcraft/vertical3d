@@ -37,7 +37,7 @@ void Bar::add(const std::string& label, const boost::shared_ptr<Menu>& menu) {
     }
     labels_.push_back(label);
     // nothing is hit until a renderer has said where the label went
-    bounds_.push_back(v3d::type::geometry::Bound2D({.position = glm::vec2(0.0f, 0.0f), .size = glm::vec2(0.0f, 0.0f)}));
+    bounds_.push_back(v3d::type::geometry::Bound2D({.position = glm::vec2(0.0F, 0.0F), .size = glm::vec2(0.0F, 0.0F)}));
     adopt(*menu);
     menus_.push_back(menu);
 }

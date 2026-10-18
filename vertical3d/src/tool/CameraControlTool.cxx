@@ -14,14 +14,14 @@ namespace {
 /**
  * World units a perspective camera moves for each pixel the mouse is dragged.
  **/
-constexpr float perspectiveFactor = 0.125f;
+constexpr float perspectiveFactor = 0.125F;
 
 };  // namespace
 
 /**
  **/
 CameraControlTool::CameraControlTool() :
-    last_(0.0f, 0.0f),
+    last_(0.0F, 0.0F),
     mode_(CAMERA_MODE_NONE),
     dragging_(false) {
 }
@@ -154,7 +154,7 @@ void CameraControlTool::truck(const glm::vec2& position) {
     delta_x = static_cast<float>(position[0] - last_[0]);
     delta_y = static_cast<float>(position[1] - last_[1]);
     float factor;
-    if (delta_x != 0.0f) {
+    if (delta_x != 0.0F) {
         if (camera->orthographic()) {
             factor = camera->orthoFactorHorizontal();
         } else {
@@ -162,7 +162,7 @@ void CameraControlTool::truck(const glm::vec2& position) {
         }
         camera->truck(delta_x * -factor);
     }
-    if (delta_y != 0.0f) {
+    if (delta_y != 0.0F) {
         // the vertical factor - the pixel aspect ratio belongs to width alone
         if (camera->orthographic()) {
             factor = camera->orthoFactorVertical();

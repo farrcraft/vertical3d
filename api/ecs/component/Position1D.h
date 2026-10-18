@@ -12,7 +12,7 @@ namespace v3d::ecs::component {
  * copy, and written directly, since simulation sets it every step.
  **/
 struct Position1D final {
-    float value = 0.0f;
+    float value = 0.0F;
 };
 
 /**

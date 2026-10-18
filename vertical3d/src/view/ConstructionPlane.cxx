@@ -18,16 +18,16 @@ constexpr unsigned int defaultLines = 60;
 /**
  * The colours of an ordinary line, an emphasised line and the lines through the origin.
  **/
-constexpr glm::vec4 minorColour(0.30f, 0.30f, 0.30f, 1.0f);
-constexpr glm::vec4 majorColour(0.42f, 0.42f, 0.52f, 1.0f);
-constexpr glm::vec4 originColour(0.65f, 0.65f, 0.70f, 1.0f);
+constexpr glm::vec4 minorColour(0.30F, 0.30F, 0.30F, 1.0F);
+constexpr glm::vec4 majorColour(0.42F, 0.42F, 0.52F, 1.0F);
+constexpr glm::vec4 originColour(0.65F, 0.65F, 0.70F, 1.0F);
 
 };  // namespace
 
 /**
  **/
 ConstructionPlane::ConstructionPlane() :
-    spacing_(1.0f),
+    spacing_(1.0F),
     intervals_(defaultIntervals),
     lines_(defaultLines),
     minor_(minorColour),
@@ -80,13 +80,13 @@ ConstructionPlane::Axes ConstructionPlane::axes(const v3d::type::camera::Camera&
         return {.right = camera.profile().right(), .up = camera.profile().up()};
     }
     // a perspective view gets the ground plane, which is xz with y up
-    return {.right = glm::vec3(1.0f, 0.0f, 0.0f), .up = glm::vec3(0.0f, 0.0f, 1.0f)};
+    return {.right = glm::vec3(1.0F, 0.0F, 0.0F), .up = glm::vec3(0.0F, 0.0F, 1.0F)};
 }
 
 /**
  **/
 void ConstructionPlane::draw(const v3d::type::camera::Camera& camera, v3d::render::realtime::canvas::Line* canvas) const {
-    if (canvas == nullptr || lines_ == 0 || spacing_ <= 0.0f) {
+    if (canvas == nullptr || lines_ == 0 || spacing_ <= 0.0F) {
         return;
     }
 
@@ -94,13 +94,13 @@ void ConstructionPlane::draw(const v3d::type::camera::Camera& camera, v3d::rende
     const glm::vec3& right = plane.right;
     const glm::vec3& up = plane.up;
 
-    const float extent = static_cast<float>(lines_) * spacing_ / 2.0f;
+    const float extent = static_cast<float>(lines_) * spacing_ / 2.0F;
 
     for (unsigned int index = 0; index <= lines_; index++) {
         const float offset = -extent + (static_cast<float>(index) * spacing_);
 
         glm::vec4 colour = minor_;
-        if (offset == 0.0f) {
+        if (offset == 0.0F) {
             colour = origin_;
         } else if (intervals_ > 0 && (index % intervals_) == 0) {
             colour = major_;

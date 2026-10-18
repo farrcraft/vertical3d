@@ -29,7 +29,7 @@ indices(0) {
 /**
  **/
 World::World() :
-    tint_(1.0f) {
+    tint_(1.0F) {
 }
 
 /**
@@ -39,7 +39,7 @@ void World::clear() {
     indices_.clear();
     batches_.clear();
     transforms_.reset();
-    tint_ = glm::vec4(1.0f);
+    tint_ = glm::vec4(1.0F);
 }
 
 /**
@@ -84,7 +84,7 @@ const glm::vec4& World::tint() const noexcept {
  **/
 void World::quad(const Corners& corners, const glm::vec4& colour) {
     // the whole of the white texture, so the sample is opaque white wherever it lands
-    quad(corners, glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), colour, TextureHandle());
+    quad(corners, glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), colour, TextureHandle());
 }
 
 /**
@@ -142,7 +142,7 @@ void World::open(const TextureHandle& texture) {
  **/
 void World::vertex(const glm::vec3& position, const glm::vec2& uv, const glm::vec4& colour) {
     Vertex added;
-    added.position = glm::vec3(transforms_.top() * glm::vec4(position, 1.0f));
+    added.position = glm::vec3(transforms_.top() * glm::vec4(position, 1.0F));
     added.uv = uv;
     added.colour = colour * tint_;
     vertices_.push_back(added);

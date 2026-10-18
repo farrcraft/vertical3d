@@ -21,7 +21,7 @@ class Sound final {
      *        audio::Play::pan places it. The game converts a position to a pan
      **/
     // not noexcept: clip_ is a std::string built from the view, which allocates
-    Sound(const std::string_view &clip, float pan = 0.0f);
+    Sound(const std::string_view &clip, float pan = 0.0F);
     std::string_view clip() const noexcept;
     float pan() const noexcept;
 

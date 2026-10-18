@@ -41,7 +41,7 @@ int side(unsigned int value) {
  * The deepest a scene may ask trace() to go. A shader that traces twice at every hit doubles
  * the rays at every level, and every level holds a shader on the stack.
  **/
-const float DEEPEST_TRACE = 16.0f;
+const float DEEPEST_TRACE = 16.0F;
 
 typedef v3d::render::offline::rib::ParameterList ParameterList;
 
@@ -103,8 +103,8 @@ void RIBHandler::option(const std::string & name, const ParameterList & paramete
         return;
     }
     if (name == "trace" && parameters.has("maxdepth")) {
-        const float depth = parameters.number("maxdepth", 0.0f);
-        const bool usable = std::isfinite(depth) && depth >= 0.0f;
+        const float depth = parameters.number("maxdepth", 0.0F);
+        const bool usable = std::isfinite(depth) && depth >= 0.0F;
         if (!usable) {
             context().logger()->get()->warn("a trace depth of {} is not a depth, and is not used", depth);
             return;
@@ -129,7 +129,7 @@ void RIBHandler::option(const std::string & name, const ParameterList & paramete
         }
     }
     if (parameters.has("gridsize")) {
-        const float grid = parameters.number("gridsize", 256.0f);
+        const float grid = parameters.number("gridsize", 256.0F);
         const std::optional<uint32_t> size = count(grid);
         if (size) {
             context().gridSize(*size);
@@ -216,7 +216,7 @@ void RIBHandler::output(const std::string & name) {
 
 bool RIBHandler::resolution(int width, int height) {
     // the context reads a side of zero or less as its default, so such a side is refused here
-    if (width < 1 || height < 1 || !context().imageResolution(glm::ivec2(width, height), 1.0f)) {
+    if (width < 1 || height < 1 || !context().imageResolution(glm::ivec2(width, height), 1.0F)) {
         return false;
     }
     width_ = static_cast<unsigned int>(width);

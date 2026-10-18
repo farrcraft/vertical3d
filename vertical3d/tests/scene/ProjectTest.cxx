@@ -102,9 +102,9 @@ BOOST_AUTO_TEST_CASE(project_round_trip_test) {
     const std::string path = scratch("v3d_round_trip.json");
 
     const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
-    cube->translation(glm::vec3(1.5f, -2.0f, 0.25f));
-    cube->scale(glm::vec3(2.0f, 0.5f, 1.0f));
-    cube->rotation(glm::angleAxis(0.75f, glm::normalize(glm::vec3(0.0f, 1.0f, 1.0f))));
+    cube->translation(glm::vec3(1.5F, -2.0F, 0.25F));
+    cube->scale(glm::vec3(2.0F, 0.5F, 1.0F));
+    cube->rotation(glm::angleAxis(0.75F, glm::normalize(glm::vec3(0.0F, 1.0F, 1.0F))));
 
     const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
     written->add(cube);
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(project_round_trip_test) {
     BOOST_REQUIRE_EQUAL(reader.read(path, read), true);
 
     BOOST_CHECK_EQUAL(reader.name(), "round trip");
-    BOOST_REQUIRE_EQUAL(read->count(), 1u);
+    BOOST_REQUIRE_EQUAL(read->count(), 1U);
 
     // the topology is stored as it stands, so a round trip renumbers nothing
     same(cube, meshes(read).front());
@@ -143,10 +143,10 @@ BOOST_AUTO_TEST_CASE(project_order_and_selection_test) {
 
     const boost::shared_ptr<v3d::editor::Scene> read = boost::make_shared<v3d::editor::Scene>();
     BOOST_REQUIRE_EQUAL(v3d::editor::Project(logger()).read(path, read), true);
-    BOOST_REQUIRE_EQUAL(read->count(), 2u);
+    BOOST_REQUIRE_EQUAL(read->count(), 2U);
 
     const std::vector<boost::shared_ptr<v3d::brep::BRep>> loaded = meshes(read);
-    BOOST_REQUIRE_EQUAL(loaded.size(), 2u);
+    BOOST_REQUIRE_EQUAL(loaded.size(), 2U);
     same(cube, loaded[0]);
     same(cone, loaded[1]);
 
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(project_read_replaces_the_scene_test) {
     BOOST_REQUIRE_EQUAL(v3d::editor::Project(logger()).read(path, read), true);
 
     // reading replaces the document rather than adding to it
-    BOOST_CHECK_EQUAL(read->count(), 0u);
+    BOOST_CHECK_EQUAL(read->count(), 0U);
 
     boost::filesystem::remove(path);
 }
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(project_missing_file_test) {
     BOOST_CHECK_EQUAL(project.read(scratch("v3d_no_such_project.json"), scene), false);
 
     // a failed open does not also lose the document in memory
-    BOOST_CHECK_EQUAL(scene->count(), 1u);
+    BOOST_CHECK_EQUAL(scene->count(), 1U);
 }
 
 BOOST_AUTO_TEST_CASE(project_rejects_malformed_test) {
@@ -265,7 +265,7 @@ BOOST_AUTO_TEST_CASE(project_rejects_malformed_test) {
     put({.path = path, .text = "{\"version\": 1, \"meshes\": [{\"vertices\": [[0, 1]], \"edges\": [], \"faces\": []}]}"});
     BOOST_CHECK_EQUAL(project.read(path, scene), false);
 
-    BOOST_CHECK_EQUAL(scene->count(), 1u);
+    BOOST_CHECK_EQUAL(scene->count(), 1U);
     boost::filesystem::remove(path);
 }
 
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE(project_rejects_dangling_reference_test) {
         "\"edges\": [{\"vertex\": 1, \"face\": 2147483648, \"pair\": 2147483648, \"next\": 0}],"
         "\"faces\": []}]}"});
     BOOST_CHECK_EQUAL(project.read(path, scene), false);
-    BOOST_CHECK_EQUAL(scene->count(), 0u);
+    BOOST_CHECK_EQUAL(scene->count(), 0U);
 
     // a face naming an edge the mesh does not hold
     put({.path = path, .text = "{\"version\": 1, \"meshes\": [{"
@@ -298,7 +298,7 @@ BOOST_AUTO_TEST_CASE(project_rejects_dangling_reference_test) {
         "\"edges\": [{\"vertex\": 0, \"face\": 0, \"pair\": 2147483648, \"next\": 0}],"
         "\"faces\": [{\"normal\": [0, 0, 1], \"edge\": 0}]}]}"});
     BOOST_CHECK_EQUAL(project.read(path, scene), true);
-    BOOST_CHECK_EQUAL(scene->count(), 1u);
+    BOOST_CHECK_EQUAL(scene->count(), 1U);
 
     // an unpaired edge is not a dangling one: INVALID_ID is what a boundary carries
     BOOST_CHECK_EQUAL(meshes(scene).front()->edge(0)->pair(), v3d::brep::INVALID_ID);
@@ -315,7 +315,7 @@ BOOST_AUTO_TEST_CASE(project_default_transform_test) {
     // a hand written mesh with no placement sits at the origin, unturned and unscaled
     put({.path = path, .text = "{\"version\": 1, \"meshes\": [{\"vertices\": [], \"edges\": [], \"faces\": []}]}"});
     BOOST_REQUIRE_EQUAL(project.read(path, scene), true);
-    BOOST_REQUIRE_EQUAL(scene->count(), 1u);
+    BOOST_REQUIRE_EQUAL(scene->count(), 1U);
 
     same(boost::make_shared<v3d::brep::BRep>(), meshes(scene).front());
 

@@ -16,9 +16,9 @@
 Ball::Ball(entt::registry* registry) : registry_(registry) {
     id_ = registry->create();
     // create the components attached to ball entity
-    registry->emplace<v3d::ecs::component::Position2D>(id_, glm::vec2(0.0f));
-    registry->emplace<Size>(id_, 1.0f);
-    registry->emplace<Direction>(id_, glm::vec2(0.0f, 0.0f));
+    registry->emplace<v3d::ecs::component::Position2D>(id_, glm::vec2(0.0F));
+    registry->emplace<Size>(id_, 1.0F);
+    registry->emplace<Direction>(id_, glm::vec2(0.0F, 0.0F));
 }
 
 void Ball::direction(const glm::vec2 & dir) {

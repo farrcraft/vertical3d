@@ -23,18 +23,18 @@ using v3d::type::effect::Weather;
 
 namespace {
 
-const float sixtieth = 1.0f / 60.0f;
+const float sixtieth = 1.0F / 60.0F;
 
 /**
  * Rain falling straight down at five a second, living longer than any case runs.
  **/
 Emitter rain() {
     Emitter emitter;
-    emitter.direction = glm::vec3(0.0f, -1.0f, 0.0f);
-    emitter.speedMin = 5.0f;
-    emitter.speedMax = 5.0f;
-    emitter.lifeMin = 100.0f;
-    emitter.lifeMax = 100.0f;
+    emitter.direction = glm::vec3(0.0F, -1.0F, 0.0F);
+    emitter.speedMin = 5.0F;
+    emitter.speedMax = 5.0F;
+    emitter.lifeMin = 100.0F;
+    emitter.lifeMax = 100.0F;
     emitter.cap = 100000;
     return emitter;
 }
@@ -44,9 +44,9 @@ Emitter rain() {
  **/
 Weather shower() {
     Weather weather;
-    weather.density = 1.0f;
-    weather.intensity = 1.0f;
-    weather.target = 1.0f;
+    weather.density = 1.0F;
+    weather.intensity = 1.0F;
+    weather.target = 1.0F;
     return weather;
 }
 
@@ -55,14 +55,14 @@ Weather shower() {
  **/
 struct Steps {
     int count = 1;     /**< how many steps to run **/
-    float x = 0.0f;    /**< where the region's corner is on x **/
+    float x = 0.0F;    /**< where the region's corner is on x **/
 };
 
 void run(const Emitter& emitter, Weather* weather, State* state, const Steps& steps) {
     const float x = steps.x;
     for (int step = 0; step < steps.count; step++) {
-        v3d::type::effect::fall(emitter, weather, state, glm::vec3(x, 0.0f, 0.0f),
-            glm::vec3(x + 4.0f, 10.0f, 4.0f), sixtieth);
+        v3d::type::effect::fall(emitter, weather, state, glm::vec3(x, 0.0F, 0.0F),
+            glm::vec3(x + 4.0F, 10.0F, 4.0F), sixtieth);
     }
 }
 
@@ -79,12 +79,12 @@ BOOST_AUTO_TEST_CASE(weather_settles_at_its_rate_times_its_fall_test) {
     State state(1);
 
     run(emitter, &weather, &state, {.count = 600});
-    BOOST_CHECK(state.particles.size() >= 31u);
-    BOOST_CHECK(state.particles.size() <= 34u);
+    BOOST_CHECK(state.particles.size() >= 31U);
+    BOOST_CHECK(state.particles.size() <= 34U);
 
     bool above = true;
     for (const Particle& particle : state.particles) {
-        above = above && particle.position.y >= 0.0f && particle.position.y <= 10.0f;
+        above = above && particle.position.y >= 0.0F && particle.position.y <= 10.0F;
     }
     BOOST_CHECK(above);
 }
@@ -96,21 +96,21 @@ BOOST_AUTO_TEST_CASE(weather_settles_at_its_rate_times_its_fall_test) {
 BOOST_AUTO_TEST_CASE(weather_eases_to_its_target_test) {
     const Emitter emitter = rain();
     Weather weather = shower();
-    weather.ease = 0.5f;
+    weather.ease = 0.5F;
     State state(1);
 
     run(emitter, &weather, &state, {.count = 180});
-    weather.target = 0.0f;
+    weather.target = 0.0F;
     run(emitter, &weather, &state, {.count = 60});
-    BOOST_CHECK_CLOSE(weather.intensity, 0.5f, 1e-3f);
+    BOOST_CHECK_CLOSE(weather.intensity, 0.5F, 1e-3F);
     BOOST_CHECK(!state.particles.empty());
 
     run(emitter, &weather, &state, {.count = 60});
-    BOOST_CHECK_SMALL(weather.intensity, 1e-5f);
+    BOOST_CHECK_SMALL(weather.intensity, 1e-5F);
     // the steps' easing sums to a hair short of the whole way in float, and the next step lands
     // on the target exactly rather than passing it
     run(emitter, &weather, &state, {.count = 1});
-    BOOST_CHECK_EQUAL(weather.intensity, 0.0f);
+    BOOST_CHECK_EQUAL(weather.intensity, 0.0F);
     run(emitter, &weather, &state, {.count = 130});
     BOOST_CHECK(state.particles.empty());
 }
@@ -128,12 +128,12 @@ BOOST_AUTO_TEST_CASE(weather_follows_a_moving_region_test) {
     bool inside = true;
     bool steady = true;
     for (int step = 0; step < 300; step++) {
-        const float x = 0.05f * static_cast<float>(step);
+        const float x = 0.05F * static_cast<float>(step);
         run(emitter, &weather, &state, {.count = 1, .x = x});
         for (const Particle& particle : state.particles) {
-            inside = inside && particle.position.x >= x && particle.position.x < x + 4.0f;
-            inside = inside && particle.position.z >= 0.0f && particle.position.z < 4.0f;
-            steady = steady && glm::length(particle.position - particle.previous) <= (5.0f * sixtieth) + 1e-4f;
+            inside = inside && particle.position.x >= x && particle.position.x < x + 4.0F;
+            inside = inside && particle.position.z >= 0.0F && particle.position.z < 4.0F;
+            steady = steady && glm::length(particle.position - particle.previous) <= (5.0F * sixtieth) + 1e-4F;
         }
     }
     BOOST_CHECK(inside);
@@ -147,14 +147,14 @@ BOOST_AUTO_TEST_CASE(weather_follows_a_moving_region_test) {
 BOOST_AUTO_TEST_CASE(weather_is_carried_by_the_wind_test) {
     const Emitter emitter = rain();
     Weather weather = shower();
-    weather.wind = glm::vec3(2.0f, 0.0f, 0.0f);
+    weather.wind = glm::vec3(2.0F, 0.0F, 0.0F);
     State state(1);
 
     run(emitter, &weather, &state, {.count = 90});
     BOOST_REQUIRE(!state.particles.empty());
     bool carried = true;
     for (const Particle& particle : state.particles) {
-        carried = carried && std::abs(particle.velocity.x - (2.0f * particle.age)) < 1e-4f;
+        carried = carried && std::abs(particle.velocity.x - (2.0F * particle.age)) < 1e-4F;
     }
     BOOST_CHECK(carried);
 }
@@ -166,16 +166,16 @@ BOOST_AUTO_TEST_CASE(weather_is_carried_by_the_wind_test) {
 BOOST_AUTO_TEST_CASE(weather_out_of_range_settings_are_held_in_range_test) {
     const Emitter emitter = rain();
     Weather weather = shower();
-    weather.intensity = 0.5f;
-    weather.ease = -1.0f;
+    weather.intensity = 0.5F;
+    weather.ease = -1.0F;
     State state(1);
     run(emitter, &weather, &state, {.count = 10});
-    BOOST_CHECK_EQUAL(weather.intensity, 0.5f);
+    BOOST_CHECK_EQUAL(weather.intensity, 0.5F);
 
-    weather.ease = 10.0f;
-    weather.target = 4.0f;
+    weather.ease = 10.0F;
+    weather.target = 4.0F;
     run(emitter, &weather, &state, {.count = 10});
-    BOOST_CHECK_EQUAL(weather.intensity, 1.0f);
+    BOOST_CHECK_EQUAL(weather.intensity, 1.0F);
 }
 
 /**
@@ -185,14 +185,14 @@ BOOST_AUTO_TEST_CASE(weather_out_of_range_settings_are_held_in_range_test) {
 BOOST_AUTO_TEST_CASE(weather_a_target_that_is_not_a_number_is_ignored_test) {
     const Emitter emitter = rain();
     Weather weather = shower();
-    weather.intensity = 0.5f;
+    weather.intensity = 0.5F;
     weather.target = std::nanf("");
     State state(1);
     run(emitter, &weather, &state, {.count = 10});
-    BOOST_CHECK_EQUAL(weather.intensity, 0.5f);
-    weather.target = 1.0f;
+    BOOST_CHECK_EQUAL(weather.intensity, 0.5F);
+    weather.target = 1.0F;
     run(emitter, &weather, &state, {.count = 1000});
-    BOOST_CHECK_EQUAL(weather.intensity, 1.0f);
+    BOOST_CHECK_EQUAL(weather.intensity, 1.0F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

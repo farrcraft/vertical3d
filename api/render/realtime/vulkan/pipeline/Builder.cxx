@@ -200,7 +200,7 @@ VkPipelineRasterizationStateCreateInfo Builder::rasterization() const {
     raster.polygonMode = polygon_;
     raster.cullMode = cull_;
     raster.frontFace = front_;
-    raster.lineWidth = 1.0f;
+    raster.lineWidth = 1.0F;
     // the factors are dynamic, so this enables the bias without saying what it is
     raster.depthBiasEnable = depthBias_ ? VK_TRUE : VK_FALSE;
     return raster;
@@ -323,7 +323,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     depth.depthTestEnable = depthTest_ ? VK_TRUE : VK_FALSE;
     depth.depthWriteEnable = depthWrite_ ? VK_TRUE : VK_FALSE;
     depth.depthCompareOp = depthCompare_;
-    depth.maxDepthBounds = 1.0f;
+    depth.maxDepthBounds = 1.0F;
 
     const VkPipelineColorBlendAttachmentState attachment = colourBlend();
 
