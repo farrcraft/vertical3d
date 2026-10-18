@@ -19,6 +19,7 @@ v3d_add_test(render_offline
 	"SlMachineTest.cxx"
 	"SlLibraryTest.cxx"
 	"SlDerivativeTest.cxx"
+	"SlDisplacementTest.cxx"
 	"SlLightingTest.cxx"
 	"TraceHierarchyTest.cxx"
 	"TraceStencilTest.cxx"

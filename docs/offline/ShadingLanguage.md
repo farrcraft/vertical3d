@@ -34,9 +34,12 @@ named. The language is in `api/render/offline/sl`.
   `noise`.
 - **`.` is a dot product and `^` is a cross product**, and both bind tighter than `*`. Check
   this before assuming an expression means what it looks like.
-- **All five shader types parse, and three run.** A `displacement` or `volume` shader parses and
-  returns false from `sl::syntax::Shader::supported()`. A scene that names one is told the
-  shader is unsupported, not that it is malformed.
+- **All five shader types parse, and four run.** A `volume` shader parses and returns false from
+  `sl::syntax::Shader::supported()`. A scene that names one is told the shader is unsupported,
+  not that it is malformed.
+- **A displacement shader writes `P` and `N`.** It reads the surface's other position globals,
+  `Ng`, `I`, `E`, `s`, `t`, `u`, `v`, `du` and `dv`, and nothing a surface writes, such as `Ci`.
+  A scene names one with `Displacement`.
 - **The C preprocessor is not run.** A `#` produces a diagnostic naming the missing
   preprocessor. There is no compiled-shader file: a shader is source, compiled on first use.
 - **The compiler annotates the syntax tree in place.** Every expression gets a type and a

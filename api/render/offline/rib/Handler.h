@@ -129,6 +129,10 @@ class Handler {
         (void)name;
         (void)parameters;
     }
+    virtual void displacement(const std::string & name, const ParameterList & parameters) {
+        (void)name;
+        (void)parameters;
+    }
     virtual void lightSource(const LightSource & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;

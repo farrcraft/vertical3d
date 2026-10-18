@@ -160,6 +160,10 @@ void RIBHandler::lightSource(const v3d::render::offline::rib::LightSource & requ
     context().lightSource(request, parameters);
 }
 
+void RIBHandler::displacement(const std::string & name, const ParameterList & parameters) {
+    context().displacement(name, parameters);
+}
+
 void RIBHandler::attribute(const std::string & name, const ParameterList & parameters) {
     context().attribute(name, parameters);
 }

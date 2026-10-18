@@ -228,6 +228,7 @@ Reader::Result Reader::namedRequest(const std::string & name, Lexer * lexer, Han
         { "Projection", &Handler::projection },
         { "Attribute", &Handler::attribute },
         { "Surface", &Handler::surface },
+        { "Displacement", &Handler::displacement },
         { "Imager", &Handler::imager }
     };
     for (const auto & entry : table) {

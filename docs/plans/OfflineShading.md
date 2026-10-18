@@ -133,7 +133,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [11](#step-11--an-area-light-keeps-its-geometry) | An area light keeps its geometry | `api/render/offline`, `moya` | 0094 | done |
 | [12](#step-12--area-lights-shine-from-their-surface) | Area lights shine from points on their surface | `api/render/offline`, `moya` | 0094 | done |
 | [13](#step-13--opacity-under-the-reyes-hider) | Opacity under the reyes hider | `moya` | — | done |
-| [14](#step-14--a-displacement-shader-reaches-the-renderer) | A displacement shader compiles and reaches the renderer | `api/render/offline`, `moya` | — | open |
+| [14](#step-14--a-displacement-shader-reaches-the-renderer) | A displacement shader compiles and reaches the renderer | `api/render/offline`, `moya` | — | done |
 | [15](#step-15--displacement-under-the-reyes-hider) | Displacement under the reyes hider | `moya` | — | open |
 | [16](#step-16--the-record-displacement-under-the-ray-hider) | The record: displacement under the ray hider | `docs/adr` | **0095** | open |
 | [17](#step-17--displacement-under-the-ray-hider) | Displacement under the ray hider, as 0095 decides | `api/render/offline`, `moya` | 0095 | open |
@@ -543,6 +543,15 @@ letting a grid add a second layer fails the one-layer case.
   because `raytrace` already renders opacity.
 
 ### Step 14 — A displacement shader reaches the renderer
+
+**Done.** The compiler accepts `displacement` shaders, with `P` and `N` writable. The RIB reader
+dispatches `Displacement` to `rib::Handler::displacement`, and `RiDisplacementV` calls the same
+`RenderContext::displacement`. The attribute block saves the shader and its
+`displacementbound`, and `Shading` carries both to a primitive. The cases that used
+`Displacement` as the example of an unrecognised request now use `Exterior`. The RIB reader does
+not read `CoordinateSystem`, so a file's bound can name only `"object"`, `"world"` or
+`"camera"`. A space the scene never saved is reported and object space is used. `lift.sl` is a
+displacement fixture that step 15 also uses.
 
 * **The compiler accepts `displacement` shaders.** `P` and `N` are writable in one.
   `SlCompilerTest.cxx:595-600` and `SlParserTest.cxx:229-236` change to say they compile.

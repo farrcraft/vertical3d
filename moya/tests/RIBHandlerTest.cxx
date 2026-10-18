@@ -6,6 +6,8 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
+#include <api/render/offline/rib/Declaration.h>
+#include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>
@@ -829,6 +831,48 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_an_area_light_keeps_its_geometry_test) {
     const glm::vec3 point = shading.lights[1].area->sample(glm::vec2(0.1F, 0.5F));
     BOOST_CHECK_CLOSE(point.z, 5.0F, 0.01F);
     BOOST_CHECK(!handler.context().areaLight());
+}
+
+/**
+ * Displacement in a file names the displacement shader, and Attribute "displacementbound"
+ * bounds how far it moves a point. A bound is stated in object space unless it names another
+ * space. Under a scale of three, a bound of 0.2 is 0.6 in camera space, and 0.2 when it is
+ * stated in world space. A block's end restores both. An unrecognised attribute is reported and
+ * changes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displacement_reaches_the_context_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    // read up to WorldEnd, so the attribute state is still there to be read back
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
+        "WorldBegin\n"
+        "AttributeBegin\n"
+        "Scale 3 3 3\n"
+        "Attribute \"displacementbound\" \"float sphere\" [0.2]\n"
+        "Displacement \"lift\" \"float amount\" [0.1]\n"
+        "Attribute \"nothing\" \"float at\" [1]\n", &handler));
+
+    v3d::moya::Shading shading = handler.context().shading();
+    BOOST_REQUIRE(shading.displacement.shader);
+    BOOST_CHECK_EQUAL(shading.displacement.shader->name(), "lift");
+    BOOST_CHECK_CLOSE(shading.displacementBound, 0.6F, 0.01F);
+
+    v3d::render::offline::rib::ParameterList inWorld;
+    inWorld.add("sphere", v3d::render::offline::rib::Declaration(v3d::render::offline::rib::Declaration::Storage::UNIFORM,
+        v3d::render::offline::rib::Declaration::Type::FLOAT, 1), { 0.2F }, std::vector<std::string>());
+    inWorld.add("coordinatesystem", v3d::render::offline::rib::Declaration(
+        v3d::render::offline::rib::Declaration::Storage::UNIFORM, v3d::render::offline::rib::Declaration::Type::STRING, 1),
+        std::vector<float>(), { "world" });
+    handler.context().attribute("displacementbound", inWorld);
+    BOOST_CHECK_CLOSE(handler.context().shading().displacementBound, 0.2F, 0.01F);
+
+    handler.context().attributeEnd();
+    shading = handler.context().shading();
+    BOOST_CHECK(!shading.displacement.shader);
+    BOOST_CHECK_EQUAL(shading.displacementBound, 0.0F);
 }
 
 };  // namespace

@@ -23,13 +23,14 @@ The reader recognises these requests:
 | Blocks | `FrameBegin`, `FrameEnd`, `WorldBegin`, `WorldEnd`, `AttributeBegin`, `AttributeEnd`, `TransformBegin`, `TransformEnd`, `MotionBegin`, `MotionEnd` |
 | Transforms | `Identity`, `Transform`, `ConcatTransform`, `Translate`, `Rotate`, `Scale` |
 | Attributes | `Color`, `Opacity`, `ShadingRate`, `Attribute` |
-| Shaders and lights | `Surface`, `LightSource`, `AreaLightSource`, `Illuminate`, `MakeTexture` |
+| Shaders and lights | `Surface`, `Displacement`, `LightSource`, `AreaLightSource`, `Illuminate`, `MakeTexture` |
 | Geometry | `Polygon`, `PointsPolygons`, `Sphere` |
 
 moya acts on all of them except `CropWindow`, `FrameBegin` and `FrameEnd`, which it accepts and
 ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"searchpath"` (`shader`,
-`texture`) and `"trace"` (`maxdepth`). `Attribute` acts on `"light"` (`nsamples`), and reports any
-other attribute once by name.
+`texture`) and `"trace"` (`maxdepth`). `Attribute` acts on `"light"` (`nsamples`) and
+`"displacementbound"` (`sphere`, `coordinatesystem`), and reports any other attribute once by
+name.
 
 ### Rules
 
@@ -80,6 +81,11 @@ other attribute once by name.
 - **`MakeTexture` is understood and makes nothing.** There is no `txmake`. The image a shader
   names is the texture, read through `image::Factory`, so a scene should name the image itself,
   not a converted file.
+- **`Attribute "displacementbound"` is a distance in object space**, or in the space its
+  `"string coordinatesystem"` names: `"object"`, `"world"`, `"camera"`, or one the scene saved
+  with `RiCoordinateSystem`. moya keeps it in camera space, scaled by the largest stretch of the
+  space's axes. A space the scene never named is reported, and object space is used. The RIB
+  reader does not read `CoordinateSystem`, so a file can name only the three predefined spaces.
 - **`AreaLightSource` becomes an ordinary light** unless a handler overrides
   `Handler::areaLightSource`. moya overrides it, and `RiAreaLightSource` does the same.
 - **An area light keeps the geometry declared after it in the same attribute block.** Every

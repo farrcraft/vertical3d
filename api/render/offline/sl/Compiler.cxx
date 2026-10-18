@@ -48,6 +48,7 @@ typedef Signature::Argument Argument;
 const unsigned int SURFACE = 1U << 0;
 const unsigned int LIGHT = 1U << 1;
 const unsigned int IMAGER = 1U << 2;
+const unsigned int DISPLACEMENT = 1U << 3;
 
 /**
  * A shader global: which shader types have it, and which of them may write it.
@@ -71,19 +72,20 @@ class Global final {
 };
 
 const Global GLOBALS[] = {
-    { "P", Type::POINT, Storage::VARYING, SURFACE | LIGHT | IMAGER, 0, false },
-    { "N", Type::NORMAL, Storage::VARYING, SURFACE, 0, false },
-    { "Ng", Type::NORMAL, Storage::VARYING, SURFACE, 0, false },
-    { "I", Type::VECTOR, Storage::VARYING, SURFACE, 0, false },
-    { "E", Type::POINT, Storage::UNIFORM, SURFACE, 0, false },
+    // a displacement shader moves the surface, so it writes P and N, and reads where it is
+    { "P", Type::POINT, Storage::VARYING, SURFACE | LIGHT | IMAGER | DISPLACEMENT, DISPLACEMENT, false },
+    { "N", Type::NORMAL, Storage::VARYING, SURFACE | DISPLACEMENT, DISPLACEMENT, false },
+    { "Ng", Type::NORMAL, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+    { "I", Type::VECTOR, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+    { "E", Type::POINT, Storage::UNIFORM, SURFACE | DISPLACEMENT, 0, false },
     { "Cs", Type::COLOR, Storage::VARYING, SURFACE, 0, false },
     { "Os", Type::COLOR, Storage::VARYING, SURFACE, 0, false },
-    { "s", Type::FLOAT, Storage::VARYING, SURFACE, 0, false },
-    { "t", Type::FLOAT, Storage::VARYING, SURFACE, 0, false },
-    { "u", Type::FLOAT, Storage::VARYING, SURFACE, 0, false },
-    { "v", Type::FLOAT, Storage::VARYING, SURFACE, 0, false },
-    { "du", Type::FLOAT, Storage::VARYING, SURFACE, 0, false },
-    { "dv", Type::FLOAT, Storage::VARYING, SURFACE, 0, false },
+    { "s", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+    { "t", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+    { "u", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+    { "v", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+    { "du", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+    { "dv", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
     { "Ci", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
     { "Oi", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
     { "Ps", Type::POINT, Storage::VARYING, LIGHT, 0, false },
@@ -104,6 +106,7 @@ unsigned int bit(ShaderType type) {
         case ShaderType::IMAGER:
             return IMAGER;
         case ShaderType::DISPLACEMENT:
+            return DISPLACEMENT;
         case ShaderType::VOLUME:
             return 0;
     }
@@ -123,6 +126,9 @@ std::string owners(unsigned int shaders) {
     }
     if ((shaders & IMAGER) != 0) {
         names.push_back("an imager");
+    }
+    if ((shaders & DISPLACEMENT) != 0) {
+        names.push_back("a displacement");
     }
     std::string text;
     for (std::size_t i = 0; i < names.size(); i++) {

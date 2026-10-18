@@ -226,6 +226,12 @@ class RenderContext {
          **/
         void surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters);
         /**
+         * maps to RiDisplacement()
+         * The displacement shader for the primitives that follow, in the current attribute
+         * state, placed as a surface shader is.
+         **/
+        void displacement(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters);
+        /**
          * maps to RiLightSource()
          * Creates a light and switches it on in the current attribute state. The light
          * lasts for the frame. Which lights are on is an attribute, so an Illuminate inside
@@ -238,7 +244,10 @@ class RenderContext {
          * maps to RiAttribute()
          * `Attribute "light" "integer nsamples"` is how many points an area light made after
          * it samples at each shading point. A count below one is taken as one, and one above
-         * 4096 as 4096. Any other
+         * 4096 as 4096. `Attribute "displacementbound" "float sphere"` is how far a
+         * displacement shader may move a point, in the space `"string coordinatesystem"`
+         * names, or in object space without one. A bound that is negative or not finite is not
+         * used, with a warning. Any other
          * attribute is reported once by name and not used.
          **/
         void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters);
@@ -412,6 +421,8 @@ class RenderContext {
             std::vector<std::string> lit;
             boost::shared_ptr<v3d::render::offline::Area> areaLight;
             unsigned int lightSamples = 16;
+            v3d::render::offline::sl::Placed displacement;
+            float displacementBound = 0.0F;
         };
 
         /**
@@ -431,6 +442,9 @@ class RenderContext {
         boost::shared_ptr<v3d::render::offline::Area> areaLight_;
         /** `Attribute "light" "nsamples"`, which an area light takes when it is made. **/
         unsigned int lightSamples_ = 16;
+        /** The displacement shader in force, and its bound in camera space. **/
+        v3d::render::offline::sl::Placed displacement_;
+        float displacementBound_ = 0.0F;
         /** The attributes already reported as not used, so each is reported once. **/
         std::vector<std::string> unusedAttributes_;
 

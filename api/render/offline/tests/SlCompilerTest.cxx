@@ -593,12 +593,10 @@ BOOST_AUTO_TEST_CASE(slcompiler_parameter_names_test) {
 }
 
 /**
- * Displacement and volume shaders parse and are refused here by name, so a scene naming one
- * is reported as unsupported rather than malformed.
+ * A volume shader parses and is refused here by name, so a scene naming one is reported as
+ * unsupported rather than malformed.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_unsupported_shader_test) {
-    BOOST_CHECK_EQUAL(compile("displacement bumpy(float Km = 1;) { }"),
-        "a displacement shader is not supported at line 1, column 1");
     BOOST_CHECK_EQUAL(compile("volume fog(float density = 1;) { }"),
         "a volume shader is not supported at line 1, column 1");
 }

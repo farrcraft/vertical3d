@@ -69,6 +69,8 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
         const v3d::render::offline::rib::ParameterList & parameters) override;
     void lightSource(const v3d::render::offline::rib::LightSource & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
+    void displacement(const std::string & name,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
     void attribute(const std::string & name,
         const v3d::render::offline::rib::ParameterList & parameters) override;
     void areaLightSource(const v3d::render::offline::rib::LightSource & request,

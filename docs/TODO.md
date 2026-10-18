@@ -24,7 +24,8 @@ and its section names the plan or roadmap that orders it.
 Each of these waits until a scene needs it. The [OfflineShading plan](plans/OfflineShading.md)
 takes them up, in the order the [OfflineShading roadmap](roadmap/OfflineShading.md) gives.
 
-[] **Displacement is not possible.** Displacement shaders are refused.
+[] **Displacement is not possible.** A displacement shader compiles and reaches the render
+context, with its `displacementbound`, but neither hider runs it.
 
 - Under the reyes hider, displacement reaches into moya's dicing. The displacement shader runs on
   a grid after dicing and before the surface shader, and the primitive's bound grows by

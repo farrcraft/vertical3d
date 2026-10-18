@@ -659,9 +659,23 @@ RtVoid RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]
 }
 
 RtVoid RiDisplacement(RtToken name, ...) {
+    va_list arguments;
+    va_start(arguments, name);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiDisplacementV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    if (name == nullptr) {
+        return;
+    }
+    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
+    v3d::render::offline::rib::ParameterList list;
+    parameters(rc, n, tokens, parms, &list);
+    rc.displacement(name, list);
 }
 
 RtVoid RiCoordinateSystem(RtToken space) {

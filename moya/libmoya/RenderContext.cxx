@@ -382,6 +382,8 @@ void RenderContext::attributeBegin() {
     saved.lit = lit_;
     saved.areaLight = areaLight_;
     saved.lightSamples = lightSamples_;
+    saved.displacement = displacement_;
+    saved.displacementBound = displacementBound_;
     attributes_.push_back(saved);
 }
 
@@ -401,6 +403,8 @@ void RenderContext::attributeEnd() {
     lit_ = saved.lit;
     areaLight_ = saved.areaLight;
     lightSamples_ = saved.lightSamples;
+    displacement_ = saved.displacement;
+    displacementBound_ = saved.displacementBound;
     attributes_.pop_back();
 }
 
@@ -576,6 +580,12 @@ void RenderContext::surface(const std::string & name,
     surfacePlacement_ = coordinateSystems_["camera"] * transform_.reference();
 }
 
+void RenderContext::displacement(const std::string & name,
+    const v3d::render::offline::rib::ParameterList & parameters) {
+    displacement_.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::DISPLACEMENT, parameters);
+    displacement_.placement = coordinateSystems_["camera"] * transform_.reference();
+}
+
 void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & request,
     const v3d::render::offline::rib::ParameterList & parameters) {
     LightSource light;
@@ -610,6 +620,35 @@ void RenderContext::attribute(const std::string & name, const v3d::render::offli
         // capped, so a count past what an unsigned holds is not cast into one
         constexpr float MOST_SAMPLES = 4096.0F;
         lightSamples_ = std::isfinite(count) && count >= 1.0F ? static_cast<unsigned int>(std::min(count, MOST_SAMPLES)) : 1U;
+        return;
+    }
+    if (name == "displacementbound" && parameters.has("sphere")) {
+        const float radius = parameters.number("sphere", 0.0F);
+        if (!std::isfinite(radius) || radius < 0.0F) {
+            logger_->get()->warn("a displacement bound of {} is not a distance, and is not used", radius);
+            return;
+        }
+        // the bound is stated in object space, or the space it names, and is kept in camera
+        // space, where every primitive is culled. A scale that differs between axes is taken
+        // at its largest, so the bound still holds the surface
+        const std::vector<std::string> & named = parameters.strings("coordinatesystem");
+        glm::mat4x4 toCamera = coordinateSystems_["camera"] * transform_.reference();
+        if (!named.empty() && named.front() == "camera") {
+            toCamera = glm::mat4x4(1.0F);
+        } else if (!named.empty() && named.front() != "object" && named.front() != "world" &&
+            coordinateSystems_.find(named.front()) == coordinateSystems_.end()) {
+            logger_->get()->warn("the displacement bound's space \"{}\" is not one the scene named, so object space is used",
+                named.front());
+        } else if (!named.empty() && named.front() == "world") {
+            toCamera = coordinateSystems_["camera"];
+        } else if (!named.empty() && named.front() != "object") {
+            // a named space is saved as the transformation into world space in force when the
+            // scene named it
+            toCamera = coordinateSystems_["camera"] * coordinateSystem(named.front());
+        }
+        const glm::mat3 linear(toCamera);
+        const float stretch = std::max(glm::length(linear[0]), std::max(glm::length(linear[1]), glm::length(linear[2])));
+        displacementBound_ = radius * stretch;
         return;
     }
     if (std::find(unusedAttributes_.begin(), unusedAttributes_.end(), name) == unusedAttributes_.end()) {
@@ -667,6 +706,8 @@ Shading RenderContext::shading() {
         shining.area = light.area;
         state.lights.push_back(shining);
     }
+    state.displacement = displacement_;
+    state.displacementBound = displacementBound_;
     return state;
 }
 
