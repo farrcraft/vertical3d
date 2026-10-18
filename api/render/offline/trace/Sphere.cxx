@@ -5,6 +5,11 @@
 
 #include "Sphere.h"
 
+#include <api/render/offline/Units.h>
+#include <api/render/offline/rib/Requests.h>
+#include <api/type/geometry/Line.h>
+#include <api/type/geometry/Ray.h>
+
 #include <algorithm>
 #include <cmath>
 
@@ -13,63 +18,58 @@
 #include <glm/matrix.hpp>
 
 #include "Hit.h"
+#include "Intersection.h"
+#include "Pose.h"
+#include "Primitive.h"
 
 namespace v3d::render::offline::trace {
 
-namespace {
-
-const float PI = 3.14159265358979323846f;
-
-};  // namespace
-
-Sphere::Sphere(float radius, float zmin, float zmax, float thetamax, const glm::mat4x4 & placement,
-    const glm::vec3 & colour) :
-    Primitive(colour), radius_(radius),
-    // clamped by the size of the radius, so a negative one is still a valid range; such a
-    // sphere is never hit anyway
-    zmin_(std::clamp(std::min(zmin, zmax), -std::fabs(radius), std::fabs(radius))),
-    zmax_(std::clamp(std::max(zmin, zmax), -std::fabs(radius), std::fabs(radius))),
-    thetamax_(std::clamp(thetamax, 0.0f, 360.0f) * PI / 180.0f),
+Sphere::Sphere(const v3d::render::offline::rib::Sphere & shape, const glm::mat4x4 & placement, const glm::vec3 & colour) :
+    Primitive(colour), radius_(shape.radius),
+    // clamped to the absolute radius, so a negative radius still gives a valid range. A
+    // sphere with a negative radius is never hit
+    zmin_(std::clamp(std::min(shape.zmin, shape.zmax), -std::fabs(shape.radius), std::fabs(shape.radius))),
+    zmax_(std::clamp(std::max(shape.zmin, shape.zmax), -std::fabs(shape.radius), std::fabs(shape.radius))),
+    thetamax_(std::clamp(shape.thetamax, 0.0F, v3d::render::offline::rib::Sphere::FULL_THETAMAX) * PI / HALF_TURN_DEGREES),
     toObject_(glm::inverse(placement)) {
 }
 
-bool Sphere::intersects(const glm::vec3 & origin, const glm::vec3 & direction, float from,
-    float* along, glm::vec3* point) const {
-    if (!(radius_ > 0.0f)) {
+bool Sphere::intersects(const v3d::type::geometry::Line & line, float from, float* along, glm::vec3* point) const {
+    if (!(radius_ > 0.0F)) {
         return false;
     }
     // an affine map keeps a line's parameter, so a root here is a distance in the caller's
     // units without being carried back
-    const glm::vec3 o(toObject_ * glm::vec4(origin, 1.0f));
-    const glm::vec3 d = glm::mat3(toObject_) * direction;
-    const float a = glm::dot(d, d);
-    const float b = 2.0f * glm::dot(o, d);
-    const float c = glm::dot(o, o) - radius_ * radius_;
-    const float discriminant = b * b - 4.0f * a * c;
-    if (a <= 0.0f || discriminant < 0.0f) {
+    const glm::vec3 origin(toObject_ * glm::vec4(line.origin, 1.0F));
+    const glm::vec3 direction = glm::mat3(toObject_) * line.direction;
+    const float quadratic = glm::dot(direction, direction);
+    const float linear = 2.0F * glm::dot(origin, direction);
+    const float constant = glm::dot(origin, origin) - (radius_ * radius_);
+    const float discriminant = (linear * linear) - (4.0F * quadratic * constant);
+    if (quadratic <= 0.0F || discriminant < 0.0F) {
         return false;
     }
     const float root = std::sqrt(discriminant);
     // the nearer root first, and the far one when the near is behind or cut away: a ray
     // from inside, or one through the open top of a cut sphere, meets the inside
-    const float roots[2] = { (-b - root) / (2.0f * a), (-b + root) / (2.0f * a) };
+    const float roots[2] = { (-linear - root) / (2.0F * quadratic), (-linear + root) / (2.0F * quadratic) };
     for (const float t : roots) {
         if (t <= from) {
             continue;
         }
-        const glm::vec3 p = o + d * t;
-        if (p.z < zmin_ || p.z > zmax_) {
+        const glm::vec3 position = origin + direction * t;
+        if (position.z < zmin_ || position.z > zmax_) {
             continue;
         }
-        float phi = std::atan2(p.y, p.x);
-        if (phi < 0.0f) {
-            phi += 2.0f * PI;
+        float phi = std::atan2(position.y, position.x);
+        if (phi < 0.0F) {
+            phi += 2.0F * PI;
         }
         if (phi > thetamax_) {
             continue;
         }
         *along = t;
-        *point = p;
+        *point = position;
         return true;
     }
     return false;
@@ -82,23 +82,23 @@ glm::vec3 Sphere::normal(const glm::vec3 & point) const {
 
 glm::vec2 Sphere::parameters(const glm::vec3 & point) const {
     float phi = std::atan2(point.y, point.x);
-    if (phi < 0.0f) {
-        phi += 2.0f * PI;
+    if (phi < 0.0F) {
+        phi += 2.0F * PI;
     }
     const float low = std::asin(zmin_ / radius_);
     const float high = std::asin(zmax_ / radius_);
-    const float latitude = std::asin(std::clamp(point.z / radius_, -1.0f, 1.0f));
-    return glm::vec2(thetamax_ > 0.0f ? phi / thetamax_ : 0.0f,
-        high > low ? (latitude - low) / (high - low) : 0.0f);
+    const float latitude = std::asin(std::clamp(point.z / radius_, -1.0F, 1.0F));
+    return glm::vec2(thetamax_ > 0.0F ? phi / thetamax_ : 0.0F,
+        high > low ? (latitude - low) / (high - low) : 0.0F);
 }
 
 bool Sphere::intersect(const v3d::type::geometry::Ray & ray, float from, const Pose & pose,
     Intersection* found) const {
     // taken back unnormalised, so the parameter along it is still the ray's distance
     const glm::vec3 origin = pose.backward == nullptr ? ray.origin() :
-        glm::vec3(*pose.backward * glm::vec4(ray.origin(), 1.0f));
+        glm::vec3(*pose.backward * glm::vec4(ray.origin(), 1.0F));
     const glm::vec3 direction = pose.backward == nullptr ? ray.direction() : glm::mat3(*pose.backward) * ray.direction();
-    return intersects(origin, direction, from, &found->distance, &found->point);
+    return intersects({.origin = origin, .direction = direction}, from, &found->distance, &found->point);
 }
 
 void Sphere::describe(const Intersection & found, Hit* hit) const {

@@ -12,13 +12,14 @@
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/Frame.h>
-#include <api/render/realtime/LitSettings.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/MeshRegistry.h>
-#include <api/render/realtime/Meshes.h>
+#include <api/render/realtime/entity/Meshes.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Poses.h>
-#include <api/render/realtime/SceneUniforms.h>
-#include <api/render/realtime/Shadow.h>
+#include <api/render/realtime/entity/Poses.h>
+#include <api/render/realtime/lighting/SceneUniforms.h>
+#include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
@@ -30,6 +31,7 @@
 #include <api/type/camera/Isometric.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <optional>
 #include <string>
@@ -46,15 +48,16 @@
 using v3d::ecs::component::Playback;
 using v3d::ecs::component::Transform;
 using v3d::render::realtime::Frame;
-using v3d::render::realtime::LitSettings;
 using v3d::render::realtime::MeshHandle;
 using v3d::render::realtime::MeshRegistry;
 using v3d::render::realtime::Pass;
-using v3d::render::realtime::Poses;
+using v3d::render::realtime::entity::Poses;
 using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
 using v3d::render::realtime::vulkan::renderer::Lit;
+
+namespace lighting = v3d::render::realtime::lighting;
 
 namespace {
 
@@ -63,7 +66,7 @@ const uint32_t width = 128;
 const uint32_t height = 128;
 
 // a strip bound to three joints, with a bend among its clips, made by
-// api/asset/tests/data/make_skin_fixture.py
+// api/asset/tests/data/make_skin_fixture.ts
 const char* STRIP = "bending_strip.glb";
 
 boost::shared_ptr<v3d::asset::Manager> assets(const v3d::test::Headless& headless) {
@@ -94,7 +97,7 @@ v3d::type::Model stripped(const boost::shared_ptr<v3d::asset::Manager>& manager)
 entt::entity lay(entt::registry* registry, const MeshHandle& mesh) {
     const entt::entity entity = registry->create();
     Transform transform;
-    transform.rotation = glm::angleAxis(-glm::half_pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f));
+    transform.rotation = glm::angleAxis(-glm::half_pi<float>(), glm::vec3(1.0F, 0.0F, 0.0F));
     registry->emplace<Transform>(entity, transform);
     registry->emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{mesh, false});
     return entity;
@@ -107,28 +110,28 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     const MeshRegistry& meshes, Lit* lit, const boost::shared_ptr<RenderTarget>& target, const std::string& path) {
     v3d::type::camera::Isometric orbit;
     // the strip lies from z = 0 to z = -3 once laid down
-    orbit.target(glm::vec3(0.0f, 0.0f, -1.5f));
-    orbit.zoom(4.0f);
-    orbit.elevation(1.0471976f);
+    orbit.target(glm::vec3(0.0F, 0.0F, -1.5F));
+    orbit.zoom(4.0F);
+    orbit.elevation(1.0471976F);
     v3d::type::camera::Camera camera;
-    camera.profile().clipping(0.1f, 100.0f);
+    camera.profile().clipping(glm::vec2(0.1F, 100.0F));
     orbit.apply(&camera);
     camera.createProjection();
     camera.createView();
 
-    LitSettings settings;
-    settings.outline = 0.05f;
+    lighting::Settings settings;
+    settings.outline = 0.05F;
 
-    const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
+    const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0F, meshes);
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("lit");
+    const boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     pass->camera(camera.view(), camera.projection());
-    pass->scene(lit->scene(v3d::render::realtime::pack(settings, glm::mat4(1.0f), 0.0f),
+    pass->scene(lit->scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F),
         v3d::render::realtime::TextureHandle(), poses.palette()));
-    v3d::render::realtime::meshes(registry, 1.0f, meshes, *lit, settings.outline, pass.get(), poses);
+    v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, lit, settings.outline, pass.get(), poses);
 
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
@@ -156,7 +159,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
 std::size_t covered(v3d::image::Image& picture) {
     std::size_t count = 0;
     for (std::size_t texel = 0; texel < static_cast<std::size_t>(picture.width()) * picture.height(); texel++) {
-        const unsigned char* at = picture.data() + texel * 4;
+        const unsigned char* at = picture.data() + (texel * 4);
         if (at[0] != 0 || at[1] != 0 || at[2] != 255) {
             count++;
         }
@@ -164,10 +167,10 @@ std::size_t covered(v3d::image::Image& picture) {
     return count;
 }
 
-std::size_t differing(v3d::image::Image& a, v3d::image::Image& b) {
+std::size_t differing(v3d::image::Image& first, v3d::image::Image& second) {
     std::size_t count = 0;
-    for (std::size_t texel = 0; texel < static_cast<std::size_t>(a.width()) * a.height(); texel++) {
-        if (std::memcmp(a.data() + texel * 4, b.data() + texel * 4, 4) != 0) {
+    for (std::size_t texel = 0; texel < static_cast<std::size_t>(first.width()) * first.height(); texel++) {
+        if (std::memcmp(first.data() + (texel * 4), second.data() + (texel * 4), 4) != 0) {
             count++;
         }
     }
@@ -179,8 +182,6 @@ Lit makeLit(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>
         headless->context->frameUniforms(), headless->context->textures(), colourFormat, target->depthFormat(), shadow);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(skin_test)
 
 /**
@@ -188,7 +189,7 @@ BOOST_AUTO_TEST_SUITE(skin_test)
  * skeleton, and a static entity is not posed at all.
  **/
 BOOST_AUTO_TEST_CASE(poses_are_laid_end_to_end) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
     const boost::shared_ptr<v3d::asset::Manager> manager = assets(headless);
     MeshRegistry meshes(headless.logger, headless.context, manager);
     const MeshHandle strip = meshes.load(STRIP);
@@ -199,7 +200,7 @@ BOOST_AUTO_TEST_CASE(poses_are_laid_end_to_end) {
     const entt::entity second = lay(&registry, strip);
     const entt::entity unskinned = lay(&registry, still);
 
-    const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
+    const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0F, meshes);
     BOOST_CHECK_EQUAL(poses.palette().size(), 6U);
     BOOST_REQUIRE(poses.firstJoint(first) && poses.firstJoint(second));
     BOOST_CHECK_EQUAL(*poses.firstJoint(first) + *poses.firstJoint(second), 3U);
@@ -209,10 +210,10 @@ BOOST_AUTO_TEST_CASE(poses_are_laid_end_to_end) {
 
 /**
  * An entity with no playback, and one playing nothing, stand in the rest pose, whose palette
- * is the identity; one whose mesh was released is not posed.
+ * is the identity. An entity whose mesh was released is not posed.
  **/
 BOOST_AUTO_TEST_CASE(an_entity_with_nothing_playing_stands_at_rest) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     const MeshHandle strip = meshes.load(STRIP);
     const MeshHandle doomed = meshes.add("doomed", *boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(
@@ -225,11 +226,11 @@ BOOST_AUTO_TEST_CASE(an_entity_with_nothing_playing_stands_at_rest) {
     const entt::entity released = lay(&registry, doomed);
     BOOST_REQUIRE(meshes.release(doomed));
 
-    const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
+    const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0F, meshes);
     BOOST_CHECK(!poses.firstJoint(released));
     BOOST_REQUIRE_EQUAL(poses.palette().size(), 6U);
     for (const glm::mat4& matrix : poses.palette()) {
-        BOOST_CHECK(matrix == glm::mat4(1.0f));
+        BOOST_CHECK(matrix == glm::mat4(1.0F));
     }
     BOOST_CHECK(headless.silent());
 }
@@ -244,7 +245,7 @@ BOOST_AUTO_TEST_CASE(an_entity_with_nothing_playing_stands_at_rest) {
  **/
 BOOST_AUTO_TEST_CASE(a_skin_at_rest_draws_its_unskinned_mesh) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true);
     const boost::shared_ptr<v3d::asset::Manager> manager = assets(headless);
     MeshRegistry meshes(headless.logger, headless.context, manager);
@@ -272,7 +273,7 @@ BOOST_AUTO_TEST_CASE(a_skin_at_rest_draws_its_unskinned_mesh) {
  **/
 BOOST_AUTO_TEST_CASE(a_bent_strip_is_drawn_and_silent) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true);
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     Lit lit = makeLit(&headless, target, VK_FORMAT_UNDEFINED);
@@ -286,8 +287,8 @@ BOOST_AUTO_TEST_CASE(a_bent_strip_is_drawn_and_silent) {
     const boost::shared_ptr<v3d::image::Image> rested = draw(&headless, registry, meshes, &lit, target, "data_out/skinned_rest.png");
 
     Playback playback;
-    v3d::ecs::component::play(&playback, *bend, meshes.resolve(strip)->skin->clips[*bend].duration, false, 0.0f);
-    v3d::ecs::component::advance(&playback, 0.5f);
+    v3d::ecs::component::play(&playback, {.clip = *bend, .duration = meshes.resolve(strip)->skin->clips[*bend].duration, .loops = false, .fade = 0.0F});
+    v3d::ecs::component::advance(&playback, 0.5F);
     registry.emplace<Playback>(entity, playback);
     const boost::shared_ptr<v3d::image::Image> bent = draw(&headless, registry, meshes, &lit, target, "data_out/skinned_bend.png");
     BOOST_REQUIRE(rested && bent);
@@ -306,7 +307,7 @@ BOOST_AUTO_TEST_CASE(a_bent_strip_is_drawn_and_silent) {
  **/
 BOOST_AUTO_TEST_CASE(an_exported_rig_is_drawn_mid_clip) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true);
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     Lit lit = makeLit(&headless, target, VK_FORMAT_UNDEFINED);
@@ -318,14 +319,14 @@ BOOST_AUTO_TEST_CASE(an_exported_rig_is_drawn_mid_clip) {
     entt::registry registry;
     const entt::entity entity = lay(&registry, rig);
     Playback playback;
-    v3d::ecs::component::play(&playback, *bend, duration, false, 0.0f);
+    v3d::ecs::component::play(&playback, {.clip = *bend, .duration = duration, .loops = false, .fade = 0.0F});
     registry.emplace<Playback>(entity, playback);
 
     std::vector<boost::shared_ptr<v3d::image::Image>> pictures;
     for (int third = 0; third < 3; third++) {
         pictures.push_back(draw(&headless, registry, meshes, &lit, target, "data_out/blender_bend_" + std::to_string(third) + ".png"));
         BOOST_REQUIRE(pictures.back());
-        v3d::ecs::component::advance(registry, duration / 3.0f);
+        v3d::ecs::component::advance(registry, duration / 3.0F);
     }
     BOOST_CHECK(headless.silent());
 
@@ -345,7 +346,7 @@ BOOST_AUTO_TEST_CASE(an_exported_rig_is_drawn_mid_clip) {
 BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     const uint32_t size = 16;
     v3d::test::Headless headless(colourFormat, size, size);
-    boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         size, size, VK_FORMAT_UNDEFINED, true, true);
     if (map->depthFormat() != VK_FORMAT_D32_SFLOAT) {
         BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
@@ -354,21 +355,21 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
 
     // a square at z = -0.5 facing -z, towards the light, wound counter clockwise from there
     v3d::type::Model square;
-    const glm::vec3 corners[4] = {{0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, -0.5f}};
+    const glm::vec3 corners[4] = {{0.5F, -0.5F, -0.5F}, {-0.5F, -0.5F, -0.5F}, {-0.5F, 0.5F, -0.5F}, {0.5F, 0.5F, -0.5F}};
     for (const glm::vec3& corner : corners) {
         v3d::type::Model::Vertex vertex;
         vertex.position = corner;
-        vertex.normal = glm::vec3(0.0f, 0.0f, -1.0f);
+        vertex.normal = glm::vec3(0.0F, 0.0F, -1.0F);
         square.vertices().push_back(vertex);
         v3d::type::Model::Influence influence;
-        influence.weights = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+        influence.weights = glm::vec4(1.0F, 0.0F, 0.0F, 0.0F);
         square.influences().push_back(influence);
     }
     square.indices() = {0, 1, 2, 0, 2, 3};
     square.materials().emplace_back();
     square.parts().push_back({0, 6, 0});
     v3d::type::Skeleton::Joint joint;
-    joint.translation = glm::vec3(0.0f, 0.0f, 0.5f);
+    joint.translation = glm::vec3(0.0F, 0.0F, 0.5F);
     square.skeleton().joints.push_back(joint);
 
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
@@ -380,22 +381,22 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     entt::registry registry;
     const entt::entity entity = registry.create();
     Transform transform;
-    transform.position = glm::vec3(0.0f, 0.0f, -0.5f);
+    transform.position = glm::vec3(0.0F, 0.0F, -0.5F);
     registry.emplace<Transform>(entity, transform);
     registry.emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{handle, true});
 
     // the light looks along +z from two units out over a sphere of one, as the static case's
-    const glm::mat4 light = v3d::render::realtime::shadow::light(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f), 1.0f);
-    const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
+    const glm::mat4 light = lighting::shadowLight(glm::vec3(0.0F, 0.0F, -1.0F), {.centre = glm::vec3(0.0F), .radius = 1.0F});
+    const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0F, meshes);
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("shadow");
+    const boost::shared_ptr<Pass> pass = frame.pass("shadow");
     pass->target(map);
     pass->depth(true);
-    pass->scene(lit.scene(v3d::render::realtime::pack(LitSettings(), light, 1.0f / size),
+    pass->scene(lit.scene(lighting::pack(lighting::Settings(), light, 1.0F / size),
         v3d::render::realtime::TextureHandle(), poses.palette()));
-    pass->depthBias(0.0f, 0.0f);
-    v3d::render::realtime::casters(registry, 1.0f, meshes, lit, pass.get(), poses);
+    pass->depthBias(0.0F, 0.0F);
+    v3d::render::realtime::entity::casters(registry, 1.0F, meshes, &lit, pass.get(), poses);
     BOOST_CHECK_EQUAL(pass->items().size(), 1U);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
@@ -414,8 +415,8 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     BOOST_CHECK(headless.silent());
     const std::vector<float> depths = capture.depth();
     BOOST_REQUIRE_EQUAL(depths.size(), static_cast<std::size_t>(size) * size);
-    BOOST_CHECK_EQUAL(depths[static_cast<std::size_t>(8) * size + 8], 0.375f);
-    BOOST_CHECK_EQUAL(depths[0], 1.0f);
+    BOOST_CHECK_EQUAL(depths[(static_cast<std::size_t>(8) * size) + 8], 0.375F);
+    BOOST_CHECK_EQUAL(depths[0], 1.0F);
 }
 
 /**
@@ -423,7 +424,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
  **/
 BOOST_AUTO_TEST_CASE(a_skinned_mesh_released_in_flight_outlives_its_frame) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true);
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     Lit lit = makeLit(&headless, target, VK_FORMAT_UNDEFINED);
@@ -431,14 +432,14 @@ BOOST_AUTO_TEST_CASE(a_skinned_mesh_released_in_flight_outlives_its_frame) {
 
     entt::registry registry;
     lay(&registry, strip);
-    const Poses poses = v3d::render::realtime::poses(registry, 1.0f, meshes);
+    const Poses poses = v3d::render::realtime::entity::poses(registry, 1.0F, meshes);
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("lit");
+    const boost::shared_ptr<Pass> pass = frame.pass("lit");
     pass->target(target);
     pass->depth(true);
-    pass->scene(lit.scene(v3d::render::realtime::pack(LitSettings(), glm::mat4(1.0f), 0.0f),
+    pass->scene(lit.scene(lighting::pack(lighting::Settings(), glm::mat4(1.0F), 0.0F),
         v3d::render::realtime::TextureHandle(), poses.palette()));
-    v3d::render::realtime::meshes(registry, 1.0f, meshes, lit, 0.0f, pass.get(), poses);
+    v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, 0.0F, pass.get(), poses);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
@@ -454,3 +455,5 @@ BOOST_AUTO_TEST_CASE(a_skinned_mesh_released_in_flight_outlives_its_frame) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

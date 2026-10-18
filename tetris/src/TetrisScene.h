@@ -24,7 +24,7 @@ class TetrisScene {
 
     /**
      * Advance the board by one simulation step.
-     * @param step seconds, which is what the fall rate is expressed against
+     * @param step seconds, the unit the fall rate is expressed against
      */
     void tick(float step);
     void resize(int width, int height);
@@ -42,7 +42,7 @@ class TetrisScene {
     unsigned int score() const;
 
     /**
-     * Whether the game is running. A paused game still draws, but its board does not fall.
+     * Whether the game is paused. A paused game still draws, but its board does not fall.
      */
     bool paused() const;
     void pause(bool paused);

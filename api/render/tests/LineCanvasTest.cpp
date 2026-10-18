@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -16,17 +16,15 @@
 
 namespace {
 
-constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
-constexpr glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
+constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
+constexpr glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
 
 /**
  * A quarter turn about z, which takes the x axis onto the y axis.
  **/
 glm::mat4 quarterTurn() {
-    return glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    return glm::rotate(glm::mat4(1.0F), glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F));
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(linecanvas_test)
 
@@ -35,7 +33,7 @@ BOOST_AUTO_TEST_SUITE(linecanvas_test)
  * costs neither an upload nor an item.
  **/
 BOOST_AUTO_TEST_CASE(an_empty_canvas_has_nothing_to_draw) {
-    v3d::render::realtime::LineCanvas canvas;
+    const v3d::render::realtime::canvas::Line canvas;
 
     BOOST_CHECK(canvas.empty());
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 0);
@@ -45,17 +43,17 @@ BOOST_AUTO_TEST_CASE(an_empty_canvas_has_nothing_to_draw) {
  * A line list carries two vertices per segment and no indices.
  **/
 BOOST_AUTO_TEST_CASE(a_segment_is_two_vertices) {
-    v3d::render::realtime::LineCanvas canvas;
-    canvas.line(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 2.0f, 3.0f), red);
+    v3d::render::realtime::canvas::Line canvas;
+    canvas.line(glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(1.0F, 2.0F, 3.0F), red);
 
     BOOST_CHECK(!canvas.empty());
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 2);
-    BOOST_CHECK_EQUAL(canvas.vertices()[0].position.x, 0.0f);
-    BOOST_CHECK_EQUAL(canvas.vertices()[1].position.x, 1.0f);
-    BOOST_CHECK_EQUAL(canvas.vertices()[1].position.y, 2.0f);
-    BOOST_CHECK_EQUAL(canvas.vertices()[1].position.z, 3.0f);
-    BOOST_CHECK_EQUAL(canvas.vertices()[1].colour.r, 1.0f);
-    BOOST_CHECK_EQUAL(canvas.vertices()[1].colour.g, 0.0f);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].position.x, 0.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[1].position.x, 1.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[1].position.y, 2.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[1].position.z, 3.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[1].colour.r, 1.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[1].colour.g, 0.0F);
 }
 
 /**
@@ -63,17 +61,17 @@ BOOST_AUTO_TEST_CASE(a_segment_is_two_vertices) {
  * both from nothing.
  **/
 BOOST_AUTO_TEST_CASE(clearing_drops_the_stream) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
     canvas.push();
-    canvas.translate(glm::vec3(5.0f, 0.0f, 0.0f));
-    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.translate(glm::vec3(5.0F, 0.0F, 0.0F));
+    canvas.line(glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), white);
 
     canvas.clear();
 
     BOOST_CHECK(canvas.empty());
-    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.line(glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), white);
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 2);
-    BOOST_CHECK_EQUAL(canvas.vertices()[0].position.x, 0.0f);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].position.x, 0.0F);
 }
 
 /**
@@ -81,17 +79,17 @@ BOOST_AUTO_TEST_CASE(clearing_drops_the_stream) {
  * not a line and draws nothing.
  **/
 BOOST_AUTO_TEST_CASE(a_polyline_joins_its_points_in_order) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     std::vector<glm::vec3> lone;
-    lone.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
+    lone.push_back(glm::vec3(0.0F, 0.0F, 0.0F));
     canvas.polyline(lone, white);
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 0);
 
     std::vector<glm::vec3> points;
-    points.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
-    points.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
-    points.push_back(glm::vec3(1.0f, 1.0f, 0.0f));
+    points.push_back(glm::vec3(0.0F, 0.0F, 0.0F));
+    points.push_back(glm::vec3(1.0F, 0.0F, 0.0F));
+    points.push_back(glm::vec3(1.0F, 1.0F, 0.0F));
 
     canvas.polyline(points, white);
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 4);
@@ -100,9 +98,9 @@ BOOST_AUTO_TEST_CASE(a_polyline_joins_its_points_in_order) {
     canvas.polyline(points, white, true);
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 6);
     // the closing segment runs from the last point back to the first
-    BOOST_CHECK_EQUAL(canvas.vertices()[4].position.y, 1.0f);
-    BOOST_CHECK_EQUAL(canvas.vertices()[5].position.x, 0.0f);
-    BOOST_CHECK_EQUAL(canvas.vertices()[5].position.y, 0.0f);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].position.y, 1.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[5].position.x, 0.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[5].position.y, 0.0F);
 }
 
 /**
@@ -110,14 +108,14 @@ BOOST_AUTO_TEST_CASE(a_polyline_joins_its_points_in_order) {
  * it is a corner.
  **/
 BOOST_AUTO_TEST_CASE(a_box_is_twelve_edges_between_its_corners) {
-    v3d::render::realtime::LineCanvas canvas;
-    canvas.box(glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f), white);
+    v3d::render::realtime::canvas::Line canvas;
+    canvas.box(glm::vec3(-1.0F, -1.0F, -1.0F), glm::vec3(1.0F, 1.0F, 1.0F), white);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 24);
-    for (const v3d::render::realtime::LineCanvas::Vertex& vertex : canvas.vertices()) {
-        BOOST_CHECK_EQUAL(std::abs(vertex.position.x), 1.0f);
-        BOOST_CHECK_EQUAL(std::abs(vertex.position.y), 1.0f);
-        BOOST_CHECK_EQUAL(std::abs(vertex.position.z), 1.0f);
+    for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
+        BOOST_CHECK_EQUAL(std::abs(vertex.position.x), 1.0F);
+        BOOST_CHECK_EQUAL(std::abs(vertex.position.y), 1.0F);
+        BOOST_CHECK_EQUAL(std::abs(vertex.position.z), 1.0F);
     }
 }
 
@@ -126,29 +124,29 @@ BOOST_AUTO_TEST_CASE(a_box_is_twelve_edges_between_its_corners) {
  * segment lands back on the first point.
  **/
 BOOST_AUTO_TEST_CASE(a_circle_closes_in_the_plane_of_its_axes) {
-    v3d::render::realtime::LineCanvas canvas;
-    const glm::vec3 u(1.0f, 0.0f, 0.0f);
-    const glm::vec3 v(0.0f, 0.0f, 1.0f);
+    v3d::render::realtime::canvas::Line canvas;
+    const glm::vec3 u(1.0F, 0.0F, 0.0F);
+    const glm::vec3 v(0.0F, 0.0F, 1.0F);
 
-    canvas.circle(glm::vec3(0.0f), u, v, 2.0f, 8, white);
+    canvas.circle({.centre = glm::vec3(0.0F), .axisU = u, .axisV = v, .radius = 2.0F, .sides = 8}, white);
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 16);
 
-    for (const v3d::render::realtime::LineCanvas::Vertex& vertex : canvas.vertices()) {
-        BOOST_CHECK_SMALL(vertex.position.y, 0.001f);
-        const float radius = std::sqrt(vertex.position.x * vertex.position.x + vertex.position.z * vertex.position.z);
-        BOOST_CHECK_CLOSE(radius, 2.0f, 0.01f);
+    for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
+        BOOST_CHECK_SMALL(vertex.position.y, 0.001F);
+        const float radius = std::sqrt((vertex.position.x * vertex.position.x) + (vertex.position.z * vertex.position.z));
+        BOOST_CHECK_CLOSE(radius, 2.0F, 0.01F);
     }
 
-    BOOST_CHECK_CLOSE(canvas.vertices().front().position.x, canvas.vertices().back().position.x, 0.01f);
-    BOOST_CHECK_SMALL(canvas.vertices().back().position.z, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.vertices().front().position.x, canvas.vertices().back().position.x, 0.01F);
+    BOOST_CHECK_SMALL(canvas.vertices().back().position.z, 0.001F);
 }
 
 /**
  * Fewer than three sides is not a ring.
  **/
 BOOST_AUTO_TEST_CASE(a_circle_of_fewer_than_three_sides_draws_nothing) {
-    v3d::render::realtime::LineCanvas canvas;
-    canvas.circle(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 1.0f, 2, white);
+    v3d::render::realtime::canvas::Line canvas;
+    canvas.circle({.centre = glm::vec3(0.0F), .axisU = glm::vec3(1.0F, 0.0F, 0.0F), .axisV = glm::vec3(0.0F, 0.0F, 1.0F), .radius = 1.0F, .sides = 2}, white);
 
     BOOST_CHECK(canvas.empty());
 }
@@ -158,29 +156,29 @@ BOOST_AUTO_TEST_CASE(a_circle_of_fewer_than_three_sides_draws_nothing) {
  * the origin and placed where it is drawn.
  **/
 BOOST_AUTO_TEST_CASE(the_transform_stack_places_what_is_drawn_under_it) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
-    canvas.translate(glm::vec3(10.0f, 0.0f, 0.0f));
-    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.translate(glm::vec3(10.0F, 0.0F, 0.0F));
+    canvas.line(glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), white);
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 2);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 10.0f, 0.01f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[1].position.x, 11.0f, 0.01f);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 10.0F, 0.01F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[1].position.x, 11.0F, 0.01F);
 
     // a pushed transform composes onto the one under it: the segment runs up the y axis now,
     // and still starts from the outer translation
     canvas.push();
     canvas.transform(quarterTurn());
-    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.line(glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), white);
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4);
-    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.x, 10.0f, 0.01f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[3].position.x, 10.0f, 0.01f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[3].position.y, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.x, 10.0F, 0.01F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[3].position.x, 10.0F, 0.01F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[3].position.y, 1.0F, 0.01F);
 
     // and a pop puts back what was there before it
     canvas.pop();
-    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.line(glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), white);
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 6);
-    BOOST_CHECK_CLOSE(canvas.vertices()[5].position.x, 11.0f, 0.01f);
+    BOOST_CHECK_CLOSE(canvas.vertices()[5].position.x, 11.0F, 0.01F);
 }
 
 /**
@@ -188,15 +186,15 @@ BOOST_AUTO_TEST_CASE(the_transform_stack_places_what_is_drawn_under_it) {
  * under a rotation moves along the rotated axis.
  **/
 BOOST_AUTO_TEST_CASE(a_translation_follows_the_transform_it_is_applied_under) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     canvas.transform(quarterTurn());
-    canvas.translate(glm::vec3(2.0f, 0.0f, 0.0f));
-    canvas.line(glm::vec3(0.0f), glm::vec3(0.0f), white);
+    canvas.translate(glm::vec3(2.0F, 0.0F, 0.0F));
+    canvas.line(glm::vec3(0.0F), glm::vec3(0.0F), white);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 2);
-    BOOST_CHECK_SMALL(canvas.vertices()[0].position.x, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.y, 2.0f, 0.01f);
+    BOOST_CHECK_SMALL(canvas.vertices()[0].position.x, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.y, 2.0F, 0.01F);
 }
 
 /**
@@ -204,15 +202,15 @@ BOOST_AUTO_TEST_CASE(a_translation_follows_the_transform_it_is_applied_under) {
  * the canvas usable rather than reading off the end of the stack.
  **/
 BOOST_AUTO_TEST_CASE(popping_past_the_bottom_of_the_stack_is_harmless) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
     canvas.pop();
     canvas.pop();
-    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.line(glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), white);
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 2);
-    BOOST_CHECK_EQUAL(canvas.vertices()[0].position.x, 0.0f);
-    BOOST_CHECK_EQUAL(canvas.vertices()[1].position.x, 1.0f);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].position.x, 0.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[1].position.x, 1.0F);
 }
 
 /**
@@ -220,9 +218,9 @@ BOOST_AUTO_TEST_CASE(popping_past_the_bottom_of_the_stack_is_harmless) {
  * is a single draw.
  **/
 BOOST_AUTO_TEST_CASE(an_uncut_stream_is_one_batch) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
-    canvas.box(glm::vec3(0.0f), glm::vec3(1.0f), white);
+    canvas.box(glm::vec3(0.0F), glm::vec3(1.0F), white);
 
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
     BOOST_CHECK(!canvas.batches()[0].clipped);
@@ -231,26 +229,26 @@ BOOST_AUTO_TEST_CASE(an_uncut_stream_is_one_batch) {
 }
 
 /**
- * A clip cuts the stream where it opens and where it closes, and the batch between them
+ * A clip starts a new batch where it opens and where it closes, and the batch between them
  * carries the rectangle the device scissors to. Nothing is dropped on the cpu: the segment
  * inside the clip is still two vertices.
  **/
 BOOST_AUTO_TEST_CASE(a_clip_cuts_the_batch_and_carries_its_rectangle) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
-    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
-    canvas.clip(glm::vec2(4.0f, 5.0f), glm::vec2(20.0f, 30.0f));
-    canvas.line(glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f), red);
+    canvas.line(glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), white);
+    canvas.clip(glm::vec2(4.0F, 5.0F), glm::vec2(20.0F, 30.0F));
+    canvas.line(glm::vec3(0.0F), glm::vec3(0.0F, 1.0F, 0.0F), red);
     canvas.unclip();
-    canvas.line(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f), white);
+    canvas.line(glm::vec3(0.0F), glm::vec3(0.0F, 0.0F, 1.0F), white);
 
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 3);
     BOOST_CHECK(!canvas.batches()[0].clipped);
     BOOST_CHECK(canvas.batches()[1].clipped);
-    BOOST_CHECK_CLOSE(canvas.batches()[1].clip.x, 4.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.batches()[1].clip.y, 5.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.batches()[1].clip.z, 20.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.batches()[1].clip.w, 30.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.batches()[1].clip.x, 4.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.batches()[1].clip.y, 5.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.batches()[1].clip.z, 20.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.batches()[1].clip.w, 30.0F, 0.001F);
     BOOST_CHECK_EQUAL(canvas.batches()[1].firstVertex, 2);
     BOOST_CHECK_EQUAL(canvas.batches()[1].vertices, 2);
     BOOST_CHECK(!canvas.batches()[2].clipped);
@@ -258,22 +256,22 @@ BOOST_AUTO_TEST_CASE(a_clip_cuts_the_batch_and_carries_its_rectangle) {
 }
 
 /**
- * The clip is in the pixels of the image drawn into and the modelview does not apply to it,
- * unlike Canvas's: a line canvas is world space, so the transform a vertex goes through is
- * not one a screen rectangle could go through.
+ * The clip is in pixels of the image drawn into, and the modelview does not apply to it, unlike
+ * Canvas's clip. A line canvas is in world space, and a screen rectangle cannot go through a
+ * world-space transform.
  **/
 BOOST_AUTO_TEST_CASE(a_clip_is_not_moved_by_the_transform) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
-    canvas.translate(glm::vec3(100.0f, 100.0f, 0.0f));
-    canvas.clip(glm::vec2(4.0f, 5.0f), glm::vec2(20.0f, 30.0f));
-    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.translate(glm::vec3(100.0F, 100.0F, 0.0F));
+    canvas.clip(glm::vec2(4.0F, 5.0F), glm::vec2(20.0F, 30.0F));
+    canvas.line(glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), white);
 
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
-    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.x, 4.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.w, 30.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.x, 4.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.w, 30.0F, 0.001F);
     // the vertex did move, so the transform is being applied to what is drawn
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 100.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 100.0F, 0.001F);
 }
 
 /**
@@ -281,17 +279,17 @@ BOOST_AUTO_TEST_CASE(a_clip_is_not_moved_by_the_transform) {
  * clipped box never draws outside the outer one.
  **/
 BOOST_AUTO_TEST_CASE(an_inner_clip_only_takes_room_away) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
-    canvas.clip(glm::vec2(10.0f, 10.0f), glm::vec2(50.0f, 50.0f));
-    canvas.clip(glm::vec2(0.0f, 20.0f), glm::vec2(100.0f, 30.0f));
-    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.clip(glm::vec2(10.0F, 10.0F), glm::vec2(50.0F, 50.0F));
+    canvas.clip(glm::vec2(0.0F, 20.0F), glm::vec2(100.0F, 30.0F));
+    canvas.line(glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), white);
 
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
-    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.x, 10.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.y, 20.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.z, 50.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.w, 30.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.x, 10.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.y, 20.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.z, 50.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.batches()[0].clip.w, 30.0F, 0.001F);
 }
 
 /**
@@ -300,11 +298,11 @@ BOOST_AUTO_TEST_CASE(an_inner_clip_only_takes_room_away) {
  * nothing.
  **/
 BOOST_AUTO_TEST_CASE(clips_that_miss_leave_nothing_rather_than_an_inverted_rectangle) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
-    canvas.clip(glm::vec2(0.0f, 0.0f), glm::vec2(10.0f, 10.0f));
-    canvas.clip(glm::vec2(40.0f, 40.0f), glm::vec2(50.0f, 50.0f));
-    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.clip(glm::vec2(0.0F, 0.0F), glm::vec2(10.0F, 10.0F));
+    canvas.clip(glm::vec2(40.0F, 40.0F), glm::vec2(50.0F, 50.0F));
+    canvas.line(glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), white);
 
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
     const glm::vec4& clip = canvas.batches()[0].clip;
@@ -317,15 +315,17 @@ BOOST_AUTO_TEST_CASE(clips_that_miss_leave_nothing_rather_than_an_inverted_recta
  * stream is rebuilt every frame and the stack is part of it.
  **/
 BOOST_AUTO_TEST_CASE(clearing_drops_the_clip_stack_with_the_stream) {
-    v3d::render::realtime::LineCanvas canvas;
+    v3d::render::realtime::canvas::Line canvas;
 
-    canvas.clip(glm::vec2(4.0f, 5.0f), glm::vec2(20.0f, 30.0f));
-    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.clip(glm::vec2(4.0F, 5.0F), glm::vec2(20.0F, 30.0F));
+    canvas.line(glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), white);
     canvas.clear();
-    canvas.line(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), white);
+    canvas.line(glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), white);
 
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
     BOOST_CHECK(!canvas.batches()[0].clipped);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

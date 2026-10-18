@@ -18,10 +18,11 @@ tests depth shares this one image.
 `DEPTH_STENCIL_ATTACHMENT`. With `sampled` true it also requires `SAMPLED_IMAGE`, which can give a
 different answer: a device may draw depth into a format without letting a shader sample it.
 `stencil()` says whether the format has a stencil aspect. Nothing uses the stencil aspect, and
-every depth barrier names only the depth aspect, in `DEPTH_ATTACHMENT_OPTIMAL` or
-`DEPTH_READ_ONLY_OPTIMAL`. For a combined format that is valid only because the device enables
-`separateDepthStencilLayouts`. Naming the stencil aspect as well would be an error, because
-those two layouts are depth-only.
+every depth barrier names only the depth aspect: into `DEPTH_ATTACHMENT_OPTIMAL` or
+`DEPTH_READ_ONLY_OPTIMAL`, and into and out of `TRANSFER_SRC_OPTIMAL` for a readback. For a
+combined format each of those is valid only because the device enables
+`separateDepthStencilLayouts`. Naming the stencil aspect with the first two would be an error,
+because those layouts are depth-only.
 
 **Sampled depth** is chosen at construction and cannot be switched on later, because it can
 change the format. A sampled buffer:
@@ -64,8 +65,13 @@ and pass it to the device they build.
   `VkDeviceMemory`. A suballocated region starts part way into a shared block, so mapping and
   freeing go through the allocator.
 - **`Allocator::bind(buffer or image, properties, &allocation)` allocates and binds in one call.**
-  A resource never chooses a memory type itself. It throws when no memory type has the
-  properties, and returns the `VkResult` for an allocation that failed.
+  A resource never chooses a memory type itself. **It never throws.** When no memory type has
+  the properties it returns `VK_ERROR_FEATURE_NOT_PRESENT`, from either kind of allocator, and
+  for an allocation that failed it returns that `VkResult`. A resource that made a buffer or an
+  image destroys it when `bind()` fails, so nothing is left on the device.
+- **A constructor that makes several handles destroys the ones it made before it rethrows.**
+  Nothing runs the destructor of an object whose constructor threw. `Swapchain` and
+  `Presenter` do this.
 - `free()` on an allocation that names no memory does nothing, so a resource can free
   unconditionally.
 - VMA is a private dependency. `Allocator.h` and `Allocation.h` declare its handle types
@@ -87,11 +93,13 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
 - `Buffer::grow(bytes)` doubles until large enough and **replaces the allocation**, invalidating
   `handle()`. It waits for the device first. `Buffer::read()` is slow (coherent, not cached), so
   use it for one-off readback only.
-- `DeviceBuffer::upload()` waits for the copy, so nothing may be in flight against the buffer.
-- `memory::Uploader::oneShot(record)` records, submits on the graphics queue and waits. Because it
-  waits, a staging allocation never outlives the function that made it. It reuses one command
-  buffer. It is for load-time work; uploading during play would need a transfer queue and a
-  fence, which do not exist.
+- `DeviceBuffer::upload()` waits for the copy and not for frames in flight, so no frame may be
+  reading the buffer. The constructors are its only callers, and fill a buffer nothing has read.
+- `memory::Uploader::oneShot(record)` records, submits on the graphics queue, and waits on a fence
+  for that submission alone. Because it waits, a staging allocation never outlives the function
+  that made it. Frames in flight go on running, so an upload during play does not stall them,
+  and an upload does not mean any frame has finished. An object a frame may still read is
+  retired through the ring. It reuses one command buffer and one fence.
 - `Mesh` is filled once. Changing geometry means building a new mesh, because a refill would have
   to wait for every frame still drawing the old one. `Mesh::describe(&item)` fills an item's
   buffers, index type and counts.

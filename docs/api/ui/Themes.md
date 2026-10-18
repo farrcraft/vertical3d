@@ -27,6 +27,12 @@ panel without each panel naming it.
 Changing the active theme is `Engine::activeTheme(name)`. Pass the theme to the renderer with
 `Screen::theme()` or `ComponentRenderer::theme()`.
 
+**A theme starts from the defaults, not from the theme before it.** A value the new theme does
+not name goes back to what it was before any theme, and passing no theme puts every value back.
+`Immediate::theme()` follows the same rule. A default the app writes into `dressing()` survives
+a switch, unless a theme also names it, in which case the switch puts back the value from
+before that theme.
+
 ### The `ui` class: the base for retained mode
 
 A theme's `ui` style sets the defaults every other class is applied over. A property the

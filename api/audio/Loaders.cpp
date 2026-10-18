@@ -5,7 +5,9 @@
 
 #include "Loaders.h"
 
+#include <api/asset/Manager.h>
 #include <api/audio/loader/Wav.h>
+#include <api/log/Logger.h>
 
 #include <boost/make_shared.hpp>
 

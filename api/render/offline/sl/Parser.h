@@ -25,13 +25,11 @@ namespace v3d::render::offline::sl {
 /**
  * Recursive descent over a shading language source.
  *
- * Recursive descent rather than a generated parser, because the grammar is small and the
- * error messages matter most. Every diagnostic names a line, a column and what was
- * expected, which is hard to do well in a table driven parser.
+ * Every diagnostic names a line, a column and what was expected.
  *
- * All five shader types parse. Displacement and volume shaders are not executed: they come
- * back as shaders whose `Shader::supported()` returns false, so a scene carrying one is
- * told what is unsupported rather than what is malformed.
+ * Every shader type parses. Displacement and volume shaders are not executed. They come
+ * back as shaders whose `Shader::supported()` returns false, so the error for a scene that
+ * uses one says the type is unsupported, not that the source is malformed.
  *
  * **A parse that fails yields no shaders at all**, and error() says why. The renderer
  * decides what to do about it.
@@ -56,17 +54,18 @@ class Parser final {
 
  private:
     /**
-     * Thrown by the productions and caught by parse(), so a production reads like the
-     * grammar rule it implements rather than like a chain of null checks.
+     * Thrown by the productions and caught by parse(), so that a production reads like its
+     * grammar rule and not like a chain of null checks.
      **/
     class Failure final {};
 
     /**
      * The next token, left for next() to take.
      *
-     * The reference is into the lexer's one token slot, so a token that has to outlive the
-     * next consumption is copied rather than bound. A lexer error surfaces here rather than
-     * as the END it hands back, which would otherwise be reported as a truncated shader.
+     * The reference is into the lexer's single lookahead slot, so a token that must outlive
+     * the next call to next() is copied. A lexer error fails the parse here with the lexer's
+     * message. Otherwise the END token the lexer returns would be reported as a truncated
+     * shader.
      **/
     const Token & peek();
     Token next();
@@ -85,14 +84,14 @@ class Parser final {
     Token expect(Token::Kind kind, const std::string & text);
     /**
      * Consume the next token, failing when it is not of that kind. `what` names what was
-     * wanted, for the diagnostic - "an identifier", "a shader name".
+     * wanted, for the diagnostic: "an identifier", "a shader name".
      **/
     Token expectKind(Token::Kind kind, const char* what);
 
     syntax::ShaderPtr parseShader();
     /**
-     * A shader's parameter list, whose every parameter carries a required default, or a
-     * function's formals, which carry none.
+     * A shader's parameter list, where every parameter must have a default, or a
+     * function's formals, which have none.
      **/
     void parseParameters(std::vector<syntax::Parameter>* parameters, bool defaults);
     bool parseType(Type* type);
@@ -109,7 +108,7 @@ class Parser final {
     syntax::StatementPtr parseWhile();
     syntax::StatementPtr parseFor();
     /**
-     * break, continue or return - the last with an optional value.
+     * break, continue or return. A return may have a value.
      **/
     syntax::StatementPtr parseJump();
     /**
@@ -119,9 +118,8 @@ class Parser final {
     /**
      * The rest of a declaration, from the first name onward.
      *
-     * The name is already consumed because a shader body's `float x` and `float f(` are
-     * told apart by the token after it, and the lexer looks one token ahead rather than
-     * two.
+     * The name is already consumed. The token after the name tells `float x` from
+     * `float f(`, and the lexer looks only one token ahead.
      **/
     syntax::StatementPtr parseDeclaration(Storage storage, Type type, const Token & first);
     /**
@@ -140,7 +138,7 @@ class Parser final {
     syntax::ExpressionPtr parseAdditive();
     syntax::ExpressionPtr parseMultiplicative();
     /**
-     * '.' and '^' - the dot and cross products - which bind tighter than a multiply.
+     * '.' and '^', the dot and cross products, which bind tighter than a multiply.
      **/
     syntax::ExpressionPtr parseProduct();
     syntax::ExpressionPtr parseUnary();

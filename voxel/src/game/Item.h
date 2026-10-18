@@ -6,19 +6,21 @@
 
 #pragma once
 
+#include <cstdint>
+
 /**
  * A game item
  */
 class Item {
  public:
-    typedef enum {
+    typedef enum : std::uint8_t {
         WEARABLE_TYPE_FEET,
         WEARABLE_TYPE_LEGS,
         WEARABLE_TYPE_HEAD,
         WEARABLE_TYPE_CHEST
     } WearableType;
 
-    typedef enum {
+    typedef enum : std::uint8_t {
         ITEM_TYPE_ORE,
         ITEM_TYPE_PLANT,
         ITEM_TYPE_FOOD,

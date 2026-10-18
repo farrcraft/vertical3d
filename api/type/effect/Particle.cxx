@@ -10,7 +10,7 @@
 namespace v3d::type::effect {
 
 float Particle::life() const noexcept {
-    return lifetime > 0.0f ? std::clamp(age / lifetime, 0.0f, 1.0f) : 1.0f;
+    return lifetime > 0.0F ? std::clamp(age / lifetime, 0.0F, 1.0F) : 1.0F;
 }
 
 };  // namespace v3d::type::effect

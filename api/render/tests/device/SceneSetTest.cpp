@@ -7,6 +7,7 @@
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
@@ -16,6 +17,7 @@
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <vector>
 
@@ -73,8 +75,8 @@ PipelineHandle scenePipeline(v3d::test::Headless* headless, VkDescriptorSetLayou
 void draw(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& target, PipelineHandle pipeline,
     VkDescriptorSet scene, Capture* capture) {
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("scene");
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    const boost::shared_ptr<Pass> pass = frame.pass("scene");
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     pass->scene(scene);
 
     DrawItem item;
@@ -101,8 +103,6 @@ void draw(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& 
     headless->submitAndWait(commands);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(scene_set_test)
 
 /**
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_SUITE(scene_set_test)
  **/
 BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     VkDescriptorSetLayoutBinding block{};
     block.binding = 0;
@@ -123,8 +123,8 @@ BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
     block.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     DescriptorPool pool(headless.device, headless.context->ring(), std::vector<VkDescriptorSetLayoutBinding>{block}, 1, "scene");
 
-    const glm::vec4 colour(0.0f, 1.0f, 1.0f, 1.0f);
-    Buffer uniform(headless.device, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(colour));
+    const glm::vec4 colour(0.0F, 1.0F, 1.0F, 1.0F);
+    Buffer uniform(headless.device, {.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, .bytes = sizeof(colour)});
     uniform.write(&colour, sizeof(colour));
 
     VkDescriptorSet scene = pool.allocate();
@@ -149,11 +149,11 @@ BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
 
     BOOST_REQUIRE(capture.write("data_out/scene_set.png"));
     v3d::image::reader::Png png(headless.logger);
-    boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/scene_set.png");
+    const boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/scene_set.png");
     BOOST_REQUIRE(picture);
     const unsigned char* pixels = picture->data();
     for (uint32_t texel = 0; texel < width * height; texel++) {
-        const unsigned char* at = pixels + static_cast<std::size_t>(texel) * 4;
+        const unsigned char* at = pixels + (static_cast<std::size_t>(texel) * 4);
         if (at[0] != 0x00 || at[1] != 0xFF || at[2] != 0xFF || at[3] != 0xFF) {
             BOOST_ERROR("texel " << texel << " is not the colour bound at set 2");
             return;
@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
  **/
 BOOST_AUTO_TEST_CASE(a_scene_pipeline_in_a_pass_with_no_scene_throws) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     VkDescriptorSetLayoutBinding block{};
     block.binding = 0;
@@ -183,3 +183,5 @@ BOOST_AUTO_TEST_CASE(a_scene_pipeline_in_a_pass_with_no_scene_throws) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

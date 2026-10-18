@@ -6,7 +6,10 @@
 #include "ViewLayout.h"
 
 #include <api/asset/Json.h>
+#include <api/asset/kind/Json.h>
+#include <api/log/Logger.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -17,7 +20,7 @@ namespace v3d::editor {
 /**
  **/
 ViewLayout::View::View() :
-region(0.0f, 0.0f, 0.0f, 0.0f) {
+region(0.0F, 0.0F, 0.0F, 0.0F) {
 }
 
 /**
@@ -84,6 +87,10 @@ bool ViewLayout::loadNode(const boost::json::object& entry, Node* into) {
         }
         View view;
         view.camera = *camera;
+        // a layout may show one profile twice, and each view draws in a pass of its own
+        const std::size_t shown = static_cast<std::size_t>(std::ranges::count_if(views_,
+            [&camera](const View& earlier) { return earlier.camera == *camera; }));
+        view.name = shown == 0 ? *camera : *camera + " " + std::to_string(shown + 1);
         into->view = views_.size();
         views_.push_back(view);
         return true;
@@ -124,7 +131,7 @@ bool ViewLayout::loadNode(const boost::json::object& entry, Node* into) {
 /**
  **/
 void ViewLayout::resize(int width, int height) {
-    resize(glm::vec4(0.0f, 0.0f,
+    resize(glm::vec4(0.0F, 0.0F,
         static_cast<float>(width > 0 ? width : 0),
         static_cast<float>(height > 0 ? height : 0)));
 }
@@ -133,8 +140,8 @@ void ViewLayout::resize(int width, int height) {
  **/
 void ViewLayout::resize(const glm::vec4& region) {
     place(root_, glm::vec4(region.x, region.y,
-        region.z > 0.0f ? region.z : 0.0f,
-        region.w > 0.0f ? region.w : 0.0f));
+        region.z > 0.0F ? region.z : 0.0F,
+        region.w > 0.0F ? region.w : 0.0F));
 }
 
 /**
@@ -161,10 +168,10 @@ void ViewLayout::place(const Node& node, const glm::vec4& region) {
         glm::vec4 child = region;
         if (node.vertical) {
             child.y = offset;
-            child.w = extent > 0.0f ? extent : 0.0f;
+            child.w = extent > 0.0F ? extent : 0.0F;
         } else {
             child.x = offset;
-            child.z = extent > 0.0f ? extent : 0.0f;
+            child.z = extent > 0.0F ? extent : 0.0F;
         }
         place(node.children[index], child);
         offset += extent;

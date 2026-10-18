@@ -28,15 +28,25 @@ The sound document lists clips by id:
   asset. The manager must have had `audio::registerLoaders()` called on it. A clip whose source
   is not a file can be loaded with the overload of `load()` that takes a `Resolve` callback.
 - To play a one-shot from anywhere, publish a sound event:
-  `dispatcher()->trigger(v3d::event::kind::Sound("hit"))`. The audio engine listens for it.
+  `dispatcher()->trigger(v3d::event::kind::Sound("hit"))`. The audio engine listens for it. A
+  second argument pans it: `Sound("hit", -0.5F)` sounds left of centre.
 - `playClip(id)` also plays a one-shot. `play(id, how)` returns a `Voice` for a sound you need
-  to control. `audio::Play` sets the bus, the loop count (-1 loops until stopped), a fade-in and
-  a gain.
-- `stop(voice, fadeOutMs)`, `stopAll()`, `playing(voice)` and `gain(voice, level)` control
-  playing sounds. A voice that has finished is refused, never confused with a newer sound.
+  to control. A `Voice` is a scoped enum, so it cannot be passed where a fade or a level goes.
+  `Voice::None` is no sound, which a failed `play()` returns. `audio::Play` sets the bus, the
+  loop count (-1 loops until stopped), a fade-in, a gain and a pan.
+- `stop(voice, fadeOutMs)`, `stopAll()`, `playing(voice)`, `gain(voice, level)` and
+  `pan(voice, value)` control playing sounds. A voice that has finished is refused, never
+  confused with a newer sound.
+- **A pan runs from -1, left, through 0 to 1, right.** The side a sound is panned towards stays
+  at full gain, and the other falls in a straight line to silence at the end. A centred sound is
+  exactly an unpanned one. A pan past either end is held there, and one that is not finite is
+  centred. `audio::stereo(pan)` gives the two gains.
+- **The game converts a position to a pan**, because which way is left depends on its camera.
+  There is no listener and no fall-off with distance.
 - `has(id)` says whether a clip is filed under an id. It works without a device.
-- `busGain(bus, level)` sets the volume of a named bus such as `music` or `sfx`. It may be set
-  before anything plays on that bus.
+- `busGain(bus, level)` sets the gain of every voice playing on a named bus such as `music` or
+  `sfx`. It replaces each voice's own gain, and does not apply to a voice started afterwards.
+  Nothing stores the level.
 - **A device that does not open leaves the app silent, not broken.** `initialize()` returns
   false and logs, clips still load, and playing returns false.
 
@@ -52,7 +62,7 @@ events_ = v3d::audio::events(logger());                  // in start()
 events_->bank(path + "/Master.bank");
 events_->bank(path + "/Master.strings.bank");
 events_->play("event:/UI/Cancel");                       // a one shot
-events_->parameter("Intensity", 0.8f);                   // a global parameter
+events_->parameter("Intensity", 0.8F);                   // a global parameter
 events_->update();                                       // once a frame, in tick()
 ```
 

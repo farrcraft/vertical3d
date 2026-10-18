@@ -7,6 +7,7 @@
 
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
+#include <api/log/Logger.h>
 
 #include <string>
 
@@ -16,6 +17,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "SearchPath.h"
+#include "Texture.h"
 
 namespace v3d::render::offline {
 

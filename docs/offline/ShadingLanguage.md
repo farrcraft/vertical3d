@@ -84,9 +84,9 @@ named. The language is in `api/render/offline/sl`.
   and that transformation. Declared defaults are evaluated through the renderer's space table,
   not stored as numbers, so `point "shader" (0, 0, 1)` in the standard lights aims where the
   scene placed the light. A position a scene binds is in the same space.
-- **A light shader runs in its own space.** While a light runs, `"shader"` is the light's
-  placement, not the surface's. This places a `pointlight`'s default `from` where the scene put
-  the light.
+- **A light shader runs in its own space.** While a light runs, `"shader"` is the inverse of
+  the light's placement, not of the surface's. This places a `pointlight`'s default `from` where
+  the scene put the light.
 - **Both hiders bind the same globals.** A hider fills one `sl::Point` per shading point.
   `sl::Globals`, resolved once per program, writes the points into the batch and reads `Ci` and
   `Oi` back. `Globals::shine` runs a light over a batch. `du` and `dv` are zero for a traced
@@ -236,7 +236,7 @@ Rules:
   from. Where a cut crosses an edge, the new vertex's normal is interpolated along the edge and
   renormalised, so a surface large enough to split is smooth rather than faceted per piece. A
   vertex with no normal of its own, or on an edge with an end that has none, takes the
-  primitive's plane, which each piece is given through `ReyesPrimitive::place()`. That plane is
+  primitive's plane, which each piece is given through `reyes::Primitive::place()`. That plane is
   also every piece's `Ng`.
 - **`trace::Triangle` has one constructor per case**: with and without per-corner normals.
   `shadingNormal(u, v)` interpolates over the barycentric coordinates `type::Ray::intersects`

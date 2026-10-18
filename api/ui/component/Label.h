@@ -12,7 +12,7 @@
 namespace v3d::ui::component {
 
 /**
- * A vGUI Label
+ * A line of text.
  **/
 class Label : public Component {
  public:

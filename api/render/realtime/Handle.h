@@ -18,7 +18,7 @@ namespace v3d::render::realtime {
  *
  * A slot can be reused once what was in it is released, so a handle also carries the
  * generation of the occupant it was given for. Two handles to the same slot with
- * different generations are different handles; only the slot is a sort order.
+ * different generations are different handles. Only the slot goes into a sort key.
  **/
 template <typename Tag>
 class Handle final {
@@ -30,10 +30,18 @@ class Handle final {
     }
 
     /**
-     * @param id the registry slot the handle refers to
-     * @param generation which occupant of that slot it refers to
+     * @param id the registry slot the handle refers to, at its first occupant
      **/
-    explicit Handle(uint32_t id, uint32_t generation = 0) noexcept : id_(id), generation_(generation) {
+    explicit Handle(uint32_t id) noexcept : id_(id), generation_(0) {
+    }
+
+    /** The registry slot a handle refers to, and which occupant of that slot. **/
+    struct Key {
+        uint32_t id = 0;
+        uint32_t generation = 0;
+    };
+
+    explicit Handle(const Key& key) noexcept : id_(key.id), generation_(key.generation) {
     }
 
     /**
@@ -76,7 +84,7 @@ class Handle final {
     }
 
  private:
-    static const uint32_t invalid = 0xFFFFFFFFu;
+    static const uint32_t invalid = 0xFFFFFFFFU;
 
     uint32_t id_;
     uint32_t generation_;

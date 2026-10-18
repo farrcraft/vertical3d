@@ -5,8 +5,14 @@
 
 #include "BRep.h"
 
-#include <algorithm>
+#include <api/type/geometry/AABBox.h>
+
+#include "Face.h"
+#include "HalfEdge.h"
+#include "Index.h"
+
 #include <cassert>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -25,27 +31,18 @@ BRep::~BRep() {
 Index BRep::addVertex(const glm::vec3& v) {
     Index index = 0;
     for (; index < static_cast<Index>(vertices_.size()); index++) {
-        if (vertices_[index] == v)
+        if (vertices_[index] == v) {
             return index;
+        }
     }
-    Vertex vert(v);
+    const Vertex vert(v);
     vertices_.push_back(vert);
     return static_cast<Index>(vertices_.size() - 1);
 }
 
 Index BRep::addEdge(Index vertex) {
-    HalfEdge e(vertex);
-    /*
-    Index index = 0;
-    for (; index < _edges.size(); index++)
-    {
-        if (_edges[index] == e)
-        {
-            return index;
-        }
-    }
-    */
-    edges_.push_back(e);
+    const HalfEdge halfEdge(vertex);
+    edges_.push_back(halfEdge);
     return static_cast<Index>(edges_.size() - 1);
 }
 
@@ -62,36 +59,16 @@ void BRep::addFace(const std::vector<glm::vec3>& vertices, const glm::vec3& norm
     // add edges
     Index index = 0;
     Index edge_id;
-    /*
-    Index firstEdgeID = INVALID_ID;
-    Index lastEdgeID = INVALID_ID;
-    */
     std::vector<Index> edges;
     for (; index < static_cast<Index>(indices.size()); index++) {
         edge_id = addEdge(indices[index]);
-        /*
-        if (index != 0)
-            _edges[edgeID].pair(indices[index - 1]);
-        if (lastEdgeID != INVALID_ID)
-            _edges[lastEdgeID].next(edgeID);
-
-        if (index == (indices.size() - 1))
-        {
-            _edges[firstEdgeID].pair(edgeID);
-            _edges[edgeID].next(firstEdgeID);
-        }
-
-        if (firstEdgeID == INVALID_ID)
-            firstEdgeID = edgeID;
-        lastEdgeID = edgeID;
-        */
         edges.push_back(edge_id);
     }
 
     // add face
     Index face;
-    Face f(normal, edges[0]);
-    faces_.push_back(f);
+    const Face newFace(normal, edges[0]);
+    faces_.push_back(newFace);
     face = static_cast<Index>(faces_.size() - 1);
 
     // finish constructing edges
@@ -102,10 +79,11 @@ void BRep::addFace(const std::vector<glm::vec3>& vertices, const glm::vec3& norm
         assert(ep != 0);
         ep->face(face);
         Index next;
-        if (index != static_cast<Index>(edges.size()) - 1)
+        if (index != static_cast<Index>(edges.size()) - 1) {
             next = edges[index + 1];
-        else
+        } else {
             next = edges[0];
+        }
         ep->next(next);
     }
 
@@ -113,11 +91,11 @@ void BRep::addFace(const std::vector<glm::vec3>& vertices, const glm::vec3& norm
         ep = edge(edges[index]);
         assert(ep != 0);
         Index pair = INVALID_ID;
-        if (index != 0)
+        if (index != 0) {
             pair = findPair(edges[index], edges[index - 1]);
-        else
+        } else {
             pair = findPair(edges[index], edges[static_cast<Index>(edges.size()) - 1]);
-        //  assert(pair != INVALID_ID);
+        }
         if (pair != INVALID_ID) {
             ep->pair(pair);
             edge(pair)->pair(edges[index]);
@@ -126,9 +104,9 @@ void BRep::addFace(const std::vector<glm::vec3>& vertices, const glm::vec3& norm
 }
 
 Index BRep::findPair(Index edge, Index prevEdge) {
-    // this edge's pair points to the previous edge/vertex in this face
-    // find the edge that points to the previous edge's vertex
-    // and whose next edge points to this edge's vertex
+    // a half edge runs from the vertex prevEdge ends at to the vertex it ends at itself. Its
+    // pair runs the other way, in another face. The pair therefore ends at prevEdge's vertex,
+    // and the half edge before the pair in its loop ends at this edge's vertex
 
     Index index = 0;
     // pairs never share the same face
@@ -136,66 +114,49 @@ Index BRep::findPair(Index edge, Index prevEdge) {
     for (; index < static_cast<Index>(edges_.size()); index++) {
         if (edges_[index].face() != face &&
             edges_[index].vertex() == edges_[prevEdge].vertex()) {
-            // find potential pair's prev edge
-            // bounded by the edge count, so a ring that does not close ends the search
+            // find the half edge before the candidate in its loop. The walk is bounded by the
+            // edge count, so a ring that does not close ends the search
             Index pair_prev = edges_[index].next();
             std::size_t steps = 0;
             while (pair_prev < edges_.size() && edges_[pair_prev].next() != index && steps++ < edges_.size()) {
                 pair_prev = edges_[pair_prev].next();
             }
             if (pair_prev < edges_.size() && edges_[pair_prev].next() == index &&
-                edges_[pair_prev].vertex() == edges_[edge].vertex())
+                edges_[pair_prev].vertex() == edges_[edge].vertex()) {
                 return index;
-        }
-        /* #2
-            if (_edges[index].face() != face &&
-                _edges[index].vertex() == _edges[edgeID].vertex())
-            {
-                Index next = _edges[index].next();
-                assert(next != INVALID_ID);
-                if (_edges[next].vertex() == _edges[prevEdgeID].vertex())
-                    return index;
-            }
-        */
-        /* #1
-        if (index != edgeID && index != prevEdgeID &&
-            _edges[index].vertex() == _edges[prevEdgeID].vertex())
-        {
-            if (_edges[index].next() != INVALID_ID)
-            {
-                if (_edges[_edges[index].next()].vertex() == _edges[edgeID].vertex())
-                    return index;
             }
         }
-        */
     }
     return INVALID_ID;
 }
 
-HalfEdge* BRep::edge(Index edge) {
-    if (edge < edges_.size())
-        return &edges_[edge];
+HalfEdge* BRep::edge(Index index) {
+    if (index < edges_.size()) {
+        return &edges_[index];
+    }
     return 0;
 }
 
-Face* BRep::face(Index face) {
-    if (face < faces_.size())
-        return &faces_[face];
+Face* BRep::face(Index index) {
+    if (index < faces_.size()) {
+        return &faces_[index];
+    }
     return 0;
 }
 
 Vertex* BRep::vertex(Index vert) {
-    if (vert < vertices_.size())
+    if (vert < vertices_.size()) {
         return &vertices_[vert];
+    }
     return 0;
 }
 
-const HalfEdge* BRep::edge(Index edge) const {
-    return edge < edges_.size() ? &edges_[edge] : nullptr;
+const HalfEdge* BRep::edge(Index index) const {
+    return index < edges_.size() ? &edges_[index] : nullptr;
 }
 
-const Face* BRep::face(Index face) const {
-    return face < faces_.size() ? &faces_[face] : nullptr;
+const Face* BRep::face(Index index) const {
+    return index < faces_.size() ? &faces_[index] : nullptr;
 }
 
 const Vertex* BRep::vertex(Index vert) const {
@@ -256,13 +217,13 @@ Index BRep::addVertex(const Vertex& v) {
     return static_cast<Index>(vertices_.size() - 1);
 }
 
-Index BRep::addEdge(const HalfEdge& e) {
-    edges_.push_back(e);
+Index BRep::addEdge(const HalfEdge& newEdge) {
+    edges_.push_back(newEdge);
     return static_cast<Index>(edges_.size() - 1);
 }
 
-Index BRep::addFace(const Face& f) {
-    faces_.push_back(f);
+Index BRep::addFace(const Face& newFace) {
+    faces_.push_back(newFace);
     return static_cast<Index>(faces_.size() - 1);
 }
 
@@ -278,19 +239,20 @@ void BRep::deselectComponents(void) noexcept {
     for (Vertex& vert : vertices_) {
         vert.selected(false);
     }
-    for (HalfEdge& e : edges_) {
-        e.selected(false);
+    for (HalfEdge& halfEdge : edges_) {
+        halfEdge.selected(false);
     }
-    for (Face& f : faces_) {
-        f.selected(false);
+    for (Face& polygon : faces_) {
+        polygon.selected(false);
     }
 }
 
 // calculate object-space bounds of mesh
 v3d::type::geometry::AABBox BRep::bound(void) const {
     v3d::type::geometry::AABBox extents;
-    if (vertices_.empty())
+    if (vertices_.empty()) {
         return extents;
+    }
     glm::vec3 min;
     glm::vec3 max;
     min = vertices_[0].point();

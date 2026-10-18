@@ -5,12 +5,29 @@
 
 #include "Renderer.h"
 
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/Engine3D.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Window.h>
+#include <api/render/realtime/canvas/Canvas.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/frame/Timings.h>
+#include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/render/realtime/vulkan/pipeline/Material.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/type/geometry/Frustum.h>
+#include <api/ui/Engine.h>
+#include <api/ui/Immediate.h>
+#include <api/ui/shell/Screen.h>
+#include <api/ui/shell/StatisticsOverlay.h>
 #include <voxel/src/engine/Camera.h>
 #include <voxel/src/engine/ChunkMeshBuilder.h>
 #include <voxel/src/engine/ChunkVertex.h>
+#include <voxel/src/engine/Nanoseconds.h>
 #include <voxel/src/engine/SceneUniforms.h>
 #include <voxel/src/game/Player.h>
 #include <voxel/src/voxel/ChunkCulling.h>
@@ -18,10 +35,15 @@
 #include <voxel/src/voxel/MeshBuilder.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
+#include <functional>
+#include <ios>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Scene.h"
@@ -33,8 +55,8 @@
 namespace {
 
 /**
- * The terrain pipeline's shader modules, compiled to SPIR-V at build time by glslc and
- * included as the C initialiser lists its -mfmt=c writes - see v3d_add_shader.
+ * The terrain pipeline's shader modules. v3d_add_shader compiles each to SPIR-V at build time
+ * with glslc -mfmt=c, which writes it as a C initialiser list that is included here.
  **/
 const uint32_t vertexShader[] =
 #include "shaders/voxel.vert.inc"
@@ -63,39 +85,65 @@ const char* const debugTitle = "Debug";
  * The size the ui and the debug overlay are drawn at. Glyphs are distance fields, so the
  * atlas is scaled to this size rather than rasterized at it.
  **/
-const float fontSize = 18.0f;
+const float fontSize = 18.0F;
 
-constexpr glm::vec4 sky(0.4f, 0.6f, 0.9f, 1.0f);
-constexpr glm::vec4 textColour(0.95f, 0.95f, 0.95f, 1.0f);
-constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+constexpr glm::vec4 sky(0.4F, 0.6F, 0.9F, 1.0F);
+constexpr glm::vec4 textColour(0.95F, 0.95F, 0.95F, 1.0F);
+constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
 
 /**
- * How many chunks are remeshed in one tick. Meshing waits for its staging copy, so the
- * whole world arriving in one frame would be a visible stall.
+ * How many chunks are remeshed in one tick. Each mesh waits for its staging copy, so meshing
+ * the whole world in one frame would stall that frame visibly.
  **/
 const size_t chunkUpdatesPerTick = 16;
 
 /**
- * The block palette, indexed by Voxel::BlockType less one - air is never meshed, so the
+ * The sun, in world space and well above a 256 block wide world.
+ **/
+constexpr glm::vec4 sunPosition(128.0F, 200.0F, 128.0F, 1.0F);
+constexpr glm::vec4 ambientLight(0.4F, 0.4F, 0.4F, 1.0F);
+
+/**
+ * The specular colour every block shares, with its shininess in the fourth component.
+ **/
+constexpr glm::vec4 blockSpecular(0.8F, 0.8F, 0.8F, 100.0F);
+
+/**
+ * The farthest distance, in blocks, that a draw's depth key can hold.
+ **/
+constexpr float maxDepthKey = static_cast<float>(std::numeric_limits<uint16_t>::max());
+
+/**
+ * Where the debug readout sits and how big it is, in pixels, and the alpha its background is
+ * drawn at. Its height is debugHeight plus one debugLineHeight for each timed span.
+ **/
+constexpr glm::vec2 debugPosition(20.0F, 20.0F);
+constexpr float debugWidth = 260.0F;
+constexpr float debugHeight = 154.0F;
+constexpr float debugLineHeight = 26.0F;
+constexpr float debugAlpha = 0.85F;
+
+/**
+ * The block palette, indexed by Voxel::BlockType less one. Air is never meshed, so the
  * table starts at dirt.
  **/
 constexpr glm::vec3 palette[materialCount] = {
-    glm::vec3(0.9f, 0.5f, 0.3f),     // dirt
-    glm::vec3(0.13f, 0.56f, 0.19f),  // grass
-    glm::vec3(0.9f, 0.88f, 0.58f),   // sand
-    glm::vec3(0.75f, 0.75f, 0.75f),  // stone
-    glm::vec3(0.52f, 0.52f, 0.52f),  // gravel
-    glm::vec3(0.25f, 0.39f, 0.96f),  // water
-    glm::vec3(0.16f, 0.16f, 0.16f),  // ore
-    glm::vec3(0.5f, 0.29f, 0.02f),   // wood
-    glm::vec3(1.0f, 0.47f, 0.12f),   // lava
-    glm::vec3(0.76f, 0.87f, 1.0f),   // glass
-    glm::vec3(0.29f, 0.29f, 0.29f),  // bedrock
-    glm::vec3(0.86f, 0.86f, 0.86f),  // clay
-    glm::vec3(0.96f, 0.96f, 0.96f),  // ice
-    glm::vec3(0.85f, 0.81f, 0.56f),  // sandstone
-    glm::vec3(0.0f, 0.0f, 0.0f),     // obsidian
-    glm::vec3(0.91f, 0.91f, 0.91f)   // snow
+    glm::vec3(0.9F, 0.5F, 0.3F),     // dirt
+    glm::vec3(0.13F, 0.56F, 0.19F),  // grass
+    glm::vec3(0.9F, 0.88F, 0.58F),   // sand
+    glm::vec3(0.75F, 0.75F, 0.75F),  // stone
+    glm::vec3(0.52F, 0.52F, 0.52F),  // gravel
+    glm::vec3(0.25F, 0.39F, 0.96F),  // water
+    glm::vec3(0.16F, 0.16F, 0.16F),  // ore
+    glm::vec3(0.5F, 0.29F, 0.02F),   // wood
+    glm::vec3(1.0F, 0.47F, 0.12F),   // lava
+    glm::vec3(0.76F, 0.87F, 1.0F),   // glass
+    glm::vec3(0.29F, 0.29F, 0.29F),  // bedrock
+    glm::vec3(0.86F, 0.86F, 0.86F),  // clay
+    glm::vec3(0.96F, 0.96F, 0.96F),  // ice
+    glm::vec3(0.85F, 0.81F, 0.56F),  // sandstone
+    glm::vec3(0.0F, 0.0F, 0.0F),     // obsidian
+    glm::vec3(0.91F, 0.91F, 0.91F)   // snow
 };
 
 };  // namespace
@@ -121,7 +169,9 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     createLayout();
     createUniforms();
     createPipeline();
-    meshes_ = boost::make_shared<ChunkMeshPool>();
+    meshes_ = boost::make_shared<ChunkMeshPool>([ring = context_->ring()](std::function<void()> destroy) {
+        ring->retire(std::move(destroy));
+    });
     builder_ = boost::make_shared<MeshBuilder>(scene_->chunks(),
         ChunkMeshBuilder(context_->device(), context_->uploader()));
 
@@ -158,17 +208,16 @@ void Renderer::createLayout() {
  **/
 void Renderer::createUniforms() {
     SceneUniforms uniforms{};
-    // the sun, in world space and well above a 256 block wide world
-    uniforms.lightPosition = glm::vec4(128.0f, 200.0f, 128.0f, 1.0f);
-    uniforms.ambient = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
-    uniforms.diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    uniforms.specular = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    uniforms.lightPosition = sunPosition;
+    uniforms.ambient = ambientLight;
+    uniforms.diffuse = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
+    uniforms.specular = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
     for (unsigned int i = 0; i < materialCount; i++) {
-        // a block reflects its own colour ambiently and diffusely and white specularly -
-        // what varies between block types is the colour, not the finish
-        uniforms.materials[i].ambient = glm::vec4(palette[i], 1.0f);
-        uniforms.materials[i].diffuse = glm::vec4(palette[i], 1.0f);
-        uniforms.materials[i].specular = glm::vec4(0.8f, 0.8f, 0.8f, 100.0f);
+        // a block reflects its own colour ambiently and diffusely, and white specularly.
+        // Block types differ in colour, not in finish
+        uniforms.materials[i].ambient = glm::vec4(palette[i], 1.0F);
+        uniforms.materials[i].diffuse = glm::vec4(palette[i], 1.0F);
+        uniforms.materials[i].specular = blockSpecular;
     }
 
     uniforms_ = boost::make_shared<v3d::render::realtime::vulkan::memory::DeviceBuffer>(
@@ -203,18 +252,18 @@ void Renderer::createPipeline() {
     builder.name("voxel-terrain")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
-        .vertexBinding(0, sizeof(ChunkVertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ChunkVertex, position))
-        .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ChunkVertex, info))
-        // a block face is wound counter clockwise seen from outside the block, and the
-        // camera's projection flips y - so what reaches the rasterizer is clockwise
+        .vertexBinding({.binding = 0, .stride = sizeof(ChunkVertex)})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(ChunkVertex, position)})
+        .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(ChunkVertex, info)})
+        // a block face is wound counter clockwise seen from outside the block. The camera's
+        // projection flips y, so what reaches the rasterizer is clockwise
         .cull(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE)
         .depth(true, true)
         // terrain is opaque, and blending it would cost bandwidth on every fragment of it
         .blend(false)
         .set(context_->frameUniforms()->layout())
         .set(scenePool_->layout())
-        .push(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::vec4))
+        .push({.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .size = sizeof(glm::vec4)})
         .colourFormat(context_->colourFormat())
         .depthFormat(context_->depthFormat());
 
@@ -252,15 +301,15 @@ void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
         item.pipeline = pipeline_;
         item.material = material_;
 
-        const glm::vec4 origin(entry.origin, 0.0f);
+        const glm::vec4 origin(entry.origin, 0.0F);
         std::memcpy(item.push.data(), &origin, sizeof(origin));
         item.pushSize = sizeof(origin);
 
-        // near chunks first, so the depth test rejects what is behind them before it is
-        // shaded. The far plane is 1000 blocks and a chunk is 16, so quantizing the distance
-        // to whole blocks is finer than the ordering can use
+        // sort near chunks first, so the depth test rejects what is behind them before it is
+        // shaded. The key holds whole blocks, which is fine enough to order chunks 16 blocks
+        // wide
         const float distance = glm::length(entry.origin - eye);
-        item.key.depth = static_cast<uint16_t>(distance < 65535.0f ? distance : 65535.0f);
+        item.key.depth = static_cast<uint16_t>(distance < maxDepthKey ? distance : maxDepthKey);
 
         pass->submit(item);
     }
@@ -274,12 +323,11 @@ void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statis
 
     v3d::ui::Immediate* layer = screen_->immediate();
     layer->begin(&screen_->canvas(), tools);
-    // a line more for each span of the frame that was timed
-    const float tall = 154.0f + 26.0f * static_cast<float>(statistics.spans.size());
-    if (layer->window(debugTitle, glm::vec2(20.0f, 20.0f), glm::vec2(260.0f, tall), 0.85f)) {
+    const float tall = debugHeight + (debugLineHeight * static_cast<float>(statistics.spans.size()));
+    if (layer->window(debugTitle, {.position = debugPosition, .size = glm::vec2(debugWidth, tall)}, debugAlpha)) {
         layer->text(std::string("Voxel ") + VOXEL_VERSION);
-        // the loop already keeps a rolling mean, so nothing here averages anything
-        layer->text(std::to_string(statistics.mean / 1000000U) + " ms");
+        // statistics.mean is already the loop's rolling mean of the frame time
+        layer->text(std::to_string(statistics.mean / NANOSECONDS_PER_MILLISECOND) + " ms");
         std::stringstream where;
         where.precision(1);
         where << std::fixed << "x " << position.x << "  y " << position.y << "  z " << position.z;
@@ -300,12 +348,12 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     if (!screen_->begin()) {
         return;
     }
-    v3d::render::realtime::Canvas& canvas = screen_->canvas();
+    const v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
     if (screen_->resized()) {
-        resize(static_cast<int>(canvas.width()), static_cast<int>(canvas.height()));
+        resize(glm::ivec2(static_cast<int>(canvas.width()), static_cast<int>(canvas.height())));
     }
 
-    boost::shared_ptr<v3d::render::realtime::Pass> terrain = engine_.frame()->pass(terrainPass);
+    const boost::shared_ptr<v3d::render::realtime::Pass> terrain = engine_.frame()->pass(terrainPass);
     terrain->depth(true);
     // one item per chunk through one pipeline and one material, so what the sort does here
     // is order them front to back for the depth test
@@ -319,9 +367,9 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     }
     screen_->draw(ui_.get(), statistics);
 
-    // a second pass rather than more items in the first: the terrain is depth tested and
-    // sorted front to back, and the text over it is painter ordered and must not be
-    boost::shared_ptr<v3d::render::realtime::Pass> overlay = engine_.frame()->pass(overlayPass);
+    // the text goes in a second pass. The terrain pass is depth tested and sorted front to
+    // back, and the text over it must be drawn in painter order with no depth test
+    const boost::shared_ptr<v3d::render::realtime::Pass> overlay = engine_.frame()->pass(overlayPass);
     overlay->keepColour();
     overlay->depth(false);
     engine_.quads()->submit(canvas, overlay.get());
@@ -338,22 +386,19 @@ const std::vector<v3d::render::realtime::vulkan::frame::Timings::Timing>& Render
 /**
  **/
 void Renderer::tick(unsigned int /* delta */) {
-    // the chunk build has a budget of chunks per tick rather than a duration, so it does not
-    // use how long the last frame took. The loop measures that for the debug readout
+    // the chunk build's budget is a number of chunks, not a duration, so delta is not used
     builder_->build(meshes_, chunkUpdatesPerTick);
 }
 
 /**
  **/
-void Renderer::resize(int width, int height) {
-    const float w = static_cast<float>(width);
-    const float h = static_cast<float>(height);
+void Renderer::resize(const glm::ivec2& size) {
+    const int width = size.x;
+    const int height = size.y;
+    const float floatWidth = static_cast<float>(width);
+    const float floatHeight = static_cast<float>(height);
 
-    scene_->camera()->perspective(
-        90.0f,  // x fov
-        w / h,  // aspect
-        0.1f,  // near
-        1000.0f);  // far
+    scene_->camera()->perspective({.fovx = Camera::DEFAULT_FOVX, .aspect = floatWidth / floatHeight, .znear = Camera::DEFAULT_ZNEAR, .zfar = Camera::DEFAULT_ZFAR});
 }
 
 /**

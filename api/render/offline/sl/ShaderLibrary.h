@@ -22,15 +22,15 @@ namespace v3d::render::offline::sl {
  * use and kept.
  *
  * **The standard shaders are source strings compiled into the library**, so `Surface "matte"`
- * works with no shader files at all. A renderer's test suite is then hermetic, and a first
+ * works with no shader files at all. A renderer's tests then need no files, and a first
  * render needs nothing installed. `Option "searchpath" "shader"` adds directories for
  * everything else. A `.sl` file found there takes precedence over a built-in of the same
  * name, so a scene can replace one.
  *
- * **A shader that will not compile is reported and substituted rather than fatal.** RI
- * requires a renderer to carry on. The report names the shader and the position and is
- * logged as an error, because a scene whose shader failed and a scene that named no shader
- * must not look the same from outside.
+ * **A shader that will not compile is reported, and the render carries on,** as RI
+ * requires. A surface is replaced by fallback(), and any other type is dropped. The report
+ * names the shader and the position and is logged as an error. Otherwise a scene whose
+ * shader failed would look the same as a scene that named no shader.
  **/
 class ShaderLibrary final {
  public:
@@ -44,30 +44,36 @@ class ShaderLibrary final {
     void searchpath(const std::string & path);
 
     /**
-     * An instance of the named shader with the scene's parameters bound onto it, or the
-     * substitute when the name will not compile.
+     * An instance of the named shader with the scene's parameters bound onto it, or
+     * fallback() when the name will not compile.
      *
-     * @param wanted what a shader of this type is expected to be; a name that turns out to
-     *        be a shader of another type is reported and substituted too
+     * @param wanted the shader type the scene expects. A name that is a shader of another
+     *        type is reported, and fallback() is returned for it too
      **/
     InstancePtr instance(const std::string & name, ShaderType wanted,
         const rib::ParameterList & parameters);
 
     /**
-     * What a surface with no shader is drawn with, and what a shader that failed is
-     * replaced by. RI leaves the choice to the renderer and forbids only "null".
+     * What a surface with no shader is drawn with, and what a surface shader that failed
+     * is replaced by. RI leaves the choice to the renderer and forbids only "null". Null
+     * for every type but a surface.
      **/
     InstancePtr fallback(ShaderType wanted);
 
  private:
     /**
      * The program for a name, compiling it the first time it is requested. Null when it
-     * will not compile, which is cached too - a scene naming a broken shader on a thousand
-     * primitives is one report and one attempt.
+     * will not compile. The failure is cached too, so a broken shader named on many
+     * primitives is compiled and reported once.
      **/
     ProgramPtr program(const std::string & name);
-    ProgramPtr compile(const std::string & name, const std::string & source,
-        const std::string & where);
+    /** A shader's source, and where it came from for the messages about it. **/
+    struct Source {
+        std::string text;
+        std::string where;
+    };
+
+    ProgramPtr compile(const std::string & name, const Source & source);
     /** The source of a `.sl` file on the search path, or empty when there is none. **/
     std::string file(const std::string & name, std::string* where) const;
 

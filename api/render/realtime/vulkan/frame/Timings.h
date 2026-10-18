@@ -21,18 +21,18 @@ namespace v3d::render::realtime::vulkan::frame {
 /**
  * How long the device spent on each pass of a frame, from timestamps written around it.
  *
- * A pool of queries per frame in flight, so what one slot recorded is read when the slot is
- * begun again, after its fence. The numbers are therefore as old as the ring is deep, and
+ * Each frame in flight has its own query pool. A slot's timestamps are read when the slot is
+ * begun again, after its fence has signalled. The numbers are framesInFlight frames old, and
  * reading them never waits on the device.
  *
- * On a device whose graphics queue writes no timestamps this is off, and every call then
+ * On a device whose graphics queue writes no timestamps, Timings is disabled and every call
  * does nothing.
  **/
 class Timings final {
  public:
     /**
-     * How many spans a frame can time. A pass is one; a frame with more passes than this
-     * times the first ones.
+     * How many spans a frame can time. Each pass is one span. Spans past this many are not
+     * timed.
      **/
     static constexpr uint32_t capacity = 64;
 
@@ -57,7 +57,8 @@ class Timings final {
 
     /**
      * Read what a slot recorded the last time it was used, then reset its queries in the
-     * command buffer it is beginning. Called by the ring once the slot's fence has signalled.
+     * command buffer it is beginning. Ring::begin() calls it once the slot's fence has
+     * signalled.
      *
      * @param submitted false when the slot's last use was abandoned before its submit, so it
      *        recorded nothing that can be read

@@ -8,6 +8,7 @@
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/sl/Types.h>
 #include <api/render/offline/trace/Hit.h>
 #include <api/render/offline/trace/HitShader.h>
 #include <api/render/offline/trace/Tracer.h>
@@ -55,8 +56,7 @@ Placed instance(const std::string & name, v3d::render::offline::sl::ShaderType t
  * the side the camera and the lights are on.
  **/
 v3d::render::offline::trace::Triangle facing(float size, const glm::vec3 & colour) {
-    return v3d::render::offline::trace::Triangle(glm::vec3(-size, -size, 0.0f), glm::vec3(size, -size, 0.0f),
-        glm::vec3(0.0f, size, 0.0f), colour);
+    return v3d::render::offline::trace::Triangle({glm::vec3(-size, -size, 0.0F), glm::vec3(size, -size, 0.0F), glm::vec3(0.0F, size, 0.0F)}, colour);
 }
 
 /**
@@ -64,13 +64,11 @@ v3d::render::offline::trace::Triangle facing(float size, const glm::vec3 & colou
  * the triangle covers.
  **/
 v3d::render::offline::trace::Hit at(const v3d::render::offline::trace::Scene & scene, float x, float y) {
-    const v3d::type::geometry::Ray ray(glm::vec3(x, y, 10.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+    const v3d::type::geometry::Ray ray({.origin = glm::vec3(x, y, 10.0F), .direction = glm::vec3(0.0F, 0.0F, -1.0F)});
     v3d::render::offline::trace::Hit hit;
-    BOOST_REQUIRE_MESSAGE(scene.nearest(ray, 0.0f, &hit), "the ray missed the triangle");
+    BOOST_REQUIRE_MESSAGE(scene.nearest(ray, 0.0F, &hit), "the ray missed the triangle");
     return hit;
 }
-
-};  // namespace
 
 /**
  * `matte` over one distant light, against hand-worked maths.
@@ -81,21 +79,21 @@ v3d::render::offline::trace::Hit at(const v3d::render::offline::trace::Scene & s
  **/
 BOOST_AUTO_TEST_CASE(trace_matte_at_a_hit_test) {
     v3d::render::offline::trace::Scene scene;
-    v3d::render::offline::trace::Triangle triangle = facing(2.0f, glm::vec3(1.0f, 0.5f, 0.0f));
+    v3d::render::offline::trace::Triangle triangle = facing(2.0F, glm::vec3(1.0F, 0.5F, 0.0F));
     triangle.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE,
         ParameterList()));
     scene.add(triangle);
 
-    // aimed down the negative z axis, so L - which points at the light - is along positive z
+    // aimed down the negative z axis, so L, which points at the light, is along positive z
     ParameterList overhead;
-    add(&overhead, "to", Declaration::Type::POINT, { 0.0f, 0.0f, -1.0f });
+    add(&overhead, "to", Declaration::Type::POINT, { 0.0F, 0.0F, -1.0F });
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, overhead));
 
     v3d::render::offline::trace::Tracer shader(&scene);
-    const glm::vec3 lit = shader.shade(at(scene, 0.0f, 0.0f));
-    BOOST_CHECK_CLOSE(lit.r, 1.0f, 0.1f);
-    BOOST_CHECK_CLOSE(lit.g, 0.5f, 0.1f);
-    BOOST_CHECK_SMALL(lit.b, 0.0001f);
+    const glm::vec3 lit = shader.shade(at(scene, 0.0F, 0.0F));
+    BOOST_CHECK_CLOSE(lit.r, 1.0F, 0.1F);
+    BOOST_CHECK_CLOSE(lit.g, 0.5F, 0.1F);
+    BOOST_CHECK_SMALL(lit.b, 0.0001F);
 }
 
 /**
@@ -104,17 +102,17 @@ BOOST_AUTO_TEST_CASE(trace_matte_at_a_hit_test) {
  **/
 BOOST_AUTO_TEST_CASE(trace_the_cosine_test) {
     v3d::render::offline::trace::Scene scene;
-    v3d::render::offline::trace::Triangle triangle = facing(2.0f, glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle triangle = facing(2.0F, glm::vec3(1.0F));
     triangle.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE,
         ParameterList()));
     scene.add(triangle);
 
     ParameterList tilted;
-    add(&tilted, "to", Declaration::Type::POINT, { 0.8660254f, 0.0f, -0.5f });
+    add(&tilted, "to", Declaration::Type::POINT, { 0.8660254F, 0.0F, -0.5F });
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, tilted));
 
     v3d::render::offline::trace::Tracer shader(&scene);
-    BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0f, 0.0f)).r, 0.5f, 0.5f);
+    BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0F, 0.0F)).r, 0.5F, 0.5F);
 }
 
 /**
@@ -123,29 +121,28 @@ BOOST_AUTO_TEST_CASE(trace_the_cosine_test) {
  **/
 BOOST_AUTO_TEST_CASE(trace_an_occluder_casts_a_shadow_test) {
     v3d::render::offline::trace::Scene scene;
-    v3d::render::offline::trace::Triangle floor = facing(8.0f, glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle floor = facing(8.0F, glm::vec3(1.0F));
     floor.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList()));
     scene.add(floor);
 
     // a small triangle a unit above the floor, with no shader of its own: a shadow ray
     // reads an occluder's opacity and does not run its shader
-    scene.add(v3d::render::offline::trace::Triangle(glm::vec3(-0.5f, -0.5f, 1.0f), glm::vec3(0.5f, -0.5f, 1.0f),
-        glm::vec3(0.0f, 0.5f, 1.0f), glm::vec3(1.0f)));
+    scene.add(v3d::render::offline::trace::Triangle({glm::vec3(-0.5F, -0.5F, 1.0F), glm::vec3(0.5F, -0.5F, 1.0F), glm::vec3(0.0F, 0.5F, 1.0F)}, glm::vec3(1.0F)));
 
     /*
-        The light is up and over to one side rather than straight overhead, so the shadow
-        falls beside the occluder rather than under it. The camera cannot see a point
-        directly beneath the occluder.
+        The light is up and over to one side, not straight overhead. The shadow falls
+        beside the occluder, not under it. The camera cannot see a point directly beneath
+        the occluder.
     */
     ParameterList tilted;
-    add(&tilted, "to", Declaration::Type::POINT, { 0.70710678f, 0.0f, -0.70710678f });
+    add(&tilted, "to", Declaration::Type::POINT, { 0.70710678F, 0.0F, -0.70710678F });
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, tilted));
 
     v3d::render::offline::trace::Tracer shader(&scene);
     // one unit over from the occluder, where its shadow lands
-    BOOST_CHECK_SMALL(shader.shade(at(scene, 1.0f, 0.0f)).r, 0.0001f);
+    BOOST_CHECK_SMALL(shader.shade(at(scene, 1.0F, 0.0F)).r, 0.0001F);
     // well away from it, where only the cosine applies
-    BOOST_CHECK_CLOSE(shader.shade(at(scene, 4.0f, -4.0f)).r, 0.70710678f, 0.5f);
+    BOOST_CHECK_CLOSE(shader.shade(at(scene, 4.0F, -4.0F)).r, 0.70710678F, 0.5F);
 }
 
 /**
@@ -158,18 +155,18 @@ BOOST_AUTO_TEST_CASE(trace_an_occluder_casts_a_shadow_test) {
  **/
 BOOST_AUTO_TEST_CASE(trace_the_shadow_epsilon_test) {
     v3d::render::offline::trace::Scene scene;
-    v3d::render::offline::trace::Triangle floor = facing(1000.0f, glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle floor = facing(1000.0F, glm::vec3(1.0F));
     floor.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList()));
     scene.add(floor);
 
     ParameterList overhead;
-    add(&overhead, "to", Declaration::Type::POINT, { 0.0f, 0.0f, -1.0f });
+    add(&overhead, "to", Declaration::Type::POINT, { 0.0F, 0.0F, -1.0F });
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, overhead));
 
     v3d::render::offline::trace::Tracer shader(&scene);
-    BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0f, 0.0f)).r, 1.0f, 0.1f);
-    BOOST_CHECK_CLOSE(shader.shade(at(scene, 400.0f, -400.0f)).r, 1.0f, 0.1f);
-    BOOST_CHECK_CLOSE(shader.shade(at(scene, -700.0f, -800.0f)).r, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0F, 0.0F)).r, 1.0F, 0.1F);
+    BOOST_CHECK_CLOSE(shader.shade(at(scene, 400.0F, -400.0F)).r, 1.0F, 0.1F);
+    BOOST_CHECK_CLOSE(shader.shade(at(scene, -700.0F, -800.0F)).r, 1.0F, 0.1F);
 }
 
 /**
@@ -179,19 +176,19 @@ BOOST_AUTO_TEST_CASE(trace_the_shadow_epsilon_test) {
  **/
 BOOST_AUTO_TEST_CASE(trace_a_point_light_is_placed_test) {
     v3d::render::offline::trace::Scene scene;
-    v3d::render::offline::trace::Triangle floor = facing(4.0f, glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle floor = facing(4.0F, glm::vec3(1.0F));
     floor.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList()));
     scene.add(floor);
 
     Placed bulb = instance("pointlight", v3d::render::offline::sl::ShaderType::LIGHT,
         ParameterList());
     // two units above the origin of the floor, where the hit is
-    bulb.placement = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 2.0f));
+    bulb.placement = glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, 0.0F, 2.0F));
     scene.add(bulb);
 
     v3d::render::offline::trace::Tracer shader(&scene);
     // the cosine is one and the falloff is a quarter, so a quarter of the colour
-    BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0f, 0.0f)).r, 0.25f, 1.0f);
+    BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0F, 0.0F)).r, 0.25F, 1.0F);
 }
 
 /**
@@ -199,12 +196,12 @@ BOOST_AUTO_TEST_CASE(trace_a_point_light_is_placed_test) {
  **/
 BOOST_AUTO_TEST_CASE(trace_no_shader_is_the_flat_colour_test) {
     v3d::render::offline::trace::Scene scene;
-    scene.add(facing(2.0f, glm::vec3(0.25f, 0.5f, 0.75f)));
+    scene.add(facing(2.0F, glm::vec3(0.25F, 0.5F, 0.75F)));
 
     v3d::render::offline::trace::Tracer shader(&scene);
-    const glm::vec3 colour = shader.shade(at(scene, 0.0f, 0.0f));
-    BOOST_CHECK_CLOSE(colour.r, 0.25f, 0.1f);
-    BOOST_CHECK_CLOSE(colour.b, 0.75f, 0.1f);
+    const glm::vec3 colour = shader.shade(at(scene, 0.0F, 0.0F));
+    BOOST_CHECK_CLOSE(colour.r, 0.25F, 0.1F);
+    BOOST_CHECK_CLOSE(colour.b, 0.75F, 0.1F);
 }
 
 namespace {
@@ -220,9 +217,8 @@ glm::vec3 relayed(unsigned int depth) {
 
     v3d::render::offline::trace::Scene scene;
     scene.traceDepth(depth);
-    v3d::render::offline::trace::Triangle below = facing(2.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-    v3d::render::offline::trace::Triangle above(glm::vec3(-2.0f, -2.0f, 1.0f), glm::vec3(0.0f, 2.0f, 1.0f),
-        glm::vec3(2.0f, -2.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    v3d::render::offline::trace::Triangle below = facing(2.0F, glm::vec3(1.0F, 0.0F, 0.0F));
+    v3d::render::offline::trace::Triangle above({glm::vec3(-2.0F, -2.0F, 1.0F), glm::vec3(0.0F, 2.0F, 1.0F), glm::vec3(2.0F, -2.0F, 1.0F)}, glm::vec3(0.0F, 1.0F, 0.0F));
     Placed relay;
     relay.shader = shaders.instance("relay", v3d::render::offline::sl::ShaderType::SURFACE,
         ParameterList());
@@ -232,9 +228,9 @@ glm::vec3 relayed(unsigned int depth) {
     scene.add(below);
     scene.add(above);
 
-    const v3d::type::geometry::Ray ray(glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, -1.0f));
+    const v3d::type::geometry::Ray ray({.origin = glm::vec3(0.0F, 0.0F, 0.5F), .direction = glm::vec3(0.0F, 0.0F, -1.0F)});
     v3d::render::offline::trace::Hit hit;
-    BOOST_REQUIRE(scene.nearest(ray, 0.0f, &hit));
+    BOOST_REQUIRE(scene.nearest(ray, 0.0F, &hit));
     v3d::render::offline::trace::Tracer shader(&scene);
     return shader.shade(hit);
 }
@@ -251,9 +247,9 @@ glm::vec3 relayed(unsigned int depth) {
  **/
 BOOST_AUTO_TEST_CASE(trace_a_trace_recurses_test) {
     const glm::vec3 colour = relayed(2);
-    BOOST_CHECK_CLOSE(colour.r, 2.0f, 0.1f);
-    BOOST_CHECK_CLOSE(colour.g, 1.0f, 0.1f);
-    BOOST_CHECK_SMALL(colour.b, 0.0001f);
+    BOOST_CHECK_CLOSE(colour.r, 2.0F, 0.1F);
+    BOOST_CHECK_CLOSE(colour.g, 1.0F, 0.1F);
+    BOOST_CHECK_SMALL(colour.b, 0.0001F);
 }
 
 /**
@@ -262,29 +258,28 @@ BOOST_AUTO_TEST_CASE(trace_a_trace_recurses_test) {
  **/
 BOOST_AUTO_TEST_CASE(trace_a_trace_stops_at_the_depth_test) {
     const glm::vec3 once = relayed(1);
-    BOOST_CHECK_CLOSE(once.r, 1.0f, 0.1f);
-    BOOST_CHECK_CLOSE(once.g, 1.0f, 0.1f);
+    BOOST_CHECK_CLOSE(once.r, 1.0F, 0.1F);
+    BOOST_CHECK_CLOSE(once.g, 1.0F, 0.1F);
 
     const glm::vec3 never = relayed(0);
-    BOOST_CHECK_CLOSE(never.r, 1.0f, 0.1f);
-    BOOST_CHECK_SMALL(never.g, 0.0001f);
+    BOOST_CHECK_CLOSE(never.r, 1.0F, 0.1F);
+    BOOST_CHECK_SMALL(never.g, 0.0001F);
 
     const glm::vec3 deeper = relayed(3);
-    BOOST_CHECK_CLOSE(deeper.r, 2.0f, 0.1f);
-    BOOST_CHECK_CLOSE(deeper.g, 2.0f, 0.1f);
+    BOOST_CHECK_CLOSE(deeper.r, 2.0F, 0.1F);
+    BOOST_CHECK_CLOSE(deeper.g, 2.0F, 0.1F);
 }
 
 namespace {
 
 /** What a ray straight down the negative z axis from a height sees. **/
 v3d::render::offline::trace::Tracer::Seen down(v3d::render::offline::trace::Tracer* shader, float x, float y, float from) {
-    return shader->see(v3d::type::geometry::Ray(glm::vec3(x, y, from), glm::vec3(0.0f, 0.0f, -1.0f)));
+    return shader->see(v3d::type::geometry::Ray({.origin = glm::vec3(x, y, from), .direction = glm::vec3(0.0F, 0.0F, -1.0F)}));
 }
 
 /** A triangle in the plane z = height, facing down the negative z axis. **/
 v3d::render::offline::trace::Triangle downward(float size, float height, const glm::vec3 & colour) {
-    return v3d::render::offline::trace::Triangle(glm::vec3(-size, -size, height), glm::vec3(0.0f, size, height),
-        glm::vec3(size, -size, height), colour);
+    return v3d::render::offline::trace::Triangle({glm::vec3(-size, -size, height), glm::vec3(0.0F, size, height), glm::vec3(size, -size, height)}, colour);
 }
 
 };  // namespace
@@ -295,19 +290,19 @@ v3d::render::offline::trace::Triangle downward(float size, float height, const g
  **/
 BOOST_AUTO_TEST_CASE(trace_a_mirror_shows_what_it_faces_test) {
     v3d::render::offline::trace::Scene scene;
-    v3d::render::offline::trace::Triangle mirror = facing(2.0f, glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle mirror = facing(2.0F, glm::vec3(1.0F));
     ParameterList only;
-    add(&only, "Ka", Declaration::Type::FLOAT, { 0.0f });
-    add(&only, "Ks", Declaration::Type::FLOAT, { 0.0f });
+    add(&only, "Ka", Declaration::Type::FLOAT, { 0.0F });
+    add(&only, "Ks", Declaration::Type::FLOAT, { 0.0F });
     mirror.surface(instance("shinymetal", v3d::render::offline::sl::ShaderType::SURFACE, only));
     scene.add(mirror);
-    scene.add(downward(4.0f, 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+    scene.add(downward(4.0F, 2.0F, glm::vec3(1.0F, 0.0F, 0.0F)));
 
     v3d::render::offline::trace::Tracer shader(&scene);
-    const glm::vec3 seen = down(&shader, 0.0f, 0.0f, 1.0f).colour;
-    BOOST_CHECK_CLOSE(seen.r, 1.0f, 0.001f);
-    BOOST_CHECK_SMALL(seen.g, 1.0e-6f);
-    BOOST_CHECK_SMALL(seen.b, 1.0e-6f);
+    const glm::vec3 seen = down(&shader, 0.0F, 0.0F, 1.0F).colour;
+    BOOST_CHECK_CLOSE(seen.r, 1.0F, 0.001F);
+    BOOST_CHECK_SMALL(seen.g, 1.0e-6F);
+    BOOST_CHECK_SMALL(seen.b, 1.0e-6F);
 }
 
 /**
@@ -317,30 +312,28 @@ BOOST_AUTO_TEST_CASE(trace_a_mirror_shows_what_it_faces_test) {
 BOOST_AUTO_TEST_CASE(trace_transparency_composites_test) {
     const Placed constant = instance("constant", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList());
     v3d::render::offline::trace::Scene scene;
-    scene.background(glm::vec3(0.0f, 0.0f, 1.0f));
-    v3d::render::offline::trace::Triangle pane(glm::vec3(-4.0f, -4.0f, 1.0f), glm::vec3(4.0f, -4.0f, 1.0f),
-        glm::vec3(0.0f, 4.0f, 1.0f), glm::vec3(1.0f));
+    scene.background(glm::vec3(0.0F, 0.0F, 1.0F));
+    v3d::render::offline::trace::Triangle pane({glm::vec3(-4.0F, -4.0F, 1.0F), glm::vec3(4.0F, -4.0F, 1.0F), glm::vec3(0.0F, 4.0F, 1.0F)}, glm::vec3(1.0F));
     pane.surface(constant);
-    pane.opacity(glm::vec3(0.5f));
+    pane.opacity(glm::vec3(0.5F));
     scene.add(pane);
     // the black quad is under the left of the pane only
-    v3d::render::offline::trace::Triangle under(glm::vec3(-3.0f, -3.0f, 0.0f), glm::vec3(-1.0f, -3.0f, 0.0f),
-        glm::vec3(-1.0f, 3.0f, 0.0f), glm::vec3(0.0f));
+    v3d::render::offline::trace::Triangle under({glm::vec3(-3.0F, -3.0F, 0.0F), glm::vec3(-1.0F, -3.0F, 0.0F), glm::vec3(-1.0F, 3.0F, 0.0F)}, glm::vec3(0.0F));
     under.surface(constant);
     scene.add(under);
 
     v3d::render::offline::trace::Tracer shader(&scene);
-    const v3d::render::offline::trace::Tracer::Seen over = down(&shader, -1.5f, -1.0f, 10.0f);
+    const v3d::render::offline::trace::Tracer::Seen over = down(&shader, -1.5F, -1.0F, 10.0F);
     BOOST_CHECK(over.hit);
-    BOOST_CHECK_CLOSE(over.colour.r, 0.5f, 0.001f);
-    BOOST_CHECK_CLOSE(over.colour.b, 0.5f, 0.001f);
-    BOOST_CHECK_CLOSE(over.opacity.r, 1.0f, 0.001f);
-    BOOST_CHECK_CLOSE(over.distance, 9.0f, 0.001f);
+    BOOST_CHECK_CLOSE(over.colour.r, 0.5F, 0.001F);
+    BOOST_CHECK_CLOSE(over.colour.b, 0.5F, 0.001F);
+    BOOST_CHECK_CLOSE(over.opacity.r, 1.0F, 0.001F);
+    BOOST_CHECK_CLOSE(over.distance, 9.0F, 0.001F);
 
-    const v3d::render::offline::trace::Tracer::Seen alone = down(&shader, 1.0f, -1.0f, 10.0f);
-    BOOST_CHECK_CLOSE(alone.colour.r, 0.5f, 0.001f);
-    BOOST_CHECK_CLOSE(alone.colour.b, 1.0f, 0.001f);
-    BOOST_CHECK_CLOSE(alone.opacity.r, 0.5f, 0.001f);
+    const v3d::render::offline::trace::Tracer::Seen alone = down(&shader, 1.0F, -1.0F, 10.0F);
+    BOOST_CHECK_CLOSE(alone.colour.r, 0.5F, 0.001F);
+    BOOST_CHECK_CLOSE(alone.colour.b, 1.0F, 0.001F);
+    BOOST_CHECK_CLOSE(alone.opacity.r, 0.5F, 0.001F);
 }
 
 /**
@@ -349,20 +342,19 @@ BOOST_AUTO_TEST_CASE(trace_transparency_composites_test) {
  **/
 BOOST_AUTO_TEST_CASE(trace_a_shadow_through_a_pane_test) {
     v3d::render::offline::trace::Scene scene;
-    v3d::render::offline::trace::Triangle floor = facing(8.0f, glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle floor = facing(8.0F, glm::vec3(1.0F));
     floor.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList()));
     scene.add(floor);
-    v3d::render::offline::trace::Triangle pane(glm::vec3(-0.5f, -0.5f, 1.0f), glm::vec3(0.5f, -0.5f, 1.0f),
-        glm::vec3(0.0f, 0.5f, 1.0f), glm::vec3(1.0f));
-    pane.opacity(glm::vec3(0.5f));
+    v3d::render::offline::trace::Triangle pane({glm::vec3(-0.5F, -0.5F, 1.0F), glm::vec3(0.5F, -0.5F, 1.0F), glm::vec3(0.0F, 0.5F, 1.0F)}, glm::vec3(1.0F));
+    pane.opacity(glm::vec3(0.5F));
     scene.add(pane);
 
     ParameterList tilted;
-    add(&tilted, "to", Declaration::Type::POINT, { 0.70710678f, 0.0f, -0.70710678f });
+    add(&tilted, "to", Declaration::Type::POINT, { 0.70710678F, 0.0F, -0.70710678F });
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, tilted));
 
     v3d::render::offline::trace::Tracer shader(&scene);
-    BOOST_CHECK_CLOSE(shader.shade(at(scene, 1.0f, 0.0f)).r, 0.5f * 0.70710678f, 0.5f);
+    BOOST_CHECK_CLOSE(shader.shade(at(scene, 1.0F, 0.0F)).r, 0.5F * 0.70710678F, 0.5F);
 }
 
 /**
@@ -375,21 +367,19 @@ BOOST_AUTO_TEST_CASE(trace_a_glass_slab_is_straight_through_test) {
     const Placed glass = instance("glass", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList());
     v3d::render::offline::trace::Scene scene;
     // the slab's two faces, each facing out of it
-    v3d::render::offline::trace::Triangle top(glm::vec3(-4.0f, -4.0f, 1.0f), glm::vec3(4.0f, -4.0f, 1.0f),
-        glm::vec3(0.0f, 4.0f, 1.0f), glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle top({glm::vec3(-4.0F, -4.0F, 1.0F), glm::vec3(4.0F, -4.0F, 1.0F), glm::vec3(0.0F, 4.0F, 1.0F)}, glm::vec3(1.0F));
     top.surface(glass);
     scene.add(top);
-    v3d::render::offline::trace::Triangle bottom = downward(4.0f, 0.5f, glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle bottom = downward(4.0F, 0.5F, glm::vec3(1.0F));
     bottom.surface(glass);
     scene.add(bottom);
-    scene.add(v3d::render::offline::trace::Triangle(glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(0.5f, -0.5f, 0.0f),
-        glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+    scene.add(v3d::render::offline::trace::Triangle({glm::vec3(-0.5F, -0.5F, 0.0F), glm::vec3(0.5F, -0.5F, 0.0F), glm::vec3(0.0F, 0.5F, 0.0F)}, glm::vec3(1.0F, 0.0F, 0.0F)));
 
     v3d::render::offline::trace::Tracer shader(&scene);
-    const glm::vec3 through = down(&shader, 0.0f, 0.0f, 10.0f).colour;
-    BOOST_CHECK_CLOSE(through.r, 0.96f * 0.96f, 0.01f);
-    BOOST_CHECK_SMALL(through.g, 1.0e-6f);
-    BOOST_CHECK_SMALL(down(&shader, 0.0f, -0.7f, 10.0f).colour.r, 1.0e-6f);
+    const glm::vec3 through = down(&shader, 0.0F, 0.0F, 10.0F).colour;
+    BOOST_CHECK_CLOSE(through.r, 0.96F * 0.96F, 0.01F);
+    BOOST_CHECK_SMALL(through.g, 1.0e-6F);
+    BOOST_CHECK_SMALL(down(&shader, 0.0F, -0.7F, 10.0F).colour.r, 1.0e-6F);
 }
 
 /**
@@ -398,22 +388,22 @@ BOOST_AUTO_TEST_CASE(trace_a_glass_slab_is_straight_through_test) {
  **/
 BOOST_AUTO_TEST_CASE(trace_a_primitive_has_its_own_lights_test) {
     v3d::render::offline::trace::Scene scene;
-    v3d::render::offline::trace::Triangle triangle = facing(2.0f, glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle triangle = facing(2.0F, glm::vec3(1.0F));
     triangle.surface(instance("matte", v3d::render::offline::sl::ShaderType::SURFACE,
         ParameterList()));
 
     // the scene's light is overhead and the primitive's own is sixty degrees off
     ParameterList overhead;
-    add(&overhead, "to", Declaration::Type::POINT, { 0.0f, 0.0f, -1.0f });
+    add(&overhead, "to", Declaration::Type::POINT, { 0.0F, 0.0F, -1.0F });
     scene.add(instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, overhead));
     ParameterList tilted;
-    add(&tilted, "to", Declaration::Type::POINT, { 0.8660254f, 0.0f, -0.5f });
+    add(&tilted, "to", Declaration::Type::POINT, { 0.8660254F, 0.0F, -0.5F });
     triangle.lights(boost::make_shared<std::vector<Placed> >(
         1, instance("distantlight", v3d::render::offline::sl::ShaderType::LIGHT, tilted)));
     scene.add(triangle);
 
     v3d::render::offline::trace::Tracer shader(&scene);
-    BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0f, 0.0f)).r, 0.5f, 0.5f);
+    BOOST_CHECK_CLOSE(shader.shade(at(scene, 0.0F, 0.0F)).r, 0.5F, 0.5F);
 }
 
 /**
@@ -425,35 +415,38 @@ BOOST_AUTO_TEST_CASE(trace_a_failed_shader_keeps_its_opacity_test) {
     shaders.searchpath("data");
 
     v3d::render::offline::trace::Scene scene;
-    v3d::render::offline::trace::Triangle pane = facing(2.0f, glm::vec3(1.0f));
+    v3d::render::offline::trace::Triangle pane = facing(2.0F, glm::vec3(1.0F));
     Placed endless;
     endless.shader = shaders.instance("endless", v3d::render::offline::sl::ShaderType::SURFACE, ParameterList());
     BOOST_REQUIRE(endless.shader);
     pane.surface(endless);
-    pane.opacity(glm::vec3(0.5f));
+    pane.opacity(glm::vec3(0.5F));
     scene.add(pane);
 
     v3d::render::offline::trace::Tracer shader(&scene);
-    const glm::vec3 colour = shader.shade(at(scene, 0.0f, 0.0f));
-    BOOST_CHECK_CLOSE(colour.r, 0.5f, 0.1f);
+    const glm::vec3 colour = shader.shade(at(scene, 0.0F, 0.0F));
+    BOOST_CHECK_CLOSE(colour.r, 0.5F, 0.1F);
 }
 
 /**
  * A hit has no "object" space, because a traced primitive does not carry the transformation
- * that was in force where the scene created it. The hit refuses the space, which the machine
- * reports, rather than answering with world space. "world" and "current" are the identity.
+ * that was in force where the scene created it. The hit refuses the space rather than
+ * answering with world space, and the machine reports the refusal. "world" and "current" are
+ * the identity.
  **/
 BOOST_AUTO_TEST_CASE(trace_a_hit_refuses_object_space_test) {
     v3d::render::offline::trace::Scene scene;
-    scene.add(facing(2.0f, glm::vec3(1.0f)));
+    scene.add(facing(2.0F, glm::vec3(1.0F)));
     v3d::render::offline::trace::Tracer tracer(&scene);
-    const v3d::render::offline::trace::Hit hit = at(scene, 0.0f, 0.0f);
+    const v3d::render::offline::trace::Hit hit = at(scene, 0.0F, 0.0F);
     v3d::render::offline::trace::HitShader shader(&tracer, hit);
 
-    glm::mat4x4 matrix(1.0f);
+    glm::mat4x4 matrix(1.0F);
     BOOST_CHECK(!shader.space("object", &matrix));
     BOOST_CHECK(shader.space("world", &matrix));
-    BOOST_CHECK((matrix == glm::mat4x4(1.0f)));
+    BOOST_CHECK((matrix == glm::mat4x4(1.0F)));
     BOOST_CHECK(shader.space("current", &matrix));
-    BOOST_CHECK((matrix == glm::mat4x4(1.0f)));
+    BOOST_CHECK((matrix == glm::mat4x4(1.0F)));
 }
+
+};  // namespace

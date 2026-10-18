@@ -6,6 +6,9 @@
 #pragma once
 
 #include <api/type/geometry/Bound2D.h>
+
+#include <cstdint>
+
 #include "Length.h"
 
 #include <glm/vec2.hpp>
@@ -15,13 +18,13 @@ namespace v3d::ui {
 /**
  * Where a component sits in the box around it, and how big it is there.
  *
- * This is the input to layout; Component::position() and size() are the output, the
- * absolute box it was last drawn in. The two are separate so that a
- * percentage survives being resolved: a component that stored only the resolved number
- * would forget what it asked for the moment its parent changed size.
+ * This is the input to layout. Component::position() and size() are the output, the
+ * absolute box the component was last drawn in. The two are kept apart so that a
+ * percentage is kept after it is resolved, and is resolved again when the parent changes
+ * size.
  *
- * Nothing here reads the output. A box is worked out from the box around it and from what
- * the component makes of itself. The answer is the same however many times it is asked and
+ * Nothing here reads the output. A box is worked out from the box around it and from the
+ * component's natural size. The result is the same however many times it is resolved, and
  * whatever was on the screen before.
  *
  * x and y are measured from the anchored corner and grow inwards, so a bottom right
@@ -29,7 +32,7 @@ namespace v3d::ui {
  * width is.
  **/
 struct Layout final {
-    enum class Anchor {
+    enum class Anchor : std::uint8_t {
         TopLeft,
         TopRight,
         BottomLeft,
@@ -44,7 +47,7 @@ struct Layout final {
      *
      * @param parent the box the component sits in, which is the canvas for a component
      *      with no parent
-     * @param own the size the component makes of itself, for an Auto extent
+     * @param own the component's natural size, which an Auto extent resolves to
      **/
     v3d::type::geometry::Bound2D resolve(const v3d::type::geometry::Bound2D& parent, const glm::vec2& own) const;
 

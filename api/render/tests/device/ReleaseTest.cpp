@@ -5,7 +5,8 @@
 
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
@@ -15,6 +16,7 @@
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -23,7 +25,7 @@
 
 #include "Headless.h"
 
-using v3d::render::realtime::Canvas;
+using v3d::render::realtime::canvas::Canvas;
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::TextureHandle;
@@ -41,10 +43,10 @@ const uint32_t height = 16;
  * A texture that is one flat colour, so that wherever and however it is sampled what reaches
  * the target is that colour exactly, on any conformant driver.
  **/
-TextureHandle flat(v3d::test::Headless* headless, unsigned char r, unsigned char g, unsigned char b) {
+TextureHandle flat(v3d::test::Headless* headless, unsigned char red, unsigned char green, unsigned char blue) {
     std::vector<unsigned char> pixels;
     for (int texel = 0; texel < 4 * 4; texel++) {
-        pixels.insert(pixels.end(), {r, g, b, 0xFF});
+        pixels.insert(pixels.end(), {red, green, blue, 0xFF});
     }
     return headless->context->textures()->texture(pixels.data(), 4, 4, 4);
 }
@@ -56,14 +58,14 @@ TextureHandle flat(v3d::test::Headless* headless, unsigned char r, unsigned char
 void draw(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& target,
     const TextureHandle& texture, Capture* capture) {
     Canvas canvas;
-    canvas.resize(width, height);
+    canvas.resize(glm::uvec2(width, height));
     canvas.clear();
-    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
-        glm::vec4(1.0f), texture);
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F),
+        glm::vec4(1.0F), texture);
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("colour");
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    const boost::shared_ptr<Pass> pass = frame.pass("colour");
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless->context->quads()->submit(canvas, pass.get());
 
     VkCommandBuffer commands = headless->context->ring()->begin();
@@ -94,8 +96,6 @@ void idle(v3d::test::Headless* headless) {
     headless->submit(headless->context->ring()->begin());
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(release_test)
 
 /**
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_SUITE(release_test)
  **/
 BOOST_AUTO_TEST_CASE(a_texture_released_in_flight_outlives_its_frame) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     TextureHandle texture = flat(&headless, 0xFF, 0x00, 0x00);
     draw(&headless, target, texture, nullptr);
@@ -131,21 +131,21 @@ BOOST_AUTO_TEST_CASE(a_texture_released_in_flight_outlives_its_frame) {
  **/
 BOOST_AUTO_TEST_CASE(a_sprite_whose_texture_is_released_after_it_is_queued_draws_it) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     // one frame submitted first, so the ring has begun a frame before the release
     idle(&headless);
 
     const TextureHandle texture = flat(&headless, 0xFF, 0x00, 0xFF);
     Canvas canvas;
-    canvas.resize(width, height);
+    canvas.resize(glm::uvec2(width, height));
     canvas.clear();
-    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
-        glm::vec4(1.0f), texture);
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F),
+        glm::vec4(1.0F), texture);
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("colour");
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    const boost::shared_ptr<Pass> pass = frame.pass("colour");
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, pass.get());
 
     BOOST_CHECK(headless.context->textures()->release(texture));
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(a_sprite_whose_texture_is_released_after_it_is_queued_draws
     BOOST_REQUIRE(picture);
     const unsigned char* pixels = picture->data();
     for (uint32_t texel = 0; texel < width * height; texel++) {
-        const unsigned char* at = pixels + static_cast<std::size_t>(texel) * 4;
+        const unsigned char* at = pixels + (static_cast<std::size_t>(texel) * 4);
         if (at[0] != 0xFF || at[1] != 0x00 || at[2] != 0xFF || at[3] != 0xFF) {
             BOOST_ERROR("texel " << texel << " is not the released sprite's texture");
             return;
@@ -233,7 +233,7 @@ BOOST_AUTO_TEST_CASE(a_released_handle_is_held_until_its_frame_finishes) {
  **/
 BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     TextureHandle red = flat(&headless, 0xFF, 0x00, 0x00);
     draw(&headless, target, red, nullptr);
@@ -253,11 +253,11 @@ BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
 
     BOOST_REQUIRE(capture.write("data_out/release_reused_slot.png"));
     v3d::image::reader::Png png(headless.logger);
-    boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/release_reused_slot.png");
+    const boost::shared_ptr<v3d::image::Image> picture = png.read("data_out/release_reused_slot.png");
     BOOST_REQUIRE(picture);
     const unsigned char* pixels = picture->data();
     for (uint32_t texel = 0; texel < width * height; texel++) {
-        const unsigned char* at = pixels + static_cast<std::size_t>(texel) * 4;
+        const unsigned char* at = pixels + (static_cast<std::size_t>(texel) * 4);
         if (at[0] != 0x00 || at[1] != 0xFF || at[2] != 0x00 || at[3] != 0xFF) {
             BOOST_ERROR("texel " << texel << " is not the texture now in the slot");
             return;
@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
  **/
 BOOST_AUTO_TEST_CASE(a_target_resized_in_flight_outlives_its_frame) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat, true);
 
     draw(&headless, target, flat(&headless, 0xFF, 0x00, 0x00), nullptr);
     target->recreate(width / 2, height / 2);
@@ -292,8 +292,8 @@ BOOST_AUTO_TEST_CASE(a_target_resized_in_flight_outlives_its_frame) {
  **/
 BOOST_AUTO_TEST_CASE(a_registered_target_keeps_its_image_through_a_resize) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> source = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
-    boost::shared_ptr<RenderTarget> into = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> source = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> into = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 
     draw(&headless, source, flat(&headless, 0x00, 0x00, 0xFF), nullptr);
     const TextureHandle registered = headless.context->textures()->texture(*source);
@@ -314,7 +314,7 @@ BOOST_AUTO_TEST_CASE(a_registered_target_keeps_its_image_through_a_resize) {
  * that handle is releasing the white texture.
  **/
 BOOST_AUTO_TEST_CASE(the_white_texture_is_not_released) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     TextureHandle white = headless.context->textures()->white();
 
@@ -329,19 +329,19 @@ BOOST_AUTO_TEST_CASE(the_white_texture_is_not_released) {
  **/
 BOOST_AUTO_TEST_CASE(a_stream_holds_what_one_frame_asked_for) {
     v3d::test::Headless headless(colourFormat, width, height);
-    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), 64, 32);
+    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), {.vertexBytes = 64, .indexBytes = 32});
     const std::size_t frames = headless.context->ring()->framesInFlight();
 
     for (int frame = 0; frame < 12; ++frame) {
-        stream.claim(16, 8);
-        stream.claim(16, 8);
+        stream.claim({.vertexBytes = 16, .indexBytes = 8});
+        stream.claim({.vertexBytes = 16, .indexBytes = 8});
         idle(&headless);
     }
     BOOST_CHECK_EQUAL(stream.held(), 2 * frames);
 
     for (std::size_t frame = 0; frame < frames * 2; ++frame) {
-        const v3d::render::realtime::vulkan::frame::StreamRing::Geometry grown = stream.claim(1000, 8);
-        BOOST_CHECK_GE(grown.vertices->size(), 1000u);
+        const v3d::render::realtime::vulkan::frame::StreamRing::Geometry grown = stream.claim({.vertexBytes = 1000, .indexBytes = 8});
+        BOOST_CHECK_GE(grown.vertices->size(), 1000U);
         idle(&headless);
     }
     BOOST_CHECK_EQUAL(stream.held(), 2 * frames);
@@ -354,8 +354,8 @@ BOOST_AUTO_TEST_CASE(a_stream_holds_what_one_frame_asked_for) {
  * gives a new one.
  **/
 BOOST_AUTO_TEST_CASE(a_target_registered_twice_has_one_handle) {
-    v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true, true);
 
     const TextureHandle first = headless.context->textures()->texture(*target);
@@ -377,36 +377,41 @@ BOOST_AUTO_TEST_CASE(a_target_registered_twice_has_one_handle) {
  * skipped frames holds no more than one frame's worth.
  **/
 BOOST_AUTO_TEST_CASE(a_skipped_frame_gives_its_claims_back) {
-    v3d::test::Headless headless(colourFormat, width, height);
-    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), 64, 32);
+    const v3d::test::Headless headless(colourFormat, width, height);
+    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), {.vertexBytes = 64, .indexBytes = 32});
 
     for (int frame = 0; frame < 12; ++frame) {
-        stream.claim(16, 8);
-        stream.claim(16, 8);
+        stream.claim({.vertexBytes = 16, .indexBytes = 8});
+        stream.claim({.vertexBytes = 16, .indexBytes = 8});
         headless.context->ring()->skip();
     }
-    BOOST_CHECK_EQUAL(stream.held(), 2u);
+    BOOST_CHECK_EQUAL(stream.held(), 2U);
     BOOST_CHECK(headless.silent());
 }
 
 /**
  * A renderer claims before the frame begins. A frame begun and abandoned, because recording
- * threw, was never drawn, so the attempt that follows reuses its claims. The first claim on
- * the next slot then takes that slot's first pair.
+ * threw, was never drawn, so the attempt that follows reuses its claims. That holds however
+ * many times the same slot is begun again, so the slot holds one pair. The first claim on the
+ * next slot then takes that slot's first pair.
  **/
 BOOST_AUTO_TEST_CASE(a_frame_begun_again_restarts_its_claims) {
     v3d::test::Headless headless(colourFormat, width, height);
-    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), 64, 32);
+    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), {.vertexBytes = 64, .indexBytes = 32});
 
-    stream.claim(16, 8);
+    stream.claim({.vertexBytes = 16, .indexBytes = 8});
     headless.context->ring()->begin();
 
-    stream.claim(16, 8);
-    headless.submit(headless.context->ring()->begin());
+    stream.claim({.vertexBytes = 16, .indexBytes = 8});
+    headless.context->ring()->begin();
 
-    const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim(16, 8);
+    stream.claim({.vertexBytes = 16, .indexBytes = 8});
+    headless.submit(headless.context->ring()->begin());
+    BOOST_CHECK_EQUAL(stream.held(), 1U);
+
+    const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim({.vertexBytes = 16, .indexBytes = 8});
     BOOST_CHECK(next.vertices != nullptr);
-    BOOST_CHECK_EQUAL(stream.held(), 2u);
+    BOOST_CHECK_EQUAL(stream.held(), 2U);
     headless.context->ring()->waitIdle();
     BOOST_CHECK(headless.silent());
 }
@@ -418,18 +423,18 @@ BOOST_AUTO_TEST_CASE(a_frame_begun_again_restarts_its_claims) {
  **/
 BOOST_AUTO_TEST_CASE(a_claim_on_the_next_slot_starts_from_its_front) {
     v3d::test::Headless headless(colourFormat, width, height);
-    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), 64, 32);
+    v3d::render::realtime::vulkan::frame::StreamRing stream(headless.device, headless.context->ring(), {.vertexBytes = 64, .indexBytes = 32});
 
     headless.context->ring()->begin();
-    stream.claim(16, 8);
+    stream.claim({.vertexBytes = 16, .indexBytes = 8});
 
     VkCommandBuffer commands = headless.context->ring()->begin();
-    stream.claim(16, 8);
+    stream.claim({.vertexBytes = 16, .indexBytes = 8});
     headless.submit(commands);
 
-    const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim(16, 8);
+    const v3d::render::realtime::vulkan::frame::StreamRing::Geometry next = stream.claim({.vertexBytes = 16, .indexBytes = 8});
     BOOST_CHECK(next.vertices != nullptr);
-    BOOST_CHECK_EQUAL(stream.held(), 2u);
+    BOOST_CHECK_EQUAL(stream.held(), 2U);
     headless.context->ring()->waitIdle();
     BOOST_CHECK(headless.silent());
 }
@@ -441,24 +446,24 @@ BOOST_AUTO_TEST_CASE(a_claim_on_the_next_slot_starts_from_its_front) {
  **/
 BOOST_AUTO_TEST_CASE(a_depth_texture_draws_on_a_canvas) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> source = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height,
+    const boost::shared_ptr<RenderTarget> source = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height,
         colourFormat, true, true);
-    boost::shared_ptr<RenderTarget> into = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> into = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
     const TextureHandle depth = headless.context->textures()->depthTexture(*source);
 
     Canvas canvas;
-    canvas.resize(width, height);
+    canvas.resize(glm::uvec2(width, height));
     canvas.clear();
-    canvas.rect(glm::vec2(0.0f, 0.0f), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
-        glm::vec4(1.0f), depth);
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(static_cast<float>(width), static_cast<float>(height)), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F),
+        glm::vec4(1.0F), depth);
 
     Frame frame;
-    boost::shared_ptr<Pass> drawn = frame.pass("colour");
+    const boost::shared_ptr<Pass> drawn = frame.pass("colour");
     drawn->target(into);
     drawn->reads(source);
-    drawn->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    drawn->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, drawn.get());
-    boost::shared_ptr<Pass> cleared = frame.pass("depth");
+    const boost::shared_ptr<Pass> cleared = frame.pass("depth");
     cleared->target(source);
     cleared->depth(true);
 
@@ -472,3 +477,5 @@ BOOST_AUTO_TEST_CASE(a_depth_texture_draws_on_a_canvas) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

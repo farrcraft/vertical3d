@@ -19,8 +19,8 @@ void Transform::scale(const glm::vec3& s) {
     value_.scale = s;
 }
 
-void Transform::rotation(const glm::quat& r) {
-    value_.rotation = r;
+void Transform::rotation(const glm::quat& orientation) {
+    value_.rotation = orientation;
 }
 
 void Transform::translation(const glm::vec3& t) {

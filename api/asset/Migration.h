@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <span>
 
@@ -14,15 +15,15 @@ namespace v3d::asset {
 
 /**
  * One migration step: it takes a document of one version to the next, and returns whether it
- * succeeded. It reads and writes only the document it is given, because that is a copy
- * readForward() discards if a later step fails.
+ * succeeded. A step reads and writes only the document it is given. readForward() passes a
+ * copy, and discards it if a later step fails.
  **/
 typedef std::function<bool(boost::json::object&)> Migration;
 
 /**
  * What reading a document forward found. The caller decides what to do about each.
  **/
-enum class Reading {
+enum class Reading : std::uint8_t {
     Current,    // already at this build's version, and untouched
     Migrated,   // migrated forward to this build's version
     Newer,      // a later build wrote it, so it is untouched and must not be overwritten
@@ -33,9 +34,9 @@ enum class Reading {
  * Walk a document forward to this build's version, one step at a time.
  *
  * The document's version is the whole number at its root under "version". chain[0] takes
- * version 1 to 2, so a build at version n has n - 1 steps. Migration runs on a copy, stamps
- * the version after every step, and assigns the copy back only when every step succeeded, so
- * a refused document is exactly what was handed in.
+ * version 1 to 2, so a build at version n has n - 1 steps. Migration runs on a copy and stamps
+ * the version after every step. The copy is assigned back only when every step succeeded, so
+ * a refused document is left exactly as it was passed in.
  *
  * @param document the document to read, which is replaced only on Reading::Migrated
  * @param current the version this build writes, from 1

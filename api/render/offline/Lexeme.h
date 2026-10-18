@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "Position.h"
+
 namespace v3d::render::offline {
 
 /**
@@ -17,15 +19,15 @@ template <typename Kind>
 class Lexeme {
  public:
     Lexeme() = default;
-    Lexeme(Kind kind, unsigned int line, unsigned int column) :
-        kind_(kind), line_(line), column_(column) {
+    Lexeme(Kind kind, const v3d::render::offline::Position & at) :
+        kind_(kind), line_(at.line), column_(at.column) {
     }
-    Lexeme(Kind kind, const std::string & text, unsigned int line, unsigned int column) :
-        kind_(kind), text_(text), line_(line), column_(column) {
+    Lexeme(Kind kind, const std::string & text, const v3d::render::offline::Position & at) :
+        kind_(kind), text_(text), line_(at.line), column_(at.column) {
     }
     /** A number. Only a number lexeme carries a value. **/
-    Lexeme(Kind number, float value, unsigned int line, unsigned int column) :
-        kind_(number), value_(value), line_(line), column_(column) {
+    Lexeme(Kind number, float value, const v3d::render::offline::Position & at) :
+        kind_(number), value_(value), line_(at.line), column_(at.column) {
     }
 
     Kind kind() const {
@@ -53,11 +55,14 @@ class Lexeme {
     unsigned int column() const {
         return column_;
     }
+    Position position() const {
+        return {.line = line_, .column = column_};
+    }
 
  private:
     Kind kind_ = Kind::END;
     std::string text_;
-    float value_ = 0.0f;
+    float value_ = 0.0F;
     unsigned int line_ = 0;
     unsigned int column_ = 0;
 };

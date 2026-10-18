@@ -152,8 +152,8 @@ function(v3d_api_closure)
 	set(V3D_API_PACKAGES "${packages}" PARENT_SCOPE)
 endfunction()
 
-# One manifest field of one library against what the link lines actually named. Appends to
-# the list named by out_var, which is why it takes the name rather than the value.
+# One manifest field of one library against what the link lines actually named. It appends to
+# the list named by out_var, so it takes the variable's name, not its value.
 function(v3d_api_compare library field actual out_var)
 	set(declared ${V3D_API_${library}_${field}})
 	set(problems ${${out_var}})
@@ -232,7 +232,7 @@ function(v3d_api_verify_manifest)
 endfunction()
 
 # Which api library owns a path under api/: the one whose PATH is the longest prefix of it, so
-# render/offline/Film.h is render_offline's and render/realtime/Canvas.h is render's. Sets
+# render/offline/Film.h is render_offline's and render/realtime/canvas/Canvas.h is render's. Sets
 # out_var to the library, or to nothing for a path no library owns.
 function(v3d_api_owner relative out_var)
 	set(owner)
@@ -259,7 +259,7 @@ endfunction()
 # includes what its library links PRIVATE fails here, and so does a PUBLIC link that no header
 # needs.
 #
-# It runs at configure, so a header edited since then is checked at the next one; CI
+# It runs at configure, so a header edited since then is checked at the next one. CI
 # configures every run.
 function(v3d_api_verify_visibility root)
 	set(problems)

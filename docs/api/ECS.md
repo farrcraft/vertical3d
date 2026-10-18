@@ -15,18 +15,18 @@ drawing entities between simulation steps. How entities are drawn is in
 
 ## The registry
 
-`v3d::engine::Engine` holds one `entt::registry` by value, as the protected member `registry_`.
-An app's engine subclass inherits it. There is no accessor, so only the subclass reaches it
-directly, and it passes the registry to whatever else needs it: a pointer for a system, a
-reference for the render functions.
+`v3d::engine::Engine` holds one `entt::registry` by value. An app's engine subclass reaches it
+through `registry()`, which is protected and returns it writable. Nothing outside the subclass
+reaches it directly, so the subclass passes the registry to whatever else needs it: a pointer for
+a system, a reference for the render functions.
 
 An entity's components are added by the class that owns the entity's id, and read back through
 the registry:
 
 ```cpp
-registry_.emplace<v3d::ecs::component::Position2D>(id_, glm::vec2(0.0f));
+registry().emplace<v3d::ecs::component::Position2D>(id_, glm::vec2(0.0F));
 ...
-auto& position = registry_.get<v3d::ecs::component::Position2D>(id_);
+auto& position = registry().get<v3d::ecs::component::Position2D>(id_);
 position.value += velocity * step;
 ```
 
@@ -47,7 +47,7 @@ v3d::ecs::Ref selected_;
 ...
 selected_.set(clicked);
 ...
-const entt::entity target = selected_.get(registry_);   // entt::null once it is destroyed
+const entt::entity target = selected_.get(registry());   // entt::null once it is destroyed
 if (target != entt::null) { ... }
 ```
 
@@ -118,7 +118,7 @@ model's animation clips an entity is playing. Clips are identified by their inde
 model's `clips()`. It holds the clip, the time into it, its duration and whether it loops, plus
 the same for the clip being faded out of, and the fade's progress.
 
-- **`play(&playback, clip, duration, loops, fade)`** starts a clip from the beginning, fading
+- **`play(&playback, {.clip, .duration, .loops, .fade})`** starts a clip from the beginning, fading
   from whatever was playing over `fade` seconds. Asking for the clip already playing changes
   nothing, so a game can call it every step from whatever chooses its clip. A fade of zero, or
   nothing playing, cuts.
@@ -126,7 +126,8 @@ the same for the clip being faded out of, and the fade's progress.
   `simulate()`, after the snapshot.
 - **`crossed(previous, current, marker)`** counts how many times a step passed a marker time in
   the clip, such as a footstep. It is zero for a step that changed clip.
-- **`Playback::none`** as the clip draws the skeleton's rest pose.
+- **`Playback::none`** as the clip draws the skeleton's rest pose. Playing it with a fade fades
+  the old clip out into the rest pose over the fade, as any other clip would.
 - It holds no pose. The renderer samples the pose from the interpolated playback each frame.
 - Across a step that changed clip there is no halfway point, so interpolation gives the later
   step. The fade smooths the change.
@@ -197,10 +198,10 @@ The rules:
 
 ```cpp
 bool MyEngine::simulate(float step) {
-    v3d::ecs::snapshot<v3d::ecs::component::Transform>(registry_);
-    v3d::ecs::snapshot<v3d::ecs::component::Playback>(registry_);
+    v3d::ecs::snapshot<v3d::ecs::component::Transform>(registry());
+    v3d::ecs::snapshot<v3d::ecs::component::Playback>(registry());
     // ... move things ...
-    v3d::ecs::component::advance(registry_, step);
+    v3d::ecs::component::advance(registry(), step);
     return true;
 }
 ```
@@ -221,10 +222,10 @@ components live in `api/render/realtime/component/`, beside the renderer handles
 | `realtime::component::Mesh` | A model from a `MeshRegistry`, lit and optionally casting a shadow. |
 | `realtime::component::Particles` | The particles of the entity's `ecs::component::Emitter`. |
 
-The api provides the functions that find these entities and draw them: `realtime::sprites()`,
-`realtime::particles()`, `realtime::meshes()` and `realtime::casters()`. Each takes the registry
-and `alpha()`, and reads `Transform` through `interpolated<Transform>`. An entity whose game
-snapshots `Transform` is therefore drawn between steps with no further work.
+The api provides the functions that find these entities and draw them, in `realtime::entity`:
+`sprites()`, `particles()`, `meshes()` and `casters()`. Each takes the registry and `alpha()`,
+and reads `Transform` through `interpolated<Transform>`. An entity whose game snapshots
+`Transform` is therefore drawn between steps with no further work.
 
 A sprite ignores its transform's rotation, because a billboard faces the camera. A game shows
 which way a sprite faces by choosing its region. A `Sprite` holds the region's texture

@@ -18,12 +18,12 @@ namespace v3d::audio {
  * Sound authored in an audio tool: banks, the named events in them, and the global parameters
  * their mix reads.
  *
- * It sits beside the clip engine rather than replacing it. Clips, buses and fades stay on
- * audio::Engine. An app that plays events asks events() for one of these, and gets the null
- * backend where no event backend was built, so it builds and runs either way.
+ * It works beside the clip engine and does not replace it. Clips, buses and fades stay on
+ * audio::Engine. An app that plays events gets one of these from events(). In a build with no
+ * event backend, events() returns the null backend, so the app builds and runs either way.
  *
- * Every call reports whether it did what it was asked. The null backend does nothing and says
- * so, which a game reads as silence rather than as an error.
+ * Every call returns whether it succeeded. The null backend does nothing and returns false,
+ * and a game treats that as silence, not as an error.
  **/
 class Events {
  public:

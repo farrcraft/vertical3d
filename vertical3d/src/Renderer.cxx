@@ -5,13 +5,26 @@
 
 #include "Renderer.h"
 
+#include <api/asset/Manager.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/asset/Type.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Window.h>
+#include <api/render/realtime/canvas/Canvas.h>
+#include <api/render/realtime/vulkan/renderer/Line.h>
+#include <api/ui/Engine.h>
+#include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Text.h>
+#include <api/ui/shell/Screen.h>
+#include <api/ui/shell/StatisticsOverlay.h>
+#include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -25,7 +38,7 @@ namespace {
 /**
  * What every viewport clears to.
  **/
-constexpr glm::vec4 background(0.16f, 0.17f, 0.19f, 1.0f);
+constexpr glm::vec4 background(0.16F, 0.17F, 0.19F, 1.0F);
 
 /**
  * What a view's handle pass is called, on the end of the view's own name.
@@ -40,16 +53,24 @@ const char* const uiPass = "ui";
 /**
  * How large the whole ui is drawn, as a multiple of the size it was laid out at.
  *
- * Every metric below is a multiple of the text size and the text size is a multiple of
+ * Every metric below is a multiple of the text size, and the text size is a multiple of
  * this, so the editor scales by one number. Glyphs are distance fields, so a new scale
  * does not need a rebuilt atlas.
  **/
-const float uiScale = 1.0f;
+const float uiScale = 1.0F;
 
 /**
  * The size the ui text is drawn at, and what the bar and its rows are sized from.
  **/
-const float fontSize = 15.0f * uiScale;
+const float fontSize = 15.0F * uiScale;
+
+/**
+ * The ui's spacing, each a multiple of the text size.
+ **/
+constexpr float lineHeightScale = 1.5F;
+constexpr float paddingScale = 1.4F;
+constexpr float barHeightScale = 1.8F;
+constexpr float panelPaddingScale = 0.3F;
 
 };  // namespace
 
@@ -68,10 +89,10 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
     v3d::ui::shell::Screen::Options options;
     options.size = fontSize;
     options.dress = [](v3d::ui::paint::Dressing* style, float size) {
-        style->lineHeight = size * 1.5f;
-        style->padding = size * 1.4f;
-        style->barHeight = size * 1.8f;
-        style->panelPadding = size * 0.3f;
+        style->lineHeight = size * lineHeightScale;
+        style->padding = size * paddingScale;
+        style->barHeight = size * barHeightScale;
+        style->panelPadding = size * panelPaddingScale;
     };
     screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
 }
@@ -126,7 +147,7 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     ui_->resolveImages([this](const std::string& source) -> v3d::render::realtime::TextureHandle {
         const v3d::asset::Type type = source.ends_with(".png")
             ? v3d::asset::Type::ImagePng : v3d::asset::Type::ImageTga;
-        boost::shared_ptr<v3d::asset::media::kind::Image> asset =
+        const boost::shared_ptr<v3d::asset::media::kind::Image> asset =
             assetManager_->load<v3d::asset::media::kind::Image>(source, type);
         if (!asset || !asset->image()) {
             return v3d::render::realtime::TextureHandle();
@@ -143,7 +164,7 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
  **/
 glm::vec2 Renderer::insets() const {
     if (!ui_) {
-        return glm::vec2(0.0f, 0.0f);
+        return glm::vec2(0.0F, 0.0F);
     }
     return screen_->components().insets(*ui_);
 }
@@ -154,12 +175,12 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
     if (!screen_->begin()) {
         return;
     }
-    boost::shared_ptr<v3d::render::realtime::Frame> frame = engine_.frame();
+    const boost::shared_ptr<v3d::render::realtime::Frame> frame = engine_.frame();
     if (!frame) {
         return;
     }
 
-    boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Line> lines = engine_.lines();
+    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Line> lines = engine_.lines();
 
     // a view with no scene still draws its grid: an empty document is not an error
     const Scene empty;
@@ -173,7 +194,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
 
         view->draw(scene, manipulator_.get(), &canvases_[index], &overlays_[index]);
 
-        boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(view->name());
+        const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(view->name());
         pass->viewport(view->region());
         pass->clearColour(background_);
         // every view depth tests, so a wireframe is occluded by what is in front of it.
@@ -183,7 +204,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
 
         // the handles are drawn over what the scene pass left, without a depth test, so
         // a handle lying in the plane of the grid is not hidden by it
-        boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame->pass(view->name() + handleSuffix);
+        const boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame->pass(view->name() + handleSuffix);
         overlay->viewport(view->region());
         overlay->keepColour();
         overlay->depth(false);
@@ -206,17 +227,17 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
  **/
 void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame,
     const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
-    // the overlay draws onto the same canvas, so this runs for it whether or not there is
-    // a ui to draw as well
+    // the statistics overlay draws onto the same canvas, so this runs even when there is no
+    // ui to draw
     screen_->draw(ui_.get(), statistics);
-    v3d::render::realtime::Canvas& canvas = screen_->canvas();
+    const v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
     if (canvas.empty()) {
         return;
     }
 
-    // over the whole window rather than a view, and over what every view left. A canvas
-    // carries its own projection, so this pass needs no camera
-    boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(uiPass);
+    // this pass covers the whole window, over what every view drew. A canvas carries its
+    // own projection, so this pass needs no camera
+    const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(uiPass);
     pass->keepColour();
     pass->depth(false);
     engine_.quads()->submit(canvas, pass.get());

@@ -26,11 +26,11 @@ class Sampler final {
      **/
     struct Sample {
         /** The position in raster space, in pixels from the image's upper left. **/
-        glm::vec2 raster { 0.0f, 0.0f };
+        glm::vec2 raster { 0.0F, 0.0F };
         /** When, between the shutter opening and closing. **/
-        float time { 0.0f };
+        float time { 0.0F };
         /** A point on the unit disc, which the lens scales by its radius. **/
-        glm::vec2 lens { 0.0f, 0.0f };
+        glm::vec2 lens { 0.0F, 0.0F };
     };
 
     explicit Sampler(const Sampling & sampling);
@@ -42,8 +42,8 @@ class Sampler final {
      * An axis with one stratum is sampled at the pixel centre rather than jittered, so one
      * sample a pixel is exactly the pixel centre.
      *
-     * @param pass which set of samples; a pixel sampled more than once is given a different
-     *        set each time, and the same set for the same pass
+     * @param pass which set of samples. A pixel sampled more than once is given a different
+     *        set for each pass, and the same set for the same pass
      **/
     std::vector<Sample> pixel(unsigned int column, unsigned int row, unsigned int pass = 0) const;
 

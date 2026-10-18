@@ -39,7 +39,7 @@ asked for.
 | `alpha()` | How far between two simulation steps the frame is. |
 | `statistics()` | What the loop measured about its pacing. |
 | `measure(name)` | Times a scope into the statistics. Protected. |
-| `registry_` | The `entt::registry` the app's entities live in. Protected. See [ECS.md](../ECS.md). |
+| `registry()` | The `entt::registry` the app's entities live in, writable. Protected. See [ECS.md](../ECS.md). |
 
 ## The shell an app gets
 

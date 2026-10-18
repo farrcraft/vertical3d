@@ -10,7 +10,7 @@ metadata:
   role: specialist
   scope: implementation
   output-format: code
-  related-skills: systematic-debugging, architecture-decision-records
+  related-skills: systematic-debugging, architecture-decision-records, code-comments
 ---
 
 # C++ Pro
@@ -49,7 +49,9 @@ What differs here:
 
 - **`boost::shared_ptr` and `boost::make_shared`, not the `std` equivalents.** This is
   consistent across the whole tree. Do not "modernise" it in passing.
-- **Doc comments are `/** **/` blocks**, not `///`.
+- **Doc comments are `/** **/` blocks**, not `///`. What goes in a comment, and what must stay
+  out of one, is in the `code-comments` skill. Load it before writing more than a line or two
+  of comment.
 - Headers are `.h`; implementations are `.cpp` **or** `.cxx`, mixed even within a directory.
   Match the immediate neighbours.
 - The root sets `CMAKE_CXX_STANDARD 23` (MSVC `/std:c++latest`) and `/permissive-`, so modern

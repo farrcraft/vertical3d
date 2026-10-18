@@ -18,31 +18,34 @@ namespace v3d::config {
 /**
  * One image and a table of names over rectangles in it.
  *
- * The image is named rather than loaded: an app resolves it through its own asset manager
- * and renderer, as it does the images a theme names.
+ * The sheet names its image but does not load it. An app resolves the name through its own
+ * asset manager and renderer, as it does the images a theme names.
  *
- * **The rectangles are in pixels and the sheet states its own size**, so uv() divides one by
- * the other. An author reads a sprite sheet in pixels and a shader needs a fraction, and
- * pixels in the document can be checked against the image. Because the sheet states its size,
- * the document stays valid if the image is rescaled: the pixels are relative to the size
- * written here, not to the file on disk.
+ * **The rectangles are in pixels and the sheet states its own size.** uv() divides one by the
+ * other to give the fractions a shader needs. The pixels are relative to the size the sheet
+ * states, not to the image file, so the document stays valid if the image is rescaled.
  **/
 class SpriteSheet final {
  public:
     SpriteSheet();
 
     /**
-     * Build a sheet to put sprites in, for a packer emitting a document rather than a
-     * reader filling one out.
+     * The name, image and size of a sheet a packer builds to write out.
      *
-     * The size is given here and not per sprite because place() measures each region
-     * against it. A sheet built this way therefore refuses exactly what a sheet read from a
-     * document refuses, and a tool cannot emit a region the reader will drop.
+     * place() checks each region against this size, as it does for a sheet read from a
+     * document. A packer therefore cannot write a region that SpriteSheets::load() would drop.
      **/
-    SpriteSheet(const std::string& name, const std::string& image, int width, int height);
+    struct Spec {
+        std::string name;
+        std::string image;   /**< the image the sprites are cut from **/
+        int width = 0;
+        int height = 0;
+    };
+
+    explicit SpriteSheet(const Spec& spec);
 
     /**
-     * @return what the sheet is called, as whatever names one names it
+     * @return the sheet's name
      **/
     const std::string& name() const noexcept;
 
@@ -84,9 +87,9 @@ class SpriteSheet final {
     bool uv(const std::string& sprite, glm::vec2* uv0, glm::vec2* uv1) const;
 
     /**
-     * Put one sprite in the sheet. A region running off the sheet is refused, because it
-     * would give a uv outside 0..1, which samples according to the wrap mode instead of
-     * failing visibly.
+     * Put one sprite in the sheet. An empty name, an empty region and a region that runs off
+     * the sheet are refused. A region off the sheet would give a uv outside 0..1, and the
+     * sampler's wrap mode would then draw something instead of failing visibly.
      *
      * @return whether the region is one this sheet can hold. A name already in the sheet is
      *         kept as it was and is not an error

@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Asset.h>
 #include <api/asset/Manager.h>
 #include <api/asset/Type.h>
 #include <api/asset/kind/Json.h>
@@ -20,11 +21,9 @@ boost::shared_ptr<v3d::asset::Manager> manager(const std::string& path = "data")
     return boost::make_shared<v3d::asset::Manager>(path, boost::make_shared<v3d::log::Logger>());
 }
 
-};  // namespace
-
 /**
- * A manager starts with the two loaders that read a document, and nothing else - the rest are
- * registered by api/asset/media and api/audio.
+ * A manager starts with the document loaders and nothing else. api/asset/media and api/audio
+ * register the rest.
  **/
 BOOST_AUTO_TEST_CASE(manager_loader_per_registered_type_test) {
     auto assets = manager();
@@ -122,11 +121,13 @@ BOOST_AUTO_TEST_CASE(manager_path_resolution_test) {
 }
 
 /**
- * A file that is not there is a null asset, not a throw - Config::load reads its own return
- * that way and so does every consumer that guards the pointer.
+ * A file that is not there is a null asset, not a throw. Config::load() and every consumer
+ * that checks the pointer rely on this.
  **/
 BOOST_AUTO_TEST_CASE(manager_missing_asset_test) {
     auto assets = manager();
 
     BOOST_TEST(!assets->loadTypeFromExt("absent.json"));
 }
+
+};  // namespace

@@ -25,14 +25,14 @@ namespace v3d::render::realtime::vulkan::frame {
 class Swapchain;
 
 /**
- * A drawn image read back off the device and written out as a png - a presented frame off the
+ * A drawn image read back from the device and written out as a png: a presented frame from the
  * swapchain, or an offscreen target a pass drew into.
  *
  * Copying and writing are two calls because a queue submit sits between them. record() adds
  * the copy to the command buffer the frame is already being drawn into, and write() reads
- * the result once that frame's fence has signalled. The caller is responsible for that
- * synchronisation - a fence it already waits on, or a device wait. A record() with no
- * write() after it is not detected: the copy runs and is discarded.
+ * the result once that frame's fence has signalled. The caller provides that wait, through a
+ * fence it already waits on or a device wait. A record() with no write() after it is not
+ * detected: the copy runs and is discarded.
  *
  * The readback allocation is made by the first record() and reused by every later one, so a
  * renderer that holds a Capture and never asks for one pays nothing for it.
@@ -41,7 +41,7 @@ class Capture final {
  public:
     /**
      * What a capture reads from. A swapchain image and a render target differ only in these
-     * four things, so record() takes them rather than either class.
+     * fields, so record() takes them, not either class.
      **/
     struct Source {
         Source() noexcept;
@@ -85,11 +85,11 @@ class Capture final {
      * Copy an acquired swapchain image into the readback buffer.
      *
      * @param commands the buffer the frame was recorded into, still recording
-     * @param image which of the chain's images was acquired
+     * @param image which of the swapchain's images was acquired
      * @pre the image is in PRESENT_SRC. Recorder::record leaves it there.
-     * @throw std::runtime_error when the chain's images lack TRANSFER_SRC usage, because the
-     *        surface does not support it (Swapchain::copyable() is false), or when image is
-     *        not an index into the chain
+     * @throw std::runtime_error when the swapchain's images lack TRANSFER_SRC usage, because
+     *        the surface does not support it (Swapchain::copyable() is false), or when image
+     *        is not an index into the swapchain's images
      **/
     void record(VkCommandBuffer commands, const Swapchain& swapchain, uint32_t image);
 
@@ -115,10 +115,10 @@ class Capture final {
     /**
      * Turn a copied image into one the writers understand.
      *
-     * A chain is commonly BGRA and a png is RGBA, and the alpha a chain presents is not
-     * meaningful once the image has been composited, so it is written opaque.
+     * A swapchain is commonly BGRA and a png is RGBA. The alpha a swapchain presents has no
+     * meaning once the image has been composited, so it is written opaque.
      *
-     * Device free, so a test can pin the channel order without a chain to acquire from.
+     * Needs no device, so a test can check the channel order without a swapchain.
      *
      * @param pixels one tightly packed 4 byte texel per pixel, as the copy left them
      **/

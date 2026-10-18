@@ -5,7 +5,15 @@
 
 #include "TextureAtlas.h"
 
+#include <api/log/Logger.h>
+
 #include <algorithm>
+#include <cassert>
+#include <climits>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <stdexcept>
 #include <string>
 
 #include <boost/shared_ptr.hpp>
@@ -33,7 +41,7 @@ TextureAtlas::TextureAtlas(unsigned int width, unsigned int height, unsigned int
     used_(0),
     logger_(logger) {
     if (depth != 1 && depth != 3 && depth != 4) {
-        std::string err = "Invalid texture atlas depth - must be 1, 3, or 4";
+        const std::string err = "Invalid texture atlas depth - must be 1, 3, or 4";
         logger_->get()->error(err);
         throw std::runtime_error(err);
     }
@@ -41,7 +49,7 @@ TextureAtlas::TextureAtlas(unsigned int width, unsigned int height, unsigned int
     // 1 pixel border
     nodes_.push_back(glm::ivec3(1, 1, width - 2));
 
-    image_.reset(new Image(width, height, static_cast<uint8_t>(depth * 8)));
+    image_.reset(new Image(glm::uvec2(width, height), static_cast<uint8_t>(depth * 8)));
 }
 
 void TextureAtlas::write(const std::string& filename) {
@@ -69,7 +77,7 @@ unsigned int TextureAtlas::id() const {
 }
 
 glm::ivec4 TextureAtlas::region(unsigned int width, unsigned int height) {
-    const glm::ivec4 cell = allocate(width + gutter * 2, height + gutter * 2);
+    const glm::ivec4 cell = allocate(width + (gutter * 2), height + (gutter * 2));
     if (cell.x < 0) {
         return cell;
     }
@@ -83,13 +91,13 @@ glm::ivec4 TextureAtlas::allocate(unsigned int width, unsigned int height) {
     int bestIndex = -1;
     glm::ivec4 region(0, 0, width, height);
     for (unsigned int i = 0; i < nodes_.size(); ++i) {
-        int y = fit(i, width, height);
+        const int y = fit(i, glm::uvec2(width, height));
         if (y >= 0) {
             node = nodes_[i];
             if (((y + static_cast<int>(height)) < bestHeight) ||
                 (((y + static_cast<int>(height)) == bestHeight) && (node.z < bestWidth))) {
-                bestHeight = y + height;
-                bestIndex = i;
+                bestHeight = y + static_cast<int>(height);
+                bestIndex = static_cast<int>(i);
                 bestWidth = node.z;
                 region.x = node.x;
                 region.y = y;
@@ -106,8 +114,8 @@ glm::ivec4 TextureAtlas::allocate(unsigned int width, unsigned int height) {
     }
 
     node.x = region.x;
-    node.y = region.y + height;
-    node.z = width;
+    node.y = region.y + static_cast<int>(height);
+    node.z = static_cast<int>(width);
     nodes_.insert(nodes_.begin() + bestIndex, node);
 
     glm::ivec3 prev;
@@ -115,7 +123,7 @@ glm::ivec4 TextureAtlas::allocate(unsigned int width, unsigned int height) {
         prev = nodes_[i - 1];
 
         if (nodes_[i].x < (prev.x + prev.z)) {
-            int shrink = prev.x + prev.z - nodes_[i].x;
+            const int shrink = prev.x + prev.z - nodes_[i].x;
             nodes_[i].x += shrink;
             nodes_[i].z -= shrink;
             if (nodes_[i].z <= 0) {
@@ -135,23 +143,25 @@ glm::ivec4 TextureAtlas::allocate(unsigned int width, unsigned int height) {
 
 /**
  **/
-int TextureAtlas::fit(unsigned int index, unsigned int width, unsigned int height) {
+int TextureAtlas::fit(unsigned int index, const glm::uvec2& size) {
+    const unsigned int width = size.x;
+    const unsigned int height = size.y;
     glm::ivec3 node = nodes_[index];
-    int x = node.x;
+    const int x = node.x;
     if ((x + width) > (width_ - 1)) {
         return -1;
     }
     int y = node.y;
-    int widthLeft = width;
-    unsigned int i = index;
+    int widthLeft = static_cast<int>(width);
+    unsigned int nodeIndex = index;
     while (widthLeft > 0) {
-        node = nodes_[i];
+        node = nodes_[nodeIndex];
         y = std::max(y, node.y);
         if ((y + height) > (height_ - 1)) {
             return -1;
         }
         widthLeft -= node.z;
-        ++i;
+        ++nodeIndex;
     }
     return y;
 }
@@ -166,7 +176,11 @@ void TextureAtlas::merge() {
     }
 }
 
-void TextureAtlas::region(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char* data, unsigned int stride) {
+void TextureAtlas::region(const glm::ivec4& area, unsigned char* data, unsigned int stride) {
+    const unsigned int x = static_cast<unsigned int>(area.x);
+    const unsigned int y = static_cast<unsigned int>(area.y);
+    const unsigned int width = static_cast<unsigned int>(area.z);
+    const unsigned int height = static_cast<unsigned int>(area.w);
     assert(x > 0);
     assert(y > 0);
     assert(x < (width_ - 1));
@@ -174,11 +188,11 @@ void TextureAtlas::region(unsigned int x, unsigned int y, unsigned int width, un
     assert(y < (height_ - 1));
     assert((y + height) <= (height_ - 1));
 
-    size_t charsize = sizeof(char);
+    const size_t charsize = sizeof(char);
     unsigned char* imgData = image_->data();
     for (unsigned int i = 0; i < height; ++i) {
-        memcpy(imgData + (static_cast<size_t>(y + i) * width_ + x) * charsize * depth_,
-            data + (static_cast<size_t>(i) * stride) * charsize, width * charsize * depth_);
+        memcpy(imgData + (((static_cast<size_t>(y + i) * width_) + x) * charsize * depth_),
+            data + ((static_cast<size_t>(i) * stride) * charsize), width * charsize * depth_);
     }
 }
 

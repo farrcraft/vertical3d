@@ -5,6 +5,8 @@
 
 #include "Application.h"
 
+#include <api/log/Logger.h>
+
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_stdinc.h>
@@ -27,11 +29,11 @@ std::string appPath(const char* executable) {
 /**
  **/
 std::string userPath(const std::string& org, const std::string& app) {
-    // SDL owns the returned string and needs no SDL_Init to return it, so this can be
-    // called at the very start of an app's startup
+    // the caller frees the returned string with SDL_free(). SDL_GetPrefPath() needs no
+    // SDL_Init(), so this can be called at the very start of an app's startup
     char* path = SDL_GetPrefPath(org.c_str(), app.c_str());
     if (path == nullptr) {
-        v3d::log::Logger logger;
+        const v3d::log::Logger logger;
         logger.get()->error("no user directory for {}/{} - {}", org, app, SDL_GetError());
         return std::string();
     }

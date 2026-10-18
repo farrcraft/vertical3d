@@ -29,17 +29,17 @@ class TextureTextBuffer : public TextBuffer {
          * The size the text is laid out at; the font's metrics are scaled by its ratio to the
          * font's own size. Zero or less means the font's own size.
          **/
-        float size_ = 0.0f;
-        float gamma_ = 1.0f;
-        glm::vec4 foregroundColor_{1.0f};
+        float size_ = 0.0F;
+        float gamma_ = 1.0F;
+        glm::vec4 foregroundColor_{1.0F};
         /** Transparent unless a background quad is wanted behind each glyph. **/
-        glm::vec4 backgroundColor_{0.0f};
+        glm::vec4 backgroundColor_{0.0F};
         bool underline_ = false;
-        glm::vec4 underlineColor_{1.0f};
+        glm::vec4 underlineColor_{1.0F};
         bool overline_ = false;
-        glm::vec4 overlineColor_{1.0f};
+        glm::vec4 overlineColor_{1.0F};
         bool strikethrough_ = false;
-        glm::vec4 strikethroughColor_{1.0f};
+        glm::vec4 strikethroughColor_{1.0F};
         boost::shared_ptr<TextureFont> font_;
     };
 

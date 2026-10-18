@@ -6,19 +6,17 @@
 # It is a root project of its own rather than a subdirectory of vertical3d, so
 # CMAKE_SOURCE_DIR differs from V3D_ROOT.
 #
-# Its vcpkg.json and vcpkg-configuration.json are copies of the tree's, as a real consumer
-# repository carries. CI does not install from them - it points the configure at the
-# install the ctest job already made - so the copies here document the requirement rather than
-# doubling the CI cost of it.
+# Its vcpkg.json and vcpkg-configuration.json are copies of the tree's, as a consumer
+# repository would carry. CI does not install from them. It points the configure at the vcpkg
+# install the ctest job has already made, so the copies only document what a consumer needs.
 
 cmake_minimum_required(VERSION 3.21)
 
 project("v3dstarter" CXX)
 
-# What a consumer sets for itself, and all of it. The language standard and /permissive- are
-# deliberately not in the api's interface properties. Everything else a v3d:: target needs
-# arrives through the target: its include root, /EHsc, /utf-8, and every third party
-# dependency its headers name.
+# The only settings a consumer makes for itself. The api's interface properties leave out the
+# language standard and /permissive-. Everything else a v3d:: target needs comes through the
+# target: its include root, /EHsc, /utf-8, and every third party dependency its headers name.
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options("/permissive-")
@@ -28,10 +26,10 @@ add_compile_options("/permissive-")
 set(V3D_BUILD_APPS OFF)
 set(V3D_BUILD_TESTS OFF)
 
-# The three libraries this app links. V3D_LIBRARIES selects which api libraries are built: the
-# named ones and everything they depend on, and only their packages are looked for. Naming them
-# rather than leaving V3D_LIBRARIES at "all" makes CI check that closure: an api library that
-# does not declare something it links fails this configure.
+# The libraries this app links. V3D_LIBRARIES selects which api libraries are built: the named
+# ones and everything they depend on. Only their packages are looked for. Because the list is
+# not "all", CI checks that closure here: an api library that links something it does not
+# declare fails this configure.
 set(V3D_LIBRARIES engine log render)
 get_filename_component(V3D_TREE "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 add_subdirectory("${V3D_TREE}" v3d)
@@ -42,14 +40,14 @@ add_executable(v3dstarter
 
 # A CMake function is global once defined, so the tree's data helpers are callable here. This
 # one copies data/ beside the executable, because the engine resolves every asset relative to
-# the exe. v3d_add_shared_data(v3dstarter) would add the tree's own data/, which holds the
-# shared font, and this app draws no text and so does not ask for it.
+# the exe. v3d_add_shared_data(v3dstarter) would also copy the tree's own data/, which holds
+# the shared font. This app draws no text, so it does not call it.
 v3d_add_app_data(v3dstarter)
 
-# Three targets and no third party package of its own. boost::filesystem is compiled by these
-# sources - asset/Manager.h names a path - but it arrives through v3d::asset, so nothing here
-# has to name it. A consumer that does name a package itself has to find_package it in its own
-# scope.
+# The app names v3d:: targets and no third party package. These sources compile against
+# boost::filesystem, because asset/Manager.h names a path. It comes through v3d::asset, so
+# nothing here names it. A consumer that names a package itself has to call find_package for it
+# in its own scope.
 target_link_libraries(v3dstarter PRIVATE
 	v3d::engine
 	v3d::log

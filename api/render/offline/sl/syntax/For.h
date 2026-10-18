@@ -12,7 +12,7 @@ namespace v3d::render::offline::sl::syntax {
 
 class For final : public Statement {
  public:
-    For(unsigned int line, unsigned int column);
+    For(const v3d::render::offline::Position & at);
 
     /** Any of the three heads may be null, when it is empty in the source. **/
     StatementPtr initialiser;

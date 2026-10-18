@@ -20,8 +20,8 @@ namespace v3d::render::offline {
  * is applied here and nowhere else.
  *
  * A sample is filtered as it arrives into every pixel whose centre is within half the filter's
- * width of it on each axis. The film therefore holds a weighted sum per pixel rather than the
- * samples. Its memory is a frame buffer's, whatever the sample count.
+ * width of it on each axis. The film therefore holds a weighted sum per pixel and not the
+ * samples, so its memory does not grow with the sample count.
  **/
 class Film final {
  public:
@@ -30,14 +30,14 @@ class Film final {
      **/
     struct Sample {
         /** In raster space, in pixels from the image's upper left. **/
-        glm::vec2 raster { 0.0f, 0.0f };
+        glm::vec2 raster { 0.0F, 0.0F };
         /**
          * Premultiplied by its opacity, as Ci is. A miss's colour is filtered in too, and is
          * black unless a renderer has a background of its own.
          **/
-        glm::vec3 colour { 0.0f, 0.0f, 0.0f };
-        glm::vec3 opacity { 0.0f, 0.0f, 0.0f };
-        float depth { 0.0f };
+        glm::vec3 colour { 0.0F, 0.0F, 0.0F };
+        glm::vec3 opacity { 0.0F, 0.0F, 0.0F };
+        float depth { 0.0F };
         /** Whether the sample hit a surface. Coverage counts these samples. **/
         bool hit { false };
     };
@@ -80,7 +80,7 @@ class Film final {
      *
      * @param colour the first of three planes the colour goes into
      * @param coverage the plane the coverage goes into
-     * @param depth the plane the depth goes into, or negative for none; a pixel no sample
+     * @param depth the plane the depth goes into, or negative for none. A pixel no sample
      *        hit keeps what the plane held
      **/
     void resolve(FrameBuffer * frame, unsigned int colour, unsigned int coverage, int depth = -1) const;
@@ -92,7 +92,7 @@ class Film final {
         glm::dvec3 opacity { 0.0, 0.0, 0.0 };
         double coverage { 0.0 };
         double weight { 0.0 };
-        float depth { 0.0f };
+        float depth { 0.0F };
         bool hit { false };
     };
 

@@ -3,8 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Commands.h>
 #include <api/event/Engine.h>
+#include <api/event/Event.h>
+#include <api/event/State.h>
+#include <api/event/Type.h>
+#include <api/log/Logger.h>
 #include <api/ui/Engine.h>
+#include <api/ui/component/menu/Menu.h>
 #include <api/ui/shell/GameMenu.h>
 
 #include <string>
@@ -76,7 +82,7 @@ const char* const bindings = R"({
  * the time it reaches the loader.
  **/
 boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher),
         dispatcher,
@@ -90,16 +96,14 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
  * The menu's active item, by label, which navigation moves.
  **/
 std::string active(const boost::shared_ptr<v3d::ui::Engine>& ui) {
-    boost::shared_ptr<v3d::ui::component::Menu> menu =
-        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
-    boost::shared_ptr<v3d::ui::component::Menu> level = menu->level();
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(ui->container("game-menu")->get("main-menu"));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> level = menu->level();
     if (!level || !level->active()) {
         return std::string();
     }
     return std::string(level->active()->label());
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(game_menu_test)
 
@@ -108,7 +112,7 @@ BOOST_AUTO_TEST_SUITE(game_menu_test)
  * as it is up.
  **/
 BOOST_AUTO_TEST_CASE(a_toggle_shows_the_container_and_suspends_the_game) {
-    boost::shared_ptr<v3d::ui::Engine> ui = load(document);
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(document);
     std::vector<bool> suspended;
     v3d::ui::shell::GameMenu menu(ui, [&suspended](bool state) { suspended.push_back(state); });
 
@@ -128,11 +132,11 @@ BOOST_AUTO_TEST_CASE(a_toggle_shows_the_container_and_suspends_the_game) {
 }
 
 /**
- * Going back up out of a submenu leaves the menu open - it is only closing the top level
- * that resumes the game, so a toggle inside a submenu is not a close.
+ * Going back up out of a submenu leaves the menu open. Only closing the top level resumes
+ * the game, so a toggle inside a submenu is not a close.
  **/
 BOOST_AUTO_TEST_CASE(a_toggle_inside_a_submenu_only_goes_up_a_level) {
-    boost::shared_ptr<v3d::ui::Engine> ui = load(document);
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(document);
     std::vector<bool> suspended;
     v3d::ui::shell::GameMenu menu(ui, [&suspended](bool state) { suspended.push_back(state); });
 
@@ -159,7 +163,7 @@ BOOST_AUTO_TEST_CASE(a_toggle_inside_a_submenu_only_goes_up_a_level) {
  * Navigation moves the active item, and wraps at each end.
  **/
 BOOST_AUTO_TEST_CASE(navigation_moves_the_active_item) {
-    boost::shared_ptr<v3d::ui::Engine> ui = load(document);
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(document);
     v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
     menu.toggle();
 
@@ -174,7 +178,7 @@ BOOST_AUTO_TEST_CASE(navigation_moves_the_active_item) {
  * A command that is not one of the three is left for the app to act on itself.
  **/
 BOOST_AUTO_TEST_CASE(an_unrelated_command_is_not_taken) {
-    boost::shared_ptr<v3d::ui::Engine> ui = load(document);
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(document);
     v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
     menu.toggle();
 
@@ -186,7 +190,7 @@ BOOST_AUTO_TEST_CASE(an_unrelated_command_is_not_taken) {
  * the game when there is no menu over it.
  **/
 BOOST_AUTO_TEST_CASE(nothing_is_navigated_while_the_menu_is_down) {
-    boost::shared_ptr<v3d::ui::Engine> ui = load(document);
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(document);
     v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
 
     BOOST_TEST(!menu.navigate("menuNext"));
@@ -194,11 +198,11 @@ BOOST_AUTO_TEST_CASE(nothing_is_navigated_while_the_menu_is_down) {
 }
 
 /**
- * A config that names no such container leaves every call doing nothing, rather than
- * failing - a game whose ui carries no menu still runs, without one.
+ * A config that names no such container leaves every call doing nothing, and none of them
+ * fails. A game whose ui carries no menu still runs, without one.
  **/
 BOOST_AUTO_TEST_CASE(a_missing_container_leaves_the_menu_inert) {
-    boost::shared_ptr<v3d::ui::Engine> ui = load(R"({"themes": [], "containers": []})");
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({"themes": [], "containers": []})");
     std::vector<bool> suspended;
     v3d::ui::shell::GameMenu menu(ui, [&suspended](bool state) { suspended.push_back(state); });
 
@@ -213,7 +217,7 @@ BOOST_AUTO_TEST_CASE(a_missing_container_leaves_the_menu_inert) {
  * the whole value.
  **/
 BOOST_AUTO_TEST_CASE(a_key_input_item_captures_a_key_and_sends_it) {
-    boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
     v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
 
     menu.toggle();
@@ -233,8 +237,8 @@ BOOST_AUTO_TEST_CASE(a_key_input_item_captures_a_key_and_sends_it) {
     BOOST_TEST(!menu.capturing());
 
     // the item carries what it captured, and its event goes out with it
-    boost::shared_ptr<v3d::ui::component::Menu> component =
-        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> component =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(ui->container("game-menu")->get("main-menu"));
     boost::optional<v3d::event::EventData> value = (*component)[0]->value();
     BOOST_REQUIRE(value);
     BOOST_TEST(std::get<std::string>(value.get()) == "w");
@@ -248,7 +252,7 @@ BOOST_AUTO_TEST_CASE(a_key_input_item_captures_a_key_and_sends_it) {
  * not quietly recorded onto it.
  **/
 BOOST_AUTO_TEST_CASE(a_capture_takes_nothing_until_it_is_open) {
-    boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
     v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
 
     // not even while the menu is down
@@ -257,8 +261,8 @@ BOOST_AUTO_TEST_CASE(a_capture_takes_nothing_until_it_is_open) {
     menu.toggle();
     BOOST_TEST(!menu.capture(std::string("w")));
 
-    boost::shared_ptr<v3d::ui::component::Menu> component =
-        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> component =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(ui->container("game-menu")->get("main-menu"));
     BOOST_TEST(!(*component)[0]->value());
 }
 
@@ -267,10 +271,10 @@ BOOST_AUTO_TEST_CASE(a_capture_takes_nothing_until_it_is_open) {
  * the item is not given a value.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_input_item_opens_no_capture) {
-    boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
     v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
-    boost::shared_ptr<v3d::ui::component::Menu> component =
-        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> component =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(ui->container("game-menu")->get("main-menu"));
     (*component)[0]->enabled(false);
 
     menu.toggle();
@@ -287,7 +291,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_input_item_opens_no_capture) {
  * leaving the level the item sits on.
  **/
 BOOST_AUTO_TEST_CASE(a_toggle_during_a_capture_abandons_it) {
-    boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(bindings);
     v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
 
     menu.toggle();
@@ -299,8 +303,8 @@ BOOST_AUTO_TEST_CASE(a_toggle_during_a_capture_abandons_it) {
     // the menu is still up, and nothing was captured
     BOOST_TEST(menu.visible());
 
-    boost::shared_ptr<v3d::ui::component::Menu> component =
-        boost::dynamic_pointer_cast<v3d::ui::component::Menu>(ui->container("game-menu")->get("main-menu"));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> component =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(ui->container("game-menu")->get("main-menu"));
     BOOST_TEST(!(*component)[0]->value());
 
     // and navigation moves again
@@ -309,36 +313,43 @@ BOOST_AUTO_TEST_CASE(a_toggle_during_a_capture_abandons_it) {
 }
 
 /**
- * The menu answers its own commands off the ui's dispatcher, so an app's handler does not
- * route the toggle and the navigation to it - and a command of another context is not its.
+ * The menu registers its own commands, so an app's handlers do not route the toggle and the
+ * navigation to it, and a command of another context is not its. Each command is registered
+ * before the menu exists and does nothing until the app holds one.
  **/
-BOOST_AUTO_TEST_CASE(the_menu_answers_its_own_commands) {
-    boost::shared_ptr<v3d::ui::Engine> ui = load(document);
-    v3d::ui::shell::GameMenu menu(ui, [](bool) {});
+BOOST_AUTO_TEST_CASE(the_menu_declares_its_own_commands) {
+    const boost::shared_ptr<v3d::ui::Engine> ui = load(document);
     boost::shared_ptr<v3d::event::Engine> events = boost::make_shared<v3d::event::Engine>(ui->dispatcher());
+    boost::shared_ptr<v3d::ui::shell::GameMenu> menu;
+    v3d::event::Commands commands;
+    v3d::ui::shell::GameMenu::declare(commands, menu);
 
-    auto send = [&](const std::string& context, const std::string& name) {
+    auto send = [&](const std::string& context, const std::string& name, bool repeat) {
         v3d::event::Event command(name, events->resolveContext(context));
         command.type(v3d::event::Type::Destination);
-        ui->dispatcher()->trigger(command);
+        command.state(v3d::event::State::Pressed);
+        command.repeat(repeat);
+        return commands.invoke(command);
     };
 
-    send("game", v3d::ui::shell::GameMenu::toggleCommand);
-    BOOST_TEST(!menu.visible());
+    BOOST_TEST(send("ui", v3d::ui::shell::GameMenu::toggleCommand, false));
 
-    send("ui", v3d::ui::shell::GameMenu::toggleCommand);
-    BOOST_TEST(menu.visible());
+    menu = boost::make_shared<v3d::ui::shell::GameMenu>(ui, [](bool) {});
+    BOOST_TEST(!send("game", v3d::ui::shell::GameMenu::toggleCommand, false));
+    BOOST_TEST(!menu->visible());
+
+    BOOST_TEST(send("ui", v3d::ui::shell::GameMenu::toggleCommand, false));
+    BOOST_TEST(menu->visible());
 
     const std::string before = active(ui);
-    send("ui", "menuNext");
+    BOOST_TEST(send("ui", "menuNext", false));
     BOOST_TEST(active(ui) != before);
 
     // a held key's repeats do not flick the menu shut
-    v3d::event::Event repeated(v3d::ui::shell::GameMenu::toggleCommand, events->resolveContext("ui"));
-    repeated.type(v3d::event::Type::Destination);
-    repeated.repeat(true);
-    ui->dispatcher()->trigger(repeated);
-    BOOST_TEST(menu.visible());
+    BOOST_TEST(send("ui", v3d::ui::shell::GameMenu::toggleCommand, true));
+    BOOST_TEST(menu->visible());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

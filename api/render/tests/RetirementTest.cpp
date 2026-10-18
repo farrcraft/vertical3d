@@ -11,11 +11,13 @@
 
 using v3d::render::realtime::vulkan::frame::Retirement;
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(retirement_test)
 
 /**
- * Something released while frame n was being recorded is still in use until frame n has
- * finished, and with two frames in flight that is known only once frame n + 2 has begun.
+ * A resource released while frame n is recorded stays in use until frame n finishes. With two
+ * frames in flight, that is certain only once frame n + 2 begins.
  **/
 BOOST_AUTO_TEST_CASE(a_destruction_waits_for_the_frames_in_flight) {
     Retirement retirement(2);
@@ -28,7 +30,7 @@ BOOST_AUTO_TEST_CASE(a_destruction_waits_for_the_frames_in_flight) {
 
     retirement.collect(7);
     BOOST_CHECK(destroyed);
-    BOOST_CHECK_EQUAL(retirement.pending(), 0u);
+    BOOST_CHECK_EQUAL(retirement.pending(), 0U);
 }
 
 /**
@@ -44,15 +46,15 @@ BOOST_AUTO_TEST_CASE(only_what_is_due_is_collected) {
 
     retirement.collect(3);
 
-    BOOST_REQUIRE_EQUAL(destroyed.size(), 2u);
+    BOOST_REQUIRE_EQUAL(destroyed.size(), 2U);
     BOOST_CHECK_EQUAL(destroyed[0], 1);
     BOOST_CHECK_EQUAL(destroyed[1], 2);
-    BOOST_CHECK_EQUAL(retirement.pending(), 1u);
+    BOOST_CHECK_EQUAL(retirement.pending(), 1U);
 }
 
 /**
- * Whatever is still held when the queue goes is destroyed rather than leaked - the ring idles
- * the device before that happens.
+ * Whatever a Retirement still holds when it is destroyed is destroyed with it, not leaked. The
+ * Ring waits for the device to idle before that.
  **/
 BOOST_AUTO_TEST_CASE(what_is_held_is_destroyed_with_the_queue) {
     bool destroyed = false;
@@ -65,3 +67,5 @@ BOOST_AUTO_TEST_CASE(what_is_held_is_destroyed_with_the_queue) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

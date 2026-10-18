@@ -5,12 +5,14 @@
 
 #pragma once
 
+#include <cstdint>
+
 
 class GameState {
  public:
     GameState();
 
-    typedef enum {
+    typedef enum : std::uint8_t {
         STATE_LOADING,
         STATE_SIMULATION,
         STATE_GUI

@@ -18,9 +18,9 @@ namespace v3d::render::offline::sl::runtime {
 /**
  * A compiled shader: its registers and the instructions over them.
  *
- * The first `symbols` registers are the compiler's symbols in its own order - globals, then
- * the shader's parameters, then the locals - so a renderer binds a parameter or reads Ci by
- * the index the compiler gave it. Everything after them is a temporary or a constant.
+ * The first `symbols` registers are the compiler's symbols, in the compiler's order: globals,
+ * then the shader's parameters, then the locals. A renderer binds a parameter or reads Ci by
+ * the index the compiler gave it. Every later register is a temporary or a constant.
  **/
 class Program final {
  public:
@@ -33,10 +33,9 @@ class Program final {
     /**
      * How many of the instructions compute the shader's declared parameter defaults.
      *
-     * They are at the front and a run starts after them, because a default written as an
-     * instruction the body runs would overwrite the value a scene bound on every pass over
-     * a grid. `Machine::initialise()` runs them once, before a scene's values are written
-     * over them.
+     * They are at the front, and Machine::run() starts after them. Run on every grid, they
+     * would overwrite the values a scene bound. `Machine::initialise()` runs them once,
+     * before a scene's values are written over the defaults.
      **/
     std::size_t prologue = 0;
 

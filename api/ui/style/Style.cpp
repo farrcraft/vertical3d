@@ -10,6 +10,7 @@
 
 #include <map>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -17,7 +18,7 @@
 
 namespace v3d::ui::style {
 
-Style::Style(const std::string& str, const std::string& class_name) : name_(str), className_(class_name) {
+Style::Style(const Selector& selector) : name_(selector.name), className_(selector.className) {
 }
 
 Style::~Style() {
@@ -37,15 +38,16 @@ void Style::className(const std::string& str) {
 
 boost::shared_ptr<Property> Style::property(const std::string& name, const std::string& class_name) const {
     boost::shared_ptr<Property> prop;
-    std::pair<std::string, std::string> key(name, class_name);
-    std::map<std::pair<std::string, std::string>, boost::shared_ptr<Property> >::const_iterator iter = properties_.find(key);
-    if (iter != properties_.end())
+    const std::pair<std::string, std::string> key(name, class_name);
+    const std::map<std::pair<std::string, std::string>, boost::shared_ptr<Property> >::const_iterator iter = properties_.find(key);
+    if (iter != properties_.end()) {
         prop = iter->second;
+    }
     return prop;
 }
 
 void Style::addProperty(const boost::shared_ptr<Property>& prop, const std::string& class_name) {
-    std::pair<std::string, std::string> key(prop->name(), class_name);
+    const std::pair<std::string, std::string> key(prop->name(), class_name);
     properties_[key] = prop;
 }
 
@@ -53,8 +55,9 @@ std::vector< boost::shared_ptr<Property>  > Style::getPropertySet(const std::str
     std::map<std::pair<std::string, std::string>, boost::shared_ptr<Property> >::const_iterator iter = properties_.begin();
     std::vector< boost::shared_ptr<Property> > props;
     for (; iter != properties_.end(); iter++) {
-        if ((name.empty() || (*iter).first.first == name) && (class_name.empty() || (*iter).first.second == class_name))
+        if ((name.empty() || (*iter).first.first == name) && (class_name.empty() || (*iter).first.second == class_name)) {
             props.push_back((*iter).second);
+        }
     }
     return props;
 }

@@ -18,9 +18,9 @@ namespace v3d::asset {
 /**
  * The base interface for asset loaders.
  *
- * A loader holds nothing between calls: one is shared by everything that loads through the
- * same manager, so a setting left on it by one caller would be found by the next. Whatever a
- * load needs it reads from the file.
+ * A loader keeps no state between calls. One loader serves every caller of the same manager,
+ * so a setting left on it by one caller would affect the next. A load reads everything it
+ * needs from the file.
  **/
 class Loader {
  public:
@@ -42,15 +42,18 @@ class Loader {
 
  protected:
     /**
-     * Default constructor
-     *
-     * @param Type t The asset type this loader provides
+     * @param t the asset type this loader provides
+     * @param logger the log a failed load is reported to
      **/
     Loader(Type t, const boost::shared_ptr<v3d::log::Logger>& logger);
 
-    boost::shared_ptr<v3d::log::Logger> logger_;
+    /**
+     * @return the log a loader reports a failed load to
+     **/
+    const boost::shared_ptr<v3d::log::Logger>& logger() const noexcept;
 
  private:
+    boost::shared_ptr<v3d::log::Logger> logger_;
     Type type_;
 };
 };  // namespace v3d::asset

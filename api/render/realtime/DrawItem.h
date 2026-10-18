@@ -20,20 +20,18 @@ namespace v3d::render::realtime {
 /**
  * A description of one draw, submitted to a pass for the engine to record.
  *
- * An item is data rather than code. The engine sorts, merges and records items, so nothing
- * here writes to a command buffer directly. The exception is record, an escape hatch for
- * work the fields cannot describe yet. It is meant for rare cases; needing it routinely
- * means the item needs a new field.
+ * An item is data, not code. The engine sorts and records items, and an item does not write
+ * to a command buffer itself. The exception is record, for work the fields cannot describe.
+ * Use it rarely. A kind of draw that needs it routinely needs a new field instead.
  **/
 struct DrawItem final {
     /**
      * How many bytes of push constants an item can carry.
      *
      * 128 is the minimum Vulkan guarantees. Using all of it lets an item carry a transform
-     * alongside the few values a lit or graded material needs. The lit renderer's mat4,
-     * vec4, scalar and joint index take 88 bytes, and the quad primitive's mat4 and text flag
-     * take 68. The cost is paid per item per frame: an item is copied into a pass's queue by
-     * value, so the unused part of the block is copied whether or not a pipeline declared it.
+     * alongside the few values a graded material needs. The quad primitive's mat4 and text
+     * flag take 68. The cost is paid per item per frame: an item is copied into a pass's queue
+     * by value, so the unused part of the block is copied whether or not a pipeline declared it.
      **/
     static const std::size_t pushCapacity = 128;
 
@@ -61,8 +59,8 @@ struct DrawItem final {
     uint32_t instances;        /**< how many instances to draw **/
     uint32_t firstInstance;    /**< the first instance **/
 
-    bool scissored;            /**< whether the draw is cut down, rather than covering the pass **/
-    VkRect2D scissor;          /**< what it is cut to, in the pixels of the image drawn into **/
+    bool scissored;            /**< whether the draw is clipped to scissor, not the whole pass **/
+    VkRect2D scissor;          /**< the clip rectangle, in pixels of the image drawn into **/
 
     /**
      * Records the item itself, for work the fields above cannot describe.

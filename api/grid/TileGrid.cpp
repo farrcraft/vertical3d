@@ -5,7 +5,12 @@
 
 #include "TileGrid.h"
 
+#include "TileCoord.h"
+
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -34,15 +39,18 @@ std::string_view toString(Cover cover) {
 }
 
 TileGrid::TileGrid(int width, int height, float tileSize) :
+    TileGrid(width, height, tileSize,
+        glm::vec3(-0.5F * static_cast<float>(width) * tileSize, 0.0F, -0.5F * static_cast<float>(height) * tileSize)) {
+}
+
+TileGrid::TileGrid(int width, int height, float tileSize, const glm::vec3& corner) :
     width_(width),
     height_(height),
-    tileSize_(tileSize) {
-    if (width <= 0 || height <= 0) {
-        throw std::invalid_argument("TileGrid dimensions must be positive, got " +
-            std::to_string(width) + "x" + std::to_string(height));
-    }
-    if (tileSize <= 0.0f) {
-        throw std::invalid_argument("TileGrid tile size must be positive, got " + std::to_string(tileSize));
+    tileSize_(tileSize),
+    corner_(corner.x, 0.0F, corner.z) {
+    const std::optional<std::string> refused = refusal(width, height, tileSize, corner);
+    if (refused) {
+        throw std::invalid_argument("TileGrid " + *refused);
     }
 
     const std::size_t tiles = static_cast<std::size_t>(width) * static_cast<std::size_t>(height);
@@ -68,8 +76,8 @@ bool TileGrid::contains(TileCoord tile) const {
 
 glm::vec3 TileGrid::tileToWorld(TileCoord tile) const {
     const glm::vec3 corner = worldMin();
-    return glm::vec3(corner.x + (static_cast<float>(tile.x) + 0.5f) * tileSize_, 0.0f,
-        corner.z + (static_cast<float>(tile.y) + 0.5f) * tileSize_);
+    return glm::vec3(corner.x + ((static_cast<float>(tile.x) + 0.5F) * tileSize_), 0.0F,
+        corner.z + ((static_cast<float>(tile.y) + 0.5F) * tileSize_));
 }
 
 TileCoord TileGrid::worldToTile(const glm::vec3& position) const {
@@ -78,9 +86,25 @@ TileCoord TileGrid::worldToTile(const glm::vec3& position) const {
         static_cast<int>(std::floor((position.z - corner.z) / tileSize_)) };
 }
 
+std::optional<std::string> TileGrid::refusal(int width, int height, float tileSize, const glm::vec3& corner) {
+    if (width <= 0 || height <= 0) {
+        return "dimensions must be positive, got " + std::to_string(width) + "x" + std::to_string(height);
+    }
+    // a NaN fails every comparison, so the test is written to fail it
+    if (!(tileSize > 0.0F) || !std::isfinite(tileSize)) {
+        return "tile size must be a finite positive number, got " + std::to_string(tileSize);
+    }
+    if (!std::isfinite(static_cast<float>(std::max(width, height)) * tileSize)) {
+        return "tile size " + std::to_string(tileSize) + " makes a side too long to hold";
+    }
+    if (!std::isfinite(corner.x) || !std::isfinite(corner.z)) {
+        return "corner must be finite, got " + std::to_string(corner.x) + ", " + std::to_string(corner.z);
+    }
+    return std::nullopt;
+}
+
 glm::vec3 TileGrid::worldMin() const {
-    return glm::vec3(-0.5f * static_cast<float>(width_) * tileSize_, 0.0f,
-        -0.5f * static_cast<float>(height_) * tileSize_);
+    return corner_;
 }
 
 bool TileGrid::passable(TileCoord tile) const {
@@ -106,7 +130,7 @@ void TileGrid::setCover(TileCoord tile, Cover cover) {
 }
 
 std::size_t TileGrid::index(TileCoord tile) const {
-    return static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(width_) + static_cast<std::size_t>(tile.x);
+    return (static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(width_)) + static_cast<std::size_t>(tile.x);
 }
 
 };  // namespace v3d::grid

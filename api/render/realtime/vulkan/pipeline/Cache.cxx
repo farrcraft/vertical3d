@@ -5,6 +5,7 @@
 
 #include "Cache.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
 
@@ -18,7 +19,7 @@ Cache::Cache(const boost::shared_ptr<device::Device>& device) :
     VkPipelineCacheCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 
-    VkResult result = vkCreatePipelineCache(device_->handle(), &createInfo, nullptr, &cache_);
+    const VkResult result = vkCreatePipelineCache(device_->handle(), &createInfo, nullptr, &cache_);
     if (result != VK_SUCCESS) {
         cache_ = VK_NULL_HANDLE;
         throw device::failure(result, "Unable to create the vulkan pipeline cache");

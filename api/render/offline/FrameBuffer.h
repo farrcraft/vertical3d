@@ -14,16 +14,15 @@
 namespace v3d::render::offline {
 /**
  * A stack of image planes. Each plane is a 2d grid of float values whose width and
- * height are the image's, holding one colour channel or some other float associated
- * with a pixel - a depth, a coverage. Colour is float rather than an unsigned integer
- * so that the same structure serves both.
+ * height are the image's. A plane holds one colour channel or some other per-pixel float,
+ * such as a depth or a coverage. Colour is stored as float too, so one structure holds
+ * both.
  **/
 class FrameBuffer final {
  public:
     /**
-     * Every plane starts at zero. A plane whose zero means something - a depth, where
-     * it is the near plane rather than an absence - has to be clear()ed to what it
-     * should start at.
+     * Every plane starts at zero. A plane where zero is a real value must be clear()ed to
+     * its starting value. For a depth plane, zero is the near plane, not an absence.
      **/
     FrameBuffer(unsigned int width, unsigned int height, unsigned int planes);
 
@@ -39,10 +38,16 @@ class FrameBuffer final {
     float value(unsigned int plane, unsigned int column, unsigned int row) const;
     void value(unsigned int plane, unsigned int column, unsigned int row, float v);
 
+    /** A plane, and the value every pixel of it is set to. **/
+    struct Fill {
+        unsigned int plane = 0;
+        float value = 0.0F;
+    };
+
     /**
      * Fill a whole plane with one value.
      **/
-    void clear(unsigned int plane, float v);
+    void clear(const Fill & fill);
 
     /**
      * The leading planes as an image, row 0 at the top.
@@ -51,8 +56,8 @@ class FrameBuffer final {
      * image channels and are not part of the picture. A depth written into alpha gives
      * a wrong image that looks like a shading fault.
      *
-     * A value outside [0, 1] saturates rather than wrapping - the cast alone turns a
-     * bright pixel dark.
+     * A value outside [0, 1] is clamped, because the conversion to a byte alone would wrap
+     * and turn a bright pixel dark. A NaN is black.
      *
      * @param channels how many leading planes are image channels, 3 or 4
      **/

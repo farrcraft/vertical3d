@@ -5,6 +5,10 @@
 
 #include "IsometricController.h"
 
+#include <api/event/Event.h>
+#include <api/event/State.h>
+#include <api/type/camera/Isometric.h>
+
 #include <string>
 #include <string_view>
 #include <utility>
@@ -43,15 +47,15 @@ void IsometricController::simulate(float step) {
     }
     // each axis is the difference of its two commands, so holding both cancels out
     const auto axis = [this](const std::string& positive, const std::string& negative) {
-        return (held_(positive) ? 1.0f : 0.0f) - (held_(negative) ? 1.0f : 0.0f);
+        return (held_(positive) ? 1.0F : 0.0F) - (held_(negative) ? 1.0F : 0.0F);
     };
     const glm::vec2 pan(axis(commands_.panRight, commands_.panLeft), axis(commands_.panUp, commands_.panDown));
-    if (pan.x != 0.0f || pan.y != 0.0f) {
+    if (pan.x != 0.0F || pan.y != 0.0F) {
         orbit_->pan(pan * (speeds_.pan * step));
     }
     // zooming in narrows the view, which is a negative change in its half height
     const float zoom = axis(commands_.zoomOut, commands_.zoomIn);
-    if (zoom != 0.0f) {
+    if (zoom != 0.0F) {
         orbit_->zoomBy(zoom * speeds_.zoom * step);
     }
 }

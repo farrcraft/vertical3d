@@ -23,8 +23,6 @@ boost::shared_ptr<v3d::asset::Manager> manager() {
     return assets;
 }
 
-};  // namespace
-
 /**
  * A wav reaches a manager only through this library, and comes back holding a clip the
  * mixer can play.
@@ -48,3 +46,5 @@ BOOST_AUTO_TEST_CASE(audio_loader_unreadable_test) {
 
     BOOST_TEST(!assets->load("nowhere.wav", v3d::asset::Type::AudioWav));
 }
+
+};  // namespace

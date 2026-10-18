@@ -5,9 +5,14 @@
 
 #include "ChunkMeshBuilder.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/vulkan/memory/Uploader.h>
 #include <voxel/src/voxel/MeshCache.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 #include "ChunkVertex.h"
@@ -29,14 +34,13 @@ boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> ChunkMeshBuilder:
         return boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>();
     }
 
-    // the face a vertex belongs to carries its normal and its material. A vertex is only
-    // ever shared within one face, so the per face pair can be scattered out to the four
-    // corners the face added
+    // the face a vertex belongs to gives its normal and its material. A vertex is shared only
+    // within one face, so each face's pair can be copied to the four corners the face added
     std::vector<ChunkVertex> vertices(vertexCount);
     const glm::vec3* positions = mesh->vertices();
     for (size_t i = 0; i < vertexCount; i++) {
         vertices[i].position = positions[i];
-        vertices[i].info = glm::vec2(0.0f, 0.0f);
+        vertices[i].info = glm::vec2(0.0F, 0.0F);
     }
 
     const glm::ivec3* tris = mesh->tris();
@@ -45,8 +49,8 @@ boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> ChunkMeshBuilder:
     for (size_t i = 0; i < faceCount; i++) {
         const glm::ivec4 face = faces[i];
         const glm::vec2 info(static_cast<float>(face.z), static_cast<float>(face.w));
-        // the face's two triangles name its four vertices between them, twice over for the
-        // shared edge - assigning the same value to all six costs less than deduplicating
+        // the face's two triangles name its four vertices, two of them twice for the shared
+        // edge. Assigning the same value six times costs less than deduplicating
         const glm::ivec3 corners[2] = { tris[face.x], tris[face.y] };
         for (const glm::ivec3& tri : corners) {
             vertices[tri.x].info = info;
@@ -64,7 +68,5 @@ boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> ChunkMeshBuilder:
     }
 
     return boost::make_shared<v3d::render::realtime::vulkan::memory::Mesh>(device_, uploader_,
-        vertices.data(), static_cast<VkDeviceSize>(vertices.size() * sizeof(ChunkVertex)),
-        static_cast<uint32_t>(vertices.size()),
-        indices.data(), static_cast<uint32_t>(indices.size()));
+        std::as_bytes(std::span(vertices)), static_cast<uint32_t>(vertices.size()), std::span<const uint32_t>(indices));
 }

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
 namespace v3d::event {
@@ -17,7 +18,7 @@ namespace v3d::event {
  * that triggered it, so a handler can tell the two edges apart without needing a
  * separate binding for each.
  **/
-enum class State {
+enum class State : std::uint8_t {
     Any,
     Pressed,
     Released
@@ -25,7 +26,7 @@ enum class State {
 
 /**
  * Convert a binding config's state name to a State.
- * An unrecognized name - including the absence of one - is Any, which matches both edges.
+ * An unrecognized name is Any, and so is an empty one. Any matches both edges.
  **/
 constexpr State stringToState(const std::string_view& stateName) {
     if (stateName == "pressed" || stateName == "down") {

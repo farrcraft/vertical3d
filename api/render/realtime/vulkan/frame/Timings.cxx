@@ -5,11 +5,22 @@
 
 #include "Timings.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <string_view>
 #include <vector>
 
 namespace v3d::render::realtime::vulkan::frame {
+
+namespace {
+
+// the timestamp period is in nanoseconds, and a timing is reported in milliseconds
+constexpr double NANOSECONDS_PER_MILLISECOND = 1.0e6;
+
+};  // namespace
 
 /**
  **/
@@ -35,7 +46,7 @@ Timings::Timings(const boost::shared_ptr<device::Device>& device, uint32_t frame
         if (result != VK_SUCCESS) {
             // the destructor does not run for a constructor that throws, so the pools
             // already made are destroyed here
-            for (Slot& made : slots_) {
+            for (const Slot& made : slots_) {
                 if (made.pool != VK_NULL_HANDLE) {
                     vkDestroyQueryPool(device_->handle(), made.pool, nullptr);
                 }
@@ -49,7 +60,7 @@ Timings::Timings(const boost::shared_ptr<device::Device>& device, uint32_t frame
 /**
  **/
 Timings::~Timings() {
-    for (Slot& slot : slots_) {
+    for (const Slot& slot : slots_) {
         if (slot.pool != VK_NULL_HANDLE) {
             vkDestroyQueryPool(device_->handle(), slot.pool, nullptr);
         }
@@ -76,8 +87,8 @@ void Timings::begin(VkCommandBuffer commands, uint32_t slot, bool submitted) {
     }
     active.names.clear();
     active.open = false;
-    // reset in the command buffer rather than on the host, which needs a feature the device
-    // is not asked for
+    // reset in the command buffer. A reset on the host needs the hostQueryReset feature, which
+    // the device does not enable
     vkCmdResetQueryPool(commands, active.pool, 0, capacity * 2);
 }
 
@@ -98,10 +109,10 @@ void Timings::read(Slot* slot) {
     last_.clear();
     last_.reserve(slot->names.size());
     for (std::size_t index = 0; index < slot->names.size(); ++index) {
-        // masked, because a queue writing fewer than 64 bits wraps, and a span across the
-        // wrap is still the difference of the two
-        const uint64_t ticks = (stamps[index * 2 + 1] - stamps[index * 2]) & mask_;
-        last_.push_back(Timing{ slot->names[index], static_cast<double>(ticks) * period_ / 1.0e6 });
+        // masked, because a queue that writes fewer than 64 bits wraps. The masked difference
+        // is still correct for a span across the wrap
+        const uint64_t ticks = (stamps[(index * 2) + 1] - stamps[index * 2]) & mask_;
+        last_.push_back(Timing{ slot->names[index], static_cast<double>(ticks) * period_ / NANOSECONDS_PER_MILLISECOND });
     }
 }
 
@@ -132,7 +143,7 @@ void Timings::close(VkCommandBuffer commands) {
         return;
     }
     slot.open = false;
-    const auto query = static_cast<uint32_t>(slot.names.size() * 2 - 1);
+    const auto query = static_cast<uint32_t>((slot.names.size() * 2) - 1);
     vkCmdWriteTimestamp2(commands, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, slot.pool, query);
 }
 

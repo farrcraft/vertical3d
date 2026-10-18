@@ -5,10 +5,18 @@
 
 #include "Picker.h"
 
+#include <api/brep/BRep.h>
+#include <api/brep/Index.h>
 #include <api/brep/Topology.h>
+#include <api/brep/Vertex.h>
+#include <api/type/camera/Camera.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/view/ViewPort.h>
 
+#include "SelectMask.h"
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -27,15 +35,15 @@ namespace {
 float closest(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target) {
     const glm::vec2 along = to - from;
     const float length = glm::dot(along, along);
-    if (length <= 0.0f) {
-        return 0.0f;
+    if (length <= 0.0F) {
+        return 0.0F;
     }
     const float u = glm::dot(target - from, along) / length;
-    if (u < 0.0f) {
-        return 0.0f;
+    if (u < 0.0F) {
+        return 0.0F;
     }
-    if (u > 1.0f) {
-        return 1.0f;
+    if (u > 1.0F) {
+        return 1.0F;
     }
     return u;
 }
@@ -57,9 +65,9 @@ Picker::Picker(float tolerance) :
     tolerance_(tolerance),
     mask_(SelectMask::Object),
     camera_(nullptr),
-    cursor_(0.0f, 0.0f),
-    model_(1.0f),
-    nearest_(0.0f) {
+    cursor_(0.0F, 0.0F),
+    model_(1.0F),
+    nearest_(0.0F) {
     viewport_[0] = 0;
     viewport_[1] = 0;
     viewport_[2] = 0;
@@ -73,11 +81,11 @@ Picker::Hit Picker::pick(const Scene& scene, const ViewPort& view, const glm::ve
     hit_.kind = mask;
     mask_ = mask;
     cursor_ = cursor;
-    nearest_ = 0.0f;
+    nearest_ = 0.0F;
 
-    boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     const glm::vec4& region = view.region();
-    if (!camera || region.z <= 0.0f || region.w <= 0.0f) {
+    if (!camera || region.z <= 0.0F || region.w <= 0.0F) {
         return hit_;
     }
 
@@ -136,7 +144,7 @@ void Picker::surface(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     // be in world space and hits on differently scaled meshes stay comparable
     const v3d::type::geometry::Ray local = ray_.transformed(glm::inverse(model_));
 
-    float distance = 0.0f;
+    float distance = 0.0F;
     if (!local.intersects(mesh->bound(), &distance)) {
         return;
     }
@@ -148,20 +156,20 @@ void Picker::surface(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
             continue;
         }
 
-        // a fan from the loop's first vertex is correct only for a planar convex
-        // face, which is all the primitives and the modelling operations produce
-        glm::vec3 first;
-        glm::vec3 second;
-        glm::vec3 third;
-        if (!v3d::brep::loopSegment(*mesh, loop, 0, &first, nullptr)) {
+        // a fan from the loop's first vertex is correct only for a planar convex face.
+        // Every primitive the editor creates has only such faces
+        const std::optional<v3d::brep::Segment> opening = v3d::brep::loopSegment(*mesh, loop, 0);
+        if (!opening) {
             continue;
         }
+        const glm::vec3& first = opening->from;
         for (std::size_t index = 1; index + 1 < loop.size(); index++) {
-            if (!v3d::brep::loopSegment(*mesh, loop, index, &second, &third)) {
+            const std::optional<v3d::brep::Segment> edge = v3d::brep::loopSegment(*mesh, loop, index);
+            if (!edge) {
                 continue;
             }
-            if (local.intersects(first, second, third, &distance)) {
-                offer(mesh->id(), face, distance);
+            if (local.intersects(first, edge->from, edge->to, &distance)) {
+                offer({.mesh = mesh->id(), .component = face, .distance = distance});
             }
         }
     }
@@ -177,14 +185,14 @@ void Picker::vertices(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
             continue;
         }
         glm::vec2 position;
-        float depth = 0.0f;
+        float depth = 0.0F;
         if (!screen(vertex->point(), &position, &depth)) {
             continue;
         }
         if (glm::distance(position, cursor_) > tolerance_) {
             continue;
         }
-        offer(mesh->id(), index, depth);
+        offer({.mesh = mesh->id(), .component = index, .distance = depth});
     }
 }
 
@@ -201,16 +209,17 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
                 continue;
             }
 
-            glm::vec3 from;
-            glm::vec3 to;
-            if (!v3d::brep::loopSegment(*mesh, loop, index, &from, &to)) {
+            const std::optional<v3d::brep::Segment> segment = v3d::brep::loopSegment(*mesh, loop, index);
+            if (!segment) {
                 continue;
             }
+            const glm::vec3& from = segment->from;
+            const glm::vec3& to = segment->to;
 
             glm::vec2 start;
             glm::vec2 end;
-            float startDepth = 0.0f;
-            float endDepth = 0.0f;
+            float startDepth = 0.0F;
+            float endDepth = 0.0F;
             if (!screen(from, &start, &startDepth) || !screen(to, &end, &endDepth)) {
                 continue;
             }
@@ -219,7 +228,7 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
             if (glm::distance(start + (end - start) * along, cursor_) > tolerance_) {
                 continue;
             }
-            offer(mesh->id(), loop[index], startDepth + (endDepth - startDepth) * along);
+            offer({.mesh = mesh->id(), .component = loop[index], .distance = startDepth + ((endDepth - startDepth) * along)});
         }
     }
 }
@@ -227,13 +236,13 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
 /**
  **/
 bool Picker::screen(const glm::vec3& point, glm::vec2* position, float* depth) const {
-    const glm::vec3 world(model_ * glm::vec4(point, 1.0f));
+    const glm::vec3 world(model_ * glm::vec4(point, 1.0F));
     const glm::vec3 projected = camera_->project(world, viewport_);
 
     // outside the depth range is behind the near plane or beyond the far one. A point
     // behind a perspective camera divides by a negative w and lands beyond one, so it
     // is rejected here rather than looking like a hit in front
-    if (projected[2] < 0.0f || projected[2] > 1.0f) {
+    if (projected[2] < 0.0F || projected[2] > 1.0F) {
         return false;
     }
 
@@ -248,14 +257,14 @@ bool Picker::screen(const glm::vec3& point, glm::vec2* position, float* depth) c
 
 /**
  **/
-void Picker::offer(unsigned int mesh, unsigned int component, float distance) {
-    if (hit_.valid && distance >= nearest_) {
+void Picker::offer(const Candidate& candidate) {
+    if (hit_.valid && candidate.distance >= nearest_) {
         return;
     }
-    nearest_ = distance;
+    nearest_ = candidate.distance;
     hit_.valid = true;
-    hit_.mesh = mesh;
-    hit_.component = component;
+    hit_.mesh = candidate.mesh;
+    hit_.component = candidate.component;
 }
 
 };  // namespace v3d::editor

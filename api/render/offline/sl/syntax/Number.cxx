@@ -5,10 +5,14 @@
 
 #include "Number.h"
 
+#include <api/render/offline/Position.h>
+
+#include "Expression.h"
+
 namespace v3d::render::offline::sl::syntax {
 
-Number::Number(float value, unsigned int line, unsigned int column) :
-    Expression(Kind::NUMBER, line, column),
+Number::Number(float value, const v3d::render::offline::Position & at) :
+    Expression(Kind::NUMBER, at),
     value(value) {
 }
 

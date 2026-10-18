@@ -6,6 +6,8 @@
 
 #include "Camera.h"
 
+#include <cmath>
+
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include <glm/gtc/type_ptr.hpp>
@@ -16,21 +18,21 @@
 
 Camera::Camera() :
     behavior_(CAMERA_BEHAVIOR_FLIGHT),
-    fovx_(90.0f),
-    near_(0.1f),
-    far_(1000.0f),
-    aspect_(1.0f),
-    pitch_(0.0f),
-    eye_(0.0f, 0.0f, 0.0f),
-    xAxis_(1.0f, 0.0f, 0.0f),
-    yAxis_(0.0f, 1.0f, 0.0f),
-    zAxis_(0.0f, 0.0f, 1.0f),
-    direction_(0.0f, 0.0f, -1.0f),
-    acceleration_(0.0f, 0.0f, 0.0f),
-    currentVelocity_(0.0f, 0.0f, 0.0f),
-    velocity_(0.0f, 0.0f, 0.0f),
-    view_(1.0f),
-    projection_(1.0f) {
+    fovx_(DEFAULT_FOVX),
+    near_(DEFAULT_ZNEAR),
+    far_(DEFAULT_ZFAR),
+    aspect_(1.0F),
+    pitch_(0.0F),
+    eye_(0.0F, 0.0F, 0.0F),
+    xAxis_(1.0F, 0.0F, 0.0F),
+    yAxis_(0.0F, 1.0F, 0.0F),
+    zAxis_(0.0F, 0.0F, 1.0F),
+    direction_(0.0F, 0.0F, -1.0F),
+    acceleration_(0.0F, 0.0F, 0.0F),
+    currentVelocity_(0.0F, 0.0F, 0.0F),
+    velocity_(0.0F, 0.0F, 0.0F),
+    view_(1.0F),
+    projection_(1.0F) {
 }
 
 
@@ -87,10 +89,13 @@ void Camera::dirty(bool status) {
 }
 
 void Camera::lookAt(const glm::vec3 &target) {
-    lookAt(eye_, target, yAxis_);
+    lookAt({.eye = eye_, .target = target, .up = yAxis_});
 }
 
-void Camera::lookAt(const glm::vec3 &eye, const glm::vec3 &target, const glm::vec3 &up) {
+void Camera::lookAt(const Aim& aim) {
+    const glm::vec3& eye = aim.eye;
+    const glm::vec3& target = aim.target;
+    const glm::vec3& up = aim.up;
     eye_ = eye;
 
     zAxis_ = glm::normalize(eye - target);
@@ -123,7 +128,7 @@ void Camera::lookAt(const glm::vec3 &eye, const glm::vec3 &target, const glm::ve
 }
 
 void Camera::move(float dx, float dy, float dz) {
-    glm::vec3 eye = calculateMovement(glm::vec3(dx, dy, dz));
+    const glm::vec3 eye = calculateMovement(glm::vec3(dx, dy, dz));
     position(eye);
 }
 
@@ -140,13 +145,13 @@ glm::vec3 Camera::calculateMovement(const glm::vec3 & delta) {
         // z axis as doing so will cause the camera to move more slowly as the
         // camera's view approaches 90 degrees straight up and down.
 
-        forwards = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), xAxis_));
+        forwards = glm::normalize(glm::cross(glm::vec3(0.0F, 1.0F, 0.0F), xAxis_));
     } else {
         forwards = direction_;
     }
 
     eye += xAxis_ * delta.x;
-    eye += glm::vec3(0.0f, 1.0f, 0.0f) * delta.y;
+    eye += glm::vec3(0.0F, 1.0F, 0.0F) * delta.y;
     eye += forwards * delta.z;
 
     return eye;
@@ -163,40 +168,44 @@ void Camera::move(const glm::vec3 &direction, const glm::vec3 &amount) {
     updateViewMatrix(false);
 }
 
-void Camera::perspective(float fovx, float aspect, float znear, float zfar) {
+void Camera::perspective(const Lens& lens) {
+    const float fovx = lens.fovx;
+    const float aspect = lens.aspect;
+    const float znear = lens.znear;
+    const float zfar = lens.zfar;
     // Construct a projection matrix based on the horizontal field of view
     // 'fovx' rather than the more traditional vertical field of view 'fovy'.
 
-    float e = 1.0f / tanf(glm::radians(fovx) / 2.0f);
-    float aspectInv = 1.0f / aspect;
-    float fovy = 2.0f * atanf(aspectInv / e);
-    float xScale = 1.0f / tanf(0.5f * fovy);
-    float yScale = xScale / aspectInv;
+    const float focal = 1.0F / tanf(glm::radians(fovx) / 2.0F);
+    const float aspectInv = 1.0F / aspect;
+    const float fovy = 2.0F * atanf(aspectInv / focal);
+    const float xScale = 1.0F / tanf(0.5F * fovy);
+    const float yScale = xScale / aspectInv;
 
     projection_[0][0] = xScale;
-    projection_[0][1] = 0.0f;
-    projection_[0][2] = 0.0f;
-    projection_[0][3] = 0.0f;
+    projection_[0][1] = 0.0F;
+    projection_[0][2] = 0.0F;
+    projection_[0][3] = 0.0F;
 
-    projection_[1][0] = 0.0f;
-    // negated: vulkan's clip space has y pointing down, where the axes this is built from
-    // have it pointing up. Which also reverses the winding a front face presents, so the
-    // pipeline drawing through this has to call its front faces clockwise
+    projection_[1][0] = 0.0F;
+    // negated, because vulkan's clip space has y pointing down and the camera's axes have it
+    // pointing up. The flip also reverses the winding of a front face, so a pipeline drawing
+    // through this camera declares its front faces clockwise
     projection_[1][1] = -yScale;
-    projection_[1][2] = 0.0f;
-    projection_[1][3] = 0.0f;
+    projection_[1][2] = 0.0F;
+    projection_[1][3] = 0.0F;
 
-    projection_[2][0] = 0.0f;
-    projection_[2][1] = 0.0f;
+    projection_[2][0] = 0.0F;
+    projection_[2][1] = 0.0F;
     // near maps to zero and far to one, which is the depth range vulkan clips against and
     // what the engine clears the depth buffer to
     projection_[2][2] = zfar / (znear - zfar);
-    projection_[2][3] = -1.0f;
+    projection_[2][3] = -1.0F;
 
-    projection_[3][0] = 0.0f;
-    projection_[3][1] = 0.0f;
+    projection_[3][0] = 0.0F;
+    projection_[3][1] = 0.0F;
     projection_[3][2] = (zfar * znear) / (znear - zfar);
-    projection_[3][3] = 0.0f;
+    projection_[3][3] = 0.0F;
 
     fovx_ = fovx;
     aspect_ = aspect;
@@ -224,54 +233,57 @@ void Camera::rotateFlight(float headingDegrees, float pitchDegrees, float rollDe
     glm::mat4 rotMtx;
 
     // Rotate camera's existing x and z axes about its existing y axis.
-    if (headingDegrees != 0.0f) {
+    if (headingDegrees != 0.0F) {
         rotMtx = glm::rotate(rotMtx, headingDegrees, yAxis_);
-        xAxis_ = glm::vec3(glm::vec4(xAxis_, 0.0f) * rotMtx);
-        zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0f) * rotMtx);
+        xAxis_ = glm::vec3(glm::vec4(xAxis_, 0.0F) * rotMtx);
+        zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0F) * rotMtx);
     }
 
     // Rotate camera's existing y and z axes about its existing x axis.
-    if (pitchDegrees != 0.0f) {
+    if (pitchDegrees != 0.0F) {
         rotMtx = glm::rotate(rotMtx, pitchDegrees, xAxis_);
-        yAxis_ = glm::vec3(glm::vec4(yAxis_, 0.0f) * rotMtx);
-        zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0f) * rotMtx);
+        yAxis_ = glm::vec3(glm::vec4(yAxis_, 0.0F) * rotMtx);
+        zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0F) * rotMtx);
     }
 
     // Rotate camera's existing x and y axes about its existing z axis.
-    if (rollDegrees != 0.0f) {
+    if (rollDegrees != 0.0F) {
         rotMtx = glm::rotate(rotMtx, rollDegrees, zAxis_);
-        xAxis_ = glm::vec3(glm::vec4(xAxis_, 0.0f) * rotMtx);
-        yAxis_ = glm::vec3(glm::vec4(yAxis_, 0.0f) * rotMtx);
+        xAxis_ = glm::vec3(glm::vec4(xAxis_, 0.0F) * rotMtx);
+        yAxis_ = glm::vec3(glm::vec4(yAxis_, 0.0F) * rotMtx);
     }
 }
 
 void Camera::rotateFirstPerson(float headingDegrees, float pitchDegrees) {
+    // degrees above or below the horizon: straight up or straight down, and no further
+    constexpr float pitchLimit = 90.0F;
+
     pitch_ += pitchDegrees;
 
-    if (pitch_ > 90.0f) {
-        pitchDegrees = 90.0f - (pitch_ - pitchDegrees);
-        pitch_ = 90.0f;
+    if (pitch_ > pitchLimit) {
+        pitchDegrees = pitchLimit - (pitch_ - pitchDegrees);
+        pitch_ = pitchLimit;
     }
 
-    if (pitch_ < -90.0f) {
-        pitchDegrees = -90.0f - (pitch_ - pitchDegrees);
-        pitch_ = -90.0f;
+    if (pitch_ < -pitchLimit) {
+        pitchDegrees = -pitchLimit - (pitch_ - pitchDegrees);
+        pitch_ = -pitchLimit;
     }
 
     glm::mat4 rotMtx;
 
     // Rotate camera's existing y and z axes about its existing x axis.
-    if (pitchDegrees != 0.0f) {
+    if (pitchDegrees != 0.0F) {
         rotMtx = glm::rotate(rotMtx, pitchDegrees, xAxis_);
-        yAxis_ = glm::vec3(glm::vec4(yAxis_, 0.0f) * rotMtx);
-        zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0f) * rotMtx);
+        yAxis_ = glm::vec3(glm::vec4(yAxis_, 0.0F) * rotMtx);
+        zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0F) * rotMtx);
     }
 
     // Rotate camera's existing x and z axes about the world y axis.
-    if (headingDegrees != 0.0f) {
-        rotMtx = glm::rotate(rotMtx, headingDegrees, glm::vec3(0.0f, 1.0f, 0.0f));
-        xAxis_ = glm::vec3(glm::vec4(xAxis_, 0.0f) * rotMtx);
-        zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0f) * rotMtx);
+    if (headingDegrees != 0.0F) {
+        rotMtx = glm::rotate(rotMtx, headingDegrees, glm::vec3(0.0F, 1.0F, 0.0F));
+        xAxis_ = glm::vec3(glm::vec4(xAxis_, 0.0F) * rotMtx);
+        zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0F) * rotMtx);
     }
 }
 
@@ -288,7 +300,7 @@ void Camera::behavior(CameraBehavior newBehavior) {
         // Moving from flight-simulator mode to first-person.
         // Need to ignore camera roll, but retain existing pitch and heading.
 
-        lookAt(eye_, eye_ - zAxis_, glm::vec3(0.0f, 1.0f, 0.0f));
+        lookAt({.eye = eye_, .target = eye_ - zAxis_, .up = glm::vec3(0.0F, 1.0F, 0.0F)});
     }
 
     behavior_ = newBehavior;
@@ -321,14 +333,14 @@ void Camera::velocity(const glm::vec3 &velocity) {
 }
 
 glm::vec3 Camera::calculateDisplacement(const glm::vec3 &direction, float elapsedTimeSec) {
-    glm::vec3 displacement(0.0f);
-    if (glm::length2(currentVelocity_) != 0.0f) {
+    glm::vec3 displacement(0.0F);
+    if (glm::length2(currentVelocity_) != 0.0F) {
         // Only move the camera if the velocity vector is not of zero length.
         // Doing this guards against the camera slowly creeping around due to
         // floating point rounding errors.
 
         displacement = (currentVelocity_ * elapsedTimeSec) +
-            (0.5f * acceleration_ * elapsedTimeSec * elapsedTimeSec);
+            (0.5F * acceleration_ * elapsedTimeSec * elapsedTimeSec);
 
         // Floating point rounding errors will slowly accumulate and cause the
         // camera to move along each axis. To prevent any unintended movement
@@ -338,16 +350,16 @@ glm::vec3 Camera::calculateDisplacement(const glm::vec3 &direction, float elapse
         // state when the camera is no longer moving along that direction. To
         // account for this the camera's current velocity is also checked.
 
-        if (direction.x == 0.0f && glm::epsilonEqual(currentVelocity_.x, 0.0f, glm::epsilon<float>())) {
-            displacement.x = 0.0f;
+        if (direction.x == 0.0F && glm::epsilonEqual(currentVelocity_.x, 0.0F, glm::epsilon<float>())) {
+            displacement.x = 0.0F;
         }
 
-        if (direction.y == 0.0f && glm::epsilonEqual(currentVelocity_.y, 0.0f, glm::epsilon<float>())) {
-            displacement.y = 0.0f;
+        if (direction.y == 0.0F && glm::epsilonEqual(currentVelocity_.y, 0.0F, glm::epsilon<float>())) {
+            displacement.y = 0.0F;
         }
 
-        if (direction.z == 0.0f && glm::epsilonEqual(currentVelocity_.z, 0.0f, glm::epsilon<float>())) {
-            displacement.z = 0.0f;
+        if (direction.z == 0.0F && glm::epsilonEqual(currentVelocity_.z, 0.0F, glm::epsilon<float>())) {
+            displacement.z = 0.0F;
         }
     }
     return displacement;
@@ -358,7 +370,7 @@ void Camera::updatePosition(const glm::vec3 &direction, float elapsedTimeSec) {
     // assumed here to somewhat simplify the calculations. The direction vector
     // is in the range [-1,1].
 
-    glm::vec3 displacement = calculateDisplacement(direction, elapsedTimeSec);
+    const glm::vec3 displacement = calculateDisplacement(direction, elapsedTimeSec);
     move(displacement.x, displacement.y, displacement.z);  // NOLINT(build/include_what_you_use) - the method, not std::move
 
     // Continuously update the camera's velocity vector even if the camera
@@ -370,15 +382,29 @@ void Camera::updatePosition(const glm::vec3 &direction, float elapsedTimeSec) {
 
 namespace {
 
+/** One axis's velocity, which way it is driven, how fast it changes, its limit, and the time. **/
+struct Axis {
+    float current = 0.0F;
+    float direction = 0.0F;
+    float acceleration = 0.0F;
+    float limit = 0.0F;
+    float elapsed = 0.0F;
+};
+
 /**
- * One axis of the camera's velocity for one frame.
+ * One axis of the camera's velocity, after one update.
  *
  * A driven axis accelerates toward its limit and is clamped there. An axis that is not
- * driven decelerates toward zero and stops there rather than crossing it. The deceleration
- * has two signs for this reason.
+ * driven decelerates toward zero and stops there, without crossing it. The deceleration
+ * therefore takes the sign that moves the velocity toward zero.
  **/
-float axisVelocity(float current, float direction, float acceleration, float limit, float elapsed) {
-    if (direction != 0.0f) {
+float axisVelocity(const Axis& axis) {
+    float current = axis.current;
+    const float direction = axis.direction;
+    const float acceleration = axis.acceleration;
+    const float limit = axis.limit;
+    const float elapsed = axis.elapsed;
+    if (direction != 0.0F) {
         current += direction * acceleration * elapsed;
         if (current > limit) {
             return limit;
@@ -388,12 +414,12 @@ float axisVelocity(float current, float direction, float acceleration, float lim
         }
         return current;
     }
-    if (current > 0.0f) {
+    if (current > 0.0F) {
         current -= acceleration * elapsed;
-        return current < 0.0f ? 0.0f : current;
+        return current < 0.0F ? 0.0F : current;
     }
     current += acceleration * elapsed;
-    return current > 0.0f ? 0.0f : current;
+    return current > 0.0F ? 0.0F : current;
 }
 
 };  // namespace
@@ -403,8 +429,8 @@ void Camera::updateVelocity(const glm::vec3 &direction, float elapsedTimeSec) {
     // and the elapsed time (since this method was last called). The movement
     // direction is in the range [-1,1]. The three axes are independent of each other.
     for (glm::length_t axis = 0; axis < 3; axis++) {
-        currentVelocity_[axis] = axisVelocity(currentVelocity_[axis], direction[axis],
-            acceleration_[axis], velocity_[axis], elapsedTimeSec);
+        currentVelocity_[axis] = axisVelocity({.current = currentVelocity_[axis], .direction = direction[axis],
+            .acceleration = acceleration_[axis], .limit = velocity_[axis], .elapsed = elapsedTimeSec});
     }
 }
 
@@ -433,10 +459,10 @@ void Camera::updateViewMatrix(bool orthogonalizeAxes) {
     view_[2][2] = zAxis_.z;
     view_[3][2] = -glm::dot(zAxis_, eye_);
 
-    view_[0][3] = 0.0f;
-    view_[1][3] = 0.0f;
-    view_[2][3] = 0.0f;
-    view_[3][3] = 1.0f;
+    view_[0][3] = 0.0F;
+    view_[1][3] = 0.0F;
+    view_[2][3] = 0.0F;
+    view_[3][3] = 1.0F;
 
     dirty_ = true;
 }

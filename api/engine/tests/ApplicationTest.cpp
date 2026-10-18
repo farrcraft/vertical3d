@@ -4,21 +4,25 @@
  **/
 
 #include <api/engine/Application.h>
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
 
+#include <cstdlib>
 #include <string>
 #include <utility>
 
 #include <boost/test/unit_test.hpp>
 
+#include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/make_shared.hpp>
 
 namespace {
 
 /**
- * What run<T> built its engine with. run<T> builds it on the stack and lets it go, so this
- * is recorded as the engine is constructed rather than read back off an object that is gone
- * by the time the call returns.
+ * What run<T> built its engine with. run<T> builds the engine on the stack, and it is gone by
+ * the time the call returns. The constructor therefore records its arguments here.
  **/
 struct Built final {
     std::string path;
@@ -29,8 +33,8 @@ struct Built final {
 Built* built = nullptr;
 
 /**
- * What run<T> actually requires of an engine, which is three methods and a constructor -
- * not a v3d::engine::Engine, which cannot be built in a test without a window.
+ * What run<T> requires of an engine: a constructor, initialize(), eventLoop() and shutdown().
+ * It does not require a v3d::engine::Engine, which cannot run its loop in a test.
  **/
 struct StubEngine final {
     StubEngine(const std::string& path, int option = 0, std::string label = std::string()) {
@@ -52,13 +56,11 @@ struct StubEngine final {
     }
 };
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(application_test)
 
 /**
- * Everything an app loads is named relative to this, so it has to end with a separator -
- * the engine appends "data/" to it rather than joining a path onto it.
+ * Everything an app loads is named relative to this, so it has to end with a separator. The
+ * engine appends "data/" to it as a string, not as a path join.
  **/
 BOOST_AUTO_TEST_CASE(an_app_path_ends_with_a_separator) {
     const std::string path = v3d::engine::appPath("C:/somewhere/pong.exe");
@@ -90,11 +92,10 @@ BOOST_AUTO_TEST_CASE(a_relative_argument_comes_back_absolute) {
 }
 
 /**
- * The other half of the pair: where an app writes what the player chose.
+ * userPath() is where an app writes what the player chose.
  *
- * It has to be somewhere else than appPath() - that directory is overwritten from source on
- * every build - and it has to end with a separator for the same reason appPath() does, so
- * that a second asset::Manager can be rooted at it.
+ * It has to differ from appPath(), which every build overwrites. It ends with a separator,
+ * as appPath() does, so that a second asset::Manager can be rooted at it.
  **/
 BOOST_AUTO_TEST_CASE(a_user_path_is_absolute_and_ends_with_a_separator) {
     const std::string path = v3d::engine::userPath("Vertical3D", "ApplicationTest");
@@ -126,8 +127,8 @@ BOOST_AUTO_TEST_CASE(a_user_path_is_per_app) {
 }
 
 /**
- * An app whose engine is built from more than a path - a command line parsed into options
- * before the engine exists - hands them over here rather than writing its own main.
+ * An app whose engine needs more than a path, such as options parsed from the command line,
+ * passes them to run<T>. It does not write its own main.
  **/
 BOOST_AUTO_TEST_CASE(run_forwards_what_the_engine_is_built_from) {
     Built record;
@@ -157,4 +158,43 @@ BOOST_AUTO_TEST_CASE(run_still_takes_a_path_alone) {
     BOOST_CHECK(record.label.empty());
 }
 
+/**
+ * A narrow path is UTF-8. A game installed under a directory whose name the ANSI code page
+ * cannot hold still writes its log there and finds its assets there.
+ *
+ * The directory is made and checked through wide paths, so the test does not depend on the
+ * conversion it is testing.
+ **/
+BOOST_AUTO_TEST_CASE(a_path_outside_the_ansi_code_page_is_written_and_read) {
+    // "日本", which no Western ANSI code page can hold
+    const boost::filesystem::path directory = boost::filesystem::current_path() / L"日本";
+    const std::string narrow = boost::filesystem::current_path().string() + "/\xE6\x97\xA5\xE6\x9C\xAC";
+    boost::filesystem::remove_all(directory);
+    boost::filesystem::create_directory(directory);
+    {
+        boost::filesystem::ofstream asset(directory / L"found.txt");
+        asset << "found";
+    }
+
+    Built record;
+    built = &record;
+    BOOST_TEST(v3d::engine::run<StubEngine>((narrow + "/stub.exe").c_str(), "stub") == EXIT_SUCCESS);
+    built = nullptr;
+
+    BOOST_TEST(boost::filesystem::exists(directory / L"v3d.log"));
+
+    {
+        auto logger = boost::make_shared<v3d::log::Logger>();
+        v3d::asset::Manager manager(record.path, logger);
+        BOOST_TEST(manager.loadTypeFromExt("found.txt") != nullptr);
+    }
+
+    // the log file stays open while any logger holds it, so it is moved back before the
+    // directory goes
+    v3d::log::Logger::open("v3d.log");
+    boost::filesystem::remove_all(directory);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

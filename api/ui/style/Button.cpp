@@ -5,11 +5,13 @@
 
 #include "Button.h"
 
+#include "Style.h"
+
 #include <string>
 
 namespace v3d::ui::style {
 
-Button::Button(const std::string& str, State s) : Style(str, "button"), state_(s) {
+Button::Button(const std::string& str, State s) : Style({.name = str, .className = "button"}), state_(s) {
 }
 
 Button::~Button() {

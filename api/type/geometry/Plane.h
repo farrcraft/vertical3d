@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "AABBox.h"
 
 #include <glm/vec3.hpp>
@@ -12,17 +14,16 @@
 namespace v3d::type::geometry {
 
 /**
-    *	defines a plane from one of:
-    *		N dot P = D
-    *		Ax+Bx+Cz = D
+    *	A plane: the points P where N dot P = d, that is Ax + By + Cz = d.
+    *	The equation is stored as A, B, C and D = -d, so Ax + By + Cz + D = 0.
     */
 class Plane {
  public:
     Plane();
-    Plane(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 & C);
+    Plane(const glm::vec3 & p0, const glm::vec3 & p1, const glm::vec3 & p2);
     ~Plane();
 
-    enum HalfSpace {
+    enum HalfSpace : std::int8_t {
         NEGATIVE = -1,
         OUTSIDE = -1,
         ON_PLANE = 0,
@@ -30,14 +31,14 @@ class Plane {
         POSITIVE = 1,
         INSIDE = 1
     };
-    enum EquationIndex {
+    enum EquationIndex : std::uint8_t {
         A = 0,
         B = 1,
         C = 2,
         D = 3
     };
-    void set(const glm::vec3 & n, float d);
-    void calculate(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 & C);
+    void set(const glm::vec3 & n, float originDistance);
+    void calculate(const glm::vec3 & p0, const glm::vec3 & p1, const glm::vec3 & p2);
     void calculate(const glm::vec3 & normal, const glm::vec3 & point);
 
     /**
@@ -55,18 +56,18 @@ class Plane {
     float signedDistance(const glm::vec3 & point) const;
     int classify(const AABBox & aabb) const;
     int classify(const glm::vec3 & point) const;
-    bool intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * hitPoint) const;
+    bool intersectEdge(const glm::vec3 & start, const glm::vec3 & end, glm::vec3 * hitPoint) const;
     void normalize(void);
 
-    float & operator[] (unsigned int i);
-    float operator[] (unsigned int i) const;
+    float & operator[] (unsigned int index);
+    float operator[] (unsigned int index) const;
 
  private:
     /*
-        The equation is the plane's only state: normal in [A..C] and the negated distance
-        from the origin in [D]. distance(p) is then the equation applied to p. A separate
-        stored normal and distance could disagree with it.
+        The equation is the plane's only state: the normal in [A..C] and the negated
+        distance from the origin in [D]. signedDistance(p) is the equation applied to p.
+        A separately stored normal and distance could disagree with it.
     */
-    float equation_[4] = { 0.0f, 0.0f, 0.0f, 0.0f };  // abcd
+    float equation_[4] = { 0.0F, 0.0F, 0.0F, 0.0F };  // abcd
 };
 };  // namespace v3d::type::geometry

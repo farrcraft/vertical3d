@@ -5,6 +5,8 @@
 
 #include "FaceCulling.h"
 
+#include "Voxel.h"
+
 Neighbour::Neighbour() :
     crosses(false),
     chunk(0, 0, 0),

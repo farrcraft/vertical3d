@@ -7,6 +7,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(events_test)
 
 /**
@@ -18,9 +20,11 @@ BOOST_AUTO_TEST_CASE(the_null_backend_plays_nothing_and_says_so) {
     v3d::audio::NullEvents events;
     BOOST_TEST(!events.bank("Master.bank"));
     BOOST_TEST(!events.play("event:/UI/Cancel"));
-    BOOST_TEST(!events.parameter("Intensity", 0.5f));
+    BOOST_TEST(!events.parameter("Intensity", 0.5F));
     events.update();
     BOOST_TEST(events.name() == "null");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

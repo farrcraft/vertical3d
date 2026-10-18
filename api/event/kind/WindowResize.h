@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <glm/vec2.hpp>
+
 namespace v3d::event::kind {
 
 /**
@@ -13,7 +15,7 @@ class WindowResize final {
  public:
     /**
      **/
-    WindowResize(int width, int height) noexcept;
+    explicit WindowResize(const glm::ivec2& size) noexcept;
     int width() const noexcept;
     int height() const noexcept;
 

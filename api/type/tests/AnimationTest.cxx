@@ -10,6 +10,7 @@
 #include <api/type/animation/Pose.h>
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <vector>
@@ -28,7 +29,7 @@ using v3d::type::animation::Pose;
 namespace {
 
 /**
- * The bending strip's skeleton, as api/asset/tests/data/make_skin_fixture.py writes it: root,
+ * The bending strip's skeleton, as api/asset/tests/data/make_skin_fixture.ts writes it: root,
  * middle and top in a chain a unit apart along +y, each bound where it stands.
  **/
 Skeleton strip() {
@@ -36,8 +37,8 @@ Skeleton strip() {
     for (int joint = 0; joint < 3; joint++) {
         Skeleton::Joint read;
         read.parent = joint - 1;
-        read.translation = glm::vec3(0.0f, joint == 0 ? 0.0f : 1.0f, 0.0f);
-        read.inverseBind = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -static_cast<float>(joint), 0.0f));
+        read.translation = glm::vec3(0.0F, joint == 0 ? 0.0F : 1.0F, 0.0F);
+        read.inverseBind = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, -static_cast<float>(joint), 0.0F));
         skeleton.joints.push_back(read);
     }
     return skeleton;
@@ -47,8 +48,8 @@ Skeleton strip() {
  * A quarter turn about +z, stored x, y, z, w as a clip stores a rotation.
  **/
 glm::vec4 quarterTurn() {
-    const float half = std::sqrt(0.5f);
-    return glm::vec4(0.0f, 0.0f, half, half);
+    const float half = std::sqrt(0.5F);
+    return glm::vec4(0.0F, 0.0F, half, half);
 }
 
 /**
@@ -59,11 +60,11 @@ Clip bend(Channel::Interpolation interpolation) {
     turn.joint = 1;
     turn.path = Channel::Path::Rotation;
     turn.interpolation = interpolation;
-    turn.times = {0.0f, 1.0f};
-    turn.values = {glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), quarterTurn()};
+    turn.times = {0.0F, 1.0F};
+    turn.values = {glm::vec4(0.0F, 0.0F, 0.0F, 1.0F), quarterTurn()};
     Clip clip;
     clip.name = "bend";
-    clip.duration = 1.0f;
+    clip.duration = 1.0F;
     clip.channels.push_back(turn);
     return clip;
 }
@@ -79,19 +80,17 @@ glm::vec3 standing(const Skeleton& skeleton, const Pose& pose, std::size_t joint
 }
 
 void checkNear(const glm::vec3& actual, const glm::vec3& expected) {
-    BOOST_CHECK_SMALL(actual.x - expected.x, 1e-5f);
-    BOOST_CHECK_SMALL(actual.y - expected.y, 1e-5f);
-    BOOST_CHECK_SMALL(actual.z - expected.z, 1e-5f);
+    BOOST_CHECK_SMALL(actual.x - expected.x, 1e-5F);
+    BOOST_CHECK_SMALL(actual.y - expected.y, 1e-5F);
+    BOOST_CHECK_SMALL(actual.z - expected.z, 1e-5F);
 }
 
 /**
  * The angle of a rotation about +z, which is all the bend turns.
  **/
 float angleAboutZ(const glm::quat& rotation) {
-    return 2.0f * std::atan2(rotation.z, rotation.w);
+    return 2.0F * std::atan2(rotation.z, rotation.w);
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(animation_test)
 
@@ -104,22 +103,21 @@ BOOST_AUTO_TEST_CASE(animation_the_rest_palette_is_the_identity_test) {
     std::vector<glm::mat4> matrices;
     v3d::type::animation::palette(skeleton, v3d::type::animation::rest(skeleton), &matrices);
 
-    BOOST_REQUIRE_EQUAL(matrices.size(), 3u);
+    BOOST_REQUIRE_EQUAL(matrices.size(), 3U);
     for (const glm::mat4& matrix : matrices) {
-        BOOST_CHECK(matrix == glm::mat4(1.0f));
+        BOOST_CHECK(matrix == glm::mat4(1.0F));
     }
 }
 
 /**
- * The skeleton's root stands above every root joint, so a root that moves the skeleton moves
- * every joint's global matrix - and the palette, which a pose bound under no root does not
- * expect.
+ * The skeleton's root sits above every root joint, so a root that moves the skeleton moves
+ * every joint's global matrix with it.
  **/
 BOOST_AUTO_TEST_CASE(animation_the_root_places_the_skeleton_test) {
     Skeleton skeleton = strip();
-    skeleton.root = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 4.0f));
+    skeleton.root = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, 4.0F));
 
-    checkNear(standing(skeleton, v3d::type::animation::rest(skeleton), 2), glm::vec3(0.0f, 2.0f, 4.0f));
+    checkNear(standing(skeleton, v3d::type::animation::rest(skeleton), 2), glm::vec3(0.0F, 2.0F, 4.0F));
 }
 
 /**
@@ -132,19 +130,19 @@ BOOST_AUTO_TEST_CASE(animation_sampling_a_linear_rotation_test) {
     const Clip clip = bend(Channel::Interpolation::Linear);
 
     Pose pose = v3d::type::animation::rest(skeleton);
-    v3d::type::animation::sample(clip, 0.0f, &pose);
-    BOOST_CHECK_SMALL(angleAboutZ(pose.joints[1].rotation), 1e-6f);
-    checkNear(standing(skeleton, pose, 2), glm::vec3(0.0f, 2.0f, 0.0f));
+    v3d::type::animation::sample(clip, 0.0F, &pose);
+    BOOST_CHECK_SMALL(angleAboutZ(pose.joints[1].rotation), 1e-6F);
+    checkNear(standing(skeleton, pose, 2), glm::vec3(0.0F, 2.0F, 0.0F));
 
-    v3d::type::animation::sample(clip, 1.0f, &pose);
-    BOOST_CHECK_CLOSE(angleAboutZ(pose.joints[1].rotation), glm::half_pi<float>(), 1e-4f);
-    checkNear(standing(skeleton, pose, 2), glm::vec3(-1.0f, 1.0f, 0.0f));
+    v3d::type::animation::sample(clip, 1.0F, &pose);
+    BOOST_CHECK_CLOSE(angleAboutZ(pose.joints[1].rotation), glm::half_pi<float>(), 1e-4F);
+    checkNear(standing(skeleton, pose, 2), glm::vec3(-1.0F, 1.0F, 0.0F));
 
-    v3d::type::animation::sample(clip, 0.5f, &pose);
-    BOOST_CHECK_CLOSE(angleAboutZ(pose.joints[1].rotation), glm::quarter_pi<float>(), 1e-4f);
+    v3d::type::animation::sample(clip, 0.5F, &pose);
+    BOOST_CHECK_CLOSE(angleAboutZ(pose.joints[1].rotation), glm::quarter_pi<float>(), 1e-4F);
     BOOST_CHECK(pose.joints[0].rotation == glm::identity<glm::quat>());
     BOOST_CHECK(pose.joints[2].rotation == glm::identity<glm::quat>());
-    BOOST_CHECK(pose.joints[1].translation == glm::vec3(0.0f, 1.0f, 0.0f));
+    BOOST_CHECK(pose.joints[1].translation == glm::vec3(0.0F, 1.0F, 0.0F));
 }
 
 /**
@@ -155,10 +153,10 @@ BOOST_AUTO_TEST_CASE(animation_sampling_a_step_test) {
     const Clip clip = bend(Channel::Interpolation::Step);
 
     Pose pose = v3d::type::animation::rest(skeleton);
-    v3d::type::animation::sample(clip, 0.99f, &pose);
-    BOOST_CHECK_SMALL(angleAboutZ(pose.joints[1].rotation), 1e-6f);
-    v3d::type::animation::sample(clip, 1.0f, &pose);
-    BOOST_CHECK_CLOSE(angleAboutZ(pose.joints[1].rotation), glm::half_pi<float>(), 1e-4f);
+    v3d::type::animation::sample(clip, 0.99F, &pose);
+    BOOST_CHECK_SMALL(angleAboutZ(pose.joints[1].rotation), 1e-6F);
+    v3d::type::animation::sample(clip, 1.0F, &pose);
+    BOOST_CHECK_CLOSE(angleAboutZ(pose.joints[1].rotation), glm::half_pi<float>(), 1e-4F);
 }
 
 /**
@@ -170,9 +168,9 @@ BOOST_AUTO_TEST_CASE(animation_sampling_a_time_that_is_not_finite_test) {
 
     Pose pose = v3d::type::animation::rest(skeleton);
     v3d::type::animation::sample(clip, std::nanf(""), &pose);
-    BOOST_CHECK_SMALL(angleAboutZ(pose.joints[1].rotation), 1e-6f);
+    BOOST_CHECK_SMALL(angleAboutZ(pose.joints[1].rotation), 1e-6F);
     v3d::type::animation::sample(clip, INFINITY, &pose);
-    BOOST_CHECK_SMALL(angleAboutZ(pose.joints[1].rotation), 1e-6f);
+    BOOST_CHECK_SMALL(angleAboutZ(pose.joints[1].rotation), 1e-6F);
 }
 
 /**
@@ -186,22 +184,22 @@ BOOST_AUTO_TEST_CASE(animation_sampling_a_cubic_spline_test) {
     rise.joint = 2;
     rise.path = Channel::Path::Translation;
     rise.interpolation = Channel::Interpolation::CubicSpline;
-    rise.times = {0.0f, 1.0f};
+    rise.times = {0.0F, 1.0F};
     rise.values = {
-        glm::vec4(0.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
-        glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 2.0f, 0.0f, 0.0f), glm::vec4(0.0f),
+        glm::vec4(0.0F), glm::vec4(0.0F, 1.0F, 0.0F, 0.0F), glm::vec4(1.0F, 0.0F, 0.0F, 0.0F),
+        glm::vec4(-1.0F, 0.0F, 0.0F, 0.0F), glm::vec4(0.0F, 2.0F, 0.0F, 0.0F), glm::vec4(0.0F),
     };
     Clip clip;
-    clip.duration = 1.0f;
+    clip.duration = 1.0F;
     clip.channels.push_back(rise);
 
     Pose pose = v3d::type::animation::rest(strip());
-    v3d::type::animation::sample(clip, 0.0f, &pose);
-    BOOST_CHECK(pose.joints[2].translation == glm::vec3(0.0f, 1.0f, 0.0f));
-    v3d::type::animation::sample(clip, 1.0f, &pose);
-    BOOST_CHECK(pose.joints[2].translation == glm::vec3(0.0f, 2.0f, 0.0f));
-    v3d::type::animation::sample(clip, 0.5f, &pose);
-    BOOST_CHECK(pose.joints[2].translation == glm::vec3(0.25f, 1.5f, 0.0f));
+    v3d::type::animation::sample(clip, 0.0F, &pose);
+    BOOST_CHECK(pose.joints[2].translation == glm::vec3(0.0F, 1.0F, 0.0F));
+    v3d::type::animation::sample(clip, 1.0F, &pose);
+    BOOST_CHECK(pose.joints[2].translation == glm::vec3(0.0F, 2.0F, 0.0F));
+    v3d::type::animation::sample(clip, 0.5F, &pose);
+    BOOST_CHECK(pose.joints[2].translation == glm::vec3(0.25F, 1.5F, 0.0F));
 }
 
 /**
@@ -212,13 +210,13 @@ BOOST_AUTO_TEST_CASE(animation_blending_two_poses_test) {
     const Skeleton skeleton = strip();
     const Pose rested = v3d::type::animation::rest(skeleton);
     Pose bent = rested;
-    v3d::type::animation::sample(bend(Channel::Interpolation::Linear), 1.0f, &bent);
+    v3d::type::animation::sample(bend(Channel::Interpolation::Linear), 1.0F, &bent);
 
-    const Pose half = v3d::type::animation::blend(rested, bent, 0.5f);
-    BOOST_CHECK_CLOSE(angleAboutZ(half.joints[1].rotation), glm::quarter_pi<float>(), 1e-4f);
+    const Pose half = v3d::type::animation::blend(rested, bent, 0.5F);
+    BOOST_CHECK_CLOSE(angleAboutZ(half.joints[1].rotation), glm::quarter_pi<float>(), 1e-4F);
 
-    BOOST_CHECK(v3d::type::animation::blend(rested, bent, 0.0f).joints[1].rotation == rested.joints[1].rotation);
-    BOOST_CHECK(v3d::type::animation::blend(rested, bent, 1.0f).joints[1].rotation == bent.joints[1].rotation);
+    BOOST_CHECK(v3d::type::animation::blend(rested, bent, 0.0F).joints[1].rotation == rested.joints[1].rotation);
+    BOOST_CHECK(v3d::type::animation::blend(rested, bent, 1.0F).joints[1].rotation == bent.joints[1].rotation);
 }
 
 /**
@@ -226,17 +224,17 @@ BOOST_AUTO_TEST_CASE(animation_blending_two_poses_test) {
  * passes.
  **/
 BOOST_AUTO_TEST_CASE(animation_a_looping_clock_test) {
-    const Clock clock(1.0f, true);
+    const Clock clock(1.0F, true);
 
-    const float later = clock.advance(0.75f, 0.5f);
-    BOOST_CHECK_EQUAL(later, 1.25f);
-    BOOST_CHECK_EQUAL(clock.sample(later), 0.25f);
-    BOOST_CHECK_EQUAL(clock.crossed(0.75f, later, 1.0f), 1u);
-    BOOST_CHECK_EQUAL(clock.crossed(0.75f, later, 0.0f), 1u);
+    const float later = clock.advance(0.75F, 0.5F);
+    BOOST_CHECK_EQUAL(later, 1.25F);
+    BOOST_CHECK_EQUAL(clock.sample(later), 0.25F);
+    BOOST_CHECK_EQUAL(clock.crossed(0.75F, later, 1.0F), 1U);
+    BOOST_CHECK_EQUAL(clock.crossed(0.75F, later, 0.0F), 1U);
     BOOST_CHECK(!clock.finished(later));
 
     // a step longer than the clip passes the end once a loop
-    BOOST_CHECK_EQUAL(clock.crossed(0.5f, clock.advance(0.5f, 3.0f), 1.0f), 3u);
+    BOOST_CHECK_EQUAL(clock.crossed(0.5F, clock.advance(0.5F, 3.0F), 1.0F), 3U);
 }
 
 /**
@@ -244,13 +242,13 @@ BOOST_AUTO_TEST_CASE(animation_a_looping_clock_test) {
  * and not the steps it then stands there for.
  **/
 BOOST_AUTO_TEST_CASE(animation_a_clamped_clock_test) {
-    const Clock clock(1.0f, false);
+    const Clock clock(1.0F, false);
 
-    const float end = clock.advance(0.75f, 0.5f);
-    BOOST_CHECK_EQUAL(end, 1.0f);
+    const float end = clock.advance(0.75F, 0.5F);
+    BOOST_CHECK_EQUAL(end, 1.0F);
     BOOST_CHECK(clock.finished(end));
-    BOOST_CHECK_EQUAL(clock.crossed(0.75f, end, 1.0f), 1u);
-    BOOST_CHECK_EQUAL(clock.crossed(end, clock.advance(end, 0.5f), 1.0f), 0u);
+    BOOST_CHECK_EQUAL(clock.crossed(0.75F, end, 1.0F), 1U);
+    BOOST_CHECK_EQUAL(clock.crossed(end, clock.advance(end, 0.5F), 1.0F), 0U);
 }
 
 /**
@@ -258,13 +256,13 @@ BOOST_AUTO_TEST_CASE(animation_a_clamped_clock_test) {
  * is reported once however the steps fall.
  **/
 BOOST_AUTO_TEST_CASE(animation_a_marker_is_crossed_once_test) {
-    const Clock clock(1.0f, true);
+    const Clock clock(1.0F, true);
 
-    BOOST_CHECK_EQUAL(clock.crossed(0.25f, 0.5f, 0.5f), 1u);
-    BOOST_CHECK_EQUAL(clock.crossed(0.5f, 0.75f, 0.5f), 0u);
-    BOOST_CHECK_EQUAL(clock.crossed(0.25f, 0.4f, 0.5f), 0u);
+    BOOST_CHECK_EQUAL(clock.crossed(0.25F, 0.5F, 0.5F), 1U);
+    BOOST_CHECK_EQUAL(clock.crossed(0.5F, 0.75F, 0.5F), 0U);
+    BOOST_CHECK_EQUAL(clock.crossed(0.25F, 0.4F, 0.5F), 0U);
     // and a looping one passes it again the loop after
-    BOOST_CHECK_EQUAL(clock.crossed(1.25f, 1.5f, 0.5f), 1u);
+    BOOST_CHECK_EQUAL(clock.crossed(1.25F, 1.5F, 0.5F), 1U);
 }
 
 /**
@@ -272,28 +270,30 @@ BOOST_AUTO_TEST_CASE(animation_a_marker_is_crossed_once_test) {
  * number is never passed. A count too large to hold is held at its largest value.
  **/
 BOOST_AUTO_TEST_CASE(animation_a_clock_step_that_is_not_finite_test) {
-    const Clock looping(1.0f, true);
-    BOOST_CHECK_EQUAL(looping.crossed(0.5f, INFINITY, 1.0f), 0u);
-    BOOST_CHECK_EQUAL(looping.crossed(-INFINITY, 0.5f, 1.0f), 0u);
-    BOOST_CHECK_EQUAL(looping.crossed(0.5f, std::nanf(""), 1.0f), 0u);
-    BOOST_CHECK_EQUAL(looping.crossed(std::nanf(""), 0.5f, 1.0f), 0u);
-    BOOST_CHECK_EQUAL(looping.crossed(0.25f, 0.75f, std::nanf("")), 0u);
-    BOOST_CHECK_EQUAL(looping.crossed(0.0f, 1e30f, 1.0f), std::numeric_limits<uint32_t>::max());
+    const Clock looping(1.0F, true);
+    BOOST_CHECK_EQUAL(looping.crossed(0.5F, INFINITY, 1.0F), 0U);
+    BOOST_CHECK_EQUAL(looping.crossed(-INFINITY, 0.5F, 1.0F), 0U);
+    BOOST_CHECK_EQUAL(looping.crossed(0.5F, std::nanf(""), 1.0F), 0U);
+    BOOST_CHECK_EQUAL(looping.crossed(std::nanf(""), 0.5F, 1.0F), 0U);
+    BOOST_CHECK_EQUAL(looping.crossed(0.25F, 0.75F, std::nanf("")), 0U);
+    BOOST_CHECK_EQUAL(looping.crossed(0.0F, 1e30F, 1.0F), std::numeric_limits<uint32_t>::max());
 
-    const Clock clamped(1.0f, false);
-    BOOST_CHECK_EQUAL(clamped.crossed(0.5f, INFINITY, 1.0f), 0u);
-    BOOST_CHECK_EQUAL(clamped.crossed(0.5f, std::nanf(""), 1.0f), 0u);
+    const Clock clamped(1.0F, false);
+    BOOST_CHECK_EQUAL(clamped.crossed(0.5F, INFINITY, 1.0F), 0U);
+    BOOST_CHECK_EQUAL(clamped.crossed(0.5F, std::nanf(""), 1.0F), 0U);
 }
 
 /**
  * A clip of no length never moves, rather than dividing by its duration.
  **/
 BOOST_AUTO_TEST_CASE(animation_an_empty_clock_test) {
-    const Clock clock(0.0f, true);
+    const Clock clock(0.0F, true);
 
-    BOOST_CHECK_EQUAL(clock.advance(0.0f, 0.5f), 0.0f);
-    BOOST_CHECK_EQUAL(clock.sample(3.0f), 0.0f);
-    BOOST_CHECK_EQUAL(clock.crossed(0.0f, 1.0f, 0.0f), 0u);
+    BOOST_CHECK_EQUAL(clock.advance(0.0F, 0.5F), 0.0F);
+    BOOST_CHECK_EQUAL(clock.sample(3.0F), 0.0F);
+    BOOST_CHECK_EQUAL(clock.crossed(0.0F, 1.0F, 0.0F), 0U);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

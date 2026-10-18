@@ -5,11 +5,16 @@
 
 #include "While.h"
 
+#include <api/render/offline/Position.h>
+
+#include "Expression.h"
+#include "Statement.h"
+
 namespace v3d::render::offline::sl::syntax {
 
 While::While(const ExpressionPtr & condition, const StatementPtr & body,
-    unsigned int line, unsigned int column) :
-    Statement(Kind::WHILE, line, column),
+    const v3d::render::offline::Position & at) :
+    Statement(Kind::WHILE, at),
     condition(condition),
     body(body) {
 }

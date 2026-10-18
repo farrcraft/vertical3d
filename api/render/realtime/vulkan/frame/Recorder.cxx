@@ -5,7 +5,13 @@
 
 #include "Recorder.h"
 
+#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/memory/Barriers.h>
+#include <api/render/realtime/vulkan/pipeline/Material.h>
+#include <api/render/realtime/vulkan/pipeline/Pipeline.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -14,7 +20,9 @@
 #include <stdexcept>
 #include <vector>
 
+#include "FrameUniforms.h"
 #include "RenderTarget.h"
+#include "Timings.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -26,11 +34,10 @@ namespace {
  * Whether the pass at an index is the first of the frame to draw into the target it
  * names, or the last.
  *
- * A target is brought into the layout a pass attaches it in once, before the first pass
- * that writes it. It is left readable after the last one, so two passes drawing into one
- * target cost one pair of barriers rather than two. Scanned rather than tallied because a
- * frame has a handful of passes, and a scan is easier to verify than a map that has to be
- * cleared every frame.
+ * A target is moved into its attachment layout once, before the first pass that writes it,
+ * and left readable after the last one. Two passes that draw into one target then cost one
+ * pair of barriers, not two. The passes are scanned each time, not counted into a map,
+ * because a frame has few passes.
  **/
 bool firstWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
     for (std::size_t before = 0; before < index; ++before) {
@@ -86,8 +93,8 @@ Recorder::Target resolve(const Pass& pass, const Recorder::Target& frame) {
  * Write the pass's camera into the frame's uniform buffer and return the set it is bound
  * from, or null for a frame whose pipelines declare nothing at set 0.
  *
- * A viewport of zero means the whole of what is being drawn into, which is the target's
- * extent rather than the frame's - a pass into a smaller target sees that target's size.
+ * A viewport width or height of zero means the whole extent of what the pass draws into. For
+ * a pass into its own target, that is the target's extent, not the frame's.
  **/
 VkDescriptorSet writeCamera(FrameUniforms* uniforms, const Pass& pass, const Recorder::Target& into) {
     if (uniforms == nullptr) {
@@ -100,8 +107,8 @@ VkDescriptorSet writeCamera(FrameUniforms* uniforms, const Pass& pass, const Rec
     camera.viewProjection = camera.projection * camera.view;
     camera.viewport.x = pass.viewport().x;
     camera.viewport.y = pass.viewport().y;
-    camera.viewport.z = pass.viewport().z > 0.0f ? pass.viewport().z : static_cast<float>(into.extent.width);
-    camera.viewport.w = pass.viewport().w > 0.0f ? pass.viewport().w : static_cast<float>(into.extent.height);
+    camera.viewport.z = pass.viewport().z > 0.0F ? pass.viewport().z : static_cast<float>(into.extent.width);
+    camera.viewport.w = pass.viewport().w > 0.0F ? pass.viewport().w : static_cast<float>(into.extent.height);
     return uniforms->write(camera);
 }
 
@@ -142,9 +149,9 @@ into(nullptr) {
  **/
 void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target& target, const pipeline::Resources& resources,
     FrameUniforms* uniforms, Timings* timings) {
-    // the acquired image comes back in whatever layout it was left in, and nothing in the
-    // frame reads it, so undefined is the correct source layout and the cheapest one. A frame
-    // given no image is one whose every pass names a target of its own
+    // the frame never reads the image's old contents, so UNDEFINED is the correct source
+    // layout and the cheapest one. A frame given no image is one where every pass names its
+    // own target
     if (target.image != VK_NULL_HANDLE) {
         memory::record(commands, {memory::colourForDrawing(target.image)});
     }
@@ -153,7 +160,7 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
         memory::record(commands, {memory::depthForDrawing(target.depthImage)});
     }
 
-    // every pass drawing into a target before every pass reading it
+    // every pass that draws into a target comes before every pass that reads it
     const std::vector<boost::shared_ptr<Pass>> passes = frame.ordered();
     for (std::size_t index = 0; index < passes.size(); ++index) {
         const boost::shared_ptr<Pass>& pass = passes[index];
@@ -186,9 +193,9 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
 /**
  **/
 void Recorder::openTarget(VkCommandBuffer commands, bool depth, const Target& into) {
-    // undefined as the source layout: a target carries nothing from one frame to the next,
-    // the same way the swapchain image and the depth buffer do not. The barrier still orders
-    // this frame's writes after the reads the previous frame made of the same image
+    // UNDEFINED as the source layout, because a target's contents are not kept from one frame
+    // to the next, the same as the swapchain image and the depth buffer. The barrier still
+    // orders this frame's writes after the previous frame's reads of the same image
     if (into.image != VK_NULL_HANDLE) {
         memory::record(commands, {memory::colourForDrawing(into.image)});
     }
@@ -204,8 +211,8 @@ void Recorder::closeTarget(VkCommandBuffer commands, bool depth, const Target& i
     if (into.image != VK_NULL_HANDLE) {
         memory::record(commands, {memory::colourAfterDrawing(into.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
     }
-    // and the same for its depth when it was created sampled: DEPTH_READ_ONLY_OPTIMAL lets a
-    // later pass both sample it and depth test against it. A shadow map has only this half
+    // a depth image created for sampling moves to DEPTH_READ_ONLY_OPTIMAL, so a later pass
+    // can both sample it and depth test against it. A shadow map target has only a depth image
     if (depth && into.sampledDepth && into.depthImage != VK_NULL_HANDLE) {
         memory::record(commands, {memory::depthForSampling(into.depthImage)});
     }
@@ -237,15 +244,16 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& 
     // and one drawing on top of another keeps what that one wrote
     depthAttachment.loadOp = pass.clears() ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    // far is one - the projections in api/type are not reversed depth
-    depthAttachment.clearValue.depthStencil.depth = 1.0f;
+    // far is 1. The projections in api/type do not use reversed depth
+    depthAttachment.clearValue.depthStencil.depth = 1.0F;
 
-    // the region a pass draws into, which is the whole image until something asks for less
+    // the region a pass draws into: its viewport, with a zero width or height meaning the
+    // image's
     VkRect2D area{};
     area.offset.x = static_cast<int32_t>(pass.viewport().x);
     area.offset.y = static_cast<int32_t>(pass.viewport().y);
-    area.extent.width = pass.viewport().z > 0.0f ? static_cast<uint32_t>(pass.viewport().z) : target.extent.width;
-    area.extent.height = pass.viewport().w > 0.0f ? static_cast<uint32_t>(pass.viewport().w) : target.extent.height;
+    area.extent.width = pass.viewport().z > 0.0F ? static_cast<uint32_t>(pass.viewport().z) : target.extent.width;
+    area.extent.height = pass.viewport().w > 0.0F ? static_cast<uint32_t>(pass.viewport().w) : target.extent.height;
 
     VkRenderingInfo rendering{};
     rendering.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
@@ -265,12 +273,12 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& 
     viewport.y = static_cast<float>(area.offset.y);
     viewport.width = static_cast<float>(area.extent.width);
     viewport.height = static_cast<float>(area.extent.height);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
+    viewport.minDepth = 0.0F;
+    viewport.maxDepth = 1.0F;
     vkCmdSetViewport(commands, 0, 1, &viewport);
     vkCmdSetScissor(commands, 0, 1, &area);
 
-    // the pass decides whether that is submission order or sort key order
+    // submission order, or sort key order when the pass sorts
     std::vector<const DrawItem*> ordered;
     pass.ordered(&ordered);
 
@@ -317,9 +325,9 @@ void Recorder::check(const Pass& pass, const pipeline::Pipeline& pipeline, const
         msg << "The " << pass.name() << " pass draws with a pipeline built with depth bias, and names no bias";
         throw std::runtime_error(msg.str());
     }
-    // the pipeline's formats must match the target's. Validation reports a mismatch too, but
-    // only with its layers on, and as a draw rather than a pass. The recorder attaches one
-    // colour image at most, so only the first format is compared
+    // the pipeline's formats must match the target's. The validation layer reports a mismatch
+    // too, but only when it is enabled, and against a draw, not a pass. Recorder attaches at
+    // most one colour image, so only the first format is compared
     if (into.format != VK_FORMAT_UNDEFINED && !pipeline.colourFormats.empty() && pipeline.colourFormats.front() != into.format) {
         std::stringstream msg;
         msg << "The " << pass.name() << " pass draws into colour format " << into.format
@@ -339,8 +347,8 @@ void Recorder::check(const Pass& pass, const pipeline::Pipeline& pipeline, const
  **/
 void Recorder::record(VkCommandBuffer commands, const Pass& pass, const DrawItem& item, const pipeline::Resources& resources,
     VkDescriptorSet frameSet, Bound* bound) {
-    // the escape hatch, for work the item's fields cannot describe. It may record anything,
-    // so nothing about what is bound is assumed to survive it
+    // DrawItem::record, for work the item's fields cannot describe. It may record any command,
+    // so nothing bound before it is assumed to be bound after it
     if (item.record) {
         item.record(commands);
         const VkRect2D area = bound->area;
@@ -371,8 +379,8 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const DrawItem
     }
 
     if (frameSet != VK_NULL_HANDLE && frameSet != bound->frameSet) {
-        // set 0 holds per frame data: the camera the whole pass draws through, so it is bound
-        // here and never per item
+        // set 0 holds the pass's camera. Every item in the pass shares it, so it is bound only
+        // when it changes
         vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1, &frameSet, 0, nullptr);
         bound->frameSet = frameSet;
     }
@@ -426,8 +434,8 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const DrawItem
 void Recorder::scissor(VkCommandBuffer commands, const DrawItem& item, Bound* bound) {
     VkRect2D wanted = bound->area;
     if (item.scissored) {
-        // clamped to the pass rather than trusted: an offset outside the image, or an
-        // extent running past its edge, is a validation error and not a wrong picture
+        // clamped to the pass area. An offset outside the image, or an extent past its edge,
+        // is a validation error, not just a wrong picture
         const int32_t left = std::max(item.scissor.offset.x, bound->area.offset.x);
         const int32_t top = std::max(item.scissor.offset.y, bound->area.offset.y);
         const int64_t right = std::min(static_cast<int64_t>(item.scissor.offset.x) + item.scissor.extent.width,

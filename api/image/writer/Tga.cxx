@@ -6,13 +6,19 @@
 #include "Tga.h"
 
 #include <api/image/Channels.h>
+#include <api/image/Image.h>
+#include <api/image/Writer.h>
+#include <api/log/Logger.h>
 
+#include <cstdint>
 #include <fstream>
-#include <iostream>
 #include <limits>
 #include <cstring>
 #include <string>
+#include <string_view>
 #include <vector>
+
+namespace {
 
 #pragma pack(push, 1)
 
@@ -42,6 +48,8 @@ struct tga_footer {
 };
 
 #pragma pack(pop)
+
+};  // namespace
 
 namespace v3d::image::writer {
 /**
@@ -77,15 +85,15 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     fheader.bpp_ = img->bpp();
     const bool grey = img->format() == Image::Format::Grey;
     fheader.type_ = grey ? 3 : 2;
-    // bit 5 of the descriptor is the vertical origin, and the rows below go out top down
-    // because that is the order Image holds them in. Leaving it clear claims bottom up,
-    // which a reader is entitled to act on by turning the picture over
+    // bit 5 of the descriptor marks a top-left origin. The rows go out top down, the order
+    // Image holds them in, so the bit is set. A reader treats a clear bit as bottom up and
+    // flips the picture
     fheader.descriptor_ = 0x20;
 
     file.write(reinterpret_cast<char*>(&fheader), sizeof(fheader));
 
-    unsigned int bytespp = fheader.bpp_ / 8;
-    unsigned int size = fheader.width_ * fheader.height_ * bytespp;
+    const unsigned int bytespp = fheader.bpp_ / 8;
+    const unsigned int size = fheader.width_ * fheader.height_ * bytespp;
     std::vector<unsigned char> scratch(size);
     const unsigned char* data = img->data();
 
@@ -98,7 +106,7 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
         // one channel is one channel in either order, so there is nothing to swap
         memcpy(scratch.data(), data, size);
     } else {
-        swapRedBlue(data, scratch.data(), size / bytespp, bytespp);
+        swapRedBlue(data, scratch.data(), {.pixels = size / bytespp, .channels = bytespp});
     }
 
     file.write(reinterpret_cast<char*>(scratch.data()), size);
@@ -106,8 +114,8 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     tga_footer footer;
     memset(&footer, 0, sizeof(tga_footer));
 
-    // The signature fills the field exactly, with no terminator - it is 16 bytes of a
-    // fixed size record rather than a C string.
+    // The signature fills the field exactly, with no terminator. It is 16 bytes of a fixed
+    // size record, not a C string.
     memcpy(footer.signature_, "TRUEVISION-XFILE", sizeof(footer.signature_));
     footer.reserved_ = '.';
     file.write(reinterpret_cast<char*>(&footer), sizeof(footer));

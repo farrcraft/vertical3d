@@ -6,6 +6,7 @@
 #include "Migration.h"
 
 #include <cstddef>
+#include <span>
 #include <utility>
 
 #include <boost/system/error_code.hpp>

@@ -5,7 +5,9 @@
 
 #pragma once
 
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/paint/Text.h>
+#include <api/ui/style/Style.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -17,9 +19,9 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 class Canvas;
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas
 
 namespace v3d::ui {
 
@@ -33,11 +35,11 @@ class Theme;
  * A panel is a sequence between begin() and end(). Each widget is placed where the layout
  * pen has got to and drawn onto the same quad canvas the retained components draw onto. It
  * is hit tested against the box it was just drawn in, and returns its result on the spot.
- * There is nothing to keep in step with the state it shows, because it is a function of
- * that state, so it suits tool panels that read live state.
+ * A widget is drawn from the state it shows each frame, so nothing has to be kept in step
+ * with that state. That suits tool panels that read live state.
  *
- * Text is the caller's to draw, the same way ComponentRenderer takes it: this class knows
- * how wide a string is and where it goes, and v3d::font turns it into glyphs.
+ * Text is drawn through callbacks, as with ComponentRenderer. This class decides how wide a
+ * string is and where it goes, and v3d::font turns it into glyphs.
  *
  * Which widget the cursor is on is decided as a frame is drawn and used by the next one,
  * so a widget drawn later takes the cursor from one under it. A widget that moved is
@@ -50,15 +52,14 @@ class Theme;
 class Immediate {
  public:
     /**
-     * What a widget is known by. A label hashed with whatever pushId() has put on the
-     * stack, so two widgets with the same label in the same scope are one widget as far
-     * as the cursor is concerned.
+     * A widget's identity: its label hashed with whatever pushId() has put on the stack. Two
+     * widgets with the same label in the same scope are one widget to the cursor.
      **/
     typedef std::uint64_t Id;
 
     /**
-     * What the cursor did since the last frame. An app fills this from its input engine;
-     * pressed and released are the edges of down, and are true for the one frame each.
+     * What the cursor did since the last frame. An app fills this from its input engine.
+     * pressed and released are the edges of down, and each is true for one frame.
      **/
     struct Input final {
         Input() noexcept;
@@ -71,11 +72,10 @@ class Immediate {
     };
 
     /**
-     * The colours and metrics the layer draws with. What a theme's "ui" style does not
-     * name keeps the value here, so a theme carrying nothing changes nothing.
+     * The colours and metrics the immediate ui draws with. A value that a theme's "tools"
+     * style does not set keeps its default, so an empty theme changes nothing.
      *
-     * Not a Style, which is the bag of properties a theme holds. This is what one resolves
-     * to.
+     * A Style is the set of properties a theme holds. This struct is what one resolves to.
      **/
     struct Dressing final {
         Dressing() noexcept;
@@ -83,17 +83,17 @@ class Immediate {
         float lineHeight;      /**< the height of one row of text **/
         float padding;         /**< the gap between a widget's edge and the text in it **/
         float spacing;         /**< the gap between one widget and the next **/
-        float barHeight;       /**< how tall a title bar or a tab is **/
+        float barHeight;       /**< how tall a title bar, a tab or a button is **/
         float borderWidth;     /**< how thick a window's outline is **/
         float radius;          /**< how far a window's corners are rounded **/
         float indent;          /**< how far a bullet pushes its text in **/
         float scrollbarWidth;  /**< how wide the bar down a window that scrolls is **/
         glm::vec4 panel;       /**< a window's background **/
-        glm::vec4 border;      /**< its outline **/
-        glm::vec4 titleBar;    /**< the band across the top of one **/
+        glm::vec4 border;      /**< a window's outline **/
+        glm::vec4 titleBar;    /**< the band across the top of a window, and a table's header **/
         glm::vec4 text;        /**< ordinary text **/
-        glm::vec4 activeText;  /**< text on something the cursor is on **/
-        glm::vec4 dimText;     /**< text that is disabled, or said to be unimportant **/
+        glm::vec4 activeText;  /**< text on a hovered or selected widget **/
+        glm::vec4 dimText;     /**< text that is disabled or secondary **/
         glm::vec4 widget;      /**< a button, a track, a tab that is not selected **/
         glm::vec4 highlight;   /**< a selected row, a selected tab **/
         glm::vec4 hover;       /**< what is drawn behind the widget the cursor is on **/
@@ -123,15 +123,16 @@ class Immediate {
     /**
      * Read a theme's "tools" style into dressing().
      *
-     * A separate class from the "ui" the retained components read, because a tool panel
-     * uses the same keys at smaller sizes than a hud. A theme dresses both, in two classes.
+     * A separate class from the "ui" class the retained components read, because a tool
+     * panel uses the same keys at smaller sizes than a hud. A theme styles both, in two
+     * classes.
      **/
     void theme(const boost::shared_ptr<style::Theme>& theme);
 
     /**
      * Start a frame. Everything drawn until end() goes onto this canvas.
      **/
-    void begin(v3d::render::realtime::Canvas* canvas, const Input& input);
+    void begin(v3d::render::realtime::canvas::Canvas* canvas, const Input& input);
 
     /**
      * Finish a frame: settle who has the cursor for the next one, and age out what nothing
@@ -140,11 +141,11 @@ class Immediate {
     void end();
 
     /**
-     * How many widgets the layer is holding something for.
+     * How many widgets the immediate ui holds state for.
      *
-     * A window's scroll and fold and a tab strip's selection are all it keeps, so this is
-     * a handful in a running app and is here to say so - a caller building ids out of
-     * changing text can watch it rather than discover the cost later.
+     * It keeps only a window's scroll and fold, a table's scroll and a tab strip's
+     * selection, so this is a handful in a running app. A caller that builds ids out of
+     * changing text can watch it to see the cost.
      **/
     std::size_t retained() const noexcept;
 
@@ -158,7 +159,8 @@ class Immediate {
     static const std::uint64_t retention = 60;
 
     /**
-     * Open a window at a place the caller decides, and that its title bar moves it from.
+     * Open a window at a place the caller decides. Dragging the title bar moves it from
+     * there.
      *
      * The position is an anchor. A drag is kept in the window's retained state as a
      * displacement from it, so a window the caller repositions every frame follows and
@@ -171,13 +173,14 @@ class Immediate {
      * after the one that overflowed, and a window whose content changes every frame sizes
      * its thumb a frame behind.
      *
-     * Pair every call with endWindow() whatever it answered: a collapsed window returns
+     * Pair every call with endWindow(), whatever it returned. A collapsed window returns
      * false and still has to be closed.
      *
+     * @param area where the window's top left corner is, and its size
      * @param alpha what the window's background is drawn at, 1 for opaque
      * @return whether what goes in it should be drawn, false for a collapsed window
      **/
-    bool window(const std::string& title, const glm::vec2& position, const glm::vec2& size, float alpha);
+    bool window(const std::string& title, const v3d::type::geometry::Bound2D::Area& area, float alpha);
     void endWindow();
 
     /**
@@ -186,7 +189,7 @@ class Immediate {
     void text(const std::string& line);
 
     /**
-     * A line of text in the dim colour, for something said rather than shown.
+     * A line of text in the dim colour, for secondary text.
      **/
     void textDisabled(const std::string& line);
 
@@ -240,9 +243,8 @@ class Immediate {
     /**
      * How wide the next widget should be, instead of the rest of the row.
      *
-     * Consumed by the widget that follows and forgotten after it, so it is set again for
-     * each one, so two scrubbers can share a row without either of them owning a width.
-     * It does not apply to a separator, which always spans the row.
+     * Only the next widget uses it, so it is set again before each one. Two scrubbers can
+     * then share a row. It does not apply to a separator, which always spans the row.
      *
      * @param width in pixels, or nothing at all to go back to the rest of the row
      **/
@@ -252,23 +254,22 @@ class Immediate {
      * Whether the cursor is over something this layer drew, or is dragging something it
      * drew.
      *
-     * What an app asks before it acts on a click of its own, so that a press which
-     * already pressed a button here does not also give an order to the scene behind it.
-     * ui::Cursor does the same for the retained tree.
+     * An app checks this before it acts on a click of its own, so that a press on a button
+     * here does not also act on the scene behind it. input::Cursor's return values do the
+     * same for the retained tree.
      *
-     * Computed from what the previous frame found, the same way a widget's own hover is:
-     * an app asks this before it draws, and what it is asking about has not been drawn
-     * yet.
+     * Computed from what the previous frame found, the same way a widget's own hover is,
+     * because an app calls this before it draws the current frame.
      **/
     bool capturing() const noexcept;
 
     /**
-     * Claim a rectangle of the screen for this layer, though it draws nothing there.
+     * Claim a rectangle of the screen for the immediate ui, though it draws nothing there.
      *
      * For something another renderer draws, such as a modal backdrop over the whole viewport,
      * that should still stop a click reaching the scene below. The rectangle counts toward
      * capturing() exactly as a window does. It takes the cursor from everything drawn before
-     * it, and a widget drawn after it inside it takes the cursor back. The answer is one frame
+     * it, and a widget drawn after it inside it takes the cursor back. The result is one frame
      * behind.
      *
      * @param min the top left corner, in the canvas's pixels
@@ -329,9 +330,15 @@ class Immediate {
      * The room a bar would take is reserved whether or not there is anything to scroll,
      * so the columns of a table that gains a row do not re-flow.
      *
-     * @param height how tall the table is, or zero to be as tall as its rows
+     * The shape is how many columns the table has, and how tall it is, or zero to be as tall
+     * as its rows.
      **/
-    bool table(const std::string& id, unsigned int columns, float height = 0.0f);
+    struct TableShape {
+        unsigned int columns = 1;
+        float height = 0.0F;
+    };
+
+    bool table(const std::string& id, const TableShape& shape);
 
     /**
      * Name a column and say how wide it is. A width of zero shares out what the other
@@ -342,8 +349,8 @@ class Immediate {
     /**
      * Draw the header row - the column names on a band of their own.
      *
-     * In a table that scrolls, the band is drawn above the region rather than in it, so
-     * the rows pass under it rather than over it.
+     * In a table that scrolls, the band is drawn above the scrolled region, not in it. The
+     * rows pass under the band.
      **/
     void headerRow();
 
@@ -415,8 +422,8 @@ class Immediate {
         bool open;           /**< whether a window is being written at all **/
         float margin;        /**< the row margin to go back to at endWindow() **/
         float right;         /**< and the right edge **/
-        Id id;               /**< whose scroll and content the one being written are **/
-        Id scroll;           /**< the id its scrollbar answers the cursor as **/
+        Id id;               /**< the id that holds the window's scroll and content **/
+        Id scroll;           /**< the id its scrollbar is hit tested under **/
         glm::vec2 bodyMin;   /**< the part of it below the title bar, which is clipped to **/
         glm::vec2 bodyMax;
         float contentTop;    /**< where its content would start if it were not scrolled **/
@@ -451,8 +458,8 @@ class Immediate {
         std::vector<float> widths;
         float left;             /**< where the row starts, which columns are measured from **/
         unsigned int column;    /**< which column the pen is in **/
-        Id id;                  /**< whose scroll and content its rows are **/
-        Id scroll;              /**< the id its bar answers the cursor as **/
+        Id id;                  /**< the id that holds the table's scroll and content **/
+        Id scroll;              /**< the id its scrollbar is hit tested under **/
         float right;            /**< the row right to go back to, and the region's right edge **/
         float height;           /**< how tall it is, or zero for a table that does not scroll **/
         float top;              /**< where it starts, which its height is measured from **/
@@ -475,8 +482,7 @@ class Immediate {
     /**
      * How wide the widget being written may be, and forget what asked for it.
      *
-     * The rest of the row unless nextItemWidth() named something else, so a caller that
-     * never names one never pays for the question.
+     * The rest of the row, unless nextItemWidth() set a width.
      **/
     float itemWidth();
 
@@ -502,22 +508,33 @@ class Immediate {
      * Whether a scrolled region puts up its scrollbar: a window decides at its start, from
      * what it drew last frame, and a table whenever there is more than it shows.
      **/
-    enum class Bar { Never, Always, WhenNeeded };
+    enum class Bar : std::uint8_t { Never, Always, WhenNeeded };
 
     /**
-     * Close a scrolled region - a window's body or a table: measure what was drawn into it,
-     * put up its scrollbar down the right of the body, and turn the wheel over it into scroll.
-     *
-     * @param bodyMax the bottom right corner of the region, which the scrollbar runs down to
+     * A scrolled region. id holds its scroll and content, and scroll is the id its
+     * scrollbar is hit tested under. contentTop is where its content would start if it were
+     * not scrolled. bodyMax is the bottom right corner of its body, which the scrollbar runs
+     * down to.
      **/
-    void closeScroll(Id id, Id scroll, float contentTop, const glm::vec2& bodyMax, Bar bar);
+    struct Scrolled {
+        Id id = 0;
+        Id scroll = 0;
+        float contentTop = 0.0F;
+        glm::vec2 bodyMax{0.0F};
+    };
+
+    /**
+     * Close a scrolled region, a window's body or a table: measure what was drawn into it,
+     * draw its scrollbar down the right of the body, and turn the wheel over it into scroll.
+     **/
+    void closeScroll(const Scrolled& region, Bar bar);
 
     /**
      * Draw the bar down the right of a region that has more content than it shows, and
      * scroll it where the cursor drags the thumb to.
      *
-     * A window and a table each have one, so the region is passed rather than read: the
-     * bar is drawn inside the rectangle given, against the right of it.
+     * A window and a table each have one, so the caller passes the rectangle. The bar is
+     * drawn inside it.
      *
      * @param id the id the thumb is hit tested under
      * @param min the top left of the region the bar runs down
@@ -532,8 +549,8 @@ class Immediate {
     /**
      * Open a scrolling table's region, at the pen, the first time a row asks for one.
      *
-     * Called from nextRow() rather than from table(), because that is what a header row
-     * and a table without one have in common: the region starts wherever the rows do.
+     * Called from nextRow(), not from table(), because the region starts where the rows do:
+     * below the header row when there is one, and at the top of the table when there is not.
      **/
     void tableBody();
 
@@ -559,9 +576,11 @@ class Immediate {
     paint::Measure measure_;
     paint::Write write_;
     Dressing dressing_;
+    // what the current theme wrote over dressing_
+    style::Overlay<Dressing> overlay_;
     boost::shared_ptr<style::Theme> theme_;
 
-    v3d::render::realtime::Canvas* canvas_;
+    v3d::render::realtime::canvas::Canvas* canvas_;
     Input input_;
     glm::vec2 previousCursor_;
     glm::vec2 drag_;

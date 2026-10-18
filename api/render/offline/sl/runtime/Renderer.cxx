@@ -5,16 +5,20 @@
 
 #include "Renderer.h"
 
+#include <api/render/offline/Texture.h>
+
+#include "Value.h"
+
 #include <string>
 #include <vector>
 
 namespace v3d::render::offline::sl::runtime {
 
 /*
-    The defaults for a renderer that cannot do these things. Each default lets a scene
-    render wrongly rather than not at all: the machine reports what it could not do, and a
-    picture missing a shadow is easier to diagnose than no picture. The parameter names are
-    in comments because none of them is used.
+    The defaults for a renderer that cannot do these things. With each default a scene still
+    renders, though wrongly, and the machine reports what it could not do. A picture missing
+    a shadow is easier to diagnose than no picture. The parameter names are in comments
+    because none of them is used.
 */
 
 unsigned int Renderer::lights() {

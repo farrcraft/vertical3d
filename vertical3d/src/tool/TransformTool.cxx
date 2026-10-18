@@ -5,10 +5,17 @@
 
 #include "TransformTool.h"
 
+#include <api/brep/BRep.h>
+#include <api/log/Logger.h>
+#include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/TransformCommand.h>
+#include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/manipulator/RotateManipulator.h>
 #include <vertical3d/src/manipulator/ScaleManipulator.h>
 #include <vertical3d/src/manipulator/TranslateManipulator.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/view/ViewPort.h>
 
 #include <string>
 
@@ -70,7 +77,7 @@ TransformTool::TransformTool(const boost::shared_ptr<Scene>& scene,
     scale_(boost::make_shared<ScaleManipulator>()),
     mode_(Mode::None),
     dragging_(false),
-    last_(0.0f, 0.0f) {
+    last_(0.0F, 0.0F) {
 }
 
 /**
@@ -122,7 +129,7 @@ void TransformTool::mode(Mode mode) {
     // the handle being dragged is about to stop existing, but what it already wrote to
     // the mesh has happened
     commit();
-    boost::shared_ptr<Manipulator> current = manipulator();
+    const boost::shared_ptr<Manipulator> current = manipulator();
     if (current) {
         current->active(false);
     }
@@ -159,7 +166,7 @@ bool TransformTool::dragging() const noexcept {
  **/
 void TransformTool::cancel() {
     dragged_.reset();
-    boost::shared_ptr<Manipulator> current = manipulator();
+    const boost::shared_ptr<Manipulator> current = manipulator();
     if (current) {
         current->active(false);
     }
@@ -169,7 +176,7 @@ void TransformTool::cancel() {
 /**
  **/
 void TransformTool::commit() {
-    boost::shared_ptr<v3d::brep::BRep> mesh = dragged_;
+    const boost::shared_ptr<v3d::brep::BRep> mesh = dragged_;
     dragged_.reset();
     if (!mesh || !commands_) {
         return;
@@ -178,13 +185,13 @@ void TransformTool::commit() {
     if (after.same(before_)) {
         return;
     }
-    commands_->push(boost::make_shared<TransformCommand>(mesh, before_, after, modeName(mode_)));
+    commands_->push(boost::make_shared<TransformCommand>(mesh, TransformCommand::Change{.before = before_, .after = after}, modeName(mode_)));
 }
 
 /**
  **/
 void TransformTool::hover(const glm::vec2& position) {
-    boost::shared_ptr<Manipulator> current = manipulator();
+    const boost::shared_ptr<Manipulator> current = manipulator();
     if (!current) {
         return;
     }
@@ -193,7 +200,7 @@ void TransformTool::hover(const glm::vec2& position) {
         return;
     }
 
-    boost::shared_ptr<v3d::brep::BRep> mesh = scene_->selection();
+    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->selection();
     Manipulator::Axis axis = Manipulator::Axis::None;
     if (!mesh || !current->grab(mesh, *view_, position, &axis)) {
         current->active(false);
@@ -206,7 +213,7 @@ void TransformTool::hover(const glm::vec2& position) {
 /**
  **/
 void TransformTool::motion(const glm::vec2& position) {
-    boost::shared_ptr<Manipulator> current = manipulator();
+    const boost::shared_ptr<Manipulator> current = manipulator();
     // a drag moves the mesh whose handle was grabbed rather than whatever is selected
     // now, so that a selection changing mid gesture cannot leave the record naming one
     // mesh and the movement landing on another
@@ -237,20 +244,20 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
     }
 
     dragging_ = false;
-    boost::shared_ptr<Manipulator> current = manipulator();
+    const boost::shared_ptr<Manipulator> current = manipulator();
     if (!current || !scene_ || !view_) {
         return;
     }
 
-    boost::shared_ptr<v3d::brep::BRep> mesh = scene_->selection();
+    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->selection();
     if (!mesh) {
         return;
     }
 
     Manipulator::Axis axis = Manipulator::Axis::None;
     if (!current->grab(mesh, *view_, position, &axis)) {
-        // no handle under the cursor, so the press is not this tool's - the controller
-        // passes it on to the one that selects
+        // no handle under the cursor, so the press is not this tool's. The controller
+        // passes it on to the select tool
         current->active(false);
         return;
     }

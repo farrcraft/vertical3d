@@ -5,7 +5,13 @@
 
 #include "Imager.h"
 
+#include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/sl/Globals.h>
+#include <api/render/offline/sl/runtime/Program.h>
+#include <api/render/offline/sl/runtime/Renderer.h>
+
+#include "Instance.h"
+#include "Types.h"
 
 #include <glm/vec3.hpp>
 
@@ -40,7 +46,7 @@ bool Imager::run(FrameBuffer* frame, unsigned int coverage) {
             // the pixel's centre in raster space
             globals.pixel(&machine_, column, glm::vec3(frame->value(0, column, row), frame->value(1, column, row),
                 frame->value(2, column, row)), frame->value(coverage, column, row),
-                glm::vec3(static_cast<float>(column) + 0.5f, static_cast<float>(row) + 0.5f, 0.0f));
+                glm::vec3(static_cast<float>(column) + 0.5F, static_cast<float>(row) + 0.5F, 0.0F));
         }
         if (!machine_.run()) {
             return false;

@@ -27,14 +27,14 @@ namespace v3d::render::realtime::vulkan::device {
  *
  * A device given no surface is headless. It is selected on its graphics family alone, asks
  * for no swapchain extension, and has no present queue, because presenting is the only thing
- * a surface is needed for. Everything that draws works on one; everything that presents - a
- * Swapchain, a Presenter - needs a device that was given a surface.
+ * a surface is needed for. Everything that draws works on a headless device. Everything that
+ * presents, such as a Swapchain or a Presenter, needs a device that was given a surface.
  **/
 class Device final {
  public:
     /**
-     * The queue families a device has to provide before we can draw with it, and present
-     * from it when there is a surface. The same family often serves both roles.
+     * The queue families a device has to provide to draw, and to present when there is a
+     * surface. The same family often serves both roles.
      **/
     struct QueueFamilies {
         QueueFamilies() noexcept;
@@ -42,7 +42,7 @@ class Device final {
         /**
          * @param presenting whether a present family is one of the ones needed, which it is
          *        only for a device that was given a surface
-         * @return whether the families we need were found
+         * @return whether the needed families were found
          **/
         bool complete(bool presenting) const noexcept;
 
@@ -146,7 +146,7 @@ class Device final {
 
     /**
      * @return the graphics family a physical device offers, and the present family it offers
-     *         for our surface when there is one
+     *         for the surface when there is one
      **/
     QueueFamilies findFamilies(VkPhysicalDevice device) const;
 
@@ -176,7 +176,7 @@ class Device final {
     VkQueue presentQueue_;
     float timestampPeriod_;
     Description description_;
-    /**< built once the logical device exists, and outlived by nothing it allocated for **/
+    /**< created after the logical device. Everything it allocated is freed before it goes **/
     boost::shared_ptr<memory::Allocator> allocator_;
 };
 

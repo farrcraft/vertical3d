@@ -13,13 +13,18 @@
 namespace v3d::render::offline::sl::syntax {
 
 /**
- * An assignment and its compound forms. The target is an expression rather than a name so
- * that `Ci[0] = 1` parses; the compiler checks whether it can be assigned to.
+ * An assignment and its compound forms. The target is an expression, not a name, so that
+ * `Ci[0] = 1` parses. The compiler checks whether the target can be assigned to.
  **/
 class Assignment final : public Statement {
  public:
-    Assignment(const std::string & op, const ExpressionPtr & target, const ExpressionPtr & value,
-        unsigned int line, unsigned int column);
+    /** What is assigned to, and what is assigned. **/
+    struct Sides {
+        ExpressionPtr target;
+        ExpressionPtr value;
+    };
+
+    Assignment(const std::string & op, const Sides & sides, const v3d::render::offline::Position & at);
 
     std::string op;
     ExpressionPtr target;

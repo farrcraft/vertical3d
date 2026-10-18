@@ -7,7 +7,7 @@
 
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
@@ -68,9 +68,9 @@ class Renderer {
     void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
         const v3d::ui::Immediate::Input& tools);
     /**
-     * Resize the frame
+     * Give the camera's projection the aspect of a frame this size.
      */
-    void resize(int width, int height);
+    void resize(const glm::ivec2& size);
 
     void tick(unsigned int delta);
 
@@ -88,7 +88,8 @@ class Renderer {
 
  private:
     /**
-     * The layout of set 1 - the light and the block palette, which every chunk draws with.
+     * Create the descriptor pool and layout for set 1: the light and the block palette, which
+     * every chunk draws with.
      **/
     void createLayout();
 
@@ -98,8 +99,8 @@ class Renderer {
     void createUniforms();
 
     /**
-     * Compile the terrain pipeline against the pass it draws into - a colour attachment and
-     * a depth one, which dynamic rendering needs named at compile time.
+     * Compile the terrain pipeline against the pass it draws into: a colour attachment and
+     * a depth one. Dynamic rendering needs both named at compile time.
      **/
     void createPipeline();
 
@@ -109,8 +110,8 @@ class Renderer {
     void drawTerrain(v3d::render::realtime::Pass* pass);
 
     /**
-     * The F3 readout - the build, what the loop measured, where the player is standing, and
-     * how many of the meshed chunks were drawn.
+     * The debug readout, toggled by voxel::debug: the build, what the loop measured, where the
+     * player is standing, and how many of the meshed chunks were drawn.
      **/
     void drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
         const v3d::ui::Immediate::Input& tools);

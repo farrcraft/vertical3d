@@ -7,12 +7,13 @@
 
 #include <api/render/offline/Lexeme.h>
 
+#include <cstdint>
 #include <string>
 
 namespace v3d::render::offline::rib {
 
 /** What kind of thing a Token is. **/
-enum class TokenKind {
+enum class TokenKind : std::uint8_t {
     END,
     IDENTIFIER,
     STRING,
@@ -24,22 +25,21 @@ enum class TokenKind {
 /**
  * One lexical unit of a RIB stream.
  *
- * An ASCII RIB file holds nothing else: a request name, a quoted string, a number, and
- * the two array delimiters. The reader can therefore recover from an unrecognised request
- * without knowing its arity. Only a string, a number or an array can be an argument, so the
- * next identifier begins the next request whether or not either one is recognised.
+ * An ASCII RIB file holds only these: a request name, a quoted string, a number, and the
+ * two array delimiters. A request name is the only identifier, so the reader can skip an
+ * unrecognised request without knowing how many arguments it takes.
  **/
 class Token final : public v3d::render::offline::Lexeme<TokenKind> {
  public:
     typedef TokenKind Kind;
 
     Token() = default;
-    Token(Kind kind, unsigned int line, unsigned int column) : Lexeme(kind, line, column) {
+    Token(Kind kind, const v3d::render::offline::Position & at) : Lexeme(kind, at) {
     }
-    Token(Kind kind, const std::string & text, unsigned int line, unsigned int column) :
-        Lexeme(kind, text, line, column) {
+    Token(Kind kind, const std::string & text, const v3d::render::offline::Position & at) :
+        Lexeme(kind, text, at) {
     }
-    Token(float value, unsigned int line, unsigned int column) : Lexeme(Kind::NUMBER, value, line, column) {
+    Token(float value, const v3d::render::offline::Position & at) : Lexeme(Kind::NUMBER, value, at) {
     }
 };
 

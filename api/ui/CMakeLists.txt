@@ -28,8 +28,8 @@ v3d_add_api_library(ui
 	"component/Type.h" "component/Type.cpp"
 	"component/VerticalBox.h" "component/VerticalBox.cpp"
 	"component/menu/Menu.h" "component/menu/Menu.cpp"
-	"component/menu/MenuBar.h" "component/menu/MenuBar.cpp"
-	"component/menu/MenuItem.h" "component/menu/MenuItem.cpp"
+	"component/menu/Bar.h" "component/menu/Bar.cpp"
+	"component/menu/Item.h" "component/menu/Item.cpp"
 	"component/menu/Type.h"
 	"input/Command.h" "input/Command.cpp"
 	"input/Cursor.h" "input/Cursor.cpp"
@@ -37,6 +37,7 @@ v3d_add_api_library(ui
 	"paint/ComponentRenderer.h" "paint/ComponentRenderer.cpp"
 	"paint/Dressing.h" "paint/Dressing.cpp"
 	"paint/Painter.h" "paint/Painter.cpp"
+	"paint/Palette.h"
 	"paint/Text.h" "paint/Text.cpp"
 	"paint/TextRenderer.h" "paint/TextRenderer.cpp"
 	"shell/FileChooser.h" "shell/FileChooser.cpp"
@@ -56,8 +57,8 @@ v3d_add_api_library(ui
 	"style/property/Number.h" "style/property/Number.cpp")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
-# v3dlib_render: ComponentRenderer draws onto a realtime::Canvas. The dependency is one way -
-# nothing in the renderer knows about a ui component - and Canvas carries no vulkan of its own.
+# v3dlib_render: ComponentRenderer draws onto a realtime::canvas::Canvas. The dependency is one
+# way: nothing in the renderer names a ui component, and Canvas carries no vulkan of its own.
 # TextRenderer.h keeps that true by taking the atlas upload as a callback rather than naming
 # a renderer.
 # v3dlib_font: TextRenderer.h holds a TextureFontCache and a TextureTextBuffer::Markup.
@@ -78,7 +79,7 @@ target_link_libraries(v3dlib_ui PUBLIC
 	EnTT::EnTT)
 
 # PRIVATE: v3dlib_input: shell/Keyboard.cpp decodes an SDL key through input::keyName, so that
-# the name a binding is written against and the name a text box answers come from one table. The
+# the name a binding is written against and the name a text box receives come from one table. The
 # header names neither the device nor SDL_Event beyond a forward declaration.
 # SDL3::SDL3: shell/Keyboard.cpp reads SDL events and the clipboard through SDL.
 target_link_libraries(v3dlib_ui PRIVATE v3dlib_input SDL3::SDL3)

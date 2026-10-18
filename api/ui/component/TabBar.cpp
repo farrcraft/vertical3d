@@ -5,8 +5,14 @@
 
 #include "TabBar.h"
 
+#include <api/type/geometry/Bound2D.h>
+#include <api/ui/Component.h>
 #include <api/ui/paint/Painter.h>
 
+#include "TabPage.h"
+#include "Type.h"
+
+#include <cstddef>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -18,7 +24,7 @@ const int TabBar::none;
 TabBar::TabBar() :
     Component(Type::TabBar),
     selected_(0) {
-    // a control is pickable and focusable from the start; a plain component is neither, so a
+    // a control is pickable and focusable from the start. A plain component is neither, so a
     // panel laid over a scene lets presses through
     pickable(true);
     focusable(true);
@@ -46,8 +52,8 @@ int TabBar::selected() const noexcept {
 
 boost::shared_ptr<TabPage> TabBar::page() const {
     const std::vector<boost::shared_ptr<TabPage>> held = pages();
-    // a bar starts on its first page, and that index is held from before any page is added,
-    // so it lands on the first page once there is one
+    // a new bar holds index 0 before it has any pages, so it shows its first page as soon as
+    // one is added
     if (held.empty()) {
         return nullptr;
     }

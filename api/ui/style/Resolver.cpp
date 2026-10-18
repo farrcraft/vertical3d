@@ -5,11 +5,14 @@
 
 #include "Resolver.h"
 
+#include <api/ui/paint/Dressing.h>
 #include <api/ui/style/Style.h>
 
+#include <cstddef>
 #include <functional>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "Theme.h"
@@ -33,6 +36,9 @@ Resolver::Resolver() {
 }
 
 void Resolver::theme(const boost::shared_ptr<Theme>& theme) {
+    // the new theme starts from what was there before any theme, so where it is silent the
+    // last theme's value does not linger
+    overlay_.restore(&base_);
     theme_ = theme;
     for (std::map<std::string, paint::Dressing, std::less<>>& entries : resolved_) {
         entries.clear();
@@ -62,32 +68,32 @@ void Resolver::chrome() {
         return;
     }
 
-    readColour(style, "panel", &base_.panel);
-    readColour(style, "border", &base_.border);
-    readColour(style, "track", &base_.track);
-    readColour(style, "fill", &base_.fill);
-    readColour(style, "thumb", &base_.thumb);
-    readColour(style, "mark", &base_.mark);
-    readColour(style, "caret", &base_.caret);
-    readColour(style, "placeholder", &base_.placeholder);
-    readColour(style, "tab", &base_.tab);
-    readColour(style, "text", &base_.text);
-    readColour(style, "active-text", &base_.activeText);
-    readColour(style, "disabled-text", &base_.disabledText);
-    readColour(style, "highlight", &base_.highlight);
-    readColour(style, "hover", &base_.hover);
-    readColour(style, "focus", &base_.focus);
+    overlay_.colour(style, "panel", &base_, &paint::Dressing::panel);
+    overlay_.colour(style, "border", &base_, &paint::Dressing::border);
+    overlay_.colour(style, "track", &base_, &paint::Dressing::track);
+    overlay_.colour(style, "fill", &base_, &paint::Dressing::fill);
+    overlay_.colour(style, "thumb", &base_, &paint::Dressing::thumb);
+    overlay_.colour(style, "mark", &base_, &paint::Dressing::mark);
+    overlay_.colour(style, "caret", &base_, &paint::Dressing::caret);
+    overlay_.colour(style, "placeholder", &base_, &paint::Dressing::placeholder);
+    overlay_.colour(style, "tab", &base_, &paint::Dressing::tab);
+    overlay_.colour(style, "text", &base_, &paint::Dressing::text);
+    overlay_.colour(style, "active-text", &base_, &paint::Dressing::activeText);
+    overlay_.colour(style, "disabled-text", &base_, &paint::Dressing::disabledText);
+    overlay_.colour(style, "highlight", &base_, &paint::Dressing::highlight);
+    overlay_.colour(style, "hover", &base_, &paint::Dressing::hover);
+    overlay_.colour(style, "focus", &base_, &paint::Dressing::focus);
 
-    readMetric(style, "line-height", &base_.lineHeight);
-    readMetric(style, "padding", &base_.padding);
-    readMetric(style, "bar-height", &base_.barHeight);
-    readMetric(style, "icon-size", &base_.iconSize);
-    readMetric(style, "panel-padding", &base_.panelPadding);
-    readMetric(style, "scrollbar-width", &base_.scrollbarWidth);
-    readMetric(style, "mark-size", &base_.markSize);
-    readMetric(style, "border-width", &base_.borderWidth);
-    readMetric(style, "focus-width", &base_.focusWidth);
-    readMetric(style, "radius", &base_.radius);
+    overlay_.metric(style, "line-height", &base_, &paint::Dressing::lineHeight);
+    overlay_.metric(style, "padding", &base_, &paint::Dressing::padding);
+    overlay_.metric(style, "bar-height", &base_, &paint::Dressing::barHeight);
+    overlay_.metric(style, "icon-size", &base_, &paint::Dressing::iconSize);
+    overlay_.metric(style, "panel-padding", &base_, &paint::Dressing::panelPadding);
+    overlay_.metric(style, "scrollbar-width", &base_, &paint::Dressing::scrollbarWidth);
+    overlay_.metric(style, "mark-size", &base_, &paint::Dressing::markSize);
+    overlay_.metric(style, "border-width", &base_, &paint::Dressing::borderWidth);
+    overlay_.metric(style, "focus-width", &base_, &paint::Dressing::focusWidth);
+    overlay_.metric(style, "radius", &base_, &paint::Dressing::radius);
 }
 
 const char* Resolver::named(Class className) noexcept {

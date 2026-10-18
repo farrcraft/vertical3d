@@ -5,6 +5,8 @@
 
 #include "Frame.h"
 
+#include "Pass.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <stdexcept>

@@ -22,14 +22,14 @@
 
 namespace v3d::render::realtime {
 /**
- * Everything a context owns that needs a device and nothing more: the frames in flight, the
- * pipeline cache and resources, the uploader, set 0, and the three renderers.
+ * Everything a context owns that needs only a device: the frames in flight, the pipeline
+ * cache and resources, the uploader, set 0, and the quad, line and world quad renderers.
  *
- * This is usable on its own. A context that draws into a window is Context3D, which adds the
- * chain and the presenter. A context that draws into an offscreen target is this class, given
- * that target's format and size. The code here is the same for both. Under dynamic rendering
- * a pipeline is built against the format of whatever it draws into, and that format is all a
- * renderer needs to be given about its destination.
+ * A DeviceContext is usable on its own. Context3D derives from it to draw into a window, and
+ * adds the swapchain and the Presenter. A context that draws into an offscreen target is a
+ * DeviceContext given that target's format and size. Under dynamic rendering a pipeline is
+ * built against the format of whatever it draws into, and that format is all a renderer needs
+ * to know about its destination.
  *
  * Every renderer is built on the first call for it and kept. An app that draws no lines then
  * pays no pipeline compiles or vertex buffers for them. A context built before its
@@ -41,8 +41,8 @@ class DeviceContext {
      * @param logger
      * @param device the device everything here is built on
      * @param colour the colour format of what this draws into, and what every pipeline built
-     *        here is built against. A destination known when the context is built says so
-     *        here; Context3D cannot, because its chain does not exist yet
+     *        here is built against. Context3D passes VK_FORMAT_UNDEFINED, because its
+     *        swapchain does not exist yet, and calls describe() later
      * @param extent the size of that destination
      * @param framesInFlight how many frames may be recorded ahead of the device
      **/
@@ -80,7 +80,7 @@ class DeviceContext {
     boost::shared_ptr<vulkan::frame::FrameUniforms> frameUniforms() const;
 
     /**
-     * @return the one-shot queue everything reaching device local memory is copied by
+     * @return the Uploader that copies data into device local memory
      **/
     boost::shared_ptr<vulkan::memory::Uploader> uploader() const;
 
@@ -106,8 +106,8 @@ class DeviceContext {
     /**
      * The depth buffer, allocated on the first call and sized by extent() from then on.
      *
-     * Lazy because a 2D app never asks: pong and tetris draw painter ordered quads and need
-     * no full screen depth image.
+     * Lazy because a 2D app never asks for it. Painter ordered quads need no full screen
+     * depth image.
      *
      * @return the buffer, which may be invalid if there is no area to allocate
      **/
@@ -126,7 +126,7 @@ class DeviceContext {
     boost::shared_ptr<Textures> textures() const;
 
     /**
-     * @return the batched quad primitive, which every 2D thing draws through
+     * @return the batched quad primitive, which all 2D drawing goes through
      * @throw std::runtime_error if its pipelines cannot be created
      **/
     boost::shared_ptr<vulkan::renderer::Quad> quads();
@@ -162,10 +162,9 @@ class DeviceContext {
     /**
      * Say what this context draws into.
      *
-     * A destination that is known when the context is built passes it here once. Context3D
-     * cannot: its chain is created after this class is, and is recreated whenever the window
-     * changes size, so it calls this again each time. Anything already built against the old
-     * description stays built against it - a renderer holds the format it was compiled with.
+     * Context3D's swapchain is created after the DeviceContext, and is recreated whenever the
+     * window changes size, so Context3D calls describe() each time. A renderer already built
+     * keeps the format it was compiled with.
      *
      * @param colour the colour format of the destination
      * @param extent its size
@@ -175,8 +174,8 @@ class DeviceContext {
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<vulkan::device::Device> device_;
-    // before everything it paces, so that it is torn down after them - a renderer's buffers
-    // may still be in flight on one of its fences
+    // declared before everything that uses it, so it is destroyed after them. Its destructor
+    // waits for the device and runs what they retired
     boost::shared_ptr<vulkan::frame::Ring> ring_;
     boost::shared_ptr<vulkan::pipeline::Cache> pipelineCache_;
     boost::shared_ptr<vulkan::pipeline::Resources> resources_;

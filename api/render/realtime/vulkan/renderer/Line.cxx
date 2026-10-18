@@ -8,10 +8,20 @@
 #include "Clip.h"
 
 #include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/canvas/Line.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/frame/StreamRing.h>
+#include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
 
-#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -22,8 +32,8 @@ namespace {
 
 /**
  * The line pipeline's shader modules, compiled to SPIR-V at build time by glslc and
- * included here as the C initialiser lists its -mfmt=c writes - see v3d_add_shader in
- * the root CMakeLists.
+ * included here as the C initialiser lists its -mfmt=c writes, by v3d_add_shader in
+ * cmake/v3dHelpers.cmake.
  **/
 const uint32_t vertexShader[] =
 #include "shaders/line.vert.inc"
@@ -52,8 +62,8 @@ Line::Line(const boost::shared_ptr<device::Device>& device,
     resources_(resources),
     ring_(ring),
     uniforms_(uniforms) {
-    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, initialVertexBytes, 0);
-    createPipelines(colour, depth);
+    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = 0});
+    createPipelines({.colour = colour, .depth = depth});
 }
 
 /**
@@ -65,14 +75,16 @@ Line::~Line() {
 
 /**
  **/
-void Line::createPipelines(VkFormat colour, VkFormat depth) {
+void Line::createPipelines(const pipeline::Formats & formats) {
+    const VkFormat colour = formats.colour;
+    const VkFormat depth = formats.depth;
     pipeline::Builder builder(device_);
     builder.name("line")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
-        .vertexBinding(0, sizeof(LineCanvas::Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(LineCanvas::Vertex, position))
-        .vertexAttribute(1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(LineCanvas::Vertex, colour))
+        .vertexBinding({.binding = 0, .stride = sizeof(canvas::Line::Vertex)})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(canvas::Line::Vertex, position)})
+        .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(canvas::Line::Vertex, colour)})
         .topology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
         // a line has no facing to cull by
         .cull(VK_CULL_MODE_NONE)
@@ -88,20 +100,20 @@ void Line::createPipelines(VkFormat colour, VkFormat depth) {
 
 /**
  **/
-void Line::submit(const LineCanvas& canvas, Pass* pass, uint16_t layer) {
+void Line::submit(const canvas::Line& canvas, Pass* pass, uint16_t layer) {
     if (pass == nullptr || canvas.empty()) {
         return;
     }
 
-    const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(LineCanvas::Vertex);
-    const boost::shared_ptr<memory::Buffer> vertices = stream_->claim(vertexBytes, 0).vertices;
+    const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(canvas::Line::Vertex);
+    const boost::shared_ptr<memory::Buffer> vertices = stream_->claim({.vertexBytes = vertexBytes, .indexBytes = 0}).vertices;
     vertices->write(canvas.vertices().data(), vertexBytes);
 
     // dynamic rendering matches a pipeline to the pass's attachments, so which of the two
     // is drawn with follows from whether the pass has a depth buffer
     const PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
 
-    for (const LineCanvas::Batch& batch : canvas.batches()) {
+    for (const canvas::Line::Batch& batch : canvas.batches()) {
         if (batch.vertices == 0) {
             continue;
         }

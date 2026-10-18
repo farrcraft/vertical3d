@@ -1,9 +1,6 @@
-# Cases that need no window and no device. A pass collects draw items and a sort key orders them
-# without touching vulkan. The three canvases are cpu side too: batching, the transform stack, the
-# projection and the line geometry. The choice of swapchain format and the channel order of a
-# captured frame are cpu side too. The frame count after which a released resource is destroyed,
-# the scissor a clip rectangle becomes, and the colour formats a quad is decoded for are as well.
-# Everything else below the recorder needs a device, and is in render_device below.
+# Cases that need no window and no device. They test CPU-side code, such as sorting draw items,
+# canvas geometry, choosing a swapchain format and decoding a model. Decoding reads files but
+# makes no device call, so it is here too. A case that needs a device goes in render_device below.
 v3d_add_test(render
 	"TestMain.cpp"
 	"FrameTest.cpp"
@@ -24,18 +21,23 @@ v3d_add_test(render
 	"GradeTest.cpp"
 	"CaptureConvertTest.cpp"
 	"QuadFormatTest.cpp"
-	"ResultTest.cpp")
+	"ResultTest.cpp"
+	"DecodedModelTest.cpp")
 
-target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_ecs v3dlib_font v3dlib_image v3dlib_type EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
+target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_ecs v3dlib_font v3dlib_image v3dlib_type v3dlib_asset v3dlib_asset_media v3dlib_log Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
+
+# a model is decoded from a copy of the asset suite's fixtures
+target_compile_definitions(v3dtest_render PRIVATE V3D_ASSET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../../asset/tests/data")
 
 # A second binary, because these cases need a Vulkan device and the first must run on a machine
 # with none. CI provides a software implementation. Where there is no device at all, the binary
-# exits with 77, which ctest reads as skipped rather than failed. device/TestMain.cpp explains why
-# the skip happens before the test framework starts.
+# exits with 77, which ctest reports as skipped, not failed. device/TestMain.cpp says why the
+# binary exits before the test framework starts.
 v3d_add_test(render_device
 	"device/TestMain.cpp"
 	"device/Headless.cpp"
 	"device/Reference.cpp"
+	"device/Shapes.cpp"
 	"device/OffscreenFrameTest.cpp"
 	"device/WorldDepthTest.cpp"
 	"device/WorldBlendTest.cpp"
@@ -47,16 +49,18 @@ v3d_add_test(render_device
 	"device/MeshRegistryTest.cpp"
 	"device/LitSceneTest.cpp"
 	"device/SkinTest.cpp"
+	"device/LitCrowdTest.cpp"
 	"device/RenderTargetTest.cpp"
 	"device/PostTest.cpp"
 	"device/PipelineBuilderTest.cpp"
 	"device/TimingsTest.cpp"
 	"device/TextureSamplerTest.cpp"
 	"device/DepthWriteTest.cpp"
-	"device/DeviceDescriptionTest.cpp")
+	"device/DeviceDescriptionTest.cpp"
+	"device/AllocatorTest.cpp")
 
-# A committed picture is resolved against the working directory, which v3d_add_test points at
-# the executable, so the references have to sit beside it. moya copies its own the same way.
+# A committed reference image is opened relative to the working directory. v3d_add_test sets
+# that to the executable's directory, so the references are copied there.
 add_custom_command(TARGET v3dtest_render_device POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/device/data"
@@ -67,6 +71,10 @@ add_custom_command(TARGET v3dtest_render_device POST_BUILD
 # the case that compiles a depth only pipeline needs a vertex stage of its own, because the
 # renderers' shaders belong to v3dlib_render
 v3d_add_shader(v3dtest_render_device "shaders/depth.vert")
+
+# a second vertex stage that differs from depth.vert only in its code, so the pipeline cache case
+# has two pipelines that differ in one field
+v3d_add_shader(v3dtest_render_device "shaders/flat.vert")
 
 # a pipeline that declares a scene set at set 2 and reads nothing else, so the case that binds
 # one can show the set reached the draw
@@ -91,7 +99,8 @@ v3d_add_test(render_window
 	"window/TestMain.cpp"
 	"window/Windowed.cpp"
 	"window/EngineCaptureTest.cpp"
-	"window/EngineAllocationsTest.cpp")
+	"window/EngineAllocationsTest.cpp"
+	"window/FullscreenTest.cpp")
 
 target_link_libraries(v3dtest_render_window PRIVATE v3dlib_render v3dlib_image v3dlib_log Boost::filesystem ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
 set_tests_properties(render_window PROPERTIES SKIP_RETURN_CODE 77)

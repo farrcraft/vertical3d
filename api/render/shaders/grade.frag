@@ -1,12 +1,16 @@
 #version 450
+#extension GL_GOOGLE_include_directive : require
 
 /**
  * The colour grade: the scene, looked up in a 16 cubed table.
  *
- * Both sides are linear light. A lit scene is drawn into an sRGB target, which decodes when it
- * is sampled, so the table is indexed by linear colour. The result is written to a target that
- * encodes again on store.
+ * The table maps a colour as it is shown to the colour it is shown as, as a strip authored in an
+ * image editor does. A scene read from an sRGB target arrives decoded to linear light, so a
+ * stage built with LINEAR_SCENE encodes it before the lookup. An sRGB target encodes what it
+ * stores, so a stage built with LINEAR_TARGET decodes the result before writing it.
  **/
+
+#include "srgb.glsl"
 
 layout(set = 1, binding = 0) uniform sampler2D scene;
 layout(set = 1, binding = 1) uniform sampler3D table;
@@ -21,6 +25,13 @@ const float scale = (size - 1.0) / size;
 const float bias = 0.5 / size;
 
 void main() {
-    const vec3 lit = texture(scene, uv).rgb;
-    colour = vec4(texture(table, lit * scale + bias).rgb, 1.0);
+    vec3 shown = texture(scene, uv).rgb;
+#ifdef LINEAR_SCENE
+    shown = display(shown);
+#endif
+    vec3 graded = texture(table, shown * scale + bias).rgb;
+#ifdef LINEAR_TARGET
+    graded = linear(graded);
+#endif
+    colour = vec4(graded, 1.0);
 }

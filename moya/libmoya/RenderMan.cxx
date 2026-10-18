@@ -4,33 +4,32 @@
  **/
 
 #include "RenderMan.h"
-// #include "Polygon.h"
+#include "Polygon.h"
 #include "Renderer.h"
 
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Arguments.h>
+#include <api/render/offline/rib/Parameters.h>
 
 #include <stdarg.h>
 #include <string.h>
 
 #include <algorithm>
-#include <cmath>
+#include <cstddef>
 #include <deque>
 #include <string>
 #include <vector>
 
 #include "RenderContext.h"
+#include "Vertex.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
 namespace {
 
-// the renderer the C interface drives. An identifier with a leading underscore at namespace
-// scope is reserved to the implementation, and nothing outside this file names it.
-//
-// It is built on first use rather than at static initialisation: the RI entry points are the
-// only things that reach it, and an exception out of a dynamic initialiser reaches no handler
-// at all, where one out of RiBegin reaches the caller's.
+// the renderer the C interface drives. It is built on first use, inside the RI call that
+// reaches it, so an exception from its constructor reaches the caller. An exception from a
+// static initialiser reaches no handler at all.
 v3d::moya::Renderer& renderer() {
     static v3d::moya::Renderer instance;
     return instance;
@@ -39,9 +38,9 @@ v3d::moya::Renderer& renderer() {
 /**
  * Read a variadic parameter list into the two arrays the vector form takes.
  *
- * RI terminates one with RI_NULL, which is the only thing that bounds it: a va_list
- * carries no count. A variadic entry point therefore has no body of its own - it reads
- * its arguments and hands them on, so that the two forms of a request cannot drift.
+ * RI terminates the list with RI_NULL, because a va_list carries no count. A variadic entry
+ * point that calls this has no body of its own. It hands the arrays to its vector form, so
+ * the two forms of a request cannot drift apart.
  **/
 void collect(va_list arguments, std::vector<RtToken>* tokens, std::vector<RtPointer>* parms) {
     for (;;) {
@@ -75,10 +74,9 @@ void parameters(v3d::moya::RenderContext & rc, RtInt n, RtToken tokens[], RtPoin
 /**
  * A light handle a C caller can hold on to.
  *
- * RtLightHandle is an untyped pointer, so the characters it points at have to outlive the
- * call that made it - a caller may pass one back to RiIlluminate at any later point. A
- * deque rather than a vector because an element of one does not move when another is
- * added, and a handle already given out must not become a pointer to somewhere else.
+ * RtLightHandle is an untyped pointer, so the characters it points at must outlive the call
+ * that made it. A caller may pass one back to RiIlluminate at any later point. The handles
+ * are kept in a deque, whose elements do not move when another is added.
  **/
 RtLightHandle keep(const std::string & value) {
     static std::deque<std::string> handles;
@@ -86,13 +84,13 @@ RtLightHandle keep(const std::string & value) {
     return const_cast<char*>(handles.back().c_str());
 }
 
-/** How many lights the C interface has made, which is the sequence their handles are. **/
+/** How many lights the C interface has made. Each light's handle is the count before it. **/
 unsigned int made = 0;
 
 };  // namespace
 
-// the display type and mode tokens carry the strings RiDisplay compares against, so an
-// uninitialised one reaches the context as a null pointer and no output is selected
+// a token that a request reads holds RI's string for it. The context writes a file only when
+// the display type is "file", and RiDisplay passes a null type on as an empty string
 RtToken RI_FRAMEBUFFER = const_cast<char*>("framebuffer"),
         RI_FILE = const_cast<char*>("file");
 RtToken RI_RGB = const_cast<char*>("rgb"),
@@ -193,7 +191,8 @@ RtBasis RiBezierBasis,
 
 RtInt RiLastError;
 
-// RI subroutines
+// RI subroutines. The RenderMan Interface sets every signature below, including the order of
+// parameters that share a type, so each that the swappable parameter check reports is marked.
 RtFloat RiGaussianFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
     return v3d::render::offline::filter(v3d::render::offline::Filter::Gaussian, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
@@ -214,12 +213,15 @@ RtFloat RiSincFilter(RtFloat x, RtFloat y, RtFloat xwidth, RtFloat ywidth) {
     return v3d::render::offline::filter(v3d::render::offline::Filter::Sinc, glm::vec2(x, y), glm::vec2(xwidth, ywidth));
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiErrorIgnore(RtInt code, RtInt severity, char *msg) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiErrorPrint(RtInt code, RtInt severity, char *msg) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiErrorAbort(RtInt code, RtInt severity, char *msg) {
 }
 
@@ -232,12 +234,9 @@ RtVoid RiProcRunProgram(RtPointer data, RtFloat detail) {
 RtVoid RiProcDynamicLoad(RtPointer data, RtFloat detail) {
 }
 
-/*
-RiGetContext and RiContext have no RIB equivalents
-*/
+// RiGetContext and RiContext have no RIB equivalents
 RtContextHandle RiGetContext(void) {
-    // the handle is the context itself, so RiContext could make it active again. RI does not
-    // define a handle, only that it names a context
+    // the handle is the active context. RiContext ignores it and does not switch contexts
     return &renderer().activeRenderContext();
 }
 
@@ -248,23 +247,13 @@ RtToken RiDeclare(char * name, char * declaration) {
     if (name == nullptr || declaration == nullptr) {
         return 0;
     }
-    renderer().activeRenderContext().declarations().declare(name, declaration);
-    // RI returns the token the name now stands for, which for this renderer is the name
+    renderer().activeRenderContext().declarations().declare({.name = name, .type = declaration});
+    // RI returns the token the name now stands for. In this renderer the token is the name
     return name;
 }
 
 
-/**
- * RiBegin creates and initializes a new rendering context, setting all graphics state
- * variables to their default values, and makes the new context the active one to which
- * subsequent Ri routines will apply. Any previously active rendering context still exists,
- * but is no longer the active one. The name may be the name of a renderer, to select
- * among various implementations that may be available, or the name of the file to write
- * (in the case of a RIB generator). RI NULL indicates that the default implementation
- * and/or output file should be used.
- * RiBegin and RiEnd have no RIB equivalents. it can be implied that these are implied
- * to occur at the start and end of a RIB file.
- */
+// RiBegin pushes a new context and makes it active. RI_NULL is the empty name
 RtVoid RiBegin(RtToken name) {
     std::string str;
     if (name != RI_NULL) {
@@ -274,13 +263,8 @@ RtVoid RiBegin(RtToken name) {
 }
 
 
-/**
- * RiEnd terminates the active rendering context, including performing any cleanup
- * operations that need to be done. After RiEnd is called, there is no active rendering
- * context until another RiBegin or RiContext is called.
- * All other RenderMan Interface procedures must be called within an active context
- * (the only exceptions are RiErrorHandler, RiOption, and RiContext).
- */
+// RiEnd pops the active context, and the one beneath it becomes active. A request that
+// arrives with no context active creates one
 RtVoid RiEnd(void) {
     renderer().destroyActiveRenderContext();
 }
@@ -291,60 +275,20 @@ RtVoid RiFrameBegin(RtInt frame) {
 RtVoid RiFrameEnd(void) {
 }
 
-/*
-When RiWorldBegin is invoked, all rendering options are frozen and cannot be
-changed until the picture is finished. The world-to-camera transformation is set to the
-current transformation and the current transformation is reinitialized to the identity. Inside
-an RiWorldBegin-RiWorldEnd block, the current transformation is interpreted to
-be the object-to-world transformation. After an RiWorldBegin, the interface can accept
-geometric primitives that define the scene. (The only other mode in which geometric
-primitives may be defined is inside a RiObjectBegin-RiObjectEnd block.) Some
-rendering programs may immediately begin rendering geometric primitives as they
-are defined, whereas other rendering programs may wait until the entire scene has
-been defined.
-*/
+// the transformation in force becomes the world to camera transformation, and the
+// framebuffer is allocated
 RtVoid RiWorldBegin(void) {
     renderer().activeRenderContext().prepareWorld();
 }
 
-/*
-RiWorldEnd does not normally return until the rendering program has completed
-drawing the image. If the image is to be saved in a file, this is done automatically by
-RiWorldEnd.
-All lights and retained objects defined inside the RiWorldBegin-RiWorldEnd world
-block are removed and their storage reclaimed when RiWorldEnd is called (thus invalidating
-their handles).
-*/
+// renders the frame, and writes it when the display type is "file"
 RtVoid RiWorldEnd(void) {
     renderer().activeRenderContext().render();
 }
 
-/*
-Set the horizontal (xresolution) and vertical (yresolution) resolution (in pixels) of the
-image to be rendered. The upper left hand corner of the image has coordinates (0,0)
-and the lower right hand corner of the image has coordinates (xresolution, yresolution).
-If the resolution is greater than the maximum resolution of the device, the
-desired image is clipped to the device boundaries (rather than being shrunk to fit
-inside the device). This command also sets the pixel aspect ratio. The pixel aspect
-ratio is the ratio of the physical width to the height of a single pixel. The pixel aspect
-ratio should normally be set to 1 unless a picture is being computed specifically for a
-display device with non-square pixels.
-Implicit in this command is the creation of a display viewport with a
-viewportaspectratio = (xresolution * pixelaspectratio) / yresolution
-The viewport aspect ratio is the ratio of the physical width to the height of the entire
-image.
-An image of the desired aspect ratio can be specified in a device independent way using
-the procedure RiFrameAspectRatio described below. The RiFormat command
-should only be used when an image of a specified resolution is needed or an image
-file is being created.
-If this command is not given, the resolution defaults to that of the display device
-being used (see the Displays section, p. 27). Also, if xresolution, yresolution or pixelaspectratio
-is specified as a nonpositive value, the resolution defaults to that of the
-display device for that particular parameter.
-*/
 RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
     // the context takes a side of zero or less as its default, and refuses one that is too large
-    renderer().activeRenderContext().imageResolution(xres, yres, aspect);
+    renderer().activeRenderContext().imageResolution(glm::ivec2(xres, yres), aspect);
 }
 
 RtVoid RiFrameAspectRatio(RtFloat aspect) {
@@ -352,50 +296,24 @@ RtVoid RiFrameAspectRatio(RtFloat aspect) {
 }
 
 RtVoid RiScreenWindow(RtFloat left, RtFloat right, RtFloat bot, RtFloat top) {
-    renderer().activeRenderContext().screenWindow(left, right, bot, top);
+    renderer().activeRenderContext().screenWindow({.left = left, .right = right, .bottom = bot, .top = top});
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax) {
 }
 
-/*
-The projection determines how camera coordinates are converted to screen coordinates,
-using the type of projection and the near/far clipping planes to generate a
-projection matrix. It appends this projection matrix to the current transformation matrix
-and stores this as the screen transformation, then marks the current coordinate
-system as the camera coordinate system and reinitializes the current transformation
-matrix to the identity camera transformation. The required types of projection are
-"perspective", "orthographic", and RI NULL.
-"perspective" builds a projection matrix that does a perspective projection along the
-z-axis, using the RiClipping values, so that points on the near clipping plane project
-to z = 0 and points on the far clipping plane project to z = 1. "perspective" takes one
-optional parameter, "fov", a single RtFloat that indicates he full angle perspective field
-of view (in degrees) between screen space coordinates (-1,0) and (1,0) (equivalently
-between (0,-1) and (0,1)). The default is 90 degrees.
-Note that there is a redundancy in the focal length implied by this procedure and the
-one set by RiDepthOfField. The focal length implied by this command is:
-focallength = (horizontalscreenwidth / verticalscreenwidth) / tan(fov / 2)
-"orthographic" builds a simple orthographic projection that scales z using the RiClipping
-values as above. "orthographic" takes no parameters.
-RI NULL uses an identity projection matrix, and simply marks camera space in situations
-where the user has generated his own projection matrices himself using RiPerspective
-or RiTransform.
-This command can also be used to select implementation-specific projections or special
-projections written in the Shading Language. If a particular implementation does
-not support the special projection specified, it is ignored and an orthographic projection
-is used. If RiProjection is not called, the screen transformation defaults to the
-identity matrix, so screen space and camera space are identical.
-*/
+// "perspective" reads an optional "fov", in degrees, and takes 90 without one. RI_NULL
+// selects orthographic
 RtVoid RiProjection(RtToken name, ...) {
-    // get parameter list
     va_list ap;
     va_start(ap, name);
     RtToken param = va_arg(ap, RtToken);
     std::string token;
-    float fov = 90.;
+    float fov = v3d::moya::RenderContext::defaultFov;
     if (name == RI_NULL) {
         renderer().activeRenderContext().projection("");
-    } else if (!strncmp(name, RI_PERSPECTIVE, 11)) {
+    } else if (strncmp(name, RI_PERSPECTIVE, strlen(RI_PERSPECTIVE)) == 0) {
         // perspective takes an optional fov parameter
         if (param != RI_NULL) {
             token = va_arg(ap, RtToken);
@@ -413,25 +331,15 @@ RtVoid RiProjection(RtToken name, ...) {
 RtVoid RiProjectionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
-/*
-Sets the position of the near and far clipping planes along the direction of view.
-near and far must both be positive numbers. near must be greater than or equal
-to RI EPSILON and less than far . far must be greater than near and may be equal to
-RI INFINITY. These values are used by RiProjection to generate a screen projection
-such that depth values are scaled to equal zero at z=near and one at z=far . Notice
-that the rendering system will actually clip geometry which lies outside of z=(0,1)
-in the screen coordinate system, so non-identity screen transforms may affect which
-objects are actually clipped.
-For reasons of efficiency, it is generally a good idea to bound the scene tightly with
-the near and far clipping planes.
-*/
 RtVoid RiClipping(RtFloat hither, RtFloat yon) {
-    renderer().activeRenderContext().clipping(hither, yon);
+    renderer().activeRenderContext().clipping({.hither = hither, .yon = yon});
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiClippingPlane(RtFloat x, RtFloat y, RtFloat z, RtFloat nx, RtFloat ny, RtFloat nz) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDepthOfField(RtFloat fstop, RtFloat focallength, RtFloat focaldistance) {
     v3d::render::offline::Sampling & sampling = renderer().activeRenderContext().sampling();
     sampling.fstop = fstop;
@@ -453,8 +361,8 @@ RtVoid RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
 }
 
 RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
-    // the C interface names a filter by its function, and only the five RI declares are
-    // known; any other leaves the filter the context had
+    // the C interface names a filter by its function, and only the filters RI declares are
+    // known. Any other function leaves the filter the context had
     v3d::render::offline::Filter filter = v3d::render::offline::Filter::Gaussian;
     if (filterfunc == RiBoxFilter) {
         filter = v3d::render::offline::Filter::Box;
@@ -478,12 +386,11 @@ RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
     sampling.width = glm::vec2(xwidth, ywidth);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiExposure(RtFloat gain, RtFloat gamma) {
 }
 
 RtVoid RiImager(RtToken name, ...) {
-    // a va_list cannot be built at runtime, so the variadic form reads its own arguments
-    // and hands them to the vector form rather than the two having separate bodies
     va_list arguments;
     va_start(arguments, name);
     std::vector<RtToken> tokens;
@@ -503,60 +410,36 @@ RtVoid RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
     rc.imager(name, list);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl) {
 }
 
-/*
-Choose a display by name and set the type of output being generated. name is either
-the name of a picture file or the name of the framebuffer, depending on type.
-The type of display is the display format, output device, or output driver. All implementations
-must support the type names "framebuffer" and "file", which indicate
-that the renderer should select the default framebuffer or default file format, respectively.
-Implementations may support any number of particular formats or devices
-(for example, "tiff" might indicate that a TIFF file should be written), and may allow
-the supported formats to be user-extensible in an implementation-specific manner.
-The mode indicates what data are to be output in this display stream. All renderers
-must support any combination (string concatenation) of "rgb" for color (usually red,
-green and blue intensities unless there are more or less than 3 color samples; see the
-next section, Additional options), "a" for alpha, and "z" for depth values, in that order.
-Renderers may additionally produce "images" consisting of arbitrary data, by using a
-mode that is the name of a known geometric quantity or the name of a shader output
-variable. Note also that multiple display channels can be specified, by prepending
-the + character to the name. For example,
-RiDisplay ("out.tif," "file," "rgba", RI NULL);
-RiDisplay ("+normal.tif," "file," "N", RI NULL);
-will produce a four-channel image consisting of the filtered color and alpha in out.tif,
-and also a second three-channel image file normal.tif consisting of the surface normal
-of the nearest surface behind each pixel. (This would, of course, only be useful if
-RiQuantize were instructed to output floating point data or otherwise scale the data.)
-Display options or device-dependent display modes or functions may be set using
-the parameterlist. One such option is required: "origin", which takes an array of two
-RtInts, sets the x and y position of the upper left hand corner of the image in the
-display's coordinate system; by default the origin is set to (0,0). The default display
-device is renderer implementation-specific.
-*/
+// the parameter list is not read. A null name, type or mode reaches the context as an
+// empty string
 RtVoid RiDisplay(char *name, RtToken type, RtToken mode, ...) {
-    renderer().activeRenderContext().display(
-        name ? name : "",
-        type ? type : "",
-        mode ? mode : "");
+    renderer().activeRenderContext().display({
+        .name = name != nullptr ? name : "",
+        .type = type != nullptr ? type : "",
+        .mode = mode != nullptr ? mode : ""});
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDisplayV(char *name, RtToken type, RtToken mode, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
 RtVoid RiHider(RtToken type, ...) {
-    renderer().activeRenderContext().hider(type ? type : "");
+    renderer().activeRenderContext().hider(type != nullptr ? type : "");
 }
 
 RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    // neither hider takes a parameter
+    // no hider takes a parameter
     (void)n;
     (void)tokens;
     (void)parms;
-    renderer().activeRenderContext().hider(type ? type : "");
+    renderer().activeRenderContext().hider(type != nullptr ? type : "");
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) {
 }
 
@@ -577,10 +460,6 @@ RtVoid RiAttributeEnd(void) {
     renderer().activeRenderContext().attributeEnd();
 }
 
-/*
-Set the current color to color. Normally there are three components in the color (red,
-green, and blue), but this may be changed with the colorsamples request.
-*/
 RtVoid RiColor(RtColor color) {
     renderer().activeRenderContext().color(glm::vec3(color[0], color[1], color[2]));
 }
@@ -589,14 +468,11 @@ RtVoid RiOpacity(RtColor color) {
     renderer().activeRenderContext().opacity(glm::vec3(color[0], color[1], color[2]));
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2, RtFloat s3, RtFloat t3, RtFloat s4, RtFloat t4) {
 }
 
-/*
-shadername is the name of a light source shader. This procedure creates a non-area
-light, turns it on, and adds it to the current light source list. An RtLightHandle value
-is returned that can be used to turn the light off or on again.
-*/
+// creates a light, switches it on, and returns the handle RiIlluminate takes
 RtLightHandle RiLightSource(RtToken name, ...) {
     va_list arguments;
     va_start(arguments, name);
@@ -613,15 +489,15 @@ RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer 
     }
     v3d::moya::RenderContext & rc = renderer().activeRenderContext();
     /*
-        A C caller has no handle to give, so the interface hands one back. The handle is a
-        string to the render context, because RIB writes it as a number in 3.03 and as a
-        string later and a context keyed on it should not have to know which; here it is
-        the count of the lights made so far, which is the same sequence a 3.03 file writes.
+        A C caller has no handle to give, so the interface returns one. The render context
+        keys lights on a string, because RIB 3.03 writes a handle as a number and later
+        versions write a string. This handle is the count of lights made so far, the same
+        sequence a 3.03 file writes.
     */
     const std::string handle = std::to_string(made++);
     v3d::render::offline::rib::ParameterList list;
     parameters(rc, n, tokens, parms, &list);
-    rc.lightSource(name, handle, list);
+    rc.lightSource({.shader = name, .handle = handle}, list);
     return keep(handle);
 }
 
@@ -648,11 +524,8 @@ RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff) {
     renderer().activeRenderContext().illuminate(static_cast<const char*>(light), onoff != RI_FALSE);
 }
 
-/*
-shadername is the name of a surface shader. This procedure sets the current surface
-shader to be shadername. If the surface shader shadername is not defined, some
-implementation-dependent default surface shader (but not "null") is used.
-*/
+// a shader the library cannot load leaves no surface current, and a primitive with no
+// surface is shaded with "constant"
 RtVoid RiSurface(RtToken name, ...) {
     va_list arguments;
     va_start(arguments, name);
@@ -707,6 +580,7 @@ RtVoid RiBound(RtBound bound) {
 RtVoid RiDetail(RtBound bound) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis) {
 }
 
@@ -722,9 +596,6 @@ RtVoid RiReverseOrientation(void) {
 RtVoid RiSides(RtInt sides) {
 }
 
-/*
-Set the current transformation to the identity.
-*/
 RtVoid RiIdentity(void) {
     renderer().activeRenderContext().setIdentityTransform();
 }
@@ -742,16 +613,10 @@ glm::mat4x4 matrix(RtMatrix transform) {
 
 };  // namespace
 
-/*
-Set the current transformation to the transformation transform.
-*/
 RtVoid RiTransform(RtMatrix transform) {
     renderer().activeRenderContext().setTransform(matrix(transform));
 }
 
-/*
-Concatenate the transformation transform onto the current transformation.
-*/
 RtVoid RiConcatTransform(RtMatrix transform) {
     renderer().activeRenderContext().concatTransform(matrix(transform));
 }
@@ -759,27 +624,20 @@ RtVoid RiConcatTransform(RtMatrix transform) {
 RtVoid RiPerspective(RtFloat fov) {
 }
 
-/*
-Concatenate a translation onto the current transformation.
-*/
 RtVoid RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz) {
     renderer().activeRenderContext().translate(dx, dy, dz);
 }
 
-/*
-Concatenate a rotation of angle degrees about the given axis onto the current transformation.
-*/
+// angle is in degrees
 RtVoid RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) {
-    renderer().activeRenderContext().rotate(angle, dx, dy, dz);
+    renderer().activeRenderContext().rotate(angle, glm::vec3(dx, dy, dz));
 }
 
-/*
-Concatenate a scaling onto the current transformation.
-*/
 RtVoid RiScale(RtFloat sx, RtFloat sy, RtFloat sz) {
     renderer().activeRenderContext().scale(sx, sy, sz);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1, RtFloat dx2, RtFloat dy2, RtFloat dz2) {
 }
 
@@ -789,13 +647,6 @@ RtVoid RiDeformation(RtToken name, ...) {
 RtVoid RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
-/*
-Set the current displacement shader to the named shader. shadername is the name of a
-displacement shader.
-If a particular implementation does not support the Displacements capability, displacement
-shaders can only change the normal vectors to generate bump mapping,
-and the surface geometry itself is not modified (see Displacement Shaders).
-*/
 RtVoid RiDisplacement(RtToken name, ...) {
 }
 
@@ -814,10 +665,6 @@ RtPoint * RiTransformPoints(RtToken /* fromspace */, RtToken /* tospace */, RtIn
     return 0;
 }
 
-/*
-Push and pop the current transformation. Pushing and popping must be properly
-nested with respect to the various begin-end constructs.
-*/
 RtVoid RiTransformBegin(void) {
     renderer().activeRenderContext().pushTransform();
 }
@@ -832,71 +679,23 @@ RtVoid RiAttribute(RtToken name, ...) {
 RtVoid RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
-/*
-nvertices is the number of vertices in a single closed planar convex polygon. parameterlist
-is a list of token-array pairs where each token is one of the standard geometric primitive
-variables or a variable which has been defined with RiDeclare. The parameter
-list must include at least position ("P") information. If a primitive variable is of classss
-vertex or varying, the array contains nvertices elements of the type corresponding
-to the token. If the variable is uniform or constant, the array contains a single element.
-The number of floats associated with each type is given in Table 5.1, Standard
-Geometric Primitive Variables.
-No checking is done by the RenderMan Interface to ensure that polygons are planar,
-convex and nondegenerate. The rendering program will attempt to render invalid
-polygons but the results are unpredictable.
-*/
+// reads "P" only. Every other parameter is skipped, and a polygon is not checked for being
+// planar, convex or degenerate
 RtVoid RiPolygon(RtInt nverts, ...) {
-    /*
-        parameterlist is a list of token-array pairs - or -
-        a sequence of pairs of arguments, the first being an RtToken and the 
-        second being an RtPointer, an untyped pointer to an array of either
-        RtFloat, RtString or other values. The list is terminated by the special
-        token RI_NULL.
-        
-        
-        tokens are:
-            
-            Info			Name	Type		Class		Floats
-            ------------------------------------------------------
-            Position		"P"		point		vertex		3
-                            "Pz"	float		vertex		1
-                            "Pw"	h			vertex		4
-            Normal			"N"		normal		varying		3
-            Color			"Cs"	color		varying		(3)
-            Opacity			"Os"	color		varying		(3)
-            Texture Coords	"s"		float		varying		1
-                            "t"		float		varying		1
-                            "st"	2 float		varying		2
-        crorresponding tokens:
-            RI_P, RI_PZ, RI_PW, RI_N, RI_CS, RI_OS, RI_S, RI_T, RI_ST
-
-        usage:
-            RtPoint points[4] = { 0.0, 1.0, 0.0,	0.0, 1.0, 1.0,
-                                  0.0, 0.0, 1.0,	0.0, 0.0, 0.0 };
-            RiPolygon(4, RI_P, (RtPointer)points, RI_NULL);
-
-        gourad shaded:
-            RtColor colors[4];
-            RiPolygon(4, "P", (RtPointer)points, "Cs", (RtPointer)colors, RI_NULL);
-
-        phong shaded:
-            RtPoint normals[4];
-            RiPolygon(4, "P", (RtPointer)points, "N", (RtPointer)normals, RI_NULL);
-    */
     va_list ap;
 
     va_start(ap, nverts);
 
     RtToken name = va_arg(ap, RtToken);
     std::string token;
-    boost::shared_ptr<v3d::moya::Polygon> poly(new v3d::moya::Polygon);
+    const boost::shared_ptr<v3d::moya::Polygon> poly(new v3d::moya::Polygon);
     while (name != RI_NULL) {
         token = name;
-        RtPointer p = va_arg(ap, RtPointer);
+        RtPointer value = va_arg(ap, RtPointer);
         if (token == RI_P) {
-            // p contains RtPoint points[nverts]
+            // value contains RtPoint points[nverts]
             v3d::moya::Vertex v;
-            RtPoint *points = static_cast<RtPoint*>(p);
+            const RtPoint *points = static_cast<RtPoint*>(value);
             for (int i = 0; i < nverts; i++) {
                 v.point(glm::vec3(points[i][0], points[i][1], points[i][2]));
                 poly->addVertex(v);
@@ -906,16 +705,16 @@ RtVoid RiPolygon(RtInt nverts, ...) {
             // a standard parameter this renderer does not read: depth and homogeneous
             // positions, normals, colours, opacities and texture coordinates
         }
-        // else error
+        // an unknown token is skipped the same way
 
         name = va_arg(ap, RtToken);
     }
     va_end(ap);
 
-    // add poly to renderer
     renderer().activeRenderContext().addPolygon(poly);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
@@ -931,9 +730,11 @@ RtVoid RiPointsPolygons(RtInt npolys, RtInt nverts[], RtInt verts[], ...) {
 RtVoid RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
@@ -952,65 +753,79 @@ RtVoid RiPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwra
 RtVoid RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax,
     RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[], RtFloat knot[], RtFloat min[], RtFloat max[], RtInt n[], RtFloat u[], RtFloat v[], RtFloat w[]) {
 }
 
-/*
-Requests a sphere defined by the following equations:
-
-*/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCone(RtFloat height, RtFloat radius, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
 RtVoid RiHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDisk(RtFloat height, RtFloat radius, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiBlobby(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt[], RtInt nstr, RtToken str[], ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiBlobbyV(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt[], RtInt nstr, RtToken str[], RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
@@ -1023,13 +838,16 @@ RtVoid RiCurvesV(RtToken type, RtInt nvcurves, RtInt nvertices[], RtToken wrap, 
 RtVoid RiPoints(RtInt nverts, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiPointsV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSubdivisionMesh(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags, RtToken tags[], RtInt numargs[], RtInt intargs[],
     RtFloat floatargs[], ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags, RtToken tags[], RtInt numargs[], RtInt intargs[],
     RtFloat floatargs[], RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
@@ -1079,37 +897,48 @@ RtVoid RiMotionEnd(void) {
     renderer().activeRenderContext().motionEnd();
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeTexture(char *pic, char *tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeTextureV(char *pic, char *tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeBump(char *pic, char *tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeBumpV(char *pic, char *tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeLatLongEnvironment(char *pic, char *tex, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeLatLongEnvironmentV(char *pic, char *tex, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeCubeFaceEnvironment(char *px, char *nx, char *py, char *ny, char *pz, char *nz, char *tex, RtFloat fov, RtFilterFunc filterfunc, RtFloat swidth, RtFloat ywidth, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeCubeFaceEnvironmentV(char *px, char *nx, char *py, char *ny, char *pz, char *nz, char *tex, RtFloat fov, RtFilterFunc filterfunc, RtFloat swidth, RtFloat ywidth,
     RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeShadow(char *pic, char *tex, ...) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiMakeShadowV(char *pic, char *tex, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiArchiveRecord(RtToken type, char *format, ...) {
 }
 

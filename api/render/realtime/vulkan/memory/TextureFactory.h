@@ -30,13 +30,13 @@ class Buffer;
 /**
  * Turns pixels into a sampled image the shaders can read.
  *
- * Every texture is uploaded through a staging buffer and a one-shot command buffer that
- * the factory waits on before returning - see Uploader. Textures are built at load time,
- * so nothing needs an upload that overlaps the frames being drawn.
+ * Every texture is uploaded through a staging buffer and an Uploader one-shot command
+ * buffer, which the factory waits on before returning. The wait is for the upload alone, so a
+ * texture can be made while frames are in flight. The image is new, so no frame is reading it.
  *
  * A single channel image is given a view that swizzles its one channel into alpha and
- * ones into rgb. A glyph atlas therefore samples as white-with-coverage, and the quad
- * shader reads text and sprites the same way.
+ * ones into rgb. A coverage mask then samples as white with its coverage in alpha. A glyph
+ * atlas holds signed distances, which the quad shader reads from alpha and thresholds.
  *
  * A texture is read through the sampler its spec names. The factory makes one sampler for each
  * distinct spec and shares it, so a scene of tiling textures holds one repeating sampler. Every
@@ -47,7 +47,7 @@ class TextureFactory final {
     /**
      * How the bytes of a colour image are read back by a shader.
      **/
-    enum class Encoding {
+    enum class Encoding : std::uint8_t {
         /**< as they were authored, as every texture drawn unlit is **/
         Display,
         /**< decoded from sRGB to linear when sampled, as a lit albedo is **/
@@ -56,9 +56,7 @@ class TextureFactory final {
 
     /**
      * @param device the device the images are created on
-     **/
-    /**
-     * @param uploader the context's one-shot queue, which every texture is copied through
+     * @param uploader the context's Uploader, which copies every texture
      **/
     TextureFactory(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader);
 
@@ -70,11 +68,19 @@ class TextureFactory final {
     TextureFactory& operator=(const TextureFactory&) = delete;
 
     /**
-     * @param pixels tightly packed rows of width * channels bytes
-     * @param width in pixels
-     * @param height in pixels
-     * @param channels 1 for a coverage mask, 3 or 4 for colour - 3 is widened to 4,
-     *        because a three channel format is not something a device has to support
+     * Pixels in tightly packed rows of width * channels bytes. The width and height are in
+     * pixels. The channels are 1 for a coverage mask, or 3 or 4 for colour. 3 is widened to 4,
+     * because a three channel format is not something a device has to support.
+     **/
+    struct Pixels {
+        const unsigned char* data = nullptr;
+        uint32_t width = 0;
+        uint32_t height = 0;
+        uint32_t channels = 4;
+    };
+
+    /**
+     * @param source what to upload
      * @param encoding how a shader reads the colour back. A coverage mask is not a colour
      *        and ignores it
      * @param sampler how a shader reads the image. The default is linear and clamped to the
@@ -83,8 +89,8 @@ class TextureFactory final {
      * @return the created image and the sampler it is read through, for the caller to register
      * @throw std::runtime_error if any part of the creation or upload fails
      **/
-    pipeline::Texture create(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
-        Encoding encoding = Encoding::Display, const pipeline::Sampler::Spec& sampler = pipeline::Sampler::Spec()) const;
+    pipeline::Texture create(const Pixels& source, Encoding encoding = Encoding::Display,
+        const pipeline::Sampler::Spec& sampler = pipeline::Sampler::Spec()) const;
 
     /**
      * @param image the image to upload, whose bpp decides the channel count
@@ -93,7 +99,8 @@ class TextureFactory final {
         const pipeline::Sampler::Spec& sampler = pipeline::Sampler::Spec()) const;
 
     /**
-     * A 3D texture, read as it is stored - a lookup table rather than a colour anyone authored.
+     * A 3D texture, read as it is stored, because it is a lookup table and not an authored
+     * colour.
      * @param texels four bytes a texel, rows then slices
      * @throw std::runtime_error if there are no texels or any part of the upload fails
      **/
@@ -112,8 +119,8 @@ class TextureFactory final {
 
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<Uploader> uploader_;
-    /**< one sampler per distinct spec, the default first. Mutable because creating a texture
-     *   does not change what the factory makes, only what it has already made **/
+    /**< one sampler per distinct spec, the default first. Mutable because create() is const:
+     *   a new sampler changes only this cache, not what the factory makes **/
     mutable std::vector<std::pair<pipeline::Sampler::Spec, boost::shared_ptr<pipeline::Sampler>>> samplers_;
 };
 

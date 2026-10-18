@@ -5,7 +5,12 @@
 
 #include "Event.h"
 
+#include "Context.h"
+#include "State.h"
+#include "Type.h"
+
 #include <string>
+#include <string_view>
 
 namespace v3d::event {
 
@@ -18,7 +23,7 @@ Event::Event(const std::string& name) :
 }
 
 bool Event::operator <(const Event& rhs) const {
-    int order = str().compare(rhs.str());
+    const int order = str().compare(rhs.str());
     if (order != 0) {
         return order < 0;
     }
@@ -78,9 +83,9 @@ std::string Event::str() const {
     return std::string(context_->name()) + "::" + name_;
 }
 
-void Event::data(const EventData& d) {
+void Event::data(const EventData& payload) {
     hasData_ = true;
-    data_ = d;
+    data_ = payload;
 }
 
 boost::optional<EventData> Event::data() const {

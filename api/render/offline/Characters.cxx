@@ -14,34 +14,34 @@ Characters::Characters(std::istream & stream) : stream_(stream) {
 }
 
 int Characters::get() {
-    int c = END;
+    int character = END;
     if (pushed_) {
-        c = pushback_;
+        character = pushback_;
         pushed_ = false;
     } else {
-        c = stream_.get();
+        character = stream_.get();
     }
-    if (c == '\n') {
+    if (character == '\n') {
         line_++;
         column_ = 0;
-    } else if (c != END) {
+    } else if (character != END) {
         column_++;
     }
-    return c;
+    return character;
 }
 
 int Characters::look() {
     if (pushed_) {
         return pushback_;
     }
-    const int c = stream_.peek();
-    return stream_.good() ? c : END;
+    const int character = stream_.peek();
+    return stream_.good() ? character : END;
 }
 
-void Characters::unget(int c) {
-    pushback_ = c;
+void Characters::unget(int character) {
+    pushback_ = character;
     pushed_ = true;
-    if (c != END) {
+    if (character != END) {
         column_--;
     }
 }
@@ -56,15 +56,15 @@ unsigned int Characters::column() const {
 
 bool Characters::quoted(bool lineEnds, std::string* text) {
     for (;;) {
-        const int c = get();
-        if (c == END || (lineEnds && c == '\n')) {
+        const int character = get();
+        if (character == END || (lineEnds && character == '\n')) {
             return false;
         }
-        if (c == '"') {
+        if (character == '"') {
             return true;
         }
-        if (c != '\\') {
-            *text += static_cast<char>(c);
+        if (character != '\\') {
+            *text += static_cast<char>(character);
             continue;
         }
         const int escape = get();
@@ -82,7 +82,7 @@ bool Characters::quoted(bool lineEnds, std::string* text) {
                 if (octal(escape)) {
                     int value = escape - '0';
                     for (int i = 1; i < 3 && octal(look()); i++) {
-                        value = value * 8 + (get() - '0');
+                        value = (value * 8) + (get() - '0');
                     }
                     *text += static_cast<char>(value);
                 } else {
@@ -94,20 +94,20 @@ bool Characters::quoted(bool lineEnds, std::string* text) {
     }
 }
 
-bool Characters::digit(int c) {
-    return c >= '0' && c <= '9';
+bool Characters::digit(int character) {
+    return character >= '0' && character <= '9';
 }
 
-bool Characters::octal(int c) {
-    return c >= '0' && c <= '7';
+bool Characters::octal(int character) {
+    return character >= '0' && character <= '7';
 }
 
-bool Characters::alpha(int c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+bool Characters::alpha(int character) {
+    return (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') || character == '_';
 }
 
-bool Characters::space(int c) {
-    return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\f' || c == '\v';
+bool Characters::space(int character) {
+    return character == ' ' || character == '\t' || character == '\r' || character == '\n' || character == '\f' || character == '\v';
 }
 
 std::string Characters::position(unsigned int line, unsigned int column) {

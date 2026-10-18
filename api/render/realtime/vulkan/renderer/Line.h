@@ -7,7 +7,7 @@
 
 #include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
@@ -15,6 +15,7 @@
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <vulkan/vulkan.h>
@@ -30,15 +31,15 @@ namespace v3d::render::realtime::vulkan::renderer {
 /**
  * The device side of the world space line primitive.
  *
- * A canvas is filled on the CPU during a tick and handed here, which uploads it into a
- * buffer belonging to the frame about to be recorded. There is no texture, no material
- * and no index buffer, so an uncut canvas becomes one draw and a clipped one becomes a
- * draw per rectangle it is cut to. The buffers are per frame in flight, because the
- * device may still be reading the previous frame's out of the previous slot.
+ * An app fills a canvas::Line on the CPU during a tick, and submit() uploads it into a buffer
+ * of the frame about to be recorded. There is no texture, no material and no index buffer, so
+ * an unclipped canvas becomes one draw, and a clipped one becomes a draw per clip rectangle.
+ * The buffers are per frame in flight, because the device may still be reading the previous
+ * frame's buffers.
  *
- * A frame may submit any number of canvases, and each submission takes a buffer of its
- * own out of the frame's ring. They cannot share one: growing a buffer replaces the
- * allocation, which invalidates the handle every draw item already recorded holds.
+ * A frame may submit any number of canvases, and each submission claims a buffer of its own
+ * from the StreamRing. They cannot share one: growing a buffer replaces the allocation, which
+ * invalidates the handle every draw item already queued holds.
  *
  * Lines are one pixel wide. Wider ones need the wideLines device feature, which the
  * device does not enable.
@@ -50,8 +51,8 @@ class Line final {
      * @param cache the pipeline cache every pipeline is compiled against
      * @param resources where the pipelines are registered
      * @param ring which frame in flight is being recorded, and when its buffers are free
-     * @param uniforms set 0, which the line pipelines both declare and read - a line
-     *        canvas is world space, so the pass's camera is its only transform
+     * @param uniforms set 0, which the line pipelines both declare and read. A line canvas
+     *        is in world space, so the pass's camera is its only transform.
      * @param colour the format of the image the pass draws into, which dynamic rendering
      *        needs at pipeline creation because there is no render pass to take it from
      * @param depth the format of the depth image, for the second of the two pipelines
@@ -80,19 +81,20 @@ class Line final {
      * @param layer the layer the item's sort key carries, which only has an effect in a pass
      *        that sorts
      **/
-    void submit(const LineCanvas& canvas, Pass* pass, uint16_t layer = 0);
+    void submit(const canvas::Line& canvas, Pass* pass, uint16_t layer = 0);
 
  private:
     /**
-     * Compile the line pipeline twice - once for a pass with a depth attachment and once
-     * for a pass without, because dynamic rendering matches a pipeline to the attachments
-     * of the pass it draws into.
+     * Compile the line pipeline twice: once for a pass with a depth attachment and once for
+     * a pass without, because dynamic rendering matches a pipeline to the attachments of the
+     * pass it draws into.
      *
-     * The two differ in behaviour as well as in format: the one built for a pass with
-     * depth tests and writes it, so a wireframe is occluded by the geometry in front of
-     * it. Lines drawn over a scene rather than into it belong in a pass with no depth.
+     * The two differ in behaviour as well as in format. The one built for a pass with depth
+     * tests it, and writes it unless the pass sets depthWrite(), so a wireframe is occluded
+     * by the geometry in front of it. Lines drawn over a scene, not into it, belong in a pass
+     * with no depth.
      **/
-    void createPipelines(VkFormat colour, VkFormat depth);
+    void createPipelines(const pipeline::Formats & formats);
 
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<pipeline::Cache> cache_;

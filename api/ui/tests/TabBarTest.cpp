@@ -4,13 +4,15 @@
  **/
 
 #include <api/event/Engine.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/TabBar.h>
+#include <api/ui/component/TabPage.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
 #include <string>
@@ -24,7 +26,7 @@
 
 namespace {
 
-const float characterWidth = 10.0f;
+const float characterWidth = 10.0F;
 
 struct Written final {
     std::string text;
@@ -51,7 +53,7 @@ boost::shared_ptr<v3d::ui::component::TabPage> page(const std::string& label, co
     component->name(label);
     component->label(label);
 
-    boost::shared_ptr<v3d::ui::component::Label> text = boost::make_shared<v3d::ui::component::Label>();
+    const boost::shared_ptr<v3d::ui::component::Label> text = boost::make_shared<v3d::ui::component::Label>();
     text->name(holds);
     text->text(holds);
     component->add(text);
@@ -65,14 +67,12 @@ boost::shared_ptr<v3d::ui::component::TabBar> bar() {
     boost::shared_ptr<v3d::ui::component::TabBar> component =
         boost::make_shared<v3d::ui::component::TabBar>();
     component->name("panels");
-    component->layout().width = v3d::ui::Length(200.0f, v3d::ui::Length::Unit::Pixels);
-    component->layout().height = v3d::ui::Length(150.0f, v3d::ui::Length::Unit::Pixels);
+    component->layout().width = v3d::ui::Length(200.0F, v3d::ui::Length::Unit::Pixels);
+    component->layout().height = v3d::ui::Length(150.0F, v3d::ui::Length::Unit::Pixels);
     component->add(page("Turn", "turn 3"));
     component->add(page("Entities", "42 entities"));
     return component;
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(tab_bar_test)
 
@@ -82,9 +82,9 @@ BOOST_AUTO_TEST_SUITE(tab_bar_test)
  **/
 BOOST_AUTO_TEST_CASE(only_the_chosen_page_is_drawn) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer = build(&written);
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(400, 300);
+    const v3d::ui::paint::ComponentRenderer renderer = build(&written);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels = bar();
     v3d::ui::Container container("hud", true);
@@ -111,12 +111,12 @@ BOOST_AUTO_TEST_CASE(only_the_chosen_page_is_drawn) {
  **/
 BOOST_AUTO_TEST_CASE(the_page_is_laid_out_under_the_strip) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(400, 300);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels = bar();
-    panels->layout().x = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
-    panels->layout().y = v3d::ui::Length(40.0f, v3d::ui::Length::Unit::Pixels);
+    panels->layout().x = v3d::ui::Length(30.0F, v3d::ui::Length::Unit::Pixels);
+    panels->layout().y = v3d::ui::Length(40.0F, v3d::ui::Length::Unit::Pixels);
     v3d::ui::Container container("hud", true);
     container.add(panels);
     renderer.draw(&canvas, container);
@@ -124,13 +124,13 @@ BOOST_AUTO_TEST_CASE(the_page_is_laid_out_under_the_strip) {
     const boost::shared_ptr<v3d::ui::component::TabPage> up = panels->page();
     BOOST_REQUIRE(up);
     BOOST_CHECK(up->position().y > panels->position().y + renderer.dressing().barHeight);
-    BOOST_CHECK_CLOSE(up->position().x, panels->position().x, 0.001f);
-    BOOST_CHECK_CLOSE(up->size().x, 200.0f, 0.001f);
+    BOOST_CHECK_CLOSE(up->position().x, panels->position().x, 0.001F);
+    BOOST_CHECK_CLOSE(up->size().x, 200.0F, 0.001F);
 
     // and the page that is not up was never placed
     const std::vector<boost::shared_ptr<v3d::ui::component::TabPage>> pages = panels->pages();
     BOOST_REQUIRE_EQUAL(pages.size(), 2U);
-    BOOST_CHECK_CLOSE(pages[1]->size().x, 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(pages[1]->size().x, 0.0F, 0.001F);
 }
 
 /**
@@ -139,11 +139,11 @@ BOOST_AUTO_TEST_CASE(the_page_is_laid_out_under_the_strip) {
  **/
 BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
     v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(400, 300);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels = bar();
-    BOOST_CHECK_EQUAL(panels->at(glm::vec2(10.0f, 10.0f)), v3d::ui::component::TabBar::none);
+    BOOST_CHECK_EQUAL(panels->at(glm::vec2(10.0F, 10.0F)), v3d::ui::component::TabBar::none);
 
     v3d::ui::Container container("hud", true);
     container.add(panels);
@@ -152,13 +152,13 @@ BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
     BOOST_REQUIRE_EQUAL(panels->tabs().size(), 2U);
     const v3d::type::geometry::Bound2D& first = panels->tabs()[0];
     const v3d::type::geometry::Bound2D& second = panels->tabs()[1];
-    BOOST_CHECK_CLOSE(first.size().x, 4.0f * characterWidth + renderer.dressing().padding, 0.001f);
-    BOOST_CHECK(second.position().x > first.position().x + first.size().x - 1.0f);
+    BOOST_CHECK_CLOSE(first.size().x, (4.0F * characterWidth) + renderer.dressing().padding, 0.001F);
+    BOOST_CHECK(second.position().x > first.position().x + first.size().x - 1.0F);
 
-    BOOST_CHECK_EQUAL(panels->at(first.position() + first.size() * 0.5f), 0);
-    BOOST_CHECK_EQUAL(panels->at(second.position() + second.size() * 0.5f), 1);
+    BOOST_CHECK_EQUAL(panels->at(first.position() + first.size() * 0.5F), 0);
+    BOOST_CHECK_EQUAL(panels->at(second.position() + second.size() * 0.5F), 1);
     // past the last tab, on the empty part of the strip
-    BOOST_CHECK_EQUAL(panels->at(glm::vec2(panels->position().x + 190.0f, panels->position().y + 2.0f)),
+    BOOST_CHECK_EQUAL(panels->at(glm::vec2(panels->position().x + 190.0F, panels->position().y + 2.0F)),
         v3d::ui::component::TabBar::none);
 }
 
@@ -167,14 +167,14 @@ BOOST_AUTO_TEST_CASE(a_point_names_the_tab_under_it) {
  * and nothing under it.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_with_no_pages_shows_nothing) {
-    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(400, 300);
+    const v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::TabBar> panels =
         boost::make_shared<v3d::ui::component::TabBar>();
-    panels->layout().width = v3d::ui::Length(200.0f, v3d::ui::Length::Unit::Pixels);
-    panels->layout().height = v3d::ui::Length(150.0f, v3d::ui::Length::Unit::Pixels);
+    panels->layout().width = v3d::ui::Length(200.0F, v3d::ui::Length::Unit::Pixels);
+    panels->layout().height = v3d::ui::Length(150.0F, v3d::ui::Length::Unit::Pixels);
     panels->selected(0);
 
     BOOST_CHECK_EQUAL(panels->selected(), v3d::ui::component::TabBar::none);
@@ -217,8 +217,8 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_strip_of_pages) {
   ]
 })";
 
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
         boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(ui->load(boost::json::parse(document).as_object()));
@@ -234,3 +234,5 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_strip_of_pages) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

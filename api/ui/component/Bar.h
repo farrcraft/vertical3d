@@ -7,20 +7,22 @@
 
 #include <api/ui/Component.h>
 
+#include <cstdint>
+
 namespace v3d::ui::component {
 
 /**
  * A fill as a fraction of a track - a hit point bar, a cooldown, a progress readout.
  *
- * The track is the component's whole box and the fill is the part of it the fraction
- * covers, so a bar is sized by its layout like anything else. A horizontal bar fills from
- * the left and a vertical one from the bottom, which is the direction each is read in.
+ * The track is the component's whole box, and the fill is the part of it the fraction
+ * covers, which means a bar is sized by its layout like any other component. A horizontal
+ * bar fills from the left, and a vertical one from the bottom.
  *
  * The track and the fill are drawn in the "bar" style class the component names.
  **/
 class Bar : public Component {
  public:
-    enum class Direction {
+    enum class Direction : std::uint8_t {
         Horizontal,
         Vertical
     };

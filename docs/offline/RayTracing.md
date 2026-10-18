@@ -1,7 +1,7 @@
 # Ray tracing
 
-The shared ray tracer in `api/render/offline/trace`, which the ray-trace hider uses to find what
-the camera sees and which shaders use for shadows, reflection and refraction.
+The shared ray tracer in `api/render/offline/trace`. The ray-trace hider uses it to find what the
+camera sees, and shaders use it for shadows, reflection and refraction.
 
 ## Ray tracing
 
@@ -70,7 +70,7 @@ The ray hider casts every primary ray into it. Under either hider, a shader's `t
   returns the background, which stops two surfaces that trace into each other. moya takes a
   depth above 16 as 16, with a warning, because a shader that traces twice at every hit
   doubles the rays at every level. A depth that is negative or not finite is not used.
-- **A grid traces through the same scene.** `GridShader` carries a shading point's ray from
+- **A grid traces through the same scene.** `reyes::GridShader` carries a shading point's ray from
   camera space into world space, starting it off the grid's plane. A ray from a grid of a warped
   quad may hit the exact polygon the grid was diced from, because the two agree only when the
   polygon is planar.

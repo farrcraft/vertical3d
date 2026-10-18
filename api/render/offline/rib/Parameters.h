@@ -20,10 +20,9 @@ namespace v3d::render::offline::rib {
 /**
  * The token-value pairs of one request, typed by the declarations that were in force.
  *
- * Parameters are typed once, in the reader, so no handler re-derives how many
- * floats "Cs" is. A name that is not here reads as empty or as the caller's fallback
- * rather than throwing: a renderer must accept a request carrying a parameter it does
- * not support.
+ * Parameters are typed once, in the reader, so no handler works out again how many floats
+ * "Cs" is. A name that is not here reads as empty or as the caller's fallback, and nothing
+ * throws. A renderer must accept a request carrying a parameter it does not support.
  **/
 class ParameterList final {
  public:
@@ -60,13 +59,16 @@ class ParameterList final {
      * The first value, or the fallback when the parameter is absent or empty.
      **/
     float number(const std::string & name, float fallback) const;
-    std::string string(const std::string & name, const std::string & fallback) const;
+    /**
+     * The first value, or an empty string when the parameter is absent or empty.
+     **/
+    std::string string(const std::string & name) const;
 
     /**
-     * Sixteen floats as a matrix, or the identity. RIB writes a matrix in row major
-     * order under RI's row vector convention, and glm stores column major under a column
-     * vector one. Reading the floats in order therefore converts between the conventions,
-     * and a transpose here would undo it.
+     * Sixteen floats as a matrix, or the identity when there are fewer than sixteen. RIB
+     * writes a matrix row by row, for row vectors. glm stores a matrix column by column, for
+     * column vectors. Reading the floats in order therefore converts between the two
+     * conventions, and a transpose here would undo it.
      **/
     glm::mat4x4 matrix(const std::string & name) const;
 

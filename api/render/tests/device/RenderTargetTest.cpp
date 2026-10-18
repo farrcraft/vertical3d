@@ -5,7 +5,8 @@
 
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
@@ -16,6 +17,7 @@
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -25,7 +27,7 @@
 
 #include "Headless.h"
 
-using v3d::render::realtime::Canvas;
+using v3d::render::realtime::canvas::Canvas;
 using v3d::render::realtime::DrawItem;
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
@@ -54,11 +56,11 @@ std::vector<unsigned char> centre(v3d::test::Headless* headless, Capture* captur
         return std::vector<unsigned char>();
     }
     v3d::image::reader::Png png(headless->logger);
-    boost::shared_ptr<v3d::image::Image> picture = png.read(path);
+    const boost::shared_ptr<v3d::image::Image> picture = png.read(path);
     if (!picture) {
         return std::vector<unsigned char>();
     }
-    const unsigned char* at = picture->data() + (static_cast<std::size_t>(height / 2) * width + width / 2) * 4;
+    const unsigned char* at = picture->data() + (((static_cast<std::size_t>(height / 2) * width) + (width / 2)) * 4);
     return std::vector<unsigned char>(at, at + 4);
 }
 
@@ -73,19 +75,19 @@ std::vector<unsigned char> drawFrame(v3d::test::Headless* headless, const boost:
     const std::vector<TextureHandle>& handles, const boost::shared_ptr<RenderTarget>& output,
     const glm::vec4& colour, const std::string& path) {
     Canvas canvas;
-    canvas.resize(width, height);
+    canvas.resize(glm::uvec2(width, height));
     canvas.clear();
-    canvas.rect(glm::vec2(0.0f), glm::vec2(width, height), glm::vec2(0.0f), glm::vec2(1.0f), glm::vec4(1.0f),
+    canvas.rect(glm::vec2(0.0F), glm::vec2(width, height), glm::vec2(0.0F), glm::vec2(1.0F), glm::vec4(1.0F),
         handles[slots->previous()]);
 
     Frame frame;
-    boost::shared_ptr<Pass> reader = frame.pass("reader");
+    const boost::shared_ptr<Pass> reader = frame.pass("reader");
     reader->target(output);
     reader->reads(slots);
-    reader->clearColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    reader->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     headless->context->quads()->submit(canvas, reader.get());
 
-    boost::shared_ptr<Pass> writer = frame.pass("writer");
+    const boost::shared_ptr<Pass> writer = frame.pass("writer");
     writer->target(slots);
     writer->clearColour(colour);
 
@@ -104,8 +106,6 @@ std::vector<unsigned char> drawFrame(v3d::test::Headless* headless, const boost:
     return centre(headless, &capture, path);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(render_target_test)
 
 /**
@@ -113,16 +113,16 @@ BOOST_AUTO_TEST_SUITE(render_target_test)
  * the frame before drew is still there to read. On the first frame there is no frame before,
  * and previous() is the cleared image the target was made with rather than an image in an
  * undefined layout. That image is transparent black, so the quad drawn from it blends to
- * nothing and the reader's own blue clear is what shows.
+ * nothing and the reader's own blue clear shows through.
  **/
 BOOST_AUTO_TEST_CASE(a_target_per_frame_reads_the_frame_before) {
     v3d::test::Headless headless(colourFormat, width, height);
     const uint32_t frames = headless.context->ring()->framesInFlight();
     BOOST_REQUIRE_GT(frames, 1U);
 
-    boost::shared_ptr<RenderTarget> slots = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> slots = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, false, false, frames);
-    boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat);
     BOOST_REQUIRE_EQUAL(slots->images(), frames);
 
@@ -134,12 +134,12 @@ BOOST_AUTO_TEST_CASE(a_target_per_frame_reads_the_frame_before) {
 
     VkImage first = slots->image();
     const std::vector<unsigned char> unwritten =
-        drawFrame(&headless, slots, handles, output, glm::vec4(1.0f, 0.0f, 0.0f, 1.0f), "data_out/target_first.png");
+        drawFrame(&headless, slots, handles, output, glm::vec4(1.0F, 0.0F, 0.0F, 1.0F), "data_out/target_first.png");
     VkImage second = slots->image();
     const std::vector<unsigned char> red =
-        drawFrame(&headless, slots, handles, output, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), "data_out/target_second.png");
+        drawFrame(&headless, slots, handles, output, glm::vec4(0.0F, 1.0F, 0.0F, 1.0F), "data_out/target_second.png");
     const std::vector<unsigned char> green =
-        drawFrame(&headless, slots, handles, output, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), "data_out/target_third.png");
+        drawFrame(&headless, slots, handles, output, glm::vec4(0.0F, 0.0F, 0.0F, 1.0F), "data_out/target_third.png");
 
     BOOST_CHECK(headless.silent());
     BOOST_CHECK(first != second);
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE(a_target_per_frame_reads_the_frame_before) {
  * that is not the one before.
  **/
 BOOST_AUTO_TEST_CASE(a_target_holds_one_image_or_one_per_frame) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
     const uint32_t frames = headless.context->ring()->framesInFlight();
     BOOST_CHECK_THROW(RenderTarget(headless.device, headless.context->ring(), width, height, colourFormat, false, false,
         frames + 1), std::runtime_error);
@@ -164,8 +164,8 @@ BOOST_AUTO_TEST_CASE(a_target_holds_one_image_or_one_per_frame) {
  * and size and can still be recreated at a valid size.
  **/
 BOOST_AUTO_TEST_CASE(a_failed_recreate_leaves_the_target_as_it_was) {
-    v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat, true);
     VkImage image = target->image();
     VkImageView view = target->view();
@@ -194,19 +194,19 @@ BOOST_AUTO_TEST_CASE(a_failed_recreate_leaves_the_target_as_it_was) {
  * recorder, naming the pass that drew it.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
-    v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, VK_FORMAT_B8G8R8A8_UNORM);
 
     Builder builder(headless.device);
     builder.name("rgba")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .vertexBinding(0, sizeof(float) * 3)
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0)
+        .vertexBinding({.binding = 0, .stride = sizeof(float) * 3})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0})
         .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
         .colourFormat(colourFormat);
-    const std::vector<float> triangle{-1.0f, -1.0f, 0.5f, 3.0f, -1.0f, 0.5f, -1.0f, 3.0f, 0.5f};
-    Buffer buffer(headless.device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, triangle.size() * sizeof(float));
+    const std::vector<float> triangle{-1.0F, -1.0F, 0.5F, 3.0F, -1.0F, 0.5F, -1.0F, 3.0F, 0.5F};
+    Buffer buffer(headless.device, {.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, .bytes = triangle.size() * sizeof(float)});
     buffer.write(triangle.data(), triangle.size() * sizeof(float));
 
     DrawItem item;
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
     item.vertices = 3;
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("mismatched");
+    const boost::shared_ptr<Pass> pass = frame.pass("mismatched");
     pass->target(target);
     pass->submit(item);
 
@@ -229,12 +229,12 @@ BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
  * whose only depth test is into a target of its own does not create it.
  **/
 BOOST_AUTO_TEST_CASE(only_a_swapchain_pass_wants_the_swapchain_depth) {
-    v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height,
+    const v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height,
         colourFormat, true);
 
     Frame frame;
-    boost::shared_ptr<Pass> offscreen = frame.pass("offscreen");
+    const boost::shared_ptr<Pass> offscreen = frame.pass("offscreen");
     offscreen->target(target);
     offscreen->depth(true);
     frame.pass("overlay");
@@ -245,3 +245,5 @@ BOOST_AUTO_TEST_CASE(only_a_swapchain_pass_wants_the_swapchain_depth) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

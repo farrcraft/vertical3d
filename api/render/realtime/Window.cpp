@@ -5,20 +5,34 @@
 
 #include "Window.h"
 
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/device/Instance.h>
+#include <api/render/realtime/vulkan/device/Surface.h>
+
+#include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/make_shared.hpp>
 
 namespace v3d::render::realtime {
 
+namespace {
+
+// the size a window reports before it is created
+constexpr int DEFAULT_WIDTH = 300;
+constexpr int DEFAULT_HEIGHT = 200;
+
+};  // namespace
+
 /**
  **/
 Window::Window(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept :
     window_(nullptr),
-    width_(300),
-    height_(200),
+    width_(DEFAULT_WIDTH),
+    height_(DEFAULT_HEIGHT),
     vulkanLoaded_(false),
     created_(false),
     logger_(logger) {
@@ -26,12 +40,12 @@ Window::Window(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept :
 
 /**
 **/
-bool Window::create(int width, int height) {
-    if (width > 0) {
-        width_ = width;
+bool Window::create(const glm::ivec2& size) {
+    if (size.x > 0) {
+        width_ = size.x;
     }
-    if (height > 0) {
-        height_ = height;
+    if (size.y > 0) {
+        height_ = size.y;
     }
 
     // the loader has to be up before a window can be created with the vulkan flag
@@ -115,18 +129,18 @@ int Window::height() const noexcept {
 
 /**
  **/
-void Window::resize(int width, int height) noexcept {
-    width_ = width;
-    height_ = height;
+void Window::resize(const glm::ivec2& size) noexcept {
+    width_ = size.x;
+    height_ = size.y;
 }
 
 /**
  **/
-void Window::request(int width, int height) {
-    if (window_ == nullptr || width <= 0 || height <= 0) {
+void Window::request(const glm::ivec2& size) {
+    if (window_ == nullptr || size.x <= 0 || size.y <= 0) {
         return;
     }
-    SDL_SetWindowSize(window_, width, height);
+    SDL_SetWindowSize(window_, size.x, size.y);
 }
 
 /**
@@ -143,6 +157,28 @@ bool Window::focused() const {
         return false;
     }
     return (SDL_GetWindowFlags(window_) & SDL_WINDOW_INPUT_FOCUS) != 0;
+}
+
+/**
+ **/
+bool Window::fullscreen(bool on) {
+    if (window_ == nullptr) {
+        return false;
+    }
+    if (!SDL_SetWindowFullscreen(window_, on)) {
+        logger_->get()->error("The window could not {} full screen: {}", on ? "go" : "leave", SDL_GetError());
+        return false;
+    }
+    return true;
+}
+
+/**
+ **/
+bool Window::fullscreen() const {
+    if (window_ == nullptr) {
+        return false;
+    }
+    return (SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN) != 0;
 }
 
 /**

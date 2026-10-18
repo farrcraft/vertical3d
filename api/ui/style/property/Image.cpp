@@ -5,11 +5,15 @@
 
 #include "Image.h"
 
+#include <api/ui/Image.h>
+#include <api/ui/style/Property.h>
+
 #include <string>
+#include <string_view>
 
 namespace v3d::ui::style::property {
 
-Image::Image(const std::string& name, const std::string& src) : Property(name), source_(src) {
+Image::Image(const Named& named) : Property(named.name), source_(named.source) {
 }
 
 Image::~Image() {

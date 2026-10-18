@@ -5,7 +5,11 @@
 
 #include "RadioButton.h"
 
+#include "CheckBox.h"
+#include "Type.h"
+
 #include <string>
+#include <string_view>
 
 namespace v3d::ui::component {
 

@@ -3,6 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Type.h>
+#include <api/asset/kind/Json.h>
+#include <api/log/Logger.h>
 #include <vertical3d/src/view/ViewLayout.h>
 
 #include <string>
@@ -35,14 +38,12 @@ const char* const quad =
 "{\"split\": \"horizontal\", \"children\": [{\"camera\": \"Left\"}, {\"camera\": \"Perspective\"}]}"
 "]}}}";
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(viewlayout_quad_test) {
     v3d::editor::ViewLayout layout(logger());
     BOOST_REQUIRE(layout.load(config(quad)));
 
     BOOST_CHECK_EQUAL(layout.name(), "Quad Layout");
-    BOOST_REQUIRE_EQUAL(layout.views().size(), 4u);
+    BOOST_REQUIRE_EQUAL(layout.views().size(), 4U);
 
     // the leaves come back in the order the document listed them, depth first
     BOOST_CHECK_EQUAL(layout.views()[0].camera, "Front");
@@ -53,19 +54,37 @@ BOOST_AUTO_TEST_CASE(viewlayout_quad_test) {
     layout.resize(1024, 768);
 
     // a vertical split stacks its two rows and each row puts its two views side by side
-    BOOST_CHECK_EQUAL(layout.views()[0].region.x, 0.0f);
-    BOOST_CHECK_EQUAL(layout.views()[0].region.y, 0.0f);
-    BOOST_CHECK_EQUAL(layout.views()[0].region.z, 512.0f);
-    BOOST_CHECK_EQUAL(layout.views()[0].region.w, 384.0f);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.x, 0.0F);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.y, 0.0F);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.z, 512.0F);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.w, 384.0F);
 
-    BOOST_CHECK_EQUAL(layout.views()[1].region.x, 512.0f);
-    BOOST_CHECK_EQUAL(layout.views()[1].region.y, 0.0f);
+    BOOST_CHECK_EQUAL(layout.views()[1].region.x, 512.0F);
+    BOOST_CHECK_EQUAL(layout.views()[1].region.y, 0.0F);
 
-    BOOST_CHECK_EQUAL(layout.views()[2].region.x, 0.0f);
-    BOOST_CHECK_EQUAL(layout.views()[2].region.y, 384.0f);
+    BOOST_CHECK_EQUAL(layout.views()[2].region.x, 0.0F);
+    BOOST_CHECK_EQUAL(layout.views()[2].region.y, 384.0F);
 
-    BOOST_CHECK_EQUAL(layout.views()[3].region.x, 512.0f);
-    BOOST_CHECK_EQUAL(layout.views()[3].region.y, 384.0f);
+    BOOST_CHECK_EQUAL(layout.views()[3].region.x, 512.0F);
+    BOOST_CHECK_EQUAL(layout.views()[3].region.y, 384.0F);
+}
+
+/**
+ * A layout may show one camera profile in two views. Each view is named for its own pass, so
+ * the second one is not drawn over the first.
+ **/
+BOOST_AUTO_TEST_CASE(viewlayout_names_each_view_of_one_profile_apart_test) {
+    v3d::editor::ViewLayout layout(logger());
+    BOOST_REQUIRE(layout.load(config(
+        "{\"layout\": {\"root\": {\"split\": \"vertical\", \"children\": ["
+        "{\"camera\": \"Perspective\"}, {\"camera\": \"Top\"}, {\"camera\": \"Perspective\"}"
+        "]}}}")));
+
+    BOOST_REQUIRE_EQUAL(layout.views().size(), 3U);
+    BOOST_CHECK_EQUAL(layout.views()[0].name, "Perspective");
+    BOOST_CHECK_EQUAL(layout.views()[1].name, "Top");
+    BOOST_CHECK_EQUAL(layout.views()[2].name, "Perspective 2");
+    BOOST_CHECK_EQUAL(layout.views()[2].camera, "Perspective");
 }
 
 BOOST_AUTO_TEST_CASE(viewlayout_covers_the_window_test) {
@@ -73,12 +92,12 @@ BOOST_AUTO_TEST_CASE(viewlayout_covers_the_window_test) {
     BOOST_REQUIRE(layout.load(config(quad)));
 
     // an odd size does not divide evenly, and the last child of a split takes what integer
-    // division left over - otherwise there is a gap of pixels no pass ever draws into
+    // division left over. Otherwise there would be a gap of pixels no pass draws into
     layout.resize(1025, 769);
 
-    BOOST_CHECK_EQUAL(layout.views()[0].region.z + layout.views()[1].region.z, 1025.0f);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.z + layout.views()[1].region.z, 1025.0F);
     BOOST_CHECK_EQUAL(layout.views()[1].region.x, layout.views()[0].region.z);
-    BOOST_CHECK_EQUAL(layout.views()[0].region.w + layout.views()[2].region.w, 769.0f);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.w + layout.views()[2].region.w, 769.0F);
     BOOST_CHECK_EQUAL(layout.views()[2].region.y, layout.views()[0].region.w);
 }
 
@@ -87,28 +106,28 @@ BOOST_AUTO_TEST_CASE(viewlayout_hit_test) {
     BOOST_REQUIRE(layout.load(config(quad)));
     layout.resize(1024, 768);
 
-    BOOST_CHECK_EQUAL(layout.viewAt(10.0f, 10.0f), 0u);
-    BOOST_CHECK_EQUAL(layout.viewAt(600.0f, 10.0f), 1u);
-    BOOST_CHECK_EQUAL(layout.viewAt(10.0f, 600.0f), 2u);
-    BOOST_CHECK_EQUAL(layout.viewAt(600.0f, 600.0f), 3u);
+    BOOST_CHECK_EQUAL(layout.viewAt(10.0F, 10.0F), 0U);
+    BOOST_CHECK_EQUAL(layout.viewAt(600.0F, 10.0F), 1U);
+    BOOST_CHECK_EQUAL(layout.viewAt(10.0F, 600.0F), 2U);
+    BOOST_CHECK_EQUAL(layout.viewAt(600.0F, 600.0F), 3U);
 
     // a border belongs to the view it starts, not the one it ends
-    BOOST_CHECK_EQUAL(layout.viewAt(512.0f, 384.0f), 3u);
-    BOOST_CHECK_EQUAL(layout.viewAt(511.0f, 383.0f), 0u);
+    BOOST_CHECK_EQUAL(layout.viewAt(512.0F, 384.0F), 3U);
+    BOOST_CHECK_EQUAL(layout.viewAt(511.0F, 383.0F), 0U);
 
     // and a point outside the window belongs to none
-    BOOST_CHECK_EQUAL(layout.viewAt(2000.0f, 10.0f), layout.views().size());
+    BOOST_CHECK_EQUAL(layout.viewAt(2000.0F, 10.0F), layout.views().size());
 }
 
 BOOST_AUTO_TEST_CASE(viewlayout_single_view_test) {
-    // a layout does not have to split at all - one viewport covering the window is valid
+    // a layout does not have to split at all: one viewport covering the window is valid
     v3d::editor::ViewLayout layout(logger());
     BOOST_REQUIRE(layout.load(config("{\"layout\": {\"root\": {\"camera\": \"Perspective\"}}}")));
 
-    BOOST_REQUIRE_EQUAL(layout.views().size(), 1u);
+    BOOST_REQUIRE_EQUAL(layout.views().size(), 1U);
     layout.resize(800, 600);
-    BOOST_CHECK_EQUAL(layout.views()[0].region.z, 800.0f);
-    BOOST_CHECK_EQUAL(layout.views()[0].region.w, 600.0f);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.z, 800.0F);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.w, 600.0F);
 }
 
 BOOST_AUTO_TEST_CASE(viewlayout_rejects_test) {
@@ -137,3 +156,5 @@ BOOST_AUTO_TEST_CASE(viewlayout_rejects_a_nested_empty_split_test) {
         "{\"layout\": {\"root\": {\"split\": \"horizontal\", \"children\": "
         "[{\"camera\": \"Top\"}, {\"split\": \"vertical\", \"children\": []}]}}}")));
 }
+
+};  // namespace

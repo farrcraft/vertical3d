@@ -224,10 +224,14 @@ Specific rules:
   the definition, spdlog compiles header-only and defines symbols the compiled library also
   defines. The result is a duplicate-symbol link error in whichever app pulls in the wrong object
   first.
+- **`v3dlib_log` carries the UTF-8 code page manifest.** Linking it embeds the manifest in
+  the executable, so the executable reads every narrow path as UTF-8. An executable that opens
+  files without linking `v3dlib_log` adds `api/log/Utf8.manifest` to its sources.
+  [Files.md](../api/engine/Files.md#paths) states the path rule.
 - **Only an app that plays sound links the mixer.** It names `v3dlib_audio`, which links
-  `SDL3_mixer::SDL3_mixer` PRIVATE, because its headers declare the mixer's handles rather than
-  including the mixer. The app calls `audio::registerLoaders()` on its asset manager. No other
-  api library depends on audio.
+  `SDL3_mixer::SDL3_mixer` PRIVATE. That is enough because audio's headers declare the mixer's
+  handles and do not include the mixer. The app calls `audio::registerLoaders()` on its asset
+  manager. No other api library depends on audio.
 - **An asset manager loads only the file types registered on it.** `engine::Engine` registers
   `v3dlib_asset_media`'s loaders on the manager it builds. A manager built anywhere else,
   including in a test, starts with JSON and text documents only and must call
@@ -296,3 +300,9 @@ ninja -C out/build/starter
   [Testing.md](Testing.md#traps).
 - **LNK1163 names a corrupt object file**, not a code problem. Delete the `.obj` it names and
   build again.
+- **An executable that crashes before `main` can be a corrupt incremental link.** A Debug link is
+  incremental, and it can write an executable whose kernel32 import table is partly zeroed. The
+  loader then binds none of kernel32's imports. The program faults in the C runtime's startup,
+  before even `--help` prints anything, and the faulting module is "unknown". Deleting the
+  `.obj` files does not help, because the relink reuses the `.ilk`. Delete the target's `.exe`,
+  `.ilk` and `.pdb`, and build again.

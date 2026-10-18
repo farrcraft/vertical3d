@@ -19,7 +19,7 @@ struct Pose;
  **/
 struct Clip final {
     std::string name;
-    float duration{ 0.0f };  /**< the last key of any channel **/
+    float duration{ 0.0F };  /**< the last key of any channel **/
     std::vector<Channel> channels;
 };
 
@@ -28,7 +28,8 @@ struct Clip final {
  *
  * A time before a channel's first key holds that key, and one after its last holds the last.
  *
- * @param time a time within the clip, which Clock::sample() gives from a playback's
+ * @param time a time within the clip. Clock::sample() turns a playback's unwrapped time into
+ *        one.
  **/
 void sample(const Clip& clip, float time, Pose* pose);
 

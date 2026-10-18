@@ -5,9 +5,12 @@
 
 #include <api/log/Logger.h>
 #include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/sl/Imager.h>
+#include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/sl/Types.h>
 
 #include <cstdio>
 #include <fstream>
@@ -26,7 +29,7 @@ typedef v3d::render::offline::sl::ShaderLibrary ShaderLibrary;
 typedef v3d::render::offline::sl::InstancePtr InstancePtr;
 typedef v3d::render::offline::sl::ShaderType ShaderType;
 
-/** The colour plane count plus one for coverage, as moya's framebuffer holds. **/
+/** The index of the coverage plane, which follows the three colour planes. **/
 const unsigned int COVERAGE = 3;
 
 ShaderLibrary & library() {
@@ -39,14 +42,12 @@ ShaderLibrary & library() {
  **/
 FrameBuffer drawn() {
     FrameBuffer frame(4, 2, COVERAGE + 1);
-    frame.value(0, 1, 0, 0.9f);
-    frame.value(1, 1, 0, 0.2f);
-    frame.value(2, 1, 0, 0.2f);
-    frame.value(COVERAGE, 1, 0, 1.0f);
+    frame.value(0, 1, 0, 0.9F);
+    frame.value(1, 1, 0, 0.2F);
+    frame.value(2, 1, 0, 0.2F);
+    frame.value(COVERAGE, 1, 0, 1.0F);
     return frame;
 }
-
-};  // namespace
 
 /**
  * `background` composites the frame over a constant colour where coverage says nothing was
@@ -56,7 +57,7 @@ FrameBuffer drawn() {
 BOOST_AUTO_TEST_CASE(slimager_background_test) {
     ParameterList list;
     list.add("background", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::COLOR, 1),
-        { 0.15f, 0.25f, 0.45f }, std::vector<std::string>());
+        { 0.15F, 0.25F, 0.45F }, std::vector<std::string>());
     const InstancePtr shader = library().instance("background", ShaderType::IMAGER, list);
     BOOST_REQUIRE(shader);
 
@@ -65,17 +66,17 @@ BOOST_AUTO_TEST_CASE(slimager_background_test) {
     BOOST_REQUIRE(imager.run(&frame, COVERAGE));
 
     // the pixel nothing was drawn into takes the colour whole
-    BOOST_CHECK_CLOSE(frame.value(0, 0, 0), 0.15f, 0.01f);
-    BOOST_CHECK_CLOSE(frame.value(2, 0, 0), 0.45f, 0.01f);
+    BOOST_CHECK_CLOSE(frame.value(0, 0, 0), 0.15F, 0.01F);
+    BOOST_CHECK_CLOSE(frame.value(2, 0, 0), 0.45F, 0.01F);
     // the one that was drawn into is untouched, because its coverage was one
-    BOOST_CHECK_CLOSE(frame.value(0, 1, 0), 0.9f, 0.01f);
-    BOOST_CHECK_CLOSE(frame.value(1, 1, 0), 0.2f, 0.01f);
+    BOOST_CHECK_CLOSE(frame.value(0, 1, 0), 0.9F, 0.01F);
+    BOOST_CHECK_CLOSE(frame.value(1, 1, 0), 0.2F, 0.01F);
     // every row runs, not only the first
-    BOOST_CHECK_CLOSE(frame.value(2, 3, 1), 0.45f, 0.01f);
+    BOOST_CHECK_CLOSE(frame.value(2, 3, 1), 0.45F, 0.01F);
 
     // the whole frame is covered afterwards, because a pixel the imager paints counts as
     // covered
-    BOOST_CHECK_CLOSE(frame.value(COVERAGE, 0, 0), 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(frame.value(COVERAGE, 0, 0), 1.0F, 0.01F);
 }
 
 /**
@@ -99,17 +100,17 @@ BOOST_AUTO_TEST_CASE(slimager_a_row_is_a_batch_test) {
     BOOST_REQUIRE(imager.run(&frame, COVERAGE));
 
     // P is the pixel's centre in raster space, so column c reads c and a half
-    BOOST_CHECK_CLOSE(frame.value(0, 0, 0), 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(frame.value(0, 3, 0), 3.5f, 0.01f);
-    BOOST_CHECK_CLOSE(frame.value(0, 2, 1), 2.5f, 0.01f);
+    BOOST_CHECK_CLOSE(frame.value(0, 0, 0), 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(frame.value(0, 3, 0), 3.5F, 0.01F);
+    BOOST_CHECK_CLOSE(frame.value(0, 2, 1), 2.5F, 0.01F);
 
     std::remove("ramp.sl");
 }
 
 /**
  * A shader that is not an imager is refused rather than run over the frame. The library
- * already reports a name that is the wrong kind of shader; this check covers a caller that
- * passes one here anyway.
+ * already reports a name that is the wrong kind of shader. This check covers a caller that
+ * passes one to the imager anyway.
  **/
 BOOST_AUTO_TEST_CASE(slimager_only_an_imager_test) {
     const InstancePtr surface = library().instance("matte", ShaderType::SURFACE, ParameterList());
@@ -119,5 +120,7 @@ BOOST_AUTO_TEST_CASE(slimager_only_an_imager_test) {
     v3d::render::offline::sl::Imager imager(surface, nullptr);
     BOOST_CHECK(!imager.run(&frame, COVERAGE));
     // the frame is unchanged
-    BOOST_CHECK_SMALL(frame.value(0, 0, 0), 0.0001f);
+    BOOST_CHECK_SMALL(frame.value(0, 0, 0), 0.0001F);
 }
+
+};  // namespace

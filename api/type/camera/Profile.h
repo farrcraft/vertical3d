@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 #include <glm/glm.hpp>
@@ -17,33 +18,47 @@ namespace v3d::type::camera {
 class Profile {
  public:
         /**
-        *	Which way round lookat() crosses its normals, and so which world direction
-        *	ends up on the right of the screen. Both are right handed bases and both
-        *	render; they mirror each other horizontally, which also reverses the winding
-        *	a front face presents.
+        *	Which way round lookat() crosses its normals. This decides which world direction
+        *	ends up on the right of the screen. The two bases mirror each other
+        *	horizontally, and both render. A front face therefore has opposite windings
+        *	under the two.
         *
         *	UpCrossDirection is the default. DirectionCrossUp is for an application whose
         *	geometry was authored against glm::lookAt, so that it can use this camera
         *	without changing its renderer.
         */
-        enum class Hand {
+        enum class Hand : std::uint8_t {
                 UpCrossDirection,       /**< right = up x direction **/
                 DirectionCrossUp        /**< right = direction x up, which glm::lookAt builds **/
         };
 
+        /** The projection a new profile starts with. **/
+        static constexpr float DEFAULT_ORTHO_ZOOM = 1.0F;
+        static constexpr float DEFAULT_PIXEL_ASPECT = 1.33F;
+        static constexpr float DEFAULT_NEAR = 0.001F;
+        static constexpr float DEFAULT_FAR = 100.0F;
+        static constexpr float DEFAULT_FOV = 60.0F;
+
         explicit Profile(const std::string & name);
         /**
-        *	Construct a profile with an explicit basis.
-        *	The basis vectors are taken as given and the rotation is left at identity,
-        *	so a profile built this way is oriented by a later lookat() or rotation().
-        *	@param name the profile name.
-        *	@param eye the camera position.
-        *	@param up the camera up vector.
-        *	@param right the camera right vector.
-        *	@param direction the direction of view.
+        *	Where the eye is, and its up, right and view directions.
         */
-        Profile(const std::string & name, const glm::vec3 & eye, const glm::vec3 & up,
-            const glm::vec3 & right, const glm::vec3 & direction);
+        struct Frame {
+            glm::vec3 eye{0.0F};
+            glm::vec3 up{0.0F, 1.0F, 0.0F};
+            glm::vec3 right{1.0F, 0.0F, 0.0F};
+            glm::vec3 direction{0.0F, 0.0F, -1.0F};
+        };
+
+        /**
+        *	Construct a profile with an explicit basis.
+        *	The basis vectors are taken as given and the rotation is left at identity.
+        *	The view follows the rotation, so orient the profile with lookat(), rotation()
+        *	or turn() before drawing.
+        *	@param name the profile name.
+        *	@param frame the eye position and the three normals.
+        */
+        Profile(const std::string & name, const Frame & frame);
         virtual ~Profile();
 
         // get
@@ -71,21 +86,25 @@ class Profile {
         /**
         *	Access the size in pixels of the viewport the camera draws into.
         *	Zero until something that owns a viewport sets it.
-        *	Camera::orthoFactorHorizontal() and ::orthoFactorVertical() guard against zero.
+        *	Camera::orthoFactorHorizontal() and Camera::orthoFactorVertical() return zero
+        *	while it is zero.
         */
         glm::uvec2 size() const;
 
         // set
         void name(const std::string & name);
-        void clipping(float near, float far);
+        /**
+        *	The near and far clipping planes, as x and y, as clipping() returns them.
+        */
+        void clipping(const glm::vec2 & planes);
         void fov(float fov);
         void orthoZoom(float zoom);
         void pixelAspect(float aspect);
         void orthographic(bool ortho);
         /**
         *	Whether the far clipping distance should follow the scene bounds, so that
-        *	objects do not clip out as they move away. The profile records the setting
-        *	and nothing more - adjusting the distance is left to whoever draws.
+        *	objects do not clip out as they move away. The profile only stores the setting.
+        *	The code that draws has to adjust the distance.
         *	@param adaptive the new adaptive projection setting.
         */
         void adaptiveProjection(bool adaptive);
@@ -93,9 +112,9 @@ class Profile {
         void eye(const glm::vec3 & position);
         /**
         *	Set one of the camera normals.
-        *	The three normals and the rotation are independent state - setting a normal
-        *	does not recompute the rotation, and rotating does not recompute the normals.
-        *	Only lookat() writes all four consistently.
+        *	The three normals and the rotation are separate state. Setting a normal does not
+        *	recompute the rotation, and rotation() does not recompute the normals.
+        *	lookat() and turn() write all four consistently.
         */
         void up(const glm::vec3 & up);
         void right(const glm::vec3 & right);
@@ -111,22 +130,21 @@ class Profile {
         void rotation(const glm::quat & rotation);
         /**
         *	Turn the camera by a rotation composed onto the one it has, in its own axes.
-        *	Unlike rotation(), this keeps the normals in step: they are re-derived from the
-        *	rotation it leaves, so a dolly or a truck after a turn moves along the axes the
-        *	view now has.
+        *	Unlike rotation(), this also recomputes the normals from the new rotation. A
+        *	dolly or a truck after a turn therefore moves along the turned axes.
         *	@param local the rotation to compose, which need not be normalized.
         */
         void turn(const glm::quat & local);
         /**
-        *	The rotation as a matrix, which Camera::createView() transposes into the view.
-        *	It is the basis lookat() built while that is still the rotation in force, and the
-        *	rotation cast back to a matrix once anything else has set it.
+        *	The rotation as a matrix. Camera::createView() transposes it into the view.
+        *	Returns the basis matrix lookat() built until something else sets the rotation,
+        *	and the quaternion cast to a matrix after that.
         */
         glm::mat4x4 orientation() const;
-        void size(unsigned int width, unsigned int height);
+        void size(const glm::uvec2 & size);
         /**
-        *	Choose which basis lookat() builds. It changes nothing until lookat() runs,
-        *	since the normals are state rather than a derivation, so set it before.
+        *	Choose which basis lookat() builds. Set it before calling lookat(). Setting it
+        *	does not change the stored normals, and turn() and lookat() read it.
         *	@param hand the basis to build
         */
         void hand(Hand hand);
@@ -145,15 +163,15 @@ class Profile {
         void clone(const Profile & profile);
         /**
         *	Assignment operator.
-        *	Copy the camera settings from one profile and assign them to another.
-        *	This is just the profile method packaged in an operator.
-        *	@param p the camera profile to copy settings from.
+        *	Copy the camera settings from one profile and assign them to another,
+        *	through clone().
+        *	@param other the camera profile to copy settings from.
         *	@return the camera profile with the new settings copied to it.
         */
-        Profile & operator = (const Profile & p);
+        Profile & operator = (const Profile & other);
 
  private:
-        typedef enum CameraOptions {
+        typedef enum CameraOptions : std::uint8_t {
             OPTION_ORTHOGRAPHIC = (1 << 1),
             OPTION_ADAPTIVE_PROJECTION = (1 << 2),
             OPTION_ADAPTIVE_POSITION = (1 << 3)
@@ -180,10 +198,10 @@ class Profile {
         *	quaternion, so a view built through lookat() equals the one glm::lookAt builds,
         *	exactly. Casting the quaternion differs by about 2e-6 per element.
         *
-        *	rotation(), turn() and lookat() are the only writers of rotation_. lookat() fills
-        *	this cache, and every other write of the rotation clears it, including
-        *	Camera::pan() and Camera::tilt() through turn(). While it is clear, orientation()
-        *	casts the quaternion. clone() copies the cache along with the rotation.
+        *	lookat() fills this cache. rotation() and turn() clear it, and so do
+        *	Camera::pan() and Camera::tilt(), which call turn(). While it is clear,
+        *	orientation() casts the quaternion. clone() copies the cache along with the
+        *	rotation.
         *
         *	lookat() does not renormalize the up vector it derives, because glm::lookAt does
         *	not.

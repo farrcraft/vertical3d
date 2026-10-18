@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/brep/BRep.h>
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 
 #include "Manipulator.h"
 
@@ -18,13 +18,13 @@ namespace v3d::editor {
 /**
  * Resizes the selection: a box on a stalk per axis, and a box at the centre.
  *
- * Dragging a handle out to twice its length doubles the object along that axis, so the
- * gesture is proportional rather than a number of world units - a small object and a
- * large one resize at the same rate under the cursor. The centre handle scales all
- * three axes together.
+ * Dragging a handle out to twice its length doubles the object along that axis. The
+ * gesture is proportional, not a number of world units, so a small object and a large one
+ * resize at the same rate under the cursor. The centre handle scales all three axes
+ * together.
  *
- * The handles are always the object's own axes: a scale is a vector in those axes and
- * a global one could not be written back through the transform.
+ * The handles always follow the object's own axes. A scale is a vector in those axes, and
+ * a scale along global axes could not be written back through the transform.
  **/
 class ScaleManipulator final : public Manipulator {
  public:
@@ -32,7 +32,7 @@ class ScaleManipulator final : public Manipulator {
 
     // manipulator overrides
     void draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
-        v3d::render::realtime::LineCanvas* canvas) const override;
+        v3d::render::realtime::canvas::Line* canvas) const override;
     void apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
         const glm::vec2& from, const glm::vec2& to) const override;
 

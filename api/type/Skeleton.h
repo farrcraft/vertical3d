@@ -26,15 +26,15 @@ struct Skeleton final {
     struct Joint final {
         std::string name;
         int32_t parent{ -1 };  /**< an index into joints, always lower than this one's, or -1 **/
-        glm::vec3 translation{ 0.0f };
+        glm::vec3 translation{ 0.0F };
         glm::quat rotation = glm::identity<glm::quat>();
-        glm::vec3 scale{ 1.0f };
+        glm::vec3 scale{ 1.0F };
 
         /**
          * Takes a vertex from the space the model's vertices are in to this joint's own, as
          * the joint stood when the model was bound to it.
          **/
-        glm::mat4 inverseBind{ 1.0f };
+        glm::mat4 inverseBind{ 1.0F };
     };
 
     std::vector<Joint> joints;
@@ -43,10 +43,10 @@ struct Skeleton final {
      * Where the root joints stand: whatever the file put above the skeleton, such as an
      * armature's scale, which no clip animates.
      **/
-    glm::mat4 root{ 1.0f };
+    glm::mat4 root{ 1.0F };
 
     /**
-     * @return whether there is a skeleton at all, which a static model does not have
+     * @return whether the skeleton has no joints, as for a static model
      **/
     bool empty() const noexcept;
 };

@@ -77,13 +77,13 @@ Traits traits(Type type) {
 }
 
 Type parse(std::string_view text) {
-    // walked rather than mapped: the list is short, this runs once per component in a config
-    // read at startup, and a table would be a second place to forget. A type with no config
-    // name answers empty from name(), which no non-empty text matches.
+    // a linear search over name(), so there is no second table of names to keep in step. It
+    // runs once per component while a config loads. A type with no config name returns
+    // empty from name(), which no non-empty text matches.
     //
-    // The loop runs to VerticalBox because the enum is kept alphabetical and that is its last
-    // entry. A type added past it would be skipped here while compiling everywhere else, so
-    // TypeTest sweeps wider than the enum and fails if one ever is
+    // The loop stops at VerticalBox because the enum is kept alphabetical and that is its
+    // last entry. A type added after it would be skipped here and still compile, so TypeTest
+    // checks past the end of the enum
     if (text.empty()) {
         return Type::Undefined;
     }

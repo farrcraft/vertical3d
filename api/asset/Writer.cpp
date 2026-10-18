@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstddef>
 #include <fstream>
+#include <ios>
 #include <limits>
 #include <string>
 #include <system_error>
@@ -30,7 +31,7 @@ bool scalar(const boost::json::value& value) {
 }
 
 /**
- * A point, a vector or a quaternion - the one shape kept on a line of its own.
+ * Whether a value is an array of scalars, such as a point, a vector or a quaternion.
  **/
 bool scalarArray(const boost::json::value& value) {
     if (!value.is_array()) {
@@ -40,8 +41,9 @@ bool scalarArray(const boost::json::value& value) {
 }
 
 /**
- * Whether a value is kept on one line: a scalar, a vector, or a record of those - an edge or
- * a face. A mesh broken a number to a line is unreadable and its diff is noise.
+ * Whether a value is kept on one line: a scalar, an array of scalars, or an object whose
+ * members are those, such as an edge or a face. A mesh printed one number to a line would be
+ * unreadable, and its diff would be noise.
  **/
 bool compact(const boost::json::value& value) {
     if (scalar(value) || scalarArray(value)) {
@@ -218,8 +220,8 @@ bool writeFile(const boost::filesystem::path& path, const std::string& bytes) {
             return false;
         }
     }
-    // the target is replaced rather than removed first, so a reader between the two calls
-    // sees one document or the other and never an absent one
+    // rename() replaces the target in one step, so a reader sees the old document or the new
+    // one. Removing the target first would leave a moment with no file
     boost::filesystem::rename(temporary, path, error);
     if (error) {
         boost::system::error_code ignored;

@@ -9,6 +9,7 @@
 #include <api/asset/Writer.h>
 #include <api/log/Logger.h>
 
+#include <cstddef>
 #include <limits>
 #include <string>
 
@@ -29,7 +30,7 @@ boost::shared_ptr<v3d::log::Logger> logger() {
 }
 
 /**
- * Two sheets, one of them the shape a tile set is: a square image cut into a row of tiles.
+ * Two sheets. terrain is a 256 by 128 image holding two 64-pixel tiles and one larger sprite.
  **/
 const char* const sheets =
 "{\"sheets\": ["
@@ -43,13 +44,11 @@ const char* const sheets =
 " \"sprites\": [{\"name\": \"player\", \"x\": 0, \"y\": 0, \"width\": 32, \"height\": 64}]}"
 "]}";
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(sprite_sheets_load_test) {
     v3d::config::SpriteSheets loaded(logger());
     BOOST_REQUIRE_EQUAL(loaded.load(config(sheets)), true);
 
-    BOOST_REQUIRE_EQUAL(loaded.names().size(), 2u);
+    BOOST_REQUIRE_EQUAL(loaded.names().size(), 2U);
     BOOST_CHECK_EQUAL(loaded.names()[0], "terrain");
     BOOST_CHECK_EQUAL(loaded.names()[1], "actors");
     BOOST_CHECK(loaded.has("terrain"));
@@ -61,7 +60,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_load_test) {
     BOOST_CHECK_EQUAL(terrain.image(), "terrain.png");
     BOOST_CHECK_EQUAL(terrain.width(), 256);
     BOOST_CHECK_EQUAL(terrain.height(), 128);
-    BOOST_REQUIRE_EQUAL(terrain.sprites().size(), 3u);
+    BOOST_REQUIRE_EQUAL(terrain.sprites().size(), 3U);
     BOOST_CHECK_EQUAL(terrain.sprites()[0], "grass");
 }
 
@@ -78,23 +77,23 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_convert_pixels_to_uv_test) {
     BOOST_CHECK_EQUAL(water.x, 64);
     BOOST_CHECK_EQUAL(water.width, 64);
 
-    glm::vec2 uv0(0.0f, 0.0f);
-    glm::vec2 uv1(0.0f, 0.0f);
+    glm::vec2 uv0(0.0F, 0.0F);
+    glm::vec2 uv1(0.0F, 0.0F);
     BOOST_REQUIRE(terrain.uv("water", &uv0, &uv1));
-    BOOST_CHECK_CLOSE(uv0.x, 0.25f, 0.001f);
-    BOOST_CHECK_CLOSE(uv0.y, 0.0f, 0.001f);
-    BOOST_CHECK_CLOSE(uv1.x, 0.5f, 0.001f);
-    BOOST_CHECK_CLOSE(uv1.y, 0.5f, 0.001f);
+    BOOST_CHECK_CLOSE(uv0.x, 0.25F, 0.001F);
+    BOOST_CHECK_CLOSE(uv0.y, 0.0F, 0.001F);
+    BOOST_CHECK_CLOSE(uv1.x, 0.5F, 0.001F);
+    BOOST_CHECK_CLOSE(uv1.y, 0.5F, 0.001F);
 
-    // the sheet that fills its image is 0..1 in both axes
+    // a sprite that reaches the sheet's far corner ends at uv 1, 1
     BOOST_REQUIRE(terrain.uv("cabin", &uv0, &uv1));
-    BOOST_CHECK_CLOSE(uv1.x, 1.0f, 0.001f);
-    BOOST_CHECK_CLOSE(uv1.y, 1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(uv1.x, 1.0F, 0.001F);
+    BOOST_CHECK_CLOSE(uv1.y, 1.0F, 0.001F);
 
     // a sprite nobody put in the sheet leaves both outputs alone
-    glm::vec2 untouched(-1.0f, -1.0f);
+    glm::vec2 untouched(-1.0F, -1.0F);
     BOOST_CHECK(!terrain.uv("nothing", &untouched, &untouched));
-    BOOST_CHECK_CLOSE(untouched.x, -1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(untouched.x, -1.0F, 0.001F);
 }
 
 /**
@@ -119,11 +118,11 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_reject_what_they_cannot_use_test) {
     v3d::config::SpriteSheets loaded(logger());
     BOOST_CHECK_EQUAL(loaded.load(config(mixed)), false);
 
-    BOOST_REQUIRE_EQUAL(loaded.names().size(), 1u);
+    BOOST_REQUIRE_EQUAL(loaded.names().size(), 1U);
     BOOST_CHECK_EQUAL(loaded.names()[0], "good");
 
     const v3d::config::SpriteSheet good = loaded.get("good");
-    BOOST_REQUIRE_EQUAL(good.sprites().size(), 1u);
+    BOOST_REQUIRE_EQUAL(good.sprites().size(), 1U);
     BOOST_CHECK_EQUAL(good.sprites()[0], "fits");
     BOOST_CHECK(good.has("fits"));
     BOOST_CHECK(!good.has("overruns"));
@@ -136,16 +135,16 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_reject_what_they_cannot_use_test) {
 BOOST_AUTO_TEST_CASE(sprite_sheets_missing_document_test) {
     v3d::config::SpriteSheets loaded(logger());
     BOOST_CHECK_EQUAL(loaded.load(config("{\"something\": 1}")), false);
-    BOOST_CHECK_EQUAL(loaded.names().size(), 0u);
+    BOOST_CHECK_EQUAL(loaded.names().size(), 0U);
 
     const v3d::config::SpriteSheet absent = loaded.get("nothing");
     BOOST_CHECK_EQUAL(absent.name(), "");
     BOOST_CHECK_EQUAL(absent.width(), 0);
-    BOOST_CHECK_EQUAL(absent.sprites().size(), 0u);
+    BOOST_CHECK_EQUAL(absent.sprites().size(), 0U);
 
     // a sheet with no size to divide by cannot answer a uv
-    glm::vec2 uv0(0.0f, 0.0f);
-    glm::vec2 uv1(0.0f, 0.0f);
+    glm::vec2 uv0(0.0F, 0.0F);
+    glm::vec2 uv1(0.0F, 0.0F);
     BOOST_CHECK(!absent.uv("anything", &uv0, &uv1));
 }
 
@@ -197,7 +196,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_round_trip_test) {
  * a packer cannot emit a region the reader would drop on the way back in.
  **/
 BOOST_AUTO_TEST_CASE(sprite_sheets_build_a_document_test) {
-    v3d::config::SpriteSheet packed("hud", "art/hud.png", 128, 64);
+    v3d::config::SpriteSheet packed({.name = "hud", .image = "art/hud.png", .width = 128, .height = 64});
     BOOST_CHECK(packed.place("heart", v3d::config::SpriteRegion()) == false);
 
     v3d::config::SpriteRegion heart;
@@ -236,11 +235,11 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_build_a_document_test) {
 
     v3d::config::SpriteSheets reloaded(logger());
     BOOST_REQUIRE_EQUAL(reloaded.load(config(v3d::asset::serializeDocument(built.document()))), true);
-    BOOST_REQUIRE_EQUAL(reloaded.names().size(), 1u);
+    BOOST_REQUIRE_EQUAL(reloaded.names().size(), 1U);
 
     const v3d::config::SpriteSheet hud = reloaded.get("hud");
     BOOST_CHECK_EQUAL(hud.image(), "art/hud.png");
-    BOOST_REQUIRE_EQUAL(hud.sprites().size(), 1u);
+    BOOST_REQUIRE_EQUAL(hud.sprites().size(), 1U);
     BOOST_CHECK_EQUAL(hud.sprites()[0], "heart");
     BOOST_CHECK_EQUAL(hud.get("heart").width, 16);
 }
@@ -252,9 +251,9 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_build_a_document_test) {
 BOOST_AUTO_TEST_CASE(sprite_sheets_add_replaces_one_sheet_test) {
     v3d::config::SpriteSheets loaded(logger());
     BOOST_REQUIRE_EQUAL(loaded.load(config(sheets)), true);
-    BOOST_REQUIRE_EQUAL(loaded.names().size(), 2u);
+    BOOST_REQUIRE_EQUAL(loaded.names().size(), 2U);
 
-    v3d::config::SpriteSheet repacked("terrain", "terrain.png", 512, 512);
+    v3d::config::SpriteSheet repacked({.name = "terrain", .image = "terrain.png", .width = 512, .height = 512});
     v3d::config::SpriteRegion grass;
     grass.x = 0;
     grass.y = 0;
@@ -264,11 +263,11 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_add_replaces_one_sheet_test) {
     BOOST_REQUIRE(loaded.add(repacked));
 
     // replaced rather than merged into, and it kept its place in the order
-    BOOST_REQUIRE_EQUAL(loaded.names().size(), 2u);
+    BOOST_REQUIRE_EQUAL(loaded.names().size(), 2U);
     BOOST_CHECK_EQUAL(loaded.names()[0], "terrain");
     const v3d::config::SpriteSheet terrain = loaded.get("terrain");
     BOOST_CHECK_EQUAL(terrain.width(), 512);
-    BOOST_REQUIRE_EQUAL(terrain.sprites().size(), 1u);
+    BOOST_REQUIRE_EQUAL(terrain.sprites().size(), 1U);
     BOOST_CHECK(!terrain.has("water"));
 
     // and the sheet nobody packed is untouched, because the tool loaded before writing
@@ -278,8 +277,8 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_add_replaces_one_sheet_test) {
 
     // a sheet that could not be read back is not one that can be put in
     BOOST_CHECK(!loaded.add(v3d::config::SpriteSheet()));
-    BOOST_CHECK(!loaded.add(v3d::config::SpriteSheet("sizeless", "sizeless.png", 0, 0)));
-    BOOST_CHECK_EQUAL(loaded.names().size(), 2u);
+    BOOST_CHECK(!loaded.add(v3d::config::SpriteSheet({.name = "sizeless", .image = "sizeless.png", .width = 0, .height = 0})));
+    BOOST_CHECK_EQUAL(loaded.names().size(), 2U);
 }
 
 /**
@@ -296,10 +295,12 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_load_keeps_the_last_of_a_repeated_name_test) 
     v3d::config::SpriteSheets loaded(logger());
     BOOST_REQUIRE_EQUAL(loaded.load(config(repeated)), true);
 
-    BOOST_REQUIRE_EQUAL(loaded.names().size(), 2u);
+    BOOST_REQUIRE_EQUAL(loaded.names().size(), 2U);
     BOOST_CHECK_EQUAL(loaded.names()[0], "terrain");
     BOOST_CHECK_EQUAL(loaded.names()[1], "actors");
     const v3d::config::SpriteSheet terrain = loaded.get("terrain");
     BOOST_CHECK_EQUAL(terrain.image(), "last.png");
     BOOST_CHECK_EQUAL(terrain.width(), 128);
 }
+
+};  // namespace

@@ -6,6 +6,7 @@
 #include "SpriteClip.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <stdexcept>
 #include <vector>
 
@@ -14,15 +15,16 @@ namespace v3d::type::animation {
 namespace {
 
 /**
- * @return the summed length of the frames, refusing what a clip cannot show
+ * @return the summed length of the frames
+ * @throw std::invalid_argument for no frames, or a frame whose duration is not positive
  **/
 float total(const std::vector<SpriteClip::Frame>& frames) {
     if (frames.empty()) {
         throw std::invalid_argument("a sprite clip needs at least one frame");
     }
-    float sum = 0.0f;
+    float sum = 0.0F;
     for (const SpriteClip::Frame& frame : frames) {
-        if (!(frame.duration > 0.0f)) {
+        if (!(frame.duration > 0.0F)) {
             throw std::invalid_argument("a sprite clip's frame must be shown for some time");
         }
         sum += frame.duration;
@@ -36,7 +38,7 @@ SpriteClip::SpriteClip(const std::vector<Frame>& frames, bool loops) :
     frames_(frames),
     clock_(total(frames), loops) {
     ends_.reserve(frames_.size());
-    float end = 0.0f;
+    float end = 0.0F;
     for (const Frame& frame : frames_) {
         end += frame.duration;
         ends_.push_back(end);

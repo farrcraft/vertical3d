@@ -5,7 +5,11 @@
 
 #include "MeshBuilder.h"
 
+#include <voxel/src/engine/ChunkMeshBuilder.h>
 #include <voxel/src/engine/MortonCode.h>
+
+#include <cstddef>
+#include <iterator>
 
 #include "Chunk.h"
 #include "FaceCulling.h"
@@ -18,7 +22,7 @@ MeshBuilder::MeshBuilder(const boost::unordered_map<unsigned int, boost::shared_
     const size_t vertices = 32768;
     const size_t tris = 49152;
     const size_t faces = 24576;
-    cache_.reset(new MeshCache(vertices, tris, faces));
+    cache_.reset(new MeshCache({.vertices = vertices, .tris = tris, .faces = faces}));
 }
 
 void MeshBuilder::build(const boost::shared_ptr<ChunkMeshPool> & pool, size_t limit) {
@@ -43,16 +47,16 @@ void MeshBuilder::generateChunk(const boost::shared_ptr<ChunkMeshPool> & pool, c
     glm::ivec3 pos;
     unsigned int faces = 0;
 
-    glm::ivec3 chunkPosition = chunk->position();
-    unsigned int chunkSize = chunk->size();
+    const glm::ivec3 chunkPosition = chunk->position();
+    const unsigned int chunkSize = chunk->size();
 
-    size_t chunkId = MortonCode::encode(chunkPosition);
+    const size_t chunkId = MortonCode::encode(chunkPosition);
     // the mesh is built around the chunk's own corner, so the world position it is drawn at
     // is a push constant rather than something baked into every vertex
-    glm::vec3 origin(chunkPosition * static_cast<int>(chunkSize));
+    const glm::vec3 origin(chunkPosition * static_cast<int>(chunkSize));
     cache_->reset();  // reset cache not the ptr
 
-    Voxel::BlockFace checkFaces[6] = {
+    const Voxel::BlockFace checkFaces[] = {
         Voxel::BLOCK_FACE_FRONT, Voxel::BLOCK_FACE_BACK,
         Voxel::BLOCK_FACE_LEFT, Voxel::BLOCK_FACE_RIGHT,
         Voxel::BLOCK_FACE_TOP, Voxel::BLOCK_FACE_BOTTOM
@@ -66,15 +70,15 @@ void MeshBuilder::generateChunk(const boost::shared_ptr<ChunkMeshPool> & pool, c
         hash = (*it).first;
         pos = MortonCode::decode3(hash);
 
-        for (unsigned int i = 0; i < 6; i++) {
+        for (unsigned int i = 0; i < std::size(checkFaces); i++) {
             // check for face occlusion from other blocks within the same chunk
             if (chunk->hidden(checkFaces[i], pos)) {
                 faces &= ~checkFaces[i];
             } else {  // check for face occlusion from blocks in adjacent chunks
-                Neighbour neighbor = neighbourAcrossSeam(checkFaces[i], pos, chunkPosition, static_cast<int>(chunkSize));
+                const Neighbour neighbor = neighbourAcrossSeam(checkFaces[i], pos, chunkPosition, static_cast<int>(chunkSize));
                 if (neighbor.crosses) {
-                    unsigned int neighborChunkHash = MortonCode::encode(neighbor.chunk);
-                    boost::unordered_map<unsigned int, boost::shared_ptr<Chunk > >::iterator neighborChunk = chunks_.find(neighborChunkHash);
+                    const unsigned int neighborChunkHash = MortonCode::encode(neighbor.chunk);
+                    const boost::unordered_map<unsigned int, boost::shared_ptr<Chunk > >::iterator neighborChunk = chunks_.find(neighborChunkHash);
                     if (neighborChunk != chunks_.end()) {
                         if ((*neighborChunk).second->active(neighbor.block)) {
                             faces &= ~checkFaces[i];

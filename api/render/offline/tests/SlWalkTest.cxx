@@ -5,7 +5,9 @@
 
 #include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/syntax/Block.h>
+#include <api/render/offline/sl/syntax/Expression.h>
 #include <api/render/offline/sl/syntax/Shader.h>
+#include <api/render/offline/sl/syntax/Statement.h>
 #include <api/render/offline/sl/syntax/Walk.h>
 
 #include <sstream>
@@ -25,12 +27,10 @@ v3d::render::offline::sl::syntax::StatementPtr last(const char* source) {
     std::istringstream stream(source);
     v3d::render::offline::sl::Parser parser(stream);
     const std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
-    BOOST_REQUIRE_EQUAL(shaders.size(), 1u);
+    BOOST_REQUIRE_EQUAL(shaders.size(), 1U);
     BOOST_REQUIRE(!shaders[0]->body->statements.empty());
     return shaders[0]->body->statements.back();
 }
-
-};  // namespace
 
 /**
  * A `for` hands over its initialiser, condition, step and body in the order they are written,
@@ -70,3 +70,5 @@ BOOST_AUTO_TEST_CASE(slwalk_missing_test) {
     BOOST_CHECK_EQUAL(expressions, 1);
     BOOST_CHECK_EQUAL(statements, 1);
 }
+
+};  // namespace

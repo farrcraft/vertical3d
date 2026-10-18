@@ -5,9 +5,17 @@
 
 #include "RenderTarget.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/memory/Barriers.h>
+#include <api/render/realtime/vulkan/memory/Image.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
+#include <api/render/realtime/vulkan/pipeline/Sampler.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
+#include "DepthBuffer.h"
+#include "Ring.h"
+
+#include <cstdint>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -18,10 +26,18 @@ namespace v3d::render::realtime::vulkan::frame {
 
 namespace {
 
+/** The colour and depth attachments of a target, either of which may be null. **/
+struct Views {
+    VkImageView colour = VK_NULL_HANDLE;
+    VkImageView depth = VK_NULL_HANDLE;
+};
+
 /**
  * Clear what is attached to transparent black and the far plane, with no draws.
  **/
-void clear(VkCommandBuffer commands, VkImageView colour, VkImageView depth, const VkExtent2D& extent) {
+void clear(VkCommandBuffer commands, const Views& views, const VkExtent2D& extent) {
+    VkImageView colour = views.colour;
+    VkImageView depth = views.depth;
     VkRenderingAttachmentInfo colourAttachment{};
     colourAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     colourAttachment.imageView = colour;
@@ -36,7 +52,7 @@ void clear(VkCommandBuffer commands, VkImageView colour, VkImageView depth, cons
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     // the far plane, so a shadow map read before anything was drawn reports no shadow
-    depthAttachment.clearValue.depthStencil.depth = 1.0f;
+    depthAttachment.clearValue.depthStencil.depth = 1.0F;
 
     VkRenderingInfo rendering{};
     rendering.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
@@ -62,7 +78,7 @@ void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, V
     if (depth != VK_NULL_HANDLE) {
         memory::record(commands, {memory::depthForDrawing(depth)});
     }
-    clear(commands, colourView, depthView, extent);
+    clear(commands, {.colour = colourView, .depth = depthView}, extent);
     if (colour != VK_NULL_HANDLE) {
         memory::record(commands, {memory::colourAfterDrawing(colour, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
     }
@@ -84,7 +100,7 @@ RenderTarget::RenderTarget(const boost::shared_ptr<device::Device>& device, cons
     extent_(),
     wantsDepth_(depth),
     sampledDepth_(sampledDepth) {
-    // a slot is chosen by the ring's frame, so any other count would make previous() a frame
+    // a slot is chosen by the Ring's frame(), so any other count would make previous() a frame
     // that is not the one before
     if (images_ != 1 && images_ != ring_->framesInFlight()) {
         throw std::runtime_error("A vulkan render target holds one image or one per frame in flight");
@@ -122,7 +138,7 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
     std::vector<Slot> slots(images_);
     for (Slot& slot : slots) {
         if (format_ != VK_FORMAT_UNDEFINED) {
-            slot.image = createColour(width, height);
+            slot.image = createColour({.width = width, .height = height});
         }
         if (wantsDepth_) {
             // a target's depth is a DepthBuffer, the same class the swapchain passes use
@@ -154,10 +170,10 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
 
 /**
  **/
-boost::shared_ptr<memory::Image> RenderTarget::createColour(uint32_t width, uint32_t height) const {
+boost::shared_ptr<memory::Image> RenderTarget::createColour(const VkExtent2D& extent) const {
     memory::Image::Spec spec;
-    spec.width = width;
-    spec.height = height;
+    spec.width = extent.width;
+    spec.height = extent.height;
     spec.format = format_;
     // a pass draws into a target and a later pass reads it. TRANSFER_SRC lets frame::Capture
     // copy one out. It is always granted, as SAMPLED is, and its only cost is any compression
@@ -169,9 +185,9 @@ boost::shared_ptr<memory::Image> RenderTarget::createColour(uint32_t width, uint
 /**
  **/
 void RenderTarget::ready(const std::vector<Slot>& slots, const VkExtent2D& extent) const {
-    // a clear by rendering rather than by transfer, because attachment usage is what every
-    // target's images already have
-    memory::Uploader uploader(device_);
+    // clear by rendering, not by a transfer command, because every target image already has
+    // attachment usage and none has TRANSFER_DST
+    const memory::Uploader uploader(device_);
     uploader.oneShot([&slots, &extent](VkCommandBuffer commands) {
         for (const Slot& slot : slots) {
             const bool depth = slot.depth && slot.depth->sampled();
@@ -219,7 +235,7 @@ uint32_t RenderTarget::previous() const noexcept {
 /**
  **/
 const RenderTarget::Slot& RenderTarget::slot() const noexcept {
-    // every accessor then answers null rather than reading past the end
+    // an empty slot, so every accessor returns null instead of reading past the end
     static const Slot none;
     if (slots_.empty()) {
         return none;

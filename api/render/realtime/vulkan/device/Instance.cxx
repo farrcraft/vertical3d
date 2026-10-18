@@ -7,6 +7,7 @@
 
 #include "Result.h"
 
+#include <cstdint>
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
@@ -71,8 +72,8 @@ Instance::Instance(const boost::shared_ptr<v3d::log::Logger>& logger, const std:
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.apiVersion = VK_API_VERSION_1_3;
 
-    // the layer and the extension that carries its messages are both optional - a machine
-    // without the sdk installed has neither, and should still run
+    // the layer and the extension that carries its messages are both optional. A machine
+    // without the SDK installed has neither, and still runs
     validating_ = hasValidationLayer() && hasExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
     std::vector<const char*> enabled(extensions);
@@ -90,7 +91,7 @@ Instance::Instance(const boost::shared_ptr<v3d::log::Logger>& logger, const std:
         createInfo.ppEnabledLayerNames = &validationLayer;
     }
 
-    VkResult result = vkCreateInstance(&createInfo, nullptr, &instance_);
+    const VkResult result = vkCreateInstance(&createInfo, nullptr, &instance_);
     check(result, "Unable to create vulkan instance");
 
     logger_->get()->info("Created vulkan instance with {} extension(s), validation {}",
@@ -171,7 +172,7 @@ void Instance::createMessenger() {
     info.pfnUserCallback = report;
     info.pUserData = this;
 
-    VkResult result = create(instance_, &info, nullptr, &messenger_);
+    const VkResult result = create(instance_, &info, nullptr, &messenger_);
     if (result != VK_SUCCESS) {
         logger_->get()->warn("Unable to create the vulkan debug messenger - {}", resultString(result));
         messenger_ = VK_NULL_HANDLE;

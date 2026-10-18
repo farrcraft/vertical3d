@@ -1,12 +1,13 @@
 #version 450
+#extension GL_GOOGLE_include_directive : require
 
 /**
  * The fragment stage of the batched quad primitive.
  *
  * There is one sampler and it is always bound, because an untextured quad is drawn against a
- * 1x1 white texture rather than through a second pipeline. A single channel texture - a glyph
- * atlas - is given a view that swizzles its one channel into alpha, so the sample reaches the
- * same place whatever was bound.
+ * 1x1 white texture rather than through a second pipeline. A single channel texture, such as
+ * a glyph atlas, is given a view that swizzles its one channel into alpha, so the value is in
+ * alpha whatever was bound.
  *
  * The only branch is text. A glyph atlas holds signed distances rather than coverage, and a
  * distance has to be thresholded to become an alpha. The branch is uniform across a draw,
@@ -32,12 +33,8 @@ layout(push_constant) uniform Push {
 } push;
 
 #ifdef LINEARISE
-// the sRGB decode, per channel, which the target's encode on store undoes
-vec3 linear(vec3 display) {
-    vec3 low = display / 12.92;
-    vec3 high = pow((display + 0.055) / 1.055, vec3(2.4));
-    return mix(high, low, lessThanEqual(display, vec3(0.04045)));
-}
+// the decode, which the target's encode on store undoes
+#include "srgb.glsl"
 #endif
 
 void main() {

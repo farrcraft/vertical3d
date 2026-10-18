@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include <glm/glm.hpp>
 
 namespace v3d::moya {
@@ -13,7 +15,7 @@ class Vertex {
     Vertex();
     ~Vertex();
 
-    enum Bits {
+    enum Bits : std::uint8_t {
         HAS_COLOR = (1 << 1),
         HAS_NORMAL = (1 << 2),
         HAS_TEX_COORD = (1 << 3)
@@ -23,34 +25,35 @@ class Vertex {
     void point(const glm::vec3 & v);
 
     /**
-     * The shaded colour. Set on every vertex of a grid rather than per micropolygon,
-     * since a micropolygon shares its corners with its neighbours.
+     * The colour. Before a grid is shaded it is the geometry's colour, SL's Cs. The surface
+     * shader then replaces it with Ci. It is set on every vertex of a grid, not per
+     * micropolygon, because a micropolygon shares its corners with its neighbours.
      */
     glm::vec3 color(void) const;
-    void color(const glm::vec3 & c);
+    void color(const glm::vec3 & colour);
     /**
-     * Whether a colour was written. A primitive carrying no "Cs" takes the colour that
-     * was current when it was added, and one that carries its own keeps it.
+     * Whether a colour was written. A vertex with no "Cs" of its own takes the colour that
+     * was current when its primitive was added, and one with its own keeps it.
      */
     bool hasColor(void) const;
 
     /**
-     * The shading normal, SL's N. A scene that gives a varying "N" per vertex has it here
-     * and a surface comes out smooth; one that does not takes the geometric normal, and
+     * The shading normal, SL's N. A scene that gives a varying "N" per vertex has it here,
+     * and the surface comes out smooth. A vertex without one takes the geometric normal, and
      * the surface is faceted.
      */
     glm::vec3 normal(void) const;
     void normal(const glm::vec3 & n);
     /**
-     * Whether the scene gave one. A vertex left without it takes the primitive's
-     * geometric normal in RenderContext::addPolygon(), the way it takes the colour.
+     * Whether a shading normal was written. A vertex the scene gave none takes the
+     * primitive's geometric normal in RenderContext::addPolygon(), as it takes the colour.
      */
     bool hasNormal(void) const;
 
     /**
-     * The geometric normal, SL's Ng: the plane the primitive lies in, one value across it
-     * rather than a value a vertex brings. Both are carried because faceforward() and
-     * calculatenormal() are defined in terms of the pair.
+     * The geometric normal, SL's Ng: the normal of the plane the primitive lies in. It is one
+     * value across the primitive, not a value each vertex brings. It is kept apart from N
+     * because a shader reads Ng on its own, and a traced ray starts a small offset along it.
      */
     glm::vec3 geometricNormal(void) const;
     void geometricNormal(const glm::vec3 & n);
@@ -64,13 +67,13 @@ class Vertex {
     bool hasTexCoord(void) const;
 
  private:
-    // a grid is filled in by writing over default constructed vertices, so a vertex that
-    // has not been written to yet has to read as one rather than as whatever was there
-    glm::vec3 point_ = glm::vec3(0.0f);
-    glm::vec3 color_ = glm::vec3(0.0f);
-    glm::vec3 normal_ = glm::vec3(0.0f);
-    glm::vec3 geometric_ = glm::vec3(0.0f);
-    glm::vec2 st_ = glm::vec2(0.0f);
+    // a grid is filled in by writing over default constructed vertices, so every member
+    // starts at zero and a vertex not yet written reads as zero
+    glm::vec3 point_ = glm::vec3(0.0F);
+    glm::vec3 color_ = glm::vec3(0.0F);
+    glm::vec3 normal_ = glm::vec3(0.0F);
+    glm::vec3 geometric_ = glm::vec3(0.0F);
+    glm::vec2 st_ = glm::vec2(0.0F);
     unsigned int bits_ = 0;
 };
 };  // namespace v3d::moya

@@ -5,8 +5,14 @@
 
 #include "Device.h"
 
-#include "Result.h"
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/memory/Allocator.h>
 
+#include "Instance.h"
+#include "Result.h"
+#include "Surface.h"
+
+#include <cstdint>
 #include <cstring>
 #include <set>
 #include <sstream>
@@ -68,7 +74,7 @@ Device::Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::s
     device_(VK_NULL_HANDLE),
     graphicsQueue_(VK_NULL_HANDLE),
     presentQueue_(VK_NULL_HANDLE),
-    timestampPeriod_(0.0f) {
+    timestampPeriod_(0.0F) {
     selectPhysical();
     createLogical();
     try {
@@ -84,8 +90,8 @@ Device::Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::s
 /**
  **/
 Device::~Device() {
-    // before the device, not after it: a member is destroyed once this body has run, and an
-    // allocator holding blocks of its own frees them against a device that is already gone
+    // reset before the device is destroyed. Members are destroyed after this body runs, and a
+    // suballocator frees its blocks against the device, which by then would be gone
     allocator_.reset();
     if (device_ != VK_NULL_HANDLE) {
         vkDestroyDevice(device_, nullptr);
@@ -166,7 +172,7 @@ Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
     }
 
     for (uint32_t index = 0; index < count; index++) {
-        if (!families.hasGraphics && (properties[index].queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
+        if (!families.hasGraphics && (properties[index].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
             families.graphics = index;
             families.hasGraphics = true;
             families.timestampBits = properties[index].timestampValidBits;
@@ -175,7 +181,7 @@ Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
         // without a surface there is nothing to be presentable to, and no handle to ask with
         if (surface_ && !families.hasPresent) {
             VkBool32 presentable = VK_FALSE;
-            VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface_->handle(), &presentable);
+            const VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface_->handle(), &presentable);
             if (result == VK_SUCCESS && presentable == VK_TRUE) {
                 families.present = index;
                 families.hasPresent = true;
@@ -241,7 +247,7 @@ bool Device::hasRequiredFeatures(VkPhysicalDevice device) {
 
     // the renderer draws through dynamic rendering and synchronizes with the 1.3 barrier forms.
     // Separate depth and stencil layouts let a barrier move only the depth aspect of a combined
-    // depth and stencil format; every 1.2 device supports them
+    // depth and stencil format. Every 1.2 device supports them
     return features13.dynamicRendering == VK_TRUE && features13.synchronization2 == VK_TRUE &&
         features12.separateDepthStencilLayouts == VK_TRUE;
 }
@@ -265,7 +271,7 @@ void Device::selectPhysical() {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(device, &properties);
 
-        // the renderer is built against 1.3 - dynamic rendering and synchronization2
+        // the renderer requires 1.3, for dynamic rendering and synchronization2
         if (properties.apiVersion < requiredApiVersion) {
             continue;
         }
@@ -278,12 +284,12 @@ void Device::selectPhysical() {
             continue;
         }
 
-        QueueFamilies families = findFamilies(device);
+        const QueueFamilies families = findFamilies(device);
         if (!families.complete(presenting())) {
             continue;
         }
 
-        // a discrete gpu is worth taking over whatever we may have already settled for
+        // a discrete gpu replaces any device already chosen
         const bool discrete = properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
         if (physical_ == VK_NULL_HANDLE || discrete) {
             physical_ = device;
@@ -316,7 +322,7 @@ void Device::selectPhysical() {
 /**
  **/
 void Device::createLogical() {
-    const float priority = 1.0f;
+    const float priority = 1.0F;
     std::set<uint32_t> uniqueFamilies;
     uniqueFamilies.insert(families_.graphics);
     if (presenting()) {
@@ -324,7 +330,7 @@ void Device::createLogical() {
     }
 
     std::vector<VkDeviceQueueCreateInfo> queueInfos;
-    for (uint32_t family : uniqueFamilies) {
+    for (const uint32_t family : uniqueFamilies) {
         VkDeviceQueueCreateInfo queueInfo{};
         queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueInfo.queueFamilyIndex = family;
@@ -334,7 +340,7 @@ void Device::createLogical() {
     }
 
     // dynamic rendering replaces render passes and framebuffers, and synchronization2 replaces
-    // the 1.0 barrier and submit forms - both are 1.3 core features and both have to be asked for
+    // the 1.0 barrier and submit forms. Both are 1.3 core features, and both have to be enabled
     VkPhysicalDeviceVulkan13Features features13{};
     features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
     features13.dynamicRendering = VK_TRUE;
@@ -364,7 +370,7 @@ void Device::createLogical() {
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
 
-    VkResult result = vkCreateDevice(physical_, &createInfo, nullptr, &device_);
+    const VkResult result = vkCreateDevice(physical_, &createInfo, nullptr, &device_);
     check(result, "Unable to create a logical vulkan device");
 
     vkGetDeviceQueue(device_, families_.graphics, 0, &graphicsQueue_);

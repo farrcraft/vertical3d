@@ -23,8 +23,8 @@ std::string& destination() {
 }
 
 /**
- * The log, in the file destination() names, or on stderr when that file cannot be opened: a
- * directory that is not writable must not stop the app from starting.
+ * Creates the log in the file destination() names. When that file cannot be opened, the log
+ * goes to stderr, so a directory that is not writable does not stop the app from starting.
  *
  * @param opened set to whether the file was opened
  **/
@@ -42,9 +42,9 @@ std::shared_ptr<spdlog::logger> create(bool* opened) {
         logger->warn("the log cannot be written to {}, so it goes to stderr: {}", destination(), why);
     }
     logger->set_level(spdlog::level::debug);
-    // a graphics app that goes wrong tends to stop responding rather than return from
-    // main, and a buffered sink loses the lines that say what it was doing. Nothing in the
-    // tree logs at info per frame, so flushing from info up costs a few writes at startup
+    // flush at info and above. A graphics app that fails often hangs instead of returning
+    // from main, and a buffered sink would lose its last lines. Nothing logs at info every
+    // frame, so the flush costs only a few writes at startup
     logger->flush_on(spdlog::level::info);
     return logger;
 }
@@ -55,7 +55,7 @@ std::shared_ptr<spdlog::logger> create(bool* opened) {
  **/
 bool Logger::open(const std::string& path) {
     destination() = path;
-    // registering a name twice throws, so a log already in use is let go of first
+    // spdlog throws when a name is registered twice, so drop the current log first
     if (spdlog::get(NAME)) {
         spdlog::drop(NAME);
     }

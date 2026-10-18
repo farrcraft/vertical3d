@@ -1,0 +1,7 @@
+{
+  "regions": [
+    { "file": "map.json", "corner": { "x": 0, "y": 0 }, "size": { "x": 20, "y": 12 } },
+    { "file": "east.json", "corner": { "x": 20, "y": 0 }, "size": { "x": 20, "y": 12 } }
+  ],
+  "start": 0
+}

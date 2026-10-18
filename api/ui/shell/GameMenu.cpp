@@ -5,6 +5,12 @@
 
 #include "GameMenu.h"
 
+#include <api/event/Commands.h>
+#include <api/event/Event.h>
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
+#include <api/ui/component/menu/Menu.h>
+
 #include <string>
 #include <string_view>
 
@@ -16,31 +22,36 @@ const char* const GameMenu::toggleCommand = "showGameMenu";
 
 /**
  **/
-GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend,
-    const std::string& container, const std::string& menu) :
+GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend, const Names& names) :
     engine_(engine),
     suspend_(suspend),
-    containerName_(container),
-    menuName_(menu) {
-    if (engine_ && engine_->dispatcher()) {
-        commands_ = engine_->dispatcher()->sink<v3d::event::Event>().connect<&GameMenu::command>(*this);
-    }
+    containerName_(names.container),
+    menuName_(names.menu) {
 }
 
 /**
  **/
-void GameMenu::command(const v3d::event::Event& event) {
-    if (!event.context() || event.context()->name() != "ui") {
-        return;
-    }
-    if (event.name() == toggleCommand) {
-        // a held key would otherwise open and close the menu at the repeat rate
-        if (!event.repeat()) {
-            toggle();
+GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend) :
+    GameMenu(engine, suspend, Names()) {
+}
+
+/**
+ **/
+void GameMenu::declare(v3d::event::Commands& commands, const boost::shared_ptr<GameMenu>& menu) {
+    // a press handler ignores a held key's repeats, which would otherwise open and close the
+    // menu at the repeat rate
+    commands.addPress(std::string("ui::") + toggleCommand, [&menu]() {
+        if (menu) {
+            menu->toggle();
         }
-        return;
+    });
+    for (const char* const name : { "menuPrevious", "menuNext", "selectMenu" }) {
+        commands.addPress(std::string("ui::") + name, [&menu, name]() {
+            if (menu) {
+                menu->navigate(name);
+            }
+        });
     }
-    navigate(event.name());
 }
 
 /**
@@ -54,25 +65,25 @@ boost::shared_ptr<Container> GameMenu::container() const {
 
 /**
  **/
-boost::shared_ptr<component::Menu> GameMenu::menu() const {
-    boost::shared_ptr<Container> holder = container();
+boost::shared_ptr<component::menu::Menu> GameMenu::menu() const {
+    const boost::shared_ptr<Container> holder = container();
     if (!holder) {
-        return boost::shared_ptr<component::Menu>();
+        return boost::shared_ptr<component::menu::Menu>();
     }
-    return boost::dynamic_pointer_cast<component::Menu>(holder->get(menuName_));
+    return boost::dynamic_pointer_cast<component::menu::Menu>(holder->get(menuName_));
 }
 
 /**
  **/
 bool GameMenu::visible() const {
-    boost::shared_ptr<Container> holder = container();
+    const boost::shared_ptr<Container> holder = container();
     return holder && holder->visible();
 }
 
 /**
  **/
 void GameMenu::toggle() {
-    boost::shared_ptr<Container> holder = container();
+    const boost::shared_ptr<Container> holder = container();
     if (!holder) {
         return;
     }
@@ -85,7 +96,7 @@ void GameMenu::toggle() {
         return;
     }
 
-    boost::shared_ptr<component::Menu> active = menu();
+    const boost::shared_ptr<component::menu::Menu> active = menu();
     if (active && active->up()) {
         return;
     }
@@ -101,7 +112,7 @@ bool GameMenu::capturing() const {
     if (!visible()) {
         return false;
     }
-    boost::shared_ptr<component::Menu> active = menu();
+    const boost::shared_ptr<component::menu::Menu> active = menu();
     return active && active->capturing();
 }
 
@@ -111,7 +122,7 @@ bool GameMenu::capture(const v3d::event::EventData& value) {
     if (!visible()) {
         return false;
     }
-    boost::shared_ptr<component::Menu> active = menu();
+    const boost::shared_ptr<component::menu::Menu> active = menu();
     if (!active) {
         return false;
     }
@@ -124,7 +135,7 @@ bool GameMenu::navigate(const std::string_view& command) {
     if (!visible()) {
         return false;
     }
-    boost::shared_ptr<component::Menu> active = menu();
+    const boost::shared_ptr<component::menu::Menu> active = menu();
     if (!active) {
         return false;
     }

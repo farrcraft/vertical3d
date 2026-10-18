@@ -25,8 +25,8 @@ reads besides the common ones:
 | `textbox` | `TextBox` | a plate, one line of text, a highlight behind the selection, and a caret while focused | `text`, `placeholder`, `limit` (bytes), `command`, `context` | yes / yes |
 | `hbox`, `vbox` | `HorizontalBox`, `VerticalBox` | nothing; they place their children | `spacing`, `stretch`, `wrap` | no / no |
 | `toolbar` | `Toolbar` | a row or column of buttons at an edge | `edge` (`top` or `left`), `buttons` (array of button entries) | yes / no |
-| `menubar` | `MenuBar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }` | yes / no |
-| `menu` | `Menu` | a game menu, one level at a time, centred | `items` | no / no |
+| `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }` | yes / no |
+| `menu` | `menu::Menu` | a game menu, one level at a time, centred | `items` | no / no |
 
 Notes on individual components:
 
@@ -60,7 +60,7 @@ Notes on individual components:
   with an `icon` is sized to the icon; otherwise to its label. A toolbar button falls back to
   its label when its icon is not resolved. A hidden button takes no room in its strip, is not
   drawn and takes no press, and the buttons after it close up.
-- **A `Menu` or `MenuBar` item** has a `label`, a `type`, and optionally `command` and
+- **A `menu::Menu` or `menu::Bar` item** has a `label`, a `type`, and optionally `command` and
   `context`. Item types are `action`, `submenu` (which holds its own `items`), `check`,
   `radio`, `input`, `numeric_input` and `key_input`. A check and a radio item are marked by
   the app, the same as a check box. Radio items are drawn with the same square mark as check

@@ -17,41 +17,38 @@ namespace v3d::grid {
 /**
  * Cost of one orthogonal step between adjacent tiles.
  *
- * Movement is 8 way and a diagonal costs the same as an orthogonal step, so distance on
- * open ground is Chebyshev: a budget of N reaches a square of side 2N + 1, and eight movers
- * can stand in contact with one. The price is that a diagonal covers 41% more ground for
- * the same cost, so a diagonal approach is always the cheapest one.
+ * Movement is 8-way, and a diagonal step costs the same as an orthogonal one. Distance on open
+ * ground is therefore Chebyshev distance. A budget of N reaches a square of side 2N + 1, and
+ * eight movers can stand next to one. A diagonal step covers 41% more ground for the same
+ * cost, so a diagonal approach is never dearer than another.
  *
- * These are two constants rather than one because the search charges per edge. Pricing
- * diagonals differently is a change to these values and to tileDistance(), not to the
- * algorithm.
+ * The search charges each step by its direction, so there are two constants. Pricing
+ * diagonals differently changes these values and tileDistance(), not the search.
  **/
 constexpr int ORTHOGONAL_STEP_COST = 1;
 
 /**
- * Cost of one diagonal step, which is the orthogonal cost - see ORTHOGONAL_STEP_COST.
+ * Cost of one diagonal step. It equals ORTHOGONAL_STEP_COST, whose comment explains why.
  **/
 constexpr int DIAGONAL_STEP_COST = 1;
 
 /**
- * Steps between two tiles ignoring everything in the way: Chebyshev distance, which is the
- * admissible heuristic for the costs above.
+ * The number of steps between two tiles, ignoring everything in the way. This is Chebyshev
+ * distance, the admissible heuristic for the costs above.
  *
- * This is the distance metric for anything measured in tiles. Use it rather than another
- * metric, so that distances agree with what movement costs.
+ * Measure every distance in tiles with it, so that distances agree with movement costs.
  **/
-int tileDistance(TileCoord a, TileCoord b);
+int tileDistance(TileCoord from, TileCoord to);
 
 /**
  * Cheapest route from start to goal, start first and goal last.
  *
- * The returned path always includes the tile the mover is standing on, so its cost is
- * path.size() - 1 and a route to where you already stand is one tile long. An empty result
- * means there is no route at all. Including the start keeps "no route" distinct from "already
- * there".
+ * The path always includes start, so its cost is path.size() - 1, and a route from a tile to
+ * itself is one tile long. An empty result means there is no route. Including start keeps
+ * "no route" distinct from "already there".
  *
- * start itself is never tested against the grid or the filter - the mover is standing on
- * it, and whatever makes a tile unenterable does not trap whoever is already there.
+ * start is never tested against the grid or the filter. The mover is standing on it, so
+ * whatever makes a tile unenterable does not trap a mover already there.
  *
  * A diagonal step between two blocked tiles is refused, so a wall laid corner to corner
  * blocks movement, and a mover cannot slip between two movers standing corner to corner.
@@ -66,9 +63,9 @@ std::vector<TileCoord> findPath(const TileGrid& grid, TileCoord start, TileCoord
 /**
  * Every tile reachable from start for no more than budget, cheapest first.
  *
- * Includes start at a cost of 0. The same corner rule and the same treatment of the start
- * tile as findPath(), so a tile in this set is a tile findPath() can reach for the cost
- * given here. A highlight drawn from this set never shows a move that findPath() refuses.
+ * Includes start at a cost of 0. It uses the same corner rule and the same treatment of start
+ * as findPath(), so findPath() reaches each tile in the set for the cost given here. A
+ * highlight drawn from this set never shows a move that findPath() refuses.
  *
  * @throws std::invalid_argument if the budget is negative
  **/

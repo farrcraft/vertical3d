@@ -5,16 +5,19 @@
 
 #include "Binary.h"
 
+#include <api/render/offline/Position.h>
+
+#include "Expression.h"
+
 #include <string>
 
 namespace v3d::render::offline::sl::syntax {
 
-Binary::Binary(const std::string & op, const ExpressionPtr & left, const ExpressionPtr & right,
-    unsigned int line, unsigned int column) :
-    Expression(Kind::BINARY, line, column),
+Binary::Binary(const std::string & op, const Operands & operands, const v3d::render::offline::Position & at) :
+    Expression(Kind::BINARY, at),
     op(op),
-    left(left),
-    right(right) {
+    left(operands.left),
+    right(operands.right) {
 }
 
 };  // namespace v3d::render::offline::sl::syntax

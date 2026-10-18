@@ -61,7 +61,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 ```
 scene.rib -> rib::Reader -> moya::RIBHandler -> moya::RenderContext (graphics state)
                                                       |  WorldEnd
-                                         ReyesHider ("hidden") or RayHider ("raytrace")
+                                     reyes::Hider ("hidden") or RayHider ("raytrace")
                                                       |  samples
                                    offline::Film -> planes -> imager -> image file
 ```
@@ -89,7 +89,7 @@ uninitialised. A null token reaches the context as an empty string, not as an er
 
 **A hider is a `moya::Hider`.** It reports whether it sees only the traced scene
 (`traces()`), and it renders what the context gathered (`render()`). `RenderContext` holds one.
-`"hidden"` is `moya::ReyesHider` and `"raytrace"` is `moya::RayHider`. A hider name moya does
+`"hidden"` is `moya::reyes::Hider` and `"raytrace"` is `moya::RayHider`. A hider name moya does
 not recognise is logged, and the current hider stays.
 
 Both hiders read one graphics state and one camera, write one framebuffer, and share the film,

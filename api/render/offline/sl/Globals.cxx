@@ -6,6 +6,10 @@
 #include "Globals.h"
 
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Program.h>
+
+#include "Placed.h"
 
 #include <vector>
 
@@ -95,7 +99,7 @@ bool Globals::shine(const Placed & light, runtime::Machine* machine, unsigned in
         return false;
     }
 
-    const glm::vec3 origin = ptransform(light.placement, glm::vec3(0.0f));
+    const glm::vec3 origin = ptransform(light.placement, glm::vec3(0.0F));
     for (unsigned int lane = 0; lane < batch; lane++) {
         put(machine, lit_, lane, surface.triple(lane));
         put(machine, position_, lane, origin);
@@ -105,8 +109,8 @@ bool Globals::shine(const Placed & light, runtime::Machine* machine, unsigned in
     }
 
     for (unsigned int lane = 0; lane < batch; lane++) {
-        direction->triple(lane, towards_ < 0 ? glm::vec3(0.0f) : machine->value(towards_).triple(lane));
-        colour->triple(lane, lightColour_ < 0 ? glm::vec3(0.0f) : machine->value(lightColour_).triple(lane));
+        direction->triple(lane, towards_ < 0 ? glm::vec3(0.0F) : machine->value(towards_).triple(lane));
+        colour->triple(lane, lightColour_ < 0 ? glm::vec3(0.0F) : machine->value(lightColour_).triple(lane));
     }
     *reached = machine->lit();
     *ambient = light.shader->ambient();

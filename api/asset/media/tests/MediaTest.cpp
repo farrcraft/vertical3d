@@ -22,8 +22,6 @@ boost::shared_ptr<v3d::asset::Manager> manager() {
     return assets;
 }
 
-};  // namespace
-
 /**
  * Once the media loaders are registered, a manager loads a picture or a model by its
  * extension. A manager without them loads only documents.
@@ -65,3 +63,5 @@ BOOST_AUTO_TEST_CASE(media_unregistered_manager_loads_only_documents_test) {
     BOOST_TEST(!plain.loadTypeFromExt("two_surfaces.glb"));
     BOOST_TEST(static_cast<bool>(plain.loadTypeFromExt("document.json")));
 }
+
+};  // namespace

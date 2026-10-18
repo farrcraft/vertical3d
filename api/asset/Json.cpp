@@ -5,7 +5,11 @@
 
 #include "Json.h"
 
+#include <cstdint>
+#include <limits>
+#include <optional>
 #include <string>
+#include <string_view>
 
 namespace v3d::asset {
 
@@ -29,6 +33,26 @@ std::optional<double> readNumber(const boost::json::object& object, std::string_
         return std::nullopt;
     }
     return number;
+}
+
+std::optional<int> readInt(const boost::json::object& object, std::string_view key) noexcept {
+    const boost::json::value* member = object.if_contains(key);
+    if (member == nullptr) {
+        return std::nullopt;
+    }
+    if (const std::int64_t* value = member->if_int64()) {
+        if (*value < std::numeric_limits<int>::min() || *value > std::numeric_limits<int>::max()) {
+            return std::nullopt;
+        }
+        return static_cast<int>(*value);
+    }
+    if (const std::uint64_t* value = member->if_uint64()) {
+        if (*value > static_cast<std::uint64_t>(std::numeric_limits<int>::max())) {
+            return std::nullopt;
+        }
+        return static_cast<int>(*value);
+    }
+    return std::nullopt;
 }
 
 std::optional<bool> readBool(const boost::json::object& object, std::string_view key) noexcept {

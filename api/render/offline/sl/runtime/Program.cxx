@@ -5,6 +5,7 @@
 
 #include "Program.h"
 
+#include <cstddef>
 #include <string>
 
 namespace v3d::render::offline::sl::runtime {

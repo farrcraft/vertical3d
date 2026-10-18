@@ -5,12 +5,13 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <utility>  // for std::pair
 
 /**
- * A group of individual blocks forming a shape. We call the current 
- * (or any future) falling piece a tetrad.
+ * A shape of blocks in a 4x4 grid, with a position on the board and an orientation. The
+ * falling piece and the next piece are both tetrads.
  */
 class Tetrad {
  public:
@@ -20,14 +21,14 @@ class Tetrad {
             std::string color_;  // texture name
         };
 
-        typedef enum {
+        typedef enum : std::uint8_t {
             OFFSET_X = 0,
             OFFSET_Y = 1,
             OFFSET_COL = 1,
             OFFSET_ROW = 0
         } OffsetAxis;
 
-        typedef enum {
+        typedef enum : std::uint8_t {
             CLOCKWISE,
             COUNTERCLOCKWISE
         } RotationDirection;
@@ -39,9 +40,9 @@ class Tetrad {
 
         /**
          * Set the position of the tetrad.
-         * @param p the new position
+         * @param newPosition the new position
          */
-        void position(PositionType p);
+        void position(PositionType newPosition);
         /**
          * Move the tetrad by the specified amount.
          * @param dx amount to move the tetrad in the x axis (number of columns)
@@ -54,7 +55,7 @@ class Tetrad {
          */
         PositionType position() const;
         unsigned int orientation() const;
-        void orientation(unsigned int o);
+        void orientation(unsigned int newOrientation);
         void rotate(RotationDirection dir);
         unsigned int width() const;
         unsigned int height() const;
@@ -73,9 +74,9 @@ class Tetrad {
         /**
          * Move a shape's filled cells into the top left of its 4x4 grid.
          *
-         * Every shape is kept this way. A rotation produces one, so a shape that did not
-         * start out normalised would behave differently before its first turn than after -
-         * it would stop a cell short of the left wall until it was rotated once.
+         * Every shape is kept normalised, and rotate() normalises its result. A shape that
+         * started out unnormalised would otherwise stop short of the left wall until its first
+         * turn.
          *
          * @param shape the layout to normalise in place
          */

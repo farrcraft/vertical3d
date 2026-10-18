@@ -11,7 +11,7 @@ v3d_add_test(engine
 	"SettingsTest.cpp"
 	"IsometricControllerTest.cpp")
 
-# SDL3: the engine names SDL directly.
+# SDL3: the tests build SDL_Event values directly.
 target_link_libraries(v3dtest_engine PRIVATE
 	v3dlib_engine
 	v3dlib_config
@@ -29,9 +29,9 @@ target_link_libraries(v3dtest_engine PRIVATE
 	Freetype::Freetype
 	Vulkan::Vulkan)
 
-# A fixture is an app path rather than a data path - initialize() appends "data/" to it - and
-# the manager resolves what it is given against the working directory, which v3d_add_test
-# points at the executable.
+# A fixture is an app path, not a data path: initialize() appends "data/" to it. The asset
+# manager resolves a relative path against the working directory, and v3d_add_test sets that
+# to the executable's directory.
 add_custom_command(TARGET v3dtest_engine POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/fixtures"

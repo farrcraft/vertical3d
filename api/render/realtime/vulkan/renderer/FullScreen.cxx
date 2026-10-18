@@ -5,8 +5,20 @@
 
 #include "FullScreen.h"
 
+#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
+#include <api/render/realtime/vulkan/pipeline/Material.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
+#include <cstdint>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -18,7 +30,7 @@ namespace v3d::render::realtime::vulkan::renderer {
 namespace {
 
 /**
- * The triangle every full-screen pipeline draws, compiled to SPIR-V at build time - see
+ * The triangle every full-screen pipeline draws, compiled to SPIR-V at build time by
  * v3d_add_shader.
  **/
 const uint32_t vertexShader[] =
@@ -26,8 +38,8 @@ const uint32_t vertexShader[] =
 ;  // NOLINT(whitespace/semicolon)
 
 /**
- * How many sources a pool holds before it grows another. A source is made when a target is
- * made or resized, so a handful covers most programs.
+ * How many sources each descriptor pool holds before DescriptorPool adds another. A source is
+ * made when a target is created or resized, so a few cover most programs.
  **/
 const uint32_t setsPerPool = 8;
 

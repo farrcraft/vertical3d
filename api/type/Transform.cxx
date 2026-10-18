@@ -14,13 +14,13 @@
 namespace v3d::type {
 
 glm::mat4 Transform::matrix() const {
-    // a rotation built up by multiplying many turns drifts off unit length, and a quaternion
-    // that is not unit length scales and shears as well as turning, so it is normalised here.
-    // A quaternion of zero length, or of no finite length, is treated as no rotation
+    // a rotation built up by multiplying many turns drifts off unit length. A quaternion that
+    // is not unit length scales as well as turning, so it is normalised here. A quaternion of
+    // zero length, or of no finite length, is treated as no rotation
     const float length = glm::length(rotation);
-    const glm::quat turn = std::isfinite(length) && length > 0.0f ? rotation / length : glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-    return glm::translate(glm::mat4(1.0f), position) * glm::mat4_cast(turn) *
-        glm::scale(glm::mat4(1.0f), scale);
+    const glm::quat turn = std::isfinite(length) && length > 0.0F ? rotation / length : glm::quat(1.0F, 0.0F, 0.0F, 0.0F);
+    return glm::translate(glm::mat4(1.0F), position) * glm::mat4_cast(turn) *
+        glm::scale(glm::mat4(1.0F), scale);
 }
 
 Transform interpolate(const Transform& from, const Transform& to, const float alpha) {

@@ -5,6 +5,7 @@
 
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
@@ -15,6 +16,7 @@
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <vector>
 
@@ -50,23 +52,23 @@ const uint32_t vertexShader[] =
  * every covered sample. Both values are exact in a 32 bit float, so the case compares equal
  * rather than near.
  **/
-const float nearDepth = 0.25f;
-const float farDepth = 0.75f;
+const float nearDepth = 0.25F;
+const float farDepth = 0.75F;
 
 /**
  * Two triangles spanning x from left to right and y from -0.5 to 0.5, at one depth.
  **/
 void quad(std::vector<float>* vertices, float left, float right, float depth) {
     vertices->insert(vertices->end(), {
-        left, -0.5f, depth, right, -0.5f, depth, right, 0.5f, depth,
-        left, -0.5f, depth, right, 0.5f, depth, left, 0.5f, depth
+        left, -0.5F, depth, right, -0.5F, depth, right, 0.5F, depth,
+        left, -0.5F, depth, right, 0.5F, depth, left, 0.5F, depth
     });
 }
 
 std::vector<float> quads() {
     std::vector<float> vertices;
-    quad(&vertices, -0.75f, -0.25f, nearDepth);
-    quad(&vertices, 0.25f, 0.75f, farDepth);
+    quad(&vertices, -0.75F, -0.25F, nearDepth);
+    quad(&vertices, 0.25F, 0.75F, farDepth);
     return vertices;
 }
 
@@ -77,8 +79,8 @@ PipelineHandle depthPipeline(v3d::test::Headless* headless, VkFormat depthFormat
     Builder builder(headless->device);
     builder.name(biased ? "biased-depth" : "depth")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .vertexBinding(0, sizeof(float) * 3)
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0)
+        .vertexBinding({.binding = 0, .stride = sizeof(float) * 3})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0})
         .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
         .depth(true, true)
         .depthBias(biased)
@@ -95,16 +97,16 @@ PipelineHandle depthPipeline(v3d::test::Headless* headless, VkFormat depthFormat
 std::vector<float> drawDepth(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& target,
     const std::optional<float>& bias) {
     const std::vector<float> vertices = quads();
-    Buffer buffer(headless->device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices.size() * sizeof(float));
+    Buffer buffer(headless->device, {.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, .bytes = vertices.size() * sizeof(float)});
     buffer.write(vertices.data(), vertices.size() * sizeof(float));
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("shadow");
+    const boost::shared_ptr<Pass> pass = frame.pass("shadow");
     pass->target(target);
     pass->depth(true);
-    pass->clearColour(glm::vec4(0.0f));
+    pass->clearColour(glm::vec4(0.0F));
     if (bias) {
-        pass->depthBias(*bias, 0.0f);
+        pass->depthBias(*bias, 0.0F);
     }
 
     DrawItem item;
@@ -131,7 +133,7 @@ std::vector<float> drawDepth(v3d::test::Headless* headless, const boost::shared_
 }
 
 float at(const std::vector<float>& depths, uint32_t x, uint32_t y) {
-    return depths[static_cast<std::size_t>(y) * width + x];
+    return depths[(static_cast<std::size_t>(y) * width) + x];
 }
 
 /**
@@ -143,7 +145,7 @@ float at(const std::vector<float>& depths, uint32_t x, uint32_t y) {
 std::vector<float> drawBeside(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& target,
     bool depthFirst) {
     const std::vector<float> vertices = quads();
-    Buffer buffer(headless->device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices.size() * sizeof(float));
+    Buffer buffer(headless->device, {.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, .bytes = vertices.size() * sizeof(float)});
     buffer.write(vertices.data(), vertices.size() * sizeof(float));
 
     Frame frame;
@@ -151,7 +153,7 @@ std::vector<float> drawBeside(v3d::test::Headless* headless, const boost::shared
     if (!depthFirst) {
         without = frame.pass("without");
     }
-    boost::shared_ptr<Pass> with = frame.pass("with");
+    const boost::shared_ptr<Pass> with = frame.pass("with");
     if (depthFirst) {
         without = frame.pass("without");
     }
@@ -160,7 +162,7 @@ std::vector<float> drawBeside(v3d::test::Headless* headless, const boost::shared
     without->keepColour();
     with->target(target);
     with->depth(true);
-    with->clearColour(glm::vec4(0.0f));
+    with->clearColour(glm::vec4(0.0F));
 
     DrawItem item;
     item.pipeline = depthPipeline(headless, target->depthFormat(), false);
@@ -184,8 +186,6 @@ std::vector<float> drawBeside(v3d::test::Headless* headless, const boost::shared
     return capture.depth();
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(depth_target_test)
 
 /**
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_SUITE(depth_target_test)
  **/
 BOOST_AUTO_TEST_CASE(a_depth_only_target_holds_the_depth_drawn) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, VK_FORMAT_UNDEFINED, true, true);
     BOOST_REQUIRE(target->image() == VK_NULL_HANDLE);
     if (target->depthFormat() != VK_FORMAT_D32_SFLOAT) {
@@ -210,43 +210,45 @@ BOOST_AUTO_TEST_CASE(a_depth_only_target_holds_the_depth_drawn) {
     // the centre of each quad, a pixel between them, and a corner
     BOOST_CHECK_EQUAL(at(depths, 4, 8), nearDepth);
     BOOST_CHECK_EQUAL(at(depths, 11, 8), farDepth);
-    BOOST_CHECK_EQUAL(at(depths, 8, 8), 1.0f);
-    BOOST_CHECK_EQUAL(at(depths, 0, 0), 1.0f);
+    BOOST_CHECK_EQUAL(at(depths, 8, 8), 1.0F);
+    BOOST_CHECK_EQUAL(at(depths, 0, 0), 1.0F);
 }
 
 /**
- * A pass's bias reaches a biased pipeline. How far it moves a depth is the implementation's,
- * by way of the format's smallest step, so the case pins only that it moved away from the eye.
+ * A pass's bias reaches a biased pipeline. How far the bias moves a depth depends on the
+ * implementation and the format's smallest step, so the case checks only that the depth moved
+ * away from the eye.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_bias_moves_the_depth_drawn) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, VK_FORMAT_UNDEFINED, true, true);
     if (target->depthFormat() != VK_FORMAT_D32_SFLOAT) {
         BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
         return;
     }
 
-    const std::vector<float> depths = drawDepth(&headless, target, 64.0f);
+    const std::vector<float> depths = drawDepth(&headless, target, 64.0F);
     BOOST_CHECK(headless.silent());
     BOOST_REQUIRE_EQUAL(depths.size(), static_cast<std::size_t>(width) * height);
 
     BOOST_CHECK_GT(at(depths, 4, 8), nearDepth);
     BOOST_CHECK_LT(at(depths, 4, 8), farDepth);
     BOOST_CHECK_GT(at(depths, 11, 8), farDepth);
-    BOOST_CHECK_EQUAL(at(depths, 0, 0), 1.0f);
+    BOOST_CHECK_EQUAL(at(depths, 0, 0), 1.0F);
 }
 
 /**
- * A target written by a pass without depth and by one with it has its depth opened and closed
- * once a frame, whichever of the two comes first. The validation layer reports a depth image
- * used in the wrong layout, so the case checks that it is silent and that the depth is right.
+ * A target written by a pass without depth and by one with depth has its depth image moved into
+ * the attachment layout once per frame, whichever of the two passes comes first. The validation
+ * layer reports a depth image used in the wrong layout, so the case checks that the layer is
+ * silent and that the depth is right.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_without_depth_beside_one_with_it) {
     for (const bool depthFirst : {false, true}) {
         BOOST_TEST_CONTEXT("the pass with depth " << (depthFirst ? "first" : "second")) {
             v3d::test::Headless headless(colourFormat, width, height);
-            boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device,
+            const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device,
                 headless.context->ring(), width, height, VK_FORMAT_UNDEFINED, true, true);
             if (target->depthFormat() != VK_FORMAT_D32_SFLOAT) {
                 BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
@@ -257,7 +259,7 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_beside_one_with_it) {
             BOOST_CHECK(headless.silent());
             BOOST_REQUIRE_EQUAL(depths.size(), static_cast<std::size_t>(width) * height);
             BOOST_CHECK_EQUAL(at(depths, 4, 8), nearDepth);
-            BOOST_CHECK_EQUAL(at(depths, 8, 8), 1.0f);
+            BOOST_CHECK_EQUAL(at(depths, 8, 8), 1.0F);
         }
     }
 }
@@ -301,3 +303,5 @@ BOOST_AUTO_TEST_CASE(a_combined_depth_format_moves_by_its_depth_aspect) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

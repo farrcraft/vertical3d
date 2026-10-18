@@ -5,15 +5,25 @@
 
 #include "Reader.h"
 
+#include <api/log/Logger.h>
+
+#include "Image.h"
+
 #include <cstddef>
 #include <fstream>
+#include <ios>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::image {
 /**
  **/
 Reader::Reader(const boost::shared_ptr<v3d::log::Logger>& logger) : logger_(logger) {
+}
+
+const boost::shared_ptr<v3d::log::Logger>& Reader::logger() const noexcept {
+    return logger_;
 }
 
 /**

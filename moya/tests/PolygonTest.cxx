@@ -3,7 +3,9 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/geometry/AABBox.h>
 #include <moya/libmoya/Polygon.h>
+#include <moya/libmoya/Vertex.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -17,111 +19,109 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
     return v;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(polygon_vertex_test) {
     v3d::moya::Polygon polygon;
 
-    BOOST_TEST(polygon.vertexCount() == 0u);
+    BOOST_TEST(polygon.vertexCount() == 0U);
 
-    glm::vec3 point(2.0f, 5.0f, 7.0f);
+    const glm::vec3 point(2.0F, 5.0F, 7.0F);
     polygon.addVertex(vertex(point.x, point.y, point.z));
 
-    BOOST_TEST(polygon.vertexCount() == 1u);
+    BOOST_TEST(polygon.vertexCount() == 1U);
     BOOST_TEST((polygon.vertex(0).point() == point));
     BOOST_TEST((polygon[0].point() == point));
 
     polygon.removeVertex(0);
-    BOOST_TEST(polygon.vertexCount() == 0u);
+    BOOST_TEST(polygon.vertexCount() == 0U);
 }
 
 /**
- * The subscript is the only accessor that hands back a reference, so it is the one a caller
- * can write a vertex through.
+ * The subscript is the only accessor that returns a reference. A caller writes a vertex
+ * through it.
  **/
 BOOST_AUTO_TEST_CASE(polygon_vertex_reference_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(1.0f, 1.0f, 1.0f));
+    polygon.addVertex(vertex(1.0F, 1.0F, 1.0F));
 
-    polygon[0].point(glm::vec3(4.0f, 5.0f, 6.0f));
+    polygon[0].point(glm::vec3(4.0F, 5.0F, 6.0F));
 
-    BOOST_TEST((polygon.vertex(0).point() == glm::vec3(4.0f, 5.0f, 6.0f)));
+    BOOST_TEST((polygon.vertex(0).point() == glm::vec3(4.0F, 5.0F, 6.0F)));
 }
 
 BOOST_AUTO_TEST_CASE(polygon_remove_middle_vertex_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(0.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(1.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(2.0f, 0.0f, 0.0f));
+    polygon.addVertex(vertex(0.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(1.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(2.0F, 0.0F, 0.0F));
 
     polygon.removeVertex(1);
 
-    BOOST_TEST(polygon.vertexCount() == 2u);
-    BOOST_TEST((polygon.vertex(0).point() == glm::vec3(0.0f, 0.0f, 0.0f)));
-    BOOST_TEST((polygon.vertex(1).point() == glm::vec3(2.0f, 0.0f, 0.0f)));
+    BOOST_TEST(polygon.vertexCount() == 2U);
+    BOOST_TEST((polygon.vertex(0).point() == glm::vec3(0.0F, 0.0F, 0.0F)));
+    BOOST_TEST((polygon.vertex(1).point() == glm::vec3(2.0F, 0.0F, 0.0F)));
 }
 
 /**
- * clear empties the polygon, so a clip can write its result back over the one it was given.
+ * clear removes every vertex of the polygon.
  **/
 BOOST_AUTO_TEST_CASE(polygon_clear_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(1.0f, 1.0f, 1.0f));
-    polygon.addVertex(vertex(2.0f, 2.0f, 2.0f));
+    polygon.addVertex(vertex(1.0F, 1.0F, 1.0F));
+    polygon.addVertex(vertex(2.0F, 2.0F, 2.0F));
 
     polygon.clear();
 
-    BOOST_TEST(polygon.vertexCount() == 0u);
+    BOOST_TEST(polygon.vertexCount() == 0U);
 }
 
 /**
- * The bound is in object space and is the per-axis extent of the vertices. The splitter and
- * the bucket assignment both read it.
+ * The bound is the per-axis extent of the vertices, in the space they are in. split() and
+ * RenderContext::addPolygon() both read it.
  **/
 BOOST_AUTO_TEST_CASE(polygon_bound_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(-1.0f, 4.0f, 0.0f));
-    polygon.addVertex(vertex(3.0f, -2.0f, 5.0f));
-    polygon.addVertex(vertex(0.0f, 1.0f, -7.0f));
+    polygon.addVertex(vertex(-1.0F, 4.0F, 0.0F));
+    polygon.addVertex(vertex(3.0F, -2.0F, 5.0F));
+    polygon.addVertex(vertex(0.0F, 1.0F, -7.0F));
 
-    v3d::type::geometry::AABBox bound = polygon.bound();
+    const v3d::type::geometry::AABBox bound = polygon.bound();
 
-    BOOST_TEST((bound.min() == glm::vec3(-1.0f, -2.0f, -7.0f)));
-    BOOST_TEST((bound.max() == glm::vec3(3.0f, 4.0f, 5.0f)));
+    BOOST_TEST((bound.min() == glm::vec3(-1.0F, -2.0F, -7.0F)));
+    BOOST_TEST((bound.max() == glm::vec3(3.0F, 4.0F, 5.0F)));
 }
 
 /**
- * A polygon holding nothing has no extent to report, so the bound comes back as the default
- * one rather than as whatever the first vertex would have seeded it with.
+ * A polygon with no vertices has no extent, and its bound is a default constructed one.
  **/
 BOOST_AUTO_TEST_CASE(polygon_empty_bound_test) {
-    v3d::moya::Polygon polygon;
+    const v3d::moya::Polygon polygon;
 
-    v3d::type::geometry::AABBox bound = polygon.bound();
+    const v3d::type::geometry::AABBox bound = polygon.bound();
 
-    BOOST_TEST((bound.min() == glm::vec3(0.0f, 0.0f, 0.0f)));
-    BOOST_TEST((bound.max() == glm::vec3(0.0f, 0.0f, 0.0f)));
+    BOOST_TEST((bound.min() == glm::vec3(0.0F, 0.0F, 0.0F)));
+    BOOST_TEST((bound.max() == glm::vec3(0.0F, 0.0F, 0.0F)));
 }
 
 /**
- * The plane a polygon lies in, wound the way its vertices are - SL's Ng, and the normal every
- * vertex of it takes when the scene supplies no varying "N".
+ * The geometric normal is the normal of the plane the polygon lies in, facing the way its
+ * vertices wind. It is SL's Ng. Every vertex takes it as its normal when the scene supplies no
+ * varying "N".
  **/
 BOOST_AUTO_TEST_CASE(polygon_geometric_normal_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(0.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(1.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(0.0f, 1.0f, 0.0f));
+    polygon.addVertex(vertex(0.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(1.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(0.0F, 1.0F, 0.0F));
 
-    BOOST_TEST((polygon.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_TEST((polygon.geometricNormal() == glm::vec3(0.0F, 0.0F, 1.0F)));
 
-    // the winding is what decides which way it faces, so reversing it reverses the normal
+    // the winding decides which way the polygon faces, so reversing it reverses the normal
     v3d::moya::Polygon reversed;
-    reversed.addVertex(vertex(0.0f, 0.0f, 0.0f));
-    reversed.addVertex(vertex(0.0f, 1.0f, 0.0f));
-    reversed.addVertex(vertex(1.0f, 0.0f, 0.0f));
+    reversed.addVertex(vertex(0.0F, 0.0F, 0.0F));
+    reversed.addVertex(vertex(0.0F, 1.0F, 0.0F));
+    reversed.addVertex(vertex(1.0F, 0.0F, 0.0F));
 
-    BOOST_TEST((reversed.geometricNormal() == glm::vec3(0.0f, 0.0f, -1.0f)));
+    BOOST_TEST((reversed.geometricNormal() == glm::vec3(0.0F, 0.0F, -1.0F)));
 }
 
 /**
@@ -130,27 +130,28 @@ BOOST_AUTO_TEST_CASE(polygon_geometric_normal_test) {
  **/
 BOOST_AUTO_TEST_CASE(polygon_geometric_normal_skips_collinear_test) {
     v3d::moya::Polygon polygon;
-    polygon.addVertex(vertex(0.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(1.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(2.0f, 0.0f, 0.0f));
-    polygon.addVertex(vertex(0.0f, 1.0f, 0.0f));
+    polygon.addVertex(vertex(0.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(1.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(2.0F, 0.0F, 0.0F));
+    polygon.addVertex(vertex(0.0F, 1.0F, 0.0F));
 
-    BOOST_TEST((polygon.geometricNormal() == glm::vec3(0.0f, 0.0f, 1.0f)));
+    BOOST_TEST((polygon.geometricNormal() == glm::vec3(0.0F, 0.0F, 1.0F)));
 }
 
 /**
- * A polygon with no area lies in no plane, and returns zero rather than normalising a zero
- * vector.
+ * A polygon with no area lies in no plane, and its geometric normal is the zero vector.
  **/
 BOOST_AUTO_TEST_CASE(polygon_degenerate_normal_test) {
     v3d::moya::Polygon collinear;
-    collinear.addVertex(vertex(0.0f, 0.0f, 0.0f));
-    collinear.addVertex(vertex(1.0f, 0.0f, 0.0f));
-    collinear.addVertex(vertex(2.0f, 0.0f, 0.0f));
+    collinear.addVertex(vertex(0.0F, 0.0F, 0.0F));
+    collinear.addVertex(vertex(1.0F, 0.0F, 0.0F));
+    collinear.addVertex(vertex(2.0F, 0.0F, 0.0F));
 
-    BOOST_TEST((collinear.geometricNormal() == glm::vec3(0.0f)));
+    BOOST_TEST((collinear.geometricNormal() == glm::vec3(0.0F)));
 
-    v3d::moya::Polygon empty;
+    const v3d::moya::Polygon empty;
 
-    BOOST_TEST((empty.geometricNormal() == glm::vec3(0.0f)));
+    BOOST_TEST((empty.geometricNormal() == glm::vec3(0.0F)));
 }
+
+};  // namespace

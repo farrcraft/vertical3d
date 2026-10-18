@@ -14,13 +14,13 @@ namespace v3d::input {
 
 /**
  **/
-MouseState::MouseState() : position_(0.0f, 0.0f), wheel_(0.0f) {
+MouseState::MouseState() : position_(0.0F, 0.0F), wheel_(0.0F) {
 }
 
 /**
  **/
 bool MouseState::held(std::string_view button) const {
-    std::vector<std::string>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
+    const std::vector<std::string>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
     return iter != buttons_.end();
 }
 
@@ -41,13 +41,13 @@ bool MouseState::released(std::string_view button) const {
 void MouseState::flush() {
     pressed_.clear();
     released_.clear();
-    wheel_ = 0.0f;
+    wheel_ = 0.0F;
 }
 
 /**
  **/
 bool MouseState::operator() (const std::string& button) {
-    std::vector<std::string>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
+    const std::vector<std::string>::const_iterator iter = std::find(buttons_.begin(), buttons_.end(), button);
     bool held = true;
     if (iter != buttons_.end()) {
         buttons_.erase(iter);
@@ -55,8 +55,8 @@ bool MouseState::operator() (const std::string& button) {
     } else {
         buttons_.push_back(button);
     }
-    // a click and its release inside one frame is both edges of one button, so this records
-    // rather than replaces - the same rule KeyState keeps
+    // each edge is appended, not replaced, as in KeyState. A click and its release inside
+    // one frame report both edges of one button
     if (held) {
         pressed_.push_back(button);
     } else {
@@ -67,9 +67,9 @@ bool MouseState::operator() (const std::string& button) {
 
 /**
  **/
-glm::vec2 MouseState::operator() (const glm::vec2& p) {
-    glm::vec2 previous = position_;
-    position_ = p;
+glm::vec2 MouseState::operator() (const glm::vec2& cursor) {
+    const glm::vec2 previous = position_;
+    position_ = cursor;
     return previous;
 }
 

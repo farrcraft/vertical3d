@@ -29,26 +29,32 @@ one-pixel edge at any scale. Other batches return `colour * texel`.
 outside, and the cameras in `api/type` flip y into Vulkan clip space. A camera on
 `Profile::Hand::DirectionCrossUp` also mirrors x, which reverses the winding again, so `Lit`
 takes the front face as its last constructor argument. All six pipelines cull by it.
-`shadow::light()` builds its view the way `type::camera::Camera` does in the hand it is given,
-so faces wind the same under the light and the shadow pipeline culls as the cel one does.
+`lighting::shadowLight()` builds its view the way `type::camera::Camera` does in the hand it is
+given, so faces wind the same under the light and the shadow pipeline culls as the cel one does.
 
 **`Lit::scene()`** writes the frame's slot: a uniform buffer (`SceneUniforms`, std140, matching
-the `Scene` block in `lit.glsl`), the shadow map binding, and the palette storage buffer. It waits
-on `Ring::waitFrame()` first, so it is called while the frame is built and before the ring begins
-it. The palette buffer is one per frame in flight, grows by doubling, and retires an outgrown
-buffer through the ring. A static item pushes `firstJoint = 0` and its pipeline ignores it.
+the `Scene` block in `lit.glsl`), the shadow map binding, and the palette storage buffer, and
+empties the slot's objects. It waits on `Ring::waitFrame()` first, so it is called while the
+frame is built and before the ring begins it. It also makes that slot the one `Lit::object()`
+adds to, so the walks run after it. The palette and object buffers are one per frame in flight,
+grow by doubling, and retire an outgrown buffer through the ring. An object buffer that grows
+copies the objects already added, because the frame's draws name them by index. A static
+object has `firstJoint = 0`, and its pipeline ignores it.
 
 **Skinned vertex.** `MeshRegistry::SkinnedVertex` is `type::Model::Vertex` (32 bytes) followed by
 `type::Model::Influence`: four joints as unsigned shorts and four float weights, 56 bytes in all.
 
 **`FullScreen` sources** are allocated from its own `DescriptorPool`, one binding per source.
 A depth image is bound in `DEPTH_READ_ONLY_OPTIMAL`. A source must be released before the
-`FullScreen` goes, since the set belongs to its pool. `Grade` keeps a map from the handle a caller
+`FullScreen` goes, since the set belongs to its pool. `Grade` holds two `FullScreen`s, one for a
+scene that holds display values and one for an `_SRGB` scene, which is read decoded. Both are built
+for the grade's target, so they decode the result before an `_SRGB` target stores it. A source
+belongs to the one that matches its scene's format. `Grade` keeps a map from the handle a caller
 holds to the current material; `replace()` creates a new table, rebinds every source to new
 materials, and retires the old table and materials through the ring. `replace()` uploads through
-`Uploader::oneShot`, which waits for the queue to go idle. `Grade`'s destructor releases its table
-and every source still in the map, before its `FullScreen` goes. `source()` releases the scene's
-registration if binding the material throws.
+`Uploader::oneShot`, which waits for that upload and not for frames in flight. `Grade`'s
+destructor releases its table and every source still in the map, before its `FullScreen` goes.
+`source()` releases the scene's registration if binding the material throws.
 
 Background: [ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md),
 [ADR-0011](../../adr/0011-rendering-lines-as-a-world-space-primitive.md),

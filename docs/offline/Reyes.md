@@ -1,7 +1,9 @@
 # The reyes hider
 
 moya's default hider, `"hidden"`. It splits surfaces into grids of micropolygons, shades each
-grid, and hides the result into the pixel samples bucket by bucket.
+grid, and hides the result into the pixel samples bucket by bucket. Its classes are in
+`moya::reyes`, in `moya/libmoya/reyes/`. The polygons and vertices it dices are shared with the
+ray hider, and are in `moya/libmoya/`.
 
 ## The reyes hider
 
@@ -51,7 +53,7 @@ Only `Polygon` and `PointsPolygons` reach this pass. Spheres are not diced.
   and `"st"` bilinearly over the first four vertices. A triangle's fourth corner is its third. A
   polygon with more than four vertices loses the rest, which gives a wrong grid for a concave
   polygon.
-- **The grid is shaded**: `moya::GridShader` runs the surface shader once over all of the
+- **The grid is shaded**: `moya::reyes::GridShader` runs the surface shader once over all of the
   grid's vertices and leaves `Ci` on each.
 - **The grid is hidden into the samples.** Each micropolygon takes the colour shaded at its
   first corner. It is tested against each sample in the pixels its bound touches, as two
@@ -60,17 +62,17 @@ Only `Polygon` and `PointsPolygons` reach this pass. Spheres are not diced.
 
 Rules:
 
-- **A `ReyesPrimitive` carries the transformation, colour, normal and shading state it was
+- **A `reyes::Primitive` carries the transformation, colour, normal and shading state it was
   submitted under.** A split resubmits pieces through the first pass during the second, when
   none of that state is current. The colour and normal fill a piece's vertices that carried
   none, and the normal is every piece's `Ng`.
 - **The sweep repeats while any bucket split something.** A piece is bucketed where it lands,
   which can be a bucket the sweep has already passed. A primitive already diced yields no more
   grids, so a repeated sweep costs one pass over the buckets.
-- **The samples are one store for the whole frame**, `moya::Samples`, filtered through the film
-  once the last bucket is done. A sample is not finished until every grid that could reach it
-  is hidden, and the sweep can return to any bucket, so no bucket is finished early. Bucket
-  edges never show in the image.
+- **The samples are one store for the whole frame**, `moya::reyes::Samples`, filtered through
+  the film once the last bucket is done. A sample is not finished until every grid that could
+  reach it is hidden, and the sweep can return to any bucket, so no bucket is finished early.
+  Bucket edges never show in the image.
 - **Every sample is opaque.** The reyes hider keeps the nearest surface and sets its opacity to
   one, ignoring the shader's `Oi`.
 - **A grid is shaded once for all its samples**, so its shadow and traced rays see the scene at

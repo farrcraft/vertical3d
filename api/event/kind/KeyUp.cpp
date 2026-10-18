@@ -5,6 +5,10 @@
 
 #include "KeyUp.h"
 
+#include <api/event/Context.h>
+
+#include "Key.h"
+
 #include <string>
 
 namespace v3d::event::kind {

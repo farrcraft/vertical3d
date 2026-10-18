@@ -5,6 +5,8 @@
 
 #include "FileChooser.h"
 
+#include <api/ui/Container.h>
+#include <api/ui/Engine.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/TextBox.h>
@@ -46,7 +48,7 @@ void FileChooser::open(Mode mode, const boost::filesystem::path& directory, cons
     mode_ = mode;
     extension_ = extension;
     chosen_ = chosen;
-    // the field keeps what was typed into it the last time, which is not a name for this one
+    // the field still holds what was typed into it last time, so it is cleared
     name(std::string());
     confirming_.clear();
     if (!list(directory)) {
@@ -188,7 +190,7 @@ void FileChooser::name(const std::string& value) {
 /**
  **/
 std::string FileChooser::name() const {
-    // the field is typed into directly, so it is what holds the name when there is one
+    // the field is typed into directly, so the name is read from it when there is one
     const boost::shared_ptr<Container> shown = container();
     const boost::shared_ptr<component::TextBox> field = shown
         ? boost::dynamic_pointer_cast<component::TextBox>(shown->get(names_.field))
@@ -200,10 +202,10 @@ std::string FileChooser::name() const {
  **/
 bool FileChooser::accept() {
     std::string typed = name();
-    // a name is a name in the directory shown, so one that would step out of it is refused
-    // rather than followed. On Windows a colon makes a drive relative path such as "C:name"
-    // or an alternate data stream such as "name:stream", so it is refused too. A name that
-    // is not its own file name has some other form that leaves the directory
+    // a name must be a file in the directory shown, so one that would step out of it is
+    // refused. On Windows a colon makes a drive relative path such as "C:name" or an
+    // alternate data stream such as "name:stream", so it is refused too. A name that is not
+    // its own file name leaves the directory some other way
     if (typed.empty() || typed == "." || typed == parent ||
         typed.find_first_of("/\\:") != std::string::npos ||
         boost::filesystem::path(typed).filename().string() != typed) {
@@ -223,7 +225,7 @@ bool FileChooser::accept() {
         if (boost::filesystem::is_directory(chosen, error)) {
             return false;
         }
-        // asked once, and the same name again is the answer
+        // the first accept asks, and accepting the same name again confirms
         if (confirming_ != typed) {
             confirming_ = typed;
             show();

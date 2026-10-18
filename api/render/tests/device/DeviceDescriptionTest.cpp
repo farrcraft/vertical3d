@@ -13,6 +13,8 @@
 
 #include "Headless.h"
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(device_description_test)
 
 /**
@@ -21,7 +23,7 @@ BOOST_AUTO_TEST_SUITE(device_description_test)
  * that was never filled in.
  **/
 BOOST_AUTO_TEST_CASE(a_device_describes_itself_as_its_driver_does) {
-    v3d::test::Headless headless(VK_FORMAT_R8G8B8A8_UNORM, 4, 4);
+    const v3d::test::Headless headless(VK_FORMAT_R8G8B8A8_UNORM, 4, 4);
     VkPhysicalDeviceProperties properties{};
     vkGetPhysicalDeviceProperties(headless.device->physical(), &properties);
 
@@ -33,8 +35,10 @@ BOOST_AUTO_TEST_CASE(a_device_describes_itself_as_its_driver_does) {
     BOOST_TEST(description.vendor == properties.vendorID);
     BOOST_TEST(description.driver == properties.driverVersion);
     // the renderer requires 1.3, so a device it chose is at least that
-    BOOST_TEST(description.apiMajor == 1u);
-    BOOST_TEST(description.apiMinor >= 3u);
+    BOOST_TEST(description.apiMajor == 1U);
+    BOOST_TEST(description.apiMinor >= 3U);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

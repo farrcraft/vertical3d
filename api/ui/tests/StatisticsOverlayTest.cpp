@@ -3,7 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/StatisticsOverlay.h>
 
 #include <array>
@@ -18,8 +19,6 @@ namespace {
 
 const std::uint64_t millisecond = 1000000;
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(statistics_overlay_test)
 
 /**
@@ -27,7 +26,7 @@ BOOST_AUTO_TEST_SUITE(statistics_overlay_test)
  **/
 BOOST_AUTO_TEST_CASE(a_frame_reads_as_milliseconds_and_a_rate) {
     v3d::ui::shell::StatisticsOverlay::Sample sample;
-    sample.mean = 16 * millisecond + 667000;
+    sample.mean = (16 * millisecond) + 667000;
     sample.last = 17 * millisecond;
     sample.steps = 1;
 
@@ -53,8 +52,8 @@ BOOST_AUTO_TEST_CASE(no_rate_is_shown_before_the_first_frame) {
 }
 
 /**
- * The steps line is what says the accumulator's clamp is doing real work, so a frame that
- * owed several of them has to be able to say so.
+ * The steps line shows whether the accumulator's clamp is doing real work. A frame that
+ * owed several steps reports all of them.
  **/
 BOOST_AUTO_TEST_CASE(a_frame_that_owed_several_steps_says_so) {
     v3d::ui::shell::StatisticsOverlay::Sample sample;
@@ -95,8 +94,8 @@ BOOST_AUTO_TEST_CASE(nothing_is_drawn_without_a_text_renderer) {
     v3d::ui::shell::StatisticsOverlay overlay(text);
     overlay.visible(true);
 
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(640, 480);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(640, 480));
     overlay.draw(&canvas, v3d::ui::shell::StatisticsOverlay::Sample());
 
     BOOST_CHECK(canvas.empty());
@@ -108,7 +107,7 @@ BOOST_AUTO_TEST_CASE(nothing_is_drawn_without_a_text_renderer) {
 BOOST_AUTO_TEST_CASE(a_span_reads_as_its_name_and_milliseconds) {
     v3d::ui::shell::StatisticsOverlay::Sample::Span span;
     span.name = "terrain";
-    span.nanoseconds = 2 * millisecond + 500000;
+    span.nanoseconds = (2 * millisecond) + 500000;
     BOOST_CHECK_EQUAL(v3d::ui::shell::StatisticsOverlay::line(span), "terrain 2.5 ms");
 }
 
@@ -135,3 +134,5 @@ BOOST_AUTO_TEST_CASE(a_named_device_is_the_top_line) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

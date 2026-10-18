@@ -22,7 +22,7 @@ namespace {
 using v3d::ui::style::Resolver;
 
 boost::shared_ptr<v3d::ui::style::Style> style(const std::string& name, const std::string& className) {
-    return boost::make_shared<v3d::ui::style::Style>(name, className);
+    return boost::make_shared<v3d::ui::style::Style>(v3d::ui::style::Selector{.name = name, .className = className});
 }
 
 void colour(const boost::shared_ptr<v3d::ui::style::Style>& target, const std::string& name,
@@ -34,10 +34,8 @@ void metric(const boost::shared_ptr<v3d::ui::style::Style>& target, const std::s
     target->addProperty(boost::make_shared<v3d::ui::style::property::Number>(name, value), "number");
 }
 
-constexpr glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
-constexpr glm::vec4 green(0.0f, 1.0f, 0.0f, 1.0f);
-
-};  // namespace
+constexpr glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
+constexpr glm::vec4 green(0.0F, 1.0F, 0.0F, 1.0F);
 
 BOOST_AUTO_TEST_SUITE(resolver_test)
 
@@ -62,18 +60,18 @@ BOOST_AUTO_TEST_CASE(a_class_style_is_applied_over_the_base) {
         boost::make_shared<v3d::ui::style::Theme>("dark");
     const boost::shared_ptr<v3d::ui::style::Style> panel = style("plate", "panel");
     colour(panel, "background", green);
-    metric(panel, "radius", 6.0f);
+    metric(panel, "radius", 6.0F);
     theme->addStyle(panel);
 
     Resolver resolver;
     resolver.base().panel = red;
     resolver.base().border = red;
-    resolver.base().radius = 0.0f;
+    resolver.base().radius = 0.0F;
     resolver.theme(theme);
 
     const v3d::ui::paint::Dressing& dressing = resolver.resolve(Resolver::Class::Panel, "plate");
     BOOST_CHECK(dressing.panel == green);
-    BOOST_CHECK_CLOSE(dressing.radius, 6.0f, 0.001f);
+    BOOST_CHECK_CLOSE(dressing.radius, 6.0F, 0.001F);
     // named nothing, so unchanged
     BOOST_CHECK(dressing.border == red);
 }
@@ -151,7 +149,7 @@ BOOST_AUTO_TEST_CASE(the_ui_style_is_read_into_the_base) {
         boost::make_shared<v3d::ui::style::Theme>("dark");
     const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", "ui");
     colour(chrome, "border", green);
-    metric(chrome, "border-width", 3.0f);
+    metric(chrome, "border-width", 3.0F);
     theme->addStyle(chrome);
 
     Resolver resolver;
@@ -161,7 +159,7 @@ BOOST_AUTO_TEST_CASE(the_ui_style_is_read_into_the_base) {
     // and a class that names no border of its own draws in it
     const v3d::ui::paint::Dressing& dressing = resolver.resolve(Resolver::Class::Bar, std::string_view());
     BOOST_CHECK(dressing.border == green);
-    BOOST_CHECK_CLOSE(dressing.borderWidth, 3.0f, 0.001f);
+    BOOST_CHECK_CLOSE(dressing.borderWidth, 3.0F, 0.001F);
 }
 
 /**
@@ -206,35 +204,35 @@ BOOST_AUTO_TEST_CASE(a_scrollbar_does_not_take_a_bars_style) {
 
 /**
  * A class rings its own control, so a theme can mark a focused text box differently from a
- * focused list - and a class naming neither keeps the base's ring.
+ * focused list. A class that names no ring keeps the base's.
  **/
 BOOST_AUTO_TEST_CASE(a_class_can_ring_its_own_control) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
     const boost::shared_ptr<v3d::ui::style::Style> field = style("default", "textbox");
     colour(field, "focus", green);
-    metric(field, "focus-width", 4.0f);
+    metric(field, "focus-width", 4.0F);
     theme->addStyle(field);
     // named so that the class is found, and naming no ring of its own
     theme->addStyle(style("default", "list"));
 
     Resolver resolver;
     resolver.base().focus = red;
-    resolver.base().focusWidth = 1.0f;
+    resolver.base().focusWidth = 1.0F;
     resolver.theme(theme);
 
     const v3d::ui::paint::Dressing& box = resolver.resolve(Resolver::Class::TextBox, std::string_view());
     BOOST_CHECK(box.focus == green);
-    BOOST_CHECK_CLOSE(box.focusWidth, 4.0f, 0.001f);
+    BOOST_CHECK_CLOSE(box.focusWidth, 4.0F, 0.001F);
 
     const v3d::ui::paint::Dressing& list = resolver.resolve(Resolver::Class::List, std::string_view());
     BOOST_CHECK(list.focus == red);
-    BOOST_CHECK_CLOSE(list.focusWidth, 1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(list.focusWidth, 1.0F, 0.001F);
 }
 
 /**
- * A button's ring comes out of the "button" class, which is the only thing a button reads as a
- * Dressing - its fill is nine images and its label is the base's.
+ * A button's ring comes out of the "button" class. The ring is the only thing a button reads
+ * as a Dressing. Its fill is nine images and its label is the base's.
  *
  * A button's styles are told apart by state as well as by name. The first of the set is
  * used here, because a ring shows where the keyboard is rather than what state the button
@@ -266,21 +264,21 @@ BOOST_AUTO_TEST_CASE(the_two_ways_of_writing_a_ui_read_different_classes) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
     const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", Resolver::chromeClass);
-    metric(chrome, "line-height", 34.0f);
+    metric(chrome, "line-height", 34.0F);
     theme->addStyle(chrome);
     const boost::shared_ptr<v3d::ui::style::Style> tools = style("default", Resolver::tools);
-    metric(tools, "line-height", 18.0f);
+    metric(tools, "line-height", 18.0F);
     theme->addStyle(tools);
 
     Resolver resolver;
     resolver.theme(theme);
-    BOOST_CHECK_CLOSE(resolver.base().lineHeight, 34.0f, 0.001f);
+    BOOST_CHECK_CLOSE(resolver.base().lineHeight, 34.0F, 0.001F);
 
     v3d::ui::Immediate ui(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
     ui.theme(theme);
-    BOOST_CHECK_CLOSE(ui.dressing().lineHeight, 18.0f, 0.001f);
+    BOOST_CHECK_CLOSE(ui.dressing().lineHeight, 18.0F, 0.001F);
 }
 
 /**
@@ -291,15 +289,78 @@ BOOST_AUTO_TEST_CASE(a_theme_that_dresses_one_side_leaves_the_other_alone) {
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
     const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", Resolver::chromeClass);
-    metric(chrome, "line-height", 34.0f);
+    metric(chrome, "line-height", 34.0F);
     theme->addStyle(chrome);
 
     v3d::ui::Immediate ui(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0f; },
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
     const float before = ui.dressing().lineHeight;
     ui.theme(theme);
-    BOOST_CHECK_CLOSE(ui.dressing().lineHeight, before, 0.001f);
+    BOOST_CHECK_CLOSE(ui.dressing().lineHeight, before, 0.001F);
+}
+
+/**
+ * A theme switch starts from what was there before any theme. A value the new theme is silent
+ * on goes back to its default rather than keeping the last theme's, and no theme puts every
+ * value back. A default the app wrote itself, and no theme names, survives both.
+ **/
+BOOST_AUTO_TEST_CASE(a_theme_switch_resets_what_the_new_theme_does_not_name) {
+    const boost::shared_ptr<v3d::ui::style::Theme> first = boost::make_shared<v3d::ui::style::Theme>("first");
+    const boost::shared_ptr<v3d::ui::style::Style> loud = style("default", Resolver::chromeClass);
+    colour(loud, "text", red);
+    metric(loud, "line-height", 34.0F);
+    first->addStyle(loud);
+
+    const boost::shared_ptr<v3d::ui::style::Theme> second = boost::make_shared<v3d::ui::style::Theme>("second");
+    const boost::shared_ptr<v3d::ui::style::Style> quiet = style("default", Resolver::chromeClass);
+    colour(quiet, "highlight", green);
+    second->addStyle(quiet);
+
+    Resolver resolver;
+    const glm::vec4 text = resolver.base().text;
+    const float lineHeight = resolver.base().lineHeight;
+    const glm::vec4 highlight = resolver.base().highlight;
+    const glm::vec4 own(0.2F, 0.4F, 0.6F, 1.0F);
+    resolver.base().focus = own;
+
+    resolver.theme(first);
+    BOOST_CHECK(resolver.base().text == red);
+    BOOST_CHECK_CLOSE(resolver.base().lineHeight, 34.0F, 0.001F);
+
+    resolver.theme(second);
+    BOOST_CHECK(resolver.base().text == text);
+    BOOST_CHECK_CLOSE(resolver.base().lineHeight, lineHeight, 0.001F);
+    BOOST_CHECK(resolver.base().highlight == green);
+
+    resolver.theme(boost::shared_ptr<v3d::ui::style::Theme>());
+    BOOST_CHECK(resolver.base().highlight == highlight);
+    BOOST_CHECK(resolver.base().focus == own);
+}
+
+/**
+ * The immediate layer's theme switch follows the same rule for its own style class.
+ **/
+BOOST_AUTO_TEST_CASE(the_immediate_layer_resets_what_the_new_theme_does_not_name) {
+    const boost::shared_ptr<v3d::ui::style::Theme> first = boost::make_shared<v3d::ui::style::Theme>("first");
+    const boost::shared_ptr<v3d::ui::style::Style> loud = style("default", Resolver::tools);
+    colour(loud, "text", red);
+    first->addStyle(loud);
+
+    v3d::ui::Immediate ui(
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    const glm::vec4 text = ui.dressing().text;
+
+    ui.theme(first);
+    BOOST_CHECK(ui.dressing().text == red);
+    ui.theme(boost::make_shared<v3d::ui::style::Theme>("second"));
+    BOOST_CHECK(ui.dressing().text == text);
+    ui.theme(first);
+    ui.theme(boost::shared_ptr<v3d::ui::style::Theme>());
+    BOOST_CHECK(ui.dressing().text == text);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

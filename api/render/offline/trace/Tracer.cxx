@@ -5,12 +5,19 @@
 
 #include "Tracer.h"
 
+#include <api/render/offline/Textures.h>
+#include <api/render/offline/sl/Instance.h>
+#include <api/type/geometry/Line.h>
+#include <api/type/geometry/Ray.h>
+
 #include <algorithm>
 #include <utility>
 
 #include <glm/geometric.hpp>
 
+#include "Hit.h"
 #include "HitShader.h"
+#include "Scene.h"
 
 namespace v3d::render::offline::trace {
 
@@ -24,14 +31,14 @@ namespace {
  * rather than a numerical one. The offset is along the normal rather than along the ray,
  * because an offset along a ray nearly parallel to the surface stays on the surface.
  **/
-const float EPSILON = 1.0e-4f;
+const float EPSILON = 1.0e-4F;
 
 };  // namespace
 
 Tracer::Tracer(const Scene* scene, v3d::render::offline::Textures* textures) :
     scene_(scene), textures_(textures) {
     if (scene_ != nullptr) {
-        poses_ = scene_->poses(0.0f);
+        poses_ = scene_->poses(0.0F);
     }
 }
 
@@ -49,7 +56,7 @@ Tracer::Run & Tracer::run(const v3d::render::offline::sl::InstancePtr & shader) 
         return held;
     }
     held.program = &shader->program();
-    // a batch of one: a hit is not a special case of the model
+    // a batch of one point: a hit runs the same machine as a grid
     held.machine.prepare(shader->program(), 1);
     held.globals = v3d::render::offline::sl::Globals(shader->program());
     return held;
@@ -61,34 +68,34 @@ void Tracer::time(float when) {
     }
 }
 
-glm::vec3 Tracer::transmitted(const glm::vec3 & from, const glm::vec3 & to, const glm::vec3 & geometric) {
-    const glm::vec3 along = to - from;
+glm::vec3 Tracer::transmitted(const v3d::type::geometry::Line & path, const glm::vec3 & geometric) {
+    const glm::vec3 & along = path.direction;
     const float span = glm::length(along);
-    if (scene_ == nullptr || span <= 0.0f) {
-        return glm::vec3(1.0f);
+    if (scene_ == nullptr || span <= 0.0F) {
+        return glm::vec3(1.0F);
     }
 
     /*
-        The ray leaves the surface it is shading, so it starts off it: exactly on it, it
-        meets it. The offset is along the geometric normal and toward the light, which is
-        the side the light is on - a ray leaving the back of a surface would otherwise
-        start inside it.
+        The ray starts a small offset from the surface it leaves, because a ray that starts
+        exactly on the surface hits it. The offset is along the geometric normal, on the
+        side the light is on. A ray leaving the back of a surface would otherwise start
+        inside it.
     */
-    const float side = glm::dot(geometric, along) < 0.0f ? -1.0f : 1.0f;
-    const v3d::type::geometry::Ray ray(from + geometric * (side * EPSILON), along / span);
+    const float side = glm::dot(geometric, along) < 0.0F ? -1.0F : 1.0F;
+    const v3d::type::geometry::Ray ray({.origin = path.origin + (geometric * (side * EPSILON)), .direction = along / span});
 
     /*
-        Everything between here and the light takes its share, and nothing beyond the light
-        does. An occluder lets through what its Os does not stop. Os is read off the
-        primitive rather than by running its shader. A shadow is a visibility question, and
-        asking a shader would make every shadow ray a shading one.
+        Each occluder between the shading point and the light lets through what its Os
+        does not stop. Nothing beyond the light counts. Os is read from the primitive, and
+        its shader is not run: a shadow ray only tests visibility, and running a shader would
+        make every shadow ray a shading ray.
     */
-    glm::vec3 through(1.0f);
-    float past = 0.0f;
+    glm::vec3 through(1.0F);
+    float past = 0.0F;
     Hit blocker;
     while (scene_->nearest(ray, past, &blocker, poses_) && blocker.distance < span) {
-        through *= glm::vec3(1.0f) - blocker.primitive->opacity();
-        if (std::max(through.r, std::max(through.g, through.b)) <= 0.0f) {
+        through *= glm::vec3(1.0F) - blocker.primitive->opacity();
+        if (std::max(through.r, std::max(through.g, through.b)) <= 0.0F) {
             break;
         }
         past = blocker.distance;
@@ -96,20 +103,21 @@ glm::vec3 Tracer::transmitted(const glm::vec3 & from, const glm::vec3 & to, cons
     return through;
 }
 
-glm::vec3 Tracer::traced(const glm::vec3 & origin, const glm::vec3 & direction, const glm::vec3 & geometric) {
+glm::vec3 Tracer::traced(const v3d::type::geometry::Line & path, const glm::vec3 & geometric) {
+    const glm::vec3 & direction = path.direction;
     if (scene_ == nullptr) {
-        return glm::vec3(0.0f);
+        return glm::vec3(0.0F);
     }
     const float span = glm::length(direction);
     // a ray past the scene's depth returns the background, which bounds the recursion
-    if (depth_ >= scene_->traceDepth() || span <= 0.0f) {
+    if (depth_ >= scene_->traceDepth() || span <= 0.0F) {
         return scene_->background();
     }
-    const float side = glm::dot(geometric, direction) < 0.0f ? -1.0f : 1.0f;
-    const glm::vec3 start = origin + geometric * (side * EPSILON);
+    const float side = glm::dot(geometric, direction) < 0.0F ? -1.0F : 1.0F;
+    const glm::vec3 start = path.origin + (geometric * (side * EPSILON));
 
     depth_++;
-    const Seen seen = see(v3d::type::geometry::Ray(start, direction / span));
+    const Seen seen = see(v3d::type::geometry::Ray({.origin = start, .direction = direction / span}));
     depth_--;
     return seen.colour;
 }
@@ -121,39 +129,38 @@ Tracer::Seen Tracer::see(const v3d::type::geometry::Ray & ray) {
     }
     /*
         Each surface goes behind what is in front of it: C += (1 - A) Ci and A += (1 - A) Oi,
-        with Ci already premultiplied. The next surface is searched for past the last one,
-        so the loop ends: the distances only grow, and a ray meets each primitive at most
-        twice.
+        with Ci already premultiplied. Each search starts past the last hit, so the distance
+        only grows. A ray meets each primitive at most twice, so the loop ends.
     */
-    float past = 0.0f;
+    float past = 0.0F;
     Hit hit;
     while (scene_->nearest(ray, past, &hit, poses_)) {
-        glm::vec3 opacity(1.0f);
+        glm::vec3 opacity(1.0F);
         const glm::vec3 colour = shade(hit, &opacity);
         if (!seen.hit) {
             seen.hit = true;
             seen.distance = hit.distance;
         }
-        seen.colour += (glm::vec3(1.0f) - seen.opacity) * colour;
-        seen.opacity += (glm::vec3(1.0f) - seen.opacity) * opacity;
-        if (std::min(seen.opacity.r, std::min(seen.opacity.g, seen.opacity.b)) >= 1.0f) {
+        seen.colour += (glm::vec3(1.0F) - seen.opacity) * colour;
+        seen.opacity += (glm::vec3(1.0F) - seen.opacity) * opacity;
+        if (std::min(seen.opacity.r, std::min(seen.opacity.g, seen.opacity.b)) >= 1.0F) {
             return seen;
         }
         past = hit.distance;
     }
-    seen.colour += (glm::vec3(1.0f) - seen.opacity) * scene_->background();
+    seen.colour += (glm::vec3(1.0F) - seen.opacity) * scene_->background();
     return seen;
 }
 
 glm::vec3 Tracer::shade(const Hit & hit) {
-    glm::vec3 opacity(1.0f);
+    glm::vec3 opacity(1.0F);
     return shade(hit, &opacity);
 }
 
 glm::vec3 Tracer::shade(const Hit & hit, glm::vec3* opacity) {
     if (hit.primitive == nullptr) {
-        *opacity = glm::vec3(0.0f);
-        return scene_ == nullptr ? glm::vec3(0.0f) : scene_->background();
+        *opacity = glm::vec3(0.0F);
+        return scene_ == nullptr ? glm::vec3(0.0F) : scene_->background();
     }
     HitShader shader(this, hit);
     return shader.shade(opacity);

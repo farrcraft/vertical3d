@@ -15,7 +15,7 @@ namespace v3d::dag {
 /**
  * A translation, a rotation and a scale, and the matrix they compose to.
  *
- * What derives from this owns a placement in the world rather than a position: a mesh
+ * A class that derives from this is placed in the world by matrix(). A mesh, for example,
  * describes its geometry about its own origin and is drawn through matrix().
  **/
 class Transform {
@@ -24,7 +24,7 @@ class Transform {
     virtual ~Transform();
 
     void scale(const glm::vec3 & s);
-    void rotation(const glm::quat & r);
+    void rotation(const glm::quat & orientation);
     void translation(const glm::vec3 & t);
 
     glm::vec3 scale(void) const;
@@ -32,18 +32,19 @@ class Transform {
     glm::vec3 translation(void) const;
 
     /**
-     * Move by an offset, rather than to a position - what a drag of a translate
-     * manipulator does, where the gesture measures a delta and not a destination.
+     * Adds offset to the translation. A drag of the translate manipulator measures a
+     * delta, not a destination, so it moves the mesh through this.
      **/
     void translate(const glm::vec3 & offset);
 
     /**
-     * @return the composition, translation * rotation * scale - type::Transform::matrix()
+     * @return translation * rotation * scale, composed by type::Transform::matrix()
      **/
     glm::mat4 matrix(void) const;
 
     /**
-     * @return all three parts at once, as the value an ecs entity is placed by
+     * @return the translation, rotation and scale as one type::Transform, the type an ecs
+     *         entity is placed by
      **/
     const v3d::type::Transform & value(void) const;
 

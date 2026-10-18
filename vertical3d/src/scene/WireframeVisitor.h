@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 
 #include "SceneVisitor.h"
 
@@ -17,20 +17,19 @@ namespace v3d::editor {
 /**
  * Draws every mesh of a scene as a wireframe, onto one line canvas.
  *
- * A mesh is drawn through its own transform, so the canvas carries the placement rather
- * than the geometry, and each edge is drawn once - see ownsEdge().
+ * A mesh is drawn through its own transform, so the canvas carries the placement, not the
+ * geometry. Each edge is drawn once, by the half edge ownsEdge() picks.
  *
- * Wireframe is the only display mode the editor has - a shaded mode needs a triangle
- * primitive, which is not the line one. That is also why a selected face is drawn as
- * its boundary and a selected vertex as a small box: there is nothing to fill either
- * with.
+ * Wireframe is the editor's only display mode, because a shaded mode needs a triangle
+ * primitive and this draws lines. For the same reason a selected face is drawn as its
+ * boundary, and a selected vertex as a small box.
  **/
 class WireframeVisitor final : public SceneVisitor {
  public:
     /**
-     * @param canvas where the segments are appended - nothing is cleared
+     * @param canvas where the segments are appended. Nothing is cleared
      **/
-    explicit WireframeVisitor(v3d::render::realtime::LineCanvas* canvas);
+    explicit WireframeVisitor(v3d::render::realtime::canvas::Line* canvas);
 
     /**
      * Append one mesh's wireframe.
@@ -43,7 +42,7 @@ class WireframeVisitor final : public SceneVisitor {
      **/
     void markers(const boost::shared_ptr<v3d::brep::BRep>& mesh);
 
-    v3d::render::realtime::LineCanvas* canvas_;
+    v3d::render::realtime::canvas::Line* canvas_;
     glm::vec4 wire_;
     glm::vec4 object_;
     glm::vec4 component_;

@@ -10,6 +10,7 @@
 #include <api/render/realtime/vulkan/frame/Timings.h>
 
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -29,13 +30,11 @@ const VkFormat colourFormat = VK_FORMAT_R8G8B8A8_UNORM;
 const uint32_t width = 64;
 const uint32_t height = 32;
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(timings_test)
 
 /**
- * Two passes are timed under their names, in the order they were recorded, once the slot that
- * recorded them comes round again - and every span is a real duration.
+ * Two passes are timed under their names, in the order they were recorded, and every span is a
+ * real duration. The times are read when the ring slot that recorded them is begun again.
  **/
 BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -45,7 +44,7 @@ BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
         return;
     }
 
-    boost::shared_ptr<RenderTarget> target =
+    const boost::shared_ptr<RenderTarget> target =
         boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
     Recorder::Target described;
     described.image = target->image();
@@ -54,12 +53,13 @@ BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
     described.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     Frame frame;
-    frame.pass("first")->clearColour(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    frame.pass("first")->clearColour(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
     const boost::shared_ptr<Pass> second = frame.pass("second");
     second->keepColour();
 
     BOOST_CHECK(timings.last().empty());
-    // a slot's spans are read when it is begun again, so one round of the ring and one more
+    // a slot's spans are read when the slot is begun again, so record one full round of the
+    // ring and one frame more
     const uint32_t frames = headless.context->ring()->framesInFlight() + 1;
     for (uint32_t index = 0; index < frames; ++index) {
         VkCommandBuffer commands = headless.context->ring()->begin();
@@ -69,13 +69,13 @@ BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
     }
 
     const std::vector<Timings::Timing>& spans = timings.last();
-    BOOST_REQUIRE_EQUAL(spans.size(), 2u);
+    BOOST_REQUIRE_EQUAL(spans.size(), 2U);
     BOOST_CHECK_EQUAL(spans[0].name, "first");
     BOOST_CHECK_EQUAL(spans[1].name, "second");
     for (const Timings::Timing& span : spans) {
         BOOST_CHECK(std::isfinite(span.milliseconds));
         BOOST_CHECK(span.milliseconds >= 0.0);
-        // a cleared 64 by 32 target, so anything near a second is a misread rather than a pass
+        // the pass only clears a 64 by 32 target, so a span near a second is a misread
         BOOST_CHECK(span.milliseconds < 1000.0);
     }
     BOOST_CHECK(headless.silent());
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
  **/
 BOOST_AUTO_TEST_CASE(a_frame_recorded_without_timings_times_nothing) {
     v3d::test::Headless headless(colourFormat, width, height);
-    boost::shared_ptr<RenderTarget> target =
+    const boost::shared_ptr<RenderTarget> target =
         boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
     Recorder::Target described;
     described.image = target->image();
@@ -107,3 +107,5 @@ BOOST_AUTO_TEST_CASE(a_frame_recorded_without_timings_times_nothing) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

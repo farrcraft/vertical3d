@@ -11,7 +11,9 @@
 #include <api/render/offline/sl/Emitter.h>
 #include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <api/render/offline/sl/syntax/Function.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 
 #include <set>
@@ -82,38 +84,36 @@ float answer(const std::string & expression) {
     return Shaded("float answer = " + expression + ";").number("answer");
 }
 
-};  // namespace
-
 /**
  * The maths, each against the value the standard gives it. They share one loop over the
  * components in the machine, so a case per name checks that each name reaches its own body
  * rather than its neighbour in the table.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_maths_test) {
-    BOOST_CHECK_CLOSE(answer("abs(-3)"), 3.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("sign(-3)"), -1.0f, 0.01f);
-    BOOST_CHECK_SMALL(answer("sign(0)"), 0.0001f);
-    BOOST_CHECK_CLOSE(answer("floor(1.7)"), 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("ceil(1.2)"), 2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("round(1.5)"), 2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("sqrt(9)"), 3.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("pow(2, 10)"), 1024.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("exp(0)"), 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("log(1)"), 0.0f, 0.01f);
+    BOOST_CHECK_CLOSE(answer("abs(-3)"), 3.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("sign(-3)"), -1.0F, 0.01F);
+    BOOST_CHECK_SMALL(answer("sign(0)"), 0.0001F);
+    BOOST_CHECK_CLOSE(answer("floor(1.7)"), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("ceil(1.2)"), 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("round(1.5)"), 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("sqrt(9)"), 3.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("pow(2, 10)"), 1024.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("exp(0)"), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("log(1)"), 0.0F, 0.01F);
     // the two argument form is a logarithm to a base rather than a second natural log
-    BOOST_CHECK_CLOSE(answer("log(8, 2)"), 3.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("min(4, 7)"), 4.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("max(4, 7)"), 7.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("clamp(9, 0, 5)"), 5.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("mix(10, 20, 0.25)"), 12.5f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("radians(180)"), 3.14159f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("degrees(3.14159265)"), 180.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("sin(0) + cos(0)"), 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("tan(0.7853981)"), 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("degrees(asin(1))"), 90.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("degrees(acos(0))"), 90.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("degrees(atan(1))"), 45.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("degrees(atan(1, 1))"), 45.0f, 0.01f);
+    BOOST_CHECK_CLOSE(answer("log(8, 2)"), 3.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("min(4, 7)"), 4.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("max(4, 7)"), 7.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("clamp(9, 0, 5)"), 5.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("mix(10, 20, 0.25)"), 12.5F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("radians(180)"), 3.14159F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("degrees(3.14159265)"), 180.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("sin(0) + cos(0)"), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("tan(0.7853981)"), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("degrees(asin(1))"), 90.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("degrees(acos(0))"), 90.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("degrees(atan(1))"), 45.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("degrees(atan(1, 1))"), 45.0F, 0.01F);
 }
 
 /**
@@ -122,8 +122,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_maths_test) {
  * to it.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_mod_test) {
-    BOOST_CHECK_CLOSE(answer("mod(7, 3)"), 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("mod(-1, 3)"), 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(answer("mod(7, 3)"), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("mod(-1, 3)"), 2.0F, 0.01F);
 }
 
 /**
@@ -131,13 +131,13 @@ BOOST_AUTO_TEST_CASE(sllibrary_mod_test) {
  * of each are the edges first and the value last.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_step_test) {
-    BOOST_CHECK_SMALL(answer("step(0.5, 0.2)"), 0.0001f);
-    BOOST_CHECK_CLOSE(answer("step(0.5, 0.9)"), 1.0f, 0.01f);
-    BOOST_CHECK_SMALL(answer("smoothstep(0, 1, -1)"), 0.0001f);
-    BOOST_CHECK_CLOSE(answer("smoothstep(0, 1, 2)"), 1.0f, 0.01f);
+    BOOST_CHECK_SMALL(answer("step(0.5, 0.2)"), 0.0001F);
+    BOOST_CHECK_CLOSE(answer("step(0.5, 0.9)"), 1.0F, 0.01F);
+    BOOST_CHECK_SMALL(answer("smoothstep(0, 1, -1)"), 0.0001F);
+    BOOST_CHECK_CLOSE(answer("smoothstep(0, 1, 2)"), 1.0F, 0.01F);
     // the midpoint of the curve, which is the only value of it that is also the linear one
-    BOOST_CHECK_CLOSE(answer("smoothstep(0, 1, 0.5)"), 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("smoothstep(0, 1, 0.25)"), 0.15625f, 0.01f);
+    BOOST_CHECK_CLOSE(answer("smoothstep(0, 1, 0.5)"), 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("smoothstep(0, 1, 0.25)"), 0.15625F, 0.01F);
 }
 
 /**
@@ -147,9 +147,9 @@ BOOST_AUTO_TEST_CASE(sllibrary_step_test) {
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_componentwise_over_a_colour_test) {
     const Shaded shaded("color answer = mix(color (0, 10, 20), color (10, 20, 40), 0.5);");
-    BOOST_CHECK_CLOSE(shaded.triple("answer").r, 5.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("answer").g, 15.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("answer").b, 30.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("answer").r, 5.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("answer").g, 15.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("answer").b, 30.0F, 0.01F);
 }
 
 /**
@@ -165,65 +165,66 @@ BOOST_AUTO_TEST_CASE(sllibrary_componentwise_promotes_test) {
         "color squared = pow(color (1, 2, 3), 2);\n"
         "point rooted = sqrt(point (4, 9, 16));");
 
-    BOOST_CHECK_SMALL(shaded.triple("floored").r, 0.0001f);
-    BOOST_CHECK_CLOSE(shaded.triple("floored").g, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("floored").b, 2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("mixed").r, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("mixed").b, 3.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("absolute").r, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("absolute").g, 2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("squared").b, 9.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("rooted").x, 2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("rooted").z, 4.0f, 0.01f);
+    BOOST_CHECK_SMALL(shaded.triple("floored").r, 0.0001F);
+    BOOST_CHECK_CLOSE(shaded.triple("floored").g, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("floored").b, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("mixed").r, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("mixed").b, 3.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("absolute").r, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("absolute").g, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("squared").b, 9.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("rooted").x, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("rooted").z, 4.0F, 0.01F);
 }
 
 /**
- * The geometry that is a number out of directions.
+ * The geometric built-ins that measure directions and points: length, distance and
+ * normalize.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_geometry_test) {
-    BOOST_CHECK_CLOSE(answer("length(vector (3, 4, 0))"), 5.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("distance(point (1, 0, 0), point (1, 3, 4))"), 5.0f, 0.01f);
+    BOOST_CHECK_CLOSE(answer("length(vector (3, 4, 0))"), 5.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("distance(point (1, 0, 0), point (1, 3, 4))"), 5.0F, 0.01F);
 
     const Shaded shaded("vector answer = normalize(vector (0, 0, 5));");
-    BOOST_CHECK_CLOSE(shaded.triple("answer").z, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("answer").z, 1.0F, 0.01F);
 
     // a zero direction has no unit, and a shader that normalized one renders black rather
     // than rendering nothing at all
     const Shaded zero("vector answer = normalize(vector (0, 0, 0));");
-    BOOST_CHECK_SMALL(zero.triple("answer").z, 0.0001f);
+    BOOST_CHECK_SMALL(zero.triple("answer").z, 0.0001F);
 }
 
 /**
- * faceforward turns a normal to the side its reference is on, hand worked: against an
- * incident direction coming from in front, the normal is left alone; from behind, it is
- * flipped. The two argument form has no Ng and uses the normal as its own reference.
+ * faceforward turns a normal to the side its reference is on, checked against hand-worked
+ * values. An incident direction from in front leaves the normal alone, and one
+ * from behind flips it. The two argument form has no Ng and uses the normal as its own reference.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_faceforward_test) {
     const Shaded toward("normal answer = faceforward(normal (0, 0, 1), vector (0, 0, -1));");
-    BOOST_CHECK_CLOSE(toward.triple("answer").z, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(toward.triple("answer").z, 1.0F, 0.01F);
 
     const Shaded away("normal answer = faceforward(normal (0, 0, 1), vector (0, 0, 1));");
-    BOOST_CHECK_CLOSE(away.triple("answer").z, -1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(away.triple("answer").z, -1.0F, 0.01F);
 
     // three arguments, where the reference faces the other way from the normal and decides
     const Shaded reference(
         "normal answer = faceforward(normal (0, 0, 1), vector (0, 0, -1), normal (0, 0, -1));");
-    BOOST_CHECK_CLOSE(reference.triple("answer").z, -1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(reference.triple("answer").z, -1.0F, 0.01F);
 }
 
 /**
  * reflect and refract against hand-worked values. A ray coming down onto a surface facing
- * up reflects back up; through equal media it carries straight on; and at a grazing angle
- * into a denser one it turns toward the normal.
+ * up reflects back up. Through equal media it carries straight on. At 45 degrees into a
+ * denser medium it turns toward the normal.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_reflect_and_refract_test) {
     const Shaded mirrored("vector answer = reflect(vector (1, 0, -1), normal (0, 0, 1));");
-    BOOST_CHECK_CLOSE(mirrored.triple("answer").x, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(mirrored.triple("answer").z, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(mirrored.triple("answer").x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(mirrored.triple("answer").z, 1.0F, 0.01F);
 
     // eta of one is no boundary at all, so the direction is unchanged
     const Shaded straight("vector answer = refract(vector (0, 0, -1), normal (0, 0, 1), 1);");
-    BOOST_CHECK_CLOSE(straight.triple("answer").z, -1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(straight.triple("answer").z, -1.0F, 0.01F);
 
     /*
         45 degrees into a medium of eta 0.5: sin of the refracted angle is half the sin of
@@ -231,14 +232,14 @@ BOOST_AUTO_TEST_CASE(sllibrary_reflect_and_refract_test) {
     */
     const Shaded bent(
         "vector answer = refract(vector (0.70710678, 0, -0.70710678), normal (0, 0, 1), 0.5);");
-    BOOST_CHECK_CLOSE(bent.triple("answer").x, 0.35355f, 0.1f);
-    BOOST_CHECK_CLOSE(bent.triple("answer").z, -0.93541f, 0.1f);
+    BOOST_CHECK_CLOSE(bent.triple("answer").x, 0.35355F, 0.1F);
+    BOOST_CHECK_CLOSE(bent.triple("answer").z, -0.93541F, 0.1F);
 
     // past the critical angle nothing is refracted at all, which is total internal reflection
     const Shaded trapped(
         "vector answer = refract(vector (0.99, 0, -0.141), normal (0, 0, 1), 2);");
-    BOOST_CHECK_SMALL(trapped.triple("answer").x, 0.0001f);
-    BOOST_CHECK_SMALL(trapped.triple("answer").z, 0.0001f);
+    BOOST_CHECK_SMALL(trapped.triple("answer").x, 0.0001F);
+    BOOST_CHECK_SMALL(trapped.triple("answer").z, 0.0001F);
 }
 
 /**
@@ -252,40 +253,40 @@ BOOST_AUTO_TEST_CASE(sllibrary_reflect_and_refract_test) {
 BOOST_AUTO_TEST_CASE(sllibrary_fresnel_test) {
     const Shaded straight("float kr = 0; float kt = 0; vector R = 0; vector T = 0;\n"
         "fresnel(vector (0, 0, -1), normal (0, 0, 1), 1 / 1.5, kr, kt, R, T);");
-    BOOST_CHECK_CLOSE(straight.number("kr"), 0.04f, 0.1f);
-    BOOST_CHECK_CLOSE(straight.number("kt"), 0.96f, 0.1f);
-    BOOST_CHECK_CLOSE(straight.triple("R").z, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(straight.triple("T").z, -1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(straight.number("kr"), 0.04F, 0.1F);
+    BOOST_CHECK_CLOSE(straight.number("kt"), 0.96F, 0.1F);
+    BOOST_CHECK_CLOSE(straight.triple("R").z, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(straight.triple("T").z, -1.0F, 0.01F);
 
     const Shaded angled("float kr = 0; float kt = 0;\n"
         "fresnel(vector (1, 0, -1), normal (0, 0, 1), 1 / 1.5, kr, kt);");
-    BOOST_CHECK_CLOSE(angled.number("kr"), 0.050241f, 0.1f);
-    BOOST_CHECK_CLOSE(angled.number("kt"), 1.0f - 0.050241f, 0.1f);
+    BOOST_CHECK_CLOSE(angled.number("kr"), 0.050241F, 0.1F);
+    BOOST_CHECK_CLOSE(angled.number("kt"), 1.0F - 0.050241F, 0.1F);
 
     const Shaded trapped("float kr = 0; float kt = 0; vector R = 0; vector T = 0;\n"
         "fresnel(vector (0.99, 0, -0.141), normal (0, 0, 1), 2, kr, kt, R, T);");
-    BOOST_CHECK_CLOSE(trapped.number("kr"), 1.0f, 0.01f);
-    BOOST_CHECK_SMALL(trapped.number("kt"), 0.0001f);
-    BOOST_CHECK_SMALL(glm::length(trapped.triple("T")), 0.0001f);
+    BOOST_CHECK_CLOSE(trapped.number("kr"), 1.0F, 0.01F);
+    BOOST_CHECK_SMALL(trapped.number("kt"), 0.0001F);
+    BOOST_CHECK_SMALL(glm::length(trapped.triple("T")), 0.0001F);
 }
 
 /**
  * The component accessors and their setters, by name and by index. A setter writes the
- * value it was given rather than returning one; no other built-in does that.
+ * value it was given into its first argument rather than returning one.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_components_test) {
-    BOOST_CHECK_CLOSE(answer("xcomp(point (7, 8, 9))"), 7.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("ycomp(point (7, 8, 9))"), 8.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("zcomp(point (7, 8, 9))"), 9.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("comp(color (7, 8, 9), 1)"), 8.0f, 0.01f);
+    BOOST_CHECK_CLOSE(answer("xcomp(point (7, 8, 9))"), 7.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("ycomp(point (7, 8, 9))"), 8.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("zcomp(point (7, 8, 9))"), 9.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("comp(color (7, 8, 9), 1)"), 8.0F, 0.01F);
 
     const Shaded written(
         "point answer = point (1, 2, 3);\n"
         "setycomp(answer, 20);\n"
         "setcomp(answer, 2, 30);");
-    BOOST_CHECK_CLOSE(written.triple("answer").x, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(written.triple("answer").y, 20.0f, 0.01f);
-    BOOST_CHECK_CLOSE(written.triple("answer").z, 30.0f, 0.01f);
+    BOOST_CHECK_CLOSE(written.triple("answer").x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(written.triple("answer").y, 20.0F, 0.01F);
+    BOOST_CHECK_CLOSE(written.triple("answer").z, 30.0F, 0.01F);
 }
 
 /**
@@ -293,22 +294,21 @@ BOOST_AUTO_TEST_CASE(sllibrary_components_test) {
  * matrices they should.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_matrix_test) {
-    BOOST_CHECK_CLOSE(answer("determinant(matrix 1)"), 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("determinant(scale(matrix 1, vector (2, 3, 4)))"), 24.0f, 0.01f);
+    BOOST_CHECK_CLOSE(answer("determinant(matrix 1)"), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("determinant(scale(matrix 1, vector (2, 3, 4)))"), 24.0F, 0.01F);
     // a rotation and a translation each preserve volume, so the determinant is one
-    BOOST_CHECK_CLOSE(answer("determinant(translate(matrix 1, vector (5, 6, 7)))"), 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(answer("determinant(rotate(matrix 1, 0.5, vector (0, 1, 0)))"), 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(answer("determinant(translate(matrix 1, vector (5, 6, 7)))"), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(answer("determinant(rotate(matrix 1, 0.5, vector (0, 1, 0)))"), 1.0F, 0.01F);
 }
 
 /**
- * The renderer resolves a named coordinate space. With none attached the value arrives in
- * the space it was already in and the machine reports it once, rather than a scene silently
- * rendering in the wrong place.
+ * The renderer resolves a named coordinate space. With no renderer attached, the value
+ * arrives in the space it was already in, and the machine reports the unknown space once.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_transform_without_a_renderer_test) {
     const Shaded shaded("point answer = ptransform(\"world\", point (1, 2, 3));");
-    BOOST_CHECK_CLOSE(shaded.triple("answer").x, 1.0f, 0.01f);
-    BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 1u);
+    BOOST_CHECK_CLOSE(shaded.triple("answer").x, 1.0F, 0.01F);
+    BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 1U);
     BOOST_CHECK_EQUAL(shaded.machine().reports()[0],
         "the coordinate space \"world\" is not one this renderer knows");
 }
@@ -322,7 +322,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_printf_test) {
     const Shaded shaded(
         "color tint = color (0.5, 0, 1);\n"
         "printf(\"s is %f and the tint is %c\\n\", s, tint);", 3);
-    BOOST_REQUIRE_EQUAL(shaded.machine().printed().size(), 3u);
+    BOOST_REQUIRE_EQUAL(shaded.machine().printed().size(), 3U);
     BOOST_CHECK(shaded.machine().printed()[0].find("s is 0.000000") != std::string::npos);
     BOOST_CHECK(shaded.machine().printed()[0].find("(0.500000 0.000000 1.000000)") != std::string::npos);
     // no report: reports are only for what the machine could not do
@@ -335,7 +335,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_printf_test) {
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_printf_missing_argument_test) {
     const Shaded shaded("printf(\"%f and %f\", 1);");
-    BOOST_REQUIRE_EQUAL(shaded.machine().printed().size(), 1u);
+    BOOST_REQUIRE_EQUAL(shaded.machine().printed().size(), 1U);
     BOOST_CHECK_EQUAL(shaded.machine().printed()[0], "1.000000 and (missing)");
 }
 
@@ -348,10 +348,10 @@ BOOST_AUTO_TEST_CASE(sllibrary_stubs_report_once_test) {
         "float b = shadow(\"nowhere.shd\", P + 1);\n"
         "Ci = a + b;", 16);
 
-    BOOST_CHECK_SMALL(shaded.number("a"), 0.0001f);
+    BOOST_CHECK_SMALL(shaded.number("a"), 0.0001F);
 
     const std::vector<std::string> & reports = shaded.machine().reports();
-    BOOST_REQUIRE_EQUAL(reports.size(), 1u);
+    BOOST_REQUIRE_EQUAL(reports.size(), 1U);
     BOOST_CHECK_EQUAL(reports[0],
         "'shadow' is declared and does nothing yet, so it answers its default");
 }
@@ -362,7 +362,7 @@ namespace {
  * Two by two texels: red and green across the top, blue and white across the bottom.
  **/
 v3d::render::offline::Texture quartered() {
-    v3d::image::Image image(2, 2, 24);
+    v3d::image::Image image(glm::uvec2(2, 2), 24);
     const unsigned char texels[12] = {
         255, 0, 0,   0, 255, 0,
         0, 0, 255,   255, 255, 255
@@ -404,11 +404,11 @@ BOOST_AUTO_TEST_CASE(sllibrary_texture_test) {
         "color own = texture(\"quarters\");\n"
         "float red = float texture(\"quarters\", 0.25, 0.25);", 1, &renderer);
 
-    BOOST_CHECK_SMALL(glm::length(shaded.triple("placed") - glm::vec3(0.0f, 1.0f, 0.0f)), 0.0001f);
-    BOOST_CHECK_SMALL(glm::length(shaded.triple("between") - glm::vec3(0.5f, 0.5f, 1.0f)), 0.0001f);
+    BOOST_CHECK_SMALL(glm::length(shaded.triple("placed") - glm::vec3(0.0F, 1.0F, 0.0F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::length(shaded.triple("between") - glm::vec3(0.5F, 0.5F, 1.0F)), 0.0001F);
     // a batch of one has s and t at zero, which is the corner the four texels meet at
-    BOOST_CHECK_SMALL(glm::length(shaded.triple("own") - glm::vec3(0.5f, 0.5f, 0.5f)), 0.0001f);
-    BOOST_CHECK_CLOSE(shaded.number("red"), 1.0f, 0.01f);
+    BOOST_CHECK_SMALL(glm::length(shaded.triple("own") - glm::vec3(0.5F, 0.5F, 0.5F)), 0.0001F);
+    BOOST_CHECK_CLOSE(shaded.number("red"), 1.0F, 0.01F);
     BOOST_CHECK(shaded.machine().reports().empty());
 }
 
@@ -421,9 +421,9 @@ BOOST_AUTO_TEST_CASE(sllibrary_missing_texture_test) {
         "color a = texture(\"nowhere.png\", s, t);\n"
         "color b = texture(\"nowhere.png\");", 16, &renderer);
 
-    BOOST_CHECK_SMALL(glm::length(shaded.triple("a", 7)), 0.0001f);
+    BOOST_CHECK_SMALL(glm::length(shaded.triple("a", 7)), 0.0001F);
     const std::vector<std::string> & reports = shaded.machine().reports();
-    BOOST_REQUIRE_EQUAL(reports.size(), 1u);
+    BOOST_REQUIRE_EQUAL(reports.size(), 1U);
     BOOST_CHECK_EQUAL(reports[0], "the texture \"nowhere.png\" cannot be read, so it answers black");
 }
 
@@ -440,15 +440,15 @@ BOOST_AUTO_TEST_CASE(sllibrary_noise_test) {
         "point moved = point noise(2.6);");
 
     BOOST_CHECK_EQUAL(shaded.number("line"), shaded.number("plane"));
-    BOOST_CHECK_EQUAL(shaded.number("line"), v3d::render::offline::noise(glm::vec3(1.3f, 0.0f, 0.0f)));
-    BOOST_CHECK_EQUAL(shaded.number("space"), v3d::render::offline::noise(glm::vec3(1.3f, 0.7f, 2.1f)));
+    BOOST_CHECK_EQUAL(shaded.number("line"), v3d::render::offline::noise(glm::vec3(1.3F, 0.0F, 0.0F)));
+    BOOST_CHECK_EQUAL(shaded.number("space"), v3d::render::offline::noise(glm::vec3(1.3F, 0.7F, 2.1F)));
     const glm::vec3 tint = shaded.triple("tint");
     BOOST_CHECK_EQUAL(tint.r, shaded.number("space"));
     BOOST_CHECK_NE(tint.r, tint.g);
     BOOST_CHECK_NE(tint.g, tint.b);
     for (int i = 0; i < 3; i++) {
-        BOOST_CHECK_GE(shaded.triple("moved")[i], 0.0f);
-        BOOST_CHECK_LE(shaded.triple("moved")[i], 1.0f);
+        BOOST_CHECK_GE(shaded.triple("moved")[i], 0.0F);
+        BOOST_CHECK_LE(shaded.triple("moved")[i], 1.0F);
     }
     BOOST_CHECK(shaded.machine().reports().empty());
 }
@@ -463,9 +463,9 @@ BOOST_AUTO_TEST_CASE(sllibrary_string_comparison_test) {
         "float named = name != \"\";\n"
         "float empty = name == \"\";\n"
         "float same = name == \"blocks.png\";");
-    BOOST_CHECK_EQUAL(shaded.number("named"), 1.0f);
-    BOOST_CHECK_EQUAL(shaded.number("empty"), 0.0f);
-    BOOST_CHECK_EQUAL(shaded.number("same"), 1.0f);
+    BOOST_CHECK_EQUAL(shaded.number("named"), 1.0F);
+    BOOST_CHECK_EQUAL(shaded.number("empty"), 0.0F);
+    BOOST_CHECK_EQUAL(shaded.number("same"), 1.0F);
 }
 
 namespace {
@@ -485,16 +485,16 @@ class Spaces final : public v3d::render::offline::sl::runtime::Renderer {
  public:
     bool space(const std::string & name, glm::mat4x4* matrix) override {
         if (name == "world") {
-            *matrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(2.0f, 3.0f, 4.0f)) *
-                glm::scale(glm::mat4x4(1.0f), glm::vec3(1.0f, 1.0f, 2.0f));
+            *matrix = glm::translate(glm::mat4x4(1.0F), glm::vec3(2.0F, 3.0F, 4.0F)) *
+                glm::scale(glm::mat4x4(1.0F), glm::vec3(1.0F, 1.0F, 2.0F));
             return true;
         }
         if (name == "shader") {
-            *matrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f));
+            *matrix = glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, -2.0F, 0.0F));
             return true;
         }
         if (name == "NDC") {
-            *matrix = glm::scale(glm::mat4x4(1.0f), glm::vec3(1.0f, 1.0f, 0.1f));
+            *matrix = glm::scale(glm::mat4x4(1.0F), glm::vec3(1.0F, 1.0F, 0.1F));
             return true;
         }
         return false;
@@ -517,14 +517,14 @@ BOOST_AUTO_TEST_CASE(sllibrary_transforms_test) {
         "float away = depth(point (0, 0, 5));", 1, &renderer);
 
     // scaled to (1, 1, 2) and then moved by (2, 3, 4)
-    BOOST_CHECK_CLOSE(shaded.triple("moved").x, 3.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("moved").z, 6.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("moved").x, 3.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("moved").z, 6.0F, 0.01F);
     // the same scale with no move, because a direction has no position to move
-    BOOST_CHECK_CLOSE(shaded.triple("turned").x, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("turned").z, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("turned").x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("turned").z, 2.0F, 0.01F);
     // the inverse transpose, which is the reciprocal of that scale rather than the scale
-    BOOST_CHECK_CLOSE(shaded.triple("tilted").z, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.number("away"), 0.5f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("tilted").z, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.number("away"), 0.5F, 0.01F);
     BOOST_CHECK(shaded.machine().reports().empty());
 }
 
@@ -538,11 +538,11 @@ BOOST_AUTO_TEST_CASE(sllibrary_transform_between_two_spaces_test) {
         "point same = ptransform(\"world\", \"world\", point (1, 1, 1));\n"
         "point out = ptransform(\"world\", \"current\", point (3, 4, 6));", 1, &renderer);
 
-    BOOST_CHECK_CLOSE(shaded.triple("same").x, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("same").z, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("same").x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("same").z, 1.0F, 0.01F);
     // back the other way, which undoes the case above
-    BOOST_CHECK_CLOSE(shaded.triple("out").x, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("out").z, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("out").x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("out").z, 1.0F, 0.01F);
 }
 
 /**
@@ -558,12 +558,12 @@ BOOST_AUTO_TEST_CASE(sllibrary_transform_maps_current_into_the_named_space_test)
         "point moved = ptransform(\"shader\", point (0, 2, 0));", 1, &renderer);
 
     // the current origin through the world matrix is that matrix's translation
-    BOOST_CHECK_CLOSE(shaded.triple("origin").x, 2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("origin").y, 3.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("origin").z, 4.0f, 0.01f);
-    BOOST_CHECK_SMALL(shaded.triple("moved").x, 0.0001f);
-    BOOST_CHECK_SMALL(shaded.triple("moved").y, 0.0001f);
-    BOOST_CHECK_SMALL(shaded.triple("moved").z, 0.0001f);
+    BOOST_CHECK_CLOSE(shaded.triple("origin").x, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("origin").y, 3.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("origin").z, 4.0F, 0.01F);
+    BOOST_CHECK_SMALL(shaded.triple("moved").x, 0.0001F);
+    BOOST_CHECK_SMALL(shaded.triple("moved").y, 0.0001F);
+    BOOST_CHECK_SMALL(shaded.triple("moved").z, 0.0001F);
     BOOST_CHECK(shaded.machine().reports().empty());
 }
 
@@ -584,21 +584,21 @@ BOOST_AUTO_TEST_CASE(sllibrary_cast_maps_the_named_space_into_current_test) {
         "point back = ptransform(\"world\", point \"world\" (1, 1, 1));\n"
         "point placed = point \"shader\" (0, 0, 1);", 1, &renderer);
 
-    BOOST_CHECK_CLOSE(shaded.triple("origin").x, -2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("origin").y, -3.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("origin").z, -2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("along").x, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("along").z, 0.5f, 0.01f);
-    BOOST_CHECK_SMALL(shaded.triple("facing").x, 0.0001f);
-    BOOST_CHECK_CLOSE(shaded.triple("facing").z, 2.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("origin").x, -2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("origin").y, -3.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("origin").z, -2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("along").x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("along").z, 0.5F, 0.01F);
+    BOOST_CHECK_SMALL(shaded.triple("facing").x, 0.0001F);
+    BOOST_CHECK_CLOSE(shaded.triple("facing").z, 2.0F, 0.01F);
     // the cast and ptransform undo each other
-    BOOST_CHECK_CLOSE(shaded.triple("back").x, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("back").y, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("back").z, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(shaded.triple("back").x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("back").y, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("back").z, 1.0F, 0.01F);
     // stated in the shader's own space, which is two units up y in current space
-    BOOST_CHECK_SMALL(shaded.triple("placed").x, 0.0001f);
-    BOOST_CHECK_CLOSE(shaded.triple("placed").y, 2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("placed").z, 1.0f, 0.01f);
+    BOOST_CHECK_SMALL(shaded.triple("placed").x, 0.0001F);
+    BOOST_CHECK_CLOSE(shaded.triple("placed").y, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("placed").z, 1.0F, 0.01F);
     BOOST_CHECK(shaded.machine().reports().empty());
 }
 
@@ -632,14 +632,14 @@ BOOST_AUTO_TEST_CASE(sllibrary_matrix_order_test) {
 
     // ptransform moves (1, 1, 1) to (3, 4, 6) through "world": scaled by (1, 1, 2), then moved
     // by (2, 3, 4), which is the literal's last row
-    BOOST_CHECK_EQUAL(shaded.number("worldIsLiteral"), 1.0f);
-    BOOST_CHECK_EQUAL(shaded.number("moveThenDouble"), 1.0f);
-    BOOST_CHECK_EQUAL(shaded.number("doubleThenMove"), 1.0f);
-    BOOST_CHECK_EQUAL(shaded.number("moveThenHalve"), 1.0f);
-    BOOST_CHECK_EQUAL(shaded.number("translateFirst"), 1.0f);
-    BOOST_CHECK_EQUAL(shaded.number("scaleFirst"), 1.0f);
-    BOOST_CHECK_EQUAL(shaded.number("rotateFirst"), 1.0f);
-    BOOST_CHECK_EQUAL(shaded.number("spaceLast"), 1.0f);
+    BOOST_CHECK_EQUAL(shaded.number("worldIsLiteral"), 1.0F);
+    BOOST_CHECK_EQUAL(shaded.number("moveThenDouble"), 1.0F);
+    BOOST_CHECK_EQUAL(shaded.number("doubleThenMove"), 1.0F);
+    BOOST_CHECK_EQUAL(shaded.number("moveThenHalve"), 1.0F);
+    BOOST_CHECK_EQUAL(shaded.number("translateFirst"), 1.0F);
+    BOOST_CHECK_EQUAL(shaded.number("scaleFirst"), 1.0F);
+    BOOST_CHECK_EQUAL(shaded.number("rotateFirst"), 1.0F);
+    BOOST_CHECK_EQUAL(shaded.number("spaceLast"), 1.0F);
     BOOST_CHECK(shaded.machine().reports().empty());
 }
 
@@ -659,12 +659,12 @@ BOOST_AUTO_TEST_CASE(sllibrary_matrix_and_colour_spaces_test) {
         "color into = ctransform(\"rgb\", \"xyz\", color (0.25, 0.5, 0.75));", 1, &renderer);
 
     // the world matrix scales one axis by two and nothing else changes a volume
-    BOOST_CHECK_CLOSE(shaded.number("bulk"), 2.0f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("kept").g, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("other").g, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("both").g, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(shaded.triple("into").g, 0.5f, 0.01f);
-    BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 2u);
+    BOOST_CHECK_CLOSE(shaded.number("bulk"), 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("kept").g, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("other").g, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("both").g, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("into").g, 0.5F, 0.01F);
+    BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 2U);
     BOOST_CHECK_EQUAL(shaded.machine().reports()[0],
         "the colour space \"hsv\" is not one this renderer knows");
     BOOST_CHECK_EQUAL(shaded.machine().reports()[1],
@@ -678,25 +678,25 @@ BOOST_AUTO_TEST_CASE(sllibrary_matrix_and_colour_spaces_test) {
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_colour_cast_space_test) {
     const Shaded rgb("color red = color \"rgb\" (1, 0, 0);");
-    BOOST_CHECK_CLOSE(rgb.triple("red").r, 1.0f, 0.01f);
+    BOOST_CHECK_CLOSE(rgb.triple("red").r, 1.0F, 0.01F);
     BOOST_CHECK(rgb.machine().reports().empty());
 
     const Shaded hsv("color other = color \"hsv\" (0.25, 0.5, 0.75);");
-    BOOST_CHECK_CLOSE(hsv.triple("other").g, 0.5f, 0.01f);
-    BOOST_REQUIRE_EQUAL(hsv.machine().reports().size(), 1u);
+    BOOST_CHECK_CLOSE(hsv.triple("other").g, 0.5F, 0.01F);
+    BOOST_REQUIRE_EQUAL(hsv.machine().reports().size(), 1U);
     BOOST_CHECK_EQUAL(hsv.machine().reports()[0],
         "the colour space \"hsv\" is not one this renderer knows");
 }
 
 /**
- * calculatenormal needs the derivatives of the grid it is shading, which no renderer
- * supplies. It is a stub like the other three rather than returning a plausible value,
- * because a plausible value would make a scene render wrong silently.
+ * calculatenormal needs the derivatives of the grid it is shading, and no renderer supplies
+ * them. It is a stub that reports itself rather than returning a plausible value. A plausible
+ * value would make a scene render wrong silently.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_calculatenormal_is_a_stub_test) {
     const Shaded shaded("normal answer = calculatenormal(P);", 4);
-    BOOST_CHECK_SMALL(shaded.triple("answer").z, 0.0001f);
-    BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 1u);
+    BOOST_CHECK_SMALL(shaded.triple("answer").z, 0.0001F);
+    BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 1U);
     BOOST_CHECK_EQUAL(shaded.machine().reports()[0],
         "'calculatenormal' is declared and does nothing yet, so it answers its default");
 }
@@ -723,3 +723,5 @@ BOOST_AUTO_TEST_CASE(sllibrary_bodies_test) {
     BOOST_CHECK(declared == written);
     BOOST_CHECK(stubs == std::set<std::string>({ "calculatenormal", "shadow" }));
 }
+
+};  // namespace

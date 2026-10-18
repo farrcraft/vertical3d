@@ -6,6 +6,7 @@
 #include <api/asset/Writer.h>
 
 #include <fstream>
+#include <ios>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -46,13 +47,11 @@ class Sandbox {
 };
 
 std::string contents(const boost::filesystem::path& path) {
-    std::ifstream file(path.c_str(), std::ios::binary);
+    const std::ifstream file(path.c_str(), std::ios::binary);
     std::ostringstream text;
     text << file.rdbuf();
     return text.str();
 }
-
-};  // namespace
 
 /**
  * The serializer is pure, so what it produces has to parse back to what went in.
@@ -84,7 +83,7 @@ BOOST_AUTO_TEST_CASE(writer_round_trip_test) {
     BOOST_CHECK(read.at("nothing").is_null());
 
     const boost::json::array& scale = read.at("scale").as_array();
-    BOOST_REQUIRE_EQUAL(scale.size(), 3u);
+    BOOST_REQUIRE_EQUAL(scale.size(), 3U);
     BOOST_CHECK_EQUAL(scale[0].to_number<double>(), 1.5);
     BOOST_CHECK_EQUAL(scale[1].to_number<double>(), 2.0);
     BOOST_CHECK_EQUAL(scale[2].to_number<double>(), 0.25);
@@ -100,7 +99,7 @@ BOOST_AUTO_TEST_CASE(writer_round_trip_test) {
  **/
 BOOST_AUTO_TEST_CASE(writer_readable_test) {
     boost::json::object root;
-    root["coordinate"] = static_cast<double>(0.1f);
+    root["coordinate"] = static_cast<double>(0.1F);
     BOOST_CHECK_EQUAL(v3d::asset::serializeDocument(root), "{ \"coordinate\": 0.1 }");
 
     boost::json::object vector;
@@ -126,7 +125,7 @@ BOOST_AUTO_TEST_CASE(writer_readable_test) {
  * A double too large for a float prints as the double it is, and parses back to it.
  **/
 BOOST_AUTO_TEST_CASE(writer_double_beyond_float_range_test) {
-    boost::json::array numbers{ 1e300, -1e300, 1e39 };
+    const boost::json::array numbers{ 1e300, -1e300, 1e39 };
     const std::string text = v3d::asset::serializeDocument(numbers);
     BOOST_CHECK(text.find("inf") == std::string::npos);
 
@@ -135,7 +134,7 @@ BOOST_AUTO_TEST_CASE(writer_double_beyond_float_range_test) {
     BOOST_REQUIRE(!error);
     BOOST_REQUIRE(parsed.is_array());
     const boost::json::array& read = parsed.as_array();
-    BOOST_REQUIRE_EQUAL(read.size(), 3u);
+    BOOST_REQUIRE_EQUAL(read.size(), 3U);
     BOOST_CHECK_CLOSE(read[0].to_number<double>(), 1e300, 1e-9);
     BOOST_CHECK_CLOSE(read[1].to_number<double>(), -1e300, 1e-9);
     BOOST_CHECK_CLOSE(read[2].to_number<double>(), 1e39, 1e-9);
@@ -221,3 +220,5 @@ BOOST_AUTO_TEST_CASE(writer_missing_directory_test) {
     const Sandbox sandbox("missing");
     BOOST_CHECK(!v3d::asset::writeFile(sandbox.file("absent") / "file.json", "bytes"));
 }
+
+};  // namespace

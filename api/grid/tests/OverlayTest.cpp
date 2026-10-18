@@ -91,45 +91,42 @@ class QuadRecorder {
     std::vector<glm::vec4> colours_;
 };
 
-constexpr glm::vec4 INTERIOR(0.3f, 0.3f, 0.3f, 1.0f);
-constexpr glm::vec4 BORDER(0.8f, 0.8f, 0.9f, 1.0f);
-constexpr glm::vec4 HIGHLIGHT(0.2f, 0.6f, 1.0f, 0.4f);
-
-};  // namespace
+constexpr glm::vec4 INTERIOR(0.3F, 0.3F, 0.3F, 1.0F);
+constexpr glm::vec4 BORDER(0.8F, 0.8F, 0.9F, 1.0F);
+constexpr glm::vec4 HIGHLIGHT(0.2F, 0.6F, 1.0F, 0.4F);
 
 BOOST_AUTO_TEST_CASE(overlay_tile_corners_bound_the_tile_test) {
     const TileGrid grid(4, 4);
     const std::array<glm::vec3, 4> corners = tileCorners(grid, at(2, 1));
     const glm::vec3 centre = grid.tileToWorld(at(2, 1));
-    const float half = 0.5f * grid.tileSize();
+    const float half = 0.5F * grid.tileSize();
 
     for (const glm::vec3& corner : corners) {
-        BOOST_CHECK_CLOSE(corner.x - centre.x > 0.0f ? corner.x - centre.x : centre.x - corner.x, half, 0.01f);
-        BOOST_CHECK_CLOSE(corner.z - centre.z > 0.0f ? corner.z - centre.z : centre.z - corner.z, half, 0.01f);
+        BOOST_CHECK_CLOSE(corner.x - centre.x > 0.0F ? corner.x - centre.x : centre.x - corner.x, half, 0.01F);
+        BOOST_CHECK_CLOSE(corner.z - centre.z > 0.0F ? corner.z - centre.z : centre.z - corner.z, half, 0.01F);
     }
 
     // consecutive corners share an edge, so each is one tile side from the next and the
     // fourth closes back onto the first
     for (std::size_t corner = 0; corner < corners.size(); ++corner) {
         const glm::vec3 next = corners[(corner + 1) % corners.size()];
-        BOOST_CHECK_CLOSE(glm::length(next - corners[corner]), grid.tileSize(), 0.01f);
+        BOOST_CHECK_CLOSE(glm::length(next - corners[corner]), grid.tileSize(), 0.01F);
     }
 }
 
 BOOST_AUTO_TEST_CASE(overlay_is_lifted_clear_of_the_ground_test) {
     const TileGrid grid(4, 4);
 
-    // coplanar geometry z-fights the ground wherever depth testing is on, and every layer
-    // of the overlay shares one lift so none of them sinks into another
+    // every layer of the overlay sits at the same lift above the ground
     for (const glm::vec3& corner : tileCorners(grid, at(0, 0))) {
-        BOOST_CHECK_CLOSE(corner.y, v3d::grid::OVERLAY_LIFT, 0.01f);
+        BOOST_CHECK_CLOSE(corner.y, v3d::grid::OVERLAY_LIFT, 0.01F);
     }
 
     Recorder recorder;
     outlineGrid(grid, INTERIOR, BORDER, recorder.sink());
     for (const Segment& segment : recorder.segments()) {
-        BOOST_CHECK_CLOSE(segment.from.y, v3d::grid::OVERLAY_LIFT, 0.01f);
-        BOOST_CHECK_CLOSE(segment.to.y, v3d::grid::OVERLAY_LIFT, 0.01f);
+        BOOST_CHECK_CLOSE(segment.from.y, v3d::grid::OVERLAY_LIFT, 0.01F);
+        BOOST_CHECK_CLOSE(segment.to.y, v3d::grid::OVERLAY_LIFT, 0.01F);
     }
 }
 
@@ -139,12 +136,12 @@ BOOST_AUTO_TEST_CASE(overlay_outline_tile_closes_test) {
 
     outlineTile(grid, at(1, 1), BORDER, recorder.sink());
 
-    BOOST_CHECK_EQUAL(recorder.segments().size(), 4u);
+    BOOST_CHECK_EQUAL(recorder.segments().size(), 4U);
     // the four edges join end to end and the last comes back to the first
     for (std::size_t edge = 1; edge < recorder.segments().size(); ++edge) {
-        BOOST_CHECK_SMALL(glm::length(recorder.segments()[edge].from - recorder.segments()[edge - 1].to), 0.0001f);
+        BOOST_CHECK_SMALL(glm::length(recorder.segments()[edge].from - recorder.segments()[edge - 1].to), 0.0001F);
     }
-    BOOST_CHECK_SMALL(glm::length(recorder.segments().back().to - recorder.segments().front().from), 0.0001f);
+    BOOST_CHECK_SMALL(glm::length(recorder.segments().back().to - recorder.segments().front().from), 0.0001F);
 }
 
 BOOST_AUTO_TEST_CASE(overlay_outline_tile_off_the_grid_draws_nothing_test) {
@@ -163,11 +160,10 @@ BOOST_AUTO_TEST_CASE(overlay_grid_draws_the_boundaries_test) {
 
     outlineGrid(grid, INTERIOR, BORDER, recorder.sink());
 
-    // the lines are the boundaries rather than the tiles: five down the width and four
-    // across the height, not twelve tiles' worth
-    BOOST_CHECK_EQUAL(recorder.segments().size(), 9u);
-    BOOST_CHECK_EQUAL(recorder.coloured(BORDER), 4u);
-    BOOST_CHECK_EQUAL(recorder.coloured(INTERIOR), 5u);
+    // one line per boundary: five across the width and four across the height
+    BOOST_CHECK_EQUAL(recorder.segments().size(), 9U);
+    BOOST_CHECK_EQUAL(recorder.coloured(BORDER), 4U);
+    BOOST_CHECK_EQUAL(recorder.coloured(INTERIOR), 5U);
 }
 
 BOOST_AUTO_TEST_CASE(overlay_grid_spans_the_board_test) {
@@ -181,16 +177,14 @@ BOOST_AUTO_TEST_CASE(overlay_grid_spans_the_board_test) {
     const float spanZ = static_cast<float>(grid.height()) * grid.tileSize();
 
     for (const Segment& segment : recorder.segments()) {
-        // every line runs the full extent of the board on one axis and sits on a tile
-        // boundary on the other. The outline uses the grid's own arithmetic rather than a
-        // separate calculation of where the tiles are
+        // every line runs the full extent of the grid along one axis
         const bool alongZ = segment.from.x == segment.to.x;
         if (alongZ) {
-            BOOST_CHECK_CLOSE(segment.from.z, min.z, 0.01f);
-            BOOST_CHECK_CLOSE(segment.to.z, min.z + spanZ, 0.01f);
+            BOOST_CHECK_CLOSE(segment.from.z, min.z, 0.01F);
+            BOOST_CHECK_CLOSE(segment.to.z, min.z + spanZ, 0.01F);
         } else {
-            BOOST_CHECK_CLOSE(segment.from.x, min.x, 0.01f);
-            BOOST_CHECK_CLOSE(segment.to.x, min.x + spanX, 0.01f);
+            BOOST_CHECK_CLOSE(segment.from.x, min.x, 0.01F);
+            BOOST_CHECK_CLOSE(segment.to.x, min.x + spanX, 0.01F);
         }
     }
 }
@@ -198,13 +192,13 @@ BOOST_AUTO_TEST_CASE(overlay_grid_spans_the_board_test) {
 BOOST_AUTO_TEST_CASE(overlay_a_tile_outline_lies_on_the_grid_outline_test) {
     const TileGrid grid(4, 4);
 
-    // the corner tile's outer corner is the board's own corner, so a highlight cannot sit
-    // half a tile off the lines it is drawn over
+    // the corner tile's outer corner is the grid's own corner, so a highlight lines up with
+    // the grid lines it is drawn over
     const std::array<glm::vec3, 4> corners = tileCorners(grid, at(0, 0));
     const glm::vec3 min = grid.worldMin();
 
-    BOOST_CHECK_CLOSE(corners[0].x, min.x, 0.01f);
-    BOOST_CHECK_CLOSE(corners[0].z, min.z, 0.01f);
+    BOOST_CHECK_CLOSE(corners[0].x, min.x, 0.01F);
+    BOOST_CHECK_CLOSE(corners[0].z, min.z, 0.01F);
 }
 
 BOOST_AUTO_TEST_CASE(overlay_a_default_sink_draws_nothing_test) {
@@ -217,27 +211,27 @@ BOOST_AUTO_TEST_CASE(overlay_a_default_sink_draws_nothing_test) {
 
 /**
  * A filled tile is the four corners the outline is drawn from, in the same order and at the
- * same lift, so a fill and an outline of one tile land on each other rather than beside.
+ * same lift, so a fill and an outline of one tile coincide.
  **/
 BOOST_AUTO_TEST_CASE(overlay_fills_a_tile_with_the_corners_it_outlines_test) {
     const TileGrid grid(4, 4);
     QuadRecorder recorder;
 
     fillTile(grid, at(2, 1), HIGHLIGHT, recorder.sink());
-    BOOST_REQUIRE_EQUAL(recorder.quads().size(), 1u);
+    BOOST_REQUIRE_EQUAL(recorder.quads().size(), 1U);
     BOOST_CHECK(recorder.colours()[0] == HIGHLIGHT);
 
     const std::array<glm::vec3, 4> expected = tileCorners(grid, at(2, 1));
     for (std::size_t corner = 0; corner < expected.size(); ++corner) {
-        BOOST_CHECK_CLOSE(recorder.quads()[0][corner].x, expected[corner].x, 0.01f);
-        BOOST_CHECK_CLOSE(recorder.quads()[0][corner].y, expected[corner].y, 0.01f);
-        BOOST_CHECK_CLOSE(recorder.quads()[0][corner].z, expected[corner].z, 0.01f);
+        BOOST_CHECK_CLOSE(recorder.quads()[0][corner].x, expected[corner].x, 0.01F);
+        BOOST_CHECK_CLOSE(recorder.quads()[0][corner].y, expected[corner].y, 0.01F);
+        BOOST_CHECK_CLOSE(recorder.quads()[0][corner].z, expected[corner].z, 0.01F);
     }
 }
 
 /**
- * A tile off the grid fills nothing, and a run of them skips the ones that are rather than
- * refusing the whole run - a movement range clipped by the board's edge is the common case.
+ * A tile off the grid fills nothing. fillTiles() skips the tiles off the grid and fills the
+ * rest, as for a movement range cut off by the edge of the grid.
  **/
 BOOST_AUTO_TEST_CASE(overlay_fill_skips_tiles_off_the_grid_test) {
     const TileGrid grid(4, 4);
@@ -245,13 +239,15 @@ BOOST_AUTO_TEST_CASE(overlay_fill_skips_tiles_off_the_grid_test) {
 
     fillTile(grid, at(-1, 0), HIGHLIGHT, recorder.sink());
     fillTile(grid, at(4, 4), HIGHLIGHT, recorder.sink());
-    BOOST_CHECK_EQUAL(recorder.quads().size(), 0u);
+    BOOST_CHECK_EQUAL(recorder.quads().size(), 0U);
 
     const std::vector<TileCoord> range = { at(0, 0), at(-1, 0), at(1, 1), at(9, 9), at(2, 2) };
     fillTiles(grid, range, HIGHLIGHT, recorder.sink());
-    BOOST_CHECK_EQUAL(recorder.quads().size(), 3u);
+    BOOST_CHECK_EQUAL(recorder.quads().size(), 3U);
 
     // an empty std::function would be called through if it were not guarded
     fillTile(grid, at(0, 0), HIGHLIGHT, QuadSink());
     fillTiles(grid, range, HIGHLIGHT, QuadSink());
 }
+
+};  // namespace

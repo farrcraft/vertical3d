@@ -9,19 +9,20 @@
 #include <api/ui/Component.h>
 #include <api/ui/Image.h>
 
+#include <cstdint>
 #include <string>
 
 namespace v3d::ui::component {
 /**
- * A vGUI Button
+ * A control that sends a command when it is pressed.
  *
  * A toggle button does not own the state it shows. Pressing one sends its command and
  * marks nothing, and whatever handles the command sets checked(). The mark then matches
  * the state even when a key binding sends the same command.
  *
  * A button that names an icon is drawn as that image instead of as its label, and holds
- * what the name resolved to. It keeps its label either way, and a strip measures the
- * label before anything has been resolved.
+ * what the name resolved to. It keeps its label either way, and draws the label until the
+ * image has been resolved.
  *
  * Disabled is not a button state: it is Component::enabled(), which lasts until it is
  * changed. A button state lasts only while the cursor stays where it is.
@@ -33,7 +34,7 @@ class Button : public Component {
     /**
         * button state enumeration
         */
-    typedef enum {
+    typedef enum : std::uint8_t {
         STATE_NORMAL,  /**< Normal Button State **/
         STATE_HOVER,   /**< Mouse is hovering over button **/
         STATE_PRESS    /**< Button is being clicked **/

@@ -4,6 +4,7 @@
  **/
 
 #include <voxel/src/voxel/FaceCulling.h>
+#include <voxel/src/voxel/Voxel.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -12,12 +13,10 @@ namespace {
 const int chunkSize = 16;
 const int high = chunkSize - 1;
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(seam_lookup_moves_the_block_as_well_as_the_chunk_test) {
     // crossing a seam moves the block as well as the chunk. For a face looking out the high
     // side, the block against it is at 0 of the neighbour, not at 15. Carrying the
-    // coordinate over unchanged tests the block at the far side of the next chunk
+    // coordinate over unchanged would test the block at the far side of the next chunk
     const glm::ivec3 chunk(1, 1, 1);
 
     const Neighbour right = neighbourAcrossSeam(Voxel::BLOCK_FACE_RIGHT, glm::ivec3(high, 4, 4), chunk, chunkSize);
@@ -82,3 +81,5 @@ BOOST_AUTO_TEST_CASE(the_edge_of_the_world_has_no_chunk_beyond_it_test) {
     BOOST_CHECK(!neighbourAcrossSeam(Voxel::BLOCK_FACE_BACK, glm::ivec3(4, 4, 0), origin, chunkSize).crosses);
     BOOST_CHECK(!neighbourAcrossSeam(Voxel::BLOCK_FACE_BOTTOM, glm::ivec3(4, 0, 4), origin, chunkSize).crosses);
 }
+
+};  // namespace

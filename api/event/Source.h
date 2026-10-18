@@ -18,13 +18,13 @@
 namespace v3d::event {
 
 /**
- * What a device sent - a key or a button going down or up - as against the command a binding
- * makes of it, which is an Event.
+ * An input a device sent, such as a key or a button going down or up. The command a binding
+ * turns it into is a plain Event.
  *
- * A type of its own so that the two go to separate sinks: a listener on sink<Event> receives
- * commands only, and one that needs the keys themselves, such as a key capture, listens on
- * sink<Source>. It derives from Event because a binding names both ends in the same terms, and
- * a Mapper keys on them.
+ * Source is a separate type so that inputs and commands go to separate sinks. A listener on
+ * sink<Event> receives commands only. A listener that needs the keys themselves, such as a key
+ * capture, listens on sink<Source>. Source derives from Event because a binding describes both
+ * ends the same way, and a Mapper keys on them.
  **/
 class Source final : public Event {
  public:
@@ -40,8 +40,8 @@ class Source final : public Event {
     bool consumed() const noexcept;
 
  private:
-    // shared, because a dispatcher gives each listener a copy, and publish() reads the flag
-    // on the one it sent
+    // shared, because the dispatcher hands its listeners a copy of the source, and publish()
+    // reads the flag on the original
     boost::shared_ptr<bool> consumed_;
 };
 
@@ -50,7 +50,7 @@ class Source final : public Event {
  * to. Only the event engine listens for this.
  **/
 struct Unclaimed final {
-    const Source* source;  // never null; a pointer because a dispatcher stores its events by value
+    const Source* source;  // never null. A pointer, because a dispatcher stores its events by value
 };
 
 /**
@@ -58,9 +58,9 @@ struct Unclaimed final {
  * commands its bindings make of it.
  *
  * Every listener receives the key before any receives its command, whatever order they
- * connected in. A dispatcher calls a sink's listeners in reverse order of connection, so the
- * event engine listens for Unclaimed rather than for the key. A source is always sent through
- * this function and never triggered directly.
+ * connected in. A dispatcher calls a sink's listeners in reverse order of connection. The event
+ * engine therefore listens for Unclaimed, not for Source, so that it runs after every Source
+ * listener. Send a source through this function, never by triggering it directly.
  **/
 void publish(entt::dispatcher& dispatcher, const Source& source);
 

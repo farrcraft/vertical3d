@@ -11,24 +11,26 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 /**
  * A span in milliseconds becomes whole nanoseconds, with the fraction dropped.
  **/
 BOOST_AUTO_TEST_CASE(nanoseconds_of_a_span_test) {
-    BOOST_CHECK_EQUAL(nanoseconds(0.0), 0u);
-    BOOST_CHECK_EQUAL(nanoseconds(1.5), 1500000u);
-    BOOST_CHECK_EQUAL(nanoseconds(0.0000015), 1u);
+    BOOST_CHECK_EQUAL(nanoseconds(0.0), 0U);
+    BOOST_CHECK_EQUAL(nanoseconds(1.5), 1500000U);
+    BOOST_CHECK_EQUAL(nanoseconds(0.0000015), 1U);
     // 1.8e19 nanoseconds is below 2^64 and exact as a double
-    BOOST_CHECK_EQUAL(nanoseconds(1.8e13), 18000000000000000000u);
+    BOOST_CHECK_EQUAL(nanoseconds(1.8e13), 18000000000000000000U);
 }
 
 /**
  * A negative span, -infinity and a NaN are zero.
  **/
 BOOST_AUTO_TEST_CASE(nanoseconds_of_no_span_test) {
-    BOOST_CHECK_EQUAL(nanoseconds(-1.0), 0u);
-    BOOST_CHECK_EQUAL(nanoseconds(-std::numeric_limits<double>::infinity()), 0u);
-    BOOST_CHECK_EQUAL(nanoseconds(std::nan("")), 0u);
+    BOOST_CHECK_EQUAL(nanoseconds(-1.0), 0U);
+    BOOST_CHECK_EQUAL(nanoseconds(-std::numeric_limits<double>::infinity()), 0U);
+    BOOST_CHECK_EQUAL(nanoseconds(std::nan("")), 0U);
 }
 
 /**
@@ -43,3 +45,5 @@ BOOST_AUTO_TEST_CASE(nanoseconds_of_a_span_too_long_test) {
     BOOST_CHECK_EQUAL(nanoseconds(1.0e300), largest);
     BOOST_CHECK_EQUAL(nanoseconds(std::numeric_limits<double>::infinity()), largest);
 }
+
+};  // namespace

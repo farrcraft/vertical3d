@@ -5,11 +5,11 @@ and textured quads with corners anywhere in the world.
 
 ## Lines
 
-`LineCanvas` draws one-pixel lines in **world space**, through the camera of the pass. The editor's
-grid, axes, wireframes and manipulators are lines.
+`canvas::Line` draws one-pixel lines in **world space**, through the camera of the pass. The
+editor's grid, axes, wireframes and manipulators are lines.
 
 ```cpp
-LineCanvas lines;
+canvas::Line lines;
 lines.clear();
 lines.line(from, to, colour);
 lines.polyline(points, colour, /* closed */ true);
@@ -28,21 +28,21 @@ renderer_->lines()->submit(lines, pass.get());
 - **In a pass with depth, lines test and write depth**, so solid geometry in front hides them.
   To draw lines over a scene instead, submit them to a pass without depth.
 - Lines are always one pixel wide.
-- `LineCanvas::clip()` takes a rectangle in the pixels of the image, not in world space. The
+- `canvas::Line::clip()` takes a rectangle in the pixels of the image, not in world space. The
   transform does not apply to it.
 
 ## World quads and sprites
 
-`WorldCanvas` draws textured quads with four corners in **world space**, through the pass camera.
+`canvas::World` draws textured quads with four corners in **world space**, through the pass camera.
 Use it for sprites standing on a ground plane, particles and tile highlights.
 
 ```cpp
-WorldCanvas world;
+canvas::World world;
 world.clear();
-world.tint(glm::vec4(1.0f, 0.8f, 0.6f, 1.0f));   // multiplies every quad added after it
-WorldCanvas::Corners corners = {a, b, c, d};      // in order around the edge
+world.tint(glm::vec4(1.0F, 0.8F, 0.6F, 1.0F));   // multiplies every quad added after it
+canvas::World::Corners corners = {a, b, c, d};  // in order around the edge
 world.quad(corners, colour);
-world.quad(corners, uv0, uv1, glm::vec4(1.0f), textureHandle);   // uv0 at the first corner, uv1 at the third
+world.quad(corners, uv0, uv1, glm::vec4(1.0F), textureHandle);   // uv0 at the first corner, uv1 at the third
 
 renderer_->worldQuads()->submit(world, pass.get(), 0, vulkan::renderer::World::Blend::Alpha);
 ```
@@ -85,5 +85,5 @@ drawn after every key that is.
 | Primitive | In a pass with depth |
 |---|---|
 | `Canvas` quads | Neither test nor write. A UI stays on top of whatever the scene drew. |
-| `LineCanvas` lines | Test and write. |
-| `WorldCanvas` quads | Test, but do not write. |
+| `canvas::Line` lines | Test and write. |
+| `canvas::World` quads | Test, but do not write. |

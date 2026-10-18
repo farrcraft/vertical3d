@@ -7,35 +7,39 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(vertex_test) {
     v3d::brep::Vertex vertex;
-    glm::vec3 vector(1.0f, 2.0f, 3.0f);
-    glm::vec3 vector2(7.0f, 9.0f, 4.0f);
+    const glm::vec3 vector(1.0F, 2.0F, 3.0F);
+    const glm::vec3 vector2(7.0F, 9.0F, 4.0F);
     vertex.point(vector);
-    glm::vec3 checkVector = vertex.point();
+    const glm::vec3 checkVector = vertex.point();
     BOOST_CHECK_EQUAL((checkVector == vector), true);
     BOOST_CHECK_EQUAL((vertex == vector), true);
     BOOST_CHECK_EQUAL((vertex == vector2), false);
 
-    v3d::brep::Vertex vertex2(vector);
-    glm::vec3 checkPoint = vertex2.point();
+    const v3d::brep::Vertex vertex2(vector);
+    const glm::vec3 checkPoint = vertex2.point();
     BOOST_CHECK_EQUAL((checkPoint == vector), true);
     BOOST_CHECK_EQUAL((vertex == vertex2), true);
     v3d::brep::Vertex vertex3(vector2);
     BOOST_CHECK_EQUAL((vertex2 == vertex3), false);
 
     vertex3.edge(11);
-    BOOST_CHECK_EQUAL(vertex3.edge(), 11u);
+    BOOST_CHECK_EQUAL(vertex3.edge(), 11U);
 }
 
 BOOST_AUTO_TEST_CASE(vertex_selection_test) {
-    v3d::brep::Vertex vertex(glm::vec3(1.0f, 2.0f, 3.0f));
+    v3d::brep::Vertex vertex(glm::vec3(1.0F, 2.0F, 3.0F));
 
     BOOST_CHECK_EQUAL(vertex.selected(), false);
     vertex.selected(true);
     BOOST_CHECK_EQUAL(vertex.selected(), true);
 
     // selection is not part of what makes two vertices the same point
-    v3d::brep::Vertex other(glm::vec3(1.0f, 2.0f, 3.0f));
+    const v3d::brep::Vertex other(glm::vec3(1.0F, 2.0F, 3.0F));
     BOOST_CHECK_EQUAL((vertex == other), true);
 }
+
+};  // namespace

@@ -5,11 +5,16 @@
 
 #include "Png.h"
 
+#include <api/image/Image.h>
+#include <api/image/Writer.h>
+#include <api/log/Logger.h>
+
 #include <png.h>
 
 #include <iostream>
 #include <cstdio>
 #include <string>
+#include <string_view>
 
 namespace {
 
@@ -17,23 +22,22 @@ void
 pngtest_warning(png_structp png_ptr, png_const_charp message) {
     PNG_CONST char *name = "UNKNOWN (ERROR!)";
     png_voidp error_ptr = NULL;
-    if (png_ptr != NULL)
+    if (png_ptr != NULL) {
         error_ptr = png_get_error_ptr(png_ptr);
-    if (error_ptr != NULL)
+    }
+    if (error_ptr != NULL) {
         name = reinterpret_cast<char*>(error_ptr);
+    }
     std::cout << name << ": libpng warning: " << message << "\n";
 }
 
-/* This is the default error handling function.  Note that replacements for
- * this function MUST NOT RETURN, or the program will likely crash.  This
- * function is used by default, or if the program supplies NULL for the
- * error function pointer in png_set_error_fn().
+/* The error handler png_set_error_fn() installs. It prints the message and returns.
+ * png_error() then calls libpng's default handler, which longjmps to png_jmpbuf, or
+ * aborts the process when no setjmp is in place.
  */
 void
 pngtest_error(png_structp png_ptr, png_const_charp message) {
     pngtest_warning(png_ptr, message);
-    /* We can return because png_error calls the default handler, which is
-    * actually OK in this case. */
 }
 
 };  // namespace
@@ -53,7 +57,7 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
 
     // open the file
     FILE* fp;
-    errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "wb");
+    const errno_t err = fopen_s(&fp, static_cast<std::string>(filename).c_str(), "wb");
     if (err != 0) {
         return false;
     }
@@ -116,7 +120,7 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     /* pack pixels into bytes */
     // png_set_packing(png_ptr);
 
-    png_uint_32 k;
+    png_uint_32 row;
     png_uint_32 height;
     png_uint_32 bytes_per_pixel;
     png_uint_32 width;
@@ -126,19 +130,20 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     png_byte** row_pointers = 0;
     row_pointers = new png_bytep[height];
 
-    if (height > PNG_UINT_32_MAX / sizeof(png_bytep))
+    if (height > PNG_UINT_32_MAX / sizeof(png_bytep)) {
         png_error(png_ptr, "Image is too tall to process in memory");
+    }
 
     png_bytep data = img->data();
     // both the file and Image are top down, so the rows go out in the order they are in
-    for (k = 0; k < height; k++) {
-        row_pointers[k] = data + static_cast<size_t>(k) * width * bytes_per_pixel;
+    for (row = 0; row < height; row++) {
+        row_pointers[row] = data + (static_cast<size_t>(row) * width * bytes_per_pixel);
     }
 
     png_write_image(png_ptr, row_pointers);
 
     png_write_end(png_ptr, info_ptr);
-    // clean up after the write, and free any memory allocated */
+    // clean up after the write, and free any memory allocated
     png_destroy_write_struct(&png_ptr, &info_ptr);
 
     delete[] row_pointers;

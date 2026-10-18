@@ -12,7 +12,7 @@ namespace v3d::render::offline::sl::syntax {
 
 class ExpressionStatement final : public Statement {
  public:
-    ExpressionStatement(const ExpressionPtr & expression, unsigned int line, unsigned int column);
+    ExpressionStatement(const ExpressionPtr & expression, const v3d::render::offline::Position & at);
 
     ExpressionPtr expression;
 };

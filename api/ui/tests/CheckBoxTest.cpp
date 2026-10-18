@@ -4,15 +4,19 @@
  **/
 
 #include <api/event/Engine.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/RadioButton.h>
 #include <api/ui/component/Scrollbar.h>
+#include <api/ui/component/Type.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/paint/Dressing.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -27,7 +31,7 @@ namespace {
 /**
  * A fixed width per character, so a label's natural width is predictable.
  **/
-const float characterWidth = 10.0f;
+const float characterWidth = 10.0F;
 
 /**
  * What the renderer asked to be written, so a test can read a row back without a font.
@@ -53,7 +57,7 @@ v3d::ui::paint::ComponentRenderer build(std::vector<Written>* written) {
  * the time it reaches the loader.
  **/
 boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher),
         dispatcher,
@@ -63,8 +67,6 @@ boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
     return ui;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(check_box_test)
 
 /**
@@ -73,9 +75,9 @@ BOOST_AUTO_TEST_SUITE(check_box_test)
  **/
 BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer = build(&written);
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(400, 300);
+    const v3d::ui::paint::ComponentRenderer renderer = build(&written);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::CheckBox> box =
         boost::make_shared<v3d::ui::component::CheckBox>();
@@ -88,8 +90,8 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
 
     const v3d::ui::paint::Dressing& style = build(nullptr).dressing();
     BOOST_CHECK_CLOSE(box->size().x,
-        style.markSize + style.padding * 0.5f + 7.0f * characterWidth, 0.001f);
-    BOOST_CHECK_CLOSE(box->size().y, std::max(style.markSize, style.lineHeight), 0.001f);
+        style.markSize + (style.padding * 0.5F) + (7.0F * characterWidth), 0.001F);
+    BOOST_CHECK_CLOSE(box->size().y, std::max(style.markSize, style.lineHeight), 0.001F);
 
     // the label is written past the mark rather than over it
     BOOST_REQUIRE_EQUAL(written.size(), 1U);
@@ -98,13 +100,13 @@ BOOST_AUTO_TEST_CASE(a_check_box_asks_for_its_mark_and_its_label) {
 }
 
 /**
- * The mark is what checked() adds, so an unchecked box is the plate alone and a checked one
- * is the plate and the mark over it.
+ * checked() adds the mark, so an unchecked box is the box alone and a checked one is the box
+ * with the mark over it.
  **/
 BOOST_AUTO_TEST_CASE(the_mark_is_drawn_only_when_the_box_is_checked) {
-    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(400, 300);
+    const v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::CheckBox> box =
         boost::make_shared<v3d::ui::component::CheckBox>();
@@ -124,11 +126,11 @@ BOOST_AUTO_TEST_CASE(the_mark_is_drawn_only_when_the_box_is_checked) {
  * the same state as a check box.
  **/
 BOOST_AUTO_TEST_CASE(a_radio_button_is_a_check_box_with_a_round_mark) {
-    v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
-    v3d::render::realtime::Canvas square;
-    v3d::render::realtime::Canvas round;
-    square.resize(400, 300);
-    round.resize(400, 300);
+    const v3d::ui::paint::ComponentRenderer renderer = build(nullptr);
+    v3d::render::realtime::canvas::Canvas square;
+    v3d::render::realtime::canvas::Canvas round;
+    square.resize(glm::uvec2(400, 300));
+    round.resize(glm::uvec2(400, 300));
 
     const boost::shared_ptr<v3d::ui::component::CheckBox> box =
         boost::make_shared<v3d::ui::component::CheckBox>();
@@ -198,8 +200,10 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_check_box_a_radio_button_and_a_clip) {
         boost::dynamic_pointer_cast<v3d::ui::component::Scrollbar>(container->get("bar"));
     BOOST_REQUIRE(bar);
     BOOST_CHECK(bar->direction() == v3d::ui::component::Scrollbar::Direction::Horizontal);
-    BOOST_CHECK_CLOSE(bar->maximum(), 300.0f, 0.001f);
-    BOOST_CHECK_CLOSE(bar->offset(), 50.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->maximum(), 300.0F, 0.001F);
+    BOOST_CHECK_CLOSE(bar->offset(), 50.0F, 0.001F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

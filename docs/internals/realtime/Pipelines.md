@@ -12,11 +12,12 @@ pipeline::Builder(device)
     .name("quad")
     .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
     .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
-    .vertexBinding(0, sizeof(Canvas::Vertex))
-    .vertexAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Canvas::Vertex, position))
+    .vertexBinding({.binding = 0, .stride = sizeof(Canvas::Vertex)})
+    .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT,
+        .offset = offsetof(Canvas::Vertex, position)})
     .set(uniforms->layout())     // set 0 first: sets are numbered in the order added
     .set(textures->layout())     // set 1
-    .push(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Push))
+    .push({.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .size = sizeof(Push)})
     .colourFormat(colour)
     .build(cache);
 ```
@@ -72,8 +73,8 @@ Sets are organised by how often their contents change.
 |---|---|---|---|
 | 0 | per pass, per frame | the camera: `view`, `projection`, `viewProjection` (three `mat4`) and `viewport` (`vec4`), 208 bytes std140 | `vulkan::frame::FrameUniforms` |
 | 1 | per material | one combined image sampler at binding 0, fragment stage (`FullScreen` declares one per source) | `Textures` (and `FullScreen`, `Grade`) |
-| 2 | per pass, only for pipelines that declare it | a lit scene: `Scene` uniform (binding 0), shadow map (binding 1), joint palette storage buffer (binding 2) | `vulkan::renderer::Lit` |
-| push | per draw | transform, tint, flags, a skinned object's first joint | the item |
+| 2 | per pass, only for pipelines that declare it | a lit scene: `Scene` uniform (binding 0), shadow map (binding 1), joint palette storage buffer (binding 2), object storage buffer (binding 3) | `vulkan::renderer::Lit` |
+| push | per draw | a projection or an origin, and flags | the item |
 
 Rules:
 
@@ -81,8 +82,11 @@ Rules:
   bound for one pipeline then stays bound across a switch to another built against the same
   layout. Compatibility runs from set 0 upwards, so pipelines with nothing beyond set 0 (lines)
   stay compatible with ones that add set 1.
-- **Per-object data goes in push constants, never in a set.** An item binds at most one set of
-  its own (set 1), and merging two adjacent items is a comparison of two handles.
+- **Per-object data never goes in a set of its own.** An item binds at most one set of its own
+  (set 1), and merging two adjacent items is a comparison of two handles. A pipeline outside a
+  lit scene pushes its per-object data. A lit pipeline pushes nothing, and reads its object from
+  the scene's object buffer at set 2 by instance index. A lit draw names its object as its first
+  instance, and `Lit::object()` returns that index.
 - A pipeline that declares set 2 must be drawn in a pass that names a scene set; the recorder
   checks this.
 
@@ -107,8 +111,7 @@ Current blocks:
 | Pipeline | Block | Size |
 |---|---|---|
 | Quad | `mat4 projection; uint text` | 68 bytes |
-| Lit | `Lit::Object`: `mat4 model; vec4 baseColour; float outline; uint firstJoint` | 88 bytes |
-| Line, World, FullScreen | none | |
+| Line, World, FullScreen, Lit | none | |
 
 The block is copied into the item by value, so the unused part of the 128 bytes is copied per
 item per frame whether or not a pipeline declared it.
@@ -127,7 +130,8 @@ writes it before binding.
 | set 2 (`Lit` scenes) | frames in flight |
 
 Background: [ADR-0008](../../adr/0008-shaders-descriptor-sets-by-update-frequency.md),
-[ADR-0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md)
+[ADR-0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md),
+[ADR-0088](../../adr/0088-lit-per-object-data-in-a-storage-buffer.md)
 
 ## Draw items and the sort key
 
@@ -173,13 +177,19 @@ that wants to replace them.
 | `line.vert`, `line.frag` | `Line` |
 | `world.vert`, `world.frag` | `World` |
 | `fullscreen.vert`, `grade.frag` | `FullScreen`, `Grade` |
+| `grade_linear_scene.frag`, `grade_linear_target.frag`, `grade_linear.frag` | `Grade`: `grade.frag` compiled with `LINEAR_SCENE` for an `_SRGB` scene, `LINEAR_TARGET` for an `_SRGB` target, or both |
 | `lit/mesh.vert`, `lit/cel.frag`, `lit/outline.vert`, `lit/outline.frag`, `lit/shadow.vert` | `Lit` |
 | `skinned_mesh.vert`, `skinned_outline.vert`, `skinned_shadow.vert` | `Lit`, the three lit vertex stages compiled with `SKINNED` |
 
+`srgb.glsl` holds the sRGB decode and encode. `quad.frag` and `grade.frag` include it, so the
+two agree to the bit.
+
 The lit shaders share their blocks through includes:
 
-- `lit/lit.glsl` declares the `Camera` (set 0), `Scene` (set 2, binding 0) and `Object` (push)
-  blocks. Every lit shader includes it, so a block is written once.
+- `lit/lit.glsl` declares the `Camera` (set 0) and `Scene` (set 2, binding 0) blocks, the
+  `Object` struct, and the `Objects` buffer of them (set 2, binding 3). In a vertex stage,
+  `object` is the entry at `gl_InstanceIndex`. `cel.frag` reads the entry at the index `mesh.vert`
+  passes it at location 3. Every lit shader includes `lit.glsl`, so a block is written once.
 - `lit/pose.glsl` defines `pose()`: the identity normally, or the weighted joint matrices when
   `SKINNED` is defined. When `SKINNED` is defined it also includes `lit/skin.glsl`: the palette
   at set 2, binding 2, and the joint and weight attributes at locations 3 and 4.
@@ -188,4 +198,5 @@ The lit shaders share their blocks through includes:
 [api/rendering/Lighting.md](../../api/rendering/Lighting.md#replacing-the-lit-shaders)).
 Pipeline creation is the only check that a replacement matches the layout. When changing a
 block in `lit.glsl`, change `SceneUniforms` or `Lit::Object` to match; reordering members is not
-caught by anything.
+caught by anything. `Lit::Object` is padded to 96 bytes, the std430 stride of an array of
+`Object`, and a static assert holds it there.

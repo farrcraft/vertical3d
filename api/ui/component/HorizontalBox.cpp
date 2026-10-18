@@ -5,6 +5,9 @@
 
 #include "HorizontalBox.h"
 
+#include "Box.h"
+#include "Type.h"
+
 namespace v3d::ui::component {
 
 HorizontalBox::HorizontalBox() :

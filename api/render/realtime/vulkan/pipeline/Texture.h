@@ -18,15 +18,16 @@ namespace v3d::render::realtime::vulkan::pipeline {
 /**
  * An image the shaders sample from, and the sampler they read it through.
  *
- * Both are shared rather than owned. A texture memory::TextureFactory built is the only
- * holder of its image; one registered from a frame::RenderTarget shares the target's, so
- * the image outlives whichever of the two lets go first. Either way a released texture is
- * destroyed by the last reference going, which the ring holds until no frame can read it.
+ * Both are held by shared pointer. A texture that memory::TextureFactory built is the only
+ * holder of its image. One registered from a frame::RenderTarget shares the target's image,
+ * so the image outlives whichever of the two releases it first. Either way, a released
+ * texture is destroyed when its last reference goes, and the Ring holds a reference until no
+ * frame can read it.
  **/
 struct Texture final {
     /**
      * What a descriptor write names to sample this texture, in the layout the image is left in
-     * for sampling: DEPTH_READ_ONLY_OPTIMAL for a depth image, as the recorder leaves one, and
+     * for sampling: DEPTH_READ_ONLY_OPTIMAL for a depth image, as Recorder leaves one, and
      * SHADER_READ_ONLY_OPTIMAL for a colour one.
      **/
     VkDescriptorImageInfo descriptor() const noexcept {

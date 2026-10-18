@@ -17,10 +17,14 @@ namespace v3d::event::kind {
  **/
 class MouseMotion final : public Event {
  public:
-    /**
-     **/
+    /** Where the cursor is, and how far it moved. **/
+    struct Moved {
+        glm::vec2 position{0.0F};
+        glm::vec2 motion{0.0F};
+    };
+
     // not noexcept: the base takes the event name as a std::string, which allocates
-    MouseMotion(const glm::vec2& position, const glm::vec2& motion, const boost::shared_ptr<Context>& context);
+    MouseMotion(const Moved& moved, const boost::shared_ptr<Context>& context);
 
     /**
      * @return the cursor position the move ended at

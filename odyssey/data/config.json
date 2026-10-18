@@ -9,8 +9,8 @@
       "file": "window.json"
     },
     {
-      "type": "map",
-      "file": "map.json"
+      "type": "world",
+      "file": "world.json"
     }
   ]
 }

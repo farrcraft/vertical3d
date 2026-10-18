@@ -6,6 +6,7 @@
 #include <api/engine/IsometricController.h>
 #include <api/event/Context.h>
 #include <api/event/Event.h>
+#include <api/event/State.h>
 #include <api/type/camera/Isometric.h>
 
 #include <functional>
@@ -42,11 +43,9 @@ IsometricController::Held holding(const std::set<std::string, std::less<>>* down
     return [down](std::string_view command) { return down->find(command) != down->end(); };
 }
 
-bool near(const glm::vec3& a, const glm::vec3& b) {
-    return glm::length(a - b) < 1e-4f;
+bool near(const glm::vec3& actual, const glm::vec3& expected) {
+    return glm::length(actual - expected) < 1e-4F;
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(isometric_controller_test)
 
@@ -79,14 +78,14 @@ BOOST_AUTO_TEST_CASE(a_held_pan_moves_by_time_not_by_steps) {
 
     Isometric halves;
     IsometricController halving(&halves, dispatcher, holding(&down));
-    halving.simulate(0.5f);
-    halving.simulate(0.5f);
+    halving.simulate(0.5F);
+    halving.simulate(0.5F);
 
     Isometric whole;
     IsometricController once(&whole, dispatcher, holding(&down));
-    once.simulate(1.0f);
+    once.simulate(1.0F);
 
-    BOOST_TEST(glm::length(whole.target()) > 1.0f);
+    BOOST_TEST(glm::length(whole.target()) > 1.0F);
     BOOST_TEST(near(halves.target(), whole.target()));
 }
 
@@ -100,15 +99,15 @@ BOOST_AUTO_TEST_CASE(a_pan_after_a_rotate_follows_the_view) {
     Isometric orbit;
     const glm::vec3 unturned = orbit.right();
     IsometricController::Speeds speeds;
-    speeds.pan = 2.0f;
+    speeds.pan = 2.0F;
     IsometricController controller(&orbit, dispatcher, holding(&down), IsometricController::Commands(), speeds);
 
     dispatcher->trigger(press("rotate_right", false));
     BOOST_REQUIRE(!near(orbit.right(), unturned));
     const glm::vec3 before = orbit.target();
-    controller.simulate(1.0f);
+    controller.simulate(1.0F);
 
-    BOOST_TEST(near(orbit.target() - before, orbit.right() * 2.0f));
+    BOOST_TEST(near(orbit.target() - before, orbit.right() * 2.0F));
 }
 
 /**
@@ -121,19 +120,19 @@ BOOST_AUTO_TEST_CASE(a_pan_after_a_rotate_follows_the_view) {
 BOOST_AUTO_TEST_CASE(a_held_zoom_in_narrows_and_zoom_out_widens) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     IsometricController::Speeds speeds;
-    speeds.zoom = 3.0f;
+    speeds.zoom = 3.0F;
 
     const std::set<std::string, std::less<>> in{"camera::zoom_in"};
     Isometric closer;
     IsometricController zoomingIn(&closer, dispatcher, holding(&in), IsometricController::Commands(), speeds);
-    zoomingIn.simulate(1.0f);
-    BOOST_TEST(closer.zoom() == Isometric::DEFAULT_ZOOM - 3.0f, boost::test_tools::tolerance(1e-5f));
+    zoomingIn.simulate(1.0F);
+    BOOST_TEST(closer.zoom() == Isometric::DEFAULT_ZOOM - 3.0F, boost::test_tools::tolerance(1e-5F));
 
     const std::set<std::string, std::less<>> out{"camera::zoom_out"};
     Isometric wider;
     IsometricController zoomingOut(&wider, dispatcher, holding(&out), IsometricController::Commands(), speeds);
-    zoomingOut.simulate(1.0f);
-    BOOST_TEST(wider.zoom() == Isometric::DEFAULT_ZOOM + 3.0f, boost::test_tools::tolerance(1e-5f));
+    zoomingOut.simulate(1.0F);
+    BOOST_TEST(wider.zoom() == Isometric::DEFAULT_ZOOM + 3.0F, boost::test_tools::tolerance(1e-5F));
 }
 
 /**
@@ -147,19 +146,19 @@ BOOST_AUTO_TEST_CASE(a_held_zoom_in_narrows_and_zoom_out_widens) {
 BOOST_AUTO_TEST_CASE(each_pan_command_moves_its_own_way) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     IsometricController::Speeds speeds;
-    speeds.pan = 2.0f;
+    speeds.pan = 2.0F;
     const auto moved = [&](const std::string& command) {
         const std::set<std::string, std::less<>> down{command};
         Isometric orbit;
         IsometricController controller(&orbit, dispatcher, holding(&down), IsometricController::Commands(), speeds);
         const glm::vec3 before = orbit.target();
-        controller.simulate(1.0f);
+        controller.simulate(1.0F);
         return orbit.target() - before;
     };
     const Isometric reference;
-    BOOST_TEST(near(moved("camera::pan_left"), reference.right() * -2.0f));
-    BOOST_TEST(near(moved("camera::pan_up"), reference.forward() * 2.0f));
-    BOOST_TEST(near(moved("camera::pan_down"), reference.forward() * -2.0f));
+    BOOST_TEST(near(moved("camera::pan_left"), reference.right() * -2.0F));
+    BOOST_TEST(near(moved("camera::pan_up"), reference.forward() * 2.0F));
+    BOOST_TEST(near(moved("camera::pan_down"), reference.forward() * -2.0F));
 }
 
 /**
@@ -178,3 +177,5 @@ BOOST_AUTO_TEST_CASE(a_destroyed_controller_stops_listening) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

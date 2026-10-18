@@ -5,14 +5,26 @@
 
 #include "CameraControlTool.h"
 
+#include <api/type/camera/Camera.h>
+#include <vertical3d/src/view/ViewPort.h>
+
 #include <string>
 
 namespace v3d::editor {
 
+namespace {
+
+/**
+ * World units a perspective camera moves for each pixel the mouse is dragged.
+ **/
+constexpr float perspectiveFactor = 0.125F;
+
+};  // namespace
+
 /**
  **/
 CameraControlTool::CameraControlTool() :
-    last_(0.0f, 0.0f),
+    last_(0.0F, 0.0F),
     mode_(CAMERA_MODE_NONE),
     dragging_(false) {
 }
@@ -85,8 +97,8 @@ void CameraControlTool::motion(const glm::vec2& position) {
             pan(point);
         }
     }
-    // after the move, not before: pan() drags the arcball to the point the gesture has
-    // reached, and a last_ written first would make every rotation one event stale
+    // after the move, not before: zoom() and truck() measure the move from last_, and a
+    // last_ written first would make every move zero
     last_ = point;
 }
 
@@ -111,21 +123,20 @@ void CameraControlTool::zoom(const glm::vec2& position) {
     if (!view_) {
         return;
     }
-    boost::shared_ptr<v3d::type::camera::Camera> camera = view_->camera();
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = view_->camera();
     if (!camera) {
         return;
     }
-    // do camera zooming/dollying - ortho cameras zoom, but perspective cameras dolly
+    // an orthographic camera zooms, and a perspective camera dollies
     float delta;
-    // event is current position and mouse is previous position
+    // position is where the cursor is now, and last_ is where it was at the last event
     delta = static_cast<float>(position[0] - last_[0]);
     float factor;
     if (camera->orthographic()) {
-        // size is the viewport size (pixel dimensions)
         factor = camera->orthoFactorHorizontal();
         camera->zoom(-delta * factor);
     } else {
-        factor = 0.125f;
+        factor = perspectiveFactor;
         camera->dolly(delta * factor);
     }
 }
@@ -136,7 +147,7 @@ void CameraControlTool::truck(const glm::vec2& position) {
     if (!view_) {
         return;
     }
-    boost::shared_ptr<v3d::type::camera::Camera> camera = view_->camera();
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = view_->camera();
     if (!camera) {
         return;
     }
@@ -145,20 +156,20 @@ void CameraControlTool::truck(const glm::vec2& position) {
     delta_x = static_cast<float>(position[0] - last_[0]);
     delta_y = static_cast<float>(position[1] - last_[1]);
     float factor;
-    if (delta_x != 0.0f) {
+    if (delta_x != 0.0F) {
         if (camera->orthographic()) {
             factor = camera->orthoFactorHorizontal();
         } else {
-            factor = 0.125f;
+            factor = perspectiveFactor;
         }
         camera->truck(delta_x * -factor);
     }
-    if (delta_y != 0.0f) {
-        // the vertical factor - the pixel aspect ratio belongs to width alone
+    if (delta_y != 0.0F) {
+        // the vertical factor, because the pixel aspect ratio applies to the width alone
         if (camera->orthographic()) {
             factor = camera->orthoFactorVertical();
         } else {
-            factor = 0.125f;
+            factor = perspectiveFactor;
         }
         camera->pedestal(delta_y * factor);
     }
@@ -170,7 +181,7 @@ void CameraControlTool::pan(const glm::vec2& position) {
     if (!view_) {
         return;
     }
-    boost::shared_ptr<v3d::type::camera::Camera> camera = view_->camera();
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = view_->camera();
     if (!camera) {
         return;
     }

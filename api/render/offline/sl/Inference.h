@@ -19,16 +19,16 @@
 namespace v3d::render::offline::sl {
 
 /**
- * The varying inference: which symbols, expressions and function results are varying, over
- * a tree the checker has already annotated with types and symbols.
+ * Decides which symbols, expressions and function results are varying. It runs over a tree
+ * the checker has already annotated with types and symbols.
  *
- * **An error here is silent.** A value is uniform until something varying reaches it.
- * Inferring uniform where varying was right gives a whole grid one point's value, which
- * looks like a shading bug but is a compiler bug. Two rules make the inference sound. An
- * assignment inside control flow whose condition is varying becomes varying, because
- * different points take different arms. The traversal runs to a fixed point, because a loop
- * can carry a varying value back to a name that was read before it was written. A symbol
- * only ever changes from uniform to varying, so the traversal terminates.
+ * **A mistake in this pass produces no error.** A value is uniform until something varying
+ * reaches it. Inferring uniform where varying was right gives a whole grid one point's
+ * value, which looks like a shading bug but is a compiler bug. Two rules make the inference
+ * sound. First, an assignment inside control flow with a varying condition is varying,
+ * because different points take different arms. Second, the traversal repeats until nothing
+ * changes, because a loop can carry a varying value back to a name that was read before it
+ * was written. Each round only changes things from uniform to varying, so the rounds end.
  **/
 class Inference final {
  public:
@@ -39,7 +39,8 @@ class Inference final {
 
     /**
      * Annotate every expression with its storage and settle every symbol's.
-     * @return the first uniform a varying value reached, or empty when there was none
+     * @return an error naming the first symbol declared uniform that a varying value
+     *         reached, or empty when there was none
      **/
     std::string run();
 
@@ -57,8 +58,8 @@ class Inference final {
     Storage inferExpression(const syntax::ExpressionPtr & expression);
     Storage inferCall(const syntax::ExpressionPtr & expression);
     /**
-     * Mark a symbol varying, recording that something moved so the fixed point runs again.
-     * A symbol that was declared uniform is left alone and the shader is faulted instead.
+     * Mark a symbol varying, and record the change so that another round runs. A symbol
+     * declared uniform keeps its storage, and the first such case becomes run()'s error.
      **/
     void spread(int symbol, const syntax::ExpressionPtr & from);
 
@@ -70,8 +71,7 @@ class Inference final {
      **/
     std::vector<Storage> results_;
     /**
-     * The loops being traversed, innermost last, so that a break or a continue can name the one
-     * it leaves.
+     * The loops being traversed, innermost last. A break or a continue leaves the last one.
      **/
     std::vector<const syntax::Statement*> enclosing_;
     /**
@@ -81,9 +81,8 @@ class Inference final {
      **/
     std::vector<const syntax::Statement*> escaping_;
     /**
-     * A uniform that a varying value reached, held until the fixed point has settled. The
-     * inference cannot report while it is still running, because a symbol may become varying
-     * on a later round than the one that read it.
+     * The error for the first symbol declared uniform that a varying value reached. run()
+     * returns it after the last round.
      **/
     std::string violation_;
     bool changed_ = false;

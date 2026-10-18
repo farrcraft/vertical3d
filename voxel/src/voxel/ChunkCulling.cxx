@@ -5,6 +5,9 @@
 
 #include "ChunkCulling.h"
 
+#include <api/type/geometry/AABBox.h>
+#include <api/type/geometry/Frustum.h>
+
 v3d::type::geometry::AABBox chunkBounds(const glm::vec3& origin, float size) {
     v3d::type::geometry::AABBox bounds;
     bounds.extents(origin, origin + glm::vec3(size));

@@ -5,6 +5,7 @@
 
 #include "Keys.h"
 
+#include <api/event/Event.h>
 #include <api/ui/Component.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Scrollbar.h>
@@ -15,7 +16,6 @@
 #include <api/ui/component/Type.h>
 
 #include <algorithm>
-#include <string>
 #include <string_view>
 
 #include "Command.h"
@@ -24,24 +24,29 @@ namespace v3d::ui::input {
 
 namespace {
 
+/** The key that steps towards the end, and the one that steps towards the start. **/
+struct Arrows {
+    std::string_view along;
+    std::string_view back;
+};
+
 /**
  * Where a key moves a cursor through count things, starting from where.
  *
- * A list and a tab bar step through what they hold the same way and differ only in which
- * arrows read as "along": down and up for rows stacked vertically, right and left for
- * tabs laid out across. Neither wraps - running off the end of a list is how a keyboard
- * reaches the end of it, and a wrap would take the user back to the top instead.
+ * A list and a tab bar step through what they hold the same way. They differ only in which
+ * arrows step: down and up for rows stacked vertically, right and left for tabs laid out
+ * across. Neither wraps, so holding an arrow stops at the last item.
  *
- * @param along the key that steps towards the end, and back the one that steps towards the start
  * @return where to move to, or `where` when the key moves nothing
  **/
-int step(std::string_view key, int where, int count, std::string_view along, std::string_view back) {
+int step(std::string_view key, int where, int count, const Arrows& arrows) {
+    const std::string_view along = arrows.along;
+    const std::string_view back = arrows.back;
     if (count <= 0) {
         return where;
     }
     if (key == along) {
-        // nothing chosen steps onto the first rather than the second, so one press of an
-        // arrow reaches a list nobody has clicked in
+        // with nothing chosen, the first step goes to the first item, not the second
         if (where < 0) {
             return 0;
         }
@@ -75,7 +80,7 @@ Keys::Keys(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::di
     clipboard_(clipboard) {
 }
 
-bool Keys::press(std::string_view key, bool shifted, bool controlled) {
+bool Keys::press(std::string_view key, bool shifted, bool controlled, bool repeat) {
     if (!ui_ || key.empty()) {
         return false;
     }
@@ -84,28 +89,34 @@ bool Keys::press(std::string_view key, bool shifted, bool controlled) {
         return false;
     }
     if (usable(*focused) && !ui_->reachable(focused)) {
-        // hidden while it held the focus, as a dialog's field is when the dialog closes. It
-        // gives the focus up, and the key goes on to the app, tab and escape included
+        // the component was hidden while it held the focus, as a dialog's field is when the
+        // dialog closes. The focus is cleared, and the key goes on to the app, tab and
+        // escape included
         ui_->focus(boost::shared_ptr<Component>());
         return false;
     }
     if (key == "tab") {
-        // taken whether or not it moved: a form holding one field still swallows the tab
-        // rather than letting it reach a binding while somebody is typing
+        // taken whether or not the focus moved, so a tab in a form with one field does not
+        // reach a binding while somebody is typing
         ui_->focusNext(!shifted);
         return true;
     }
     if (key == "escape") {
-        // leaving the box is what escape means everywhere else, and it is the only way
-        // out of one with no other ui to click on
+        // escape takes the focus off whatever has it. With no other ui to click on, it is
+        // the only way out of a text box
         ui_->focus(boost::shared_ptr<Component>());
         return true;
     }
     if (!usable(*focused)) {
-        // a component disabled while it held the focus answers no key, and the key goes on
-        // to the app's bindings the way one reaching an unfocused ui does. Tab and escape
-        // are above this, so the focus is never stuck on one
+        // a component disabled while it held the focus takes no key, and the key goes on to
+        // the app's bindings as it would with nothing focused. Tab and escape are handled
+        // above, so the focus can still be moved off it
         return false;
+    }
+    if (repeat && activates(key)) {
+        // a repeat of return or space does nothing, so a held key sends its command once. The
+        // repeat is still taken, so it reaches no binding either
+        return true;
     }
     return act(focused, key, shifted, controlled);
 }
@@ -117,20 +128,19 @@ bool Keys::text(std::string_view utf8) {
     const boost::shared_ptr<Component> focused = ui_->focused();
     if (!focused || !component::traits(focused->type()).text || !usable(*focused)) {
         // a box disabled while it held the focus takes no characters either, so what is
-        // typed reaches the app rather than a field nobody can use
+        // typed reaches the app
         return false;
     }
     if (!ui_->reachable(focused)) {
-        // a box hidden while it held the focus gives it up
+        // a box hidden while it held the focus loses the focus
         ui_->focus(boost::shared_ptr<Component>());
         return false;
     }
     const boost::shared_ptr<component::TextBox> box =
         boost::dynamic_pointer_cast<component::TextBox>(focused);
     if (box) {
-        // taken whether or not it went in: the box has handled the characters even when its
-        // limit refused them, and letting them through to the app's bindings would type into
-        // the game instead
+        // taken even when the box's length limit refused the characters, so they never reach
+        // the app's bindings
         box->insert(utf8);
     }
     return true;
@@ -165,24 +175,24 @@ bool Keys::act(const boost::shared_ptr<Component>& component, std::string_view k
         case component::Type::Toolbar:
         case component::Type::Undefined:
         case component::Type::VerticalBox:
-            // nothing here holds a place a key moves through, so the only key it takes is the
-            // one that activates it, and it falls out of the switch
+            // a key does not move anything inside these, so the only keys they take are the
+            // activation keys, handled after the switch
             break;
     }
     if (controlled) {
-        // a text box is the only thing here that answers a chord, so every other control
-        // leaves one for the app - a ctrl-space must not press a focused button
+        // only a text box takes a chord. Every other control leaves it for the app, so a
+        // ctrl-space does not press a focused button
         return false;
     }
     if (!activates(key)) {
-        // a letter reaching a focused button is not being typed, so it goes on to the app's
-        // bindings - unlike the same letter reaching a text box. A button that took every key
-        // would stop the game being played while it held the focus
+        // a letter reaching a focused button goes on to the app's bindings, unlike the same
+        // letter reaching a text box, so the game can still be played while a button has the
+        // focus
         return false;
     }
     // a component does not own the state it shows, so activating one sends its command and
-    // marks nothing. The key is taken either way, so one activation never also reaches a
-    // binding
+    // marks nothing. The key is taken even when there is no command, so an activation never
+    // also reaches a binding
     send(component);
     return true;
 }
@@ -194,8 +204,8 @@ bool Keys::edit(const boost::shared_ptr<component::TextBox>& box, std::string_vi
     }
 
     if (controlled) {
-        // the four chords an editor is expected to answer, and no others: a chord the box
-        // does not act on goes on to the app, so a ctrl-s still saves while it has the focus
+        // copy, cut, paste and select all, and no other chord. Any other chord goes on to
+        // the app, so a ctrl-s still saves while the box has the focus
         if (key == "c") {
             copySelection(box);
         } else if (key == "x") {
@@ -207,8 +217,8 @@ bool Keys::edit(const boost::shared_ptr<component::TextBox>& box, std::string_vi
         } else {
             return false;
         }
-        // taken whether or not it did anything, for the reason a refused paste is: a chord
-        // the box answers must not also reach a binding
+        // taken whether or not it changed anything, so the chord never also reaches a
+        // binding
         return true;
     }
 
@@ -227,18 +237,18 @@ bool Keys::edit(const boost::shared_ptr<component::TextBox>& box, std::string_vi
         box->end(shifted);
     } else if (key == "return") {
         // a return sends the box's command, and whatever handles it reads text(). The event
-        // is read off the box rather than through ui::command(), which returns none for a
-        // text box so that a click into one does not submit it
+        // is read from the box directly. input::command() returns none for a text box, so
+        // that a click into one does not submit it
         send(box->event());
     } else if (key.size() == 1 || key == "space") {
-        // a key that will arrive again as a character is taken here as well, so that it
-        // does not also reach the app's bindings - typing "w" into a box must not walk
-        // the player forward. api/input names a key one character wide when it composes
-        // text and a word when it does not, so the width is the test
+        // a key that will arrive again as a character is taken here as well, so it does not
+        // also reach the app's bindings. Typing "w" into a box must not walk the player
+        // forward. api/input gives a key that composes text a one-character name, and any
+        // other key a word, so the length of the name is the test
         return true;
     } else {
-        // a function key, a modifier, a page down: nothing the box does, so the app still
-        // sees it while the box has the focus
+        // a function key, a modifier or a page down does nothing in the box, so the app still
+        // receives it while the box has the focus
         return false;
     }
     return true;
@@ -254,12 +264,12 @@ bool Keys::choose(const boost::shared_ptr<component::SelectList>& list, std::str
     }
 
     const int was = list->selected();
-    const int now = step(key, was, static_cast<int>(list->items().size()), "arrow_down", "arrow_up");
+    const int now = step(key, was, static_cast<int>(list->items().size()), {.along = "arrow_down", .back = "arrow_up"});
     if (now == was) {
         return false;
     }
-    // the list owns which row is chosen and the app decides what that row means, so moving
-    // sends the command the same way clicking a row does in Cursor::act
+    // the list holds which row is chosen, and the app decides what that row means, so moving
+    // sends the command, as clicking a row does in Cursor::act
     list->selected(now);
     send(list);
     return true;
@@ -270,10 +280,10 @@ bool Keys::turn(const boost::shared_ptr<component::TabBar>& bar, std::string_vie
         return false;
     }
     const int was = bar->selected();
-    const int now = step(key, was, static_cast<int>(bar->pages().size()), "arrow_right", "arrow_left");
+    const int now = step(key, was, static_cast<int>(bar->pages().size()), {.along = "arrow_right", .back = "arrow_left"});
     if (now == was) {
-        // a bar carries no command, so a return on one has nothing to send and nothing to
-        // take - which leaves the return for whatever the page holds
+        // a tab bar carries no command, so a return on one sends nothing and is not taken.
+        // The app receives it
         return false;
     }
     bar->selected(now);
@@ -282,8 +292,8 @@ bool Keys::turn(const boost::shared_ptr<component::TabBar>& bar, std::string_vie
 
 bool Keys::nudge(const boost::shared_ptr<component::Scrollbar>& bar, std::string_view key) {
     if (!bar || !bar->scrollable()) {
-        // a bar showing all of its content has nowhere to go, so the key is left for the
-        // app's bindings
+        // a bar showing all of its content cannot move, so the key is left for the app's
+        // bindings
         return false;
     }
     const bool vertical = bar->direction() == component::Scrollbar::Direction::Vertical;
@@ -296,12 +306,12 @@ bool Keys::nudge(const boost::shared_ptr<component::Scrollbar>& bar, std::string
     } else if (key == "pageup") {
         bar->scroll(-bar->page());
     } else if (key == "home") {
-        bar->offset(0.0f);
+        bar->offset(0.0F);
     } else if (key == "end") {
         bar->offset(bar->maximum());
     } else {
-        // a bar carries no command, so a return and a space have nothing to send and are
-        // left for whatever the bar scrolls to answer
+        // a scrollbar carries no command, so a return or a space sends nothing and is left
+        // for the app
         return false;
     }
     return true;
@@ -311,10 +321,11 @@ bool Keys::slide(const boost::shared_ptr<component::Slider>& slider, std::string
     if (!slider) {
         return false;
     }
-    // a step, or a hundredth of the range for a slider that has none; a page is ten of them
+    // a line is the slider's step, or a hundredth of the range for a slider with no step. A
+    // page is a tenth of the range, and never less than a line
     const float span = slider->maximum() - slider->minimum();
-    const float line = slider->step() > 0.0f ? slider->step() : span / 100.0f;
-    const float page = std::max(line, span / 10.0f);
+    const float line = slider->step() > 0.0F ? slider->step() : span / 100.0F;
+    const float page = std::max(line, span / 10.0F);
     float to = slider->value();
     if (key == "arrow_right") {
         to += line;
@@ -331,8 +342,8 @@ bool Keys::slide(const boost::shared_ptr<component::Slider>& slider, std::string
     } else {
         return false;
     }
-    // a key that moves nothing is not taken, so a slider at an end leaves the arrow for
-    // whatever is next to it - the scrollbar's rule
+    // a key that moves nothing is not taken, as with a scrollbar, so a slider at an end
+    // leaves the arrow for the app
     if (!slider->value(to)) {
         return false;
     }
@@ -347,8 +358,8 @@ void Keys::copySelection(const boost::shared_ptr<component::TextBox>& box) const
 }
 
 void Keys::cutSelection(const boost::shared_ptr<component::TextBox>& box) const {
-    // handed over before it is taken out, and not taken out at all when there is nowhere to
-    // hand it: a cut that loses the run is worse than one that did not happen
+    // the text is written to the clipboard before it is removed, and is not removed at all
+    // when there is no write callback, so a cut never loses text
     if (!clipboard_.write || !box->selected()) {
         return;
     }
@@ -358,8 +369,8 @@ void Keys::cutSelection(const boost::shared_ptr<component::TextBox>& box) const 
 
 void Keys::paste(const boost::shared_ptr<component::TextBox>& box) const {
     if (clipboard_.read) {
-        // over the selection, as insert() does with a run of characters, so a paste and a
-        // typed character land the same way
+        // insert() replaces the selection, so a paste and a typed character land the same
+        // way
         box->insert(clipboard_.read());
     }
 }

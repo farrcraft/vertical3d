@@ -5,11 +5,24 @@
 
 #include "Lit.h"
 
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/lighting/SceneUniforms.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 #include <api/type/Model.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
+#include <stdexcept>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -17,6 +30,10 @@
 namespace v3d::render::realtime::vulkan::renderer {
 
 namespace {
+
+// the stride of lit.glsl's Object struct in a std430 array
+constexpr std::size_t OBJECT_STRIDE = 96;
+static_assert(sizeof(Lit::Object) == OBJECT_STRIDE, "Lit::Object must match the std430 stride of lit.glsl's Object");
 
 /**
  * The api's lit shaders, compiled to SPIR-V at build time - see v3d_add_shader.
@@ -59,33 +76,32 @@ std::vector<uint32_t> words(const uint32_t (&code)[N]) {
 }
 
 /**
- * Sets 0 to 2 and the push block, which every lit pipeline declares alike so that the sets a
- * pass binds stay bound across a switch between them.
+ * Sets 0 to 2, which every lit pipeline declares alike so that the sets a pass binds stay bound
+ * across a switch between them.
  **/
 void declare(pipeline::Builder* builder, VkDescriptorSetLayout camera, VkDescriptorSetLayout material,
     VkDescriptorSetLayout scene) {
     builder->set(camera)
         .set(material)
-        .set(scene)
-        .push(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Lit::Object));
+        .set(scene);
 }
 
 /**
- * The vertex a pipeline reads: a model's, and for a skinned one its influence after it - the
+ * The vertex a pipeline reads: a model's, and for a skinned one its influence after it, the
  * layout MeshRegistry uploads a skinned model in. A depth only stage reads the position alone.
  **/
 void vertex(pipeline::Builder* builder, bool skinned, bool positionOnly) {
     using Vertex = type::Model::Vertex;
     using Influence = type::Model::Influence;
-    builder->vertexBinding(0, skinned ? sizeof(Vertex) + sizeof(Influence) : sizeof(Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position));
+    builder->vertexBinding({.binding = 0, .stride = static_cast<uint32_t>(skinned ? sizeof(Vertex) + sizeof(Influence) : sizeof(Vertex))})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, position)});
     if (!positionOnly) {
-        builder->vertexAttribute(1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal))
-            .vertexAttribute(2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv));
+        builder->vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, normal)})
+            .vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(Vertex, uv)});
     }
     if (skinned) {
-        builder->vertexAttribute(3, 0, VK_FORMAT_R16G16B16A16_UINT, sizeof(Vertex) + offsetof(Influence, joints))
-            .vertexAttribute(4, 0, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(Vertex) + offsetof(Influence, weights));
+        builder->vertexAttribute({.location = 3, .binding = 0, .format = VK_FORMAT_R16G16B16A16_UINT, .offset = sizeof(Vertex) + offsetof(Influence, joints)})
+            .vertexAttribute({.location = 4, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = sizeof(Vertex) + offsetof(Influence, weights)});
     }
 }
 
@@ -94,6 +110,11 @@ void vertex(pipeline::Builder* builder, bool skinned, bool positionOnly) {
  * first grow.
  **/
 const std::size_t initialJoints = 256;
+
+/**
+ * The object buffer's starting room: a scene of a few hundred objects before the first grow.
+ **/
+const std::size_t initialObjects = 256;
 
 };  // namespace
 
@@ -143,9 +164,17 @@ Lit::Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_pt
     palette.descriptorCount = 1;
     palette.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+    // the vertex stage reads the model matrix and the outline, and the cel pass's fragment stage
+    // the base colour
+    VkDescriptorSetLayoutBinding objects{};
+    objects.binding = 3;
+    objects.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    objects.descriptorCount = 1;
+    objects.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
     // a set per frame in flight, which is all a scene ever needs
     scenes_ = boost::make_shared<pipeline::DescriptorPool>(device_, ring_,
-        std::vector<VkDescriptorSetLayoutBinding>{block, map, palette}, ring_->framesInFlight(), "scene");
+        std::vector<VkDescriptorSetLayoutBinding>{block, map, palette, objects}, ring_->framesInFlight(), "scene");
     slots_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 
     createPipelines(shaders, colour, depth, shadow, front);
@@ -191,7 +220,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
             continue;
         }
         // depth alone, so no fragment stage and no colour. Culled as the cel pass is, which
-        // shadow::light keeps right by winding a face the way a camera does
+        // lighting::shadowLight keeps right by winding a face the way a camera does
         const std::vector<uint32_t>& shadowVertex = skinned ? shaders.skinnedShadow : shaders.shadow;
         pipeline::Builder caster(device_);
         caster.name(skinned ? "lit-shadow-skinned" : "lit-shadow")
@@ -257,12 +286,12 @@ Lit::Slot& Lit::slot() {
         return slot;
     }
 
-    slot.buffer = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(SceneUniforms));
+    slot.buffer = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, .bytes = sizeof(lighting::SceneUniforms)});
     slot.set = scenes_->allocate();
 
     VkDescriptorBufferInfo buffer{};
     buffer.buffer = slot.buffer->handle();
-    buffer.range = sizeof(SceneUniforms);
+    buffer.range = sizeof(lighting::SceneUniforms);
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -271,55 +300,67 @@ Lit::Slot& Lit::slot() {
     write.descriptorCount = 1;
     write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     write.pBufferInfo = &buffer;
-    // the set points at the buffer for good - a frame writes the buffer, not the descriptor
+    // the set points at the buffer permanently. A frame writes the buffer, not the descriptor
     vkUpdateDescriptorSets(device_->handle(), 1, &write, 0, nullptr);
-    reserve(&slot, initialJoints);
+    reserve(&slot, &slot.palette, {.binding = 2, .needed = initialJoints * sizeof(glm::mat4), .kept = 0});
+    reserve(&slot, &slot.objects, {.binding = 3, .needed = initialObjects * sizeof(Object), .kept = 0});
     return slot;
 }
 
 /**
  **/
-void Lit::reserve(Slot* slot, std::size_t joints) {
-    const VkDeviceSize needed = static_cast<VkDeviceSize>(joints) * sizeof(glm::mat4);
-    if (slot->palette && slot->palette->size() >= needed) {
+void Lit::reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, const Reservation& reservation) {
+    const uint32_t binding = reservation.binding;
+    const VkDeviceSize needed = reservation.needed;
+    const VkDeviceSize kept = reservation.kept;
+    if (*buffer && (*buffer)->size() >= needed) {
         return;
     }
-    VkDeviceSize size = slot->palette ? slot->palette->size() : sizeof(glm::mat4);
+    VkDeviceSize size = *buffer ? (*buffer)->size() : sizeof(glm::mat4);
     while (size < needed) {
         size *= 2;
     }
-    if (slot->palette) {
-        // the frame that last read it should have finished, since the slot is only written
-        // after waiting for it. It is still released through the ring, which destroys it only
-        // once no frame in flight can read it
-        ring_->retire([old = slot->palette]() mutable { old.reset(); });
+    const boost::shared_ptr<memory::Buffer> grown = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, .bytes = size});
+    if (*buffer) {
+        if (kept > 0) {
+            std::vector<unsigned char> bytes(static_cast<std::size_t>(kept));
+            (*buffer)->read(bytes.data(), kept);
+            grown->write(bytes.data(), kept);
+        }
+        // the frame that last read it should have finished, because a slot is written only
+        // after waiting for its frame. It is still retired through the Ring, which destroys it
+        // only once no frame in flight can read it
+        ring_->retire([old = *buffer]() mutable { old.reset(); });
     }
-    slot->palette = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, size);
+    *buffer = grown;
 
-    VkDescriptorBufferInfo buffer{};
-    buffer.buffer = slot->palette->handle();
-    buffer.range = VK_WHOLE_SIZE;
+    VkDescriptorBufferInfo info{};
+    info.buffer = grown->handle();
+    info.range = VK_WHOLE_SIZE;
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.dstSet = slot->set;
-    write.dstBinding = 2;
+    write.dstBinding = binding;
     write.descriptorCount = 1;
     write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    write.pBufferInfo = &buffer;
+    write.pBufferInfo = &info;
     vkUpdateDescriptorSets(device_->handle(), 1, &write, 0, nullptr);
 }
 
 /**
  **/
-VkDescriptorSet Lit::scene(const SceneUniforms& uniforms, const TextureHandle& shadowMap, const std::vector<glm::mat4>& palette) {
-    // the slot about to be written was last read by the frame that used it a ring ago
+VkDescriptorSet Lit::scene(const lighting::SceneUniforms& uniforms, const TextureHandle& shadowMap, const std::vector<glm::mat4>& palette) {
+    // the device may still read this slot from framesInFlight frames ago
     ring_->waitFrame();
     Slot& written = slot();
+    current_ = &written;
+    written.count = 0;
     written.buffer->write(&uniforms, sizeof(uniforms));
     if (!palette.empty()) {
-        reserve(&written, palette.size());
-        written.palette->write(palette.data(), static_cast<VkDeviceSize>(palette.size() * sizeof(glm::mat4)));
+        const VkDeviceSize bytes = static_cast<VkDeviceSize>(palette.size() * sizeof(glm::mat4));
+        reserve(&written, &written.palette, {.binding = 2, .needed = bytes, .kept = 0});
+        written.palette->write(palette.data(), bytes);
     }
 
     const pipeline::Texture* texture = resources_->texture(shadowMap);
@@ -340,6 +381,19 @@ VkDescriptorSet Lit::scene(const SceneUniforms& uniforms, const TextureHandle& s
     // another created can share a handle while the descriptor still names the one destroyed
     vkUpdateDescriptorSets(device_->handle(), 1, &write, 0, nullptr);
     return written.set;
+}
+
+/**
+ **/
+uint32_t Lit::object(const Object& object) {
+    if (current_ == nullptr) {
+        throw std::runtime_error("Lit::object before any scene: a frame writes its scene first");
+    }
+    const VkDeviceSize offset = static_cast<VkDeviceSize>(current_->count) * sizeof(Object);
+    // growing keeps what the frame has added so far, which its draws already name by index
+    reserve(current_, &current_->objects, {.binding = 3, .needed = offset + sizeof(Object), .kept = offset});
+    current_->objects->write(&object, sizeof(Object), offset);
+    return current_->count++;
 }
 
 };  // namespace v3d::render::realtime::vulkan::renderer

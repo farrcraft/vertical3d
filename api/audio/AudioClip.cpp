@@ -8,6 +8,7 @@
 #include <SDL3_mixer/SDL_mixer.h>
 
 #include <string>
+#include <string_view>
 
 namespace v3d::audio {
 
@@ -16,7 +17,7 @@ AudioClip::~AudioClip() {
 }
 
 void AudioClip::destroy() {
-    if (!audio_) {
+    if (audio_ == nullptr) {
         return;
     }
     MIX_DestroyAudio(audio_);
@@ -33,11 +34,11 @@ bool AudioClip::load(const std::string_view & filename) {
         return false;
     }
     const std::string str(filename);
-    // no mixer, so the clip outlives any one device and can be read through the asset
-    // manager before an app has opened one. Predecoded because these are short effects
-    // played from a game tick, where a decode is a stall
+    // loaded with no mixer, so the clip outlives any one device, and the asset manager can
+    // read it before an app has opened one. Predecoded, because these are short effects
+    // played from a game tick, where decoding would stall the frame
     audio_ = MIX_LoadAudio(nullptr, str.c_str(), true);
-    if (!audio_) {
+    if (audio_ == nullptr) {
         MIX_Quit();
         return false;
     }

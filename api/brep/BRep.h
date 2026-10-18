@@ -23,9 +23,9 @@ namespace v3d::brep {
 /**
  * A boundary representation mesh.
  *
- * It is a dag::Node, so it has an id the selection model keys on, and a dag::Transform,
- * so its geometry is described about its own origin and placed by matrix(). The three
- * manipulators write through the transform rather than through the vertices.
+ * It is a dag::Node, so it has an id the selection model keys on. It is a dag::Transform, so
+ * its geometry is described about its own origin and placed by matrix(). A manipulator moves
+ * the mesh through the transform, not through the vertices.
  **/
 class BRep : public v3d::dag::Node, public v3d::dag::Transform {
  public:
@@ -35,21 +35,21 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         static const Index INVALID_ID;
 
         /**
-         * A component by index, or null when the mesh holds no such one. Walking a face is
-         * faceLoop()'s - see Topology.h.
+         * A component by index, or null when the mesh holds no such one. faceLoop() in
+         * Topology.h lists the half edges of a face.
          **/
-        HalfEdge * edge(Index e);
-        Face * face(Index f);
+        HalfEdge * edge(Index index);
+        Face * face(Index index);
         Vertex * vertex(Index vert);
-        const HalfEdge * edge(Index e) const;
-        const Face * face(Index f) const;
+        const HalfEdge * edge(Index index) const;
+        const Face * face(Index index) const;
         const Vertex * vertex(Index vert) const;
 
         /**
-         * Whether every reference the mesh holds is to something it holds: a half edge's
-         * vertex always, and its face, pair and next unless they are INVALID_ID; a face's
-         * edge always. A next chain that does not close is allowed, since an unfinished
-         * modelling operation leaves one, and faceLoop() ends it.
+         * Whether every reference the mesh holds is to something it holds. A half edge's
+         * vertex and a face's edge must always be valid. A half edge's face, pair and next
+         * may also be INVALID_ID. A next chain that does not close is allowed: an unfinished
+         * modelling operation leaves one, and faceLoop() stops on it.
          *
          * @param problem what is wrong, for a caller to report, when anything is
          **/
@@ -65,8 +65,8 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         void selected(bool sel) noexcept;
 
         /**
-         * Clear the selection flag of every vertex, edge and face, leaving the mesh's
-         * own flag alone - a select mask change deselects components, not objects.
+         * Clear the selection flag of every vertex, edge and face, and leave the mesh's own
+         * flag alone. A select mask change deselects components, not objects.
          **/
         void deselectComponents(void) noexcept;
 
@@ -78,8 +78,8 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         size_t faceCount(void) const;
 
         Index addVertex(const Vertex & v);
-        Index addEdge(const HalfEdge & e);
-        Index addFace(const Face & f);
+        Index addEdge(const HalfEdge & newEdge);
+        Index addFace(const Face & newFace);
 
  protected:
         Index addVertex(const glm::vec3 & v);

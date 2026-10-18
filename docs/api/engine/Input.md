@@ -9,8 +9,9 @@ Input reaches an app in four ways. Use whichever fits:
 
 - **Raw SDL events**, through `onEvent()`. Use this to host a ui toolkit you did not write.
 - **Source events**, on the dispatcher's `sink<event::Source>`. Use this to capture a key.
-- **Commands**, on the dispatcher's `sink<event::Event>`, made from source events by the
-  binding document. Use this when the action should be named in config rather than in code.
+- **Commands**, made from source events by the binding document and run through the handlers
+  the app registers. Use this when the action should be named in config rather than in code.
+  See [Commands](#commands).
 - **Polling**, through `keys()`, `mouse()` and `held()`. Read `held()` from `simulate()`, and
   the edges from `tick()` or `render()`.
 
@@ -47,10 +48,10 @@ A key or mouse button going down or up is a **source event**, `v3d::event::Sourc
 action that a binding makes from it is a **command**, `v3d::event::Event`. They are published on
 two separate sinks of the dispatcher:
 
-| Sink | Carries | Listen here to |
+| Sink | Carries | Who listens |
 |---|---|---|
-| `sink<event::Source>` | every key and button edge | capture a key, or react to a raw key |
-| `sink<event::Event>` | commands only | act on named actions |
+| `sink<event::Source>` | every key and button edge | an app that captures a key, or reacts to a raw key |
+| `sink<event::Event>` | commands only | the engine, which runs the [registered handler](#commands) |
 
 A device also publishes typed events on the dispatcher for every input:
 `event::kind::KeyDown`, `KeyUp`, `MouseButton`, `MouseMotion`, `MouseWheel` and `TextInput`. An
@@ -105,7 +106,8 @@ The binding document is the config document of type `binding`, conventionally
 - `source.state` is optional. `pressed` or `down` binds the press only, `released` or `up` the
   release only, and anything else, including no state, binds both.
 - `destination.context` and `destination.name` name the command. `destination.param` is
-  optional and becomes the command's data. It may be a whole number, a boolean or a string.
+  optional and becomes the command's data. It may be a whole number an `int` can hold, a
+  boolean or a string.
 - A name no device can send is logged and bound anyway. It never fires.
 - Every `name`, `context` and `state` is a string. A malformed document, including one that
   gives any of them another type, is logged, and startup fails.
@@ -114,6 +116,47 @@ The binding document is the config document of type `binding`, conventionally
 rebinding screen. The command keeps the context and the edge the document gave it. A rebinding
 lasts only as long as the process. To keep it, store it in [Settings](Files.md#settings-and-the-players-files)
 and apply it again at startup, as pong's `applyStoredBindings()` does.
+
+### Commands
+
+**Every command an app handles is registered by name.** `Engine::commands()` returns the app's
+`event::Commands`, which maps each `context::name` to a handler. The engine listens on
+`sink<event::Event>` and runs the handler a command names. An app does not listen there itself.
+
+- `addPress(name, handler)` registers a handler that runs on the press only. A release and a
+  held key's repeat are handled and do nothing, so a toggle needs no repeat check of its own.
+- `add(name, handler)` registers a handler that receives the whole event. Use it for a command
+  that acts on a release or on each repeat, or that reads the event's data, as a menu item's
+  value does.
+- `addHeld(name)` registers a command that the app reads with `held()` rather than handling.
+  Its event is handled and does nothing.
+
+**Register in the constructor.** A test can then build the app without a window and check the
+bindings it ships with `Engine::unhandled(document)`. Every game's suite does this for its
+`data/mappings.json`. A handler runs only once the loop has started, so it may use what
+`start()` builds.
+
+- After `start()`, the engine logs each binding whose command nothing registered.
+  `Engine::unhandled()` returns the same list.
+- A command that arrives with no handler is logged as a warning. A menu item that names a
+  command nothing handles shows up this way.
+- A name registered twice is refused, and the first handler stays.
+- The engine registers `ui::quit`, which ends the loop, and `ui::fullscreen`, which switches
+  the window between full screen and a window. An app binds them and writes no handler.
+- `ui::shell::GameMenu::declare(commands(), menu_)` registers the pause menu's commands, before
+  the menu exists. See [ShellComponents.md](../ui/ShellComponents.md#gamemenu).
+
+```cpp
+AppEngine::AppEngine(const std::string& path) : v3d::engine::Engine(path) {
+    commands().addHeld("app::moveLeft");                  // read with held() in simulate()
+    commands().addPress("app::toggleStatistics", [this]() {
+        renderer_->statistics()->toggle();                // built in start()
+    });
+    v3d::ui::shell::GameMenu::declare(commands(), menu_);
+}
+```
+
+Background: [ADR-0090](../../adr/0090-input-commands-are-handled-through-one-registry.md)
 
 ### Polling the keyboard and mouse
 

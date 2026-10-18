@@ -23,40 +23,39 @@ namespace v3d::render::offline::sl {
 class Signature;
 
 /**
- * Symbols, types and the varying inference: the pass between the syntax tree and the
- * program.
+ * Resolves symbols, checks types and infers storage classes, between parsing and emitting.
  *
- * The tree is annotated in place - every expression comes out with a type and a storage
- * class, and every variable with the index of the symbol it resolved to. The storage is the
- * Inference's, run once the checking is done.
+ * The tree is annotated in place. Every expression gets a type and a storage class, and
+ * every variable gets the index of the symbol it resolved to. The storage classes come from
+ * Inference, which runs after the type checks.
  **/
 class Compiler final {
  public:
     explicit Compiler(const syntax::ShaderPtr & shader);
 
     /**
-     * Check and annotate. False on the first error, which error() then names with a
-     * position; the tree is left partly annotated and is not worth running.
+     * Check and annotate. False on the first error, and error() then describes it with a
+     * line and column. The tree is then partly annotated and must not be emitted.
      **/
     bool compile();
 
     const std::string & error() const;
 
     /**
-     * Every symbol the shader holds, in the order the machine should allocate them.
+     * Every symbol the shader holds, in the order the emitter allocates their registers.
      **/
     const std::vector<Symbol> & symbols() const;
 
  private:
     /**
-     * Thrown by the checks and caught by compile(), so a check reads as its rule rather than
-     * as a chain of error returns.
+     * Thrown by the checks and caught by compile(), so that a check is not a chain of error
+     * returns.
      **/
     class Failure final {};
 
     /**
-     * One name in scope, and the symbol it stands for. A scope is a run of these, unwound
-     * to a mark when the block closes.
+     * One name in scope, and the symbol it stands for. The scope is a stack of these. When
+     * a block closes, the stack is cut back to its size when the block opened.
      **/
     class Binding final {
      public:
@@ -71,21 +70,20 @@ class Compiler final {
     int lookup(const std::string & name) const;
 
     /**
-     * Take on the library functions the shader calls, and the ones those call in turn.
+     * Add the library functions the shader calls, and the ones those call in turn, to the
+     * shader's own function list.
      *
-     * `diffuse` and its siblings are written in the language, so a shader that names one
-     * gets it added to its own function list before anything else runs. Everything
-     * downstream - the checker, the inference and the inliner - then sees one kind of
-     * function rather than two, and a shader's own definition of the name wins because it
-     * is already there.
+     * `diffuse` and the other functions from sources() are written in the shading language.
+     * After this, the checker, the inference and the inliner see only one kind of function.
+     * A function the shader defines itself is not replaced.
      **/
     void adopt();
 
     void checkFunctions();
     /**
-     * Reject a function that reaches itself. The machine has a register file per shader run
-     * and no call stack, so a recursive shader cannot run. The check needs the whole call
-     * graph, so it is made here rather than in the parser.
+     * Reject a function that calls itself, directly or through others. Calls are inlined
+     * and the machine has no call stack, so a recursive shader cannot run. The check needs
+     * the whole call graph, so the parser cannot make it.
      **/
     void checkCallGraph();
     void checkBlock(const syntax::BlockPtr & block);
@@ -100,7 +98,7 @@ class Compiler final {
     Type checkCall(const syntax::ExpressionPtr & expression);
     /**
      * Which of the shader's own functions the call names, or -1 for none of them. A shader's
-     * function wins over a standard one of the same name.
+     * function takes precedence over a standard one of the same name.
      **/
     int checkShaderCall(syntax::Call & call, const std::vector<Type> & given);
     /**
@@ -115,8 +113,8 @@ class Compiler final {
     Type checkTernary(const syntax::ExpressionPtr & expression);
     Type checkCast(const syntax::ExpressionPtr & expression);
     /**
-     * Whether a cast's type can carry the space named in front of it. A position or a
-     * direction takes a coordinate space and a colour takes a colour space.
+     * Reject a cast whose type cannot take the space named in front of it. A point, vector
+     * or normal takes a coordinate space, and a colour takes a colour space.
      **/
     void checkSpace(const syntax::Cast & cast);
 
@@ -130,8 +128,8 @@ class Compiler final {
      **/
     std::vector<std::vector<int> > calls_;
     /**
-     * The globals a surface shader may read only inside an illuminance body - L and Cl,
-     * which a light sets and which mean nothing outside one.
+     * The globals a surface shader may read only inside an illuminance body: L and Cl. A
+     * light sets them, and they have no value outside that body.
      **/
     std::vector<int> lighting_;
     std::string error_;

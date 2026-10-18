@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+#include <glm/vec3.hpp>
+
 namespace v3d::grid {
 
 /**
@@ -34,18 +36,20 @@ struct Picture final {
 /**
  * Build a grid from rows of glyphs, one per tile, and a legend saying what each glyph is.
  *
- * The grid parses terrain only. Reading the file the rows came from, and any other meaning a
- * glyph has to a game, such as a prop, a spawn or the player's start, belong to the game. A
- * glyph the legend does not name is therefore returned in Picture::unknown rather than
- * refused. A game that treats one as an error checks that list itself.
+ * fromPicture() reads terrain only. The game reads the file the rows came from, and handles
+ * any other meaning a glyph has, such as a prop, a spawn or the player's start. A glyph the
+ * legend does not name is therefore returned in Picture::unknown, not refused. A game that
+ * treats an unknown glyph as an error checks that list itself.
  *
  * @param rows the picture, row y of it being tile row y, all the same length
  * @param legend what each glyph is made of
  * @param tileSize the grid's tile edge length in world units
- * @return the grid, or no grid and the reason when the tile size is not positive, there are
- *         no rows, a row is empty, or the rows differ in length. It never throws for these.
+ * @param corner where the grid's minimum corner is placed, for a region of a larger world.
+ *        Without it, the grid is centred on the origin
+ * @return the grid, or no grid and the reason when there are no rows, a row is empty, the rows
+ *         differ in length, or TileGrid::refusal() refuses the grid. It never throws for these.
  **/
 Picture fromPicture(const std::vector<std::string>& rows, const std::map<char, Terrain>& legend,
-    float tileSize = TileGrid::DEFAULT_TILE_SIZE);
+    float tileSize = TileGrid::DEFAULT_TILE_SIZE, const std::optional<glm::vec3>& corner = std::nullopt);
 
 };  // namespace v3d::grid

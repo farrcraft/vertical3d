@@ -6,6 +6,11 @@
 #include "Config.h"
 
 #include <api/asset/Json.h>
+#include <api/asset/Manager.h>
+#include <api/asset/kind/Json.h>
+#include <api/log/Logger.h>
+
+#include "Type.h"
 
 #include <optional>
 #include <string>
@@ -24,15 +29,13 @@ Config::Config(const boost::shared_ptr<v3d::log::Logger>& logger) :
 /**
  **/
 bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
-    boost::shared_ptr<v3d::asset::kind::Json> config = assetManager->load<v3d::asset::kind::Json>("config.json");
+    const boost::shared_ptr<v3d::asset::kind::Json> config = assetManager->load<v3d::asset::kind::Json>("config.json");
     if (!config) {
         return false;
     }
     auto const doc = config->document();
-    // every lookup below is guarded by a contains() rather than reaching straight for
-    // at(): boost::json::at throws, and a config this function does not understand has to
-    // come back as a false return like every other rejection here, not as an exception
-    // out of engine startup.
+    // boost::json's at() and as_*() throw, so every call below follows a contains() or a type
+    // check. A config this function cannot read returns false, never an exception.
     if (!doc.contains("configs")) {
         logger_->get()->error("Missing configs in config");
         return false;
@@ -42,7 +45,8 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
         logger_->get()->error("Missing configs in config");
         return false;
     }
-    // filed here and kept only once every entry has loaded, so a failed load files nothing
+    // collected here and stored only once every entry has loaded, so a failed load stores
+    // nothing
     std::unordered_map<std::string, boost::shared_ptr<v3d::asset::kind::Json> > read;
     auto const items = configs.as_array();
     const auto* it = items.begin();
@@ -74,8 +78,8 @@ bool Config::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager) {
         if (stringToType(typeName) == Type::Unknown) {
             logger_->get()->debug("Config names a {} document, which the api does not read", typeName);
         }
-        // a file that is missing, is not json, or names an extension nothing loads is no
-        // asset, and the manager has logged which
+        // the manager returns null for a file that is missing, is not JSON, or has an
+        // extension no loader handles, and logs which
         const boost::shared_ptr<v3d::asset::kind::Json> asset = assetManager->load<v3d::asset::kind::Json>(fileName);
         if (!asset) {
             logger_->get()->error("Config file could not be loaded: {}", fileName);

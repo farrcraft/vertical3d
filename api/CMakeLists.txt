@@ -6,7 +6,7 @@ foreach(v3d_library IN LISTS V3D_API_BUILD)
 	add_subdirectory("${V3D_API_${v3d_library}_PATH}")
 endforeach()
 
-# The manifest the root selected from, against the link graph the libraries just declared.
+# Check the manifest the root selected from against the link graph the libraries declared.
 v3d_api_verify_manifest()
 
 # Check each library's PUBLIC links against what its headers include.

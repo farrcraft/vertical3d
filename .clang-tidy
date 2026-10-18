@@ -1,7 +1,7 @@
 # The check list clang-tidy runs under -DV3D_CLANG_TIDY=ON. Four families are enabled and
 # named checks are subtracted, rather than the live checks being listed one by one: a name
 # clang-tidy does not recognise is not an error, so a list that has gone stale turns findings
-# on and fails loudly instead of quietly covering less. 186 of the 206 checks in these families
+# on and fails loudly instead of quietly covering less. 199 of the 206 checks in these families
 # are live, and the tree is clean at all of them.
 #
 # The cppcoreguidelines, modernize and google families are not enabled at all. Each argues with
@@ -34,34 +34,23 @@
 #    boost does not export that instantiation - the call compiles and then fails to link
 #    with an unresolved __declspec(dllimport). count() is what those two keep.
 #
-# Every other subtraction is open work. The way to remove one is to fix what it reports, not to
-# widen the exclusion.
+# One check is off in part of the tree rather than all of it. Each tests directory has a
+# .clang-tidy of its own that turns off readability-magic-numbers, because a test's literal is
+# the value it expects and belongs beside the assertion that checks it. Everywhere else the
+# check applies.
 Checks: >
   -*,
   bugprone-*,
   performance-*,
   misc-*,
   readability-*,
-  -bugprone-easily-swappable-parameters,
   -bugprone-invalid-enum-default-initialization,
-  -bugprone-narrowing-conversions,
-  -misc-const-correctness,
-  -misc-include-cleaner,
   -misc-multiple-inheritance,
   -misc-no-recursion,
-  -misc-non-private-member-variables-in-classes,
-  -misc-use-internal-linkage,
-  -performance-enum-size,
   -readability-ambiguous-smartptr-reset-call,
-  -readability-braces-around-statements,
   -readability-container-contains,
-  -readability-identifier-length,
-  -readability-implicit-bool-conversion,
-  -readability-magic-numbers,
   -readability-make-member-function-const,
-  -readability-math-missing-parentheses,
-  -readability-non-const-parameter,
-  -readability-uppercase-literal-suffix
+  -readability-non-const-parameter
 
 # A header is diagnosed wherever it is included from, so an api header is covered by whichever
 # library compiles it. The third party trees are not this repository's to fix, and each would
@@ -84,3 +73,38 @@ CheckOptions:
   # author wrote: a straight run of assertions with no branch in it reaches 37. Nothing in this
   # tree's own macros branches, so counting them buys nothing anywhere else either.
   readability-function-cognitive-complexity.IgnoreMacros: 'true'
+  # The check already ignores std::bad_alloc, since running out of memory is not a defect in the
+  # function that allocates. MSVC's debug library throws std::bad_array_new_length, a kind of
+  # bad_alloc, from the size check of every allocation, including the proxy that moving a string
+  # or a container allocates. The check matches the exact type, so without this every lambda that
+  # captures a string has a move constructor that may throw.
+  bugprone-exception-escape.IgnoredExceptions: 'bad_array_new_length'
+  # A class whose data members are all public is a plain record, built with designated
+  # initialisers and read field by field. The check is for a class that keeps an invariant
+  # over its members, so a mix of public and private data, or protected data, is reported.
+  misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: 'true'
+  # A number needs a name when a reader cannot tell what it is. These rarely leave a reader
+  # guessing: a power of two is a size, a width or an alignment, 24 is the bits of an rgb pixel
+  # and the shift to a word's top byte, 255 is the largest byte, and 0.5 and 2.0 halve and
+  # double. The check already ignores 0 to 4, 1.0 and 100.0.
+  readability-magic-numbers.IgnoredIntegerValues: '1;2;3;4;24;255'
+  readability-magic-numbers.IgnorePowersOf2IntegerValues: 'true'
+  readability-magic-numbers.IgnoredFloatingPointValues: '0.5;1.0;2.0;100.0'
+  # A name of two letters is a word or a standard abbreviation: at, to, id, op, ui, dx. One
+  # letter is a name only where it is the conventional one: x, y, z and w are coordinates, u and
+  # v are a surface's parameters, and s and t are its texture coordinates. i, j and k count a
+  # loop, n is a count and e is a caught exception. Every other name says what it holds.
+  readability-identifier-length.MinimumVariableNameLength: '2'
+  readability-identifier-length.MinimumParameterNameLength: '2'
+  readability-identifier-length.IgnoredVariableNames: '^[xyzwuvst]$'
+  readability-identifier-length.IgnoredParameterNames: '^[nxyzwuvst]$'
+  readability-identifier-length.IgnoredLoopCounterNames: '^[ijk_xyzwuvst]$'
+  # A literal's suffix is written in capitals, so a long 1L is not misread as 11. A literal
+  # inside a macro argument, such as a Boost.Test assertion's, follows the same rule.
+  readability-uppercase-literal-suffix.IgnoreMacros: 'false'
+  # A third party library is included through its public header, such as glm/vec3.hpp or
+  # vulkan/vulkan.h, while the check names the internal header that declares a symbol. The
+  # check reads no mapping between the two, so it ignores every header installed outside the
+  # tree, the same trees the header filter above excludes. It still checks the tree's own
+  # headers and the standard library's.
+  misc-include-cleaner.IgnoreHeaders: '(vcpkg_installed|vendor|VulkanSDK|Microsoft Visual Studio|Windows Kits)[\\/].*'

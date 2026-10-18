@@ -27,8 +27,6 @@ VkDescriptorSet someSet() {
     return reinterpret_cast<VkDescriptorSet>(&placeholder);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(recorder_check_test)
 
 /**
@@ -51,7 +49,7 @@ BOOST_AUTO_TEST_CASE(a_biased_pipeline_needs_a_biased_pass) {
     BOOST_CHECK_THROW(Recorder::check(unbiased, biased), std::runtime_error);
 
     Pass shadow("shadow");
-    shadow.depthBias(1.5f, 2.75f);
+    shadow.depthBias(1.5F, 2.75F);
     BOOST_CHECK_NO_THROW(Recorder::check(shadow, biased));
 }
 
@@ -61,7 +59,7 @@ BOOST_AUTO_TEST_CASE(a_biased_pipeline_needs_a_biased_pass) {
  **/
 BOOST_AUTO_TEST_CASE(an_unbiased_pipeline_ignores_the_bias) {
     Pass shadow("shadow");
-    shadow.depthBias(1.5f, 2.75f);
+    shadow.depthBias(1.5F, 2.75F);
     BOOST_CHECK_NO_THROW(Recorder::check(shadow, Pipeline()));
 }
 
@@ -135,3 +133,5 @@ BOOST_AUTO_TEST_CASE(a_depth_pass_checks_the_depth_format) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -5,29 +5,29 @@
 
 #include "Piece.h"
 
-#include <iostream>
 #include <string>
 
 Piece::Piece(ColorType type) : color_(type) {
 }
 
 Piece::Piece(const std::string& color_name) {
-    if (color_name == "red")
+    if (color_name == "red") {
         color_ = COLOR_RED;
-    else if (color_name == "cyan")
+    } else if (color_name == "cyan") {
         color_ = COLOR_CYAN;
-    else if (color_name == "blue")
+    } else if (color_name == "blue") {
         color_ = COLOR_BLUE;
-    else if (color_name == "green")
+    } else if (color_name == "green") {
         color_ = COLOR_GREEN;
-    else if (color_name == "orange")
+    } else if (color_name == "orange") {
         color_ = COLOR_ORANGE;
-    else if (color_name == "purple")
+    } else if (color_name == "purple") {
         color_ = COLOR_PURPLE;
-    else if (color_name == "yellow")
+    } else if (color_name == "yellow") {
         color_ = COLOR_YELLOW;
-    else
+    } else {
         color_ = COLOR_EMPTY;
+    }
 }
 
 Piece::ColorType Piece::color() const {

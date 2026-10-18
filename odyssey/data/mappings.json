@@ -42,16 +42,6 @@
     },
     {
       "source": {
-        "context": "keyboard",
-        "name": "space"
-      },
-      "destination": {
-        "context": "odyssey",
-        "name": "moveUp"
-      }
-    },
-    {
-      "source": {
         "context": "mouse",
         "name": "left",
         "state": "pressed"

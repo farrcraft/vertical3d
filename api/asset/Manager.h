@@ -25,13 +25,13 @@ namespace v3d::asset {
  * The Asset Manager provides an access point for mapping and loading assets
  * within a single path.
  *
- * It loads what a loader has been registered for. A manager starts with the two that read a
- * document, Json and Text; the loaders for pictures and models are in api/asset/media and the
- * one for sound in api/audio, and each library registers its own.
+ * It loads the types a loader has been registered for. A manager starts with the document
+ * loaders, Json and Text. The loaders for pictures and models are in api/asset/media, and the
+ * loader for sound is in api/audio. Each library registers its own.
  *
  * **Every way of loading reports a failure the same way: no asset, and a line in the log.**
- * That covers a missing file, one that does not decode, a type with no registered loader and
- * an unregistered extension, so a caller checks one pointer whatever went wrong.
+ * That covers a missing file, a file that does not decode, a type with no registered loader
+ * and an unregistered extension. A caller checks one pointer whatever went wrong.
  **/
 class Manager final {
  public:
@@ -56,8 +56,8 @@ class Manager final {
     /**
      * Load an asset as the kind the caller holds it as, the type found from its extension.
      *
-     * @return the asset, or null - for a file of a kind other than T as well, which is logged
-     *         as that rather than looking like a missing file
+     * @return the asset, or null. A file that loads as a kind other than T also gives null,
+     *         and the log says so, so it does not look like a missing file
      **/
     template <typename T>
     boost::shared_ptr<T> load(std::string_view name) {
@@ -87,8 +87,8 @@ class Manager final {
     boost::shared_ptr<Loader> resolveLoader(asset::Type t);
 
     /**
-     * Where a name resolves to, for something that has to open the file itself rather than
-     * load it as an asset.
+     * The path a name resolves to, for a caller that opens the file itself instead of loading
+     * it as an asset.
      **/
     std::string path(std::string_view name) const;
 

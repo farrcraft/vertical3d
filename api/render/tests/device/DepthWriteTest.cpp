@@ -6,9 +6,9 @@
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/Frame.h>
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
@@ -16,6 +16,7 @@
 #include <api/render/realtime/vulkan/renderer/World.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -30,12 +31,12 @@
 #include "Headless.h"
 
 using v3d::render::realtime::Frame;
-using v3d::render::realtime::LineCanvas;
 using v3d::render::realtime::Pass;
-using v3d::render::realtime::WorldCanvas;
 using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
+
+namespace canvas = v3d::render::realtime::canvas;
 
 namespace {
 
@@ -48,18 +49,18 @@ const uint32_t height = 32;
  * down over [0, height), and z into the screen over [0, 1].
  **/
 glm::mat4x4 pixels() {
-    glm::mat4x4 projection(1.0f);
-    projection[0][0] = 2.0f / static_cast<float>(width);
-    projection[1][1] = 2.0f / static_cast<float>(height);
-    projection[3][0] = -1.0f;
-    projection[3][1] = -1.0f;
+    glm::mat4x4 projection(1.0F);
+    projection[0][0] = 2.0F / static_cast<float>(width);
+    projection[1][1] = 2.0F / static_cast<float>(height);
+    projection[3][0] = -1.0F;
+    projection[3][1] = -1.0F;
     return projection;
 }
 
 /**
  * What a case draws twice at the same depth.
  **/
-enum class Drawn {
+enum class Drawn : std::uint8_t {
     Lines,
     WorldQuads
 };
@@ -76,32 +77,32 @@ enum class Drawn {
  * @return "red", "green" or "neither", for the pixel at the middle of row 16
  **/
 std::string drawCoincident(v3d::test::Headless* headless, Drawn drawn, std::optional<bool> write, const std::string& path) {
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
         headless->device, headless->context->ring(), width, height, colourFormat, true);
 
-    const glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
-    const glm::vec4 green(0.0f, 1.0f, 0.0f, 1.0f);
+    const glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
+    const glm::vec4 green(0.0F, 1.0F, 0.0F, 1.0F);
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("coincident");
+    const boost::shared_ptr<Pass> pass = frame.pass("coincident");
     pass->target(target);
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     pass->depth(true);
     pass->depthWrite(write);
-    pass->camera(glm::mat4x4(1.0f), pixels());
+    pass->camera(glm::mat4x4(1.0F), pixels());
 
-    LineCanvas lines;
-    WorldCanvas quads;
+    canvas::Line lines;
+    canvas::World quads;
     if (drawn == Drawn::Lines) {
-        lines.line(glm::vec3(0.0f, 16.5f, 0.5f), glm::vec3(64.0f, 16.5f, 0.5f), red);
-        lines.line(glm::vec3(0.0f, 16.5f, 0.5f), glm::vec3(64.0f, 16.5f, 0.5f), green);
+        lines.line(glm::vec3(0.0F, 16.5F, 0.5F), glm::vec3(64.0F, 16.5F, 0.5F), red);
+        lines.line(glm::vec3(0.0F, 16.5F, 0.5F), glm::vec3(64.0F, 16.5F, 0.5F), green);
         headless->context->lines()->submit(lines, pass.get());
     } else {
-        const WorldCanvas::Corners band{
-            glm::vec3(0.0f, 8.0f, 0.5f),
-            glm::vec3(64.0f, 8.0f, 0.5f),
-            glm::vec3(64.0f, 24.0f, 0.5f),
-            glm::vec3(0.0f, 24.0f, 0.5f)
+        const canvas::World::Corners band{
+            glm::vec3(0.0F, 8.0F, 0.5F),
+            glm::vec3(64.0F, 8.0F, 0.5F),
+            glm::vec3(64.0F, 24.0F, 0.5F),
+            glm::vec3(0.0F, 24.0F, 0.5F)
         };
         quads.quad(band, red);
         quads.quad(band, green);
@@ -130,7 +131,7 @@ std::string drawCoincident(v3d::test::Headless* headless, Drawn drawn, std::opti
     if (!picture) {
         return "nothing read";
     }
-    const unsigned char* at = picture->data() + (static_cast<std::size_t>(16) * width + 32) * 4;
+    const unsigned char* at = picture->data() + (((static_cast<std::size_t>(16) * width) + 32) * 4);
     if (at[0] == 255 && at[1] == 0 && at[2] == 0) {
         return "red";
     }
@@ -139,8 +140,6 @@ std::string drawCoincident(v3d::test::Headless* headless, Drawn drawn, std::opti
     }
     return "neither";
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(depth_write_test)
 
@@ -192,3 +191,5 @@ BOOST_AUTO_TEST_CASE(a_pass_that_names_nothing_leaves_world_quads_unwritten) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

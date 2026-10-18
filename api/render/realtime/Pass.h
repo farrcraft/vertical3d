@@ -23,21 +23,21 @@ class RenderTarget;
 };  // namespace vulkan::frame
 
 /**
- * One pass of a frame - a target, what to do with what is already in it, a camera, and
- * the draw items to record into it.
+ * One pass of a frame: a target, whether to clear it, a camera, and the draw items to record
+ * into it.
  *
  * 2D and 3D drawing differ by pass, not by engine. A sprite pass has no depth buffer and
  * painter ordering, a scene pass has depth and front to back ordering, and an editor
  * viewport is one more pass over the same device.
  *
- * A pass draws into the swapchain image unless it names a target of its own - see target().
+ * A pass draws into the swapchain image unless target() names an offscreen target.
  **/
 class Pass final {
  public:
     /**
-     * What vkCmdSetDepthBias is given, in its terms. The fields are a constant offset in
-     * units of the depth format's smallest step, one scaled by the polygon's slope, and the
-     * most either may add up to - zero for no limit.
+     * The arguments to vkCmdSetDepthBias. constant is an offset in units of the depth format's
+     * smallest step, slope is scaled by the polygon's depth slope, and clamp is the largest
+     * bias allowed, or zero for no limit.
      **/
     struct DepthBias final {
         float constant;
@@ -46,7 +46,7 @@ class Pass final {
     };
 
     /**
-     * @param name what the pass is for, used in logs and debug markers
+     * @param name what the pass is for, used in error messages and in Timings
      **/
     explicit Pass(const std::string& name);
 
@@ -78,13 +78,13 @@ class Pass final {
     const glm::vec4& clearColour() const noexcept;
 
     /**
-     * Whether the pass depth tests. 2D passes do not - they rely on painter ordering.
+     * Whether the pass depth tests. 2D passes do not, because they rely on painter ordering.
      *
-     * A pass that asks for depth is given one the size of what it draws into: the
-     * context's depth buffer for a pass on the swapchain, allocated the first frame
-     * anything asks for it, and the target's own for a pass with a target. Depth is
-     * cleared exactly when colour is, so a pass drawing on top of what the pass before
-     * it left keeps that pass's depth too.
+     * A pass that asks for depth is given a depth image the size of what it draws into. A
+     * pass on the swapchain gets DeviceContext's depth buffer, allocated the first frame a
+     * pass asks for it. A pass with a target gets the target's own. Depth is cleared exactly
+     * when colour is, so a pass drawing on top of what the pass before it left keeps that
+     * pass's depth too.
      **/
     void depth(bool enabled) noexcept;
 
@@ -96,12 +96,12 @@ class Pass final {
     /**
      * Draw into an offscreen target rather than into the swapchain image.
      *
-     * The recorder leaves a target readable by every pass after the last one that drew
+     * Recorder leaves a target readable by every pass after the last one that drew
      * into it. A pass sampling what an earlier pass rendered names that target's texture as
      * a material like any other, and declares it with reads().
      *
      * A pipeline is built against the format of what it draws into, so a pass whose target
-     * is not the swapchain's format needs a pipeline built for that format. The recorder
+     * is not the swapchain's format needs a pipeline built for that format. Recorder
      * throws when a pipeline is bound in a pass whose target has a different format.
      *
      * Passing an empty pointer puts the pass back on the swapchain image.
@@ -180,13 +180,13 @@ class Pass final {
     /**
      * The depth bias every pipeline built with one draws at in this pass.
      *
-     * The bias belongs to the pass rather than the item, because it depends on the target's
-     * depth format and the light's angle, which every caster in a shadow pass shares. A
+     * The bias belongs to the pass, not the item. It depends on the target's depth format and
+     * the light's angle, and every caster in a shadow pass shares both. A
      * pipeline built without one ignores it, so other geometry can share the pass. An item
      * whose pipeline was built with one, in a pass that names none, is an error at record
      * time. Otherwise Vulkan would draw with whatever bias was last set, and report nothing.
      **/
-    void depthBias(float constant, float slope, float clamp = 0.0f) noexcept;
+    void depthBias(float constant, float slope, float clamp = 0.0F) noexcept;
 
     /**
      * @return the bias the pass draws at, or nothing when it names none
@@ -219,7 +219,7 @@ class Pass final {
      * Off by default, because 2D content is painter ordered. The key sorts by pipeline and
      * material within a layer, so sorting a canvas's batches would put a panel over the text
      * on it. Sorting is meant for a depth tested scene pass, which has one item per object.
-     * Grouping those by pipeline and material lets the recorder skip rebinding between them.
+     * Grouping those by pipeline and material lets Recorder skip rebinding between them.
      *
      * The sort is stable, so items whose keys are equal keep the order they arrived in.
      **/
@@ -234,7 +234,7 @@ class Pass final {
      * Add a draw item to the pass. The engine decides when it is recorded.
      *
      * The key's pipeline and material are taken from the item's handles here, so whatever a
-     * caller set them to is replaced; its layer and depth are the caller's.
+     * caller set them to is replaced. Its layer and depth are the caller's.
      **/
     void submit(const DrawItem& item);
 

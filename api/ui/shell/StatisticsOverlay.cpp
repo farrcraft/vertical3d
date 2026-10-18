@@ -5,12 +5,15 @@
 
 #include "StatisticsOverlay.h"
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/paint/TextRenderer.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <iomanip>
+#include <ios>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -23,20 +26,19 @@ namespace {
 /**
  * The gap from the corner of the canvas to the box, and from the box to the text inside it.
  **/
-const float margin = 8.0f;
-const float padding = 6.0f;
+const float margin = 8.0F;
+const float padding = 6.0F;
 
 /**
- * A line's height as a multiple of the size the font was rasterized at. Nothing scales a
- * glyph, so this is the only thing that decides how far apart the lines sit.
+ * A line's height as a multiple of the size the readout is drawn at.
  **/
-const float lineSpacing = 1.3f;
+const float lineSpacing = 1.3F;
 
 /**
- * Translucent so that what is being measured stays visible under the numbers.
+ * The background is translucent, so that the scene stays visible under the numbers.
  **/
-constexpr glm::vec4 background(0.0f, 0.0f, 0.0f, 0.6f);
-constexpr glm::vec4 foreground(0.9f, 0.9f, 0.9f, 1.0f);
+constexpr glm::vec4 background(0.0F, 0.0F, 0.0F, 0.6F);
+constexpr glm::vec4 foreground(0.9F, 0.9F, 0.9F, 1.0F);
 
 const double nanosecondsPerMillisecond = 1000000.0;
 const double nanosecondsPerSecond = 1000000000.0;
@@ -56,7 +58,7 @@ namespace v3d::ui::shell {
 
 /**
  **/
-const float StatisticsOverlay::defaultSize = 16.0f;
+const float StatisticsOverlay::defaultSize = 16.0F;
 
 /**
  **/
@@ -148,14 +150,14 @@ std::vector<std::string> StatisticsOverlay::content(const Sample& sample) const 
 
 /**
  **/
-void StatisticsOverlay::draw(v3d::render::realtime::Canvas* canvas, const Sample& sample) {
-    if (!visible_ || !canvas || !text_ || !text_->loaded()) {
+void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample) {
+    if (!visible_ || canvas == nullptr || !text_ || !text_->loaded()) {
         return;
     }
 
     const std::vector<std::string> content = this->content(sample);
 
-    float widest = 0.0f;
+    float widest = 0.0F;
     for (const std::string& line : content) {
         widest = std::max(widest, text_->width(line, size_));
     }
@@ -165,7 +167,7 @@ void StatisticsOverlay::draw(v3d::render::realtime::Canvas* canvas, const Sample
     // the box goes on before the glyphs do: the canvas is drawn in the order it is filled,
     // so a background added after the text it backs would cover it
     canvas->rect(glm::vec2(margin, margin),
-        glm::vec2(margin + widest + padding * 2.0f, margin + lineHeight * static_cast<float>(content.size()) + padding * 2.0f),
+        glm::vec2(margin + widest + (padding * 2.0F), margin + (lineHeight * static_cast<float>(content.size())) + (padding * 2.0F)),
         background);
 
     // the pen is the baseline of the line, which sits one font size below the top of it

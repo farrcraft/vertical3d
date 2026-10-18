@@ -5,9 +5,18 @@
 
 #include "ViewPort.h"
 
+#include <api/render/realtime/canvas/Line.h>
+#include <api/type/Checked.h>
+#include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/WireframeVisitor.h>
 
+#include "ConstructionPlane.h"
+
+#include <cstdint>
+#include <limits>
 #include <string>
 
 #include <boost/make_shared.hpp>
@@ -18,7 +27,7 @@ namespace v3d::editor {
  **/
 ViewPort::ViewPort(const std::string& name, const v3d::type::camera::Profile& profile) :
     name_(name),
-    region_(0.0f, 0.0f, 0.0f, 0.0f),
+    region_(0.0F, 0.0F, 0.0F, 0.0F),
     showFlags_(SHOW_GRID | SHOW_MESH | SHOW_HANDLE) {
     camera_ = boost::make_shared<v3d::type::camera::Camera>(profile);
 }
@@ -40,9 +49,10 @@ const std::string& ViewPort::name() const noexcept {
 void ViewPort::resize(const glm::vec4& region) {
     region_ = region;
 
-    const unsigned int width = static_cast<unsigned int>(region.z > 0.0f ? region.z : 0.0f);
-    const unsigned int height = static_cast<unsigned int>(region.w > 0.0f ? region.w : 0.0f);
-    camera_->profile().size(width, height);
+    // a region that is negative, NaN or too large to count gives a size of zero
+    const uint32_t width = v3d::type::toCount(region.z, std::numeric_limits<uint32_t>::max()).value_or(0U);
+    const uint32_t height = v3d::type::toCount(region.w, std::numeric_limits<uint32_t>::max()).value_or(0U);
+    camera_->profile().size(glm::uvec2(width, height));
     if (height > 0) {
         camera_->profile().pixelAspect(static_cast<float>(width) / static_cast<float>(height));
     }
@@ -91,7 +101,7 @@ ConstructionPlane& ViewPort::grid() noexcept {
 /**
  **/
 void ViewPort::draw(const Scene& scene, const Manipulator* manipulator,
-    v3d::render::realtime::LineCanvas* canvas, v3d::render::realtime::LineCanvas* handles) {
+    v3d::render::realtime::canvas::Line* canvas, v3d::render::realtime::canvas::Line* handles) {
     if (canvas == nullptr) {
         return;
     }

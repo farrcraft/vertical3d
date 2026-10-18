@@ -4,12 +4,17 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/event/Engine.h>
+#include <api/event/Event.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/Component.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
-#include <api/ui/component/menu/MenuBar.h>
+#include <api/ui/component/menu/Bar.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/paint/Dressing.h>
 
 #include <cstddef>
 #include <string>
@@ -28,7 +33,7 @@ namespace {
 /**
  * A fixed width per character, so a label's width is predictable.
  **/
-const float characterWidth = 10.0f;
+const float characterWidth = 10.0F;
 
 /**
  * The dispatcher, the events sent to it, and the strips they came from, all of which have
@@ -42,7 +47,7 @@ struct Fixture final {
             [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
             [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
-        canvas.resize(800, 600);
+        canvas.resize(glm::uvec2(800, 600));
     }
 
     void receive(const v3d::event::Event& event) {
@@ -52,14 +57,20 @@ struct Fixture final {
     /**
      * A button labelled and bound to "test::<name>", or to nothing when the name is empty.
      **/
-    boost::shared_ptr<v3d::ui::component::Button> button(const std::string& label, const std::string& name,
-        bool toggle) {
+    /** What a button shows, the name of the command it is bound to, and whether it toggles. **/
+    struct Labelled {
+        std::string label;
+        std::string name;
+        bool toggle = false;
+    };
+
+    boost::shared_ptr<v3d::ui::component::Button> button(const Labelled& spec) {
         boost::shared_ptr<v3d::ui::component::Button> made =
             boost::make_shared<v3d::ui::component::Button>();
-        made->label(label);
-        made->toggle(toggle);
-        if (!name.empty()) {
-            made->event(v3d::event::Event(name, context));
+        made->label(spec.label);
+        made->toggle(spec.toggle);
+        if (!spec.name.empty()) {
+            made->event(v3d::event::Event(spec.name, context));
         }
         return made;
     }
@@ -70,27 +81,25 @@ struct Fixture final {
     boost::shared_ptr<v3d::ui::component::Toolbar> bar(v3d::ui::component::Toolbar::Edge edge) {
         boost::shared_ptr<v3d::ui::component::Toolbar> made =
             boost::make_shared<v3d::ui::component::Toolbar>(dispatcher, edge);
-        made->add(button("Object", "object", true));
-        made->add(button("Translate", "translate", true));
-        made->add(button("Go", "", false));
+        made->add(button({.label = "Object", .name = "object", .toggle = true}));
+        made->add(button({.label = "Translate", .name = "translate", .toggle = true}));
+        made->add(button({.label = "Go", .name = "", .toggle = false}));
         return made;
     }
 
     /**
-     * The middle of a component, which is where a click on it lands.
+     * The middle of a component. A test clicks a component there.
      **/
     static glm::vec2 centre(const v3d::ui::Component& component) {
-        return component.position() + component.size() * 0.5f;
+        return component.position() + component.size() * 0.5F;
     }
 
     boost::shared_ptr<entt::dispatcher> dispatcher;
     boost::shared_ptr<v3d::event::Context> context;
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     std::vector<std::string> sent;
     v3d::ui::paint::ComponentRenderer renderer;
 };
-
-};  // namespace
 
 /**
  * A top toolbar is a row: it spans the canvas, and its buttons run left to right, each as
@@ -98,24 +107,24 @@ struct Fixture final {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_row_layout) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
     const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
 
-    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 30.0f));
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0F, 30.0F));
 
     const v3d::ui::Component& strip = *bar;
-    BOOST_TEST(strip.position().y == 30.0f);
+    BOOST_TEST(strip.position().y == 30.0F);
     BOOST_TEST(strip.size().x == static_cast<float>(fixture.canvas.width()));
     BOOST_TEST(strip.size().y == style.barHeight);
 
-    float pen = 0.0f;
+    float pen = 0.0F;
     for (std::size_t index = 0; index < bar->count(); index++) {
         const boost::shared_ptr<v3d::ui::component::Button> button = bar->button(index);
         BOOST_TEST(button->position().x == pen);
-        BOOST_TEST(button->position().y == 30.0f);
+        BOOST_TEST(button->position().y == 30.0F);
         BOOST_TEST(button->size().y == style.barHeight);
-        pen += static_cast<float>(button->label().size()) * characterWidth + style.padding;
+        pen += (static_cast<float>(button->label().size()) * characterWidth) + style.padding;
     }
 }
 
@@ -125,23 +134,23 @@ BOOST_AUTO_TEST_CASE(toolbar_row_layout) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_column_layout) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
     const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
 
-    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 30.0f));
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0F, 30.0F));
 
     const v3d::ui::Component& strip = *bar;
     // "Translate" is the widest of the three
-    const float width = 9.0f * characterWidth + style.padding;
+    const float width = (9.0F * characterWidth) + style.padding;
     BOOST_TEST(strip.size().x == width);
-    BOOST_TEST(strip.size().y == static_cast<float>(fixture.canvas.height()) - 30.0f);
+    BOOST_TEST(strip.size().y == static_cast<float>(fixture.canvas.height()) - 30.0F);
 
     for (std::size_t index = 0; index < bar->count(); index++) {
         const boost::shared_ptr<v3d::ui::component::Button> button = bar->button(index);
         BOOST_TEST(button->size().x == width);
         BOOST_TEST(button->size().y == style.lineHeight);
-        BOOST_TEST(button->position().y == 30.0f + style.lineHeight * static_cast<float>(index));
+        BOOST_TEST(button->position().y == 30.0F + (style.lineHeight * static_cast<float>(index)));
     }
 }
 
@@ -152,9 +161,9 @@ BOOST_AUTO_TEST_CASE(toolbar_column_layout) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_press_sends_its_command) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
-    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0F, 0.0F));
 
     BOOST_TEST(bar->press(Fixture::centre(*bar->button(1))));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
@@ -162,10 +171,10 @@ BOOST_AUTO_TEST_CASE(toolbar_press_sends_its_command) {
 
     // past the last button, which is the strip's own empty run
     const v3d::ui::Component& last = *bar->button(2);
-    BOOST_TEST(bar->press(glm::vec2(last.position().x + last.size().x + 4.0f, last.position().y + 2.0f)));
+    BOOST_TEST(bar->press(glm::vec2(last.position().x + last.size().x + 4.0F, last.position().y + 2.0F)));
     BOOST_TEST(fixture.sent.size() == 1U);
 
-    BOOST_TEST(!bar->press(glm::vec2(10.0f, 400.0f)));
+    BOOST_TEST(!bar->press(glm::vec2(10.0F, 400.0F)));
     BOOST_TEST(fixture.sent.size() == 1U);
 }
 
@@ -175,9 +184,9 @@ BOOST_AUTO_TEST_CASE(toolbar_press_sends_its_command) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_unbound_button_sends_nothing) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
-    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0F, 0.0F));
 
     BOOST_TEST(bar->press(Fixture::centre(*bar->button(2))));
     BOOST_TEST(fixture.sent.empty());
@@ -188,9 +197,9 @@ BOOST_AUTO_TEST_CASE(toolbar_unbound_button_sends_nothing) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_hover_follows_the_cursor) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
-    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0F, 0.0F));
 
     BOOST_TEST(bar->motion(Fixture::centre(*bar->button(0))));
     BOOST_TEST((bar->button(0)->state() == v3d::ui::component::Button::STATE_HOVER));
@@ -201,7 +210,7 @@ BOOST_AUTO_TEST_CASE(toolbar_hover_follows_the_cursor) {
     BOOST_TEST((bar->button(1)->state() == v3d::ui::component::Button::STATE_HOVER));
 
     // off the strip entirely, which leaves nothing hovered
-    BOOST_TEST(!bar->motion(glm::vec2(10.0f, 400.0f)));
+    BOOST_TEST(!bar->motion(glm::vec2(10.0F, 400.0F)));
     BOOST_TEST((bar->button(1)->state() == v3d::ui::component::Button::STATE_NORMAL));
 }
 
@@ -211,7 +220,7 @@ BOOST_AUTO_TEST_CASE(toolbar_hover_follows_the_cursor) {
  **/
 BOOST_AUTO_TEST_CASE(toolbar_marks_by_command) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
 
     boost::shared_ptr<v3d::ui::component::Button> found = bar->find("test::object");
@@ -223,7 +232,7 @@ BOOST_AUTO_TEST_CASE(toolbar_marks_by_command) {
 
     BOOST_TEST(!bar->find("test::missing"));
 
-    boost::shared_ptr<v3d::ui::component::Button> plain = bar->button(2);
+    const boost::shared_ptr<v3d::ui::component::Button> plain = bar->button(2);
     plain->checked(true);
     BOOST_TEST(!plain->checked());
 }
@@ -236,11 +245,11 @@ BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
     Fixture fixture;
     const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
 
-    boost::shared_ptr<v3d::ui::component::MenuBar> menu =
-        boost::make_shared<v3d::ui::component::MenuBar>();
-    boost::shared_ptr<v3d::ui::component::Toolbar> top =
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> menu =
+        boost::make_shared<v3d::ui::component::menu::Bar>();
+    const boost::shared_ptr<v3d::ui::component::Toolbar> top =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
-    boost::shared_ptr<v3d::ui::component::Toolbar> left =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> left =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Left);
 
     v3d::ui::Container container("editor", true);
@@ -249,9 +258,9 @@ BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
     container.add(left);
 
     const glm::vec2 insets = fixture.renderer.insets(container);
-    const float band = style.barHeight + 1.0f;
-    BOOST_TEST(insets.y == band * 2.0f);
-    BOOST_TEST(insets.x == 9.0f * characterWidth + style.padding + 1.0f);
+    const float band = style.barHeight + 1.0F;
+    BOOST_TEST(insets.y == band * 2.0F);
+    BOOST_TEST(insets.x == (9.0F * characterWidth) + style.padding + 1.0F);
 
     fixture.renderer.draw(&fixture.canvas, container);
 
@@ -259,9 +268,9 @@ BOOST_AUTO_TEST_CASE(toolbar_insets_match_what_is_drawn) {
     const v3d::ui::Component& row = *top;
     BOOST_TEST(row.position().y == band);
     const v3d::ui::Component& column = *left;
-    BOOST_TEST(column.position().x == 0.0f);
-    BOOST_TEST(column.position().y == band * 2.0f);
-    BOOST_TEST(column.size().x + 1.0f == insets.x);
+    BOOST_TEST(column.position().x == 0.0F);
+    BOOST_TEST(column.position().y == band * 2.0F);
+    BOOST_TEST(column.size().x + 1.0F == insets.x);
 }
 
 /**
@@ -288,13 +297,12 @@ BOOST_AUTO_TEST_CASE(toolbar_two_columns_stand_side_by_side_on_the_first_frame) 
 
     fixture.renderer.draw(&fixture.canvas, container);
 
-    // through the base, because a strip's own size() is its button count
     const v3d::ui::Component& left = *first;
     const v3d::ui::Component& right = *second;
-    BOOST_TEST(left.position().x == 0.0f);
-    BOOST_TEST(right.position().x == left.size().x + 1.0f);
+    BOOST_TEST(left.position().x == 0.0F);
+    BOOST_TEST(right.position().x == left.size().x + 1.0F);
     // and the two together take exactly what the app was told they would
-    BOOST_TEST(right.position().x + right.size().x + 1.0f == reserved);
+    BOOST_TEST(right.position().x + right.size().x + 1.0F == reserved);
 }
 
 /**
@@ -303,9 +311,9 @@ BOOST_AUTO_TEST_CASE(toolbar_two_columns_stand_side_by_side_on_the_first_frame) 
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_strip_disables_its_buttons) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
-    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0F, 0.0F));
 
     BOOST_TEST(v3d::ui::usable(*bar->button(1)));
     bar->enabled(false);
@@ -321,14 +329,14 @@ BOOST_AUTO_TEST_CASE(a_disabled_strip_disables_its_buttons) {
  **/
 BOOST_AUTO_TEST_CASE(a_hidden_button_takes_no_room_and_no_press) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
     bar->button(0)->visible(false);
-    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0f, 0.0f));
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0F, 0.0F));
 
-    BOOST_TEST(bar->button(1)->position().x == 0.0f);
+    BOOST_TEST(bar->button(1)->position().x == 0.0F);
 
-    BOOST_TEST(bar->press(glm::vec2(5.0f, 5.0f)));
+    BOOST_TEST(bar->press(glm::vec2(5.0F, 5.0F)));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
     BOOST_TEST(fixture.sent.front() == "test::translate");
 }
@@ -351,8 +359,8 @@ BOOST_AUTO_TEST_CASE(a_left_strip_listed_first_still_starts_below_a_top_one) {
 
     const v3d::ui::Component& column = *left;
     const v3d::ui::Component& row = *top;
-    BOOST_TEST(row.position().y == 0.0f);
-    BOOST_TEST(column.position().y == row.size().y + 1.0f);
+    BOOST_TEST(row.position().y == 0.0F);
+    BOOST_TEST(column.position().y == row.size().y + 1.0F);
 }
 
 /**
@@ -373,3 +381,5 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_name_that_is_not_a_string_is_ignored) {
     BOOST_TEST(bar->button(0)->name() == "select");
     BOOST_TEST(bar->button(1)->name().empty());
 }
+
+};  // namespace

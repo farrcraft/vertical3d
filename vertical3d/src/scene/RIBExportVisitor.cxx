@@ -5,8 +5,14 @@
 
 #include "RIBExportVisitor.h"
 
+#include <api/brep/BRep.h>
+#include <api/brep/Index.h>
 #include <api/brep/Topology.h>
+#include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 
+#include <cstddef>
+#include <optional>
 #include <ostream>
 #include <vector>
 
@@ -16,11 +22,11 @@ namespace v3d::editor {
 RIBExportVisitor::RIBExportVisitor(std::ostream* stream) : stream_(stream) {
 }
 
-void RIBExportVisitor::matrix(const glm::mat4x4& m) {
+void RIBExportVisitor::matrix(const glm::mat4x4& transform) {
     *stream_ << "[";
     for (int column = 0; column < 4; column++) {
         for (int row = 0; row < 4; row++) {
-            *stream_ << " " << m[column][row];
+            *stream_ << " " << transform[column][row];
         }
     }
     *stream_ << " ]";
@@ -81,17 +87,16 @@ void RIBExportVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         if (loop.size() < 3) {
             continue;
         }
-        // a half edge names the vertex it ends at, so the loop's segments start where the
-        // one before them ended - taking each segment's start walks the face once
+        // a half edge names the vertex it ends at, so each segment starts where the one
+        // before it ended. Taking each segment's start visits every vertex of the face once
         std::vector<glm::vec3> points;
         for (std::size_t index = 0; index < loop.size(); index++) {
-            glm::vec3 from(0.0f);
-            glm::vec3 to(0.0f);
-            if (!v3d::brep::loopSegment(*mesh, loop, index, &from, &to)) {
+            const std::optional<v3d::brep::Segment> segment = v3d::brep::loopSegment(*mesh, loop, index);
+            if (!segment) {
                 points.clear();
                 break;
             }
-            points.push_back(from);
+            points.push_back(segment->from);
         }
         if (points.size() < 3) {
             continue;

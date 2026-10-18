@@ -8,11 +8,11 @@
 /**
  * The header for the one file that defines main() and calls run<T>.
  *
- * It brings in run<T>, and SDL's entry point. A windows subsystem executable is entered through
- * WinMain, which SDL_main.h defines and which calls main(). That definition must be in exactly one
+ * It brings in run<T>, and SDL's entry point. A windows subsystem executable starts in WinMain.
+ * SDL_main.h defines WinMain, and WinMain calls main(). That definition must be in exactly one
  * translation unit, so no other file includes this header.
  **/
 
-#include <api/engine/Application.h>
+#include <api/engine/Application.h>  // IWYU pragma: export
 
 #include <SDL3/SDL_main.h>

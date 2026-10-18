@@ -22,29 +22,35 @@ namespace odyssey::tile {
  * remembered, or neither.
  *
  * Whether two tiles can see each other is decided by v3d::grid::hasLineOfSight, which is
- * symmetric. Only Cover::Full stops a line, so a crate is seen over. This class adds the
- * range and the memory; the grid has neither.
+ * symmetric. Only Cover::Full stops a line, so a crate is seen over. This class adds a range
+ * and a memory, which the grid does not have.
  **/
 class Sight final {
  public:
     /**
-     * How far sight reaches. A box of side 2R + 1 is exactly the Chebyshev disc the grid
-     * measures in, so this is a range in the same units a movement budget would be.
+     * How far sight reaches, in tiles. The grid measures distance in Chebyshev
+     * steps, where a diagonal step counts as one, so the tiles within RANGE form
+     * a square of side 2 * RANGE + 1. This is the same unit as a movement budget.
      *
-     * Seven tiles on a board twenty wide leaves the far side of it to be walked to rather
-     * than read from where the player started.
+     * On a board twenty tiles wide, a range of seven leaves the far side unseen
+     * until the player walks towards it.
      **/
     static constexpr int RANGE = 7;
 
     /**
      * Look from a tile, replacing what was in sight and adding to what is remembered.
      *
-     * Traced afresh every call rather than kept until the viewer moves: only the range box
-     * is walked, so a look is a few hundred short lines, and a view kept would not notice
-     * the board changing under it. A board of another size replaces what is remembered,
-     * because it is another board.
+     * Every call traces sight again, even when the viewer has not moved, so a change to the
+     * board is seen at once. Only the tiles within RANGE are traced, so a look costs a few
+     * hundred short lines. A board of another size is treated as a different board, and
+     * replaces what is remembered.
      **/
     void look(const v3d::grid::TileGrid& grid, v3d::grid::TileCoord from);
+
+    /**
+     * Put every tile out of sight, keeping what is remembered, for a board the viewer is not on.
+     **/
+    void blind();
 
     /**
      * @return whether a tile is in sight from where the last look() was taken. False for a
@@ -68,8 +74,8 @@ class Sight final {
     int height_{0};
 
     /**
-     * Row major over the same index() as remembered_. A byte per tile, for the reason
-     * TileGrid keeps its own flags that way.
+     * Row major, indexed by index(), as remembered_ is. A byte per tile rather than
+     * std::vector<bool>, whose proxy references are awkward at every call site.
      **/
     std::vector<char> visible_;
     std::vector<char> remembered_;

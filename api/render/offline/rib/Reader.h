@@ -7,6 +7,7 @@
 
 #include <api/log/Logger.h>
 
+#include <cstdint>
 #include <iosfwd>
 #include <set>
 #include <string>
@@ -27,14 +28,13 @@ namespace v3d::render::offline::rib {
 /**
  * Reads an ASCII RIB stream and calls a handler for each request.
  *
- * The handler is a parameter rather than a member, so one reader serves the renderer and a
- * suite can drive it with a handler that only counts.
+ * The handler is passed to read() and not stored, so a test can pass a handler that only
+ * counts requests.
  *
- * An unrecognised request is reported once per name rather than once per occurrence, and
- * its arguments are skipped. Only a string, a number or an array can be an argument, so
- * the next identifier begins the next request whatever this one was. The report exists
- * because **a scene that rendered nothing and a scene that was not understood look
- * identical from outside**.
+ * An unrecognised request is reported once per name, and its arguments are skipped. An
+ * argument is always a string, a number or an array, so the next identifier begins the next
+ * request. The report matters because **a scene that rendered nothing looks, from outside,
+ * the same as a scene that was not understood**.
  **/
 class Reader final {
  public:
@@ -71,7 +71,7 @@ class Reader final {
      * Unhandled is not a failure: it means the name belongs to another group, and the next
      * group is tried. Only the last group's Unhandled is a request this reader does not recognise.
      **/
-    enum class Result {
+    enum class Result : std::uint8_t {
         Unhandled,
         Handled,
         Failed
@@ -80,12 +80,12 @@ class Reader final {
     bool request(const std::string & name, Lexer * lexer, Handler * handler);
 
     /**
-     * The request set, split the way the RI standard groups it. Each takes the name a
-     * request began with and either recognises it or passes.
+     * The request set, split the way the RI standard groups it. Each group takes a request's
+     * name, and reads the request or returns Unhandled.
      **/
     /**
-     * The requests that are a name and a parameter list and nothing else, which read the same
-     * way and differ only in which handler method they forward to.
+     * The requests that are a name and a parameter list and nothing else. They are read the
+     * same way, and differ only in the handler method they call.
      **/
     Result namedRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result optionRequest(const std::string & name, Lexer * lexer, Handler * handler);
@@ -105,10 +105,9 @@ class Reader final {
     /**
      * The token-value pairs that close a request.
      *
-     * @param vertices how many vertices the primitive has, or 0 when that is not known
-     *        until the list has been read - which is the case for every RIB primitive,
-     *        since the count is the length of "P". An unbracketed varying or vertex
-     *        parameter is then unreadable and ends the parse.
+     * @param vertices how many vertices the primitive has, or 0 when the count is the
+     *        length of "P" and is not known until the list has been read. With 0, an
+     *        unbracketed varying or vertex parameter has no known length and ends the parse.
      **/
     bool parameters(Lexer * lexer, unsigned int vertices, ParameterList * list);
     bool values(Lexer * lexer, const Declaration & declaration, unsigned int vertices,

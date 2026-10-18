@@ -8,7 +8,8 @@ moya is three CMake targets, and it is built on one api library:
 
 | Directory | Target | Contents |
 |---|---|---|
-| `moya/libmoya` | `v3dlib_moya` | The renderer: graphics state, both hiders, the RI C API |
+| `moya/libmoya` | `v3dlib_moya` | The renderer: graphics state, both hiders, the RI C API, and the polygons both hiders draw. Namespace `v3d::moya` |
+| `moya/libmoya/reyes` | `v3dlib_moya` | The reyes hider's pipeline: buckets, dicing, grid shading and the samples. Namespace `v3d::moya::reyes` |
 | `moya/moya` | `moya` | The command-line driver |
 | `moya/tests` | `v3dtest_moya` | The test suite, ctest name `moya` |
 | `api/render/offline` | `v3dlib_render_offline` | The RIB reader, the shading language, sampling and the film, textures and the ray tracer. Namespace `v3d::render::offline` |

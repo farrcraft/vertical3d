@@ -4,7 +4,11 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/event/Engine.h>
+#include <api/event/Event.h>
+#include <api/event/Type.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
@@ -18,7 +22,6 @@
 #include <api/ui/component/TabPage.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/Toolbar.h>
-#include <api/ui/component/menu/MenuBar.h>
 #include <api/ui/input/Cursor.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
@@ -34,7 +37,7 @@
 
 namespace {
 
-const float characterWidth = 10.0f;
+const float characterWidth = 10.0F;
 
 /**
  * A ui engine holding one container, built by hand rather than loaded, plus the renderer
@@ -51,7 +54,7 @@ struct Fixture final {
             [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
             [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
-        canvas.resize(800, 600);
+        canvas.resize(glm::uvec2(800, 600));
 
         ui = boost::make_shared<v3d::ui::Engine>(
             boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
@@ -88,15 +91,13 @@ struct Fixture final {
 
     boost::shared_ptr<entt::dispatcher> dispatcher;
     boost::shared_ptr<v3d::event::Context> context;
-    v3d::render::realtime::Canvas canvas;
+    v3d::render::realtime::canvas::Canvas canvas;
     std::vector<std::string> sent;
     v3d::ui::paint::ComponentRenderer renderer;
     boost::shared_ptr<v3d::ui::Engine> ui;
     boost::shared_ptr<v3d::ui::Container> container;
     boost::shared_ptr<v3d::ui::input::Cursor> cursor;
 };
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(cursor_test)
 
@@ -109,10 +110,10 @@ BOOST_AUTO_TEST_CASE(a_button_in_a_container_sends_its_command) {
         boost::make_shared<v3d::ui::component::Button>();
     button->label("Start");
     button->event(v3d::event::Event("start", fixture.context));
-    fixture.place(button, glm::vec2(100.0f, 50.0f), glm::vec2(120.0f, 30.0f));
+    fixture.place(button, glm::vec2(100.0F, 50.0F), glm::vec2(120.0F, 30.0F));
     fixture.draw();
 
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(160.0f, 65.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(160.0F, 65.0F)));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
     BOOST_CHECK_EQUAL(fixture.sent.front(), "test::start");
 }
@@ -125,16 +126,16 @@ BOOST_AUTO_TEST_CASE(a_press_on_nothing_pickable_falls_through) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Panel> plate =
         boost::make_shared<v3d::ui::component::Panel>();
-    fixture.place(plate, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 100.0f));
+    fixture.place(plate, glm::vec2(0.0F, 0.0F), glm::vec2(200.0F, 100.0F));
     plate->pickable(false);
     fixture.draw();
 
-    BOOST_CHECK(!fixture.cursor->press(glm::vec2(50.0f, 50.0f)));
+    BOOST_CHECK(!fixture.cursor->press(glm::vec2(50.0F, 50.0F)));
     BOOST_CHECK(fixture.sent.empty());
 
     // and one that is pickable takes the press even though it sends nothing
     plate->pickable(true);
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(50.0f, 50.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(50.0F, 50.0F)));
     BOOST_CHECK(fixture.sent.empty());
 }
 
@@ -147,9 +148,9 @@ BOOST_AUTO_TEST_CASE(nothing_is_picked_before_anything_is_drawn) {
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
     button->event(v3d::event::Event("start", fixture.context));
-    fixture.place(button, glm::vec2(100.0f, 50.0f), glm::vec2(120.0f, 30.0f));
+    fixture.place(button, glm::vec2(100.0F, 50.0F), glm::vec2(120.0F, 30.0F));
 
-    BOOST_CHECK(!fixture.cursor->press(glm::vec2(160.0f, 65.0f)));
+    BOOST_CHECK(!fixture.cursor->press(glm::vec2(160.0F, 65.0F)));
     BOOST_CHECK(fixture.sent.empty());
 }
 
@@ -163,10 +164,10 @@ BOOST_AUTO_TEST_CASE(a_check_box_sends_its_command_and_marks_nothing) {
         boost::make_shared<v3d::ui::component::CheckBox>();
     box->label("Grid");
     box->event(v3d::event::Event("grid", fixture.context));
-    fixture.place(box, glm::vec2(10.0f, 10.0f), glm::vec2(140.0f, 24.0f));
+    fixture.place(box, glm::vec2(10.0F, 10.0F), glm::vec2(140.0F, 24.0F));
     fixture.draw();
 
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(20.0f, 20.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(20.0F, 20.0F)));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
     BOOST_CHECK_EQUAL(fixture.sent.front(), "test::grid");
     BOOST_CHECK(!box->checked());
@@ -182,21 +183,21 @@ BOOST_AUTO_TEST_CASE(a_list_chooses_the_row_under_the_cursor) {
         boost::make_shared<v3d::ui::component::SelectList>();
     list->items({ "alpha", "beta", "gamma" });
     list->event(v3d::event::Event("load", fixture.context));
-    fixture.place(list, glm::vec2(20.0f, 20.0f), glm::vec2(200.0f, 200.0f));
+    fixture.place(list, glm::vec2(20.0F, 20.0F), glm::vec2(200.0F, 200.0F));
     fixture.draw();
 
     const float row = list->rowHeight();
-    BOOST_REQUIRE_GT(row, 0.0f);
+    BOOST_REQUIRE_GT(row, 0.0F);
     // the middle of the second row
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(60.0f, 20.0f + row * 1.5f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(60.0F, 20.0F + (row * 1.5F))));
     BOOST_CHECK_EQUAL(list->selected(), 1);
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
     BOOST_CHECK_EQUAL(fixture.sent.front(), "test::load");
 }
 
 /**
- * A tab bar owns which page is up, the way a list owns which row is chosen, so a click on a
- * tab changes the page and sends nothing.
+ * A tab bar holds which page is chosen and carries no command, so a click on a tab changes
+ * the page and sends nothing.
  **/
 BOOST_AUTO_TEST_CASE(a_tab_bar_changes_its_page_and_sends_nothing) {
     Fixture fixture;
@@ -210,12 +211,12 @@ BOOST_AUTO_TEST_CASE(a_tab_bar_changes_its_page_and_sends_nothing) {
     second->label("Render");
     bar->add(first);
     bar->add(second);
-    fixture.place(bar, glm::vec2(0.0f, 0.0f), glm::vec2(400.0f, 300.0f));
+    fixture.place(bar, glm::vec2(0.0F, 0.0F), glm::vec2(400.0F, 300.0F));
     fixture.draw();
 
     BOOST_REQUIRE_EQUAL(bar->tabs().size(), 2U);
     const v3d::type::geometry::Bound2D& tab = bar->tabs()[1];
-    BOOST_CHECK(fixture.cursor->press(tab.position() + tab.size() * 0.5f));
+    BOOST_CHECK(fixture.cursor->press(tab.position() + tab.size() * 0.5F));
     BOOST_CHECK_EQUAL(bar->selected(), 1);
     BOOST_CHECK(fixture.sent.empty());
 }
@@ -228,24 +229,24 @@ BOOST_AUTO_TEST_CASE(a_scrollbar_follows_the_cursor_until_the_press_comes_up) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
         boost::make_shared<v3d::ui::component::Scrollbar>();
-    bar->range(1000.0f, 200.0f);
-    fixture.place(bar, glm::vec2(300.0f, 0.0f), glm::vec2(12.0f, 200.0f));
+    bar->range(1000.0F, 200.0F);
+    fixture.place(bar, glm::vec2(300.0F, 0.0F), glm::vec2(12.0F, 200.0F));
     fixture.draw();
 
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(306.0f, 20.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(306.0F, 20.0F)));
     BOOST_CHECK_EQUAL(fixture.cursor->held(), bar);
     const float near = bar->offset();
 
     // dragged down, and well off the bar sideways - the press is still its
-    BOOST_CHECK(fixture.cursor->motion(glm::vec2(500.0f, 180.0f)));
+    BOOST_CHECK(fixture.cursor->motion(glm::vec2(500.0F, 180.0F)));
     BOOST_CHECK_GT(bar->offset(), near);
 
-    BOOST_CHECK(fixture.cursor->release(glm::vec2(500.0f, 180.0f)));
+    BOOST_CHECK(fixture.cursor->release(glm::vec2(500.0F, 180.0F)));
     BOOST_CHECK(!fixture.cursor->held());
     // and a move afterwards is nothing of the bar's
     const float settled = bar->offset();
-    fixture.cursor->motion(glm::vec2(500.0f, 20.0f));
-    BOOST_CHECK_CLOSE(bar->offset(), settled, 0.001f);
+    fixture.cursor->motion(glm::vec2(500.0F, 20.0F));
+    BOOST_CHECK_CLOSE(bar->offset(), settled, 0.001F);
 }
 
 /**
@@ -256,15 +257,15 @@ BOOST_AUTO_TEST_CASE(only_the_topmost_component_takes_a_press) {
     const boost::shared_ptr<v3d::ui::component::Button> under =
         boost::make_shared<v3d::ui::component::Button>();
     under->event(v3d::event::Event("under", fixture.context));
-    fixture.place(under, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 200.0f));
+    fixture.place(under, glm::vec2(0.0F, 0.0F), glm::vec2(200.0F, 200.0F));
 
     const boost::shared_ptr<v3d::ui::component::Button> over =
         boost::make_shared<v3d::ui::component::Button>();
     over->event(v3d::event::Event("over", fixture.context));
-    fixture.place(over, glm::vec2(50.0f, 50.0f), glm::vec2(100.0f, 100.0f));
+    fixture.place(over, glm::vec2(50.0F, 50.0F), glm::vec2(100.0F, 100.0F));
     fixture.draw();
 
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(100.0f, 100.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(100.0F, 100.0F)));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
     BOOST_CHECK_EQUAL(fixture.sent.front(), "test::over");
 }
@@ -278,17 +279,17 @@ BOOST_AUTO_TEST_CASE(a_button_in_a_tree_is_hovered_under_the_cursor) {
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
     button->label("Start");
-    fixture.place(button, glm::vec2(100.0f, 50.0f), glm::vec2(120.0f, 30.0f));
+    fixture.place(button, glm::vec2(100.0F, 50.0F), glm::vec2(120.0F, 30.0F));
     fixture.draw();
 
-    BOOST_CHECK(fixture.cursor->motion(glm::vec2(160.0f, 65.0f)));
+    BOOST_CHECK(fixture.cursor->motion(glm::vec2(160.0F, 65.0F)));
     BOOST_CHECK_EQUAL(fixture.cursor->hovered(), button);
-    BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_HOVER);
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_HOVER);
 
     // and it goes back to normal the moment the cursor leaves it
-    BOOST_CHECK(!fixture.cursor->motion(glm::vec2(400.0f, 400.0f)));
+    BOOST_CHECK(!fixture.cursor->motion(glm::vec2(400.0F, 400.0F)));
     BOOST_CHECK(!fixture.cursor->hovered());
-    BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_NORMAL);
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_NORMAL);
 }
 
 /**
@@ -299,18 +300,18 @@ BOOST_AUTO_TEST_CASE(the_hover_follows_the_component_a_press_would_land_on) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Button> under =
         boost::make_shared<v3d::ui::component::Button>();
-    fixture.place(under, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 200.0f));
+    fixture.place(under, glm::vec2(0.0F, 0.0F), glm::vec2(200.0F, 200.0F));
     const boost::shared_ptr<v3d::ui::component::Button> over =
         boost::make_shared<v3d::ui::component::Button>();
-    fixture.place(over, glm::vec2(50.0f, 50.0f), glm::vec2(100.0f, 100.0f));
+    fixture.place(over, glm::vec2(50.0F, 50.0F), glm::vec2(100.0F, 100.0F));
     fixture.draw();
 
-    fixture.cursor->motion(glm::vec2(20.0f, 20.0f));
-    BOOST_CHECK_EQUAL(under->state(), v3d::ui::component::Button::STATE_HOVER);
+    fixture.cursor->motion(glm::vec2(20.0F, 20.0F));
+    BOOST_CHECK(under->state() == v3d::ui::component::Button::STATE_HOVER);
 
-    fixture.cursor->motion(glm::vec2(100.0f, 100.0f));
-    BOOST_CHECK_EQUAL(over->state(), v3d::ui::component::Button::STATE_HOVER);
-    BOOST_CHECK_EQUAL(under->state(), v3d::ui::component::Button::STATE_NORMAL);
+    fixture.cursor->motion(glm::vec2(100.0F, 100.0F));
+    BOOST_CHECK(over->state() == v3d::ui::component::Button::STATE_HOVER);
+    BOOST_CHECK(under->state() == v3d::ui::component::Button::STATE_NORMAL);
 }
 
 /**
@@ -321,13 +322,13 @@ BOOST_AUTO_TEST_CASE(a_component_that_is_not_pickable_is_not_hovered) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
-    fixture.place(button, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 200.0f));
+    fixture.place(button, glm::vec2(0.0F, 0.0F), glm::vec2(200.0F, 200.0F));
     button->pickable(false);
     fixture.draw();
 
-    BOOST_CHECK(!fixture.cursor->motion(glm::vec2(100.0f, 100.0f)));
+    BOOST_CHECK(!fixture.cursor->motion(glm::vec2(100.0F, 100.0F)));
     BOOST_CHECK(!fixture.cursor->hovered());
-    BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_NORMAL);
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_NORMAL);
 }
 
 /**
@@ -352,10 +353,10 @@ BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
         boost::make_shared<v3d::ui::component::Button>();
     onFirst->event(v3d::event::Event("first", fixture.context));
     onFirst->pickable(true);
-    onFirst->layout().x = v3d::ui::Length(20.0f, v3d::ui::Length::Unit::Pixels);
-    onFirst->layout().y = v3d::ui::Length(20.0f, v3d::ui::Length::Unit::Pixels);
-    onFirst->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
-    onFirst->layout().height = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
+    onFirst->layout().x = v3d::ui::Length(20.0F, v3d::ui::Length::Unit::Pixels);
+    onFirst->layout().y = v3d::ui::Length(20.0F, v3d::ui::Length::Unit::Pixels);
+    onFirst->layout().width = v3d::ui::Length(100.0F, v3d::ui::Length::Unit::Pixels);
+    onFirst->layout().height = v3d::ui::Length(30.0F, v3d::ui::Length::Unit::Pixels);
     first->add(onFirst);
 
     const boost::shared_ptr<v3d::ui::component::Button> onSecond =
@@ -367,7 +368,7 @@ BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
 
     bar->add(first);
     bar->add(second);
-    fixture.place(bar, glm::vec2(0.0f, 0.0f), glm::vec2(400.0f, 300.0f));
+    fixture.place(bar, glm::vec2(0.0F, 0.0F), glm::vec2(400.0F, 300.0F));
 
     // the second page is up long enough to be laid out, and then the first is chosen again
     bar->selected(1);
@@ -375,13 +376,13 @@ BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
     bar->selected(0);
     fixture.draw();
 
-    const glm::vec2 point = onFirst->position() + onFirst->size() * 0.5f;
+    const glm::vec2 point = onFirst->position() + onFirst->size() * 0.5F;
     BOOST_CHECK(fixture.cursor->press(point));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
     BOOST_CHECK_EQUAL(fixture.sent.front(), "test::first");
 
-    // and the hover half answers the same way, once the press has come up - a press that
-    // is still down is a drag, and a drag follows what it took hold of rather than picking
+    // the hover half answers the same way once the press has come up. A press that is still
+    // down is a drag. A drag follows what it took hold of and does not pick
     fixture.cursor->release(point);
     fixture.sent.clear();
     BOOST_CHECK(fixture.cursor->motion(point));
@@ -396,7 +397,7 @@ BOOST_AUTO_TEST_CASE(a_page_that_is_not_up_is_not_picked) {
  * and do nothing in an app that routes it.
  **/
 BOOST_AUTO_TEST_CASE(a_command_is_sent_as_a_destination) {
-    Fixture fixture;
+    const Fixture fixture;
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
@@ -430,20 +431,20 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_neither_picked_nor_lit) {
         boost::make_shared<v3d::ui::component::Button>();
     button->label("Continue");
     button->event(v3d::event::Event("continue", fixture.context));
-    fixture.place(button, glm::vec2(100.0f, 50.0f), glm::vec2(120.0f, 30.0f));
+    fixture.place(button, glm::vec2(100.0F, 50.0F), glm::vec2(120.0F, 30.0F));
     button->enabled(false);
     fixture.draw();
 
-    BOOST_CHECK(!fixture.cursor->motion(glm::vec2(160.0f, 65.0f)));
+    BOOST_CHECK(!fixture.cursor->motion(glm::vec2(160.0F, 65.0F)));
     BOOST_CHECK(!fixture.cursor->hovered());
-    BOOST_CHECK_EQUAL(button->state(), v3d::ui::component::Button::STATE_NORMAL);
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_NORMAL);
 
-    BOOST_CHECK(!fixture.cursor->press(glm::vec2(160.0f, 65.0f)));
+    BOOST_CHECK(!fixture.cursor->press(glm::vec2(160.0F, 65.0F)));
     BOOST_CHECK(fixture.sent.empty());
 
     // it answers again the moment it is enabled, with nothing else having been set
     button->enabled(true);
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(160.0f, 65.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(160.0F, 65.0F)));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
     BOOST_CHECK_EQUAL(fixture.sent.front(), "test::continue");
 }
@@ -456,37 +457,37 @@ BOOST_AUTO_TEST_CASE(a_disabled_box_takes_what_it_holds_with_it) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Panel> group =
         boost::make_shared<v3d::ui::component::Panel>();
-    fixture.place(group, glm::vec2(0.0f, 0.0f), glm::vec2(200.0f, 200.0f));
+    fixture.place(group, glm::vec2(0.0F, 0.0F), glm::vec2(200.0F, 200.0F));
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
     button->event(v3d::event::Event("inside", fixture.context));
-    button->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
-    button->layout().height = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+    button->layout().width = v3d::ui::Length(100.0F, v3d::ui::Length::Unit::Pixels);
+    button->layout().height = v3d::ui::Length(100.0F, v3d::ui::Length::Unit::Pixels);
     group->add(button);
     fixture.draw();
 
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(50.0f, 50.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(50.0F, 50.0F)));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
     BOOST_CHECK_EQUAL(fixture.sent.front(), "test::inside");
 
     group->enabled(false);
     fixture.draw();
-    BOOST_CHECK(!fixture.cursor->press(glm::vec2(50.0f, 50.0f)));
+    BOOST_CHECK(!fixture.cursor->press(glm::vec2(50.0F, 50.0F)));
     BOOST_CHECK_EQUAL(fixture.sent.size(), 1U);
 }
 
 /**
  * A strip is offered a press before the tree, and takes one anywhere on it, its empty run
- * included. A button the tree holds under a strip is out of reach while the strip is a
- * control.
+ * included. A button the tree holds under a strip is out of reach while the strip is
+ * pickable.
  **/
 BOOST_AUTO_TEST_CASE(a_strip_takes_a_press_before_the_tree) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Button> under =
         boost::make_shared<v3d::ui::component::Button>();
     under->event(v3d::event::Event("under", fixture.context));
-    fixture.place(under, glm::vec2(0.0f, 0.0f), glm::vec2(800.0f, 100.0f));
+    fixture.place(under, glm::vec2(0.0F, 0.0F), glm::vec2(800.0F, 100.0F));
 
     const boost::shared_ptr<v3d::ui::component::Toolbar> strip =
         boost::make_shared<v3d::ui::component::Toolbar>(fixture.dispatcher, v3d::ui::component::Toolbar::Edge::Top);
@@ -498,12 +499,12 @@ BOOST_AUTO_TEST_CASE(a_strip_takes_a_press_before_the_tree) {
     fixture.draw();
 
     BOOST_CHECK(strip->pickable());
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(700.0f, 4.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(700.0F, 4.0F)));
     BOOST_CHECK(fixture.sent.empty());
 }
 
 /**
- * A strip marked as scenery is offered nothing: a press on its empty run and on its button
+ * A strip set not pickable is offered nothing: a press on its empty run and on its button
  * both reach the tree under it, and the cursor moving over it lights nothing of the strip's.
  **/
 BOOST_AUTO_TEST_CASE(a_strip_that_is_not_pickable_lets_a_press_through) {
@@ -511,7 +512,7 @@ BOOST_AUTO_TEST_CASE(a_strip_that_is_not_pickable_lets_a_press_through) {
     const boost::shared_ptr<v3d::ui::component::Button> under =
         boost::make_shared<v3d::ui::component::Button>();
     under->event(v3d::event::Event("under", fixture.context));
-    fixture.place(under, glm::vec2(0.0f, 0.0f), glm::vec2(800.0f, 100.0f));
+    fixture.place(under, glm::vec2(0.0F, 0.0F), glm::vec2(800.0F, 100.0F));
 
     const boost::shared_ptr<v3d::ui::component::Toolbar> strip =
         boost::make_shared<v3d::ui::component::Toolbar>(fixture.dispatcher, v3d::ui::component::Toolbar::Edge::Top);
@@ -523,11 +524,11 @@ BOOST_AUTO_TEST_CASE(a_strip_that_is_not_pickable_lets_a_press_through) {
     fixture.container->add(strip);
     fixture.draw();
 
-    const glm::vec2 onButton = go->position() + go->size() * 0.5f;
+    const glm::vec2 onButton = go->position() + go->size() * 0.5F;
     BOOST_CHECK(fixture.cursor->motion(onButton));
-    BOOST_CHECK_EQUAL(go->state(), v3d::ui::component::Button::STATE_NORMAL);
+    BOOST_CHECK(go->state() == v3d::ui::component::Button::STATE_NORMAL);
 
-    BOOST_CHECK(fixture.cursor->press(glm::vec2(700.0f, 4.0f)));
+    BOOST_CHECK(fixture.cursor->press(glm::vec2(700.0F, 4.0F)));
     BOOST_CHECK(fixture.cursor->press(onButton));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 2U);
     BOOST_CHECK_EQUAL(fixture.sent[0], "test::under");
@@ -550,15 +551,15 @@ BOOST_AUTO_TEST_CASE(a_disabled_strip_takes_nothing) {
     fixture.container->add(strip);
     fixture.draw();
 
-    const glm::vec2 onButton = go->position() + go->size() * 0.5f;
+    const glm::vec2 onButton = go->position() + go->size() * 0.5F;
     BOOST_CHECK(!fixture.cursor->motion(onButton));
     BOOST_CHECK(!fixture.cursor->press(onButton));
     BOOST_CHECK(fixture.sent.empty());
 }
 
 /**
- * A document marks a strip as scenery the way it marks anything else, a menu bar included,
- * though a menu bar's box is the renderer's and is not read.
+ * A document sets a strip not pickable the way it does for any other component, a menu bar
+ * included, though a menu bar's box is placed by the renderer and is not read.
  **/
 BOOST_AUTO_TEST_CASE(a_document_marks_a_strip_as_scenery) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
@@ -582,3 +583,5 @@ BOOST_AUTO_TEST_CASE(a_document_marks_a_strip_as_scenery) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

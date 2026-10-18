@@ -42,6 +42,6 @@ struct Difference final {
  *
  * @param tolerance the largest per channel difference that still counts as a match
  **/
-Difference compare(const Image & a, const Image & b, unsigned int tolerance);
+Difference compare(const Image & expected, const Image & actual, unsigned int tolerance);
 
 };  // namespace v3d::image

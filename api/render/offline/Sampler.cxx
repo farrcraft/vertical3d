@@ -7,6 +7,8 @@
 
 #include <api/type/Random.h>
 
+#include "Sampling.h"
+
 #include <cmath>
 #include <cstdint>
 #include <utility>
@@ -21,19 +23,21 @@ namespace {
  * square stratified on the disc.
  **/
 glm::vec2 disc(const glm::vec2 & square) {
-    const float pi = 3.14159265358979f;
-    const glm::vec2 centred = square * 2.0f - glm::vec2(1.0f);
-    if (centred.x == 0.0f && centred.y == 0.0f) {
-        return glm::vec2(0.0f);
+    constexpr float pi = 3.14159265358979F;
+    // the square's diagonals cut the disc into four quarters, and this is half the angle of one
+    constexpr float halfQuarter = pi / 4.0F;
+    const glm::vec2 centred = square * 2.0F - glm::vec2(1.0F);
+    if (centred.x == 0.0F && centred.y == 0.0F) {
+        return glm::vec2(0.0F);
     }
-    float radius = 0.0f;
-    float angle = 0.0f;
+    float radius = 0.0F;
+    float angle = 0.0F;
     if (std::fabs(centred.x) > std::fabs(centred.y)) {
         radius = centred.x;
-        angle = (pi / 4.0f) * (centred.y / centred.x);
+        angle = halfQuarter * (centred.y / centred.x);
     } else {
         radius = centred.y;
-        angle = (pi / 2.0f) - (pi / 4.0f) * (centred.x / centred.y);
+        angle = (pi / 2.0F) - (halfQuarter * (centred.x / centred.y));
     }
     return glm::vec2(radius * std::cos(angle), radius * std::sin(angle));
 }
@@ -43,7 +47,7 @@ glm::vec2 disc(const glm::vec2 & square) {
  * in it otherwise.
  **/
 float jitter(unsigned int strata, v3d::type::Random * random) {
-    return strata == 1 ? 0.5f : random->unit();
+    return strata == 1 ? 0.5F : random->unit();
 }
 
 };  // namespace
@@ -56,19 +60,19 @@ std::vector<Sampler::Sample> Sampler::pixel(unsigned int column, unsigned int ro
     const unsigned int ny = sampling_.samples.y == 0 ? 1 : sampling_.samples.y;
     const unsigned int count = nx * ny;
 
-    // splitmix64 mixes its seed, so the position alone is a good one; a pass is folded in by
-    // the golden ratio constant so that each pass is a sequence of its own
+    // splitmix64 mixes its seed, so the position alone makes a good seed. A pass is folded in
+    // by the golden ratio constant, so that each pass gets a sequence of its own
     const uint64_t seed = ((static_cast<uint64_t>(row) << 32) | column) ^
-        (static_cast<uint64_t>(pass) * 0x9E3779B97F4A7C15ull);
+        (static_cast<uint64_t>(pass) * 0x9E3779B97F4A7C15ULL);
     v3d::type::Random random(seed);
 
     std::vector<Sample> samples(count);
     for (unsigned int j = 0; j < ny; j++) {
         for (unsigned int i = 0; i < nx; i++) {
-            Sample & sample = samples[j * nx + i];
+            Sample & sample = samples[(j * nx) + i];
             sample.raster = glm::vec2(
-                static_cast<float>(column) + (static_cast<float>(i) + jitter(nx, &random)) / static_cast<float>(nx),
-                static_cast<float>(row) + (static_cast<float>(j) + jitter(ny, &random)) / static_cast<float>(ny));
+                static_cast<float>(column) + ((static_cast<float>(i) + jitter(nx, &random)) / static_cast<float>(nx)),
+                static_cast<float>(row) + ((static_cast<float>(j) + jitter(ny, &random)) / static_cast<float>(ny)));
         }
     }
 
@@ -88,7 +92,7 @@ std::vector<Sampler::Sample> Sampler::pixel(unsigned int column, unsigned int ro
     const float close = sampling_.shutter.y;
     for (unsigned int k = 0; k < count; k++) {
         const float t = (static_cast<float>(times[k]) + jitter(count, &random)) / static_cast<float>(count);
-        samples[k].time = open + (close - open) * t;
+        samples[k].time = open + ((close - open) * t);
         const unsigned int across = lenses[k] % nx;
         const unsigned int down = lenses[k] / nx;
         const glm::vec2 square(

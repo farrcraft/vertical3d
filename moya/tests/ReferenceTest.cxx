@@ -5,9 +5,17 @@
 
 #include <api/image/Compare.h>
 #include <api/image/Factory.h>
+#include <api/image/Image.h>
+#include <api/log/Logger.h>
+#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/Sampling.h>
+#include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Reader.h>
+#include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RenderContext.h>
+#include <moya/libmoya/Renderer.h>
+#include <moya/libmoya/Vertex.h>
 
 #include <algorithm>
 #include <cmath>
@@ -86,13 +94,13 @@ const char* HIDERS[] = { "hidden", "raytrace" };
 
 /**
  * One sample at each pixel centre under a one pixel box, which the film gives back exactly.
- * The references drawn this way pin the hider and the shading; reference-sampled pins the
+ * A reference drawn this way checks the hider and the shading. reference-sampled checks the
  * sampling.
  **/
 void pixelCentres(v3d::moya::RenderContext & rc) {
     rc.sampling().samples = glm::uvec2(1, 1);
     rc.sampling().filter = v3d::render::offline::Filter::Box;
-    rc.sampling().width = glm::vec2(1.0f, 1.0f);
+    rc.sampling().width = glm::vec2(1.0F, 1.0F);
 }
 
 v3d::moya::Vertex vertex(float x, float y, float z) {
@@ -103,28 +111,28 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
 
 /*
     A quad facing the camera, asymmetric about both axes so that a flipped picture is a
-    failing one. The screen window is [-1, 1] on both axes, and the raster transform puts
-    its origin at the upper left corner.
+    failing one. The screen window is the default for a 4:3 frame, [-4/3, 4/3] by [-1, 1].
+    The raster transform puts its origin at the upper left corner.
 
     Regenerate this reference when a change to shading or sampling alters the picture on
     purpose. Any other change to the picture fails the test.
 */
 void scene(v3d::moya::RenderContext & rc) {
-    rc.imageResolution(64, 48, 1.0f);
+    rc.imageResolution({64, 48}, 1.0F);
     pixelCentres(rc);
     // the defaults are RI_EPSILON and RI_INFINITY, which leave the orthographic depth
     // scale at about 2e-38 and collapse every z onto the near plane
-    rc.clipping(1.0f, 100.0f);
+    rc.clipping({.hither = 1.0F, .yon = 100.0F});
     rc.prepareWorld();
-    // the shader that means no shading, built rather than defaulted to, so that this
-    // picture goes through the language by both routes
+    // the shader that means no shading, named rather than left as the default. The picture
+    // shows that the shading language draws an unshaded surface unchanged
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(-0.7f, -0.2f, 5.0f));
-    polygon->addVertex(vertex(0.3f, -0.2f, 5.0f));
-    polygon->addVertex(vertex(0.3f, 0.8f, 5.0f));
-    polygon->addVertex(vertex(-0.7f, 0.8f, 5.0f));
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.7F, -0.2F, 5.0F));
+    polygon->addVertex(vertex(0.3F, -0.2F, 5.0F));
+    polygon->addVertex(vertex(0.3F, 0.8F, 5.0F));
+    polygon->addVertex(vertex(-0.7F, 0.8F, 5.0F));
     rc.addPolygon(polygon);
 }
 
@@ -141,19 +149,19 @@ v3d::moya::Vertex shaded(float x, float y, float z, const glm::vec3 & normal) {
 
 void quad(v3d::moya::RenderContext & rc, float left, float right,
     const glm::vec3 & outer, const glm::vec3 & inner) {
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(shaded(left, -0.8f, 5.0f, outer));
-    polygon->addVertex(shaded(right, -0.8f, 5.0f, inner));
-    polygon->addVertex(shaded(right, 0.8f, 5.0f, inner));
-    polygon->addVertex(shaded(left, 0.8f, 5.0f, outer));
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(shaded(left, -0.8F, 5.0F, outer));
+    polygon->addVertex(shaded(right, -0.8F, 5.0F, inner));
+    polygon->addVertex(shaded(right, 0.8F, 5.0F, inner));
+    polygon->addVertex(shaded(left, 0.8F, 5.0F, outer));
     rc.addPolygon(polygon);
 }
 
 /**
  * One parameter as a scene wrote it, typed the way the reader would have typed it.
  *
- * An out parameter rather than a return value, as rib::arguments uses. A ParameterList is a
- * map, and returning one by value copies every parameter a request carried.
+ * The list is an out parameter, as in rib::arguments. A ParameterList is a map, and returning
+ * one by value copies every parameter in it.
  **/
 void put(v3d::render::offline::rib::ParameterList* list, const std::string & name,
     v3d::render::offline::rib::Declaration::Type type, const std::vector<float> & values) {
@@ -169,39 +177,39 @@ void put(v3d::render::offline::rib::ParameterList* list, const std::string & nam
     the RI defaults unless the caller says otherwise.
 */
 void shadedScene(v3d::moya::RenderContext & rc) {
-    rc.imageResolution(64, 48, 1.0f);
-    rc.clipping(1.0f, 100.0f);
+    rc.imageResolution({64, 48}, 1.0F);
+    rc.clipping({.hither = 1.0F, .yon = 100.0F});
     rc.prepareWorld();
 
     typedef v3d::render::offline::rib::Declaration Declaration;
     v3d::render::offline::rib::ParameterList distant;
-    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.8f });
-    put(&distant, "to", Declaration::Type::POINT, { 0.6f, -0.4f, 1.0f });
-    rc.lightSource("distantlight", "1", distant);
+    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.8F });
+    put(&distant, "to", Declaration::Type::POINT, { 0.6F, -0.4F, 1.0F });
+    rc.lightSource({.shader = "distantlight", .handle = "1"}, distant);
 
     v3d::render::offline::rib::ParameterList bulb;
-    put(&bulb, "intensity", Declaration::Type::FLOAT, { 4.0f });
+    put(&bulb, "intensity", Declaration::Type::FLOAT, { 4.0F });
     rc.pushTransform();
-    rc.translate(-1.0f, 1.0f, 2.0f);
-    rc.lightSource("pointlight", "2", bulb);
+    rc.translate(-1.0F, 1.0F, 2.0F);
+    rc.lightSource({.shader = "pointlight", .handle = "2"}, bulb);
     rc.popTransform();
 
-    const glm::vec3 tilted(-0.9f, 0.0f, -0.436f);
-    const glm::vec3 square(0.0f, 0.0f, -1.0f);
+    const glm::vec3 tilted(-0.9F, 0.0F, -0.436F);
+    const glm::vec3 square(0.0F, 0.0F, -1.0F);
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.9f, 0.4f, 0.2f));
+    rc.color(glm::vec3(0.9F, 0.4F, 0.2F));
     rc.surface("matte", v3d::render::offline::rib::ParameterList());
-    quad(rc, -1.2f, -0.1f, tilted, square);
+    quad(rc, -1.2F, -0.1F, tilted, square);
     rc.attributeEnd();
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.3f, 0.5f, 0.9f));
+    rc.color(glm::vec3(0.3F, 0.5F, 0.9F));
     v3d::render::offline::rib::ParameterList plastic;
-    put(&plastic, "roughness", Declaration::Type::FLOAT, { 0.08f });
-    put(&plastic, "Ks", Declaration::Type::FLOAT, { 0.6f });
+    put(&plastic, "roughness", Declaration::Type::FLOAT, { 0.08F });
+    put(&plastic, "Ks", Declaration::Type::FLOAT, { 0.6F });
     rc.surface("plastic", plastic);
-    quad(rc, 0.1f, 1.2f, square, glm::vec3(0.9f, 0.0f, -0.436f));
+    quad(rc, 0.1F, 1.2F, square, glm::vec3(0.9F, 0.0F, -0.436F));
     rc.attributeEnd();
 }
 
@@ -211,60 +219,72 @@ void shadedScene(v3d::moya::RenderContext & rc) {
     or a pinhole.
 */
 void focusScene(v3d::moya::RenderContext & rc, bool lens) {
-    rc.imageResolution(64, 48, 1.0f);
+    rc.imageResolution({64, 48}, 1.0F);
     rc.sampling().samples = glm::uvec2(4, 4);
     if (lens) {
-        rc.sampling().fstop = 1.0f;
-        rc.sampling().focalLength = 0.5f;
-        rc.sampling().focalDistance = 4.0f;
+        rc.sampling().fstop = 1.0F;
+        rc.sampling().focalLength = 0.5F;
+        rc.sampling().focalDistance = 4.0F;
     }
-    rc.projection("perspective", 40.0f);
-    rc.clipping(0.1f, 100.0f);
+    rc.projection("perspective", 40.0F);
+    rc.clipping({.hither = 0.1F, .yon = 100.0F});
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 
-    rc.color(glm::vec3(0.9f, 0.2f, 0.2f));
-    boost::shared_ptr<v3d::moya::Polygon> near = boost::make_shared<v3d::moya::Polygon>();
-    near->addVertex(vertex(-1.5f, -1.0f, 4.0f));
-    near->addVertex(vertex(-0.2f, -1.0f, 4.0f));
-    near->addVertex(vertex(-0.2f, 1.0f, 4.0f));
-    near->addVertex(vertex(-1.5f, 1.0f, 4.0f));
+    rc.color(glm::vec3(0.9F, 0.2F, 0.2F));
+    const boost::shared_ptr<v3d::moya::Polygon> near = boost::make_shared<v3d::moya::Polygon>();
+    near->addVertex(vertex(-1.5F, -1.0F, 4.0F));
+    near->addVertex(vertex(-0.2F, -1.0F, 4.0F));
+    near->addVertex(vertex(-0.2F, 1.0F, 4.0F));
+    near->addVertex(vertex(-1.5F, 1.0F, 4.0F));
     rc.addPolygon(near);
 
-    rc.color(glm::vec3(0.2f, 0.4f, 0.9f));
-    boost::shared_ptr<v3d::moya::Polygon> far = boost::make_shared<v3d::moya::Polygon>();
-    far->addVertex(vertex(0.5f, -2.5f, 10.0f));
-    far->addVertex(vertex(4.0f, -2.5f, 10.0f));
-    far->addVertex(vertex(4.0f, 2.5f, 10.0f));
-    far->addVertex(vertex(0.5f, 2.5f, 10.0f));
+    rc.color(glm::vec3(0.2F, 0.4F, 0.9F));
+    const boost::shared_ptr<v3d::moya::Polygon> far = boost::make_shared<v3d::moya::Polygon>();
+    far->addVertex(vertex(0.5F, -2.5F, 10.0F));
+    far->addVertex(vertex(4.0F, -2.5F, 10.0F));
+    far->addVertex(vertex(4.0F, 2.5F, 10.0F));
+    far->addVertex(vertex(0.5F, 2.5F, 10.0F));
     rc.addPolygon(far);
 }
+
+/** A row, and the columns along it from the first to the last, inclusive. **/
+struct Run {
+    unsigned int row = 0;
+    unsigned int from = 0;
+    unsigned int to = 0;
+};
 
 /**
  * How many pixels along a row are partly covered. That count is the width of an edge.
  **/
-unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage,
-    unsigned int row, unsigned int from, unsigned int to) {
+unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, const Run & run) {
     unsigned int count = 0;
-    for (unsigned int column = from; column <= to; column++) {
-        const float value = planes.value(coverage, column, row);
-        if (value > 0.02f && value < 0.98f) {
+    for (unsigned int column = run.from; column <= run.to; column++) {
+        const float value = planes.value(coverage, column, run.row);
+        if (value > 0.02F && value < 0.98F) {
             count++;
         }
     }
     return count;
 }
 
+/** The first and last columns of a block, inclusive. **/
+struct Columns {
+    unsigned int from = 0;
+    unsigned int to = 0;
+};
+
 /**
  * The largest difference between two frames over every plane of a block of columns.
  **/
-float largest(const v3d::render::offline::FrameBuffer & a, const v3d::render::offline::FrameBuffer & b,
-    unsigned int from, unsigned int to) {
-    float worst = 0.0f;
-    for (unsigned int plane = 0; plane < a.planes(); plane++) {
-        for (unsigned int row = 0; row < a.height(); row++) {
-            for (unsigned int column = from; column <= to; column++) {
-                worst = std::max(worst, std::fabs(a.value(plane, column, row) - b.value(plane, column, row)));
+float largest(const v3d::render::offline::FrameBuffer & first, const v3d::render::offline::FrameBuffer & second,
+    const Columns & columns) {
+    float worst = 0.0F;
+    for (unsigned int plane = 0; plane < first.planes(); plane++) {
+        for (unsigned int row = 0; row < first.height(); row++) {
+            for (unsigned int column = columns.from; column <= columns.to; column++) {
+                worst = std::max(worst, std::fabs(first.value(plane, column, row) - second.value(plane, column, row)));
             }
         }
     }
@@ -275,16 +295,16 @@ float largest(const v3d::render::offline::FrameBuffer & a, const v3d::render::of
  * The orthographic camera of the other references, with the shutter open from 0 to 1.
  **/
 void motionCamera(v3d::moya::RenderContext & rc) {
-    rc.imageResolution(64, 48, 1.0f);
+    rc.imageResolution({64, 48}, 1.0F);
     rc.sampling().samples = glm::uvec2(4, 4);
-    rc.sampling().shutter = glm::vec2(0.0f, 1.0f);
-    rc.clipping(0.1f, 100.0f);
+    rc.sampling().shutter = glm::vec2(0.0F, 1.0F);
+    rc.clipping({.hither = 0.1F, .yon = 100.0F});
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 }
 
 void quadAt(v3d::moya::RenderContext & rc, const glm::vec3 (&corners)[4]) {
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     for (const glm::vec3 & corner : corners) {
         polygon->addVertex(vertex(corner.x, corner.y, corner.z));
     }
@@ -299,28 +319,28 @@ void motionScene(v3d::moya::RenderContext & rc) {
     motionCamera(rc);
 
     rc.attributeBegin();
-    rc.motionBegin({ 0.0f, 1.0f });
-    rc.translate(0.0f, 0.0f, 0.0f);
-    rc.translate(0.5f, 0.0f, 0.0f);
+    rc.motionBegin({ 0.0F, 1.0F });
+    rc.translate(0.0F, 0.0F, 0.0F);
+    rc.translate(0.5F, 0.0F, 0.0F);
     rc.motionEnd();
-    rc.color(glm::vec3(0.9f, 0.8f, 0.2f));
+    rc.color(glm::vec3(0.9F, 0.8F, 0.2F));
     const glm::vec3 slid[4] = {
-        glm::vec3(-1.2f, 0.1f, 5.0f), glm::vec3(-0.4f, 0.1f, 5.0f),
-        glm::vec3(-0.4f, 0.8f, 5.0f), glm::vec3(-1.2f, 0.8f, 5.0f)
+        glm::vec3(-1.2F, 0.1F, 5.0F), glm::vec3(-0.4F, 0.1F, 5.0F),
+        glm::vec3(-0.4F, 0.8F, 5.0F), glm::vec3(-1.2F, 0.8F, 5.0F)
     };
     quadAt(rc, slid);
     rc.attributeEnd();
 
     rc.attributeBegin();
-    rc.translate(0.6f, -0.4f, 5.0f);
-    rc.motionBegin({ 0.0f, 1.0f });
-    rc.rotate(0.0f, 0.0f, 0.0f, 1.0f);
-    rc.rotate(90.0f, 0.0f, 0.0f, 1.0f);
+    rc.translate(0.6F, -0.4F, 5.0F);
+    rc.motionBegin({ 0.0F, 1.0F });
+    rc.rotate(0.0F, {0.0F, 0.0F, 1.0F});
+    rc.rotate(90.0F, {0.0F, 0.0F, 1.0F});
     rc.motionEnd();
-    rc.color(glm::vec3(0.2f, 0.7f, 0.9f));
+    rc.color(glm::vec3(0.2F, 0.7F, 0.9F));
     const glm::vec3 turned[4] = {
-        glm::vec3(-0.35f, -0.15f, 0.0f), glm::vec3(0.35f, -0.15f, 0.0f),
-        glm::vec3(0.35f, 0.15f, 0.0f), glm::vec3(-0.35f, 0.15f, 0.0f)
+        glm::vec3(-0.35F, -0.15F, 0.0F), glm::vec3(0.35F, -0.15F, 0.0F),
+        glm::vec3(0.35F, 0.15F, 0.0F), glm::vec3(-0.35F, 0.15F, 0.0F)
     };
     quadAt(rc, turned);
     rc.attributeEnd();
@@ -333,16 +353,16 @@ void motionScene(v3d::moya::RenderContext & rc) {
  * pixel from 8, falls a twelfth a pixel from 32, and is whole between.
  **/
 void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, unsigned int row) {
-    BOOST_CHECK_EQUAL(planes.value(coverage, 7, row), 0.0f);
+    BOOST_CHECK_EQUAL(planes.value(coverage, 7, row), 0.0F);
     for (unsigned int k = 0; k < 12; k++) {
         BOOST_TEST_CONTEXT("pixel " << 8 + k << " and " << 32 + k) {
-            const float rising = (static_cast<float>(k) + 0.5f) / 12.0f;
-            BOOST_CHECK_SMALL(planes.value(coverage, 8 + k, row) - rising, 0.1f);
-            BOOST_CHECK_SMALL(planes.value(coverage, 32 + k, row) - (1.0f - rising), 0.1f);
+            const float rising = (static_cast<float>(k) + 0.5F) / 12.0F;
+            BOOST_CHECK_SMALL(planes.value(coverage, 8 + k, row) - rising, 0.1F);
+            BOOST_CHECK_SMALL(planes.value(coverage, 32 + k, row) - (1.0F - rising), 0.1F);
         }
     }
-    BOOST_CHECK_CLOSE(planes.value(coverage, 25, row), 1.0f, 1.0e-4f);
-    BOOST_CHECK_EQUAL(planes.value(coverage, 44, row), 0.0f);
+    BOOST_CHECK_CLOSE(planes.value(coverage, 25, row), 1.0F, 1.0e-4F);
+    BOOST_CHECK_EQUAL(planes.value(coverage, 44, row), 0.0F);
 }
 
 /**
@@ -350,9 +370,9 @@ void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int co
  **/
 void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* reference,
     const char* output) {
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
-    boost::shared_ptr<v3d::image::Image> committed = factory.read(reference);
+    const boost::shared_ptr<v3d::image::Image> committed = factory.read(reference);
     if (committed == nullptr) {
         boost::filesystem::create_directory("data_out");
         factory.write(output, rendered);
@@ -361,7 +381,7 @@ void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* re
         std::string("cannot read the reference image ") + reference +
         " - what was rendered is in " + output);
 
-    v3d::image::Difference difference = v3d::image::compare(*rendered, *committed, 1);
+    const v3d::image::Difference difference = v3d::image::compare(*rendered, *committed, 1);
     if (!difference.match) {
         boost::filesystem::create_directory("data_out");
         factory.write(output, rendered);
@@ -370,17 +390,23 @@ void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* re
         difference.description() + " - what was rendered instead is in " + output);
 }
 
+/** A scene file, and the hider to render it under, or null for the one the file names. **/
+struct Scene {
+    const char* file = nullptr;
+    const char* hider = nullptr;
+};
+
 /**
  * A frame read from a file, under the hider the file names unless the caller names one first.
  **/
-boost::shared_ptr<v3d::render::offline::FrameBuffer> read(const char* scene, const char* hider = nullptr) {
+boost::shared_ptr<v3d::render::offline::FrameBuffer> read(const Scene & scene) {
     v3d::moya::Renderer renderer;
     v3d::moya::RIBHandler handler(&renderer);
-    if (hider != nullptr) {
-        handler.context().hider(hider);
+    if (scene.hider != nullptr) {
+        handler.context().hider(scene.hider);
     }
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
-    BOOST_REQUIRE(reader.read(scene, &handler));
+    BOOST_REQUIRE(reader.read(scene.file, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
     return handler.context().framebuffer()->planes();
 }
@@ -396,10 +422,10 @@ boost::shared_ptr<v3d::image::Image> picture(const v3d::moya::RenderContext & rc
  **/
 void raytraceCamera(v3d::moya::RenderContext & rc) {
     rc.hider("raytrace");
-    rc.imageResolution(64, 48, 1.0f);
-    rc.clipping(0.001f, 100.0f);
+    rc.imageResolution({64, 48}, 1.0F);
+    rc.clipping({.hither = 0.001F, .yon = 100.0F});
     rc.projection("orthographic");
-    rc.setTransform(glm::translate(glm::mat4x4(1.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+    rc.setTransform(glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, 0.0F, 1.0F)));
 }
 
 void background(v3d::moya::RenderContext & rc, const glm::vec3 & colour) {
@@ -415,14 +441,14 @@ void background(v3d::moya::RenderContext & rc, const glm::vec3 & colour) {
 void triangleScene(v3d::moya::RenderContext & rc) {
     raytraceCamera(rc);
     pixelCentres(rc);
-    background(rc, glm::vec3(0.15f, 0.25f, 0.45f));
+    background(rc, glm::vec3(0.15F, 0.25F, 0.45F));
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
-    rc.color(glm::vec3(0.9f, 0.2f, 0.2f));
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(-0.8f, -0.6f, 2.0f));
-    polygon->addVertex(vertex(0.8f, -0.6f, 2.0f));
-    polygon->addVertex(vertex(0.0f, 0.7f, 2.0f));
+    rc.color(glm::vec3(0.9F, 0.2F, 0.2F));
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.8F, -0.6F, 2.0F));
+    polygon->addVertex(vertex(0.8F, -0.6F, 2.0F));
+    polygon->addVertex(vertex(0.0F, 0.7F, 2.0F));
     rc.addPolygon(polygon);
 }
 
@@ -434,42 +460,42 @@ void triangleScene(v3d::moya::RenderContext & rc) {
 void raytraceShadedScene(v3d::moya::RenderContext & rc) {
     typedef v3d::render::offline::rib::Declaration Declaration;
     raytraceCamera(rc);
-    background(rc, glm::vec3(0.05f, 0.06f, 0.1f));
+    background(rc, glm::vec3(0.05F, 0.06F, 0.1F));
     rc.prepareWorld();
 
     v3d::render::offline::rib::ParameterList fill;
-    put(&fill, "intensity", Declaration::Type::FLOAT, { 0.18f });
-    rc.lightSource("ambientlight", "0", fill);
+    put(&fill, "intensity", Declaration::Type::FLOAT, { 0.18F });
+    rc.lightSource({.shader = "ambientlight", .handle = "0"}, fill);
     v3d::render::offline::rib::ParameterList distant;
-    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.9f });
-    put(&distant, "to", Declaration::Type::POINT, { 0.7f, -0.7f, 1.0f });
-    rc.lightSource("distantlight", "1", distant);
+    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.9F });
+    put(&distant, "to", Declaration::Type::POINT, { 0.7F, -0.7F, 1.0F });
+    rc.lightSource({.shader = "distantlight", .handle = "1"}, distant);
     v3d::render::offline::rib::ParameterList lamp;
-    put(&lamp, "intensity", Declaration::Type::FLOAT, { 1.2f });
+    put(&lamp, "intensity", Declaration::Type::FLOAT, { 1.2F });
     rc.pushTransform();
-    rc.translate(-0.6f, 0.5f, 1.2f);
-    rc.lightSource("pointlight", "2", lamp);
+    rc.translate(-0.6F, 0.5F, 1.2F);
+    rc.lightSource({.shader = "pointlight", .handle = "2"}, lamp);
     rc.popTransform();
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.8f, 0.75f, 0.6f));
+    rc.color(glm::vec3(0.8F, 0.75F, 0.6F));
     rc.surface("matte", v3d::render::offline::rib::ParameterList());
     const glm::vec3 floor[4] = {
-        glm::vec3(-1.15f, -1.2f, 3.0f), glm::vec3(1.15f, -1.2f, 3.0f),
-        glm::vec3(1.15f, 1.2f, 3.0f), glm::vec3(-1.15f, 1.2f, 3.0f)
+        glm::vec3(-1.15F, -1.2F, 3.0F), glm::vec3(1.15F, -1.2F, 3.0F),
+        glm::vec3(1.15F, 1.2F, 3.0F), glm::vec3(-1.15F, 1.2F, 3.0F)
     };
     quadAt(rc, floor);
     rc.attributeEnd();
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.2f, 0.45f, 0.8f));
+    rc.color(glm::vec3(0.2F, 0.45F, 0.8F));
     v3d::render::offline::rib::ParameterList shiny;
-    put(&shiny, "roughness", Declaration::Type::FLOAT, { 0.1f });
-    put(&shiny, "Ks", Declaration::Type::FLOAT, { 0.5f });
+    put(&shiny, "roughness", Declaration::Type::FLOAT, { 0.1F });
+    put(&shiny, "Ks", Declaration::Type::FLOAT, { 0.5F });
     rc.surface("plastic", shiny);
     const glm::vec3 panel[4] = {
-        glm::vec3(-0.5f, -0.45f, 2.2f), glm::vec3(0.35f, -0.45f, 2.2f),
-        glm::vec3(0.35f, 0.4f, 2.2f), glm::vec3(-0.5f, 0.4f, 2.2f)
+        glm::vec3(-0.5F, -0.45F, 2.2F), glm::vec3(0.35F, -0.45F, 2.2F),
+        glm::vec3(0.35F, 0.4F, 2.2F), glm::vec3(-0.5F, 0.4F, 2.2F)
     };
     quadAt(rc, panel);
     rc.attributeEnd();
@@ -483,60 +509,60 @@ void raytraceShadedScene(v3d::moya::RenderContext & rc) {
 void spheresScene(v3d::moya::RenderContext & rc) {
     typedef v3d::render::offline::rib::Declaration Declaration;
     rc.hider("raytrace");
-    rc.imageResolution(64, 48, 1.0f);
-    rc.clipping(0.1f, 100.0f);
-    rc.projection("perspective", 40.0f);
+    rc.imageResolution({64, 48}, 1.0F);
+    rc.clipping({.hither = 0.1F, .yon = 100.0F});
+    rc.projection("perspective", 40.0F);
     // the floor's shader is a fixture beside the scene rather than one of the standard ones
     rc.searchpath("data:&");
     rc.prepareWorld();
 
     v3d::render::offline::rib::ParameterList fill;
-    put(&fill, "intensity", Declaration::Type::FLOAT, { 0.2f });
-    rc.lightSource("ambientlight", "0", fill);
+    put(&fill, "intensity", Declaration::Type::FLOAT, { 0.2F });
+    rc.lightSource({.shader = "ambientlight", .handle = "0"}, fill);
     v3d::render::offline::rib::ParameterList distant;
-    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.9f });
-    put(&distant, "to", Declaration::Type::POINT, { 0.4f, -1.0f, 0.6f });
-    rc.lightSource("distantlight", "1", distant);
+    put(&distant, "intensity", Declaration::Type::FLOAT, { 0.9F });
+    put(&distant, "to", Declaration::Type::POINT, { 0.4F, -1.0F, 0.6F });
+    rc.lightSource({.shader = "distantlight", .handle = "1"}, distant);
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.85f, 0.8f, 0.7f));
+    rc.color(glm::vec3(0.85F, 0.8F, 0.7F));
     v3d::render::offline::rib::ParameterList checks;
-    put(&checks, "size", Declaration::Type::FLOAT, { 0.5f });
+    put(&checks, "size", Declaration::Type::FLOAT, { 0.5F });
     rc.surface("checked", checks);
     const glm::vec3 floor[4] = {
-        glm::vec3(-4.0f, -1.0f, 2.0f), glm::vec3(4.0f, -1.0f, 2.0f),
-        glm::vec3(4.0f, -1.0f, 12.0f), glm::vec3(-4.0f, -1.0f, 12.0f)
+        glm::vec3(-4.0F, -1.0F, 2.0F), glm::vec3(4.0F, -1.0F, 2.0F),
+        glm::vec3(4.0F, -1.0F, 12.0F), glm::vec3(-4.0F, -1.0F, 12.0F)
     };
     quadAt(rc, floor);
     rc.attributeEnd();
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.35f, 0.5f, 0.75f));
+    rc.color(glm::vec3(0.35F, 0.5F, 0.75F));
     rc.surface("matte", v3d::render::offline::rib::ParameterList());
     const glm::vec3 wall[4] = {
-        glm::vec3(-4.0f, -1.0f, 12.0f), glm::vec3(4.0f, -1.0f, 12.0f),
-        glm::vec3(4.0f, 4.0f, 12.0f), glm::vec3(-4.0f, 4.0f, 12.0f)
+        glm::vec3(-4.0F, -1.0F, 12.0F), glm::vec3(4.0F, -1.0F, 12.0F),
+        glm::vec3(4.0F, 4.0F, 12.0F), glm::vec3(-4.0F, 4.0F, 12.0F)
     };
     quadAt(rc, wall);
     rc.attributeEnd();
 
     rc.attributeBegin();
-    rc.color(glm::vec3(0.9f, 0.85f, 0.7f));
+    rc.color(glm::vec3(0.9F, 0.85F, 0.7F));
     v3d::render::offline::rib::ParameterList mirror;
-    put(&mirror, "Ka", Declaration::Type::FLOAT, { 0.1f });
-    put(&mirror, "Ks", Declaration::Type::FLOAT, { 0.6f });
-    put(&mirror, "Kr", Declaration::Type::FLOAT, { 0.8f });
+    put(&mirror, "Ka", Declaration::Type::FLOAT, { 0.1F });
+    put(&mirror, "Ks", Declaration::Type::FLOAT, { 0.6F });
+    put(&mirror, "Kr", Declaration::Type::FLOAT, { 0.8F });
     rc.surface("shinymetal", mirror);
-    rc.translate(-1.1f, -0.28f, 6.0f);
-    BOOST_REQUIRE(rc.addSphere(0.7f, -0.7f, 0.7f, 360.0f));
+    rc.translate(-1.1F, -0.28F, 6.0F);
+    BOOST_REQUIRE(rc.addSphere({.radius = 0.7F, .zmin = -0.7F, .zmax = 0.7F, .thetamax = 360.0F}));
     rc.attributeEnd();
 
     rc.attributeBegin();
-    rc.color(glm::vec3(1.0f));
-    rc.opacity(glm::vec3(0.3f));
+    rc.color(glm::vec3(1.0F));
+    rc.opacity(glm::vec3(0.3F));
     rc.surface("glass", v3d::render::offline::rib::ParameterList());
-    rc.translate(1.1f, -0.28f, 5.5f);
-    BOOST_REQUIRE(rc.addSphere(0.7f, -0.7f, 0.7f, 360.0f));
+    rc.translate(1.1F, -0.28F, 5.5F);
+    BOOST_REQUIRE(rc.addSphere({.radius = 0.7F, .zmin = -0.7F, .zmax = 0.7F, .thetamax = 360.0F}));
     rc.attributeEnd();
 }
 
@@ -545,48 +571,46 @@ void spheresScene(v3d::moya::RenderContext & rc) {
  * box, which is twelve pixels at this frame.
  **/
 void slidingQuad(v3d::moya::RenderContext & rc) {
-    rc.imageResolution(64, 48, 1.0f);
+    rc.imageResolution({64, 48}, 1.0F);
     rc.sampling().samples = glm::uvec2(8, 8);
     rc.sampling().filter = v3d::render::offline::Filter::Box;
-    rc.sampling().width = glm::vec2(1.0f);
-    rc.sampling().shutter = glm::vec2(0.0f, 1.0f);
-    rc.clipping(0.1f, 100.0f);
+    rc.sampling().width = glm::vec2(1.0F);
+    rc.sampling().shutter = glm::vec2(0.0F, 1.0F);
+    rc.clipping({.hither = 0.1F, .yon = 100.0F});
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 
-    rc.motionBegin({ 0.0f, 1.0f });
-    rc.translate(0.0f, 0.0f, 0.0f);
-    rc.translate(0.5f, 0.0f, 0.0f);
+    rc.motionBegin({ 0.0F, 1.0F });
+    rc.translate(0.0F, 0.0F, 0.0F);
+    rc.translate(0.5F, 0.0F, 0.0F);
     rc.motionEnd();
     const glm::vec3 corners[4] = {
-        glm::vec3(-1.0f, -0.5f, 5.0f), glm::vec3(0.0f, -0.5f, 5.0f),
-        glm::vec3(0.0f, 0.5f, 5.0f), glm::vec3(-1.0f, 0.5f, 5.0f)
+        glm::vec3(-1.0F, -0.5F, 5.0F), glm::vec3(0.0F, -0.5F, 5.0F),
+        glm::vec3(0.0F, 0.5F, 5.0F), glm::vec3(-1.0F, 0.5F, 5.0F)
     };
     quadAt(rc, corners);
 }
 
-};  // namespace
-
 /**
- * The second pass writes samples where the polygon is and leaves the rest of the planes at
- * what they were allocated with.
+ * Rendering the buckets writes samples where the polygon is, and leaves the rest of the planes
+ * at what they were allocated with.
  **/
 BOOST_AUTO_TEST_CASE(moya_renders_a_polygon_test) {
     v3d::moya::RenderContext rc;
     scene(rc);
     rc.render();
 
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
 
     // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8]
-    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::RED, 24, 16) == 1.0f);
-    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::BLUE, 24, 16) == 1.0f);
+    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::RED, 24, 16) == 1.0F);
+    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::BLUE, 24, 16) == 1.0F);
     // and nothing outside it
-    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::RED, 55, 40) == 0.0f);
+    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::RED, 55, 40) == 0.0F);
 
     // a covered pixel took a depth from the geometry rather than keeping the one it was
     // cleared to
-    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::DEPTH, 24, 16) < 2.0f);
+    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::DEPTH, 24, 16) < 2.0F);
 }
 
 /**
@@ -598,13 +622,13 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
     scene(rc);
     rc.render();
 
-    boost::shared_ptr<v3d::image::Image> rendered =
+    const boost::shared_ptr<v3d::image::Image> rendered =
         rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS);
 
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
 
-    boost::shared_ptr<v3d::image::Image> reference = factory.read(REFERENCE);
+    const boost::shared_ptr<v3d::image::Image> reference = factory.read(REFERENCE);
     if (reference == nullptr) {
         // write what was rendered, so a missing reference can be inspected, or committed when
         // it is being regenerated on purpose
@@ -615,7 +639,7 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
         std::string("cannot read the reference image ") + REFERENCE + " - what was rendered is in " + RENDERED);
 
     // the tolerance is for float rounding across compilers, not for "close enough"
-    v3d::image::Difference difference = v3d::image::compare(*rendered, *reference, 1);
+    const v3d::image::Difference difference = v3d::image::compare(*rendered, *reference, 1);
     if (!difference.match) {
         boost::filesystem::create_directory("data_out");
         factory.write(RENDERED, rendered);
@@ -627,8 +651,8 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
 /**
  * The same scene said in RIB, against the same committed picture.
  *
- * Two routes to one image: if the file path and the code path disagree, this case fails, and
- * neither path is the reference. A fault in the reader therefore shows as a wrong picture.
+ * The file and the code are two routes to one image, and neither route is the reference. If
+ * the two disagree, this case fails. A fault in the reader shows as a wrong picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
     v3d::moya::Renderer renderer;
@@ -638,15 +662,15 @@ BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(RIB_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    boost::shared_ptr<v3d::image::Image> rendered =
+    const boost::shared_ptr<v3d::image::Image> rendered =
         handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS);
 
-    boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
-    boost::shared_ptr<v3d::image::Image> reference = factory.read(REFERENCE);
+    const boost::shared_ptr<v3d::image::Image> reference = factory.read(REFERENCE);
     BOOST_REQUIRE(reference != nullptr);
 
-    v3d::image::Difference difference = v3d::image::compare(*rendered, *reference, 1);
+    const v3d::image::Difference difference = v3d::image::compare(*rendered, *reference, 1);
     if (!difference.match) {
         boost::filesystem::create_directory("data_out");
         factory.write(RIB_RENDERED, rendered);
@@ -656,8 +680,8 @@ BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
 }
 
 /**
- * A display of type "file" is what turns the sampled planes into a picture on disk; the
- * driver's --output reaches the context through RiDisplay and nothing else writes.
+ * A display of type "file" writes the sampled planes to a picture on disk. The driver's
+ * --output reaches the context through RiDisplay, and nothing else writes a file.
  **/
 BOOST_AUTO_TEST_CASE(moya_display_writes_a_file_test) {
     boost::filesystem::create_directory("data_out");
@@ -666,7 +690,7 @@ BOOST_AUTO_TEST_CASE(moya_display_writes_a_file_test) {
 
     v3d::moya::RenderContext rc;
     scene(rc);
-    rc.display(output, "file", "rgb");
+    rc.display({.name = output, .type = "file", .mode = "rgb"});
     rc.render();
 
     BOOST_TEST(boost::filesystem::exists(output));
@@ -680,16 +704,16 @@ BOOST_AUTO_TEST_CASE(moya_no_display_writes_nothing_test) {
     scene(rc);
     rc.render();
 
-    BOOST_TEST(rc.framebuffer()->planes()->value(v3d::moya::FrameBuffer::RED, 24, 16) == 1.0f);
+    BOOST_TEST(rc.framebuffer()->planes()->value(v3d::moya::FrameBuffer::RED, 24, 16) == 1.0F);
 }
 
 /**
- * A shaded scene: a matte surface and a plastic one, a distant light and a point light, each
- * surface carrying normals of its own so the falloff is a gradient.
+ * A shaded scene: a matte surface and a plastic one, a distant light and a point light. Each
+ * surface carries normals of its own, so the falloff is a gradient.
  *
- * The picture does not test individual shaders: the shading language has its own cases in
- * v3dtest_render_offline, and a wrong smoothstep is found there. This case checks the wiring
- * between the shading machine and the renderer, which no unit case covers.
+ * The picture does not test individual shaders, which have their own cases in
+ * v3dtest_render_offline. This case checks the wiring between the shading language and
+ * the renderer.
  **/
 BOOST_AUTO_TEST_CASE(moya_shaded_reference_test) {
     v3d::moya::RenderContext rc;
@@ -704,8 +728,9 @@ BOOST_AUTO_TEST_CASE(moya_shaded_reference_test) {
 /**
  * The same shaded scene said in RIB, against the same committed picture.
  *
- * Two routes to one image. A scene with shaders has more for the two paths to disagree
- * about: a parameter bound on one path and defaulted on the other shows here and nowhere else.
+ * The file and the code are two routes to one image. A scene with shaders has more for the two
+ * routes to disagree about. A shader parameter bound on one route and defaulted on the other
+ * shows here.
  **/
 BOOST_AUTO_TEST_CASE(moya_shaded_reference_from_rib_test) {
     v3d::moya::Renderer renderer;
@@ -826,18 +851,19 @@ BOOST_AUTO_TEST_CASE(moya_in_focus_is_sharp_test) {
             focusScene(lens, true);
             lens.render();
 
-            BOOST_CHECK_SMALL(largest(*pinhole.framebuffer()->planes(), *lens.framebuffer()->planes(), 0, 30),
-                1.0f / 255.0f);
+            BOOST_CHECK_SMALL(largest(*pinhole.framebuffer()->planes(), *lens.framebuffer()->planes(), {.from = 0, .to = 30}),
+                1.0F / 255.0F);
         }
     }
 }
 
 /**
  * The quad off the plane of focus spreads its edge over its circle of confusion. Under a one
- * pixel box, a pinhole leaves the edge in a pixel or two. The lens is a quarter of a unit
- * across and focused four units out. It blurs a point ten units out over
- * 2 * 0.25 * (10 - 4) / 10 of a unit there, about five pixels at this field of view. The reyes
- * hider gets there by moving the micropolygon, and the ray hider by moving the ray.
+ * pixel box, a pinhole leaves the edge in a pixel or two. The lens has a radius of a quarter
+ * of a unit and is focused four units out. It blurs a point ten units out over
+ * 2 * 0.25 * (10 - 4) / 10 of a unit, measured on the plane of focus. That is about five
+ * pixels at this field of view. The reyes hider blurs by moving the micropolygon, and the
+ * ray hider by moving the ray.
  **/
 BOOST_AUTO_TEST_CASE(moya_out_of_focus_spreads_test) {
     for (const char* hider : HIDERS) {
@@ -846,21 +872,21 @@ BOOST_AUTO_TEST_CASE(moya_out_of_focus_spreads_test) {
             pinhole.hider(hider);
             focusScene(pinhole, false);
             pinhole.sampling().filter = v3d::render::offline::Filter::Box;
-            pinhole.sampling().width = glm::vec2(1.0f);
+            pinhole.sampling().width = glm::vec2(1.0F);
             pinhole.render();
             v3d::moya::RenderContext lens;
             lens.hider(hider);
             focusScene(lens, true);
             lens.sampling().filter = v3d::render::offline::Filter::Box;
-            lens.sampling().width = glm::vec2(1.0f);
+            lens.sampling().width = glm::vec2(1.0F);
             lens.render();
 
             const unsigned int coverage = v3d::moya::FrameBuffer::COVERAGE;
-            const unsigned int sharp = partial(*pinhole.framebuffer()->planes(), coverage, 24, 30, 45);
-            const unsigned int blurred = partial(*lens.framebuffer()->planes(), coverage, 24, 30, 45);
-            BOOST_CHECK_LE(sharp, 2u);
-            BOOST_CHECK_GE(blurred, 4u);
-            BOOST_CHECK_LE(blurred, 7u);
+            const unsigned int sharp = partial(*pinhole.framebuffer()->planes(), coverage, {.row = 24, .from = 30, .to = 45});
+            const unsigned int blurred = partial(*lens.framebuffer()->planes(), coverage, {.row = 24, .from = 30, .to = 45});
+            BOOST_CHECK_LE(sharp, 2U);
+            BOOST_CHECK_GE(blurred, 4U);
+            BOOST_CHECK_LE(blurred, 7U);
         }
     }
 }
@@ -889,9 +915,9 @@ BOOST_AUTO_TEST_CASE(moya_motion_reference_from_rib_test) {
 }
 
 /**
- * A quad translated across the shutter spreads over the distance it moved, its coverage
- * rising and falling linearly along it. The reyes hider moves the micropolygons to a sample's
- * time and the ray hider carries the ray back to where the quad was then.
+ * A quad translated across the shutter spreads over the distance it moved. Its coverage rises
+ * and falls linearly along that distance. The reyes hider moves the micropolygons to a
+ * sample's time, and the ray hider carries the ray back to where the quad was then.
  **/
 BOOST_AUTO_TEST_CASE(moya_motion_spreads_linearly_test) {
     for (const char* hider : HIDERS) {
@@ -910,31 +936,31 @@ BOOST_AUTO_TEST_CASE(moya_motion_spreads_linearly_test) {
  * A quad showing a texture through paintedplastic, under each hider.
  *
  * The image's 2 by 2 texel blocks are each one colour, so a pixel well inside a block reads
- * that colour exactly whether it is sampled at the pixel or a micropolygon away from it. Both
- * hiders pin the same sixteen pixels: the same s and t, the same way up, and the same texel at
- * each. Under the reyes hider the quad is larger than a grid, so it splits, and its pieces
- * carry their st with them.
+ * that colour exactly whether it is sampled at the pixel or a micropolygon away from it. The
+ * case checks a grid of pixels under both hiders: the same s and t, the same way up, and the
+ * same texel at each. Under the reyes hider the quad is larger than a grid, so it splits, and
+ * its pieces carry their st with them.
  **/
 BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
     for (const char* hider : HIDERS) {
         BOOST_TEST_CONTEXT("hider " << hider) {
-            boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read("data/textured.rib", hider);
+            const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/textured.rib", .hider = hider});
 
             // red counts the block across and green the block down, and blue is the same in each
             for (unsigned int across = 0; across < 4; across++) {
                 for (unsigned int down = 0; down < 4; down++) {
-                    const unsigned int column = 20 + 8 * across;
-                    const unsigned int row = 12 + 8 * down;
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, column, row) - 85.0f * across / 255.0f,
-                        1.0f / 255.0f);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, column, row) - 85.0f * down / 255.0f,
-                        1.0f / 255.0f);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, column, row) - 128.0f / 255.0f,
-                        1.0f / 255.0f);
+                    const unsigned int column = 20 + (8 * across);
+                    const unsigned int row = 12 + (8 * down);
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, column, row) - (85.0F * across / 255.0F),
+                        1.0F / 255.0F);
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, column, row) - (85.0F * down / 255.0F),
+                        1.0F / 255.0F);
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, column, row) - (128.0F / 255.0F),
+                        1.0F / 255.0F);
                 }
             }
             // and outside the quad is the background
-            BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 4, 4), 0.0f);
+            BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 4, 4), 0.0F);
         }
     }
 }
@@ -944,38 +970,37 @@ BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
  * traced through the same scene the ray hider uses, so it falls where the ray hider's does.
  **/
 BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read(SHADOW_SCENE);
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = SHADOW_SCENE});
     check(planes->image(v3d::moya::FrameBuffer::CHANNELS), SHADOW, SHADOW_RIB_RENDERED);
 
     /*
         The two hiders also agree on the same file away from the edges, where the reyes hider's
         micropolygons are flat. The regions checked are a shadow of both lights, the point
         light's shadow alone, a region lit by both, and the imager's background. An edge moves
-        by up to a micropolygon, so only the insides are pinned.
+        by up to a micropolygon, so only the insides are checked.
     */
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> traced = read(SHADOW_SCENE, "raytrace");
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> traced = read({.file = SHADOW_SCENE, .hider = "raytrace"});
     const unsigned int pixels[][2] = { { 40, 30 }, { 24, 40 }, { 56, 26 }, { 8, 8 }, { 2, 2 } };
     for (const auto & pixel : pixels) {
         BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
             for (unsigned int channel = 0; channel < 3; channel++) {
                 BOOST_CHECK_SMALL(planes->value(channel, pixel[0], pixel[1]) - traced->value(channel, pixel[0], pixel[1]),
-                    1.5f / 255.0f);
+                    1.5F / 255.0F);
             }
         }
     }
 }
 
 /**
- * The ray hider's references, each reached by a file and by the render context, against one
- * committed picture. Two routes to one image: if they disagree, the case fails, and neither
- * of them is the reference.
+ * The ray hider's references, each rendered from a file and through the render context, against
+ * one committed picture. Neither route is the reference, and the case fails if they disagree.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_triangle_reference_test) {
     v3d::moya::RenderContext rc;
     triangleScene(rc);
     rc.render();
     check(picture(rc), TRIANGLE, TRIANGLE_RENDERED);
-    check(read(TRIANGLE_SCENE)->image(v3d::moya::FrameBuffer::CHANNELS), TRIANGLE, TRIANGLE_RIB_RENDERED);
+    check(read({.file = TRIANGLE_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRIANGLE, TRIANGLE_RIB_RENDERED);
 }
 
 /**
@@ -983,8 +1008,9 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_triangle_reference_test) {
  * across the floor, one sample at each pixel centre.
  *
  * The picture does not test individual shaders, which have their own cases in
- * v3dtest_render_offline. This case checks the wiring: an ambient() that reached no light, a
- * shadow ray that started on the surface it left, an imager that ran over the wrong plane.
+ * v3dtest_render_offline. This case checks the wiring between the shaders and the ray hider.
+ * It fails if ambient() reaches no light, if a shadow ray starts on the surface it leaves, or if
+ * an imager runs over the wrong plane.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_shaded_reference_test) {
     v3d::moya::RenderContext rc;
@@ -992,7 +1018,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_shaded_reference_test) {
     pixelCentres(rc);
     rc.render();
     check(picture(rc), TRACED_SHADED, TRACED_SHADED_RENDERED);
-    check(read(TRACED_SHADED_SCENE)->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_SHADED,
+    check(read({.file = TRACED_SHADED_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_SHADED,
         TRACED_SHADED_RIB_RENDERED);
 }
 
@@ -1004,12 +1030,12 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_sampled_reference_test) {
     raytraceShadedScene(rc);
     rc.render();
     check(picture(rc), TRACED_SAMPLED, TRACED_SAMPLED_RENDERED);
-    check(read(TRACED_SAMPLED_SCENE)->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_SAMPLED,
+    check(read({.file = TRACED_SAMPLED_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_SAMPLED,
         TRACED_SAMPLED_RIB_RENDERED);
 }
 
 /**
- * Two renders are equal byte for byte, so a sampled picture can have a reference at all.
+ * Two renders are equal byte for byte. A sampled picture can have a reference only if they are.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_render_is_repeatable_test) {
     v3d::moya::RenderContext first;
@@ -1029,7 +1055,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_focus_reference_test) {
     focusScene(rc, true);
     rc.render();
     check(picture(rc), TRACED_FOCUS, TRACED_FOCUS_RENDERED);
-    check(read(TRACED_FOCUS_SCENE)->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_FOCUS,
+    check(read({.file = TRACED_FOCUS_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_FOCUS,
         TRACED_FOCUS_RIB_RENDERED);
 }
 
@@ -1039,7 +1065,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_motion_reference_test) {
     motionScene(rc);
     rc.render();
     check(picture(rc), TRACED_MOTION, TRACED_MOTION_RENDERED);
-    check(read(TRACED_MOTION_SCENE)->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_MOTION,
+    check(read({.file = TRACED_MOTION_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_MOTION,
         TRACED_MOTION_RIB_RENDERED);
 }
 
@@ -1052,20 +1078,20 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_spheres_reference_test) {
     spheresScene(rc);
     rc.render();
     check(picture(rc), SPHERES, SPHERES_RENDERED);
-    check(read(SPHERES_SCENE)->image(v3d::moya::FrameBuffer::CHANNELS), SPHERES, SPHERES_RIB_RENDERED);
+    check(read({.file = SPHERES_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), SPHERES, SPHERES_RIB_RENDERED);
 }
 
 /**
- * A quad under one distant light forty five degrees off it, so a white quad comes out at the
- * cosine of that - a value neither the geometry's colour nor no shading could produce.
+ * A white quad under one distant light forty five degrees off its normal comes out at the
+ * cosine of that angle. An unshaded quad would come out white.
  **/
 BOOST_AUTO_TEST_CASE(moya_raytrace_lit_quad_test) {
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read("data/raytrace-lit-quad.rib");
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/raytrace-lit-quad.rib"});
 
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.70710678f, 0.5f);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 0.70710678f, 0.5f);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.70710678F, 0.5F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 0.70710678F, 0.5F);
     // and nothing outside the quad
-    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, 2, 2), 0.0001f);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, 2, 2), 0.0001F);
 }
 
 /**
@@ -1082,7 +1108,9 @@ BOOST_AUTO_TEST_CASE(reference_motion_without_a_cache_test) {
     motionScene(uncached);
     uncached.render();
 
-    const v3d::render::offline::FrameBuffer & a = *cached.framebuffer()->planes();
-    const v3d::render::offline::FrameBuffer & b = *uncached.framebuffer()->planes();
-    BOOST_CHECK_EQUAL(largest(a, b, 0, a.width() - 1), 0.0f);
+    const v3d::render::offline::FrameBuffer & cachedImage = *cached.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & uncachedImage = *uncached.framebuffer()->planes();
+    BOOST_CHECK_EQUAL(largest(cachedImage, uncachedImage, {.from = 0, .to = cachedImage.width() - 1}), 0.0F);
 }
+
+};  // namespace

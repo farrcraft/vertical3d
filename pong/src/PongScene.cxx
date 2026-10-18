@@ -8,10 +8,10 @@
 #include <api/event/kind/Sound.h>
 #include <api/type/geometry/Bound2D.h>
 
+#include "Paddle.h"
+
 #include <algorithm>
 #include <cmath>
-#include <iostream>
-#include <string>
 
 #include <glm/geometric.hpp>
 
@@ -19,24 +19,32 @@ namespace {
 
 // court units per second. The court is 800x600 and a paddle runs 40 to 560, so a paddle crosses
 // its whole run in a little under six seconds.
-constexpr float PADDLE_SPEED = 90.0f;
+constexpr float PADDLE_SPEED = 90.0F;
 
-// the vertical velocity a travelling paddle adds to the return, in pixels per second, before
+// the vertical velocity a travelling paddle adds to the return, in court units per second, before
 // the return is scaled back to the ball's incoming speed. It is a third of the paddle's own
 // speed, enough to steer a return without overriding where it was struck
-constexpr float PADDLE_ENGLISH = 30.0f;
+constexpr float PADDLE_ENGLISH = 30.0F;
 
 // the steepest return, off either end of a paddle, in radians: fifty degrees from the
 // horizontal. A ball struck by the paddle's centre goes back flat
-constexpr float MAX_RETURN_ANGLE = 0.8727f;
+constexpr float MAX_RETURN_ANGLE = 0.8727F;
 
 /**
  * The area a paddle returns the ball from: its own length vertically, and from left to right
  * horizontally, which the caller sets from the paddle's face to beyond the court's edge.
  **/
 v3d::type::geometry::Bound2D paddleReach(Paddle& paddle, float left, float right) {
-    const float top = paddle.position() - paddle.length() / 2.0f;
-    return v3d::type::geometry::Bound2D(left, top, right - left, paddle.length());
+    const float top = paddle.position() - (paddle.length() / 2.0F);
+    return v3d::type::geometry::Bound2D({.position = glm::vec2(left, top), .size = glm::vec2(right - left, paddle.length())});
+}
+
+/**
+ * The pan of a point on the court: -1 at the left edge, 1 at the right. The court is drawn
+ * with x running left to right across the window, so left on the court is left on screen.
+ **/
+float across(float x) {
+    return (x / PongScene::width * 2.0F) - 1.0F;
 }
 
 };  // namespace
@@ -47,8 +55,8 @@ PongScene::PongScene(entt::registry* registry, const boost::shared_ptr<entt::dis
     left_(registry),
     right_(registry),
     ball_(registry) {
-    left_.color(glm::vec3(1.0f, 1.0f, 1.0f));
-    right_.color(glm::vec3(1.0f, 1.0f, 1.0f));
+    left_.color(glm::vec3(1.0F, 1.0F, 1.0F));
+    right_.color(glm::vec3(1.0F, 1.0F, 1.0F));
 }
 
 PongScene::~PongScene() {
@@ -93,13 +101,13 @@ void PongScene::coop(bool mode) {
 }
 
 void PongScene::steerOpponent(const glm::vec2& ballPosition) {
-    // give AI a turn in single player mode
+    // the computer steers the right paddle outside coop
     if (gameState_.coop()) {
         return;
     }
     glm::vec2 ball_dir = ball_.direction();
     // is the ball headed towards the ai's paddle (towards the right side)?
-    if (ball_dir[0] > 0.0f) {
+    if (ball_dir[0] > 0.0F) {
         // travel is signed the way the court is: up decreases the paddle position and
         // down increases it, so approaching a ball above the paddle is up.
         if (ballPosition[1] < right_.position()) {
@@ -117,30 +125,30 @@ void PongScene::steerOpponent(const glm::vec2& ballPosition) {
 }
 
 void PongScene::bouncePaddles(const glm::vec2& ballPosition) {
-    // the ball is treated as its square box, and each paddle as a box running from its face
-    // out past the court's edge rather than as thick as the paddle. A ball that reaches the
-    // face bounces, and so does one fast enough to have passed it between two steps. A box
-    // the paddle's own width would let that ball tunnel through
+    // the ball is tested as its square box. Each paddle is tested as a box that runs from its
+    // face out past the court's edge, not as a box the paddle's thickness. A ball that reaches
+    // the face bounces, and so does a fast ball that passed the face between two steps. A box
+    // the paddle's thickness would let that ball pass through
     const float ballSize = gameState_.ballSize();
-    const v3d::type::geometry::Bound2D ball(ballPosition - glm::vec2(ballSize / 2.0f), glm::vec2(ballSize));
+    const v3d::type::geometry::Bound2D ball({.position = ballPosition - glm::vec2(ballSize / 2.0F), .size = glm::vec2(ballSize)});
     const float court = width;
     const float paddleSize = left_.size();
     const glm::vec2 direction = ball_.direction();
 
     // only a ball heading for the paddle is returned, so one still overlapping it on the step
     // after a bounce is not turned back again
-    if (direction.x < 0.0f && ball.overlaps(paddleReach(left_, -court, paddleSize))) {
-        returnBall(left_, ballPosition, 1.0f);
-    } else if (direction.x > 0.0f && ball.overlaps(paddleReach(right_, court - paddleSize, 2.0f * court))) {
-        returnBall(right_, ballPosition, -1.0f);
+    if (direction.x < 0.0F && ball.overlaps(paddleReach(left_, -court, paddleSize))) {
+        returnBall(left_, ballPosition, 1.0F);
+    } else if (direction.x > 0.0F && ball.overlaps(paddleReach(right_, court - paddleSize, 2.0F * court))) {
+        returnBall(right_, ballPosition, -1.0F);
     }
 }
 
 void PongScene::returnBall(Paddle& paddle, const glm::vec2& ballPosition, float away) {
     // where along the paddle the ball met it, from -1 at the top end to 1 at the bottom. The
     // ball's own half size is included, so a ball clipping the very end counts as the end
-    const float reach = paddle.length() / 2.0f + gameState_.ballSize() / 2.0f;
-    const float along = std::clamp((ballPosition.y - paddle.position()) / reach, -1.0f, 1.0f);
+    const float reach = (paddle.length() / 2.0F) + (gameState_.ballSize() / 2.0F);
+    const float along = std::clamp((ballPosition.y - paddle.position()) / reach, -1.0F, 1.0F);
 
     const float angle = along * MAX_RETURN_ANGLE;
     const float speed = glm::length(ball_.direction());
@@ -155,74 +163,75 @@ void PongScene::returnBall(Paddle& paddle, const glm::vec2& ballPosition, float 
     // the paddle turns the ball but does not speed it up, so the return leaves at the speed
     // the ball arrived at
     const float returnedLength = glm::length(returned);
-    if (returnedLength > 0.0f) {
+    if (returnedLength > 0.0F) {
         returned *= speed / returnedLength;
     }
 
     ball_.direction(returned);
-    dispatcher_->trigger(v3d::event::kind::Sound("hit"));
+    dispatcher_->trigger(v3d::event::kind::Sound("hit", across(ballPosition.x)));
 }
 
 void PongScene::scorePoint(const glm::vec2& ballPosition) {
     bool reset_ball = false;
-    float victor = 0.0f;
+    float victor = 0.0F;
     // if the ball hits the left or right edge of the screen then we need
     // to update the score and reset the ball
-    if (ballPosition[0] <= (gameState_.ballSize() / 2.0f)) {
+    if (ballPosition[0] <= (gameState_.ballSize() / 2.0F)) {
         right_.score(right_.score() + 1);
-        victor = -1.0f;
+        victor = -1.0F;
         reset_ball = true;
-        dispatcher_->trigger(v3d::event::kind::Sound("score"));
-    } else if (ballPosition[0] >= (width - (gameState_.ballSize() / 2.0f))) {
+        dispatcher_->trigger(v3d::event::kind::Sound("score", across(ballPosition[0])));
+    } else if (ballPosition[0] >= (width - (gameState_.ballSize() / 2.0F))) {
         left_.score(left_.score() + 1);
-        victor = 1.0f;
+        victor = 1.0F;
         reset_ball = true;
-        dispatcher_->trigger(v3d::event::kind::Sound("score"));
+        dispatcher_->trigger(v3d::event::kind::Sound("score", across(ballPosition[0])));
     }
     if (!reset_ball) {
         return;
     }
     // reposition the ball in the center of the screen
-    const float mid_y = height / 2.0f;
-    const float mid_x = width / 2.0f;
-    glm::vec2 v(mid_x, mid_y);
+    const float mid_y = height / 2.0F;
+    const float mid_x = width / 2.0F;
+    const glm::vec2 v(mid_x, mid_y);
     ball_.position(v);
-    // last winner serves the ball, at the start speed
+    // serve towards the player who conceded the point, at the start speed
     const float speed = gameState_.ballStartSpeed();
-    glm::vec2 dir(speed * victor, 0.0f);
+    const glm::vec2 dir(speed * victor, 0.0F);
     ball_.direction(dir);
 
     // reset the default paddle positions
     left_.position(mid_y);
     right_.position(mid_y);
 
-    // all three were put back rather than moved, so none is drawn travelling there
+    // all three were placed, not moved, so settle them. The next frame then draws them at the
+    // centre and not on the way there
     ball_.settle();
     left_.settle();
     right_.settle();
 }
 
 void PongScene::bounceWalls(const glm::vec2& ballPosition) {
-    // a ball whose edge has reached a wall's face is sent away from that wall. Setting the
-    // sign rather than flipping it means a ball still inside the wall on the next step is not
-    // turned back into it
-    const float half = gameState_.ballSize() / 2.0f;
+    // turn a ball whose edge has reached a wall's face, but only while it heads into that
+    // wall. A ball still inside the wall on the next step is already heading out, so it is not
+    // turned back in
+    const float half = gameState_.ballSize() / 2.0F;
     glm::vec2 direction = ball_.direction();
-    const bool intoTop = ballPosition.y - half <= wall && direction.y < 0.0f;
-    const bool intoBottom = ballPosition.y + half >= height - wall && direction.y > 0.0f;
+    const bool intoTop = ballPosition.y - half <= wall && direction.y < 0.0F;
+    const bool intoBottom = ballPosition.y + half >= height - wall && direction.y > 0.0F;
     if (!intoTop && !intoBottom) {
         return;
     }
     direction.y = -direction.y;
     ball_.direction(direction);
-    dispatcher_->trigger(v3d::event::kind::Sound("bounce"));
+    dispatcher_->trigger(v3d::event::kind::Sound("bounce", across(ballPosition.x)));
 }
 
 void PongScene::movePaddles(float step) {
     // a paddle stops with its end against a wall, however far a step would have taken it
     const float travel = PADDLE_SPEED * step;
     for (Paddle * paddle : { &left_, &right_ }) {
-        const float top = wall + paddle->length() / 2.0f;
+        const float top = wall + (paddle->length() / 2.0F);
         const float bottom = height - top;
         if (paddle->up()) {
             paddle->position(std::clamp(paddle->position() - travel, top, bottom));
@@ -239,9 +248,9 @@ void PongScene::tick(float step) {
 
     checkVictory();
 
-    // one snapshot serves the whole tick: a bounce changes the ball's direction rather
-    // than its position, and the reposition a point scores happens after everything that
-    // reads where the ball was
+    // every phase reads the ball's position from before this step. A bounce changes only the
+    // ball's direction. scorePoint() moves the ball to the centre, and bounceWalls() then reads
+    // the old position, but the serve has no vertical direction, so no wall turns it
     const glm::vec2 ballPosition = ball_.position();
 
     steerOpponent(ballPosition);
@@ -255,8 +264,8 @@ void PongScene::tick(float step) {
 
 
 void PongScene::reset() {
-    const float mid_y = height / 2.0f;
-    const float mid_x = width / 2.0f;
+    const float mid_y = height / 2.0F;
+    const float mid_x = width / 2.0F;
     // set the default paddle positions
     left_.position(mid_y);
     right_.position(mid_y);
@@ -264,11 +273,11 @@ void PongScene::reset() {
     right_.offset(width - right_.size());
 
     // this is the ball's starting position
-    glm::vec2 v(mid_x, mid_y);
+    const glm::vec2 v(mid_x, mid_y);
     ball_.position(v);
     // ... and direction
-    float speed = gameState_.ballStartSpeed();
-    glm::vec2 dir(-speed, 0.0f);
+    const float speed = gameState_.ballStartSpeed();
+    const glm::vec2 dir(-speed, 0.0F);
     ball_.direction(dir);
     // ... and size
     ball_.size(gameState_.ballSize());

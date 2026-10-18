@@ -5,13 +5,14 @@
 
 #include "DeviceBuffer.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
 #include <stdexcept>
 
 #include "Allocator.h"
 #include "Buffer.h"
-#include "Memory.h"
+#include "Uploader.h"
 
 namespace v3d::render::realtime::vulkan::memory {
 
@@ -26,7 +27,7 @@ DeviceBuffer::DeviceBuffer(const boost::shared_ptr<device::Device>& device, cons
     if (!uploader_) {
         throw std::runtime_error("A device local buffer needs an uploader to be filled through");
     }
-    create(usage, bytes > 0 ? bytes : 1);
+    create({.usage = usage, .bytes = bytes > 0 ? bytes : 1});
 }
 
 /**
@@ -45,13 +46,13 @@ DeviceBuffer::~DeviceBuffer() {
 
 /**
  **/
-void DeviceBuffer::create(VkBufferUsageFlags usage, VkDeviceSize bytes) {
+void DeviceBuffer::create(const BufferSpec& spec) {
     VkBufferCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    info.size = bytes;
+    info.size = spec.bytes;
     // nothing reaches device local memory except through a copy, so every buffer here is
     // a transfer destination whatever else the caller asked for
-    info.usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    info.usage = spec.usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     VkResult result = vkCreateBuffer(device_->handle(), &info, nullptr, &buffer_);
@@ -66,7 +67,7 @@ void DeviceBuffer::create(VkBufferUsageFlags usage, VkDeviceSize bytes) {
         throw device::failure(result, "Unable to allocate device local memory for a vulkan buffer");
     }
 
-    size_ = bytes;
+    size_ = spec.bytes;
 }
 
 /**
@@ -102,7 +103,7 @@ void DeviceBuffer::upload(const void* data, VkDeviceSize bytes, VkDeviceSize off
         throw std::runtime_error("An upload ran off the end of a device local vulkan buffer");
     }
 
-    Buffer staging(device_, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, bytes);
+    Buffer staging(device_, {.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
     staging.write(data, bytes);
 
     VkBuffer source = staging.handle();
@@ -114,8 +115,8 @@ void DeviceBuffer::upload(const void* data, VkDeviceSize bytes, VkDeviceSize off
         copy.size = bytes;
         vkCmdCopyBuffer(commands, source, destination, 1, &copy);
 
-        // waiting on the queue orders the copy against what comes after it but does not
-        // make its writes visible to a later read - the barrier is what does that
+        // waiting on the upload orders the copy against what comes after it, but does not
+        // make its writes visible to a later read. The barrier does that
         VkBufferMemoryBarrier2 barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
         barrier.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;

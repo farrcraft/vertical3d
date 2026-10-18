@@ -3,12 +3,20 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Asset.h>
 #include <api/asset/Manager.h>
+#include <api/asset/Loader.h>
+#include <api/asset/Type.h>
+#include <api/asset/Worker.h>
 #include <api/asset/media/Loaders.h>
+#include <api/asset/media/loader/Image.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/DecodedModel.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
@@ -17,9 +25,13 @@
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/type/Model.h>
 
+#include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+#include <thread>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -29,6 +41,7 @@
 
 #include "Headless.h"
 
+using v3d::asset::Worker;
 using v3d::render::realtime::DrawItem;
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::MeshHandle;
@@ -59,8 +72,8 @@ const uint32_t albedoShader[] =
 ;  // NOLINT(whitespace/semicolon)
 
 /**
- * A registry loading from the asset suite's fixtures, which the build names rather than
- * copying - see V3D_ASSET_FIXTURES.
+ * A registry loading from the asset suite's fixtures. The build passes their directory in
+ * V3D_ASSET_FIXTURES instead of copying them.
  **/
 boost::shared_ptr<MeshRegistry> registry(v3d::test::Headless* headless) {
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
@@ -69,11 +82,63 @@ boost::shared_ptr<MeshRegistry> registry(v3d::test::Headless* headless) {
 }
 
 /**
+ * A registry like registry(), which requests through a worker.
+ **/
+boost::shared_ptr<MeshRegistry> requesting(v3d::test::Headless* headless, Worker* worker) {
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
+    v3d::asset::media::registerLoaders(*assets, headless->logger);
+    // the registry shares the worker without owning it, and each case outlives both
+    const boost::shared_ptr<Worker> shared(worker, [](Worker*) {});
+    return boost::make_shared<MeshRegistry>(headless->logger, headless->context, assets, shared);
+}
+
+/**
+ * Poll a worker until every job's completion has run, or ten seconds pass.
+ *
+ * @return whether everything completed
+ **/
+bool drain(Worker* worker) {
+    const std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    while (worker->outstanding() > 0) {
+        if (std::chrono::steady_clock::now() > deadline) {
+            return false;
+        }
+        worker->poll();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    return true;
+}
+
+/**
+ * A PNG loader that counts its loads, so a case can see whether a picture was decoded.
+ **/
+class CountingPng final : public v3d::asset::Loader {
+ public:
+    explicit CountingPng(const boost::shared_ptr<v3d::log::Logger>& logger) :
+        Loader(v3d::asset::Type::ImagePng, logger),
+        png_(v3d::asset::Type::ImagePng, logger) {
+    }
+
+    boost::shared_ptr<v3d::asset::Asset> load(std::string_view name) override {
+        loads_++;
+        return png_.load(name);
+    }
+
+    unsigned int loads() const {
+        return loads_;
+    }
+
+ private:
+    v3d::asset::media::loader::Image png_;
+    unsigned int loads_ = 0;
+};
+
+/**
  * Two triangles in code, a part each, naming a texture apiece - empty for none.
  **/
 v3d::type::Model twoParts(const std::string& first, const std::string& second) {
     v3d::type::Model model;
-    const glm::vec3 corners[6] = {{0, 0, 0.5f}, {1, 0, 0.5f}, {0, 1, 0.5f}, {1, 0, 0.5f}, {1, 1, 0.5f}, {0, 1, 0.5f}};
+    const glm::vec3 corners[6] = {{0, 0, 0.5F}, {1, 0, 0.5F}, {0, 1, 0.5F}, {1, 0, 0.5F}, {1, 1, 0.5F}, {0, 1, 0.5F}};
     for (const glm::vec3& corner : corners) {
         v3d::type::Model::Vertex vertex;
         vertex.position = corner;
@@ -96,9 +161,9 @@ v3d::type::Model twoParts(const std::string& first, const std::string& second) {
 v3d::type::Model triangle(const std::string& texture) {
     v3d::type::Model model;
     model.vertices().resize(3);
-    model.vertices()[0].position = glm::vec3(-0.5f, -0.5f, 0.5f);
-    model.vertices()[1].position = glm::vec3(0.5f, -0.5f, 0.5f);
-    model.vertices()[2].position = glm::vec3(0.0f, 0.5f, 0.5f);
+    model.vertices()[0].position = glm::vec3(-0.5F, -0.5F, 0.5F);
+    model.vertices()[1].position = glm::vec3(0.5F, -0.5F, 0.5F);
+    model.vertices()[2].position = glm::vec3(0.0F, 0.5F, 0.5F);
     model.indices() = {0, 1, 2};
     v3d::type::Model::Material material;
     material.baseColourTexture = texture;
@@ -106,8 +171,6 @@ v3d::type::Model triangle(const std::string& texture) {
     model.parts().push_back({0, 3, 0});
     return model;
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(mesh_registry_test)
 
@@ -214,10 +277,10 @@ BOOST_AUTO_TEST_CASE(a_file_in_parts_is_an_entry_in_parts) {
     BOOST_REQUIRE_EQUAL(entry->parts.size(), 2U);
     BOOST_CHECK_EQUAL(entry->parts[0].firstIndex, 0U);
     BOOST_CHECK_EQUAL(entry->parts[0].indexCount, 6U);
-    BOOST_CHECK(entry->parts[0].baseColour == glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    BOOST_CHECK(entry->parts[0].baseColour == glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
     BOOST_CHECK_EQUAL(entry->parts[1].firstIndex, 6U);
     BOOST_CHECK_EQUAL(entry->parts[1].indexCount, 3U);
-    BOOST_CHECK(entry->parts[1].baseColour == glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    BOOST_CHECK(entry->parts[1].baseColour == glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     BOOST_CHECK(headless.silent());
 }
 
@@ -243,8 +306,8 @@ BOOST_AUTO_TEST_CASE(each_part_has_its_own_albedo) {
 }
 
 /**
- * Two parts naming one image share it, and it is released once, when the entry is - not when
- * the first of the two parts is counted off.
+ * Two parts naming one image share it, and it is released once, with the entry, not when the
+ * first of the two parts is released.
  **/
 BOOST_AUTO_TEST_CASE(two_parts_naming_one_image_share_it) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -261,6 +324,71 @@ BOOST_AUTO_TEST_CASE(two_parts_naming_one_image_share_it) {
     BOOST_CHECK(headless.context->resources()->texture(entry.parts[0].texture) != nullptr);
     BOOST_CHECK(meshes->release(once));
     BOOST_CHECK(headless.context->resources()->texture(entry.parts[0].texture) == nullptr);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A decoded model is uploaded under its path, and a second upload of the same path returns the
+ * first handle.
+ **/
+BOOST_AUTO_TEST_CASE(a_decoded_model_is_uploaded_once) {
+    const v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
+    MeshRegistry meshes(headless.logger, headless.context, assets);
+
+    const v3d::render::realtime::DecodedModel decoded = v3d::render::realtime::decodeModel(*assets, "embedded_texture.glb");
+    const MeshHandle first = meshes.add(decoded);
+    const MeshHandle second = meshes.add(decoded);
+
+    BOOST_CHECK(first == second);
+    BOOST_CHECK_EQUAL(meshes.count(), 1U);
+    BOOST_CHECK(meshes.load("embedded_texture.glb") == first);
+    const MeshRegistry::Entry* entry = meshes.resolve(first);
+    BOOST_REQUIRE(entry != nullptr);
+    BOOST_REQUIRE(!entry->parts.empty());
+    BOOST_CHECK(entry->parts[0].texture != headless.context->textures()->white());
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A decoded model without one albedo per material, or with no model at all, is refused and
+ * registers nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_decoded_model_without_its_albedos_is_refused) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
+
+    v3d::render::realtime::DecodedModel missing;
+    missing.path = "short";
+    missing.model = boost::make_shared<const v3d::type::Model>(twoParts("", ""));
+    missing.albedos.resize(1);
+    BOOST_CHECK_THROW(meshes->add(missing), std::runtime_error);
+
+    v3d::render::realtime::DecodedModel empty;
+    empty.path = "empty";
+    BOOST_CHECK_THROW(meshes->add(empty), std::runtime_error);
+
+    BOOST_CHECK_EQUAL(meshes->count(), 0U);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * An albedo another entry already uploaded is not read again.
+ **/
+BOOST_AUTO_TEST_CASE(an_uploaded_albedo_is_not_read_again) {
+    const v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
+    const boost::shared_ptr<CountingPng> png = boost::make_shared<CountingPng>(headless.logger);
+    assets->registerLoader(png, {".png"});
+    MeshRegistry meshes(headless.logger, headless.context, assets);
+
+    const MeshHandle crate = meshes.add("crate", triangle("pixel.png"));
+    const MeshHandle barrel = meshes.add("barrel", triangle("pixel.png"));
+
+    BOOST_CHECK_EQUAL(png->loads(), 1U);
+    BOOST_CHECK(meshes.resolve(crate)->parts.at(0).texture == meshes.resolve(barrel)->parts.at(0).texture);
     BOOST_CHECK(headless.silent());
 }
 
@@ -298,15 +426,15 @@ BOOST_AUTO_TEST_CASE(a_mesh_released_in_flight_outlives_its_frame) {
     const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
     const MeshHandle handle = meshes->add("triangle", triangle(""));
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, VK_FORMAT_UNDEFINED, true, true);
 
     // a depth-only draw of the model's positions, which is all the stride needs to agree on
     Builder builder(headless.device);
     builder.name("mesh-depth")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .vertexBinding(0, sizeof(v3d::type::Model::Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0)
+        .vertexBinding({.binding = 0, .stride = sizeof(v3d::type::Model::Vertex)})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0})
         .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
         .depth(true, true)
         .depthFormat(target->depthFormat())
@@ -314,7 +442,7 @@ BOOST_AUTO_TEST_CASE(a_mesh_released_in_flight_outlives_its_frame) {
     const PipelineHandle pipeline = headless.context->resources()->add(builder.build(headless.context->pipelineCache()));
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("depth");
+    const boost::shared_ptr<Pass> pass = frame.pass("depth");
     pass->target(target);
     pass->depth(true);
     DrawItem item;
@@ -345,14 +473,14 @@ BOOST_AUTO_TEST_CASE(a_mesh_released_after_its_items_are_queued_outlives_its_fra
     const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
     const MeshHandle handle = meshes->add("triangle", triangle(""));
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, VK_FORMAT_UNDEFINED, true, true);
 
     Builder builder(headless.device);
     builder.name("mesh-depth")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .vertexBinding(0, sizeof(v3d::type::Model::Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0)
+        .vertexBinding({.binding = 0, .stride = sizeof(v3d::type::Model::Vertex)})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0})
         .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
         .depth(true, true)
         .depthFormat(target->depthFormat())
@@ -363,7 +491,7 @@ BOOST_AUTO_TEST_CASE(a_mesh_released_after_its_items_are_queued_outlives_its_fra
     headless.submitAndWait(headless.context->ring()->begin());
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("depth");
+    const boost::shared_ptr<Pass> pass = frame.pass("depth");
     pass->target(target);
     pass->depth(true);
     DrawItem item;
@@ -396,9 +524,9 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
     v3d::test::Headless headless(colourFormat, width, height);
     const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
 
-    const boost::shared_ptr<v3d::image::Image> albedo = boost::make_shared<v3d::image::Image>(4, 4, 32);
+    const boost::shared_ptr<v3d::image::Image> albedo = boost::make_shared<v3d::image::Image>(glm::uvec2(4, 4), 32);
     for (std::size_t texel = 0; texel < std::size_t{16}; texel++) {
-        unsigned char* at = albedo->data() + texel * 4;
+        unsigned char* at = albedo->data() + (texel * 4);
         at[0] = 0xFF;
         at[1] = 0x00;
         at[2] = 0xFF;
@@ -410,7 +538,7 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
     BOOST_REQUIRE_EQUAL(entry->parts.size(), 1U);
     BOOST_REQUIRE(entry->parts[0].texture != headless.context->textures()->white());
 
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
         width, height, colourFormat);
 
     // the vertex stage covers the target from the index alone, so the mesh's three indices
@@ -430,8 +558,8 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
     headless.submitAndWait(headless.context->ring()->begin());
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("colour");
-    pass->clearColour(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    const boost::shared_ptr<Pass> pass = frame.pass("colour");
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     DrawItem item;
     item.pipeline = pipeline;
     item.material = entry->parts[0].material;
@@ -471,7 +599,7 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
     BOOST_REQUIRE(picture);
     const unsigned char* pixels = picture->data();
     for (uint32_t texel = 0; texel < width * height; texel++) {
-        const unsigned char* at = pixels + static_cast<std::size_t>(texel) * 4;
+        const unsigned char* at = pixels + (static_cast<std::size_t>(texel) * 4);
         if (at[0] != 0xFF || at[1] != 0x00 || at[2] != 0xFF || at[3] != 0xFF) {
             BOOST_ERROR("texel " << texel << " is not the albedo of the released mesh");
             return;
@@ -479,4 +607,185 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
     }
 }
 
+/**
+ * A requested path resolves to nothing until its decoding has finished and a poll has uploaded
+ * it, and then resolves like a loaded one.
+ **/
+BOOST_AUTO_TEST_CASE(a_requested_mesh_resolves_once_polled) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    Worker worker;
+    const boost::shared_ptr<MeshRegistry> meshes = requesting(&headless, &worker);
+
+    const MeshHandle handle = meshes->request("embedded_texture.glb");
+
+    BOOST_CHECK(handle.valid());
+    BOOST_CHECK(meshes->resolve(handle) == nullptr);
+    BOOST_CHECK(meshes->pending(handle));
+    BOOST_CHECK_EQUAL(meshes->count(), 0U);
+    BOOST_CHECK_EQUAL(meshes->pending(), 1U);
+    BOOST_CHECK(meshes->request("embedded_texture.glb") == handle);
+
+    BOOST_REQUIRE(drain(&worker));
+    BOOST_CHECK_EQUAL(meshes->poll(), 1U);
+
+    const MeshRegistry::Entry* entry = meshes->resolve(handle);
+    BOOST_REQUIRE(entry != nullptr);
+    BOOST_CHECK(entry->mesh->indexCount() > 0);
+    BOOST_CHECK(entry->parts.at(0).texture != headless.context->textures()->white());
+    BOOST_CHECK(!meshes->pending(handle));
+    BOOST_CHECK_EQUAL(meshes->count(), 1U);
+    BOOST_CHECK_EQUAL(meshes->pending(), 0U);
+    BOOST_CHECK(meshes->load("embedded_texture.glb") == handle);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * Loading a path that is requested and not yet uploaded uploads it at once under the same
+ * handle, and what the worker decodes for it later is dropped.
+ **/
+BOOST_AUTO_TEST_CASE(loading_a_requested_path_completes_it_at_once) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    Worker worker;
+    const boost::shared_ptr<MeshRegistry> meshes = requesting(&headless, &worker);
+
+    const MeshHandle requested = meshes->request("three_primitives.glb");
+    const MeshHandle loaded = meshes->load("three_primitives.glb");
+
+    BOOST_CHECK(loaded == requested);
+    BOOST_CHECK(meshes->resolve(loaded) != nullptr);
+    BOOST_CHECK(!meshes->pending(loaded));
+    BOOST_CHECK_EQUAL(meshes->pending(), 0U);
+
+    BOOST_REQUIRE(drain(&worker));
+    BOOST_CHECK_EQUAL(meshes->poll(), 0U);
+    BOOST_CHECK_EQUAL(meshes->count(), 1U);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A request released before its decoding finishes uploads nothing, and the path can be
+ * requested again under a new handle.
+ **/
+BOOST_AUTO_TEST_CASE(a_released_request_uploads_nothing) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    Worker worker;
+    const boost::shared_ptr<MeshRegistry> meshes = requesting(&headless, &worker);
+
+    const MeshHandle handle = meshes->request("three_primitives.glb");
+    BOOST_CHECK(meshes->release(handle));
+    BOOST_CHECK(!meshes->pending(handle));
+    BOOST_CHECK_EQUAL(meshes->pending(), 0U);
+
+    BOOST_REQUIRE(drain(&worker));
+    BOOST_CHECK_EQUAL(meshes->poll(), 0U);
+    BOOST_CHECK(meshes->resolve(handle) == nullptr);
+    BOOST_CHECK_EQUAL(meshes->count(), 0U);
+
+    const MeshHandle again = meshes->request("three_primitives.glb");
+    BOOST_CHECK(again != handle);
+    BOOST_CHECK(meshes->pending(again));
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A request for a file that is not a model is reported, and its handle stops being pending and
+ * resolves to nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_failed_request_resolves_to_nothing) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    Worker worker;
+    const boost::shared_ptr<MeshRegistry> meshes = requesting(&headless, &worker);
+
+    const MeshHandle handle = meshes->request("absent.glb");
+    BOOST_REQUIRE(drain(&worker));
+    BOOST_CHECK_EQUAL(meshes->poll(), 0U);
+
+    BOOST_CHECK(meshes->resolve(handle) == nullptr);
+    BOOST_CHECK(!meshes->pending(handle));
+    BOOST_CHECK_EQUAL(meshes->pending(), 0U);
+    BOOST_CHECK_EQUAL(meshes->count(), 0U);
+
+    // the path is free again, so asking for it starts a new request
+    const MeshHandle again = meshes->request("absent.glb");
+    BOOST_CHECK(again != handle);
+    BOOST_CHECK(meshes->pending(again));
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * Adding a model in code under a name that is requested and not yet uploaded fills the request,
+ * and what the worker decodes for it later is dropped.
+ **/
+BOOST_AUTO_TEST_CASE(adding_a_requested_name_completes_it_at_once) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    Worker worker;
+    const boost::shared_ptr<MeshRegistry> meshes = requesting(&headless, &worker);
+
+    const MeshHandle requested = meshes->request("crate");
+    const MeshHandle added = meshes->add("crate", triangle("pixel.png"));
+
+    BOOST_CHECK(added == requested);
+    BOOST_CHECK(meshes->resolve(added) != nullptr);
+    BOOST_CHECK_EQUAL(meshes->pending(), 0U);
+    BOOST_CHECK_EQUAL(meshes->count(), 1U);
+
+    BOOST_REQUIRE(drain(&worker));
+    BOOST_CHECK_EQUAL(meshes->poll(), 0U);
+    BOOST_CHECK(meshes->resolve(added) != nullptr);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A poll stops once its budget is spent, and leaves the rest for the next poll. A budget of
+ * nothing still uploads one model, so a poll always makes progress.
+ **/
+BOOST_AUTO_TEST_CASE(a_poll_stops_at_its_budget) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    Worker worker;
+    const boost::shared_ptr<MeshRegistry> meshes = requesting(&headless, &worker);
+
+    const MeshHandle first = meshes->request("three_primitives.glb");
+    const MeshHandle second = meshes->request("two_surfaces.glb");
+    BOOST_REQUIRE(drain(&worker));
+
+    BOOST_CHECK_EQUAL(meshes->poll(0), 1U);
+    BOOST_CHECK(meshes->resolve(first) != nullptr);
+    BOOST_CHECK(meshes->pending(second));
+    BOOST_CHECK_EQUAL(meshes->poll(0), 1U);
+    BOOST_CHECK(meshes->resolve(second) != nullptr);
+    BOOST_CHECK_EQUAL(meshes->poll(0), 0U);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A registry made without a worker refuses a request rather than loading it at once.
+ **/
+BOOST_AUTO_TEST_CASE(a_registry_without_a_worker_refuses_a_request) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
+
+    BOOST_CHECK_THROW(meshes->request("three_primitives.glb"), std::logic_error);
+    BOOST_CHECK_EQUAL(meshes->count(), 0U);
+    BOOST_CHECK_EQUAL(meshes->pending(), 0U);
+}
+
+/**
+ * A registry destroyed while its requests are decoding leaves the worker's completions nothing
+ * to touch.
+ **/
+BOOST_AUTO_TEST_CASE(a_registry_destroyed_before_its_requests_finish) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    Worker worker;
+    boost::shared_ptr<MeshRegistry> meshes = requesting(&headless, &worker);
+
+    meshes->request("three_primitives.glb");
+    meshes->request("two_surfaces.glb");
+    meshes.reset();
+
+    BOOST_CHECK(drain(&worker));
+    BOOST_CHECK(headless.silent());
+}
+
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

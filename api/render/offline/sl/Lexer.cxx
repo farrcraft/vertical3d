@@ -7,6 +7,8 @@
 
 #include <api/render/offline/Characters.h>
 
+#include "Token.h"
+
 #include <algorithm>
 #include <cstdlib>
 #include <istream>
@@ -17,10 +19,9 @@ namespace v3d::render::offline::sl {
 namespace {
 
 /**
- * The closed set: the five shader types, the eight data types, the two storage classes,
- * the control flow, and the three lighting constructs. A name outside it is an identifier,
- * so a shader may declare a variable called "output" or "noise" and have it mean what it
- * declared.
+ * The keywords: the shader types, the data types, the storage classes, the control flow,
+ * and the lighting constructs. Any other name is an identifier, so a shader may declare a
+ * variable called "output" or "noise".
  **/
 const char* const KEYWORDS[] = {
     "surface", "light", "displacement", "volume", "imager",
@@ -30,8 +31,8 @@ const char* const KEYWORDS[] = {
     "illuminance", "illuminate", "solar"
 };
 
-bool punctuation(int c) {
-    return c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}' || c == ',' || c == ';';
+bool punctuation(int character) {
+    return character == '(' || character == ')' || character == '[' || character == ']' || character == '{' || character == '}' || character == ',' || character == ';';
 }
 
 bool keyword(const std::string & name) {
@@ -45,16 +46,16 @@ Lexer::Lexer(std::istream & stream) : in_(stream) {
 
 bool Lexer::skipSpace() {
     for (;;) {
-        const int c = in_.look();
-        if (Characters::space(c)) {
+        const int character = in_.look();
+        if (Characters::space(character)) {
             in_.get();
             continue;
         }
-        if (c != '/') {
+        if (character != '/') {
             return true;
         }
-        // a '/' is a division until the character after it says otherwise, and reading that
-        // character means the '/' has already been taken
+        // a '/' is a division unless the next character starts a comment. Reading that
+        // character takes the '/' first
         const unsigned int line = in_.line();
         const unsigned int column = in_.column() + 1;
         in_.get();
@@ -90,7 +91,7 @@ Token Lexer::fail(const std::string & message, unsigned int line, unsigned int c
     if (error_.empty()) {
         error_ = message + Characters::position(line, column);
     }
-    return Token(Token::Kind::END, line, column);
+    return Token(Token::Kind::END, {.line = line, .column = column});
 }
 
 Token Lexer::scanString(unsigned int line, unsigned int column) {
@@ -99,12 +100,12 @@ Token Lexer::scanString(unsigned int line, unsigned int column) {
     if (!in_.quoted(true, &text)) {
         return fail("unterminated string starting", line, column);
     }
-    return Token(Token::Kind::STRING, text, line, column);
+    return Token(Token::Kind::STRING, text, {.line = line, .column = column});
 }
 
 Token Lexer::scanNumber(unsigned int line, unsigned int column) {
-    // no sign is taken here, unlike RIB's numbers: a '-' in SL is the subtraction or the
-    // negation, so "a-1" is three tokens rather than two
+    // unlike a RIB number, an SL number takes no sign. A '-' in SL is a subtraction or a
+    // negation, so "a-1" is three tokens
     std::string text;
     bool digits = false;
     while (Characters::digit(in_.look())) {
@@ -130,7 +131,7 @@ Token Lexer::scanNumber(unsigned int line, unsigned int column) {
     if (!digits) {
         return fail("'" + text + "' is not a number", line, column);
     }
-    return Token(std::strtof(text.c_str(), nullptr), line, column);
+    return Token(std::strtof(text.c_str(), nullptr), {.line = line, .column = column});
 }
 
 Token Lexer::scanName(unsigned int line, unsigned int column) {
@@ -139,78 +140,78 @@ Token Lexer::scanName(unsigned int line, unsigned int column) {
         text += static_cast<char>(in_.get());
     }
     const Token::Kind kind = keyword(text) ? Token::Kind::KEYWORD : Token::Kind::IDENTIFIER;
-    return Token(kind, text, line, column);
+    return Token(kind, text, {.line = line, .column = column});
 }
 
 Token Lexer::scanOperator(unsigned int line, unsigned int column) {
     const int first = in_.get();
     std::string text(1, static_cast<char>(first));
 
-    // the two character forms, longest match first: a '<' is not a '<=' until the '=' is
-    // seen, and a '&' that is not half of a '&&' is not a token in this language
+    // the two-character forms, longest match first. A '<' followed by '=' is '<='. A '&' or
+    // '|' that is not doubled is not a token in SL
     const int second = in_.look();
     const bool assigns = (first == '+' || first == '-' || first == '*' || first == '/' ||
         first == '=' || first == '!' || first == '<' || first == '>') && second == '=';
     const bool doubled = (first == '&' || first == '|') && second == first;
     if (assigns || doubled) {
         text += static_cast<char>(in_.get());
-        return Token(Token::Kind::OPERATOR, text, line, column);
+        return Token(Token::Kind::OPERATOR, text, {.line = line, .column = column});
     }
     if (first == '&' || first == '|') {
         return fail("'" + text + "' is not an operator - '" + text + text + "' is", line, column);
     }
-    return Token(Token::Kind::OPERATOR, text, line, column);
+    return Token(Token::Kind::OPERATOR, text, {.line = line, .column = column});
 }
 
 Token Lexer::scan() {
     if (!error_.empty()) {
-        return Token(Token::Kind::END, in_.line(), in_.column());
+        return Token(Token::Kind::END, {.line = in_.line(), .column = in_.column()});
     }
     if (!skipSpace()) {
-        return Token(Token::Kind::END, in_.line(), in_.column());
+        return Token(Token::Kind::END, {.line = in_.line(), .column = in_.column()});
     }
 
     const unsigned int line = in_.line();
     const unsigned int column = in_.column() + 1;
-    const int c = in_.look();
-    if (c == Characters::END) {
-        return Token(Token::Kind::END, line, column);
+    const int character = in_.look();
+    if (character == Characters::END) {
+        return Token(Token::Kind::END, {.line = line, .column = column});
     }
-    if (c == '#') {
-        // '#' has no other meaning in SL, so wherever one is, it came from a directive this
-        // lexer will not resolve. Reporting it by name says the shader needs a preprocessor,
-        // rather than suggesting that it is misspelt
+    if (character == '#') {
+        // '#' has no meaning in SL except as a preprocessor directive, which this lexer does
+        // not resolve. The error says the shader needs a preprocessor, so it does not read
+        // as a misspelling
         in_.get();
         return fail("the C preprocessor is not run, so a '#' directive cannot be read", line, column);
     }
-    if (c == '"') {
+    if (character == '"') {
         return scanString(line, column);
     }
-    if (Characters::digit(c)) {
+    if (Characters::digit(character)) {
         return scanNumber(line, column);
     }
-    if (c == '.') {
+    if (character == '.') {
         // a '.' opens a number when a digit follows it and is the dot product otherwise
         in_.get();
         if (Characters::digit(in_.look())) {
             in_.unget('.');
             return scanNumber(line, column);
         }
-        return Token(Token::Kind::OPERATOR, ".", line, column);
+        return Token(Token::Kind::OPERATOR, ".", {.line = line, .column = column});
     }
-    if (Characters::alpha(c)) {
+    if (Characters::alpha(character)) {
         return scanName(line, column);
     }
-    if (punctuation(c)) {
+    if (punctuation(character)) {
         in_.get();
-        return Token(Token::Kind::PUNCTUATION, std::string(1, static_cast<char>(c)), line, column);
+        return Token(Token::Kind::PUNCTUATION, std::string(1, static_cast<char>(character)), {.line = line, .column = column});
     }
-    if (c == '+' || c == '-' || c == '*' || c == '/' || c == '^' || c == '=' || c == '!' ||
-        c == '<' || c == '>' || c == '&' || c == '|' || c == '?' || c == ':') {
+    if (character == '+' || character == '-' || character == '*' || character == '/' || character == '^' || character == '=' || character == '!' ||
+        character == '<' || character == '>' || character == '&' || character == '|' || character == '?' || character == ':') {
         return scanOperator(line, column);
     }
     in_.get();
-    return fail(std::string("unexpected character '") + static_cast<char>(c) + "'", line, column);
+    return fail(std::string("unexpected character '") + static_cast<char>(character) + "'", line, column);
 }
 
 Token Lexer::next() {

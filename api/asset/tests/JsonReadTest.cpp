@@ -5,13 +5,12 @@
 
 #include <api/asset/Json.h>
 
-#include <string>
-
 #include <boost/json.hpp>
 #include <boost/test/unit_test.hpp>
 
 using v3d::asset::readArray;
 using v3d::asset::readBool;
+using v3d::asset::readInt;
 using v3d::asset::readNumber;
 using v3d::asset::readObject;
 using v3d::asset::readString;
@@ -31,8 +30,6 @@ boost::json::object sample() {
         "list": [1, 2, 3]
     })").as_object();
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(json_read_test)
 
@@ -69,6 +66,31 @@ BOOST_AUTO_TEST_CASE(a_number_read_refuses_a_missing_member_and_every_other_type
     }
 }
 
+/**
+ * An integer is read when an int can hold it. One beyond that range is refused rather than
+ * wrapped, and so is a double, even a whole one.
+ **/
+BOOST_AUTO_TEST_CASE(an_int_read_takes_only_an_integer_an_int_can_hold) {
+    const boost::json::object object = boost::json::parse(R"({
+        "small": 640,
+        "negative": -2147483648,
+        "top": 2147483647,
+        "wrapped": 4294967936,
+        "below": -2147483649,
+        "unsigned": 18446744073709551615,
+        "whole": 2.0,
+        "text": "640"
+    })").as_object();
+    BOOST_CHECK(readInt(object, "small") == 640);
+    BOOST_CHECK(readInt(object, "negative") == -2147483647 - 1);
+    BOOST_CHECK(readInt(object, "top") == 2147483647);
+    for (const char* key : { "wrapped", "below", "unsigned", "whole", "text", "missing" }) {
+        BOOST_TEST_CONTEXT(key) {
+            BOOST_CHECK_NO_THROW(BOOST_CHECK(!readInt(object, key).has_value()));
+        }
+    }
+}
+
 BOOST_AUTO_TEST_CASE(a_bool_read_takes_only_true_or_false) {
     const boost::json::object object = sample();
     BOOST_CHECK(readBool(object, "yes") == true);
@@ -95,7 +117,7 @@ BOOST_AUTO_TEST_CASE(an_array_read_points_into_the_object) {
     const boost::json::object object = sample();
     const boost::json::array* list = readArray(object, "list");
     BOOST_REQUIRE(list != nullptr);
-    BOOST_CHECK_EQUAL(list->size(), 3u);
+    BOOST_CHECK_EQUAL(list->size(), 3U);
     BOOST_CHECK_EQUAL(list, &object.at("list").as_array());
     BOOST_CHECK(readArray(object, "missing") == nullptr);
     BOOST_CHECK(readArray(object, "inner") == nullptr);
@@ -103,3 +125,5 @@ BOOST_AUTO_TEST_CASE(an_array_read_points_into_the_object) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -17,6 +17,12 @@ What the engine calls each frame, and which call a piece of work belongs in.
 
 If `tick`, `simulate` or `render` returns false, the loop ends and the run fails.
 
+**While the window is minimised, the loop sleeps.** After step 1 it waits for the next event,
+routes it, and starts again. It does not tick, simulate or render. A minimised window shows
+nothing, so the game pauses there and resumes where it stopped, and the time spent minimised is
+not counted as a frame. The engine tracks the state from SDL's minimise, restore and maximise
+events, and from the window's flags when the loop starts. Sound keeps playing.
+
 ### tick and simulate
 
 The two virtual functions take different units on purpose:
@@ -45,7 +51,7 @@ the arithmetic:
 
 - The loop measures each frame in nanoseconds with `SDL_GetTicksNS()`.
 - **The step is 60 Hz and is a constant.** It is not read from config and cannot change at run
-  time. `Accumulator::step` is 16,666,666 ns and `Accumulator::seconds` is `1.0f / 60.0f`.
+  time. `Accumulator::step` is 16,666,666 ns and `Accumulator::seconds` is `1.0F / 60.0F`.
 - **A frame longer than 250 ms is clamped to 250 ms, and the excess time is dropped.** A window
   drag or a breakpoint therefore slows the world for a moment, rather than making the loop run
   hundreds of steps to catch up.

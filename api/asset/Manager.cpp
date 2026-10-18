@@ -7,10 +7,16 @@
 
 #include <api/asset/loader/Json.h>
 #include <api/asset/loader/Text.h>
+#include <api/log/Logger.h>
+
+#include "Asset.h"
+#include "Loader.h"
+#include "Type.h"
 
 #include <algorithm>
 #include <cctype>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -55,7 +61,7 @@ std::string Manager::path(std::string_view name) const {
 /**
  **/
 boost::shared_ptr<Asset> Manager::load(std::string_view name, asset::Type t) {
-    boost::shared_ptr<Loader> loader = resolveLoader(t);
+    const boost::shared_ptr<Loader> loader = resolveLoader(t);
     if (!loader) {
         logger_->get()->error("Nothing is registered to load {} as type {}", name, static_cast<int>(t));
         return boost::shared_ptr<Asset>();
@@ -68,7 +74,7 @@ boost::shared_ptr<Asset> Manager::load(std::string_view name, asset::Type t) {
 boost::shared_ptr<Asset> Manager::loadTypeFromExt(std::string_view name) {
     std::string ext = boost::filesystem::path(static_cast<std::string>(name)).extension().string();
     std::transform(ext.begin(), ext.end(), ext.begin(),
-        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
     auto found = extensions_.find(ext);
     if (found == extensions_.end()) {
         logger_->get()->error("Nothing is registered to load a {} file, so {} is not loaded", ext.empty() ? "nameless" : ext, name);

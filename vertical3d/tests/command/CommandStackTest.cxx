@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/BRep.h>
+#include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
 #include <vertical3d/src/command/Placement.h>
@@ -57,8 +59,6 @@ boost::shared_ptr<CountingCommand> counter(const std::string& name) {
     return boost::make_shared<CountingCommand>(name);
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(command_stack_empty_test) {
     v3d::editor::CommandStack stack;
 
@@ -69,32 +69,32 @@ BOOST_AUTO_TEST_CASE(command_stack_empty_test) {
 
     // a stack that is given nothing has recorded nothing
     stack.push(boost::shared_ptr<v3d::editor::Command>());
-    BOOST_CHECK_EQUAL(stack.undoDepth(), 0u);
+    BOOST_CHECK_EQUAL(stack.undoDepth(), 0U);
 }
 
 BOOST_AUTO_TEST_CASE(command_stack_undo_redo_test) {
     v3d::editor::CommandStack stack;
-    boost::shared_ptr<CountingCommand> first = counter("first");
-    boost::shared_ptr<CountingCommand> second = counter("second");
+    const boost::shared_ptr<CountingCommand> first = counter("first");
+    const boost::shared_ptr<CountingCommand> second = counter("second");
 
     // a command arrives already done, so pushing must not do it again
     stack.push(first);
     stack.push(second);
     BOOST_CHECK_EQUAL(first->redone, 0);
     BOOST_CHECK_EQUAL(second->redone, 0);
-    BOOST_CHECK_EQUAL(stack.undoDepth(), 2u);
+    BOOST_CHECK_EQUAL(stack.undoDepth(), 2U);
 
-    boost::shared_ptr<v3d::editor::Command> undone = stack.undo();
+    const boost::shared_ptr<v3d::editor::Command> undone = stack.undo();
     BOOST_CHECK(undone == second);
     BOOST_CHECK_EQUAL(second->undone, 1);
     BOOST_CHECK_EQUAL(first->undone, 0);
-    BOOST_CHECK_EQUAL(stack.undoDepth(), 1u);
-    BOOST_CHECK_EQUAL(stack.redoDepth(), 1u);
+    BOOST_CHECK_EQUAL(stack.undoDepth(), 1U);
+    BOOST_CHECK_EQUAL(stack.redoDepth(), 1U);
 
-    boost::shared_ptr<v3d::editor::Command> redone = stack.redo();
+    const boost::shared_ptr<v3d::editor::Command> redone = stack.redo();
     BOOST_CHECK(redone == second);
     BOOST_CHECK_EQUAL(second->redone, 1);
-    BOOST_CHECK_EQUAL(stack.undoDepth(), 2u);
+    BOOST_CHECK_EQUAL(stack.undoDepth(), 2U);
     BOOST_CHECK(!stack.canRedo());
 
     // the whole history unwinds in order
@@ -105,8 +105,8 @@ BOOST_AUTO_TEST_CASE(command_stack_undo_redo_test) {
 
 BOOST_AUTO_TEST_CASE(command_stack_branch_test) {
     v3d::editor::CommandStack stack;
-    boost::shared_ptr<CountingCommand> first = counter("first");
-    boost::shared_ptr<CountingCommand> second = counter("second");
+    const boost::shared_ptr<CountingCommand> first = counter("first");
+    const boost::shared_ptr<CountingCommand> second = counter("second");
 
     stack.push(first);
     stack.undo();
@@ -116,22 +116,22 @@ BOOST_AUTO_TEST_CASE(command_stack_branch_test) {
     // redone
     stack.push(second);
     BOOST_CHECK(!stack.canRedo());
-    BOOST_CHECK_EQUAL(stack.undoDepth(), 1u);
+    BOOST_CHECK_EQUAL(stack.undoDepth(), 1U);
     BOOST_CHECK(stack.undo() == second);
 }
 
 BOOST_AUTO_TEST_CASE(command_stack_capacity_test) {
     v3d::editor::CommandStack stack(2);
-    boost::shared_ptr<CountingCommand> first = counter("first");
-    boost::shared_ptr<CountingCommand> second = counter("second");
-    boost::shared_ptr<CountingCommand> third = counter("third");
+    const boost::shared_ptr<CountingCommand> first = counter("first");
+    const boost::shared_ptr<CountingCommand> second = counter("second");
+    const boost::shared_ptr<CountingCommand> third = counter("third");
 
     stack.push(first);
     stack.push(second);
     stack.push(third);
 
     // the oldest is dropped rather than the newest, and dropping it does not undo it
-    BOOST_CHECK_EQUAL(stack.undoDepth(), 2u);
+    BOOST_CHECK_EQUAL(stack.undoDepth(), 2U);
     BOOST_CHECK_EQUAL(first->undone, 0);
     BOOST_CHECK(stack.undo() == third);
     BOOST_CHECK(stack.undo() == second);
@@ -140,12 +140,12 @@ BOOST_AUTO_TEST_CASE(command_stack_capacity_test) {
     // a capacity of none would be a stack that cannot record anything
     v3d::editor::CommandStack smallest(0);
     smallest.push(first);
-    BOOST_CHECK_EQUAL(smallest.undoDepth(), 1u);
+    BOOST_CHECK_EQUAL(smallest.undoDepth(), 1U);
 }
 
 BOOST_AUTO_TEST_CASE(command_stack_clear_test) {
     v3d::editor::CommandStack stack;
-    boost::shared_ptr<CountingCommand> first = counter("first");
+    const boost::shared_ptr<CountingCommand> first = counter("first");
 
     stack.push(first);
     stack.clear();
@@ -157,35 +157,35 @@ BOOST_AUTO_TEST_CASE(command_stack_clear_test) {
 }
 
 BOOST_AUTO_TEST_CASE(create_command_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
     const unsigned int id = cube->id();
 
-    boost::shared_ptr<v3d::editor::CreateCommand> command =
+    const boost::shared_ptr<v3d::editor::CreateCommand> command =
         boost::make_shared<v3d::editor::CreateCommand>(scene, cube, "cube");
     BOOST_CHECK_EQUAL(command->name(), "create cube");
 
     // the command does the creating, so the first do and a redo run the same code
     command->redo();
-    BOOST_CHECK_EQUAL(scene->count(), 1u);
+    BOOST_CHECK_EQUAL(scene->count(), 1U);
     BOOST_CHECK(scene->selection() == cube);
 
     command->undo();
-    BOOST_CHECK_EQUAL(scene->count(), 0u);
+    BOOST_CHECK_EQUAL(scene->count(), 0U);
     BOOST_CHECK(!scene->selection());
     BOOST_CHECK(!cube->selected());
 
     // the mesh outlives its removal, so it comes back with the id that a command deeper in
     // the history still names
     command->redo();
-    BOOST_CHECK_EQUAL(scene->count(), 1u);
+    BOOST_CHECK_EQUAL(scene->count(), 1U);
     BOOST_CHECK(scene->mesh(id) == cube);
 }
 
 BOOST_AUTO_TEST_CASE(create_command_selection_test) {
-    boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    boost::shared_ptr<v3d::brep::BRep> plane = v3d::editor::create_poly_plane();
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::brep::BRep> plane = v3d::editor::create_poly_plane();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
 
     plane->selected(true);
     scene->add(plane);
@@ -204,33 +204,33 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
 }
 
 BOOST_AUTO_TEST_CASE(transform_command_test) {
-    boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
 
     const v3d::editor::Placement before = v3d::editor::Placement::of(*cube);
 
-    cube->translation(glm::vec3(1.0f, 2.0f, 3.0f));
-    cube->rotation(glm::angleAxis(1.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
-    cube->scale(glm::vec3(2.0f, 2.0f, 2.0f));
+    cube->translation(glm::vec3(1.0F, 2.0F, 3.0F));
+    cube->rotation(glm::angleAxis(1.0F, glm::vec3(0.0F, 1.0F, 0.0F)));
+    cube->scale(glm::vec3(2.0F, 2.0F, 2.0F));
     const v3d::editor::Placement after = v3d::editor::Placement::of(*cube);
 
     BOOST_CHECK(!before.same(after));
 
-    v3d::editor::TransformCommand command(cube, before, after, "translate");
+    v3d::editor::TransformCommand command(cube, {.before = before, .after = after}, "translate");
     BOOST_CHECK_EQUAL(command.name(), "translate");
 
     // a gesture is undone by restoring the whole placement, not only the part that moved
     command.undo();
-    BOOST_CHECK_SMALL(cube->translation().x, 0.001f);
-    BOOST_CHECK_CLOSE(cube->scale().x, 1.0f, 0.1f);
+    BOOST_CHECK_SMALL(cube->translation().x, 0.001F);
+    BOOST_CHECK_CLOSE(cube->scale().x, 1.0F, 0.1F);
     BOOST_CHECK(v3d::editor::Placement::of(*cube).same(before));
 
     command.redo();
     BOOST_CHECK(v3d::editor::Placement::of(*cube).same(after));
-    BOOST_CHECK_CLOSE(cube->translation().y, 2.0f, 0.1f);
+    BOOST_CHECK_CLOSE(cube->translation().y, 2.0F, 0.1F);
 }
 
 BOOST_AUTO_TEST_CASE(placement_tolerance_test) {
-    v3d::editor::Placement one;
+    const v3d::editor::Placement one;
     v3d::editor::Placement two;
 
     // the default placement is the one a mesh is built with
@@ -238,9 +238,11 @@ BOOST_AUTO_TEST_CASE(placement_tolerance_test) {
 
     // a gesture that measured nothing still composes a rotation, so the two ends of it
     // differ in the last bits without the object having moved
-    two.translation.x = 1e-9f;
+    two.translation.x = 1e-9F;
     BOOST_CHECK(one.same(two));
 
-    two.translation.x = 0.001f;
+    two.translation.x = 0.001F;
     BOOST_CHECK(!one.same(two));
 }
+
+};  // namespace

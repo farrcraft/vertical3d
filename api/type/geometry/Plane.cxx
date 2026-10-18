@@ -5,6 +5,8 @@
 
 #include "Plane.h"
 
+#include "AABBox.h"
+
 #include <cmath>
 #include <cassert>
 
@@ -15,8 +17,8 @@ namespace v3d::type::geometry {
 Plane::Plane() {
 }
 
-Plane::Plane(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 & C) {
-    calculate(A, B, C);
+Plane::Plane(const glm::vec3 & p0, const glm::vec3 & p1, const glm::vec3 & p2) {
+    calculate(p0, p1, p2);
 }
 
 Plane::~Plane() {
@@ -24,18 +26,18 @@ Plane::~Plane() {
 
 void Plane::normalize(void) {
     float mag;
-    mag = std::sqrt(equation_[0] * equation_[0] + equation_[1] * equation_[1] + equation_[2] * equation_[2]);
+    mag = std::sqrt((equation_[0] * equation_[0]) + (equation_[1] * equation_[1]) + (equation_[2] * equation_[2]));
     equation_[0] /= mag;
     equation_[1] /= mag;
     equation_[2] /= mag;
     equation_[3] /= mag;
 }
 
-void Plane::set(const glm::vec3 & n, float d) {
+void Plane::set(const glm::vec3 & n, float originDistance) {
     equation_[0] = n[0];
     equation_[1] = n[1];
     equation_[2] = n[2];
-    equation_[3] = -d;
+    equation_[3] = -originDistance;
 }
 
 glm::vec3 Plane::normal(void) const {
@@ -50,24 +52,24 @@ float Plane::distance(void) const {
     Calculate the normal and distance of a plane given three coplanar points.
 
     The normal N is the cross product of vectors U and V:
-        U = B - A
-        V = C - A
+        U = p1 - p0
+        V = p2 - p0
         N.x = (U.y * V.z) - (U.z * V.y)
         N.y = (U.z * V.x) - (U.x * V.z)
         N.z = (U.x * V.y) - (U.y * V.x)
 
-    The resulting normal is not in normalized form.
+    The normal is then normalized.
 
-    The distance d is the dot product of the normalized normal N and point A:
-        d = (N.x * A.x) + (N.y * A.y) + (N.z * A.z)
+    The distance d is the dot product of the normalized normal N and point p0:
+        d = (N.x * p0.x) + (N.y * p0.y) + (N.z * p0.z)
 
     In the plane equation Ax + By + Cz = d, x, y and z are a point in 3d space. A, B and C
     are the x, y and z components of the surface normal, and d is the distance value. Any
     point (x, y, z) that satisfies this equation lies on the plane.
 */
-void Plane::calculate(const glm::vec3 & A, const glm::vec3 & B, const glm::vec3 & C) {
-    glm::vec3 n = glm::normalize(glm::cross((B - A), (C - A)));  // normal = AB*AC
-    set(n, glm::dot(n, A));
+void Plane::calculate(const glm::vec3 & p0, const glm::vec3 & p1, const glm::vec3 & p2) {
+    const glm::vec3 planeNormal = glm::normalize(glm::cross((p1 - p0), (p2 - p0)));  // normal = p0p1*p0p2
+    set(planeNormal, glm::dot(planeNormal, p0));
 }
 
 void Plane::calculate(const glm::vec3 & normal, const glm::vec3 & point) {
@@ -75,16 +77,16 @@ void Plane::calculate(const glm::vec3 & normal, const glm::vec3 & point) {
 }
 
 float Plane::signedDistance(const glm::vec3 & point) const {
-    return equation_[0] * point[0] + equation_[1] * point[1] + equation_[2] * point[2] + equation_[3];
+    return (equation_[0] * point[0]) + (equation_[1] * point[1]) + (equation_[2] * point[2]) + equation_[3];
 }
 
-// classifies whether a point is on either side of the plane or on the plane itself.
+// classifies a point as on the positive side of the plane, the negative side, or on it.
 int Plane::classify(const glm::vec3 & point) const {
     /*
         Ax + By + Cz + D = 0
         Ax + By + Cz = -D
     */
-    float dist = signedDistance(point);
+    const float dist = signedDistance(point);
 
     if (dist < 0.0) {
         return NEGATIVE;
@@ -104,7 +106,7 @@ int Plane::classify(const AABBox & aabb) const {
     aabb.vertices(corners);
     int inside = 8;  // start with all 8 points inside
     for (unsigned int i = 0; i < 8; i++) {
-        int side = classify(corners[i]);
+        const int side = classify(corners[i]);
         if (side == NEGATIVE) {
             inside--;
         }
@@ -119,26 +121,26 @@ int Plane::classify(const AABBox & aabb) const {
     return CROSSING;
 }
 
-float & Plane::operator[] (unsigned int i) {
-    assert(i < 4);
-    return equation_[i];
+float & Plane::operator[] (unsigned int index) {
+    assert(index < 4);
+    return equation_[index];
 }
 
-float Plane::operator[] (unsigned int i) const {
-    assert(i < 4);
-    return equation_[i];
+float Plane::operator[] (unsigned int index) const {
+    assert(index < 4);
+    return equation_[index];
 }
 
 
-bool Plane::intersectEdge(const glm::vec3 & A, const glm::vec3 & B, glm::vec3 * hitPoint) const {
-    glm::vec3 direction = B - A;
-    float denom = glm::dot(normal(), direction);
+bool Plane::intersectEdge(const glm::vec3 & start, const glm::vec3 & end, glm::vec3 * hitPoint) const {
+    const glm::vec3 direction = end - start;
+    const float denom = glm::dot(normal(), direction);
     if (denom == 0.0) {
         return false;
     }
-    float tval = (distance() - (glm::dot(normal(), A))) / denom;
+    const float tval = (distance() - (glm::dot(normal(), start))) / denom;
     if (tval >= 0.0 && tval <= 1.0) {
-        glm::vec3 hit = A + (direction * tval);
+        const glm::vec3 hit = start + (direction * tval);
         hitPoint->x = hit.x;
         hitPoint->y = hit.y;
         hitPoint->z = hit.z;

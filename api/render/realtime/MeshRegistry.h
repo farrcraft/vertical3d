@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/realtime/DecodedModel.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Registry.h>
 #include <api/render/realtime/vulkan/memory/Mesh.h>
@@ -13,9 +14,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <deque>
+#include <exception>
+#include <expected>
 #include <map>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -23,6 +28,7 @@
 
 namespace v3d::asset {
 class Manager;
+class Worker;
 };  // namespace v3d::asset
 
 namespace v3d::image {
@@ -42,13 +48,18 @@ class DeviceContext;
  * texture and a material from the context's Textures, shared by every part naming the same
  * image, and the white texture for a part naming none.
  *
- * The vertex layout is type::Model::Vertex - a position, a normal and a uv, 32 bytes - which
- * is what a pipeline drawing an entry declares. A model with a skeleton is uploaded as a
+ * The vertex layout is type::Model::Vertex: a position, a normal and a uv, 32 bytes. A pipeline
+ * that draws an entry declares that layout. A model with a skeleton is uploaded as a
  * SkinnedVertex instead, and keeps its skeleton and clips on the CPU for whatever poses it.
  *
  * A handle is released explicitly, and resolves to nothing at once. An albedo is released with
  * the last entry naming it. Items queued before a release are still drawn by their frame, with
  * their albedo, and the mesh is destroyed once that frame has finished.
+ *
+ * A path can also be requested. The handle comes back at once and resolves to nothing while the
+ * model is decoded on a worker thread. poll() uploads it, and from then on the handle resolves
+ * like any other. A draw skips a handle that resolves to nothing, so a model still loading is
+ * not drawn.
  **/
 class MeshRegistry final {
  public:
@@ -64,8 +75,8 @@ class MeshRegistry final {
     };
 
     /**
-     * A skinned model's vertex on the device: the model's vertex, then the joints that move it -
-     * what renderer::Lit's skinned pipelines read.
+     * A skinned model's vertex on the device: the model's vertex, then the joints that move it.
+     * renderer::Lit's skinned pipelines read this layout.
      **/
     struct SkinnedVertex final {
         type::Model::Vertex vertex;
@@ -90,17 +101,23 @@ class MeshRegistry final {
     };
 
     /**
+     * The most bytes poll() uploads by default before it leaves the rest for the next call.
+     **/
+    static constexpr std::size_t DEFAULT_UPLOAD_BUDGET = std::size_t{4} * 1024 * 1024;
+
+    /**
      * @param logger where a texture that could not be found is reported
      * @param context the device to upload to, and the textures an albedo is registered with
      * @param assets where a path is loaded from, and a texture a model names is resolved
+     * @param worker what request() decodes on. Without one, request() throws
      **/
     MeshRegistry(const boost::shared_ptr<log::Logger>& logger, const boost::shared_ptr<DeviceContext>& context,
-        const boost::shared_ptr<asset::Manager>& assets);
+        const boost::shared_ptr<asset::Manager>& assets, const boost::shared_ptr<asset::Worker>& worker = {});
 
     /**
-     * Destroys every mesh still registered at once, the way Resources destroys what it holds,
-     * so it goes after the frames in flight have finished. An albedo still registered with
-     * the context's Textures stays there until the context goes.
+     * Destroys every mesh still registered at once, as Resources does, so destroy the registry
+     * only after the frames in flight have finished. An albedo still registered with the
+     * context's Textures stays there until the context is destroyed.
      **/
     ~MeshRegistry() = default;
 
@@ -114,10 +131,37 @@ class MeshRegistry final {
      * that cannot be found is reported and drawn white, so a missing image is a wrong picture
      * rather than a scene that does not load.
      *
+     * A path already requested and not yet uploaded is read and uploaded now. What the worker
+     * decodes for it later is dropped.
+     *
      * @param path relative to the asset manager's root
      * @throw std::runtime_error if the file is not a model, or holds no geometry
      **/
     MeshHandle load(const std::string& path);
+
+    /**
+     * A glTF model, decoded on the worker thread and uploaded by a later poll().
+     *
+     * The handle resolves to nothing until then. Asking for a path again returns the same
+     * handle, whether or not it is uploaded yet. A file that cannot be read or uploaded is
+     * reported in the log, and its handle resolves to nothing from then on.
+     *
+     * @param path relative to the asset manager's root
+     * @throw std::logic_error if the registry was made without a worker
+     **/
+    MeshHandle request(const std::string& path);
+
+    /**
+     * Upload the requested models whose decoding has finished, in the order they were requested.
+     *
+     * It uploads at least one when any is ready, and stops once the bytes uploaded reach the
+     * budget. Call it once a frame, after polling the worker.
+     *
+     * @param budget the vertex, index and albedo bytes to upload before stopping. An albedo
+     *        another entry already uploaded is not counted
+     * @return how many models were uploaded
+     **/
+    std::size_t poll(std::size_t budget = DEFAULT_UPLOAD_BUDGET);
 
     /**
      * A model built in code, uploaded the first time its name is asked for.
@@ -134,6 +178,16 @@ class MeshRegistry final {
         const std::vector<boost::shared_ptr<image::Image>>& albedos = {});
 
     /**
+     * A model already read and decoded, uploaded the first time its path is asked for. An albedo
+     * with a key and no pixels is drawn white unless an entry already uploaded it, and nothing is
+     * read from a file.
+     *
+     * @throw std::runtime_error if the model holds no geometry, a part outside it, a skeleton
+     *        without an influence for every vertex, or not one albedo per material
+     **/
+    MeshHandle add(const DecodedModel& decoded);
+
+    /**
      * Stop addressing an entry. Items queued before the release are still drawn by their frame,
      * with their albedo. What only this entry was using is destroyed once that frame has
      * finished.
@@ -143,9 +197,16 @@ class MeshRegistry final {
     bool release(const MeshHandle& handle);
 
     /**
-     * @return the entry, or nullptr for a handle that was released or never given out
+     * @return the entry, or nullptr for a handle that was released, never given out, failed to
+     *         load, or is requested and not yet uploaded
      **/
     const Entry* resolve(const MeshHandle& handle) const;
+
+    /**
+     * @return whether a handle is requested and not yet uploaded, so that a caller can tell one
+     *         still loading from one that failed or was released
+     **/
+    bool pending(const MeshHandle& handle) const;
 
     /**
      * @return the index of an entry's clip of that name, which ecs::component::play() takes, or
@@ -154,9 +215,15 @@ class MeshRegistry final {
     std::optional<uint32_t> clip(const MeshHandle& handle, const std::string& name) const;
 
     /**
-     * @return how many entries are registered: one per model on the device
+     * @return how many entries are registered: one per model on the device, not counting those
+     *         requested and not yet uploaded
      **/
     std::size_t count() const noexcept;
+
+    /**
+     * @return how many requests are not yet uploaded
+     **/
+    std::size_t pending() const noexcept;
 
  private:
     /**
@@ -166,16 +233,22 @@ class MeshRegistry final {
         Entry entry;
         std::string key;
         std::vector<std::string> albedos;  /**< each part's albedo key, or empty for the white texture **/
+        bool pending = false;  /**< requested and not yet uploaded, so the entry is empty **/
     };
 
     /**
-     * Where a material's albedo comes from: the key it is shared by, and its pixels when the
-     * caller has them rather than a name to load.
+     * A requested model the worker has finished with, waiting for poll().
      **/
-    struct Source final {
-        std::string key;  /**< empty for a material with no albedo **/
-        boost::shared_ptr<image::Image> pixels;
+    struct Arrival final {
+        MeshHandle handle;
+        std::expected<DecodedModel, std::exception_ptr> result;
     };
+
+    /**
+     * What the worker's completions hand to this registry. A completion holds it weakly, so one
+     * that runs after the registry is gone does nothing.
+     **/
+    using Inbox = std::deque<Arrival>;
 
     /**
      * An albedo, and how many entries name it.
@@ -187,20 +260,41 @@ class MeshRegistry final {
     };
 
     /**
-     * Upload a model and register it under a key, with each part's albedo found from its
-     * material's source.
+     * Upload a model and register it under a key, with each part's albedo taken from its
+     * material's.
      *
-     * @param sources one per material, by index
-     * @throw std::runtime_error if the model holds no geometry, no parts, or a part outside it
+     * @param albedos one per material, by index
+     * @param pending the requested slot to fill, or an unset handle to take a new one
+     * @throw std::runtime_error if the model holds no geometry, no parts, a part outside it, or
+     *        not one albedo per material
      **/
-    MeshHandle upload(const std::string& key, const type::Model& model, const std::vector<Source>& sources);
+    MeshHandle upload(const std::string& key, const type::Model& model, const std::vector<DecodedModel::Albedo>& albedos,
+        const MeshHandle& pending = MeshHandle());
 
     /**
-     * Find or upload an albedo, and count one more user of it.
-     *
-     * @return the key it is shared by, or empty when it could not be found and white is used
+     * @return the handle registered under a key, and whether it is only requested, or nothing
+     *         when the key is free
      **/
-    std::string acquire(const Source& source, Part* part);
+    std::optional<std::pair<MeshHandle, bool>> registered(const std::string& key) const;
+
+    /**
+     * Give up a request that could not be read or uploaded, so that its handle resolves to
+     * nothing and its key is free for another request.
+     **/
+    void abandon(const MeshHandle& handle);
+
+    /**
+     * Find or upload an albedo, and count one more user of it. Nothing is read from a file.
+     *
+     * @return the key it is shared by, or empty when it has no pixels and none is uploaded, and
+     *         white is used
+     **/
+    std::string acquire(const DecodedModel::Albedo& source, Part* part);
+
+    /**
+     * @return whether an albedo is uploaded under a key
+     **/
+    bool uploaded(const std::string& key) const;
 
     /**
      * Count one fewer user of an albedo, and release it when none is left.
@@ -210,7 +304,10 @@ class MeshRegistry final {
     boost::shared_ptr<log::Logger> logger_;
     boost::shared_ptr<DeviceContext> context_;
     boost::shared_ptr<asset::Manager> assets_;
+    boost::shared_ptr<asset::Worker> worker_;
+    boost::shared_ptr<Inbox> inbox_;
     Registry<MeshTag, Slot> meshes_;
+    std::size_t pending_ = 0;
     std::map<std::string, MeshHandle> keys_;
     std::map<std::string, Albedo> albedos_;
 };

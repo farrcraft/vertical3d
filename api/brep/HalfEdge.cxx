@@ -5,6 +5,8 @@
 
 #include "HalfEdge.h"
 
+#include "Index.h"
+
 namespace v3d::brep {
 
 HalfEdge::HalfEdge() : vertex_(INVALID_ID), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID), selected_(false) {
@@ -13,26 +15,26 @@ HalfEdge::HalfEdge() : vertex_(INVALID_ID), pair_(INVALID_ID), next_(INVALID_ID)
 HalfEdge::HalfEdge(Index vert) : vertex_(vert), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID), selected_(false) {
 }
 
-HalfEdge::HalfEdge(const HalfEdge& e) {
-    *this = e;
+HalfEdge::HalfEdge(const HalfEdge& other) {
+    *this = other;
 }
 
 HalfEdge::~HalfEdge() {
 }
 
-bool HalfEdge::operator == (const HalfEdge& e) const {
-    return (vertex_ == e.vertex_ &&
-        face_ == e.face_ &&
-        next_ == e.next_ &&
-        pair_ == e.pair_);
+bool HalfEdge::operator == (const HalfEdge& other) const {
+    return (vertex_ == other.vertex_ &&
+        face_ == other.face_ &&
+        next_ == other.next_ &&
+        pair_ == other.pair_);
 }
 
-HalfEdge& HalfEdge::operator = (const HalfEdge& e) {
-    vertex_ = e.vertex_;
-    face_ = e.face_;
-    next_ = e.next_;
-    pair_ = e.pair_;
-    selected_ = e.selected_;
+HalfEdge& HalfEdge::operator = (const HalfEdge& other) {
+    vertex_ = other.vertex_;
+    face_ = other.face_;
+    next_ = other.next_;
+    pair_ = other.pair_;
+    selected_ = other.selected_;
 
     return *this;
 }
@@ -65,16 +67,16 @@ void HalfEdge::vertex(Index v) {
     vertex_ = v;
 }
 
-void HalfEdge::face(Index f) {
-    face_ = f;
+void HalfEdge::face(Index faceIndex) {
+    face_ = faceIndex;
 }
 
-void HalfEdge::pair(Index e) {
-    pair_ = e;
+void HalfEdge::pair(Index pairIndex) {
+    pair_ = pairIndex;
 }
 
-void HalfEdge::next(Index e) {
-    next_ = e;
+void HalfEdge::next(Index nextIndex) {
+    next_ = nextIndex;
 }
 
 };  // namespace v3d::brep

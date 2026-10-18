@@ -5,6 +5,10 @@
 
 #include "Scene.h"
 
+#include <api/brep/BRep.h>
+
+#include "SceneVisitor.h"
+
 #include <algorithm>
 #include <cstddef>
 

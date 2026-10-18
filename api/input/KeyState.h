@@ -12,13 +12,12 @@
 namespace v3d::input {
 
 /**
- * KeyState keeps track of the current state of all keys based on all of the key up/down
- * events that we've seen.
+ * Which keys are held, built from every key down and key up event the keyboard has handled.
  *
- * held() reports the current state; pressed() and released() report changes since the last
- * flush. A key pressed and released between two flushes returns true from both pressed() and
- * released(), but was never held when anything checked, so polling held() alone misses it.
- * The loop clears the edges once per frame, not the reader; see engine::Engine::eventLoop.
+ * held() reports the current state. pressed() and released() report the edges: the changes
+ * since the last flush. A key pressed and released between two flushes returns true from both
+ * pressed() and released(). It was never held when anything checked, so polling held() alone
+ * misses it. engine::Engine::eventLoop() clears the edges once per frame, so a reader does not.
  **/
 class KeyState final {
  public:
@@ -27,21 +26,21 @@ class KeyState final {
      *
      * @return bool
      **/
-    bool held(std::string_view c) const;
+    bool held(std::string_view key) const;
 
     /**
      * Did a key go down since the last flush?
      *
-     * @param c the key's name
+     * @param key the key's name
      **/
-    bool pressed(std::string_view c) const;
+    bool pressed(std::string_view key) const;
 
     /**
      * Did a key come up since the last flush?
      *
-     * @param c the key's name
+     * @param key the key's name
      **/
-    bool released(std::string_view c) const;
+    bool released(std::string_view key) const;
 
     /**
      * Forget this frame's edges, leaving what is held alone. Called once per frame by the
@@ -52,11 +51,11 @@ class KeyState final {
     /**
      * Toggle the state of the key
      *
-     * @param c The key being toggled
+     * @param key The key being toggled
      *
      * @return bool true if the resulting state is a held key
      **/
-    bool operator() (const std::string& c);
+    bool operator() (const std::string& key);
 
  private:
     std::vector<std::string> keys_;

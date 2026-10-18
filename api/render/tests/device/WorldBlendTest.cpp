@@ -7,13 +7,14 @@
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/renderer/World.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 
 #include <boost/make_shared.hpp>
@@ -27,11 +28,12 @@
 
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
-using v3d::render::realtime::WorldCanvas;
 using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::frame::Recorder;
 using v3d::render::realtime::vulkan::frame::RenderTarget;
 using v3d::render::realtime::vulkan::renderer::World;
+
+namespace canvas = v3d::render::realtime::canvas;
 
 namespace {
 
@@ -44,20 +46,20 @@ const uint32_t height = 16;
  * quad's corners land on pixel boundaries and every pixel is wholly in or out of it.
  **/
 glm::mat4x4 pixels() {
-    glm::mat4x4 projection(1.0f);
-    projection[0][0] = 2.0f / static_cast<float>(width);
-    projection[1][1] = 2.0f / static_cast<float>(height);
-    projection[3][0] = -1.0f;
-    projection[3][1] = -1.0f;
+    glm::mat4x4 projection(1.0F);
+    projection[0][0] = 2.0F / static_cast<float>(width);
+    projection[1][1] = 2.0F / static_cast<float>(height);
+    projection[3][0] = -1.0F;
+    projection[3][1] = -1.0F;
     return projection;
 }
 
-WorldCanvas::Corners rect(float minX, float maxX) {
-    return WorldCanvas::Corners{
-        glm::vec3(minX, 0.0f, 0.5f),
-        glm::vec3(maxX, 0.0f, 0.5f),
-        glm::vec3(maxX, static_cast<float>(height), 0.5f),
-        glm::vec3(minX, static_cast<float>(height), 0.5f)
+canvas::World::Corners rect(float minX, float maxX) {
+    return canvas::World::Corners{
+        glm::vec3(minX, 0.0F, 0.5F),
+        glm::vec3(maxX, 0.0F, 0.5F),
+        glm::vec3(maxX, static_cast<float>(height), 0.5F),
+        glm::vec3(minX, static_cast<float>(height), 0.5F)
     };
 }
 
@@ -65,16 +67,16 @@ WorldCanvas::Corners rect(float minX, float maxX) {
  * Clear to a colour every channel of which is a whole number of 8-bit steps, draw a canvas over
  * it with a blend, and read the picture back.
  **/
-boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, const WorldCanvas& canvas,
+boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, const canvas::World& canvas,
     World::Blend blend, const std::string& name) {
-    boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
         headless->device, headless->context->ring(), width, height, colourFormat, false);
 
     Frame frame;
-    boost::shared_ptr<Pass> pass = frame.pass("world");
+    const boost::shared_ptr<Pass> pass = frame.pass("world");
     pass->target(target);
-    pass->clearColour(glm::vec4(0.2f, 0.4f, 0.0f, 1.0f));
-    pass->camera(glm::mat4x4(1.0f), pixels());
+    pass->clearColour(glm::vec4(0.2F, 0.4F, 0.0F, 1.0F));
+    pass->camera(glm::mat4x4(1.0F), pixels());
     headless->context->worldQuads()->submit(canvas, pass.get(), 0, blend);
 
     VkCommandBuffer commands = headless->context->ring()->begin();
@@ -102,18 +104,17 @@ boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, cons
  * @return the texel at a column of the picture, in its middle row
  **/
 glm::ivec4 at(v3d::image::Image* picture, uint32_t x) {
-    const unsigned char* texel = picture->data() + (static_cast<std::size_t>(height / 2) * width + x) * 4;
+    const unsigned char* texel = picture->data() + (((static_cast<std::size_t>(height / 2) * width) + x) * 4);
     return glm::ivec4(texel[0], texel[1], texel[2], texel[3]);
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(world_blend_test)
 
 /**
- * An additive quad adds its colour, scaled by its alpha, to what is there and leaves the alpha
- * as it was, where the alpha pipeline covers it. The sums land on whole 8-bit steps well away
- * from any rounding boundary, so the specification determines every byte.
+ * An additive quad adds its colour, scaled by its alpha, to the colour already there, and leaves
+ * the alpha unchanged. An alpha-blended quad covers the clear instead. The sums land on whole
+ * 8-bit steps, well away from any rounding boundary, so the specification determines every
+ * byte.
  *
  * The clear is 51 and 102 on a 255 scale. A quad of 0.4, 0.4 and 0.8 adds 102, 102 and 204 at
  * full alpha and half that at half alpha, so every sum is a multiple of 51.
@@ -121,9 +122,9 @@ BOOST_AUTO_TEST_SUITE(world_blend_test)
 BOOST_AUTO_TEST_CASE(an_additive_quad_adds_to_what_is_there) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    WorldCanvas canvas;
-    canvas.quad(rect(0.0f, 16.0f), glm::vec4(0.4f, 0.4f, 0.8f, 1.0f));
-    canvas.quad(rect(16.0f, 32.0f), glm::vec4(0.4f, 0.4f, 0.8f, 0.5f));
+    canvas::World canvas;
+    canvas.quad(rect(0.0F, 16.0F), glm::vec4(0.4F, 0.4F, 0.8F, 1.0F));
+    canvas.quad(rect(16.0F, 32.0F), glm::vec4(0.4F, 0.4F, 0.8F, 0.5F));
 
     const boost::shared_ptr<v3d::image::Image> added = blended(&headless, canvas, World::Blend::Additive, "world_additive");
     BOOST_CHECK(headless.silent());
@@ -139,3 +140,5 @@ BOOST_AUTO_TEST_CASE(an_additive_quad_adds_to_what_is_there) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

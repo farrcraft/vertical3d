@@ -7,10 +7,7 @@
 
 namespace v3d::type::geometry {
 
-Bound2D::Bound2D(float x, float y, float width, float height) : size_(width, height), position_(x, y) {
-}
-
-Bound2D::Bound2D(const glm::vec2& position, const glm::vec2& size) : size_(size), position_(position) {
+Bound2D::Bound2D(const Area& area) : size_(area.size), position_(area.position) {
 }
 
 bool Bound2D::contains(const glm::vec2& point) const {

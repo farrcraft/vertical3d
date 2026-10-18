@@ -8,6 +8,8 @@
 #include <api/image/Compare.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/frame/Capture.h>
 
 #include <string>
 
@@ -19,8 +21,8 @@ namespace v3d::test {
 namespace {
 
 /**
- * Where a picture is committed, and where one that was drawn is left. Both are resolved
- * against the working directory, which v3d_add_test points at the executable.
+ * The directory of the committed references, and the directory a drawn image is written to.
+ * Both are relative to the working directory, which v3d_add_test sets to the executable's.
  **/
 const char* const committedDirectory = "data";
 const char* const renderedDirectory = "data_out";
@@ -38,10 +40,10 @@ void checkReference(const boost::shared_ptr<v3d::log::Logger>& logger,
     BOOST_REQUIRE_MESSAGE(capture->write(rendered), "the capture wrote no " + rendered);
 
     v3d::image::reader::Png png(logger);
-    boost::shared_ptr<v3d::image::Image> drawn = png.read(rendered);
+    const boost::shared_ptr<v3d::image::Image> drawn = png.read(rendered);
     BOOST_REQUIRE_MESSAGE(drawn != nullptr, "cannot read back " + rendered);
 
-    boost::shared_ptr<v3d::image::Image> reference = png.read(committed);
+    const boost::shared_ptr<v3d::image::Image> reference = png.read(committed);
     // a missing reference fails rather than being written from what was drawn, which would
     // pass every time
     BOOST_REQUIRE_MESSAGE(reference != nullptr,

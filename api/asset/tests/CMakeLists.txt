@@ -1,6 +1,6 @@
-# The manager, the loader base and the two text-shaped loaders need neither a window nor a
-# device - they resolve a path and read a file. The loaders for pictures and models are
-# api/asset/media's, and the one for sound api/audio's, each with its own suite.
+# The manager, the loader base and the document loaders need neither a window nor a device.
+# They resolve a path and read a file. The loaders for pictures and models are tested in
+# api/asset/media, and the loader for sound in api/audio.
 v3d_add_test(asset
 	"TestMain.cpp"
 	"ManagerTest.cpp"
@@ -9,7 +9,8 @@ v3d_add_test(asset
 	"JsonReadTest.cpp"
 	"WriterTest.cpp"
 	"MigrationTest.cpp"
-	"TextTest.cpp")
+	"TextTest.cpp"
+	"WorkerTest.cpp")
 
 target_link_libraries(v3dtest_asset PRIVATE v3dlib_asset v3dlib_log ${Boost_LIBRARIES})
 

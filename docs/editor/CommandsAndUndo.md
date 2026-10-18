@@ -44,8 +44,9 @@ undo, quit. It is identified by a context and a name written together as `"conte
 example `create::poly::cube` or `transform::rotate`. This is the string `event::Event::str()`
 returns.
 
-**The directory.** `v3d::editor::CommandDirectory` maps each command string to a handler.
-`Controller::registerCommands()` registers every handler at startup:
+**The registry.** The engine's `event::Commands` maps each command string to a handler, and
+runs the handler each command names. `Controller::registerCommands()` registers every handler
+from the controller's constructor:
 
 - `addPress(name, handler)` registers a handler that runs on the press only. A release of the
   same binding is still accepted, and does nothing, and so is a held key's repeat, so holding a
@@ -54,9 +55,9 @@ returns.
   press from a release. The camera modifiers use it, because a camera mode lasts while its key
   is held.
 
-`Controller::handleEvent` calls `invoke()` and does nothing else. After every command it calls
-`syncUi()`, which sets the check marks on menu items and toolbar toggles from the editor's
-state: the active view's show flags, the select mask and the transform mode.
+Each handler calls `syncUi()` after it runs. That sets the check marks on menu items and
+toolbar toggles from the editor's state: the active view's show flags, the select mask and the
+transform mode.
 
 **How a command arrives.** Three sources produce the same `event::Event`, so all three reach
 the same handler:
@@ -74,21 +75,24 @@ the same handler:
 2. A key or button is published as an `event::Source` to every listener on `sink<Source>`. The
    editor does not listen there.
 3. Unless a listener consumed the source, the event engine sends the commands bound to it on
-   `sink<Event>`. The editor's `handleEvent` listens there, so it receives commands and never
-   raw keys.
+   `sink<Event>`. The engine listens there and runs the handler the command names, so the
+   editor receives commands and never raw keys.
 
 Mouse motion and window resizes reach the editor as `event::kind::MouseMotion` and
 `event::kind::WindowResize` on their own sinks, without bindings.
 
 **Rules.**
 
-- An unregistered command is logged as a warning: "no command is registered as ...". A menu
-  item for a feature that does not exist reports itself this way.
-- A second registration of the same name is refused, and the first handler stays. The
-  controller logs it as an error.
+- An unregistered command is logged as a warning: "nothing handles ...". A menu item for a
+  feature that does not exist reports itself this way.
+- A second registration of the same name is refused, and the first handler stays. `start()`
+  logs it as an error.
+- The editor suite checks that every binding in `data/mappings.json` names a registered
+  command.
 - Startup logs how many commands are registered and how many of them are on a menu.
 - Command names follow the editor's original UI definition, so menu items and bindings use the
-  same strings. `ui::quit` uses the `ui` context, as every app's application-level commands do.
+  same strings. `ui::quit` uses the `ui` context, as every app's application-level commands do,
+  and the engine handles it.
   `edit::undo` and `edit::redo` were added for the history.
 
 **Adding a command:**
@@ -104,7 +108,8 @@ while it is active: `activate(name)`, `deactivate(name)`, `motion(position)` and
 implement it. `Tool` lives in the editor because no other app holds a gesture open across
 events.
 
-`CommandDirectory`, `CommandStack` and `Tool` are all in the editor rather than the api. No
-other app has a document to undo or several ways to invoke one command.
+`CommandStack` and `Tool` are in the editor rather than the api. No other app has a document
+to undo.
 
-Background: [ADR-0081](../adr/0081-input-key-events-and-commands-are-separate.md)
+Background: [ADR-0081](../adr/0081-input-key-events-and-commands-are-separate.md),
+[ADR-0090](../adr/0090-input-commands-are-handled-through-one-registry.md)

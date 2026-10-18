@@ -10,16 +10,18 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(sortkey_test)
 
 /**
- * A fresh key is the lowest one there is, so an item nobody has classified sorts first
- * rather than landing somewhere arbitrary.
+ * A default key is the lowest key, so an item that was never classified sorts first, not at
+ * an arbitrary place.
  **/
 BOOST_AUTO_TEST_CASE(default_key_is_zero) {
-    v3d::render::realtime::SortKey key;
+    const v3d::render::realtime::SortKey key;
 
-    BOOST_CHECK_EQUAL(key.packed(), 0u);
+    BOOST_CHECK_EQUAL(key.packed(), 0U);
 }
 
 /**
@@ -110,3 +112,5 @@ BOOST_AUTO_TEST_CASE(sorting_groups_by_pipeline_within_a_layer) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

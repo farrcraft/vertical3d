@@ -3,10 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/canvas/World.h>
 
-#include <array>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -16,26 +17,24 @@
 
 namespace {
 
-constexpr glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
-constexpr glm::vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
+constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
+constexpr glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
 
 /**
  * A unit square lying on the ground plane, in the perimeter order grid::tileCorners uses.
  **/
-v3d::render::realtime::WorldCanvas::Corners tile(float x, float z) {
+v3d::render::realtime::canvas::World::Corners tile(float x, float z) {
     return {
-        glm::vec3(x, 0.0f, z),
-        glm::vec3(x + 1.0f, 0.0f, z),
-        glm::vec3(x + 1.0f, 0.0f, z + 1.0f),
-        glm::vec3(x, 0.0f, z + 1.0f)
+        glm::vec3(x, 0.0F, z),
+        glm::vec3(x + 1.0F, 0.0F, z),
+        glm::vec3(x + 1.0F, 0.0F, z + 1.0F),
+        glm::vec3(x, 0.0F, z + 1.0F)
     };
 }
 
 v3d::render::realtime::TextureHandle handle(uint32_t id) {
     return v3d::render::realtime::TextureHandle(id);
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(worldcanvas_test)
 
@@ -44,7 +43,7 @@ BOOST_AUTO_TEST_SUITE(worldcanvas_test)
  * in it costs neither an upload nor an item.
  **/
 BOOST_AUTO_TEST_CASE(an_empty_canvas_has_nothing_to_draw) {
-    v3d::render::realtime::WorldCanvas canvas;
+    const v3d::render::realtime::canvas::World canvas;
 
     BOOST_CHECK(canvas.empty());
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 0);
@@ -56,17 +55,17 @@ BOOST_AUTO_TEST_CASE(an_empty_canvas_has_nothing_to_draw) {
  * come out in the order they were given.
  **/
 BOOST_AUTO_TEST_CASE(a_quad_is_four_world_vertices_and_two_triangles) {
-    v3d::render::realtime::WorldCanvas canvas;
-    canvas.quad(tile(0.0f, 0.0f), white);
+    v3d::render::realtime::canvas::World canvas;
+    canvas.quad(tile(0.0F, 0.0F), white);
 
     BOOST_CHECK(!canvas.empty());
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4);
     BOOST_REQUIRE_EQUAL(canvas.indices().size(), 6);
 
     // the position is a world position and keeps all three of its components
-    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.x, 1.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.y, 0.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.z, 1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.x, 1.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.y, 0.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.z, 1.0F, 0.001F);
 
     const std::vector<uint32_t> expected = {0, 1, 2, 2, 3, 0};
     for (std::size_t index = 0; index < expected.size(); index++) {
@@ -84,43 +83,43 @@ BOOST_AUTO_TEST_CASE(a_quad_is_four_world_vertices_and_two_triangles) {
  * into an atlas comes out the right way up.
  **/
 BOOST_AUTO_TEST_CASE(the_uv_rectangle_follows_the_corner_order) {
-    v3d::render::realtime::WorldCanvas canvas;
-    canvas.quad(tile(0.0f, 0.0f), glm::vec2(0.25f, 0.5f), glm::vec2(0.75f, 1.0f), white, handle(3));
+    v3d::render::realtime::canvas::World canvas;
+    canvas.quad(tile(0.0F, 0.0F), glm::vec2(0.25F, 0.5F), glm::vec2(0.75F, 1.0F), white, handle(3));
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].uv.x, 0.25f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].uv.y, 0.5f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[1].uv.x, 0.75f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[1].uv.y, 0.5f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[2].uv.x, 0.75f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[2].uv.y, 1.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[3].uv.x, 0.25f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[3].uv.y, 1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].uv.x, 0.25F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].uv.y, 0.5F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[1].uv.x, 0.75F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[1].uv.y, 0.5F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[2].uv.x, 0.75F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[2].uv.y, 1.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[3].uv.x, 0.25F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[3].uv.y, 1.0F, 0.001F);
 }
 
 /**
- * The stream cuts where the bound texture changes and nowhere else, as the 2D canvas does. A
- * sheet of sprites drawn from one atlas is one draw however many there are.
+ * A new batch starts where the texture changes and nowhere else, as in the 2D canvas. A sheet
+ * of sprites drawn from one atlas is one draw however many sprites there are.
  **/
 BOOST_AUTO_TEST_CASE(the_stream_cuts_where_the_texture_changes) {
-    v3d::render::realtime::WorldCanvas canvas;
-    canvas.quad(tile(0.0f, 0.0f), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white, handle(1));
-    canvas.quad(tile(1.0f, 0.0f), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white, handle(1));
-    canvas.quad(tile(2.0f, 0.0f), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white, handle(1));
+    v3d::render::realtime::canvas::World canvas;
+    canvas.quad(tile(0.0F, 0.0F), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, handle(1));
+    canvas.quad(tile(1.0F, 0.0F), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, handle(1));
+    canvas.quad(tile(2.0F, 0.0F), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, handle(1));
 
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
     BOOST_CHECK_EQUAL(canvas.batches()[0].indices, 18);
 
     // a second texture is a second draw, and going back to the first is a third
-    canvas.quad(tile(3.0f, 0.0f), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white, handle(2));
-    canvas.quad(tile(4.0f, 0.0f), glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), white, handle(1));
+    canvas.quad(tile(3.0F, 0.0F), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, handle(2));
+    canvas.quad(tile(4.0F, 0.0F), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, handle(1));
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 3);
     BOOST_CHECK_EQUAL(canvas.batches()[1].firstIndex, 18);
     BOOST_CHECK_EQUAL(canvas.batches()[1].indices, 6);
     BOOST_CHECK_EQUAL(canvas.batches()[2].firstIndex, 24);
 
-    // an untextured quad cuts the batch too, because white is a texture like any other
-    canvas.quad(tile(5.0f, 0.0f), red);
+    // an untextured quad starts a new batch too, because white is a texture like any other
+    canvas.quad(tile(5.0F, 0.0F), red);
     BOOST_CHECK_EQUAL(canvas.batches().size(), 4);
 }
 
@@ -130,16 +129,16 @@ BOOST_AUTO_TEST_CASE(the_stream_cuts_where_the_texture_changes) {
  * the camera.
  **/
 BOOST_AUTO_TEST_CASE(quads_are_drawn_in_the_order_they_were_added) {
-    v3d::render::realtime::WorldCanvas canvas;
-    canvas.quad(tile(0.0f, 8.0f), white);   // far up the ground plane, added first
-    canvas.quad(tile(0.0f, 0.0f), red);     // near the camera, added second
+    v3d::render::realtime::canvas::World canvas;
+    canvas.quad(tile(0.0F, 8.0F), white);   // far up the ground plane, added first
+    canvas.quad(tile(0.0F, 0.0F), red);     // near the camera, added second
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.z, 8.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[4].position.z, 0.0f, 0.001f);
-    // one batch, because both are untextured - painter order inside it is index order
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.z, 8.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[4].position.z, 0.0F, 0.001F);
+    // one batch, because both are untextured. Painter order inside it is index order
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
-    BOOST_CHECK_EQUAL(canvas.indices()[6], 4u);
+    BOOST_CHECK_EQUAL(canvas.indices()[6], 4U);
 }
 
 /**
@@ -148,30 +147,30 @@ BOOST_AUTO_TEST_CASE(quads_are_drawn_in_the_order_they_were_added) {
  * unlike Canvas's, which only moves a point in a plane.
  **/
 BOOST_AUTO_TEST_CASE(the_transform_stack_places_geometry) {
-    v3d::render::realtime::WorldCanvas canvas;
+    v3d::render::realtime::canvas::World canvas;
 
     canvas.push();
-    canvas.translate(glm::vec3(10.0f, 2.0f, -3.0f));
-    canvas.quad(tile(0.0f, 0.0f), white);
+    canvas.translate(glm::vec3(10.0F, 2.0F, -3.0F));
+    canvas.quad(tile(0.0F, 0.0F), white);
     canvas.pop();
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 10.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.y, 2.0f, 0.001f);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.z, -3.0f, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 10.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.y, 2.0F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.z, -3.0F, 0.001F);
 
     // and popping put it back, so the next quad is where it says it is
-    canvas.quad(tile(0.0f, 0.0f), white);
-    BOOST_CHECK_CLOSE(canvas.vertices()[4].position.x, 0.0f, 0.001f);
+    canvas.quad(tile(0.0F, 0.0F), white);
+    BOOST_CHECK_CLOSE(canvas.vertices()[4].position.x, 0.0F, 0.001F);
 
     // a rotation is expressible, so a quad can stand upright
     canvas.push();
-    canvas.transform(glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
-    canvas.quad(tile(0.0f, 0.0f), white);
+    canvas.transform(glm::rotate(glm::mat4(1.0F), glm::radians(90.0F), glm::vec3(1.0F, 0.0F, 0.0F)));
+    canvas.quad(tile(0.0F, 0.0F), white);
     canvas.pop();
     // the ground plane turned up to face the camera: z became -y
-    BOOST_CHECK_CLOSE(canvas.vertices()[10].position.y, -1.0f, 0.001f);
-    BOOST_CHECK_SMALL(canvas.vertices()[10].position.z, 0.001f);
+    BOOST_CHECK_CLOSE(canvas.vertices()[10].position.y, -1.0F, 0.001F);
+    BOOST_CHECK_SMALL(canvas.vertices()[10].position.z, 0.001F);
 }
 
 /**
@@ -179,17 +178,17 @@ BOOST_AUTO_TEST_CASE(the_transform_stack_places_geometry) {
  * transform a caller forgot to pop.
  **/
 BOOST_AUTO_TEST_CASE(clearing_drops_the_stream_and_the_stack) {
-    v3d::render::realtime::WorldCanvas canvas;
+    v3d::render::realtime::canvas::World canvas;
     canvas.push();
-    canvas.translate(glm::vec3(5.0f, 5.0f, 5.0f));
-    canvas.quad(tile(0.0f, 0.0f), white);
+    canvas.translate(glm::vec3(5.0F, 5.0F, 5.0F));
+    canvas.quad(tile(0.0F, 0.0F), white);
 
     canvas.clear();
     BOOST_CHECK(canvas.empty());
     BOOST_CHECK_EQUAL(canvas.batches().size(), 0);
 
-    canvas.quad(tile(0.0f, 0.0f), white);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 0.0f, 0.001f);
+    canvas.quad(tile(0.0F, 0.0F), white);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 0.0F, 0.001F);
 }
 
 /**
@@ -197,16 +196,16 @@ BOOST_AUTO_TEST_CASE(clearing_drops_the_stream_and_the_stack) {
  * before keeps its own.
  **/
 BOOST_AUTO_TEST_CASE(a_tint_multiplies_the_quads_after_it) {
-    v3d::render::realtime::WorldCanvas canvas;
-    const glm::vec4 dusk(1.0f, 0.5f, 0.25f, 1.0f);
-    canvas.quad(tile(0.0f, 0.0f), red);
+    v3d::render::realtime::canvas::World canvas;
+    const glm::vec4 dusk(1.0F, 0.5F, 0.25F, 1.0F);
+    canvas.quad(tile(0.0F, 0.0F), red);
     canvas.tint(dusk);
-    canvas.quad(tile(1.0f, 0.0f), glm::vec2(0.0f), glm::vec2(1.0f), glm::vec4(0.5f, 1.0f, 1.0f, 0.5f), handle(2));
+    canvas.quad(tile(1.0F, 0.0F), glm::vec2(0.0F), glm::vec2(1.0F), glm::vec4(0.5F, 1.0F, 1.0F, 0.5F), handle(2));
 
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8u);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8U);
     for (std::size_t corner = 0; corner < 4; corner++) {
         BOOST_TEST((canvas.vertices()[corner].colour == red));
-        BOOST_TEST((canvas.vertices()[4 + corner].colour == glm::vec4(0.5f, 0.5f, 0.25f, 0.5f)));
+        BOOST_TEST((canvas.vertices()[4 + corner].colour == glm::vec4(0.5F, 0.5F, 0.25F, 0.5F)));
     }
     BOOST_TEST((canvas.tint() == dusk));
 }
@@ -216,12 +215,14 @@ BOOST_AUTO_TEST_CASE(a_tint_multiplies_the_quads_after_it) {
  * frame that sets no tint draws the world as it is.
  **/
 BOOST_AUTO_TEST_CASE(clearing_returns_the_tint_to_white) {
-    v3d::render::realtime::WorldCanvas canvas;
-    canvas.tint(glm::vec4(0.2f, 0.2f, 0.6f, 1.0f));
+    v3d::render::realtime::canvas::World canvas;
+    canvas.tint(glm::vec4(0.2F, 0.2F, 0.6F, 1.0F));
     canvas.clear();
 
-    canvas.quad(tile(0.0f, 0.0f), red);
+    canvas.quad(tile(0.0F, 0.0F), red);
     BOOST_TEST((canvas.vertices()[0].colour == red));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

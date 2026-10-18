@@ -10,7 +10,7 @@
 namespace v3d::ecs::component {
 
 glm::quat aboutY(const float radians) {
-    return glm::angleAxis(radians, glm::vec3(0.0f, 1.0f, 0.0f));
+    return glm::angleAxis(radians, glm::vec3(0.0F, 1.0F, 0.0F));
 }
 
 };  // namespace v3d::ecs::component

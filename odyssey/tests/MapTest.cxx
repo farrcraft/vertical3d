@@ -3,10 +3,14 @@
  * Copyright (c) 2026 Joshua Farr (josh@farrcraft.com)
  **/
 
+#include <api/asset/Type.h>
+#include <api/asset/kind/Json.h>
 #include <api/grid/Pathfinding.h>
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
+#include <api/log/Logger.h>
 #include <odyssey/tile/Map.h>
+#include <odyssey/tile/Tile.h>
 
 #include <string>
 #include <vector>
@@ -26,8 +30,8 @@ boost::shared_ptr<odyssey::tile::Map> map() {
 }
 
 /**
- * A room with a doorway in the middle of its wall, so a route across it has to find the
- * one gap rather than walk the straight line the distance metric would suggest.
+ * A room split by a wall with one gap at its foot. A route from one side to the other has to
+ * go round through the gap, not straight across.
  **/
 const char* const room =
 "{\"tiles\": ["
@@ -38,14 +42,12 @@ const char* const room =
 "\"#####\""
 "]}";
 
-};  // namespace
-
 /**
  * The document is read as it is written: the first string is the northmost row, a
  * character is a tile, and the kinds land where the file put them.
  **/
 BOOST_AUTO_TEST_CASE(map_load_test) {
-    boost::shared_ptr<odyssey::tile::Map> board = map();
+    const boost::shared_ptr<odyssey::tile::Map> board = map();
     BOOST_REQUIRE(board->load(document(room)));
 
     BOOST_REQUIRE(board->loaded());
@@ -61,11 +63,11 @@ BOOST_AUTO_TEST_CASE(map_load_test) {
 }
 
 /**
- * A kind decides passability and cover together. This is the only place those two are
- * chosen: the grid stores them but does not define what a crate is.
+ * Each kind sets both passability and cover on the grid. The grid stores the two flags but
+ * does not define what a crate is.
  **/
 BOOST_AUTO_TEST_CASE(map_kinds_carry_cover_test) {
-    boost::shared_ptr<odyssey::tile::Map> board = map();
+    const boost::shared_ptr<odyssey::tile::Map> board = map();
     BOOST_REQUIRE(board->load(document("{\"tiles\": [\"#.o\"]}")));
 
     BOOST_CHECK(!board->grid()->passable({0, 0}));
@@ -80,12 +82,11 @@ BOOST_AUTO_TEST_CASE(map_kinds_carry_cover_test) {
 }
 
 /**
- * A route over the map, found by the api rather than by the app. The straight line from
- * the start to the far corner crosses a wall, so a path that goes around shows the grid
- * actually searched for it.
+ * v3d::grid::findPath routes over the map's grid. The straight line from the start to the
+ * goal crosses a wall, so a route that goes round it shows the grid searched for one.
  **/
 BOOST_AUTO_TEST_CASE(map_is_routable_test) {
-    boost::shared_ptr<odyssey::tile::Map> board = map();
+    const boost::shared_ptr<odyssey::tile::Map> board = map();
     BOOST_REQUIRE(board->load(document(room)));
 
     const v3d::grid::TileCoord goal{3, 1};
@@ -95,9 +96,9 @@ BOOST_AUTO_TEST_CASE(map_is_routable_test) {
     BOOST_REQUIRE(!path.empty());
     BOOST_CHECK(path.front() == board->start());
     BOOST_CHECK(path.back() == goal);
-    // three tiles apart on open ground, but the wall between them makes it four steps
+    // two tiles apart on open ground, but the wall between them makes the route four steps
     BOOST_CHECK_EQUAL(v3d::grid::tileDistance(board->start(), goal), 2);
-    BOOST_CHECK_EQUAL(path.size() - 1, 4u);
+    BOOST_CHECK_EQUAL(path.size() - 1, 4U);
 
     // every tile of it is one the map says can be walked on
     for (const v3d::grid::TileCoord& tile : path) {
@@ -106,11 +107,10 @@ BOOST_AUTO_TEST_CASE(map_is_routable_test) {
 }
 
 /**
- * A map with no '@' still has somewhere to stand, because a board that loaded but cannot
- * be played on is worse than one that did not load.
+ * A map with no '@' starts the player on its first floor tile.
  **/
 BOOST_AUTO_TEST_CASE(map_start_defaults_to_floor_test) {
-    boost::shared_ptr<odyssey::tile::Map> board = map();
+    const boost::shared_ptr<odyssey::tile::Map> board = map();
     BOOST_REQUIRE(board->load(document("{\"tiles\": [\"##\", \"#.\"]}")));
 
     BOOST_CHECK(board->start() == v3d::grid::TileCoord({1, 1}));
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(map_start_defaults_to_floor_test) {
  * loaded before survives the attempt.
  **/
 BOOST_AUTO_TEST_CASE(map_rejects_test) {
-    boost::shared_ptr<odyssey::tile::Map> board = map();
+    const boost::shared_ptr<odyssey::tile::Map> board = map();
     BOOST_REQUIRE(board->load(document(room)));
 
     BOOST_CHECK(!board->load(document("{}")));
@@ -139,13 +139,15 @@ BOOST_AUTO_TEST_CASE(map_rejects_test) {
 }
 
 /**
- * Nothing stands outside the board, so a tile off it reads as wall rather than throwing -
- * the same shape TileGrid::passable() has for the same reason.
+ * A tile off the board reads as wall, and reading one does not throw. TileGrid::passable()
+ * behaves the same way.
  **/
 BOOST_AUTO_TEST_CASE(map_off_the_board_test) {
-    boost::shared_ptr<odyssey::tile::Map> board = map();
+    const boost::shared_ptr<odyssey::tile::Map> board = map();
     BOOST_REQUIRE(board->load(document(room)));
 
     BOOST_CHECK(board->kind({-1, 0}) == odyssey::tile::Kind::Wall);
     BOOST_CHECK(board->kind({5, 5}) == odyssey::tile::Kind::Wall);
 }
+
+};  // namespace

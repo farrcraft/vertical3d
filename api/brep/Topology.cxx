@@ -5,7 +5,14 @@
 
 #include "Topology.h"
 
+#include "BRep.h"
+#include "Face.h"
+#include "HalfEdge.h"
+#include "Index.h"
+#include "Vertex.h"
+
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 #include <glm/geometric.hpp>
@@ -36,27 +43,21 @@ std::vector<Index> faceLoop(const BRep & mesh, Index face) {
     return edges;
 }
 
-bool loopSegment(const BRep & mesh, const std::vector<Index> & loop, std::size_t entry, glm::vec3* from, glm::vec3* to) {
+std::optional<Segment> loopSegment(const BRep & mesh, const std::vector<Index> & loop, std::size_t entry) {
     if (loop.empty() || entry >= loop.size()) {
-        return false;
+        return std::nullopt;
     }
     const HalfEdge* edge = mesh.edge(loop[entry]);
     const HalfEdge* before = mesh.edge(loop[(entry + loop.size() - 1) % loop.size()]);
     if (edge == nullptr || before == nullptr) {
-        return false;
+        return std::nullopt;
     }
     const Vertex* start = mesh.vertex(before->vertex());
     const Vertex* end = mesh.vertex(edge->vertex());
     if (start == nullptr || end == nullptr) {
-        return false;
+        return std::nullopt;
     }
-    if (from != nullptr) {
-        *from = start->point();
-    }
-    if (to != nullptr) {
-        *to = end->point();
-    }
-    return true;
+    return Segment{.from = start->point(), .to = end->point()};
 }
 
 bool ownsEdge(const BRep & mesh, Index edge) {
@@ -82,16 +83,16 @@ bool edgeSelected(const BRep & mesh, Index edge) {
 
 glm::vec3 center(const BRep & mesh, Index face) {
     const std::vector<Index> loop = faceLoop(mesh, face);
-    glm::vec3 sum(0.0f);
-    float count = 0.0f;
+    glm::vec3 sum(0.0F);
+    float count = 0.0F;
     for (const Index entry : loop) {
         const Vertex* vertex = mesh.vertex(mesh.edge(entry)->vertex());
         if (vertex != nullptr) {
             sum += vertex->point();
-            count += 1.0f;
+            count += 1.0F;
         }
     }
-    return count > 0.0f ? sum / count : sum;
+    return count > 0.0F ? sum / count : sum;
 }
 
 void faceUV(const BRep & mesh, Index face, glm::vec3* u, glm::vec3* v) {
@@ -111,10 +112,10 @@ void faceUV(const BRep & mesh, Index face, glm::vec3* u, glm::vec3* v) {
         sides.push_back(end->point() - after->point());
     }
     // the first side that has a length, and the first side after it that is not parallel to it
-    constexpr float PARALLEL = 1e-10f;
+    constexpr float PARALLEL = 1e-10F;
     for (std::size_t first = 0; first < sides.size(); first++) {
         const float firstLength = glm::dot(sides[first], sides[first]);
-        if (firstLength <= 0.0f) {
+        if (firstLength <= 0.0F) {
             continue;
         }
         for (std::size_t second = first + 1; second < sides.size(); second++) {

@@ -10,13 +10,13 @@
 namespace v3d::type::animation {
 
 /**
- * The time-keeping of anything played on the fixed simulation step: a duration, and whether it
+ * The timing of anything that advances once per simulation step: a duration, and whether it
  * loops or stops at its end.
  *
- * A clock holds no time of its own. Whatever plays something keeps the time and passes it to
- * the clock to advance, so a skeletal clip and a sprite's frames can each keep their own. A
- * looping clock's time is kept unwrapped, so that two steps either side of a wrap still
- * interpolate forwards; sample() wraps it.
+ * A clock holds no time of its own. The caller keeps the time and passes it to advance(), so a
+ * skeletal clip and a sprite's frames can each keep their own. A looping clock's time is kept
+ * unwrapped, so two steps on either side of a wrap still interpolate forwards. sample() wraps
+ * it.
  **/
 class Clock final {
  public:
@@ -43,12 +43,13 @@ class Clock final {
     float sample(float time) const noexcept;
 
     /**
-     * How many times a step passed a marker: a time within the clip at which something is to
-     * be reported. A step that ends exactly on the marker passes it, and one that starts on it
-     * does not, so a marker is reported once however the steps fall.
+     * How many times a step passed a marker. A marker is a time within the clip at which
+     * something is to be reported. A step that ends exactly on the marker passes it, and one
+     * that starts on it does not, so a marker is reported once however the steps fall.
      *
-     * A marker at the duration is the end: a clamped clip reports it once, the step it stops,
-     * and a looping one reports every wrap.
+     * A marker at the duration is the end. A clamped clip reports it once, on the step that
+     * reaches it, and a looping one reports it at every wrap. A marker outside [0, duration]
+     * is never passed.
      *
      * A step that starts or ends at a time that is not finite passes nothing, and neither does
      * a marker that is not a number. A count too large for the result is held at its largest

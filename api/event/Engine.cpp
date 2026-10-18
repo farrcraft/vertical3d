@@ -5,7 +5,13 @@
 
 #include "Engine.h"
 
+#include "Context.h"
+#include "Event.h"
+#include "Mapper.h"
+#include "Source.h"
+
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -19,7 +25,7 @@ Engine::Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher) : dispatch
 /**
  **/
 void Engine::addMapper(const boost::shared_ptr<Mapper>& mapper) {
-    std::string mapperName(mapper->name());
+    const std::string mapperName(mapper->name());
     mappers_[mapperName] = mapper;
 }
 
@@ -30,8 +36,8 @@ void Engine::handleSourceEvent(const Unclaimed& unclaimed) {
     for (auto it = mappers_.begin(); it != mappers_.end(); it++) {
         std::vector<Event> destinations = it->second->destinations(source);
         for (auto mapped = destinations.begin(); mapped != destinations.end(); ++mapped) {
-            // carry the edge across so a handler can tell press from release without
-            // needing a separate binding for each
+            // copy the source's edge and repeat flag onto the command, so a handler can tell
+            // press from release without a separate binding for each
             mapped->state(source.state());
             mapped->repeat(source.repeat());
             dispatcher_->trigger(*mapped);

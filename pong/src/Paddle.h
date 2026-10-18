@@ -27,8 +27,8 @@ class Paddle final {
     float drawn(float alpha) const;
 
     /**
-     * Draw the paddle where it is with no motion, after it has been put somewhere rather
-     * than moved there.
+     * Make the next frame draw the paddle at its position, with no motion from the last step.
+     * Call it after placing the paddle somewhere it did not move to.
      **/
     void settle();
 
@@ -42,8 +42,8 @@ class Paddle final {
     float length() const;
     float size() const;
 
-    void up(bool k);
-    void down(bool k);
+    void up(bool held);
+    void down(bool held);
     void score(int s);
 
  private:

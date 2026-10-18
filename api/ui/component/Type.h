@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
 namespace v3d::ui::component {
@@ -15,7 +16,7 @@ namespace v3d::ui::component {
  * Every one of these has a loader and a draw path. A type is not listed here until it has
  * both.
  **/
-enum class Type {
+enum class Type : std::uint8_t {
     Undefined,
     Bar,
     Button,
@@ -49,7 +50,7 @@ enum class Type {
 std::string_view name(Type type);
 
 /**
- * The reverse: what a config asked for.
+ * The reverse of name(): the type a config's "type" names.
  *
  * @return the type, or Undefined for a name no component has. The loader reports that as
  *         an unrecognised type.
@@ -57,10 +58,11 @@ std::string_view name(Type type);
 Type parse(std::string_view text);
 
 /**
- * What a type is, for a rule that holds of a kind of component rather than of one.
+ * The properties of a type, for a rule that applies to a kind of component rather than to
+ * one type.
  **/
 struct Traits final {
-    bool strip = false;   /**< a menu bar or a toolbar: stacked at an edge, its items its own **/
+    bool strip = false;   /**< a menu bar or a toolbar: stacked at an edge, holding items that are not children **/
     bool flow = false;    /**< a component::Box, laying its children out in the order it holds them **/
     bool pages = false;   /**< holds pages and shows one, so only that one is live **/
     bool text = false;    /**< takes typed text while it has the focus **/

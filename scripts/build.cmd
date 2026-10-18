@@ -1,14 +1,13 @@
 @echo off
-rem Build the tree from a plain shell, which ninja cannot do on its own: the compiler,
-rem the linker and ninja itself are all on the developer environment's PATH and on
-rem nothing else's. Visual Studio configures out/build/x64-Debug from CMakeSettings.json
-rem and needs none of this; a shell does.
+rem Build the tree from a plain shell. The compiler, the linker and ninja are only on a
+rem developer environment's PATH, so this script enters one first. Visual Studio
+rem configures out/build/x64-Debug from CMakeSettings.json and does not need this script.
 rem
 rem   scripts\build.cmd                 everything
 rem   scripts\build.cmd pong            one target by name
 rem
-rem Anything after the script name is passed to ninja. docs/contributing/Build.md covers configuring
-rem a cold tree, which this does not do - it builds one that is already configured.
+rem Anything after the script name is passed to ninja. The tree must already be configured,
+rem because this script does not run cmake.
 
 setlocal
 

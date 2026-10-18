@@ -17,9 +17,9 @@ namespace v3d::asset {
  * Checked reads of one member of a JSON object, by key.
  *
  * Each read returns nothing when the object has no member of that name, or when the member is
- * not of the type the read names. None of them throws for either case, where
- * boost::json::value_to and the as_ accessors throw. A caller that reports a missing member and
- * a member of the wrong type differently tests contains() first.
+ * not of the type the read names. Unlike boost::json::value_to and the as_ accessors, none of
+ * them throws in either case. A caller that reports a missing member and a member of the wrong
+ * type differently tests contains() first.
  *
  * The object and array reads return a pointer into the object instead of a copy, and a null
  * pointer in place of nothing. The pointer is valid for as long as the object is unchanged.
@@ -38,6 +38,16 @@ std::optional<std::string> readString(const boost::json::object& object, std::st
  * @return the member's value, or nothing when it is absent or not a number
  **/
 std::optional<double> readNumber(const boost::json::object& object, std::string_view key) noexcept;
+
+/**
+ * A member stored as a signed or an unsigned integer whose value an int can hold. A double is
+ * not read, even a whole one, so a document that writes a count as 2.0 is refused rather than
+ * rounded.
+ *
+ * @return the member's value, or nothing when it is absent, not an integer, or outside the
+ *         range of an int
+ **/
+std::optional<int> readInt(const boost::json::object& object, std::string_view key) noexcept;
 
 /**
  * @return the member's value, or nothing when it is absent or not true or false

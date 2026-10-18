@@ -33,7 +33,7 @@ class Asset {
      **/
     Type type() const noexcept;
 
- protected:
+ private:
     std::string name_;
     Type type_;
 };

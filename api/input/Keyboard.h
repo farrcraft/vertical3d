@@ -49,7 +49,7 @@ class Keyboard final : public Device {
     void flush() override;
 
     /**
-     * @return what is held and what changed edge this frame
+     * @return the keys held and this frame's edges
      **/
     const KeyState& state() const;
 

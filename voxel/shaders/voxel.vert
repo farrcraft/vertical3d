@@ -4,8 +4,8 @@
  * The vertex half of the voxel terrain pipeline - ambient, diffuse and specular shading of
  * an axis aligned block face.
  *
- * Lighting is done here rather than per fragment because a face is flat: its normal is one
- * of six constants and its material is constant across the quad, so the four corners carry
+ * Lighting is done per vertex, not per fragment. A face is flat: its normal is one of six
+ * constants, and its material is the same across the quad. The four corners therefore carry
  * everything the interpolator needs.
  *
  * Positions arrive in chunk local blocks and the chunk's origin comes in a push constant,
@@ -18,7 +18,7 @@ layout(location = 1) in vec2 info;
 
 layout(location = 0) out vec3 intensity;
 
-// set 0, updated once per frame - the camera the whole pass draws through
+// set 0, the camera the whole pass draws through, updated once per frame
 layout(set = 0, binding = 0) uniform Camera {
     mat4 view;
     mat4 projection;
@@ -32,7 +32,7 @@ struct MaterialInfo {
     vec4 specular;  // reflectivity in rgb, the shininess exponent in w
 };
 
-// set 1, updated once per material - the one light and the block palette, written once
+// set 1, the one light and the block palette. It is written once, and every chunk draws with it
 layout(set = 1, binding = 0) uniform Scene {
     vec4 lightPosition;  // in world space
     vec4 ambient;        // light intensities

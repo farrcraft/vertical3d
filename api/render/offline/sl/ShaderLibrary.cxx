@@ -5,7 +5,10 @@
 
 #include "ShaderLibrary.h"
 
+#include <api/log/Logger.h>
 #include <api/render/offline/SearchPath.h>
+#include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 
 #include <fstream>
@@ -17,7 +20,9 @@
 
 #include "Compiler.h"
 #include "Emitter.h"
+#include "Instance.h"
 #include "Parser.h"
+#include "Types.h"
 
 namespace v3d::render::offline::sl {
 
@@ -27,17 +32,17 @@ namespace {
     The standard shaders, compiled into the library as source strings so that
     Surface "matte" works with no shader files at all.
 
-    They are RI's own, written in this implementation's interpretation of the language: L
-    points from the point being shaded toward the light, so a spotlight tests its cone
-    against -L, the direction the light travels.
+    They are the standard shaders RI defines. Here L points from the point being shaded
+    toward the light, so a spotlight tests its cone against -L, the direction the light
+    travels.
 
-    Each of the three directional lights casts a shadow by calling transmission() for how much
-    of its light arrives. A renderer with no ray tracer returns full transmission, so its
-    lights cast no shadows.
+    Each light with a direction casts a shadow by calling transmission() for how much of its
+    light arrives. A renderer with no ray tracer returns full transmission, so its lights
+    cast no shadows.
 
-    shinymetal is RI's with trace() where RI reads an environment map. glass is not one of
-    RI's, since RI defines no refracting shader. glass is opaque because it shows what is
-    behind it by tracing a refracted ray rather than by letting a ray through. It flips its
+    shinymetal is RI's, with trace() where RI reads an environment map. RI defines no
+    refracting shader, so glass is this library's own. glass is opaque: it shows what is
+    behind it by tracing a refracted ray, not by letting the ray through. It flips its
     normal and its ratio of indices when the ray is leaving it.
 */
 const char* const STANDARD = R"(
@@ -157,9 +162,9 @@ imager background(color background = 0) {
 /**
  * The shader of that name out of a source, or null when it holds none.
  *
- * A file found on the search path is allowed to name its shader something other than the
- * file: RI identifies a shader by the name in its source, and a file holding exactly one
- * is unambiguous whatever it is called.
+ * A source holding exactly one shader returns it whatever its name. RI identifies a shader
+ * by the name in its source, so a file on the search path may name its shader something
+ * other than the file.
  **/
 syntax::ShaderPtr find(const std::vector<syntax::ShaderPtr> & shaders, const std::string & name) {
     for (const syntax::ShaderPtr & shader : shaders) {
@@ -186,7 +191,7 @@ std::string ShaderLibrary::file(const std::string & name, std::string* where) co
         path += "/";
         path += name;
         path += ".sl";
-        std::ifstream stream(path.c_str());
+        const std::ifstream stream(path.c_str());
         if (!stream.is_open()) {
             continue;
         }
@@ -198,9 +203,9 @@ std::string ShaderLibrary::file(const std::string & name, std::string* where) co
     return std::string();
 }
 
-ProgramPtr ShaderLibrary::compile(const std::string & name, const std::string & source,
-    const std::string & where) {
-    std::istringstream stream(source);
+ProgramPtr ShaderLibrary::compile(const std::string & name, const Source & source) {
+    const std::string & where = source.where;
+    std::istringstream stream(source.text);
     Parser parser(stream);
     const syntax::ShaderPtr shader = find(parser.parse(), name);
     if (!shader) {
@@ -243,15 +248,15 @@ ProgramPtr ShaderLibrary::program(const std::string & name) {
         where = "the standard shaders";
         source = STANDARD;
     }
-    ProgramPtr compiled = compile(name, source, where);
+    ProgramPtr compiled = compile(name, {.text = source, .where = where});
     programs_[name] = compiled;
     return compiled;
 }
 
 InstancePtr ShaderLibrary::fallback(ShaderType wanted) {
     if (wanted != ShaderType::SURFACE) {
-        // RI requires a default surface and says nothing about a default light: a light
-        // that will not compile is one fewer light rather than a light of some other kind
+        // RI requires a default surface and says nothing about a default light. A light
+        // that will not compile is dropped, not replaced by another light
         return InstancePtr();
     }
     const ProgramPtr matte = program("matte");
@@ -265,7 +270,7 @@ InstancePtr ShaderLibrary::instance(const std::string & name, ShaderType wanted,
     const rib::ParameterList & parameters) {
     const ProgramPtr found = program(name);
     if (!found) {
-        // already reported as an error, by name and position
+        // compile() has already logged the error
         return fallback(wanted);
     }
     if (found->type != wanted) {

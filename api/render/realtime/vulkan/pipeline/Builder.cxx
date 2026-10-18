@@ -5,8 +5,14 @@
 
 #include "Builder.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
+#include "Cache.h"
+#include "Pipeline.h"
+
+#include <cstddef>
+#include <cstdint>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -61,7 +67,7 @@ Builder& Builder::shader(VkShaderStageFlagBits stage, const uint32_t* code, std:
     info.pCode = code;
 
     VkShaderModule module = VK_NULL_HANDLE;
-    VkResult result = vkCreateShaderModule(device_->handle(), &info, nullptr, &module);
+    const VkResult result = vkCreateShaderModule(device_->handle(), &info, nullptr, &module);
     device::check(result, "Unable to create a shader module for the " + name_ + " pipeline");
     modules_.push_back(module);
 
@@ -77,23 +83,14 @@ Builder& Builder::shader(VkShaderStageFlagBits stage, const uint32_t* code, std:
 
 /**
  **/
-Builder& Builder::vertexBinding(uint32_t binding, uint32_t stride, VkVertexInputRate rate) {
-    VkVertexInputBindingDescription description{};
-    description.binding = binding;
-    description.stride = stride;
-    description.inputRate = rate;
+Builder& Builder::vertexBinding(const VkVertexInputBindingDescription & description) {
     bindings_.push_back(description);
     return *this;
 }
 
 /**
  **/
-Builder& Builder::vertexAttribute(uint32_t location, uint32_t binding, VkFormat format, uint32_t offset) {
-    VkVertexInputAttributeDescription description{};
-    description.location = location;
-    description.binding = binding;
-    description.format = format;
-    description.offset = offset;
+Builder& Builder::vertexAttribute(const VkVertexInputAttributeDescription & description) {
     attributes_.push_back(description);
     return *this;
 }
@@ -167,9 +164,9 @@ Builder& Builder::set(VkDescriptorSetLayout layout) {
 
 /**
  **/
-Builder& Builder::push(VkShaderStageFlags stages, uint32_t bytes) {
-    pushStages_ = stages;
-    pushBytes_ = bytes;
+Builder& Builder::push(const VkPushConstantRange & range) {
+    pushStages_ = range.stageFlags;
+    pushBytes_ = range.size;
     return *this;
 }
 
@@ -209,7 +206,7 @@ VkPipelineRasterizationStateCreateInfo Builder::rasterization() const {
     raster.polygonMode = polygon_;
     raster.cullMode = cull_;
     raster.frontFace = front_;
-    raster.lineWidth = 1.0f;
+    raster.lineWidth = 1.0F;
     // the factors are dynamic, so this enables the bias without saying what it is
     raster.depthBiasEnable = depthBias_ ? VK_TRUE : VK_FALSE;
     return raster;
@@ -233,9 +230,9 @@ VkPipelineColorBlendAttachmentState Builder::colourBlend() const {
 /**
  **/
 std::vector<VkDynamicState> Builder::dynamics() const {
-    // the viewport is dynamic so that a window resize costs no pipeline rebuild, and the
-    // depth bias is dynamic for a pipeline that asked for one - its numbers belong to the
-    // scene rather than to the pipeline
+    // the viewport is dynamic so that a window resize costs no pipeline rebuild. The depth
+    // bias is dynamic for a pipeline built with one, because its values belong to the scene,
+    // not the pipeline
     std::vector<VkDynamicState> dynamics{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
     if (depthBias_) {
         dynamics.push_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
@@ -255,8 +252,8 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
         msg << "The " << name_ << " pipeline was built with no shader stages";
         throw std::runtime_error(msg.str());
     }
-    // an empty list is a pipeline that writes no colour, which a shadow pass is. An entry
-    // left undefined was never named; that is the default, and still an error
+    // an empty list is a pipeline that writes no colour, as in a shadow pass. An entry left
+    // undefined was never set. That is the default, and still an error
     for (const VkFormat format : colours_) {
         if (format == VK_FORMAT_UNDEFINED) {
             std::stringstream msg;
@@ -299,7 +296,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     layout.pPushConstantRanges = built.pushStages != 0 ? &push : nullptr;
 
     if (ownsLayout) {
-        VkResult result = vkCreatePipelineLayout(device, &layout, nullptr, &built.layout);
+        const VkResult result = vkCreatePipelineLayout(device, &layout, nullptr, &built.layout);
         device::check(result, "Unable to create the " + name_ + " pipeline layout");
     } else {
         built.layout = layout_;
@@ -332,7 +329,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     depth.depthTestEnable = depthTest_ ? VK_TRUE : VK_FALSE;
     depth.depthWriteEnable = depthWrite_ ? VK_TRUE : VK_FALSE;
     depth.depthCompareOp = depthCompare_;
-    depth.maxDepthBounds = 1.0f;
+    depth.maxDepthBounds = 1.0F;
 
     const VkPipelineColorBlendAttachmentState attachment = colourBlend();
 

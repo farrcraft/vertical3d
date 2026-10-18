@@ -12,8 +12,13 @@ namespace v3d::render::offline::sl::syntax {
 
 class Conditional final : public Statement {
  public:
-    Conditional(const ExpressionPtr & condition, const StatementPtr & whenTrue,
-        const StatementPtr & whenFalse, unsigned int line, unsigned int column);
+    /** What runs when the condition holds, and what runs when it does not, which may be null. **/
+    struct Branches {
+        StatementPtr whenTrue;
+        StatementPtr whenFalse;
+    };
+
+    Conditional(const ExpressionPtr & condition, const Branches & branches, const v3d::render::offline::Position & at);
 
     ExpressionPtr condition;
     StatementPtr whenTrue;

@@ -12,6 +12,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(registry_test)
 
 /**
@@ -19,7 +21,7 @@ BOOST_AUTO_TEST_SUITE(registry_test)
  * material can be told apart from one that named the first one registered.
  **/
 BOOST_AUTO_TEST_CASE(a_default_handle_is_invalid) {
-    v3d::render::realtime::TextureHandle handle;
+    const v3d::render::realtime::TextureHandle handle;
 
     BOOST_CHECK(!handle.valid());
     BOOST_CHECK(handle != v3d::render::realtime::TextureHandle(0));
@@ -29,8 +31,8 @@ BOOST_AUTO_TEST_CASE(a_default_handle_is_invalid) {
  * Handles order by slot, and a sort key is built from the slot.
  **/
 BOOST_AUTO_TEST_CASE(handles_order_by_slot) {
-    v3d::render::realtime::PipelineHandle first(0);
-    v3d::render::realtime::PipelineHandle second(1);
+    const v3d::render::realtime::PipelineHandle first(0);
+    const v3d::render::realtime::PipelineHandle second(1);
 
     BOOST_CHECK(first < second);
     BOOST_CHECK(first == v3d::render::realtime::PipelineHandle(0));
@@ -42,8 +44,8 @@ BOOST_AUTO_TEST_CASE(handles_order_by_slot) {
 BOOST_AUTO_TEST_CASE(a_registered_resource_resolves) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;
 
-    v3d::render::realtime::Handle<struct TestTag> first = registry.add("first");
-    v3d::render::realtime::Handle<struct TestTag> second = registry.add("second");
+    const v3d::render::realtime::Handle<struct TestTag> first = registry.add("first");
+    const v3d::render::realtime::Handle<struct TestTag> second = registry.add("second");
 
     BOOST_CHECK_EQUAL(registry.count(), 2);
     BOOST_REQUIRE(registry.resolve(first) != nullptr);
@@ -57,14 +59,14 @@ BOOST_AUTO_TEST_CASE(a_registered_resource_resolves) {
 BOOST_AUTO_TEST_CASE(slots_are_handed_out_in_order) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;
 
-    BOOST_CHECK_EQUAL(registry.add("first").id(), 0u);
-    BOOST_CHECK_EQUAL(registry.add("second").id(), 1u);
-    BOOST_CHECK_EQUAL(registry.add("third").id(), 2u);
+    BOOST_CHECK_EQUAL(registry.add("first").id(), 0U);
+    BOOST_CHECK_EQUAL(registry.add("second").id(), 1U);
+    BOOST_CHECK_EQUAL(registry.add("third").id(), 2U);
 }
 
 /**
- * Resolving something that was never registered gives nothing rather than a stale
- * reference - a recorder walking a frame full of items has to be able to skip one.
+ * Resolving a handle that was never registered gives nothing, not a stale reference, so a
+ * recorder can skip an item whose resource does not exist.
  **/
 BOOST_AUTO_TEST_CASE(an_unknown_handle_resolves_to_nothing) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;
@@ -80,8 +82,8 @@ BOOST_AUTO_TEST_CASE(an_unknown_handle_resolves_to_nothing) {
  **/
 BOOST_AUTO_TEST_CASE(a_released_handle_resolves_to_nothing) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;
-    v3d::render::realtime::Handle<struct TestTag> first = registry.add("first");
-    v3d::render::realtime::Handle<struct TestTag> second = registry.add("second");
+    const v3d::render::realtime::Handle<struct TestTag> first = registry.add("first");
+    const v3d::render::realtime::Handle<struct TestTag> second = registry.add("second");
 
     std::optional<std::string> released = registry.release(first);
 
@@ -94,15 +96,15 @@ BOOST_AUTO_TEST_CASE(a_released_handle_resolves_to_nothing) {
 }
 
 /**
- * A slot freed by a release is reused, and the old handle does not reach the new occupant
- * even though both name the same slot - the generation is what tells them apart.
+ * A slot freed by a release is reused, and the old handle does not reach the new occupant. Both
+ * handles name the same slot, and the generation tells them apart.
  **/
 BOOST_AUTO_TEST_CASE(a_reused_slot_refuses_the_old_handle) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;
-    v3d::render::realtime::Handle<struct TestTag> old = registry.add("old");
+    const v3d::render::realtime::Handle<struct TestTag> old = registry.add("old");
     registry.release(old);
 
-    v3d::render::realtime::Handle<struct TestTag> reused = registry.add("new");
+    const v3d::render::realtime::Handle<struct TestTag> reused = registry.add("new");
 
     BOOST_CHECK_EQUAL(reused.id(), old.id());
     BOOST_CHECK(reused != old);
@@ -117,9 +119,9 @@ BOOST_AUTO_TEST_CASE(a_reused_slot_refuses_the_old_handle) {
  **/
 BOOST_AUTO_TEST_CASE(a_second_release_is_a_no_op) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;
-    v3d::render::realtime::Handle<struct TestTag> old = registry.add("old");
+    const v3d::render::realtime::Handle<struct TestTag> old = registry.add("old");
     registry.release(old);
-    v3d::render::realtime::Handle<struct TestTag> reused = registry.add("new");
+    const v3d::render::realtime::Handle<struct TestTag> reused = registry.add("new");
 
     BOOST_CHECK(!registry.release(old).has_value());
     BOOST_CHECK(registry.resolve(reused) != nullptr);
@@ -127,13 +129,13 @@ BOOST_AUTO_TEST_CASE(a_second_release_is_a_no_op) {
 }
 
 /**
- * Walking a registry with released slots visits only what it still holds, in slot order. A
- * destructor uses the same walk to destroy what remains.
+ * each() on a registry with released slots visits only what it still holds, in slot order. A
+ * destructor calls each() to destroy what remains.
  **/
 BOOST_AUTO_TEST_CASE(a_walk_skips_released_slots) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;
     registry.add("first");
-    v3d::render::realtime::Handle<struct TestTag> second = registry.add("second");
+    const v3d::render::realtime::Handle<struct TestTag> second = registry.add("second");
     registry.add("third");
     registry.release(second);
 
@@ -151,10 +153,10 @@ BOOST_AUTO_TEST_CASE(a_walk_skips_released_slots) {
  **/
 BOOST_AUTO_TEST_CASE(a_clear_refuses_every_earlier_handle) {
     v3d::render::realtime::Registry<struct TestTag, std::string> registry;
-    v3d::render::realtime::Handle<struct TestTag> before = registry.add("before");
+    const v3d::render::realtime::Handle<struct TestTag> before = registry.add("before");
 
     registry.clear();
-    v3d::render::realtime::Handle<struct TestTag> after = registry.add("after");
+    const v3d::render::realtime::Handle<struct TestTag> after = registry.add("after");
 
     BOOST_CHECK_EQUAL(registry.count(), 1);
     BOOST_CHECK(registry.resolve(before) == nullptr);
@@ -162,3 +164,5 @@ BOOST_AUTO_TEST_CASE(a_clear_refuses_every_earlier_handle) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

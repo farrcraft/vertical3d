@@ -19,12 +19,11 @@
 namespace v3d::ui {
 
 /**
- * A vGUI Component
- * All UI components are all derived from this class.
+ * The base class of every ui component.
  *
  * A component holds other components, and layout() says where it sits in the one holding
- * it. position() and size() are the box it was last drawn in: the output of the layout
- * pass that resolves layout(), and what the cursor is tested against.
+ * it. position() and size() are the box it was last drawn in. The layout pass writes them
+ * when it resolves layout(), and the cursor is tested against them.
  */
 class Component {
  public:
@@ -110,14 +109,14 @@ class Component {
     component::Type type() const;
 
     /**
-     * Set the component's z index depth value, which a container draws in order of. Equal
-     * depths keep the order they were added in.
+     * Set the component's z index depth value. A container draws in order of depth, and
+     * equal depths keep the order they were added in.
      * @param index the new depth
      **/
     void depth(unsigned int index);
 
     /**
-     * @return where this component asks to be, to be changed in place
+     * @return where this component is placed and how big it is, to be changed in place
      **/
     Layout& layout() noexcept;
     const Layout& layout() const noexcept;
@@ -142,27 +141,27 @@ class Component {
     Component* parent() const noexcept;
 
     /**
-     * Take an item this component holds outside children(), such as a toolbar's buttons or a
-     * menu's items, so that the item inherits from this component. usable() walks up through
-     * the holder, and a disabled strip disables what is on it. The holder lays out and draws the
-     * item itself, so it is not a child and no traversal reaches it as one.
+     * Make this component the parent of an item it holds outside children(), such as a
+     * toolbar's buttons or a menu's items. usable() then walks up through the holder, so a
+     * disabled toolbar disables its buttons. The holder lays out and draws the item itself,
+     * so the item is not a child, and no loop over children() reaches it.
      *
      * An item already held by something else is left with it, as add() leaves a child.
      **/
     void adopt(Component& item) noexcept;
 
     /**
-     * Let go of an item adopt() took, so it no longer names this as its parent. A holder calls
-     * this for each item from its own destructor: an app may still hold an item after its
-     * holder is gone, and usable() on it must not walk into the holder.
+     * Release an item adopt() took, so it no longer names this as its parent. A holder calls
+     * this for each item from its own destructor. An app may still hold an item after its
+     * holder is gone, and usable() on that item must not reach the destroyed holder.
      **/
     void disown(Component& item) noexcept;
 
     /**
      * Get whether the component takes the cursor.
      *
-     * False by default: a hud is mostly labels and bars drawn over a scene that has to
-     * stay clickable, so a component takes a press only when it is set. Controls set it in
+     * False by default, because a hud is mostly labels and bars drawn over a scene that has
+     * to stay clickable. A component takes a press only when this is set. Controls set it in
      * their constructors.
      **/
     bool pickable() const;
@@ -171,9 +170,9 @@ class Component {
     /**
      * Get whether the component takes the keyboard.
      *
-     * False by default: most of a ui has nothing to type into, and a press that took the
-     * keyboard off a text box whenever it landed on a panel would make the box unusable.
-     * Controls that read keys set it in their constructors.
+     * False by default, because most of a ui reads no keys. Controls that read keys set it in
+     * their constructors. A press on a component that is not focusable takes the focus off
+     * whatever had it.
      **/
     bool focusable() const;
     void focusable(bool takes);
@@ -181,9 +180,8 @@ class Component {
     /**
      * Get whether the keyboard is on this component.
      *
-     * Written by Engine::focus(), which keeps one component focused at a time. A flag here
-     * rather than a question for the engine, so that drawing a component reads only the
-     * component.
+     * Written by Engine::focus(), which keeps one component focused at a time. The flag is
+     * stored on the component so that drawing a component reads only the component.
      **/
     bool focused() const;
     void focused(bool on);
@@ -191,9 +189,9 @@ class Component {
     /**
      * Get whether what this component holds is cut off at its box.
      *
-     * False by default: a menu drops a panel out of the strip it came
-     * from, and a badge sits half outside the plate it belongs to. A component that holds
-     * more than it can show - a list, a scrolled panel - sets it.
+     * False by default, because a menu drops a panel outside the strip it came from, and a
+     * badge can sit half outside the panel it belongs to. A component that holds more than it
+     * can show, such as a list or a scrolled panel, sets it.
      **/
     bool clip() const;
     void clip(bool cut);
@@ -201,10 +199,9 @@ class Component {
     /**
      * Get whether the component can be used.
      *
-     * True by default, and a property of the component rather than a state something
-     * writes as the cursor moves: a disabled component is not offered a point, is not
-     * reached by the tab order, and is drawn in the theme's disabled colour. A component
-     * that holds others disables them with it, so a screen greys out a group of controls by
+     * True by default. The cursor never changes it. A disabled component is not picked, is
+     * skipped by the tab order, and is drawn in the theme's disabled colour. Disabling a
+     * component disables everything it holds, so a screen greys out a group of controls by
      * disabling the box around them.
      **/
     bool enabled() const;
@@ -239,10 +236,10 @@ std::vector<boost::shared_ptr<Component>> ordered(const std::vector<boost::share
 
 /**
  * Whether components are already in the order they are drawn, so that a loop over them
- * needs no sorted copy of its own.
+ * needs no sorted copy.
  *
- * True whenever nothing has been given a depth, which is the common case, so it costs a
- * scan rather than an allocation and a sort, once per parent per frame.
+ * True whenever nothing has been given a depth, which is the common case. The check is one
+ * scan, with no allocation or sort, and runs once per parent per frame.
  **/
 bool inDrawOrder(const std::vector<boost::shared_ptr<Component>>& components) noexcept;
 
@@ -250,8 +247,8 @@ bool inDrawOrder(const std::vector<boost::shared_ptr<Component>>& components) no
  * Whether a component can be used, which is whether it and everything holding it are
  * enabled.
  *
- * Picking and the tab order skip a disabled subtree whole and never need to ask. Drawing
- * reaches each component on its own, so it asks here, and a label inside a disabled box is
+ * Picking and the tab order skip a disabled subtree whole, so they do not call this.
+ * Drawing visits every component, so it calls this, and a label inside a disabled box is
  * drawn greyed.
  **/
 bool usable(const Component& component) noexcept;

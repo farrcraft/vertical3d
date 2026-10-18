@@ -5,8 +5,12 @@
 
 #include "Pass.h"
 
+#include "DrawItem.h"
+
 #include <algorithm>
 #include <cstdint>
+#include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -20,7 +24,7 @@ namespace {
  * is unaffected.
  **/
 uint16_t slot(uint32_t id) noexcept {
-    return static_cast<uint16_t>(std::min<uint32_t>(id, 0xFFFFu));
+    return static_cast<uint16_t>(std::min<uint32_t>(id, std::numeric_limits<uint16_t>::max()));
 }
 
 };  // namespace
@@ -29,10 +33,10 @@ uint16_t slot(uint32_t id) noexcept {
  **/
 Pass::Pass(const std::string& name) :
     name_(name),
-    clearColour_(0.0f, 0.0f, 0.0f, 1.0f),
-    viewport_(0.0f, 0.0f, 0.0f, 0.0f),
-    view_(1.0f),
-    projection_(1.0f),
+    clearColour_(0.0F, 0.0F, 0.0F, 1.0F),
+    viewport_(0.0F, 0.0F, 0.0F, 0.0F),
+    view_(1.0F),
+    projection_(1.0F),
     scene_(VK_NULL_HANDLE),
     clears_(true),
     depth_(false),
@@ -189,7 +193,7 @@ void Pass::ordered(std::vector<const DrawItem*>* into) const {
 /**
  **/
 void Pass::reset() noexcept {
-    // the capacity is worth keeping - the next frame submits about as much as this one did
+    // keep the capacity. The next frame submits about as much as this one did
     items_.clear();
 }
 

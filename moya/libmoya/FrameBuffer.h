@@ -6,34 +6,34 @@
 #pragma once
 
 #include <api/render/offline/FrameBuffer.h>
+#include <moya/libmoya/reyes/Bucket.h>
 
-#include "Bucket.h"
-
+#include <cstdint>
 #include <vector>
 
+#include <glm/vec2.hpp>
+
 namespace v3d::moya {
-/*
-    the screen space to be rendered is broken down into a grid of tiles (buckets).
-    the framebuffer owns that grid, and the stack of float image planes the frame's
-    samples are filtered into.
-*/
+/**
+ * The image divided into a grid of tiles, called buckets, and the stack of float image
+ * planes the frame's samples are filtered into. It owns both.
+ */
 class FrameBuffer {
  public:
     /**
-     * The planes a render writes. The colour channels lead because the image conversion
-     * takes the leading planes as the picture; the depth follows them, and is the
-     * renderer's own rather than an alpha - written into one it would be a wrong picture
-     * that looks like a shading fault.
+     * The planes a render writes. The colour planes come first, because image() takes its
+     * channels from the leading planes. DEPTH follows them and is not an alpha channel, so
+     * the picture is written with CHANNELS planes and never four.
      */
-    enum Plane {
+    enum Plane : std::uint8_t {
         RED = 0,
         GREEN = 1,
         BLUE = 2,
         DEPTH = 3,
         /**
-         * How much of the pixel was drawn into, which is SL's alpha: the filtered
-         * fraction of its samples that hit. An imager reads it to tell a pixel nothing was
-         * drawn into from a black one.
+         * How much of the pixel was drawn into: the filtered fraction of its samples that
+         * hit. An imager reads it as SL's alpha, to tell a pixel nothing was drawn into from
+         * a black one.
          */
         COVERAGE = 4
     };
@@ -42,7 +42,13 @@ class FrameBuffer {
      */
     static const unsigned int CHANNELS = 3;
 
-    FrameBuffer(unsigned int bucketSize[2], unsigned int imageSize[2]);
+    /** The size of a bucket and of the whole image, in pixels. **/
+    struct Sizes {
+        glm::uvec2 bucket{0U};
+        glm::uvec2 image{0U};
+    };
+
+    explicit FrameBuffer(const Sizes & sizes);
     ~FrameBuffer();
 
     unsigned int * bucketSize(void) const;
@@ -61,10 +67,10 @@ class FrameBuffer {
      * The image planes the film resolves the frame's samples into, indexed by Plane.
      */
     boost::shared_ptr<v3d::render::offline::FrameBuffer> planes(void) const;
-    void addPrimitive(const boost::shared_ptr<ReyesPrimitive> & primitive, const v3d::type::geometry::AABBox & bound);
+    void addPrimitive(const boost::shared_ptr<reyes::Primitive> & primitive, const v3d::type::geometry::AABBox & bound);
     void render(RenderContext & rc);
 
-    typedef std::vector< std::vector<Bucket> > BucketGrid;
+    typedef std::vector< std::vector<reyes::Bucket> > BucketGrid;
 
  protected:
     void allocate(void);

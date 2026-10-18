@@ -27,10 +27,10 @@ namespace v3d::editor {
  * the scene's selection flags. The mask lives here rather than on a view, because it
  * decides what a click looks for and not what a view draws.
  *
- * Missing in object mode clears the whole selection; missing in a component mode
- * clears the components and leaves the object selected, so a stray click does not
- * throw away the object the user is working inside. Clicking the same component twice
- * deselects it, and one component of a kind is selected at a time.
+ * A miss in object mode clears the whole selection. A miss in a component mode clears the
+ * components and leaves the object selected, so a stray click does not lose the object the
+ * user is working inside. Clicking the same component twice deselects it, and one component
+ * of a kind is selected at a time.
  **/
 class SelectTool final : public Tool {
  public:
@@ -79,8 +79,8 @@ class SelectTool final : public Tool {
 
     /**
      * Select one mesh and nothing else.
-     * @param id the node id, or zero for none - no mesh has id zero, the counter
-     *        starts above it
+     * @param id the node id, or zero for none. No mesh has id zero, because the id
+     *        counter starts above it
      **/
     void selectObject(unsigned int id);
 

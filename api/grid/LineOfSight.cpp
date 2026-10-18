@@ -5,6 +5,9 @@
 
 #include "LineOfSight.h"
 
+#include "TileCoord.h"
+#include "TileGrid.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -22,12 +25,12 @@ int signOf(int value) {
 /**
  * The fixed order the two endpoints are put in before anything is traced.
  *
- * Any total order would do; what matters is that one trace serves both directions, so no tie
- * inside it can be broken one way for one end and the other way for the other. Row before
- * column, to match the grid's own row major layout.
+ * Any total order works. The fixed order makes one trace serve both directions, so a tie
+ * inside the trace cannot be broken differently for each end. Rows are compared before
+ * columns, matching the grid's row-major layout.
  **/
-bool precedes(TileCoord a, TileCoord b) {
-    return a.y != b.y ? a.y < b.y : a.x < b.x;
+bool precedes(TileCoord first, TileCoord second) {
+    return first.y != second.y ? first.y < second.y : first.x < second.x;
 }
 
 /**
@@ -46,15 +49,15 @@ struct Step {
 };
 
 /**
- * Walk every tile the segment between two tile centres touches, from exclusive.
+ * Visits every tile that the segment between two tile centres passes through, excluding from.
  *
  * Tiles are unit squares centred on their coordinate, so the boundaries the segment crosses
- * sit at half integers. After i steps along x and j along y, the segment meets the next x
- * boundary before the next y boundary exactly when ady * (2i + 1) < adx * (2j + 1) - integer
- * arithmetic throughout, so the tie is exact rather than a tolerance, and the tie is the
- * corner case.
+ * sit at half integers. After xSteps steps along x and ySteps along y, the segment meets the
+ * next x boundary before the next y boundary exactly when
+ * ady * (2 * xSteps + 1) < adx * (2 * ySteps + 1). The arithmetic is all integer, so a tie is
+ * exact, not within a tolerance. A tie means the segment passes exactly through a corner.
  *
- * @param onStep called for each tile entered; returning false stops the walk
+ * @param onStep called for each tile entered. Returning false stops the trace
  **/
 template<typename OnStep>
 void trace(TileCoord from, TileCoord to, OnStep onStep) {
@@ -64,28 +67,28 @@ void trace(TileCoord from, TileCoord to, OnStep onStep) {
     const std::int64_t adx = std::abs(to.x - from.x);
     const std::int64_t ady = std::abs(to.y - from.y);
 
-    auto at = [from, sx, sy](std::int64_t i, std::int64_t j) {
-        return TileCoord{ from.x + sx * static_cast<int>(i), from.y + sy * static_cast<int>(j) };
+    auto at = [from, sx, sy](std::int64_t alongX, std::int64_t alongY) {
+        return TileCoord{ from.x + (sx * static_cast<int>(alongX)), from.y + (sy * static_cast<int>(alongY)) };
     };
 
-    std::int64_t i = 0;
-    std::int64_t j = 0;
-    while (i != adx || j != ady) {
-        const std::int64_t boundary = ady * (2 * i + 1) - adx * (2 * j + 1);
+    std::int64_t xSteps = 0;
+    std::int64_t ySteps = 0;
+    while (xSteps != adx || ySteps != ady) {
+        const std::int64_t boundary = (ady * ((2 * xSteps) + 1)) - (adx * ((2 * ySteps) + 1));
 
         Step step;
         if (boundary == 0) {
             step.diagonal = true;
-            step.corner = { at(i + 1, j), at(i, j + 1) };
-            ++i;
-            ++j;
+            step.corner = { at(xSteps + 1, ySteps), at(xSteps, ySteps + 1) };
+            ++xSteps;
+            ++ySteps;
         } else if (boundary < 0) {
-            ++i;
+            ++xSteps;
         } else {
-            ++j;
+            ++ySteps;
         }
 
-        step.tile = at(i, j);
+        step.tile = at(xSteps, ySteps);
         if (!onStep(step)) {
             return;
         }
@@ -99,8 +102,8 @@ bool hasLineOfSight(const TileGrid& grid, TileCoord from, TileCoord to, const Si
         return false;
     }
 
-    // one trace for both directions: whatever the argument order, the same line is traced,
-    // so the result does not depend on which endpoint comes first
+    // put the endpoints in a fixed order, so the same line is traced whichever endpoint is
+    // passed first
     if (precedes(to, from)) {
         std::swap(from, to);
     }
@@ -111,8 +114,9 @@ bool hasLineOfSight(const TileGrid& grid, TileCoord from, TileCoord to, const Si
 
     bool clear = true;
     trace(from, to, [&](const Step& step) {
-        // the pair a diagonal squeezes between stops sight only together; the tile it lands
-        // on is tested like any other, and the far endpoint is not tested at all
+        // the two tiles a diagonal step passes between block sight only if both block. The
+        // tile a step lands on is tested like any other, except the far endpoint, which is not
+        // tested
         if (step.diagonal && blocked(step.corner.first) && blocked(step.corner.second)) {
             clear = false;
         }

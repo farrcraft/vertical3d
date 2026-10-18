@@ -6,9 +6,21 @@
 #include "World.h"
 
 #include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/canvas/World.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/frame/StreamRing.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -20,8 +32,8 @@ namespace {
 
 /**
  * The world quad pipeline's shader modules, compiled to SPIR-V at build time by glslc and
- * included here as the C initialiser lists its -mfmt=c writes - see v3d_add_shader in the
- * root CMakeLists.
+ * included here as the C initialiser lists its -mfmt=c writes, by v3d_add_shader in
+ * cmake/v3dHelpers.cmake.
  **/
 const uint32_t vertexShader[] =
 #include "shaders/world.vert.inc"
@@ -51,8 +63,8 @@ World::World(const boost::shared_ptr<device::Device>& device,
     ring_(ring),
     uniforms_(uniforms),
     textures_(textures) {
-    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, initialVertexBytes, initialIndexBytes);
-    createPipelines(colour, depth);
+    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = initialIndexBytes});
+    createPipelines({.colour = colour, .depth = depth});
 }
 
 /**
@@ -64,24 +76,27 @@ World::~World() {
 
 /**
  **/
-void World::createPipelines(VkFormat colour, VkFormat depth) {
-    pipeline_ = createPipeline("world", colour, VK_FORMAT_UNDEFINED, Blend::Alpha);
-    depthPipeline_ = createPipeline("world-depth", colour, depth, Blend::Alpha);
-    additivePipeline_ = createPipeline("world-additive", colour, VK_FORMAT_UNDEFINED, Blend::Additive);
-    additiveDepthPipeline_ = createPipeline("world-additive-depth", colour, depth, Blend::Additive);
+void World::createPipelines(const pipeline::Formats & formats) {
+    const pipeline::Formats flat{.colour = formats.colour};
+    pipeline_ = createPipeline("world", flat, Blend::Alpha);
+    depthPipeline_ = createPipeline("world-depth", formats, Blend::Alpha);
+    additivePipeline_ = createPipeline("world-additive", flat, Blend::Additive);
+    additiveDepthPipeline_ = createPipeline("world-additive-depth", formats, Blend::Additive);
 }
 
 /**
  **/
-PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, VkFormat depth, Blend blend) {
+PipelineHandle World::createPipeline(const std::string& name, const pipeline::Formats & formats, Blend blend) {
+    const VkFormat colour = formats.colour;
+    const VkFormat depth = formats.depth;
     pipeline::Builder builder(device_);
     builder.name(name)
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
-        .vertexBinding(0, sizeof(WorldCanvas::Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(WorldCanvas::Vertex, position))
-        .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(WorldCanvas::Vertex, uv))
-        .vertexAttribute(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(WorldCanvas::Vertex, colour))
+        .vertexBinding({.binding = 0, .stride = sizeof(canvas::World::Vertex)})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(canvas::World::Vertex, position)})
+        .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(canvas::World::Vertex, uv)})
+        .vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(canvas::World::Vertex, colour)})
         // a quad standing in the world is seen from whichever side the camera is on, and a
         // tile highlight is seen from above and below
         .cull(VK_CULL_MODE_NONE)
@@ -100,8 +115,8 @@ PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, V
         builder.blend(adding);
     }
 
-    // tests and does not write unless the pass says otherwise: the scene occludes a quad and a
-    // quad does not cut a hole in the one behind it where both are transparent
+    // tests, and does not write unless the pass says otherwise. The scene occludes a quad,
+    // and a quad does not cut a hole in the one behind it where both are transparent
     if (depth != VK_FORMAT_UNDEFINED) {
         builder.depth(true, false).depthWriteDynamic(true).depthFormat(depth);
     }
@@ -110,14 +125,14 @@ PipelineHandle World::createPipeline(const std::string& name, VkFormat colour, V
 
 /**
  **/
-void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer, Blend blend) {
+void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blend blend) {
     if (pass == nullptr || canvas.empty() || !textures_) {
         return;
     }
 
-    const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(WorldCanvas::Vertex);
+    const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(canvas::World::Vertex);
     const VkDeviceSize indexBytes = canvas.indices().size() * sizeof(uint32_t);
-    const frame::StreamRing::Geometry claimed = stream_->claim(vertexBytes, indexBytes);
+    const frame::StreamRing::Geometry claimed = stream_->claim({.vertexBytes = vertexBytes, .indexBytes = indexBytes});
     claimed.vertices->write(canvas.vertices().data(), vertexBytes);
     claimed.indices->write(canvas.indices().data(), indexBytes);
 
@@ -128,7 +143,7 @@ void World::submit(const WorldCanvas& canvas, Pass* pass, uint16_t layer, Blend 
         handle = pass->depth() ? additiveDepthPipeline_ : additivePipeline_;
     }
 
-    for (const WorldCanvas::Batch& batch : canvas.batches()) {
+    for (const canvas::World::Batch& batch : canvas.batches()) {
         if (batch.indices == 0) {
             continue;
         }

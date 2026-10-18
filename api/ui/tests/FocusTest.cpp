@@ -4,6 +4,7 @@
  **/
 
 #include <api/event/Engine.h>
+#include <api/log/Logger.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Panel.h>
@@ -13,7 +14,6 @@
 
 #include <string>
 #include <string_view>
-#include <vector>
 
 #include <boost/test/unit_test.hpp>
 
@@ -64,8 +64,6 @@ std::string focusedName(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     return component ? std::string(component->name()) : std::string();
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(focus_test)
 
 /**
@@ -74,7 +72,7 @@ BOOST_AUTO_TEST_SUITE(focus_test)
  * mixture every real screen is.
  **/
 BOOST_AUTO_TEST_CASE(the_focus_moves_forward_and_back_and_wraps) {
-    Fixture fixture(ONE_CONTAINER);
+    const Fixture fixture(ONE_CONTAINER);
     const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
     hud->add(box("first"));
     hud->add(panel("plate"));
@@ -106,7 +104,7 @@ BOOST_AUTO_TEST_CASE(the_focus_moves_forward_and_back_and_wraps) {
  * reachable by tabbing through the page in front of it.
  **/
 BOOST_AUTO_TEST_CASE(a_hidden_subtree_is_skipped) {
-    Fixture fixture(ONE_CONTAINER);
+    const Fixture fixture(ONE_CONTAINER);
     const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
     hud->add(box("first"));
 
@@ -134,7 +132,7 @@ BOOST_AUTO_TEST_CASE(a_hidden_subtree_is_skipped) {
  * Arranger::walk does, and the two have to agree or the tab order is not the reading order.
  **/
 BOOST_AUTO_TEST_CASE(the_order_is_the_order_things_are_drawn_in) {
-    Fixture fixture(ONE_CONTAINER);
+    const Fixture fixture(ONE_CONTAINER);
     const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
 
     const boost::shared_ptr<v3d::ui::component::TextBox> front = box("front");
@@ -162,11 +160,11 @@ BOOST_AUTO_TEST_CASE(the_order_is_the_order_things_are_drawn_in) {
 }
 
 /**
- * A ui with nothing focused is left alone. That is what keeps a game's movement keys
- * working: tab must not take the focus onto the first widget of a hud nobody is using.
+ * A ui with nothing focused is left alone. Tab does not take the focus onto the first
+ * widget of a hud nobody is using, so a game's movement keys keep working.
  **/
 BOOST_AUTO_TEST_CASE(nothing_focused_stays_nothing_focused) {
-    Fixture fixture(ONE_CONTAINER);
+    const Fixture fixture(ONE_CONTAINER);
     const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
     hud->add(box("first"));
     hud->add(box("second"));
@@ -188,7 +186,7 @@ BOOST_AUTO_TEST_CASE(nothing_focused_stays_nothing_focused) {
  * also reaches whatever the app bound to tab.
  **/
 BOOST_AUTO_TEST_CASE(tab_moves_the_focus_and_is_taken) {
-    Fixture fixture(ONE_CONTAINER);
+    const Fixture fixture(ONE_CONTAINER);
     const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
     hud->add(box("first"));
     hud->add(box("second"));
@@ -211,7 +209,7 @@ BOOST_AUTO_TEST_CASE(tab_moves_the_focus_and_is_taken) {
  * component does.
  **/
 BOOST_AUTO_TEST_CASE(a_hidden_container_is_skipped) {
-    Fixture fixture(R"({ "themes": [], "containers": [
+    const Fixture fixture(R"({ "themes": [], "containers": [
         { "name": "hud", "visible": true, "components": [] },
         { "name": "menu", "visible": false, "components": [] } ] })");
 
@@ -230,7 +228,7 @@ BOOST_AUTO_TEST_CASE(a_hidden_container_is_skipped) {
  * out by the box around them must not be tabbed into.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_subtree_is_skipped) {
-    Fixture fixture(ONE_CONTAINER);
+    const Fixture fixture(ONE_CONTAINER);
     const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
     hud->add(box("first"));
 
@@ -253,12 +251,11 @@ BOOST_AUTO_TEST_CASE(a_disabled_subtree_is_skipped) {
 }
 
 /**
- * A disabled component is nothing to focus, which is the answer one that never asked to be
- * focusable gets - and a component inside a disabled box is no different, though it is
- * enabled itself.
+ * A disabled component cannot be focused, the same as one that is not focusable. Nor can a
+ * component inside a disabled box, though it is enabled itself.
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_component_cannot_be_focused) {
-    Fixture fixture(ONE_CONTAINER);
+    const Fixture fixture(ONE_CONTAINER);
     const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
     const boost::shared_ptr<v3d::ui::component::TextBox> spent = box("spent");
     spent->enabled(false);
@@ -282,7 +279,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_component_cannot_be_focused) {
  * is never stuck on a control nobody can use.
  **/
 BOOST_AUTO_TEST_CASE(a_component_disabled_while_focused_takes_no_key) {
-    Fixture fixture(ONE_CONTAINER);
+    const Fixture fixture(ONE_CONTAINER);
     const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
     hud->add(box("first"));
     hud->add(box("second"));
@@ -303,7 +300,7 @@ BOOST_AUTO_TEST_CASE(a_component_disabled_while_focused_takes_no_key) {
  * player cannot see.
  **/
 BOOST_AUTO_TEST_CASE(a_control_on_a_hidden_page_is_not_focused) {
-    Fixture fixture(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
+    const Fixture fixture(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
         { "name": "panels", "type": "tabs", "selected": 0, "children": [
             { "name": "shown", "type": "tab", "label": "Shown",
               "children": [ { "name": "here", "type": "textbox" } ] },
@@ -329,7 +326,7 @@ BOOST_AUTO_TEST_CASE(a_control_on_a_hidden_page_is_not_focused) {
  * container it is in does the same.
  **/
 BOOST_AUTO_TEST_CASE(a_component_hidden_while_focused_lets_keys_through) {
-    Fixture fixture(ONE_CONTAINER);
+    const Fixture fixture(ONE_CONTAINER);
     const boost::shared_ptr<v3d::ui::Container> hud = fixture.ui->container("hud");
     hud->add(box("field"));
 
@@ -356,3 +353,5 @@ BOOST_AUTO_TEST_CASE(a_component_hidden_while_focused_lets_keys_through) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

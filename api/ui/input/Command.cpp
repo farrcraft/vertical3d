@@ -5,6 +5,7 @@
 
 #include "Command.h"
 
+#include <api/event/Event.h>
 #include <api/ui/Component.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
@@ -36,7 +37,8 @@ v3d::event::Event command(const boost::shared_ptr<Component>& component) {
         }
         case component::Type::CheckBox:
         case component::Type::RadioButton: {
-            // a radio button is a check box with a round mark, and the same command under it
+            // a radio button is a check box with a round mark, and carries its command the same
+            // way
             const boost::shared_ptr<component::CheckBox> box =
                 boost::dynamic_pointer_cast<component::CheckBox>(component);
             return box ? box->event() : v3d::event::Event();
@@ -65,12 +67,12 @@ v3d::event::Event command(const boost::shared_ptr<Component>& component) {
         case component::Type::Toolbar:
         case component::Type::Undefined:
         case component::Type::VerticalBox:
-            // nothing here carries a command. A box is whatever it holds, a strip routes its
-            // own press, a bar and a tab bar own what they show rather than sending it, and a
-            // panel or a label is pickable only so that it takes a press off what is under it.
-            // A text box is here for a different reason: it carries a command, but a click into
-            // one is somebody starting to type rather than saying they are done, so only a
-            // return sends it and ui::Keys reaches for the event itself
+            // none of these carries a command. A box has only its children, and a strip
+            // handles its own press. A bar, a scrollbar and a tab bar change what they show
+            // without sending anything. A panel or a label is pickable only so that it takes
+            // a press off what is under it. A text box does carry a command, but a click into
+            // one starts typing, so only a return sends it, and input::Keys reads the event
+            // from the box directly
         case component::Type::TextBox:
             return v3d::event::Event();
     }

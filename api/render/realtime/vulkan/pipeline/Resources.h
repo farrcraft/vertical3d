@@ -26,19 +26,19 @@ namespace v3d::render::realtime::vulkan::pipeline {
 /**
  * Everything a draw item can name by handle, and the owner that destroys it.
  *
- * Draw items refer to resources by handle rather than by pointer so that the sort key
- * they carry is stable. That requires an owner that outlives the frames using a resource,
- * which this class is.
+ * Draw items refer to resources by handle, not by pointer, so the sort key they carry is
+ * stable. Handles need an owner that outlives the frames using a resource, and Resources is
+ * that owner.
  *
- * A resource lives until it is released or the context goes. Pipelines are built at load time
- * and are not released. A released material or texture keeps its slot until every frame that
- * may name it has finished, so its handle is never reused early.
+ * A resource lives until it is released or the Resources is destroyed. Pipelines are built at
+ * load time and are not released. A released material or texture keeps its slot until every
+ * frame that may name it has finished, so its handle is never reused early.
  **/
 class Resources final {
  public:
     /**
      * @param device the device everything registered here was created on
-     * @param ring the frames in flight, which hold back what is released until they finish
+     * @param ring the frames in flight. Released resources are retired through it.
      **/
     Resources(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<frame::Ring>& ring);
 
@@ -117,8 +117,8 @@ class Resources final {
 
  private:
     /**
-     * What a release hands to the ring. The ring may run it after this object is destroyed, so
-     * it is shared with every callback rather than reached through this.
+     * The registries a release's callback updates. The Ring may run the callback after the
+     * Resources is destroyed, so each callback shares ownership of Held.
      **/
     struct Held final {
         Registry<MaterialTag, Material> materials;

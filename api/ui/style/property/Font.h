@@ -16,7 +16,13 @@ namespace v3d::ui::style::property {
  */
 class Font : public Property {
  public:
-    Font(const std::string& name, const std::string& src);
+    /** The property's name, and the font file it names. **/
+    struct Named {
+        std::string name;
+        std::string source;
+    };
+
+    explicit Font(const Named& named);
     ~Font();
 
     bool italics() const;

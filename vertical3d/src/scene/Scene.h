@@ -71,9 +71,9 @@ class Scene final {
     void deselect() noexcept;
 
     /**
-     * Clear the component selection of every mesh, leaving the objects selected - what
-     * a select mask change does, since the components of one kind mean nothing to an
-     * operation working in another.
+     * Clear the component selection of every mesh, and leave the objects selected. A select
+     * mask change does this, because components of one kind mean nothing to an operation
+     * working on another.
      **/
     void deselectComponents() noexcept;
 

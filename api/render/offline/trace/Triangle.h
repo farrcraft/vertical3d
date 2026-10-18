@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <array>
+
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
@@ -19,10 +21,13 @@ namespace v3d::render::offline::trace {
  **/
 class Triangle final : public Primitive {
  public:
+    /** Three values, one for each corner, in the order a, b, c. **/
+    using Corners = std::array<glm::vec3, 3>;
+
     /**
      * A triangle whose shading normal is its plane, for a scene that gives no normals.
      **/
-    Triangle(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c, const glm::vec3 & colour);
+    Triangle(const Corners & corners, const glm::vec3 & colour);
 
     /**
      * A triangle carrying a shading normal per corner, from a scene's varying "N".
@@ -30,8 +35,7 @@ class Triangle final : public Primitive {
      * The geometric normal stays its plane either way: SL's Ng and N are separate, and
      * faceforward() and calculatenormal() are defined in terms of both.
      **/
-    Triangle(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c, const glm::vec3 & colour,
-        const glm::vec3 & na, const glm::vec3 & nb, const glm::vec3 & nc);
+    Triangle(const Corners & corners, const glm::vec3 & colour, const Corners & normals);
 
     const glm::vec3 & a() const;
     const glm::vec3 & b() const;
@@ -55,7 +59,7 @@ class Triangle final : public Primitive {
      * The texture coordinates at each corner, from a scene's varying "st". A triangle given
      * none has (0, 0), (1, 0) and (0, 1), so its s and t are its barycentric weights.
      **/
-    void st(const glm::vec2 & a, const glm::vec2 & b, const glm::vec2 & c);
+    void st(const glm::vec2 & stA, const glm::vec2 & stB, const glm::vec2 & stC);
     /** SL's s and t at a hit, weighted as shadingNormal() weighs the normals. **/
     glm::vec2 st(float u, float v) const;
 
@@ -63,7 +67,7 @@ class Triangle final : public Primitive {
      * A colour at each corner, from a scene's varying "Cs". A triangle given none is the one
      * colour it was built with.
      **/
-    void colours(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c);
+    void colours(const glm::vec3 & colourA, const glm::vec3 & colourB, const glm::vec3 & colourC);
     /** SL's Cs at a hit, weighted as shadingNormal() weighs the normals. **/
     glm::vec3 colour(float u, float v) const;
     using Primitive::colour;
@@ -80,13 +84,13 @@ class Triangle final : public Primitive {
     glm::vec3 nb_;
     glm::vec3 nc_;
     glm::vec3 geometric_;
-    glm::vec2 sta_ = glm::vec2(0.0f, 0.0f);
-    glm::vec2 stb_ = glm::vec2(1.0f, 0.0f);
-    glm::vec2 stc_ = glm::vec2(0.0f, 1.0f);
+    glm::vec2 sta_ = glm::vec2(0.0F, 0.0F);
+    glm::vec2 stb_ = glm::vec2(1.0F, 0.0F);
+    glm::vec2 stc_ = glm::vec2(0.0F, 1.0F);
     bool coloured_ = false;
-    glm::vec3 ca_ = glm::vec3(0.0f);
-    glm::vec3 cb_ = glm::vec3(0.0f);
-    glm::vec3 cc_ = glm::vec3(0.0f);
+    glm::vec3 ca_ = glm::vec3(0.0F);
+    glm::vec3 cb_ = glm::vec3(0.0F);
+    glm::vec3 cc_ = glm::vec3(0.0F);
 };
 
 };  // namespace v3d::render::offline::trace

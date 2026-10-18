@@ -5,6 +5,11 @@
 
 #include "Engine.h"
 
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
+
+#include "Window.h"
+
 #include <boost/make_shared.hpp>
 
 

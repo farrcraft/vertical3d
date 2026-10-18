@@ -5,6 +5,8 @@
 
 #include "Accumulator.h"
 
+#include <cstdint>
+
 namespace v3d::engine {
 
 unsigned int Accumulator::accumulate(std::uint64_t elapsed) noexcept {

@@ -5,6 +5,8 @@
 
 #include "Placement.h"
 
+#include <api/dag/Transform.h>
+
 #include <cmath>
 
 namespace v3d::editor {
@@ -15,24 +17,24 @@ namespace {
  * How far apart two placements may be and still be the same one. A drag is measured
  * in world units of a scene whose primitives are one unit across.
  **/
-const float tolerance = 1e-6f;
+const float tolerance = 1e-6F;
 
 /**
  **/
-bool close(float a, float b) {
-    return std::fabs(a - b) <= tolerance;
+bool close(float first, float second) {
+    return std::fabs(first - second) <= tolerance;
 }
 
 /**
  **/
-bool close(const glm::vec3& a, const glm::vec3& b) {
-    return close(a.x, b.x) && close(a.y, b.y) && close(a.z, b.z);
+bool close(const glm::vec3& first, const glm::vec3& second) {
+    return close(first.x, second.x) && close(first.y, second.y) && close(first.z, second.z);
 }
 
 /**
  **/
-bool close(const glm::quat& a, const glm::quat& b) {
-    return close(a.w, b.w) && close(a.x, b.x) && close(a.y, b.y) && close(a.z, b.z);
+bool close(const glm::quat& first, const glm::quat& second) {
+    return close(first.w, second.w) && close(first.x, second.x) && close(first.y, second.y) && close(first.z, second.z);
 }
 
 };  // namespace

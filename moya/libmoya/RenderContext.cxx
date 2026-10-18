@@ -6,19 +6,33 @@
 #include "RenderContext.h"
 
 #include <api/image/Factory.h>
+#include <api/log/Logger.h>
+#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/Sampling.h>
+#include <api/render/offline/Textures.h>
+#include <api/render/offline/rib/Declarations.h>
+#include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/sl/Imager.h>
+#include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/sl/Types.h>
+#include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>
+#include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Frustum.h>
+#include <moya/libmoya/reyes/GridShader.h>
+#include <moya/libmoya/reyes/Hider.h>
+#include <moya/libmoya/reyes/Samples.h>
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <iostream>
+#include <cstddef>
 #include <limits>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -27,15 +41,24 @@
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 
-#include "GridShader.h"
+#include "FrameBuffer.h"
 #include "Hider.h"
+#include "Polygon.h"
 #include "RayHider.h"
+#include "Shading.h"
 
 namespace v3d::moya {
 
-glm::vec3 project(const glm::mat4x4 & m, const glm::vec3 & point) {
-    const glm::vec4 projected = m * glm::vec4(point, 1.0f);
-    if (projected.w <= 1.0e-6f) {
+namespace {
+
+/** The least w a point is divided by. A point at or below it is at or behind the eye. **/
+constexpr float SMALLEST_W = 1.0e-6F;
+
+};  // namespace
+
+glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point) {
+    const glm::vec4 projected = matrix * glm::vec4(point, 1.0F);
+    if (projected.w <= SMALLEST_W) {
         return glm::vec3(projected);
     }
     return glm::vec3(projected) / projected.w;
@@ -55,23 +78,18 @@ RenderContext::~RenderContext() {
 void RenderContext::initialize() {
     logger_ = boost::make_shared<v3d::log::Logger>();
     // RI's default hider
-    hider_ = boost::make_shared<ReyesHider>();
+    hider_ = boost::make_shared<reyes::Hider>();
     shaders_ = boost::make_shared<v3d::render::offline::sl::ShaderLibrary>(logger_);
     textures_ = boost::make_shared<v3d::render::offline::Textures>(logger_);
 
-    // initialize the predefined coordinate systems to defaults (identity matrix)
-    glm::mat4x4 def(1.0f);
+    // the predefined coordinate systems start as the identity
+    const glm::mat4x4 def(1.0F);
     coordinateSystems_["object"] = def;
     coordinateSystems_["world"] = def;
     coordinateSystems_["camera"] = def;
     coordinateSystems_["screen"] = def;
     coordinateSystems_["raster"] = def;
     coordinateSystems_["NDC"] = def;
-
-
-    // initialize the z buffer
-
-    // initialize buckets - done in prepareWorld()
 }
 
 boost::shared_ptr<FrameBuffer> RenderContext::framebuffer() const {
@@ -94,7 +112,7 @@ float RenderContext::shadingRate() const {
     return shadingRate_;
 }
 
-Samples & RenderContext::samples() {
+reyes::Samples & RenderContext::samples() {
     assert(samples_);
     return *samples_;
 }
@@ -107,20 +125,13 @@ const v3d::render::offline::Sampling & RenderContext::sampling() const {
     return sampling_;
 }
 
-unsigned int RenderContext::samplesTaken(unsigned int column, unsigned int row) const {
-    return hider_->samplesTaken(column, row);
+unsigned int RenderContext::samplesTaken(const glm::uvec2 & pixel) const {
+    return hider_->samplesTaken(pixel);
 }
 
-/*
-    maps to RiWorldBegin()
-    freezes all rendering options, world to camera transformation
-    is set to current transormation, current transformation is set to identity
-    the view options are frozen beyond this call
-    the framebuffer will be allocated here
-*/
 void RenderContext::prepareWorld() {
-    // a scene that named no projection gets the default. One that named a projection has
-    // had its transform reset already, so only its screen transform is built again, from
+    // a scene that named no projection gets the default. A named projection has already
+    // reset the current transformation, so only its screen transform is built again, from
     // the screen window, format and clipping as they stand now
     if (!projectionNamed_) {
         projection("");
@@ -128,42 +139,31 @@ void RenderContext::prepareWorld() {
         screenTransform();
     }
 
-    // establish the world coordinate system
-    // save the existing transform as the camera coordinate system. What a scene set
-    // between RiProjection and here is the world to camera transformation
+    // what a scene set between RiProjection and here is the world to camera transformation
     saveCoordinateSystem("camera");
-    // a traced hit's "camera" space and its E are this camera's, because the traced scene
-    // has no camera of its own
+    // the traced scene has no camera of its own, so a traced hit's "camera" space and E
+    // are this camera's
     traced_.view(coordinateSystems_["camera"]);
     // inside the world block the current transformation is object to world
-    transform_.replace(glm::mat4x4(1.0f));
+    transform_.replace(glm::mat4x4(1.0F));
 
     // set raster transformation
-    glm::mat4x4 raster(1.0f);  // identity
+    glm::mat4x4 raster(1.0F);
     /*
-        screen transform maps to the canonical volume [-1, 1]
-        raster transform scales to [0, xres] x [0, yres]
+        The screen transform maps to the canonical volume [-1, 1], and the raster transform
+        takes that to [0, xres] by [0, yres].
 
         y is negated because raster space has its origin at the upper left corner and
-        counts downward, which is also the row order image::Image is in - without the
-        flip a correctly computed picture is written upside down.
+        counts downward. image::Image stores its rows in the same order, top row first.
     */
-    float x = xres_ / 2.0f;
-    float y = yres_ / 2.0f;
-    raster = glm::scale(raster, glm::vec3(x, -y, 1.0f));
-    raster = glm::translate(raster, glm::vec3(1.0f, -1.0f, 1.0f));
+    const float x = static_cast<float>(xres_) / 2.0F;
+    const float y = static_cast<float>(yres_) / 2.0F;
+    raster = glm::scale(raster, glm::vec3(x, -y, 1.0F));
+    raster = glm::translate(raster, glm::vec3(1.0F, -1.0F, 1.0F));
 
-    // mark the raster coordinate system
     coordinateSystems_["raster"] = raster;
 
-    unsigned int screen[2];
-    screen[0] = xres_;
-    screen[1] = yres_;
-    unsigned int bucket[2];
-    bucket[0] = bucketWidth_;
-    bucket[1] = bucketHeight_;
-
-    frameBuffer_.reset(new FrameBuffer(bucket, screen));
+    frameBuffer_.reset(new FrameBuffer({.bucket = glm::uvec2(bucketWidth_, bucketHeight_), .image = glm::uvec2(xres_, yres_)}));
 }
 
 unsigned int RenderContext::imageWidth() const {
@@ -178,11 +178,6 @@ float RenderContext::pixelAspect() const {
     return pixelAspect_;
 }
 
-/*
-set a named projection transformation matrix
-the combination of the projection and screen transformation matrices
-move between camera and screen coordinate space
-*/
 bool RenderContext::perspective() const {
     return projection_ == "perspective";
 }
@@ -192,27 +187,25 @@ void RenderContext::projection(std::string name, float fov) {
         name = "orthographic";
     }
 
-    // name is orthographic, perspective, or empty
-    // only perspective uses fov
+    // only "perspective" reads fov
     projection_ = name;
     fov_ = fov;
     projectionNamed_ = true;
 
-    // the transformation in force here is what the projection is appended to. It is kept so
-    // that WorldBegin can build the screen transform again from the camera options as they
-    // stand then, since RI lets a screen window, format or clipping follow the projection
+    // the projection applies after the transformation in force here. It is kept so that
+    // WorldBegin can build the screen transform again, because RI lets a screen window,
+    // format or clipping follow the projection
     projectionBase_ = transform_;
     screenTransform();
 
-    // reinitialize current transformation to indentity matrix
-    transform_.replace(glm::mat4x4(1.0f));
-    // current transformation matrix is now the camera coordinate system
+    // what the scene sets from here to WorldBegin is the world to camera transformation
+    transform_.replace(glm::mat4x4(1.0F));
 }
 
 void RenderContext::screenTransform() {
     // append the projection to the transformation in force at RiProjection. RI states the
-    // composition in row vectors, where the projection is on the right; a matrix applies to
-    // what is on its right here, so it goes on the left
+    // composition in row vectors, with the projection on the right. Here a matrix applies to
+    // what is on its right, so the projection goes on the left
     const v3d::render::offline::MovingTransform current = transform_;
     transform_ = projectionBase_.before(projectionMatrix());
     // save as screen coordinate system
@@ -226,10 +219,8 @@ glm::mat4x4 RenderContext::projectionMatrix() const {
     const float bottom = screen_[2];
     const float top = screen_[3];
 
-    // an unsupported projection falls through every branch below, so this has to start as
-    // something composable rather than as whatever the stack held
-    glm::mat4x4 projection(1.0f);
-    // build the projection matrix
+    // the identity, because an unsupported projection takes none of the branches below
+    glm::mat4x4 projection(1.0F);
     if (projection_ == "perspective") {
         /*
             RI states fov as the full angle between screen space (-1, 0) and (1, 0), so a
@@ -237,73 +228,60 @@ glm::mat4x4 RenderContext::projectionMatrix() const {
             window then selects the part of screen space the image covers.
 
             The interface looks down +z, so w is +z rather than the -z a right handed
-            system would write. Depth runs [-1, 1] to match the orthographic branch. The
-            cull below passes that same depth range to its Frustum.
+            system would write. Depth runs [-1, 1] to match the orthographic branch, and
+            the frustum cull in addPolygon() reads the same range.
         */
-        const float tangent = std::tan(glm::radians(fov_) / 2.0f);
-        projection = glm::mat4x4(0.0f);
-        projection[0][0] = 2.0f / ((right - left) * tangent);
-        projection[1][1] = 2.0f / ((top - bottom) * tangent);
+        const float tangent = std::tan(glm::radians(fov_) / 2.0F);
+        projection = glm::mat4x4(0.0F);
+        projection[0][0] = 2.0F / ((right - left) * tangent);
+        projection[1][1] = 2.0F / ((top - bottom) * tangent);
         projection[2][0] = -(right + left) / (right - left);
         projection[2][1] = -(top + bottom) / (top - bottom);
         projection[2][2] = (far_ + near_) / (far_ - near_);
-        projection[2][3] = 1.0f;
-        projection[3][2] = -2.0f * far_ * near_ / (far_ - near_);
+        projection[2][3] = 1.0F;
+        projection[3][2] = -2.0F * far_ * near_ / (far_ - near_);
     } else if (projection_ == "orthographic") {
         /*
-            [2 / (right-left)	0					0				-tx	]
-            [0					2 / (bottom-top)	0				-ty	]
-            [0					0					2/(far-near)	-tz	]
-            [0					0					0				1	]
+            The screen window maps to [-1, 1] on x and y, and [near, far] maps to [-1, 1]
+            on z. glm indexes a matrix as [column][row], so the translation is column 3.
+
+            [ 2 / (right - left)   0                    0                  -tx ]
+            [ 0                    2 / (top - bottom)   0                  -ty ]
+            [ 0                    0                    2 / (far - near)   -tz ]
+            [ 0                    0                    0                    1 ]
 
             tx = (right + left) / (right - left)
             ty = (top + bottom) / (top - bottom)
             tz = (far + near) / (far - near)
-        [  0,  1,  2,  3 ]
-        [  4,  5,  6,  7 ]
-        [  8,  9, 10, 11 ]
-        [ 12, 13, 14, 15 ]
-
-        m[0] = 2 / screen window width
-        m[5] = 2 / screen window height
-
-        glm (column-major ordering):
-        [  00,  10,  20,  30 ]
-        [  01,  11,  21,  31 ]
-        [  02,  12,  22,  32 ]
-        [  03,  13,  23,  33 ]
         */
 
-        float far = far_;
-        float near = near_;
+        const float far = far_;
+        const float near = near_;
 
-        float tx = ((right + left) / (right - left));
-        float ty = ((top + bottom) / (top - bottom));
-        float tz = (far + near) / (far - near);
+        const float tx = ((right + left) / (right - left));
+        const float ty = ((top + bottom) / (top - bottom));
+        const float tz = (far + near) / (far - near);
 
-        projection[0][0] = 2.0f / (right - left);
+        projection[0][0] = 2.0F / (right - left);
         projection[1][0] = 0.0;
         projection[2][0] = 0.0;
         projection[3][0] = -tx;
         projection[0][1] = 0.0;
-        projection[1][1] = 2.0f / (top - bottom);
+        projection[1][1] = 2.0F / (top - bottom);
         projection[2][1] = 0.0;
         projection[3][1] = -ty;
         projection[0][2] = 0.0;
         projection[1][2] = 0.0;
-        // positive, as the matrix above is written: the interface looks down +z, and the
-        // negated form belongs to a right handed system, where it puts the whole of the
-        // clip range behind the near plane
-        projection[2][2] = 2.0f / (far - near);
+        // positive, because the interface looks down +z. The negated form is for a right
+        // handed system, and here it would put the whole clip range behind the near plane
+        projection[2][2] = 2.0F / (far - near);
         projection[3][2] = -tz;
         projection[0][3] = 0.0;
         projection[1][3] = 0.0;
         projection[2][3] = 0.0;
         projection[3][3] = 1.0;
-
-        // std::cerr << projection;
-    } else {  // implementation-specific projection
-        // unsupported projections default to orthographic
+    } else {  // an implementation-specific projection
+        // moya has none, so an unsupported name projects through the identity
     }
 
     return projection;
@@ -311,7 +289,7 @@ glm::mat4x4 RenderContext::projectionMatrix() const {
 
 void RenderContext::hider(const std::string & name) {
     if (name == "hidden") {
-        hider_ = boost::make_shared<ReyesHider>();
+        hider_ = boost::make_shared<reyes::Hider>();
     } else if (name == "raytrace") {
         hider_ = boost::make_shared<RayHider>();
     } else {
@@ -327,65 +305,50 @@ float RenderContext::hither() const {
     return near_;
 }
 
-/*
-    maps to RiFormat(xres, yres, aspect)
-    sets the pixel resolution and aspect ratio of the image to be rendered
-    default values will be used when not called
-*/
-bool RenderContext::imageResolution(int xres, int yres, float aspect) {
+bool RenderContext::imageResolution(const glm::ivec2 & resolution, float aspect) {
     // RI reads a side of zero or less as the device's default for that side
-    const unsigned int width = xres > 0 ? static_cast<unsigned int>(xres) : defaultWidth;
-    const unsigned int height = yres > 0 ? static_cast<unsigned int>(yres) : defaultHeight;
+    const unsigned int width = resolution.x > 0 ? static_cast<unsigned int>(resolution.x) : defaultWidth;
+    const unsigned int height = resolution.y > 0 ? static_cast<unsigned int>(resolution.y) : defaultHeight;
     if (width > v3d::render::offline::largestResolution || height > v3d::render::offline::largestResolution) {
         return false;
     }
     xres_ = width;
     yres_ = height;
-    pixelAspect_ = aspect > 0.0f && std::isfinite(aspect) ? aspect : 1.0f;
+    pixelAspect_ = aspect > 0.0F && std::isfinite(aspect) ? aspect : 1.0F;
     if (!frameAspectNamed_) {
-        frameAspectRatio(xres_ * pixelAspect_ / yres_);
+        frameAspectRatio(static_cast<float>(xres_) * pixelAspect_ / static_cast<float>(yres_));
         frameAspectNamed_ = false;
     }
     return true;
 }
 
-/*
-    maps to RiFrameAspectRatio(aspect)
-*/
 void RenderContext::frameAspectRatio(float aspect) {
     frameAspect_ = aspect;
     frameAspectNamed_ = true;
     if (screenNamed_) {
         return;
     }
-    // the RI default: the wider dimension spans [-1, 1] and the other is the reciprocal,
-    // so that a frame which is not square does not stretch a square window across itself
-    if (frameAspect_ >= 1.0f) {
-        screenWindow(-frameAspect_, frameAspect_, -1.0f, 1.0f);
+    // the RI default: the shorter side spans [-1, 1] and the longer spans [-a, a], so that
+    // a frame which is not square does not stretch a square window across itself
+    if (frameAspect_ >= 1.0F) {
+        screenWindow({.left = -frameAspect_, .right = frameAspect_, .bottom = -1.0F, .top = 1.0F});
     } else {
-        screenWindow(-1.0f, 1.0f, -1.0f / frameAspect_, 1.0f / frameAspect_);
+        screenWindow({.left = -1.0F, .right = 1.0F, .bottom = -1.0F / frameAspect_, .top = 1.0F / frameAspect_});
     }
     screenNamed_ = false;
 }
 
-/*
-    maps to RiScreenWindow(left, right, bottom, top)
-*/
-void RenderContext::screenWindow(float left, float right, float bottom, float top) {
-    screen_[0] = left;
-    screen_[1] = right;
-    screen_[2] = bottom;
-    screen_[3] = top;
+void RenderContext::screenWindow(const v3d::render::offline::rib::ScreenWindow & window) {
+    screen_[0] = window.left;
+    screen_[1] = window.right;
+    screen_[2] = window.bottom;
+    screen_[3] = window.top;
     screenNamed_ = true;
 }
 
-/*
-    maps to RiClipping(hither, yon)
-    sets the position of the near and far clipping planes
-*/
-void RenderContext::clipping(float near, float far) {
-    near_ = near;
-    far_ = far;
+void RenderContext::clipping(const v3d::render::offline::rib::Clipping & planes) {
+    near_ = planes.hither;
+    far_ = planes.yon;
 }
 
 void RenderContext::pushTransform(void) {
@@ -423,8 +386,8 @@ void RenderContext::attributeEnd() {
     shadingRate_ = saved.shadingRate;
     surface_ = saved.surface;
     surfacePlacement_ = saved.surfacePlacement;
-    // which lights are on comes back; the lights themselves do not, because a light
-    // belongs to the frame rather than to the block that created it
+    // only the set of lights that are on is restored. A light lasts for the frame, not
+    // for the block that created it
     lit_ = saved.lit;
     attributes_.pop_back();
 }
@@ -434,13 +397,11 @@ void RenderContext::saveCoordinateSystem(const std::string& name) {
 }
 
 void RenderContext::setCoordinateSystem(const std::string& name) {
-    // make sure name is a valid coordinate system
-
     transform_.replace(coordinateSystems_[name]);
 }
 
 void RenderContext::setIdentityTransform() {
-    transform_.replace(glm::mat4(1.0f));
+    transform_.replace(glm::mat4(1.0F));
 }
 
 void RenderContext::setTransform(const glm::mat4x4& trans) {
@@ -511,32 +472,34 @@ glm::mat4x4 RenderContext::coordinateSystem(const std::string& name) {
 }
 
 void RenderContext::translate(float dx, float dy, float dz) {
-    transform_.concat(glm::translate(glm::mat4x4(1.0f), glm::vec3(dx, dy, dz)));
+    transform_.concat(glm::translate(glm::mat4x4(1.0F), glm::vec3(dx, dy, dz)));
 }
 
 // RiRotate takes its angle in degrees and glm takes radians
-void RenderContext::rotate(float angle, float dx, float dy, float dz) {
-    transform_.concat(glm::rotate(glm::mat4x4(1.0f), glm::radians(angle), glm::vec3(dx, dy, dz)));
+void RenderContext::rotate(float angle, const glm::vec3 & axis) {
+    transform_.concat(glm::rotate(glm::mat4x4(1.0F), glm::radians(angle), axis));
 }
 
 void RenderContext::scale(float sx, float sy, float sz) {
-    transform_.concat(glm::scale(glm::mat4x4(1.0f), glm::vec3(sx, sy, sz)));
+    transform_.concat(glm::scale(glm::mat4x4(1.0F), glm::vec3(sx, sy, sz)));
 }
 
-/*
-    maps to RiPolygon()
-    this covers the initial pass of the reyes architecture
-*/
 namespace {
+
+/** An axis aligned box, by its least and greatest corners. **/
+struct Bound {
+    glm::vec3 min{0.0F};
+    glm::vec3 max{0.0F};
+};
 
 /**
  * One of the eight corners of a box. Bit 0 of the index picks x, bit 1 picks y and bit 2
  * picks z, each from max when set and from min when clear.
  **/
 glm::vec3 boxCorner(const glm::vec3 & min, const glm::vec3 & max, int index) {
-    return glm::vec3((index & 1) ? max.x : min.x,
-                     (index & 2) ? max.y : min.y,
-                     (index & 4) ? max.z : min.z);
+    return glm::vec3((index & 1) != 0 ? max.x : min.x,
+                     (index & 2) != 0 ? max.y : min.y,
+                     (index & 4) != 0 ? max.z : min.z);
 }
 
 /**
@@ -545,32 +508,28 @@ glm::vec3 boxCorner(const glm::vec3 & min, const glm::vec3 & max, int index) {
  * All eight corners go through the matrix. Under a rotation any corner can hold the extreme
  * on an axis, so the two diagonal corners alone can leave part of the box outside.
  **/
-void transformBound(const glm::mat4x4 & m, const glm::vec3 & objectMin, const glm::vec3 & objectMax,
-    glm::vec3* min, glm::vec3* max) {
-    *min = glm::vec3(std::numeric_limits<float>::max());
-    *max = glm::vec3(std::numeric_limits<float>::lowest());
+Bound transformBound(const glm::mat4x4 & transform, const Bound & object) {
+    Bound bound{.min = glm::vec3(std::numeric_limits<float>::max()), .max = glm::vec3(std::numeric_limits<float>::lowest())};
     for (int k = 0; k < 8; k++) {
-        const glm::vec3 corner(m * glm::vec4(boxCorner(objectMin, objectMax, k), 1.0f));
-        *min = glm::min(*min, corner);
-        *max = glm::max(*max, corner);
+        const glm::vec3 corner(transform * glm::vec4(boxCorner(object.min, object.max, k), 1.0F));
+        bound.min = glm::min(bound.min, corner);
+        bound.max = glm::max(bound.max, corner);
     }
+    return bound;
 }
 
 /**
  * Grow an eye space bound to cover where a moving primitive is at both ends of the shutter,
  * from its object space bound. A still primitive's bound is left as it is.
  **/
-void sweep(const v3d::render::offline::MovingTransform & motion, const glm::vec3 & objectMin,
-    const glm::vec3 & objectMax, glm::vec3* min, glm::vec3* max) {
+void sweep(const v3d::render::offline::MovingTransform & motion, const Bound & object, Bound* swept) {
     if (!motion.moving()) {
         return;
     }
     for (const glm::mat4x4* end : { &motion.open(), &motion.close() }) {
-        glm::vec3 endMin;
-        glm::vec3 endMax;
-        transformBound(*end, objectMin, objectMax, &endMin, &endMax);
-        *min = glm::min(*min, endMin);
-        *max = glm::max(*max, endMax);
+        const Bound at = transformBound(*end, object);
+        swept->min = glm::min(swept->min, at.min);
+        swept->max = glm::max(swept->max, at.max);
     }
 }
 
@@ -600,26 +559,25 @@ void fillVertices(Polygon* poly) {
 void RenderContext::surface(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
     surface_ = shaders_->instance(name, v3d::render::offline::sl::ShaderType::SURFACE, parameters);
-    // RI says a shader's own space is the transform in force when the scene instanced it,
-    // and a "point \"shader\" (0, 0, 1)" in it is stated against that space
+    // RI makes a shader's own space the transformation in force when the scene instanced
+    // it. A "point \"shader\" (0, 0, 1)" parameter is stated in that space
     surfacePlacement_ = coordinateSystems_["camera"] * transform_.reference();
 }
 
-void RenderContext::lightSource(const std::string & name, const std::string & handle,
+void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & request,
     const v3d::render::offline::rib::ParameterList & parameters) {
     LightSource light;
-    light.handle = handle;
-    light.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::LIGHT, parameters);
+    light.handle = request.handle;
+    light.shader = shaders_->instance(request.shader, v3d::render::offline::sl::ShaderType::LIGHT, parameters);
     light.placement = coordinateSystems_["camera"] * transform_.reference();
     if (!light.shader) {
-        // the library has already logged why. A light that will not compile is left out
-        // rather than replaced by a light of some other kind
+        // the library has already logged why. The light is left out, not replaced by a
+        // light of some other kind
         return;
     }
     lights_.push_back(light);
-    // RiLightSource creates the light and switches it on, so a scene with one light
-    // needs one request
-    illuminate(handle, true);
+    // RiLightSource switches the light it creates on
+    illuminate(request.handle, true);
 }
 
 void RenderContext::illuminate(const std::string & handle, bool on) {
@@ -650,8 +608,8 @@ Shading RenderContext::shading() {
     state.placement = surfacePlacement_;
     state.opacity = opacity_;
     if (!state.surface) {
-        // a scene that names no surface draws the shader that means no shading. RI leaves
-        // the default to the renderer and forbids only "null"
+        // a scene that names no surface draws "constant", which does no shading. RI leaves
+        // the default surface to the renderer
         state.surface = shaders_->instance("constant",
             v3d::render::offline::sl::ShaderType::SURFACE,
             v3d::render::offline::rib::ParameterList());
@@ -677,9 +635,9 @@ const boost::shared_ptr<v3d::log::Logger> & RenderContext::logger() const {
     return logger_;
 }
 
-GridShader & RenderContext::shader() {
+reyes::GridShader & RenderContext::shader() {
     if (!shader_) {
-        shader_ = boost::make_shared<GridShader>(this);
+        shader_ = boost::make_shared<reyes::GridShader>(this);
     }
     return *shader_;
 }
@@ -692,8 +650,7 @@ const v3d::render::offline::trace::Lights & RenderContext::tracedLights(const Sh
     if (tracedLights_ && tracedFor_ == lit_ && tracedLightsFor_ == lights_.size()) {
         return tracedLights_;
     }
-    // a light is placed in camera space, which is moya's current space, and the traced
-    // scene is in world space
+    // a light's placement takes it to camera space, and the traced scene is in world space
     const glm::mat4x4 toWorld = glm::inverse(coordinateSystems_["camera"]);
     auto on = boost::make_shared<std::vector<v3d::render::offline::sl::Placed> >();
     for (const v3d::render::offline::sl::Placed & light : state.lights) {
@@ -718,17 +675,16 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
     const Vertex first = poly.vertex(0);
     for (std::size_t i = 1; i + 1 < poly.vertexCount(); i++) {
         const Vertex corners[3] = { first, poly.vertex(i), poly.vertex(i + 1) };
-        glm::vec3 points[3];
-        for (int k = 0; k < 3; k++) {
-            points[k] = glm::vec3(toWorld * glm::vec4(corners[k].point(), 1.0f));
+        v3d::render::offline::trace::Triangle::Corners points;
+        v3d::render::offline::trace::Triangle::Corners normals;
+        for (std::size_t k = 0; k < 3; k++) {
+            points[k] = glm::vec3(toWorld * glm::vec4(corners[k].point(), 1.0F));
+            normals[k] = corners[k].hasNormal() ? glm::normalize(toWorldNormal * corners[k].normal()) : glm::vec3(0.0F);
         }
-        const bool normals = corners[0].hasNormal() && corners[1].hasNormal() && corners[2].hasNormal();
-        v3d::render::offline::trace::Triangle triangle = normals ?
-            v3d::render::offline::trace::Triangle(points[0], points[1], points[2], color_,
-                glm::normalize(toWorldNormal * corners[0].normal()),
-                glm::normalize(toWorldNormal * corners[1].normal()),
-                glm::normalize(toWorldNormal * corners[2].normal())) :
-            v3d::render::offline::trace::Triangle(points[0], points[1], points[2], color_);
+        const bool shaded = corners[0].hasNormal() && corners[1].hasNormal() && corners[2].hasNormal();
+        v3d::render::offline::trace::Triangle triangle = shaded ?
+            v3d::render::offline::trace::Triangle(points, color_, normals) :
+            v3d::render::offline::trace::Triangle(points, color_);
         if (corners[0].hasTexCoord() && corners[1].hasTexCoord() && corners[2].hasTexCoord()) {
             triangle.st(corners[0].st(), corners[1].st(), corners[2].st());
         }
@@ -741,8 +697,7 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
 }
 
 void RenderContext::shade(v3d::render::offline::trace::Primitive* primitive, const Shading & state) {
-    // a shader is placed in camera space, which is moya's current space, and the traced
-    // scene is in world space
+    // a shader's placement takes it to camera space, and the traced scene is in world space
     v3d::render::offline::sl::Placed surface;
     surface.shader = state.surface;
     surface.placement = glm::inverse(coordinateSystems_["camera"]) * state.placement;
@@ -751,19 +706,19 @@ void RenderContext::shade(v3d::render::offline::trace::Primitive* primitive, con
     primitive->lights(tracedLights(state));
 }
 
-bool RenderContext::addSphere(float radius, float zmin, float zmax, float thetamax) {
+bool RenderContext::addSphere(const v3d::render::offline::rib::Sphere & shape) {
     if (!hider_->traces()) {
         return false;
     }
-    if (!(radius > 0.0f)) {
-        logger_->get()->warn("a sphere of radius {} is not drawn", radius);
+    if (!(shape.radius > 0.0F)) {
+        logger_->get()->warn("a sphere of radius {} is not drawn", shape.radius);
         return true;
     }
     if (flatMotion()) {
         return true;
     }
     // placed by the reference end of its motion, as a polygon's points are
-    v3d::render::offline::trace::Sphere sphere(radius, zmin, zmax, thetamax, transform_.reference(), color_);
+    v3d::render::offline::trace::Sphere sphere(shape, transform_.reference(), color_);
     shade(&sphere, shading());
     traced_.add(sphere, transform_);
     return true;
@@ -785,21 +740,13 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     if (flatMotion()) {
         return;
     }
-    // if an output stream exists
-    // echo RiPolygon RIB command to output stream
-
-    // bound polygon in eye space
-    /*
-        the polygon's vertices are in object space, so its bound is too. The placement
-        carries both into eye space, where every later calculation on the polygon happens.
-    */
-    // a primitive carries the state it was submitted under - see ReyesPrimitive::place().
-    // A piece handed back by a split is already placed and keeps its parent's
     if (hider_->traces()) {
         // the ray hider sees the traced scene and nothing else, so nothing is bucketed
         trace(*poly, shading());
         return;
     }
+    // a polygon is placed with the state it was submitted under, and is traced once. A
+    // piece handed back by a split is already placed and keeps its parent's state
     if (!poly->placed()) {
         const Shading state = shading();
         trace(*poly, state);
@@ -816,98 +763,65 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     glm::vec3 bound_min = bound.min();
 
     /*
-        convert bound to eye space coordinates: the modeling transformation takes it to
-        world coordinates, and the camera transformation takes that to eye coordinates.
-        The primitive's placement holds the two composed.
+        The bound is in object space. The placement takes it to eye space, where every
+        later calculation on the polygon happens. The placement is the camera coordinate
+        system, which holds world to camera as prepareWorld() saved it, times the object to
+        world transformation. It applies as it stands, with no transpose or inverse.
     */
-
-    // the camera coordinate system holds the world to camera transformation, which is what
-    // prepareWorld() saved, so it applies as it stands. Neither a transpose nor an inverse
-    // belongs here: both happen to be right when it is a rotation and neither is when a
-    // scene places its camera with a matrix that also translates
     const glm::mat4x4 toEye = poly->placement();
-    const glm::vec3 objectMin = bound_min;
-    const glm::vec3 objectMax = bound_max;
-    transformBound(toEye, objectMin, objectMax, &bound_min, &bound_max);
+    const Bound object{.min = bound_min, .max = bound_max};
+    const Bound eye = transformBound(toEye, object);
+    bound_min = eye.min;
+    bound_max = eye.max;
 
     // a moving primitive is culled by where it is at both ends of the shutter, as well as by
     // where it is stored. The size test below reads where it is stored, because a split
     // shrinks a primitive and never the distance it travels
-    glm::vec3 swept_min = bound_min;
-    glm::vec3 swept_max = bound_max;
-    sweep(poly->motion(), objectMin, objectMax, &swept_min, &swept_max);
+    Bound swept = eye;
+    sweep(poly->motion(), object, &swept);
+    const glm::vec3 & swept_min = swept.min;
+    const glm::vec3 & swept_max = swept.max;
 
-    // do hither-yon cull
-    if ((swept_max[2] > far_ && swept_min[2] > far_)  // bound is completely outside far plane (too far away for the camera to see)
-        || (swept_max[2] < near_ && swept_min[2] < near_)) {  // bound is completely outside near plane (effectively behind camera)
-        // cull poly
-        // no need to continue since poly won't be rendered
+    // hither-yon cull
+    if ((swept_max[2] > far_ && swept_min[2] > far_)  // the bound is wholly beyond the far plane
+        || (swept_max[2] < near_ && swept_min[2] < near_)) {  // the bound is wholly nearer than the near plane
         return;
     }
 
-    // set initial diceable state of the primitive
     poly->diceable(true);
 
-    // do hither e plane test & mark undiceable if necessary
-    /*
-        anything that spans hither or yon will make it past the first cull step above.
-        those conditions are:
-        (bound_max[2] < far_ && bound_min[2] > far_)	not possible. max > min
-        (bound_max[2] > far_ && bound_min[2] < far_)	crosses far plane
-        (bound_max[2] > near_ && bound_min[2] < near_)	crosses near plane
-        (bound_max[2] < near_ && bound_min[2] > near_)	not possible. max > min
-
-        in the e plane test we are only concerned with the third condition
-    */
-    if (bound_max[2] > near_ && bound_min[2] < near_) {  // crosses near plane
-        // if bound_min[2] also crosses the eye plane, we'll need to split it
-        // (mark undiceable so it will be split on the next pass)
+    // eye plane test. A bound that spans the near plane passes the cull above. If it also
+    // reaches behind the eye plane, z = 0, it cannot be projected, and is marked undiceable
+    // so that it is split
+    if (bound_max[2] > near_ && bound_min[2] < near_) {
         if (bound_min[2] < 0.0) {
             poly->diceable(false);
         }
-        // else poly is in front of the eye plane and still projectable so continue
     }
 
-    // convert bounds to screen space
-    /*
-        to get from eye to screen space apply the projection and screen transformations
-        the projection matrix is appended to the current transformation when RiProjection() is called
-        the current transformation is then saved as the screen transformation (with original screen &
-        projection matrices already combined).
-        we don't want to transform the primitive here, just the bounds.
-        we'll still need eye space in the second pass.
-    */
-    // poly->transform(coordinateSystems_["screen"]);
-    // screen space to reyes means renderman raster space
-
-    // do viewing frustum cull
-    /*
-        The planes of a matrix bound the region of the space it reads that lands inside the
-        canonical clip volume, so the test is against the eye space bound and against the
-        projection alone. Testing the raster space bound against the planes of the raster
-        matrix asks whether pixel coordinates fall inside a volume measured in eye units.
-    */
+    // viewing frustum cull. The frustum is built from the "screen" coordinate system, which
+    // takes eye space to screen space, so it is tested against the eye space bound swept
+    // over the shutter. Only the bound is transformed. The vertices stay in object space
     const v3d::type::geometry::Frustum frustum(coordinateSystems_["screen"], v3d::type::geometry::Frustum::Depth::MinusOneToOne);
     v3d::type::geometry::AABBox eyeBound;
     eyeBound.extents(swept_min, swept_max);
-    if (frustum.intersect(eyeBound) == v3d::type::geometry::Frustum::OUTSIDE) {  // poly is entirely outside frustum
+    if (frustum.intersect(eyeBound) == v3d::type::geometry::Frustum::OUTSIDE) {
         return;
     }
 
-    // bound = poly->bound();
-    // the raster transform reads the canonical volume the projection writes, so it goes
-    // on the left - a matrix applies to what is on its right
+    // raster applies after screen, so it is on the left: a matrix applies to what is on its
+    // right
     const glm::mat4x4 screen = coordinateSystems_["raster"] * coordinateSystems_["screen"];
-    // all eight corners of the eye space bound are projected. Under a perspective projection
-    // the raster extremes need not lie at the two diagonal corners. A corner at or behind the
-    // eye has no raster position, so it is left out and the primitive is split instead. The
+    // all eight corners of the eye space bound are projected, because under a perspective
+    // projection the raster extremes need not lie at two diagonal corners. A corner at or
+    // behind the eye has no raster position. It is left out, and the primitive is split. The
     // test on w is the one project() makes before it divides
     glm::vec3 raster_min(std::numeric_limits<float>::max());
     glm::vec3 raster_max(std::numeric_limits<float>::lowest());
     bool projected = false;
     for (int k = 0; k < 8; k++) {
         const glm::vec3 corner = boxCorner(bound_min, bound_max, k);
-        if ((screen * glm::vec4(corner, 1.0f)).w <= 1.0e-6f) {
+        if ((screen * glm::vec4(corner, 1.0F)).w <= SMALLEST_W) {
             poly->diceable(false);
             continue;
         }
@@ -919,24 +833,18 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     if (!projected) {
         // no corner is in front of the eye. The primitive is split, and its pieces are
         // bucketed again, so the first bucket holds it until then
-        raster_min = glm::vec3(0.0f);
-        raster_max = glm::vec3(0.0f);
+        raster_min = glm::vec3(0.0F);
+        raster_max = glm::vec3(0.0F);
     }
     bound_min = raster_min;
     bound_max = raster_max;
 
     bound.extents(bound_min, bound_max);
 
-    /*
-        if the primitive is spanning the e plane then we already know it needs split
-        but we still need to determine if any other primitive that hasn't already
-        been culled will need to be split.
-    */
+    // a primitive already marked for splitting needs no size test
     if (poly->diceable()) {
-        /*
-            if our primitive's raster space bound is bigger
-            than the maximum grid size then it should be split
-        */
+        // a raster bound wider or taller than one grid's side, sqrt(gridSize_) *
+        // shadingRate_ pixels, is split
         float size = static_cast<float>(gridSize_);
         size = sqrt(size) * shadingRate_;
         glm::vec3 bound_size = bound_max - bound_min;
@@ -945,55 +853,30 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         }
     }
 
-    /*
-        if poly is diceable then we don't need to split it
-        dicing is done in eye space so we go ahead and transform the poly's
-        vertices now.
-     */
+    // dicing is done in eye space, so a polygon that will be diced has its vertices moved
+    // there now
     if (poly->diceable()) {
-        // a normal transforms by the inverse transpose rather than by the matrix that
-        // moves the points. The two agree under a rotation and a uniform scale, and differ
-        // as soon as a scene scales one axis, which would tilt a normal off its surface
+        // a normal transforms by the inverse transpose of the matrix that moves the points.
+        // The two agree under a rotation and a uniform scale. Under a scale on one axis the
+        // point matrix would tilt a normal off its surface
         const glm::mat3x3 toEyeNormal = glm::transpose(glm::inverse(glm::mat3x3(toEye)));
         for (unsigned int i = 0; i < poly->vertexCount(); i++) {
             Vertex pv = poly->vertex(i);
-            pv.point(glm::vec3(toEye * glm::vec4(pv.point(), 1.0f)));
+            pv.point(glm::vec3(toEye * glm::vec4(pv.point(), 1.0F)));
             pv.normal(glm::normalize(toEyeNormal * pv.normal()));
             pv.geometricNormal(glm::normalize(toEyeNormal * pv.geometricNormal()));
             (*poly)[i] = pv;
         }
     }
 
-    // put the polygon in a bucket
-    /*
-        this is the last step of the first pass
-        we just need to know which bucket to put the primitive in
-        to do this we need the upper left corner of the primitive's bound
-        buckets work in raster space (buckets are evenly tiled in pixel space)
-        up to now our bound is only in screen space
-
-        NOTE: reyes does not have raster or ndc space. raster space is the same as screen space
-              so when we move to screen space above, we should really be moving to what
-              RenderMan calls raster space.
-    */
+    // the polygon goes in the bucket that holds the upper left corner of its raster bound
     frameBuffer_->addPrimitive(poly, bound);
-    // nothing left to do in the first pass for this primitive
 }
-/*
-    maps to RiWorldEnd()
-    once rendering is done, objects, lights and other stuff set
-    after prepareWorld() are destroyed and the memory reclaimed
-    saving the output file is done here also.
-    the results might not even include a rendered image depending
-    on the context. we might just output a rib file.
-*/
-/*
-    maps to RiDisplay()
-*/
-void RenderContext::display(const std::string & name, const std::string & type, const std::string & mode) {
-    displayName_ = name;
-    displayType_ = type;
-    displayMode_ = mode;
+
+void RenderContext::display(const v3d::render::offline::rib::Display & display) {
+    displayName_ = display.name;
+    displayType_ = display.type;
+    displayMode_ = display.mode;
 }
 
 const std::string & RenderContext::displayName() const {
@@ -1001,27 +884,23 @@ const std::string & RenderContext::displayName() const {
 }
 
 void RenderContext::bucket(v3d::render::offline::FrameBuffer* planes) {
-    samples_ = boost::make_shared<Samples>(planes->width(), planes->height(), sampling_);
+    samples_ = boost::make_shared<reyes::Samples>(glm::uvec2(planes->width(), planes->height()), sampling_);
     frameBuffer_->render(*this);
     samples_->resolve(planes, FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
 }
 
-/*
-    hide what the world gathered, then write what it sampled
-*/
 void RenderContext::render() {
     if (!frameBuffer_) {
         return;
     }
 
-    boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = frameBuffer_->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = frameBuffer_->planes();
     hider_->render(this, planes.get());
 
     if (imager_) {
-        // after the last bucket, once every sample of the frame is in: an imager is a
-        // function of the finished picture rather than of a piece. A failed run is logged by
-        // the shader's machine. It leaves that row and the rows below it as the hider wrote
-        // them, and the frame is still written
+        // the imager runs once the hider has finished, because it reads the whole picture.
+        // The shader's machine logs a failed run. The failed row and the rows below it stay
+        // as the hider wrote them, and the frame is still written
         v3d::render::offline::sl::Imager imager(imager_, &shader());
         imager.run(frameBuffer_->planes().get(), FrameBuffer::COVERAGE);
     }
@@ -1032,8 +911,8 @@ void RenderContext::render() {
         return;
     }
 
-    // every display mode writes the three colour channels. The coverage and depth planes
-    // are resolved, and are not written to the file
+    // only the three colour channels are written, whatever the display mode. The coverage
+    // and depth planes stay in the framebuffer
     auto logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
     factory.write(displayName_, frameBuffer_->planes()->image(FrameBuffer::CHANNELS));

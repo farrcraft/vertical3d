@@ -9,11 +9,15 @@
 
 #include <glm/glm.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(vertex_test) {
     v3d::moya::Vertex vertex;
 
-    glm::vec3 point(7.0f, 12.0f, -13.0f);
+    const glm::vec3 point(7.0F, 12.0F, -13.0F);
     vertex.point(point);
 
     BOOST_TEST((vertex.point() == point));
 }
+
+};  // namespace

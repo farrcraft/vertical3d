@@ -1,7 +1,8 @@
 # Lighting
 
 The lit pass draws meshes with lights, shadows and skinning. Meshes come from the mesh
-registry described in [TexturesAndMeshes.md](TexturesAndMeshes.md).
+registry described in [TexturesAndMeshes.md](TexturesAndMeshes.md). The lighting settings and
+the shadow functions are in `realtime::lighting`, in `api/render/realtime/lighting/`.
 
 ## The lit pass
 
@@ -43,14 +44,14 @@ vulkan::renderer::Lit lit(context->device(), context->pipelineCache(), context->
 ```
 
 The cel, outline and shadow pipelines all cull by this face. The light's matrix therefore has to
-be built in the camera's hand too: pass the hand to `shadow::light()`.
+be built in the camera's hand too: pass the hand to `lighting::shadowLight()`.
 
 ### Each frame
 
 ```cpp
-LitSettings settings;
-const glm::mat4 light = shadow::light(settings.light, bounds.centre, bounds.radius);
-VkDescriptorSet sceneSet = lit.scene(pack(settings, light, 1.0f / mapSize),
+lighting::Settings settings;
+const glm::mat4 light = lighting::shadowLight(settings.light, bounds);
+VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0F / mapSize),
     context->textures()->depthTexture(*map));
 
 boost::shared_ptr<Pass> pass = frame->pass("lit");       // may be created first
@@ -59,22 +60,27 @@ casting->target(map);
 casting->depth(true);
 casting->scene(sceneSet);
 casting->depthBias(settings.constantBias, settings.slopeBias);
-casters(registry, alpha(), meshes, lit, casting.get());
+entity::casters(registry, alpha(), meshes, &lit, casting.get());
 
 pass->target(scene);
 pass->depth(true);
 pass->reads(map);                                         // records the shadow pass first
 pass->camera(camera.view(), camera.projection());
 pass->scene(sceneSet);
-meshes(registry, alpha(), meshes, lit, settings.outline, pass.get());
+entity::meshes(registry, alpha(), meshes, &lit, settings.outline, pass.get());
 ```
 
-(`meshes()` here is the free function `realtime::meshes`, and `meshes` the registry.)
+(`entity::meshes()` is the free function in `api/render/realtime/entity/`, and `meshes` the
+registry.)
 
 Rules:
 
 - **Call `Lit::scene()` once per frame, while building the frame**, before `renderFrame()`. A
   second call in the same frame replaces the first.
+- **Call `scene()` before `casters()` and `meshes()`.** Each draw's object (its model matrix,
+  base colour, outline and first joint) is added to the frame's scene, and the draw names it by
+  index. A walk before any `scene()` throws. A walk before this frame's `scene()` adds to the
+  scene of a frame that may still be drawing.
 - **Both passes name the same scene set.** A pass that draws a lit pipeline without a scene set
   throws when the frame is recorded.
 - **The shadow pass names a depth bias.** The shadow pipeline is built with depth bias, and a
@@ -82,26 +88,48 @@ Rules:
 - With no shadow map passed to `scene()`, the white texture stands in and nothing is shadowed.
 - `meshes()` submits every entity's outline, then every entity's surface. Each entity is drawn
   between its last two simulation steps, using `alpha`.
-- `casters()` submits only entities whose `component::Mesh::castsShadow` is set.
+- Entities that draw the same registry entry are drawn together: one draw per part, with an
+  instance per entity. A scene's draw count follows how many distinct entries it shows, not how
+  many entities. A copy of a model registered under a second key is a second entry, and is not
+  grouped with the first.
+- `casters()` submits only entities whose `component::Mesh::castsShadow` is set, grouped as
+  `meshes()` groups them.
 - An entity whose mesh handle was released is skipped.
 
 ### Fitting the shadow map
 
-`shadow::fit(registry, alsoCover, margin)` returns a sphere around every shadow caster: the mean
-of their positions, and the farthest of them plus `margin`. The margin has to cover a caster's
-size and the length of its shadow. Things that cast nothing, such as the ground, stay out of the
-fit. `alsoCover` adds points that must be inside the map, such as where a character is walking
-to. `fit` returns nothing when no entity casts. The radius is never below
-`shadow::minimumRadius` (0.01), so one caster with no margin still gives a usable matrix.
+`lighting::fitShadow(registry, alsoCover, {.margin, .alpha})` returns a sphere around every shadow
+caster: the mean of their positions, and the farthest of them plus `margin`. The margin has to
+cover a caster's size and the length of its shadow. Things that cast nothing, such as the
+ground, stay out of the fit. `alsoCover` adds points that must be inside the map, such as where
+a character is walking to. `fitShadow` returns nothing when no entity casts. The radius is never
+below `lighting::minimumShadowRadius` (0.01), so one caster with no margin still gives a usable
+matrix. Each caster is read where it is drawn, `alpha` of the way from its previous step, as the
+lit pass draws it. Pass `Engine::alpha()`; the default of one reads the current step.
 
-`shadow::light(towards, centre, radius, hand)` builds the matrix the shadow pass draws through:
-an orthographic box around the sphere, seen from the light. `hand` is the camera's
+`lighting::fitShadowToView(viewProjection, distance, towards, texels)` fits the map to what the
+camera sees instead, for a world larger than one view. Call it every frame with the camera's
+matrix.
+
+- The sphere encloses the camera's view volume from the near plane out to `distance` along each
+  edge, or to the far plane where that is nearer. Shadows beyond `distance` are not drawn.
+- The radius depends only on the shape of the view volume, so the map's texels keep their size
+  as the camera moves and turns.
+- The centre is moved across the light to a whole number of texels. A point fixed in the world
+  therefore stays at the same place within its texel, and a shadow's edge does not crawl as the
+  camera moves. `texels` is the shadow map's width, at least 4.
+- It returns nothing for a distance that is not finite and positive, a light direction that is
+  zero or not finite, fewer than 4 texels, or a matrix that cannot be inverted.
+
+`lighting::shadowLight(towards, bounds, hand)` builds the matrix the shadow pass draws
+through: an orthographic box around the sphere, seen from the light. `hand` is the camera's
 `Profile::Hand`, and defaults to `UpCrossDirection`. A face is wound the same way under the
 light as under a camera of that hand, so the shadow pipeline culls the same faces the cel
 pipeline does. A light built in the other hand stores each caster's far side in the map.
 
-**The map does not follow the casters.** Fit it at scene load, or when the casters move
-somewhere new.
+**A map fitted by `fitShadow` does not follow the casters.** Fit it at scene load, or when the
+casters move somewhere new. A map fitted by `fitShadowToView` every frame follows the camera
+instead.
 
 ### Skinned models
 
@@ -109,11 +137,11 @@ Skinned models are drawn by the same calls with one more argument. Compute the p
 frame and pass the same `Poses` to all three:
 
 ```cpp
-const Poses poses = realtime::poses(registry, alpha(), meshes);
-VkDescriptorSet sceneSet = lit.scene(pack(settings, light, 1.0f / mapSize),
+const entity::Poses poses = entity::poses(registry, alpha(), meshes);
+VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0F / mapSize),
     context->textures()->depthTexture(*map), poses.palette());
-casters(registry, alpha(), meshes, lit, casting.get(), poses);
-meshes(registry, alpha(), meshes, lit, settings.outline, pass.get(), poses);
+entity::casters(registry, alpha(), meshes, &lit, casting.get(), poses);
+entity::meshes(registry, alpha(), meshes, &lit, settings.outline, pass.get(), poses);
 ```
 
 - `poses()` samples each skinned entity's `ecs::component::Playback`, blending out of the clip
@@ -124,9 +152,9 @@ meshes(registry, alpha(), meshes, lit, settings.outline, pass.get(), poses);
   models only.
 - A shadow is cast in the same pose that is drawn.
 
-### LitSettings
+### Settings
 
-`LitSettings` is plain data with no GPU in it, so a game can read its look from a file.
+`lighting::Settings` is plain data with no GPU in it, so a game can read its look from a file.
 
 | Field | Meaning |
 |---|---|
@@ -140,9 +168,9 @@ meshes(registry, alpha(), meshes, lit, settings.outline, pass.get(), poses);
 | `normalBias` | How far a lookup moves along the normal before reading the shadow map. |
 | `shadowStrength` | How much of a band a shadow removes. Zero still draws the shadow pass but ignores it. |
 
-`pack(settings, lightViewProjection, texel)` turns the settings into the `SceneUniforms` that
-`scene()` takes. Changing `colour` and `shadowColour` over time is how a scene's light changes
-through a day.
+`lighting::pack(settings, lightViewProjection, texel)` turns the settings into the
+`SceneUniforms` that `scene()` takes. Changing `colour` and `shadowColour` over time is how a
+scene's light changes through a day.
 
 ### The outline
 
@@ -181,7 +209,7 @@ shaders.cel = loadSpirv("shaders/my_cel.frag.spv");
 vulkan::renderer::Lit lit(..., scene->format(), scene->depthFormat(), map->depthFormat(), shaders);
 ```
 
-A replacement must declare the same sets and push block as the built-in shaders:
+A replacement must declare the same sets as the built-in shaders, and no push constants:
 
 | Binding | Holds |
 |---|---|
@@ -190,12 +218,17 @@ A replacement must declare the same sets and push block as the built-in shaders:
 | set 2, binding 0 | The scene (`Scene` block, laid out as `SceneUniforms`) |
 | set 2, binding 1 | The shadow map |
 | set 2, binding 2 | The joint palette, a read-only storage buffer (skinned shaders) |
-| push constant | `Lit::Object`: model matrix, base colour, outline, first joint (88 bytes) |
+| set 2, binding 3 | The objects, a read-only storage buffer of `Lit::Object`: model matrix, base colour, outline, first joint (96 bytes each) |
+
+A vertex stage reads its object at `gl_InstanceIndex`, because a draw names its object as its
+first instance. A fragment stage has no instance index, so its vertex stage passes the index
+down as a flat output. The built-in `mesh.vert` passes it at location 3, and `cel.frag` reads
+it there.
 
 Front faces are clockwise. Include
 [`api/render/shaders/lit/lit.glsl`](../../../api/render/shaders/lit/lit.glsl) to get the shared
-blocks rather than copying them. A replacement that declares a binding the layout lacks fails
-when the pipeline is built. One that only reorders block members fails silently and draws the
-wrong picture.
+blocks rather than copying them. In a vertex stage it also defines `object` as the stage's own
+entry. A replacement that declares a binding the layout lacks fails when the pipeline is built.
+One that only reorders block members fails silently and draws the wrong picture.
 
 `Lit::sceneLayout()` returns set 2's layout, for a pipeline of your own that reads the same scene.

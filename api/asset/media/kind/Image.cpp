@@ -5,6 +5,10 @@
 
 #include "Image.h"
 
+#include <api/asset/Asset.h>
+#include <api/asset/Type.h>
+#include <api/image/Image.h>
+
 #include <string>
 
 namespace v3d::asset::media::kind {

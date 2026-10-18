@@ -17,13 +17,12 @@ namespace v3d::moya {
 /**
  * Drives a render context from a RIB stream. The reader calls one typed method per RI request.
  *
- * RiBegin and RiEnd have no RIB equivalent - the standard says they are implied at the
- * start and end of a file - so a handler creates the context it drives and destroys it
- * when it goes out of scope.
+ * RiBegin and RiEnd have no RIB equivalent. The standard implies them at the start and end
+ * of a file, so the constructor pushes a render context and the destructor pops it.
  *
  * The C entry points in RenderMan.cxx are the other way into the same render context.
- * Neither goes through the other: a va_list cannot be built at runtime, so a reader
- * holding a parsed parameter list could not call them.
+ * Neither calls the other. The reader passes typed parameter lists, and the C entry points
+ * take untyped arrays.
  **/
 class RIBHandler final : public v3d::render::offline::rib::Handler {
  public:
@@ -33,17 +32,17 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void option(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
     void hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
 
-    void format(unsigned int width, unsigned int height, float pixelAspect) override;
+    void format(const v3d::render::offline::rib::Format & request) override;
     void frameAspectRatio(float aspect) override;
-    void screenWindow(float left, float right, float bottom, float top) override;
+    void screenWindow(const v3d::render::offline::rib::ScreenWindow & request) override;
     void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void clipping(float hither, float yon) override;
-    void depthOfField(float fstop, float focalLength, float focalDistance) override;
-    void shutter(float open, float close) override;
-    void pixelSamples(unsigned int x, unsigned int y) override;
+    void clipping(const v3d::render::offline::rib::Clipping & request) override;
+    void depthOfField(const v3d::render::offline::rib::DepthOfField & request) override;
+    void shutter(const v3d::render::offline::rib::Shutter & request) override;
+    void pixelSamples(const glm::uvec2 & samples) override;
     void pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) override;
     void pixelVariance(float variation) override;
-    void display(const std::string & name, const std::string & type, const std::string & mode,
+    void display(const v3d::render::offline::rib::Display & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
 
     void worldBegin() override;
@@ -57,7 +56,7 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void transform(const glm::mat4x4 & matrix) override;  // NOLINT(build/include_what_you_use)
     void concatTransform(const glm::mat4x4 & matrix) override;
     void translate(float dx, float dy, float dz) override;
-    void rotate(float angle, float dx, float dy, float dz) override;
+    void rotate(float angle, const glm::vec3 & axis) override;
     void scale(float sx, float sy, float sz) override;
     void motionBegin(const std::vector<float> & times) override;
     void motionEnd() override;
@@ -68,33 +67,31 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
 
     void surface(const std::string & name,
         const v3d::render::offline::rib::ParameterList & parameters) override;
-    void lightSource(const std::string & name, const std::string & handle,
+    void lightSource(const v3d::render::offline::rib::LightSource & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
     void illuminate(const std::string & handle, bool on) override;
     void imager(const std::string & name,
         const v3d::render::offline::rib::ParameterList & parameters) override;
 
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
-    void pointsPolygons(const std::vector<unsigned int> & counts, const std::vector<unsigned int> & indices,
+    void pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
     /**
      * Drawn by the ray hider only, because the reyes hider dices polygons only. The first
      * sphere a scene names under the reyes hider is reported.
      **/
-    void sphere(float radius, float zmin, float zmax, float thetamax,
+    void sphere(const v3d::render::offline::rib::Sphere & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
 
     /**
-     * The context the requests are landing in, which is where a driver reads the
-     * framebuffer from once the file has been read.
+     * The context the requests reach. Its framebuffer holds the picture once the file has
+     * been read.
      **/
     RenderContext & context();
 
     /**
-     * Where the render goes whatever the scene's Display names.
-     *
-     * A command line naming an output file means that file rather than the one the scene
-     * was written to write, and a scene's Display arrives after this is set.
+     * The file the render is written to, whatever the scene's Display names. It is set
+     * before the scene is read, and a Display the scene makes later keeps this name.
      **/
     void output(const std::string & name);
 

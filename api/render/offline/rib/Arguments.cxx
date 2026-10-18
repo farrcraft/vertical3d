@@ -5,10 +5,29 @@
 
 #include "Arguments.h"
 
+#include "Declaration.h"
+#include "Declarations.h"
+#include "Parameters.h"
+
 #include <string>
 #include <vector>
 
 namespace v3d::render::offline::rib {
+
+namespace {
+
+/**
+ * Append a value array of the C type the declaration names to the list's floats.
+ **/
+template <typename T>
+void append(const void* values, unsigned int count, std::vector<float>* floats) {
+    const T* numbers = static_cast<const T*>(values);
+    for (unsigned int value = 0; value < count; value++) {
+        floats->push_back(static_cast<float>(numbers[value]));
+    }
+}
+
+};  // namespace
 
 void arguments(const Declarations & declarations, int count,
     const char* const* tokens, const void* const* values, unsigned int vertices,
@@ -42,12 +61,12 @@ void arguments(const Declarations & declarations, int count,
             for (unsigned int element = 0; element < elements; element++) {
                 strings.push_back(text[element] == nullptr ? std::string() : text[element]);
             }
+        } else if (declaration.type() == Declaration::Type::INTEGER) {
+            // an integer parameter's array holds ints, as RtInt is, and read as floats it
+            // would be their bit patterns
+            append<int>(values[i], elements * declaration.floats(), &floats);
         } else {
-            const float* numbers = static_cast<const float*>(values[i]);
-            const unsigned int wanted = elements * declaration.floats();
-            for (unsigned int value = 0; value < wanted; value++) {
-                floats.push_back(numbers[value]);
-            }
+            append<float>(values[i], elements * declaration.floats(), &floats);
         }
         list->add(name, declaration, floats, strings);
     }

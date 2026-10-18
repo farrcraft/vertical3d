@@ -22,11 +22,11 @@ namespace v3d::editor {
 /**
  * What a click at a screen point hit, found by a ray cast on the CPU.
  *
- * An object and a face are hit by the ray meeting a triangle of the mesh; a vertex and
- * an edge, by being drawn within a few pixels of the cursor.
+ * An object or a face is hit when the ray meets a triangle of the mesh. A vertex or an edge
+ * is hit when it is drawn within a few pixels of the cursor.
  *
- * Component masks only consider meshes that are already selected: an object has to be
- * selected before any of its components may be.
+ * A component mask considers only meshes that are already selected: an object has to be
+ * selected before any of its components can be.
  **/
 class Picker final : public SceneVisitor {
  public:
@@ -56,10 +56,16 @@ class Picker final : public SceneVisitor {
     };
 
     /**
+     * How far from a vertex or an edge, in pixels, a click still counts as being on it
+     * when no tolerance is given.
+     **/
+    static constexpr float defaultTolerance = 5.0F;
+
+    /**
      * @param tolerance how far from a vertex or an edge, in pixels, still counts as
      *        being on it
      **/
-    explicit Picker(float tolerance = 5.0f);
+    explicit Picker(float tolerance = defaultTolerance);
 
     /**
      * Cast a click into a view.
@@ -76,8 +82,8 @@ class Picker final : public SceneVisitor {
     Hit pick(const Scene& scene, const ViewPort& view, const glm::vec2& cursor, SelectMask mask);
 
     /**
-     * One mesh of the scene, during a pick. Public because a scene is walked through
-     * SceneVisitor; nothing else should call it.
+     * One mesh of the scene, during a pick. Public because the scene calls it through
+     * SceneVisitor. Only the scene calls it.
      **/
     void visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) override;
 
@@ -105,10 +111,19 @@ class Picker final : public SceneVisitor {
     bool screen(const glm::vec3& point, glm::vec2* position, float* depth) const;
 
     /**
-     * Take the hit if it is nearer than the best so far.
-     * @param distance along the ray, or the depth for a screen space pick
+     * A mesh, a component of it, and how far away the pick found it: along the ray, or the
+     * depth for a screen space pick.
      **/
-    void offer(unsigned int mesh, unsigned int component, float distance);
+    struct Candidate {
+        unsigned int mesh = 0;
+        unsigned int component = 0;
+        float distance = 0.0F;
+    };
+
+    /**
+     * Take the candidate if it is nearer than the best so far.
+     **/
+    void offer(const Candidate& candidate);
 
     float tolerance_;
 

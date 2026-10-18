@@ -102,8 +102,8 @@ failed fix is itself data about what the system is really doing.
 
 1. **Fix the root cause**, not the symptom, and keep the change minimal.
 2. **Verify with the command that failed**, and quote what it said. Building the target that
-   broke is usually the whole of the available proof; say so plainly rather than implying
-   more. If the fix is in a library, build a consumer of it too.
+   broke is usually the whole of the available proof. Say so plainly, and do not imply more.
+   If the fix is in a library, build a consumer of it too.
 3. **Run cpplint on the files you touched.** The tree is clean at that command and at the
    other three checks, so anything they report is yours.
 4. **State what you did not verify.** For a change under `api/render`, run the
@@ -149,7 +149,7 @@ Plus the Visual Studio debugger, and spdlog for probes.
 
 **The Khronos validation layer is enabled when it is installed**, and `vulkan::device::Instance`
 routes its warnings and errors through the logger — so for a Vulkan defect, read `v3d.log`
-before anything else. A silent log means the layer found nothing, not that it is off; a run
+before anything else. A silent log means the layer found nothing, not that it is off. A run
 with no layer installed is also silent, so confirm the instance logged that validation is on.
 
 **There is no sanitizer build.** Do not claim a fix is verified by one. `/analyze` and

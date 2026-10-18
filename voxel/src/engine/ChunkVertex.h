@@ -11,8 +11,8 @@
 /**
  * One vertex of a chunk mesh, in the layout shaders/voxel.vert declares.
  *
- * The position is chunk local, so a chunk's vertices never change when it moves and the
- * origin the pipeline adds back is a push constant rather than a rebuild.
+ * The position is chunk local. The chunk's origin is added back in the shader from a push
+ * constant, so moving a chunk does not change its vertices.
  **/
 struct ChunkVertex {
     glm::vec3 position;

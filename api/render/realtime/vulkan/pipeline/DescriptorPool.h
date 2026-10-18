@@ -22,10 +22,10 @@ namespace v3d::render::realtime::vulkan::pipeline {
 /**
  * Descriptor sets of one layout, and the layout itself.
  *
- * Sets are allocated out of a list of Vulkan pools. The list grows by a fixed count whenever
- * the last one is full, so the number of sets a frame or a scene needs is not fixed up front.
- * Individual sets are not freed: one handed back is kept and given out again once the ring
- * reports that no frame in flight can still be binding it.
+ * Sets are allocated from a list of Vulkan pools. A new pool of setsPerPool sets is added
+ * whenever the last one is full, so the number of sets a frame or a scene needs is not fixed
+ * up front. Individual sets are not freed. A released set is kept, and given out again once
+ * no frame in flight can still bind it.
  *
  * Every set a pool hands out has the same layout, so a set allocated here can be bound by
  * any pipeline that declared that layout at the same set number.
@@ -34,7 +34,7 @@ class DescriptorPool final {
  public:
     /**
      * @param device the device the layout, the pools and the sets are created on
-     * @param ring the frames in flight, which hold back a released set until they finish
+     * @param ring the frames in flight. A released set is retired through it.
      * @param bindings the layout's bindings, which also decide how much each pool holds
      * @param setsPerPool how many sets a pool is created with, and so how often one is added
      * @param name what the sets are for, for the messages an error throws
@@ -45,7 +45,8 @@ class DescriptorPool final {
 
     /**
      * Destroys the pools, which frees every set allocated from them, and then the layout. Both
-     * are destroyed through the ring, once no frame queued or in flight can still bind a set.
+     * are retired through the Ring, and destroyed once no frame queued or in flight can still
+     * bind a set.
      **/
     ~DescriptorPool();
 
@@ -90,8 +91,8 @@ class DescriptorPool final {
     std::vector<VkDescriptorPoolSize> sizes_;  /**< what one pool holds, by descriptor type **/
     std::vector<VkDescriptorPool> pools_;
     uint32_t remaining_;                       /**< sets left in the last pool **/
-    /**< sets handed back that no frame still binds. Shared with what the ring runs, because
-         the ring can outlive this **/
+    /**< released sets that no frame still binds. Shared with the callbacks retired through
+         the Ring, because the Ring can outlive the DescriptorPool **/
     boost::shared_ptr<std::vector<VkDescriptorSet>> spare_;
 };
 

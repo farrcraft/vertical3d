@@ -5,17 +5,25 @@
 
 #include "Grade.h"
 
+#include <api/log/Logger.h>
 #include <api/render/realtime/DeviceContext.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 #include <api/render/realtime/vulkan/renderer/FullScreen.h>
+#include <api/render/realtime/vulkan/renderer/Quad.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <iterator>
 #include <map>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -25,9 +33,30 @@ namespace v3d::render::realtime {
 
 namespace {
 
+/**
+ * The grade for each pairing of what it reads and what it draws into. A scene holds display
+ * values, or is read decoded to linear. A target stores what it is given, or encodes on store.
+ **/
 const uint32_t gradeShader[] =
 #include "shaders/grade.frag.inc"
 ;  // NOLINT(whitespace/semicolon)
+
+const uint32_t gradeLinearSceneShader[] =
+#include "shaders/grade_linear_scene.frag.inc"
+;  // NOLINT(whitespace/semicolon)
+
+const uint32_t gradeLinearTargetShader[] =
+#include "shaders/grade_linear_target.frag.inc"
+;  // NOLINT(whitespace/semicolon)
+
+const uint32_t gradeLinearShader[] =
+#include "shaders/grade_linear.frag.inc"
+;  // NOLINT(whitespace/semicolon)
+
+template <std::size_t N>
+std::vector<uint32_t> words(const uint32_t (&code)[N]) {
+    return std::vector<uint32_t>(std::begin(code), std::end(code));
+}
 
 const std::size_t TEXELS = static_cast<std::size_t>(Grade::SIZE) * Grade::SIZE * Grade::SIZE;
 
@@ -36,17 +65,22 @@ const std::size_t TEXELS = static_cast<std::size_t>(Grade::SIZE) * Grade::SIZE *
 /**
  **/
 Grade::Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_ptr<DeviceContext>& context,
-    VkFormat colour, VkFormat depth, const boost::shared_ptr<image::Image>& strip) :
+    const vulkan::pipeline::Formats& formats, const boost::shared_ptr<image::Image>& strip) :
     logger_(logger),
     context_(context) {
-    vulkan::renderer::FullScreen::Spec spec;
-    spec.name = "grade";
-    spec.fragment.assign(std::begin(gradeShader), std::end(gradeShader));
-    spec.sources = 2;
-    spec.colour = colour;
-    spec.depth = depth;
-    pass_ = boost::make_shared<vulkan::renderer::FullScreen>(context_->device(), context_->pipelineCache(),
-        context_->resources(), context_->ring(), context_->frameUniforms(), spec);
+    const bool encodes = vulkan::renderer::Quad::linearises(formats.colour);
+    const auto build = [&](const std::string& name, std::vector<uint32_t> fragment) {
+        vulkan::renderer::FullScreen::Spec spec;
+        spec.name = name;
+        spec.fragment = std::move(fragment);
+        spec.sources = 2;
+        spec.colour = formats.colour;
+        spec.depth = formats.depth;
+        return boost::make_shared<vulkan::renderer::FullScreen>(context_->device(), context_->pipelineCache(),
+            context_->resources(), context_->ring(), context_->frameUniforms(), spec);
+    };
+    shown_ = build("grade", encodes ? words(gradeLinearTargetShader) : words(gradeShader));
+    decoded_ = build("grade-linear-scene", encodes ? words(gradeLinearShader) : words(gradeLinearSceneShader));
 
     std::vector<uint8_t> texels = table(strip);
     if (texels.empty()) {
@@ -69,11 +103,11 @@ Grade::Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_p
 /**
  **/
 Grade::~Grade() {
-    // a destructor must not throw. Releasing only hands objects to the ring, which fails only
-    // when out of memory, and then they stay registered until the context goes
+    // a destructor must not throw. A release only retires objects through the Ring, which
+    // throws only when out of memory. They then stay registered until the context is destroyed
     try {
         for (const std::pair<const MaterialHandle, Source>& source : sources_) {
-            pass_->release(source.second.current);
+            pass(source.second).release(source.second.current);
             context_->resources()->release(source.second.scene);
         }
         sources_.clear();
@@ -91,14 +125,17 @@ MaterialHandle Grade::source(const vulkan::frame::RenderTarget& scene, uint32_t 
         throw std::runtime_error("A grade's scene has no colour image to read");
     }
     texture.sampler = nearest_;
+    // an _SRGB scene is decoded as it is read, so it is graded by the stage that encodes it again
+    const bool decoded = vulkan::renderer::Quad::linearises(scene.format());
+    vulkan::renderer::FullScreen& reader = decoded ? *decoded_ : *shown_;
     const TextureHandle sceneTexture = context_->resources()->add(texture);
     MaterialHandle material;
     try {
-        material = pass_->source({sceneTexture, tableTexture_});
-        sources_[material] = Source{sceneTexture, material};
+        material = reader.source({sceneTexture, tableTexture_});
+        sources_[material] = Source{sceneTexture, material, decoded};
     } catch (...) {
         if (material.valid()) {
-            pass_->release(material);
+            reader.release(material);
         }
         context_->resources()->release(sceneTexture);
         throw;
@@ -113,7 +150,7 @@ bool Grade::release(const MaterialHandle& source) {
     if (found == sources_.end()) {
         return false;
     }
-    pass_->release(found->second.current);
+    pass(found->second).release(found->second.current);
     context_->resources()->release(found->second.scene);
     sources_.erase(found);
     return true;
@@ -132,11 +169,16 @@ bool Grade::replace(const std::vector<uint8_t>& texels) {
     rebound.reserve(sources_.size());
     try {
         for (const std::pair<const MaterialHandle, Source>& source : sources_) {
-            rebound.push_back(pass_->source({source.second.scene, replacement}));
+            rebound.push_back(pass(source.second).source({source.second.scene, replacement}));
         }
     } catch (...) {
-        for (const MaterialHandle& material : rebound) {
-            pass_->release(material);
+        // each pairing made so far belongs to the pass of the source in the same place
+        std::size_t undone = 0;
+        for (const std::pair<const MaterialHandle, Source>& source : sources_) {
+            if (undone == rebound.size()) {
+                break;
+            }
+            pass(source.second).release(rebound[undone++]);
         }
         context_->resources()->release(replacement);
         throw;
@@ -144,7 +186,7 @@ bool Grade::replace(const std::vector<uint8_t>& texels) {
 
     std::size_t next = 0;
     for (std::pair<const MaterialHandle, Source>& source : sources_) {
-        pass_->release(source.second.current);
+        pass(source.second).release(source.second.current);
         source.second.current = rebound[next++];
     }
     context_->resources()->release(tableTexture_);
@@ -156,13 +198,26 @@ bool Grade::replace(const std::vector<uint8_t>& texels) {
  **/
 void Grade::submit(const MaterialHandle& source, Pass* pass) const {
     const std::map<MaterialHandle, Source>::const_iterator found = sources_.find(source);
-    pass_->submit(found != sources_.end() ? found->second.current : source, pass);
+    if (found == sources_.end()) {
+        // not one of this grade's, so it resolves to nothing and draws nothing, as an unknown
+        // material does in any pass
+        shown_->submit(source, pass);
+        return;
+    }
+    this->pass(found->second).submit(found->second.current, pass);
+}
+
+/**
+ **/
+vulkan::renderer::FullScreen& Grade::pass(const Source& source) const {
+    return source.decoded ? *decoded_ : *shown_;
 }
 
 /**
  **/
 TextureHandle Grade::createTable(const std::vector<uint8_t>& texels) {
-    // sampled linearly between entries, the factory's default, so sixteen of them are enough
+    // sampled linearly between entries, the factory's default, so sixteen entries an edge are
+    // enough
     const vulkan::memory::TextureFactory factory(context_->device(), context_->uploader());
     return context_->resources()->add(factory.volume(texels.data(), SIZE, SIZE, SIZE));
 }
@@ -182,7 +237,7 @@ std::vector<uint8_t> Grade::table(const boost::shared_ptr<image::Image>& strip) 
     for (uint32_t blue = 0; blue < SIZE; blue++) {
         for (uint32_t green = 0; green < SIZE; green++) {
             for (uint32_t red = 0; red < SIZE; red++) {
-                const std::size_t at = (static_cast<std::size_t>(green) * strip->width() + static_cast<std::size_t>(blue) * SIZE + red) * channels;
+                const std::size_t at = ((static_cast<std::size_t>(green) * strip->width()) + (static_cast<std::size_t>(blue) * SIZE) + red) * channels;
                 texels.insert(texels.end(), {pixels[at], pixels[at + 1], pixels[at + 2], 255});
             }
         }

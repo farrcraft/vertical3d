@@ -5,10 +5,16 @@
 
 #include "Component.h"
 
+#include <api/type/geometry/Bound2D.h>
+#include <api/ui/component/Type.h>
+
+#include "Layout.h"
+
 #include <algorithm>
 #include <atomic>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::ui {
@@ -16,20 +22,17 @@ namespace v3d::ui {
 namespace {
 
 /**
- * The next id to hand out. Atomic because a component may be built anywhere, and private
- * because an id is only ever read back - nothing outside a constructor has a use for the
- * counter itself.
+ * The next id to hand out. Atomic because a component may be built on any thread.
  **/
 std::atomic<unsigned int> nextID { 0 };
 
 };  // namespace
 
-// in declaration order, so that a member added later cannot quietly be initialised from
-// one that has not been yet
+// in declaration order, so that no member is initialised from one that is not yet set
 Component::Component(component::Type type) :
     parent_(nullptr),
-    position_(0.0f, 0.0f),
-    size_(0.0f, 0.0f),
+    position_(0.0F, 0.0F),
+    size_(0.0F, 0.0F),
     zIndex_(0),
     id_(nextID++),
     visible_(true),
@@ -163,7 +166,7 @@ void Component::enabled(bool on) {
 }
 
 v3d::type::geometry::Bound2D Component::bound() const {
-    v3d::type::geometry::Bound2D bound(position_, size_);
+    v3d::type::geometry::Bound2D bound({.position = position_, .size = size_});
     return bound;
 }
 

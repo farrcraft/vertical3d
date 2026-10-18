@@ -18,16 +18,16 @@ using v3d::render::realtime::Grade;
 namespace {
 
 /**
- * The strip the identity table is baked to: slice b at b * 16 across, red across each slice
- * and green down it, each entry k of fifteen.
+ * The identity table baked to a strip. Slice b holds blue step b and starts at x = b * 16. Red
+ * steps across each slice and green steps down it, and step k has the value k / 15.
  **/
 boost::shared_ptr<v3d::image::Image> identityStrip(uint8_t bits) {
     const uint32_t size = Grade::SIZE;
-    boost::shared_ptr<v3d::image::Image> strip = boost::make_shared<v3d::image::Image>(size * size, size, bits);
+    boost::shared_ptr<v3d::image::Image> strip = boost::make_shared<v3d::image::Image>(glm::uvec2(size * size, size), bits);
     const std::size_t channels = bits / 8;
     for (uint32_t y = 0; y < size; y++) {
         for (uint32_t x = 0; x < size * size; x++) {
-            unsigned char* at = strip->data() + (static_cast<std::size_t>(y) * size * size + x) * channels;
+            unsigned char* at = strip->data() + (((static_cast<std::size_t>(y) * size * size) + x) * channels);
             at[0] = static_cast<unsigned char>((x % size) * 17);
             at[1] = static_cast<unsigned char>(y * 17);
             at[2] = static_cast<unsigned char>((x / size) * 17);
@@ -44,10 +44,8 @@ boost::shared_ptr<v3d::image::Image> identityStrip(uint8_t bits) {
  **/
 std::vector<uint8_t> entry(const std::vector<uint8_t>& table, std::size_t index) {
     return std::vector<uint8_t>(table.begin() + static_cast<std::ptrdiff_t>(index * 4),
-        table.begin() + static_cast<std::ptrdiff_t>(index * 4 + 4));
+        table.begin() + static_cast<std::ptrdiff_t>((index * 4) + 4));
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(grade_test)
 
@@ -61,7 +59,7 @@ BOOST_AUTO_TEST_CASE(the_identity_is_each_entry_at_its_own_position) {
     BOOST_CHECK(entry(table, 0) == (std::vector<uint8_t>{0, 0, 0, 255}));
     BOOST_CHECK(entry(table, 15) == (std::vector<uint8_t>{255, 0, 0, 255}));
     BOOST_CHECK(entry(table, 16) == (std::vector<uint8_t>{0, 17, 0, 255}));
-    BOOST_CHECK(entry(table, 16 * 16 * 16 - 1) == (std::vector<uint8_t>{255, 255, 255, 255}));
+    BOOST_CHECK(entry(table, (16 * 16 * 16) - 1) == (std::vector<uint8_t>{255, 255, 255, 255}));
 }
 
 /**
@@ -78,8 +76,10 @@ BOOST_AUTO_TEST_CASE(a_strip_is_read_slice_by_slice) {
  **/
 BOOST_AUTO_TEST_CASE(a_strip_of_the_wrong_shape_is_no_table) {
     BOOST_CHECK(Grade::table(boost::shared_ptr<v3d::image::Image>()).empty());
-    BOOST_CHECK(Grade::table(boost::make_shared<v3d::image::Image>(16, 16, 24)).empty());
-    BOOST_CHECK(Grade::table(boost::make_shared<v3d::image::Image>(256, 16, 8)).empty());
+    BOOST_CHECK(Grade::table(boost::make_shared<v3d::image::Image>(glm::uvec2(16, 16), 24)).empty());
+    BOOST_CHECK(Grade::table(boost::make_shared<v3d::image::Image>(glm::uvec2(256, 16), 8)).empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -16,34 +16,8 @@ Two kinds of item do not belong here:
 Each entry states the gap in the code, not who is waiting for it. An entry may name a trigger:
 the condition that makes the work due.
 
-## The clang-tidy backlog
-
-[.clang-tidy](../.clang-tidy) enables the bugprone, performance, misc and readability families
-and disables 20 checks by name. The tree is clean at the 186 checks left enabled.
-
-Seven of the disabled checks are disabled for good, and `.clang-tidy` says why; they are not
-listed here. The other thirteen are in the table below, with the number of distinct sites each
-reports over a full `-DV3D_CLANG_TIDY=ON` build.
-
-- To remove a row, fix every site it reports. Never widen an exclusion instead.
-- `voxel/src/noise` is not counted. It is vendored code, kept unchanged, and is skipped by
-  clang-tidy, `/analyze` and cpplint.
-
-| Check | Sites |
-|---|---|
-| `readability-implicit-bool-conversion` | 69 |
-| `bugprone-narrowing-conversions` | 111 |
-| `readability-braces-around-statements` | 111 |
-| `readability-math-missing-parentheses` | 131 |
-| `bugprone-easily-swappable-parameters` | 233 |
-| `performance-enum-size` | 303 |
-| `misc-use-internal-linkage` | 526 |
-| `misc-const-correctness` | 939 |
-| `misc-non-private-member-variables-in-classes` | 1303 |
-| `readability-magic-numbers` | 1883 |
-| `readability-identifier-length` | 2483 |
-| `misc-include-cleaner` | 3346 |
-| `readability-uppercase-literal-suffix` | 4156 |
+An open plan or roadmap may order entries from here. The entry stays here until the work lands,
+and its section names the plan or roadmap that orders it.
 
 ## RiRotate's sign
 
@@ -62,7 +36,8 @@ Background: [OfflineRenderingPhase3](plans/completed/OfflineRenderingPhase3.md#o
 
 ## Offline rendering
 
-Each of these waits until a scene needs it.
+Each of these waits until a scene needs it. [OfflineShading](roadmap/OfflineShading.md) orders
+them, along with RiRotate's sign above.
 
 [] **A transform into a projected space does not divide by w.** `ptransform` drops w, so
 `transform("screen", P)`, `"raster"`, `"NDC"` and `depth()` are right under an orthographic
@@ -101,7 +76,7 @@ projection and not under a perspective one.
 [] **The reyes hider adds every polygon to the traced scene.**
 
 - moya fans each polygon into the traced scene as it arrives, before culling, and shades its
-  lights once for it. This is what lets an off-screen caster cast a shadow.
+  lights once for it. This lets an off-screen caster cast a shadow.
 - A scene that never calls `trace()` or `transmission()` pays the memory and the time anyway.
 - The fix adds geometry only when a surface or light shader in the scene traces.
 - Due when a large reyes-only scene's memory or load time shows it.
@@ -135,21 +110,63 @@ Applying them again after the read would make the command line win.
 
 Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration).
 
+## moya's front end and reyes hider
+
+Defects in `moya/libmoya` that its comments described wrongly. Each is due when a scene or a
+caller reaches it.
+
+[] **Five RI C entry points are unsafe or empty.**
+
+- `RiProjection` reads the value after `"fov"` as a token and builds a string from it, then
+  reads a `double` where RI passes a pointer to an `RtFloat`. The behaviour is undefined.
+- `RiEnd` with no context open calls `pop_back` on an empty stack.
+- `RiGetContext` returns a pointer into a `std::vector<RenderContext>`, so a later `RiBegin`
+  that grows the vector leaves the handle dangling. `RiContext` ignores the handle.
+- `RiDisplayV`, `RiPolygonV` and `RiProjectionV` are empty, and `RiDisplay` ignores its
+  parameter list.
+- `RtErrorHandler`, `RtProcSubdivFunc`, `RtProcFreeFunc` and `RtArchiveCallback` return
+  `RtFloat` where RI has `RtVoid`, so `RiErrorIgnore` and its kin cannot be passed to
+  `RiErrorHandler`.
+
+[] **A bad name is accepted silently.**
+
+- `RiProjection(RI_NULL)` gives an orthographic projection and an unknown name the identity.
+  RI has the reverse, and nothing logs the unknown name.
+- `setCoordinateSystem()` and `coordinateSystem()` with an unknown name insert an all-zero
+  matrix and make it current, which flattens everything drawn after it.
+
+[] **`RenderContext` assumes its caller's order.**
+
+- `addPolygon()` under the reyes hider dereferences `frameBuffer_`, which exists only after
+  `prepareWorld()`. A polygon sent before `RiWorldBegin` crashes.
+- `render()` ignores the result of `image::Factory::write`, so an unknown extension writes no
+  file and reports nothing. It also makes a new `Logger` instead of using `logger_`.
+- `RiCropWindow` has no effect. `crop_` is stored by nothing and read by nothing.
+
+[] **The reyes hider departs from RI in four places.**
+
+- `GridShader` sets I to P for every camera. That is right for a perspective camera only; an
+  orthographic camera's I is (0, 0, 1) in camera space. The ray hider is right.
+- `GridShader::space("object")` fails, although the primitive's placement is that transform.
+  `shade()` is given the `Shading`, not the primitive.
+- ShadingRate is read as a side length in pixels: the first pass splits at
+  `sqrt(gridSize) * shadingRate` pixels. RI defines it as an area.
+- `Polygon::dice()` uses the first four vertices, so a polygon with more is diced wrongly.
+
 ## Tile grids
 
 `api/grid` is a library of its own, and odyssey uses it. The grid owns a map's picture and
 terrain legend; the rest of a map belongs to the game. [Grid.md](api/Grid.md) describes the
 library.
 
-[] **A world cannot be made of regions.**
+[] **A route and sight stop at a region's edge.**
 
-- A `TileGrid` is one rectangle centred on the world origin.
-- A world of regions needs each region offset in the world, and loaded and released with its
-  sprite sheets. There is no way to place a grid like that.
-- A region could be a grid with an origin, a grid of grids, or a game's list of grids. The first
-  game with regions decides. A world origin on `TileGrid` is the most likely answer, and it
-  changes every conversion between world and tile coordinates.
-- Background: [LargeWorlds, step 7](plans/completed/LargeWorlds.md#step-7--regions).
+- A region is a grid placed by its corner, and [Grid.md](api/Grid.md#regions) states the rules.
+  odyssey loads its regions as the player approaches and crosses between them by stepping.
+- `findPath` and `hasLineOfSight` each take one grid, so odyssey's clicked routes and its sight
+  stay within the region the player stands in. The next region is dark until the player crosses.
+- Joining them needs a search over several grids, or a game that stitches one together.
+- Due when a game needs a route, or sight, that crosses a seam.
 
 [] **Remembered sight belongs in `api/grid`.**
 
@@ -158,22 +175,7 @@ library.
 - Move it to `api/grid` when a second game needs it.
 - Background: [LargeWorlds, step 8](plans/completed/LargeWorlds.md#step-8--remembered-sight).
 
-[] **`TileFilter` is a `std::function`.**
-
-- It is called for every neighbour of every visited tile.
-- Make it a template parameter if a board becomes large enough for the cost to show. A
-  region-sized board is the most likely case, so this waits for regions.
-- Background: [LargeWorlds, step 9](plans/completed/LargeWorlds.md#step-9--the-movement-filter-as-a-template).
-
 ## Voxel
-
-[] **A remeshed chunk destroys its old mesh too early once uploads become asynchronous.**
-
-- Today a remeshed chunk destroys its old mesh when the last reference goes. That is safe only
-  because `memory::Uploader` waits for the queue to go idle after every copy, as
-  [ChunkMeshPool.h](../voxel/src/voxel/ChunkMeshPool.h) says.
-- When uploads stop waiting for the queue (see [Loading](#loading)), the old mesh must be retired
-  through `frame::Ring::retire` instead.
 
 [] **Mouselook turns far too fast and rolls the view.**
 
@@ -209,110 +211,74 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Lit scenes
 
-[] **A shadow map covers only a fixed sphere.**
+[ToolingDebt](plans/ToolingDebt.md) takes the grade tolerance.
 
-- `shadow::fit` fits the shadow map to its casters once. Anything that moves out of that sphere
-  is not covered.
-- The fit covers each caster's position and the margin the caller passes, not the caster's
-  extent or scale, and it reads the stepped position rather than the one drawn between steps. A
-  caller with large or fast casters has to pass a margin big enough for both.
-- A world larger than one look-dev scene needs the fit to follow the camera, and beyond that,
-  cascaded shadow maps.
+[] **There are no cascaded shadow maps.**
+
+- `lighting::fitShadowToView` fits one map to the camera's view out to a distance. Over a long
+  view, one map spreads its texels thinly, and near shadows lose detail.
+- Cascades split the view into slices by distance, each with its own map, and the lit shader
+  picks the slice a fragment falls in.
+- `lighting::fitShadow` covers each caster's position and a margin, not its extent or scale. A
+  caller with large casters passes a margin big enough for them.
+- Due when a game's view is long enough for near shadows to look coarse.
 - Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
-
-[] **The colour grade's table is sampled by linear colour.**
-
-- `Grade` stores a 16-entry cube as UNORM and indexes it by the scene's linear colour. A strip
-  authored for display, as most are, grades wrongly, and 16 entries over linear light leave
-  little resolution in the shadows.
-- The fix encodes the lookup coordinate to sRGB before sampling, or stores a larger table.
-- Due when a game uses a grade authored outside the tree.
 
 [] **The grade tests allow a one-step tolerance that may not be needed.**
 
-- The identity grade and the inverting grade were exact on the authoring GPU (a Radeon), but
-  [PostTest.cpp](../api/render/tests/device/PostTest.cpp) allows a difference of one step,
+- The identity grade and the inverting grade were exact on the authoring GPU (a Radeon), from a
+  UNORM scene and from an sRGB one.
+- [PostTest.cpp](../api/render/tests/device/PostTest.cpp) still allows a difference of one step,
   because lavapipe, the software Vulkan driver CI uses, had not been checked.
 - If CI shows lavapipe is exact too, reduce the tolerance to zero. If it is not, add a comment
   beside the case saying lavapipe is the reason.
 - Background: [LitScene, step 10](plans/completed/LitScene.md#step-10--the-chain-after-the-scene).
 
-[] **There is no instanced drawing.**
-
-- `meshes()` and `casters()` submit one draw item per part per entity. A scene with a dozen
-  characters and a few dozen props is a few hundred draws.
-- Instancing would move `Lit::Object` from the push constant block into a per-frame storage
-  buffer, read by `gl_InstanceIndex`, beside the joint palette at set 2. Draw items would be
-  grouped by mesh entry and part. The recorder can already draw instances.
-- Due when a scene's object count or a profile of recording time needs it.
-- Background: [SkeletalAnimation, step 8](plans/completed/SkeletalAnimation.md#step-8--instancing-held).
-
 ## Loading
 
-[] **Every load runs on the main thread**, so each load is a frame hitch the size of the load.
+[] **A texture has no request of its own.**
 
-- First piece: decode on a worker thread through its own `asset::Manager`, because the manager's
-  loaders are shared and stateful. The main thread polls once a frame and uploads what is ready
-  through `TextureFactory::create(image)` and `MeshRegistry::add(name, model, albedos)`.
-- Before any thread is added, a texture named by a glTF file must be decoded on the load side.
-  Today `MeshRegistry::acquire` decodes it inside the upload.
-- This would be the first thread in `api/`, which needs an ADR of its own.
-- Due when a game streams regions, or any load is long enough for a player to see.
-- Background: [ShellAndShipping, step 12](plans/completed/ShellAndShipping.md#step-12--asynchronous-loading-held).
+- `MeshRegistry::request` returns a mesh handle at once and fills it later. A texture handle
+  cannot do the same, because `pipeline::Resources` would have to swap the image behind a live
+  handle and rewrite its descriptor set.
+- A worker job that decodes the image, and a completion that calls `Textures::texture(image)`,
+  covers the need meanwhile.
+- Due when a game wants a texture handle before its pixels arrive.
 
-[] **A path outside the ANSI code page cannot be opened.**
+[] **An upload still waits for its copy.**
 
-- `engine::appPath()` builds a narrow string with `boost::filesystem::path::string()`, which
-  converts through the ANSI code page. A character that page cannot hold becomes `?`.
-- spdlog opens its file with a narrow name, because the vcpkg port is built without
-  `SPDLOG_WCHAR_FILENAMES`. `asset::Manager` takes the narrow path as its root.
-- An app under such a directory logs to stderr instead of `v3d.log`, and finds none of its
-  assets.
-- The fix carries paths as `boost::filesystem::path` or UTF-8 through `appPath()`, the logger
-  and the asset manager, or gives every app a manifest that sets the UTF-8 code page.
-- Due when a player reports it, or before a release.
+- `memory::Uploader::oneShot` waits on its own fence, so the caller can free its staging buffer
+  when it returns. Frames in flight keep running, and the main thread waits only for the copy.
+- An upload that returned at once would retire its staging buffer through the frame ring.
+- Due when a profile shows the fence wait itself.
 
-## Frames
-
-[] **A minimised window busy-loops and floods the log.**
-
-- When the window has no area, `Engine3D::beginFrame` presents an empty frame.
-- `Swapchain::create` is asked for a new swapchain on every frame, and logs
-  `Window has no area` at info level each time.
-- Nothing in the loop waits. Two seconds minimised wrote twelve thousand lines to pong's log.
-- Possible fixes: the loop waits for an event while the window is minimised, or the swapchain
-  logs only the change of state.
-- Background: [ShellAndShipping, step 6](plans/completed/ShellAndShipping.md#step-6--one-screen-and-four-apps-on-it).
+[] **The upload budget's default is not measured.** `MeshRegistry::DEFAULT_UPLOAD_BUDGET` is
+4 MiB, chosen without measuring a region's upload, because no game in the tree requests meshes.
+Due when one does.
 
 ## Audio
 
-`audio::Engine` plays a voice on a named bus, with a fade and a gain. Nothing gives a voice a
-position.
+`audio::Engine` plays a voice on a named bus, with a fade, a gain and a pan.
 
-[] **A voice has no pan.**
+[] **A voice has no position.**
 
-- A footstep on the left of a fixed camera's screen should sound from the left.
-- The caller converts a position to a pan, because in a flat world under a fixed camera that
-  mapping belongs to the game.
-- `Play` would gain a pan value, and the engine a `pan(voice, value)` call, using whatever
-  SDL_mixer 3 offers for a track.
-- Due when a game needs positional sound.
-- Background: [Effects, step 10](plans/completed/Effects.md#step-10--a-panned-voice-held).
+- A pan places a sound between the speakers. Nothing places it in a 3D scene, or makes it
+  quieter with distance.
+- SDL_mixer 3.2's `MIX_SetTrack3DPosition` places a track and attenuates it by distance, with
+  the listener fixed at the origin. A caller would give each position relative to its listener.
+- Due when a game needs sound in a 3D scene.
+- Background: [LitScenesAtScale, step 10](plans/completed/LitScenesAtScale.md#step-10--close-phase-3).
 
 ## Tests
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.
 
-[] **The glTF fixture generators are Python.** The repository holds no Python, and committed
-scripts are TypeScript run by Node. Five generators in `api/asset/tests/data/` write glTF by hand
-and can move to TypeScript: `make_embedded_fixture.py`, `make_model_fixture.py`,
-`make_modes_fixture.py`, `make_parts_fixture.py` and `make_skin_fixture.py`.
-`make_blender_fixture.py` runs inside Blender, which scripts only in Python, so it needs a
-decision of its own: keep it as the one exception, or keep only the fixture it wrote.
+[] **Nothing tests a requested model that decodes and does not upload.** `MeshRegistry::poll`
+logs and abandons such a request, but no fixture decodes cleanly and then fails `upload()`'s
+checks, so the branch never runs in a test.
 
-[] **Nothing asserts the pipeline cache.** The device suite covers everything below the
-recorder in `api/render` except the pipeline cache. A test for it would count what was compiled,
-not compare a picture.
+[] **Nothing binds one value to a colour shader parameter.** `sl::Instance` copies a single
+value to every channel, and no case in `SlShaderLibraryTest` binds fewer than three.
 
 [] **Two things need a window or a sound device to test:** `Feature::Window` and
 `audio::Engine::initialize()`. A software Vulkan driver does not help with either.
@@ -329,99 +295,106 @@ Defects a review found that the change under review did not introduce.
 [Review.md](contributing/Review.md) says how this list is used: a reviewer reads it first and
 does not report an entry again. Each entry names its class.
 
-### Boundary input
+[] **The PNG writer has no error recovery.** Cleanup, major. `writer::Png` installs no
+`setjmp(png_jmpbuf(...))`, so any `png_error`, including its own "Image is too tall", aborts the
+process and leaks `row_pointers`. The error pointer it gives `png_set_error_fn` is the `c_str()`
+of a temporary `std::string`, so `pngtest_warning` reads a dangling pointer as the file name.
 
-[] **`TileGrid` lets a tile size that is not a number through.** `TileGrid.cpp` tests
-`tileSize <= 0`, which NaN and infinity pass; its header says a size that is not positive throws.
+[] **The TGA writer writes a wrong footer and can overflow its size.** Semantics and boundary
+input, major.
 
-[] **The editor's orthographic zoom has no floor.** `Camera::zoom` scales the half height by a
-factor that one large drag takes to zero or below, and a zero never recovers. `Isometric::zoom`
-clamps; this does not.
+- `tga_footer` declares both offsets as `int64_t`, so the footer is 34 bytes. TGA 2.0 has a
+  26-byte footer with 4-byte offsets.
+- `width_ * height_ * bytespp` is computed in `unsigned int`, which overflows for an image the
+  writer accepts, up to 65535 on a side.
 
-[] **The C interface reads an integer parameter as a float.** `rib::Arguments` reads every
-non-string value through `const float*`, so an `RtInt` array arrives as its bit pattern.
+[] **The base `image::Writer::write` returns true and writes nothing.** Contract, minor. A format
+registered with the base class reports success silently.
 
-[] **`Polygon::clip` ignores whether an edge met the plane.** `intersectEdge`'s result is dropped
-and the point it did not set is used. `Polygon::split` tests the result. When `intersectEdge`
-returns false, `split` asserts that `classify` puts both ends on one side, and the assert is
-compiled out of a release build. The two tests can disagree for an edge that touches the plane.
+[] **A bus volume is not a bus gain.** Contract, major. `audio::Engine::busGain` calls
+`MIX_SetTagGain`, which overwrites the gain of each track tagged at that moment. It does nothing
+when no track plays on the bus and stores nothing. A volume set before anything plays has no
+effect, and a later `play()` resets the track to `Play::gain`.
 
-[] **The ui `Loader` reads most document keys without testing their type.** Its other
-`boost::json::value_to` reads throw out of `ui::Engine::load` when a key holds the wrong type.
-Among them are a component's `type`, `name`, `style`, `depth` and `label`, a theme's `name`, a
-container's `visible` and a style property's `value`. The fix reads them through
-`api/asset/Json.h`.
+[] **voxel's camera rotation is undefined.** Contract, major. `Camera::rotateFlight` and
+`rotateFirstPerson` rotate a default-constructed `glm::mat4`, which is uninitialised because the
+tree does not define `GLM_FORCE_CTOR_INIT`. They also pass degrees to `glm::rotate`, which takes
+radians, so the 90 degree pitch clamp does not match the rotation.
 
-[] **Two config readers narrow a JSON integer to `int` without a range check.** `Bindings.cpp`
-casts a binding's integer `param` from `int64_t` to `int`. `Engine.cpp` does the same with the
-window config's `width` and `height`. A value outside the range of `int`, such as 2^32 + 640,
-becomes a different number with no warning.
+[] **voxel's player speed is never read.** Contract, minor. `PLAYER_VELOCITY` is read only by
+`Camera::updateVelocity()`, and that and `updatePosition()` have no caller. `Player::move()` sets
+a velocity of 1, so the player walks at one unit a second.
 
-### Contract
+[] **voxel's perspective may not honour its horizontal field of view.** Semantics, minor.
+`Camera::perspective` multiplies both scales by the aspect ratio, so the horizontal field of view
+equals `fovx` only at an aspect of 1. Check against the intended projection.
 
-[] **A held activation key repeats a ui command.** `Keys::press` takes every key-down, so a held
-space or return on a button, check box or list sends its command at the key repeat rate.
+[] **A shading language `output` is never copied back.** Semantics, major.
 
-[] **The centred game menu draws a disabled item as live.** `ComponentRenderer` greys a disabled
-item in a panel and not in the centred menu, which refuses to activate it.
+- A shader parameter declared `output` sets `Symbol::output`, which nothing reads.
+- A function formal declared `output` is accepted. `Emitter::emitInline` copies arguments into
+  formals and never copies them back, so a function that writes one leaves the caller's variable
+  unchanged. The shading language passes an output formal by reference.
 
-[] **A theme overlays the one before it.** `Resolver::chrome` writes only what the new theme names,
-so a switch keeps the old theme's values where the new one is silent, and a null theme keeps all
-of them.
+[] **Two-argument `faceforward(N, I)` uses N as its own reference.** Semantics, minor. RenderMan
+defines the default reference as Ng. The two-argument form is in `sl/runtime/Library.cxx`.
 
-[] **Two views of one camera share one pass.** A layout may name a camera profile twice, and the
-pass is named after the profile, so the second view overwrites the first.
+[] **A runtime shader report has no source position.** Contract, minor. The emitter writes a line
+and column into every `sl::runtime::Instruction`, and no machine report reads them.
 
-[] **Playing no clip with a fade freezes the old pose.** `Playback::advance` returns before the
-fade code when the clip is `none`, so the old clip is blended at weight zero for ever.
+[] **The RIB reader reads a Sphere's parameters as one vertex.** Semantics, minor.
+`Reader::primitiveRequest` passes `vertices = 1`. RI gives a quadric four varying values, so a
+bracketed varying "Cs" warns about its length and a bare one reads one element. It does not
+matter while spheres ignore their parameter list.
 
-### Cleanup
+[] **`RiPolygon` reads only "P".** Contract, minor. The RIB path also reads "Cs", "N" and "st",
+so the C entry point and the RIB reader build different polygons from the same request.
 
-[] **The direct allocator leaks a buffer or image when no memory type suits it.**
-`memoryType()` throws after the object is made, and the constructors clean up only a failed bind.
+[] **A default `camera::Profile::Frame` disagrees with its hand.** Contract, minor. The Frame
+defaults (direction -z, right +x, up +y) form the DirectionCrossUp basis, but a Frame-built
+profile has `hand_` UpCrossDirection and an identity rotation. Its `direction()` is -z while
+`createView()` looks along +z until `lookat()` or `turn()` runs. Check whether a caller relies on
+the defaults.
 
-[] **`Presenter` leaks its semaphores when its constructor throws part way.**
+[] **The glTF loader drops two failures without a word.** Boundary input, minor.
 
-### Weak test
+- `influenceOf()` maps a joint index outside the skin to joint 0 at full weight, and sets no
+  `Dropped` flag.
+- `decodeEmbedded()` returns null without logging when an image has neither a buffer view nor a
+  uri. Every other failure in that function logs.
 
-[] **`a_frame_begun_again_restarts_its_claims` never claims on the slot it began twice.** It passes
-without the turn counter it was written for. Its sibling test does fail without it.
+[] **A region load that throws is not logged.** Cleanup, minor. `odyssey/tile/World.cpp` marks
+the region failed and drops the exception held in the `std::expected`.
 
-### Drift
+[] **`CameraControlTool::deactivate` ignores which mode it was given.** Contract, minor. It always
+resets to `CAMERA_MODE_NONE`, so releasing one camera modifier while another is held cancels the
+held move.
 
-[] **Stale comments and doc sentences.**
+[] **A menu `Item` of any type can show a check mark.** Contract, minor. `Item::checked()` returns
+`checked_` whatever the type, unlike `Button::checked()`, which also requires a toggle.
+`ComponentRenderer::panel()` draws a mark for any checked item.
 
-- `Cursor.h` and `docs/api/ui/Mouse.md` say a release sends nothing; a slider can send its command
-  on release.
-- `Menu.h` says `previous()` returns false on a wrap; it returns true.
-- `Manipulator.h` says the profile's normals do not follow its rotation; they do now.
-- `ProfileTest.cxx` says "looking down -z" of a camera that looks along +z.
-- `Retirement.h` documents its tag as the frames begun; it is the last frame that may name the
-  object.
-- `docs/internals/realtime/Memory.md` and `Barriers.h` list two depth-only layouts and leave out
-  the readback barrier, which needs the same feature.
-- `Renderer.h` and `docs/offline/ShadingLanguage.md` call "shader" space the light's placement; it
-  is the inverse.
-- `docs/internals/realtime/Frames.md` does not state the scissor's rules for an edge that is not a
-  number or is past 2^24.
-- The root `CMakeLists.txt` says the apps name every api library between them; none names font.
-- `docs/contributing/Testing.md`'s fixture list leaves out the font and ui suites, which take the
-  shared font through a build rule.
+[] **`Immediate::theme()` reads every `Dressing` metric but `indent`.** Contract, minor. A "tools"
+style cannot set the bullet indent.
 
-## Documentation
+[] **pong's multiplayer mode is single player.** Contract, minor. `ui::setMultiplayerMode` calls
+`mode(false)`, as single player does, so the computer still plays the right paddle.
 
-[] **The reasons for moving to SDL3 are not recorded.** No ADR records why SDL3 replaced
-SDL2.
+[] **`BRep::addEdge(const glm::vec3&)` is declared and never defined.** Build, minor. A call
+compiles and fails to link.
 
-## Games
+[] **Two tests do not check what they claim.** Weak test, minor.
 
-[] **Three bindings name commands nothing handles:** F1 → `pong::toggleFS`,
-F1 → `tetris::toggleFS` and Space → `odyssey::moveUp`.
+- odyssey's `a_world_destroyed_before_its_loads_arrive` streams at (1, 1), five tiles from the
+  east region, and `APPROACH` is 4. No load is in flight when the world is destroyed. Streaming
+  at (2, 1) puts one in flight.
+- moya's `framebuffer_negative_bound_test` has no assertion. It passes unless an out-of-range
+  bucket index crashes, and never checks which bucket a primitive lands in.
 
 ## Editor
 
 Open work for when the editor app itself moves forward. [editor/](editor/README.md) describes the
-editor.
+editor. [EditorModelling](roadmap/EditorModelling.md) orders these.
 
 [] 55 of the menu's 77 commands have no handler, and only log themselves when chosen.
 

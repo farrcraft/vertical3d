@@ -13,45 +13,53 @@
 namespace v3d::ecs::component {
 
 /**
- * Which of a model's clips an entity is playing, how far in, and the one it is fading out of.
+ * The animation clip an entity is playing, how far into it, and the clip it is fading out of.
  *
- * Advanced on the fixed step by advance(), and drawn between steps through ecs::interpolated,
- * so a game snapshots it beside its Transform. A pose is sampled from it when it is drawn; it
- * holds no pose itself. The game decides which clip plays and when, by calling play().
+ * advance() moves it forward once per simulation step. To draw between steps, a game keeps a
+ * Previous<Playback> next to its Previous<Transform>, and ecs::interpolated() blends the two
+ * values. The component holds no pose. The pose is sampled from it at draw time.
  *
- * A clip is named by its index into the model's clips, and carries its duration and whether it
- * loops, copied in by play(), so that advancing needs nothing but the component.
+ * The game chooses which clip plays, and when, by calling play(). A clip is an index into the
+ * model's clips. play() copies the clip's duration and looping flag into the component, so
+ * advance() needs no access to the model.
  **/
 struct Playback final {
     /**
-     * The clip of a playback that has been asked to play nothing, which draws the rest pose.
+     * The clip value that means nothing plays. A playback with this clip draws the rest pose.
      **/
     static constexpr uint32_t none = std::numeric_limits<uint32_t>::max();
 
     uint32_t clip{ none };
-    float time{ 0.0f };      /**< seconds in, unwrapped when the clip loops - Clock::sample() wraps it **/
-    float duration{ 0.0f };
+    float time{ 0.0F };      /**< seconds into the clip, unwrapped when it loops. Clock::sample() wraps it **/
+    float duration{ 0.0F };
     bool loops{ true };
 
     uint32_t from{ none };   /**< the clip being faded out of, or none **/
-    float fromTime{ 0.0f };
-    float fromDuration{ 0.0f };
+    float fromTime{ 0.0F };
+    float fromDuration{ 0.0F };
     bool fromLoops{ true };
 
-    float fade{ 1.0f };      /**< how far the fade into clip has gone, 1 when it has finished or there is none **/
-    float fadeDuration{ 0.0f };
+    float fade{ 1.0F };      /**< how far the fade into clip has gone, 1 when it has finished or there is none **/
+    float fadeDuration{ 0.0F };
 };
 
 /**
- * Start a clip from its beginning, fading into it from whatever was playing.
+ * The arguments to play(). play() starts a clip from its beginning, and fades into it from the
+ * clip that was playing.
  *
- * Asking for the clip already playing changes nothing, so a game can call this every step from
- * whatever decides its clip. A fade of zero, or nothing playing to fade from, cuts.
+ * Playing the clip that is already playing changes nothing, so a game can call play() every
+ * step. With a fade of zero, or no clip playing before, the new clip starts at full weight.
  *
- * @param duration the clip's, in seconds
- * @param fade how long the fade lasts, in seconds
+ * The clip's duration and the fade are in seconds.
  **/
-void play(Playback* playback, uint32_t clip, float duration, bool loops, float fade);
+struct Start {
+    uint32_t clip = Playback::none;
+    float duration = 0.0F;
+    bool loops = false;
+    float fade = 0.0F;
+};
+
+void play(Playback* playback, const Start& start);
 
 /**
  * Move one playback on by a step: its clip, the clip it is fading from, and the fade.
@@ -59,24 +67,25 @@ void play(Playback* playback, uint32_t clip, float duration, bool loops, float f
 void advance(Playback* playback, float step);
 
 /**
- * Move every entity's playback on by a step. Called from simulate(), after the snapshot.
+ * Move every entity's playback on by a step. Call it from simulate(), after snapshot().
  **/
 void advance(entt::registry& registry, float step);
 
 /**
- * How many times the step from previous to current passed a marker in the current clip - a
- * footstep, the frame an attack lands. Zero when the step changed clip.
+ * How many times the step from previous to current passed marker in the current clip. A marker
+ * is a moment such as a footstep, or the frame an attack lands. Zero when the step changed clip
+ * or nothing plays.
  *
  * @param marker a time within the clip, in seconds
  **/
 uint32_t crossed(const Playback& previous, const Playback& current, float marker);
 
 /**
- * The playback alpha of the way from one step to the next, which ecs::interpolated uses to
- * draw it between steps.
+ * The playback alpha of the way from one step to the next. ecs::interpolated() uses it to draw
+ * a playback between steps.
  *
- * Across a step that changed clip there is no halfway, so it is the later step, and the fade is
- * what smooths the change. A fade that finished during the step draws the clip alone.
+ * When the step changed clip, the result is the later step unchanged, and the fade smooths the
+ * change. When a fade finished during the step, the result draws the new clip alone.
  **/
 Playback interpolate(const Playback& from, const Playback& to, float alpha);
 

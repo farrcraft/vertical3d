@@ -22,7 +22,9 @@ needs to know about occupants, the caller passes a predicate:
 
 - `TileFilter` (`std::function<bool(TileCoord)>`) says whether a tile may be entered, on top of
   the grid's own passability. Close it over whatever the app tracks: occupancy, ownership, a
-  zone a unit will not cross.
+  zone a unit will not cross. A search calls it for every neighbour it visits. On a 256 by 256
+  board, in an optimised build, that adds a few percent to a search, so it is a function object
+  rather than a template parameter.
 - `SightBlocker` (`std::function<bool(TileCoord)>`) says whether a tile stops sight, on top of
   the grid's own cover. Use it for smoke or a closed shutter.
 
@@ -32,11 +34,16 @@ occupants, the same type serves map generation, which has none, and a running ga
 ## The board and its coordinates
 
 `TileGrid` ([api/grid/TileGrid.h](../../api/grid/TileGrid.h)) is a rectangle of tiles lying flat
-on the `y = 0` plane, centred on the world origin.
+on the `y = 0` plane, centred on the world origin unless it is placed by its corner.
 
-- `TileGrid(width, height, tileSize)` throws `std::invalid_argument` if any value is not
-  positive. The default tile size, `TileGrid::DEFAULT_TILE_SIZE`, is 1.5 world units, which
-  suits a figure about 1.8 units tall.
+- `TileGrid(width, height, tileSize)` throws `std::invalid_argument` if a dimension is not
+  positive, the tile size is not a finite positive number, or the tile size makes a side too long
+  to hold in a float. `TileGrid::refusal()` gives the same reason without throwing. The default
+  tile size, `TileGrid::DEFAULT_TILE_SIZE`, is 1.5 world units, which suits a figure about 1.8
+  units tall.
+- `TileGrid(width, height, tileSize, corner)` places the grid's minimum corner, the outer corner
+  of tile (0, 0), at a world position. The corner's `y` is ignored. A corner whose `x` or `z` is
+  not finite throws `std::invalid_argument`. `worldMin()` returns the corner either way.
 - A `TileCoord` is `{x, y}`. **`x` runs along world `+X` and `y` along world `+Z`**, so the
   second axis is depth, not height.
 - `tileToWorld(tile)` gives the centre of a tile on the ground. `worldToTile(position)` gives the
@@ -59,6 +66,20 @@ doorway (passable, `None`), a crate or low wall (impassable, `Half`) and a solid
 (impassable, `Full`). Placing a wall means setting both.
 
 Reading off the board is allowed. **Writing off the board throws `std::out_of_range`.**
+
+### Regions
+
+A world larger than one board is made of regions, and **a region is a grid placed by its
+corner**. The game loads and releases each region, and decides which one a point is in. Two
+grids placed side by side share a seam. `fromPicture(rows, legend, tileSize, corner)` places
+a grid read from a picture the same way. A point on the seam belongs to the higher tile, which is
+the first column or row of the grid beyond it. The grid before the seam puts the point just off
+its board.
+
+Pathfinding, line of sight and the overlay each work within one grid. A route or a line that
+crosses regions is the game's to join. Two grids placed so that they overlap are not detected.
+
+Background: [ADR-0087](../adr/0087-grid-a-region-is-a-grid-placed-by-its-corner.md)
 
 ## Movement
 
@@ -179,20 +200,23 @@ case can be tested without a device.
 - A `LineSink` receives `(from, to, colour)`. Forward it to the renderer's world-space line
   primitive.
 - A `QuadSink` receives four corners and a colour. The corners arrive in the order
-  `realtime::WorldCanvas` expects. The colour's alpha arrives unchanged, so a translucent fill
+  `realtime::canvas::World` expects. The colour's alpha arrives unchanged, so a translucent fill
   blends if the pass blends.
 - Everything is lifted `OVERLAY_LIFT` (0.01 world units) above the ground so it does not
   z-fight with ground drawn at `y = 0`. Draw every layer of one overlay with the same lift.
 - A tile off the board emits nothing.
 
-[rendering/](rendering/README.md) covers the line primitive and `WorldCanvas`.
+[rendering/](rendering/README.md) covers the line primitive and `canvas::World`.
 
 ## An example: odyssey
 
 odyssey is the app that uses this library:
 
-- It reads its board from `data/map.json`, a list of rows with one character per tile, and
-  builds the grid with `fromPicture()`. Its own `tile::Kind` decides passability and cover.
+- Its world is two regions side by side. Each reads its board from a list of rows with one
+  character per tile, and builds a grid placed by its corner with `fromPicture()`. Its own
+  `tile::Kind` decides passability and cover.
+- A region is loaded on a worker as the player approaches it and released once the player is
+  far away. A step crosses the seam between two loaded regions.
 - A click routes the player with `findPath()`.
 - `tile::Sight` calls `hasLineOfSight()` to find what the player can see.
 - The map format, how far the player sees and what the player remembers are odyssey's own.

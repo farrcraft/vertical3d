@@ -13,12 +13,18 @@
 #include <api/image/writer/Jpeg.h>
 #include <api/image/writer/Png.h>
 #include <api/image/writer/Tga.h>
+#include <api/log/Logger.h>
+
+#include "Image.h"
+#include "Reader.h"
+#include "Writer.h"
 
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
 #include <map>
 #include <string>
+#include <string_view>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -38,7 +44,7 @@ std::string format(std::string_view filename) {
         ext.erase(0, 1);
     }
     std::transform(ext.begin(), ext.end(), ext.begin(),
-        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
     return ext;
 }
 
@@ -71,27 +77,27 @@ void Factory::add(const std::string& name, const boost::shared_ptr<Writer>& writ
 }
 
 bool Factory::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
-    boost::filesystem::path full_path = boost::filesystem::system_complete(static_cast<std::string>(filename));
+    const boost::filesystem::path full_path = boost::filesystem::system_complete(static_cast<std::string>(filename));
 
-    std::map<std::string, boost::shared_ptr<Writer> >::iterator it = writers_.find(format(filename));
+    const std::map<std::string, boost::shared_ptr<Writer> >::iterator it = writers_.find(format(filename));
     if (it != writers_.end()) {
-        boost::shared_ptr<Writer> writer = (*it).second;
+        const boost::shared_ptr<Writer> writer = (*it).second;
         return writer->write(full_path.string(), img);
     }
     return false;
 }
 
 boost::shared_ptr<Image> Factory::read(std::string_view filename) {
-    boost::filesystem::path full_path = boost::filesystem::system_complete(static_cast<std::string>(filename));
+    const boost::filesystem::path full_path = boost::filesystem::system_complete(static_cast<std::string>(filename));
     std::string filepath = full_path.string();
 
     const std::string ext = format(filename);
 
     logger_->get()->debug("ImageFactory::read - reading file {} with reader bound to extension {} from path {}", filename, ext, filepath);
 
-    std::map<std::string, boost::shared_ptr<Reader> >::iterator it = readers_.find(ext);
+    const std::map<std::string, boost::shared_ptr<Reader> >::iterator it = readers_.find(ext);
     if (it != readers_.end()) {
-        boost::shared_ptr<Reader> reader = (*it).second;
+        const boost::shared_ptr<Reader> reader = (*it).second;
         return reader->read(filepath);
     }
     boost::shared_ptr<Image> empty_ptr;
@@ -101,7 +107,7 @@ boost::shared_ptr<Image> Factory::read(std::string_view filename) {
 
 boost::shared_ptr<Image> Factory::read(const unsigned char* data, std::size_t size, std::string_view kind) {
     const std::string format = static_cast<std::string>(kind);
-    std::map<std::string, boost::shared_ptr<Reader> >::iterator it = readers_.find(format);
+    const std::map<std::string, boost::shared_ptr<Reader> >::iterator it = readers_.find(format);
     if (it != readers_.end()) {
         return (*it).second->read(data, size);
     }

@@ -5,37 +5,45 @@
 
 #include "Triangle.h"
 
+#include <api/type/geometry/Ray.h>
+
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
 
 #include "Hit.h"
+#include "Intersection.h"
+#include "Pose.h"
+#include "Primitive.h"
 
 namespace v3d::render::offline::trace {
 
 namespace {
 
+/** The least length of a triangle's edge cross product that gives it a plane. **/
+constexpr float SMALLEST_TRIANGLE_AREA = 1.0e-8F;
+
 /**
  * The plane of a triangle, wound the way its corners are. A triangle with no area names no
  * plane and returns zero rather than normalising a zero vector.
  **/
-glm::vec3 plane(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c) {
-    const glm::vec3 across = glm::cross(b - a, c - a);
+glm::vec3 plane(const glm::vec3 & cornerA, const glm::vec3 & cornerB, const glm::vec3 & cornerC) {
+    const glm::vec3 across = glm::cross(cornerB - cornerA, cornerC - cornerA);
     const float area = glm::length(across);
-    return area > 1.0e-8f ? across / area : glm::vec3(0.0f);
+    return area > SMALLEST_TRIANGLE_AREA ? across / area : glm::vec3(0.0F);
 }
 
 };  // namespace
 
-Triangle::Triangle(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c, const glm::vec3 & colour) :
-    Primitive(colour), a_(a), b_(b), c_(c), geometric_(plane(a, b, c)) {
+Triangle::Triangle(const Corners & corners, const glm::vec3 & colour) :
+    Primitive(colour), a_(corners[0]), b_(corners[1]), c_(corners[2]), geometric_(plane(a_, b_, c_)) {
     na_ = geometric_;
     nb_ = geometric_;
     nc_ = geometric_;
 }
 
-Triangle::Triangle(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c, const glm::vec3 & colour,
-    const glm::vec3 & na, const glm::vec3 & nb, const glm::vec3 & nc) :
-    Primitive(colour), a_(a), b_(b), c_(c), na_(na), nb_(nb), nc_(nc), geometric_(plane(a, b, c)) {
+Triangle::Triangle(const Corners & corners, const glm::vec3 & colour, const Corners & normals) :
+    Primitive(colour), a_(corners[0]), b_(corners[1]), c_(corners[2]), na_(normals[0]), nb_(normals[1]), nc_(normals[2]),
+    geometric_(plane(a_, b_, c_)) {
 }
 
 const glm::vec3 & Triangle::a() const {
@@ -55,60 +63,58 @@ const glm::vec3 & Triangle::geometricNormal() const {
 }
 
 glm::vec3 Triangle::shadingNormal(float u, float v) const {
-    const glm::vec3 normal = na_ * (1.0f - u - v) + nb_ * u + nc_ * v;
-    // interpolating unit normals does not give a unit one back, and three corners whose
-    // normals cancel give none at all, so the plane is used instead
+    const glm::vec3 normal = na_ * (1.0F - u - v) + nb_ * u + nc_ * v;
+    // a blend of unit normals is not unit length, so it is normalised. Corner normals that
+    // cancel give a zero vector, and the plane is used instead
     const float length = glm::length(normal);
-    return length > 0.0f ? normal / length : geometric_;
+    return length > 0.0F ? normal / length : geometric_;
 }
 
-void Triangle::st(const glm::vec2 & a, const glm::vec2 & b, const glm::vec2 & c) {
-    sta_ = a;
-    stb_ = b;
-    stc_ = c;
+void Triangle::st(const glm::vec2 & stA, const glm::vec2 & stB, const glm::vec2 & stC) {
+    sta_ = stA;
+    stb_ = stB;
+    stc_ = stC;
 }
 
 glm::vec2 Triangle::st(float u, float v) const {
-    return sta_ * (1.0f - u - v) + stb_ * u + stc_ * v;
+    return sta_ * (1.0F - u - v) + stb_ * u + stc_ * v;
 }
 
-void Triangle::colours(const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c) {
+void Triangle::colours(const glm::vec3 & colourA, const glm::vec3 & colourB, const glm::vec3 & colourC) {
     coloured_ = true;
-    ca_ = a;
-    cb_ = b;
-    cc_ = c;
+    ca_ = colourA;
+    cb_ = colourB;
+    cc_ = colourC;
 }
 
 glm::vec3 Triangle::colour(float u, float v) const {
     if (!coloured_) {
         return Primitive::colour();
     }
-    return ca_ * (1.0f - u - v) + cb_ * u + cc_ * v;
+    return ca_ * (1.0F - u - v) + cb_ * u + cc_ * v;
 }
 
 bool Triangle::intersect(const v3d::type::geometry::Ray & ray, float from, const Pose & pose,
     Intersection* found) const {
     const v3d::type::geometry::Ray local = pose.backward == nullptr ? ray :
-        v3d::type::geometry::Ray(glm::vec3(*pose.backward * glm::vec4(ray.origin(), 1.0f)),
-            glm::mat3(*pose.backward) * ray.direction());
-    float distance = 0.0f;
-    float u = 0.0f;
-    float v = 0.0f;
-    if (!local.intersects(a_, b_, c_, &distance, &u, &v)) {
+        v3d::type::geometry::Ray({.origin = glm::vec3(*pose.backward * glm::vec4(ray.origin(), 1.0F)), .direction = glm::mat3(*pose.backward) * ray.direction()});
+    float distance = 0.0F;
+    glm::vec2 weights(0.0F);
+    if (!local.intersects(a_, b_, c_, &distance, &weights)) {
         return false;
     }
     if (pose.ahead != nullptr) {
         // a distance along the ray taken back is in the stored pose's units, which a
         // motion that scales does not keep
-        const glm::vec3 there(*pose.ahead * glm::vec4(local.origin() + local.direction() * distance, 1.0f));
+        const glm::vec3 there(*pose.ahead * glm::vec4(local.origin() + local.direction() * distance, 1.0F));
         distance = glm::dot(there - ray.origin(), ray.direction());
     }
     if (distance <= from) {
         return false;
     }
     found->distance = distance;
-    found->u = u;
-    found->v = v;
+    found->u = weights.x;
+    found->v = weights.y;
     return true;
 }
 

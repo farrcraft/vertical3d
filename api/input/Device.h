@@ -27,22 +27,32 @@ class Device {
     virtual ~Device() = default;
 
     /**
-     * Handle any device events
-     * If the event is associated with this device, true should always be returned.
-     * 
-     * @param event a potential event to handle
-     * 
-     * @return true if the event was handled by this device
+     * Handle an event if it belongs to this device.
+     *
+     * @param event any polled event
+     *
+     * @return true for every event that belongs to this device, including one it ignores
      **/
     virtual bool handleEvent(const SDL_Event& event) = 0;
 
     /**
-     * Forget the edges this frame recorded. Called once per frame by the loop, after
-     * everything that reads them has run - a device with no edge state does nothing.
+     * Forget the edges this frame recorded. The loop calls this once per frame, after
+     * everything that reads the edges has run. A device with no edge state does nothing.
      **/
     virtual void flush() {}
 
  protected:
+    /**
+     * @return the event context this device's events are raised in
+     **/
+    const boost::shared_ptr<v3d::event::Context>& context() const noexcept;
+
+    /**
+     * @return the dispatcher this device raises its events through
+     **/
+    const boost::shared_ptr<entt::dispatcher>& dispatcher() const noexcept;
+
+ private:
     boost::shared_ptr<v3d::event::Context> context_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
 };

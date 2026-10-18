@@ -9,41 +9,43 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace {
+
 BOOST_AUTO_TEST_CASE(framebuffer_plane_test) {
     v3d::render::offline::FrameBuffer buffer(4, 3, 4);
 
-    BOOST_CHECK_EQUAL(buffer.width(), 4u);
-    BOOST_CHECK_EQUAL(buffer.height(), 3u);
-    BOOST_CHECK_EQUAL(buffer.planes(), 4u);
+    BOOST_CHECK_EQUAL(buffer.width(), 4U);
+    BOOST_CHECK_EQUAL(buffer.height(), 3U);
+    BOOST_CHECK_EQUAL(buffer.planes(), 4U);
 
     // every plane starts at zero
-    BOOST_CHECK_EQUAL(buffer.value(2, 3, 2), 0.0f);
+    BOOST_CHECK_EQUAL(buffer.value(2, 3, 2), 0.0F);
 
-    buffer.value(2, 3, 2, 0.5f);
-    BOOST_CHECK_EQUAL(buffer.value(2, 3, 2), 0.5f);
+    buffer.value(2, 3, 2, 0.5F);
+    BOOST_CHECK_EQUAL(buffer.value(2, 3, 2), 0.5F);
     // the write lands on one pixel of one plane
-    BOOST_CHECK_EQUAL(buffer.value(1, 3, 2), 0.0f);
-    BOOST_CHECK_EQUAL(buffer.value(2, 2, 2), 0.0f);
-    BOOST_CHECK_EQUAL(buffer.value(2, 3, 1), 0.0f);
+    BOOST_CHECK_EQUAL(buffer.value(1, 3, 2), 0.0F);
+    BOOST_CHECK_EQUAL(buffer.value(2, 2, 2), 0.0F);
+    BOOST_CHECK_EQUAL(buffer.value(2, 3, 1), 0.0F);
 
-    buffer.clear(3, 1.0f);
-    BOOST_CHECK_EQUAL(buffer.value(3, 0, 0), 1.0f);
-    BOOST_CHECK_EQUAL(buffer.value(3, 3, 2), 1.0f);
-    BOOST_CHECK_EQUAL(buffer.value(2, 0, 0), 0.0f);
+    buffer.clear({.plane = 3, .value = 1.0F});
+    BOOST_CHECK_EQUAL(buffer.value(3, 0, 0), 1.0F);
+    BOOST_CHECK_EQUAL(buffer.value(3, 3, 2), 1.0F);
+    BOOST_CHECK_EQUAL(buffer.value(2, 0, 0), 0.0F);
 }
 
 BOOST_AUTO_TEST_CASE(framebuffer_image_test) {
     v3d::render::offline::FrameBuffer buffer(2, 2, 4);
 
-    buffer.value(0, 0, 0, 1.0f);
-    buffer.value(1, 1, 0, 1.0f);
-    buffer.value(2, 0, 1, 1.0f);
-    buffer.value(3, 1, 1, 1.0f);
+    buffer.value(0, 0, 0, 1.0F);
+    buffer.value(1, 1, 0, 1.0F);
+    buffer.value(2, 0, 1, 1.0F);
+    buffer.value(3, 1, 1, 1.0F);
 
     auto image = buffer.image(4);
-    BOOST_CHECK_EQUAL(image->width(), 2u);
-    BOOST_CHECK_EQUAL(image->height(), 2u);
-    BOOST_CHECK_EQUAL(image->bpp(), 32u);
+    BOOST_CHECK_EQUAL(image->width(), 2U);
+    BOOST_CHECK_EQUAL(image->height(), 2U);
+    BOOST_CHECK_EQUAL(image->bpp(), 32U);
 
     // 1.0 is 255, and each write reaches its own channel of its own pixel
     BOOST_CHECK_EQUAL((*image)[0], 255);
@@ -61,8 +63,8 @@ BOOST_AUTO_TEST_CASE(framebuffer_row_order_test) {
     v3d::render::offline::FrameBuffer buffer(2, 2, 3);
 
     // row 0 of the buffer is row 0 of the image, which is the top of the picture
-    buffer.value(0, 0, 0, 1.0f);
-    buffer.value(1, 0, 1, 1.0f);
+    buffer.value(0, 0, 0, 1.0F);
+    buffer.value(1, 0, 1, 1.0F);
 
     auto image = buffer.image(3);
     BOOST_CHECK_EQUAL((*image)[0], 255);
@@ -75,10 +77,10 @@ BOOST_AUTO_TEST_CASE(framebuffer_row_order_test) {
 BOOST_AUTO_TEST_CASE(framebuffer_saturation_test) {
     v3d::render::offline::FrameBuffer buffer(2, 1, 3);
 
-    // a cast alone wraps a value above one, which turns a bright pixel dark
-    buffer.value(0, 0, 0, 4.0f);
-    buffer.value(1, 0, 0, 1.004f);
-    buffer.value(2, 0, 0, -0.5f);
+    // a value above one saturates to 255, and a value below zero to 0
+    buffer.value(0, 0, 0, 4.0F);
+    buffer.value(1, 0, 0, 1.004F);
+    buffer.value(2, 0, 0, -0.5F);
 
     auto image = buffer.image(3);
     BOOST_CHECK_EQUAL((*image)[0], 255);
@@ -89,16 +91,18 @@ BOOST_AUTO_TEST_CASE(framebuffer_saturation_test) {
 BOOST_AUTO_TEST_CASE(framebuffer_extra_plane_test) {
     v3d::render::offline::FrameBuffer buffer(1, 1, 4);
 
-    buffer.value(0, 0, 0, 1.0f);
-    buffer.value(1, 0, 0, 1.0f);
-    buffer.value(2, 0, 0, 1.0f);
+    buffer.value(0, 0, 0, 1.0F);
+    buffer.value(1, 0, 0, 1.0F);
+    buffer.value(2, 0, 0, 1.0F);
     // the fourth plane is a depth here, not an alpha
-    buffer.value(3, 0, 0, 0.25f);
+    buffer.value(3, 0, 0, 0.25F);
 
     // three channels requested, so the depth is not in the picture
     auto image = buffer.image(3);
-    BOOST_CHECK_EQUAL(image->bpp(), 24u);
+    BOOST_CHECK_EQUAL(image->bpp(), 24U);
     BOOST_CHECK_EQUAL((*image)[0], 255);
     BOOST_CHECK_EQUAL((*image)[1], 255);
     BOOST_CHECK_EQUAL((*image)[2], 255);
 }
+
+};  // namespace

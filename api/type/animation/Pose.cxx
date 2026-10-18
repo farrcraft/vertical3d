@@ -5,6 +5,8 @@
 
 #include "Pose.h"
 
+#include <api/type/Skeleton.h>
+
 #include <cstddef>
 #include <vector>
 
@@ -22,20 +24,20 @@ Pose rest(const Skeleton& skeleton) {
 }
 
 Pose blend(const Pose& from, const Pose& to, float weight) {
-    if (from.joints.size() != to.joints.size() || weight <= 0.0f) {
+    if (from.joints.size() != to.joints.size() || weight <= 0.0F) {
         return from;
     }
-    if (weight >= 1.0f) {
+    if (weight >= 1.0F) {
         return to;
     }
     Pose mixed;
     mixed.joints.resize(from.joints.size());
     for (std::size_t joint = 0; joint < from.joints.size(); joint++) {
-        const Pose::Joint& a = from.joints[joint];
-        const Pose::Joint& b = to.joints[joint];
-        mixed.joints[joint].translation = glm::mix(a.translation, b.translation, weight);
-        mixed.joints[joint].rotation = glm::normalize(glm::slerp(a.rotation, b.rotation, weight));
-        mixed.joints[joint].scale = glm::mix(a.scale, b.scale, weight);
+        const Pose::Joint& fromJoint = from.joints[joint];
+        const Pose::Joint& toJoint = to.joints[joint];
+        mixed.joints[joint].translation = glm::mix(fromJoint.translation, toJoint.translation, weight);
+        mixed.joints[joint].rotation = glm::normalize(glm::slerp(fromJoint.rotation, toJoint.rotation, weight));
+        mixed.joints[joint].scale = glm::mix(fromJoint.scale, toJoint.scale, weight);
     }
     return mixed;
 }
@@ -48,8 +50,8 @@ void palette(const Skeleton& skeleton, const Pose& pose, std::vector<glm::mat4>*
         const Pose::Joint local = index < pose.joints.size()
             ? pose.joints[index]
             : Pose::Joint{ joint.translation, joint.rotation, joint.scale };
-        const glm::mat4 matrix = glm::translate(glm::mat4(1.0f), local.translation) * glm::mat4_cast(local.rotation) *
-            glm::scale(glm::mat4(1.0f), local.scale);
+        const glm::mat4 matrix = glm::translate(glm::mat4(1.0F), local.translation) * glm::mat4_cast(local.rotation) *
+            glm::scale(glm::mat4(1.0F), local.scale);
         const glm::mat4& above = joint.parent < 0 ? skeleton.root : (*out)[static_cast<std::size_t>(joint.parent)];
         (*out)[index] = above * matrix;
     }

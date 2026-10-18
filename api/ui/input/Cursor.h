@@ -30,10 +30,9 @@ namespace v3d::ui::input {
 /**
  * Turns a cursor into a command.
  *
- * A point is offered to the ui in the reverse of the order it was drawn - menu bars first,
- * then toolbars, then the component tree - and the first thing that takes it stops the
- * search. That order follows how ComponentRenderer draws, so it lives here rather than in
- * each app.
+ * A point is offered to the ui in the reverse of the order ComponentRenderer draws: menu
+ * bars first, then toolbars, then the component tree. The first thing that takes the point
+ * stops the search.
  *
  * A press on a pickable component sends that component's bound event and is consumed. A
  * press on anything else is not. pickable() is false by default, so a hud of labels over a
@@ -43,8 +42,8 @@ namespace v3d::ui::input {
  * is picked until something has been drawn.
  *
  * A cursor measures text so that a press inside a text box can place the caret. It takes
- * the same Measure both renderers take. A cursor given none still routes every press, and a
- * text box then keeps the caret it had rather than taking one from where it was clicked.
+ * the same Measure that ComponentRenderer and Immediate take. A cursor given none still
+ * routes every press, and a text box then keeps its caret where it was.
  **/
 class Cursor final {
  public:
@@ -61,9 +60,9 @@ class Cursor final {
     /**
      * The cursor moved.
      *
-     * A press being held goes on being followed wherever the cursor is, so a scrollbar's
-     * thumb follows it. Otherwise this sets which button is hovered, whether it sits on a
-     * strip or in the tree.
+     * While a press is held, the held component follows the cursor wherever it goes, so a
+     * scrollbar's thumb can be dragged. Otherwise this sets which button is hovered, on a
+     * toolbar or in the tree.
      *
      * @return whether the ui took it, in which case it does not reach the scene under it
      **/
@@ -76,8 +75,10 @@ class Cursor final {
     bool press(const glm::vec2& point);
 
     /**
-     * The primary button came up, ending a drag. Nothing is dispatched here -
-     * a command is sent as the press lands, the way a strip's is.
+     * The primary button came up, ending a held press. The held component follows the cursor
+     * to where the button came up, as it would on a motion(), so a slider whose value changes
+     * there sends its command. Nothing else is sent, because a command is sent when the press
+     * lands, as on a toolbar.
      * @return whether the ui took it
      **/
     bool release(const glm::vec2& point);
@@ -94,16 +95,16 @@ class Cursor final {
 
  private:
     /**
-     * Light one component up and put back whatever was lit before it.
+     * Highlight one component and clear the highlight on the one before it.
      *
-     * A component is hovered when it is the one a press would land on. The same pickable()
-     * that decides what takes a click decides what lights up, so a hud of labels does not
-     * flicker as the cursor crosses it.
+     * A component is hovered when a press would land on it. pickable() decides both what
+     * takes a click and what is highlighted, so a hud of labels does not flicker as the
+     * cursor crosses it.
      **/
     void hover(const boost::shared_ptr<Component>& component);
 
     /**
-     * Offer a press to one container's strips, then to what it holds.
+     * Offer a press to one container's menu bars and toolbars, then to what it holds.
      * @return whether anything took it
      **/
     bool press(const boost::shared_ptr<Container>& container, const glm::vec2& point);
@@ -129,7 +130,7 @@ class Cursor final {
      * Put a box's caret where a point landed, or take the selection out to there when the
      * press that started it is still down.
      *
-     * A cursor with no Measure names no text and leaves the box alone.
+     * A cursor with no Measure leaves the box alone.
      *
      * @param extend whether the anchor stays where it was, as it does during a drag
      **/
@@ -139,8 +140,8 @@ class Cursor final {
     boost::shared_ptr<Engine> ui_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     paint::Measure measure_;
-    // held rather than owned: the component belongs to the container it was loaded into,
-    // and a press outliving one that was unloaded should not keep it alive
+    // weak, because the component belongs to the container it was loaded into. A held press
+    // must not keep alive a component whose container was unloaded
     boost::weak_ptr<Component> held_;
     boost::weak_ptr<Component> hovered_;
 };

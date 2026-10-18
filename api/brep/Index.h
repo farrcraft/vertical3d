@@ -24,6 +24,6 @@ using Index = uint32_t;
  * The value is part of the project file format, which stores a reference that may be
  * absent as this sentinel. Changing it breaks every project file already written.
  **/
-constexpr Index INVALID_ID = (1u << 31);
+constexpr Index INVALID_ID = (1U << 31);
 
 };  // namespace v3d::brep

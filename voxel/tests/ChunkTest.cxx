@@ -5,6 +5,8 @@
 
 #include <voxel/src/engine/MortonCode.h>
 #include <voxel/src/voxel/Chunk.h>
+#include <voxel/src/voxel/TerrainMap.h>
+#include <voxel/src/voxel/Voxel.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -19,9 +21,8 @@ class FlatTerrain final : public TerrainMap {
     explicit FlatTerrain(float height) : height_(height) {
     }
 
-    float height(unsigned int x, unsigned int z) override {
-        static_cast<void>(x);
-        static_cast<void>(z);
+    float height(const glm::uvec2& column) override {
+        static_cast<void>(column);
         return height_;
     }
 
@@ -36,13 +37,11 @@ const unsigned int chunkSize = 16;
  **/
 const unsigned int worldHeightInBlocks = 64;
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(chunk_ceiling_is_measured_in_blocks_test) {
-    // the ceiling is in blocks, not chunks. A heightmap is scaled against it, so passing the
-    // world's chunk count instead flattens terrain in a 64 block world to four blocks and
-    // leaves every chunk above the first empty
-    FlatTerrain terrain(255.0f);
+    // the ceiling is in blocks, not chunks. A heightmap is scaled against it, so a ceiling of
+    // the world's chunk count would flatten a 64 block world to four blocks, and leave every
+    // chunk above the first empty
+    FlatTerrain terrain(255.0F);
 
     Chunk full(&terrain, glm::ivec3(0, 1, 0), worldHeightInBlocks);
     BOOST_CHECK(!full.empty());
@@ -51,13 +50,13 @@ BOOST_AUTO_TEST_CASE(chunk_ceiling_is_measured_in_blocks_test) {
     // passing the chunk count instead leaves the same chunk empty
     Chunk starved(&terrain, glm::ivec3(0, 1, 0), worldHeightInBlocks / chunkSize);
     BOOST_CHECK(starved.empty());
-    BOOST_CHECK_EQUAL(starved.blocks().size(), 0u);
+    BOOST_CHECK_EQUAL(starved.blocks().size(), 0U);
 }
 
 BOOST_AUTO_TEST_CASE(chunk_column_scales_with_the_heightmap_test) {
     // half height over a 64 block ceiling is 32 blocks, so the chunk holding blocks 32 to 47
     // gets its bottom layer and nothing above it
-    FlatTerrain terrain(128.0f);
+    FlatTerrain terrain(128.0F);
 
     Chunk below(&terrain, glm::ivec3(0, 0, 0), worldHeightInBlocks);
     BOOST_CHECK_EQUAL(below.blocks().size(), chunkSize * chunkSize * chunkSize);
@@ -65,12 +64,12 @@ BOOST_AUTO_TEST_CASE(chunk_column_scales_with_the_heightmap_test) {
     Chunk edge(&terrain, glm::ivec3(0, 2, 0), worldHeightInBlocks);
     BOOST_CHECK_EQUAL(edge.blocks().size(), chunkSize * chunkSize);
 
-    Chunk above(&terrain, glm::ivec3(0, 3, 0), worldHeightInBlocks);
+    const Chunk above(&terrain, glm::ivec3(0, 3, 0), worldHeightInBlocks);
     BOOST_CHECK(above.empty());
 }
 
 BOOST_AUTO_TEST_CASE(chunk_hides_faces_between_its_own_blocks_test) {
-    FlatTerrain terrain(255.0f);
+    FlatTerrain terrain(255.0F);
     Chunk chunk(&terrain, glm::ivec3(0, 0, 0), worldHeightInBlocks);
 
     // a block surrounded by its own chunk contributes no geometry at all
@@ -82,14 +81,14 @@ BOOST_AUTO_TEST_CASE(chunk_hides_faces_between_its_own_blocks_test) {
     BOOST_CHECK(chunk.hidden(Voxel::BLOCK_FACE_FRONT, interior));
     BOOST_CHECK(chunk.hidden(Voxel::BLOCK_FACE_BACK, interior));
 
-    // one on the wall has a face its own chunk cannot resolve, so the check crosses the
-    // seam into the next chunk
+    // a block on the chunk's edge has a face whose neighbour is in the next chunk, so hidden()
+    // does not hide that face
     BOOST_CHECK(!chunk.hidden(Voxel::BLOCK_FACE_LEFT, glm::ivec3(0, 8, 8)));
     BOOST_CHECK(!chunk.hidden(Voxel::BLOCK_FACE_RIGHT, glm::ivec3(15, 8, 8)));
 }
 
 BOOST_AUTO_TEST_CASE(chunk_positions_its_blocks_in_the_world_test) {
-    FlatTerrain terrain(255.0f);
+    FlatTerrain terrain(255.0F);
     const glm::ivec3 position(2, 1, 3);
     Chunk chunk(&terrain, position, worldHeightInBlocks);
 
@@ -101,3 +100,5 @@ BOOST_AUTO_TEST_CASE(chunk_positions_its_blocks_in_the_world_test) {
     BOOST_CHECK_EQUAL(corner->position().y, static_cast<float>(position.y * chunkSize));
     BOOST_CHECK_EQUAL(corner->position().z, static_cast<float>(position.z * chunkSize));
 }
+
+};  // namespace

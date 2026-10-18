@@ -96,6 +96,11 @@ includes, rather than reaching it through the library under test. Each suite's `
 defines `BOOST_TEST_MODULE` and nothing else. The exceptions are `render_device`, whose `main`
 checks for a device first, and `render_window`, whose `main` checks for a window.
 
+A test file puts everything after its includes in one anonymous namespace, its suites and cases
+as well as its fixtures and helpers. `BOOST_AUTO_TEST_CASE` declares a struct named after the
+case, so two files in one executable with the same suite and case names would otherwise define
+the same struct twice. clang-tidy's `misc-use-internal-linkage` reports a case outside one.
+
 A suite with fixture files copies a directory of them beside the executable in a `POST_BUILD`
 command, which the suite's `tests/CMakeLists.txt` writes. Most suites copy their `tests/data/`
 to `data/`. Three copy something else:
@@ -104,12 +109,26 @@ to `data/`. Three copy something else:
 - `asset_media` copies the asset suite's `api/asset/tests/data/` to `data/`.
 - `render_device` copies `api/render/tests/device/data/` to `data/`.
 
+Some suites take data through the build rule an app uses instead, which copies an edited file
+on the next build whether or not the suite relinks:
+
+- `font` and `ui` take the shared font through `v3d_add_shared_data`.
+- `pong`, `tetris`, `voxel`, `odyssey` and `vertical3d` take their app's `data/` through
+  `v3d_copy_data`, to check the bindings it ships. pong's suite also checks its sounds document.
+
 See [Traps](#traps) for what the copy means when you add a fixture.
+
+The glTF fixtures in `api/asset/tests/data/` are written by generators beside them, and each
+generator's header says why its fixture is shaped as it is. A `make_*_fixture.ts` generator writes
+glTF by hand through `gltf_writer.ts`, and Node runs it from the root of the tree:
+`node api/asset/tests/data/make_skin_fixture.ts`. `make_blender_fixture.py` builds a rig in
+Blender and exports it with Blender's own exporter. Blender scripts only in Python, so it is the
+one Python file in the tree. Its header gives the command line.
 
 ### Patterns the suites use
 
 - **Test the decision, not the effect.** For example, the 2D clipping tests check the scissor
-  rectangle that a batch carries out of `Canvas`, `LineCanvas` or a UI draw. The
+  rectangle that a batch carries out of `Canvas`, `canvas::Line` or a UI draw. The
   `vkCmdSetScissor` call that applies it needs a device.
 - **Replace a platform dependency with a callback.** `ComponentRenderer` takes text measuring and
   text drawing as callbacks. `TextBoxTest` measures every character as ten pixels and keeps its
@@ -208,7 +227,8 @@ back with `vulkan::frame::Capture`. Every case asserts two things:
   hand.
 
 Some cases build a pipeline rather than drawing, because only a device can reject a pipeline
-shape that no renderer in the tree uses.
+shape that no renderer in the tree uses. One of them reads how much the pipeline cache holds after
+each build. It shows that a pipeline asked for twice is compiled once.
 
 Cases that cannot be checked exactly, such as a lit and shadowed scene, a skinned mesh mid-clip,
 or a particle effect, assert validation silence and a few properties. They write what they drew to
@@ -345,6 +365,11 @@ change locally by running an app and reading its log.
   copy the file by hand into the directory the suite copies to, beside the executable.
   [Writing a test](#writing-a-test) lists which directory each suite copies. A fresh CI
   checkout always relinks.
+- **Boost.Test prints a one-byte enum as a character.** An unscoped enum with a `std::uint8_t`
+  or `std::int8_t` base reaches the stream as a `char`, so a failed `BOOST_CHECK_EQUAL(a, b)` or
+  `BOOST_TEST(a == b)` reports unreadable bytes. Compare such enums with `BOOST_CHECK(a == b)`,
+  or wrap the comparison in a second pair of parentheses, `BOOST_TEST((a == b))`. Neither
+  prints the operands. A scoped enum does not compile in either printing form.
 - **voxel's suite must link libnoise**, even for cases that generate no noise. `Chunk` is built
   against a `TerrainMap`, and the vtable of the flat map a test supplies refers to the Perlin
   implementation. See [Dependencies.md](Dependencies.md#building-libnoise).

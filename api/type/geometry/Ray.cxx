@@ -5,6 +5,10 @@
 
 #include "Ray.h"
 
+#include "AABBox.h"
+#include "Line.h"
+#include "Plane.h"
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -18,16 +22,16 @@ namespace v3d::type::geometry {
 namespace {
 
 /**
- * Below this a direction is degenerate, and a triangle determinant is edge on - a
- * ray running in the plane of the triangle, where the barycentric solution is
+ * A direction shorter than this is degenerate. A triangle determinant smaller than this
+ * means the ray runs in the plane of the triangle, where the barycentric solution is
  * meaningless.
  **/
-constexpr float epsilon = 1e-7f;
+constexpr float epsilon = 1e-7F;
 
 /**
  * Whether every component of a ray's origin and direction is finite. Each intersection test
- * refuses a ray that is not, because a comparison with NaN is false and lets it pass every
- * rejection test.
+ * rejects a ray that is not. A comparison with NaN is false, so a NaN ray would otherwise
+ * pass every rejection test.
  **/
 bool finite(const glm::vec3& origin, const glm::vec3& direction) {
     return std::isfinite(origin.x) && std::isfinite(origin.y) && std::isfinite(origin.z) &&
@@ -39,15 +43,15 @@ bool finite(const glm::vec3& origin, const glm::vec3& direction) {
 /**
  **/
 Ray::Ray() :
-    origin_(0.0f, 0.0f, 0.0f),
-    direction_(0.0f, 0.0f, 1.0f) {
+    origin_(0.0F, 0.0F, 0.0F),
+    direction_(0.0F, 0.0F, 1.0F) {
 }
 
 /**
  **/
-Ray::Ray(const glm::vec3& origin, const glm::vec3& direction) :
-    origin_(origin),
-    direction_(direction) {
+Ray::Ray(const Line& line) :
+    origin_(line.origin),
+    direction_(line.direction) {
     const float length = glm::length(direction_);
     if (length > epsilon) {
         direction_ /= length;
@@ -76,8 +80,8 @@ glm::vec3 Ray::point(float distance) const {
  **/
 Ray Ray::transformed(const glm::mat4& transform) const {
     Ray moved;
-    moved.origin_ = glm::vec3(transform * glm::vec4(origin_, 1.0f));
-    moved.direction_ = glm::vec3(transform * glm::vec4(direction_, 0.0f));
+    moved.origin_ = glm::vec3(transform * glm::vec4(origin_, 1.0F));
+    moved.direction_ = glm::vec3(transform * glm::vec4(direction_, 0.0F));
     return moved;
 }
 
@@ -92,19 +96,19 @@ bool Ray::intersects(const AABBox& box, float* distance) const {
     }
 
     // not near/far: the windows headers define both as macros
-    float entryDistance = 0.0f;
+    float entryDistance = 0.0F;
     float exitDistance = std::numeric_limits<float>::max();
 
     for (int axis = 0; axis < 3; axis++) {
         if (std::fabs(direction_[axis]) < epsilon) {
-            // parallel to this pair of slabs, so it either misses them or is
-            // unconstrained by them
+            // parallel to this pair of slabs: the origin is either outside them, a miss,
+            // or between them, no constraint
             if (origin_[axis] < min[axis] || origin_[axis] > max[axis]) {
                 return false;
             }
             continue;
         }
-        const float inverse = 1.0f / direction_[axis];
+        const float inverse = 1.0F / direction_[axis];
         float entry = (min[axis] - origin_[axis]) * inverse;
         float exit = (max[axis] - origin_[axis]) * inverse;
         if (entry > exit) {
@@ -125,52 +129,49 @@ bool Ray::intersects(const AABBox& box, float* distance) const {
 
 /**
  **/
-bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance) const {
-    return intersects(a, b, c, distance, nullptr, nullptr);
+bool Ray::intersects(const glm::vec3& vertexA, const glm::vec3& vertexB, const glm::vec3& vertexC, float* distance) const {
+    return intersects(vertexA, vertexB, vertexC, distance, nullptr);
 }
 
-bool Ray::intersects(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c, float* distance,
-    float* u, float* v) const {
+bool Ray::intersects(const glm::vec3& vertexA, const glm::vec3& vertexB, const glm::vec3& vertexC, float* distance,
+    glm::vec2* weights) const {
     if (!finite(origin_, direction_)) {
         return false;
     }
-    const glm::vec3 ab = b - a;
-    const glm::vec3 ac = c - a;
+    const glm::vec3 ab = vertexB - vertexA;
+    const glm::vec3 ac = vertexC - vertexA;
     const glm::vec3 perpendicular = glm::cross(direction_, ac);
     const float determinant = glm::dot(ab, perpendicular);
 
-    // no back face cull: a modeller picks the inside of a mesh as readily as the
-    // outside, so only an edge on ray is rejected here
+    // no back face cull, so a pick can hit the inside of a mesh. Only an edge on ray is
+    // rejected
     if (std::fabs(determinant) < epsilon) {
         return false;
     }
 
-    const float inverse = 1.0f / determinant;
-    const glm::vec3 offset = origin_ - a;
+    const float inverse = 1.0F / determinant;
+    const glm::vec3 offset = origin_ - vertexA;
     const float weightB = glm::dot(offset, perpendicular) * inverse;
-    if (weightB < 0.0f || weightB > 1.0f) {
+    if (weightB < 0.0F || weightB > 1.0F) {
         return false;
     }
 
     const glm::vec3 across = glm::cross(offset, ab);
     const float weightC = glm::dot(direction_, across) * inverse;
-    if (weightC < 0.0f || weightB + weightC > 1.0f) {
+    if (weightC < 0.0F || weightB + weightC > 1.0F) {
         return false;
     }
 
     const float hit = glm::dot(ac, across) * inverse;
-    if (hit < 0.0f) {
+    if (hit < 0.0F) {
         return false;
     }
 
     if (distance != nullptr) {
         *distance = hit;
     }
-    if (u != nullptr) {
-        *u = weightB;
-    }
-    if (v != nullptr) {
-        *v = weightC;
+    if (weights != nullptr) {
+        *weights = glm::vec2(weightB, weightC);
     }
     return true;
 }
@@ -181,15 +182,15 @@ bool Ray::intersects(const Plane& plane, float* distance) const {
     if (!finite(origin_, direction_)) {
         return false;
     }
-    // the plane's equation along the ray is distance(origin) + t * dot(normal, direction),
-    // which is zero where the ray crosses. Neither term needs a unit normal, since a scale
-    // of one is a scale of the other
+    // along the ray, the plane's equation is signedDistance(origin) + t * dot(normal,
+    // direction), which is zero where the ray crosses. Both terms scale with the length of
+    // the normal, so their ratio does not need a unit normal
     const float approach = glm::dot(plane.normal(), direction_);
     if (std::fabs(approach) < epsilon) {
         return false;
     }
     const float hit = -plane.signedDistance(origin_) / approach;
-    if (hit < 0.0f) {
+    if (hit < 0.0F) {
         return false;
     }
 

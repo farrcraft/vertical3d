@@ -19,7 +19,13 @@ namespace v3d::ui::style::property {
  */
 class Image : public Property {
  public:
-    Image(const std::string& name, const std::string& src);
+    /** The property's name, and the image it names. **/
+    struct Named {
+        std::string name;
+        std::string source;
+    };
+
+    explicit Image(const Named& named);
     ~Image();
 
     /**

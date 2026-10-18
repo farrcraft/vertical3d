@@ -12,6 +12,8 @@
 
 using v3d::render::realtime::vulkan::device::check;
 
+namespace {
+
 BOOST_AUTO_TEST_SUITE(result_test)
 
 /**
@@ -39,3 +41,5 @@ BOOST_AUTO_TEST_CASE(success_and_what_is_tolerated_pass) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

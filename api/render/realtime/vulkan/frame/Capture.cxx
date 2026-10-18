@@ -7,12 +7,18 @@
 
 #include <api/image/Image.h>
 #include <api/image/writer/Png.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/memory/Barriers.h>
+#include <api/render/realtime/vulkan/memory/Buffer.h>
 
 #include "Swapchain.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -53,7 +59,7 @@ void Capture::record(VkCommandBuffer commands, const Source& source) {
 
     const VkDeviceSize bytes = static_cast<VkDeviceSize>(width_) * height_ * 4;
     if (!readback_) {
-        readback_ = boost::make_shared<memory::Buffer>(device_, VK_BUFFER_USAGE_TRANSFER_DST_BIT, bytes);
+        readback_ = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT, .bytes = bytes});
     } else {
         readback_->grow(bytes);
     }
@@ -125,7 +131,7 @@ std::vector<float> Capture::depth() const {
  **/
 boost::shared_ptr<image::Image> Capture::convert(const unsigned char* pixels, uint32_t width, uint32_t height,
     VkFormat format) {
-    boost::shared_ptr<image::Image> img = boost::make_shared<image::Image>(width, height, 32);
+    boost::shared_ptr<image::Image> img = boost::make_shared<image::Image>(glm::uvec2(width, height), 32);
 
     const bool swizzle = format == VK_FORMAT_B8G8R8A8_UNORM || format == VK_FORMAT_B8G8R8A8_SRGB;
 

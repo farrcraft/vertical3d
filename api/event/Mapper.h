@@ -41,11 +41,16 @@ class Mapper {
      * Find every source bound to a destination, whatever edge each was bound on and
      * whatever parameter the destination carries.
      *
-     * @param destination the destination as "context::name", which is how Event::str()
-     *        and a rebind name one
+     * @param destination the destination as "context::name", the form Event::str() returns
      * @return the sources, empty when nothing is bound to it
      **/
     std::vector<Event> sources(std::string_view destination) const;
+
+    /**
+     * @return every destination this mapper sends, as "context::name", each once and in name
+     *         order
+     **/
+    std::vector<std::string> destinations() const;
 
  private:
     std::multimap<Event, Event> mappings_;

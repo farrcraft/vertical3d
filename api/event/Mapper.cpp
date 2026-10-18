@@ -5,7 +5,12 @@
 
 #include "Mapper.h"
 
+#include "Event.h"
+#include "State.h"
+
+#include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -33,7 +38,7 @@ std::vector<Event> Mapper::destinations(const Event& source) const {
     auto begin = mappings_.lower_bound(first);
     auto end = mappings_.upper_bound(last);
     for (auto it = begin; it != end; ++it) {
-        State bound = it->first.state();
+        const State bound = it->first.state();
         if (bound == State::Any || bound == source.state()) {
             found.push_back(it->second);
         }
@@ -43,14 +48,24 @@ std::vector<Event> Mapper::destinations(const Event& source) const {
 
 std::vector<Event> Mapper::sources(std::string_view destination) const {
     std::vector<Event> found;
-    // the map is keyed by source, so finding a destination's sources scans all of it. That
-    // is a handful of bindings, looked up a few times a step
+    // the map is keyed by source, so this scans every binding. A binding document holds few
+    // enough for that to be cheap
     for (const std::pair<const Event, Event>& mapping : mappings_) {
         if (mapping.second.str() == destination) {
             found.push_back(mapping.first);
         }
     }
     return found;
+}
+
+/**
+ **/
+std::vector<std::string> Mapper::destinations() const {
+    std::set<std::string> names;
+    for (const std::pair<const Event, Event>& mapping : mappings_) {
+        names.insert(mapping.second.str());
+    }
+    return std::vector<std::string>(names.begin(), names.end());
 }
 
 };  // namespace v3d::event

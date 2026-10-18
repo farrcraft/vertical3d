@@ -8,6 +8,7 @@
 #include <api/render/realtime/vulkan/pipeline/Pipeline.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
@@ -29,11 +30,19 @@ const uint32_t width = 64;
 const uint32_t height = 32;
 
 /**
- * A vertex stage and nothing else, which is all a depth only pipeline needs. Included as the
- * C initialiser list glslc's -mfmt=c writes - see v3d_add_shader.
+ * A vertex stage and nothing else, which is all a depth only pipeline needs. It is included as
+ * the C initialiser list that v3d_add_shader has glslc write with -mfmt=c.
  **/
 const uint32_t vertexShader[] =
 #include "shaders/depth.vert.inc"
+;  // NOLINT(whitespace/semicolon) - the initialiser it terminates is the include above
+
+/**
+ * The same vertex stage with a different body, for a pipeline that differs from the one
+ * describe() gives in its stage alone.
+ **/
+const uint32_t flatShader[] =
+#include "shaders/flat.vert.inc"
 ;  // NOLINT(whitespace/semicolon) - the initialiser it terminates is the include above
 
 /**
@@ -43,11 +52,45 @@ const uint32_t vertexShader[] =
 void describe(Builder* builder) {
     builder->name("depth-only")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .vertexBinding(0, sizeof(float) * 3)
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0);
+        .vertexBinding({.binding = 0, .stride = sizeof(float) * 3})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0});
 }
 
-};  // namespace
+/**
+ * Whether the device is lavapipe, which keeps nothing in a pipeline cache. Its cache holds only
+ * the header whatever is built against it.
+ **/
+bool keepsNoCache(const v3d::test::Headless& headless) {
+    VkPhysicalDeviceDriverProperties driver{};
+    driver.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+    VkPhysicalDeviceProperties2 properties{};
+    properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    properties.pNext = &driver;
+    vkGetPhysicalDeviceProperties2(headless.device->physical(), &properties);
+    return driver.driverID == VK_DRIVER_ID_MESA_LLVMPIPE;
+}
+
+/**
+ * How many bytes the cache would write out, which grows by an entry each time a build
+ * compiles something the cache did not already hold.
+ **/
+std::size_t held(const v3d::test::Headless& headless, const Cache& cache) {
+    std::size_t bytes = 0;
+    const VkResult result = vkGetPipelineCacheData(headless.device->handle(), cache.handle(), &bytes, nullptr);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Unable to read the size of the pipeline cache");
+    }
+    return bytes;
+}
+
+/**
+ * Build a pipeline against the cache and destroy it, leaving only what the cache kept.
+ **/
+void buildAndDestroy(const v3d::test::Headless& headless, const Builder& builder, const boost::shared_ptr<Cache>& cache) {
+    const Pipeline built = builder.build(cache);
+    vkDestroyPipeline(headless.device->handle(), built.pipeline, nullptr);
+    vkDestroyPipelineLayout(headless.device->handle(), built.layout, nullptr);
+}
 
 BOOST_AUTO_TEST_SUITE(pipeline_builder_test)
 
@@ -59,7 +102,7 @@ BOOST_AUTO_TEST_SUITE(pipeline_builder_test)
  * pipeline that writes no colour.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_with_no_colour_attachment_compiles) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
     Builder builder(headless.device);
@@ -80,7 +123,7 @@ BOOST_AUTO_TEST_CASE(a_pipeline_with_no_colour_attachment_compiles) {
  * none or one. Nothing in this tree draws into two, so only this case covers it.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_with_two_colour_attachments_compiles) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
     Builder builder(headless.device);
@@ -104,7 +147,7 @@ BOOST_AUTO_TEST_CASE(a_pipeline_with_two_colour_attachments_compiles) {
  * a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state below checks it instead.
  **/
 BOOST_AUTO_TEST_CASE(a_depth_only_pipeline_with_a_bias_compiles) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
     Builder builder(headless.device);
@@ -129,7 +172,7 @@ BOOST_AUTO_TEST_CASE(a_depth_only_pipeline_with_a_bias_compiles) {
  * than to a value and so has no reference picture.
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_with_named_blend_factors_compiles) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
     Builder builder(headless.device);
@@ -152,7 +195,7 @@ BOOST_AUTO_TEST_CASE(a_pipeline_with_named_blend_factors_compiles) {
  * no colour, while the default means the caller set nothing, and the two must not be confused.
  **/
 BOOST_AUTO_TEST_CASE(a_colour_format_nobody_named_is_still_an_error) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
     Builder builder(headless.device);
@@ -172,7 +215,7 @@ BOOST_AUTO_TEST_CASE(a_colour_format_nobody_named_is_still_an_error) {
  * the state from the builder.
  **/
 BOOST_AUTO_TEST_CASE(a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     Builder biased(headless.device);
     describe(&biased);
@@ -190,7 +233,7 @@ BOOST_AUTO_TEST_CASE(a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state) 
     BOOST_CHECK_EQUAL(plain.rasterization().depthBiasEnable, VK_FALSE);
     const std::vector<VkDynamicState> untouched = plain.dynamics();
     BOOST_CHECK(std::find(untouched.begin(), untouched.end(), VK_DYNAMIC_STATE_DEPTH_BIAS) == untouched.end());
-    BOOST_REQUIRE_EQUAL(untouched.size(), 2u);
+    BOOST_REQUIRE_EQUAL(untouched.size(), 2U);
     BOOST_CHECK_EQUAL(untouched[0], VK_DYNAMIC_STATE_VIEWPORT);
     BOOST_CHECK_EQUAL(untouched[1], VK_DYNAMIC_STATE_SCISSOR);
 }
@@ -203,7 +246,7 @@ BOOST_AUTO_TEST_CASE(a_depth_bias_reaches_vulkan_as_state_and_as_dynamic_state) 
  * a precision rather than to a value, so it has no reference picture.
  **/
 BOOST_AUTO_TEST_CASE(blend_factors_reach_the_attachment_as_named) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     Builder named(headless.device);
     describe(&named);
@@ -244,7 +287,7 @@ BOOST_AUTO_TEST_CASE(blend_factors_reach_the_attachment_as_named) {
  * a double free.
  **/
 BOOST_AUTO_TEST_CASE(one_layout_the_caller_owns_serves_every_pipeline_given_it) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
 
@@ -284,7 +327,7 @@ BOOST_AUTO_TEST_CASE(one_layout_the_caller_owns_serves_every_pipeline_given_it) 
  * A builder given no layout builds its own, so two such builders give two different layouts.
  **/
 BOOST_AUTO_TEST_CASE(a_builder_given_no_layout_still_builds_its_own) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
 
     const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
 
@@ -309,4 +352,59 @@ BOOST_AUTO_TEST_CASE(a_builder_given_no_layout_still_builds_its_own) {
     vkDestroyPipelineLayout(headless.device->handle(), two.layout, nullptr);
 }
 
+/**
+ * A pipeline is compiled into the cache it is built against. Asked for a second time, it adds
+ * nothing to the cache, and a pipeline that differs from it in one field adds an entry of its
+ * own. The case compares no picture. It reads how much the cache holds after each build.
+ *
+ * The field that differs is the vertex stage. A different stage needs a new compile on any
+ * implementation that caches at all. Whether fixed function state such as the cull mode is part
+ * of the cache's key is left to the implementation.
+ *
+ * An implementation may keep nothing in a cache, and lavapipe keeps nothing. On lavapipe the
+ * case builds one pipeline and checks the validation layer, but not the cache's size. Every
+ * other driver has to grow the cache, so a build that passes no cache still fails there.
+ *
+ * Covers the base: 3dd24da7 brought the builder's cache argument. Checked by passing a null
+ * cache to vkCreateGraphicsPipelines in build(), which leaves the cache empty and fails this
+ * case.
+ **/
+BOOST_AUTO_TEST_CASE(the_same_pipeline_is_compiled_into_the_cache_once) {
+    const v3d::test::Headless headless(colourFormat, width, height);
+
+    const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
+    const std::size_t empty = held(headless, *cache);
+
+    Builder first(headless.device);
+    describe(&first);
+    first.colourFormat(colourFormat);
+    buildAndDestroy(headless, first, cache);
+    const std::size_t once = held(headless, *cache);
+    if (keepsNoCache(headless)) {
+        BOOST_TEST_MESSAGE("lavapipe keeps nothing in a pipeline cache, so its size was not checked");
+        BOOST_CHECK(headless.silent());
+        return;
+    }
+    BOOST_CHECK_GT(once, empty);
+
+    Builder again(headless.device);
+    describe(&again);
+    again.colourFormat(colourFormat);
+    buildAndDestroy(headless, again, cache);
+    BOOST_CHECK_EQUAL(held(headless, *cache), once);
+
+    Builder other(headless.device);
+    other.name("flat")
+        .shader(VK_SHADER_STAGE_VERTEX_BIT, flatShader, sizeof(flatShader))
+        .vertexBinding({.binding = 0, .stride = sizeof(float) * 3})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0})
+        .colourFormat(colourFormat);
+    buildAndDestroy(headless, other, cache);
+    BOOST_CHECK_GT(held(headless, *cache), once);
+
+    BOOST_CHECK(headless.silent());
+}
+
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

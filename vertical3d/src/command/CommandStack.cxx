@@ -5,6 +5,8 @@
 
 #include "CommandStack.h"
 
+#include "Command.h"
+
 #include <algorithm>
 #include <cstddef>
 
@@ -27,7 +29,7 @@ void CommandStack::push(const boost::shared_ptr<Command>& command) {
     undone_.clear();
     done_.push_back(command);
     if (done_.size() > capacity_) {
-        done_.erase(done_.begin(), done_.begin() + (done_.size() - capacity_));
+        done_.erase(done_.begin(), done_.begin() + static_cast<std::ptrdiff_t>(done_.size() - capacity_));
     }
 }
 

@@ -5,6 +5,7 @@
 
 #include "TextBuffer.h"
 
+#include <cstddef>
 #include <vector>
 
 namespace v3d::font {
@@ -73,8 +74,6 @@ const std::vector<unsigned int>& TextBuffer::indices() const {
 }
 
 void TextBuffer::clear() {
-    // allocating effectively clears the buffer
-    // buffer_.allocate();
     indices_.clear();
     vertices_.clear();
     uvs_.clear();

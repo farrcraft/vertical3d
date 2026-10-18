@@ -5,8 +5,21 @@
 
 #include "Textures.h"
 
+#include <api/image/Image.h>
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/memory/TextureFactory.h>
+#include <api/render/realtime/vulkan/memory/Uploader.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
+#include <api/render/realtime/vulkan/pipeline/Material.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/pipeline/Sampler.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
+#include "Handle.h"
+
+#include <cstdint>
 #include <map>
 #include <vector>
 
@@ -17,8 +30,8 @@ namespace v3d::render::realtime {
 namespace {
 
 /**
- * How many sets a descriptor pool is created with. One set per texture; another pool is
- * added when this one is full.
+ * How many sets each descriptor pool holds. Each texture's material takes one set, and
+ * DescriptorPool adds another pool when one is full.
  **/
 const uint32_t poolSize = 64;
 
@@ -57,7 +70,7 @@ TextureHandle Textures::texture(const boost::shared_ptr<v3d::image::Image>& imag
  **/
 TextureHandle Textures::texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
     const vulkan::pipeline::Sampler::Spec& sampler) {
-    return resources_->add(factory_->create(pixels, width, height, channels,
+    return resources_->add(factory_->create({.data = pixels, .width = width, .height = height, .channels = channels},
         vulkan::memory::TextureFactory::Encoding::Display, sampler));
 }
 

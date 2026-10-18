@@ -5,9 +5,11 @@
 
 #include "Face.h"
 
+#include "Index.h"
+
 namespace v3d::brep {
 
-Face::Face() : normal_(0.0f, 0.0f, 0.0f), edge_(INVALID_ID), selected_(false) {
+Face::Face() : normal_(0.0F, 0.0F, 0.0F), edge_(INVALID_ID), selected_(false) {
 }
 
 Face::Face(const glm::vec3& normal, Index edge) : normal_(normal), edge_(edge), selected_(false) {
@@ -36,8 +38,8 @@ Index Face::edge(void) const {
     return edge_;
 }
 
-void Face::edge(Index e) {
-    edge_ = e;
+void Face::edge(Index edgeIndex) {
+    edge_ = edgeIndex;
 }
 
 };  // namespace v3d::brep

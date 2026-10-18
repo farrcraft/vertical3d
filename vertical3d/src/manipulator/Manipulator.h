@@ -6,8 +6,10 @@
 #pragma once
 
 #include <api/brep/BRep.h>
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/view/ViewPort.h>
+
+#include <cstdint>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/ext/quaternion_float.hpp>
@@ -25,15 +27,14 @@ namespace v3d::editor {
  * the object's own origin because the transform pivots there, so a rotation turns about
  * the point the handles show.
  *
- * Handles are picked by testing each one against the cursor on the CPU, and drawn
- * through LineCanvas. They are sized in world
- * units taken from the view, so a handle keeps roughly the same length on screen
- * however far away the object is.
+ * Handles are picked by testing each one against the cursor on the CPU, and drawn through
+ * canvas::Line. They are sized in world units taken from the view, so a handle keeps
+ * roughly the same length on screen however far away the object is.
  *
- * A drag is one motion event at a time: apply() is given the two cursor positions
- * either side of the move and adds what it measures to the transform. Writing an
- * absolute position instead would snap the object to the gesture rather than move it
- * by the gesture.
+ * A drag is applied one motion event at a time. apply() is given the cursor positions
+ * before and after the move, and adds what it measures to the transform. Writing an
+ * absolute position instead would snap the object to the gesture, not move it by the
+ * gesture.
  **/
 class Manipulator {
  public:
@@ -41,7 +42,7 @@ class Manipulator {
      * Which handle a drag is constrained to. None is the centre handle, which moves in
      * the plane of the screen rather than along an axis.
      **/
-    enum class Axis {
+    enum class Axis : std::uint8_t {
         None,
         X,
         Y,
@@ -51,7 +52,7 @@ class Manipulator {
     /**
      * Whether the handles line up with the world axes or with the object's own.
      **/
-    enum class Space {
+    enum class Space : std::uint8_t {
         Global,
         Local
     };
@@ -96,11 +97,11 @@ class Manipulator {
      **/
     struct Placement final {
         /**
-         * False when there is nothing to draw for - no mesh, or a view with no area.
+         * False when there is nothing to draw for: no mesh, or a view with no area.
          **/
         bool valid;
         /**
-         * The object's origin in world space, which is where its transform pivots.
+         * The object's origin in world space. Its transform pivots about this point.
          **/
         glm::vec3 origin;
         /**
@@ -137,7 +138,7 @@ class Manipulator {
      * selection.
      **/
     virtual void draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
-        v3d::render::realtime::LineCanvas* canvas) const = 0;
+        v3d::render::realtime::canvas::Line* canvas) const = 0;
 
     /**
      * Apply one motion event's worth of drag along the constrained axis.
@@ -159,6 +160,12 @@ class Manipulator {
      * How far from a handle, in pixels, still counts as being on it.
      **/
     static const float tolerance;
+
+    /**
+     * How many times the tolerance the centre handle reaches, so that it can be picked
+     * where the axes crowd it.
+     **/
+    static constexpr float centreReach = 1.5F;
 
     /**
      * What the coordinate space means to this manipulator. Scale overrides it: a non
@@ -190,11 +197,17 @@ class Manipulator {
     static float unitsPerPixel(const ViewPort& view, const glm::vec3& at);
 
     /**
-     * The camera's axes in world space, read out of the view matrix rather than off the
-     * profile - the profile's normals do not follow its rotation.
-     * @param forward the direction into the screen - may be null
+     * The camera's axes in world space, read out of the view matrix the view draws with, so
+     * the handles line up with what is on screen. A view with no camera gives the world's
+     * axes, with forward along +z.
      **/
-    static void basis(const ViewPort& view, glm::vec3* right, glm::vec3* up, glm::vec3* forward);
+    struct Basis {
+        glm::vec3 right{1.0F, 0.0F, 0.0F};
+        glm::vec3 up{0.0F, 1.0F, 0.0F};
+        glm::vec3 forward{0.0F, 0.0F, 1.0F};  /**< into the screen **/
+    };
+
+    static Basis basis(const ViewPort& view);
 
     /**
      * Two unit vectors spanning the plane a direction is normal to, for drawing a ring
@@ -227,7 +240,7 @@ class Manipulator {
      * The box drawn at the centre handle and at the tip of a scale handle, oriented
      * with the placement.
      **/
-    static void marker(v3d::render::realtime::LineCanvas* canvas, const Placement& placement,
+    static void marker(v3d::render::realtime::canvas::Line* canvas, const Placement& placement,
         const glm::vec3& at, float size, const glm::vec4& colour);
 
  private:

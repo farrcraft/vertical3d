@@ -8,6 +8,8 @@
 #include <api/image/TextureAtlas.h>
 #include <api/log/Logger.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <vector>
 #include <string>
 
@@ -18,7 +20,7 @@ namespace v3d::font {
 
 class TextureFont {
  public:
-    typedef enum {
+    typedef enum : std::uint8_t {
         OUTLINE_TYPE_NONE = 0,
         OUTLINE_TYPE_LINE = 1,
         OUTLINE_TYPE_INNER = 2,
@@ -99,6 +101,9 @@ class TextureFont {
     static boost::shared_ptr<Glyph> createGlyph();
 
  private:
+    /** The number of weights in the filter applied across subpixels. **/
+    static constexpr std::size_t LCD_FILTER_TAPS = 5;
+
     std::vector<boost::shared_ptr<Glyph> > glyphs_;
     boost::shared_ptr<v3d::image::TextureAtlas> atlas_;
     std::string filename_;
@@ -108,7 +113,7 @@ class TextureFont {
     OutlineType outline_;
     float outlineThickness_;
     int lcdFiltering_;
-    unsigned char lcdWeights_[5];
+    unsigned char lcdWeights_[LCD_FILTER_TAPS];
     float height_;
     float linegap_;
     float ascender_;

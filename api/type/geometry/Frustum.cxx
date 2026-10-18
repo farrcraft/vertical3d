@@ -5,6 +5,11 @@
 
 #include "Frustum.h"
 
+#include "AABBox.h"
+#include "Plane.h"
+
+#include <array>
+
 namespace v3d::type::geometry {
 
 namespace {
@@ -13,14 +18,14 @@ namespace {
  * A frustum plane is a combination of the matrix's rows: its w row times one weight plus
  * one of its x, y or z rows times another.
  *
- * glm is column major, so row i component k is m[k][i]. Reading m[i][k] instead extracts
- * the planes of the transposed matrix, which for anything but a symmetric one is a
+ * glm is column major, so row i component k is matrix[k][i]. Reading matrix[i][k] would
+ * extract the planes of the transposed matrix. Unless the matrix is symmetric, that is a
  * different frustum.
  **/
-Plane rowPlane(const glm::mat4& m, unsigned int row, float wWeight, float rowWeight) {
+Plane rowPlane(const glm::mat4& matrix, unsigned int row, float wWeight, float rowWeight) {
     Plane plane;
-    for (unsigned int k = 0; k < 4; k++) {
-        plane[k] = wWeight * m[k][3] + rowWeight * m[k][row];
+    for (glm::length_t k = 0; k < 4; k++) {
+        plane[k] = (wWeight * matrix[k][3]) + (rowWeight * matrix[k][static_cast<glm::length_t>(row)]);
     }
     return plane;
 }
@@ -37,12 +42,12 @@ Plane rowPlane(const glm::mat4& m, unsigned int row, float wWeight, float rowWei
 */
 Frustum::Frustum(const glm::mat4& viewProjection, Depth depth) :
     planes_{
-        rowPlane(viewProjection, 0, 1.0f, 1.0f),
-        rowPlane(viewProjection, 0, 1.0f, -1.0f),
-        rowPlane(viewProjection, 1, 1.0f, 1.0f),
-        rowPlane(viewProjection, 1, 1.0f, -1.0f),
-        rowPlane(viewProjection, 2, depth == Depth::ZeroToOne ? 0.0f : 1.0f, 1.0f),
-        rowPlane(viewProjection, 2, 1.0f, -1.0f)
+        rowPlane(viewProjection, 0, 1.0F, 1.0F),
+        rowPlane(viewProjection, 0, 1.0F, -1.0F),
+        rowPlane(viewProjection, 1, 1.0F, 1.0F),
+        rowPlane(viewProjection, 1, 1.0F, -1.0F),
+        rowPlane(viewProjection, 2, depth == Depth::ZeroToOne ? 0.0F : 1.0F, 1.0F),
+        rowPlane(viewProjection, 2, 1.0F, -1.0F)
     } {
 }
 
@@ -60,7 +65,7 @@ int Frustum::intersect(const AABBox& box) const {
     return crossing ? CROSSING : INSIDE;
 }
 
-const std::array<Plane, 6>& Frustum::planes() const noexcept {
+const std::array<Plane, Frustum::PLANE_COUNT>& Frustum::planes() const noexcept {
     return planes_;
 }
 

@@ -5,6 +5,10 @@
 
 #pragma once
 
+#include <api/render/offline/Position.h>
+
+#include <cstdint>
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::offline::sl::syntax {
@@ -14,7 +18,7 @@ namespace v3d::render::offline::sl::syntax {
  **/
 class Statement {
  public:
-    enum class Kind {
+    enum class Kind : std::uint8_t {
         BLOCK,
         DECLARATION,
         ASSIGNMENT,
@@ -24,11 +28,11 @@ class Statement {
         /** break, continue or return. **/
         JUMP,
         EXPRESSION,
-        /** illuminance, illuminate or solar - a construct with a body rather than a call. **/
+        /** illuminance, illuminate or solar: a construct with a body, not a call. **/
         LIGHTING
     };
 
-    Statement(Kind kind, unsigned int line, unsigned int column);
+    Statement(Kind kind, const v3d::render::offline::Position & at);
     virtual ~Statement();
 
     Kind kind;

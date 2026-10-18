@@ -26,13 +26,16 @@ namespace v3d::editor {
  **/
 class TransformCommand final : public Command {
  public:
+    /** Where the mesh was before the change, and where it is after it. **/
+    struct Change {
+        Placement before;
+        Placement after;
+    };
+
     /**
      * @param mode which manipulator made the change, which is the name it reports
      **/
-    TransformCommand(const boost::shared_ptr<v3d::brep::BRep>& mesh,
-        const Placement& before,
-        const Placement& after,
-        const std::string& mode);
+    TransformCommand(const boost::shared_ptr<v3d::brep::BRep>& mesh, const Change& change, const std::string& mode);
 
     void undo() override;
     void redo() override;

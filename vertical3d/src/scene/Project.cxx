@@ -11,7 +11,9 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Face.h>
 #include <api/brep/HalfEdge.h>
+#include <api/brep/Index.h>
 #include <api/brep/Vertex.h>
+#include <api/log/Logger.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -20,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "Scene.h"
 #include "SceneVisitor.h"
 
 #include <boost/json.hpp>
@@ -143,15 +146,15 @@ class WriteVisitor final : public SceneVisitor {
 };
 
 /**
- * Read the placement a mesh was saved under. Every part of it is optional: a mesh saved
- * before the transform was written carries none, and is left where a new one starts.
+ * Read the placement a mesh was saved under. Every part of it is optional. A mesh with no
+ * transform entry is left where a new mesh starts.
  **/
 void readTransform(const boost::json::object& entry, const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     if (!entry.contains("transform") || !entry.at("transform").is_object()) {
         return;
     }
     const boost::json::object& transform = entry.at("transform").as_object();
-    float values[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    float values[4] = { 0.0F, 0.0F, 0.0F, 0.0F };
     if (numbers(transform, "translation", 3, values)) {
         mesh->translation(glm::vec3(values[0], values[1], values[2]));
     }
@@ -166,7 +169,7 @@ void readTransform(const boost::json::object& entry, const boost::shared_ptr<v3d
 bool readVertices(const boost::json::array& points, const std::string& path,
     const boost::shared_ptr<v3d::brep::BRep>& mesh, const boost::shared_ptr<v3d::log::Logger>& logger) {
     for (const boost::json::value& point : points) {
-        float values[3] = { 0.0f, 0.0f, 0.0f };
+        float values[3] = { 0.0F, 0.0F, 0.0F };
         if (!numbers(point, 3, values)) {
             logger->get()->error("A vertex in {} is not three numbers", path);
             return false;
@@ -211,7 +214,7 @@ bool readFaces(const boost::json::array& faces, const std::string& path,
             return false;
         }
         const boost::json::object& record = faceEntry.as_object();
-        float normal[3] = { 0.0f, 0.0f, 0.0f };
+        float normal[3] = { 0.0F, 0.0F, 0.0F };
         v3d::brep::Index edge = 0;
         if (!numbers(record, "normal", 3, normal) || !index(record, "edge", &edge)) {
             logger->get()->error("A face in {} is missing its normal or its edge", path);
@@ -333,7 +336,7 @@ bool Project::read(const std::string& path, const boost::shared_ptr<Scene>& scen
             logger_->get()->error("{} holds something that is not a mesh", path);
             return false;
         }
-        boost::shared_ptr<v3d::brep::BRep> mesh = readMesh(value.as_object(), path, logger_);
+        const boost::shared_ptr<v3d::brep::BRep> mesh = readMesh(value.as_object(), path, logger_);
         if (!mesh) {
             return false;
         }

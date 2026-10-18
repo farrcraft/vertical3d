@@ -11,9 +11,9 @@ namespace v3d::render::offline::sl::syntax {
 
 class Number final : public Expression {
  public:
-    Number(float value, unsigned int line, unsigned int column);
+    Number(float value, const v3d::render::offline::Position & at);
 
-    float value = 0.0f;
+    float value = 0.0F;
 };
 
 };  // namespace v3d::render::offline::sl::syntax

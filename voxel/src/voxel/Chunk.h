@@ -35,10 +35,11 @@ class Chunk {
     bool dirty() const;
 
     /**
-        * Check to see if a neighboring block exists with an opposing face that makes the checking block's face hidden
+        * Whether a block of this chunk sits against a block's face, so the face cannot be seen.
+        * A face on the chunk's edge is never hidden here: the neighbour is in the next chunk.
         *
         * @param face the block's face to check
-        * @param position the position of the block
+        * @param position the block's position within this chunk
         */
     bool hidden(Voxel::BlockFace face, const glm::ivec3 & position);
 

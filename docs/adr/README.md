@@ -26,7 +26,7 @@ content went. Numbers are never reused.
 | [0003](0003-rendering-one-engine-for-2d-and-3d.md) | Rendering: one engine for 2D and 3D | accepted |
 | [0004](0004-rendering-submit-draw-items-as-data.md) | Rendering: submit draw items as data | accepted |
 | [0005](0005-2d-one-batched-quad-pipeline.md) | 2D: one batched quad pipeline | amended by 0036, 0042 |
-| [0008](0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency | amended by 0064 |
+| [0008](0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency | amended by 0064, 0088 |
 | [0009](0009-colour-display-space-unorm-swapchain.md) | Colour: display space, UNORM swapchain | amended by 0049, 0066 |
 | [0010](0010-meshes-owned-by-the-app-that-built-them.md) | Meshes: owned by the app that built them | amended by 0061; superseded by 0065 |
 | [0011](0011-rendering-lines-as-a-world-space-primitive.md) | Rendering: lines as a world-space primitive | accepted |
@@ -48,10 +48,11 @@ content went. Numbers are never reused.
 | [0066](0066-lighting-light-in-linear-draw-to-srgb.md) | Lighting: light in linear, draw to sRGB | accepted |
 | 0067 | *Not a decision. Now in docs/api/rendering/Lighting.md and vulkan/renderer/Lit.h* | removed |
 | [0068](0068-rendering-order-passes-by-what-they-read.md) | Rendering: order passes by what they read | accepted |
-| [0071](0071-skinning-joint-matrices-in-one-storage-buffer.md) | Skinning: joint matrices in one storage buffer | accepted |
+| [0071](0071-skinning-joint-matrices-in-one-storage-buffer.md) | Skinning: joint matrices in one storage buffer | amended by 0088 |
 | [0075](0075-2d-a-canvas-may-have-its-own-coordinate-space.md) | 2D: a canvas may have its own coordinate space | accepted |
 | [0082](0082-textures-owned-by-the-device-context.md) | Textures: owned by the device context | accepted |
 | [0085](0085-rendering-a-pass-chooses-whether-depth-is-written.md) | Rendering: a pass chooses whether depth is written | accepted |
+| [0088](0088-lit-per-object-data-in-a-storage-buffer.md) | Lit: per-object data in a storage buffer | accepted |
 
 ## Offline rendering
 
@@ -100,6 +101,10 @@ content went. Numbers are never reused.
 | [0080](0080-apps-the-engine-owns-startup-and-shutdown-order.md) | Apps: the engine owns startup and shutdown order | accepted |
 | [0081](0081-input-key-events-and-commands-are-separate.md) | Input: key events and commands are separate | accepted |
 | [0084](0084-audio-events-and-parameters-behind-an-interface.md) | Audio: events and parameters behind an interface | accepted |
+| [0086](0086-loading-one-worker-thread-polled-from-the-main-thread.md) | Loading: one worker thread, polled from the main thread | accepted |
+| [0089](0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md) | Paths: narrow strings are UTF-8, under a UTF-8 code page | accepted |
+| [0090](0090-input-commands-are-handled-through-one-registry.md) | Input: commands are handled through one registry | accepted |
+| [0091](0091-platform-sdl3-replaces-sdl2.md) | Platform: SDL3 replaces SDL2 | accepted |
 
 ## Grid and ECS
 
@@ -111,6 +116,7 @@ content went. Numbers are never reused.
 | [0063](0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md) | ECS: draw from a transform plus a component per kind | accepted |
 | [0070](0070-animation-cpu-sampling-playback-on-the-fixed-step.md) | Animation: CPU sampling, playback on the fixed step | accepted |
 | [0072](0072-particles-an-emitter-component-owns-its-particles.md) | Particles: an emitter component owns its particles | accepted |
+| [0087](0087-grid-a-region-is-a-grid-placed-by-its-corner.md) | Grid: a region is a grid placed by its corner | accepted |
 
 ## Editor
 
@@ -120,7 +126,7 @@ content went. Numbers are never reused.
 | [0014](0014-editor-pick-by-cpu-ray-cast.md) | Editor: pick by CPU ray cast | accepted |
 | [0015](0015-editor-manipulators-edit-the-object-transform.md) | Editor: manipulators edit the object transform | accepted |
 | [0016](0016-editor-undo-records-completed-changes.md) | Editor: undo records completed changes | accepted |
-| 0017 | *Not a decision. Now in docs/editor/CommandsAndUndo.md and vertical3d/src/command/CommandDirectory.h* | removed |
+| 0017 | *Not a decision. Now in docs/editor/CommandsAndUndo.md and api/event/Commands.h* | removed |
 | [0018](0018-editor-projects-saved-as-json-with-exact-topology.md) | Editor: projects saved as JSON with exact topology | amended by 0041 |
 
 ## Build, testing and code

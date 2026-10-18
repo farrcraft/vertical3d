@@ -18,7 +18,10 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 ## Open plans
 
-None.
+| Plan | Area | What it delivers |
+|---|---|---|
+| [ToolingDebt](ToolingDebt.md) | All of the tree, tests | The thirteen disabled clang-tidy checks enabled, and the test gaps that need no new hardware |
+| [OfflineShading](OfflineShading.md) | Offline rendering, moya | Verified transformations, a bounding volume hierarchy, derivatives, area lights, reyes opacity, displacement and bump mapping |
 
 ## Completed plans
 
@@ -26,6 +29,10 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [ReleaseHardening](completed/ReleaseHardening.md) | Engine, input, ui, assets, rendering, moya, apps | 2026-10-17 | UTF-8 paths, a minimised window that waits, a command registry every app's bindings are checked against, and the known review findings fixed |
+| [LitScenesAtScale](completed/LitScenesAtScale.md) | Realtime rendering, audio, pong | 2026-10-17 | Lit objects in a storage buffer, instanced lit and shadow draws, a grade that reads its table as shown, and a panned voice |
+| [Regrouping](completed/Regrouping.md) | Realtime rendering, image, UI, moya | 2026-10-16 | `render/realtime`, `image` and `libmoya` split into directories by purpose, every namespace in `api/` following its directory, and a sweep of libmoya's comments |
+| [StreamingWorlds](completed/StreamingWorlds.md) | Assets, realtime rendering, grid, voxel, odyssey | 2026-10-16 | A worker thread for loading, mesh requests under an upload budget, uploads that do not drain the queue, grids placed as regions, odyssey as a world of two regions, and a shadow map fitted to the view |
 | [RetconUpstream](completed/RetconUpstream.md) | Realtime rendering, UI, ECS, engine, audio | 2026-10-08 | Frame capture on `Engine3D`, four renderer seams a game on the other camera hand or an sRGB chain needs, five small helpers, and audio events behind an interface |
 | [ReviewGates](completed/ReviewGates.md) | Process, CI | 2026-10-07 | A changeset reviews clean: a finding is what the change introduced, and four classes a tool can find are gated in CI |
 | [ReviewFixes](completed/ReviewFixes.md) | All of `api/`, moya, pong, voxel, docs | 2026-10-05 | Fixed the findings of a code review of `feat/motion-and-queries`, each with a test that failed first, and recorded the four that were not defects |

@@ -16,7 +16,7 @@ class Aligned {
     void* operator new(std::size_t size) {
         std::size_t space = size + (Alignment - 1);
         void *ptr = malloc(space + sizeof(void*));
-        void *original_ptr = ptr;
+        const void *original_ptr = ptr;
 
         char *ptr_bytes = static_cast<char*>(ptr);
         ptr_bytes += sizeof(void*);
@@ -32,7 +32,7 @@ class Aligned {
     }
 
     void operator delete(void* ptr) {
-        char *ptr_bytes = static_cast<char*>(ptr);
+        const char *ptr_bytes = static_cast<char*>(ptr);
         ptr_bytes -= sizeof(void*);
 
         void *original_ptr;

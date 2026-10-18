@@ -6,6 +6,7 @@
 #include <api/render/offline/sl/Compiler.h>
 #include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/Symbol.h>
+#include <api/render/offline/sl/Types.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 
 #include <sstream>
@@ -32,7 +33,7 @@ std::string compile(const std::string & source, std::vector<Symbol>* symbols = n
     }
     v3d::render::offline::sl::Compiler compiler(shaders[0]);
     const bool compiled = compiler.compile();
-    if (symbols) {
+    if (symbols != nullptr) {
         *symbols = compiler.symbols();
     }
     if (compiled) {
@@ -131,10 +132,8 @@ const char* const BACKGROUND =
 "    Oi = 1;\n"
 "}\n";
 
-};  // namespace
-
 /**
- * The nine shaders compiled into the library all pass the checker.
+ * The standard shaders, as this file writes them out, all pass the checker.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_standard_shaders_test) {
     const char* const sources[] = {
@@ -231,8 +230,8 @@ BOOST_AUTO_TEST_CASE(slcompiler_promoted_builtin_test) {
 }
 
 /**
- * A shader may only write the globals its type owns. A light shader assigning Ci is told that
- * Ci belongs to a surface and an imager, rather than that the name is undeclared.
+ * A shader may only write the globals its type owns. The error for a light shader assigning Ci
+ * says that Ci belongs to a surface and an imager, not that the name is undeclared.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_global_writability_test) {
     BOOST_CHECK_EQUAL(compile("light l() { Ci = 1; }"),
@@ -251,8 +250,8 @@ BOOST_AUTO_TEST_CASE(slcompiler_global_writability_test) {
 }
 
 /**
- * A surface shader's L and Cl are set by the light whose shader illuminance is running, and
- * mean nothing outside that body.
+ * A surface shader's L and Cl are set by the light whose shader the illuminance loop is
+ * running. They mean nothing outside the illuminance body.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_lighting_globals_test) {
     BOOST_CHECK_EQUAL(compile("surface s() { illuminance(P) { Ci = Ci + Cl; } }"), "");
@@ -276,8 +275,9 @@ BOOST_AUTO_TEST_CASE(slcompiler_undeclared_identifier_test) {
 }
 
 /**
- * A global is varying because it differs per shading point; a parameter is uniform unless it
- * was declared otherwise, because a scene binds one value for the whole primitive.
+ * A global that differs per shading point, such as P, is varying, and one that does not, such
+ * as E, is uniform. A parameter is uniform unless it was declared otherwise, because a scene
+ * binds one value for the whole primitive.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_storage_defaults_test) {
     std::vector<Symbol> symbols;
@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE(slcompiler_varying_condition_test) {
         "    Ci = Cs;\n"
         "}\n", &symbols), "");
 
-    // the value assigned is uniform in both, and the condition is what differs
+    // the value assigned is uniform in both. Only the condition differs
     BOOST_CHECK(storageOf(symbols, "inside") == Storage::VARYING);
     BOOST_CHECK(storageOf(symbols, "outside") == Storage::UNIFORM);
 }
@@ -390,9 +390,8 @@ BOOST_AUTO_TEST_CASE(slcompiler_break_in_illuminance_test) {
 }
 
 /**
- * A string is uniform, and so is the coordinate space name inside a cast: there is no
- * per-point transform to look up, and allowing one would make every transform a runtime
- * string lookup.
+ * A string is uniform, and so is the coordinate space name inside a cast. The space is looked
+ * up once for the whole batch, not once per point.
  **/
 BOOST_AUTO_TEST_CASE(slcompiler_string_is_uniform_test) {
     std::vector<Symbol> symbols;
@@ -612,7 +611,7 @@ BOOST_AUTO_TEST_CASE(slcompiler_symbol_order_test) {
     std::vector<Symbol> symbols;
     BOOST_CHECK_EQUAL(compile("surface s(float Ka = 1;) { float a = Ka; Ci = Cs; }", &symbols), "");
 
-    BOOST_REQUIRE(symbols.size() > 3u);
+    BOOST_REQUIRE(symbols.size() > 3U);
     BOOST_CHECK(symbols.front().role == Symbol::Role::GLOBAL);
     BOOST_CHECK_EQUAL(symbols.front().name, "P");
     BOOST_CHECK(symbols[symbols.size() - 2].role == Symbol::Role::PARAMETER);
@@ -648,3 +647,5 @@ BOOST_AUTO_TEST_CASE(slcompiler_shadowing_test) {
     // the inner one takes the varying value and the outer one is untouched by it
     BOOST_CHECK(outer == Storage::UNIFORM);
 }
+
+};  // namespace

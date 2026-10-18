@@ -14,8 +14,8 @@ namespace v3d::render::realtime::vulkan::memory {
 /**
  * The layout transitions the engine makes, each named for what the image is being made ready
  * for. Every one is the whole of a single level, single layer image. The stages and access
- * either side are decided here rather than by whoever records it, so that two places moving
- * an image the same way cannot drift apart.
+ * masks on either side are set here, not by the caller, so two places that move an image the
+ * same way cannot drift apart.
  **/
 
 /**
@@ -24,9 +24,9 @@ namespace v3d::render::realtime::vulkan::memory {
 VkImageMemoryBarrier2 colourForDrawing(VkImage image);
 
 /**
- * Out of COLOR_ATTACHMENT once the last pass has drawn: SHADER_READ_ONLY for a later pass to
- * sample, or anything else - PRESENT_SRC for the presentation engine - with only the writes
- * made visible.
+ * Out of COLOR_ATTACHMENT once the last pass has drawn, into to. SHADER_READ_ONLY is for a
+ * later pass to sample. Any other layout, such as PRESENT_SRC for the presentation engine,
+ * only has the writes made visible.
  **/
 VkImageMemoryBarrier2 colourAfterDrawing(VkImage image, VkImageLayout to);
 
@@ -36,7 +36,7 @@ VkImageMemoryBarrier2 colourAfterDrawing(VkImage image, VkImageLayout to);
  *
  * This and depthForSampling() name only the depth aspect, because their layouts are depth-only
  * and naming the stencil aspect with them is an error. For a format that also has stencil, that
- * relies on the device enabling separateDepthStencilLayouts.
+ * relies on the device enabling separateDepthStencilLayouts, as a depth readback does.
  **/
 VkImageMemoryBarrier2 depthForDrawing(VkImage image);
 
@@ -46,7 +46,7 @@ VkImageMemoryBarrier2 depthForDrawing(VkImage image);
  * DEPTH_READ_ONLY_OPTIMAL rather than SHADER_READ_ONLY_OPTIMAL, because it is the layout a depth
  * aspect can be both sampled and tested in. A pass sampling the image relies on nothing writing
  * it while it is read. A pass that both samples a target's depth and draws into it breaks that
- * rule; the validation layer reports it, and nothing here detects it.
+ * rule. The validation layer reports it, and nothing here detects it.
  **/
 VkImageMemoryBarrier2 depthForSampling(VkImage image);
 
@@ -62,6 +62,10 @@ VkImageMemoryBarrier2 uploadedForSampling(VkImage image);
 
 /**
  * Into TRANSFER_SRC for a readback to copy out of, from whatever layout the frame left it in.
+ *
+ * A depth readback names only the depth aspect. For a format that also has stencil, moving one
+ * aspect alone relies on the device enabling separateDepthStencilLayouts.
+ *
  * @param aspect colour or depth, which decides what writes are waited on
  **/
 VkImageMemoryBarrier2 forReadback(VkImage image, VkImageAspectFlags aspect, VkImageLayout from);

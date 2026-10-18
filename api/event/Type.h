@@ -5,10 +5,12 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace v3d::event {
 /**
  **/
-enum class Type {
+enum class Type : std::uint8_t {
     Unknown = 0,
     Source = 1,
     Destination = 2

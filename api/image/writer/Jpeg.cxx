@@ -5,10 +5,15 @@
 
 #include "Jpeg.h"
 
-#include <api/image/JpegError.h>
+#include <api/image/Image.h>
+#include <api/image/Writer.h>
+#include <api/image/format/JpegError.h>
+#include <api/log/Logger.h>
 
+#include <csetjmp>
 #include <cstdio>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::image::writer {
@@ -27,15 +32,15 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
 
     // open the file
     FILE* fp;
-    errno_t err = fopen_s(&fp, path.c_str(), "wb");
+    const errno_t err = fopen_s(&fp, path.c_str(), "wb");
     if (err != 0) {
         return false;
     }
 
     struct jpeg_compress_struct cinfo;
-    JpegError jerr;
+    format::JpegError jerr;
     cinfo.err = jpeg_std_error(&jerr.pub);
-    jerr.pub.error_exit = jpegErrorExit;
+    jerr.pub.error_exit = format::jpegErrorExit;
 
     // a jpeg has no alpha, so an RGBA image goes out a row at a time with it dropped. The
     // row is declared here because longjmp destroys nothing constructed after the setjmp
@@ -51,7 +56,7 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
         fclose(fp);
         // what was written is an incomplete jpeg, so the file is removed
         std::remove(path.c_str());
-        logger_->get()->error("JpegWriter::write - the encoder refused {}", path);
+        logger()->get()->error("JpegWriter::write - the encoder refused {}", path);
         return false;
     }
 #pragma warning(pop)
@@ -59,7 +64,7 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
     jpeg_create_compress(&cinfo);
 
     // The colour space has to be set before jpeg_set_defaults(), which reads it to decide
-    // the rest - including how many components a scanline has.
+    // the rest. That includes how many components a scanline has.
     cinfo.in_color_space = img->format() == Image::Format::Grey ? JCS_GRAYSCALE : JCS_RGB;
 
     jpeg_set_defaults(&cinfo);
@@ -82,9 +87,9 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
         JSAMPROW line = data;
         if (alpha) {
             for (unsigned int column = 0; column < img->width(); ++column) {
-                row[column * 3 + 0] = data[column * 4 + 0];
-                row[column * 3 + 1] = data[column * 4 + 1];
-                row[column * 3 + 2] = data[column * 4 + 2];
+                row[(column * 3) + 0] = data[(column * 4) + 0];
+                row[(column * 3) + 1] = data[(column * 4) + 1];
+                row[(column * 3) + 2] = data[(column * 4) + 2];
             }
             line = row.data();
         }

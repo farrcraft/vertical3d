@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
@@ -13,8 +13,8 @@
 namespace v3d::ui::paint {
 
 /**
- * The boxes this library is drawn out of, shared by the two ways of writing a ui: the
- * retained components and the immediate mode layer.
+ * The boxes this library is drawn out of, shared by the retained components and the
+ * immediate ui.
  *
  * A rounded box is three bands and four wedges, all of them batched on the 2D canvas, so a
  * corner radius costs no draw of its own.
@@ -26,7 +26,7 @@ namespace v3d::ui::paint {
  * A radius past half the shorter side is clamped to it, so it makes a fully rounded
  * end rather than a folded one.
  **/
-void fillBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+void fillBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, const glm::vec4& colour);
 
 /**
@@ -38,20 +38,29 @@ void fillBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const 
  *
  * @param width how thick the outline is, clamped to half the shorter side
  **/
-void strokeBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+void strokeBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, float width, const glm::vec4& colour);
+
+/**
+ * What a box is filled with, and what its outline is drawn in.
+ **/
+struct Plate {
+    glm::vec4 inside{1.0F};
+    glm::vec4 outline{1.0F};
+};
 
 /**
  * Fill a box inside an outline, both rounded.
  *
- * The outline is traced around the fill rather than drawn as a box behind it, because
- * what is inside usually carries an alpha: an outline behind it would show through as a
- * tint over the whole plate, and whatever the plate covers would not show through at all.
+ * The outline is traced around the fill, not drawn as a box behind it, because the fill
+ * usually carries an alpha. An outline behind it would tint the whole box, and would hide
+ * whatever the box covers.
  *
- * @param width how thick the outline is; nothing is traced when it is zero
+ * @param width how thick the outline is. Nothing is traced when it is zero
+ * @param colours what the box is filled with, and what its outline is
  **/
-void plateBox(v3d::render::realtime::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
-    float radius, float width, const glm::vec4& inside, const glm::vec4& outline);
+void plateBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+    float radius, float width, const Plate& colours);
 
 /**
  * @return whether a point is inside a box, its top and left edges included

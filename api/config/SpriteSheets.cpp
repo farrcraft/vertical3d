@@ -5,6 +5,11 @@
 
 #include "SpriteSheets.h"
 
+#include <api/log/Logger.h>
+
+#include "SpriteRegion.h"
+#include "SpriteSheet.h"
+
 #include <map>
 #include <set>
 #include <string>

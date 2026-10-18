@@ -18,12 +18,11 @@ namespace v3d::ui::component {
 /**
  * One line of text the user can edit, with a caret in it.
  *
- * A text box owns what it shows, the way a SelectList owns its rows. The text is a place
- * in the component rather than a fact about the app, and there is nowhere else for a
- * half-typed word to live. Whatever handles its command reads text() when it arrives.
+ * A text box holds the text it shows, the way a SelectList holds its rows, because a
+ * half-typed word has nowhere else to be kept. Whatever handles its command reads text().
  *
- * The editing is here and the key routing is in ui::Keys: a key names an operation and
- * this component carries it out.
+ * The editing is here, and the key routing is in input::Keys. Keys chooses the operation
+ * for a key, and this component carries it out.
  *
  * The caret is a byte offset into utf-8, and every operation moves it to a character
  * boundary, so a multi-byte character is inserted, stepped over and erased whole.
@@ -32,11 +31,11 @@ namespace v3d::ui::component {
  * when the two are equal. Every operation that moves the caret says whether the anchor
  * moves with it. Cut, copy and paste are then a run of bytes and an insertion.
  *
- * The box never reaches the clipboard. ui::Keys receives clipboard access as callbacks,
- * so api/ui names no SDL type. ui::Cursor measures text through the app's Measure
+ * The box never reaches the clipboard. input::Keys receives clipboard access as callbacks,
+ * so api/ui names no SDL type. input::Cursor measures text through the app's Measure
  * callback, so a press places the caret through at() and a drag selects.
  *
- * The plate, the text and the caret are the "textbox" style class.
+ * The background, the text and the caret are the "textbox" style class.
  **/
 class TextBox : public Component {
  public:
@@ -89,16 +88,16 @@ class TextBox : public Component {
     bool selected() const noexcept;
 
     /**
-     * @return the selected run, empty when nothing is selected. What a copy hands a
-     *      clipboard, and a view into the box's own text rather than a copy of it
+     * @return the selected run, empty when nothing is selected. A copy writes this to the
+     *      clipboard. It is a view into the box's own text, not a copy of it
      **/
     std::string_view selection() const noexcept;
 
     /**
      * Take the selected run out, leaving the caret where the run started.
      *
-     * What a cut does once the run has been handed over, and what a backspace, a delete and
-     * an insertion each do to a selection before doing anything of their own.
+     * A cut calls this after writing the run to the clipboard. A backspace, a delete and an
+     * insertion each call it first when there is a selection.
      *
      * @return whether anything was selected
      **/
@@ -112,8 +111,8 @@ class TextBox : public Component {
     std::size_t limit() const noexcept;
 
     /**
-     * What is drawn when the box is empty, in place of the text. It is never edited and
-     * never returned by text().
+     * What is drawn in place of the text while the box is empty and does not have the
+     * focus. It is never edited and never returned by text().
      **/
     void placeholder(const std::string& value);
     std::string_view placeholder() const noexcept;
@@ -123,9 +122,9 @@ class TextBox : public Component {
      * leave the caret after them.
      *
      * @param value utf-8, as the platform composed it or as a clipboard held it
-     * @return whether it went in. Only the limit refuses it, and the limit is measured
-     *      against what the text would become, so a paste may be as long as the run it
-     *      replaces plus whatever room was left
+     * @return whether it went in. Only an empty value or the limit refuses it. The limit is
+     *      measured against what the text would become, so a paste may be as long as the
+     *      run it replaces plus whatever room was left
      **/
     bool insert(std::string_view value);
 
@@ -146,8 +145,8 @@ class TextBox : public Component {
     /**
      * Move the caret one character, or to an end of the text.
      *
-     * A selection has two ends, so an arrow with nothing held lands on the near or the far
-     * one rather than a character past it, as in other text editors.
+     * With a selection and extend false, left() moves the caret to the start of the
+     * selection and right() to its end, not a character past it, as in other text editors.
      *
      * @param extend whether the anchor stays where it is, which selects the run travelled
      * @return whether anything moved
@@ -204,8 +203,8 @@ class TextBox : public Component {
     std::size_t forward(std::size_t offset) const noexcept;
 
     /**
-     * @return where the selected run starts and where it ends, which is the anchor and the
-     *      caret in that order
+     * @return where the selected run starts and where it ends: the lower of the anchor and
+     *      the caret first, then the higher
      **/
     std::pair<std::size_t, std::size_t> run() const noexcept;
 

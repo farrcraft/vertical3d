@@ -5,15 +5,24 @@
 
 #include "Menu.h"
 
+#include <api/event/Event.h>
+#include <api/ui/Component.h>
+#include <api/ui/component/Type.h>
 #include <api/ui/input/Command.h>
 
-namespace v3d::ui::component {
+#include "Item.h"
+#include "Type.h"
+
+#include <cassert>
+#include <cstddef>
+
+namespace v3d::ui::component::menu {
 Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
     Component(component::Type::Menu), dispatcher_(dispatcher), active_(-1) {
 }
 
 Menu::~Menu() {
-    for (const boost::shared_ptr<MenuItem>& item : items_) {
+    for (const boost::shared_ptr<Item>& item : items_) {
         if (item) {
             disown(*item);
         }
@@ -22,8 +31,8 @@ Menu::~Menu() {
 
 /**
  **/
-void Menu::parent(const boost::weak_ptr<Menu>& p) {
-    parent_ = p;
+void Menu::parent(const boost::weak_ptr<Menu>& parentMenu) {
+    parent_ = parentMenu;
 }
 
 bool Menu::hasParent() const {
@@ -34,18 +43,18 @@ boost::shared_ptr<Menu> Menu::level() const {
     return level_.lock();
 }
 
-void Menu::level(const boost::weak_ptr<Menu>& m) {
-    level_ = m;
+void Menu::level(const boost::weak_ptr<Menu>& current) {
+    level_ = current;
 }
 
-void Menu::addItem(const boost::shared_ptr<MenuItem>& item) {
+void Menu::addItem(const boost::shared_ptr<Item>& item) {
     if (item) {
         adopt(*item);
     }
     items_.push_back(item);
 }
 
-boost::shared_ptr<MenuItem> Menu::active() const {
+boost::shared_ptr<Item> Menu::active() const {
     if (active_ < 0 || static_cast<size_t>(active_) >= items_.size()) {
         return nullptr;
     }
@@ -65,7 +74,7 @@ bool Menu::next() {
     if (capture_) {
         return false;
     }
-    boost::shared_ptr<Menu> lvl = level();
+    const boost::shared_ptr<Menu> lvl = level();
     if (!lvl || lvl->items_.empty()) {
         return false;
     }
@@ -82,7 +91,7 @@ bool Menu::previous() {
     if (capture_) {
         return false;
     }
-    boost::shared_ptr<Menu> lvl = level();
+    const boost::shared_ptr<Menu> lvl = level();
     if (!lvl || lvl->items_.empty()) {
         return false;
     }
@@ -99,13 +108,12 @@ bool Menu::previous() {
 }
 
 bool Menu::up() {
-    // backing out of a capture is what it means here, rather than leaving the level the
-    // item being captured into sits on
+    // while a capture is open, up() cancels the capture and stays on the same level
     if (capture_) {
         cancel();
         return true;
     }
-    boost::shared_ptr<Menu> lvl = level();
+    const boost::shared_ptr<Menu> lvl = level();
     if (!lvl) {
         return false;
     }
@@ -120,16 +128,16 @@ bool Menu::down() {
     if (capture_) {
         return false;
     }
-    boost::shared_ptr<Menu> lvl = level();
+    const boost::shared_ptr<Menu> lvl = level();
     if (!lvl) {
         return false;
     }
-    boost::shared_ptr<MenuItem> item = lvl->active();
+    const boost::shared_ptr<Item> item = lvl->active();
     // a disabled item, or one in a disabled menu, is not opened
     if (!item || !usable(*item)) {
         return false;
     }
-    boost::shared_ptr<Menu> sm = item->submenu();
+    const boost::shared_ptr<Menu> sm = item->submenu();
     if (sm) {
         level_ = sm;
         return true;
@@ -141,17 +149,17 @@ size_t Menu::count() const {
     return items_.size();
 }
 
-boost::shared_ptr<MenuItem>& Menu::operator[](size_t i) {
-    assert(i < items_.size());
-    return items_[i];
+boost::shared_ptr<Item>& Menu::operator[](size_t index) {
+    assert(index < items_.size());
+    return items_[index];
 }
 
 /**
  **/
-bool Menu::dispatch(const boost::shared_ptr<MenuItem>& item) const {
+bool Menu::dispatch(const boost::shared_ptr<Item>& item) const {
     v3d::event::Event event = item->event();
-    // an item is only bound to an event when its config gave both a command and a context.
-    // a disabled item sends nothing
+    // an item is bound to an event only when its config gave both a command and a context.
+    // A disabled item sends nothing
     if (!usable(*item)) {
         return false;
     }
@@ -180,9 +188,9 @@ bool Menu::capture(const v3d::event::EventData& value) {
     }
     capture_->value(value);
 
-    // a binding is one key, so the first one given is the whole answer
+    // a binding is one key, so the first value given finishes a key input
     if (capture_->itemType() == menu::ItemType::KeyInput) {
-        const boost::shared_ptr<MenuItem> item = capture_;
+        const boost::shared_ptr<Item> item = capture_;
         capture_.reset();
         dispatch(item);
     }
@@ -195,17 +203,17 @@ void Menu::activate() {
     // an activation arriving while a capture is open ends it, whichever level
     // the item being captured into belongs to
     if (capture_) {
-        const boost::shared_ptr<MenuItem> item = capture_;
+        const boost::shared_ptr<Item> item = capture_;
         capture_.reset();
         dispatch(item);
         return;
     }
 
-    boost::shared_ptr<Menu> lvl = level();
+    const boost::shared_ptr<Menu> lvl = level();
     if (!lvl) {
         return;
     }
-    boost::shared_ptr<MenuItem> item = lvl->active();
+    const boost::shared_ptr<Item> item = lvl->active();
     // a disabled item, or one in a disabled menu, does nothing. An input item would otherwise
     // open a capture and swallow the next key
     if (item && !usable(*item)) {
@@ -226,4 +234,4 @@ void Menu::activate() {
     }
 }
 
-};  // namespace v3d::ui::component
+};  // namespace v3d::ui::component::menu

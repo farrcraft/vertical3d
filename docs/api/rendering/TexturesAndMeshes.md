@@ -53,6 +53,10 @@ meshes.release(crate);
 - `load()` reads glTF. Asking for the same path again returns the same handle.
 - `add()` registers a model built in code under a name. Names and paths share one namespace.
   It can take an image per material where you have pixels instead of a file name.
+- **Reading and decoding are separate from uploading.** `decodeModel(assets, path)` reads a
+  glTF file and decodes the albedo each material uses, and makes no device call. It returns a
+  `DecodedModel`, which `add(decoded)` uploads without reading any file. `load(path)` is the
+  two together, and skips decoding an albedo an entry already uploaded.
 - An entry is drawn one *part* at a time. A part is a range of the indices, an albedo texture
   and a base colour, and is one draw.
 - A texture a model names that cannot be found is logged and drawn white.
@@ -63,6 +67,40 @@ meshes.release(crate);
   indices and four weights.
 - `clip(handle, name)` returns the index of a skinned entry's animation clip, for
   `ecs::component::play()`.
+
+### Requesting a mesh
+
+A registry made with an `asset::Worker` can request a path instead of loading it. The model is
+decoded on the worker thread and uploaded by a later `poll()`, so a load costs the frame only
+its upload.
+
+```cpp
+MeshRegistry meshes(logger(), renderer_->context(), assets(), worker_);
+MeshHandle tree = meshes.request("models/tree.glb");  // resolves to nothing for now
+
+void MyApp::tick(unsigned int delta) {
+    worker_->poll();  // the decoded models arrive
+    meshes.poll();    // and are uploaded, up to a byte budget
+}
+```
+
+- **A requested handle resolves to nothing until a poll uploads it.** A draw skips such a
+  handle, so a model still loading is not drawn. Asking for the path again returns the same
+  handle.
+- **`poll(budget)` uploads in request order**, at least one model when any is ready, and stops
+  once the vertex, index and albedo bytes reach the budget. The default is
+  `MeshRegistry::DEFAULT_UPLOAD_BUDGET`, 4 MiB. The rest wait for the next poll.
+- **`pending(handle)` is true while a request is decoding or waiting for a poll.** A handle that
+  is not pending and resolves to nothing failed or was released.
+- **A file that cannot be read or uploaded is reported in the log.** Its handle resolves to
+  nothing from then on, and the path can be requested again.
+- **Releasing a pending handle** drops what the worker decodes for it.
+- **`load()` of a pending path** uploads it at once under the same handle.
+- `count()` leaves out pending requests, and `pending()` counts them.
+- A registry made without a worker throws `std::logic_error` from `request()`.
+
+A texture has no request of its own. Decode the image in a worker job and register it with
+`Textures::texture(image)` in the job's completion.
 
 A registered mesh is drawn by the [lit pass](Lighting.md#the-lit-pass). Geometry an app builds
 and draws itself (voxel's chunks, for instance) is a `vulkan::memory::Mesh` owned by the app. A

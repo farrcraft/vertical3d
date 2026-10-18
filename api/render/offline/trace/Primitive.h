@@ -72,8 +72,8 @@ class Primitive {
     void lights(const Lights & lit);
 
     /**
-     * Which of the scene's motions carries the primitive, or negative for none. It is
-     * stored where the motion's reference end put it.
+     * Which of the scene's motions carries the primitive, or negative for none. The
+     * primitive's geometry is stored where the motion's reference() transformation put it.
      **/
     int motion() const;
 
@@ -87,7 +87,7 @@ class Primitive {
     int motion_ = -1;
     v3d::render::offline::sl::Placed surface_;
     Lights lights_;
-    glm::vec3 opacity_ = glm::vec3(1.0f);
+    glm::vec3 opacity_ = glm::vec3(1.0F);
     glm::vec3 colour_;
 };
 

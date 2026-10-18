@@ -15,16 +15,33 @@
 #include FT_MODULE_H
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstddef>
+#include <cwchar>
+#include <iterator>
 #include <string>
 
 #include <boost/make_shared.hpp>
 
 namespace v3d::font {
+
+namespace {
+
+// metrics and advances are 26.6 fixed point, 64 units to the pixel
+constexpr float FIXED_POINT_SCALE = 64.0F;
+// the face is loaded at this many times its horizontal resolution, and the transform matrix
+// scales x back down by the same factor
+constexpr FT_UInt HORIZONTAL_OVERSAMPLE = 64;
+// the resolution FT_Set_Char_Size is given, in dots per inch, at which one point is one pixel
+constexpr FT_UInt RESOLUTION_DPI = 72;
+
+};  // namespace
+
 /**
- * The library and the face a font is read through, for as long as it is being read. Whatever
- * is open is closed by release(), by opening another, or by the owner going - so no path
- * through a load has to remember which of the two it had got as far as.
+ * The FreeType library and face a font is read through, open only while it is being read.
+ * release() closes whatever is open, and so do loadFace() and the destructor. A load that
+ * fails part way therefore never has to track which of the two it opened.
  **/
 class TextureFont::Freetype {
  public:
@@ -90,8 +107,7 @@ bool TextureFont::Freetype::loadFace(const std::string& filename, float size) {
 
     // set char size
     // size *= 100.0f;
-    const FT_UInt hres = 64;
-    error = FT_Set_Char_Size(face_, static_cast<int>((size * 64)), 0, 72 * hres, 72);
+    error = FT_Set_Char_Size(face_, static_cast<int>((size * FIXED_POINT_SCALE)), 0, RESOLUTION_DPI * HORIZONTAL_OVERSAMPLE, RESOLUTION_DPI);
     if (error != 0) {
         logger_->get()->error("Error setting freetype char size!");
         release();
@@ -100,7 +116,7 @@ bool TextureFont::Freetype::loadFace(const std::string& filename, float size) {
 
     // set transform matrix
     FT_Matrix matrix = {
-        static_cast<int>((1.0 / hres) * 0x10000L),
+        static_cast<int>((1.0 / HORIZONTAL_OVERSAMPLE) * 0x10000L),  // checked: a constant, 1024
         static_cast<int>(0.0 * 0x10000L),
         static_cast<int>(0.0 * 0x10000L),
         static_cast<int>(1.0 * 0x10000L)
@@ -120,46 +136,42 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
     ascender_(0),
     descender_(0),
     outline_(OUTLINE_TYPE_NONE),
-    outlineThickness_(0.0f),
+    outlineThickness_(0.0F),
     hinting_(1),
     lcdFiltering_(1),
     logger_(logger) {
-    lcdWeights_[0] = 0x10;
-    lcdWeights_[1] = 0x40;
-    lcdWeights_[2] = 0x70;
-    lcdWeights_[3] = 0x40;
-    lcdWeights_[4] = 0x10;
+    constexpr std::array<unsigned char, LCD_FILTER_TAPS> defaultLcdWeights{ 0x10, 0x40, 0x70, 0x40, 0x10 };
+    std::copy(defaultLcdWeights.begin(), defaultLcdWeights.end(), std::begin(lcdWeights_));
 
     // what the face would have set, for a face that does not open
-    underlinePosition_ = 0.0f;
-    underlineThickness_ = 0.0f;
-    linegap_ = 0.0f;
+    underlinePosition_ = 0.0F;
+    underlineThickness_ = 0.0F;
+    linegap_ = 0.0F;
 
     freetype_ = boost::make_shared<Freetype>(logger);
 
-    // the face is loaded at its own size. Asking for a hundred times the size - the
-    // upstream trick for reading the metrics with more precision - overflows what
-    // FT_Set_Char_Size accepts at the 64x horizontal resolution this uses, and every
-    // metric comes back zero.
+    // load the face at its own size. A hundred times the size, for more precise metrics,
+    // overflows what FT_Set_Char_Size accepts at the 64x horizontal resolution, and every
+    // metric then comes back zero.
     if (!freetype_->loadFace(filename_, size_)) {
         return;
     }
 
-    // 64 * 64 because of 26.6 encoding AND the transform matrix used
-    // in texture_font_load_face (hres = 64)
-    underlinePosition_ = freetype_->face_->underline_position / (64.0f * 64.0f) * size_;
-    underlinePosition_ = underlinePosition_ < 0.0f ? std::ceil(underlinePosition_ - 0.5f) : std::floor(underlinePosition_ + 0.5f);
-    underlinePosition_ = std::min(underlinePosition_, -2.0f);
+    // the face's units are 26.6 fixed point and scaled by the horizontal oversample of the
+    // transform matrix loadFace sets
+    underlinePosition_ = static_cast<float>(freetype_->face_->underline_position) / (FIXED_POINT_SCALE * static_cast<float>(HORIZONTAL_OVERSAMPLE)) * size_;
+    underlinePosition_ = underlinePosition_ < 0.0F ? std::ceil(underlinePosition_ - 0.5F) : std::floor(underlinePosition_ + 0.5F);
+    underlinePosition_ = std::min(underlinePosition_, -2.0F);
 
-    underlineThickness_ = freetype_->face_->underline_thickness / (64.0f * 64.0f) * size_;
-    underlineThickness_ = underlineThickness_ < 0.0f ? std::ceil(underlineThickness_ - 0.5f) : std::floor(underlineThickness_ + 0.5f);
-    underlineThickness_ = std::max(underlineThickness_, 1.0f);
+    underlineThickness_ = static_cast<float>(freetype_->face_->underline_thickness) / (FIXED_POINT_SCALE * static_cast<float>(HORIZONTAL_OVERSAMPLE)) * size_;
+    underlineThickness_ = underlineThickness_ < 0.0F ? std::ceil(underlineThickness_ - 0.5F) : std::floor(underlineThickness_ + 0.5F);
+    underlineThickness_ = std::max(underlineThickness_, 1.0F);
 
     // metrics are 26.6 fixed point, which already carries fractional pixels
-    FT_Size_Metrics metrics = freetype_->face_->size->metrics;
-    ascender_ = metrics.ascender / 64.0f;
-    descender_ = metrics.descender / 64.0f;
-    height_ = metrics.height / 64.0f;
+    const FT_Size_Metrics metrics = freetype_->face_->size->metrics;
+    ascender_ = static_cast<float>(metrics.ascender) / FIXED_POINT_SCALE;
+    descender_ = static_cast<float>(metrics.descender) / FIXED_POINT_SCALE;
+    height_ = static_cast<float>(metrics.height) / FIXED_POINT_SCALE;
     linegap_ = height_ - ascender_ + descender_;
 
     freetype_->release();
@@ -181,12 +193,12 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::createGlyph() {
     glyph->outlineThickness_ = 0.0;
     glyph->offset_.x = 0;
     glyph->offset_.y = 0;
-    glyph->advance_.x = 0.0f;
-    glyph->advance_.y = 0.0f;
-    glyph->st_[0].s = 0.0f;
-    glyph->st_[0].t = 0.0f;
-    glyph->st_[1].s = 0.0f;
-    glyph->st_[1].t = 0.0f;
+    glyph->advance_.x = 0.0F;
+    glyph->advance_.y = 0.0F;
+    glyph->st_[0].s = 0.0F;
+    glyph->st_[0].t = 0.0F;
+    glyph->st_[1].s = 0.0F;
+    glyph->st_[1].t = 0.0F;
 
     return glyph;
 }
@@ -206,7 +218,7 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::packed(wchar_t charcode) cons
 }
 
 boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
-    wchar_t lineCode = static_cast<wchar_t>(-1);
+    const wchar_t lineCode = static_cast<wchar_t>(-1);
 
     boost::shared_ptr<Glyph> glyph = packed(charcode);
     if (glyph) {
@@ -214,7 +226,7 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
     }
     // -1 is used for line drawing (overline, underline, strikethrough) and background
     if (charcode == lineCode) {
-        glm::ivec4 region = atlas_->region(4, 4);
+        const glm::ivec4 region = atlas_->region(4, 4);
 
         if (region.x < 0) {
             logger_->get()->error("Texture atlas is full!");
@@ -229,17 +241,17 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
         };
 
-        atlas_->region(region.x, region.y, 4, 4, data, 0);
+        atlas_->region(glm::ivec4(region.x, region.y, 4, 4), data, 0);
 
-        float width = static_cast<float>(atlas_->width());
-        float height = static_cast<float>(atlas_->height());
+        const float width = static_cast<float>(atlas_->width());
+        const float height = static_cast<float>(atlas_->height());
 
         glyph->charcode_ = lineCode;
 
-        glyph->st_[0].s = (region.x + 2) / width;
-        glyph->st_[0].t = (region.y + 2) / height;
-        glyph->st_[1].s = (region.x + 3) / width;
-        glyph->st_[1].t = (region.y + 3) / height;
+        glyph->st_[0].s = static_cast<float>(region.x + 2) / width;
+        glyph->st_[0].t = static_cast<float>(region.y + 2) / height;
+        glyph->st_[1].s = static_cast<float>(region.x + 3) / width;
+        glyph->st_[1].t = static_cast<float>(region.y + 3) / height;
 
         glyphs_.push_back(glyph);
 
@@ -270,10 +282,10 @@ struct GlyphBitmap final {
 };
 
 /**
- * Owns the stroker for as long as the outline is being built.
+ * Owns the stroker while the outline is built.
  *
- * Every step between FT_Stroker_New and the bitmap can fail, and each of those failures is
- * a return - so the release belongs to the scope rather than to any one of them.
+ * Each step after FT_Stroker_New can fail and return, so the destructor releases the stroker
+ * on every path.
  **/
 class StrokerHandle final {
  public:
@@ -294,12 +306,12 @@ class StrokerHandle final {
 };
 
 /**
- * Owns the glyph the outline path builds, for the iteration that built it.
+ * Owns the glyph the outline path builds, until the end of the loop iteration that built it.
  *
- * Holding nothing is the normal case: a glyph with no outline is read out of the face's
- * own slot, which the face owns. Only FT_Get_Glyph hands back a copy to release, and it is
- * released however the iteration ends - a full atlas skips the rest of one, and a stroke
- * that fails abandons the whole run.
+ * It usually holds nothing: a glyph with no outline is read from the face's own slot, which
+ * the face owns. Only FT_Get_Glyph returns a copy that must be released. The destructor
+ * releases it however the iteration ends, whether a full atlas skips to the next glyph or a
+ * failed stroke ends the load.
  **/
 class GlyphHandle final {
  public:
@@ -313,8 +325,8 @@ class GlyphHandle final {
     GlyphHandle& operator=(const GlyphHandle&) = delete;
 
     /**
-     * Where FT_Get_Glyph writes. It is left alone by a failure before that call, and holds
-     * whatever the last step that succeeded replaced it with after one.
+     * Where FT_Get_Glyph writes. A failure before that call leaves it null. After that call,
+     * it holds the glyph from the last step that succeeded.
      **/
     FT_Glyph* address() {
         return &glyph_;
@@ -325,10 +337,10 @@ class GlyphHandle final {
 };
 
 /**
- * Which of freetype's render modes a run of glyphs is rasterized through.
+ * The FreeType render mode for a run of glyphs.
  *
- * A three channel atlas is subpixel filtered and has to stay so. A single channel one is a
- * distance field when a spread was asked for, and coverage otherwise.
+ * A three channel atlas holds subpixel (LCD) coverage. Any other atlas holds a distance field
+ * when sdf is set, and coverage otherwise.
  **/
 FT_Render_Mode glyphRenderMode(unsigned int depth, bool sdf) {
     if (depth == 3) {
@@ -338,16 +350,16 @@ FT_Render_Mode glyphRenderMode(unsigned int depth, bool sdf) {
 }
 
 /**
- * The FT_LOAD flags one glyph is asked for under, and the lcd filter that goes with them.
+ * The FT_LOAD flags for one glyph.
  *
- * Setting the filter is part of choosing the flags rather than a step of its own: it only
- * means anything alongside FT_LOAD_TARGET_LCD.
+ * For a three channel atlas this also sets the library's LCD filter, because the filter only
+ * has an effect with FT_LOAD_TARGET_LCD.
  **/
 FT_Int32 glyphLoadFlags(FT_Library library, TextureFont::OutlineType outline, bool hinting,
     unsigned int depth, bool lcdFiltering, const unsigned char* lcdWeights, bool sdf) {
     FT_Int32 flags = 0;
-    // a distance field is built from the outline, so the load must not have rendered one
-    // to a bitmap already - the caller renders it afterwards, in the mode it needs
+    // a distance field and a stroked outline are both built from the glyph's outline, so the
+    // load must not render a bitmap. The caller renders afterwards, in the mode it needs
     if (outline != TextureFont::OUTLINE_TYPE_NONE || sdf) {
         flags |= FT_LOAD_NO_BITMAP;
     } else {
@@ -373,10 +385,10 @@ FT_Int32 glyphLoadFlags(FT_Library library, TextureFont::OutlineType outline, bo
 /**
  * Stroke the loaded glyph and render the outline to a bitmap.
  *
- * *glyph is whatever FT_Get_Glyph handed back, which the caller's GlyphHandle owns from
- * that point on: FT_Glyph_Stroke and FT_Glyph_To_Bitmap are both asked to destroy what they
- * replace, and only do so when they succeed. Releasing the face after a failure is the
- * caller's, which is where the face was loaded.
+ * *glyph receives FT_Get_Glyph's copy, which the caller's GlyphHandle owns from then on.
+ * FT_Glyph_Stroke and FT_Glyph_To_Bitmap are both told to destroy the glyph they replace, and
+ * do so only when they succeed. After a failure the caller releases the face, because the
+ * caller loaded it.
  **/
 bool strokeGlyph(FT_Library library, FT_Face face, TextureFont::OutlineType outline, float thickness,
     FT_Render_Mode mode, FT_Glyph* glyph, GlyphBitmap* out,
@@ -390,7 +402,7 @@ bool strokeGlyph(FT_Library library, FT_Face face, TextureFont::OutlineType outl
     const StrokerHandle stroker(raw);
     FT_Stroker_Set(
         stroker.get(),
-        static_cast<int>(thickness * 64),
+        static_cast<int>(thickness * FIXED_POINT_SCALE),
         FT_STROKER_LINECAP_ROUND,
         FT_STROKER_LINEJOIN_ROUND,
         0);
@@ -407,7 +419,7 @@ bool strokeGlyph(FT_Library library, FT_Face face, TextureFont::OutlineType outl
     } else if (outline == TextureFont::OUTLINE_TYPE_OUTER) {
         error = FT_Glyph_StrokeBorder(glyph, stroker.get(), 1, 1);
     }
-    if (error) {
+    if (error != 0) {
         logger->get()->error("Error setting glyph stroke border!");
         return false;
     }
@@ -420,8 +432,8 @@ bool strokeGlyph(FT_Library library, FT_Face face, TextureFont::OutlineType outl
 
     FT_BitmapGlyph bitmapGlyph = (FT_BitmapGlyph)*glyph;
     out->bitmap = bitmapGlyph->bitmap;
-    out->width = bitmapGlyph->bitmap.width;
-    out->rows = bitmapGlyph->bitmap.rows;
+    out->width = static_cast<int>(bitmapGlyph->bitmap.width);
+    out->rows = static_cast<int>(bitmapGlyph->bitmap.rows);
     out->top = bitmapGlyph->top;
     out->left = bitmapGlyph->left;
     return true;
@@ -443,16 +455,15 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
     const bool sdf = spread_ > 0 && atlas_->depth() == 1;
     const FT_Render_Mode mode = glyphRenderMode(atlas_->depth(), sdf);
     if (sdf) {
-        // freetype clamps this to its own 2..32, and the spread is in pixels of the size
-        // the face was loaded at, which is why the base size and the spread are chosen
-        // together
+        // FreeType clamps the spread to 2..32. The spread is in pixels at the size the face
+        // was loaded at, so the base size and the spread are chosen together
         FT_Int property = static_cast<FT_Int>(spread_);
         FT_Property_Set(freetype_->library_, "sdf", "spread", &property);
     }
 
     unsigned int missed = 0;
     for (unsigned int i = 0; i < wcslen(charcodes); ++i) {
-        FT_UInt glyphIndex = FT_Get_Char_Index(freetype_->face_, charcodes[i]);
+        const FT_UInt glyphIndex = FT_Get_Char_Index(freetype_->face_, charcodes[i]);
         const FT_Int32 flags = glyphLoadFlags(freetype_->library_, outline_, hinting_ != 0,
             atlas_->depth(), lcdFiltering_ != 0, lcdWeights_, sdf);
 
@@ -463,8 +474,8 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
             return false;
         }
 
-        // the handle is the iteration's, so a stroke that fails and a full atlas both
-        // release what FT_Get_Glyph built without either having to say so
+        // declared per iteration, so its destructor releases FT_Get_Glyph's copy whether the
+        // iteration finishes, skips a glyph for a full atlas, or returns on a failed stroke
         GlyphHandle stroked;
         GlyphBitmap rendered;
         if (outline_ == OUTLINE_TYPE_NONE) {
@@ -480,8 +491,8 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
                 }
             }
             rendered.bitmap = loaded->bitmap;
-            rendered.width = loaded->bitmap.width;
-            rendered.rows = loaded->bitmap.rows;
+            rendered.width = static_cast<int>(loaded->bitmap.width);
+            rendered.rows = static_cast<int>(loaded->bitmap.rows);
             rendered.top = loaded->bitmap_top;
             rendered.left = loaded->bitmap_left;
         } else if (!strokeGlyph(freetype_->library_, freetype_->face_, outline_, outlineThickness_,
@@ -491,36 +502,36 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
         }
 
         const unsigned int w = rendered.width / atlas_->depth();
-        const unsigned int h = rendered.rows;
-        glm::ivec4 region = atlas_->region(w, h);
+        const unsigned int rows = rendered.rows;
+        const glm::ivec4 region = atlas_->region(w, rows);
         if (region.x < 0) {
             missed++;
             continue;
         }
-        unsigned int x = region.x;
-        unsigned int y = region.y;
-        atlas_->region(x, y, w, h, rendered.bitmap.buffer, rendered.bitmap.pitch);
+        const unsigned int x = region.x;
+        const unsigned int y = region.y;
+        atlas_->region(glm::ivec4(x, y, w, rows), rendered.bitmap.buffer, rendered.bitmap.pitch);
 
-        boost::shared_ptr<Glyph> glyph = createGlyph();
+        const boost::shared_ptr<Glyph> glyph = createGlyph();
         glyph->charcode_ = charcodes[i];
         glyph->width_ = w;
-        glyph->height_ = h;
+        glyph->height_ = rows;
         glyph->outline_ = outline_;
         glyph->outlineThickness_ = outlineThickness_;
         glyph->offset_.x = rendered.left;
         glyph->offset_.y = rendered.top;
-        size_t width = atlas_->width();
-        size_t height = atlas_->height();
-        glyph->st_[0].s = x / static_cast<float>(width);
-        glyph->st_[0].t = y / static_cast<float>(height);
-        glyph->st_[1].s = (x + glyph->width_) / static_cast<float>(width);
-        glyph->st_[1].t = (y + glyph->height_) / static_cast<float>(height);
+        const size_t width = atlas_->width();
+        const size_t height = atlas_->height();
+        glyph->st_[0].s = static_cast<float>(x) / static_cast<float>(width);
+        glyph->st_[0].t = static_cast<float>(y) / static_cast<float>(height);
+        glyph->st_[1].s = static_cast<float>(x + glyph->width_) / static_cast<float>(width);
+        glyph->st_[1].t = static_cast<float>(y + glyph->height_) / static_cast<float>(height);
 
         // Discard hinting to get advance
         FT_Load_Glyph(freetype_->face_, glyphIndex, FT_LOAD_RENDER | FT_LOAD_NO_HINTING);
         FT_GlyphSlot advanced = freetype_->face_->glyph;
-        glyph->advance_.x = advanced->advance.x / 64.0f;
-        glyph->advance_.y = advanced->advance.y / 64.0f;
+        glyph->advance_.x = static_cast<float>(advanced->advance.x) / FIXED_POINT_SCALE;
+        glyph->advance_.y = static_cast<float>(advanced->advance.y) / FIXED_POINT_SCALE;
 
         glyphs_.push_back(glyph);
     }

@@ -10,7 +10,7 @@
 namespace v3d::type::effect {
 
 State::State(uint64_t seed) noexcept :
-    owed(0.0f),
+    owed(0.0F),
     random(seed) {
 }
 

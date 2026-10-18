@@ -5,6 +5,17 @@
 
 #include "SelectTool.h"
 
+#include <api/brep/BRep.h>
+#include <api/brep/Face.h>
+#include <api/brep/HalfEdge.h>
+#include <api/brep/Vertex.h>
+#include <api/log/Logger.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/view/ViewPort.h>
+
+#include "Picker.h"
+#include "SelectMask.h"
+
 #include <string>
 
 #include <boost/shared_ptr.hpp>
@@ -17,7 +28,7 @@ SelectTool::SelectTool(const boost::shared_ptr<Scene>& scene, const boost::share
     scene_(scene),
     logger_(logger),
     mask_(SelectMask::Object),
-    cursor_(0.0f, 0.0f) {
+    cursor_(0.0F, 0.0F) {
 }
 
 /**
@@ -77,8 +88,8 @@ void SelectTool::motion(const glm::vec2& position) {
 /**
  **/
 void SelectTool::button(unsigned int button, bool pressed, const glm::vec2& position) {
-    // only the primary button selects, and on the press rather than the release - a
-    // release that follows a drag out of the view would pick somewhere else
+    // only the primary button selects, and on the press, not the release. A release that
+    // follows a drag out of the view would pick somewhere else
     if (button != 1 || !pressed) {
         return;
     }
@@ -114,7 +125,7 @@ void SelectTool::apply(const Picker::Hit& hit) {
 
     if (!hit.valid) {
         // a miss in a component mode clears the components and leaves the objects
-        // selected: the user is working inside one and a stray click should not undo that
+        // selected, so a stray click does not lose the object the user is working inside
         scene_->deselectComponents();
         return;
     }
@@ -129,7 +140,7 @@ void SelectTool::selectObject(unsigned int id) {
     if (id == 0) {
         return;
     }
-    boost::shared_ptr<v3d::brep::BRep> mesh = scene_->mesh(id);
+    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->mesh(id);
     if (!mesh) {
         return;
     }
@@ -139,7 +150,7 @@ void SelectTool::selectObject(unsigned int id) {
 /**
  **/
 void SelectTool::selectComponent(const Picker::Hit& hit) {
-    boost::shared_ptr<v3d::brep::BRep> mesh = scene_->mesh(hit.mesh);
+    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->mesh(hit.mesh);
     if (!mesh) {
         return;
     }
@@ -147,13 +158,13 @@ void SelectTool::selectComponent(const Picker::Hit& hit) {
     // read before clearing: clicking the same component twice deselects it
     bool wanted = true;
     if (hit.kind == SelectMask::Vertex) {
-        v3d::brep::Vertex* vertex = mesh->vertex(hit.component);
+        const v3d::brep::Vertex* vertex = mesh->vertex(hit.component);
         wanted = vertex != nullptr && !vertex->selected();
     } else if (hit.kind == SelectMask::Edge) {
-        v3d::brep::HalfEdge* edge = mesh->edge(hit.component);
+        const v3d::brep::HalfEdge* edge = mesh->edge(hit.component);
         wanted = edge != nullptr && !edge->selected();
     } else if (hit.kind == SelectMask::Face) {
-        v3d::brep::Face* face = mesh->face(hit.component);
+        const v3d::brep::Face* face = mesh->face(hit.component);
         wanted = face != nullptr && !face->selected();
     }
 

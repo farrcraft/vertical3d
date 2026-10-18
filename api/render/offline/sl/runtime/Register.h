@@ -27,8 +27,8 @@ class Register final {
      **/
     bool parameter = false;
     /**
-     * Whether the register holds a literal the machine writes once at the start of a run
-     * rather than something the program computes.
+     * Whether the register holds a literal. Machine::prepare() writes it once, and no
+     * instruction computes it.
      **/
     bool constant = false;
     std::vector<float> value;

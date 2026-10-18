@@ -5,6 +5,16 @@
 
 #include "PongRenderer.h"
 
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Window.h>
+#include <api/ui/Engine.h>
+#include <api/ui/shell/Screen.h>
+#include <api/ui/shell/StatisticsOverlay.h>
+
+#include "PongScene.h"
+
 #include <string>
 
 #include <boost/lexical_cast.hpp>
@@ -16,17 +26,23 @@ namespace {
  * The size the ui and the scores are drawn at. Glyphs are distance fields, so the atlas
  * is scaled to this size rather than rasterized at it.
  **/
-const float fontSize = 28.0f;
+const float fontSize = 28.0F;
 
 // the court is drawn over black, so a window of another shape shows where it ends
-constexpr glm::vec4 barColour(0.0f, 0.0f, 0.0f, 1.0f);
-constexpr glm::vec4 courtColour(0.06f, 0.07f, 0.10f, 1.0f);
-constexpr glm::vec4 boardColour(0.35f, 0.35f, 0.35f, 1.0f);
-constexpr glm::vec4 ballColour(1.0f, 1.0f, 1.0f, 1.0f);
-constexpr glm::vec4 scoreColour(0.85f, 0.85f, 0.85f, 1.0f);
+constexpr glm::vec4 barColour(0.0F, 0.0F, 0.0F, 1.0F);
+constexpr glm::vec4 courtColour(0.06F, 0.07F, 0.10F, 1.0F);
+constexpr glm::vec4 boardColour(0.35F, 0.35F, 0.35F, 1.0F);
+constexpr glm::vec4 ballColour(1.0F, 1.0F, 1.0F, 1.0F);
+constexpr glm::vec4 scoreColour(0.85F, 0.85F, 0.85F, 1.0F);
 
 const unsigned int ballSides = 32;
 const unsigned int centreLineWidth = 14;
+
+// where the scores sit, as fractions of the court: a quarter of the way down, centred over
+// each half
+constexpr float scoreRow = 0.25F;
+constexpr float leftScoreColumn = 0.25F;
+constexpr float rightScoreColumn = 0.75F;
 
 };  // namespace
 
@@ -39,7 +55,7 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window
     engine_.clearColour(barColour);
 
     // the rules are written in the court's units, and the court is fitted to the window
-    court_.space(glm::vec2(PongScene::width, PongScene::height), v3d::render::realtime::Canvas::Fit::Contain);
+    court_.space(glm::vec2(PongScene::width, PongScene::height), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
     v3d::ui::shell::Screen::Options options;
     options.size = fontSize;
@@ -80,8 +96,8 @@ void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statist
     if (!screen_->begin()) {
         return;
     }
-    const v3d::render::realtime::Canvas& ui = screen_->canvas();
-    court_.resize(ui.width(), ui.height());
+    const v3d::render::realtime::canvas::Canvas& ui = screen_->canvas();
+    court_.resize(glm::uvec2(ui.width(), ui.height()));
     court_.clear();
 
     drawBoard();
@@ -92,8 +108,8 @@ void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statist
 
     screen_->draw(ui_.get(), statistics);
 
-    // the menu in front of the court, as a layer of its own
-    boost::shared_ptr<v3d::render::realtime::Pass> pass =
+    // the screen's canvas is a layer of its own, in front of the court
+    const boost::shared_ptr<v3d::render::realtime::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);
     engine_.quads()->submit(court_, pass.get(), 0);
     engine_.quads()->submit(ui, pass.get(), 1);
@@ -106,16 +122,16 @@ void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statist
 void PongRenderer::drawBoard() {
     const float width = PongScene::width;
     const float height = PongScene::height;
-    const float half = centreLineWidth * 0.5f;
+    const float half = centreLineWidth * 0.5F;
     const float wall = PongScene::wall;
 
-    court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, height), courtColour);
+    court_.rect(glm::vec2(0.0F, 0.0F), glm::vec2(width, height), courtColour);
 
     // centre line
-    court_.rect(glm::vec2(width * 0.5f - half, 0.0f), glm::vec2(width * 0.5f + half, height), boardColour);
+    court_.rect(glm::vec2((width * 0.5F) - half, 0.0F), glm::vec2((width * 0.5F) + half, height), boardColour);
     // top and bottom walls
-    court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(width, wall), boardColour);
-    court_.rect(glm::vec2(0.0f, height - wall), glm::vec2(width, height), boardColour);
+    court_.rect(glm::vec2(0.0F, 0.0F), glm::vec2(width, wall), boardColour);
+    court_.rect(glm::vec2(0.0F, height - wall), glm::vec2(width, height), boardColour);
 }
 
 /**
@@ -127,24 +143,24 @@ void PongRenderer::drawScores() {
     const std::string left = boost::lexical_cast<std::string>(scene_->left().score());
     const std::string right = boost::lexical_cast<std::string>(scene_->right().score());
 
-    screen_->text()->draw(&court_, left, glm::vec2(width * 0.25f, height * 0.25f), scoreColour, fontSize);
-    screen_->text()->draw(&court_, right, glm::vec2(width * 0.75f, height * 0.25f), scoreColour, fontSize);
+    screen_->text()->draw(&court_, left, glm::vec2(width * leftScoreColumn, height * scoreRow), scoreColour, fontSize);
+    screen_->text()->draw(&court_, right, glm::vec2(width * rightScoreColumn, height * scoreRow), scoreColour, fontSize);
 }
 
 /**
  **/
 void PongRenderer::drawBall(float alpha) {
     // size is the side of the box the scene collides, so it is the circle's diameter
-    court_.circle(scene_->ball().drawn(alpha), scene_->ball().size() / 2.0f, ballSides, ballColour);
+    court_.circle(scene_->ball().drawn(alpha), scene_->ball().size() / 2.0F, ballSides, ballColour);
 }
 
 /**
  **/
 void PongRenderer::drawPaddle(const Paddle& paddle, float alpha) {
     court_.push();
-    // the paddle's position is the centre of its travel; its rectangle is drawn from the corner
-    court_.translate(glm::vec2(paddle.offset(), paddle.drawn(alpha) - paddle.length() / 2.0f));
+    // the paddle's position is the centre of its length. The rectangle is drawn from its corner
+    court_.translate(glm::vec2(paddle.offset(), paddle.drawn(alpha) - (paddle.length() / 2.0F)));
     const glm::vec3 colour = paddle.color();
-    court_.rect(glm::vec2(0.0f, 0.0f), glm::vec2(paddle.size(), paddle.length()), glm::vec4(colour, 1.0f));
+    court_.rect(glm::vec2(0.0F, 0.0F), glm::vec2(paddle.size(), paddle.length()), glm::vec4(colour, 1.0F));
     court_.pop();
 }

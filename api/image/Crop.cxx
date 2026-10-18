@@ -5,6 +5,8 @@
 
 #include "Crop.h"
 
+#include "Image.h"
+
 namespace v3d::image {
 
 /**
@@ -13,19 +15,18 @@ boost::shared_ptr<Image> crop(const Image & source, unsigned int x, unsigned int
     boost::shared_ptr<Image> cut;
 
     const unsigned int depth = source.bpp() / 8;
-    // the bounds are written as subtractions from the source rather than additions to the
-    // offset, so that an x or a width near the top of the range cannot wrap into looking
-    // like it fits
+    // compare against the source size minus the offset, not the offset plus the size, so
+    // that a large x or width cannot wrap around and appear to fit
     if (depth == 0 || width == 0 || height == 0 ||
         x > source.width() || width > source.width() - x ||
         y > source.height() || height > source.height() - y) {
         return cut;
     }
 
-    cut.reset(new Image(width, height, source.bpp()));
+    cut.reset(new Image(glm::uvec2(width, height), source.bpp()));
     const unsigned int run = width * depth;
     for (unsigned int row = 0; row < height; ++row) {
-        const unsigned int from = ((y + row) * source.width() + x) * depth;
+        const unsigned int from = (((y + row) * source.width()) + x) * depth;
         const unsigned int to = row * run;
         for (unsigned int byte = 0; byte < run; ++byte) {
             (*cut)[to + byte] = source[from + byte];

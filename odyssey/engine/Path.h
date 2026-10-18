@@ -15,11 +15,10 @@ namespace odyssey::engine {
 /**
  * The route an entity is walking, and how far into it it has got.
  *
- * The tiles are what v3d::grid::findPath returned, so the first of them is the tile the
- * entity was standing on when the route was asked for and `next` starts at 1. A path whose
- * tiles are empty is one that has been walked or was never found; the movement system
- * empties it rather than removing the component, so nothing is erased from under a view
- * that is iterating it.
+ * The tiles are the route v3d::grid::findPath returned, in world tiles. The first is the tile
+ * the entity stood on when the route was found, so `next` starts at 1. A path with no tiles
+ * has been walked to its end, or no route was found. The movement system empties a finished
+ * path instead of removing the component, because it is iterating a view that holds it.
  **/
 struct Path final {
     std::vector<v3d::grid::TileCoord> tiles;
@@ -30,10 +29,10 @@ struct Path final {
     std::size_t next{0};
 
     /**
-     * Seconds spent on the step in progress. Movement is a tile at a time rather than a
-     * position between two, so this accumulates until a whole step is due.
+     * Seconds spent on the step in progress. An entity moves a whole tile at a time, so this
+     * accumulates until the next tile is due.
      **/
-    float elapsed{0.0f};
+    float elapsed{0.0F};
 };
 
 };  // namespace odyssey::engine

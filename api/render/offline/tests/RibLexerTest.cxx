@@ -22,29 +22,27 @@ std::vector<Token> lex(const std::string & source, std::string * error = nullptr
     v3d::render::offline::rib::Lexer lexer(stream);
     std::vector<Token> tokens;
     for (;;) {
-        Token token = lexer.next();
+        const Token token = lexer.next();
         if (token.kind() == Token::Kind::END) {
             break;
         }
         tokens.push_back(token);
     }
-    if (error) {
+    if (error != nullptr) {
         *error = lexer.error();
     }
     return tokens;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(riblexer_request_test) {
     std::vector<Token> tokens = lex("Format 640 480 1");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 4u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 4U);
     BOOST_CHECK(tokens[0].kind() == Token::Kind::IDENTIFIER);
     BOOST_CHECK_EQUAL(tokens[0].text(), "Format");
     BOOST_CHECK(tokens[1].kind() == Token::Kind::NUMBER);
-    BOOST_CHECK_EQUAL(tokens[1].value(), 640.0f);
-    BOOST_CHECK_EQUAL(tokens[3].value(), 1.0f);
+    BOOST_CHECK_EQUAL(tokens[1].value(), 640.0F);
+    BOOST_CHECK_EQUAL(tokens[3].value(), 1.0F);
 }
 
 /**
@@ -53,7 +51,7 @@ BOOST_AUTO_TEST_CASE(riblexer_request_test) {
 BOOST_AUTO_TEST_CASE(riblexer_string_test) {
     std::vector<Token> tokens = lex("\"two words\" \"a \\\"quote\\\" and a \\\\\" \"\\101\"");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 3u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 3U);
     BOOST_CHECK(tokens[0].kind() == Token::Kind::STRING);
     BOOST_CHECK_EQUAL(tokens[0].text(), "two words");
     BOOST_CHECK_EQUAL(tokens[1].text(), "a \"quote\" and a \\");
@@ -63,9 +61,9 @@ BOOST_AUTO_TEST_CASE(riblexer_string_test) {
 
 BOOST_AUTO_TEST_CASE(riblexer_unterminated_string_test) {
     std::string error;
-    std::vector<Token> tokens = lex("Surface \"plastic", &error);
+    const std::vector<Token> tokens = lex("Surface \"plastic", &error);
 
-    BOOST_CHECK_EQUAL(tokens.size(), 1u);
+    BOOST_CHECK_EQUAL(tokens.size(), 1U);
     BOOST_CHECK(error.contains("unterminated string"));
     // the error gives the position
     BOOST_CHECK(error.contains("column 9"));
@@ -77,9 +75,9 @@ BOOST_AUTO_TEST_CASE(riblexer_unterminated_string_test) {
 BOOST_AUTO_TEST_CASE(riblexer_array_across_lines_test) {
     std::vector<Token> tokens = lex("Polygon \"P\" \n[-100. 0. -100.\n 100. 0. 100.]\n");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 10u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 10U);
     BOOST_CHECK(tokens[2].kind() == Token::Kind::ARRAY_BEGIN);
-    BOOST_CHECK_EQUAL(tokens[3].value(), -100.0f);
+    BOOST_CHECK_EQUAL(tokens[3].value(), -100.0F);
     BOOST_CHECK(tokens[9].kind() == Token::Kind::ARRAY_END);
 }
 
@@ -90,13 +88,13 @@ BOOST_AUTO_TEST_CASE(riblexer_array_across_lines_test) {
 BOOST_AUTO_TEST_CASE(riblexer_number_forms_test) {
     std::vector<Token> tokens = lex(".5 5. -1e3 +2.5E-2 1.0e38 0");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 6u);
-    BOOST_CHECK_EQUAL(tokens[0].value(), 0.5f);
-    BOOST_CHECK_EQUAL(tokens[1].value(), 5.0f);
-    BOOST_CHECK_EQUAL(tokens[2].value(), -1000.0f);
-    BOOST_CHECK_CLOSE(tokens[3].value(), 0.025f, 0.001f);
-    BOOST_CHECK_CLOSE(tokens[4].value(), 1.0e38f, 0.001f);
-    BOOST_CHECK_EQUAL(tokens[5].value(), 0.0f);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 6U);
+    BOOST_CHECK_EQUAL(tokens[0].value(), 0.5F);
+    BOOST_CHECK_EQUAL(tokens[1].value(), 5.0F);
+    BOOST_CHECK_EQUAL(tokens[2].value(), -1000.0F);
+    BOOST_CHECK_CLOSE(tokens[3].value(), 0.025F, 0.001F);
+    BOOST_CHECK_CLOSE(tokens[4].value(), 1.0e38F, 0.001F);
+    BOOST_CHECK_EQUAL(tokens[5].value(), 0.0F);
 }
 
 /**
@@ -105,7 +103,7 @@ BOOST_AUTO_TEST_CASE(riblexer_number_forms_test) {
 BOOST_AUTO_TEST_CASE(riblexer_comment_test) {
     std::vector<Token> tokens = lex("##RenderMan RIB-Structure 1.1\nFormat 32 16 1  #renderer specific\nWorldBegin");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 5u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 5U);
     BOOST_CHECK_EQUAL(tokens[0].text(), "Format");
     BOOST_CHECK_EQUAL(tokens[4].text(), "WorldBegin");
 }
@@ -116,17 +114,17 @@ BOOST_AUTO_TEST_CASE(riblexer_comment_test) {
 BOOST_AUTO_TEST_CASE(riblexer_position_test) {
     std::vector<Token> tokens = lex("Format 640\n  WorldBegin");
 
-    BOOST_REQUIRE_EQUAL(tokens.size(), 3u);
-    BOOST_CHECK_EQUAL(tokens[0].line(), 1u);
-    BOOST_CHECK_EQUAL(tokens[0].column(), 1u);
-    BOOST_CHECK_EQUAL(tokens[1].column(), 8u);
-    BOOST_CHECK_EQUAL(tokens[2].line(), 2u);
-    BOOST_CHECK_EQUAL(tokens[2].column(), 3u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 3U);
+    BOOST_CHECK_EQUAL(tokens[0].line(), 1U);
+    BOOST_CHECK_EQUAL(tokens[0].column(), 1U);
+    BOOST_CHECK_EQUAL(tokens[1].column(), 8U);
+    BOOST_CHECK_EQUAL(tokens[2].line(), 2U);
+    BOOST_CHECK_EQUAL(tokens[2].column(), 3U);
 }
 
 /**
- * Both encodings are part of the format and neither is supported. Parsed as ASCII they would
- * produce nonsense rather than an error, so the lexer reports an error instead.
+ * Binary and gzipped RIB are both part of the format, and neither is supported. The lexer
+ * reports either one as an error. Parsed as ASCII, they would produce nonsense tokens.
  **/
 BOOST_AUTO_TEST_CASE(riblexer_binary_rejected_test) {
     std::string error;
@@ -165,9 +163,9 @@ BOOST_AUTO_TEST_CASE(riblexer_example_file_test) {
     }
 
     BOOST_CHECK_EQUAL(lexer.error(), "");
-    BOOST_CHECK_GT(count, 200u);
+    BOOST_CHECK_GT(count, 200U);
     // one per request, and the file holds two frames of them
-    BOOST_CHECK_GT(identifiers, 40u);
+    BOOST_CHECK_GT(identifiers, 40U);
 }
 
 /**
@@ -181,7 +179,7 @@ BOOST_AUTO_TEST_CASE(riblexer_peek_test) {
     BOOST_CHECK_EQUAL(lexer.peek().text(), "Format");
     BOOST_CHECK_EQUAL(lexer.peek().text(), "Format");
     BOOST_CHECK_EQUAL(lexer.next().text(), "Format");
-    BOOST_CHECK_EQUAL(lexer.next().value(), 640.0f);
+    BOOST_CHECK_EQUAL(lexer.next().value(), 640.0F);
     BOOST_CHECK(lexer.next().kind() == Token::Kind::END);
 }
 
@@ -193,7 +191,7 @@ BOOST_AUTO_TEST_CASE(riblexer_byte_order_mark_is_skipped_test) {
     std::string error;
     std::vector<Token> tokens = lex("\xEF\xBB\xBF" "Format 640 480 1", &error);
     BOOST_CHECK(error.empty());
-    BOOST_REQUIRE_EQUAL(tokens.size(), 4u);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 4U);
     BOOST_CHECK_EQUAL(tokens[0].text(), "Format");
 }
 
@@ -207,3 +205,5 @@ BOOST_AUTO_TEST_CASE(riblexer_reads_from_where_the_stream_stands_test) {
     v3d::render::offline::rib::Lexer lexer(stream);
     BOOST_CHECK_EQUAL(lexer.next().text(), "Format");
 }
+
+};  // namespace

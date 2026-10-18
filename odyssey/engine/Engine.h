@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/asset/Manager.h>
+#include <api/asset/Worker.h>
 #include <api/config/Config.h>
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
@@ -15,8 +16,7 @@
 #include <api/log/Logger.h>
 #include <odyssey/render/Renderer.h>
 #include <odyssey/system/Movement.h>
-#include <odyssey/tile/Map.h>
-#include <odyssey/tile/Sight.h>
+#include <odyssey/tile/World.h>
 
 #include <string>
 
@@ -27,8 +27,8 @@
 namespace odyssey::engine {
 
 /**
- * This is the game engine.
- * It is responsible for the main game loop
+ * The odyssey application. It registers the game's commands, loads the world, and moves the
+ * player each simulation step. The api's game loop calls it.
  **/
 class Engine final : public v3d::engine::Engine {
  public:
@@ -41,7 +41,13 @@ class Engine final : public v3d::engine::Engine {
     explicit Engine(const std::string& appPath);
 
     /**
-     * Advance the game world by one fixed simulation step
+     * Called once a frame. Polls the worker, which hands each finished region load to the world.
+     * Then requests the regions the player is approaching and releases the ones it has left.
+     **/
+    bool tick(unsigned int delta) override;
+
+    /**
+     * Advance the game world by one simulation step
      * @return bool
      **/
     bool simulate(float step) override;
@@ -54,11 +60,9 @@ class Engine final : public v3d::engine::Engine {
 
  protected:
     /**
-     * Initialize the engine.
-     * Initialization includes only the minimal amount of work required to get
-     * a window displayed on the screen.
-     * 
-     * @return bool
+     * Load the world, place the player on its start tile, and build the renderer.
+     *
+     * @return false when the world cannot be loaded
      **/
     bool start() override;
 
@@ -69,41 +73,38 @@ class Engine final : public v3d::engine::Engine {
 
  private:
     /**
-     * Handle a mapped event, one of the destinations named in data/mappings.json.
-     **/
-    void handleEvent(const v3d::event::Event& event);
-
-    /**
      * Track the cursor. A click carries no position of its own, so the last motion is
      * where the click happened.
      **/
     void handleMotion(const v3d::event::kind::MouseMotion& event);
 
     /**
-     * Route the player to the tile under the cursor, replacing whatever it was walking.
-     * A click on a wall, off the map, or somewhere no route reaches leaves it where it is.
+     * Route the player to the tile under the cursor, replacing whatever it was walking. A click
+     * on a wall, in another region, or somewhere no route reaches leaves it where it is.
      **/
     void walkToCursor();
 
     /**
-     * One tile in a direction, if the player is not already walking a route and the tile
-     * can be entered. The grid decides that, so a step and a route refuse the same tiles.
+     * Move the player one tile in a direction, if World::passable() allows that tile. A step can
+     * therefore cross into the next region once that region is loaded. While the player walks a
+     * route, a step stops the route and does not move.
      **/
     void step(int dx, int dy);
 
     /**
-     * @return the tile the player is standing on
+     * @return the world tile the player is standing on
      **/
     v3d::grid::TileCoord playerTile() const;
 
     boost::shared_ptr<Player> player_;
-    boost::shared_ptr<odyssey::tile::Map> map_;
-    boost::shared_ptr<odyssey::tile::Sight> sight_;
-    glm::vec2 cursor_{0.0f, 0.0f};
+    // declared before world_, so world_ is destroyed first. The worker's destructor then drops
+    // every completion that has not run
+    boost::shared_ptr<v3d::asset::Worker> worker_;
+    boost::shared_ptr<odyssey::tile::World> world_;
+    glm::vec2 cursor_{0.0F, 0.0F};
     boost::shared_ptr<odyssey::render::Renderer> renderer_;
     boost::shared_ptr<odyssey::system::Movement> movementSystem_;
-    // the dispatcher holds a delegate to this object; these let it go when the object does
-    entt::scoped_connection events_;
+    // disconnects this object's delegate from the dispatcher when this object is destroyed
     entt::scoped_connection motion_;
 };
 

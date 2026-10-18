@@ -12,12 +12,10 @@
 namespace v3d::editor {
 
 /**
- * The polygon primitives the Create menu offers, each one unit across and centred on
- * the origin, so a mesh is placed by its transform rather than by where its geometry
- * was built.
+ * The polygon primitives the Create menu offers. Each is one unit across and centred on the
+ * origin, so a mesh is placed by its transform, not by where its geometry was built.
  *
- * The cylinder and the cone are open: neither has cap faces. The extrude and split
- * operations assume that shape.
+ * The cylinder and the cone are open: neither has cap faces.
  **/
 boost::shared_ptr<v3d::brep::BRep> create_poly_cube();
 boost::shared_ptr<v3d::brep::BRep> create_poly_plane();

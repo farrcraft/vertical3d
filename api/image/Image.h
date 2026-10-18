@@ -7,6 +7,10 @@
 
 #include <stdint.h>
 
+#include <cstdint>
+
+#include <glm/vec2.hpp>
+
 namespace v3d::image {
 /**
  * a simple image class. 
@@ -19,7 +23,7 @@ class Image {
          * The value is the channel count. A writer divides bpp by it to get the bits in a
          * channel. Grey is one channel; a texture atlas packed at depth 1 produces it.
          */
-        enum class Format {
+        enum class Format : std::uint8_t {
             Grey = 1,
             RGB = 3,
             RGBA = 4
@@ -28,18 +32,16 @@ class Image {
         Image();
         /**
          * Constructor
-         * @param w image width
-         * @param h image height
-         * @param b bits per pixel
+         * @param dimensions image width and height
+         * @param bitsPerPixel bits per pixel
          */
-        Image(uint32_t w, uint32_t h, uint8_t b);
+        Image(const glm::uvec2& dimensions, uint8_t bitsPerPixel);
         virtual ~Image();
 
         /**
-         * An image owns its buffer and frees it, so copying one would free it twice. There
-         * is no deep copy here because no caller needs an image by value - a consumer holds a
-         * boost::shared_ptr<Image> - and the copy that is actually useful, a rectangle of
-         * one image as another, is crop().
+         * An image owns its buffer and frees it, so a copy would free it twice. Copying is
+         * deleted, not made deep. A consumer holds a boost::shared_ptr<Image>, and crop()
+         * copies a rectangle of one image into a new one.
          */
         Image(const Image &) = delete;
         Image & operator=(const Image &) = delete;
@@ -67,16 +69,16 @@ class Image {
 
         Format format() const;
 
-        unsigned char & operator[] (unsigned int i);
-        unsigned char operator[] (unsigned int i) const;
+        unsigned char & operator[] (unsigned int index);
+        unsigned char operator[] (unsigned int index) const;
 
  private:
         unsigned char * data_;  // Data (Up To 32 Bits)
         uint8_t bpp_;  // Color Depth In Bits Per Pixel
         uint32_t width_;
         uint32_t height_;
-        // initialized here rather than only in the constructors, so that a depth no format
-        // describes - a raw buffer has none at all - still leaves this a definite value
+        // every constructor also sets this. formatOf() gives RGB for a depth no format
+        // describes, so the value is always one of the three
         Format format_ = Format::RGB;
 };
 

@@ -17,8 +17,8 @@ bool AppEngine::render() {
     }
     canvas_.resize(size.x, size.y);
     canvas_.clear();
-    canvas_.rect(glm::vec2(40.0f, 40.0f), glm::vec2(size.x - 40.0f, size.y - 40.0f),
-        glm::vec4(0.9f, 0.4f, 0.2f, 1.0f));
+    canvas_.rect(glm::vec2(40.0F, 40.0F), glm::vec2(size.x - 40.0F, size.y - 40.0F),
+        glm::vec4(0.9F, 0.4F, 0.2F, 1.0F));
 
     boost::shared_ptr<Pass> pass = renderer_->frame()->pass(Engine3D::colourPass);
     renderer_->quads()->submit(canvas_, pass.get());

@@ -9,10 +9,20 @@
 
 #include <noise.h>
 
+namespace {
+
+/**
+ * How far the height map reaches into the noise on each axis, in the noise's own units.
+ * More of the noise in the same 256 samples makes the hills smaller and closer together.
+ **/
+constexpr double NOISE_EXTENT = 4.0;
+
+};  // namespace
+
 class TerrainMap::Noise {
  public:
         void generate();
-        float height(unsigned int x, unsigned int y);
+        float height(const glm::uvec2& column);
 
  private:
         noise::utils::Image image_;
@@ -20,7 +30,7 @@ class TerrainMap::Noise {
 
 
 void TerrainMap::Noise::generate() {
-    noise::module::Perlin perlinModule;
+    const noise::module::Perlin perlinModule;
     noise::utils::NoiseMap heightMap;
     noise::utils::NoiseMapBuilderPlane heightMapBuilder;
 
@@ -29,7 +39,7 @@ void TerrainMap::Noise::generate() {
 
     heightMapBuilder.SetDestSize(256, 256);
     // lower x, upper x, lower z, upper z
-    heightMapBuilder.SetBounds(0.0, 4.0, 0.0, 4.0);
+    heightMapBuilder.SetBounds(0.0, NOISE_EXTENT, 0.0, NOISE_EXTENT);
 
     heightMapBuilder.Build();
 
@@ -43,9 +53,11 @@ void TerrainMap::Noise::generate() {
 }
 
 
-float TerrainMap::Noise::height(unsigned int x, unsigned int y) {
+float TerrainMap::Noise::height(const glm::uvec2& column) {
+    const unsigned int x = column.x;
+    const unsigned int y = column.y;
     noise::utils::Color color;
-    color = image_.GetValue(x, y);
+    color = image_.GetValue(static_cast<int>(x), static_cast<int>(y));
 
     // r,g,b should be all equal for a greyscale image so any one will work
     return static_cast<float>(color.blue);
@@ -57,6 +69,6 @@ void TerrainMap::generate() {
     noise_->generate();
 }
 
-float TerrainMap::height(unsigned int x, unsigned int z) {
-    return noise_->height(x, z);
+float TerrainMap::height(const glm::uvec2& column) {
+    return noise_->height(column);
 }

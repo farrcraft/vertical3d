@@ -7,6 +7,10 @@
 
 #include <voxel/src/engine/Camera.h>
 
+#include <iterator>
+
+namespace {
+
 typedef struct Moves {
     Player::Movement move_;  // movement flag
     unsigned int axis_;  // vector position of movement
@@ -14,13 +18,24 @@ typedef struct Moves {
 } Moves;
 
 Moves possibleMoves[] = {
-    { Player::MOVE_FORWARD, 2, 1.0f },
-    { Player::MOVE_BACKWARD, 2, -1.0f },
-    { Player::MOVE_RIGHT, 0, 1.0f },
-    { Player::MOVE_LEFT, 0, -1.0f },
-    { Player::MOVE_UP, 1, 1.0f },
-    { Player::MOVE_DOWN, 1, -1.0f }
+    { Player::MOVE_FORWARD, 2, 1.0F },
+    { Player::MOVE_BACKWARD, 2, -1.0F },
+    { Player::MOVE_RIGHT, 0, 1.0F },
+    { Player::MOVE_LEFT, 0, -1.0F },
+    { Player::MOVE_UP, 1, 1.0F },
+    { Player::MOVE_DOWN, 1, -1.0F }
 };
+
+/**
+ * The camera's acceleration, in units per second squared, and its velocity limit, in units
+ * per second. move() sets the current velocity of a driven axis to one unit per second.
+ * Nothing calls Camera::updateVelocity(), the only reader of the limit, so the walk is one
+ * unit per second plus each step's small acceleration term.
+ **/
+constexpr glm::vec3 PLAYER_ACCELERATION(8.0F, 8.0F, 8.0F);
+constexpr glm::vec3 PLAYER_VELOCITY(12.0F, 12.0F, 12.0F);
+
+};  // namespace
 
 Player::Player(const glm::vec3 & pos) :
     position_(pos),
@@ -28,11 +43,8 @@ Player::Player(const glm::vec3 & pos) :
     camera_.reset(new Camera());
     camera_->behavior(Camera::CAMERA_BEHAVIOR_FIRST_PERSON);
     camera_->position(position_);
-    // units per second and per second squared. The camera's velocity is constant here -
-    // nothing calls updateVelocity - so the walk is the linear term and the acceleration is
-    // a small addition on top of it.
-    camera_->acceleration(glm::vec3(8.0f, 8.0f, 8.0f));
-    camera_->velocity(glm::vec3(12.0f, 12.0f, 12.0f));
+    camera_->acceleration(PLAYER_ACCELERATION);
+    camera_->velocity(PLAYER_VELOCITY);
 }
 
 glm::vec3 Player::position() const {
@@ -48,17 +60,17 @@ void Player::position(const glm::vec3 & pos) {
 }
 
 void Player::move(Movement direction, bool held) {
-    for (unsigned int i = 0; i < 6; i++) {
+    for (unsigned int i = 0; i < std::size(possibleMoves); i++) {
         if (direction == possibleMoves[i].move_) {
             if (((movement_ & direction) != 0) == held) {
                 return;
             }
             glm::vec3 velocity = camera_->currentVelocity();
             if (held) {
-                velocity[possibleMoves[i].axis_] = possibleMoves[i].magnitude_;
+                velocity[static_cast<glm::length_t>(possibleMoves[i].axis_)] = possibleMoves[i].magnitude_;
                 movement_ |= direction;
             } else {
-                velocity[possibleMoves[i].axis_] = 0.0f;
+                velocity[static_cast<glm::length_t>(possibleMoves[i].axis_)] = 0.0F;
                 movement_ &= ~direction;
             }
             camera_->currentVelocity(velocity.x, velocity.y, velocity.z);
@@ -68,24 +80,24 @@ void Player::move(Movement direction, bool held) {
 }
 
 void Player::look(float heading, float pitch) {
-    const float cameraRotationSpeed = 0.01f;
+    const float cameraRotationSpeed = 0.01F;
 
     heading *= cameraRotationSpeed;
     pitch *= cameraRotationSpeed;
 
-    camera_->rotate(heading, pitch, 0.0f);
+    camera_->rotate(heading, pitch, 0.0F);
 }
 
 void Player::tick(float step) {
     // update player position based on current movement flags
-    glm::vec3 dir(0.0f, 0.0f, 0.0f);
-    for (unsigned int i = 0; i < 6; i++) {
-        if (movement_ & possibleMoves[i].move_) {
-            dir[possibleMoves[i].axis_] = possibleMoves[i].magnitude_;
+    glm::vec3 dir(0.0F, 0.0F, 0.0F);
+    for (unsigned int i = 0; i < std::size(possibleMoves); i++) {
+        if ((movement_ & possibleMoves[i].move_) != 0) {
+            dir[static_cast<glm::length_t>(possibleMoves[i].axis_)] = possibleMoves[i].magnitude_;
         }
     }
-    glm::vec3 displacement = camera_->calculateDisplacement(dir, step);
-    glm::vec3 position = camera_->calculateMovement(displacement);
+    const glm::vec3 displacement = camera_->calculateDisplacement(dir, step);
+    const glm::vec3 position = camera_->calculateMovement(displacement);
     if (!checkWorldCollision(position)) {
         camera_->position(position);
 

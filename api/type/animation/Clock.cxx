@@ -26,31 +26,31 @@ bool Clock::loops() const noexcept {
 }
 
 float Clock::advance(float time, float step) const noexcept {
-    if (duration_ <= 0.0f) {
-        return 0.0f;
+    if (duration_ <= 0.0F) {
+        return 0.0F;
     }
     if (loops_) {
         return time + step;
     }
-    return std::clamp(time + step, 0.0f, duration_);
+    return std::clamp(time + step, 0.0F, duration_);
 }
 
 float Clock::sample(float time) const noexcept {
-    if (duration_ <= 0.0f) {
-        return 0.0f;
+    if (duration_ <= 0.0F) {
+        return 0.0F;
     }
     if (!loops_) {
-        return std::clamp(time, 0.0f, duration_);
+        return std::clamp(time, 0.0F, duration_);
     }
     const float wrapped = std::fmod(time, duration_);
-    return wrapped < 0.0f ? wrapped + duration_ : wrapped;
+    return wrapped < 0.0F ? wrapped + duration_ : wrapped;
 }
 
 uint32_t Clock::crossed(float from, float to, float marker) const noexcept {
     if (!std::isfinite(from) || !std::isfinite(to) || std::isnan(marker)) {
         return 0;
     }
-    if (duration_ <= 0.0f || to <= from || marker < 0.0f || marker > duration_) {
+    if (duration_ <= 0.0F || to <= from || marker < 0.0F || marker > duration_) {
         return 0;
     }
     if (!loops_) {

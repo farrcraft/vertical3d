@@ -23,11 +23,9 @@ option(V3D_BUILD_TESTS "Build the Boost.Test suites and register them with ctest
 # expands this list is cmake/v3dApiLibraries.cmake.
 set(V3D_LIBRARIES "all" CACHE STRING "The api libraries to build, or \"all\"")
 
-# This gets us C++17 and newer language features, e.g. nested namespace support - https://docs.microsoft.com/en-us/cpp/error-messages/compiler-errors-1/compiler-error-c2429?view=msvc-160
-# Stated as a standard rather than as /std:c++latest directly: an imported target that
-# requires cxx_std_17 - glm and EnTT both do - adds /std:c++17 to the command line, and MSVC
-# reports D9025 for a command line naming two. CMake maps cxx_std_23 to /std:c++latest here,
-# so the flag is unchanged and the requirement is satisfied rather than contradicted.
+# C++23, which CMake gives MSVC as /std:c++latest. Set the standard here, not the flag. glm
+# and EnTT require cxx_std_17, and MSVC reports D9025 when a command line names two standards.
+# With the standard set through CMake, the command line names only the newer one.
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -38,13 +36,13 @@ add_compile_options("/permissive-")
 string(REGEX REPLACE "/W[0-4]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 add_compile_options("/W4")
 
-# C4062 (an enumerator a switch does not handle) is off at /W4. A switch over an enum lists
-# every enumerator and has no default label, so this warning reports every switch that a new
-# enumerator, such as one added to component::Type, has to be handled in. It reports only for
-# a switch with no default label, so a switch that needs a catch-all is left alone.
+# C4062 (an enumerator a switch does not handle) is off at /W4, so turn it on. A switch over
+# an enum lists every enumerator and has no default label. When an enumerator is added, the
+# warning names every switch that has to handle it. A switch with a default label is not
+# reported.
 add_compile_options("/w14062")
 
-# The three static analysis gates. /WX is on only when this project is the top level one. A
+# The static analysis gates. /WX is on only when this project is the top level one. A
 # consumer that nests this tree builds it with its own toolset, and a warning that a newer
 # compiler adds must not stop that consumer's build.
 #
@@ -69,7 +67,7 @@ if(V3D_ANALYZE)
 endif()
 
 # The check list is .clang-tidy at the root of the tree. CMAKE_CXX_CLANG_TIDY is read when a
-# target is created, so this has to precede the add_subdirectory calls below; CMake passes
+# target is created, so this has to precede the add_subdirectory calls below. CMake passes
 # --driver-mode=cl for an MSVC build itself.
 #
 # /EHsc is repeated to clang-tidy rather than left to the compile command it is already on.
@@ -92,9 +90,10 @@ include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dApiLibraries.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dDependencies.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dHelpers.cmake")
 
-# The apps name every api library between them, and every tests directory is one library's,
-# so either of those needs all of them. A consumer that narrows the selection and leaves the
-# apps or tests on has asked for two things that contradict, and configure fails.
+# The tests cover every api library, and the apps between them link every api library,
+# directly or through another, so either needs the whole api. A consumer that narrows the
+# selection and leaves the apps or tests on has asked for two things that contradict, and
+# configure fails.
 if(V3D_BUILD_APPS OR V3D_BUILD_TESTS)
 	if(NOT V3D_LIBRARIES STREQUAL "all")
 		message(FATAL_ERROR

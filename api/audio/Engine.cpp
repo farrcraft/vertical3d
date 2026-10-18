@@ -6,8 +6,14 @@
 #include "Engine.h"
 
 #include <api/asset/Json.h>
+#include <api/asset/Manager.h>
+#include <api/asset/Type.h>
 #include <api/audio/kind/Sound.h>
 #include <api/event/kind/Sound.h>
+#include <api/log/Logger.h>
+
+#include "AudioClip.h"
+#include "Play.h"
 
 #include <SDL3_mixer/SDL_mixer.h>
 
@@ -45,7 +51,7 @@ void Engine::shutdown() {
     }
     free_.clear();
     sounds_.clear();
-    if (mixer_) {
+    if (mixer_ != nullptr) {
         MIX_DestroyMixer(mixer_);
         mixer_ = nullptr;
         // the references initialize() took
@@ -55,9 +61,9 @@ void Engine::shutdown() {
 }
 
 bool Engine::initialize() {
-    // the mixer opens a device out of SDL's audio subsystem, which the game engine does
-    // not ask for - it initialises video only. The subsystem is refcounted, and this call
-    // pairs with the SDL_QuitSubSystem in shutdown().
+    // the mixer opens a device from SDL's audio subsystem. The game engine initializes only
+    // video, so this starts audio. The subsystem is reference counted, and this call pairs
+    // with the SDL_QuitSubSystem in shutdown().
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
         logger_->get()->error("could not initialize SDL audio: {}", SDL_GetError());
         return false;
@@ -69,7 +75,7 @@ bool Engine::initialize() {
     }
     // the default playback device, in whatever format it prefers
     mixer_ = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
-    if (!mixer_) {
+    if (mixer_ == nullptr) {
         logger_->get()->error("could not open an audio device: {}", SDL_GetError());
         MIX_Quit();
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
@@ -80,7 +86,9 @@ bool Engine::initialize() {
 }
 
 void Engine::soundEvent(const v3d::event::kind::Sound& sound) {
-    if (!playClip(sound.clip())) {
+    Play how;
+    how.pan = sound.pan();
+    if (play(sound.clip(), how) == Voice::None) {
         logger_->get()->error("unable to play clip: {}", sound.clip());
     }
 }
@@ -113,8 +121,8 @@ bool Engine::load(const boost::json::object& doc, const Resolve& resolve) {
         }
         const std::string& clipId = *clip;
         const std::string& fileName = *file;
-        // a clip that will not load leaves the rest of the document to load anyway - one
-        // missing wav is not a reason to start an app without any of its sounds
+        // a clip that will not load does not stop the rest of the document from loading.
+        // One missing wav does not leave the app without any of its sounds
         if (!resolve || !addClip(resolve(fileName), clipId)) {
             logger_->get()->error("unable to load audio clip [{}] from [{}]", clipId, fileName);
             loaded = false;
@@ -132,9 +140,9 @@ bool Engine::load(const boost::json::object& config, v3d::asset::Manager& assets
 }
 
 bool Engine::addClip(const boost::shared_ptr<AudioClip>& clip, const std::string_view& key) {
-    // playClip hands the audio to the mixer, so a clip that never read its file is
-    // refused here rather than reaching it as a null
-    if (!clip || !clip->audio()) {
+    // play() hands the audio to the mixer. A clip that never read its file is refused here,
+    // so the mixer never receives a null
+    if (!clip || clip->audio() == nullptr) {
         return false;
     }
     const std::string clipId(key);
@@ -149,9 +157,8 @@ bool Engine::has(const std::string_view & clip) const {
 }
 
 bool Engine::playClip(const std::string_view & clip) {
-    // a one shot nobody holds is still a track underneath, so that it can be stopped by
-    // stopAll() and mixed on whatever the master gain is
-    return play(clip, Play()) != 0;
+    // a one shot plays on a track like any other sound, so stopAll() stops it too
+    return play(clip, Play()) != Voice::None;
 }
 
 void Engine::reap() {
@@ -166,8 +173,7 @@ void Engine::reap() {
 
 std::map<Voice, Engine::Playing>::iterator Engine::retire(const std::map<Voice, Playing>::iterator & playing) {
     if (!playing->second.bus.empty()) {
-        // an untagged track, so that being played again on another bus does not leave it
-        // mixed on both
+        // untag the track, so that a reuse on another bus does not leave it on both
         MIX_UntagTrack(playing->second.track, playing->second.bus.c_str());
     }
     free_.push_back(playing->second.track);
@@ -199,31 +205,32 @@ MIX_Track* Engine::claim() {
 
 Voice Engine::play(const std::string_view & clip, const Play & how) {
     // an engine whose initialize() opened no device has nothing to play into
-    if (!mixer_) {
-        return 0;
+    if (mixer_ == nullptr) {
+        return Voice::None;
     }
     const std::string clipId(clip);
     const std::map<std::string, boost::shared_ptr<AudioClip>>::const_iterator found = sounds_.find(clipId);
     if (found == sounds_.end()) {
-        return 0;
+        return Voice::None;
     }
 
     reap();
     MIX_Track* track = claim();
     if (track == nullptr) {
         logger_->get()->error("no track to play clip [{}] on: {}", clipId, SDL_GetError());
-        return 0;
+        return Voice::None;
     }
     if (!MIX_SetTrackAudio(track, found->second->audio())) {
         logger_->get()->error("unable to put clip [{}] on a track: {}", clipId, SDL_GetError());
         free_.push_back(track);
-        return 0;
+        return Voice::None;
     }
 
     if (!how.bus.empty()) {
         MIX_TagTrack(track, how.bus.c_str());
     }
     MIX_SetTrackGain(track, how.gain);
+    place(track, how.pan);
 
     // the properties are the only way to name a loop count or a fade, and the id belongs to
     // this call rather than to the track
@@ -246,10 +253,10 @@ Voice Engine::play(const std::string_view & clip, const Play & how) {
             MIX_UntagTrack(track, how.bus.c_str());
         }
         free_.push_back(track);
-        return 0;
+        return Voice::None;
     }
 
-    const Voice voice = nextVoice_++;
+    const Voice voice = static_cast<Voice>(nextVoice_++);
     Playing playing;
     playing.track = track;
     playing.bus = how.bus;
@@ -268,7 +275,7 @@ bool Engine::stop(Voice voice, int fadeOutMs) {
 }
 
 void Engine::stopAll(int fadeOutMs) {
-    if (!mixer_) {
+    if (mixer_ == nullptr) {
         return;
     }
     MIX_StopAllTracks(mixer_, fadeOutMs > 0 ? fadeOutMs : 0);
@@ -289,8 +296,25 @@ bool Engine::gain(Voice voice, float level) {
     return MIX_SetTrackGain(found->second.track, level);
 }
 
+bool Engine::pan(Voice voice, float value) {
+    const std::map<Voice, Playing>::iterator found = live(voice);
+    if (found == voices_.end()) {
+        return false;
+    }
+    return place(found->second.track, value);
+}
+
+bool Engine::place(MIX_Track* track, float pan) {
+    const Stereo gains = stereo(pan);
+    if (gains.left == 1.0F && gains.right == 1.0F) {
+        return MIX_SetTrackStereo(track, nullptr);
+    }
+    const MIX_StereoGains mixed{gains.left, gains.right};
+    return MIX_SetTrackStereo(track, &mixed);
+}
+
 bool Engine::busGain(const std::string & bus, float level) {
-    if (!mixer_ || bus.empty()) {
+    if (mixer_ == nullptr || bus.empty()) {
         return false;
     }
     return MIX_SetTagGain(mixer_, bus.c_str(), level);

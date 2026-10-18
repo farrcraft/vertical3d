@@ -29,11 +29,11 @@ class Factory {
     /**
      * Decode an image that arrived as bytes rather than as a file.
      *
-     * A buffer carries no name, so the caller states the format rather than it being
-     * taken from an extension. An embedded image's mime type or its container gives it.
+     * A buffer has no file name to take an extension from, so the caller names the format.
+     * An embedded image's mime type or its container tells the caller which format it is.
      *
      * @param kind the format's key, as the readers were registered under: "png", "jpg",
-     *        "bmp", "tga"
+     *        "jpeg", "bmp", "tga"
      * @return the image, or null when nothing reads that format or the bytes do not decode
      **/
     boost::shared_ptr<Image> read(const unsigned char* data, std::size_t size, std::string_view kind);

@@ -6,23 +6,25 @@ v3d_add_api_library(render
 	"realtime/Context3D.h" "realtime/Context3D.cpp"
 	"realtime/DeviceContext.h" "realtime/DeviceContext.cxx" 
 	"realtime/Handle.h" "realtime/Registry.h"
-	"realtime/Canvas.h" "realtime/Canvas.cpp"
-	"realtime/CanvasStacks.h" "realtime/CanvasStacks.cpp"
-	"realtime/LineCanvas.h" "realtime/LineCanvas.cpp"
-	"realtime/WorldCanvas.h" "realtime/WorldCanvas.cpp"
-	"realtime/DepthOrder.h" "realtime/DepthOrder.cpp"
-	"realtime/Sprites.h" "realtime/Sprites.cpp"
-	"realtime/Particles.h" "realtime/Particles.cpp"
+	"realtime/canvas/Canvas.h" "realtime/canvas/Canvas.cpp"
+	"realtime/canvas/Stacks.h" "realtime/canvas/Stacks.cpp"
+	"realtime/canvas/Line.h" "realtime/canvas/Line.cpp"
+	"realtime/canvas/World.h" "realtime/canvas/World.cpp"
+	"realtime/canvas/DepthOrder.h" "realtime/canvas/DepthOrder.cpp"
+	"realtime/entity/Billboard.h"
+	"realtime/entity/Sprites.h" "realtime/entity/Sprites.cpp"
+	"realtime/entity/Particles.h" "realtime/entity/Particles.cpp"
 	"realtime/component/Sprite.h"
 	"realtime/component/Particles.h"
 	"realtime/component/Mesh.h"
+	"realtime/DecodedModel.h" "realtime/DecodedModel.cpp"
 	"realtime/MeshRegistry.h" "realtime/MeshRegistry.cpp"
 	"realtime/Textures.h" "realtime/Textures.cpp"
-	"realtime/Meshes.h" "realtime/Meshes.cpp"
-	"realtime/Poses.h" "realtime/Poses.cpp"
-	"realtime/LitSettings.h"
-	"realtime/SceneUniforms.h" "realtime/SceneUniforms.cpp"
-	"realtime/Shadow.h" "realtime/Shadow.cpp"
+	"realtime/entity/Meshes.h" "realtime/entity/Meshes.cpp"
+	"realtime/entity/Poses.h" "realtime/entity/Poses.cpp"
+	"realtime/lighting/Settings.h"
+	"realtime/lighting/SceneUniforms.h" "realtime/lighting/SceneUniforms.cpp"
+	"realtime/lighting/Shadow.h" "realtime/lighting/Shadow.cpp"
 	"realtime/Grade.h" "realtime/Grade.cpp"
 	"realtime/SortKey.h" "realtime/SortKey.cpp"
 	"realtime/DrawItem.h" "realtime/DrawItem.cpp"
@@ -59,6 +61,7 @@ v3d_add_api_library(render
 	"realtime/vulkan/frame/RenderTarget.h" "realtime/vulkan/frame/RenderTarget.cxx"
 	"realtime/vulkan/frame/FrameUniforms.h" "realtime/vulkan/frame/FrameUniforms.cxx"
 	"realtime/vulkan/frame/Capture.h" "realtime/vulkan/frame/Capture.cxx"
+	"realtime/vulkan/pipeline/Formats.h"
 	"realtime/vulkan/pipeline/Builder.h" "realtime/vulkan/pipeline/Builder.cxx"
 	"realtime/vulkan/memory/Barriers.h" "realtime/vulkan/memory/Barriers.cxx"
 	"realtime/vulkan/memory/TextureFactory.h" "realtime/vulkan/memory/TextureFactory.cxx"
@@ -69,8 +72,8 @@ v3d_add_api_library(render
 	"realtime/vulkan/renderer/Lit.h" "realtime/vulkan/renderer/Lit.cxx"
 	"realtime/vulkan/renderer/FullScreen.h" "realtime/vulkan/renderer/FullScreen.cxx")
 
-# The batched quad primitive. Every shader is compiled to SPIR-V and embedded rather than
-# loaded from disk - see v3d_add_shader in cmake/v3dHelpers.cmake.
+# The batched quad primitive. Every shader is compiled to SPIR-V and embedded, not loaded
+# from disk, by v3d_add_shader in cmake/v3dHelpers.cmake.
 v3d_add_shader(v3dlib_render "shaders/quad.vert")
 v3d_add_shader(v3dlib_render "shaders/quad.frag")
 # the same stage for an _SRGB target, which decodes before writing so the target's encode on store
@@ -91,8 +94,8 @@ v3d_add_shader(v3dlib_render "shaders/lit/cel.frag")
 v3d_add_shader(v3dlib_render "shaders/lit/outline.vert")
 v3d_add_shader(v3dlib_render "shaders/lit/outline.frag")
 v3d_add_shader(v3dlib_render "shaders/lit/shadow.vert")
-# A skinned model uses the same three vertex shaders compiled with SKINNED - see
-# shaders/lit/pose.glsl
+# A skinned model uses the same vertex shaders compiled with SKINNED, which
+# shaders/lit/pose.glsl reads
 v3d_add_shader(v3dlib_render "shaders/lit/mesh.vert" OUTPUT "skinned_mesh.vert" DEFINES SKINNED)
 v3d_add_shader(v3dlib_render "shaders/lit/outline.vert" OUTPUT "skinned_outline.vert" DEFINES SKINNED)
 v3d_add_shader(v3dlib_render "shaders/lit/shadow.vert" OUTPUT "skinned_shadow.vert" DEFINES SKINNED)
@@ -100,10 +103,16 @@ v3d_add_shader(v3dlib_render "shaders/lit/shadow.vert" OUTPUT "skinned_shadow.ve
 # The pass over a whole target, and the colour grade drawn with it.
 v3d_add_shader(v3dlib_render "shaders/fullscreen.vert")
 v3d_add_shader(v3dlib_render "shaders/grade.frag")
+# The grade compiled for each pairing of what it reads and what it draws into. LINEAR_SCENE reads
+# a scene from an _SRGB target, which arrives decoded, and LINEAR_TARGET draws into one, which
+# encodes on store. shaders/grade.frag reads both
+v3d_add_shader(v3dlib_render "shaders/grade.frag" OUTPUT "grade_linear_scene.frag" DEFINES LINEAR_SCENE)
+v3d_add_shader(v3dlib_render "shaders/grade.frag" OUTPUT "grade_linear_target.frag" DEFINES LINEAR_TARGET)
+v3d_add_shader(v3dlib_render "shaders/grade.frag" OUTPUT "grade_linear.frag" DEFINES LINEAR_SCENE LINEAR_TARGET)
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_image: Grade.h takes the image::Image a colour grade is built from.
-# Vulkan and SDL3 are PUBLIC because the realtime headers name their types outright -
+# Vulkan and SDL3 are PUBLIC because the realtime headers name their types outright:
 # Context3D.h and every vulkan/ header carry VkDevice and its neighbours, and Window.h
 # carries SDL_Window.
 target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset v3dlib_image v3dlib_type Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)
@@ -121,7 +130,7 @@ set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES
 # PRIVATE: Canvas.h forward declares font::TextBuffer rather than including it, so a consumer
 # needs the font library only if it names one itself. The ecs components the lit renderer
 # reads are named in its sources and in no header, and so are the model and image assets
-# MeshRegistry loads. MeshRegistry.cpp names a texture beside its model with
+# DecodedModel loads. DecodedModel.cpp names a texture beside its model with
 # boost::filesystem.
 target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_ecs v3dlib_asset_media Boost::filesystem)
 

@@ -12,13 +12,18 @@
 namespace v3d::render::offline::sl::syntax {
 
 /**
- * Everything infix, including two operators that differ from C: '.' is a dot product
- * rather than a member access, and '^' is a cross product rather than an exponent.
+ * Every infix operator, including two that differ from C: '.' is a dot product, not a
+ * member access, and '^' is a cross product, not an exclusive or.
  **/
 class Binary final : public Expression {
  public:
-    Binary(const std::string & op, const ExpressionPtr & left, const ExpressionPtr & right,
-        unsigned int line, unsigned int column);
+    /** The two sides of the operator, in source order. **/
+    struct Operands {
+        ExpressionPtr left;
+        ExpressionPtr right;
+    };
+
+    Binary(const std::string & op, const Operands & operands, const v3d::render::offline::Position & at);
 
     std::string op;
     ExpressionPtr left;

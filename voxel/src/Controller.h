@@ -31,7 +31,7 @@ class Controller final : public v3d::engine::Engine {
         explicit Controller(const std::string& path);
 
         /**
-         * Advance the game world time
+         * Called once a frame. Remeshes up to the per-frame budget of chunks.
          * @return bool
          **/
         bool tick(unsigned int delta) override;
@@ -46,29 +46,23 @@ class Controller final : public v3d::engine::Engine {
         /**
          * What to hand the immediate layer this frame.
          *
-         * The game owns the mouse while it is being played: mouselook warps the pointer
-         * back to the centre every frame, so its position means nothing. This returns the
-         * real cursor only while the menu is up, and a default Input otherwise, so the debug
-         * window cannot be clicked.
+         * While the game is played, relative mode hides the cursor and holds it in the window,
+         * so its position means nothing. This returns the real cursor only while the menu is
+         * open. Otherwise it returns a default Input, so the debug window cannot be clicked.
          **/
         v3d::ui::Immediate::Input tools() const;
 
-        void handleEvent(const v3d::event::Event& event);
-
         /**
-         * Steer the player with the cursor.
-         * The cursor is warped back to the centre of the window after each move, so the
-         * offset from the centre is the amount to turn by.
+         * Turn the player by how far the mouse moved, which relative mode reports in motion().
+         * Motion is ignored while the window is not focused or the menu is open.
          **/
         void handleMotion(const v3d::event::kind::MouseMotion& event);
 
  protected:
         /**
-          * Initialize the engine.
-          * Initialization includes only the minimal amount of work required to get
-          * a window displayed on the screen.
+          * Load the ui, and build the scene and the renderer.
           *
-          * @return bool
+          * @return false when the ui document cannot be loaded
           **/
         bool start() override;
 
@@ -81,8 +75,8 @@ class Controller final : public v3d::engine::Engine {
         /**
          * Pause the world while the menu is over it, and give the pointer back.
          *
-         * The cursor is released while the menu is up: mouselook warps the pointer to the
-         * centre every frame, and the menu could not be clicked while it does.
+         * Relative mode is off while the menu is open. Relative mode hides the cursor, and the
+         * menu needs one to be clicked.
          **/
         void suspend(bool suspended);
 
@@ -91,7 +85,6 @@ class Controller final : public v3d::engine::Engine {
         boost::shared_ptr<v3d::ui::Engine> vgui_;
         boost::shared_ptr<v3d::ui::shell::GameMenu> menu_;
         bool debug_;
-    // the dispatcher holds a delegate to this object; these let it go when the object does
-    entt::scoped_connection events_;
+    // disconnects this object's delegate from the dispatcher when this object is destroyed
     entt::scoped_connection motion_;
 };

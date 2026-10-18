@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 namespace v3d::render::offline::sl::runtime {
@@ -12,17 +13,17 @@ namespace v3d::render::offline::sl::runtime {
 /**
  * What one instruction does.
  *
- * A flat list over register indices rather than a tree the machine traverses, for two
- * reasons: the mask handling below needs jump targets, and a tree traversal over a batch
- * allocates at every node.
+ * A program is a flat list of instructions over register indices, not a syntax tree. The
+ * mask handling below needs jump targets, and walking a tree over a batch would allocate at
+ * every node.
  **/
-enum class Opcode {
+enum class Opcode : std::uint8_t {
     /** target = left, converting as the two registers' types call for. **/
     MOVE,
     /**
-     * One component of target takes the number in left, `right` saying which. A
-     * parenthesised list is a literal for the type in front of it, and this instruction
-     * writes each of its values into its own component.
+     * Write the number in `left` into the component of `target` that `right` names. A
+     * parenthesised list is a literal for the type in front of it, and one of these
+     * instructions writes each value of the list into its own component.
      **/
     MOVE_COMPONENT,
     ADD,
@@ -33,7 +34,7 @@ enum class Opcode {
     NEGATE,
     /** target = left == 0. **/
     NOT,
-    /** The dot product, which SL writes '.' - a number out of two directions. **/
+    /** The dot product of two directions, which SL writes '.'. **/
     DOT,
     /** The cross product, which SL writes '^'. **/
     CROSS,
@@ -47,28 +48,28 @@ enum class Opcode {
     OR,
     /**
      * A standard library function: `left` is its index in builtins() and `arguments` are
-     * the registers holding its arguments. Its implementation belongs to the library, which
-     * is passed to the machine rather than held by it.
+     * the registers holding its arguments. Machine::builtin() runs it.
      **/
     CALL,
     /**
-     * A cast with a named coordinate space: target = left, stated in the space in the string
-     * register `right`, moved into current space. That is the inverse of the matrix the
-     * renderer returns for the space. The target register's type picks the transform: a point
-     * translates, a vector does not, a normal goes by the inverse transpose.
+     * A cast with a named coordinate space. `left` is stated in the space named by the string
+     * register `right`, and `target` receives it in current space. The transform is the
+     * inverse of the matrix the renderer returns for the space. The target register's type
+     * picks how it applies: a point translates, a vector does not, and a normal is
+     * transformed by the inverse transpose.
      **/
     TRANSFORM,
     /** Jump to `target`. **/
     JUMP,
     /**
      * Jump to `target` when the **uniform** register `left` is zero. A condition with the
-     * same value at every point is a jump rather than a mask, so the common case costs no
-     * mask operations.
+     * same value at every point compiles to this jump, not to a mask, so the common case
+     * costs no mask operations.
      **/
     JUMP_IF_ZERO,
     /**
-     * Push the lanes of `left` that are not zero, and jump to `target` when none are - an
-     * arm no point takes costs the push and nothing else.
+     * Push the live lanes where `left` is not zero. Jump to `target` when there are none, so
+     * an arm that no point takes is skipped.
      **/
     MASK,
     /** The same for the lanes that are zero: the else arm. **/
@@ -84,50 +85,47 @@ enum class Opcode {
      **/
     LOOP_TEST,
     /**
-     * Put the loop's lanes back without leaving the body: what a for loop puts in front of
-     * its step, since a continue goes to the step rather than past it.
+     * Restore the loop's lanes without leaving the body. A for loop emits this before its
+     * step, because a continue goes to the step and not past it.
      **/
     LOOP_RESTORE,
-    /** The bottom of a loop body: put the loop's lanes back and jump to `target`. **/
+    /** The bottom of a loop body: restore the loop's lanes and jump to `target`. **/
     LOOP_END,
     POP_LOOP,
     /**
-     * Take the live lanes out of the loop for good, or for the rest of this iteration.
-     * Neither jumps: a lane leaves by losing its bit, because the lanes beside it have not
-     * finished.
+     * Clear the live lanes from the loop: BREAK for good, CONTINUE for the rest of this
+     * iteration. Neither jumps, because the other lanes have not finished.
      **/
     BREAK,
     CONTINUE,
     /**
      * Open an inlined function body.
      *
-     * A call is inlined because a run has no call stack. The body is bracketed rather than
-     * merely pasted in, because a `return` inside it means "these lanes are done with this
-     * function", not "done with this shader".
+     * A call is inlined because a run has no call stack. ENTER and LEAVE bracket the body,
+     * because a `return` inside it ends the function for its lanes, not the shader.
      **/
     ENTER,
     /** Close an inlined body: the lanes that returned from it are live again. **/
     LEAVE,
     /**
      * Open an illuminance loop. `left` and `right` are the surface shader's L and Cl, and
-     * `arguments` are the construct's own - the point being shaded, and a cone axis and
-     * half angle when it named one.
+     * `arguments` are the construct's own: the point being shaded, then a cone axis and half
+     * angle when it names a cone.
      *
-     * The surface shader's side of the message passing between surface and light shaders:
-     * the body runs once per light, over the same batch, with L and Cl set by that light's
-     * own program.
+     * This is the surface shader's side of the exchange with light shaders. The body runs
+     * once per light, over the same batch, with L and Cl set by that light's own program.
      **/
     ILLUMINANCE,
     /**
      * Set L and Cl from the next light the body has not run for, and narrow the batch to
      * the points that light reaches inside the cone. Jump to `target` when the lights run
-     * out. A light that reaches no point of this batch is skipped, so a scene with a
-     * hundred lights does not run the body a hundred times over an empty mask.
+     * out. A light that reaches no point of this batch is skipped, so the body never runs
+     * over an empty mask.
      **/
     ILLUMINANCE_NEXT,
     POP_ILLUMINANCE,
     /**
-     * The other end of the message passing, in a light shader with a position. L is from
+     * The light shader's side of the exchange, for a light with a position. L is from
      * the point being lit toward `arguments[0]`, and the batch narrows to the points inside
      * the cone `arguments[1]` and `arguments[2]` name. `left` and `right` are the light
      * shader's L and Ps. Jump to `target` when the light reaches no point at all.
@@ -139,9 +137,9 @@ enum class Opcode {
      **/
     SOLAR,
     /**
-     * Take the live lanes out of the innermost inlined body, or out of everything when the
-     * shader body is what is running. Like BREAK it does not jump, because the lanes beside
-     * it have not finished.
+     * Clear the live lanes from the innermost inlined body, or from everything when no
+     * inlined body is open. Like BREAK it does not jump, because the other lanes have not
+     * finished.
      **/
     RETURN
 };
@@ -153,9 +151,9 @@ class Instruction final {
     int target = -1;
     int left = -1;
     int right = -1;
-    /** A call's arguments, and nothing else's. **/
+    /** The argument registers of a CALL, ILLUMINANCE, ILLUMINATE or SOLAR. **/
     std::vector<int> arguments;
-    /** Where in the source this came from, for a runtime report. **/
+    /** Where in the source this came from. No runtime report reads it. **/
     unsigned int line = 0;
     unsigned int column = 0;
 };

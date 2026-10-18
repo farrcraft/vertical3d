@@ -15,8 +15,8 @@
 namespace {
 
 /**
- * A system holds the registry it was given rather than one of its own, because the app
- * owns the registry and passes it in as a raw pointer.
+ * A system works on the registry it is given. The app owns the registry and passes it in as a
+ * raw pointer.
  **/
 class CountingSystem final : public v3d::ecs::System {
  public:
@@ -24,9 +24,9 @@ class CountingSystem final : public v3d::ecs::System {
 
     bool simulate(float /* step */) override {
         ticks_++;
-        registry_->view<v3d::ecs::component::Position1D>().each(
+        registry()->view<v3d::ecs::component::Position1D>().each(
             [](v3d::ecs::component::Position1D& position) {
-                position.value = position.value + 1.0f;
+                position.value = position.value + 1.0F;
             });
         return true;
     }
@@ -48,8 +48,6 @@ class FailingSystem final : public v3d::ecs::System {
     }
 };
 
-};  // namespace
-
 /**
  * A step reaches every entity carrying the component it views, and nothing else.
  **/
@@ -57,27 +55,29 @@ BOOST_AUTO_TEST_CASE(system_simulate_test) {
     entt::registry registry;
     const entt::entity moving = registry.create();
     const entt::entity still = registry.create();
-    registry.emplace<v3d::ecs::component::Position1D>(moving, 0.0f);
+    registry.emplace<v3d::ecs::component::Position1D>(moving, 0.0F);
 
     CountingSystem system(&registry);
     BOOST_TEST(system.ticks() == 0);
 
-    BOOST_TEST(system.simulate(1.0f / 60.0f));
-    BOOST_TEST(system.simulate(1.0f / 60.0f));
+    BOOST_TEST(system.simulate(1.0F / 60.0F));
+    BOOST_TEST(system.simulate(1.0F / 60.0F));
 
     BOOST_TEST(system.ticks() == 2);
-    BOOST_TEST(registry.get<v3d::ecs::component::Position1D>(moving).value == 2.0f);
+    BOOST_TEST(registry.get<v3d::ecs::component::Position1D>(moving).value == 2.0F);
     BOOST_TEST(!registry.try_get<v3d::ecs::component::Position1D>(still));
 }
 
 /**
- * The engine's loop reads the return value to decide whether to stop, so a system that fails
- * must be able to report it through the base.
+ * A system reports a failure by returning false, through a pointer to the base. The engine's
+ * loop stops when simulate() returns false.
  **/
 BOOST_AUTO_TEST_CASE(system_simulate_failure_test) {
     entt::registry registry;
     const std::unique_ptr<v3d::ecs::System> system =
         std::make_unique<FailingSystem>(&registry);
 
-    BOOST_TEST(!system->simulate(1.0f / 60.0f));
+    BOOST_TEST(!system->simulate(1.0F / 60.0F));
 }
+
+};  // namespace

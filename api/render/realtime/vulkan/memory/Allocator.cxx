@@ -9,9 +9,12 @@
 #include <vk_mem_alloc.h>
 #pragma warning(pop)
 
+#include <cstdint>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 
+#include "Allocation.h"
 #include "Memory.h"
 
 namespace v3d::render::realtime::vulkan::memory {
@@ -25,10 +28,17 @@ namespace {
  **/
 VkResult allocate(VkDevice device, VkPhysicalDevice physical, const VkMemoryRequirements& requirements,
     VkMemoryPropertyFlags properties, Allocation* allocation) {
+    // returned as an error, as the suballocator reports it, so a caller that made a buffer or
+    // an image destroys it on the way out with either kind of allocator
+    const std::optional<uint32_t> type = memoryType(physical, requirements, properties);
+    if (!type) {
+        return VK_ERROR_FEATURE_NOT_PRESENT;
+    }
+
     VkMemoryAllocateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     info.allocationSize = requirements.size;
-    info.memoryTypeIndex = memoryType(physical, requirements.memoryTypeBits, properties);
+    info.memoryTypeIndex = *type;
 
     VkDeviceMemory memory = VK_NULL_HANDLE;
     const VkResult result = vkAllocateMemory(device, &info, nullptr, &memory);
@@ -48,7 +58,8 @@ VkResult allocate(VkDevice device, VkPhysicalDevice physical, const VkMemoryRequ
 VkResult Allocator::suballocate(VkBuffer buffer, VkImage image, VkMemoryPropertyFlags properties, Allocation* allocation) {
     VmaAllocationCreateInfo request{};
     // the properties the caller asked for are required rather than preferred, so a device
-    // that cannot offer them fails here the way the direct path's memoryType() does
+    // that cannot offer them fails here, with VK_ERROR_FEATURE_NOT_PRESENT, as the direct
+    // path does
     request.requiredFlags = properties;
     request.usage = VMA_MEMORY_USAGE_UNKNOWN;
 
@@ -136,8 +147,7 @@ VkResult Allocator::bind(VkBuffer buffer, VkMemoryPropertyFlags properties, Allo
     }
     const VkResult result = vkBindBufferMemory(device_, buffer, bound.memory, bound.offset);
     if (result != VK_SUCCESS) {
-        // the caller has a buffer to destroy and no allocation to free, so this is given back
-        // here rather than left for a caller that has nothing to name it with
+        // the caller receives no allocation to free, so the memory is freed here
         free(&bound);
         return result;
     }
@@ -176,8 +186,8 @@ void Allocator::free(Allocation* allocation) noexcept {
         return;
     }
     if (allocation->handle != VK_NULL_HANDLE) {
-        // the region is given back to the block it came from, which is not the same thing as
-        // freeing the block - the suballocator decides when that happens
+        // the region goes back to the block it came from. That does not free the block. The
+        // suballocator decides when to free it
         vmaFreeMemory(suballocator_, allocation->handle);
     } else {
         vkFreeMemory(device_, allocation->memory, nullptr);

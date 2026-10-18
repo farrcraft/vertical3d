@@ -20,13 +20,14 @@ namespace v3d::render::realtime::vulkan::frame {
 /**
  * Turns a frame into commands.
  *
- * Recording belongs to the engine rather than to each draw, so this is the only place that
- * writes to a command buffer. It draws through dynamic rendering: there is no VkRenderPass
- * and no VkFramebuffer anywhere in the renderer, which relies on Vulkan 1.3.
+ * Recorder records every pass of a frame. A draw item describes its draw in fields and does
+ * not record commands itself, except through DrawItem::record. Recorder draws through dynamic
+ * rendering, so the renderer has no VkRenderPass and no VkFramebuffer. Dynamic rendering
+ * requires Vulkan 1.3.
  *
- * A pass is recorded in submission order, which 2D content needs, unless it asks to be
- * sorted - see Pass::sort. A sorted pass is recorded in sort key order, so items sharing a
- * pipeline and a material end up adjacent and need no binds between them.
+ * A pass records its items in submission order, which 2D content needs, unless Pass::sort is
+ * enabled. A sorted pass records in sort key order, so items that share a pipeline and a
+ * material are adjacent and need no binds between them.
  *
  * Nothing already bound is rebound. A pipeline and a descriptor set are bound only when
  * an item names a different one than the last item did, so a run of quads sharing a
@@ -35,8 +36,8 @@ namespace v3d::render::realtime::vulkan::frame {
 class Recorder final {
  public:
     /**
-     * What a frame is being recorded into. The swapchain image the presenter acquired,
-     * and the depth buffer the context keeps beside it.
+     * What a frame is recorded into: usually the swapchain image that Presenter acquired, and
+     * the depth buffer that DeviceContext keeps beside it.
      **/
     struct Target {
         Target() noexcept;
@@ -47,18 +48,17 @@ class Recorder final {
         VkImage depthImage;    /**< the depth buffer, or null when there is none **/
         VkImageView depthView; /**< the attachment a pass that depth tests draws into **/
         bool sampledDepth;     /**< whether a later pass reads that depth image **/
-        VkFormat format;       /**< the colour format, or undefined when it goes unchecked **/
-        VkFormat depthFormat;  /**< the depth format, or undefined when it goes unchecked **/
+        VkFormat format;       /**< the colour format, or undefined to skip the format check **/
+        VkFormat depthFormat;  /**< the depth format, or undefined to skip the format check **/
 
         /**
          * What the frame leaves the image in.
          *
-         * PRESENT_SRC by default, because a frame is usually drawn to be presented and that
-         * is the layout the presentation engine reads. A frame with no chain under it is not
-         * presented and cannot use it: the layout is only valid where VK_KHR_swapchain is
-         * enabled, so using it on a headless device is a validation error. Such a frame names
-         * the layout its next use needs instead, which is SHADER_READ_ONLY_OPTIMAL for one that
-         * is captured or sampled afterwards.
+         * PRESENT_SRC by default, because most frames are presented and the presentation
+         * engine reads that layout. A frame drawn without a swapchain cannot use PRESENT_SRC.
+         * The layout is valid only where VK_KHR_swapchain is enabled, and using it on a
+         * headless device is a validation error. Such a frame names the layout its next use
+         * needs, such as SHADER_READ_ONLY_OPTIMAL for an image captured or sampled afterwards.
          **/
         VkImageLayout finalLayout;
     };
@@ -83,8 +83,8 @@ class Recorder final {
      * validation layer reports a mismatch only when it is enabled; this check names the pass
      * in every build.
      *
-     * Checked whenever the recorder binds a pipeline. It needs no device, so it can be
-     * tested on its own.
+     * record() calls it whenever it binds a pipeline. It needs no device, so it can be tested
+     * on its own.
      *
      * @param into what the pass draws into, whose formats go unchecked where it leaves them
      *        undefined
@@ -107,10 +107,10 @@ class Recorder final {
         VkDeviceSize vertexBufferOffset;
         VkBuffer indexBuffer;
         VkDeviceSize indexBufferOffset;
-        VkRect2D area;      /**< all of what the pass draws into, which an unclipped item uses **/
-        VkRect2D scissor;   /**< what is set now, so an unchanged clip costs nothing **/
-        bool scissorSet;    /**< false until one is known, as after an escape hatch has run **/
-        const Target* into; /**< what the pass draws into, which every pipeline it binds is checked against. Set before any item is recorded **/
+        VkRect2D area;      /**< the whole area the pass draws into, used by an item with no clip **/
+        VkRect2D scissor;   /**< the scissor set now, so an unchanged clip costs nothing **/
+        bool scissorSet;    /**< false while the scissor is unknown, as after DrawItem::record has run **/
+        const Target* into; /**< what the pass draws into. Every pipeline it binds is checked against it. Set before any item is recorded **/
     };
 
     /**
@@ -144,9 +144,9 @@ class Recorder final {
         VkDescriptorSet frameSet, Bound* bound);
 
     /**
-     * Cut the draw down to the item's scissor, or back to the whole pass when it names
-     * none. The rectangle is clamped to the pass's own, so an item
-     * clipped against a canvas larger than the image cannot name a region outside it.
+     * Set the scissor to the item's clip, or to the whole pass area when it has none. The
+     * rectangle is clamped to the pass area, so an item clipped against a canvas larger than
+     * the image cannot name a region outside it.
      **/
     static void scissor(VkCommandBuffer commands, const DrawItem& item, Bound* bound);
 

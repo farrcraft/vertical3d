@@ -25,6 +25,8 @@ typedef RtFloat RtNormal[3];
 typedef RtFloat RtHpoint[4];
 typedef RtFloat RtMatrix[4][4];
 typedef RtFloat RtBasis[4][4];
+// the standard's own declaration: xmin, xmax, ymin, ymax, zmin, zmax
+// NOLINTNEXTLINE(readability-magic-numbers)
 typedef RtFloat RtBound[6];
 typedef char * RtString;
 
@@ -313,4 +315,4 @@ extern RtVoid RiErrorHandler(RtErrorHandler handler);
 #define RIE_INFO ((RtInt)0) /* Rendering stats and other info */
 #define RIE_WARNING ((RtInt)1) /* Something seems wrong, maybe okay */
 #define RIE_ERROR ((RtInt)2) /* Problem. Results may be wrong */
-#define RIE_SEVERE ((RtInt)3) /* So bad you should probably abort */
+#define RIE_SEVERE ((RtInt)3) /* Severe enough to abort */

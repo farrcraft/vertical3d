@@ -4,9 +4,15 @@
  **/
 
 #include <api/log/Logger.h>
+#include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/sl/Globals.h>
+#include <api/render/offline/sl/Instance.h>
+#include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Value.h>
 
 #include <string>
 #include <vector>
@@ -30,11 +36,10 @@ ShaderLibrary & library() {
     return shaders;
 }
 
-};  // namespace
-
 /**
- * Defaults that fail fail the same way on every run, so the failure is reported once per
- * machine rather than once per run. A machine never prepared fails them every time.
+ * A shader's defaults that fail to run fail the same way on every run, so the failure is
+ * reported once per machine rather than once per run. A machine never prepared fails them
+ * every time.
  **/
 BOOST_AUTO_TEST_CASE(slglobals_failed_defaults_are_reported_once_test) {
     const InstancePtr shader = library().instance("constant", ShaderType::SURFACE, ParameterList());
@@ -43,13 +48,13 @@ BOOST_AUTO_TEST_CASE(slglobals_failed_defaults_are_reported_once_test) {
 
     BOOST_CHECK(!shader->write(&machine));
     BOOST_CHECK(!shader->write(&machine));
-    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1u);
+    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1U);
     BOOST_CHECK(machine.reports().front().contains("the defaults of shader constant did not run"));
 }
 
 /**
  * A surface reads the point a hider bound into each lane, and what it leaves in Ci and Oi
- * comes back per lane - `constant` is Os * Cs and Os.
+ * comes back per lane. `constant` sets Ci to Os * Cs and Oi to Os.
  **/
 BOOST_AUTO_TEST_CASE(slglobals_surface_test) {
     const InstancePtr shader = library().instance("constant", ShaderType::SURFACE, ParameterList());
@@ -59,32 +64,32 @@ BOOST_AUTO_TEST_CASE(slglobals_surface_test) {
     const Globals globals(shader->program());
 
     v3d::render::offline::sl::Point point;
-    point.colour = glm::vec3(0.5f, 0.5f, 1.0f);
-    point.opacity = glm::vec3(0.5f);
+    point.colour = glm::vec3(0.5F, 0.5F, 1.0F);
+    point.opacity = glm::vec3(0.5F);
     globals.surface(&machine, 0, point);
-    point.colour = glm::vec3(1.0f, 0.0f, 0.0f);
-    point.opacity = glm::vec3(1.0f);
+    point.colour = glm::vec3(1.0F, 0.0F, 0.0F);
+    point.opacity = glm::vec3(1.0F);
     globals.surface(&machine, 1, point);
     BOOST_REQUIRE(shader->write(&machine));
     BOOST_REQUIRE(machine.run());
 
-    const glm::vec3 first = globals.colour(machine, 0, glm::vec3(-1.0f));
-    BOOST_CHECK_CLOSE(first.r, 0.25f, 0.01f);
-    BOOST_CHECK_CLOSE(first.b, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(globals.opacity(machine, 0, glm::vec3(-1.0f)).g, 0.5f, 0.01f);
-    BOOST_CHECK_CLOSE(globals.colour(machine, 1, glm::vec3(-1.0f)).r, 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(globals.opacity(machine, 1, glm::vec3(-1.0f)).r, 1.0f, 0.01f);
+    const glm::vec3 first = globals.colour(machine, 0, glm::vec3(-1.0F));
+    BOOST_CHECK_CLOSE(first.r, 0.25F, 0.01F);
+    BOOST_CHECK_CLOSE(first.b, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(globals.opacity(machine, 0, glm::vec3(-1.0F)).g, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(globals.colour(machine, 1, glm::vec3(-1.0F)).r, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(globals.opacity(machine, 1, glm::vec3(-1.0F)).r, 1.0F, 0.01F);
 }
 
 /**
- * A program a renderer was not given has no globals at all, and what is read back from it
- * is the fallback value the renderer passed.
+ * Globals built with no program have no globals at all. A read returns the fallback value
+ * the caller passed.
  **/
 BOOST_AUTO_TEST_CASE(slglobals_absent_test) {
     const Globals globals;
-    Machine machine;
-    BOOST_CHECK_CLOSE(globals.colour(machine, 0, glm::vec3(0.3f)).r, 0.3f, 0.01f);
-    BOOST_CHECK_CLOSE(globals.alpha(machine, 0, 0.7f), 0.7f, 0.01f);
+    const Machine machine;
+    BOOST_CHECK_CLOSE(globals.colour(machine, 0, glm::vec3(0.3F)).r, 0.3F, 0.01F);
+    BOOST_CHECK_CLOSE(globals.alpha(machine, 0, 0.7F), 0.7F, 0.01F);
 }
 
 /**
@@ -94,7 +99,7 @@ BOOST_AUTO_TEST_CASE(slglobals_absent_test) {
 BOOST_AUTO_TEST_CASE(slglobals_shine_test) {
     ParameterList list;
     list.add("intensity", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::FLOAT, 1),
-        { 2.0f }, std::vector<std::string>());
+        { 2.0F }, std::vector<std::string>());
     v3d::render::offline::sl::Placed light;
     light.shader = library().instance("ambientlight", ShaderType::LIGHT, list);
     BOOST_REQUIRE(light.shader);
@@ -113,9 +118,11 @@ BOOST_AUTO_TEST_CASE(slglobals_shine_test) {
     BOOST_REQUIRE(globals.shine(light, &machine, 3, surface, &direction, &colour, &reached, &ambient));
 
     BOOST_CHECK(ambient);
-    BOOST_REQUIRE_EQUAL(reached.size(), 3u);
+    BOOST_REQUIRE_EQUAL(reached.size(), 3U);
     for (unsigned int lane = 0; lane < 3; lane++) {
         BOOST_CHECK(reached[lane] != 0);
-        BOOST_CHECK_CLOSE(colour.triple(lane).g, 2.0f, 0.01f);
+        BOOST_CHECK_CLOSE(colour.triple(lane).g, 2.0F, 0.01F);
     }
 }
+
+};  // namespace

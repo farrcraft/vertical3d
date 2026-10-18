@@ -4,6 +4,7 @@
  **/
 
 #include <api/event/Engine.h>
+#include <api/log/Logger.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/shell/FileChooser.h>
@@ -63,7 +64,7 @@ class Sandbox final {
  * label, under the names a chooser looks for by default.
  **/
 boost::shared_ptr<v3d::ui::Engine> chooserUi() {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
         boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
     const char* const document = R"({
@@ -94,8 +95,6 @@ std::vector<std::string> names(const v3d::ui::shell::FileChooser& chooser) {
     }
     return found;
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(file_chooser_test)
 
@@ -279,3 +278,5 @@ BOOST_AUTO_TEST_CASE(a_new_listing_has_nothing_chosen) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

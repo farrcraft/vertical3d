@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Asset.h>
 #include <api/asset/Loader.h>
-#include <api/asset/Manager.h>
 #include <api/asset/Type.h>
 #include <api/log/Logger.h>
 
-#include <string>
+#include <string_view>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
@@ -34,10 +34,10 @@ Probe probe() {
     return Probe(boost::make_shared<v3d::log::Logger>());
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(loader_type_test) {
     auto loader = probe();
 
     BOOST_TEST((loader.type() == v3d::asset::Type::Text));
 }
+
+};  // namespace

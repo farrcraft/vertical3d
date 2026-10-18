@@ -5,10 +5,14 @@
 
 #include "For.h"
 
+#include <api/render/offline/Position.h>
+
+#include "Statement.h"
+
 namespace v3d::render::offline::sl::syntax {
 
-For::For(unsigned int line, unsigned int column) :
-    Statement(Kind::FOR, line, column) {
+For::For(const v3d::render::offline::Position & at) :
+    Statement(Kind::FOR, at) {
 }
 
 };  // namespace v3d::render::offline::sl::syntax

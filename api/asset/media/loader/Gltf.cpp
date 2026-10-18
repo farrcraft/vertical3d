@@ -5,9 +5,15 @@
 
 #include "Gltf.h"
 
+#include <api/asset/Asset.h>
+#include <api/asset/Loader.h>
 #include <api/asset/Type.h>
 #include <api/asset/media/kind/Model.h>
 #include <api/image/Factory.h>
+#include <api/image/Image.h>
+#include <api/log/Logger.h>
+#include <api/type/Model.h>
+#include <api/type/Skeleton.h>
 #include <api/type/animation/Channel.h>
 #include <api/type/animation/Clip.h>
 
@@ -19,6 +25,7 @@
 #include <map>
 #include <numeric>
 #include <string>
+#include <string_view>
 #include <vector>
 
 // cgltf.h is a C header, and cpplint sorts it with the C system headers rather than with
@@ -36,9 +43,13 @@ namespace v3d::asset::media::loader {
 
 namespace {
 
+// the scheme that starts a data uri, and the marker that ends the header of a base64 one
+constexpr std::string_view DATA_SCHEME = "data:";
+constexpr std::string_view BASE64_MARKER = ";base64";
+
 /**
- * The accessors one primitive draws from. Position is the only one a primitive has to have:
- * without it there is no geometry, and the rest default to zero.
+ * The accessors one primitive draws from. Only position is required. Without it there is no
+ * geometry, and the other attributes default to zero.
  **/
 struct Attributes final {
     const cgltf_accessor* position{ nullptr };
@@ -61,8 +72,8 @@ Attributes attributesOf(const cgltf_primitive& primitive) {
                 found.normal = attribute.data;
                 break;
             case cgltf_attribute_type_texcoord:
-                // the first set only - a second one is a lightmap or a detail layer, and
-                // the vertex layout carries one
+                // the first set only. A second set is a lightmap or a detail layer, and the
+                // vertex layout has room for one set
                 if (attribute.index == 0) {
                     found.uv = attribute.data;
                 }
@@ -114,7 +125,7 @@ struct Dropped final {
 struct Placed final {
     const cgltf_primitive* primitive{ nullptr };
     Attributes attributes;
-    glm::mat4 world{ 1.0f };
+    glm::mat4 world{ 1.0F };
     bool skinned{ false };
     std::uint16_t joint{ 0 };  /**< the joint an unskinned primitive follows **/
 };
@@ -169,15 +180,15 @@ const cgltf_skin* firstSkin(const cgltf_node& node) {
 }
 
 glm::mat4 worldOf(const cgltf_node& node) {
-    glm::mat4 world(1.0f);
+    glm::mat4 world(1.0F);
     cgltf_node_transform_world(&node, glm::value_ptr(world));
     return world;
 }
 
 /**
- * A joint's rest pose, local to its parent. A node a clip animates carries its transform as a
- * translation, a rotation and a scale, which the specification requires; one given as a matrix
- * is taken apart, which holds for any matrix without shear.
+ * A joint's rest pose, local to its parent. The specification requires a node that a clip
+ * animates to give its transform as a translation, a rotation and a scale. A node given as a
+ * matrix is decomposed, which is exact for any matrix without shear.
  **/
 void restOf(const cgltf_node& node, v3d::type::Skeleton::Joint* joint) {
     if (node.has_matrix != 0) {
@@ -232,8 +243,8 @@ v3d::type::Skeleton readSkeleton(const cgltf_skin& skin, Rig* rig) {
     rig->skin = &skin;
     rig->order.assign(skin.joints_count, 0);
 
-    // repeatedly take every joint whose parent is already placed; a tree places at least one
-    // joint a sweep, so this ends
+    // repeatedly take every joint whose parent is already placed. Each sweep over a tree
+    // places at least one joint, so the loop ends
     std::vector<bool> placed(skin.joints_count, false);
     std::vector<cgltf_size> sequence;
     while (sequence.size() < skin.joints_count) {
@@ -261,7 +272,8 @@ v3d::type::Skeleton readSkeleton(const cgltf_skin& skin, Rig* rig) {
         skeleton.joints.push_back(read);
     }
 
-    // whatever stands above the skeleton - an armature's scale, typically - is the root's
+    // the world matrix of the first joint's parent, typically an armature's scale, becomes
+    // the skeleton's root
     const cgltf_node* above = skin.joints[sequence.front()]->parent;
     if (above != nullptr) {
         skeleton.root = worldOf(*above);
@@ -272,7 +284,7 @@ v3d::type::Skeleton readSkeleton(const cgltf_skin& skin, Rig* rig) {
 /**
  * Whether a skin's inverse bind matrices can be read for every one of its joints. They are read
  * by joint index, and cgltf checks neither that index against the accessor's count nor the
- * accessor's type. A skin without them binds every joint by the identity.
+ * accessor's type. A skin without inverse bind matrices binds every joint by the identity.
  **/
 bool bindsEveryJoint(const cgltf_skin& skin) {
     const cgltf_accessor* matrices = skin.inverse_bind_matrices;
@@ -294,11 +306,11 @@ std::uint16_t followed(const cgltf_node& node, const Rig& rig) {
 }
 
 /**
- * Where a node's primitives are placed. Without a skeleton that is the node's world matrix. A
- * mesh bound to the kept skin is placed by its joints alone, which the specification requires,
- * so its own node is ignored. Any other mesh follows a joint, and is taken into the space that
- * joint's skinning matrix expects, so that it stands where the file put it while the joint is
- * at rest.
+ * Where a node's primitives are placed. Without a skeleton, that is the node's world matrix.
+ * The specification requires a mesh bound to the kept skin to be placed by its joints alone,
+ * so its own node is ignored. Any other mesh follows a joint. It is taken into the space that
+ * joint's skinning matrix expects, so it stands where the file put it while the joint is at
+ * rest.
  **/
 Placed placement(const cgltf_node& node, const Rig& rig, Dropped* dropped) {
     Placed placed;
@@ -319,9 +331,9 @@ Placed placement(const cgltf_node& node, const Rig& rig, Dropped* dropped) {
 }
 
 /**
- * Put every primitive of a node's mesh, and of its children's, into the bucket of its
- * material, opening a bucket the first time a material is reached. Meshes are reached through
- * the node hierarchy rather than the file's mesh list, so each is placed by its node.
+ * Put every primitive of a node's mesh, and of its children's meshes, into the bucket of its
+ * material. A bucket is opened the first time its material is reached. Meshes are reached
+ * through the node hierarchy, not the file's mesh list, so each is placed by its node.
  **/
 void collect(const cgltf_node& node, const Rig& rig, std::vector<Bucket>* buckets, Dropped* dropped) {
     if (node.mesh != nullptr) {
@@ -333,8 +345,8 @@ void collect(const cgltf_node& node, const Rig& rig, std::vector<Bucket>* bucket
             if (attributes.position == nullptr) {
                 continue;
             }
-            // a strip and a fan become a list as they are appended; points and lines are not
-            // triangles at all
+            // a strip and a fan become a list as they are appended. Points and lines are
+            // dropped
             if (primitive.type != cgltf_primitive_type_triangles && primitive.type != cgltf_primitive_type_triangle_strip &&
                 primitive.type != cgltf_primitive_type_triangle_fan) {
                 dropped->lines = true;
@@ -361,23 +373,22 @@ void collect(const cgltf_node& node, const Rig& rig, std::vector<Bucket>* bucket
 
 /**
  * A skinned vertex's influence, in the skeleton's joint order and with weights that sum to
- * one. One whose weights sum to nothing follows the first root, as an unweighted vertex has
- * nothing else to follow.
+ * one. A vertex whose weights sum to zero or less follows the first root.
  **/
 v3d::type::Model::Influence influenceOf(const Attributes& attributes, cgltf_size index, const Rig& rig, Dropped* dropped) {
     v3d::type::Model::Influence influence;
-    influence.weights = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+    influence.weights = glm::vec4(1.0F, 0.0F, 0.0F, 0.0F);
     if (attributes.joints == nullptr || attributes.weights == nullptr) {
         dropped->unweighted = true;
         return influence;
     }
     cgltf_uint joints[4] = {0, 0, 0, 0};
-    glm::vec4 weights(0.0f);
+    glm::vec4 weights(0.0F);
     cgltf_accessor_read_uint(attributes.joints, index, joints, 4);
     // an integer weight reads as its normalised value
     cgltf_accessor_read_float(attributes.weights, index, glm::value_ptr(weights), 4);
     const float sum = weights.x + weights.y + weights.z + weights.w;
-    if (sum <= 0.0f) {
+    if (sum <= 0.0F) {
         dropped->unweighted = true;
         return influence;
     }
@@ -388,20 +399,27 @@ v3d::type::Model::Influence influenceOf(const Attributes& attributes, cgltf_size
     return influence;
 }
 
+/** Where a primitive's vertices start in the model, and how many it has. **/
+struct Span {
+    std::size_t baseVertex = 0;
+    cgltf_size count = 0;
+};
+
 /**
  * Append a primitive's triangles to the merged index list. They are appended as a list,
  * whatever mode the primitive was drawn in.
  *
- * A primitive's indices address its own vertices, so every one after the first primitive
- * addresses the wrong geometry unless it is offset into the merge. One drawn straight out of
- * its vertex array still has to be indexed once it is merged, or it is lost.
+ * A primitive's indices address its own vertices, so each is offset by the primitive's base
+ * vertex in the merged array. A primitive with no indices gets a sequential run, because the
+ * merged model is drawn indexed.
  *
  * A strip or a fan becomes a list wound as glTF winds them. Every other triangle of a strip
  * swaps its first two corners, so that all of them face the same way. Every triangle of a fan
  * shares the fan's first vertex.
  **/
-void appendIndices(const cgltf_primitive& primitive, std::size_t baseVertex, cgltf_size count,
-    std::vector<std::uint32_t>* indices) {
+void appendIndices(const cgltf_primitive& primitive, const Span& span, std::vector<std::uint32_t>* indices) {
+    const std::size_t baseVertex = span.baseVertex;
+    const cgltf_size count = span.count;
     std::vector<std::uint32_t> order;
     if (primitive.indices != nullptr) {
         order.resize(primitive.indices->count);
@@ -439,8 +457,8 @@ void appendIndices(const cgltf_primitive& primitive, std::size_t baseVertex, cgl
 void appendPrimitive(const Placed& placed, const Rig& rig, v3d::type::Model* model, Dropped* dropped) {
     const cgltf_primitive& primitive = *placed.primitive;
     const Attributes& attributes = placed.attributes;
-    // a normal is carried by the inverse transpose, so a node scaled unevenly keeps it
-    // perpendicular to its surface, and renormalised because a scale changes its length
+    // a normal is turned by the inverse transpose, so it stays perpendicular to its surface
+    // under an uneven scale. It is then renormalised, because a scale changes its length
     const glm::mat3 normals = glm::transpose(glm::inverse(glm::mat3(placed.world)));
 
     const std::size_t baseVertex = model->vertices().size();
@@ -450,12 +468,12 @@ void appendPrimitive(const Placed& placed, const Rig& rig, v3d::type::Model* mod
     for (cgltf_size index = 0; index < count; ++index) {
         v3d::type::Model::Vertex& vertex = model->vertices()[baseVertex + index];
         cgltf_accessor_read_float(attributes.position, index, &vertex.position.x, 3);
-        vertex.position = glm::vec3(placed.world * glm::vec4(vertex.position, 1.0f));
+        vertex.position = glm::vec3(placed.world * glm::vec4(vertex.position, 1.0F));
         if (attributes.normal != nullptr) {
             cgltf_accessor_read_float(attributes.normal, index, &vertex.normal.x, 3);
             const glm::vec3 turned = normals * vertex.normal;
             const float length = glm::length(turned);
-            vertex.normal = length > 0.0f ? turned / length : turned;
+            vertex.normal = length > 0.0F ? turned / length : turned;
         }
         if (attributes.uv != nullptr) {
             cgltf_accessor_read_float(attributes.uv, index, &vertex.uv.x, 2);
@@ -467,18 +485,18 @@ void appendPrimitive(const Placed& placed, const Rig& rig, v3d::type::Model* mod
         for (cgltf_size index = 0; index < count; ++index) {
             v3d::type::Model::Influence influence;
             influence.joints[0] = placed.joint;
-            influence.weights = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+            influence.weights = glm::vec4(1.0F, 0.0F, 0.0F, 0.0F);
             model->influences().push_back(placed.skinned ? influenceOf(attributes, index, rig, dropped) : influence);
         }
     }
 
-    appendIndices(primitive, baseVertex, count, &model->indices());
+    appendIndices(primitive, {.baseVertex = baseVertex, .count = count}, &model->indices());
 }
 
 /**
- * One channel of a clip, or nothing when the channel animates a node that is not a joint, or a
- * path a pose has no room for. Morph target weights are dropped without a report, since a
- * model has no morph targets to give them to.
+ * Read one channel of a clip. Returns false when the channel animates a node that is not a
+ * joint, or a path other than translation, rotation and scale. Morph target weights are
+ * dropped without a report, because a model has no morph targets.
  **/
 bool readChannel(const cgltf_animation_channel& source, const Rig& rig, v3d::type::animation::Channel* channel,
     Dropped* dropped) {
@@ -523,10 +541,10 @@ bool readChannel(const cgltf_animation_channel& source, const Rig& rig, v3d::typ
     for (cgltf_size key = 0; key < sampler.input->count; ++key) {
         cgltf_accessor_read_float(sampler.input, key, &channel->times[key], 1);
     }
-    // a translation or a scale is three floats and a rotation four; an integer rotation reads
-    // as its normalised value
+    // a translation or a scale is three floats, and a rotation is four. An integer rotation
+    // reads as its normalised value
     const cgltf_size width = channel->path == Channel::Path::Rotation ? 4 : 3;
-    channel->values.assign(sampler.output->count, glm::vec4(0.0f));
+    channel->values.assign(sampler.output->count, glm::vec4(0.0F));
     for (cgltf_size value = 0; value < sampler.output->count; ++value) {
         cgltf_accessor_read_float(sampler.output, value, glm::value_ptr(channel->values[value]), width);
     }
@@ -560,8 +578,8 @@ std::vector<v3d::type::animation::Clip> readClips(const cgltf_data& data, const 
 /**
  * The base colour and the name of the image tinting it.
  *
- * @param embedded set to the image the file carries, where it carries one rather than
- *        naming it - decoded by the caller, which has the readers
+ * @param embedded set to the image when it is stored inside the file instead of named by uri.
+ *        The caller decodes it.
  **/
 v3d::type::Model::Material readMaterial(const cgltf_material& source, const cgltf_image** embedded) {
     v3d::type::Model::Material material;
@@ -577,7 +595,7 @@ v3d::type::Model::Material readMaterial(const cgltf_material& source, const cglt
     if (texture == nullptr || texture->image == nullptr) {
         return material;
     }
-    if (texture->image->uri != nullptr && std::strncmp(texture->image->uri, "data:", 5) != 0) {
+    if (texture->image->uri != nullptr && std::strncmp(texture->image->uri, DATA_SCHEME.data(), DATA_SCHEME.size()) != 0) {
         // a uri is percent-encoded, and the app resolves the file it names
         std::string decoded(texture->image->uri);
         decoded.resize(cgltf_decode_uri(decoded.data()));
@@ -593,16 +611,16 @@ v3d::type::Model::Material readMaterial(const cgltf_material& source, const cglt
  * Which reader decodes an embedded image, from the mime type the file gave it or, when it gave
  * none, from the type a data uri states.
  *
- * glTF allows only png and jpeg for an embedded image, so an empty answer is a file
- * outside the specification rather than a format worth guessing at from the bytes.
+ * glTF allows only png and jpeg for an embedded image. Any other type is outside the
+ * specification, and the bytes are not inspected to guess a format.
  *
  * @return the key api/image registers its readers under, or nothing
  **/
 std::string readerFor(const cgltf_image& image) {
-    // the mime type is optional for an image inlined as a data uri, which states its own
+    // the mime type is optional for a data uri image, because the uri states its own type
     std::string mime = image.mime_type != nullptr ? std::string(image.mime_type) : std::string();
-    if (mime.empty() && image.uri != nullptr && std::strncmp(image.uri, "data:", 5) == 0) {
-        const char* type = image.uri + 5;
+    if (mime.empty() && image.uri != nullptr && std::strncmp(image.uri, DATA_SCHEME.data(), DATA_SCHEME.size()) == 0) {
+        const char* type = image.uri + DATA_SCHEME.size();
         const char* end = std::strpbrk(type, ";,");
         if (end != nullptr) {
             mime.assign(type, static_cast<std::size_t>(end - type));
@@ -628,43 +646,43 @@ Gltf::Gltf(const boost::shared_ptr<v3d::log::Logger>& logger) :
 /**
  **/
 boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
-    logger_->get()->info("Looking for gltf asset at: {}", name);
+    logger()->get()->info("Looking for gltf asset at: {}", name);
 
     const std::string path(name);
-    cgltf_options options{};
+    const cgltf_options options{};
     cgltf_data* data = nullptr;
 
     if (cgltf_parse_file(&options, path.c_str(), &data) != cgltf_result_success) {
-        logger_->get()->error("Could not parse gltf asset: {}", name);
+        logger()->get()->error("Could not parse gltf asset: {}", name);
         return boost::shared_ptr<Asset>();
     }
-    // a .gltf points at its buffers and a .glb carries them; either way nothing can be read
-    // out of an accessor until they are resolved
+    // a .gltf refers to its buffers and a .glb contains them. Either way, no accessor can be
+    // read until they are loaded
     if (cgltf_load_buffers(&options, data, path.c_str()) != cgltf_result_success) {
-        logger_->get()->error("Could not load the buffers of gltf asset: {}", name);
+        logger()->get()->error("Could not load the buffers of gltf asset: {}", name);
         cgltf_free(data);
         return boost::shared_ptr<Asset>();
     }
-    // cgltf reads an accessor without checking its bounds, so every accessor is checked
-    // against its buffer view, and every view against its buffer, before any is read. It also
-    // requires a primitive's attributes to share one count, and a sampler's output to match its
-    // input. It does not compare a skin's inverse bind matrices with its joints.
+    // cgltf reads an accessor without checking its bounds. cgltf_validate() checks every
+    // accessor against its buffer view, and every view against its buffer, before any is read.
+    // It also requires a primitive's attributes to share one count, and a sampler's output to
+    // match its input. It does not compare a skin's inverse bind matrices with its joints.
     if (cgltf_validate(data) != cgltf_result_success) {
-        logger_->get()->error("Gltf asset failed validation: {}", name);
+        logger()->get()->error("Gltf asset failed validation: {}", name);
         cgltf_free(data);
         return boost::shared_ptr<Asset>();
     }
 
     const std::vector<const cgltf_node*> starts = roots(*data);
-    boost::shared_ptr<v3d::type::Model> model = boost::make_shared<v3d::type::Model>();
+    const boost::shared_ptr<v3d::type::Model> model = boost::make_shared<v3d::type::Model>();
 
-    // the first skin a mesh is bound to is the model's; a model has one skeleton
+    // a model has one skeleton, read from the first skin a mesh is bound to
     Rig rig;
     for (const cgltf_node* start : starts) {
         const cgltf_skin* skin = firstSkin(*start);
         if (skin != nullptr && skin->joints_count > 0) {
             if (!bindsEveryJoint(*skin)) {
-                logger_->get()->error("The skin of gltf asset {} does not give each of its joints an inverse bind matrix",
+                logger()->get()->error("The skin of gltf asset {} does not give each of its joints an inverse bind matrix",
                     name);
                 cgltf_free(data);
                 return boost::shared_ptr<Asset>();
@@ -699,31 +717,31 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
         const cgltf_image* embedded = nullptr;
         model->materials().push_back(bucket.material != nullptr ? readMaterial(*bucket.material, &embedded)
                                                                 : v3d::type::Model::Material());
-        // decoded before the file is freed, because the bytes are the file's
+        // decoded before cgltf_free(), which frees the image's bytes
         baseColours.push_back(embedded != nullptr ? decodeEmbedded(*embedded, name) : boost::shared_ptr<v3d::image::Image>());
     }
 
     cgltf_free(data);
 
     if (dropped.skins) {
-        logger_->get()->warn("{} binds meshes to more than one skin. The first is kept, and a mesh bound to another "
+        logger()->get()->warn("{} binds meshes to more than one skin. The first is kept, and a mesh bound to another "
             "follows a joint of it rigidly", name);
     }
     if (dropped.influences) {
-        logger_->get()->warn("{} gives some vertices more than four influences, and only the first four are kept", name);
+        logger()->get()->warn("{} gives some vertices more than four influences, and only the first four are kept", name);
     }
     if (dropped.channels) {
-        logger_->get()->warn("{} animates nodes that are not joints of its skeleton, which no clip keeps", name);
+        logger()->get()->warn("{} animates nodes that are not joints of its skeleton, which no clip keeps", name);
     }
     if (dropped.unweighted) {
-        logger_->get()->warn("{} has skinned vertices with no weight, which follow the skeleton's first root", name);
+        logger()->get()->warn("{} has skinned vertices with no weight, which follow the skeleton's first root", name);
     }
     if (dropped.lines) {
-        logger_->get()->warn("{} has primitives of points or lines, which a model of triangles leaves out", name);
+        logger()->get()->warn("{} has primitives of points or lines, which a model of triangles leaves out", name);
     }
 
     if (model->empty()) {
-        logger_->get()->error("No geometry in gltf asset: {}", name);
+        logger()->get()->error("No geometry in gltf asset: {}", name);
         return boost::shared_ptr<Asset>();
     }
 
@@ -737,39 +755,40 @@ boost::shared_ptr<v3d::image::Image> Gltf::decodeEmbedded(const cgltf_image& ima
 
     const std::string kind = readerFor(image);
     if (kind.empty()) {
-        logger_->get()->warn("The base colour texture of {} is embedded as {}, which is not a format glTF "
+        logger()->get()->warn("The base colour texture of {} is embedded as {}, which is not a format glTF "
             "allows embedded, so the model has no texture", model,
             image.mime_type == nullptr ? "nothing in particular" : image.mime_type);
         return empty;
     }
 
-    v3d::image::Factory factory(logger_);
+    v3d::image::Factory factory(logger());
 
-    // a .glb keeps its images in its own buffer, which cgltf_load_buffers has already
-    // resolved by the time this runs
+    // a .glb keeps its images in its own buffer, which cgltf_load_buffers() has already
+    // loaded
     if (image.buffer_view != nullptr) {
         const unsigned char* bytes = cgltf_buffer_view_data(image.buffer_view);
         if (bytes == nullptr) {
-            logger_->get()->error("The embedded base colour texture of {} has no bytes behind it", model);
+            logger()->get()->error("The embedded base colour texture of {} has no bytes behind it", model);
             return empty;
         }
         return factory.read(bytes, static_cast<std::size_t>(image.buffer_view->size), kind);
     }
 
-    // and a .gltf may inline one as a data uri instead, which nothing has decoded yet -
-    // cgltf_load_buffers resolves the file's buffers and an image is not one of them
+    // a .gltf may instead inline an image as a data uri. cgltf_load_buffers() loads only
+    // buffers, so the image is decoded here
     if (image.uri == nullptr) {
         return empty;
     }
     const char* comma = std::strchr(image.uri, ',');
-    if (comma == nullptr || comma - image.uri < 7 || std::strncmp(comma - 7, ";base64", 7) != 0) {
-        logger_->get()->error("The base colour texture of {} is a data uri that is not base64", model);
+    if (comma == nullptr || static_cast<std::size_t>(comma - image.uri) < BASE64_MARKER.size() ||
+        std::strncmp(comma - BASE64_MARKER.size(), BASE64_MARKER.data(), BASE64_MARKER.size()) != 0) {
+        logger()->get()->error("The base colour texture of {} is a data uri that is not base64", model);
         return empty;
     }
     // four base64 characters carry three bytes, less however many the padding stands in for
     const std::size_t encoded = std::strlen(comma + 1);
     if (encoded == 0 || encoded % 4 != 0) {
-        logger_->get()->error("The base colour texture of {} is a data uri of the wrong length", model);
+        logger()->get()->error("The base colour texture of {} is a data uri of the wrong length", model);
         return empty;
     }
     std::size_t decoded = encoded / 4 * 3;
@@ -780,10 +799,10 @@ boost::shared_ptr<v3d::image::Image> Gltf::decodeEmbedded(const cgltf_image& ima
         decoded--;
     }
 
-    cgltf_options options{};
+    const cgltf_options options{};
     void* bytes = nullptr;
     if (cgltf_load_buffer_base64(&options, decoded, comma + 1, &bytes) != cgltf_result_success || bytes == nullptr) {
-        logger_->get()->error("The base colour texture of {} could not be decoded out of its data uri", model);
+        logger()->get()->error("The base colour texture of {} could not be decoded out of its data uri", model);
         return empty;
     }
     boost::shared_ptr<v3d::image::Image> result =

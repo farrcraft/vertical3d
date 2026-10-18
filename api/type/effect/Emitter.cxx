@@ -5,7 +5,10 @@
 
 #include "Emitter.h"
 
+#include <api/type/Random.h>
+
 #include "Particle.h"
+#include "State.h"
 
 #include <algorithm>
 #include <cmath>
@@ -22,17 +25,17 @@ namespace {
 
 /**
  * How far below a whole particle the owed fraction may fall and still be spawned. A rate summed
- * a step at a time drifts below the whole number it should reach, and without this a rate of
- * five a second at sixty steps spawns four in the first second.
+ * one step at a time drifts below the whole number it should reach. Without this slack, a rate
+ * of five a second at sixty steps a second spawns four in the first second.
  **/
-const float owedSlack = 1e-4f;
+const float owedSlack = 1e-4F;
 
 /**
  * The most particles that can fall due in one step: the largest float below 2^32, so that the
  * count still fits the unsigned it is returned as. An emitter's cap keeps far fewer than this
  * alive.
  **/
-const float mostOwed = 4294967040.0f;
+const float mostOwed = 4294967040.0F;
 
 /**
  * Where a particle is born, in the emitter's own space.
@@ -40,7 +43,7 @@ const float mostOwed = 4294967040.0f;
 glm::vec3 birthplace(const Emitter& emitter, Random* random) {
     switch (emitter.shape) {
         case Emitter::Shape::Sphere: {
-            const glm::vec3 direction = random->cone(glm::vec3(0.0f, 1.0f, 0.0f), glm::pi<float>());
+            const glm::vec3 direction = random->cone(glm::vec3(0.0F, 1.0F, 0.0F), glm::pi<float>());
             // a radius drawn by the cube root spreads points evenly through the ball's volume
             return direction * (emitter.extent.x * std::cbrt(random->unit()));
         }
@@ -48,7 +51,7 @@ glm::vec3 birthplace(const Emitter& emitter, Random* random) {
             return random->inside(-emitter.extent, emitter.extent);
         case Emitter::Shape::Point:
         default:
-            return glm::vec3(0.0f);
+            return glm::vec3(0.0F);
     }
 }
 
@@ -57,7 +60,7 @@ glm::vec3 birthplace(const Emitter& emitter, Random* random) {
 void travel(const Emitter& emitter, State* state, float seconds, const glm::vec3& wind) {
     std::vector<Particle>& particles = state->particles;
     const glm::vec3 acceleration = emitter.acceleration + wind;
-    const float kept = std::max(0.0f, 1.0f - (emitter.drag * seconds));
+    const float kept = std::max(0.0F, 1.0F - (emitter.drag * seconds));
     std::size_t index = 0;
     while (index < particles.size()) {
         Particle& particle = particles[index];
@@ -75,15 +78,15 @@ void travel(const Emitter& emitter, State* state, float seconds, const glm::vec3
 }
 
 uint32_t owing(State* state, float rate, float seconds) {
-    // a negative rate emits nothing, and so does one that is not a finite number, rather
-    // than a count that wraps round or is undefined when it is made unsigned. What is owed is
-    // capped at the largest count a step can return
+    // a negative rate emits nothing, and so does one that is not a finite number. Either
+    // would otherwise give a count that wraps round or is undefined when made unsigned. What
+    // is owed is capped at the largest count a step can return
     const float earned = rate * seconds;
-    if (std::isfinite(earned) && earned > 0.0f) {
+    if (std::isfinite(earned) && earned > 0.0F) {
         state->owed = std::min(state->owed + earned, mostOwed);
     }
     const float whole = std::floor(state->owed + owedSlack);
-    state->owed = std::max(0.0f, state->owed - whole);
+    state->owed = std::max(0.0F, state->owed - whole);
     return static_cast<uint32_t>(whole);
 }
 
@@ -91,7 +94,7 @@ bool spawn(const Emitter& emitter, State* state, const glm::vec3& position, cons
     if (state->particles.size() >= emitter.cap) {
         return false;
     }
-    const glm::vec3 heading = emitter.spread > 0.0f
+    const glm::vec3 heading = emitter.spread > 0.0F
         ? state->random.cone(emitter.direction, emitter.spread)
         : glm::normalize(emitter.direction);
     const float speed = state->random.range(emitter.speedMin, emitter.speedMax);
@@ -102,7 +105,7 @@ bool spawn(const Emitter& emitter, State* state, const glm::vec3& position, cons
     particle.position = position;
     particle.previous = position;
     particle.velocity = orientation * (heading * speed);
-    particle.age = 0.0f;
+    particle.age = 0.0F;
     particle.lifetime = lifetime;
     particle.phase = phase;
     state->particles.push_back(particle);

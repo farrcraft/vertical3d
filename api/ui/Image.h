@@ -27,18 +27,25 @@ struct Image final {
      **/
     Image() noexcept;
     /**
-     * The whole of a texture. Implicit, so a resolver with no sheets may answer a bare
-     * handle.
+     * The whole of a texture. Implicit, so a resolver with no sprite sheets can return a
+     * bare handle.
      *
      * @param tex the texture
      **/
     Image(const v3d::render::realtime::TextureHandle& tex) noexcept;  // NOLINT(runtime/explicit) - a handle is the whole texture
     /**
-     * @param tex the texture
-     * @param min the texture coordinate at the image's top left corner
-     * @param max the texture coordinate at its bottom right corner
+     * The texture coordinates at the image's top left corner and at its bottom right corner.
      **/
-    Image(const v3d::render::realtime::TextureHandle& tex, const glm::vec2& min, const glm::vec2& max) noexcept;
+    struct Corners {
+        glm::vec2 min{0.0F};
+        glm::vec2 max{1.0F};
+    };
+
+    /**
+     * @param tex the texture
+     * @param corners the part of it the image is
+     **/
+    Image(const v3d::render::realtime::TextureHandle& tex, const Corners& corners) noexcept;
 
     /**
      * @return whether there is anything to draw

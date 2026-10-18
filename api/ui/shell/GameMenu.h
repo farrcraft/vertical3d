@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/event/Commands.h>
 #include <api/event/Event.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
@@ -15,28 +16,27 @@
 #include <string_view>
 
 #include <boost/shared_ptr.hpp>
-#include <entt/entt.hpp>
 
 namespace v3d::ui::shell {
 
 /**
  * The menu a game puts up over itself, and the commands that drive it.
  *
- * The container is what is shown and hidden, not the menu: a component is visible from the
- * moment it is built, so asking the menu whether it is up gives the wrong answer.
+ * The container is shown and hidden, not the menu. A component is visible from the moment
+ * it is built, so the menu's own visible() does not say whether the menu is up.
  *
- * Both names come from the app's ui config, so a container this cannot find leaves every
- * call here doing nothing rather than failing - a game whose config names no menu still
- * runs, without one.
+ * Both names come from the app's ui config. When the container is not found, every call
+ * here does nothing, so a game whose config names no menu still runs, without one.
  *
- * It answers its own commands. "ui::showGameMenu" toggles it and the navigation commands
- * navigate() names drive it, so an app's handler has only the commands that are its game's.
+ * declare() registers the menu's commands: "ui::showGameMenu" toggles it, and the commands
+ * navigate() handles move through it. An app's own handlers then cover only its game's
+ * commands.
  **/
 class GameMenu {
  public:
     /**
-     * What the menu going up and coming down does to the game under it - pausing it, and
-     * whatever else the app cannot be played without while a menu is over it.
+     * Called as the menu opens and closes, to pause the game under it and resume it, and
+     * to do whatever else the app needs while a menu is over the game.
      *
      * @param suspended true as the menu opens and false as it closes
      **/
@@ -48,19 +48,36 @@ class GameMenu {
     static const char* const defaultContainer;
     static const char* const defaultMenu;
 
+    /** The container that is shown and hidden, and the menu inside it that navigation drives. **/
+    struct Names {
+        std::string container = defaultContainer;
+        std::string menu = defaultMenu;
+    };
+
     /**
      * @param engine the ui the container is looked up in
      * @param suspend what to do to the game as the menu opens and closes
-     * @param container the name of the container that is shown and hidden
-     * @param menu the name of the menu inside it that navigation drives
+     * @param names the container that is shown and hidden, and the menu inside it that
+     *        navigation drives
      **/
-    GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend,
-        const std::string& container = defaultContainer, const std::string& menu = defaultMenu);
+    GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend, const Names& names);
 
-    // the dispatcher holds a delegate to this object, which a copy would leave pointing at
-    // the original
-    GameMenu(const GameMenu&) = delete;
-    GameMenu& operator=(const GameMenu&) = delete;
+    /**
+     * The default container and menu names.
+     **/
+    GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend);
+
+    /**
+     * Register the menu's commands: "ui::showGameMenu" toggles it, and "ui::menuPrevious",
+     * "ui::menuNext" and "ui::selectMenu" navigate it. A held key's repeats toggle nothing.
+     *
+     * An app calls this from its constructor, before the menu exists, and passes the member it
+     * will hold the menu in. Each command does nothing while that member is empty.
+     *
+     * @param commands the app's commands
+     * @param menu the member the app holds its menu in, which must outlive the commands
+     **/
+    static void declare(v3d::event::Commands& commands, const boost::shared_ptr<GameMenu>& menu);
 
     /**
      * The command a game's escape key and its menu's back item send, which toggles the menu.
@@ -75,24 +92,24 @@ class GameMenu {
     /**
      * Put the menu up, or take one step back out of it.
      *
-     * Going back up out of a submenu leaves the menu open - it is only closing the top
-     * level that resumes the game.
+     * Going back up out of a submenu leaves the menu open. Only closing the top level
+     * resumes the game.
      **/
     void toggle();
 
     /**
-     * Act on one of the navigation commands an app's bindings send while the menu is up -
-     * "menuPrevious", "menuNext" and "selectMenu", which the mappings in an app's
-     * data directory name.
+     * Act on one of the navigation commands an app's bindings send while the menu is up:
+     * "menuPrevious", "menuNext" and "selectMenu", which the mappings in an app's data
+     * directory name.
      *
-     * @return whether the command was one of them and was acted on, which a command
-     *         arriving while the menu is down is not
+     * @return whether the command was one of them and was acted on. A command that arrives
+     *         while the menu is down returns false
      **/
     bool navigate(const std::string_view& command);
 
     /**
-     * Whether an input item is capturing, so that the app can send what it captures here
-     * rather than acting on it itself.
+     * Whether an input item is capturing. While it is, the app passes its keys to capture()
+     * instead of acting on them.
      **/
     bool capturing() const;
 
@@ -111,14 +128,12 @@ class GameMenu {
 
  private:
     boost::shared_ptr<Container> container() const;
-    boost::shared_ptr<component::Menu> menu() const;
-    void command(const v3d::event::Event& event);
+    boost::shared_ptr<component::menu::Menu> menu() const;
 
     boost::shared_ptr<Engine> engine_;
     Suspend suspend_;
     std::string containerName_;
     std::string menuName_;
-    entt::scoped_connection commands_;
 };
 
 };  // namespace v3d::ui::shell

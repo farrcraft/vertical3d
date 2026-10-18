@@ -1,7 +1,8 @@
 # The 2D canvas
 
 `Canvas` collects 2D quads and text for one pass. It is what a game's sprites, a HUD and the
-user interface draw onto.
+user interface draw onto. It is `realtime::canvas::Canvas`, in `api/render/realtime/canvas/`, beside
+the world space canvases in [LinesAndWorldQuads.md](LinesAndWorldQuads.md).
 
 ## 2D: the quad canvas
 
@@ -10,18 +11,18 @@ Every 2D thing — a rectangle, a sprite, a glyph, a UI panel — is a textured 
 
 ```cpp
 Canvas canvas;
-canvas.resize(width, height);    // the area drawn into, in pixels
+canvas.resize(glm::uvec2(width, height));    // the area drawn into, in pixels
 canvas.clear();                  // at the start of every frame
 
 canvas.rect(min, max, colour);                                  // untextured
-canvas.rect(min, max, uv0, uv1, glm::vec4(1.0f), textureHandle); // textured; colour multiplies the texel
+canvas.rect(min, max, uv0, uv1, glm::vec4(1.0F), textureHandle); // textured; colour multiplies the texel
 canvas.circle(centre, radius, 32, colour);
 canvas.arc(centre, radius, 16, start, sweep, colour);           // a filled wedge
 canvas.ring(centre, outer, inner, 16, start, sweep, colour);    // a band between two radii
 
 canvas.push();
-canvas.translate(glm::vec2(100.0f, 50.0f));
-canvas.scale(glm::vec2(2.0f));
+canvas.translate(glm::vec2(100.0F, 50.0F));
+canvas.scale(glm::vec2(2.0F));
 // ... drawn moved and scaled ...
 canvas.pop();
 
@@ -43,7 +44,7 @@ renderer_->quads()->submit(canvas, pass.get());
 A canvas can draw in units of the game's own instead of pixels:
 
 ```cpp
-canvas.space(glm::vec2(800.0f, 600.0f), Canvas::Fit::Contain);
+canvas.space(glm::vec2(800.0F, 600.0F), Canvas::Fit::Contain);
 ```
 
 - The space's origin is its top left and y grows down.
@@ -60,7 +61,7 @@ canvases in one pass. Pong draws its court and its menu this way.
 ### Clipping
 
 ```cpp
-canvas.clip(glm::vec2(10.0f, 10.0f), glm::vec2(200.0f, 120.0f));
+canvas.clip(glm::vec2(10.0F, 10.0F), glm::vec2(200.0F, 120.0F));
 // ... everything here is cut to that rectangle ...
 canvas.unclip();
 ```

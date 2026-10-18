@@ -5,10 +5,11 @@
 
 #include <api/ecs/component/Emitter.h>
 #include <api/ecs/component/Transform.h>
-#include <api/render/realtime/DepthOrder.h>
-#include <api/render/realtime/Particles.h>
-#include <api/render/realtime/Sprites.h>
-#include <api/render/realtime/WorldCanvas.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/canvas/DepthOrder.h>
+#include <api/render/realtime/entity/Particles.h>
+#include <api/render/realtime/entity/Sprites.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/component/Particles.h>
 #include <api/render/realtime/component/Sprite.h>
 #include <api/type/animation/SpriteClip.h>
@@ -16,7 +17,6 @@
 #include <api/type/effect/Emitter.h>
 #include <api/type/effect/Particle.h>
 
-#include <cstddef>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -29,22 +29,23 @@
 #include <glm/vec4.hpp>
 
 using v3d::ecs::component::Emitter;
-using v3d::render::realtime::DepthOrder;
+using v3d::render::realtime::canvas::DepthOrder;
 using v3d::render::realtime::TextureHandle;
-using v3d::render::realtime::WorldCanvas;
 using v3d::render::realtime::component::Particles;
 using v3d::type::animation::SpriteClip;
 using v3d::type::animation::Track;
 using v3d::type::effect::Particle;
 
+namespace canvas = v3d::render::realtime::canvas;
+
 namespace {
 
-constexpr glm::vec3 right(1.0f, 0.0f, 0.0f);
-constexpr glm::vec3 up(0.0f, 1.0f, 0.0f);
-constexpr glm::vec3 away(0.0f, 0.0f, 1.0f);
+constexpr glm::vec3 right(1.0F, 0.0F, 0.0F);
+constexpr glm::vec3 up(0.0F, 1.0F, 0.0F);
+constexpr glm::vec3 away(0.0F, 0.0F, 1.0F);
 
-bool same(const glm::vec3& a, const glm::vec3& b) {
-    return glm::all(glm::epsilonEqual(a, b, 0.0001f));
+bool same(const glm::vec3& first, const glm::vec3& second) {
+    return glm::all(glm::epsilonEqual(first, second, 0.0001F));
 }
 
 /**
@@ -55,9 +56,9 @@ Particle particle(const glm::vec3& previous, const glm::vec3& position, const gl
     made.previous = previous;
     made.position = position;
     made.velocity = velocity;
-    made.age = 1.0f;
-    made.lifetime = 4.0f;
-    made.phase = 0.0f;
+    made.age = 1.0F;
+    made.lifetime = 4.0F;
+    made.phase = 0.0F;
     return made;
 }
 
@@ -72,13 +73,11 @@ Emitter& emitting(entt::registry* registry, const std::vector<Particle>& made, c
     return emitter;
 }
 
-void draw(const entt::registry& registry, float alpha, WorldCanvas* canvas) {
+void draw(const entt::registry& registry, float alpha, canvas::World* canvas) {
     DepthOrder order;
-    v3d::render::realtime::particles(registry, alpha, right, up, away, &order);
+    v3d::render::realtime::entity::particles(registry, alpha, {.right = right, .up = up, .depthAxis = away}, &order);
     order.into(canvas);
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(particle_test)
 
@@ -89,19 +88,19 @@ BOOST_AUTO_TEST_SUITE(particle_test)
 BOOST_AUTO_TEST_CASE(a_particle_is_drawn_between_steps) {
     entt::registry registry;
     Emitter& emitter = emitting(&registry,
-        {particle(glm::vec3(0.0f), glm::vec3(4.0f, 0.0f, 0.0f), glm::vec3(0.0f))}, Particles());
+        {particle(glm::vec3(0.0F), glm::vec3(4.0F, 0.0F, 0.0F), glm::vec3(0.0F))}, Particles());
     // a quarter of the way through its life, a track from 2 to 6 gives 3
-    emitter.description.size = Track<float>({{0.0f, 2.0f}, {1.0f, 6.0f}});
+    emitter.description.size = Track<float>({{0.0F, 2.0F}, {1.0F, 6.0F}});
 
-    WorldCanvas canvas;
-    draw(registry, 0.25f, &canvas);
+    canvas::World canvas;
+    draw(registry, 0.25F, &canvas);
 
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4u);
-    const glm::vec3 centre(1.0f, 0.0f, 0.0f);
-    BOOST_TEST(same(canvas.vertices()[0].position, centre + glm::vec3(-1.5f, 1.5f, 0.0f)));
-    BOOST_TEST(same(canvas.vertices()[1].position, centre + glm::vec3(1.5f, 1.5f, 0.0f)));
-    BOOST_TEST(same(canvas.vertices()[2].position, centre + glm::vec3(1.5f, -1.5f, 0.0f)));
-    BOOST_TEST(same(canvas.vertices()[3].position, centre + glm::vec3(-1.5f, -1.5f, 0.0f)));
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    const glm::vec3 centre(1.0F, 0.0F, 0.0F);
+    BOOST_TEST(same(canvas.vertices()[0].position, centre + glm::vec3(-1.5F, 1.5F, 0.0F)));
+    BOOST_TEST(same(canvas.vertices()[1].position, centre + glm::vec3(1.5F, 1.5F, 0.0F)));
+    BOOST_TEST(same(canvas.vertices()[2].position, centre + glm::vec3(1.5F, -1.5F, 0.0F)));
+    BOOST_TEST(same(canvas.vertices()[3].position, centre + glm::vec3(-1.5F, -1.5F, 0.0F)));
 }
 
 /**
@@ -110,8 +109,8 @@ BOOST_AUTO_TEST_CASE(a_particle_is_drawn_between_steps) {
  **/
 BOOST_AUTO_TEST_CASE(a_particle_takes_its_colour_and_frame) {
     const std::vector<SpriteClip::Frame> frames = {
-        SpriteClip::Frame{glm::vec2(0.0f, 0.0f), glm::vec2(0.5f, 1.0f), 0.75f},
-        SpriteClip::Frame{glm::vec2(0.5f, 0.0f), glm::vec2(1.0f, 1.0f), 0.75f}
+        SpriteClip::Frame{glm::vec2(0.0F, 0.0F), glm::vec2(0.5F, 1.0F), 0.75F},
+        SpriteClip::Frame{glm::vec2(0.5F, 0.0F), glm::vec2(1.0F, 1.0F), 0.75F}
     };
     Particles look;
     look.texture = TextureHandle(3);
@@ -119,22 +118,22 @@ BOOST_AUTO_TEST_CASE(a_particle_takes_its_colour_and_frame) {
 
     entt::registry registry;
     Emitter& emitter = emitting(&registry,
-        {particle(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f))}, look);
-    emitter.description.colour = Track<glm::vec4>({{0.0f, glm::vec4(1.0f)}, {1.0f, glm::vec4(1.0f, 1.0f, 1.0f, 0.0f)}});
+        {particle(glm::vec3(0.0F), glm::vec3(0.0F), glm::vec3(0.0F))}, look);
+    emitter.description.colour = Track<glm::vec4>({{0.0F, glm::vec4(1.0F)}, {1.0F, glm::vec4(1.0F, 1.0F, 1.0F, 0.0F)}});
 
     // a second in, by age, the clip is in its second frame
-    WorldCanvas byAge;
-    draw(registry, 1.0f, &byAge);
-    BOOST_REQUIRE_EQUAL(byAge.vertices().size(), 4u);
-    BOOST_TEST((byAge.vertices()[0].uv == glm::vec2(0.5f, 0.0f)));
-    BOOST_TEST((byAge.vertices()[0].colour == glm::vec4(1.0f, 1.0f, 1.0f, 0.75f)));
+    canvas::World byAge;
+    draw(registry, 1.0F, &byAge);
+    BOOST_REQUIRE_EQUAL(byAge.vertices().size(), 4U);
+    BOOST_TEST((byAge.vertices()[0].uv == glm::vec2(0.5F, 0.0F)));
+    BOOST_TEST((byAge.vertices()[0].colour == glm::vec4(1.0F, 1.0F, 1.0F, 0.75F)));
     BOOST_TEST((byAge.batches()[0].texture == TextureHandle(3)));
 
     // a quarter of the way through its life, over a clip of a second and a half, is the first
     registry.get<Particles>(registry.view<Particles>().front()).overLife = true;
-    WorldCanvas byLife;
-    draw(registry, 1.0f, &byLife);
-    BOOST_TEST((byLife.vertices()[0].uv == glm::vec2(0.0f, 0.0f)));
+    canvas::World byLife;
+    draw(registry, 1.0F, &byLife);
+    BOOST_TEST((byLife.vertices()[0].uv == glm::vec2(0.0F, 0.0F)));
 }
 
 /**
@@ -143,23 +142,23 @@ BOOST_AUTO_TEST_CASE(a_particle_takes_its_colour_and_frame) {
  **/
 BOOST_AUTO_TEST_CASE(particles_sort_among_sprites) {
     entt::registry registry;
-    emitting(&registry, {particle(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f))}, Particles());
-    for (const float depth : {2.0f, 8.0f}) {
+    emitting(&registry, {particle(glm::vec3(0.0F, 0.0F, 5.0F), glm::vec3(0.0F, 0.0F, 5.0F), glm::vec3(0.0F))}, Particles());
+    for (const float depth : {2.0F, 8.0F}) {
         const entt::entity entity = registry.create();
-        registry.emplace<v3d::ecs::component::Transform>(entity).position = glm::vec3(0.0f, 0.0f, depth);
+        registry.emplace<v3d::ecs::component::Transform>(entity).position = glm::vec3(0.0F, 0.0F, depth);
         registry.emplace<v3d::render::realtime::component::Sprite>(entity);
     }
 
     DepthOrder order;
-    v3d::render::realtime::particles(registry, 1.0f, right, up, away, &order);
-    v3d::render::realtime::sprites(registry, 1.0f, right, up, away, &order);
-    WorldCanvas canvas;
+    v3d::render::realtime::entity::particles(registry, 1.0F, {.right = right, .up = up, .depthAxis = away}, &order);
+    v3d::render::realtime::entity::sprites(registry, 1.0F, {.right = right, .up = up, .depthAxis = away}, &order);
+    canvas::World canvas;
     order.into(&canvas);
 
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 12u);
-    BOOST_TEST(canvas.vertices()[0].position.z == 8.0f);
-    BOOST_TEST(canvas.vertices()[4].position.z == 5.0f);
-    BOOST_TEST(canvas.vertices()[8].position.z == 2.0f);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 12U);
+    BOOST_TEST(canvas.vertices()[0].position.z == 8.0F);
+    BOOST_TEST(canvas.vertices()[4].position.z == 5.0F);
+    BOOST_TEST(canvas.vertices()[8].position.z == 2.0F);
 }
 
 /**
@@ -169,31 +168,31 @@ BOOST_AUTO_TEST_CASE(particles_sort_among_sprites) {
 BOOST_AUTO_TEST_CASE(a_stretched_particle_lies_along_its_velocity) {
     Particles look;
     look.facing = Particles::Facing::Velocity;
-    look.stretch = 0.5f;
+    look.stretch = 0.5F;
 
     entt::registry registry;
     // falling at 8 and drifting right at 6, with a part along the view the camera cannot see
     Emitter& emitter = emitting(&registry,
-        {particle(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(6.0f, -8.0f, 3.0f))}, look);
-    emitter.description.size = Track<float>(0.5f);
+        {particle(glm::vec3(0.0F), glm::vec3(0.0F), glm::vec3(6.0F, -8.0F, 3.0F))}, look);
+    emitter.description.size = Track<float>(0.5F);
 
-    WorldCanvas canvas;
-    draw(registry, 1.0f, &canvas);
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4u);
+    canvas::World canvas;
+    draw(registry, 1.0F, &canvas);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
 
-    const glm::vec3 head = (canvas.vertices()[0].position + canvas.vertices()[1].position) * 0.5f;
-    const glm::vec3 tail = (canvas.vertices()[2].position + canvas.vertices()[3].position) * 0.5f;
+    const glm::vec3 head = (canvas.vertices()[0].position + canvas.vertices()[1].position) * 0.5F;
+    const glm::vec3 tail = (canvas.vertices()[2].position + canvas.vertices()[3].position) * 0.5F;
     // ten a second seen, over half a second, is five long
-    BOOST_TEST(same(head - tail, glm::vec3(3.0f, -4.0f, 0.0f)));
-    BOOST_TEST(glm::length(canvas.vertices()[1].position - canvas.vertices()[0].position) == 0.5f,
-        boost::test_tools::tolerance(1e-5f));
+    BOOST_TEST(same(head - tail, glm::vec3(3.0F, -4.0F, 0.0F)));
+    BOOST_TEST(glm::length(canvas.vertices()[1].position - canvas.vertices()[0].position) == 0.5F,
+        boost::test_tools::tolerance(1e-5F));
 
     // and one too slow to outrun its width is square
-    emitter.state.particles[0].velocity = glm::vec3(0.0f, 0.1f, 0.0f);
-    WorldCanvas slow;
-    draw(registry, 1.0f, &slow);
-    BOOST_TEST(glm::length(slow.vertices()[0].position - slow.vertices()[3].position) == 0.5f,
-        boost::test_tools::tolerance(1e-5f));
+    emitter.state.particles[0].velocity = glm::vec3(0.0F, 0.1F, 0.0F);
+    canvas::World slow;
+    draw(registry, 1.0F, &slow);
+    BOOST_TEST(glm::length(slow.vertices()[0].position - slow.vertices()[3].position) == 0.5F,
+        boost::test_tools::tolerance(1e-5F));
 }
 
 /**
@@ -202,18 +201,18 @@ BOOST_AUTO_TEST_CASE(a_stretched_particle_lies_along_its_velocity) {
  **/
 BOOST_AUTO_TEST_CASE(a_swaying_particle_drifts_where_it_is_drawn) {
     entt::registry registry;
-    Particle swaying = particle(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f));
-    swaying.age = 0.0f;
-    swaying.phase = 0.25f;
+    Particle swaying = particle(glm::vec3(0.0F), glm::vec3(0.0F), glm::vec3(0.0F));
+    swaying.age = 0.0F;
+    swaying.phase = 0.25F;
     Emitter& emitter = emitting(&registry, {swaying}, Particles());
-    emitter.description.sway = 0.5f;
-    emitter.description.swayRate = 1.0f;
+    emitter.description.sway = 0.5F;
+    emitter.description.swayRate = 1.0F;
 
-    WorldCanvas canvas;
-    draw(registry, 1.0f, &canvas);
+    canvas::World canvas;
+    draw(registry, 1.0F, &canvas);
     // a quarter turn in is the far right of the sway
-    BOOST_TEST(same(canvas.vertices()[0].position, glm::vec3(0.5f - 0.5f, 0.5f, 0.0f)));
-    BOOST_TEST(same(emitter.state.particles[0].position, glm::vec3(0.0f)));
+    BOOST_TEST(same(canvas.vertices()[0].position, glm::vec3(0.5F - 0.5F, 0.5F, 0.0F)));
+    BOOST_TEST(same(emitter.state.particles[0].position, glm::vec3(0.0F)));
 }
 
 /**
@@ -222,11 +221,13 @@ BOOST_AUTO_TEST_CASE(a_swaying_particle_drifts_where_it_is_drawn) {
 BOOST_AUTO_TEST_CASE(an_emitter_without_a_look_is_not_drawn) {
     entt::registry registry;
     Emitter& emitter = registry.emplace<Emitter>(registry.create());
-    emitter.state.particles.push_back(particle(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f)));
+    emitter.state.particles.push_back(particle(glm::vec3(0.0F), glm::vec3(0.0F), glm::vec3(0.0F)));
 
-    WorldCanvas canvas;
-    draw(registry, 1.0f, &canvas);
+    canvas::World canvas;
+    draw(registry, 1.0F, &canvas);
     BOOST_TEST(canvas.empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -26,8 +26,13 @@ editing.**
 
 ### Includes
 
+- **A file includes the header for each name from the tree or the standard library that it
+  uses**, rather than receiving it through another header, and includes nothing it does not use.
+  clang-tidy's `misc-include-cleaner` reports both. A third-party library is included through its
+  public header, such as `<glm/vec3.hpp>` or `<vulkan/vulkan.h>`, and the check does not judge
+  those. [Linting.md](Linting.md#clang-tidy) describes the pragmas that answer it.
 - **Include a header from another directory by its path from the repository root, in angle
-  brackets.** For example, `#include <api/render/realtime/Canvas.h>`, or
+  brackets.** For example, `#include <api/render/realtime/canvas/Canvas.h>`, or
   `#include <vertical3d/src/scene/Node.h>` for an app's own header in another directory.
 - **A subdirectory counts as another directory.** From `api/ui`, write
   `<api/ui/component/Bar.h>`, not `"component/Bar.h"`.
@@ -89,7 +94,38 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
   (` public:`, ` private:`).
 - **Do not indent a namespace body.** A continuation line at namespace scope also starts at
   column 0. [Linting.md](Linting.md#namespace-indentation) shows examples and explains why.
+- **What a header does not declare goes in an anonymous namespace.** That covers a source
+  file's own functions, variables and types, which then cannot collide with another file's.
+  Close it with `};  // namespace`. clang-tidy's `misc-use-internal-linkage` reports a
+  definition outside one.
 - **Use `boost::shared_ptr` and `boost::make_shared`**, not the `std` equivalents.
+- **A local that is never modified is `const`**, and so is what a pointer points to when it is
+  only read through. `const` goes before the type: `const float x`, `const auto& item`. An
+  array of pointers that are not reassigned is `const char* const names[]`. clang-tidy's
+  `misc-const-correctness` reports a local that could be `const`. Its fix puts the `const`
+  after the type, so do not apply that fix as it stands.
+- **A class keeps its data members private.** A derived class reaches its base's state through a
+  protected accessor, such as `logger()` or `registry()`. A struct whose data members are all
+  public is a record, and is exempt. clang-tidy's `misc-non-private-member-variables-in-classes`
+  reports a protected data member, and a public one in a class that also has private data.
+- **A number whose meaning is not plain from its line is a named constant.** The name says
+  what the number means, not its value. Numbers that are one value, such as a colour or a
+  table, are one constant. A count or a length is derived, with `std::size` or `sizeof`,
+  rather than written. clang-tidy's `readability-magic-numbers` reports a literal outside a
+  constant's initialiser, except in tests and for 0 to 4, 24, 255, powers of two, 0.5, 1.0,
+  2.0 and 100.0.
+- **A variable or parameter name is at least two letters**, and says what it holds:
+  `expected` and `actual`, not `a` and `b`. One letter is allowed only where it is the
+  conventional name:
+  - `x`, `y`, `z` and `w` for coordinates;
+  - `u` and `v` for a surface's parameters, and `s` and `t` for texture coordinates;
+  - `i`, `j` and `k` for a loop counter;
+  - `n` for a count parameter and `e` for a caught exception.
+
+  clang-tidy's `readability-identifier-length` reports any other name shorter than two letters.
+- **A literal's suffix is in capitals:** `1.0F`, `16U`, `0xFFULL`. A lowercase `l` reads as the
+  digit 1. clang-tidy's `readability-uppercase-literal-suffix` reports a lowercase suffix,
+  inside a macro argument too.
 - **Pass a non-trivial type by `const` reference**, including a `boost::shared_ptr` and a
   `std::string`. clang-tidy's `performance-unnecessary-value-param` also accepts a by-value
   parameter that is moved from, but this tree uses the `const` reference in both cases.
@@ -102,10 +138,17 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
 These rules apply to code comments and to every document in [docs/](..) alike.
 
 - **Plain words, literal statements.** Say what a thing does or requires. Avoid aphorisms
-  ("a character is not a key"), inverted sentences ("X, which is what Y") and personification.
+  ("a character is not a key"), inverted sentences ("X, which is what Y", "the submit is what
+  signals the fence") and personification.
   Code requires, stores, returns or receives. Do not describe it as wanting, knowing, owing or
   trusting.
-- **Short sentences, one idea each.** Aim for about 25 words. Split anything over 35.
+- **Short sentences, one idea each.** Aim for about 25 words. Split anything over 35. Do not
+  stack clauses: three joins such as "which", "so", "because" and "rather than" are too many for
+  one sentence, and so are two when one is a semicolon or a dash.
+- **State a choice without arguing for it.** "Each image has its own semaphore" is a statement.
+  "Per image rather than per frame, because a present waits on it" argues for the choice in the
+  sentence that makes it. Where the reason is a constraint the reader needs, give it a sentence
+  of its own.
 - **Define a term before using it,** or use the standard word for it. In-house shorthand such
   as "seam", "the walk" or "the tier" means nothing to a new reader.
 - **Present tense.** Describe the code as it is. No "used to", no "no longer", no dates, no
@@ -131,6 +174,15 @@ the commit, or describe a later phase.
 - **A test says what it checks**, not the history of the bug it guards against.
 - **Write a shared rule once**, on the function or type that owns it. Do not paste the same
   sentence into every caller.
+- **Do not count things kept elsewhere.** "The three call sites" or "twelve commands" turns
+  false when one is added, and nothing fails to compile. Write "every" or "each", or state the
+  rule they all follow.
+- **Temporary code says what ends it.** Name the condition, not a date or a plan: "Draws the
+  whole texture until the resolver can answer with a region." The work itself is listed in
+  [TODO.md](../TODO.md) or an open plan, not tagged `TODO:` in the code.
+- **A comment that is now false is worse than none.** A change to code also checks the comments
+  beside it, and a comment that names something removed, or says nothing reads a value that
+  something now reads, is fixed in the same change.
 - Doc comments are `/** **/` blocks, often left empty above trivial members.
 
 ## Documents
@@ -158,6 +210,14 @@ so adding an enumerator fails the build at every switch that does not handle it.
 - Adding a `default:` back silently turns the check off for that switch.
 - Where an enum is parsed from text, the parser's upper bound is the last enumerator. Keep the
   bound and the enum in step, and keep a test that checks the round trip.
+
+**An enum names its base type, the smallest that holds its enumerators.** That is usually
+`std::uint8_t`, from `<cstdint>`. clang-tidy's `performance-enum-size` reports a base wider
+than the enumerators need, whether it is the implicit `int` or a type that was named.
+
+- A set of bits takes a wider base when a bit is added that needs one.
+- An enum used as an id, such as `audio::Voice`, takes values the enumerators do not list. Its
+  base is as wide as the ids, and a `NOLINTNEXTLINE(performance-enum-size)` says so.
 
 ## Boundary input
 

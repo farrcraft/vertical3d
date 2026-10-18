@@ -5,19 +5,27 @@
 
 #include "TextureTextBuffer.h"
 
-#include <api/image/TextureAtlas.h>
-
+#include <cstddef>
+#include <string>
 #include <vector>
 
+#include "TextBuffer.h"
 #include "TextureFont.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace v3d::font {
 
+namespace {
+
+// two triangles
+constexpr unsigned int QUAD_INDICES = 6;
+
+};  // namespace
+
 TextureTextBuffer::TextureTextBuffer() :
-    ascender_(0.0f),
-    descender_(0.0f),
+    ascender_(0.0F),
+    descender_(0.0F),
     lineStart_(0) {
 }
 
@@ -26,7 +34,7 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         pen->x = origin_.x;
         // the same ratio as a glyph's metrics, so a markup with no size moves down one line
         // at the font's own size
-        const float lineScale = markup.size_ > 0.0f && markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
+        const float lineScale = markup.size_ > 0.0F && markup.font_->size() > 0.0F ? markup.size_ / markup.font_->size() : 1.0F;
         pen->y += (markup.font_->height() - markup.font_->descender()) * lineScale;
         /*
         descender_ = 0.0f;
@@ -36,19 +44,19 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         // newlines don't actually generate any vertex data
         return;
     }
-    boost::shared_ptr<TextureFont::Glyph> glyph = markup.font_->glyph(current);
-    boost::shared_ptr<TextureFont::Glyph> black = markup.font_->glyph(static_cast<wchar_t>(-1));
+    const boost::shared_ptr<TextureFont::Glyph> glyph = markup.font_->glyph(current);
+    const boost::shared_ptr<TextureFont::Glyph> black = markup.font_->glyph(static_cast<wchar_t>(-1));
     if (!glyph) {
         return;
     }
-    // the lines and the background are drawn with the white square, which a full atlas may
-    // have had no room for: the glyph is still drawn, and they are not
+    // the lines and the background are drawn with the white square. A full atlas may have no
+    // room for it, and then the glyph is drawn without them
     const bool lines = black != nullptr;
 
     // every metric below is in pixels of the size the face was rasterized at, so another
     // size scales them by the ratio. A markup that sets no size, or the font's own, leaves
     // this at one
-    const float scale = markup.size_ > 0.0f && markup.font_->size() > 0.0f ? markup.size_ / markup.font_->size() : 1.0f;
+    const float scale = markup.size_ > 0.0F && markup.font_->size() > 0.0F ? markup.size_ / markup.font_->size() : 1.0F;
     const float advance = glyph->advance_.x * scale;
     const float height = markup.font_->height() * scale;
     const float descender = markup.font_->descender() * scale;
@@ -58,61 +66,62 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
     const float underlineThickness = markup.font_->underlineThickness() * scale;
     unsigned int vcount = 0;
     unsigned int icount = 0;
-    size_t istart = indices().size();
-    size_t vstart = vertices().size();
+    const size_t istart = indices().size();
+    const size_t vstart = vertices().size();
 
-    if (lines && markup.backgroundColor_.a > 0.0f) {
-        glm::vec2 xy0(pen->x, pen->y + descender);
-        glm::vec2 xy1(pen->x + advance, xy0.y + height + linegap);
+    if (lines && markup.backgroundColor_.a > 0.0F) {
+        const glm::vec2 xy0(pen->x, pen->y + descender);
+        const glm::vec2 xy1(pen->x + advance, xy0.y + height + linegap);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.backgroundColor_, markup.gamma_);
 
         vcount += 4;
-        icount += 6;
+        icount += QUAD_INDICES;
     }
 
     if (lines && markup.underline_) {
-        glm::vec2 xy0(pen->x, pen->y + underlinePosition);
-        glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
+        const glm::vec2 xy0(pen->x, pen->y + underlinePosition);
+        const glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.underlineColor_, markup.gamma_);
 
         vcount += 4;
-        icount += 6;
+        icount += QUAD_INDICES;
     }
 
     if (lines && markup.overline_) {
-        glm::vec2 xy0(pen->x, pen->y + ascender);
-        glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
+        const glm::vec2 xy0(pen->x, pen->y + ascender);
+        const glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.overlineColor_, markup.gamma_);
 
         vcount += 4;
-        icount += 6;
+        icount += QUAD_INDICES;
     }
 
     if (lines && markup.strikethrough_) {
-        glm::vec2 xy0(pen->x, pen->y + ascender * .33f);
-        glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
+        const glm::vec2 xy0(pen->x, pen->y + (ascender * .33f));
+        const glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
 
         addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.strikethroughColor_, markup.gamma_);
 
         vcount += 4;
-        icount += 6;
+        icount += QUAD_INDICES;
     }
 
-    // actual glyph. y grows downwards and the pen sits on the baseline, so the bottom of
-    // the quad is however far the bitmap reaches below the baseline - its height less the
-    // bearing - and the top is one bitmap height above that
-    const float glyphWidth = glyph->width_ * scale;
-    const float glyphHeight = glyph->height_ * scale;
-    glm::vec2 xy0(pen->x + glyph->offset_.x * scale, static_cast<float>(static_cast<int>(pen->y + glyphHeight - glyph->offset_.y * scale)));
-    glm::vec2 xy1(xy0.x + glyphWidth, static_cast<float>(static_cast<int>(xy0.y - glyphHeight)));
+    // the glyph itself. y grows downwards and the pen sits on the baseline. The quad's bottom
+    // is as far below the baseline as the bitmap reaches, its height less its top bearing, and
+    // its top is one bitmap height above that
+    const float glyphWidth = static_cast<float>(glyph->width_) * scale;
+    const float glyphHeight = static_cast<float>(glyph->height_) * scale;
+    const float bottom = pen->y + glyphHeight - (static_cast<float>(glyph->offset_.y) * scale);
+    const glm::vec2 xy0(pen->x + (static_cast<float>(glyph->offset_.x) * scale), static_cast<float>(static_cast<int>(bottom)));
+    const glm::vec2 xy1(xy0.x + glyphWidth, static_cast<float>(static_cast<int>(xy0.y - glyphHeight)));
 
     addQuad(xy0, xy1, glyph->st_[0], glyph->st_[1], markup.foregroundColor_, markup.gamma_);
 
     vcount += 4;
-    icount += 6;
+    icount += QUAD_INDICES;
 
     pen->x += advance;
     items_.push_back(glm::ivec4(vstart, vcount, istart, icount));
@@ -122,10 +131,10 @@ void TextureTextBuffer::addQuad(const glm::vec2& xy0, const glm::vec2& xy1, cons
     const unsigned int vcount = static_cast<unsigned int>(vertices().size());
 
     // uv[0,1].t are flipped so y(0) can be top of screen (otherwise texture is upside down)
-    addVertex(glm::vec3(xy0.x, xy0.y, 0.0f), glm::vec2(uv0.s, uv1.t), color, xy0.x - (static_cast<int>(xy0.x)), gamma);
-    addVertex(glm::vec3(xy0.x, xy1.y, 0.0f), glm::vec2(uv0.s, uv0.t), color, xy0.x - (static_cast<int>(xy0.x)), gamma);
-    addVertex(glm::vec3(xy1.x, xy1.y, 0.0f), glm::vec2(uv1.s, uv0.t), color, xy1.x - (static_cast<int>(xy1.x)), gamma);
-    addVertex(glm::vec3(xy1.x, xy0.y, 0.0f), glm::vec2(uv1.s, uv1.t), color, xy1.x - (static_cast<int>(xy1.x)), gamma);
+    addVertex(glm::vec3(xy0.x, xy0.y, 0.0F), glm::vec2(uv0.s, uv1.t), color, xy0.x - static_cast<float>(static_cast<int>(xy0.x)), gamma);
+    addVertex(glm::vec3(xy0.x, xy1.y, 0.0F), glm::vec2(uv0.s, uv0.t), color, xy0.x - static_cast<float>(static_cast<int>(xy0.x)), gamma);
+    addVertex(glm::vec3(xy1.x, xy1.y, 0.0F), glm::vec2(uv1.s, uv0.t), color, xy1.x - static_cast<float>(static_cast<int>(xy1.x)), gamma);
+    addVertex(glm::vec3(xy1.x, xy0.y, 0.0F), glm::vec2(uv1.s, uv1.t), color, xy1.x - static_cast<float>(static_cast<int>(xy1.x)), gamma);
 
     // Use CCW winding so that the ortho matrix can put y(0) at the top of the screen
     // CW winding tri indices would be (0, 1, 2), (0, 2, 3)

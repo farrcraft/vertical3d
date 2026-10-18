@@ -20,50 +20,50 @@ namespace v3d::type::effect {
  * The description of an emitter: how often it spawns particles, where, how they move, and how
  * they look over their life.
  *
- * The spawn shape and the direction are in the emitter's own space, which step() turns into
- * the world by an orientation, so a muzzle flash follows the way its gun faces. Acceleration is
- * in the world, since gravity and wind do not turn with what emits.
+ * The spawn shape and the direction are in the emitter's own space. step() turns them into the
+ * world by an orientation, so a muzzle flash follows the way its gun faces. Acceleration is in
+ * world space, because gravity and wind do not turn with the emitter.
  **/
 struct Emitter final {
     /**
      * Where a particle is born, about the emitter's origin.
      **/
-    enum class Shape {
+    enum class Shape : std::uint8_t {
         Point,
         Sphere,   /**< anywhere inside a ball of radius extent.x **/
         Box       /**< anywhere inside a box of half size extent **/
     };
 
-    float rate{ 0.0f };      /**< particles a second; burst() adds them all at once **/
+    float rate{ 0.0F };      /**< particles a second that step() spawns. burst() ignores it **/
     uint32_t cap{ 256 };     /**< how many may live at once; particles due beyond it are dropped **/
 
-    float lifeMin{ 1.0f };   /**< a particle's lifetime in seconds, drawn between these **/
-    float lifeMax{ 1.0f };
+    float lifeMin{ 1.0F };   /**< a particle's lifetime in seconds, drawn between these **/
+    float lifeMax{ 1.0F };
 
     Shape shape{ Shape::Point };
-    glm::vec3 extent{ 0.0f };
+    glm::vec3 extent{ 0.0F };
 
-    glm::vec3 direction{ 0.0f, 1.0f, 0.0f };  /**< the centre of the cone a particle is launched in **/
-    float spread{ 0.0f };    /**< the cone's half angle in radians: 0 is along direction, pi any way **/
-    float speedMin{ 0.0f };  /**< launch speed in units a second, drawn between these **/
-    float speedMax{ 0.0f };
+    glm::vec3 direction{ 0.0F, 1.0F, 0.0F };  /**< the centre of the cone a particle is launched in **/
+    float spread{ 0.0F };    /**< the cone's half angle in radians: 0 is along direction, pi any way **/
+    float speedMin{ 0.0F };  /**< launch speed in units a second, drawn between these **/
+    float speedMax{ 0.0F };
 
-    glm::vec3 acceleration{ 0.0f };  /**< gravity, a steady wind **/
-    float drag{ 0.0f };      /**< the fraction of its velocity a particle loses a second **/
+    glm::vec3 acceleration{ 0.0F };  /**< gravity, a steady wind **/
+    float drag{ 0.0F };      /**< the fraction of its velocity a particle loses a second **/
 
     /**
-     * A sideways drift, like a snowflake's, added where a particle is drawn rather than where
-     * it is simulated. It reaches so far either side along the camera's right and sways so
-     * many times a second, each particle at its own phase.
+     * A sideways drift, like a snowflake's. It is added when a particle is drawn, not when it
+     * is simulated. sway is how far the drift reaches either side along the camera's right,
+     * and swayRate is how many times a second it sways. Each particle sways at its own phase.
      **/
-    float sway{ 0.0f };
-    float swayRate{ 0.0f };
+    float sway{ 0.0F };
+    float swayRate{ 0.0F };
 
     /**
      * Size in world units and colour, each over a particle's life from 0 at birth to 1 at death.
      **/
-    animation::Track<float> size{ 1.0f };
-    animation::Track<glm::vec4> colour{ glm::vec4(1.0f) };
+    animation::Track<float> size{ 1.0F };
+    animation::Track<glm::vec4> colour{ glm::vec4(1.0F) };
 };
 
 /**
@@ -74,10 +74,11 @@ struct Emitter final {
  *
  * @param wind added to the emitter's acceleration for this step
  **/
-void travel(const Emitter& emitter, State* state, float seconds, const glm::vec3& wind = glm::vec3(0.0f));
+void travel(const Emitter& emitter, State* state, float seconds, const glm::vec3& wind = glm::vec3(0.0F));
 
 /**
- * How many whole particles a rate has earned over a step, keeping the fraction it has not.
+ * How many whole particles a rate has earned over a step. The leftover fraction stays in
+ * state->owed for the next step.
  **/
 uint32_t owing(State* state, float rate, float seconds);
 
@@ -94,7 +95,7 @@ bool spawn(const Emitter& emitter, State* state, const glm::vec3& position, cons
  * Move the particles an emitter has made, then spawn the particles its rate makes due within
  * its shape.
  *
- * One born this step stands where it was born, with its previous position there too.
+ * A particle born this step has both its position and its previous position at its birthplace.
  *
  * @param origin where the emitter stands in the world
  * @param orientation how the emitter is turned, which turns its spawn shape and direction

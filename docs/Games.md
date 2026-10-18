@@ -41,7 +41,7 @@ Every game follows the same pattern:
 | Pong | `pong` | 800 × 600 | `binding`, `ui`, `window`, `sound` | `pong` suite: ball, paddle, game state, scene |
 | Tetris | `tetris` | 800 × 600 | `binding`, `ui`, `window` | `tetris` suite: board, tetrad |
 | Voxel | `voxel` | 800 × 600 | `binding`, `ui`, `window` | `voxel` suite: chunks, culling, mesh cache, Morton codes |
-| Odyssey | `Odyssey` | 1280 × 768 | `binding`, `window`, and the game's own `map` | `odyssey` suite: map, sight |
+| Odyssey | `Odyssey` | 1280 × 768 | `binding`, `window`, and the game's own `world` | `odyssey` suite: map, sight, world |
 
 No suite needs a window or a GPU. The renderers are not covered.
 
@@ -56,11 +56,10 @@ Sources are in `pong/src/`.
 |---|---|---|
 | W, S | `pong::leftPaddleUp`, `pong::leftPaddleDown` | Move player 1's paddle while held |
 | Up, Down | `pong::rightPaddleUp`, `pong::rightPaddleDown` | Move player 2's paddle while held (co-op only) |
-| Escape | `pong::showGameMenu` | Show or hide the menu, which pauses the game |
+| Escape | `ui::showGameMenu` | Show or hide the menu, which pauses the game |
 | Up, Down, Return | `ui::menuPrevious`, `ui::menuNext`, `ui::selectMenu` | Navigate the menu |
 | F3 | `pong::toggleStatistics` | Show or hide the frame statistics |
-
-F1 is bound to `pong::toggleFS`, which nothing handles.
+| F1 | `ui::fullscreen` | Switch between full screen and a window |
 
 **Game modes.** The game starts in co-op mode, with both paddles controlled by players. The
 menu offers Singleplayer, Co-op and Multiplayer. In Singleplayer the right paddle is steered by
@@ -127,8 +126,7 @@ Falling tetrads on a board. Sources are in `tetris/src/`.
 | Up, Down, Return | `ui::menuPrevious`, `ui::menuNext`, `ui::selectMenu` | Navigate the menu |
 | F2 | `tetris::debugMode` | Show the current piece's position and size |
 | F3 | `tetris::toggleStatistics` | Show or hide the frame statistics |
-
-F1 is bound to `tetris::toggleFS`, which nothing handles.
+| F1 | `ui::fullscreen` | Switch between full screen and a window |
 
 A rotation that does not fit tries the same rotation shifted 1 and then 2 columns either way
 before giving up. Play commands are ignored while the game is paused or over.
@@ -193,22 +191,48 @@ says how to build it.
 
 ## Odyssey
 
-A tile-based game: a player on a board of walls and crates, with line of sight. The game itself
-is not written yet. Sources are in `odyssey/`.
+A tile-based game: a player in a world of walls and crates, with line of sight. The world is made
+of regions, each a board of its own, loaded as the player approaches them. The game itself is not
+written yet. Sources are in `odyssey/`.
 
 **Controls:**
 
 | Input | Command | Effect |
 |---|---|---|
 | W, A, S, D | `odyssey::moveForward`, `moveLeft`, `moveBackward`, `moveRight` | Step one tile; also stops a walk in progress |
-| Left click | `odyssey::use` | Walk to the clicked tile along the shortest path |
+| Left click | `odyssey::use` | Walk to the clicked tile along the shortest path, within the region the player stands in |
 | Escape | `ui::quit` | Quit |
 
-Space is bound to `odyssey::moveUp`, which nothing handles. A walk moves one tile every 0.15
-seconds.
+A walk moves one tile every 0.15 seconds.
 
-**The map format.** `data/map.json` holds a `tiles` array of strings, one string per row and one
-character per tile. All rows must be the same length.
+**The world.** `data/world.json` lists the regions and names the one the player starts in:
+
+```json
+{
+  "regions": [
+    { "file": "map.json", "corner": { "x": 0, "y": 0 }, "size": { "x": 20, "y": 12 } },
+    { "file": "east.json", "corner": { "x": 20, "y": 0 }, "size": { "x": 20, "y": 12 } }
+  ],
+  "start": 0
+}
+```
+
+- Each region names its map, its corner in world tiles, and its size, which its map must match.
+  Regions may not overlap, and every number must be a whole number.
+- Positions are world tiles, and a tile is one world unit. Each region's grid is placed by its
+  corner, as [api/Grid.md](api/Grid.md#regions) describes.
+- The start region loads with the game. Another region is loaded on a worker thread once the
+  player comes within 4 tiles of it, and released once the player is more than 10 tiles from it.
+  A region whose map cannot be read is asked for again only after the player has gone away.
+- A step from one region's edge onto the next region's first tile crosses between them, once the
+  next one is loaded. A clicked route and the player's sight stay within the region the player
+  stands in. The next region is dark until the player crosses into it, and the region left behind
+  is drawn from memory.
+- The screen shows 20 × 12 tiles and scrolls to keep the player near its middle, inside the
+  world's edges.
+
+**The map format.** Each region's map, such as `data/map.json`, holds a `tiles` array of strings,
+one string per row and one character per tile. All rows must be the same length.
 
 | Character | Tile | Walkable | Blocks sight |
 |---|---|---|---|
@@ -218,30 +242,34 @@ character per tile. All rows must be the same length.
 | `@` | Floor, and the player's start | Yes | No |
 
 Any other character is refused. With no `@`, the player starts on the first walkable tile. A
-tile is 64 × 64 pixels, so the shipped 20 × 12 board fills the 1280 × 768 window.
+tile is 64 × 64 pixels, so one 20 × 12 region fills the 1280 × 768 window.
 
 **Data files** (`odyssey/data/`):
 
 | File | Holds |
 |---|---|
-| `config.json` | Lists `mappings.json`, `window.json` and `map.json`, the last under the game's own type `map` |
+| `config.json` | Lists `mappings.json`, `window.json` and `world.json`, the last under the game's own type `world` |
 | `mappings.json`, `window.json` | Bindings and window size |
-| `map.json` | The board |
+| `world.json` | The regions, and where the player starts |
+| `map.json`, `east.json` | The two regions' boards, joined by a doorway on row 5 |
 | `sample.png` | The player sprite |
 | `player.json` | Not read |
 
 **Sight.** `tile::Sight` reaches 7 tiles, measured as a square (Chebyshev distance), and
-remembers every tile it has seen. The renderer does not draw tiles never seen and dims
-remembered ones that are out of sight.
+remembers every tile it has seen. Each region keeps its own, and keeps it while the region is
+released. The renderer does not draw tiles never seen and dims remembered ones that are out of
+sight.
 
 **What odyssey is the reference for:**
 
-- **`api/grid`.** The map is parsed with `grid::fromPicture` into a `grid::TileGrid`. A click is
-  routed with `grid::findPath`, and `tile::Sight` asks `grid::hasLineOfSight` what is visible.
-  The tile kinds and the map format are odyssey's own; the grid stores only passability and
-  cover. See [api/Grid.md](api/Grid.md).
-- **An app's own config document.** `config.json` files the map under the type `map`, and the
-  game reads it with `config()->get("map")`.
+- **`api/grid`.** Each region's map is parsed with `grid::fromPicture` into a `grid::TileGrid`
+  placed by its corner. A click is routed with `grid::findPath`, and `tile::Sight` asks
+  `grid::hasLineOfSight` what is visible. The tile kinds and the file formats are odyssey's own;
+  the grid stores only passability and cover. See [api/Grid.md](api/Grid.md).
+- **Regions loaded while the game runs.** `tile::World` reads a region on an `asset::Worker` and
+  hands it over in `tick()`. See [api/Assets.md](api/Assets.md#loading-on-a-worker-thread).
+- **An app's own config document.** `config.json` files the world under the type `world`, and
+  the game reads it with `config()->get("world")`.
 - **`ecs::System`.** `system::Movement` derives from `v3d::ecs::System` and advances each
   entity's `Path` component in `simulate()`. The player's tile is a `grid::TileCoord` component.
   See [api/ECS.md](api/ECS.md).

@@ -6,8 +6,12 @@
 #include "TextureFactory.h"
 
 #include <api/image/Image.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/pipeline/Sampler.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -15,6 +19,7 @@
 #include "Barriers.h"
 #include "Buffer.h"
 #include "Image.h"
+#include "Uploader.h"
 
 #include <boost/make_shared.hpp>
 
@@ -26,8 +31,8 @@ TextureFactory::TextureFactory(const boost::shared_ptr<device::Device>& device, 
     device_(device),
     uploader_(uploader) {
     // the default. It is linear, because a glyph atlas is sampled at whatever size the text is
-    // drawn at and a sprite at whatever size the window is. It is clamped, because a region's
-    // neighbour in an atlas is a different glyph and wrapping would bleed it in
+    // drawn at and a sprite at whatever size the window is. It is clamped, so a read past one
+    // edge of the image does not wrap around to the opposite edge
     sampler(pipeline::Sampler::Spec());
 }
 
@@ -43,15 +48,18 @@ pipeline::Texture TextureFactory::create(const boost::shared_ptr<v3d::image::Ima
     if (!image) {
         throw std::runtime_error("A vulkan texture needs an image to be created from");
     }
-    // bpp really is bits per pixel here, whatever the name suggests: the loaders set it
-    // to 24 or 32, and a glyph atlas of depth 1 to 8
-    return create(image->data(), image->width(), image->height(), image->bpp() / 8, encoding, sampler);
+    // bpp is bits per pixel. The loaders set it to 24 or 32, and a glyph atlas of depth 1
+    // sets it to 8
+    return create({.data = image->data(), .width = image->width(), .height = image->height(), .channels = static_cast<uint32_t>(image->bpp() / 8)}, encoding, sampler);
 }
 
 /**
  **/
-pipeline::Texture TextureFactory::create(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
-    Encoding encoding, const pipeline::Sampler::Spec& sampler) const {
+pipeline::Texture TextureFactory::create(const Pixels& source, Encoding encoding, const pipeline::Sampler::Spec& sampler) const {
+    const unsigned char* pixels = source.data;
+    const uint32_t width = source.width;
+    const uint32_t height = source.height;
+    const uint32_t channels = source.channels;
     if (pixels == nullptr || width == 0 || height == 0) {
         throw std::runtime_error("A vulkan texture needs pixels and a non-zero size");
     }
@@ -71,16 +79,16 @@ pipeline::Texture TextureFactory::create(const unsigned char* pixels, uint32_t w
     }
     const VkDeviceSize bytes = static_cast<VkDeviceSize>(width) * height * uploaded;
 
-    Buffer staging(device_, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, bytes);
+    Buffer staging(device_, {.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
     if (channels == 3) {
         // no device has to support a three channel format, so widen on the way in
         std::vector<unsigned char> widened(static_cast<std::size_t>(bytes));
         const std::size_t count = static_cast<std::size_t>(width) * height;
         for (std::size_t pixel = 0; pixel < count; pixel++) {
-            widened[pixel * 4 + 0] = pixels[pixel * 3 + 0];
-            widened[pixel * 4 + 1] = pixels[pixel * 3 + 1];
-            widened[pixel * 4 + 2] = pixels[pixel * 3 + 2];
-            widened[pixel * 4 + 3] = 0xFF;
+            widened[(pixel * 4) + 0] = pixels[(pixel * 3) + 0];
+            widened[(pixel * 4) + 1] = pixels[(pixel * 3) + 1];
+            widened[(pixel * 4) + 2] = pixels[(pixel * 3) + 2];
+            widened[(pixel * 4) + 3] = 0xFF;
         }
         staging.write(widened.data(), bytes);
     } else {
@@ -93,8 +101,9 @@ pipeline::Texture TextureFactory::create(const unsigned char* pixels, uint32_t w
     spec.format = format;
     spec.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     if (coverage) {
-        // a glyph atlas carries coverage in its one channel, and the quad shader
-        // multiplies the vertex colour by whatever it samples - so hand it white
+        // the one channel is read as alpha, and rgb as white. The quad shader multiplies a
+        // coverage mask's sample into the vertex colour, and reads a glyph atlas's distance
+        // from alpha
         spec.components.r = VK_COMPONENT_SWIZZLE_ONE;
         spec.components.g = VK_COMPONENT_SWIZZLE_ONE;
         spec.components.b = VK_COMPONENT_SWIZZLE_ONE;
@@ -116,7 +125,7 @@ pipeline::Texture TextureFactory::volume(const unsigned char* texels, uint32_t w
         throw std::runtime_error("A vulkan volume texture needs texels and a non-zero size");
     }
     const VkDeviceSize bytes = static_cast<VkDeviceSize>(width) * height * depth * 4;
-    Buffer staging(device_, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, bytes);
+    Buffer staging(device_, {.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
     staging.write(texels, bytes);
 
     Image::Spec spec;

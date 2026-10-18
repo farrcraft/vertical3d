@@ -5,6 +5,9 @@
 
 #include "Isometric.h"
 
+#include "Camera.h"
+#include "Profile.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -14,16 +17,16 @@ namespace v3d::type::camera {
 
 namespace {
 
-constexpr glm::vec3 UP(0.0f, 1.0f, 0.0f);
+constexpr glm::vec3 UP(0.0F, 1.0F, 0.0F);
 
 /**
  * A quarter turn per azimuth step.
  **/
-constexpr float QUARTER_TURN = 1.57079632679489661923f;
+constexpr float QUARTER_TURN = 1.57079632679489661923F;
 
 /**
  * The step index reduced into [0, AZIMUTHS), for a negative index as well as a positive
- * one - the built in remainder keeps the sign of its left operand.
+ * one. The built in remainder keeps the sign of its left operand.
  **/
 int wrap(int index) {
     const int remainder = index % Isometric::AZIMUTHS;
@@ -32,7 +35,7 @@ int wrap(int index) {
 
 };  // namespace
 
-Isometric::Isometric() : target_(0.0f, 0.0f, 0.0f) {
+Isometric::Isometric() : target_(0.0F, 0.0F, 0.0F) {
 }
 
 void Isometric::rotate(int steps) {
@@ -54,13 +57,12 @@ void Isometric::pan(const glm::vec2& delta) {
 glm::vec3 Isometric::forward() const {
     const float angle = static_cast<float>(azimuth_) * QUARTER_TURN;
     // the eye sits at +x of the target at azimuth zero, so the view runs the other way
-    return glm::vec3(-std::cos(angle), 0.0f, -std::sin(angle));
+    return glm::vec3(-std::cos(angle), 0.0F, -std::sin(angle));
 }
 
 glm::vec3 Isometric::right() const {
-    // the projection sends the basis x to the right of the screen, so this is the profile's
-    // right flattened onto the ground, crossed the way the hand names. The cross order is
-    // all that a hand changes
+    // the profile's right flattened onto the ground. The hand changes only the order of
+    // the cross product
     return hand_ == Profile::Hand::DirectionCrossUp
         ? glm::normalize(glm::cross(forward(), UP))
         : glm::normalize(glm::cross(UP, forward()));
@@ -127,7 +129,7 @@ void Isometric::apply(Camera* camera) const {
     profile.orthographic(true);
     profile.orthoZoom(zoom_);
     profile.eye(eye());
-    // up before lookat: lookat derives the other two normals and the rotation from it
+    // up before lookat(), which derives the other two normals and the rotation from it
     profile.up(UP);
     profile.lookat(target_);
 }

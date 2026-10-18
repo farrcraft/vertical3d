@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 namespace v3d::editor {
@@ -16,7 +17,7 @@ namespace v3d::editor {
  * its vertices, half edges and faces, and the mask is the only thing stopping two kinds
  * being selected at once.
  **/
-enum class SelectMask {
+enum class SelectMask : std::uint8_t {
     Object,
     Vertex,
     Edge,

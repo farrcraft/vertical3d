@@ -16,21 +16,19 @@ namespace {
 using Kind = v3d::render::realtime::vulkan::memory::Allocator::Kind;
 
 /**
- * The kind of the allocator on the device the engine's context built. Read from the allocator
- * rather than from anything the engine stored, because what is being tested is that the choice
+ * The kind of the allocator on the device the engine's context built. It is read from the
+ * allocator, not from anything the engine stored, because the test checks that the choice
  * reaches the device.
  **/
 Kind built(const v3d::test::Windowed& windowed) {
     return windowed.engine->context()->device()->allocator().kind();
 }
 
-};  // namespace
-
 /**
  * An engine asked for a suballocating device builds one, and draws through it.
  **/
 BOOST_AUTO_TEST_CASE(engine3d_builds_the_allocator_it_is_asked_for_test) {
-    v3d::test::Windowed windowed(Kind::Suballocated);
+    const v3d::test::Windowed windowed(Kind::Suballocated);
     BOOST_TEST((built(windowed) == Kind::Suballocated));
 
     windowed.engine->renderFrame();
@@ -42,6 +40,8 @@ BOOST_AUTO_TEST_CASE(engine3d_builds_the_allocator_it_is_asked_for_test) {
  * An engine that names no kind builds one allocation per resource.
  **/
 BOOST_AUTO_TEST_CASE(engine3d_allocates_directly_by_default_test) {
-    v3d::test::Windowed windowed;
+    const v3d::test::Windowed windowed;
     BOOST_TEST((built(windowed) == Kind::Direct));
 }
+
+};  // namespace

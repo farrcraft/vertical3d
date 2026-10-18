@@ -5,7 +5,16 @@
 
 #include "Screen.h"
 
+#include <api/asset/Manager.h>
+#include <api/image/Image.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/Engine3D.h>
+#include <api/ui/Engine.h>
+#include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/TextRenderer.h>
+
+#include "StatisticsOverlay.h"
 
 #include <cstdint>
 
@@ -17,10 +26,16 @@ namespace v3d::ui::shell {
 namespace {
 
 /**
- * The dressing an app gets when it names none: a line of text and the gap after it.
+ * The height of a line of text, as a multiple of the text's size.
+ **/
+constexpr float LINE_SPACING = 1.4F;
+
+/**
+ * The Dress used when an app passes none. It sets only the line height, which covers a line
+ * of text and the gap after it.
  **/
 void lineHeight(paint::Dressing* dressing, float size) {
-    dressing->lineHeight = size * 1.4f;
+    dressing->lineHeight = size * LINE_SPACING;
 }
 
 };  // namespace
@@ -31,7 +46,7 @@ Screen::Screen(v3d::render::realtime::Engine3D* engine, const boost::shared_ptr<
     const boost::shared_ptr<v3d::log::Logger>& logger, const Options& options) :
     engine_(engine),
     options_(options),
-    scale_(1.0f),
+    scale_(1.0F),
     resized_(false) {
     if (!options_.dress) {
         options_.dress = lineHeight;
@@ -71,8 +86,8 @@ void Screen::build() {
         } else {
             immediate_ = boost::make_shared<Immediate>(text_->measure(drawn), text_->write(&canvas_, drawn));
         }
-        // the immediate layer has a dressing of its own kind, which the app's dress does not
-        // fill, so only the line height is carried across
+        // the immediate layer has its own Dressing type, which the app's Dress does not fill,
+        // so only the line height is copied across
         immediate_->dressing().lineHeight = components_->dressing().lineHeight;
         immediate_->theme(theme_);
     }
@@ -92,7 +107,7 @@ bool Screen::begin() {
     const auto width = static_cast<std::uint32_t>(frame.x);
     const auto height = static_cast<std::uint32_t>(frame.y);
     if (canvas_.width() != width || canvas_.height() != height) {
-        canvas_.resize(width, height);
+        canvas_.resize(glm::uvec2(width, height));
         resized_ = true;
     }
     canvas_.clear();
@@ -108,7 +123,7 @@ bool Screen::resized() const noexcept {
 /**
  **/
 void Screen::scale(float factor) {
-    if (factor <= 0.0f || factor == scale_) {
+    if (factor <= 0.0F || factor == scale_) {
         return;
     }
     scale_ = factor;
@@ -151,7 +166,7 @@ void Screen::draw(const Engine* ui, const StatisticsOverlay::Sample& statistics)
 
 /**
  **/
-v3d::render::realtime::Canvas& Screen::canvas() noexcept {
+v3d::render::realtime::canvas::Canvas& Screen::canvas() noexcept {
     return canvas_;
 }
 

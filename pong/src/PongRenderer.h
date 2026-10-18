@@ -7,7 +7,7 @@
 
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
 #include <api/ui/Engine.h>
 #include <api/ui/shell/Screen.h>
@@ -23,10 +23,11 @@
 #include <glm/vec4.hpp>
 
 /**
- * Everything pong draws, built as one canvas of quads and handed to the render engine.
+ * Everything pong draws, built as quads and handed to the render engine.
  *
- * The board, the scoreboard and the menu all go through the batched quad pipeline, so the
- * whole frame reaches the device as one upload and a draw per texture.
+ * The board and the scores are drawn on a canvas in court units. The menu and the statistics
+ * are drawn on the screen's canvas, in front of it. Both go through the batched quad pipeline,
+ * so the whole frame reaches the device as one upload and a draw per texture.
  **/
 class PongRenderer final {
  public:
@@ -67,7 +68,7 @@ class PongRenderer final {
 
     v3d::render::realtime::Engine3D engine_;
     // the court, in its own units, under the screen's canvas
-    v3d::render::realtime::Canvas court_;
+    v3d::render::realtime::canvas::Canvas court_;
 
     // built after the engine is initialized, because its atlas is uploaded through it
     boost::shared_ptr<v3d::ui::shell::Screen> screen_;

@@ -18,16 +18,24 @@ namespace v3d::ui::style {
 class Property;
 
 /**
+ * What a style applies to: a component's own style name and its class, such as "button".
+ */
+struct Selector {
+    std::string name;
+    std::string className;
+};
+
+/**
  * One entry of a theme: the properties a component of a given class and name is drawn with.
  *
- * A style is keyed by the pair rather than by either half, so a theme can carry a default
- * for every button and an override for one of them. The properties themselves are
- * typed - a colour, a number, a font, an image - and are read back through the free
- * functions below rather than by casting at the call site.
+ * A style is keyed by the pair, not by either half, so a theme can carry a default for every
+ * button and an override for one of them. The properties are typed (a colour, a number, a
+ * font, an image), and readColour() and readMetric() below read them without a cast at the
+ * call site.
  */
 class Style {
  public:
-    Style(const std::string& str, const std::string& class_name);
+    explicit Style(const Selector& selector);
     virtual ~Style();
 
     /**
@@ -83,5 +91,61 @@ void readColour(const boost::shared_ptr<Style>& target, const std::string& name,
  * name it.
  **/
 void readMetric(const boost::shared_ptr<Style>& target, const std::string& name, float* into);
+
+/**
+ * The values a theme wrote over a dressing, and what each held before.
+ *
+ * A theme names only some values. The next theme starts from the values before any theme,
+ * not from what the last one left. A value the new theme does not set goes back to its
+ * default, and no theme at all puts every value back.
+ *
+ * It records the field, not its address, so a dressing that is copied keeps working.
+ * restore() also replaces any value the app wrote over a themed one.
+ *
+ * @param D the dressing the values are in
+ **/
+template <typename D>
+class Overlay final {
+ public:
+    /**
+     * Read a colour as readColour() does, and remember what it replaced.
+     **/
+    void colour(const boost::shared_ptr<Style>& target, const std::string& name, D* dressing, glm::vec4 D::* field) {
+        const glm::vec4 was = dressing->*field;
+        readColour(target, name, &(dressing->*field));
+        if (dressing->*field != was) {
+            colours_.emplace_back(field, was);
+        }
+    }
+
+    /**
+     * Read a number as readMetric() does, and remember what it replaced.
+     **/
+    void metric(const boost::shared_ptr<Style>& target, const std::string& name, D* dressing, float D::* field) {
+        const float was = dressing->*field;
+        readMetric(target, name, &(dressing->*field));
+        if (dressing->*field != was) {
+            metrics_.emplace_back(field, was);
+        }
+    }
+
+    /**
+     * Put back every value read since the last restore, and forget them.
+     **/
+    void restore(D* dressing) {
+        for (auto it = colours_.rbegin(); it != colours_.rend(); ++it) {
+            dressing->*(it->first) = it->second;
+        }
+        for (auto it = metrics_.rbegin(); it != metrics_.rend(); ++it) {
+            dressing->*(it->first) = it->second;
+        }
+        colours_.clear();
+        metrics_.clear();
+    }
+
+ private:
+    std::vector<std::pair<glm::vec4 D::*, glm::vec4>> colours_;
+    std::vector<std::pair<float D::*, float>> metrics_;
+};
 
 };  // namespace v3d::ui::style

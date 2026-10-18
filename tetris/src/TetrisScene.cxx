@@ -5,6 +5,9 @@
 
 #include "TetrisScene.h"
 
+#include <api/asset/Manager.h>
+#include <api/log/Logger.h>
+
 TetrisScene::TetrisScene(const boost::shared_ptr<v3d::log::Logger>& logger) :
     board_(logger), paused_(false), debug_(false) {
 }

@@ -22,6 +22,12 @@ A ui document is JSON with three top-level keys:
 - `containers` (required) is an array. Each container has a `name`, a `visible` flag and a
   `components` array. A container is shown and hidden as a whole.
 
+**A member of the wrong type never throws out of the load.** A required member fails the load
+with a log line when it is missing or of the wrong type. The required members are a component's
+`type` and `name`, a container's `name`, `visible` and `components`, and a menu item's `label`
+and `type`. An
+optional one of the wrong type is logged and ignored, and the setting keeps its default.
+
 Every component entry has a `type` and a `name`. These keys apply to every component:
 
 | Key | Type | Default | Meaning |

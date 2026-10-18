@@ -5,11 +5,17 @@
 
 #include "GameBoard.h"
 
+#include <api/asset/Manager.h>
 #include <api/asset/kind/Text.h>
 #include <api/asset/Type.h>
+#include <api/log/Logger.h>
+
+#include "Piece.h"
+#include "Tetrad.h"
 
 #include <cstdlib>
 #include <ctime>
+#include <exception>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -21,11 +27,24 @@ namespace {
  **/
 const unsigned int rowScore = 100;
 
+const unsigned int boardRows = 20;
+const unsigned int boardColumns = 10;
+
+/**
+ * Seconds a tetrad rests on each row.
+ **/
+constexpr float fallRate = 0.8F;
+
+/**
+ * Lines of the shapes file that describe one tetrad: four bitmap rows and a texture name.
+ **/
+const size_t linesPerShape = 5;
+
 };  // namespace
 
 GameBoard::GameBoard(const boost::shared_ptr<v3d::log::Logger>& logger) :
-                        rows_(20), cols_(10), fallRate_(0.8f),
-                        fastFallMultiplier_(8), fastFall_(false), nextMove_(0.8f),
+                        rows_(boardRows), cols_(boardColumns), fallRate_(fallRate),
+                        fastFallMultiplier_(8), fastFall_(false), nextMove_(fallRate),
                         debug_(false), score_(0), over_(false), logger_(logger) {
     reset();
 
@@ -60,7 +79,7 @@ bool GameBoard::load(const boost::shared_ptr<v3d::asset::Manager>& assetManager)
     }
 
     std::vector<Tetrad::ShapeInfo> parsed;
-    for (size_t i = 0; i + 4 < lines.size(); i += 5) {
+    for (size_t i = 0; i + linesPerShape <= lines.size(); i += linesPerShape) {
         Tetrad::ShapeInfo info;
         bool valid = true;
         for (unsigned int row = 0; row < 4; row++) {
@@ -149,11 +168,11 @@ Piece GameBoard::piece(unsigned int col, unsigned int row) const {
     return pieces_[row][col];
 }
 
-void GameBoard::piece(unsigned int col, unsigned int row, const Piece & p) {
+void GameBoard::piece(unsigned int col, unsigned int row, const Piece & placed) {
     if (row >= pieces_.size() || col >= pieces_[row].size()) {
         return;
     }
-    pieces_[row][col] = p;
+    pieces_[row][col] = placed;
 }
 
 Tetrad GameBoard::currentTetrad() const {
@@ -168,7 +187,9 @@ Tetrad & GameBoard::currentTetrad() {
     return currentTetrad_;
 }
 
-bool GameBoard::fits(const Tetrad & tetrad, int column, int row) const {
+bool GameBoard::fits(const Tetrad & tetrad, const glm::ivec2 & cell) const {
+    const int column = cell.x;
+    const int row = cell.y;
     if (!tetrad.initialized()) {
         return false;
     }
@@ -194,7 +215,7 @@ bool GameBoard::fits(const Tetrad & tetrad, int column, int row) const {
 
 Tetrad GameBoard::randomTetrad() {
     // pick a shape
-    size_t shapeCount = shapes_.size();
+    const size_t shapeCount = shapes_.size();
     size_t num = rand() % shapeCount;  // NOLINT
 
     Tetrad piece(shapes_[num]);
@@ -222,13 +243,13 @@ void GameBoard::spawnTetrad() {
     currentTetrad_ = nextTetrad_;
     nextTetrad_ = randomTetrad();
 
-    // place it centered at the top of the board. A shape is normalised into the top left of
-    // its 4x4 grid, so the grid's left column is also the shape's
+    // centre the 4x4 grid at the top of the board. Every shape is normalised into the top left
+    // of its grid, so the grid's left column is also the shape's
     const Tetrad::PositionType position((cols_ - 4) / 2, 0);
     currentTetrad_.position(position);
 
     // nowhere left to put it: the stack has reached the top
-    if (!fits(currentTetrad_, position.first, position.second)) {
+    if (!fits(currentTetrad_, glm::ivec2(static_cast<int>(position.first), static_cast<int>(position.second)))) {
         over_ = true;
     }
 }
@@ -244,8 +265,8 @@ void GameBoard::lockTetrad() {
             }
             const unsigned int row = position.second + i;
             const unsigned int column = position.first + j;
-            // fits() has already checked the tetrad is inside the board, but a stray write during
-            // a lock would corrupt the heap rather than draw something odd, so it is checked again
+            // fits() has already checked that the tetrad is inside the board. Check again anyway,
+            // because a write outside the board here would corrupt the heap
             if (row < rows_ && column < cols_) {
                 pieces_[row][column] = Piece(shape.color_);
             }
@@ -265,13 +286,13 @@ void GameBoard::update(float step) {
     }
 
     nextMove_ -= step;
-    if (nextMove_ > 0.0f) {
+    if (nextMove_ > 0.0F) {
         return;
     }
     nextMove_ = fastFall_ ? (fallRate_ / static_cast<float>(fastFallMultiplier_)) : fallRate_;
 
     const Tetrad::PositionType position = currentTetrad_.position();
-    if (fits(currentTetrad_, position.first, position.second + 1)) {
+    if (fits(currentTetrad_, glm::ivec2(static_cast<int>(position.first), static_cast<int>(position.second + 1)))) {
         currentTetrad_.move(0, 1);
         return;
     }
@@ -285,8 +306,8 @@ void GameBoard::update(float step) {
 unsigned int GameBoard::checkCompletedRows() {
     unsigned int cleared = 0;
 
-    // from the bottom up, and a cleared row is looked at again rather than stepped past,
-    // because what was above it has just been shifted into it
+    // scan from the bottom up. After a row is cleared the same row is checked again, because
+    // the row above it has just moved down into it
     unsigned int row = rows_;
     while (row > 0) {
         unsigned int filled = 0;
@@ -301,8 +322,8 @@ unsigned int GameBoard::checkCompletedRows() {
         }
 
         // move everything above down one row and empty the top one
-        for (unsigned int m = row - 1; m > 0; m--) {
-            pieces_[m] = pieces_[m - 1];
+        for (unsigned int target = row - 1; target > 0; target--) {
+            pieces_[target] = pieces_[target - 1];
         }
         pieces_[0] = std::vector<Piece>(cols_);
         cleared++;

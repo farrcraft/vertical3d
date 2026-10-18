@@ -13,9 +13,9 @@
 namespace v3dtest {
 
 /**
- * Write the smallest wav the mixer will accept - a 44 byte canonical header over a handful
- * of 16 bit mono samples. Generated rather than committed so that every byte a case
- * depends on is visible here.
+ * Write the smallest wav the mixer will accept: a 44 byte canonical header and a handful of
+ * 16 bit mono samples. It is generated, not committed, so that every byte a case depends on
+ * is visible here.
  **/
 inline void writeWav(const std::string& path, uint32_t samples = 16) {
     const uint32_t rate = 44100;

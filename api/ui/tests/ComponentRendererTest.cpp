@@ -3,16 +3,16 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/menu/Menu.h>
-#include <api/ui/component/menu/MenuBar.h>
-#include <api/ui/component/menu/MenuItem.h>
+#include <api/ui/component/menu/Item.h>
 #include <api/ui/component/TextBox.h>
+#include <api/ui/component/menu/Type.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Style.h>
@@ -46,24 +46,22 @@ struct Written final {
 /**
  * A fixed width per character, so a label's width is predictable.
  **/
-const float characterWidth = 10.0f;
+const float characterWidth = 10.0F;
 
 /**
  * A menu of action items with the given labels, with its level pointing at itself the way
  * the ui engine's loader leaves it.
  **/
-boost::shared_ptr<v3d::ui::component::Menu> buildMenu(const std::vector<std::string>& labels) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::ui::component::Menu> menu = boost::make_shared<v3d::ui::component::Menu>(dispatcher);
+boost::shared_ptr<v3d::ui::component::menu::Menu> buildMenu(const std::vector<std::string>& labels) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    boost::shared_ptr<v3d::ui::component::menu::Menu> menu = boost::make_shared<v3d::ui::component::menu::Menu>(dispatcher);
     for (const std::string& label : labels) {
-        menu->addItem(boost::make_shared<v3d::ui::component::MenuItem>(v3d::ui::component::menu::ItemType::Action, label));
+        menu->addItem(boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Action, label));
     }
     menu->level(menu);
     menu->active(0);
     return menu;
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(component_renderer_test)
 
@@ -74,7 +72,7 @@ BOOST_AUTO_TEST_SUITE(component_renderer_test)
  **/
 BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer(
+    const v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
@@ -84,8 +82,8 @@ BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
             written.push_back(line);
         });
 
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(800, 600);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
 
     renderer.draw(&canvas, buildMenu({"One", "Two", "Three"}));
 
@@ -113,10 +111,10 @@ BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
             written.push_back(line);
         });
 
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(800, 600);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
 
-    boost::shared_ptr<v3d::ui::component::Menu> menu = buildMenu({"One", "Two", "Three"});
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"One", "Two", "Three"});
     menu->next();
 
     renderer.draw(&canvas, menu);
@@ -129,10 +127,10 @@ BOOST_AUTO_TEST_CASE(only_the_active_item_is_drawn_highlighted) {
 }
 
 /**
- * Descending into a submenu replaces what is on screen with the submenu's items, because the
- * menu draws the level navigation is on rather than the menu it was reached through.
+ * A disabled item in the centred game menu is written in the disabled colour, as it is in a
+ * dropped panel, so it does not look like a choice the menu then refuses.
  **/
-BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
+BOOST_AUTO_TEST_CASE(a_disabled_item_in_a_centred_menu_is_greyed) {
     std::vector<Written> written;
     v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
@@ -143,14 +141,45 @@ BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
             line.colour = colour;
             written.push_back(line);
         });
+    const glm::vec4 greyed(0.3F, 0.3F, 0.3F, 1.0F);
+    renderer.dressing().disabledText = greyed;
 
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(800, 600);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
 
-    boost::shared_ptr<v3d::ui::component::Menu> menu = buildMenu({"Options", "Quit"});
-    boost::shared_ptr<v3d::ui::component::Menu> submenu = buildMenu({"Rounds", "Keys"});
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"Resume", "Load", "Quit"});
+    (*menu)[1]->enabled(false);
+    renderer.draw(&canvas, menu);
+
+    BOOST_REQUIRE_EQUAL(written.size(), 3U);
+    BOOST_CHECK(written[0].colour != greyed);
+    BOOST_CHECK(written[1].colour == greyed);
+    BOOST_CHECK(written[2].colour != greyed);
+}
+
+/**
+ * Descending into a submenu replaces what is on screen with the submenu's items, because the
+ * menu draws the level navigation is on rather than the menu it was reached through.
+ **/
+BOOST_AUTO_TEST_CASE(a_submenu_replaces_what_is_drawn) {
+    std::vector<Written> written;
+    const v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            Written line;
+            line.text = text;
+            line.pen = pen;
+            line.colour = colour;
+            written.push_back(line);
+        });
+
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"Options", "Quit"});
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> submenu = buildMenu({"Rounds", "Keys"});
     submenu->parent(menu);
-    (*menu)[0] = boost::make_shared<v3d::ui::component::MenuItem>(v3d::ui::component::menu::ItemType::Submenu, "Options");
+    (*menu)[0] = boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Submenu, "Options");
     (*menu)[0]->submenu(submenu);
     submenu->level(submenu);
 
@@ -170,33 +199,33 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(800, 600);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
 
     renderer.draw(&canvas, buildMenu({"a", "abcdefghij"}));
 
     BOOST_REQUIRE(canvas.vertices().size() >= 8);
     // vertices 4..7 are the panel, drawn over the border: min at [4], max at [6]
     const float padding = renderer.dressing().padding;
-    const float expectedWidth = 10.0f * characterWidth + padding * 2.0f;
+    const float expectedWidth = (10.0F * characterWidth) + (padding * 2.0F);
     const float left = canvas.vertices()[4].position.x;
     const float right = canvas.vertices()[6].position.x;
 
-    BOOST_CHECK_CLOSE(right - left, expectedWidth, 0.01f);
-    BOOST_CHECK_CLOSE((left + right) * 0.5f, 400.0f, 0.01f);
+    BOOST_CHECK_CLOSE(right - left, expectedWidth, 0.01F);
+    BOOST_CHECK_CLOSE((left + right) * 0.5F, 400.0F, 0.01F);
 }
 
 /**
- * A container that is not visible draws nothing, which is how an app shows and hides its
- * whole ui without taking it apart.
+ * A container that is not visible draws nothing. An app shows and hides its whole ui this
+ * way, without taking it apart.
  **/
 BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
-    v3d::ui::paint::ComponentRenderer renderer(
+    const v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(800, 600);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
 
     v3d::ui::Container container("game-menu", false);
     container.add(buildMenu({"One"}));
@@ -210,7 +239,7 @@ BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
     BOOST_CHECK(drawn > 0);
 
     canvas.clear();
-    boost::shared_ptr<v3d::ui::component::Menu> hidden = buildMenu({"One"});
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> hidden = buildMenu({"One"});
     hidden->visible(false);
     v3d::ui::Container withHidden("with-hidden", true);
     withHidden.add(hidden);
@@ -223,12 +252,12 @@ BOOST_AUTO_TEST_CASE(an_invisible_container_draws_nothing) {
  * A menu with no items draws no panel either.
  **/
 BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
-    v3d::ui::paint::ComponentRenderer renderer(
+    const v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(800, 600);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
 
     renderer.draw(&canvas, buildMenu({}));
 
@@ -241,7 +270,7 @@ BOOST_AUTO_TEST_CASE(an_empty_menu_draws_nothing) {
  **/
 BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer renderer(
+    const v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
@@ -251,24 +280,24 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
             written.push_back(line);
         });
 
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(800, 600);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
 
-    boost::shared_ptr<v3d::ui::component::Label> wrapped =
+    const boost::shared_ptr<v3d::ui::component::Label> wrapped =
         boost::make_shared<v3d::ui::component::Label>();
     wrapped->text("one two three four");
-    wrapped->layout().width = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
-    wrapped->size(glm::vec2(100.0f, 40.0f));
+    wrapped->layout().width = v3d::ui::Length(100.0F, v3d::ui::Length::Unit::Pixels);
+    wrapped->size(glm::vec2(100.0F, 40.0F));
 
     renderer.draw(&canvas, wrapped);
     BOOST_REQUIRE_EQUAL(written.size(), 2);
     BOOST_CHECK_EQUAL(written[0].text, "one two");
     BOOST_CHECK_EQUAL(written[1].text, "three four");
     const v3d::ui::style::Resolver styles;
-    BOOST_CHECK_CLOSE(written[1].pen.y - written[0].pen.y, styles.base().lineHeight, 0.001f);
+    BOOST_CHECK_CLOSE(written[1].pen.y - written[0].pen.y, styles.base().lineHeight, 0.001F);
 
     written.clear();
-    boost::shared_ptr<v3d::ui::component::Label> single =
+    const boost::shared_ptr<v3d::ui::component::Label> single =
         boost::make_shared<v3d::ui::component::Label>();
     single->text("one two three four");
     renderer.draw(&canvas, single);
@@ -284,18 +313,18 @@ BOOST_AUTO_TEST_CASE(a_label_with_a_width_draws_a_row_per_line) {
  * is one quad per edge on top of whatever the component drew.
  **/
 BOOST_AUTO_TEST_CASE(a_focused_component_is_ringed) {
-    v3d::ui::paint::ComponentRenderer renderer(
+    const v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(800, 600);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
     button->label("Start");
-    button->layout().width = v3d::ui::Length(120.0f, v3d::ui::Length::Unit::Pixels);
-    button->layout().height = v3d::ui::Length(30.0f, v3d::ui::Length::Unit::Pixels);
+    button->layout().width = v3d::ui::Length(120.0F, v3d::ui::Length::Unit::Pixels);
+    button->layout().height = v3d::ui::Length(30.0F, v3d::ui::Length::Unit::Pixels);
 
     v3d::ui::Container container("screen", true);
     container.add(button);
@@ -323,25 +352,25 @@ BOOST_AUTO_TEST_CASE(a_theme_rings_a_class_in_its_own_colour) {
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
 
-    const glm::vec4 ringColour(0.0f, 1.0f, 0.0f, 1.0f);
+    const glm::vec4 ringColour(0.0F, 1.0F, 0.0F, 1.0F);
     const boost::shared_ptr<v3d::ui::style::Theme> theme =
         boost::make_shared<v3d::ui::style::Theme>("dark");
     const boost::shared_ptr<v3d::ui::style::Style> field =
-        boost::make_shared<v3d::ui::style::Style>("default", "textbox");
+        boost::make_shared<v3d::ui::style::Style>(v3d::ui::style::Selector{.name = "default", .className = "textbox"});
     field->addProperty(boost::make_shared<v3d::ui::style::property::Color>("focus", ringColour), "color");
-    field->addProperty(boost::make_shared<v3d::ui::style::property::Number>("focus-width", 2.0f), "number");
+    field->addProperty(boost::make_shared<v3d::ui::style::property::Number>("focus-width", 2.0F), "number");
     theme->addStyle(field);
     // the base first: taking it by reference drops whatever has been resolved from it
-    renderer.dressing().focus = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    renderer.dressing().focus = glm::vec4(1.0F, 0.0F, 0.0F, 1.0F);
     renderer.theme(theme);
 
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(800, 600);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::TextBox> box =
         boost::make_shared<v3d::ui::component::TextBox>();
-    box->layout().width = v3d::ui::Length(120.0f, v3d::ui::Length::Unit::Pixels);
-    box->layout().height = v3d::ui::Length(24.0f, v3d::ui::Length::Unit::Pixels);
+    box->layout().width = v3d::ui::Length(120.0F, v3d::ui::Length::Unit::Pixels);
+    box->layout().height = v3d::ui::Length(24.0F, v3d::ui::Length::Unit::Pixels);
     box->focused(true);
 
     v3d::ui::Container container("screen", true);
@@ -372,18 +401,18 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
             written.push_back(line);
         });
 
-    const glm::vec4 ordinary(0.8f, 0.8f, 0.8f, 1.0f);
-    const glm::vec4 greyed(0.3f, 0.3f, 0.3f, 1.0f);
+    const glm::vec4 ordinary(0.8F, 0.8F, 0.8F, 1.0F);
+    const glm::vec4 greyed(0.3F, 0.3F, 0.3F, 1.0F);
     renderer.dressing().text = ordinary;
     renderer.dressing().disabledText = greyed;
 
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(800, 600);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::Button> button =
         boost::make_shared<v3d::ui::component::Button>();
     button->label("Continue");
-    button->size(glm::vec2(120.0f, 30.0f));
+    button->size(glm::vec2(120.0F, 30.0F));
 
     renderer.draw(&canvas, button);
     BOOST_REQUIRE_EQUAL(written.size(), 1U);
@@ -398,7 +427,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_written_in_the_disabled_colour) {
 
     BOOST_REQUIRE_EQUAL(written.size(), 1U);
     BOOST_CHECK(written.front().colour == greyed);
-    // no plate under it either: a disabled button is never lit
+    // no highlight under it either: a disabled button is never lit
     BOOST_CHECK(canvas.empty());
 }
 
@@ -419,17 +448,17 @@ BOOST_AUTO_TEST_CASE(a_disabled_box_greys_the_label_it_holds) {
             written.push_back(line);
         });
 
-    const glm::vec4 greyed(0.3f, 0.3f, 0.3f, 1.0f);
-    renderer.dressing().text = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
+    const glm::vec4 greyed(0.3F, 0.3F, 0.3F, 1.0F);
+    renderer.dressing().text = glm::vec4(0.8F, 0.8F, 0.8F, 1.0F);
     renderer.dressing().disabledText = greyed;
 
-    v3d::render::realtime::Canvas canvas;
-    canvas.resize(800, 600);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
 
     const boost::shared_ptr<v3d::ui::component::Panel> group =
         boost::make_shared<v3d::ui::component::Panel>();
-    group->layout().width = v3d::ui::Length(200.0f, v3d::ui::Length::Unit::Pixels);
-    group->layout().height = v3d::ui::Length(100.0f, v3d::ui::Length::Unit::Pixels);
+    group->layout().width = v3d::ui::Length(200.0F, v3d::ui::Length::Unit::Pixels);
+    group->layout().height = v3d::ui::Length(100.0F, v3d::ui::Length::Unit::Pixels);
     group->enabled(false);
 
     const boost::shared_ptr<v3d::ui::component::Label> label =
@@ -446,3 +475,5 @@ BOOST_AUTO_TEST_CASE(a_disabled_box_greys_the_label_it_holds) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

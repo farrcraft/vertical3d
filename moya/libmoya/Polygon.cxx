@@ -5,12 +5,14 @@
 
 #include "Polygon.h"
 
+#include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Frustum.h>
 #include <api/type/geometry/Plane.h>
+#include <moya/libmoya/reyes/MicroPolygonGrid.h>
 
-#include <cmath>
 #include <cassert>
-#include <iostream>
+#include <cmath>
+#include <cstddef>
 #include <utility>
 #include <vector>
 
@@ -18,12 +20,32 @@
 #include <glm/geometric.hpp>
 
 #include "RenderContext.h"
+#include "Vertex.h"
 
 namespace v3d::moya {
 
 namespace {
 
-Vertex crossing(const Vertex & a, const Vertex & b, const glm::vec3 & hit);
+/**
+ * The least length of the cross product of two edges from a polygon's first vertex that gives
+ * the polygon a normal.
+ **/
+constexpr float SMALLEST_SPANNED_AREA = 1.0e-8F;
+
+Vertex crossing(const Vertex & start, const Vertex & end, const glm::vec3 & hit);
+
+/**
+ * Where an edge whose ends classify on opposite sides of a plane meets it. The two tests round
+ * differently, so intersectEdge can find no meeting for an edge that ends a hair past the
+ * plane. The edge then meets the plane at the end nearer to it.
+ **/
+glm::vec3 meeting(const v3d::type::geometry::Plane & plane, const glm::vec3 & start, const glm::vec3 & end) {
+    glm::vec3 hit;
+    if (plane.intersectEdge(start, end, &hit)) {
+        return hit;
+    }
+    return std::abs(plane.signedDistance(start)) <= std::abs(plane.signedDistance(end)) ? start : end;
+}
 
 /**
  * A piece is worth handing back only if it bounds something and is strictly smaller
@@ -35,7 +57,7 @@ bool progress(const boost::shared_ptr<Polygon> & piece, const v3d::type::geometr
         return false;
     }
     glm::vec3 was = parent.max() - parent.min();
-    v3d::type::geometry::AABBox bound = piece->bound();
+    const v3d::type::geometry::AABBox bound = piece->bound();
     glm::vec3 is = bound.max() - bound.min();
     return is[0] < was[0] || is[1] < was[1] || is[2] < was[2];
 }
@@ -63,7 +85,7 @@ Vertex Polygon::vertex(size_t idx) const {
 
 void Polygon::removeVertex(size_t idx) {
     assert(idx < vertices_.size());
-    vertices_.erase(vertices_.begin() + idx);
+    vertices_.erase(vertices_.begin() + static_cast<std::ptrdiff_t>(idx));
 }
 
 void Polygon::clear(void) {
@@ -83,18 +105,13 @@ glm::vec3 Polygon::geometricNormal(void) const {
         const glm::vec3 across = glm::cross(vertices_[i].point() - vertices_[0].point(),
                                             vertices_[i + 1].point() - vertices_[0].point());
         const float area = glm::length(across);
-        if (area > 1.0e-8f) {
+        if (area > SMALLEST_SPANNED_AREA) {
             return across / area;
         }
     }
-    return glm::vec3(0.0f);
+    return glm::vec3(0.0F);
 }
 
-/* note - clipping happens after culling
-
-    this is a 3D Sutherland-Hodgman polygon clipper: instead of clipping against a single
-    clipping rectangle edge, it clips against a plane.
-*/
 void Polygon::clip(const v3d::type::geometry::Plane & plane) {
     const size_t nverts = vertices_.size();
     // fewer than three vertices bound no area to keep, and the loop below starts on the
@@ -103,46 +120,41 @@ void Polygon::clip(const v3d::type::geometry::Plane & plane) {
         return;
     }
     std::vector<Vertex> clipped;
-    glm::vec3 hit;
     Vertex s = vertices_[nverts - 1];  // start with last vertex
     for (size_t j = 0; j < nverts; j++) {
-        const Vertex p = vertices_[j];
+        const Vertex current = vertices_[j];
         /*
-         there are 4 possible test cases:
-            case 1: s & p both inside	 - in/in
-            case 2: s inside, p outside - in/out
-            case 3: s & p both outside	 - out/out
-            case 4: s outside, p inside - out/in
-         */
-        const bool pInside = plane.classify(p.point()) != v3d::type::geometry::Plane::NEGATIVE;
+            s is the previous vertex.
+            case 1: s and current both inside.
+            case 2: s inside, current outside.
+            case 3: s and current both outside.
+            case 4: s outside, current inside.
+        */
+        const bool currentInside = plane.classify(current.point()) != v3d::type::geometry::Plane::NEGATIVE;
         const bool sInside = plane.classify(s.point()) != v3d::type::geometry::Plane::NEGATIVE;
-        if (pInside) {  // cases 1 & 4
+        if (currentInside) {  // cases 1 & 4
             if (!sInside) {  // case 4
-                plane.intersectEdge(s.point(), p.point(), &hit);
-                clipped.push_back(crossing(s, p, hit));
+                clipped.push_back(crossing(s, current, meeting(plane, s.point(), current.point())));
             }
-            clipped.push_back(p);
+            clipped.push_back(current);
         } else if (sInside) {  // case 2
-            plane.intersectEdge(s.point(), p.point(), &hit);
-            clipped.push_back(crossing(s, p, hit));
+            clipped.push_back(crossing(s, current, meeting(plane, s.point(), current.point())));
         }
         // case 3: the entire edge is clipped
-        s = p;
+        s = current;
     }
 
     vertices_ = std::move(clipped);
 }
 
-// return an object space bound of the polygon
+// the bound in the space the vertices are in: object space, until RenderContext::addPolygon()
+// moves a diceable polygon's vertices into eye space
 v3d::type::geometry::AABBox Polygon::bound(void) const {
     v3d::type::geometry::AABBox bound;
 
     if (vertices_.empty()) {
         return bound;
     }
-    /*
-        move over each vertex and record min/max
-    */
     std::vector<Vertex>::const_iterator it = vertices_.begin();
     glm::vec3 min;
     glm::vec3 max;
@@ -157,51 +169,6 @@ v3d::type::geometry::AABBox Polygon::bound(void) const {
     return bound;
 }
 
-/* split the polygon into smaller polygons
-   how do we decide where to split polygons?
-   how many smaller polygons do we make?
-
-   recursive subdivision seems like the way to do it.
-   it would work similar to frustum clipping.
-   a polygon in plane A will be divided into two halves by a plane B
-   that is perpendicular to plane A.
-
-   the generated sub polygons should be fed back to the active render context.
-
-   each call to split should divide the polygon into 4 smaller pieces.
-
-    there are two ways to go on this:
-        - splitting using polygon/plane intersection
-        - polygon triangulation
-
-    the problem with triangulation is that the next step is dicing where we'll
-    want to convert the triangles into a grid of equilateral micropolygons.
-
-    using plane intersection suffers from not having a specific plane to use for
-    the intersection. there's also no guarantee that the resulting geometry will
-    be any better than what we'd get with triangulation.
-
-    first, we'll try implementing plane intersection (since it should be easier
-    than doing triangulation here). there are two ways to figure out what plane
-    to use:
-        - (poly.v1 - poly.v0).normalize().cross(poly.normal)
-        - find rotation that maps poly.normal to [0.0, 0.0, 1.0]
-
-    the first method uses an edge of the polygon and its normal to find a normal
-    for the plane that is perpendicular to both.
-
-    the second finds a matrix that can transform the polygon's vertices onto the
-    x/y plane.
-
-    the last piece we need is a point that lies on the plane. this should be the
-    center of the polygon.
-*/
-
-/*
-internal splitter - will be called 3 times by split()
-args p1 and p2 should be pointers to empty polygons to store the resulting split
-polygons
-*/
 namespace {
 
 /**
@@ -225,19 +192,19 @@ Vertex carried(const Vertex & from) {
 }
 
 /**
- * The shading normal part of the way from a to b, as a unit vector. Two equal normals give
- * that normal back unchanged. Opposite normals meeting half way give zero, which names no
- * direction, so false is returned and the crossing is left without a normal of its own.
+ * The shading normal part of the way from one normal to another, as a unit vector. Two equal
+ * normals give that normal back unchanged. Opposite normals meeting half way give zero, which
+ * names no direction, so false is returned and the crossing is left without a normal of its own.
  **/
-bool between(const glm::vec3 & a, const glm::vec3 & b, float along, glm::vec3* normal) {
-    if (a == b) {
-        *normal = a;
+bool between(const glm::vec3 & from, const glm::vec3 & to, float along, glm::vec3* normal) {
+    if (from == to) {
+        *normal = from;
         return true;
     }
     // interpolating unit normals does not give a unit one back
-    const glm::vec3 mixed = a + (b - a) * along;
+    const glm::vec3 mixed = from + (to - from) * along;
     const float length = glm::length(mixed);
-    if (!(length > 0.0f)) {
+    if (!(length > 0.0F)) {
         return false;
     }
     *normal = mixed / length;
@@ -249,47 +216,47 @@ bool between(const glm::vec3 & a, const glm::vec3 & b, float along, glm::vec3* n
  * far along the edge as the point is, each only when both ends of the edge have one. The
  * normal is renormalised.
  **/
-Vertex crossing(const Vertex & a, const Vertex & b, const glm::vec3 & hit) {
+Vertex crossing(const Vertex & start, const Vertex & end, const glm::vec3 & hit) {
     Vertex vert;
     vert.point(hit);
-    const float span = glm::length(b.point() - a.point());
-    const float along = span > 0.0f ? glm::length(hit - a.point()) / span : 0.0f;
-    if (a.hasColor() && b.hasColor()) {
-        vert.color(a.color() + (b.color() - a.color()) * along);
+    const float span = glm::length(end.point() - start.point());
+    const float along = span > 0.0F ? glm::length(hit - start.point()) / span : 0.0F;
+    if (start.hasColor() && end.hasColor()) {
+        vert.color(start.color() + (end.color() - start.color()) * along);
     }
-    glm::vec3 normal(0.0f);
-    if (a.hasNormal() && b.hasNormal() && between(a.normal(), b.normal(), along, &normal)) {
+    glm::vec3 normal(0.0F);
+    if (start.hasNormal() && end.hasNormal() && between(start.normal(), end.normal(), along, &normal)) {
         vert.normal(normal);
     }
-    if (a.hasTexCoord() && b.hasTexCoord()) {
-        vert.st(a.st() + (b.st() - a.st()) * along);
+    if (start.hasTexCoord() && end.hasTexCoord()) {
+        vert.st(start.st() + (end.st() - start.st()) * along);
     }
     return vert;
 }
 
 /**
- * An edge that crosses the plane. hit is the vertex both halves come to share, so it goes
- * into each of them; which half keeps A and which keeps B follows the side A is on.
+ * An edge that crosses the plane. hit is the vertex both halves share, so it goes into each
+ * of them. The side start is on decides which half keeps start and which keeps end.
  **/
-void addCrossingEdge(const Vertex& a, const Vertex& b, const glm::vec3& hit, int side,
+void addCrossingEdge(const Vertex& start, const Vertex& end, const glm::vec3& hit, int side,
     bool first, bool last, const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
     if (first) {
         if (side < 0) {
-            p1->addVertex(carried(a));
+            p1->addVertex(carried(start));
         } else {
-            p2->addVertex(carried(a));
+            p2->addVertex(carried(start));
         }
     }
 
-    const Vertex shared = crossing(a, b, hit);
+    const Vertex shared = crossing(start, end, hit);
     p1->addVertex(shared);
     p2->addVertex(shared);
 
     if (!last) {
         if (side < 0) {
-            p2->addVertex(carried(b));
+            p2->addVertex(carried(end));
         } else {
-            p1->addVertex(carried(b));
+            p1->addVertex(carried(end));
         }
     }
 }
@@ -297,67 +264,75 @@ void addCrossingEdge(const Vertex& a, const Vertex& b, const glm::vec3& hit, int
 /**
  * An edge wholly on one side of the plane, so both its vertices go to the same half.
  *
- * Only the first edge contributes its A and only a non-final edge contributes its B: every
- * other vertex is the B of the edge before it.
+ * Only the first edge contributes its start and only a non-final edge contributes its end:
+ * every other vertex is the end of the edge before it.
  **/
-void addWholeEdge(const Vertex& a, const Vertex& b, int side, bool first, bool last,
+void addWholeEdge(const Vertex& start, const Vertex& end, int side, bool first, bool last,
     const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
     const boost::shared_ptr<Polygon>& half = side <= 0 ? p1 : p2;
     if (first) {
-        half->addVertex(carried(a));
+        half->addVertex(carried(start));
     }
     if (!last) {
-        half->addVertex(carried(b));
+        half->addVertex(carried(end));
     }
 }
 
 };  // namespace
 
+/*
+    Cut the polygon by a plane. p1 takes the negative side and p2 the positive, and both
+    start empty. split(RenderContext &) calls this three times to make four pieces.
+*/
 void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2) {
     // intersect each edge with the plane
     glm::vec3 hit;
     for (unsigned int i = 0; i < vertices_.size(); i++) {
         const size_t vcount = vertices_.size();
-        const Vertex & a = vertices_[i];
-        const Vertex & b = i == (vcount - 1) ? vertices_[0] : vertices_[i + 1];
-        // classify which side of the plane A is on
-        const int side = plane.classify(a.point());
+        const Vertex & start = vertices_[i];
+        const Vertex & end = i == (vcount - 1) ? vertices_[0] : vertices_[i + 1];
+        const int side = plane.classify(start.point());
         const bool first = (i == 0);
         const bool last = (i == (vcount - 1));
-        if (plane.intersectEdge(a.point(), b.point(), &hit)) {
-            addCrossingEdge(a, b, hit, side, first, last, p1, p2);
+        if (plane.intersectEdge(start.point(), end.point(), &hit)) {
+            addCrossingEdge(start, end, hit, side, first, last, p1, p2);
+        } else if (side != plane.classify(end.point())) {
+            // the two tests round differently, so an edge that ends a hair past the plane
+            // still crosses it
+            addCrossingEdge(start, end, meeting(plane, start.point(), end.point()), side, first, last, p1, p2);
         } else {
-            // since there was no intersection, B will be on the same side
-            assert(side == plane.classify(b.point()));
-            addWholeEdge(a, b, side, first, last, p1, p2);
+            addWholeEdge(start, end, side, first, last, p1, p2);
         }
     }
 }
 
+/*
+    Cut the polygon into four by two planes through the centre of its bound. Both are
+    perpendicular to the polygon's plane, and the second is perpendicular to the first.
+*/
 void Polygon::split(RenderContext & rc) {
-    // the cutting plane is derived from the first three vertices, and a polygon holding
-    // fewer than that has no area to divide
+    // a polygon with fewer than three vertices has no area to divide
     if (vertices_.size() < 3) {
         return;
     }
 
-    // the plane of the polygon, and an edge in it: the cutting plane is perpendicular to
-    // both. A polygon with no plane - every vertex on one line - has no area to divide
-    const glm::vec3 n = geometricNormal();
-    if (n == glm::vec3(0.0f)) {
+    // the plane of the polygon, and an edge in it: the normal of the first cutting plane is
+    // perpendicular to both. A polygon with no plane, every vertex on one line, has no area
+    const glm::vec3 surfaceNormal = geometricNormal();
+    if (surfaceNormal == glm::vec3(0.0F)) {
         return;
     }
     // the edge is taken from the first vertex that differs from the head. A repeated head
     // gives a zero edge, which names no cutting plane. A polygon with a plane has such a vertex
-    glm::vec3 v0(0.0f);
-    for (size_t i = 1; i < vertices_.size() && v0 == glm::vec3(0.0f); i++) {
+    glm::vec3 v0(0.0F);
+    for (size_t i = 1; i < vertices_.size() && v0 == glm::vec3(0.0F); i++) {
         v0 = vertices_[0].point() - vertices_[i].point();
     }
 
-    // calculate plane's normal
+    // the first cutting plane is perpendicular to the polygon's plane and parallel to the edge
     glm::vec3 pn;
-    pn = glm::normalize(glm::cross(n, v0));
-    // find a point on the plane
+    pn = glm::normalize(glm::cross(surfaceNormal, v0));
+    // both cutting planes pass through the centre of the bound
     v3d::type::geometry::AABBox bounds;
     glm::vec3 mp;
     glm::vec3 pop;
@@ -365,32 +340,29 @@ void Polygon::split(RenderContext & rc) {
     mp = (bounds.max() - bounds.min());
     mp /= 2.0;
     pop = bounds.min() + mp;
-    // create the intersection plane from pop and pn
     v3d::type::geometry::Plane plane;
     plane.calculate(pn, pop);
 
-    // two new (potentially) polygons created as a result of splitting
-    boost::shared_ptr<Polygon> p1(new Polygon());
-    boost::shared_ptr<Polygon> p2(new Polygon());
-    // first split
+    // the two halves of the first cut. A half that receives no vertices stays empty
+    const boost::shared_ptr<Polygon> p1(new Polygon());
+    const boost::shared_ptr<Polygon> p2(new Polygon());
     split(plane, p1, p2);
 
-    // calculate normal for 2nd plane to split against
-    pn = glm::normalize(glm::cross(n, pn));
+    // the second cutting plane is perpendicular to the polygon's plane and to the first
+    pn = glm::normalize(glm::cross(surfaceNormal, pn));
 
-    // create the new intersection plane
     plane.calculate(pn, pop);
 
-    // split the two new polygons against the two created by the last split
-    boost::shared_ptr<Polygon> pf1(new Polygon());
-    boost::shared_ptr<Polygon> pf2(new Polygon());
-    boost::shared_ptr<Polygon> pf3(new Polygon());
-    boost::shared_ptr<Polygon> pf4(new Polygon());
+    // each half is cut again, into quarters
+    const boost::shared_ptr<Polygon> pf1(new Polygon());
+    const boost::shared_ptr<Polygon> pf2(new Polygon());
+    const boost::shared_ptr<Polygon> pf3(new Polygon());
+    const boost::shared_ptr<Polygon> pf4(new Polygon());
     p1->split(plane, pf1, pf2);
     p2->split(plane, pf3, pf4);
 
-    // the four pieces go back to the top of the renderer, which re-bounds, re-culls and
-    // re-measures each against the grid; this polygon is discarded by the caller
+    // each piece goes back through RenderContext::addPolygon(), which bounds, culls and
+    // measures it against the grid again. The caller discards this polygon
     const boost::shared_ptr<Polygon> pieces[] = { pf1, pf2, pf3, pf4 };
     for (const boost::shared_ptr<Polygon> & piece : pieces) {
         if (progress(piece, bounds)) {
@@ -406,33 +378,32 @@ void Polygon::split(RenderContext & rc) {
 }
 
 /*
-    dice - turn the polygon into a grid of micropolygons
-    dicing is done in eye space, so the grid is built in x, y, z and projected only when
-    the hider needs raster coordinates
+    RenderContext::addPolygon() moves a diceable polygon's vertices into eye space, so the
+    grid is built in eye space. The hider projects it to raster space.
 */
-bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & rc) {
-    // one grid covers the whole polygon at this sampling, so the call after the first is
-    // the end of the sequence rather than another grid
+bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc) {
+    // one grid covers the whole polygon, so the second call ends the sequence
     if (diced_ || vertices_.size() < 3) {
         return false;
     }
 
     /*
-        the grid size is the number of micropolygons in a grid, and a grid of n vertices a
-        side is n - 1 of them a side. The first pass has already split anything whose
-        raster bound is larger than that, so one grid is enough for what reaches here.
+        The grid size is the number of micropolygons in a grid, and a grid of n vertices a
+        side has n - 1 micropolygons a side. RenderContext::addPolygon() marks for splitting
+        anything whose raster bound is wider or taller than the square root of the grid size
+        times the shading rate, so one grid covers what reaches here.
     */
-    unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));
-    grid.reset(new MicroPolygonGrid(across + 1));
+    const unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));  // checked: the root of a count is finite and no larger
+    grid.reset(new reyes::MicroPolygonGrid(across + 1));
 
     /*
         bilinear interpolation over the polygon's first four vertices. A triangle's fourth
-        corner degenerates onto its third; a polygon with more than four vertices has the
-        rest dropped, which gives a wrong grid for a concave one. Triangulating before
-        dicing would avoid that.
+        corner degenerates onto its third. A polygon with more than four vertices has the
+        rest dropped, so its grid does not cover the part of the polygon past the fourth
+        vertex.
     */
     const size_t fourth = vertices_.size() > 3 ? 3 : 2;
-    glm::vec3 corners[4] = {
+    const glm::vec3 corners[4] = {
         vertices_[0].point(),
         vertices_[1].point(),
         vertices_[2].point(),
@@ -440,15 +411,15 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
     };
     // colour interpolates the same way the position does, so a "Cs" given per vertex
     // reaches the grid. It is the geometry's colour rather than a shaded one
-    glm::vec3 colors[4] = {
+    const glm::vec3 colors[4] = {
         vertices_[0].color(),
         vertices_[1].color(),
         vertices_[2].color(),
         vertices_[fourth].color()
     };
-    // and so does the shading normal, so a surface given a varying "N" comes out smooth
-    // rather than faceted
-    glm::vec3 normals[4] = {
+    // the shading normal interpolates the same way, so a surface given a varying "N" is
+    // shaded smooth rather than faceted
+    const glm::vec3 normals[4] = {
         vertices_[0].normal(),
         vertices_[1].normal(),
         vertices_[2].normal(),
@@ -457,7 +428,7 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
     // the geometric normal is one value across the primitive, so there is nothing to
     // interpolate: addPolygon() wrote the same one onto every vertex
     const glm::vec3 geometric = vertices_[0].geometricNormal();
-    // texture coordinates interpolate only when the scene gave every corner one; a grid
+    // texture coordinates interpolate only when the scene gave every corner one. A grid
     // without them takes its own parameters as s and t when it is shaded
     const bool textured = vertices_[0].hasTexCoord() && vertices_[1].hasTexCoord() &&
         vertices_[2].hasTexCoord() && vertices_[fourth].hasTexCoord();
@@ -471,31 +442,31 @@ bool Polygon::dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & r
     const unsigned int size = grid->size();
     const float span = static_cast<float>(size - 1);
     for (unsigned int i = 0; i < size; i++) {
-        float u = static_cast<float>(i) / span;
+        const float u = static_cast<float>(i) / span;
         for (unsigned int j = 0; j < size; j++) {
-            float w = static_cast<float>(j) / span;
+            const float w = static_cast<float>(j) / span;
             Vertex vert;
-            vert.point(corners[0] * ((1.0f - u) * (1.0f - w)) +
-                       corners[1] * (u * (1.0f - w)) +
+            vert.point(corners[0] * ((1.0F - u) * (1.0F - w)) +
+                       corners[1] * (u * (1.0F - w)) +
                        corners[2] * (u * w) +
-                       corners[3] * ((1.0f - u) * w));
-            vert.color(colors[0] * ((1.0f - u) * (1.0f - w)) +
-                       colors[1] * (u * (1.0f - w)) +
+                       corners[3] * ((1.0F - u) * w));
+            vert.color(colors[0] * ((1.0F - u) * (1.0F - w)) +
+                       colors[1] * (u * (1.0F - w)) +
                        colors[2] * (u * w) +
-                       colors[3] * ((1.0f - u) * w));
-            const glm::vec3 normal = normals[0] * ((1.0f - u) * (1.0f - w)) +
-                                     normals[1] * (u * (1.0f - w)) +
+                       colors[3] * ((1.0F - u) * w));
+            const glm::vec3 normal = normals[0] * ((1.0F - u) * (1.0F - w)) +
+                                     normals[1] * (u * (1.0F - w)) +
                                      normals[2] * (u * w) +
-                                     normals[3] * ((1.0f - u) * w);
+                                     normals[3] * ((1.0F - u) * w);
             // interpolating unit normals does not give a unit one back
             const float length = glm::length(normal);
-            vert.normal(length > 0.0f ? normal / length : geometric);
+            vert.normal(length > 0.0F ? normal / length : geometric);
             vert.geometricNormal(geometric);
             if (textured) {
-                vert.st(st[0] * ((1.0f - u) * (1.0f - w)) +
-                        st[1] * (u * (1.0f - w)) +
+                vert.st(st[0] * ((1.0F - u) * (1.0F - w)) +
+                        st[1] * (u * (1.0F - w)) +
                         st[2] * (u * w) +
-                        st[3] * ((1.0f - u) * w));
+                        st[3] * ((1.0F - u) * w));
             }
             grid->addVertex(vert, i, j);
         }

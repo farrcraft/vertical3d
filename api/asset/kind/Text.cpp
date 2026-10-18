@@ -5,6 +5,9 @@
 
 #include "Text.h"
 
+#include <api/asset/Asset.h>
+#include <api/asset/Type.h>
+
 #include <string>
 
 namespace v3d::asset::kind {

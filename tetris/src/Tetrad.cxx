@@ -5,9 +5,9 @@
 
 #include "Tetrad.h"
 
-#include <iostream>
 #include <cassert>
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
 
 Tetrad::Tetrad(const ShapeInfo & shape) : orientation_(0), shape_(shape), initialized_(true) {
@@ -55,8 +55,8 @@ void Tetrad::rotate(RotationDirection dir) {
     }
     memcpy(shape_.layout_, rotated, sizeof(rotated));
 
-    // a turn leaves the shape wherever in the grid the arithmetic put it, and the board
-    // reads the grid's corner as the tetrad's position
+    // a turn can leave the shape away from the grid's top left corner. Normalise it, because
+    // the board treats the grid's corner as the tetrad's position
     normalize(&shape_);
 
     if (dir == CLOCKWISE) {
@@ -91,8 +91,8 @@ void Tetrad::normalize(ShapeInfo * shape) {
     memcpy(shape->layout_, shifted, sizeof(shifted));
 }
 
-void Tetrad::position(PositionType p) {
-    position_ = p;
+void Tetrad::position(PositionType newPosition) {
+    position_ = newPosition;
 }
 
 Tetrad::PositionType Tetrad::position() const {
@@ -103,8 +103,8 @@ unsigned int Tetrad::orientation() const {
     return orientation_;
 }
 
-void Tetrad::orientation(unsigned int o) {
-    orientation_ = o;
+void Tetrad::orientation(unsigned int newOrientation) {
+    orientation_ = newOrientation;
 }
 
 const Tetrad::ShapeInfo & Tetrad::shape() const {
@@ -123,8 +123,9 @@ unsigned int Tetrad::offset(OffsetAxis dir) const {
             }
         }
     }
-    if (dir == OFFSET_X)
+    if (dir == OFFSET_X) {
         return x;
+    }
     return y;
 }
 

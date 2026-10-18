@@ -4,6 +4,9 @@
  **/
 
 #include <api/event/Context.h>
+#include <api/event/Engine.h>
+#include <api/event/Event.h>
+#include <api/log/Logger.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Button.h>
@@ -59,11 +62,17 @@ struct Fixture final {
  * A key going down, as SDL would report it. The modifiers ride on the event rather than
  * being polled, and the adapter reads them from there.
  **/
-SDL_Event keyDown(SDL_Keycode key, SDL_Keymod mod = SDL_KMOD_NONE) {
+/** A key, and the modifiers held with it. **/
+struct Press {
+    SDL_Keycode key = SDLK_UNKNOWN;
+    SDL_Keymod mod = SDL_KMOD_NONE;
+};
+
+SDL_Event keyDown(const Press& press) {
     SDL_Event event = {};
     event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = key;
-    event.key.mod = mod;
+    event.key.key = press.key;
+    event.key.mod = press.mod;
     return event;
 }
 
@@ -89,8 +98,6 @@ boost::shared_ptr<v3d::ui::component::TextBox> box(const std::string& value) {
     return made;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(shell_keyboard_test)
 
 /**
@@ -98,10 +105,10 @@ BOOST_AUTO_TEST_SUITE(shell_keyboard_test)
  * working until something is clicked into.
  **/
 BOOST_AUTO_TEST_CASE(nothing_focused_takes_nothing) {
-    Fixture fixture;
+    const Fixture fixture;
     fixture.container->add(box("abc"));  // present, but nothing has the focus
 
-    BOOST_CHECK(!fixture.seam->event(keyDown(SDLK_A)));
+    BOOST_CHECK(!fixture.seam->event(keyDown({.key = SDLK_A})));
     BOOST_CHECK(!fixture.seam->event(composed("a")));
 }
 
@@ -110,21 +117,21 @@ BOOST_AUTO_TEST_CASE(nothing_focused_takes_nothing) {
  * name a binding uses.
  **/
 BOOST_AUTO_TEST_CASE(a_key_reaches_the_focused_box) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abc");
     fixture.container->add(field);
     fixture.ui->focus(field);
 
-    BOOST_CHECK(fixture.seam->event(keyDown(SDLK_BACKSPACE)));
+    BOOST_CHECK(fixture.seam->event(keyDown({.key = SDLK_BACKSPACE})));
     BOOST_CHECK_EQUAL(std::string(field->text()), "ab");
 }
 
 /**
- * A character is not a key: what the platform composed goes in at the caret whole, with
+ * A composed character arrives as text, not as a key. It goes in at the caret whole, with
  * shift already applied to it.
  **/
 BOOST_AUTO_TEST_CASE(a_composed_character_goes_in_at_the_caret) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("ab");
     fixture.container->add(field);
     fixture.ui->focus(field);
@@ -138,32 +145,32 @@ BOOST_AUTO_TEST_CASE(a_composed_character_goes_in_at_the_caret) {
  * nothing polled would have said so.
  **/
 BOOST_AUTO_TEST_CASE(shift_rides_on_the_event) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abc");
     fixture.container->add(field);
     fixture.ui->focus(field);
     field->caret(3);
 
-    BOOST_CHECK(fixture.seam->event(keyDown(SDLK_LEFT, SDL_KMOD_LSHIFT)));
+    BOOST_CHECK(fixture.seam->event(keyDown({.key = SDLK_LEFT, .mod = SDL_KMOD_LSHIFT})));
     BOOST_CHECK(field->selected());
-    BOOST_CHECK_EQUAL(field->caret(), 2u);
-    BOOST_CHECK_EQUAL(field->anchor(), 3u);
+    BOOST_CHECK_EQUAL(field->caret(), 2U);
+    BOOST_CHECK_EQUAL(field->anchor(), 3U);
 }
 
 /**
  * Control comes off the event too, and names the four chords a box answers.
  **/
 BOOST_AUTO_TEST_CASE(control_rides_on_the_event) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abc");
     fixture.container->add(field);
     fixture.ui->focus(field);
     field->caret(0);
 
-    BOOST_CHECK(fixture.seam->event(keyDown(SDLK_A, SDL_KMOD_LCTRL)));
+    BOOST_CHECK(fixture.seam->event(keyDown({.key = SDLK_A, .mod = SDL_KMOD_LCTRL})));
     BOOST_CHECK(field->selected());
-    BOOST_CHECK_EQUAL(field->caret(), 3u);
-    BOOST_CHECK_EQUAL(field->anchor(), 0u);
+    BOOST_CHECK_EQUAL(field->caret(), 3U);
+    BOOST_CHECK_EQUAL(field->anchor(), 0U);
 }
 
 /**
@@ -171,7 +178,7 @@ BOOST_AUTO_TEST_CASE(control_rides_on_the_event) {
  * up, or api/input holds it down for the rest of the run.
  **/
 BOOST_AUTO_TEST_CASE(a_release_is_never_taken) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abc");
     fixture.container->add(field);
     fixture.ui->focus(field);
@@ -185,28 +192,28 @@ BOOST_AUTO_TEST_CASE(a_release_is_never_taken) {
  * the bindings rather than being swallowed.
  **/
 BOOST_AUTO_TEST_CASE(an_unnamed_key_is_not_taken) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abc");
     fixture.container->add(field);
     fixture.ui->focus(field);
 
-    BOOST_CHECK(!fixture.seam->event(keyDown(SDLK_PAUSE)));
+    BOOST_CHECK(!fixture.seam->event(keyDown({.key = SDLK_PAUSE})));
     BOOST_CHECK_EQUAL(std::string(field->text()), "abc");
 }
 
 /**
- * A letter reaching a focused button is not taken, because a button is not something a
- * player types into - so the movement binding on that letter still fires.
+ * A letter reaching a focused button is not taken. A player does not type into a button, so
+ * the movement binding on that letter still fires.
  **/
 BOOST_AUTO_TEST_CASE(a_letter_at_a_button_reaches_the_bindings) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Button> control =
         boost::make_shared<v3d::ui::component::Button>();
     control->name("go");
     fixture.container->add(control);
     fixture.ui->focus(control);
 
-    BOOST_CHECK(!fixture.seam->event(keyDown(SDLK_W)));
+    BOOST_CHECK(!fixture.seam->event(keyDown({.key = SDLK_W})));
     BOOST_CHECK(!fixture.seam->event(composed("w")));
 }
 
@@ -214,7 +221,7 @@ BOOST_AUTO_TEST_CASE(a_letter_at_a_button_reaches_the_bindings) {
  * An event that is neither a key nor a composed character is not the ui's.
  **/
 BOOST_AUTO_TEST_CASE(another_event_is_not_taken) {
-    Fixture fixture;
+    const Fixture fixture;
     SDL_Event motion = {};
     motion.type = SDL_EVENT_MOUSE_MOTION;
 
@@ -226,7 +233,7 @@ BOOST_AUTO_TEST_CASE(another_event_is_not_taken) {
  * announced the same way, so the adapter does not have to see the press.
  **/
 BOOST_AUTO_TEST_CASE(the_focus_move_is_announced) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abc");
     fixture.container->add(field);
 
@@ -239,7 +246,7 @@ BOOST_AUTO_TEST_CASE(the_focus_move_is_announced) {
     fixture.ui->focus(field);  // the same component again is not a move
     fixture.ui->focus(boost::shared_ptr<v3d::ui::Component>());
 
-    BOOST_REQUIRE_EQUAL(landed.size(), 2u);
+    BOOST_REQUIRE_EQUAL(landed.size(), 2U);
     BOOST_CHECK_EQUAL(landed[0], "field");
     BOOST_CHECK_EQUAL(landed[1], "-");
 }
@@ -249,7 +256,7 @@ BOOST_AUTO_TEST_CASE(the_focus_move_is_announced) {
  * what focused() would answer rather than what focus() was asked for.
  **/
 BOOST_AUTO_TEST_CASE(what_is_announced_is_what_is_focused) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TextBox> field = box("abc");
     fixture.container->add(field);
     fixture.ui->focus(field);
@@ -265,9 +272,11 @@ BOOST_AUTO_TEST_CASE(what_is_announced_is_what_is_focused) {
     fixture.container->add(plate);
     fixture.ui->focus(plate);
 
-    BOOST_REQUIRE_EQUAL(landed.size(), 1u);
+    BOOST_REQUIRE_EQUAL(landed.size(), 1U);
     BOOST_CHECK(!landed.front());
     BOOST_CHECK(!fixture.ui->focused());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

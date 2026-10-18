@@ -4,7 +4,6 @@
  **/
 
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
 
@@ -20,8 +19,6 @@ boost::shared_ptr<v3d::asset::kind::Json> document(const std::string& name) {
     return boost::dynamic_pointer_cast<v3d::asset::kind::Json>(assets.loadTypeFromExt(name));
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(json_document_test) {
     auto asset = document("document.json");
     BOOST_TEST(static_cast<bool>(asset));
@@ -30,7 +27,7 @@ BOOST_AUTO_TEST_CASE(json_document_test) {
     BOOST_TEST(doc.contains("name"));
     BOOST_TEST(boost::json::value_to<std::string>(doc.at("name")) == "fixture");
     BOOST_TEST(doc.at("count").as_int64() == 3);
-    BOOST_TEST(doc.at("items").as_array().size() == 3u);
+    BOOST_TEST(doc.at("items").as_array().size() == 3U);
     BOOST_TEST(doc.at("nested").as_object().at("flag").as_bool());
 }
 
@@ -57,3 +54,5 @@ BOOST_AUTO_TEST_CASE(json_missing_document_test) {
 BOOST_AUTO_TEST_CASE(json_non_object_document_test) {
     BOOST_TEST(!document("array.json"));
 }
+
+};  // namespace

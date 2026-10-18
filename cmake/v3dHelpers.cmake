@@ -9,8 +9,8 @@
 #
 #  - an include root, so every file, in a consumer or in this repository, names a header
 #    from the repository root, as in #include <api/image/Image.h>. The root is the
-#    repository rather than api/ so that the prefix shows which repository a header came
-#    from, and so that names like <type/Camera.h> stay off every consumer's search path.
+#    repository, not api/. The prefix then shows which repository a header came from, and
+#    names like <type/Camera.h> stay off every consumer's search path.
 #    There is no INSTALL_INTERFACE half, because the api is consumed as source and nothing
 #    is installed.
 #  - a v3d:: alias, which is the name a consumer links. It would stay the same if the api
@@ -91,18 +91,18 @@ function(v3d_add_app_data target)
 endfunction()
 
 # Tests live next to the library they cover, in api/<lib>/tests, and each directory builds
-# one Boost.Test binary. v3d_add_test wires up what every one of them needs: the framework
-# (whose imported target carries BOOST_TEST_DYN_LINK, since vcpkg builds boost shared),
-# /EHsc and /utf-8 - the latter is required wherever spdlog's bundled fmt is compiled - and
-# a working directory beside the executable, so a test's data files resolve the same way an
-# app's do. Run them with ctest --test-dir out/build/<config>.
+# one Boost.Test binary. v3d_add_test wires up what every one of them needs: the framework,
+# /EHsc and /utf-8, and a working directory beside the executable. The framework's imported
+# target carries BOOST_TEST_DYN_LINK, since vcpkg builds boost shared. /utf-8 is required
+# wherever spdlog's bundled fmt is compiled. The working directory lets a test's data files
+# resolve the same way an app's do. Run them with ctest --test-dir out/build/<config>.
 function(v3d_add_test lib)
 	set(target "v3dtest_${lib}")
 	add_executable(${target} ${ARGN})
 	target_link_libraries(${target} PRIVATE Boost::unit_test_framework)
 	# A suite includes headers by their path from the repository root. An api library gives
 	# the root PUBLIC. An app suite also compiles the app's own sources, which include each
-	# other by that path, so the root is named here rather than left to a link.
+	# other by that path. The root is therefore named here, not left to a link.
 	target_include_directories(${target} PRIVATE ${V3D_ROOT})
 	target_compile_options(${target} PRIVATE /EHsc /utf-8)
 	# Boost.Test's CRT leak check reports at exit, before spdlog's global registry is torn
@@ -111,8 +111,8 @@ function(v3d_add_test lib)
 endfunction()
 
 # Shaders are compiled to SPIR-V at build time and embedded in the library that draws with
-# them, rather than shipped as data files: they belong to the engine rather than to any app,
-# so no app's data directory is the right place for them. glslc's -mfmt=c writes the module
+# them. They are not shipped as data files. They belong to the engine, not to any app, so no
+# app's data directory is the right place for them. glslc's -mfmt=c writes the module
 # out as a C initialiser list, which the source includes into a uint32_t array.
 #
 # The tool is looked for here rather than at configure time, so that a build compiling no

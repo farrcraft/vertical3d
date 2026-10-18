@@ -4,12 +4,14 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/event/Event.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
-#include <api/ui/Container.h>
+#include <api/ui/Component.h>
 #include <api/ui/component/menu/Menu.h>
-#include <api/ui/component/menu/MenuBar.h>
-#include <api/ui/component/menu/MenuItem.h>
+#include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Type.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
 #include <cstddef>
@@ -28,7 +30,7 @@ namespace {
 /**
  * A fixed width per character, so a label's width is predictable.
  **/
-const float characterWidth = 10.0f;
+const float characterWidth = 10.0F;
 
 /**
  * Where the labels went, so a test can check the layout without a font or a device.
@@ -46,7 +48,7 @@ struct Fixture final {
     Fixture() :
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")),
-        bar(boost::make_shared<v3d::ui::component::MenuBar>()),
+        bar(boost::make_shared<v3d::ui::component::menu::Bar>()),
         renderer(
             [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
             [this](std::string_view text, const glm::vec2& pen, const glm::vec4&) {
@@ -56,7 +58,7 @@ struct Fixture final {
                 written.push_back(line);
             }) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
-        canvas.resize(800, 600);
+        canvas.resize(glm::uvec2(800, 600));
     }
 
     void receive(const v3d::event::Event& event) {
@@ -66,18 +68,23 @@ struct Fixture final {
     /**
      * An item bound to "test::<name>", or to nothing when the name is empty.
      **/
-    boost::shared_ptr<v3d::ui::component::MenuItem> item(v3d::ui::component::menu::ItemType type,
-        const std::string& label, const std::string& name) {
-        boost::shared_ptr<v3d::ui::component::MenuItem> made =
-            boost::make_shared<v3d::ui::component::MenuItem>(type, label);
-        if (!name.empty()) {
-            made->event(v3d::event::Event(name, context));
+    /** What an item shows, and the name of the command it is bound to. **/
+    struct Labelled {
+        std::string label;
+        std::string name;
+    };
+
+    boost::shared_ptr<v3d::ui::component::menu::Item> item(v3d::ui::component::menu::ItemType type, const Labelled& spec) {
+        boost::shared_ptr<v3d::ui::component::menu::Item> made =
+            boost::make_shared<v3d::ui::component::menu::Item>(type, spec.label);
+        if (!spec.name.empty()) {
+            made->event(v3d::event::Event(spec.name, context));
         }
         return made;
     }
 
-    boost::shared_ptr<v3d::ui::component::Menu> menu() {
-        return boost::make_shared<v3d::ui::component::Menu>(dispatcher);
+    boost::shared_ptr<v3d::ui::component::menu::Menu> menu() {
+        return boost::make_shared<v3d::ui::component::menu::Menu>(dispatcher);
     }
 
     /**
@@ -90,10 +97,10 @@ struct Fixture final {
     }
 
     /**
-     * The middle of a component, which is where a click on it lands.
+     * The middle of a component. A test clicks a component there.
      **/
     static glm::vec2 centre(const v3d::ui::Component& component) {
-        return component.position() + component.size() * 0.5f;
+        return component.position() + component.size() * 0.5F;
     }
 
     /**
@@ -101,13 +108,13 @@ struct Fixture final {
      **/
     glm::vec2 label(std::size_t index) const {
         const v3d::type::geometry::Bound2D bounds = bar->bound(index);
-        return bounds.position() + bounds.size() * 0.5f;
+        return bounds.position() + bounds.size() * 0.5F;
     }
 
     boost::shared_ptr<entt::dispatcher> dispatcher;
     boost::shared_ptr<v3d::event::Context> context;
-    boost::shared_ptr<v3d::ui::component::MenuBar> bar;
-    v3d::render::realtime::Canvas canvas;
+    boost::shared_ptr<v3d::ui::component::menu::Bar> bar;
+    v3d::render::realtime::canvas::Canvas canvas;
     std::vector<Written> written;
     std::vector<std::string> sent;
     v3d::ui::paint::ComponentRenderer renderer;
@@ -118,16 +125,16 @@ struct Fixture final {
  * submenu that holds one action.
  **/
 void build(Fixture* fixture) {
-    boost::shared_ptr<v3d::ui::component::Menu> file = fixture->menu();
-    file->addItem(fixture->item(v3d::ui::component::menu::ItemType::Action, "Open", "open"));
-    file->addItem(fixture->item(v3d::ui::component::menu::ItemType::Check, "Grid", "grid"));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> file = fixture->menu();
+    file->addItem(fixture->item(v3d::ui::component::menu::ItemType::Action, {.label = "Open", .name = "open"}));
+    file->addItem(fixture->item(v3d::ui::component::menu::ItemType::Check, {.label = "Grid", .name = "grid"}));
 
-    boost::shared_ptr<v3d::ui::component::Menu> shading = fixture->menu();
-    shading->addItem(fixture->item(v3d::ui::component::menu::ItemType::Action, "Flat", "flat"));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> shading = fixture->menu();
+    shading->addItem(fixture->item(v3d::ui::component::menu::ItemType::Action, {.label = "Flat", .name = "flat"}));
 
-    boost::shared_ptr<v3d::ui::component::MenuItem> deeper =
-        fixture->item(v3d::ui::component::menu::ItemType::Submenu, "Shading", "");
-    boost::shared_ptr<v3d::ui::component::Menu> view = fixture->menu();
+    const boost::shared_ptr<v3d::ui::component::menu::Item> deeper =
+        fixture->item(v3d::ui::component::menu::ItemType::Submenu, {.label = "Shading", .name = ""});
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> view = fixture->menu();
     deeper->menu(view);
     deeper->submenu(shading);
     view->addItem(deeper);
@@ -135,8 +142,6 @@ void build(Fixture* fixture) {
     fixture->bar->add("File", file);
     fixture->bar->add("View", view);
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(menu_bar_test)
 
@@ -163,7 +168,7 @@ BOOST_AUTO_TEST_CASE(a_bar_that_has_not_been_drawn_takes_no_press) {
     Fixture fixture;
     build(&fixture);
 
-    BOOST_CHECK(!fixture.bar->press(glm::vec2(20.0f, 10.0f)));
+    BOOST_CHECK(!fixture.bar->press(glm::vec2(20.0F, 10.0F)));
     BOOST_CHECK(!fixture.bar->active());
 }
 
@@ -225,7 +230,7 @@ BOOST_AUTO_TEST_CASE(a_press_on_an_item_sends_its_command_and_closes) {
     fixture.bar->press(fixture.label(0));
     fixture.draw();
 
-    boost::shared_ptr<v3d::ui::component::Menu> panel = fixture.bar->panels().front();
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> panel = fixture.bar->panels().front();
     BOOST_CHECK(fixture.bar->press(Fixture::centre(*(*panel)[0])));
 
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1);
@@ -245,17 +250,16 @@ BOOST_AUTO_TEST_CASE(the_cursor_opens_a_flyout_from_a_submenu_item) {
     fixture.bar->press(fixture.label(1));
     fixture.draw();
 
-    boost::shared_ptr<v3d::ui::component::Menu> panel = fixture.bar->panels().front();
-    boost::shared_ptr<v3d::ui::component::MenuItem> shading = (*panel)[0];
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> panel = fixture.bar->panels().front();
+    const boost::shared_ptr<v3d::ui::component::menu::Item> shading = (*panel)[0];
     BOOST_CHECK(fixture.bar->motion(Fixture::centre(*shading)));
     BOOST_REQUIRE_EQUAL(fixture.bar->panels().size(), 2);
 
     fixture.draw();
-    const boost::shared_ptr<v3d::ui::component::Menu>& flyout = fixture.bar->panels().back();
-    // through the bound, because a menu's own size() is its item count
+    const boost::shared_ptr<v3d::ui::component::menu::Menu>& flyout = fixture.bar->panels().back();
     const v3d::type::geometry::Bound2D bounds = panel->bound();
-    BOOST_CHECK_CLOSE(flyout->position().x, bounds.position().x + bounds.size().x, 0.01f);
-    BOOST_CHECK_CLOSE(flyout->position().y, shading->position().y, 0.01f);
+    BOOST_CHECK_CLOSE(flyout->position().x, bounds.position().x + bounds.size().x, 0.01F);
+    BOOST_CHECK_CLOSE(flyout->position().y, shading->position().y, 0.01F);
 
     // the item in the flyout is drawn, and a press on it sends its command
     BOOST_CHECK(fixture.bar->press(Fixture::centre(*(*flyout)[0])));
@@ -274,7 +278,7 @@ BOOST_AUTO_TEST_CASE(leaving_a_submenu_item_closes_its_flyout) {
 
     fixture.bar->press(fixture.label(0));
     fixture.draw();
-    boost::shared_ptr<v3d::ui::component::Menu> file = fixture.bar->panels().front();
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> file = fixture.bar->panels().front();
 
     // File holds no submenu, so crossing either of its items leaves one panel standing
     fixture.bar->motion(Fixture::centre(*(*file)[0]));
@@ -282,7 +286,7 @@ BOOST_AUTO_TEST_CASE(leaving_a_submenu_item_closes_its_flyout) {
 
     fixture.bar->press(fixture.label(1));
     fixture.draw();
-    boost::shared_ptr<v3d::ui::component::Menu> view = fixture.bar->panels().front();
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> view = fixture.bar->panels().front();
     fixture.bar->motion(Fixture::centre(*(*view)[0]));
     BOOST_CHECK_EQUAL(fixture.bar->panels().size(), 2);
 
@@ -301,7 +305,7 @@ BOOST_AUTO_TEST_CASE(a_press_elsewhere_dismisses_an_open_bar_and_nothing_more) {
     build(&fixture);
     fixture.draw();
 
-    const glm::vec2 elsewhere(400.0f, 400.0f);
+    const glm::vec2 elsewhere(400.0F, 400.0F);
     BOOST_CHECK(!fixture.bar->press(elsewhere));
 
     fixture.bar->press(fixture.label(0));
@@ -324,7 +328,7 @@ BOOST_AUTO_TEST_CASE(a_check_item_draws_a_mark_only_when_it_is_checked) {
     fixture.draw();
     const std::size_t unchecked = fixture.canvas.vertices().size();
 
-    boost::shared_ptr<v3d::ui::component::MenuItem> grid = fixture.bar->find("test::grid");
+    const boost::shared_ptr<v3d::ui::component::menu::Item> grid = fixture.bar->find("test::grid");
     BOOST_REQUIRE(grid);
     BOOST_CHECK(!grid->checked());
     grid->checked(true);
@@ -333,7 +337,7 @@ BOOST_AUTO_TEST_CASE(a_check_item_draws_a_mark_only_when_it_is_checked) {
     BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), unchecked + 4);
 
     // activating it sends the command and leaves the mark where it was
-    boost::shared_ptr<v3d::ui::component::Menu> panel = fixture.bar->panels().front();
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> panel = fixture.bar->panels().front();
     fixture.bar->press(Fixture::centre(*(*panel)[1]));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1);
     BOOST_CHECK_EQUAL(fixture.sent[0], "test::grid");
@@ -342,7 +346,7 @@ BOOST_AUTO_TEST_CASE(a_check_item_draws_a_mark_only_when_it_is_checked) {
 
 /**
  * An item is findable by the command it sends, however deep it is, and an unbound one is
- * skipped rather than dereferenced - a submenu item has no event.
+ * skipped. A submenu item has no event.
  **/
 BOOST_AUTO_TEST_CASE(an_item_is_found_by_the_command_it_sends) {
     Fixture fixture;
@@ -365,7 +369,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_item_sends_nothing) {
     fixture.bar->press(fixture.label(0));
     fixture.draw();
 
-    boost::shared_ptr<v3d::ui::component::Menu> panel = fixture.bar->panels().front();
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> panel = fixture.bar->panels().front();
     (*panel)[0]->enabled(false);
     fixture.bar->press(Fixture::centre(*(*panel)[0]));
     BOOST_CHECK(fixture.sent.empty());
@@ -377,11 +381,11 @@ BOOST_AUTO_TEST_CASE(a_disabled_item_sends_nothing) {
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_submenu_item_disables_its_submenu) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Menu> shading = fixture.menu();
-    shading->addItem(fixture.item(v3d::ui::component::menu::ItemType::Action, "Flat", "flat"));
-    boost::shared_ptr<v3d::ui::component::MenuItem> deeper =
-        fixture.item(v3d::ui::component::menu::ItemType::Submenu, "Shading", "");
-    boost::shared_ptr<v3d::ui::component::Menu> view = fixture.menu();
+    boost::shared_ptr<v3d::ui::component::menu::Menu> shading = fixture.menu();
+    shading->addItem(fixture.item(v3d::ui::component::menu::ItemType::Action, {.label = "Flat", .name = "flat"}));
+    const boost::shared_ptr<v3d::ui::component::menu::Item> deeper =
+        fixture.item(v3d::ui::component::menu::ItemType::Submenu, {.label = "Shading", .name = ""});
+    boost::shared_ptr<v3d::ui::component::menu::Menu> view = fixture.menu();
     deeper->menu(view);
     deeper->submenu(shading);
     view->addItem(deeper);
@@ -404,7 +408,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_submenu_item_disables_its_submenu) {
  **/
 BOOST_AUTO_TEST_CASE(a_null_menu_is_not_added) {
     Fixture fixture;
-    fixture.bar->add("Empty", boost::shared_ptr<v3d::ui::component::Menu>());
+    fixture.bar->add("Empty", boost::shared_ptr<v3d::ui::component::menu::Menu>());
     BOOST_CHECK_EQUAL(fixture.bar->count(), 0U);
 
     build(&fixture);
@@ -424,10 +428,10 @@ BOOST_AUTO_TEST_CASE(a_null_menu_is_not_added) {
  **/
 BOOST_AUTO_TEST_CASE(an_item_outlives_its_menu) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::MenuItem> kept =
-        fixture.item(v3d::ui::component::menu::ItemType::Action, "Open", "open");
+    const boost::shared_ptr<v3d::ui::component::menu::Item> kept =
+        fixture.item(v3d::ui::component::menu::ItemType::Action, {.label = "Open", .name = "open"});
     {
-        boost::shared_ptr<v3d::ui::component::Menu> menu = fixture.menu();
+        const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = fixture.menu();
         menu->addItem(kept);
         BOOST_TEST(kept->parent() == menu.get());
     }
@@ -441,20 +445,22 @@ BOOST_AUTO_TEST_CASE(an_item_outlives_its_menu) {
  **/
 BOOST_AUTO_TEST_CASE(a_replaced_submenu_is_let_go) {
     Fixture fixture;
-    boost::shared_ptr<v3d::ui::component::Menu> first = fixture.menu();
-    boost::shared_ptr<v3d::ui::component::Menu> second = fixture.menu();
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> first = fixture.menu();
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> second = fixture.menu();
     {
-        boost::shared_ptr<v3d::ui::component::MenuItem> deeper =
-            fixture.item(v3d::ui::component::menu::ItemType::Submenu, "Shading", "");
+        const boost::shared_ptr<v3d::ui::component::menu::Item> deeper =
+            fixture.item(v3d::ui::component::menu::ItemType::Submenu, {.label = "Shading", .name = ""});
         deeper->submenu(first);
         BOOST_TEST(static_cast<const v3d::ui::Component&>(*first).parent() == deeper.get());
         deeper->submenu(second);
         BOOST_TEST(static_cast<const v3d::ui::Component&>(*first).parent() == nullptr);
         BOOST_TEST(static_cast<const v3d::ui::Component&>(*second).parent() == deeper.get());
-        deeper->submenu(boost::shared_ptr<v3d::ui::component::Menu>());
+        deeper->submenu(boost::shared_ptr<v3d::ui::component::menu::Menu>());
         BOOST_TEST(static_cast<const v3d::ui::Component&>(*second).parent() == nullptr);
     }
     BOOST_TEST(v3d::ui::usable(*first));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

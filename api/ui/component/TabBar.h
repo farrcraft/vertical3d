@@ -19,13 +19,12 @@ namespace v3d::ui::component {
 /**
  * A strip of tabs over the page one of them chose.
  *
- * The pages are the bar's children and one of them is chosen, so the bar owns which page
- * is up the way a select list owns which row is chosen. Only the chosen page is drawn,
- * and only its children are laid out - a page that is not up has no box, and nothing in
- * it can be picked.
+ * The pages are the bar's children. The bar holds which page is chosen, the way a select
+ * list holds which row is chosen. Only the chosen page is drawn, and only its children are
+ * laid out. A page that is not chosen gets no new box, and nothing in it can be picked.
  *
- * Where each tab ended up is written by whatever drew the strip, so a bar that has never
- * been drawn cannot say which tab a point is on.
+ * The renderer records each tab's box through tabs() when it draws the strip. Until the
+ * bar has been drawn, at() finds no tab.
  *
  * The strip, the tabs and the rule under them are the "tabs" style class the component
  * names.
@@ -33,7 +32,7 @@ namespace v3d::ui::component {
 class TabBar : public Component {
  public:
     /**
-     * What selected() answers when no page is chosen: the bar holds none, or an index outside
+     * What selected() returns when no page is chosen: the bar holds none, or an index outside
      * them was chosen.
      **/
     static const int none = -1;
@@ -58,8 +57,8 @@ class TabBar : public Component {
     boost::shared_ptr<TabPage> page() const;
 
     /**
-     * Where each tab was drawn, in the order the pages are held. Written by the draw, and
-     * what at() tests a point against.
+     * Where each tab was drawn, in the order the pages are held. The renderer writes these
+     * as it draws, and at() tests a point against them.
      **/
     void tabs(const std::vector<v3d::type::geometry::Bound2D>& boxes);
     const std::vector<v3d::type::geometry::Bound2D>& tabs() const noexcept;

@@ -5,6 +5,8 @@
 
 #include "SortKey.h"
 
+#include <cstdint>
+
 namespace v3d::render::realtime {
 
 /**
@@ -19,9 +21,11 @@ SortKey::SortKey() noexcept :
 /**
  **/
 uint64_t SortKey::packed() const noexcept {
-    return (static_cast<uint64_t>(layer) << 48) |
-        (static_cast<uint64_t>(pipeline) << 32) |
-        (static_cast<uint64_t>(material) << 16) |
+    // four fields of equal width, the layer most significant
+    constexpr int fieldBits = 16;
+    return (static_cast<uint64_t>(layer) << (3 * fieldBits)) |
+        (static_cast<uint64_t>(pipeline) << (2 * fieldBits)) |
+        (static_cast<uint64_t>(material) << fieldBits) |
         static_cast<uint64_t>(depth);
 }
 

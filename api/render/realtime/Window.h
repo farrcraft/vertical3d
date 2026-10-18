@@ -14,6 +14,8 @@
 
 #include <string>
 
+#include <glm/vec2.hpp>
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime {
@@ -21,8 +23,8 @@ namespace v3d::render::realtime {
  * The window everything is drawn into, and the Vulkan instance and surface that present to it.
  *
  * Every window is a Vulkan window: an app presents through a swapchain whether it draws in two
- * dimensions or three. A 2D app differs from a 3D one in what its passes request - an
- * orthographic camera and no depth - not in the window.
+ * dimensions or three. A 2D app differs from a 3D one in what its passes request, an
+ * orthographic camera and no depth, and not in the window.
  **/
 class Window final {
  public:
@@ -37,7 +39,7 @@ class Window final {
      * @throw std::runtime_error if the vulkan loader or SDL's extension list is missing
      * @return whether the window itself could be created
      **/
-    bool create(int width, int height);
+    bool create(const glm::ivec2& size);
 
     /**
      * @return whether create() has succeeded and destroy() has not been called since
@@ -69,7 +71,7 @@ class Window final {
      * what width() and height() report and does not change the window. To ask for a new
      * size, call request().
      **/
-    void resize(int width, int height) noexcept;
+    void resize(const glm::ivec2& size) noexcept;
 
     /**
      * Ask the window to become a size, for example to restore a remembered one.
@@ -78,7 +80,7 @@ class Window final {
      * calls resize() with it, so a size the window manager refused or adjusted is never
      * reported as the window's size.
      **/
-    void request(int width, int height);
+    void request(const glm::ivec2& size);
 
     /**
      **/
@@ -104,6 +106,19 @@ class Window final {
      *         no window at all
      **/
     bool focused() const;
+
+    /**
+     * Fill the display the window is on, or go back to a window.
+     *
+     * The display keeps its own mode, so the change is a resize as far as the swapchain is
+     * concerned, and arrives as one.
+     * @return false when the window does not exist or SDL refused, which is logged
+     **/
+    bool fullscreen(bool on);
+
+    /**
+     **/
+    bool fullscreen() const;
 
     /**
      * Start or stop the platform composing text. SDL_EVENT_TEXT_INPUT arrives only while

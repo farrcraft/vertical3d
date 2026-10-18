@@ -23,8 +23,6 @@ boost::json::object at(const boost::json::value& version) {
     return document;
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(migration_test)
 
 /**
@@ -64,7 +62,7 @@ BOOST_AUTO_TEST_CASE(the_steps_run_in_order) {
 
     boost::json::object document = at(1);
     BOOST_CHECK(v3d::asset::readForward(&document, 3, chain) == v3d::asset::Reading::Migrated);
-    BOOST_REQUIRE_EQUAL(seen.size(), 2u);
+    BOOST_REQUIRE_EQUAL(seen.size(), 2U);
     BOOST_CHECK_EQUAL(seen[0], "1 at 1");
     BOOST_CHECK_EQUAL(seen[1], "2 at 2");
     BOOST_CHECK_EQUAL(document.at("version").as_int64(), 3);
@@ -76,7 +74,7 @@ BOOST_AUTO_TEST_CASE(the_steps_run_in_order) {
     boost::json::object later = at(2);
     later["title"] = "acorn";
     BOOST_CHECK(v3d::asset::readForward(&later, 3, chain) == v3d::asset::Reading::Migrated);
-    BOOST_REQUIRE_EQUAL(seen.size(), 1u);
+    BOOST_REQUIRE_EQUAL(seen.size(), 1U);
     BOOST_CHECK_EQUAL(seen[0], "2 at 2");
 }
 
@@ -146,3 +144,5 @@ BOOST_AUTO_TEST_CASE(a_later_document_is_newer) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -3,11 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/audio/AudioClip.h>
 #include <api/audio/Engine.h>
 #include <api/audio/Play.h>
 #include <api/event/kind/Sound.h>
 #include <api/log/Logger.h>
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -47,11 +49,9 @@ struct Resolver {
     std::vector<std::string> asked_;
 };
 
-};  // namespace
-
 /**
- * The document is a list of clip ids over the sources that hold them. The library names a
- * source and the app resolves it - this library cannot reach the asset manager itself.
+ * The document lists a clip id and a source for each clip. The engine passes each source to
+ * the resolver the app supplies, and stores what comes back under the clip id.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_load_test) {
     v3dtest::writeWav("hit.wav");
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_load_test) {
     ]})"), std::ref(resolve)));
 
     // every source the document named reached the resolver, in the order it listed them
-    BOOST_REQUIRE_EQUAL(resolve.asked_.size(), 2u);
+    BOOST_REQUIRE_EQUAL(resolve.asked_.size(), 2U);
     BOOST_CHECK_EQUAL(resolve.asked_[0], "hit.wav");
     BOOST_CHECK_EQUAL(resolve.asked_[1], "score.wav");
 }
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_load_missing_clip_test) {
         {"clip_id": "gone", "file": "nowhere.wav"}
     ]})"), std::ref(resolve)));
 
-    BOOST_CHECK_EQUAL(resolve.asked_.size(), 2u);
+    BOOST_CHECK_EQUAL(resolve.asked_.size(), 2U);
     // the clip that resolved was filed, and the one that did not was never filed
     BOOST_TEST(sound->has("hit"));
     BOOST_TEST(!sound->has("gone"));
@@ -103,8 +103,8 @@ BOOST_AUTO_TEST_CASE(audio_engine_load_without_resolver_test) {
 }
 
 /**
- * Every rejection is a false return rather than an exception out of app startup - the lookups
- * are guarded because boost::json::object::at throws for a key it does not hold.
+ * Every rejection is a false return, not an exception out of app startup. The lookups are
+ * guarded because boost::json::object::at throws for a key it does not hold.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_no_sounds_key_test) {
     Resolver resolve;
@@ -151,14 +151,14 @@ BOOST_AUTO_TEST_CASE(audio_engine_empty_sounds_test) {
 }
 
 /**
- * playClip hands the clip's audio to the mixer, so a clip holding none is refused when it is
- * filed rather than reaching the mixer as a null.
+ * play() hands the clip's audio to the mixer. A clip holding none is refused when it is
+ * stored, so the mixer never receives a null.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_add_clip_test) {
     v3dtest::writeWav("hit.wav");
 
     auto sound = engine();
-    boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
+    const boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
     BOOST_REQUIRE(clip->load("hit.wav"));
     BOOST_TEST(sound->addClip(clip, "hit"));
 
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_without_initialize_test) {
     v3dtest::writeWav("hit.wav");
 
     auto sound = engine();
-    boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
+    const boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
     BOOST_REQUIRE(clip->load("hit.wav"));
     BOOST_TEST(sound->addClip(clip, "hit"));
     BOOST_CHECK_NO_THROW(sound->shutdown());
@@ -195,14 +195,14 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_without_initialize_test) {
 
 /**
  * The track functions with no device. The clip table and the voice bookkeeping can be
- * tested; whether a sound is audible cannot, so these tests run without the device that
+ * tested. Whether a sound is audible cannot, so these tests run without the device that
  * audio::Engine::initialize() opens.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_play_without_a_device_test) {
     v3dtest::writeWav("hit.wav");
 
     auto sound = engine();
-    boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
+    const boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
     BOOST_REQUIRE(clip->load("hit.wav"));
     BOOST_TEST(sound->addClip(clip, "hit"));
 
@@ -211,20 +211,20 @@ BOOST_AUTO_TEST_CASE(audio_engine_play_without_a_device_test) {
     bed.bus = "ambience";
     bed.loops = -1;
     bed.fadeInMs = 500;
-    bed.gain = 0.4f;
-    BOOST_CHECK_EQUAL(sound->play("hit", bed), 0u);
+    bed.gain = 0.4F;
+    BOOST_CHECK(sound->play("hit", bed) == v3d::audio::Voice::None);
     BOOST_TEST(!sound->playClip("hit"));
 
     // and a voice nobody was given is not playing, cannot be stopped and takes no gain
-    BOOST_TEST(!sound->playing(0));
-    BOOST_TEST(!sound->playing(1));
-    BOOST_TEST(!sound->stop(1));
-    BOOST_TEST(!sound->gain(1, 0.5f));
+    BOOST_TEST(!sound->playing(v3d::audio::Voice::None));
+    BOOST_TEST(!sound->playing(v3d::audio::Voice{1}));
+    BOOST_TEST(!sound->stop(v3d::audio::Voice{1}));
+    BOOST_TEST(!sound->gain(v3d::audio::Voice{1}, 0.5F));
 
     // a bus volume without a device is a false return rather than a crash, so a settings
     // screen on a machine with no sound card still works
-    BOOST_TEST(!sound->busGain("music", 0.5f));
-    BOOST_TEST(!sound->busGain("", 0.5f));
+    BOOST_TEST(!sound->busGain("music", 0.5F));
+    BOOST_TEST(!sound->busGain("", 0.5F));
     BOOST_CHECK_NO_THROW(sound->stopAll(250));
 }
 
@@ -237,7 +237,7 @@ BOOST_AUTO_TEST_CASE(audio_play_defaults_are_a_one_shot_test) {
     BOOST_CHECK_EQUAL(once.bus, "");
     BOOST_CHECK_EQUAL(once.loops, 0);
     BOOST_CHECK_EQUAL(once.fadeInMs, 0);
-    BOOST_CHECK_CLOSE(once.gain, 1.0f, 0.001f);
+    BOOST_CHECK_CLOSE(once.gain, 1.0F, 0.001F);
 }
 
 /**
@@ -248,10 +248,10 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_twice_after_a_play_without_a_device_t
     v3dtest::writeWav("hit.wav");
 
     auto sound = engine();
-    boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
+    const boost::shared_ptr<v3d::audio::AudioClip> clip = boost::make_shared<v3d::audio::AudioClip>();
     BOOST_REQUIRE(clip->load("hit.wav"));
     BOOST_TEST(sound->addClip(clip, "hit"));
-    BOOST_CHECK_EQUAL(sound->play("hit", v3d::audio::Play()), 0u);
+    BOOST_CHECK(sound->play("hit", v3d::audio::Play()) == v3d::audio::Voice::None);
 
     BOOST_CHECK_NO_THROW(sound->shutdown());
     BOOST_CHECK_NO_THROW(sound->shutdown());
@@ -264,7 +264,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_twice_after_a_play_without_a_device_t
  * audio subsystem starts, whether or not a device opens.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_lets_the_dispatcher_go_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     {
         v3d::audio::Engine sound(boost::make_shared<v3d::log::Logger>(), dispatcher);
         sound.initialize();
@@ -278,3 +278,5 @@ BOOST_AUTO_TEST_CASE(audio_engine_lets_the_dispatcher_go_test) {
     sound.shutdown();
     BOOST_CHECK(dispatcher->sink<v3d::event::kind::Sound>().empty());
 }
+
+};  // namespace

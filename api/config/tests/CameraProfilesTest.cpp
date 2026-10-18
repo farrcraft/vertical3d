@@ -6,6 +6,7 @@
 #include <api/config/CameraProfiles.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 
 #include <string>
 
@@ -26,7 +27,7 @@ boost::shared_ptr<v3d::log::Logger> logger() {
 }
 
 /**
- * Two of the profiles from data/cameras.json.
+ * Two of the profiles from vertical3d/data/cameras.json.
  **/
 const char* const cameras =
 "{\"cameras\": ["
@@ -38,49 +39,46 @@ const char* const cameras =
 " \"aspect\": 1.33, \"near\": 0.1, \"far\": 100.0, \"adaptive\": \"none\"}"
 "]}";
 
-};  // namespace
-
 BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
     v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config(cameras)));
 
-    BOOST_REQUIRE_EQUAL(profiles.names().size(), 2u);
+    BOOST_REQUIRE_EQUAL(profiles.names().size(), 2U);
     BOOST_CHECK_EQUAL(profiles.names()[0], "Top");
     BOOST_CHECK(profiles.has("Perspective"));
     BOOST_CHECK(!profiles.has("Nothing"));
 
-    v3d::type::camera::Profile top = profiles.get("Top");
+    const v3d::type::camera::Profile top = profiles.get("Top");
     BOOST_CHECK_EQUAL(top.orthographic(), true);
-    BOOST_CHECK_CLOSE(top.orthoZoom(), 10.0f, 0.01f);
-    BOOST_CHECK_CLOSE(top.clipping()[0], 0.1f, 0.01f);
-    BOOST_CHECK_CLOSE(top.clipping()[1], 100.0f, 0.01f);
+    BOOST_CHECK_CLOSE(top.orthoZoom(), 10.0F, 0.01F);
+    BOOST_CHECK_CLOSE(top.clipping()[0], 0.1F, 0.01F);
+    BOOST_CHECK_CLOSE(top.clipping()[1], 100.0F, 0.01F);
     BOOST_CHECK_EQUAL(top.adaptiveProjection(), true);
     BOOST_CHECK_EQUAL(top.adaptivePosition(), true);
 
-    v3d::type::camera::Profile perspective = profiles.get("Perspective");
+    const v3d::type::camera::Profile perspective = profiles.get("Perspective");
     BOOST_CHECK_EQUAL(perspective.orthographic(), false);
-    BOOST_CHECK_CLOSE(perspective.fov(), 60.0f, 0.01f);
+    BOOST_CHECK_CLOSE(perspective.fov(), 60.0F, 0.01F);
     BOOST_CHECK_EQUAL(perspective.adaptiveProjection(), false);
 }
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_orientation_test) {
-    // lookat() orients a profile, so the three normals and the rotation agree; a table
-    // naming each of them separately could disagree
+    // load() orients each profile with lookat(), so its basis vectors and its rotation agree
     v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config(cameras)));
 
-    v3d::type::camera::Profile top = profiles.get("Top");
-    BOOST_CHECK_CLOSE(top.direction()[1], -1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(top.up()[2], 1.0f, 0.01f);
-    BOOST_CHECK_CLOSE(top.right()[0], 1.0f, 0.01f);
+    const v3d::type::camera::Profile top = profiles.get("Top");
+    BOOST_CHECK_CLOSE(top.direction()[1], -1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(top.up()[2], 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(top.right()[0], 1.0F, 0.01F);
 
     // and the camera it makes sees the origin straight ahead, ten units along its own +z
     v3d::type::camera::Camera camera(top);
     camera.createView();
-    glm::vec4 origin = camera.view() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    BOOST_CHECK_SMALL(origin[0], 0.001f);
-    BOOST_CHECK_SMALL(origin[1], 0.001f);
-    BOOST_CHECK_CLOSE(origin[2], 10.0f, 0.01f);
+    glm::vec4 origin = camera.view() * glm::vec4(0.0F, 0.0F, 0.0F, 1.0F);
+    BOOST_CHECK_SMALL(origin[0], 0.001F);
+    BOOST_CHECK_SMALL(origin[1], 0.001F);
+    BOOST_CHECK_CLOSE(origin[2], 10.0F, 0.01F);
 }
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_defaults_test) {
@@ -88,7 +86,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_defaults_test) {
     v3d::config::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config("{\"cameras\": [{\"name\": \"Bare\"}]}")));
 
-    v3d::type::camera::Profile bare = profiles.get("Bare");
+    const v3d::type::camera::Profile bare = profiles.get("Bare");
     BOOST_CHECK_EQUAL(bare.name(), "Bare");
     BOOST_CHECK_EQUAL(bare.orthographic(), true);
 
@@ -107,6 +105,9 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_rejects_test) {
     // a name or an adaptive setting that is not a string is refused rather than thrown
     BOOST_CHECK_NO_THROW(BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": 5}]}"))));
     BOOST_CHECK_NO_THROW(BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"adaptive\": 3}]}"))));
+    // a zoom below Camera::MINIMUM_ZOOM is refused, because it could never zoom back out
+    BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"zoom\": 0.0}]}")));
+    BOOST_CHECK(!profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"zoom\": -4.0}]}")));
 }
 
 /**
@@ -119,7 +120,9 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_vector_of_strings_test) {
     BOOST_CHECK(profiles.has("a"));
 
     const glm::vec3 eye = profiles.get("a").eye();
-    BOOST_CHECK_SMALL(eye[0], 0.001f);
-    BOOST_CHECK_SMALL(eye[1], 0.001f);
-    BOOST_CHECK_CLOSE(eye[2], -10.0f, 0.01f);
+    BOOST_CHECK_SMALL(eye[0], 0.001F);
+    BOOST_CHECK_SMALL(eye[1], 0.001F);
+    BOOST_CHECK_CLOSE(eye[2], -10.0F, 0.01F);
 }
+
+};  // namespace

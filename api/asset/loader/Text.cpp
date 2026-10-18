@@ -5,12 +5,16 @@
 
 #include "Text.h"
 
+#include <api/asset/Asset.h>
 #include <api/asset/File.h>
+#include <api/asset/Loader.h>
 #include <api/asset/Type.h>
 #include <api/asset/kind/Text.h>
+#include <api/log/Logger.h>
 
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include <boost/make_shared.hpp>
 
@@ -26,7 +30,7 @@ Text::Text(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(Type::Tex
 boost::shared_ptr<Asset> Text::load(std::string_view name) {
     const std::optional<std::string> content = readFile(name);
     if (!content) {
-        logger_->get()->error("Could not read text asset: {}", name);
+        logger()->get()->error("Could not read text asset: {}", name);
         return boost::shared_ptr<Asset>();
     }
     return boost::make_shared<v3d::asset::kind::Text>(std::string(name), Type::Text, *content);

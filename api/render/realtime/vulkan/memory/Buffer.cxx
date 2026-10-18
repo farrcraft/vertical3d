@@ -5,10 +5,10 @@
 
 #include "Buffer.h"
 
+#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
 #include "Allocator.h"
-#include "Memory.h"
 
 #include <cstring>
 #include <stdexcept>
@@ -17,13 +17,13 @@ namespace v3d::render::realtime::vulkan::memory {
 
 /**
  **/
-Buffer::Buffer(const boost::shared_ptr<device::Device>& device, VkBufferUsageFlags usage, VkDeviceSize bytes) :
+Buffer::Buffer(const boost::shared_ptr<device::Device>& device, const BufferSpec& spec) :
     device_(device),
-    usage_(usage),
+    usage_(spec.usage),
     buffer_(VK_NULL_HANDLE),
     size_(0),
     mapped_(nullptr) {
-    create(bytes > 0 ? bytes : 1);
+    create(spec.bytes > 0 ? spec.bytes : 1);
 }
 
 /**
@@ -101,7 +101,7 @@ bool Buffer::grow(VkDeviceSize bytes) {
     }
 
     // the allocation the device may still be reading out of is about to go away
-    VkResult result = vkDeviceWaitIdle(device_->handle());
+    const VkResult result = vkDeviceWaitIdle(device_->handle());
     device::check(result, "Unable to wait for the vulkan device before growing a buffer");
     destroy();
     create(target);

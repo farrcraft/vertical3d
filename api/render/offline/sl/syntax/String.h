@@ -13,7 +13,7 @@ namespace v3d::render::offline::sl::syntax {
 
 class String final : public Expression {
  public:
-    String(const std::string & value, unsigned int line, unsigned int column);
+    String(const std::string & value, const v3d::render::offline::Position & at);
 
     std::string value;
 };

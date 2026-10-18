@@ -39,7 +39,7 @@ class Engine {
 
     /**
      * Look up a context from its name.
-     * If no existing context exists, a new one will be created.
+     * Creates the context when none has that name.
      * @return context an event context
      **/
     boost::shared_ptr<Context> resolveContext(const std::string_view& name);
@@ -48,7 +48,8 @@ class Engine {
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     std::map<std::string, boost::shared_ptr<Mapper>> mappers_;
     std::vector<boost::shared_ptr<Context>> contexts_;
-    // after dispatcher_, so it disconnects before the dispatcher it points into can go
+    // declared after dispatcher_, so it is destroyed first and disconnects while the
+    // dispatcher still exists
     entt::scoped_connection source_;
 };
 

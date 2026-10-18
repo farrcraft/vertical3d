@@ -5,6 +5,8 @@
 
 #include "Asset.h"
 
+#include "Type.h"
+
 #include <string>
 
 namespace v3d::asset {

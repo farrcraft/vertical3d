@@ -14,7 +14,7 @@ namespace v3d::image {
 /**
  * Take a rectangle out of an image.
  *
- * This is the counterpart of `TextureAtlas::region(x, y, w, h, data, stride)`, which blits a
+ * This is the counterpart of `TextureAtlas::region(area, data, stride)`, which blits a
  * rectangle *into* an image. Use it to cut a sprite back out of a packed sheet.
  *
  * The cut image carries the source's bits per pixel; nothing is converted.

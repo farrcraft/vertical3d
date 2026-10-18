@@ -16,11 +16,11 @@ namespace v3d::type::animation {
 /**
  * A sprite's frames: a sequence of regions of a sheet, each shown for its own length of time.
  *
- * Regions are held resolved, as the uv pair a canvas takes, rather than by name. A game resolves
- * them from its sheet when it loads and builds the clip again when the sheet is reloaded.
+ * Each region is held as the uv pair a canvas takes, not by name. A game looks the regions up
+ * in its sheet when it loads, and builds the clip again when the sheet is reloaded.
  *
- * Like the Clock it runs on, a clip holds no time of its own: a walk cycle is played by the
- * time the game keeps, and a particle's look by the particle's age.
+ * Like its Clock, a clip holds no time of its own. A game passes the time it keeps for a walk
+ * cycle, and a particle passes its age.
  **/
 class SpriteClip final {
  public:

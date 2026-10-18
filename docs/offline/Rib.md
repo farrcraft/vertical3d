@@ -6,8 +6,11 @@ How moya reads a RenderMan scene file. The terms used here are defined in
 ## RIB
 
 The RIB reader is in `api/render/offline/rib`. It calls `offline::rib::Handler`, a C++
-interface with typed parameter lists, not the RI C API. moya implements the handler as
-`moya::RIBHandler`. The editor exports its scenes to RIB, one way; see [editor/](../editor/README.md).
+interface with typed parameter lists, not the RI C API. A request that takes several values
+of one type passes them as one struct named after the request, from `rib/Requests.h`, so a call
+names each value: `handler->clipping({.hither = 0.1F, .yon = 100.0F})`. moya implements the
+handler as `moya::RIBHandler`. The editor exports its scenes to RIB, one way; see
+[editor/](../editor/README.md).
 
 ### What is read
 
@@ -57,6 +60,9 @@ accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"s
   standard names, including `Option "trace"`'s `maxdepth` and `Option "searchpath"`'s `shader`
   and `texture`, and nothing else. A shader parameter outside that set needs `Declare` or an
   inline type, such as `"uniform float size" [0.5]`. Otherwise the shader runs with its default.
+- **The C interface reads a parameter's values by its declared type.** An `integer` parameter's
+  array holds `RtInt`s and a `string` parameter's holds `RtString`s. Every other type's holds
+  `RtFloat`s.
 - **A `Polygon` carries no vertex count.** The count is the length of `"P"`, which the reader
   divides out. A parameter list is therefore parsed before the count is known, and an
   unbracketed varying or vertex parameter ends the parse instead of being guessed at.

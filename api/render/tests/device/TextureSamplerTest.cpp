@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
@@ -27,8 +28,6 @@ const Sampler* samplerOf(const v3d::test::Headless& headless, const TextureHandl
     return texture->sampler.get();
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(texture_sampler_test)
 
 /**
@@ -38,7 +37,7 @@ BOOST_AUTO_TEST_SUITE(texture_sampler_test)
  * texture would give the two repeating ones different samplers.
  **/
 BOOST_AUTO_TEST_CASE(textures_share_a_sampler_per_spec) {
-    v3d::test::Headless headless(VK_FORMAT_R8G8B8A8_UNORM, 4, 4);
+    const v3d::test::Headless headless(VK_FORMAT_R8G8B8A8_UNORM, 4, 4);
     const unsigned char texel[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
     Sampler::Spec repeating;
@@ -55,3 +54,5 @@ BOOST_AUTO_TEST_CASE(textures_share_a_sampler_per_spec) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

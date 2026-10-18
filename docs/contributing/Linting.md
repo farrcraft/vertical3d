@@ -122,10 +122,24 @@ Turn it on with `-DV3D_CLANG_TIDY=ON`. It is off by default for the same cost re
 list is in [.clang-tidy](../../.clang-tidy). The clang-tidy executable comes with the MSVC install,
 under `VC/Tools/Llvm/x64/bin`.
 
-`.clang-tidy` enables four check families and subtracts 20 checks by name. The tree is clean at
-the 186 that remain. [TODO.md](../TODO.md#the-clang-tidy-backlog) lists what each subtracted
-check reports, except seven that the `.clang-tidy` comment marks as settled. To remove a line from
-that list, fix what the check reports. Do not widen the exclusion.
+`.clang-tidy` enables four check families and subtracts 7 checks by name. The tree is clean at
+the 199 that remain. Each subtraction is settled, and the `.clang-tidy` comment says why. A new
+finding is fixed, never answered by widening an exclusion or an option.
+
+`misc-include-cleaner` ignores every header installed outside the tree: vcpkg, the vendored
+trees, the Vulkan SDK and the toolchain. A library such as glm or Vulkan is included through its
+public header, and the check would otherwise ask for the internal header that declares each
+symbol. It checks the tree's own headers and the standard library's. Two pragmas answer it:
+
+- `// IWYU pragma: export` on an include makes the including header provide what that include
+  provides. `api/engine/Main.h` exports `Application.h`, so an app's `main` that calls `run<T>`
+  uses `Main.h`.
+- `// IWYU pragma: keep` keeps an include the check finds unused. A source file that exists only
+  to compile its header on its own keeps that include this way.
+
+Each `tests` directory has a `.clang-tidy` of its own. It inherits the root file and turns off
+`readability-magic-numbers`, because a test's literal is the value it expects. A new tests
+directory needs a copy of that file.
 
 `V3D_WARNINGS_AS_ERRORS` also decides whether a clang-tidy finding stops the build. Turning
 either analyser on or off changes the compile commands, so ninja rebuilds what it needs to.
@@ -162,6 +176,14 @@ checks every sentence that overlaps one. It reports:
 - a sentence of more than 35 words;
 - a sentence that starts with "And" or "So";
 - a clause such as "X, which is what Y", or the same with how, where, why or when;
+- "X is what Y" where a verb follows "what", as in "the submit is what signals the fence";
+- a sentence with three clause joins, or with two when one is a semicolon or a dash. A join is
+  ", which", ", so", "so that", "because", "rather than", a semicolon, or a dash between two
+  words. All the semicolons of a sentence count as one join, and so do the two dashes around
+  an aside. A semicolon at the end of a list item is not counted, and neither is a minus sign
+  such as the one in "n - 1";
+- two relative clauses on one noun, as in "a Ring, which this drives but which works without
+  it";
 - "knows", "wants", "owes" or "trusts", or "does not know" and its kin, after a subject that is
   not a person, an app, a caller or a consumer;
 - "used to", a date or "phase N", except in [plans/](../plans) and [roadmap/](../roadmap);
@@ -174,6 +196,29 @@ Code fences, code spans, tables, headings, URLs and front matter are not checked
 Each finding prints as `path:line: rule: detail | sentence`, and the script exits with 1 when
 there is one. `--all FILE...` checks whole files instead of a change. The tree is not clean at
 `--all`, so use it to try a rule, not as a gate.
+
+## Comments only
+
+[scripts/commentsonly.ts](../../scripts/commentsonly.ts) checks that a change moved nothing but
+comments and whitespace. Run it after a change that is meant to touch only comments, such as a
+sweep of a directory's comments:
+
+```
+node scripts/commentsonly.ts
+```
+
+It compares each changed C++, GLSL and CMake file in the working tree with `HEAD`. `--base REF`
+compares with another commit, so `--base HEAD~1` checks a sweep that is already committed. It
+removes the comments from both versions, collapses whitespace outside literals, drops blank
+lines, and reports:
+
+- the first code line that differs, with its text at the base and now;
+- a block comment's closing marker left in code, which is usually a comment that closed early;
+- a line comment that ends with a backslash, because the compiler joins the next line to it;
+- a checked file that the change adds or removes.
+
+Other files are not read. It is not a CI gate, because most changes move code. A comment change
+can still break the build in a way the script does not see, so build and run the tests as well.
 
 ## CI
 

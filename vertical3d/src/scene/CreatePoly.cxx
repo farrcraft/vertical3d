@@ -5,6 +5,8 @@
 
 #include "CreatePoly.h"
 
+#include <api/brep/BRep.h>
+
 #include <cmath>
 #include <vector>
 
@@ -38,7 +40,7 @@ std::vector<glm::vec3> ring(float radius, float height) {
 /**
  **/
 boost::shared_ptr<v3d::brep::BRep> create_poly_cube() {
-    const float half = 0.5f;
+    const float half = 0.5F;
     boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
 
     std::vector<glm::vec3> points;
@@ -48,7 +50,7 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cube() {
     points.push_back(glm::vec3(half, -half, -half));
     points.push_back(glm::vec3(half, half, -half));
     points.push_back(glm::vec3(-half, half, -half));
-    mesh->addFace(points, glm::vec3(0.0f, 0.0f, -1.0f));
+    mesh->addFace(points, glm::vec3(0.0F, 0.0F, -1.0F));
 
     // right
     points.clear();
@@ -56,7 +58,7 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cube() {
     points.push_back(glm::vec3(half, -half, half));
     points.push_back(glm::vec3(half, half, half));
     points.push_back(glm::vec3(half, half, -half));
-    mesh->addFace(points, glm::vec3(1.0f, 0.0f, 0.0f));
+    mesh->addFace(points, glm::vec3(1.0F, 0.0F, 0.0F));
 
     // top
     points.clear();
@@ -64,7 +66,7 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cube() {
     points.push_back(glm::vec3(half, half, -half));
     points.push_back(glm::vec3(half, half, half));
     points.push_back(glm::vec3(-half, half, half));
-    mesh->addFace(points, glm::vec3(0.0f, 1.0f, 0.0f));
+    mesh->addFace(points, glm::vec3(0.0F, 1.0F, 0.0F));
 
     // left
     points.clear();
@@ -72,7 +74,7 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cube() {
     points.push_back(glm::vec3(-half, -half, -half));
     points.push_back(glm::vec3(-half, half, -half));
     points.push_back(glm::vec3(-half, half, half));
-    mesh->addFace(points, glm::vec3(-1.0f, 0.0f, 0.0f));
+    mesh->addFace(points, glm::vec3(-1.0F, 0.0F, 0.0F));
 
     // back
     points.clear();
@@ -80,7 +82,7 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cube() {
     points.push_back(glm::vec3(-half, -half, half));
     points.push_back(glm::vec3(-half, half, half));
     points.push_back(glm::vec3(half, half, half));
-    mesh->addFace(points, glm::vec3(0.0f, 0.0f, 1.0f));
+    mesh->addFace(points, glm::vec3(0.0F, 0.0F, 1.0F));
 
     // bottom
     points.clear();
@@ -88,7 +90,7 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cube() {
     points.push_back(glm::vec3(-half, -half, -half));
     points.push_back(glm::vec3(-half, -half, half));
     points.push_back(glm::vec3(half, -half, half));
-    mesh->addFace(points, glm::vec3(0.0f, -1.0f, 0.0f));
+    mesh->addFace(points, glm::vec3(0.0F, -1.0F, 0.0F));
 
     return mesh;
 }
@@ -96,15 +98,15 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cube() {
 /**
  **/
 boost::shared_ptr<v3d::brep::BRep> create_poly_plane() {
-    const float half = 0.5f;
+    const float half = 0.5F;
     boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
 
     std::vector<glm::vec3> vertices;
-    vertices.push_back(glm::vec3(-half, 0.0f, -half));
-    vertices.push_back(glm::vec3(half, 0.0f, -half));
-    vertices.push_back(glm::vec3(half, 0.0f, half));
-    vertices.push_back(glm::vec3(-half, 0.0f, half));
-    mesh->addFace(vertices, glm::vec3(0.0f, 1.0f, 0.0f));
+    vertices.push_back(glm::vec3(-half, 0.0F, -half));
+    vertices.push_back(glm::vec3(half, 0.0F, -half));
+    vertices.push_back(glm::vec3(half, 0.0F, half));
+    vertices.push_back(glm::vec3(-half, 0.0F, half));
+    mesh->addFace(vertices, glm::vec3(0.0F, 1.0F, 0.0F));
 
     return mesh;
 }
@@ -112,12 +114,12 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_plane() {
 /**
  **/
 boost::shared_ptr<v3d::brep::BRep> create_poly_cone() {
-    const float radius = 0.5f;
-    const float half = 0.5f;
+    const float radius = 0.5F;
+    const float half = 0.5F;
     boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
 
     const std::vector<glm::vec3> base = ring(radius, -half);
-    const glm::vec3 apex(0.0f, half, 0.0f);
+    const glm::vec3 apex(0.0F, half, 0.0F);
 
     for (unsigned int index = 0; index < sides; index++) {
         const glm::vec3& from = base[index];
@@ -137,8 +139,8 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cone() {
 /**
  **/
 boost::shared_ptr<v3d::brep::BRep> create_poly_cylinder() {
-    const float radius = 0.5f;
-    const float half = 0.5f;
+    const float radius = 0.5F;
+    const float half = 0.5F;
     boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
 
     const std::vector<glm::vec3> bottom = ring(radius, -half);
@@ -154,7 +156,7 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cylinder() {
         face.push_back(top[index]);
 
         // the wall faces outward, which is the ring point's own direction from the axis
-        mesh->addFace(face, glm::normalize(glm::vec3(bottom[index].x + bottom[next].x, 0.0f, bottom[index].z + bottom[next].z)));
+        mesh->addFace(face, glm::normalize(glm::vec3(bottom[index].x + bottom[next].x, 0.0F, bottom[index].z + bottom[next].z)));
     }
 
     return mesh;

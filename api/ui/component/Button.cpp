@@ -5,7 +5,14 @@
 
 #include "Button.h"
 
+#include <api/event/Event.h>
+#include <api/event/Type.h>
+#include <api/ui/Component.h>
+
+#include "Type.h"
+
 #include <string>
+#include <string_view>
 
 namespace v3d::ui::component {
 
@@ -14,7 +21,7 @@ Button::Button() :
     state_(STATE_NORMAL),
     toggle_(false),
     checked_(false) {
-    // a control is pickable and focusable from the start; a plain component is neither, so a
+    // a control is pickable and focusable from the start. A plain component is neither, so a
     // panel laid over a scene lets presses through
     pickable(true);
     focusable(true);

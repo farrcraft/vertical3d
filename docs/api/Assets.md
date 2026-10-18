@@ -36,9 +36,50 @@ auto model = assets()->load<v3d::asset::media::kind::Model>("knight.glb");
   not decode, an extension nothing is registered for, and a file of a different kind than `T`
   all fail the same way. Check the one pointer.
 - The manager does not cache. Each call reads the file again, so keep what you load.
+- **One manager can load on several threads at once.** Its loaders are only read after they are
+  registered, and each load decodes with its own state. Register every loader before the first
+  load on another thread.
 
 To load from somewhere else, build a second manager on that directory, for example on
 `engine::userPath()` for a saved game. Register the loaders it needs on it first.
+
+## Loading on a worker thread
+
+`asset::Worker` ([api/asset/Worker.h](../../api/asset/Worker.h)) runs jobs on one thread of its
+own, in the order they are posted. Each job's result comes back to the thread that polls it.
+
+```cpp
+worker_.post(
+    [assets = assets(), name]() { return assets->load<v3d::asset::media::kind::Image>(name); },
+    [this, name](std::expected<boost::shared_ptr<v3d::asset::media::kind::Image>, std::exception_ptr> result) {
+        if (result && *result) {
+            upload(name, *result);
+        }
+    });
+
+void MyApp::tick(unsigned int delta) {
+    worker_.poll();  // runs every finished job's completion, here
+}
+```
+
+- **A job runs on the worker thread.** It may read and decode files, through the app's manager
+  or another. It must not call Vulkan, change an ECS registry, or use a realtime registry such
+  as `MeshRegistry`, because the main thread uses all of those unguarded.
+- **A completion runs inside `poll()`**, on the thread that calls it, in the order the jobs were
+  posted. It receives a `std::expected` holding the job's result, or the exception the job
+  threw. A job returns a value; it cannot return `void`.
+- **Poll once a frame, from `tick()`.** A result therefore arrives at least one frame after its
+  job is posted. `outstanding()` counts the jobs whose completions have not run, for a loading
+  screen.
+- **A completion that throws** stops the poll, and the exception reaches the caller. The
+  completions after it run on the next poll.
+- **Destroying a worker** drops the jobs that have not started and the completions that have not
+  run. The job that is running finishes, and the thread is joined, so a long job delays the
+  destructor.
+- Whatever a job captures must outlive it. A job that captures `this` is unsafe unless the
+  worker is destroyed before the object.
+
+Background: [ADR-0086](../adr/0086-loading-one-worker-thread-polled-from-the-main-thread.md)
 
 ## Loaders
 
@@ -73,7 +114,8 @@ manager.registerLoader(boost::make_shared<MyLoader>(logger), {".map"});
 - Registering a type again replaces its loader.
 - **`load()` returns null and logs on failure. It never throws.**
 - **A loader holds no state between calls.** One instance serves everything that loads through
-  the manager, so a setting left on it by one caller would be seen by the next.
+  the manager, possibly on several threads at once, so a setting left on it by one caller would
+  be seen by the next.
 
 Splitting the loaders this way keeps each library's dependencies small. `config` needs only the
 JSON loader, so it does not pull in libpng, libjpeg or FreeType. Only an app that links `audio`
@@ -98,6 +140,7 @@ Each checked read takes an object and a key:
 |---|---|---|
 | `readString(object, key)` | `std::optional<std::string>` | anything but a string |
 | `readNumber(object, key)` | `std::optional<double>` | anything but a number |
+| `readInt(object, key)` | `std::optional<int>` | anything but an integer an `int` can hold |
 | `readBool(object, key)` | `std::optional<bool>` | anything but `true` or `false` |
 | `readObject(object, key)` | `const boost::json::object*` | anything but an object |
 | `readArray(object, key)` | `const boost::json::array*` | anything but an array |
@@ -107,6 +150,8 @@ Each checked read takes an object and a key:
 - **A caller that reports the two cases differently tests `contains()` first**, then reads.
 - `readNumber` takes a signed integer, an unsigned integer or a double, and returns a double. An
   integer beyond 2^53 loses precision. The value is not tested for being finite.
+- `readInt` takes a signed or an unsigned integer an `int` can hold. It refuses a double, even a
+  whole one, and an integer beyond the range of an `int` rather than narrowing it.
 - `readBool` does not take a number as a bool.
 - `readObject` and `readArray` return a pointer into the object rather than a copy. The pointer
   is valid while the object is unchanged.
@@ -147,7 +192,7 @@ temporary is removed, and the function returns false.
 
 **The output is always readable, and there is no compact mode.** Scalars, short vectors, and
 objects of those stay on one line. Everything else is indented two spaces per level. A double
-that a float holds exactly prints as that float, so `0.1f` prints as `0.1` rather than
+that a float holds exactly prints as that float, so `0.1F` prints as `0.1` rather than
 `0.10000000149011612`. Any other double prints as a double, so `1e-50` and `123456789.123` keep
 their values. JSON has no form for infinity or NaN, so `writeDocument()` returns false for a
 document holding one and leaves the file untouched. Call `asset::serializeDocument()` by its full
@@ -259,7 +304,7 @@ factory.write("out.tga", picture);
 - `crop(source, x, y, width, height)` cuts a rectangle into a new image at the same depth. It
   returns null when the rectangle is empty or not wholly inside the source. Use it to cut a
   sprite back out of a packed sheet.
-- `swapRedBlue(from, to, pixels, channels)` swaps the first and third bytes of each pixel, for
+- `swapRedBlue(from, to, {.pixels, .channels})` swaps the first and third bytes of each pixel, for
   converting between RGB and the BGR order BMP and TGA store. The buffers may be the same.
 - `compare(a, b, tolerance)` compares two images channel by channel and returns a
   `Difference`. It records the worst pixel even when the images match. `description()` gives

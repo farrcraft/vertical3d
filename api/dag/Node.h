@@ -8,9 +8,9 @@
 namespace v3d::dag {
 
 /**
- * Something with an identity: every node constructed gets an id no other has had, and the
- * editor keys its scene and its selection on that id. A copy would share the id it was
- * copied from, so a node cannot be copied.
+ * An object with a unique id. Each node constructed gets an id that no earlier node had. The
+ * editor's scene and selection are keyed on that id. A copy would share the id of the node it
+ * was copied from, so a node cannot be copied.
  **/
 class Node {
  public:

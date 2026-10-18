@@ -5,6 +5,7 @@ v3d_add_test(audio
 	"TestMain.cpp"
 	"AudioClipTest.cpp"
 	"EngineTest.cpp"
+	"PanTest.cpp"
 	"LoaderTest.cpp"
 	"EventsTest.cpp"
 	"EventsWithoutFmodTest.cpp")

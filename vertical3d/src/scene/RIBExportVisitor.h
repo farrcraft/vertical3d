@@ -22,14 +22,14 @@ namespace v3d::editor {
  * **Topology and a placement per mesh, and nothing else.** The editor's Scene has no
  * lights and no materials, so what comes out renders in one flat colour.
  *
- * A face is written as it stands, which is one Polygon per face. RI says a polygon is
- * planar and convex and does no checking, and moya dices a polygon's first four vertices
- * and drops the rest, so a face with more than four vertices renders as a quad.
+ * Each face is written as it stands, as one Polygon. RI requires a polygon to be planar and
+ * convex, and does no checking. moya dices a polygon's first four vertices and drops the
+ * rest, so a face with more than four vertices renders as a quad.
  **/
 class RIBExportVisitor final : public SceneVisitor {
  public:
     /**
-     * @param stream where the RIB goes - nothing is closed or flushed here
+     * @param stream where the RIB goes. Nothing here closes or flushes it
      **/
     explicit RIBExportVisitor(std::ostream* stream);
 
@@ -60,7 +60,7 @@ class RIBExportVisitor final : public SceneVisitor {
      * Both put the translation last, so a transpose here would move the object to where
      * its axes point instead.
      **/
-    void matrix(const glm::mat4x4& m);
+    void matrix(const glm::mat4x4& transform);
 
     std::ostream* stream_;
     unsigned int meshes_ = 0;

@@ -14,13 +14,12 @@
 namespace v3d::input {
 
 /**
- * MouseState keeps track of the cursor position and of which buttons are currently held,
- * based on all of the motion and button events we've seen. It is the mouse counterpart of
- * KeyState.
+ * The cursor position and which buttons are held, built from every motion and button event
+ * the mouse has handled. It is the mouse counterpart of KeyState.
  *
- * A button is named rather than numbered, the way a key is. The names are the ones a
- * binding config uses - "left", "middle", "right", "x1", "x2" - so a consumer asking
- * whether the left button is down needs no SDL header to say which one that is.
+ * A button is named, not numbered, as a key is. The names are the ones a binding config uses:
+ * "left", "middle", "right", "x1" and "x2". A caller that checks the left button therefore
+ * needs no SDL header.
  **/
 class MouseState final {
  public:
@@ -67,11 +66,11 @@ class MouseState final {
     /**
      * Move the cursor
      *
-     * @param p the new cursor position
+     * @param cursor the new cursor position
      *
      * @return the previous position
      **/
-    glm::vec2 operator() (const glm::vec2& p);
+    glm::vec2 operator() (const glm::vec2& cursor);
 
     /**
      * @return the current cursor position
@@ -81,9 +80,8 @@ class MouseState final {
     /**
      * Turn the wheel.
      *
-     * Accumulated rather than replaced, because a wheel sends one event per notch and
-     * several can land in one frame - a flick that turned three notches has to read as
-     * three, not as the last one.
+     * Added to the total, not replacing it. A wheel sends one event per notch, and several
+     * can arrive in one frame. A flick that turned three notches reads as three.
      *
      * @param notches how far it turned, away from the reader first
      **/

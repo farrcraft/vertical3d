@@ -18,10 +18,9 @@ namespace v3d::editor {
 /**
  * The document: a scene on disk, read and written as JSON.
  *
- * The topology is stored as it stands rather than as the calls that would rebuild it,
- * so a round trip renumbers nothing. Neither the selection nor a mesh's id is stored -
- * an id comes from a process wide counter and a saved one would collide with a mesh
- * already loaded.
+ * The topology is stored as it stands, not as the calls that would rebuild it, so a round
+ * trip renumbers nothing. Neither the selection nor a mesh's id is stored. An id comes from
+ * a process wide counter, and a saved one could collide with a mesh already loaded.
  *
  * Reading replaces everything the scene holds. The history describes a scene that is
  * being thrown away, so the caller clears it.

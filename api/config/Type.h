@@ -5,10 +5,11 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
 namespace v3d::config {
-enum class Type {
+enum class Type : std::uint8_t {
     Unknown,
     Window,
     Binding,
@@ -45,7 +46,7 @@ constexpr Type stringToType(const std::string_view& typeName) {
 }
 
 /**
- * The name a config entry gives a type, which is the key Config files the document under.
+ * The name a config entry gives a type. Config stores each document under this name.
  * The inverse of stringToType, and empty for Unknown.
  **/
 constexpr std::string_view typeName(Type type) {

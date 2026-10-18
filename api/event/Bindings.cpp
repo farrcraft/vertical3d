@@ -6,10 +6,17 @@
 #include "Bindings.h"
 
 #include <api/asset/Json.h>
+#include <api/log/Logger.h>
+
+#include "Engine.h"
+#include "Event.h"
+#include "State.h"
+#include "Type.h"
 
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/json.hpp>
@@ -49,10 +56,17 @@ std::vector<Event> Bindings::sources(std::string_view command) const {
     return mapper_->sources(command);
 }
 
+std::vector<std::string> Bindings::commands() const {
+    if (!mapper_) {
+        return std::vector<std::string>();
+    }
+    return mapper_->destinations();
+}
+
 bool Bindings::build() {
-    // every member is read through the checked reads, which return nothing for a member that is
-    // missing or of the wrong type. A document this does not understand has to come back as a
-    // false return, not as an exception out of startup.
+    // read every member through the checked reads in api/asset/Json.h. Each returns nothing for
+    // a member that is missing or of the wrong type. A malformed document returns false here,
+    // and never throws.
     const boost::json::object& doc = *document_;
     const boost::json::array* mappings = v3d::asset::readArray(doc, "mappings");
     if (mappings == nullptr) {
@@ -60,7 +74,7 @@ bool Bindings::build() {
         return false;
     }
 
-    boost::shared_ptr<Mapper> mapper = boost::make_shared<Mapper>("global");
+    const boost::shared_ptr<Mapper> mapper = boost::make_shared<Mapper>("global");
     for (const boost::json::value& item : *mappings) {
         if (!item.is_object()) {
             logger_->get()->error("Unrecognized mapping");
@@ -86,7 +100,7 @@ bool Bindings::build() {
         }
         mapper->map(source, destination);
     }
-    // addMapper stores by name, so this replaces the mapper rather than adding a second
+    // addMapper stores mappers by name, so this replaces the previous "global" mapper
     events_->addMapper(mapper);
     mapper_ = mapper;
     return true;
@@ -141,16 +155,21 @@ bool Bindings::readDestination(const boost::json::object& mapping, Event* event)
     }
     *event = Event(*name, events_->resolveContext(*context));
     event->type(Type::Destination);
-    // an optional "param" lets one action serve several bindings, telling them apart by the
-    // value it arrives with. It reaches the handler as the event's data, the same way a menu
-    // item's value does.
+    // an optional "param" becomes the destination event's data. Several bindings can then drive
+    // one command with different values. A menu item's value arrives the same way.
     if (!destination->contains("param")) {
         return true;
     }
     const boost::json::value& param = destination->at("param");
     const std::optional<std::string> text = v3d::asset::readString(*destination, "param");
-    if (param.is_int64()) {
-        event->data(static_cast<int>(param.as_int64()));
+    if (param.is_int64() || param.is_uint64()) {
+        // an integer an int cannot hold would arrive as a different number
+        const std::optional<int> number = v3d::asset::readInt(*destination, "param");
+        if (!number) {
+            logger_->get()->error("The binding param for [{}] is beyond the range of an int", *name);
+            return false;
+        }
+        event->data(*number);
     } else if (param.is_bool()) {
         event->data(param.as_bool());
     } else if (text) {

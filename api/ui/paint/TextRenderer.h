@@ -11,7 +11,7 @@
 #include <api/font/TextureTextBuffer.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 
 #include <cstddef>
 #include <functional>
@@ -29,22 +29,23 @@ namespace v3d::ui::paint {
 /**
  * One font, packed into one atlas, and the text drawn with it.
  *
- * A glyph is a batched quad sampling that atlas, so a line of text joins
- * whatever canvas the app is already filling and costs the frame no pass and no draw of
- * its own.
+ * A glyph is a batched quad sampling that atlas, so a line of text joins whatever canvas
+ * the app is already filling, and costs the frame no pass and no draw of its own.
  *
- * measure() and write() are the callback pair ComponentRenderer is built from. That class
- * names no font type, so it draws a ui without a device, and this class supplies the font.
+ * measure() and write() return the callback pair that ComponentRenderer and Immediate take.
+ * Those classes name no font type, so they draw a ui without a device. This class supplies
+ * the font.
  **/
 class TextRenderer {
  public:
     /**
      * How an atlas image becomes a texture the canvas can name.
      *
-     * The only thing in this class that needs a device, so it is handed in. Everything
+     * The only step in this class that needs a device, so the app passes it in. Everything
      * else here is cpu side: the cache packs into an image::TextureAtlas and the buffer
-     * lays a string out. Taking the upload as a callback lets an app that draws this
-     * canvas with a renderer of its own use the class. Engine3D's is quads->texture(image).
+     * lays a string out. Because the upload is a callback, an app that draws this canvas
+     * with a renderer of its own can use the class. With Engine3D, the callback is
+     * engine->textures()->texture(image).
      **/
     typedef std::function<v3d::render::realtime::TextureHandle(
         const boost::shared_ptr<v3d::image::Image>&)> Upload;
@@ -55,43 +56,43 @@ class TextRenderer {
     static const wchar_t* const ascii;
 
     /**
-     * The font in the shared data directory, which every app in the tree draws with.
+     * The font in the shared data directory, used when the caller names no other.
      **/
     static const char* const defaultFont;
 
     /**
      * The size the atlas is rasterized at, which every drawn size is a ratio of.
      *
-     * Large enough that scaling down is what a ui mostly does, since a distance field
-     * carries detail down better than it invents it going up, and small enough that
-     * printable ascii and its spread still fit defaultAtlas.
+     * Large enough that a ui mostly scales the glyphs down, because a distance field keeps
+     * detail when scaled down better than when scaled up. Small enough that printable ascii
+     * and its spread still fit defaultAtlas.
      **/
     static const float baseSize;
 
     /**
      * How far either side of an edge the distance field runs, in pixels at baseSize.
      *
-     * This is what sets how far a glyph can be scaled before its edge softens, and it is
-     * charged to the atlas twice over in each axis of every glyph. 8 is freetype's own
-     * default and holds an edge well past the sizes a ui draws at.
+     * The spread sets how far a glyph can be scaled before its edge softens. Each glyph
+     * takes twice the spread of extra atlas room in each axis. 8 is freetype's own default,
+     * and holds an edge well past the sizes a ui draws at.
      **/
     static const unsigned int defaultSpread;
 
     /**
-     * The square the glyphs are packed into. Printable ascii at baseSize with
-     * defaultSpread fits this with little to spare, so a larger charset, a larger base or
-     * a wider spread needs more. That is why it is an argument, and a font that does not
-     * fit is logged.
+     * The side of the square the glyphs are packed into. Printable ascii at baseSize with
+     * defaultSpread fits this with little to spare, so a larger charset, a larger base or a
+     * wider spread needs a larger atlas, passed to the constructor. A font that does not fit
+     * is logged.
      **/
     static const unsigned int defaultAtlas;
 
     /**
      * Load a font, pack its glyphs into an atlas and upload it.
      *
-     * The atlas goes to the device once, here, so every glyph that will ever be drawn has
-     * to be in charcodes. A font that cannot be loaded, and one whose glyphs do not all
-     * fit the atlas, both leave this measuring zero and drawing nothing - the log already
-     * says which - so either costs the app its labels rather than its frame.
+     * The atlas is uploaded once, here, so every glyph that will ever be drawn has to be in
+     * charcodes. A font that cannot be loaded, and one whose glyphs do not all fit the
+     * atlas, both leave this measuring zero and drawing nothing, and the log says which. The
+     * app then loses its labels but still draws its frame.
      *
      * @param upload what puts the packed atlas on the device and names it
      * @param size the size the font is rasterized at. The glyphs are distance fields, so
@@ -100,8 +101,8 @@ class TextRenderer {
      * @param charcodes the glyphs to pack
      * @param spread the distance field spread, or zero to pack coverage glyphs that only
      *        draw correctly at size
-     * @param atlasWidth the atlas to pack into, which has to hold every charcode at size
-     * @param atlasHeight likewise
+     * @param atlas the width and height of the atlas to pack into, which has to hold every
+     *        charcode at size
      **/
     TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetManager,
         const boost::shared_ptr<v3d::log::Logger>& logger,
@@ -110,19 +111,18 @@ class TextRenderer {
         const std::string& font = defaultFont,
         const wchar_t* charcodes = ascii,
         unsigned int spread = defaultSpread,
-        unsigned int atlasWidth = defaultAtlas,
-        unsigned int atlasHeight = defaultAtlas);
+        const glm::uvec2& atlas = glm::uvec2(defaultAtlas));
 
     TextRenderer(const TextRenderer&) = delete;
     TextRenderer& operator=(const TextRenderer&) = delete;
 
     /**
-     * Whether there is a font with all of its glyphs behind this, which decides
-     * whether anything is measured or drawn.
+     * Whether a font was loaded with all of its glyphs packed. Nothing is measured or drawn
+     * when it was not.
      *
      * A partly packed atlas counts as not loaded. Drawing what did fit would put text on
      * screen with characters missing and measure it short, so the ui laid out around that
-     * measure would be wrong too, and none of it would say so.
+     * measure would be wrong too, with no error.
      **/
     bool loaded() const noexcept;
 
@@ -148,7 +148,7 @@ class TextRenderer {
      *
      * @param size the size it will be drawn at, defaulting to the one the atlas holds
      **/
-    float width(std::string_view text, float size = 0.0f) const;
+    float width(std::string_view text, float size = 0.0F) const;
 
     /**
      * Lay a string out at the pen and append its glyphs to a canvas.
@@ -160,25 +160,26 @@ class TextRenderer {
      * @param pen where the baseline of the first glyph goes
      * @param size the size to draw at, defaulting to the one the atlas holds
      **/
-    void draw(v3d::render::realtime::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour,
-        float size = 0.0f);
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour,
+        float size = 0.0F);
 
     /**
-     * @return width() at a size, as the callback both ways of writing a ui take
+     * @return width() at a size, as the callback ComponentRenderer and Immediate take
      **/
-    Measure measure(float size = 0.0f) const;
+    Measure measure(float size = 0.0F) const;
 
     /**
-     * @return draw() at a size, as the callback both ways of writing a ui take, against one canvas
+     * @return draw() at a size into one canvas, as the callback ComponentRenderer and
+     *         Immediate take
      *
-     * The canvas is held by the returned callback rather than copied, so it has to outlive
-     * whatever it is given to.
+     * The returned callback holds the canvas pointer, so the canvas must outlive the
+     * callback.
      *
-     * The pair names no font type, so the size is closed over here rather than travelling
-     * with each string. A ui at one size and a heading at another are two callback pairs
-     * from one TextRenderer, and one atlas serves both.
+     * The callback pair names no font type, so the size is captured here instead of being
+     * passed with each string. A ui at one size and a heading at another are two callback
+     * pairs from one TextRenderer, and one atlas serves both.
      **/
-    Write write(v3d::render::realtime::Canvas* canvas, float size = 0.0f);
+    Write write(v3d::render::realtime::canvas::Canvas* canvas, float size = 0.0F);
 
  private:
     /**

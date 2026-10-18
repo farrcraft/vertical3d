@@ -13,6 +13,10 @@ the api rather than customised it.
 `GameMenu` is the pause menu a game puts up over itself.
 
 ```cpp
+// in the app's constructor
+v3d::ui::shell::GameMenu::declare(commands(), menu_);
+
+// in start()
 menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
     scene_->pause(suspended);
 });
@@ -20,10 +24,12 @@ menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspende
 
 - It shows and hides a container, `game-menu` by default, and drives the `Menu` inside it,
   `main-menu` by default. Both names can be passed to the constructor.
-- It answers its own commands in the `ui` context: `showGameMenu` toggles it, and
-  `menuPrevious`, `menuNext` and `selectMenu` navigate it while it is up. An app binds these
-  in its mappings, for example `escape` to `showGameMenu`. These command names cannot be
-  changed.
+- `GameMenu::declare(commands, menu)` registers its commands in the `ui` context:
+  `showGameMenu` toggles it, and `menuPrevious`, `menuNext` and `selectMenu` navigate it
+  while it is up. An app calls it from its constructor, before the menu exists, and passes the
+  member it will hold the menu in. Each command does nothing while that member is empty. An app
+  binds these in its mappings, for example `escape` to `showGameMenu`. These command names
+  cannot be changed.
 - `toggle()` opens the menu, or steps back out of a submenu. Closing the top level resumes
   the game.
 - The `Suspend` callback runs with `true` as the menu opens and `false` as it closes. Do

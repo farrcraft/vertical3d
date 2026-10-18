@@ -8,6 +8,7 @@
 #include <api/ui/Component.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -22,22 +23,22 @@ namespace v3d::ui::component {
 /**
  * A strip of buttons along one edge of the window.
  *
- * Which edge it is on decides its shape: a top toolbar is a row as wide as the canvas and
- * a left one is a column as tall as what is under the top strip. The buttons themselves
- * are the same either way.
+ * Its edge decides its shape. A top toolbar is a row as wide as the canvas, and a left
+ * one is a column running down from below the top strips. The buttons are the same either
+ * way.
  *
  * The strip tests the cursor against the bounds a renderer left on its buttons, so nothing
  * is hit until something has been drawn.
  *
- * It is pickable from the start. One marked otherwise is scenery: the cursor offers it
- * nothing, and a press on it, gaps and buttons alike, falls to whatever is under it.
+ * It is pickable from the start. A toolbar set not pickable is decoration: the cursor
+ * skips it, and a press on it, on a gap or a button, goes to whatever is under it.
  **/
 class Toolbar : public Component {
  public:
     /**
      * Which edge of the window the strip runs along.
      **/
-    enum class Edge {
+    enum class Edge : std::uint8_t {
         Top,
         Left
     };
@@ -79,7 +80,7 @@ class Toolbar : public Component {
     bool motion(const glm::vec2& cursor);
 
     /**
-     * The cursor is somewhere this strip cannot see - over a dropped menu panel, say -
+     * The cursor is over something that covers this strip, such as a dropped menu panel,
      * so nothing on it is hovered.
      **/
     void leave();
@@ -93,9 +94,9 @@ class Toolbar : public Component {
     bool press(const glm::vec2& cursor);
 
     /**
-     * Find a button by the command it sends, so that whatever answers a command can mark
-     * the button that names it.
-     * @param command the button's event as Event::str() gives it - "context::name"
+     * Find a button by the command it sends, so that whatever handles a command can mark
+     * the button that sends it.
+     * @param command the button's event as Event::str() returns it, such as "context::name"
      * @return the button, or null when no button sends that command
      **/
     boost::shared_ptr<Button> find(const std::string& command) const;

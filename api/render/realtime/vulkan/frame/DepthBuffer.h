@@ -21,27 +21,27 @@ namespace v3d::render::realtime::vulkan::frame {
 /**
  * The depth image a scene pass tests and writes against.
  *
- * A context keeps one of these for the passes that draw into the swapchain image, rather than
- * one per pass. Those passes need depth at the same size, and a pass that shares the buffer
- * with the pass before it can keep what that one left. It is sized by the swapchain and
- * rebuilt with it. A render target with depth holds one of its own, at the target's size.
+ * DeviceContext keeps one for all the passes that draw into the swapchain image, not one per
+ * pass. Those passes need depth at the same size, and a pass that shares the buffer with the
+ * pass before it can keep the depth that pass wrote. It is sized by the swapchain and
+ * recreated with it. A render target with depth holds its own, at the target's size.
  *
- * A window with no area has no depth buffer, the same way it has no swapchain - valid()
- * says so, and nothing is drawn while that is true.
+ * A window with no area has no depth buffer, as it has no swapchain. valid() then returns
+ * false, and nothing is drawn.
  *
  * A buffer can also be made sampled, as a shadow map is. Its format must then support
- * SAMPLED_IMAGE as well as DEPTH_STENCIL_ATTACHMENT in optimal tiling; a device can offer the
- * second without the first. The image gets the sampled usage bit and a sampler, and the
- * recorder moves it to DEPTH_READ_ONLY_OPTIMAL for the passes after the one that writes it.
- * Sampling is chosen at construction and cannot be switched on later, because it can change
- * which format the device gives - see chooseFormat.
+ * SAMPLED_IMAGE as well as DEPTH_STENCIL_ATTACHMENT in optimal tiling. A device can offer the
+ * second without the first. The image gets the sampled usage bit and a sampler, and Recorder
+ * moves it to DEPTH_READ_ONLY_OPTIMAL for the passes after the one that writes it. Sampling
+ * is chosen at construction and cannot be switched on later, because it can change which
+ * format chooseFormat() returns.
  **/
 class DepthBuffer final {
  public:
     /**
      * @param device the device to allocate the image on
-     * @param width in pixels, matching the swapchain's extent
-     * @param height in pixels, matching the swapchain's extent
+     * @param width in pixels, matching what the passes draw into
+     * @param height in pixels, matching what the passes draw into
      * @param sampled whether a later pass will read this, which costs a sampler, a usage
      *        bit and a narrower choice of format
      * @throw std::runtime_error if the device offers no depth format, or allocation fails
@@ -57,8 +57,8 @@ class DepthBuffer final {
     DepthBuffer& operator=(const DepthBuffer&) = delete;
 
     /**
-     * Throw the image away and build one at the new size. The format never changes, so
-     * no pipeline built against it has to be rebuilt.
+     * Replace the image with one at the new size. The format never changes, so no pipeline
+     * built against it has to be rebuilt.
      **/
     void recreate(uint32_t width, uint32_t height);
 
@@ -120,8 +120,8 @@ class DepthBuffer final {
     /**
      * @return the first depth format the device can use as an optimally tiled attachment
      *
-     * Public because a pipeline is built against the format long before anything requests
-     * the image - the buffer itself is only allocated once a pass needs one.
+     * Public because a pipeline is built against the format before the image exists.
+     * DeviceContext allocates its buffer only once a pass needs depth.
      *
      * A format that will also be sampled must support SAMPLED_IMAGE too, and can differ, so
      * a pipeline drawing into a sampled buffer has to be built against the format this

@@ -39,7 +39,7 @@ yourself:
 | Function | Returns |
 |---|---|
 | `faceLoop(mesh, face)` | The half edges of a face in order, each at most once. A chain that never returns to the face's first edge yields the edges walked before it repeats one or ends, which is an open path rather than a ring |
-| `loopSegment(mesh, loop, entry, &from, &to)` | The two endpoints of one entry of a loop |
+| `loopSegment(mesh, loop, entry)` | The two endpoints of one entry of a loop, or nothing when either cannot be resolved |
 | `ownsEdge(mesh, edge)` | Whether this half edge represents its edge. The lower-numbered half of a pair owns it; an unpaired half edge owns itself |
 | `edgeSelected(mesh, edge)` | Whether either half of the edge is selected |
 | `center(mesh, face)` | The average of a face's vertices |
@@ -84,7 +84,9 @@ A viewport is a camera, a rectangle of the window, and a set of display flags. I
 device state.
 
 **Layout.** `data/layout.json` is a tree of vertical and horizontal splits. Each leaf names a
-camera profile. `ViewLayout` turns the tree into one region per leaf. A name, camera or split
+camera profile. `ViewLayout` turns the tree into one region per leaf, and names each view
+after its profile. A profile shown twice names its second view "Perspective 2" and so on, so
+every view has a pass of its own. A name, camera or split
 that is not a string makes `load()` return false, and so does a split with no children. The
 default layout is Front, Top, Left and Perspective. The menu bar and the toolbars take strips
 along two edges of the window, and the views divide the rest.
@@ -98,7 +100,7 @@ The renderer turns each view into two passes, then adds one more pass for the ui
 
 | Pass | Region | Depth | Clears |
 |---|---|---|---|
-| Scene pass, named after the view | The view's region | Tested | Its own region, colour and depth |
+| Scene pass, named after the view, which no other view shares | The view's region | Tested | Its own region, colour and depth |
 | Handle pass | The view's region | Not tested | Nothing; it draws over the scene pass |
 | `ui` | The whole window | Not tested | Nothing |
 

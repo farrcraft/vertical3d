@@ -8,17 +8,24 @@
 #include "Clip.h"
 
 #include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/vulkan/device/Result.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/canvas/Canvas.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/frame/StreamRing.h>
+#include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
+#include <api/render/realtime/vulkan/pipeline/Pipeline.h>
+#include <api/render/realtime/vulkan/pipeline/Resources.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <map>
-#include <sstream>
-#include <stdexcept>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -29,8 +36,8 @@ namespace {
 
 /**
  * The quad pipeline's shader modules, compiled to SPIR-V at build time by glslc and
- * included here as the C initialiser lists its -mfmt=c writes - see v3d_add_shader in
- * the root CMakeLists.
+ * included here as the C initialiser lists its -mfmt=c writes, by v3d_add_shader in
+ * cmake/v3dHelpers.cmake.
  **/
 const uint32_t vertexShader[] =
 #include "shaders/quad.vert.inc"
@@ -76,15 +83,15 @@ Quad::Quad(const boost::shared_ptr<device::Device>& device,
     ring_(ring),
     uniforms_(uniforms),
     textures_(textures) {
-    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, initialVertexBytes, initialIndexBytes);
-    createPipelines(colour, depth);
+    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = initialIndexBytes});
+    createPipelines({.colour = colour, .depth = depth});
 }
 
 /**
  **/
 Quad::~Quad() {
     // the pipelines and their layouts belong to pipeline::Resources and the textures to the
-    // context - what is owned here is the geometry buffers, which go with it
+    // context's Textures. The geometry buffers are owned here and are destroyed with it
 }
 
 /**
@@ -106,23 +113,25 @@ bool Quad::linearises(VkFormat colour) noexcept {
 
 /**
  **/
-void Quad::createPipelines(VkFormat colour, VkFormat depth) {
+void Quad::createPipelines(const pipeline::Formats & formats) {
+    const VkFormat colour = formats.colour;
+    const VkFormat depth = formats.depth;
     const bool linear = linearises(colour);
     pipeline::Builder builder(device_);
     builder.name("quad")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, linear ? linearFragmentShader : fragmentShader,
             linear ? sizeof(linearFragmentShader) : sizeof(fragmentShader))
-        .vertexBinding(0, sizeof(Canvas::Vertex))
-        .vertexAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Canvas::Vertex, position))
-        .vertexAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Canvas::Vertex, uv))
-        .vertexAttribute(2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Canvas::Vertex, colour))
+        .vertexBinding({.binding = 0, .stride = sizeof(canvas::Canvas::Vertex)})
+        .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(canvas::Canvas::Vertex, position)})
+        .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(canvas::Canvas::Vertex, uv)})
+        .vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(canvas::Canvas::Vertex, colour)})
         // nothing 2D has a back face worth culling, and not culling means a caller cannot
         // get a quad's winding wrong and have it silently disappear
         .cull(VK_CULL_MODE_NONE)
         .set(uniforms_->layout())
         .set(textures_->layout())
-        .push(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Push))
+        .push({.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .size = sizeof(Push)})
         .colourFormat(colour);
 
     pipeline_ = resources_->add(builder.build(cache_));
@@ -133,14 +142,14 @@ void Quad::createPipelines(VkFormat colour, VkFormat depth) {
 
 /**
  **/
-void Quad::submit(const Canvas& canvas, Pass* pass, uint16_t layer) {
+void Quad::submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer) {
     if (pass == nullptr || canvas.empty()) {
         return;
     }
 
-    const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(Canvas::Vertex);
+    const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(canvas::Canvas::Vertex);
     const VkDeviceSize indexBytes = canvas.indices().size() * sizeof(uint32_t);
-    const frame::StreamRing::Geometry claimed = stream_->claim(vertexBytes, indexBytes);
+    const frame::StreamRing::Geometry claimed = stream_->claim({.vertexBytes = vertexBytes, .indexBytes = indexBytes});
     const boost::shared_ptr<memory::Buffer>& vertices = claimed.vertices;
     const boost::shared_ptr<memory::Buffer>& indices = claimed.indices;
 
@@ -153,7 +162,7 @@ void Quad::submit(const Canvas& canvas, Pass* pass, uint16_t layer) {
     // is drawn with follows from whether the pass has a depth buffer
     const PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
     const pipeline::Pipeline* pipeline = resources_->pipeline(handle);
-    for (const Canvas::Batch& batch : canvas.batches()) {
+    for (const canvas::Canvas::Batch& batch : canvas.batches()) {
         if (batch.indices == 0) {
             continue;
         }
@@ -180,7 +189,7 @@ void Quad::submit(const Canvas& canvas, Pass* pass, uint16_t layer) {
         if (pipeline != nullptr && pipeline->pushStages != 0) {
             Push constants;
             constants.projection = projection;
-            constants.text = batch.text ? 1u : 0u;
+            constants.text = batch.text ? 1U : 0U;
             std::memcpy(item.push.data(), &constants, sizeof(constants));
             item.pushSize = sizeof(constants);
         }

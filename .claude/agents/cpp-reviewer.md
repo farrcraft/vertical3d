@@ -48,8 +48,8 @@ Report nothing you cannot point at a line for. An empty review is a valid review
 
 Be careful not to report pre-existing breakage as though the change caused it. The tree is
 clean at every gate in `docs/contributing/Linting.md`, so a finding there is usually the
-diff's - but an environment fault is not, and `docs/contributing/Build.md` lists the ones that
-recur.
+diff's. An environment fault is not the diff's, and `docs/contributing/Build.md` lists the ones
+that recur.
 
 ---
 
@@ -67,10 +67,10 @@ most often Major.
 - **A Vulkan or OS handle not owned by a class with a destructor.** `Instance`, `Surface`,
   `Device` and `Swapchain` are RAII wrappers, non-copyable, each destroying exactly what it
   created. A raw handle stored and freed by hand somewhere else is a finding.
-- **Destruction out of order.** Destruction is the reverse of creation, and the ordering is
-  real: the surface goes before both the instance it belongs to and the window it presents
-  to; swapchain images cannot be destroyed while the queues may still be reading them, which
-  is why `Swapchain::recreate` waits for the device to go idle first.
+- **Destruction out of order.** Destruction is the reverse of creation. The surface goes
+  before both the instance it belongs to and the window it presents to. Swapchain images
+  cannot be destroyed while the queues may still be reading them. `Swapchain::recreate` waits
+  for the device to go idle first for that reason.
 - **A constructor that can throw after acquiring a handle, without cleanup.** Nothing runs
   the destructor of an object whose constructor threw. `Swapchain` catches, destroys and
   rethrows for exactly this reason; a new resource class that acquires more than one thing
@@ -136,6 +136,13 @@ From `docs/sdlc.md`:
   alternative, it is hard to reverse or constrains other code, and its reasons cannot be read
   from the code. If the diff makes such a choice and `docs/adr/` did not move, that is a
   finding. A bug fix or one class's behaviour is not such a choice.
+- **A comment that is now false.** This is the most important comment finding. Check the claims
+  a diff's comments make, and the comments beside code the diff changed. A comment that names
+  something removed, says nothing reads a value that something now reads, or describes behaviour
+  the code no longer has is a finding. `.claude/skills/code-comments/SKILL.md` covers how to
+  check them; read it when a diff adds or changes more than a line or two of comment.
+- **A comment that counts things kept elsewhere** ("the three call sites"), or temporary code
+  that does not name the condition that ends it.
 - **A comment that cites an ADR, a document, a plan or a milestone.** A comment states the
   rule itself. "per ADR-00NN" is a finding whether or not the sentence makes sense without it.
 - **A comment carrying something that will expire.** Provenance from a deleted tree

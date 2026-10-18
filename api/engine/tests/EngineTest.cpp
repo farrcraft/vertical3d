@@ -4,24 +4,29 @@
  **/
 
 #include <api/config/Type.h>
+#include <api/event/Context.h>
+#include <api/event/Event.h>
 #include <api/event/Source.h>
 #include <api/engine/Application.h>
 #include <api/engine/Engine.h>
 #include <api/engine/Feature.h>
+#include <api/event/State.h>
+#include <api/event/Type.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
+#include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
 namespace {
 
 /**
- * The engine keeps what it built where its app subclass can reach it, so a test reads the
- * mappings it registered the way a Controller does.
+ * An app subclass, so that a test reaches the engine's protected members as an app does.
  **/
 class TestEngine final : public v3d::engine::Engine {
  public:
@@ -45,8 +50,15 @@ class TestEngine final : public v3d::engine::Engine {
         return take_;
     }
 
-    bool take_ = false;
-    std::vector<Uint32> offered_;
+    // whether onEvent() takes the events offered to it
+    void take(bool value) {
+        take_ = value;
+    }
+
+    // the type of each event onEvent() was offered, in order
+    const std::vector<Uint32>& offered() const {
+        return offered_;
+    }
 
  protected:
     v3d::engine::Features features() const override {
@@ -55,6 +67,8 @@ class TestEngine final : public v3d::engine::Engine {
 
  private:
     v3d::engine::Features features_;
+    bool take_ = false;
+    std::vector<Uint32> offered_;
 };
 
 /**
@@ -76,8 +90,8 @@ v3d::event::Source source(const boost::shared_ptr<v3d::event::Context>& context,
 }
 
 /**
- * An app path rather than a data path: initialize() appends "data/" to it, so a fixture
- * carries the directory the manager ends up resolving against one level down.
+ * An app path, not a data path. initialize() appends "data/" to it, so each fixture keeps
+ * its documents in a data/ subdirectory.
  **/
 std::string appPath(const std::string& fixture) {
     return "fixtures/" + fixture + "/";
@@ -104,12 +118,9 @@ SDL_Event keyUp(SDL_Keycode key) {
     return event;
 }
 
-};  // namespace
-
 /**
- * A mask of nothing builds the asset manager, the dispatcher and the event engine and stops
- * there: no config read, no input devices and no window, so the engine can be tested
- * without a window.
+ * An empty feature mask builds the asset manager, the dispatcher and the event engine, and
+ * nothing more. It reads no config, and opens no input devices and no window.
  **/
 BOOST_AUTO_TEST_CASE(engine_initialize_no_features_test) {
     TestEngine engine(appPath("good"));
@@ -123,7 +134,8 @@ BOOST_AUTO_TEST_CASE(engine_initialize_no_features_test) {
 }
 
 /**
- * Feature::Config reads config.json out of the app's data directory and files what it names.
+ * Feature::Config reads config.json from the app's data directory, and loads each document it
+ * names.
  **/
 BOOST_AUTO_TEST_CASE(engine_initialize_config_test) {
     TestEngine engine(appPath("good"), configFeature);
@@ -136,8 +148,8 @@ BOOST_AUTO_TEST_CASE(engine_initialize_config_test) {
 }
 
 /**
- * The mappings the config named are registered as one global mapper, so a source event
- * triggered on the dispatcher comes back out as the destination it was bound to.
+ * The bindings the config names are installed. A source event published on the dispatcher
+ * comes back as the destination it is bound to.
  **/
 BOOST_AUTO_TEST_CASE(engine_registers_mappings_test) {
     TestEngine engine(appPath("good"), configFeature);
@@ -146,16 +158,16 @@ BOOST_AUTO_TEST_CASE(engine_registers_mappings_test) {
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
-    boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
+    const boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "w", v3d::event::State::Pressed));
 
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1U);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "leftPaddleUp");
     BOOST_CHECK_EQUAL(recorder.events_[0].context()->name(), "pong");
 
     // an unbound key produces nothing
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "q", v3d::event::State::Pressed));
-    BOOST_CHECK_EQUAL(recorder.events_.size(), 1u);
+    BOOST_CHECK_EQUAL(recorder.events_.size(), 1U);
 }
 
 /**
@@ -168,18 +180,18 @@ BOOST_AUTO_TEST_CASE(engine_mapping_state_test) {
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
-    boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
+    const boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
 
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "escape", v3d::event::State::Pressed));
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1U);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "quit");
 
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "escape", v3d::event::State::Released));
-    BOOST_CHECK_EQUAL(recorder.events_.size(), 1u);
+    BOOST_CHECK_EQUAL(recorder.events_.size(), 1U);
 
     // the unstated binding takes both edges
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "w", v3d::event::State::Released));
-    BOOST_CHECK_EQUAL(recorder.events_.size(), 2u);
+    BOOST_CHECK_EQUAL(recorder.events_.size(), 2U);
 }
 
 /**
@@ -193,20 +205,20 @@ BOOST_AUTO_TEST_CASE(engine_mapping_param_test) {
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
-    boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
+    const boost::shared_ptr<v3d::event::Context> keyboard = engine.events()->resolveContext("keyboard");
 
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "1", v3d::event::State::Pressed));
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1U);
     BOOST_REQUIRE(recorder.events_[0].data());
     BOOST_CHECK_EQUAL(std::get<std::string>(recorder.events_[0].data().get()), "cube");
 
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "2", v3d::event::State::Pressed));
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 2u);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 2U);
     BOOST_REQUIRE(recorder.events_[1].data());
     BOOST_CHECK_EQUAL(std::get<int>(recorder.events_[1].data().get()), 3);
 
     v3d::event::publish(*engine.dispatcher(), source(keyboard, "g", v3d::event::State::Pressed));
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 3u);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 3U);
     BOOST_REQUIRE(recorder.events_[2].data());
     BOOST_CHECK(std::get<bool>(recorder.events_[2].data().get()));
 }
@@ -224,8 +236,8 @@ BOOST_AUTO_TEST_CASE(engine_declined_event_reaches_the_bindings_test) {
 
     engine.offer(keyDown(SDLK_W));
 
-    BOOST_REQUIRE_EQUAL(engine.offered_.size(), 1u);
-    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(engine.offered().size(), 1U);
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 1U);
     BOOST_CHECK_EQUAL(recorder.events_[0].name(), "leftPaddleUp");
 }
 
@@ -236,15 +248,15 @@ BOOST_AUTO_TEST_CASE(engine_declined_event_reaches_the_bindings_test) {
 BOOST_AUTO_TEST_CASE(engine_taken_event_is_not_mapped_test) {
     TestEngine engine(appPath("good"), boundFeature);
     BOOST_REQUIRE(engine.initialize());
-    engine.take_ = true;
+    engine.take(true);
 
     Recorder recorder;
     engine.dispatcher()->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
 
     engine.offer(keyDown(SDLK_W));
 
-    BOOST_CHECK_EQUAL(engine.offered_.size(), 1u);
-    BOOST_CHECK_EQUAL(recorder.events_.size(), 0u);
+    BOOST_CHECK_EQUAL(engine.offered().size(), 1U);
+    BOOST_CHECK_EQUAL(recorder.events_.size(), 0U);
 }
 
 /**
@@ -262,7 +274,7 @@ BOOST_AUTO_TEST_CASE(engine_quit_survives_a_taken_event_test) {
 
     TestEngine taking(appPath("good"), boundFeature);
     BOOST_REQUIRE(taking.initialize());
-    taking.take_ = true;
+    taking.take(true);
     taking.offer(quit);
     BOOST_CHECK(taking.quitting());
 }
@@ -349,8 +361,8 @@ BOOST_AUTO_TEST_CASE(engine_quit_test) {
 }
 
 /**
- * The base tick and render do nothing and succeed - an app overrides both, and the loop reads
- * the return to stop.
+ * The base tick() and render() do nothing and return true. The loop stops when either
+ * returns false.
  **/
 BOOST_AUTO_TEST_CASE(engine_base_tick_and_render_test) {
     TestEngine engine(appPath("good"));
@@ -383,8 +395,8 @@ BOOST_AUTO_TEST_CASE(engine_held_follows_the_keyboard_test) {
 }
 
 /**
- * A rebound command is held by its new key and not by its old one, with nothing asked of the
- * app but the rebind.
+ * A rebound command is held by its new key and not by its old one. The app does nothing but
+ * call rebind().
  **/
 BOOST_AUTO_TEST_CASE(engine_held_follows_a_rebind_test) {
     TestEngine engine(appPath("good"), boundFeature);
@@ -398,8 +410,7 @@ BOOST_AUTO_TEST_CASE(engine_held_follows_a_rebind_test) {
 }
 
 /**
- * Without a keyboard nothing is held, rather than every command reading as up by accident of
- * a null state.
+ * Without Feature::KeyboardInput, held() returns false for every command.
  **/
 BOOST_AUTO_TEST_CASE(engine_held_without_a_keyboard_test) {
     TestEngine engine(appPath("good"), configFeature);
@@ -433,6 +444,80 @@ BOOST_AUTO_TEST_CASE(engine_answers_ui_quit_test) {
     quit.type(v3d::event::Type::Destination);
     engine.dispatcher()->trigger(quit);
     BOOST_TEST(engine.quitting());
+}
+
+/**
+ * A command event runs the handler the app registered for it, and nothing else does.
+ **/
+BOOST_AUTO_TEST_CASE(engine_runs_a_registered_command_test) {
+    TestEngine engine(appPath("good"), configFeature);
+    int jumps = 0;
+    BOOST_REQUIRE(engine.commands().addPress("game::jump", [&jumps]() { jumps++; }));
+    BOOST_REQUIRE(engine.initialize());
+
+    v3d::event::Event jump("jump", engine.events()->resolveContext("game"));
+    jump.type(v3d::event::Type::Destination);
+    jump.state(v3d::event::State::Pressed);
+    engine.dispatcher()->trigger(jump);
+    BOOST_CHECK_EQUAL(jumps, 1);
+}
+
+/**
+ * A binding to a command nothing registered is one that does nothing when its key is
+ * pressed. The engine lists those, and a command the app reads with held() counts as handled
+ * once it is registered.
+ **/
+BOOST_AUTO_TEST_CASE(engine_reports_bindings_nothing_handles_test) {
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_TEST(engine.unhandled().empty());
+    BOOST_REQUIRE(engine.initialize());
+
+    std::vector<std::string> unhandled = engine.unhandled();
+    BOOST_CHECK(std::ranges::find(unhandled, "pong::leftPaddleUp") != unhandled.end());
+    BOOST_CHECK(std::ranges::find(unhandled, "ui::quit") == unhandled.end());
+
+    BOOST_REQUIRE(engine.commands().addHeld("pong::leftPaddleUp"));
+    unhandled = engine.unhandled();
+    BOOST_CHECK(std::ranges::find(unhandled, "pong::leftPaddleUp") == unhandled.end());
+}
+
+/**
+ * An app's shipped bindings are checked without a window or initialize(): the document is
+ * read against what the constructor registered. A document that cannot be read is not an empty
+ * list.
+ **/
+BOOST_AUTO_TEST_CASE(engine_checks_a_binding_document_test) {
+    TestEngine engine(appPath("good"));
+    engine.commands().addPress("game::jump", []() { });
+
+    const boost::json::object document = boost::json::parse(R"({"mappings": [
+        {"source": {"name": "space", "context": "keyboard"}, "destination": {"name": "jump", "context": "game"}},
+        {"source": {"name": "f1", "context": "keyboard"}, "destination": {"name": "toggleFS", "context": "game"}},
+        {"source": {"name": "escape", "context": "keyboard"}, "destination": {"name": "quit", "context": "ui"}}
+    ]})").as_object();
+    const std::vector<std::string> unhandled = engine.unhandled(document);
+    BOOST_REQUIRE_EQUAL(unhandled.size(), 1U);
+    BOOST_CHECK_EQUAL(unhandled[0], "game::toggleFS");
+
+    const std::vector<std::string> unread = engine.unhandled(boost::json::parse(R"({"bindings": []})").as_object());
+    BOOST_REQUIRE_EQUAL(unread.size(), 1U);
+    BOOST_CHECK_EQUAL(unread[0], "mappings");
+}
+
+/**
+ * Full screen is a shell command like quit, so the engine handles it and no app writes the
+ * handler. Without a window it does nothing.
+ **/
+BOOST_AUTO_TEST_CASE(engine_answers_ui_fullscreen_test) {
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
+    BOOST_TEST(engine.commands().has("ui::fullscreen"));
+
+    v3d::event::Event fullscreen("fullscreen", engine.events()->resolveContext("ui"));
+    fullscreen.type(v3d::event::Type::Destination);
+    fullscreen.state(v3d::event::State::Pressed);
+    engine.dispatcher()->trigger(fullscreen);
+    BOOST_TEST(!engine.quitting());
 }
 
 template <typename T>
@@ -518,3 +603,86 @@ BOOST_AUTO_TEST_CASE(engine_a_release_that_throws_is_a_failure_test) {
     BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &throwing), EXIT_FAILURE);
     BOOST_CHECK_EQUAL(throwing.released, 1);
 }
+
+namespace {
+
+/**
+ * An engine with no features whose first tick pushes a window-minimized event. A timer on
+ * SDL's timer thread pushes a restore later, and the first tick after the restore quits. Every
+ * tick is counted, and so is each one that ran while minimized.
+ **/
+class MinimizedEngine final : public v3d::engine::Engine {
+ public:
+    explicit MinimizedEngine(const std::string& path) :
+        Engine(path) {
+    }
+
+    bool tick(unsigned int /* delta */) override {
+        ticks_++;
+        if (minimized_ && !restored_) {
+            ticksWhileMinimized_++;
+        }
+        if (ticks_ == 1) {
+            push(SDL_EVENT_WINDOW_MINIMIZED);
+        }
+        // a loop that never waits would spin until the restore, so it is stopped here
+        if (restored_ || ticksWhileMinimized_ > 1000) {
+            quit();
+        }
+        return true;
+    }
+
+    bool onEvent(const SDL_Event& event) override {
+        if (event.type == SDL_EVENT_WINDOW_MINIMIZED) {
+            minimized_ = true;
+            SDL_AddTimer(50, restore, nullptr);
+        } else if (event.type == SDL_EVENT_WINDOW_RESTORED) {
+            restored_ = true;
+        }
+        return false;
+    }
+
+    int ticks_ = 0;
+    int ticksWhileMinimized_ = 0;
+    bool minimized_ = false;
+    bool restored_ = false;
+
+ protected:
+    v3d::engine::Features features() const override {
+        return v3d::engine::Features();
+    }
+
+ private:
+    static void push(Uint32 type) {
+        SDL_Event event{};
+        event.type = type;
+        SDL_PushEvent(&event);
+    }
+
+    static Uint32 restore(void* /* user */, SDL_TimerID /* timer */, Uint32 /* interval */) {
+        push(SDL_EVENT_WINDOW_RESTORED);
+        return 0;
+    }
+};
+
+};  // namespace
+
+/**
+ * A minimized window shows nothing, so the loop sleeps until an event arrives rather than
+ * ticking and presenting empty frames. The game resumes when the window comes back.
+ **/
+BOOST_AUTO_TEST_CASE(engine_waits_while_the_window_is_minimized_test) {
+    BOOST_REQUIRE(SDL_InitSubSystem(SDL_INIT_EVENTS));
+    {
+        MinimizedEngine engine(appPath("good"));
+        BOOST_REQUIRE(engine.initialize());
+        BOOST_TEST(engine.eventLoop());
+
+        BOOST_TEST(engine.restored_);
+        BOOST_CHECK_EQUAL(engine.ticksWhileMinimized_, 0);
+        BOOST_CHECK_EQUAL(engine.ticks_, 2);
+    }
+    SDL_QuitSubSystem(SDL_INIT_EVENTS);
+}
+
+};  // namespace

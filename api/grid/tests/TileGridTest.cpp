@@ -6,7 +6,10 @@
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 
+#include <limits>
+#include <optional>
 #include <stdexcept>
+#include <string>
 
 #include <boost/test/unit_test.hpp>
 
@@ -30,12 +33,10 @@ TileGrid makeGrid() {
     return TileGrid(4, 4);
 }
 
-bool near(float a, float b) {
-    const float tolerance = 0.00001f;
-    return (a > b ? a - b : b - a) < tolerance;
+bool near(float actual, float expected) {
+    const float tolerance = 0.00001F;
+    return (actual > expected ? actual - expected : expected - actual) < tolerance;
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_CASE(tilegrid_dimensions_test) {
     const TileGrid grid = makeGrid();
@@ -48,7 +49,7 @@ BOOST_AUTO_TEST_CASE(tilegrid_dimensions_test) {
 BOOST_AUTO_TEST_CASE(tilegrid_degenerate_size_test) {
     BOOST_CHECK_THROW(TileGrid(0, 4), std::invalid_argument);
     BOOST_CHECK_THROW(TileGrid(4, -1), std::invalid_argument);
-    BOOST_CHECK_THROW(TileGrid(4, 4, 0.0f), std::invalid_argument);
+    BOOST_CHECK_THROW(TileGrid(4, 4, 0.0F), std::invalid_argument);
 }
 
 BOOST_AUTO_TEST_CASE(tilegrid_centred_on_origin_test) {
@@ -56,10 +57,10 @@ BOOST_AUTO_TEST_CASE(tilegrid_centred_on_origin_test) {
     const glm::vec3 first = grid.tileToWorld(at(0, 0));
     const glm::vec3 last = grid.tileToWorld(at(3, 3));
 
-    BOOST_CHECK_EQUAL(near(first.x, -2.25f), true);
-    BOOST_CHECK_EQUAL(near(first.z, -2.25f), true);
-    BOOST_CHECK_EQUAL(near(last.x, 2.25f), true);
-    BOOST_CHECK_EQUAL(near(last.z, 2.25f), true);
+    BOOST_CHECK_EQUAL(near(first.x, -2.25F), true);
+    BOOST_CHECK_EQUAL(near(first.z, -2.25F), true);
+    BOOST_CHECK_EQUAL(near(last.x, 2.25F), true);
+    BOOST_CHECK_EQUAL(near(last.z, 2.25F), true);
 }
 
 BOOST_AUTO_TEST_CASE(tilegrid_tile_to_world_is_the_centre_test) {
@@ -67,18 +68,18 @@ BOOST_AUTO_TEST_CASE(tilegrid_tile_to_world_is_the_centre_test) {
     const glm::vec3 centre = grid.tileToWorld(at(2, 1));
 
     // tile 2 starts at -3 + 2 * 1.5 = 0, so its centre is half a tile further on
-    BOOST_CHECK_EQUAL(near(centre.x, 0.75f), true);
-    BOOST_CHECK_EQUAL(near(centre.y, 0.0f), true);
-    BOOST_CHECK_EQUAL(near(centre.z, -0.75f), true);
+    BOOST_CHECK_EQUAL(near(centre.x, 0.75F), true);
+    BOOST_CHECK_EQUAL(near(centre.y, 0.0F), true);
+    BOOST_CHECK_EQUAL(near(centre.z, -0.75F), true);
 }
 
 BOOST_AUTO_TEST_CASE(tilegrid_world_min_test) {
     const TileGrid grid = makeGrid();
     const glm::vec3 corner = grid.worldMin();
 
-    BOOST_CHECK_EQUAL(near(corner.x, -3.0f), true);
-    BOOST_CHECK_EQUAL(near(corner.y, 0.0f), true);
-    BOOST_CHECK_EQUAL(near(corner.z, -3.0f), true);
+    BOOST_CHECK_EQUAL(near(corner.x, -3.0F), true);
+    BOOST_CHECK_EQUAL(near(corner.y, 0.0F), true);
+    BOOST_CHECK_EQUAL(near(corner.z, -3.0F), true);
 }
 
 BOOST_AUTO_TEST_CASE(tilegrid_centre_round_trips_test) {
@@ -96,30 +97,30 @@ BOOST_AUTO_TEST_CASE(tilegrid_world_to_tile_floors_test) {
     const TileGrid grid = makeGrid();
 
     // floors rather than rounds, so the mapping stays uniform either side of the origin
-    BOOST_CHECK_EQUAL(grid.worldToTile(glm::vec3(-0.01f, 0.0f, -0.01f)) == at(1, 1), true);
-    BOOST_CHECK_EQUAL(grid.worldToTile(glm::vec3(0.01f, 0.0f, 0.01f)) == at(2, 2), true);
+    BOOST_CHECK_EQUAL(grid.worldToTile(glm::vec3(-0.01F, 0.0F, -0.01F)) == at(1, 1), true);
+    BOOST_CHECK_EQUAL(grid.worldToTile(glm::vec3(0.01F, 0.0F, 0.01F)) == at(2, 2), true);
 }
 
 BOOST_AUTO_TEST_CASE(tilegrid_shared_edge_belongs_to_the_higher_tile_test) {
     const TileGrid grid = makeGrid();
 
-    BOOST_CHECK_EQUAL(grid.worldToTile(glm::vec3(0.0f, 0.0f, 0.0f)) == at(2, 2), true);
+    BOOST_CHECK_EQUAL(grid.worldToTile(glm::vec3(0.0F, 0.0F, 0.0F)) == at(2, 2), true);
 }
 
 BOOST_AUTO_TEST_CASE(tilegrid_height_is_ignored_test) {
     const TileGrid grid = makeGrid();
 
-    BOOST_CHECK_EQUAL(grid.worldToTile(glm::vec3(0.75f, 12.0f, -0.75f)) == at(2, 1), true);
+    BOOST_CHECK_EQUAL(grid.worldToTile(glm::vec3(0.75F, 12.0F, -0.75F)) == at(2, 1), true);
 }
 
 BOOST_AUTO_TEST_CASE(tilegrid_off_grid_point_is_not_clamped_test) {
     const TileGrid grid = makeGrid();
 
-    const TileCoord past = grid.worldToTile(glm::vec3(9.0f, 0.0f, 0.0f));
+    const TileCoord past = grid.worldToTile(glm::vec3(9.0F, 0.0F, 0.0F));
     BOOST_CHECK_EQUAL(past.x, 8);
     BOOST_CHECK_EQUAL(grid.contains(past), false);
 
-    const TileCoord before = grid.worldToTile(glm::vec3(-3.01f, 0.0f, 0.0f));
+    const TileCoord before = grid.worldToTile(glm::vec3(-3.01F, 0.0F, 0.0F));
     BOOST_CHECK_EQUAL(before.x, -1);
     BOOST_CHECK_EQUAL(grid.contains(before), false);
 }
@@ -223,3 +224,87 @@ BOOST_AUTO_TEST_CASE(tilegrid_every_cover_height_has_a_name_test) {
     BOOST_CHECK_EQUAL(toString(Cover::Half), "half");
     BOOST_CHECK_EQUAL(toString(Cover::Full), "full");
 }
+
+/**
+ * A grid placed by its corner converts tiles from that corner rather than from the origin.
+ **/
+BOOST_AUTO_TEST_CASE(tilegrid_placed_by_its_corner_test) {
+    const TileGrid grid(4, 4, 1.5F, glm::vec3(10.0F, 5.0F, -6.0F));
+
+    // the corner's y is ignored, because the grid lies on Y = 0
+    BOOST_CHECK(grid.worldMin() == glm::vec3(10.0F, 0.0F, -6.0F));
+    const glm::vec3 first = grid.tileToWorld(at(0, 0));
+    BOOST_CHECK(near(first.x, 10.75F));
+    BOOST_CHECK(near(first.y, 0.0F));
+    BOOST_CHECK(near(first.z, -5.25F));
+    BOOST_CHECK(grid.worldToTile(glm::vec3(10.1F, 0.0F, -5.9F)) == at(0, 0));
+    BOOST_CHECK(grid.worldToTile(glm::vec3(9.9F, 0.0F, -5.9F)) == at(-1, 0));
+}
+
+/**
+ * Two grids placed side by side agree on the edge they share. A point on that edge belongs to
+ * the higher tile, in the second grid's first column. The first grid puts the point just off
+ * its own edge.
+ **/
+BOOST_AUTO_TEST_CASE(tilegrid_side_by_side_grids_agree_on_their_seam_test) {
+    const TileGrid west(4, 4, 1.0F, glm::vec3(0.0F));
+    const TileGrid east(4, 4, 1.0F, glm::vec3(4.0F, 0.0F, 0.0F));
+
+    const glm::vec3 seam(4.0F, 0.0F, 1.5F);
+    BOOST_CHECK(west.worldToTile(seam) == at(4, 1));
+    BOOST_CHECK(!west.contains(west.worldToTile(seam)));
+    BOOST_CHECK(east.worldToTile(seam) == at(0, 1));
+
+    const glm::vec3 justWest(3.999F, 0.0F, 1.5F);
+    BOOST_CHECK(west.worldToTile(justWest) == at(3, 1));
+    BOOST_CHECK(east.worldToTile(justWest) == at(-1, 1));
+}
+
+/**
+ * Every tile of a grid placed at an awkward negative corner converts to the world and back to
+ * itself.
+ **/
+BOOST_AUTO_TEST_CASE(tilegrid_round_trip_at_a_negative_corner_test) {
+    const TileGrid grid(7, 5, 1.25F, glm::vec3(-100.5F, 0.0F, -37.25F));
+
+    for (int y = 0; y < grid.height(); y++) {
+        for (int x = 0; x < grid.width(); x++) {
+            BOOST_CHECK(grid.worldToTile(grid.tileToWorld(at(x, y))) == at(x, y));
+        }
+    }
+}
+
+/**
+ * A tile size or a corner that is not a finite number is refused, as a size that is not positive
+ * is.
+ **/
+BOOST_AUTO_TEST_CASE(tilegrid_refuses_what_is_not_finite_test) {
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float infinity = std::numeric_limits<float>::infinity();
+
+    BOOST_CHECK_THROW(TileGrid(4, 4, nan), std::invalid_argument);
+    BOOST_CHECK_THROW(TileGrid(4, 4, infinity), std::invalid_argument);
+    BOOST_CHECK_THROW(TileGrid(4, 4, 1.0F, glm::vec3(nan, 0.0F, 0.0F)), std::invalid_argument);
+    BOOST_CHECK_THROW(TileGrid(4, 4, 1.0F, glm::vec3(0.0F, 0.0F, -infinity)), std::invalid_argument);
+    // the y the grid ignores may be anything
+    BOOST_CHECK_NO_THROW(TileGrid(4, 4, 1.0F, glm::vec3(0.0F, nan, 0.0F)));
+}
+
+/**
+ * A tile size large enough that a side of the grid overflows a float is refused for its size,
+ * not for the corner a centred grid works out from it.
+ **/
+BOOST_AUTO_TEST_CASE(tilegrid_refuses_a_side_too_long_to_hold_test) {
+    const float huge = std::numeric_limits<float>::max() / 2.0F;
+
+    const std::optional<std::string> refused = TileGrid::refusal(10, 1, huge, glm::vec3(0.0F));
+    if (!refused) {
+        BOOST_ERROR("a side too long to hold was not refused");
+        return;
+    }
+    BOOST_CHECK(refused->find("tile size") != std::string::npos);
+    BOOST_CHECK_THROW(TileGrid(10, 1, huge), std::invalid_argument);
+    BOOST_CHECK(!TileGrid::refusal(10, 1, 1.0F, glm::vec3(0.0F)));
+}
+
+};  // namespace

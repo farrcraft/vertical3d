@@ -5,6 +5,10 @@
 
 #include "Png.h"
 
+#include <api/image/Image.h>
+#include <api/image/Reader.h>
+#include <api/log/Logger.h>
+
 #pragma pack(push, 1)
 
 #include <png.h>
@@ -13,8 +17,8 @@
 
 #include <csetjmp>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
-#include <string>
 #include <vector>
 
 namespace v3d::image::reader {
@@ -22,7 +26,7 @@ namespace v3d::image::reader {
 namespace {
 
 /**
- * How far into the buffer libpng has read, since it walks rather than seeks.
+ * How far libpng has read into the buffer. libpng reads in order and never seeks.
  **/
 struct Cursor final {
     const unsigned char* data;
@@ -33,8 +37,8 @@ struct Cursor final {
 /**
  * libpng's own read, over memory instead of a FILE.
  *
- * A short buffer is an error rather than a short read: png_error longjmps out of the
- * decode, so the rows below are never filled from whatever was on the stack.
+ * A read past the end of the buffer calls png_error, which longjmps out of the decode. No
+ * row is then filled from memory past the end of the buffer.
  **/
 void readFromBuffer(png_structp png, png_bytep into, png_size_t wanted) {
     Cursor* cursor = static_cast<Cursor*>(png_get_io_ptr(png));
@@ -67,21 +71,21 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
 
     png_structp png_ptr = 0;
     png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
-    if (!png_ptr) {
+    if (png_ptr == nullptr) {
         return empty_ptr;
     }
 
     png_infop info_ptr = 0;
     info_ptr = png_create_info_struct(png_ptr);
-    if (!info_ptr) {
+    if (info_ptr == nullptr) {
         png_destroy_read_struct(&png_ptr, NULL, NULL);
         return empty_ptr;
     }
 
     // longjmp does not destroy anything constructed after the setjmp point, so every
-    // object below that owns memory is declared above it. Without this libpng's default
-    // error handler aborts the process. A reader receives bytes it did not open itself,
-    // and a truncated png is an ordinary input, so it has to fail instead.
+    // object below that owns memory is declared above it. Without the setjmp, libpng's
+    // default error handler aborts the process. A truncated png is ordinary input, so the
+    // read has to fail and return instead.
     boost::shared_ptr<Image> img;
     std::vector<png_bytep> rowpointers;
     // C4611 flags the mix of setjmp with C++ object destruction, which the declarations
@@ -109,16 +113,21 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bpp, &colors, 0, 0, 0);
 
     // convert to 3x8 RGB if necessary
-    if (bpp == 16)
+    if (bpp == 16) {
         png_set_strip_16(png_ptr);
-    if (colors == PNG_COLOR_TYPE_PALETTE)
+    }
+    if (colors == PNG_COLOR_TYPE_PALETTE) {
         png_set_expand(png_ptr);
-    if (bpp < 8)
+    }
+    if (bpp < 8) {
         png_set_expand(png_ptr);
-    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+    }
+    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS) != 0) {
         png_set_expand(png_ptr);
-    if (colors == PNG_COLOR_TYPE_GRAY || colors == PNG_COLOR_TYPE_GRAY_ALPHA)
+    }
+    if (colors == PNG_COLOR_TYPE_GRAY || colors == PNG_COLOR_TYPE_GRAY_ALPHA) {
         png_set_gray_to_rgb(png_ptr);
+    }
 
     // after the transformations have been registered update info_ptr data
     png_read_update_info(png_ptr, info_ptr);
@@ -133,7 +142,7 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
     channels = png_get_channels(png_ptr, info_ptr);
 
     // now we can allocate memory to store the image
-    img.reset(new Image(width, height, static_cast<uint8_t>(channels * bpp)));
+    img.reset(new Image(glm::uvec2(width, height), static_cast<uint8_t>(channels * bpp)));
     unsigned char* data = img->data();
 
     // set the individual row-pointers to point at the correct offsets. A png file stores

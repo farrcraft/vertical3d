@@ -5,21 +5,36 @@
 
 #include "Engine.h"
 
-#include <api/asset/Json.h>
+#include <api/asset/Manager.h>
+#include <api/asset/kind/Json.h>
 #include <api/asset/media/Loaders.h>
+#include <api/config/Config.h>
+#include <api/config/Type.h>
+#include <api/config/WindowSize.h>
+#include <api/event/Engine.h>
+#include <api/event/Event.h>
 #include <api/event/kind/WindowFocus.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/input/DeviceType.h>
+#include <api/input/Engine.h>
+#include <api/input/KeyState.h>
 #include <api/input/Keyboard.h>
 #include <api/input/Mouse.h>
+#include <api/input/MouseState.h>
+#include <api/log/Logger.h>
 
 #include <SDL3/SDL.h>
 
 #include <algorithm>
-#include <map>
+#include <chrono>
+#include <cstdint>
+#include <optional>
 #include <string>
+#include <string_view>
+#include <vector>
 
 #include "Feature.h"
+#include "Statistics.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
@@ -31,6 +46,14 @@ Engine::Engine(const std::string& appPath) :
     appPath_(appPath),
     needShutdown_(false),
     quitting_(false) {
+    // the two commands every app shares. A menu's quit item and a quit key both send
+    // "ui::quit", which ends the loop as a closed window does
+    commands_.addPress("ui::quit", [this]() { quit(); });
+    commands_.addPress("ui::fullscreen", [this]() {
+        if (window_) {
+            window_->fullscreen(!window_->fullscreen());
+        }
+    });
 }
 
 /**
@@ -59,13 +82,13 @@ bool Engine::initialize() {
 
     logger_->get()->info("Initializing engine...");
 
-    std::string dataPath = appPath_ + std::string("data/");
+    const std::string dataPath = appPath_ + std::string("data/");
     assetManager_ = boost::make_shared<v3d::asset::Manager>(dataPath, logger_);
     v3d::asset::media::registerLoaders(*assetManager_, logger_);
 
     dispatcher_ = boost::make_shared<entt::dispatcher>();
     eventEngine_ = boost::make_shared<v3d::event::Engine>(dispatcher_);
-    quitCommand_ = dispatcher_->sink<v3d::event::Event>().connect<&Engine::command>(*this);
+    commandListener_ = dispatcher_->sink<v3d::event::Event>().connect<&Engine::command>(*this);
 
     if (features_.has(Feature::Config) && !loadConfig()) {
         return false;
@@ -74,14 +97,21 @@ bool Engine::initialize() {
     if (features_.has(Feature::Window) && !openWindow()) {
         return false;
     }
-    return start();
+    if (!start()) {
+        return false;
+    }
+    // a key bound to a command nothing handles does nothing when pressed. Each such binding
+    // is reported here, at startup, rather than only when the key is first pressed
+    for (const std::string& command : unhandled()) {
+        logger_->get()->error("{} is bound to a key, but nothing handles it", command);
+    }
+    return true;
 }
 
 /**
  **/
 bool Engine::loadConfig() {
     config_ = boost::make_shared<v3d::config::Config>(logger_);
-    // Load config (through the asset manager)
     if (!config_->load(assetManager_)) {
         return false;
     }
@@ -124,12 +154,11 @@ void Engine::startInput() {
 /**
  **/
 bool Engine::openWindow() {
-    // Initialize SDL
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         logger_->get()->error("SDL could not initialize! SDL_Error: {}", SDL_GetError());
         return false;
     }
-    // We've reached a point of initialization that will require a shutdown
+    // from here on, shutdown() or ~Engine has to destroy the window and quit SDL
     needShutdown_ = true;
 
     window_ = boost::make_shared<v3d::render::realtime::Window>(logger_);
@@ -139,22 +168,21 @@ bool Engine::openWindow() {
     int width = -1;
     int height = -1;
     if (features_.has(Feature::Config)) {
-        boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
+        const boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
         if (windowConfig) {
             // as with the bindings, a window document that cannot be read makes startup
             // return false rather than throw
             const boost::json::object& doc = windowConfig->document();
-            const boost::json::object* window = v3d::asset::readObject(doc, "window");
-            if (window == nullptr || !window->contains("width") || !window->contains("height") ||
-                !window->at("width").is_int64() || !window->at("height").is_int64()) {
-                logger_->get()->error("The window config needs a window with a whole width and height");
+            const std::optional<glm::ivec2> size = v3d::config::windowSize(doc);
+            if (!size) {
+                logger_->get()->error("The window config needs a window with a whole width and height an int can hold");
                 return false;
             }
-            width = static_cast<int>(window->at("width").as_int64());
-            height = static_cast<int>(window->at("height").as_int64());
+            width = size->x;
+            height = size->y;
         }
     }
-    return window_->create(width, height);
+    return window_->create(glm::ivec2(width, height));
 }
 
 /**
@@ -214,8 +242,8 @@ bool Engine::shutdown() {
     bool released = true;
     if (!released_) {
         released_ = true;
-        // a release that throws leaves the window and SDL to ~Engine, which runs after the
-        // app's own members are destroyed, so whatever presents to the window still goes first
+        // when release() throws, ~Engine destroys the window and quits SDL. ~Engine runs
+        // after the app's own members are destroyed, so a renderer still goes before the window
         released = release();
     }
     if (!needShutdown_) {
@@ -231,9 +259,43 @@ bool Engine::shutdown() {
 /**
  **/
 void Engine::command(const v3d::event::Event& event) {
-    if (event.str() == "ui::quit") {
-        quit();
+    if (!commands_.invoke(event)) {
+        logger_->get()->warn("nothing handles {}", event.str());
     }
+}
+
+/**
+ **/
+v3d::event::Commands& Engine::commands() noexcept {
+    return commands_;
+}
+
+/**
+ **/
+const v3d::event::Commands& Engine::commands() const noexcept {
+    return commands_;
+}
+
+/**
+ **/
+std::vector<std::string> Engine::unhandled() const {
+    if (!bindings_) {
+        return std::vector<std::string>();
+    }
+    return commands_.unhandled(bindings_->commands());
+}
+
+/**
+ **/
+std::vector<std::string> Engine::unhandled(const boost::json::object& document) const {
+    // the bindings install what they read into an event engine. They get a private one here,
+    // not the one the loop routes through
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    v3d::event::Bindings bindings(boost::make_shared<v3d::event::Engine>(dispatcher), boost::make_shared<v3d::log::Logger>());
+    if (!bindings.load(document)) {
+        return std::vector<std::string>{ "mappings" };
+    }
+    return commands_.unhandled(bindings.commands());
 }
 
 /**
@@ -245,8 +307,8 @@ bool Engine::render() {
 /**
  **/
 void Engine::route(const SDL_Event& event) {
-    // the app is offered the event first, because it draws over the scene and so is what
-    // the cursor points at. An event the app consumes never reaches the bindings
+    // the app sees the event first, because its ui draws over the scene and the cursor
+    // points at the ui first. An event the app consumes never reaches the bindings
     if (!onEvent(event) && inputEngine_ && inputEngine_->filterEvent(event)) {
         return;
     }
@@ -275,17 +337,26 @@ void Engine::handleEvent(const SDL_Event& event) {
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
         if (window_) {
-            window_->resize(event.window.data1, event.window.data2);
+            window_->resize(glm::ivec2(event.window.data1, event.window.data2));
         }
-        dispatcher_->trigger(v3d::event::kind::WindowResize(event.window.data1, event.window.data2));
+        dispatcher_->trigger(v3d::event::kind::WindowResize(glm::ivec2(event.window.data1, event.window.data2)));
         break;
-    // a key released while the window is unfocused never arrives, so an app that drops
-    // held input on focus loss is told when focus goes rather than polling for it
+    // a key released while the window is unfocused never arrives. WindowFocus lets an app
+    // drop held input when focus goes
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
         dispatcher_->trigger(v3d::event::kind::WindowFocus(true));
         break;
     case SDL_EVENT_WINDOW_FOCUS_LOST:
         dispatcher_->trigger(v3d::event::kind::WindowFocus(false));
+        break;
+    case SDL_EVENT_WINDOW_MINIMIZED:
+        minimized_ = true;
+        break;
+    // a window minimized from maximized comes back maximized, which SDL reports instead of a
+    // restore
+    case SDL_EVENT_WINDOW_RESTORED:
+    case SDL_EVENT_WINDOW_MAXIMIZED:
+        minimized_ = false;
         break;
     default:
         break;
@@ -299,10 +370,12 @@ bool Engine::eventLoop() {
     // nanoseconds, not SDL_GetTicks(): a whole millisecond cannot express 60 Hz, and a frame
     // faster than 1 ms measures as no elapsed time at all
     uint64_t lastTick = SDL_GetTicksNS();
-    // Enter main game loop
+    // a window can be created minimized, and then sends no event saying so
+    if (window_ && window_->created()) {
+        minimized_ = (SDL_GetWindowFlags(window_->sdl()) & SDL_WINDOW_MINIMIZED) != 0;
+    }
     while (!quitting_) {
-        // Handle events on queue
-        while (SDL_PollEvent(&event) != 0 && !quitting_) {
+        while (SDL_PollEvent(&event) && !quitting_) {
             route(event);
         }
         // an event handler may have asked to stop, and its window may be gone, so nothing
@@ -310,22 +383,30 @@ bool Engine::eventLoop() {
         if (quitting_) {
             break;
         }
+        // a minimized window shows nothing, so the loop sleeps until an event arrives instead
+        // of presenting frames. The wait is not a frame, and the clock restarts after it
+        if (minimized_) {
+            if (SDL_WaitEvent(&event)) {
+                route(event);
+            }
+            lastTick = SDL_GetTicksNS();
+            continue;
+        }
         // tick the game, telling it how long the last frame took
-        uint64_t now = SDL_GetTicksNS();
-        uint64_t elapsed = now - lastTick;
+        const uint64_t now = SDL_GetTicksNS();
+        const uint64_t elapsed = now - lastTick;
         lastTick = now;
         if (!tick(static_cast<unsigned int>(elapsed / SDL_NS_PER_MS))) {
             return false;
         }
         // advance the simulation by each whole fixed step now due. The accumulator clamps
         // the frame and carries the remainder forward
-        statistics_.frame(elapsed, accumulator_.accumulate(elapsed));
+        statistics_.frame(std::chrono::nanoseconds(elapsed), accumulator_.accumulate(elapsed));
         while (accumulator_.drain()) {
             if (!simulate(Accumulator::seconds)) {
                 return false;
             }
         }
-        // draw the frame on the screen
         if (!render()) {
             return false;
         }
@@ -399,6 +480,14 @@ const boost::shared_ptr<v3d::asset::Manager>& Engine::assets() const noexcept {
 
 const boost::shared_ptr<entt::dispatcher>& Engine::dispatcher() const noexcept {
     return dispatcher_;
+}
+
+entt::registry& Engine::registry() noexcept {
+    return registry_;
+}
+
+const entt::registry& Engine::registry() const noexcept {
+    return registry_;
 }
 
 const boost::shared_ptr<v3d::event::Engine>& Engine::events() const noexcept {

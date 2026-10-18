@@ -65,7 +65,7 @@ bool coercible(Type from, Type to) {
     if (from == Type::VOID || to == Type::VOID || from == Type::STRING || to == Type::STRING) {
         return false;
     }
-    // a float replicates into anything that is made of floats, so a shader can write
+    // a float fills any type that is made of floats, so a shader can write
     // "color specularcolor = 1"
     if (from == Type::FLOAT) {
         return true;
@@ -81,29 +81,29 @@ Type arithmetic(Type left, Type right) {
     if (left == right) {
         return left;
     }
-    // a float is a scale over anything else, whichever side it is on
+    // a float combines with any other type, on either side, and the result is that type
     if (left == Type::FLOAT) {
         return right;
     }
     if (right == Type::FLOAT) {
         return left;
     }
-    // the three point-like types mix, and the result takes the left operand's type. This
-    // language does not follow RI's affine rule that a point minus a point is a vector
+    // the point-like types mix, and the result takes the left operand's type. RI's affine
+    // rule that a point minus a point is a vector is not followed
     if (pointlike(left) && pointlike(right)) {
         return left;
     }
-    // a colour and a position have no arithmetic between them; a shader converts between
-    // them with ctransform
+    // a colour and a point, vector or normal have no arithmetic between them, and neither
+    // converts to the other
     return Type::VOID;
 }
 
 glm::vec3 ptransform(const glm::mat4x4 & matrix, const glm::vec3 & point) {
-    return glm::vec3(matrix * glm::vec4(point, 1.0f));
+    return glm::vec3(matrix * glm::vec4(point, 1.0F));
 }
 
 glm::vec3 vtransform(const glm::mat4x4 & matrix, const glm::vec3 & vector) {
-    return glm::vec3(matrix * glm::vec4(vector, 0.0f));
+    return glm::vec3(matrix * glm::vec4(vector, 0.0F));
 }
 
 glm::vec3 ntransform(const glm::mat4x4 & matrix, const glm::vec3 & normal) {

@@ -21,9 +21,9 @@ namespace v3d::type::animation {
  **/
 struct Pose final {
     struct Joint final {
-        glm::vec3 translation{ 0.0f };
+        glm::vec3 translation{ 0.0F };
         glm::quat rotation = glm::identity<glm::quat>();
-        glm::vec3 scale{ 1.0f };
+        glm::vec3 scale{ 1.0F };
     };
 
     std::vector<Joint> joints;

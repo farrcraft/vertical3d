@@ -9,7 +9,7 @@
 
 /**
  * How one block type reflects the light, as an element of the palette in SceneUniforms. Its
- * members are vec4 for the reason that struct gives.
+ * members are vec4, because std140 pads a vec3 to the size of a vec4.
  **/
 struct MaterialInfo {
     glm::vec4 ambient;   /**< reflectivity in rgb **/

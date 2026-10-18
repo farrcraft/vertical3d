@@ -14,9 +14,9 @@
 namespace v3d::render::offline {
 
 /**
- * The five pixel filters RI names.
+ * The pixel filters RI names.
  **/
-enum class Filter {
+enum class Filter : std::uint8_t {
     Box,
     Triangle,
     CatmullRom,
@@ -35,8 +35,8 @@ bool filterNamed(const std::string & name, Filter * filter);
  * A pixel filter's weight at an offset from the pixel centre, with RI's formulas.
  *
  * @param offset from the centre, in pixels
- * @param width the filter's whole extent along each axis, in pixels; every filter is zero
- *        outside it, including the catmull-rom and sinc ones whose RI formulas ignore it
+ * @param width the filter's whole extent along each axis, in pixels. Every filter is zero
+ *        outside it, including catmull-rom and sinc, whose RI formulas ignore the width
  **/
 float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width);
 
@@ -82,14 +82,14 @@ unsigned int sampleCount(float rate);
 struct Sampling final {
     glm::uvec2 samples { 2, 2 };
     Filter filter { Filter::Gaussian };
-    glm::vec2 width { 2.0f, 2.0f };
+    glm::vec2 width { 2.0F, 2.0F };
     /** 0 means no adaptive sampling. **/
-    float variance { 0.0f };
+    float variance { 0.0F };
     /** When the shutter opens and closes. **/
-    glm::vec2 shutter { 0.0f, 0.0f };
-    float fstop { 0.0f };
-    float focalLength { 0.0f };
-    float focalDistance { 0.0f };
+    glm::vec2 shutter { 0.0F, 0.0F };
+    float fstop { 0.0F };
+    float focalLength { 0.0F };
+    float focalDistance { 0.0F };
 
     /**
      * Whether the lens is a pinhole and nothing is out of focus. RI writes a pinhole as an

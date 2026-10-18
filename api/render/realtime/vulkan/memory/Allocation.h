@@ -7,9 +7,9 @@
 
 #include <vulkan/vulkan.h>
 
-// the allocator's own handle, declared rather than included: vk_mem_alloc.h is large and
-// this header is included by most of the renderer. Repeating the library's own typedef keeps
-// that header in the one translation unit that implements it - VmaImpl.cxx
+// the Vulkan Memory Allocator's handle, declared here instead of included. vk_mem_alloc.h is
+// large, and this header is included by most of the renderer. Repeating the library's typedef
+// keeps vk_mem_alloc.h out of every file except Allocator.cxx and VmaImpl.cxx
 VK_DEFINE_HANDLE(VmaAllocation)
 
 namespace v3d::render::realtime::vulkan::memory {

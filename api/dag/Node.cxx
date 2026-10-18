@@ -7,7 +7,11 @@
 
 namespace v3d::dag {
 
+namespace {
+
 unsigned int baseNodeID = 0;
+
+};  // namespace
 
 Node::Node() {
     _id = ++baseNodeID;

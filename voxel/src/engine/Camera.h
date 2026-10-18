@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <utility>
 
 #include "Aligned.h"
@@ -18,7 +19,7 @@
  */
 class Camera : public Aligned<16> {
  public:
-    typedef enum CameraBehavior {
+    typedef enum CameraBehavior : std::uint8_t {
         CAMERA_BEHAVIOR_FIRST_PERSON,
         CAMERA_BEHAVIOR_FLIGHT
     } CameraBehavior;
@@ -26,13 +27,34 @@ class Camera : public Aligned<16> {
     Camera();
 
     void lookAt(const glm::vec3 &target);
-    void lookAt(const glm::vec3 &eye, const glm::vec3 &target, const glm::vec3 &up);
+    /** Where the eye is, the point it looks at, and which way is up. **/
+    struct Aim {
+        glm::vec3 eye{0.0F};
+        glm::vec3 target{0.0F, 0.0F, -1.0F};
+        glm::vec3 up{0.0F, 1.0F, 0.0F};
+    };
+
+    void lookAt(const Aim& aim);
 
     void move(float dx, float dy, float dz);
     glm::vec3 calculateMovement(const glm::vec3 & delta);
 
     void move(const glm::vec3 &direction, const glm::vec3 &amount);
-    void perspective(float fovx, float aspect, float znear, float zfar);
+
+    /** The lens a camera has until it is given one: degrees across, and the planes in blocks. **/
+    static constexpr float DEFAULT_FOVX = 90.0F;
+    static constexpr float DEFAULT_ZNEAR = 0.1F;
+    static constexpr float DEFAULT_ZFAR = 1000.0F;
+
+    /** The horizontal field of view in degrees, the aspect, and the near and far planes. **/
+    struct Lens {
+        float fovx = DEFAULT_FOVX;
+        float aspect = 1.0F;
+        float znear = DEFAULT_ZNEAR;
+        float zfar = DEFAULT_ZFAR;
+    };
+
+    void perspective(const Lens& lens);
     void rotate(float headingDegrees, float pitchDegrees, float rollDegrees);
 
     void updatePosition(const glm::vec3 &direction, float elapsedTimeSec);

@@ -16,9 +16,9 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::render::realtime::canvas {
 class Canvas;
-};  // namespace v3d::render::realtime
+};  // namespace v3d::render::realtime::canvas
 
 namespace v3d::ui {
 
@@ -32,11 +32,14 @@ class Resolver;
 namespace component {
 class Box;
 class Button;
-class Menu;
-class MenuBar;
 class TabBar;
 class Toolbar;
 };  // namespace component
+
+namespace component::menu {
+class Bar;
+class Menu;
+};  // namespace component::menu
 
 /**
  * Works out where every component of a tree goes, and leaves each holding the box it was
@@ -55,11 +58,10 @@ class Arranger final {
     /**
      * Draw one component, whose box has just been written onto it.
      *
-     * The hook between resolving a box and filling it. A callback rather than a base class,
-     * as with text, so the layout pass names no renderer and a test can watch it place a
-     * tree without drawing one.
+     * Called between resolving a box and filling it. It is a callback, so the layout pass
+     * names no renderer, and a test can watch it place a tree without drawing one.
      **/
-    typedef std::function<void(v3d::render::realtime::Canvas*, const boost::shared_ptr<Component>&)> Paint;
+    typedef std::function<void(v3d::render::realtime::canvas::Canvas*, const boost::shared_ptr<Component>&)> Paint;
 
     /**
      * How thick the rule along a strip's far edge is, and the gap it puts between one
@@ -70,8 +72,8 @@ class Arranger final {
     /**
      * @param measure how wide a string is when the app draws it, which sizes a
      *      label, a button and a tab
-     * @param styles where a component's colours and metrics come from - held by reference
-     *      because the renderer owns it and a theme change has to reach here
+     * @param styles where a component's colours and metrics come from. Held by reference,
+     *      because the renderer owns it, and a theme change must reach the arranger
      **/
     Arranger(const paint::Measure& measure, const style::Resolver& styles);
 
@@ -80,27 +82,27 @@ class Arranger final {
      * everything it holds.
      *
      * The canvas and the paint are both optional. Given neither, this resolves every box
-     * and draws nothing. Pass neither to ask for layout on its own.
+     * and draws nothing.
      *
      * @param bounds where this component goes, which its parent worked out
      * @param paint what fills each box as it is written, or empty to place and not draw
      **/
-    void walk(v3d::render::realtime::Canvas* canvas, const boost::shared_ptr<Component>& component,
+    void walk(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<Component>& component,
         const v3d::type::geometry::Bound2D& bounds, const Paint& paint) const;
 
     /**
-     * The size a component makes of itself, which an Auto extent resolves to - the
-     * width of a label's text, the side of an icon, the room a button's label needs.
+     * A component's natural size, which an Auto extent resolves to: the width of a label's
+     * text, the side of an icon, the room a button's label needs.
      *
-     * A component that decides nothing for itself takes the room it was offered. Nothing
-     * here reads a box an earlier pass wrote.
+     * A component with no natural size takes the room it was offered. Nothing here reads a
+     * box an earlier pass wrote.
      *
-     * Takes the component to write on rather than to read: a list is left holding how wide
-     * its widest row measured, the way layout leaves every component holding its box.
+     * The component is not const because a select list caches the width of its widest row
+     * on itself.
      *
-     * @param room what the component is being offered. A flow box offers no room along the
-     *      line it lays out, because the line is shared, so an Auto extent there is what
-     *      the component makes of itself and nothing more
+     * @param room the room the component is offered. A flow box offers no room along the
+     *      line it lays out, because its children share the line. An Auto extent along
+     *      that line is then the component's natural size and nothing more
      **/
     glm::vec2 natural(Component& component, const v3d::type::geometry::Bound2D& room) const;
 
@@ -108,23 +110,23 @@ class Arranger final {
      * Where each strip of a container goes, and how much of the canvas they take between
      * them.
      *
-     * They stack in the order the container draws them: a menu bar takes the top, a top
-     * toolbar takes a band under whatever is already there, and a left toolbar runs down
-     * the side of what is left.
+     * Every menu bar takes a band at the top. Each top toolbar takes a band under those, in
+     * the order the container lists them. Each left toolbar runs down the side, below all
+     * of the bands.
      *
-     * Both the draw and insets() use this, so the area an app is told it has always
-     * matches where the strips are drawn.
+     * Both the draw and ComponentRenderer::insets() use this, so the area an app is told it
+     * has always matches where the strips are drawn.
      *
      * @param strips filled with one toolbar and its top left corner per strip, in the
      *      order they are drawn; null when only the total is wanted
-     * @param bars filled with the container's menu bars, which are drawn last because an
-     *      open menu drops a panel over the strips below it; null when only the total is
-     *      wanted
+     * @param bars filled with the container's menu bars; null when only the total is
+     *      wanted. The bars are drawn last. An open menu drops a panel over the strips
+     *      below it.
      * @return the left inset in x and the top inset in y, in pixels
      **/
     glm::vec2 stack(const Container& container,
         std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>>* strips,
-        std::vector<boost::shared_ptr<component::MenuBar>>* bars) const;
+        std::vector<boost::shared_ptr<component::menu::Bar>>* bars) const;
 
     /**
      * Where a tab bar's chosen page goes - the room the strip and its rule leave under
@@ -145,12 +147,9 @@ class Arranger final {
 
     /**
      * Leave a component holding the bounds it was put in, which the cursor is tested
-     * against. The only way a box is given, in layout alone and in a draw.
-     *
-     * Through a reference to the base, because a menu's own size() is its item count and
-     * hides the one that means how big it is.
+     * against. Every box is written through this, in a layout pass and in a draw.
      **/
-    static void place(Component& component, const glm::vec2& position, const glm::vec2& size);
+    static void place(Component& component, const v3d::type::geometry::Bound2D::Area& area);
 
     /**
      * The size a component is drawn at: the box layout gave it, or its natural size when it
@@ -170,18 +169,18 @@ class Arranger final {
      * Place a menu bar's open panel and its items, hanging from an origin and moved back into
      * the room where it would hang off an edge.
      **/
-    void panel(component::Menu& menu, const glm::vec2& origin, const glm::vec2& room) const;
+    void panel(component::menu::Menu& menu, const glm::vec2& origin, const glm::vec2& room) const;
 
     /**
      * Place a game menu's level and its items, centred in the room.
      **/
-    void centred(component::Menu& level, const glm::vec2& room) const;
+    void centred(component::menu::Menu& level, const glm::vec2& room) const;
 
     /**
      * How wide a flyout panel's mark column is, as a fraction of a line - the room on each
      * side of its labels for a check mark and a submenu arrow.
      **/
-    static constexpr float markColumn = 0.9f;
+    static constexpr float markColumn = 0.9F;
 
  private:
     /**
@@ -225,8 +224,9 @@ class Arranger final {
     paint::Measure measure_;
     const style::Resolver& styles_;
     /**
-     * Which arranger this is, unique for the life of the program. A list keeps its widest
-     * row against it, so a new measure, which comes with a new arranger, measures again.
+     * Which arranger this is, unique for the life of the program. A list caches its widest
+     * row against this serial. A new measure comes with a new arranger, so the list then
+     * measures again.
      **/
     std::uint64_t serial_;
 };

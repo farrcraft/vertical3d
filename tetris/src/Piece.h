@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 /**
@@ -14,7 +15,7 @@
  */
 class Piece {
  public:
-    typedef enum {
+    typedef enum : std::uint8_t {
         COLOR_EMPTY,
         COLOR_RED,
         COLOR_CYAN,

@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/brep/BRep.h>
-#include <api/render/realtime/LineCanvas.h>
+#include <api/render/realtime/canvas/Line.h>
 
 #include "Manipulator.h"
 
@@ -29,7 +29,7 @@ class RotateManipulator final : public Manipulator {
     bool grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
         const glm::vec2& cursor, Axis* axis) const override;
     void draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
-        v3d::render::realtime::LineCanvas* canvas) const override;
+        v3d::render::realtime::canvas::Line* canvas) const override;
     void apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
         const glm::vec2& from, const glm::vec2& to) const override;
 
@@ -38,8 +38,8 @@ class RotateManipulator final : public Manipulator {
      * How close the cursor comes to the ring about one axis, in pixels.
      *
      * A ring is not one segment, so it is tested as the run of segments it is drawn
-     * as. Nothing within tolerance of any of them, and nothing that projects at all,
-     * both come back negative.
+     * as. The result is negative when no segment is within tolerance, or when no
+     * segment projects onto the screen at all.
      **/
     static float ringDistance(const Placement& placement, const glm::vec3& unit,
         const ViewPort& view, const glm::vec2& cursor);

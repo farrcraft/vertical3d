@@ -13,20 +13,28 @@
 #include <pong/src/component/Score.h>
 #include <pong/src/component/Travel.h>
 
+namespace {
+
+// a paddle's thickness and its length along the side it moves on, in court units
+constexpr float PADDLE_THICKNESS = 15.0F;
+constexpr float PADDLE_LENGTH = 50.0F;
+
+};  // namespace
+
 Paddle::Paddle(entt::registry* registry) :
     registry_(registry) {
     id_ = registry->create();
     // create the components attached to paddle entity
-    registry->emplace<v3d::ecs::component::Position1D>(id_, 0.0f);
-    registry->emplace<v3d::ecs::component::Color3>(id_, glm::vec3(1.0f));
+    registry->emplace<v3d::ecs::component::Position1D>(id_, 0.0F);
+    registry->emplace<v3d::ecs::component::Color3>(id_, glm::vec3(1.0F));
     registry->emplace<Score>(id_, 0);
     registry->emplace<Travel>(id_, false, false);
-    registry->emplace<Offset>(id_, 0.0f);
-    registry->emplace<PaddleSize>(id_, 15.0f, 50.0f);
+    registry->emplace<Offset>(id_, 0.0F);
+    registry->emplace<PaddleSize>(id_, PADDLE_THICKNESS, PADDLE_LENGTH);
 }
 
 glm::vec3 Paddle::color() const {
-    v3d::ecs::component::Color3& color = registry_->get<v3d::ecs::component::Color3>(id_);
+    const v3d::ecs::component::Color3& color = registry_->get<v3d::ecs::component::Color3>(id_);
     return color.value;
 }
 
@@ -51,7 +59,7 @@ void Paddle::offset(const float off) {
 }
 
 float Paddle::position() const {
-    v3d::ecs::component::Position1D& component = registry_->get<v3d::ecs::component::Position1D>(id_);
+    const v3d::ecs::component::Position1D& component = registry_->get<v3d::ecs::component::Position1D>(id_);
     return component.value;
 }
 
@@ -64,42 +72,39 @@ void Paddle::settle() {
 }
 
 float Paddle::offset() const {
-    Offset& component = registry_->get<Offset>(id_);
+    const Offset& component = registry_->get<Offset>(id_);
     return component.offset_;
 }
 
 void Paddle::reset() {
     Score& component = registry_->get<Score>(id_);
     component.score_ = 0;
-/* resetting these could glitch input
-    _up = false;
-    _down = false;
-*/
+    // the travel flags are left alone, because they follow whichever key is held
 }
 
 bool Paddle::up() {
-    Travel& travel = registry_->get<Travel>(id_);
+    const Travel& travel = registry_->get<Travel>(id_);
     return travel.up_;
 }
 
 bool Paddle::down() {
-    Travel& travel = registry_->get<Travel>(id_);
+    const Travel& travel = registry_->get<Travel>(id_);
     return travel.down_;
 }
 
 int Paddle::score() {
-    Score& component = registry_->get<Score>(id_);
+    const Score& component = registry_->get<Score>(id_);
     return component.score_;
 }
 
-void Paddle::up(bool k) {
+void Paddle::up(bool held) {
     Travel& travel = registry_->get<Travel>(id_);
-    travel.up_ = k;
+    travel.up_ = held;
 }
 
-void Paddle::down(bool k) {
+void Paddle::down(bool held) {
     Travel& travel = registry_->get<Travel>(id_);
-    travel.down_ = k;
+    travel.down_ = held;
 }
 
 void Paddle::score(int s) {
@@ -108,11 +113,11 @@ void Paddle::score(int s) {
 }
 
 float Paddle::size() const {
-    PaddleSize& paddle = registry_->get<PaddleSize>(id_);
+    const PaddleSize& paddle = registry_->get<PaddleSize>(id_);
     return paddle.size_;
 }
 
 float Paddle::length() const {
-    PaddleSize& paddle = registry_->get<PaddleSize>(id_);
+    const PaddleSize& paddle = registry_->get<PaddleSize>(id_);
     return paddle.length_;
 }

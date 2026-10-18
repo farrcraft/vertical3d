@@ -18,12 +18,12 @@
 namespace v3d::config {
 
 /**
- * Named camera profiles, loaded from a document the config names as Type::Camera - the
- * editor's data/cameras.json is the one in the tree.
+ * Named camera profiles, loaded from the document the config names as Type::Camera, such as
+ * vertical3d/data/cameras.json.
  *
- * A profile is described by where the camera is and what it looks at rather than by
- * its three normals: the basis and the rotation have to agree, and
- * only Profile::lookat() writes all four consistently.
+ * A profile entry gives the camera's eye, look-at point and up vector, not its basis vectors.
+ * The three basis vectors and the rotation must agree, and only Profile::lookat() sets all
+ * four together.
  **/
 class CameraProfiles final {
  public:
@@ -34,16 +34,18 @@ class CameraProfiles final {
 
     /**
      * Read every profile in the document.
-     * A profile missing a name is rejected; every other field has a default.
+     * The load fails at a profile with no name, an "adaptive" that is not a string, or a zoom
+     * below Camera::MINIMUM_ZOOM. Profiles read before that one stay loaded. Every other field
+     * has a default.
      *
      * @param doc the parsed cameras.json
-     * @return whether the table was understood
+     * @return whether every profile was understood
      **/
     bool load(const boost::json::object& doc);
 
     /**
-     * @param name the profile name, as whatever names a view names it
-     * @return the profile, or an unnamed default when there is no such profile
+     * @param name the profile name
+     * @return the profile, or a default profile with that name when none was loaded
      **/
     v3d::type::camera::Profile get(const std::string& name) const;
 

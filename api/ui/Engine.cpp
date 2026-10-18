@@ -5,14 +5,13 @@
 
 #include "Engine.h"
 
+#include <api/event/Engine.h>
 #include <api/log/Logger.h>
 #include <api/ui/DrawOrder.h>
 #include <api/ui/Image.h>
-#include <api/ui/component/Box.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Icon.h>
 #include <api/ui/component/Toolbar.h>
-#include <api/ui/component/Type.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Image.h>
@@ -20,6 +19,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -48,8 +48,8 @@ bool Engine::load(const boost::json::object& config) {
     containers_ = std::move(loader.containers());
     themes_ = std::move(loader.themes());
 
-    // the first theme loaded is active unless the document named one, so a config carrying
-    // a single theme needs no field at all
+    // the first theme loaded is active unless the document names one, so a config with a
+    // single theme needs no field for it
     activeTheme_ = themes_.empty() ? nullptr : themes_.front();
     if (!loader.active().empty()) {
         activeTheme(loader.active());
@@ -64,7 +64,7 @@ std::size_t Engine::resolveThemeImages(const Resolve& resolve) {
     for (const boost::shared_ptr<style::Theme>& theme : themes_) {
         for (const boost::shared_ptr<style::Style>& target : theme->getStyleSet("", "")) {
             for (const boost::shared_ptr<style::Property>& property : target->getPropertySet("", "image")) {
-                boost::shared_ptr<style::property::Image> image =
+                const boost::shared_ptr<style::property::Image> image =
                     boost::dynamic_pointer_cast<style::property::Image>(property);
                 if (!image) {
                     continue;
@@ -89,11 +89,11 @@ std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::
     }
     std::size_t resolved = 0;
 
-    boost::shared_ptr<component::Icon> icon = boost::dynamic_pointer_cast<component::Icon>(component);
-    boost::shared_ptr<component::Button> button = boost::dynamic_pointer_cast<component::Button>(component);
-    // a strip's buttons are its own rather than children, so they are not reached by the
-    // traversal below and are taken here
-    boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
+    const boost::shared_ptr<component::Icon> icon = boost::dynamic_pointer_cast<component::Icon>(component);
+    const boost::shared_ptr<component::Button> button = boost::dynamic_pointer_cast<component::Button>(component);
+    // a toolbar's buttons are not its children, so the loop over children below does not
+    // reach them
+    const boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
     if (icon) {
         if (resolveIcon(resolve, std::string(icon->source()), icon)) {
             resolved++;
@@ -111,9 +111,8 @@ std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::
         }
     }
 
-    // a container holds only what was added to it, and Loader gives a nested component to its
-    // parent rather than to the container, so an icon inside a panel or a box is reached from
-    // here and from nowhere else
+    // Loader adds a nested component to its parent, not to the container, so an icon inside a
+    // panel or a box is reached only through this loop
     for (const boost::shared_ptr<Component>& child : component->children()) {
         resolved += resolveComponentImages(resolve, child);
     }
@@ -169,8 +168,7 @@ boost::shared_ptr<style::Theme> Engine::theme(const std::string_view& name) cons
 /**
  **/
 void Engine::focus(const boost::shared_ptr<Component>& component) {
-    // a component that cannot be used is nothing to focus, the same answer one that never
-    // asked to be focusable gets
+    // a component that is not focusable, or not usable, is treated as null
     const boost::shared_ptr<Component> wanted =
         component && component->focusable() && usable(*component) ? component : boost::shared_ptr<Component>();
     const boost::shared_ptr<Component> was = focused_.lock();
@@ -184,8 +182,8 @@ void Engine::focus(const boost::shared_ptr<Component>& component) {
         wanted->focused(true);
     }
     focused_ = wanted;
-    // after both components have been told, so that a listener asking focused() is answered
-    // the move rather than the middle of it
+    // called after both components' flags are set, so a listener that calls focused() sees
+    // the finished move
     if (moved_) {
         moved_(wanted);
     }
@@ -216,8 +214,8 @@ bool Engine::reachable(const boost::shared_ptr<Component>& component) const {
 namespace {
 
 /**
- * Collect what can be focused, in draw order - forEachDrawn's, so a
- * control on a tab page that is not up is not one.
+ * Collect what can be focused, in draw order. forEachDrawn skips a tab page that is not
+ * chosen, so a control on one is left out.
  **/
 void focusable(const boost::shared_ptr<Component>& component,
     std::vector<boost::shared_ptr<Component>>* found) {
@@ -272,9 +270,9 @@ bool Engine::focusNext(bool forward) {
     }
     const auto here = std::find(order.begin(), order.end(), was);
     if (here == order.end()) {
-        // what held the focus is no longer reachable: hidden, disabled or taken out of the
-        // tree since it took it. There is no place in the order to move on from, so the order
-        // starts again rather than leaving the focus somewhere tab cannot get it back
+        // the focused component is not reachable: it was hidden, disabled or taken out of the
+        // tree. There is no place in the order to move on from, so the order starts again at
+        // one end
         focus(forward ? order.front() : order.back());
         return true;
     }
@@ -297,7 +295,7 @@ boost::shared_ptr<style::Theme> Engine::activeTheme() const {
 /**
  **/
 bool Engine::activeTheme(const std::string_view& name) {
-    boost::shared_ptr<style::Theme> found = theme(name);
+    const boost::shared_ptr<style::Theme> found = theme(name);
     if (!found) {
         logger_->get()->error("No such ui theme [{}]", name);
         return false;

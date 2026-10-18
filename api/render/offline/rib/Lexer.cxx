@@ -7,11 +7,31 @@
 
 #include <api/render/offline/Characters.h>
 
+#include "Token.h"
+
 #include <cstdlib>
+#include <ios>
+#include <iosfwd>
 #include <istream>
 #include <string>
 
 namespace v3d::render::offline::rib {
+
+namespace {
+
+/** The three bytes of a UTF-8 byte order mark. **/
+constexpr unsigned char UTF8_BOM1 = 0xef;
+constexpr unsigned char UTF8_BOM2 = 0xbb;
+constexpr unsigned char UTF8_BOM3 = 0xbf;
+
+/** The two bytes a gzip stream opens with. **/
+constexpr unsigned char GZIP_ID1 = 0x1f;
+constexpr unsigned char GZIP_ID2 = 0x8b;
+
+/** The least byte that begins an encoded request in binary RIB. **/
+constexpr unsigned char FIRST_ENCODED_BYTE = 0x80;
+
+};  // namespace
 
 Lexer::Lexer(std::istream & stream) : in_(stream) {
     // the stream is read from where it stands, which is not always its beginning
@@ -28,24 +48,24 @@ Lexer::Lexer(std::istream & stream) : in_(stream) {
     const unsigned char second = static_cast<unsigned char>(header[1]);
     const unsigned char third = static_cast<unsigned char>(header[2]);
     // a UTF-8 byte order mark is text, not an encoded request, and is skipped
-    const bool marked = count >= 3 && first == 0xef && second == 0xbb && third == 0xbf;
+    const bool marked = count >= 3 && first == UTF8_BOM1 && second == UTF8_BOM2 && third == UTF8_BOM3;
     stream.seekg(marked ? start + std::streamoff(3) : start);
     if (marked) {
         return;
     }
-    if (count >= 2 && first == 0x1f && second == 0x8b) {
+    if (count >= 2 && first == GZIP_ID1 && second == GZIP_ID2) {
         error_ = "gzipped RIB is not supported - the stream opens with a gzip header";
-    } else if (count >= 1 && first >= 0x80) {
+    } else if (count >= 1 && first >= FIRST_ENCODED_BYTE) {
         error_ = "binary RIB is not supported - the stream opens with an encoded request";
     }
 }
 
 void Lexer::skipSpace() {
     for (;;) {
-        const int c = in_.look();
-        if (Characters::space(c)) {
+        const int character = in_.look();
+        if (Characters::space(character)) {
             in_.get();
-        } else if (c == '#') {
+        } else if (character == '#') {
             while (in_.look() != Characters::END && in_.look() != '\n') {
                 in_.get();
             }
@@ -59,7 +79,7 @@ Token Lexer::fail(const std::string & message, unsigned int line, unsigned int c
     if (error_.empty()) {
         error_ = message + Characters::position(line, column);
     }
-    return Token(Token::Kind::END, line, column);
+    return Token(Token::Kind::END, {.line = line, .column = column});
 }
 
 Token Lexer::scanString(unsigned int line, unsigned int column) {
@@ -68,7 +88,7 @@ Token Lexer::scanString(unsigned int line, unsigned int column) {
     if (!in_.quoted(false, &text)) {
         return fail("unterminated string starting", line, column);
     }
-    return Token(Token::Kind::STRING, text, line, column);
+    return Token(Token::Kind::STRING, text, {.line = line, .column = column});
 }
 
 Token Lexer::scanNumber(unsigned int line, unsigned int column) {
@@ -100,7 +120,7 @@ Token Lexer::scanNumber(unsigned int line, unsigned int column) {
     if (!digits) {
         return fail("'" + text + "' is not a number", line, column);
     }
-    return Token(std::strtof(text.c_str(), nullptr), line, column);
+    return Token(std::strtof(text.c_str(), nullptr), {.line = line, .column = column});
 }
 
 Token Lexer::scanIdentifier(unsigned int line, unsigned int column) {
@@ -108,40 +128,40 @@ Token Lexer::scanIdentifier(unsigned int line, unsigned int column) {
     while (Characters::alpha(in_.look()) || Characters::digit(in_.look())) {
         text += static_cast<char>(in_.get());
     }
-    return Token(Token::Kind::IDENTIFIER, text, line, column);
+    return Token(Token::Kind::IDENTIFIER, text, {.line = line, .column = column});
 }
 
 Token Lexer::scan() {
     if (!error_.empty()) {
-        return Token(Token::Kind::END, in_.line(), in_.column());
+        return Token(Token::Kind::END, {.line = in_.line(), .column = in_.column()});
     }
     skipSpace();
 
     const unsigned int line = in_.line();
     const unsigned int column = in_.column() + 1;
-    const int c = in_.look();
-    if (c == Characters::END) {
-        return Token(Token::Kind::END, line, column);
+    const int character = in_.look();
+    if (character == Characters::END) {
+        return Token(Token::Kind::END, {.line = line, .column = column});
     }
-    if (c == '[') {
+    if (character == '[') {
         in_.get();
-        return Token(Token::Kind::ARRAY_BEGIN, line, column);
+        return Token(Token::Kind::ARRAY_BEGIN, {.line = line, .column = column});
     }
-    if (c == ']') {
+    if (character == ']') {
         in_.get();
-        return Token(Token::Kind::ARRAY_END, line, column);
+        return Token(Token::Kind::ARRAY_END, {.line = line, .column = column});
     }
-    if (c == '"') {
+    if (character == '"') {
         return scanString(line, column);
     }
-    if (c == '+' || c == '-' || c == '.' || Characters::digit(c)) {
+    if (character == '+' || character == '-' || character == '.' || Characters::digit(character)) {
         return scanNumber(line, column);
     }
-    if (Characters::alpha(c)) {
+    if (Characters::alpha(character)) {
         return scanIdentifier(line, column);
     }
     in_.get();
-    return fail(std::string("unexpected character '") + static_cast<char>(c) + "'", line, column);
+    return fail(std::string("unexpected character '") + static_cast<char>(character) + "'", line, column);
 }
 
 Token Lexer::next() {

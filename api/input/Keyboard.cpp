@@ -6,6 +6,7 @@
 #include "Keyboard.h"
 
 #include <api/event/Source.h>
+#include <api/event/State.h>
 #include <api/event/kind/KeyDown.h>
 #include <api/event/kind/KeyUp.h>
 #include <api/event/kind/TextInput.h>
@@ -152,17 +153,17 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
     bool pressed = true;
     switch (event.type) {
     case SDL_EVENT_TEXT_INPUT:
-        // the text the platform composed, which is separate from which key moved: one
-        // character can take several keys, and one key can produce different characters.
-        // It is not a source event, so no command can be bound to a typed letter
-        dispatcher_->trigger<v3d::event::kind::TextInput>(v3d::event::kind::TextInput(event.text.text, context_));
+        // the text the platform composed, which is separate from the keys. One character
+        // can take several keys, and one key can produce different characters. Text input
+        // is not a source event, so no command can be bound to a typed letter
+        dispatcher()->trigger<v3d::event::kind::TextInput>(v3d::event::kind::TextInput(event.text.text, context()));
         return true;
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
         pressed = (event.type == SDL_EVENT_KEY_DOWN);
         name = keyName(event.key.key);
-        // a key we have no name for cannot be bound to anything, and must not reach
-        // KeyState either - it would be held under an empty name that no caller can query
+        // a key with no name cannot be bound, and is kept out of KeyState. There it would be
+        // held under an empty name that no caller can query
         if (name.empty()) {
             return true;
         }
@@ -170,22 +171,22 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
             state_(name);
         }
         if (pressed) {
-            dispatcher_->trigger<v3d::event::kind::KeyDown>(v3d::event::kind::KeyDown(name, context_));
+            dispatcher()->trigger<v3d::event::kind::KeyDown>(v3d::event::kind::KeyDown(name, context()));
         } else {
-            dispatcher_->trigger<v3d::event::kind::KeyUp>(v3d::event::kind::KeyUp(name, context_));
+            dispatcher()->trigger<v3d::event::kind::KeyUp>(v3d::event::kind::KeyUp(name, context()));
         }
         break;
     default:
         return false;
     }
 
-    // trigger an event source event so any mappers can propogate any mapped events.
-    // the edge is carried as the event's state, not as its data - data is the binding's
-    // parameter, and the two would otherwise overwrite each other.
-    v3d::event::Source source(name, context_, pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
+    // publish a source event for the bindings to map. The edge is carried as the event's
+    // state, not as its data. The data holds the binding's param, and the two would
+    // otherwise overwrite each other.
+    v3d::event::Source source(name, context(), pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
     // only a press can repeat, so a release is never marked as one
     source.repeat(pressed && event.key.repeat);
-    v3d::event::publish(*dispatcher_, source);
+    v3d::event::publish(*dispatcher(), source);
 
     return true;
 }

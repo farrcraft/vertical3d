@@ -17,7 +17,6 @@
 #include <api/render/offline/sl/syntax/ExpressionStatement.h>
 #include <api/render/offline/sl/syntax/For.h>
 #include <api/render/offline/sl/syntax/Function.h>
-#include <api/render/offline/sl/syntax/Index.h>
 #include <api/render/offline/sl/syntax/Jump.h>
 #include <api/render/offline/sl/syntax/Lighting.h>
 #include <api/render/offline/sl/syntax/Parameter.h>
@@ -31,6 +30,7 @@
 #include <api/render/offline/sl/syntax/While.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -45,16 +45,16 @@ namespace {
 
 typedef Signature::Argument Argument;
 
-const unsigned int SURFACE = 1u << 0;
-const unsigned int LIGHT = 1u << 1;
-const unsigned int IMAGER = 1u << 2;
+const unsigned int SURFACE = 1U << 0;
+const unsigned int LIGHT = 1U << 1;
+const unsigned int IMAGER = 1U << 2;
 
 /**
  * A shader global: which shader types have it, and which of them may write it.
  *
- * The three lists are the standard's. A name that is not here is not a global, so a light
- * shader mentioning `Ci` is told that `Ci` belongs to a surface and an imager, rather than
- * that it is undeclared.
+ * The table follows the standard. A name in the table is reported as belonging to the
+ * shader types that have it. A light shader that mentions `Ci` is told that `Ci` belongs to
+ * a surface and an imager shader, not that it is undeclared.
  **/
 class Global final {
  public:
@@ -64,8 +64,8 @@ class Global final {
     unsigned int shaders;
     unsigned int writable;
     /**
-     * Only meaningful inside a lighting construct. A surface shader's L and Cl are set by
-     * the light whose shader illuminance is running, and mean nothing outside that body.
+     * Readable only inside a lighting construct, in a shader that cannot write it. In a
+     * surface shader, L and Cl are set by the light the illuminance body is running for.
      **/
     bool lighting;
 };
@@ -87,10 +87,10 @@ const Global GLOBALS[] = {
     { "Ci", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
     { "Oi", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
     { "Ps", Type::POINT, Storage::VARYING, LIGHT, 0, false },
-    // an imager writes alpha as well as reading it: a pixel it paints counts as covered,
-    // and the "background" imager writes alpha to record that
+    // an imager reads and writes alpha. A pixel it paints counts as covered, and the
+    // "background" imager writes alpha to record that
     { "alpha", Type::FLOAT, Storage::VARYING, IMAGER, IMAGER, false },
-    // a light writes these; a surface reads them, and only inside an illuminance body
+    // a light writes these. A surface reads them, and only inside an illuminance body
     { "L", Type::VECTOR, Storage::VARYING, SURFACE | LIGHT, LIGHT, true },
     { "Cl", Type::COLOR, Storage::VARYING, SURFACE | LIGHT, LIGHT, true }
 };
@@ -262,8 +262,8 @@ Compiler::Failure Compiler::fail(const std::string & message, unsigned int line,
 
 int Compiler::declare(const std::string & name, Type type, Storage storage,
     Symbol::Role role, bool writable, unsigned int line, unsigned int column) {
-    // a local shadows whatever is outside its block; a parameter that collides with a global
-    // or with another parameter is an error
+    // a local shadows whatever is outside its block. A parameter with the name of a global or
+    // of another parameter is an error
     if (role == Symbol::Role::PARAMETER) {
         const int existing = lookup(name);
         if (existing >= 0) {
@@ -317,8 +317,9 @@ void Compiler::declareParameters() {
         if (parameter.type == Type::VOID) {
             throw fail("a parameter cannot be void", parameter.line, parameter.column);
         }
-        // a parameter is uniform unless declared varying: a scene binds one value for the
-        // whole primitive unless the declaration lets the renderer vary it
+        // a parameter with no storage class starts uniform, so a scene binds one value for
+        // the whole primitive. The inference makes it varying if the body assigns it a
+        // varying value
         const Type given = checkExpression(parameter.defaultValue);
         if (!coercible(given, parameter.type)) {
             throw fail(std::string("the default for '") + parameter.name + "' is " + name(given) +
@@ -355,8 +356,8 @@ bool Compiler::compile() {
 }
 
 void Compiler::adopt() {
-    // a call to diffuse or specular names a function written in the language. It is added to
-    // the shader's own functions so that nothing after this pass sees two kinds of function
+    // a call to diffuse or specular names a function written in the shading language. It is
+    // added to the shader's own functions, so later passes see only one kind of function
     std::vector<std::string> called;
     gather(boost::static_pointer_cast<syntax::Statement>(shader_->body), &called);
     for (const syntax::Function & function : shader_->functions) {
@@ -402,7 +403,8 @@ void Compiler::checkFunctions() {
 }
 
 void Compiler::checkCallGraph() {
-    // depth first over the call graph, colouring as it goes
+    // a depth-first search of the call graph. Colour 0 is unvisited, 1 is on the current
+    // path, and 2 is finished. Reaching a function coloured 1 is a cycle
     const std::size_t count = calls_.size();
     std::vector<int> colour(count, 0);
     std::vector<std::size_t> stack;
@@ -415,7 +417,7 @@ void Compiler::checkCallGraph() {
             const std::size_t current = stack.back();
             if (colour[current] == 0) {
                 colour[current] = 1;
-                for (int called : calls_[current]) {
+                for (const int called : calls_[current]) {
                     const std::size_t next = static_cast<std::size_t>(called);
                     if (colour[next] == 1) {
                         const syntax::Function & function = shader_->functions[next];
@@ -442,8 +444,8 @@ void Compiler::checkBlock(const syntax::BlockPtr & block) {
     for (const syntax::StatementPtr & statement : block->statements) {
         checkStatement(statement);
     }
-    // a local goes out of scope with its block, and its symbol stays: the machine allocates
-    // against the symbol, and two locals of the same name in sibling blocks are two symbols
+    // a local goes out of scope with its block, but its symbol stays. Each symbol gets its
+    // own register, so two locals of the same name in sibling blocks are two symbols
     scope_.resize(mark);
 }
 
@@ -559,7 +561,7 @@ void Compiler::checkAssignment(const syntax::StatementPtr & statement) {
             assignment.target->line, assignment.target->column);
     }
     const Type given = checkExpression(assignment.value);
-    // a compound form is the operator and then the assignment, so both have to work
+    // a compound assignment applies the operator and then assigns, so both must type-check
     const Type combined = assignment.op == "=" ? given : arithmetic(target, given);
     if (combined == Type::VOID || !coercible(combined, target)) {
         throw fail("'" + variable.name + "' is " + name(target) + " and is given " + name(given),
@@ -568,7 +570,7 @@ void Compiler::checkAssignment(const syntax::StatementPtr & statement) {
 }
 
 void Compiler::checkLighting(const syntax::StatementPtr & statement) {
-    syntax::Lighting & lighting = static_cast<syntax::Lighting &>(*statement);
+    const syntax::Lighting & lighting = static_cast<syntax::Lighting &>(*statement);
     const bool surface = shader_->type == ShaderType::SURFACE;
     if (lighting.construct == syntax::Lighting::Construct::ILLUMINANCE) {
         if (!surface) {
@@ -614,8 +616,8 @@ Type Compiler::checkExpression(const syntax::ExpressionPtr & expression) {
         case syntax::Expression::Kind::CAST:
             return checkCast(expression);
         case syntax::Expression::Kind::TUPLE:
-            // a parenthesised list is a literal for whatever a cast says it is, and means
-            // nothing on its own - checkCast is the only place that reads one
+            // a parenthesised list is a literal of the type a cast names. checkCast() checks
+            // a list inside a cast, so a list that reaches here has no type
             throw fail("a parenthesised list of values needs a type in front of it",
                 expression->line, expression->column);
         case syntax::Expression::Kind::INDEX:
@@ -628,7 +630,7 @@ Type Compiler::checkVariable(const syntax::ExpressionPtr & expression) {
     syntax::Variable & variable = static_cast<syntax::Variable &>(*expression);
     variable.symbol = lookup(variable.name);
     if (variable.symbol < 0) {
-        // report a global of another shader type as that, rather than as an undeclared name
+        // report a global of another shader type as that, not as an undeclared name
         for (const Global & global : GLOBALS) {
             if (variable.name == global.name) {
                 throw fail("'" + variable.name + "' belongs to " + owners(global.shaders) +
@@ -639,7 +641,7 @@ Type Compiler::checkVariable(const syntax::ExpressionPtr & expression) {
         throw fail("'" + variable.name + "' is not declared", expression->line, expression->column);
     }
     if (depth_ == 0) {
-        for (int index : lighting_) {
+        for (const int index : lighting_) {
             if (index == variable.symbol) {
                 throw fail("'" + variable.name + "' is set by a light and means nothing outside an "
                     "'illuminance' body", expression->line, expression->column);
@@ -676,8 +678,8 @@ Type Compiler::checkBinary(const syntax::ExpressionPtr & expression) {
     const std::string & op = binary.op;
 
     if (op == "." || op == "^") {
-        // the two that read as something else: a dot product and a cross product, over
-        // positions and directions rather than over any three-component type
+        // the dot product and the cross product. They take points, vectors and normals, and
+        // not every three-component type
         if (!accepts(Argument::POINTLIKE, left) || !accepts(Argument::POINTLIKE, right)) {
             throw fail("'" + op + "' takes two positions or directions, not " +
                 name(left) + " and " + name(right), expression->line, expression->column);
@@ -781,12 +783,12 @@ void Compiler::checkSpace(const syntax::Cast & cast) {
         case Type::VECTOR:
         case Type::NORMAL:
         case Type::COLOR:
-            // a coordinate space, which the renderer resolves when the shader runs, or for a
-            // colour a colour space, which the emitter converts out of as ctransform does
+            // a coordinate space, which the renderer resolves when the shader runs. For a
+            // colour it is a colour space, which the emitter converts out of as ctransform does
             return;
         case Type::MATRIX:
-            // RenderMan reads this as a matrix relative to the named space. That reading is
-            // not implemented, so the cast is rejected rather than ignored
+            // RenderMan reads this as a matrix relative to the named space. That is not
+            // implemented, so the cast is rejected and not ignored
             throw fail("a matrix relative to a named space is not supported", cast.line, cast.column);
         case Type::VOID:
         case Type::FLOAT:

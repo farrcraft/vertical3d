@@ -35,29 +35,28 @@ namespace v3d::ui::input {
 /**
  * Turns a key into an edit on whatever has the focus.
  *
- * The keyboard counterpart of ui::Cursor, with the same shape: it receives what the app's
- * input engine saw, returns whether the ui took it, and names the operation while the
- * component carries it out. Nothing here finds a component by walking the tree. The ui
- * holds the focus, so a key goes to one place or to nowhere.
+ * The keyboard counterpart of input::Cursor, with the same shape. It receives what the
+ * app's input engine saw and returns whether the ui took it. It chooses the operation, and
+ * the component carries it out. Nothing here searches the tree for a component. The engine
+ * holds the focus, so a key goes to one component or to none.
  *
- * Two kinds of input, because a key is not a character. A key names an operation - a
- * backspace, a caret move, a return that sends the command - and comes from the key names
- * api/input gives. A character is what the platform composed, and arrives whole: shift
- * has already been applied to it, a dead key and the one after it are one character, and
- * an input method's several keys are however many characters it decided on.
+ * There are two kinds of input. A key names an operation, such as a backspace, a caret
+ * move, or a return that sends the command. Its name comes from api/input. A character is
+ * text the platform composed, and arrives whole. Shift has already been applied to it, a
+ * dead key and the key after it make one character, and an input method sends however many
+ * characters it produced.
  *
- * Every control is driven, not only a text box. Return and space activate whatever holds
- * the focus, sending the command a click sends because both ask ui::command() for it; the
- * arrows step through a list's rows and a tab bar's pages and move a scrollbar by a line.
- * Only a text box takes the keys that compose text - a letter reaching a focused button goes
- * on to the app's bindings, because a button is not something a player is typing into.
+ * Every control can be driven from the keyboard, not only a text box. Return and space
+ * activate the focused component, sending the same command as a click, because both get it
+ * from input::command(). The arrows step through a list's rows and a tab bar's pages, and
+ * move a scrollbar by a line. Only a text box takes the keys that compose text. A letter
+ * reaching a focused button goes on to the app's bindings.
  *
- * A box also takes the four chords an editor is expected to answer - cut, copy, paste and
- * select all - over its selection. The app supplies the clipboard, as it supplies text
- * measuring.
+ * A text box also takes the cut, copy, paste and select all chords, which act on its
+ * selection. The app supplies the clipboard, as it supplies text measuring.
  *
- * A ui with nothing focused takes neither kind, so a game's movement keys keep working
- * until something is clicked into or Engine::focusFirst() starts a screen off.
+ * A ui with nothing focused takes neither kind of input, so a game's movement keys keep
+ * working until something is clicked into or Engine::focusFirst() is called.
  **/
 class Keys final {
  public:
@@ -66,9 +65,9 @@ class Keys final {
      * clipboard without depending on SDL, so the app supplies it, as it supplies text
      * measuring.
      *
-     * A router given neither call still edits everything else. A cut with nowhere to hand
-     * the run does not take it out, because a cut that loses the text is worse than one
-     * that did not happen, and a paste with nothing to read puts nothing in.
+     * Keys given neither callback still handles every other edit. A cut with no write
+     * callback leaves the text in place, so the text is never lost. A paste with no read
+     * callback inserts nothing.
      **/
     struct Clipboard final {
         std::function<std::string()> read;
@@ -88,16 +87,19 @@ class Keys final {
      * A key went down.
      *
      * @param key the name api/input gives it - "backspace", "arrow_left", "return", "tab"
-     * @param shifted whether a shift key is held. A key name carries no modifier and this
-     *        library cannot ask api/input for one without taking SDL with it, so the app
-     *        that saw the key says. Shift and tab is the focus moving backwards, and shift
-     *        and a caret key selects the run it travelled
-     * @param controlled whether a control key is held, which names the four chords a text
-     *        box answers - cut, copy, paste and select all. Every other chord goes on to
-     *        the app, so a ctrl-s still saves while somebody is typing
+     * @param shifted whether a shift key is held. A key name carries no modifier, and this
+     *        library cannot ask api/input for one without depending on SDL, so the app
+     *        passes it. Shift and tab moves the focus backwards, and shift and a caret key
+     *        selects the text the caret moves over
+     * @param controlled whether a control key is held. A text box takes ctrl with c, x, v
+     *        and a, for copy, cut, paste and select all. Every other chord goes on to the
+     *        app, so a ctrl-s still saves while somebody is typing
+     * @param repeat whether this is the key repeating while it is held. A held return or
+     *        space sends its command once: its repeats are taken and do nothing. Every other
+     *        key acts on each repeat, so a held arrow keeps moving through a list
      * @return whether the ui took it, in which case it does not reach the app's bindings
      **/
-    bool press(std::string_view key, bool shifted = false, bool controlled = false);
+    bool press(std::string_view key, bool shifted = false, bool controlled = false, bool repeat = false);
 
     /**
      * Characters the platform composed.
@@ -118,10 +120,11 @@ class Keys final {
         bool shifted, bool controlled);
 
     /**
-     * A key that reached a text box: the caret moves, a character goes, or a return sends.
+     * A key that reached a text box: the caret moves, a character is deleted, or a return
+     * sends the command.
      *
-     * The only component that takes every key that composes text, because a text box is
-     * where letters are typed rather than used as game controls.
+     * A text box is the only component that takes every key that composes text, because
+     * letters typed into it are text, not game controls.
      **/
     bool edit(const boost::shared_ptr<component::TextBox>& box, std::string_view key,
         bool shifted, bool controlled);
@@ -129,27 +132,27 @@ class Keys final {
     /**
      * Hand the selected run to the clipboard, and take it out of the box for a cut.
      *
-     * Neither does anything without a selection, because a copy of nothing would leave the
-     * clipboard holding an empty string in place of whatever was in it.
+     * Neither does anything without a selection, so an empty copy never replaces what the
+     * clipboard holds.
      **/
     void copySelection(const boost::shared_ptr<component::TextBox>& box) const;
     void cutSelection(const boost::shared_ptr<component::TextBox>& box) const;
 
     /**
-     * Put whatever the clipboard holds in over the selection, the way TextBox::insert
-     * handles a run of characters the platform composed.
+     * Insert what the clipboard holds over the selection, through TextBox::insert(), the
+     * same way composed characters are inserted.
      **/
     void paste(const boost::shared_ptr<component::TextBox>& box) const;
 
     /**
-     * A key that reached a select list: the arrows step through the rows and send the
-     * command, the way clicking a row does.
+     * A key that reached a select list. The arrows, home and end step through the rows and
+     * send the command, as clicking a row does. Return and space send it without moving.
      **/
     bool choose(const boost::shared_ptr<component::SelectList>& list, std::string_view key);
 
     /**
-     * A key that reached a tab bar: the arrows change which page is up. A bar carries no
-     * command, so nothing is sent, as with a click on a tab.
+     * A key that reached a tab bar: the arrows, home and end change the chosen page. A tab
+     * bar carries no command, so nothing is sent, as with a click on a tab.
      **/
     static bool turn(const boost::shared_ptr<component::TabBar>& bar, std::string_view key);
 
@@ -157,33 +160,32 @@ class Keys final {
      * A key that reached a scrollbar: the arrows move it by a line, page up and page down
      * by what the page shows, and home and end to the ends of the content.
      *
-     * The bar does the arithmetic, so it decides what a line and a page come to; this only
-     * says which of them a key asked for. Which arrows read as "along" follows the bar's
-     * direction, as it does for a list and for a tab bar.
+     * The scrollbar decides how far a line and a page are. This only chooses which of them
+     * a key moves by. A vertical bar takes the up and down arrows, and a horizontal bar the
+     * left and right arrows.
      *
      * A bar with nothing to scroll takes no key, so an arrow reaching one that shows all
-     * of its content goes on to the app's bindings rather than being swallowed by a
-     * control that could not have moved.
+     * of its content goes on to the app's bindings.
      **/
     static bool nudge(const boost::shared_ptr<component::Scrollbar>& bar, std::string_view key);
 
     /**
-     * Move a slider: the arrows by a step, page up and down by a tenth of the range, home
-     * and end to the ends. It sends its command when that changed the value.
+     * Move a slider: the left and right arrows by a step, page up and down by a tenth of the
+     * range, home and end to the ends. It sends its command when that changed the value.
      *
-     * @return whether the key changed the value, which a key at an end does not
+     * @return whether the key changed the value. A key that pushes past an end returns false
      **/
     bool slide(const boost::shared_ptr<component::Slider>& slider, std::string_view key);
 
     /**
-     * Send whatever command activating a component sends, per ui::command(). A component
-     * carrying none is left alone rather than being an error.
+     * Send the command input::command() returns for a component. A component carrying none
+     * sends nothing, and that is not an error.
      **/
     void send(const boost::shared_ptr<Component>& component) const;
 
     /**
-     * Send one event. An event with no context is not dispatchable and is dropped; a
-     * component with no command carries one.
+     * Send one event. An event with no context cannot be dispatched and is dropped. A
+     * component with no command returns such an event.
      **/
     void send(const v3d::event::Event& event) const;
 

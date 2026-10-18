@@ -6,9 +6,14 @@
 #include <api/render/offline/sl/Compiler.h>
 #include <api/render/offline/sl/Emitter.h>
 #include <api/render/offline/sl/Parser.h>
+#include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/Instruction.h>
 #include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/sl/runtime/Program.h>
+#include <api/render/offline/sl/runtime/Register.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 
+#include <cstddef>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -71,12 +76,19 @@ int constant(Program* program, float value) {
     return static_cast<int>(program->registers.size()) - 1;
 }
 
-int put(Program* program, Opcode opcode, int target, int left, int right = -1) {
+/** The registers an instruction writes and reads. -1 is none. **/
+struct Operands {
+    int target = -1;
+    int left = -1;
+    int right = -1;
+};
+
+int put(Program* program, Opcode opcode, const Operands & operands) {
     Instruction instruction;
     instruction.opcode = opcode;
-    instruction.target = target;
-    instruction.left = left;
-    instruction.right = right;
+    instruction.target = operands.target;
+    instruction.left = operands.left;
+    instruction.right = operands.right;
     program->instructions.push_back(instruction);
     return static_cast<int>(program->instructions.size()) - 1;
 }
@@ -95,22 +107,20 @@ std::size_t count(const Program & program, Opcode opcode) {
     return found;
 }
 
-};  // namespace
-
 /**
  * A hand-built program computes the same arithmetic over four points and over one, and
- * returns the same value at the point they share. A single traced hit is not a special case
- * of the model; it is a batch one wide.
+ * returns the same value at the point they share. A single traced hit is shaded as a batch
+ * one wide, not as a special case.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_batch_of_one_test) {
     Program program;
     const int x = add(&program, Type::FLOAT, Storage::VARYING, "x");
-    const int scale = constant(&program, 3.0f);
-    const int offset = constant(&program, 1.0f);
+    const int scale = constant(&program, 3.0F);
+    const int offset = constant(&program, 1.0F);
     const int scaled = add(&program, Type::FLOAT, Storage::VARYING);
     const int result = add(&program, Type::FLOAT, Storage::VARYING, "result");
-    put(&program, Opcode::MULTIPLY, scaled, x, scale);
-    put(&program, Opcode::ADD, result, scaled, offset);
+    put(&program, Opcode::MULTIPLY, {.target = scaled, .left = x, .right = scale});
+    put(&program, Opcode::ADD, {.target = result, .left = scaled, .right = offset});
     program.symbols = program.registers.size();
 
     v3d::render::offline::sl::runtime::Machine wide;
@@ -119,39 +129,39 @@ BOOST_AUTO_TEST_CASE(slmachine_batch_of_one_test) {
         wide.value(x).number(point, static_cast<float>(point));
     }
     BOOST_REQUIRE(wide.run());
-    BOOST_CHECK_EQUAL(wide.value(result).number(0), 1.0f);
-    BOOST_CHECK_EQUAL(wide.value(result).number(2), 7.0f);
-    BOOST_CHECK_EQUAL(wide.value(result).number(3), 10.0f);
+    BOOST_CHECK_EQUAL(wide.value(result).number(0), 1.0F);
+    BOOST_CHECK_EQUAL(wide.value(result).number(2), 7.0F);
+    BOOST_CHECK_EQUAL(wide.value(result).number(3), 10.0F);
 
     v3d::render::offline::sl::runtime::Machine single;
     single.prepare(program, 1);
-    single.value(x).number(0, 2.0f);
+    single.value(x).number(0, 2.0F);
     BOOST_REQUIRE(single.run());
     // the same instructions, a mask one bit wide, and the value the grid gave at that point
-    BOOST_CHECK_EQUAL(single.value(result).number(0), 7.0f);
-    BOOST_CHECK_EQUAL(single.batch(), 1u);
+    BOOST_CHECK_EQUAL(single.value(result).number(0), 7.0F);
+    BOOST_CHECK_EQUAL(single.batch(), 1U);
 }
 
 /**
- * A uniform value is stored once and read by every point; the storage class decides how
+ * A uniform value is stored once and read by every point. The storage class decides how
  * much memory a value takes.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_uniform_is_one_element_test) {
     Program program;
     const int once = add(&program, Type::FLOAT, Storage::UNIFORM, "once");
     const int each = add(&program, Type::FLOAT, Storage::VARYING, "each");
-    put(&program, Opcode::MOVE, each, once);
+    put(&program, Opcode::MOVE, {.target = each, .left = once});
     program.symbols = program.registers.size();
 
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 8);
-    BOOST_CHECK_EQUAL(machine.value(once).width(), 1u);
-    BOOST_CHECK_EQUAL(machine.value(each).width(), 8u);
+    BOOST_CHECK_EQUAL(machine.value(once).width(), 1U);
+    BOOST_CHECK_EQUAL(machine.value(each).width(), 8U);
 
-    machine.value(once).number(0, 5.0f);
+    machine.value(once).number(0, 5.0F);
     BOOST_REQUIRE(machine.run());
-    BOOST_CHECK_EQUAL(machine.value(each).number(0), 5.0f);
-    BOOST_CHECK_EQUAL(machine.value(each).number(7), 5.0f);
+    BOOST_CHECK_EQUAL(machine.value(each).number(0), 5.0F);
+    BOOST_CHECK_EQUAL(machine.value(each).number(7), 5.0F);
 }
 
 /**
@@ -161,20 +171,20 @@ BOOST_AUTO_TEST_CASE(slmachine_uniform_is_one_element_test) {
 BOOST_AUTO_TEST_CASE(slmachine_promotion_test) {
     Program program;
     const int colour = add(&program, Type::COLOR, Storage::VARYING, "colour");
-    const int half = constant(&program, 0.5f);
+    const int half = constant(&program, 0.5F);
     const int dimmed = add(&program, Type::COLOR, Storage::VARYING, "dimmed");
-    put(&program, Opcode::MULTIPLY, dimmed, colour, half);
+    put(&program, Opcode::MULTIPLY, {.target = dimmed, .left = colour, .right = half});
     program.symbols = program.registers.size();
 
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 2);
-    machine.value(colour).triple(0, glm::vec3(1.0f, 0.5f, 0.0f));
-    machine.value(colour).triple(1, glm::vec3(0.0f, 1.0f, 1.0f));
+    machine.value(colour).triple(0, glm::vec3(1.0F, 0.5F, 0.0F));
+    machine.value(colour).triple(1, glm::vec3(0.0F, 1.0F, 1.0F));
     BOOST_REQUIRE(machine.run());
 
-    BOOST_CHECK_EQUAL(machine.value(dimmed).triple(0).r, 0.5f);
-    BOOST_CHECK_EQUAL(machine.value(dimmed).triple(0).g, 0.25f);
-    BOOST_CHECK_EQUAL(machine.value(dimmed).triple(1).b, 0.5f);
+    BOOST_CHECK_EQUAL(machine.value(dimmed).triple(0).r, 0.5F);
+    BOOST_CHECK_EQUAL(machine.value(dimmed).triple(0).g, 0.25F);
+    BOOST_CHECK_EQUAL(machine.value(dimmed).triple(1).b, 0.5F);
 }
 
 /**
@@ -192,25 +202,25 @@ BOOST_AUTO_TEST_CASE(slmachine_varying_if_test) {
         "}\n", &program, &error), error);
 
     // the condition is varying, so it is a mask rather than a jump
-    BOOST_CHECK_EQUAL(count(program, Opcode::MASK), 1u);
-    BOOST_CHECK_EQUAL(count(program, Opcode::MASK_NOT), 1u);
-    BOOST_CHECK_EQUAL(count(program, Opcode::JUMP_IF_ZERO), 0u);
+    BOOST_CHECK_EQUAL(count(program, Opcode::MASK), 1U);
+    BOOST_CHECK_EQUAL(count(program, Opcode::MASK_NOT), 1U);
+    BOOST_CHECK_EQUAL(count(program, Opcode::JUMP_IF_ZERO), 0U);
 
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 4);
     const int texture = program.symbol("s");
     const int answer = program.symbol("answer");
     BOOST_REQUIRE(texture >= 0 && answer >= 0);
-    machine.value(texture).number(0, 0.0f);
-    machine.value(texture).number(1, 1.0f);
-    machine.value(texture).number(2, 0.0f);
-    machine.value(texture).number(3, 1.0f);
+    machine.value(texture).number(0, 0.0F);
+    machine.value(texture).number(1, 1.0F);
+    machine.value(texture).number(2, 0.0F);
+    machine.value(texture).number(3, 1.0F);
     BOOST_REQUIRE(machine.run());
 
-    BOOST_CHECK_EQUAL(machine.value(answer).number(0), 20.0f);
-    BOOST_CHECK_EQUAL(machine.value(answer).number(1), 10.0f);
-    BOOST_CHECK_EQUAL(machine.value(answer).number(2), 20.0f);
-    BOOST_CHECK_EQUAL(machine.value(answer).number(3), 10.0f);
+    BOOST_CHECK_EQUAL(machine.value(answer).number(0), 20.0F);
+    BOOST_CHECK_EQUAL(machine.value(answer).number(1), 10.0F);
+    BOOST_CHECK_EQUAL(machine.value(answer).number(2), 20.0F);
+    BOOST_CHECK_EQUAL(machine.value(answer).number(3), 10.0F);
 }
 
 /**
@@ -226,21 +236,21 @@ BOOST_AUTO_TEST_CASE(slmachine_uniform_if_is_a_jump_test) {
         "    Ci = color (answer, 0, 0);\n"
         "}\n", &program, &error), error);
 
-    BOOST_CHECK_EQUAL(count(program, Opcode::JUMP_IF_ZERO), 1u);
-    BOOST_CHECK_EQUAL(count(program, Opcode::MASK), 0u);
-    BOOST_CHECK_EQUAL(count(program, Opcode::MASK_NOT), 0u);
+    BOOST_CHECK_EQUAL(count(program, Opcode::JUMP_IF_ZERO), 1U);
+    BOOST_CHECK_EQUAL(count(program, Opcode::MASK), 0U);
+    BOOST_CHECK_EQUAL(count(program, Opcode::MASK_NOT), 0U);
 
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 4);
     const int ka = program.symbol("Ka");
     const int answer = program.symbol("answer");
-    machine.value(ka).number(0, 1.0f);
+    machine.value(ka).number(0, 1.0F);
     BOOST_REQUIRE(machine.run());
-    BOOST_CHECK_EQUAL(machine.value(answer).number(0), 10.0f);
+    BOOST_CHECK_EQUAL(machine.value(answer).number(0), 10.0F);
 
-    machine.value(ka).number(0, 0.0f);
+    machine.value(ka).number(0, 0.0F);
     BOOST_REQUIRE(machine.run());
-    BOOST_CHECK_EQUAL(machine.value(answer).number(0), 20.0f);
+    BOOST_CHECK_EQUAL(machine.value(answer).number(0), 20.0F);
 }
 
 /**
@@ -263,11 +273,11 @@ BOOST_AUTO_TEST_CASE(slmachine_empty_mask_skips_an_arm_test) {
     const int taken = program.symbol("taken");
     // no lane takes the first arm, so nothing it holds is written
     for (unsigned int point = 0; point < 4; point++) {
-        machine.value(texture).number(point, 0.0f);
+        machine.value(texture).number(point, 0.0F);
     }
     BOOST_REQUIRE(machine.run());
     for (unsigned int point = 0; point < 4; point++) {
-        BOOST_CHECK_EQUAL(machine.value(taken).number(point), 2.0f);
+        BOOST_CHECK_EQUAL(machine.value(taken).number(point), 2.0F);
     }
 }
 
@@ -295,15 +305,15 @@ BOOST_AUTO_TEST_CASE(slmachine_break_leaves_the_others_running_test) {
     machine.prepare(program, 3);
     const int limit = program.symbol("t");
     const int rounds = program.symbol("rounds");
-    machine.value(limit).number(0, 1.0f);
-    machine.value(limit).number(1, 3.0f);
-    machine.value(limit).number(2, 5.0f);
+    machine.value(limit).number(0, 1.0F);
+    machine.value(limit).number(1, 3.0F);
+    machine.value(limit).number(2, 5.0F);
     BOOST_REQUIRE(machine.run());
 
     // each lane left at its own count, and the lanes after it kept going
-    BOOST_CHECK_EQUAL(machine.value(rounds).number(0), 1.0f);
-    BOOST_CHECK_EQUAL(machine.value(rounds).number(1), 3.0f);
-    BOOST_CHECK_EQUAL(machine.value(rounds).number(2), 5.0f);
+    BOOST_CHECK_EQUAL(machine.value(rounds).number(0), 1.0F);
+    BOOST_CHECK_EQUAL(machine.value(rounds).number(1), 3.0F);
+    BOOST_CHECK_EQUAL(machine.value(rounds).number(2), 5.0F);
 }
 
 /**
@@ -328,14 +338,14 @@ BOOST_AUTO_TEST_CASE(slmachine_continue_test) {
     machine.prepare(program, 3);
     const int limit = program.symbol("t");
     const int counted = program.symbol("counted");
-    machine.value(limit).number(0, 0.0f);
-    machine.value(limit).number(1, 2.0f);
-    machine.value(limit).number(2, 4.0f);
+    machine.value(limit).number(0, 0.0F);
+    machine.value(limit).number(1, 2.0F);
+    machine.value(limit).number(2, 4.0F);
     BOOST_REQUIRE(machine.run());
 
-    BOOST_CHECK_EQUAL(machine.value(counted).number(0), 4.0f);
-    BOOST_CHECK_EQUAL(machine.value(counted).number(1), 2.0f);
-    BOOST_CHECK_EQUAL(machine.value(counted).number(2), 0.0f);
+    BOOST_CHECK_EQUAL(machine.value(counted).number(0), 4.0F);
+    BOOST_CHECK_EQUAL(machine.value(counted).number(1), 2.0F);
+    BOOST_CHECK_EQUAL(machine.value(counted).number(2), 0.0F);
 }
 
 /**
@@ -357,14 +367,14 @@ BOOST_AUTO_TEST_CASE(slmachine_loop_runs_while_any_lane_lives_test) {
     machine.prepare(program, 3);
     const int limit = program.symbol("t");
     const int total = program.symbol("total");
-    machine.value(limit).number(0, 0.0f);
-    machine.value(limit).number(1, 3.0f);
-    machine.value(limit).number(2, 5.0f);
+    machine.value(limit).number(0, 0.0F);
+    machine.value(limit).number(1, 3.0F);
+    machine.value(limit).number(2, 5.0F);
     BOOST_REQUIRE(machine.run());
 
-    BOOST_CHECK_EQUAL(machine.value(total).number(0), 0.0f);
-    BOOST_CHECK_EQUAL(machine.value(total).number(1), 3.0f);
-    BOOST_CHECK_EQUAL(machine.value(total).number(2), 10.0f);
+    BOOST_CHECK_EQUAL(machine.value(total).number(0), 0.0F);
+    BOOST_CHECK_EQUAL(machine.value(total).number(1), 3.0F);
+    BOOST_CHECK_EQUAL(machine.value(total).number(2), 10.0F);
 }
 
 /**
@@ -382,13 +392,13 @@ BOOST_AUTO_TEST_CASE(slmachine_products_test) {
 
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 1);
-    machine.value(program.symbol("N")).triple(0, glm::vec3(1.0f, 0.0f, 0.0f));
-    machine.value(program.symbol("I")).triple(0, glm::vec3(0.0f, 1.0f, 0.0f));
+    machine.value(program.symbol("N")).triple(0, glm::vec3(1.0F, 0.0F, 0.0F));
+    machine.value(program.symbol("I")).triple(0, glm::vec3(0.0F, 1.0F, 0.0F));
     BOOST_REQUIRE(machine.run());
 
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("d")).number(0), 0.0f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("d")).number(0), 0.0F);
     const glm::vec3 crossed = machine.value(program.symbol("c")).triple(0);
-    BOOST_CHECK_EQUAL(crossed.z, 1.0f);
+    BOOST_CHECK_EQUAL(crossed.z, 1.0F);
 }
 
 /**
@@ -409,9 +419,9 @@ BOOST_AUTO_TEST_CASE(slmachine_cast_and_compound_test) {
     BOOST_REQUIRE(machine.run());
 
     const glm::vec3 colour = machine.value(program.symbol("Ci")).triple(0);
-    BOOST_CHECK_EQUAL(colour.r, 2.0f);
-    BOOST_CHECK_EQUAL(colour.g, 1.0f);
-    BOOST_CHECK_EQUAL(colour.b, 0.5f);
+    BOOST_CHECK_EQUAL(colour.r, 2.0F);
+    BOOST_CHECK_EQUAL(colour.g, 1.0F);
+    BOOST_CHECK_EQUAL(colour.b, 0.5F);
 }
 
 /**
@@ -444,13 +454,13 @@ BOOST_AUTO_TEST_CASE(slmachine_equality_compares_every_component_test) {
     BOOST_REQUIRE(machine.run());
 
     const glm::vec3 first = machine.value(program.symbol("Ci")).triple(0);
-    BOOST_CHECK_EQUAL(first.r, 0.0f);
-    BOOST_CHECK_EQUAL(first.g, 1.0f);
-    BOOST_CHECK_EQUAL(first.b, 1.0f);
+    BOOST_CHECK_EQUAL(first.r, 0.0F);
+    BOOST_CHECK_EQUAL(first.g, 1.0F);
+    BOOST_CHECK_EQUAL(first.b, 1.0F);
     const glm::vec3 second = machine.value(program.symbol("Oi")).triple(0);
-    BOOST_CHECK_EQUAL(second.r, 0.0f);
-    BOOST_CHECK_EQUAL(second.g, 1.0f);
-    BOOST_CHECK_EQUAL(second.b, 0.0f);
+    BOOST_CHECK_EQUAL(second.r, 0.0F);
+    BOOST_CHECK_EQUAL(second.g, 1.0F);
+    BOOST_CHECK_EQUAL(second.b, 0.0F);
 }
 
 /**
@@ -469,12 +479,12 @@ BOOST_AUTO_TEST_CASE(slmachine_setter_writes_every_point_test) {
 
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 2);
-    machine.value(program.symbol("s")).number(0, 0.25f);
-    machine.value(program.symbol("s")).number(1, 0.75f);
+    machine.value(program.symbol("s")).number(0, 0.25F);
+    machine.value(program.symbol("s")).number(1, 0.75F);
     BOOST_REQUIRE(machine.run());
 
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 0.25f);
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).r, 0.75f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 0.25F);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).r, 0.75F);
 }
 
 /**
@@ -494,12 +504,12 @@ BOOST_AUTO_TEST_CASE(slmachine_condition_is_read_once_test) {
 
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 2);
-    machine.value(program.symbol("s")).number(0, 1.0f);
-    machine.value(program.symbol("s")).number(1, 0.0f);
+    machine.value(program.symbol("s")).number(0, 1.0F);
+    machine.value(program.symbol("s")).number(1, 0.0F);
     BOOST_REQUIRE(machine.run());
 
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 0.0f);
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).r, 1.0f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 0.0F);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).r, 1.0F);
 }
 
 /**
@@ -516,15 +526,15 @@ BOOST_AUTO_TEST_CASE(slmachine_constant_shader_test) {
 
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 2);
-    machine.value(program.symbol("Cs")).triple(0, glm::vec3(1.0f, 0.0f, 0.0f));
-    machine.value(program.symbol("Cs")).triple(1, glm::vec3(0.0f, 0.0f, 1.0f));
-    machine.value(program.symbol("Os")).triple(0, glm::vec3(1.0f));
-    machine.value(program.symbol("Os")).triple(1, glm::vec3(1.0f));
+    machine.value(program.symbol("Cs")).triple(0, glm::vec3(1.0F, 0.0F, 0.0F));
+    machine.value(program.symbol("Cs")).triple(1, glm::vec3(0.0F, 0.0F, 1.0F));
+    machine.value(program.symbol("Os")).triple(0, glm::vec3(1.0F));
+    machine.value(program.symbol("Os")).triple(1, glm::vec3(1.0F));
     BOOST_REQUIRE(machine.run());
 
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 1.0f);
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).b, 1.0f);
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Oi")).triple(1).g, 1.0f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 1.0F);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).b, 1.0F);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Oi")).triple(1).g, 1.0F);
 }
 
 /**
@@ -540,12 +550,12 @@ BOOST_AUTO_TEST_CASE(slmachine_transform_needs_a_renderer_test) {
         "    Ci = Cs;\n"
         "}\n", &program, &error), error);
 
-    BOOST_CHECK_EQUAL(count(program, Opcode::TRANSFORM), 1u);
+    BOOST_CHECK_EQUAL(count(program, Opcode::TRANSFORM), 1U);
 
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 4);
     BOOST_REQUIRE(machine.run());
-    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1u);
+    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1U);
     BOOST_CHECK_EQUAL(machine.reports()[0],
         "the coordinate space \"world\" is not one this renderer knows");
 }
@@ -587,7 +597,7 @@ BOOST_AUTO_TEST_CASE(slmachine_failed_run_reported_once_test) {
     machine.prepare(program, 1);
     BOOST_CHECK(!machine.run());
     BOOST_CHECK(!machine.run());
-    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1u);
+    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1U);
     BOOST_CHECK_EQUAL(machine.reports()[0], "the shader 's' ran without end");
 }
 
@@ -597,7 +607,7 @@ BOOST_AUTO_TEST_CASE(slmachine_failed_run_reported_once_test) {
 BOOST_AUTO_TEST_CASE(slmachine_unprepared_run_reported_test) {
     v3d::render::offline::sl::runtime::Machine machine;
     BOOST_CHECK(!machine.run());
-    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1u);
+    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1U);
     BOOST_CHECK_EQUAL(machine.reports()[0], "the machine was run before it was prepared");
 }
 
@@ -616,7 +626,7 @@ BOOST_AUTO_TEST_CASE(slmachine_prepare_once_test) {
         machine.value(program.symbol("Cs")).triple(0, glm::vec3(static_cast<float>(round)));
         BOOST_REQUIRE(machine.run());
         BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r,
-            static_cast<float>(round) * 2.0f);
+            static_cast<float>(round) * 2.0F);
     }
 }
 
@@ -635,20 +645,20 @@ BOOST_AUTO_TEST_CASE(slmachine_function_is_inlined_test) {
         "}\n", &program, &error), error);
 
     // pasted in twice rather than called twice
-    BOOST_CHECK_EQUAL(count(program, Opcode::CALL), 0u);
-    BOOST_CHECK_EQUAL(count(program, Opcode::ENTER), 2u);
-    BOOST_CHECK_EQUAL(count(program, Opcode::LEAVE), 2u);
+    BOOST_CHECK_EQUAL(count(program, Opcode::CALL), 0U);
+    BOOST_CHECK_EQUAL(count(program, Opcode::ENTER), 2U);
+    BOOST_CHECK_EQUAL(count(program, Opcode::LEAVE), 2U);
 
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 1);
     BOOST_REQUIRE(machine.run());
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 26.0f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 26.0F);
 }
 
 /**
  * A return means "this lane is done with the function", not "done with the shader". Under a
  * varying condition each lane leaves by its own arm and the shader carries on for all of
- * them. An inlined body is bracketed rather than merely pasted for this reason.
+ * them. An inlined body is therefore bracketed by ENTER and LEAVE rather than pasted bare.
  **/
 BOOST_AUTO_TEST_CASE(slmachine_return_leaves_the_function_test) {
     std::string error;
@@ -665,15 +675,15 @@ BOOST_AUTO_TEST_CASE(slmachine_return_leaves_the_function_test) {
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 2);
     const int texture = program.symbol("s");
-    machine.value(texture).number(0, 0.2f);
-    machine.value(texture).number(1, 0.8f);
+    machine.value(texture).number(0, 0.2F);
+    machine.value(texture).number(1, 0.8F);
     BOOST_REQUIRE(machine.run());
 
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 0.0f);
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).r, 1.0f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 0.0F);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).r, 1.0F);
     // the statement after the call ran for both lanes, so neither returned from the shader
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).g, 7.0f);
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).g, 7.0f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).g, 7.0F);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).g, 7.0F);
 }
 
 /**
@@ -700,15 +710,15 @@ BOOST_AUTO_TEST_CASE(slmachine_return_out_of_a_loop_test) {
     v3d::render::offline::sl::runtime::Machine machine;
     machine.prepare(program, 3);
     const int texture = program.symbol("s");
-    machine.value(texture).number(0, 3.0f);
-    machine.value(texture).number(1, 7.0f);
+    machine.value(texture).number(0, 3.0F);
+    machine.value(texture).number(1, 7.0F);
     // no iteration reaches it, so this lane falls out of the loop and takes the last return
-    machine.value(texture).number(2, 50.0f);
+    machine.value(texture).number(2, 50.0F);
     BOOST_REQUIRE(machine.run());
 
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 3.0f);
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).r, 7.0f);
-    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(2).r, 99.0f);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 3.0F);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(1).r, 7.0F);
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(2).r, 99.0F);
 }
 
 /**
@@ -721,3 +731,5 @@ BOOST_AUTO_TEST_CASE(slmachine_unprepared_test) {
     BOOST_CHECK(!machine.error().empty());
     BOOST_CHECK(!machine.initialise());
 }
+
+};  // namespace

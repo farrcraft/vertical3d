@@ -4,7 +4,8 @@
 /**
  * The vertex half of the lit pass: a registered model's vertex, posed, moved into the world by
  * the object's model matrix and drawn through the pass's camera. The world position goes on to
- * the fragment stage, which looks it up in the shadow map.
+ * the fragment stage, which looks it up in the shadow map, and so does the instance index, which
+ * the fragment stage reads its object by.
  **/
 
 #include "lit.glsl"
@@ -17,6 +18,7 @@ layout(location = 2) in vec2 uv;
 layout(location = 0) out vec3 worldNormal;
 layout(location = 1) out vec2 fragmentUv;
 layout(location = 2) out vec3 worldPosition;
+layout(location = 3) flat out uint instance;
 
 void main() {
     const mat4 posed = object.model * pose();
@@ -25,5 +27,6 @@ void main() {
     // the inverse transpose, so that a model scaled unevenly keeps its normals perpendicular
     worldNormal = mat3(transpose(inverse(posed))) * normal;
     fragmentUv = uv;
+    instance = gl_InstanceIndex;
     gl_Position = camera.viewProjection * world;
 }

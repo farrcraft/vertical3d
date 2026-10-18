@@ -22,13 +22,13 @@ class PongScene {
      * The court, in its own units. The rules are written against it, and the renderer maps it
      * onto a canvas with its own coordinate space, fitted to whatever the window is.
      **/
-    static constexpr float width = 800.0f;
-    static constexpr float height = 600.0f;
+    static constexpr float width = 800.0F;
+    static constexpr float height = 600.0F;
     /**
      * The thickness of the top and bottom walls, in court units. The ball turns at a wall's
      * face, and a paddle stops with its end against one.
      **/
-    static constexpr float wall = 15.0f;
+    static constexpr float wall = 15.0F;
 
     explicit PongScene(entt::registry* registry, const boost::shared_ptr<entt::dispatcher> & dispatcher);
     ~PongScene();
@@ -42,7 +42,8 @@ class PongScene {
     void reset();
 
     /**
-     * The four paddle commands, which the engine reads held each step and passes to steer().
+     * The paddle commands. Each step, the engine passes each one to steer() with whether its
+     * key is held.
      **/
     static constexpr std::string_view paddleCommands[] = {
         "leftPaddleUp", "leftPaddleDown", "rightPaddleUp", "rightPaddleDown"
@@ -71,9 +72,9 @@ class PongScene {
 
  private:
     /**
-     * The phases of one tick, in the order tick() runs them. Each takes the ball position
-     * tick() snapshotted rather than reading it again: a bounce changes the ball's
-     * direction, and only scorePoint moves it.
+     * The phases of one tick, in the order tick() runs them. Each phase that takes a position
+     * is given the one tick() read before the first phase. A bounce changes only the ball's
+     * direction, and of the phases only scorePoint() moves the ball.
      **/
     void checkVictory();
     void steerOpponent(const glm::vec2& ballPosition);

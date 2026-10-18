@@ -13,13 +13,13 @@
 namespace v3d::render::realtime::vulkan::frame {
 
 /**
- * Destruction held back until every frame that might still read what is being destroyed has
+ * Destructions delayed until every frame that might still read the destroyed object has
  * finished.
  *
- * An entry is a callback, so this does not depend on what it destroys. That may be a texture,
- * a descriptor set going back to a free list, or anything later that has to outlive the frames
- * in flight. It needs no device either, because the count of frames begun is handed in by
- * whoever is counting - the ring.
+ * Each entry is a callback, so Retirement does not depend on what it destroys. That may be a
+ * texture, a descriptor set returned to a free list, or anything else that has to outlive the
+ * frames in flight. Retirement needs no device either. Ring passes in the count of frames
+ * begun.
  **/
 class Retirement final {
  public:
@@ -38,18 +38,18 @@ class Retirement final {
     Retirement& operator=(const Retirement&) = delete;
 
     /**
-     * Hold a destruction back.
-     * @param begun how many frames had begun when the thing was released
-     * @param destroy what to run once those frames have finished
+     * Delay a destruction.
+     * @param last the last frame that may name the released object, as a count of frames
+     *        begun
+     * @param destroy what to run once that frame has finished
      **/
-    void retire(uint64_t begun, std::function<void()> destroy);
+    void retire(uint64_t last, std::function<void()> destroy);
 
     /**
      * Run every destruction whose frames have finished.
      *
-     * A frame that had begun when something was released has finished by the time framesInFlight
-     * more frames have begun, because beginning a frame waits on the fence of the one that used
-     * its slot last.
+     * An entry's last frame has finished by the time framesInFlight more frames have begun,
+     * because beginning a frame waits on the fence of the one that used its slot last.
      *
      * @param begun how many frames have begun, counting the one just begun
      **/
@@ -67,7 +67,7 @@ class Retirement final {
 
  private:
     struct Entry {
-        uint64_t begun;
+        uint64_t last;
         std::function<void()> destroy;
     };
 

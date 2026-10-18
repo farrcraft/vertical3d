@@ -22,8 +22,8 @@ target_link_libraries(tetris PRIVATE
 v3d_add_app_data(tetris)
 v3d_add_shared_data(tetris)
 
-# a console subsystem executable is given a console of its own alongside the app's window.
-# main is reached through the WinMain that SDL_main.h supplies.
+# build for the windows subsystem. A console subsystem executable opens a console beside the
+# app's window. SDL_main.h supplies the WinMain that calls main.
 set_target_properties(tetris PROPERTIES WIN32_EXECUTABLE TRUE)
 
 target_compile_options(tetris PRIVATE /EHsc)

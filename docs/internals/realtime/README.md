@@ -4,8 +4,11 @@ These pages are for someone changing `api/render/realtime`. How an app uses the 
 [api/rendering/](../../api/rendering/README.md), and these pages do not repeat it.
 
 Names are in `v3d::render::realtime`; `vulkan::` is `v3d::render::realtime::vulkan`. The code is
-in [api/render/realtime](../../../api/render/realtime), split into `vulkan/device`,
-`vulkan/frame`, `vulkan/memory`, `vulkan/pipeline` and `vulkan/renderer`.
+in [api/render/realtime](../../../api/render/realtime). The root holds the contexts, the frame
+and what a context owns. `canvas/` holds the canvases an app fills on the CPU, `entity/` the
+functions that draw ECS entities, and `lighting/` the lit pass's settings and shadow fitting.
+The Vulkan side is split into `vulkan/device`, `vulkan/frame`, `vulkan/memory`, `vulkan/pipeline`
+and `vulkan/renderer`.
 
 | Page | Read it to |
 |---|---|
@@ -76,14 +79,16 @@ Background: [ADR-0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md),
   `depthFormat()`, never a requested or default format. The recorder throws on a mismatch.
 - **Every pipeline declares set 0 first.** Add `FrameUniforms::layout()` with the first `set()`
   call, even if the shader reads nothing from it.
-- **Per-object data goes in push constants**, within `DrawItem::pushCapacity` (128 bytes).
+- **Per-object data goes in push constants**, within `DrawItem::pushCapacity` (128 bytes),
+  except in a lit pipeline, which reads it from the scene's object buffer by instance index.
 - **Never write a barrier inline.** Use or add a function in `memory/Barriers.h`.
 - **Never destroy a GPU object a frame may still use.** Retire it through `Ring::retire()`. This
   covers materials, textures, sets, descriptor pools, outgrown stream buffers and target images.
 - **Never share one stream buffer between two submissions.** `Buffer::grow()` replaces the
   allocation and invalidates the handle earlier draw items hold.
 - **Write per-frame data after `Ring::waitFrame()`** and before the ring begins the frame.
-  `StreamRing::claim()` and `Lit::scene()` do this; anything new keeping per-frame data must too.
+  `StreamRing::claim()` and `Lit::scene()` do this, and `Lit::object()` writes into the slot
+  `scene()` waited for. Anything new keeping per-frame data must do the same.
 - **A submit must signal `Ring::submitting()`, called immediately before it.** Otherwise the
   next turn around the ring waits forever.
 - **Drive frames through `Ring::begin()`.** Otherwise retired objects are never destroyed.

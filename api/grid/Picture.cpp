@@ -5,24 +5,24 @@
 
 #include "Picture.h"
 
+#include "Terrain.h"
 #include "TileCoord.h"
+#include "TileGrid.h"
+#include "Unknown.h"
 
 #include <algorithm>
 #include <cstddef>
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace v3d::grid {
 
-Picture fromPicture(const std::vector<std::string>& rows, const std::map<char, Terrain>& legend, float tileSize) {
+Picture fromPicture(const std::vector<std::string>& rows, const std::map<char, Terrain>& legend, float tileSize,
+    const std::optional<glm::vec3>& corner) {
     Picture picture;
-    // checked here so the grid's constructor never throws; NaN fails the test too
-    if (!(tileSize > 0.0f)) {
-        picture.error = "the tile size " + std::to_string(tileSize) + " is not positive";
-        return picture;
-    }
     if (rows.empty()) {
         picture.error = "the picture has no rows";
         return picture;
@@ -40,7 +40,15 @@ Picture fromPicture(const std::vector<std::string>& rows, const std::map<char, T
         }
     }
 
-    TileGrid grid(static_cast<int>(width), static_cast<int>(rows.size()), tileSize);
+    // check with TileGrid::refusal() first, so the constructor below never throws
+    const int columns = static_cast<int>(width);
+    const int lines = static_cast<int>(rows.size());
+    const std::optional<std::string> refused = TileGrid::refusal(columns, lines, tileSize, corner.value_or(glm::vec3(0.0F)));
+    if (refused) {
+        picture.error = "the grid " + *refused;
+        return picture;
+    }
+    TileGrid grid = corner ? TileGrid(columns, lines, tileSize, *corner) : TileGrid(columns, lines, tileSize);
     for (std::size_t y = 0; y < rows.size(); y++) {
         for (std::size_t x = 0; x < width; x++) {
             const TileCoord tile{static_cast<int>(x), static_cast<int>(y)};

@@ -15,12 +15,12 @@ namespace v3d::render::offline::trace {
 class Intersection final {
  public:
     /** Along the ray, in the ray's own units. **/
-    float distance = 0.0f;
+    float distance = 0.0F;
     /** A triangle's barycentric weights. **/
-    float u = 0.0f;
-    float v = 0.0f;
+    float u = 0.0F;
+    float v = 0.0F;
     /** A sphere's point in its own space. **/
-    glm::vec3 point = glm::vec3(0.0f);
+    glm::vec3 point = glm::vec3(0.0F);
 };
 
 };  // namespace v3d::render::offline::trace

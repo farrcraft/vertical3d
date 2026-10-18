@@ -106,8 +106,8 @@
         "state": "pressed"
       },
       "destination": {
-        "context": "tetris",
-        "name": "toggleFS"
+        "context": "ui",
+        "name": "fullscreen"
       }
     },
     {

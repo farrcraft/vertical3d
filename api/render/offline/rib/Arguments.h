@@ -18,12 +18,12 @@ namespace v3d::render::offline::rib {
  *
  * RI's `Ri*V` entry points carry a parameter list as two parallel arrays: a name per
  * parameter and an untyped pointer to its values. **Neither says how long a value array
- * is**: only the declaration does, so a parameter whose name cannot be resolved cannot be
- * read. The RIB reader resolves parameters from a file the same way, and both paths into
- * a render context use this one implementation so that they agree.
+ * is.** Only the declaration gives the length, so a parameter whose name cannot be resolved
+ * cannot be read. The RIB reader resolves names through Declarations too, so a parameter is
+ * typed the same way from a file and from the C interface.
  *
- * A name may carry its declaration inline - `"uniform float Ks"` - which declares it for
- * this request only, exactly as it does in a file.
+ * A name may carry its declaration inline, as in `"uniform float Ks"`. That declaration
+ * holds for this request only, as it does in a file.
  *
  * @param declarations what the scene has declared, and what the standard declares for it
  * @param count how many parameters, which is RI's `n`

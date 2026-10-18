@@ -6,6 +6,7 @@
 #include "Property.h"
 
 #include <string>
+#include <string_view>
 
 namespace v3d::ui::style {
 
@@ -19,8 +20,8 @@ Property::Alignment Property::align() const {
     return align_;
 }
 
-void Property::align(Alignment a) {
-    align_ = a;
+void Property::align(Alignment alignment) {
+    align_ = alignment;
 }
 
 std::string_view Property::name() const {

@@ -43,7 +43,13 @@ grade.submit(source, colour.get());
 
 - The table comes from a 256×16 strip image: sixteen slices of blue side by side, red across each
   and green down it. No strip, or one of the wrong size, gives the identity table.
-- The table is indexed by linear colour, so bake a strip for the linear light a lit scene holds.
+- The table maps a colour as it is shown to the colour it is shown as. Grade a screenshot in an
+  image editor, apply the same grade to the identity strip, and the frame grades the way the
+  screenshot did.
+- Either the scene or the target the grade draws into may be an `_SRGB` format. A scene in one
+  is encoded before the lookup, and a result drawn into one is decoded before it is stored, so
+  neither changes what the table means. A lit scene in an `_SRGB` target can be graded into a
+  `UNORM` swapchain.
 - The scene is read one texel per pixel, so the grade must draw into a target the scene's size.
 - `replace(texels)` changes the table from the next frame. Use it for a zone's own look, or lerp
   two tables yourself for a slow change. Call it before the frame's `submit()`. The texels are

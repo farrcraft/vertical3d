@@ -15,11 +15,12 @@
 namespace v3d::ui::component {
 
 /**
- * An Icon Component.
+ * A component that draws an image.
  *
- * An icon names the image it draws and holds what that name resolved to, which is nothing
- * until something has resolved it. Its size is the component's own: a handle is a slot id
- * rather than a picture, so there is nothing here to measure.
+ * An icon names the image it draws and holds what that name resolved to, which is unset
+ * until something has resolved it. Its size comes from its layout, and an Auto size is a
+ * square the height of a strip. A texture handle is a slot id, not a picture, so the icon
+ * has no image size to measure.
  */
 class Icon : public Component {
  public:
@@ -34,12 +35,11 @@ class Icon : public Component {
      */
     std::string_view source() const;
     /**
-     * Name a different image, which is how an icon changes what it shows.
+     * Name a different image for the icon to show.
      *
-     * The image the old name resolved to is dropped rather than kept, so the icon draws
-     * nothing until the new name is resolved rather than the old picture under the new name.
-     * ui::Engine::resolveComponentImages() resolves this icon alone, and every later
-     * resolveImages() resolves it from the new name.
+     * The image the old name resolved to is dropped, so the icon draws nothing until the new
+     * name is resolved. ui::Engine::resolveComponentImages() resolves this icon alone, and
+     * every later resolveImages() resolves it from the new name.
      *
      * @param name the name of the image
      */

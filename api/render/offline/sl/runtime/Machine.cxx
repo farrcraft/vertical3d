@@ -7,8 +7,15 @@
 
 #include <api/render/offline/sl/Types.h>
 
+#include "Instruction.h"
+#include "Program.h"
+#include "Register.h"
+#include "Renderer.h"
+#include "Value.h"
+
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -22,42 +29,43 @@ namespace v3d::render::offline::sl::runtime {
 namespace {
 
 /**
- * The most instructions one run executes before it fails. Without a limit, a shader with an
- * endless loop would hang a render rather than fail it, and give no reason.
+ * The most instructions one run executes before it fails. A shader with an endless loop then
+ * fails with a reason instead of hanging the render.
  **/
 const std::size_t LIMIT = 4000000;
 
 float compare(Opcode opcode, float left, float right) {
     switch (opcode) {
         case Opcode::LESS:
-            return left < right ? 1.0f : 0.0f;
+            return left < right ? 1.0F : 0.0F;
         case Opcode::LESS_EQUAL:
-            return left <= right ? 1.0f : 0.0f;
+            return left <= right ? 1.0F : 0.0F;
         case Opcode::GREATER:
-            return left > right ? 1.0f : 0.0f;
+            return left > right ? 1.0F : 0.0F;
         case Opcode::GREATER_EQUAL:
-            return left >= right ? 1.0f : 0.0f;
+            return left >= right ? 1.0F : 0.0F;
         case Opcode::EQUAL:
-            return left == right ? 1.0f : 0.0f;
+            return left == right ? 1.0F : 0.0F;
         case Opcode::NOT_EQUAL:
-            return left != right ? 1.0f : 0.0f;
+            return left != right ? 1.0F : 0.0F;
         case Opcode::AND:
-            return left != 0.0f && right != 0.0f ? 1.0f : 0.0f;
+            return left != 0.0F && right != 0.0F ? 1.0F : 0.0F;
         default:
-            return left != 0.0f || right != 0.0f ? 1.0f : 0.0f;
+            return left != 0.0F || right != 0.0F ? 1.0F : 0.0F;
     }
 }
 
 /**
- * Component i of a value read as one of wide components. A float fills every component, except
- * that a float read as a matrix is the diagonal matrix. An assignment promotes it the same way.
+ * Component index of a value, read as if the value had wide components. A float fills every
+ * component, except that a float read as a matrix is the diagonal matrix. An assignment
+ * promotes a float the same way.
  **/
-float promoted(const Value & value, unsigned int point, unsigned int i, unsigned int wide) {
+float promoted(const Value & value, unsigned int point, unsigned int index, unsigned int wide) {
     if (value.components() != 1) {
-        return value.component(point, i);
+        return value.component(point, index);
     }
-    if (wide == 16 && i % 5 != 0) {
-        return 0.0f;
+    if (wide == 16 && index % MATRIX_DIAGONAL_STRIDE != 0) {
+        return 0.0F;
     }
     return value.number(point);
 }
@@ -92,7 +100,7 @@ void Machine::prepare(const Program & program, unsigned int batch) {
         if (!reg.constant) {
             continue;
         }
-        // a constant is written once here rather than by an instruction per run
+        // a constant is written once here, not by an instruction on every run
         file_[i].text(reg.text);
         for (unsigned int component = 0; component < reg.value.size(); component++) {
             file_[i].component(0, component, reg.value[component]);
@@ -133,8 +141,7 @@ const std::vector<char> & Machine::lit() const {
 }
 
 void Machine::report(const std::string & message) {
-    // once per distinct message: a 640 by 480 render would otherwise print a million lines
-    // to say one thing
+    // once per distinct message, because every shading point of a render can make the same one
     if (std::ranges::find(reports_, message) == reports_.end()) {
         reports_.push_back(message);
         if (logger_) {
@@ -153,8 +160,8 @@ bool Machine::live(unsigned int point) const {
 
 bool Machine::writable(const Value & target, unsigned int point) const {
     // a uniform value is one value for the whole batch, so it is written while any lane is
-    // running rather than while lane zero is - a lane that broke out of a loop must not stop
-    // a uniform counter the lanes beside it are still advancing
+    // live, not only while lane zero is. A lane that broke out of a loop must not stop a
+    // uniform counter that other lanes are still advancing
     return target.storage() == Storage::VARYING ? live(point) : anyLive();
 }
 
@@ -216,11 +223,11 @@ void Machine::arithmetic(const Instruction & instruction) {
             continue;
         }
         for (unsigned int i = 0; i < wide; i++) {
-            // a one component operand is a scale over the whole of the other, as RI promotes
-            // it, rather than a zero fill
-            const float a = left.component(point, left.components() == 1 ? 0 : i);
-            const float b = right.component(point, right.components() == 1 ? 0 : i);
-            target.component(point, i, combine(instruction.opcode, a, b));
+            // a one-component operand applies to every component of the other, as RI promotes
+            // a float. The missing components are not read as zero
+            const float leftComponent = left.component(point, left.components() == 1 ? 0 : i);
+            const float rightComponent = right.component(point, right.components() == 1 ? 0 : i);
+            target.component(point, i, combine(instruction.opcode, leftComponent, rightComponent));
         }
     }
 }
@@ -232,8 +239,8 @@ void Machine::compare(const Instruction & instruction) {
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     // a string holds no number, so two of them are equal or not by their text
     const bool text = left.type() == Type::STRING && right.type() == Type::STRING;
-    const float same = left.text() == right.text() ? 1.0f : 0.0f;
-    // two colours, points or matrices are equal when every component is; a float on one side
+    const float same = left.text() == right.text() ? 1.0F : 0.0F;
+    // two colours, points or matrices are equal when every component is. A float on one side
     // is promoted as an assignment promotes it, so a matrix compares against a diagonal
     const bool whole = (instruction.opcode == Opcode::EQUAL || instruction.opcode == Opcode::NOT_EQUAL) &&
         (left.components() > 1 || right.components() > 1);
@@ -243,13 +250,13 @@ void Machine::compare(const Instruction & instruction) {
             continue;
         }
         if (text) {
-            target.number(point, instruction.opcode == Opcode::NOT_EQUAL ? 1.0f - same : same);
+            target.number(point, instruction.opcode == Opcode::NOT_EQUAL ? 1.0F - same : same);
         } else if (whole) {
             bool equal = true;
             for (unsigned int i = 0; i < wide && equal; i++) {
                 equal = promoted(left, point, i, wide) == promoted(right, point, i, wide);
             }
-            target.number(point, equal == (instruction.opcode == Opcode::EQUAL) ? 1.0f : 0.0f);
+            target.number(point, equal == (instruction.opcode == Opcode::EQUAL) ? 1.0F : 0.0F);
         } else {
             target.number(point, runtime::compare(instruction.opcode,
                 left.number(point), right.number(point)));
@@ -283,7 +290,7 @@ void Machine::unary(const Instruction & instruction) {
             continue;
         }
         if (instruction.opcode == Opcode::NOT) {
-            target.number(point, source.number(point) == 0.0f ? 1.0f : 0.0f);
+            target.number(point, source.number(point) == 0.0F ? 1.0F : 0.0F);
             continue;
         }
         for (unsigned int i = 0; i < target.components(); i++) {
@@ -293,7 +300,7 @@ void Machine::unary(const Instruction & instruction) {
 }
 
 glm::mat4x4 Machine::space(const std::string & name) {
-    glm::mat4x4 matrix(1.0f);
+    glm::mat4x4 matrix(1.0F);
     if (renderer_ == nullptr || !renderer_->space(name, &matrix)) {
         // the value still arrives, unchanged in the space it was already in
         report("the coordinate space \"" + name + "\" is not one this renderer knows");
@@ -304,12 +311,12 @@ glm::mat4x4 Machine::space(const std::string & name) {
 void Machine::transform(const Instruction & instruction) {
     Value & target = file_[static_cast<std::size_t>(instruction.target)];
     const Value & source = file_[static_cast<std::size_t>(instruction.left)];
-    // only a position or a direction is in a coordinate space, so nothing else asks the
-    // renderer for one. A cast states its value in the named space and the shader works in
-    // the current one, so the cast applies the inverse of the matrix the renderer returns
+    // only a point, vector or normal is in a coordinate space, so only those look the space up.
+    // A cast's operand is in the named space and the shader works in the current space, so
+    // the cast applies the inverse of the matrix the renderer returns
     const bool geometric = pointlike(target.type());
     const glm::mat4x4 matrix = geometric ?
-        glm::inverse(space(file_[static_cast<std::size_t>(instruction.right)].text())) : glm::mat4x4(1.0f);
+        glm::inverse(space(file_[static_cast<std::size_t>(instruction.right)].text())) : glm::mat4x4(1.0F);
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     for (unsigned int point = 0; point < count; point++) {
         if (!writable(target, point)) {
@@ -346,7 +353,7 @@ bool Machine::inside(const glm::vec3 & direction, const std::vector<int> & cone,
     const glm::vec3 axis = file_[static_cast<std::size_t>(cone[first])].triple(point);
     const float angle = file_[static_cast<std::size_t>(cone[first + 1])].number(point);
     const float length = glm::length(direction) * glm::length(axis);
-    if (length == 0.0f) {
+    if (length == 0.0F) {
         return true;
     }
     return glm::dot(direction, axis) / length >= std::cos(angle);
@@ -375,7 +382,7 @@ bool Machine::nextLight() {
                 continue;
             }
             // the cone opens along the axis from the point being shaded, and L points at
-            // the light, so it is L itself that is tested rather than the way light travels
+            // the light, so the test uses L and not the direction the light travels
             if (reached[point] == 0 || !inside(direction.triple(point), round.arguments, 1, point)) {
                 lanes[point] = 0;
                 continue;
@@ -408,7 +415,7 @@ bool Machine::illuminate(const Instruction & instruction, bool solar) {
         if (lanes[point] == 0) {
             continue;
         }
-        glm::vec3 toward(0.0f);
+        glm::vec3 toward(0.0F);
         if (given.empty()) {
             // solar with no axis is light from every direction at once, which has no L
             direction.triple(point, toward);
@@ -416,17 +423,17 @@ bool Machine::illuminate(const Instruction & instruction, bool solar) {
             // the argument is the way the light travels, and L points back along it
             toward = -file_[static_cast<std::size_t>(given[0])].triple(point);
             direction.triple(point, toward);
-            // an angle lets L be any direction inside a cone, chosen against the surface's own
-            // cone, which a light shader is not given. The light comes along its axis instead
-            if (given.size() > 1 && file_[static_cast<std::size_t>(given[1])].number(point) != 0.0f) {
+            // with an angle, L may be any direction inside a cone, chosen against the surface's
+            // cone. A light shader does not have the surface's cone, so L is the axis
+            if (given.size() > 1 && file_[static_cast<std::size_t>(given[1])].number(point) != 0.0F) {
                 report("solar with an angle is lit along its axis only, as if the angle were 0");
             }
         } else {
             toward = file_[static_cast<std::size_t>(given[0])].triple(point) - surface.triple(point);
             direction.triple(point, toward);
         }
-        // a light's own cone is stated from the light outward, so it is the way the light
-        // travels that is tested rather than L
+        // a light's own cone opens from the light outward, so the test uses the direction
+        // the light travels and not L
         if (!solar && !inside(-toward, given, 1, point)) {
             lanes[point] = 0;
             continue;
@@ -448,7 +455,7 @@ void Machine::mask(const Instruction & instruction, bool wanted) {
     const Value & condition = file_[static_cast<std::size_t>(instruction.left)];
     std::vector<char> next = masks_.back();
     for (unsigned int point = 0; point < batch_; point++) {
-        if (next[point] != 0 && (condition.number(point) != 0.0f) != wanted) {
+        if (next[point] != 0 && (condition.number(point) != 0.0F) != wanted) {
             next[point] = 0;
         }
     }
@@ -459,7 +466,7 @@ void Machine::narrow(const Instruction & instruction) {
     Loop & loop = loops_.back();
     const Value & condition = file_[static_cast<std::size_t>(instruction.left)];
     for (unsigned int point = 0; point < batch_; point++) {
-        if (loop.lanes[point] != 0 && condition.number(point) == 0.0f) {
+        if (loop.lanes[point] != 0 && condition.number(point) == 0.0F) {
             loop.lanes[point] = 0;
         }
     }
@@ -467,8 +474,8 @@ void Machine::narrow(const Instruction & instruction) {
 }
 
 void Machine::finish() {
-    // a return goes as far as the function it is in and no further, so the stacks are
-    // cleared from where that body opened rather than from the bottom
+    // a return leaves only the function it is in, so the stacks are cleared from the depths
+    // where that body opened, not from the bottom
     const std::size_t mask = frames_.empty() ? 0 : frames_.back().masks;
     const std::size_t loop = frames_.empty() ? 0 : frames_.back().loops;
     const std::vector<char> going = masks_.back();
@@ -495,8 +502,8 @@ void Machine::leave(bool loop) {
     }
     Loop & current = loops_.back();
     const std::vector<char> going = masks_.back();
-    // a lane leaves by losing its bit in every mask inside the loop, because the lanes beside
-    // it have not finished and there is nowhere to jump to on its behalf
+    // a lane leaves by being cleared from every mask inside the loop. It cannot jump, because
+    // the other lanes have not finished
     for (std::size_t i = current.depth; i < masks_.size(); i++) {
         for (unsigned int point = 0; point < batch_; point++) {
             if (going[point] != 0) {
@@ -519,7 +526,7 @@ bool Machine::initialise() {
         error_ = "the machine was run before it was prepared";
         return false;
     }
-    return execute(*program_, 0, program_->prologue);
+    return execute(*program_, {.from = 0, .until = program_->prologue});
 }
 
 bool Machine::run() {
@@ -528,24 +535,26 @@ bool Machine::run() {
         report(error_);
         return false;
     }
-    if (!execute(*program_, program_->prologue, program_->instructions.size())) {
-        // reported here, so no renderer has to log a failed run itself; initialise() does not
-        // report, because Instance::write reports it with the shader's name
+    if (!execute(*program_, {.from = program_->prologue, .until = program_->instructions.size()})) {
+        // reported here, so a renderer does not log a failed run itself. initialise() does
+        // not report, because Instance::write() reports its failure with the shader's name
         report(error_);
         return false;
     }
     return true;
 }
 
-bool Machine::execute(const Program & program, std::size_t from, std::size_t until) {
+bool Machine::execute(const Program & program, const Range & range) {
+    const std::size_t from = range.from;
+    const std::size_t until = range.until;
     error_.clear();
     printed_.clear();
     masks_.assign(1, std::vector<char>(batch_, 1));
     loops_.clear();
     frames_.clear();
     illuminations_.clear();
-    // every point until an illuminate or a solar narrows it, so a light shader with neither
-    // lights the whole batch
+    // every point is lit until an illuminate or a solar narrows the set, so a light shader
+    // with neither lights the whole batch
     lit_.assign(batch_, 1);
 
     std::size_t pc = from;
@@ -597,7 +606,7 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
                 pc = static_cast<std::size_t>(instruction.target);
                 continue;
             case Opcode::JUMP_IF_ZERO:
-                if (file_[static_cast<std::size_t>(instruction.left)].number(0) == 0.0f) {
+                if (file_[static_cast<std::size_t>(instruction.left)].number(0) == 0.0F) {
                     pc = static_cast<std::size_t>(instruction.target);
                     continue;
                 }
@@ -605,7 +614,7 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
             case Opcode::MASK:
             case Opcode::MASK_NOT:
                 mask(instruction, instruction.opcode == Opcode::MASK);
-                // an arm no lane took costs the push and nothing else
+                // an arm that no lane took is skipped after the push
                 if (!anyLive()) {
                     pc = static_cast<std::size_t>(instruction.target);
                     continue;
@@ -638,8 +647,8 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
                 }
                 break;
             case Opcode::LOOP_END:
-                // a lane that took a continue comes back for the next iteration; one that broke
-                // does not, because break cleared it from the loop's own lanes
+                // a lane that took a continue comes back for the next iteration. A lane that
+                // took a break does not, because break cleared it from the loop's own lanes
                 masks_.back() = loops_.back().lanes;
                 pc = static_cast<std::size_t>(anyLive() ? instruction.target : loops_.back().exit);
                 continue;
@@ -662,8 +671,8 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
                 break;
             }
             case Opcode::LEAVE:
-                // the lanes that returned are live again: they are done with the function,
-                // not with the shader
+                // the lanes that returned are live again, because they have finished the
+                // function and not the shader
                 masks_.resize(frames_.back().masks);
                 loops_.resize(frames_.back().loops);
                 frames_.pop_back();
@@ -685,8 +694,8 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
             case Opcode::ILLUMINANCE_NEXT:
             case Opcode::ILLUMINATE:
             case Opcode::SOLAR:
-                // all three narrow the batch to the points one light reaches, and all
-                // three skip the body when the light reaches none of them
+                // each narrows the batch to the points one light reaches, and skips the
+                // body when the light reaches none of them
                 if (!admit(instruction)) {
                     pc = static_cast<std::size_t>(instruction.target);
                     continue;
@@ -697,9 +706,9 @@ bool Machine::execute(const Program & program, std::size_t from, std::size_t unt
                 loops_.pop_back();
                 break;
             case Opcode::RETURN:
-                // like a break it does not jump: the masks and the loops between here and
-                // the body's own instruction are what has to be unwound, and each of them
-                // unwinds itself once no lane is left inside it
+                // like a break, a return does not jump. It clears its lanes from every mask
+                // and loop inside the function body. The rest of the body runs with those
+                // lanes off, and LEAVE makes them live again
                 finish();
                 break;
         }

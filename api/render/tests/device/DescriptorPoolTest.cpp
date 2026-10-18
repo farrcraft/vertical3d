@@ -6,6 +6,7 @@
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -32,8 +33,6 @@ std::vector<VkDescriptorSetLayoutBinding> uniformBlock() {
     return std::vector<VkDescriptorSetLayoutBinding>{block};
 }
 
-};  // namespace
-
 BOOST_AUTO_TEST_SUITE(descriptor_pool_test)
 
 /**
@@ -41,7 +40,7 @@ BOOST_AUTO_TEST_SUITE(descriptor_pool_test)
  * of 32 take four.
  **/
 BOOST_AUTO_TEST_CASE(a_pool_grows_when_the_last_one_is_full) {
-    v3d::test::Headless headless(colourFormat, width, height);
+    const v3d::test::Headless headless(colourFormat, width, height);
     DescriptorPool pool(headless.device, headless.context->ring(), uniformBlock(), 32, "test");
 
     for (int count = 0; count < 100; count++) {
@@ -103,3 +102,5 @@ BOOST_AUTO_TEST_CASE(a_released_set_waits_for_the_frames_in_flight) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

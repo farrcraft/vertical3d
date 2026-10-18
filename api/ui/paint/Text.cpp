@@ -7,6 +7,7 @@
 
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::ui::paint {
@@ -23,7 +24,7 @@ std::vector<std::string> wrap(std::string_view line, float width, const Measure&
             row = word;
             continue;
         }
-        if (width <= 0.0f) {
+        if (width <= 0.0F) {
             row.append(" ").append(word);
             continue;
         }

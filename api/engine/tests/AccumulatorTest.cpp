@@ -26,7 +26,7 @@ struct Result {
 Result run(Accumulator* accumulator, const std::vector<std::uint64_t>& frames) {
     Result result;
     for (std::uint64_t frame : frames) {
-        unsigned int owed = accumulator->accumulate(frame);
+        const unsigned int owed = accumulator->accumulate(frame);
         result.worst = (owed > result.worst) ? owed : result.worst;
         while (accumulator->drain()) {
             result.steps++;
@@ -38,26 +38,28 @@ Result run(Accumulator* accumulator, const std::vector<std::uint64_t>& frames) {
 
 }  // namespace
 
+namespace {
+
 /**
  * A frame shorter than a step makes no step due, but its time is kept rather than discarded,
  * unlike a millisecond delta that rounds to zero.
  **/
 BOOST_AUTO_TEST_CASE(accumulator_short_frames_test) {
     Accumulator accumulator;
-    BOOST_CHECK_EQUAL(accumulator.accumulate(1000), 0u);
-    BOOST_CHECK_EQUAL(accumulator.steps(), 0u);
+    BOOST_CHECK_EQUAL(accumulator.accumulate(1000), 0U);
+    BOOST_CHECK_EQUAL(accumulator.steps(), 0U);
     BOOST_CHECK(!accumulator.drain());
 
     // 16 ms of microsecond frames is still short of a step; a millisecond clock would
     // report zero for each of them and lose all 16
     const std::vector<std::uint64_t> frames(15999, 1000);
     Result result = run(&accumulator, frames);
-    BOOST_CHECK_EQUAL(result.steps, 0u);
+    BOOST_CHECK_EQUAL(result.steps, 0U);
 
     // another millisecond of them takes it over
     const std::vector<std::uint64_t> rest(1000, 1000);
     result = run(&accumulator, rest);
-    BOOST_CHECK_EQUAL(result.steps, 1u);
+    BOOST_CHECK_EQUAL(result.steps, 1U);
 }
 
 /**
@@ -65,11 +67,11 @@ BOOST_AUTO_TEST_CASE(accumulator_short_frames_test) {
  **/
 BOOST_AUTO_TEST_CASE(accumulator_whole_step_test) {
     Accumulator accumulator;
-    BOOST_CHECK_EQUAL(accumulator.accumulate(Accumulator::step), 1u);
+    BOOST_CHECK_EQUAL(accumulator.accumulate(Accumulator::step), 1U);
     BOOST_CHECK(accumulator.drain());
     BOOST_CHECK(!accumulator.drain());
     BOOST_CHECK_EQUAL(accumulator.simulated(), Accumulator::step);
-    BOOST_CHECK_SMALL(accumulator.alpha(), 0.0001f);
+    BOOST_CHECK_SMALL(accumulator.alpha(), 0.0001F);
 }
 
 /**
@@ -83,13 +85,13 @@ BOOST_AUTO_TEST_CASE(accumulator_jitter_test) {
     for (int i = 0; i < 144; ++i) {
         frames.push_back((i % 2 == 0) ? 6000000ULL : 7000000ULL);
     }
-    Result result = run(&accumulator, frames);
+    const Result result = run(&accumulator, frames);
 
     // 72 frames of 6 ms and 72 of 7 ms is 936 ms, which is 56 whole steps of 16.667 ms
-    BOOST_CHECK_EQUAL(result.steps, 56u);
+    BOOST_CHECK_EQUAL(result.steps, 56U);
     BOOST_CHECK_EQUAL(result.simulated, 56ULL * Accumulator::step);
     // no frame is longer than a step, so no frame ever makes more than one due
-    BOOST_CHECK_EQUAL(result.worst, 1u);
+    BOOST_CHECK_EQUAL(result.worst, 1U);
 }
 
 /**
@@ -99,8 +101,8 @@ BOOST_AUTO_TEST_CASE(accumulator_pacing_test) {
     const std::uint64_t second = 1000000000ULL;
 
     Accumulator smooth;
-    std::vector<std::uint64_t> even(60, second / 60);
-    Result a = run(&smooth, even);
+    const std::vector<std::uint64_t> even(60, second / 60);
+    const Result smoothResult = run(&smooth, even);
 
     Accumulator ragged;
     std::vector<std::uint64_t> uneven;
@@ -108,10 +110,10 @@ BOOST_AUTO_TEST_CASE(accumulator_pacing_test) {
         uneven.push_back(second / 120);
         uneven.push_back(second / 40);
     }
-    Result b = run(&ragged, uneven);
+    const Result raggedResult = run(&ragged, uneven);
 
-    BOOST_CHECK_EQUAL(a.steps, b.steps);
-    BOOST_CHECK_EQUAL(a.simulated, b.simulated);
+    BOOST_CHECK_EQUAL(smoothResult.steps, raggedResult.steps);
+    BOOST_CHECK_EQUAL(smoothResult.simulated, raggedResult.simulated);
 }
 
 /**
@@ -121,16 +123,16 @@ BOOST_AUTO_TEST_CASE(accumulator_pacing_test) {
  **/
 BOOST_AUTO_TEST_CASE(accumulator_clamp_test) {
     Accumulator accumulator;
-    unsigned int owed = accumulator.accumulate(30000000000ULL);
+    const unsigned int owed = accumulator.accumulate(30000000000ULL);
     BOOST_CHECK_EQUAL(owed, static_cast<unsigned int>(Accumulator::clamp / Accumulator::step));
-    BOOST_CHECK_EQUAL(owed, 15u);
+    BOOST_CHECK_EQUAL(owed, 15U);
 
     unsigned int drained = 0;
     while (accumulator.drain()) {
         drained++;
     }
-    BOOST_CHECK_EQUAL(drained, 15u);
-    // thirty seconds arrived and a quarter of a second of it was simulated - the rest is gone
+    BOOST_CHECK_EQUAL(drained, 15U);
+    // thirty seconds arrived and a quarter of a second of it was simulated. The rest is dropped
     BOOST_CHECK_EQUAL(accumulator.simulated(), 15ULL * Accumulator::step);
 }
 
@@ -141,13 +143,13 @@ BOOST_AUTO_TEST_CASE(accumulator_clamp_test) {
 BOOST_AUTO_TEST_CASE(accumulator_alpha_test) {
     Accumulator accumulator;
     accumulator.accumulate(Accumulator::step / 2);
-    BOOST_CHECK_CLOSE(accumulator.alpha(), 0.5f, 0.1f);
+    BOOST_CHECK_CLOSE(accumulator.alpha(), 0.5F, 0.1F);
 
     // a whole step plus a half drains one and leaves the half
     accumulator.accumulate(Accumulator::step);
     BOOST_CHECK(accumulator.drain());
     BOOST_CHECK(!accumulator.drain());
-    BOOST_CHECK_CLOSE(accumulator.alpha(), 0.5f, 0.1f);
+    BOOST_CHECK_CLOSE(accumulator.alpha(), 0.5F, 0.1F);
 }
 
 /**
@@ -156,11 +158,13 @@ BOOST_AUTO_TEST_CASE(accumulator_alpha_test) {
 BOOST_AUTO_TEST_CASE(accumulator_steps_test) {
     Accumulator accumulator;
     accumulator.accumulate(Accumulator::step * 3);
-    BOOST_CHECK_EQUAL(accumulator.steps(), 3u);
+    BOOST_CHECK_EQUAL(accumulator.steps(), 3U);
     accumulator.accumulate(0);
-    BOOST_CHECK_EQUAL(accumulator.steps(), 3u);
+    BOOST_CHECK_EQUAL(accumulator.steps(), 3U);
     while (accumulator.drain()) {
     }
     accumulator.accumulate(0);
-    BOOST_CHECK_EQUAL(accumulator.steps(), 0u);
+    BOOST_CHECK_EQUAL(accumulator.steps(), 0U);
 }
+
+};  // namespace

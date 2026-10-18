@@ -7,6 +7,8 @@
 
 #include <api/render/realtime/vulkan/memory/Mesh.h>
 
+#include <functional>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <glm/vec3.hpp>
@@ -14,13 +16,17 @@
 /**
  * The meshed chunks, held by the app.
  *
- * A chunk that is remeshed replaces its entry, and the mesh that was there is destroyed with
- * the last reference to it. A remesh must therefore happen while nothing in flight uses the
- * old buffers, so the pool is only written from a tick, before the frame that reads it is
- * recorded.
+ * A chunk that is remeshed replaces its entry. A frame in flight may still be drawing the mesh
+ * that was there, so the pool hands it to a retire function rather than destroying it. The
+ * renderer's retire function holds it until every frame that may name it has finished.
  **/
 class ChunkMeshPool {
  public:
+    /**
+     * Takes what destroys a replaced mesh, and holds it until that is safe.
+     **/
+    using Retire = std::function<void(std::function<void()>)>;
+
     /**
      * One chunk's geometry and where in the world it sits.
      **/
@@ -35,7 +41,12 @@ class ChunkMeshPool {
     typedef boost::unordered_map<size_t, Entry> EntryMap;
 
     /**
-     * Take a chunk's mesh, replacing whatever was there.
+     * @param retire what a replaced mesh is handed to
+     **/
+    explicit ChunkMeshPool(Retire retire);
+
+    /**
+     * Take a chunk's mesh, replacing whatever was there and retiring it.
      **/
     void add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>& mesh, const glm::vec3& origin,
         float size);
@@ -46,5 +57,6 @@ class ChunkMeshPool {
     const EntryMap& entries() const;
 
  private:
+    Retire retire_;
     EntryMap pool_;
 };

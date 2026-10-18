@@ -5,6 +5,9 @@
 
 #include "Retirement.h"
 
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <utility>
 
 namespace v3d::render::realtime::vulkan::frame {
@@ -23,16 +26,16 @@ Retirement::~Retirement() {
 
 /**
  **/
-void Retirement::retire(uint64_t begun, std::function<void()> destroy) {
-    entries_.push_back(Entry{begun, std::move(destroy)});
+void Retirement::retire(uint64_t last, std::function<void()> destroy) {
+    entries_.push_back(Entry{last, std::move(destroy)});
 }
 
 /**
  **/
 void Retirement::collect(uint64_t begun) {
     // entries are retired in the order frames are counted, so the ones due are at the front
-    while (!entries_.empty() && entries_.front().begun + framesInFlight_ <= begun) {
-        std::function<void()> destroy = std::move(entries_.front().destroy);
+    while (!entries_.empty() && entries_.front().last + framesInFlight_ <= begun) {
+        const std::function<void()> destroy = std::move(entries_.front().destroy);
         entries_.pop_front();
         destroy();
     }
@@ -42,7 +45,7 @@ void Retirement::collect(uint64_t begun) {
  **/
 void Retirement::flush() {
     while (!entries_.empty()) {
-        std::function<void()> destroy = std::move(entries_.front().destroy);
+        const std::function<void()> destroy = std::move(entries_.front().destroy);
         entries_.pop_front();
         destroy();
     }

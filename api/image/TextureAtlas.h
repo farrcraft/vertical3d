@@ -38,18 +38,23 @@ class TextureAtlas {
      * neighbouring region.
      *
      * The rectangle returned is the usable one: the size asked for, positioned inside the
-     * gutter. Pass it to the blit below and use it for texture coordinates as it is. A
-     * caller asks for the size it will blit, and neither adds the gutter to the request
-     * nor subtracts it from the result.
+     * gutter. Pass it to region(area, data, stride) and use it for texture coordinates as
+     * it is. A caller asks for the size it will blit, and neither adds the gutter to the
+     * request nor subtracts it from the result.
      *
      * @return the usable rectangle, or x and y of -1 when the atlas has no room left
      **/
     glm::ivec4 region(unsigned int width, unsigned int height);
-    void region(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char * data, unsigned int stride);
+    /**
+     * Copy rows of pixels into a rectangle region() returned, x, y, width and height in turn.
+     *
+     * @param stride how many bytes apart the rows of the data are
+     **/
+    void region(const glm::ivec4 & area, unsigned char * data, unsigned int stride);
 
  protected:
     glm::ivec4 allocate(unsigned int width, unsigned int height);
-    int fit(unsigned int index, unsigned int width, unsigned int height);
+    int fit(unsigned int index, const glm::uvec2 & size);
     void merge();
 
  private:

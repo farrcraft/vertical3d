@@ -15,17 +15,18 @@
 namespace v3d::ecs::component {
 
 /**
- * A particle emitter on an entity: what it makes, and the particles it has made, which the
- * component owns.
+ * A particle emitter on an entity. description says what particles it makes, and state holds
+ * the particles it has made.
  *
- * Stepped by emit() from the entity's Transform, so an effect carried by an entity is born where
- * the entity stands. It is not snapshotted: each particle keeps its own previous position.
- * The game decides when it fires and how hard, by writing description.rate or calling
+ * emit() steps it from the entity's Transform, so its particles start where the entity stands.
+ * A game does not snapshot an Emitter, because each particle keeps its own previous position.
+ * The game sets how many particles it emits by writing description.rate, or by calling
  * type::effect::burst().
  **/
 struct Emitter final {
     /**
-     * @param seed what the emitter's particles are drawn from
+     * @param seed the seed for the emitter's random numbers. The same seed gives the same
+     *        particles
      **/
     explicit Emitter(uint64_t seed = 0);
 
@@ -34,9 +35,9 @@ struct Emitter final {
 };
 
 /**
- * Step every entity's emitter from where its Transform stands and how it is turned. Called
- * from simulate() with the fixed step, or from tick() by a game that draws its effects at an
- * alpha of one. An emitter on an entity with no Transform stands at the origin.
+ * Step every entity's emitter from its Transform's position and rotation. A game calls it from
+ * simulate() with the simulation step, or from tick() when it draws its effects without
+ * interpolating them. An emitter on an entity with no Transform stands at the origin.
  **/
 void emit(entt::registry& registry, float step);
 

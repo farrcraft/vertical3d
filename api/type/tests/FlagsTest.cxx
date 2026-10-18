@@ -21,8 +21,8 @@ enum class Colour : uint8_t {
     Blue = 1 << 2
 };
 
-constexpr Flags<Colour> operator|(Colour a, Colour b) noexcept {
-    return Flags<Colour>(a) | b;
+constexpr Flags<Colour> operator|(Colour lhs, Colour rhs) noexcept {
+    return Flags<Colour>(lhs) | rhs;
 }
 
 /**
@@ -38,8 +38,6 @@ struct Combines : std::false_type {};
 
 template <typename E>
 struct Combines<E, std::void_t<decltype(std::declval<E>() | std::declval<E>())>> : std::true_type {};
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(flags_test)
 
@@ -111,3 +109,5 @@ BOOST_AUTO_TEST_CASE(flags_equality_test) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

@@ -5,12 +5,13 @@
 
 #include "Container.h"
 
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/DrawOrder.h>
-#include <api/ui/component/TabBar.h>
-#include <api/ui/component/TabPage.h>
-#include <api/ui/component/Type.h>
+
+#include "Component.h"
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::ui {
@@ -41,14 +42,14 @@ boost::shared_ptr<Component> search(const boost::shared_ptr<Component>& componen
  * order it was drawn in.
  **/
 boost::shared_ptr<Component> probe(const boost::shared_ptr<Component>& component, const glm::vec2& point) {
-    // a disabled subtree is skipped whole, the way a hidden one is: what a component holds
-    // cannot be used when the component cannot
+    // a disabled subtree is skipped whole, like a hidden one, because nothing inside a
+    // disabled component can be used
     if (!component || !component->visible() || !component->enabled()) {
         return nullptr;
     }
 
-    // what was drawn is what can be picked: a tab page that is not up keeps the box it last
-    // held, and a child drawn over its sibling has to be offered the point first
+    // only what was drawn can be picked. A tab page that is not chosen keeps the box it last
+    // held, and a child drawn over its sibling is offered the point first
     std::vector<boost::shared_ptr<Component>> drawn;
     forEachDrawn(*component, [&drawn](const boost::shared_ptr<Component>& child) { drawn.push_back(child); });
     for (auto it = drawn.rbegin(); it != drawn.rend(); ++it) {
@@ -57,7 +58,7 @@ boost::shared_ptr<Component> probe(const boost::shared_ptr<Component>& component
             return found;
         }
     }
-    v3d::type::geometry::Bound2D bound = component->bound();
+    const v3d::type::geometry::Bound2D bound = component->bound();
     if (component->pickable() && bound.contains(point)) {
         return component;
     }
@@ -95,9 +96,8 @@ boost::shared_ptr<Component> Container::pick(const glm::vec2& point) const {
     if (!visible_) {
         return nullptr;
     }
-    // the last thing drawn is the first thing offered the point, and a container draws in
-    // depth order - which is add order until something is given a depth, and then costs
-    // no copy at all
+    // the last thing drawn is the first thing offered the point. A container draws in depth
+    // order. Until something is given a depth, that is add order and needs no sorted copy
     std::vector<boost::shared_ptr<Component>> sorted;
     if (!inDrawOrder(components_)) {
         sorted = ordered();

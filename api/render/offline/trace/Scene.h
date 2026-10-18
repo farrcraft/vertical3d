@@ -34,9 +34,9 @@ namespace v3d::render::offline::trace {
 class Scene final {
  public:
     /**
-     * Where every motion has carried its primitives by one time, from where they are stored,
-     * and the way back. Computed once per time rather than per ray, since every ray of a
-     * sample has the same time.
+     * For each motion at one time, the transform from where its primitives are stored to
+     * where they are (ahead), and its inverse (backward). Computed once per time, not per
+     * ray, because every ray of a sample has the same time.
      **/
     class Poses final {
      public:
@@ -56,8 +56,8 @@ class Scene final {
     glm::vec3 eye() const;
 
     /**
-     * A primitive placed by the reference end of a transformation that may move. One that does
-     * not is added as it stands.
+     * A primitive whose geometry was placed by the reference() matrix of a transformation
+     * that may move. A primitive whose transformation does not move belongs to no motion.
      **/
     void add(const boost::shared_ptr<Primitive> & primitive, const v3d::render::offline::MovingTransform & placed);
     void add(const Triangle & triangle);
@@ -100,16 +100,16 @@ class Scene final {
      * @param from how far along the ray to start looking. Without it, a ray leaving a
      *        surface would meet the surface it left, so a shadow ray is offset rather
      *        than started at zero
-     * @param poses where the moving primitives are. A ray is taken back into the pose a
-     *        moving primitive was stored in rather than the primitive moved, and what it
-     *        hits is brought forward again
+     * @param poses where the moving primitives are. The ray is transformed back into a moving
+     *        primitive's stored pose, and the primitive is not moved. The hit's normals are
+     *        then transformed forward to the ray's time
      **/
     bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, const Poses & poses) const;
 
     /**
      * The same at a time, for a caller tracing one ray rather than every ray of a sample.
      **/
-    bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, float time = 0.0f) const;
+    bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, float time = 0.0F) const;
 
     const glm::vec3 & background() const;
     void background(const glm::vec3 & colour);
@@ -123,14 +123,14 @@ class Scene final {
     void traceDepth(unsigned int depth);
 
  private:
-    glm::mat4x4 view_ = glm::mat4x4(1.0f);
+    glm::mat4x4 view_ = glm::mat4x4(1.0F);
     /** The motion a primitive placed by this transformation is carried by, or -1. **/
     int motion(const v3d::render::offline::MovingTransform & placed);
 
     std::vector<boost::shared_ptr<const Primitive>> primitives_;
     std::vector<v3d::render::offline::MovingTransform> motions_;
     std::vector<v3d::render::offline::sl::Placed> lights_;
-    glm::vec3 background_ = glm::vec3(0.0f);
+    glm::vec3 background_ = glm::vec3(0.0F);
     unsigned int traceDepth_ = 2;
 };
 

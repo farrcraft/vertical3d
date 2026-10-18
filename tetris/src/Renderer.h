@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/asset/Manager.h>
-#include <api/render/realtime/Canvas.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
 #include <api/ui/Engine.h>
 #include <api/ui/shell/Screen.h>
@@ -28,9 +28,8 @@ class TetrisScene;
 /**
  * Everything tetris draws, built as one canvas of quads and handed to the render engine.
  *
- * Every block on the board samples one atlas, so the whole well, the falling tetrad and the
- * preview reach the device as a single batch of quads. Text and the menu are quads too,
- * against their own textures.
+ * Every block samples one atlas, so the well, the falling tetrad and the preview reach the
+ * device as a single batch of quads. Text and the menu are quads too, with their own textures.
  **/
 class TetrisRenderer final {
  public:
@@ -71,8 +70,8 @@ class TetrisRenderer final {
     };
 
     /**
-     * Where the well sits in the window, and how big one cell of it is. Recomputed on a
-     * resize so the board stays centred and fills the window it is given.
+     * Where the well sits in the window, and how big one cell of it is. Recomputed every frame
+     * from the canvas size, so the board stays centred and fills the window.
      **/
     struct Layout final {
         glm::vec2 origin;  /**< the top left of the well **/

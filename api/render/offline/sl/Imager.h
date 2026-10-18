@@ -39,7 +39,8 @@ class Imager final {
      * @param coverage which plane holds per-pixel coverage, which the shader reads and
      *        writes as `alpha`. `background` sets it, because a pixel it paints counts as
      *        covered
-     * @return false when the shader is not an imager, or when a run failed. A failed run
+     * @return false when the shader is not an imager, when the frame has no coverage plane
+     *         or no pixels, or when a run failed. A failed run
      *         stops the pass at its row. The rows above it are shaded, and that row and the
      *         rows below it are not. The machine has already logged the failure
      **/

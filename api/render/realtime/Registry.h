@@ -38,14 +38,14 @@ class Registry final {
         if (free_.empty()) {
             slots_.push_back(Slot{resource, 0});
             live_++;
-            return Handle<Tag>(static_cast<uint32_t>(slots_.size() - 1), 0);
+            return Handle<Tag>(static_cast<uint32_t>(slots_.size() - 1));
         }
         const uint32_t id = free_.back();
         free_.pop_back();
         Slot& slot = slots_[id];
         slot.resource = resource;
         live_++;
-        return Handle<Tag>(id, slot.generation);
+        return Handle<Tag>({.id = id, .generation = slot.generation});
     }
 
     /**
@@ -53,7 +53,7 @@ class Registry final {
      * now on, and its slot is free for the next add.
      *
      * @return what the handle referred to, for a caller that has to destroy it, or nothing
-     *         if it referred to nothing - a handle released twice, say
+     *         if it referred to nothing, such as a handle released twice
      **/
     std::optional<Resource> release(const Handle<Tag>& handle) {
         Slot* slot = live(handle);
@@ -110,7 +110,7 @@ class Registry final {
      **/
     void clear() {
         for (uint32_t id = 0; id < slots_.size(); id++) {
-            release(Handle<Tag>(id, slots_[id].generation));
+            release(Handle<Tag>({.id = id, .generation = slots_[id].generation}));
         }
     }
 

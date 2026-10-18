@@ -5,11 +5,19 @@
 
 #include "Map.h"
 
+#include <api/asset/kind/Json.h>
 #include <api/grid/Picture.h>
 #include <api/grid/Terrain.h>
+#include <api/grid/TileCoord.h>
+#include <api/grid/TileGrid.h>
 #include <api/grid/Unknown.h>
+#include <api/log/Logger.h>
 
+#include "Tile.h"
+
+#include <cstddef>
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -41,8 +49,8 @@ Kind kindFromGlyph(char glyph) {
 }
 
 /**
- * What a kind is to the grid. Passability and cover are independent flags, and a kind is
- * where this app decides both at once - see v3d::grid::Cover.
+ * Whether the grid lets a kind be walked on. The grid keeps passability and cover as
+ * independent flags, and each kind sets both.
  **/
 bool passable(Kind kind) {
     return kind == Kind::Floor;
@@ -60,13 +68,13 @@ v3d::grid::Cover cover(Kind kind) {
 }
 
 /**
- * The terrain legend for the grid. The start glyph is not in it: where the player starts is
- * odyssey's concern, not the grid's. The grid parses only the terrain, and the app reads
- * the start from the tiles the grid hands back.
+ * The terrain legend for v3d::grid::fromPicture. The start glyph is not in it.
+ * fromPicture() reports each glyph missing from the legend as unknown,
+ * and load() reads the start from those tiles.
  **/
 std::map<char, v3d::grid::Terrain> legend() {
     std::map<char, v3d::grid::Terrain> terrain;
-    for (char glyph : {floorGlyph, wallGlyph, crateGlyph}) {
+    for (const char glyph : {floorGlyph, wallGlyph, crateGlyph}) {
         const Kind kind = kindFromGlyph(glyph);
         terrain[glyph] = v3d::grid::Terrain{passable(kind), cover(kind)};
     }
@@ -83,7 +91,7 @@ Map::Map(const boost::shared_ptr<v3d::log::Logger>& logger) :
 
 /**
  **/
-bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document) {
+bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document, const std::optional<glm::vec3>& corner) {
     if (!document) {
         logger_->get()->error("there is no map document to read");
         return false;
@@ -108,14 +116,14 @@ bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document) {
         lines.push_back(boost::json::value_to<std::string>(row));
     }
 
-    v3d::grid::Picture picture = v3d::grid::fromPicture(lines, legend());
+    v3d::grid::Picture picture = v3d::grid::fromPicture(lines, legend(), TILE_SIZE, corner);
     if (!picture.grid) {
         logger_->get()->error("the map cannot be read: {}", picture.error);
         return false;
     }
 
     // read the whole document before touching this map's own state, so a rejected one
-    // leaves whatever was loaded before intact rather than half replaced
+    // leaves whatever was loaded before intact
     v3d::grid::TileCoord start{-1, -1};
     for (const v3d::grid::Unknown& unknown : picture.unknown) {
         if (unknown.glyph != startGlyph) {
@@ -123,7 +131,7 @@ bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document) {
                 unknown.tiles.front().x, unknown.tiles.front().y);
             return false;
         }
-        // the start stands on floor, and the last one written is the one that counts
+        // a start tile is floor. When the document has more than one '@', the last is the start
         for (const v3d::grid::TileCoord& tile : unknown.tiles) {
             picture.grid->setPassable(tile, passable(Kind::Floor));
             picture.grid->setCover(tile, cover(Kind::Floor));
@@ -135,7 +143,7 @@ bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document) {
     std::vector<Kind> kinds;
     kinds.reserve(width * lines.size());
     for (const std::string& line : lines) {
-        for (char glyph : line) {
+        for (const char glyph : line) {
             kinds.push_back(kindFromGlyph(glyph));
         }
     }
@@ -175,7 +183,7 @@ Kind Map::kind(v3d::grid::TileCoord tile) const {
     if (!grid_ || !grid_->contains(tile)) {
         return Kind::Wall;
     }
-    return kinds_[static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(grid_->width()) +
+    return kinds_[(static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(grid_->width())) +
         static_cast<std::size_t>(tile.x)];
 }
 

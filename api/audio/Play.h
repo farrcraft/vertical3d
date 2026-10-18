@@ -17,9 +17,8 @@ struct Play final {
     Play() noexcept;
 
     /**
-     * The bus the sound is mixed on - "music", "sfx", "ambience". A bus is a named group
-     * with its own volume, so a settings screen can offer a slider per bus. Empty is no
-     * bus.
+     * The bus the sound is mixed on, such as "music", "sfx" or "ambience". A bus is a named
+     * group of sounds whose volume Engine::busGain() sets together. Empty is no bus.
      **/
     std::string bus;
 
@@ -35,9 +34,33 @@ struct Play final {
     int fadeInMs;
 
     /**
-     * The sound's own volume, multiplied by its bus's. 1 is unchanged.
+     * The sound's own volume. 1 is unchanged. A later Engine::busGain() on its bus
+     * replaces it.
      **/
     float gain;
+
+    /**
+     * Where the sound sits between the speakers: -1 is left, 0 the centre and 1 right. The
+     * game converts a position to a pan, because which way is left depends on its camera.
+     * stereo() gives the gains a pan becomes.
+     **/
+    float pan;
 };
+
+/**
+ * The gain of each side of a panned sound.
+ **/
+struct Stereo final {
+    float left;
+    float right;
+};
+
+/**
+ * The gains a pan gives each side. The side the sound is panned towards stays at full gain. The
+ * other falls in a straight line to silence at the end of the range, so a centred sound is
+ * exactly an unpanned one. A pan past either end is held there, and one that is not finite is
+ * the centre.
+ **/
+Stereo stereo(float pan) noexcept;
 
 };  // namespace v3d::audio

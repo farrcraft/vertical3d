@@ -4,6 +4,9 @@
  **/
 
 #include <api/event/Context.h>
+#include <api/event/Engine.h>
+#include <api/event/Event.h>
+#include <api/log/Logger.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Button.h>
@@ -30,9 +33,9 @@
 namespace {
 
 /**
- * A ui engine holding one container, and the key router over it. Nothing draws: which
- * component a key reaches is the focus's to say, and the focus is given by the engine
- * rather than by a box anything was drawn in.
+ * A ui engine holding one container, and an input::Keys over it. Nothing draws, because the
+ * focus decides which component a key reaches, and the engine sets the focus without
+ * reading any drawn box.
  **/
 struct Fixture final {
     Fixture() :
@@ -67,8 +70,6 @@ boost::shared_ptr<v3d::ui::component::Button> button(Fixture* fixture, const std
     made->event(v3d::event::Event(name, fixture->context));
     return made;
 }
-
-};  // namespace
 
 BOOST_AUTO_TEST_SUITE(keyboard_drive_test)
 
@@ -123,7 +124,7 @@ BOOST_AUTO_TEST_CASE(a_screen_is_started_off_by_focusing_its_first_control) {
  * A ui holding nothing focusable stays as it was, so a hud leaves the movement keys alone.
  **/
 BOOST_AUTO_TEST_CASE(a_screen_with_nothing_focusable_is_left_alone) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Panel> plate =
         boost::make_shared<v3d::ui::component::Panel>();
     fixture.container->add(plate);
@@ -134,7 +135,7 @@ BOOST_AUTO_TEST_CASE(a_screen_with_nothing_focusable_is_left_alone) {
 
 /**
  * A return and a space send a focused button's command - the same command a click sends,
- * because both routers ask ui::command() for it.
+ * because input::Keys and input::Cursor both get it from input::command().
  **/
 BOOST_AUTO_TEST_CASE(a_return_and_a_space_activate_a_button) {
     Fixture fixture;
@@ -147,6 +148,33 @@ BOOST_AUTO_TEST_CASE(a_return_and_a_space_activate_a_button) {
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 2U);
     BOOST_CHECK_EQUAL(fixture.sent[0], "test::start");
     BOOST_CHECK_EQUAL(fixture.sent[1], "test::start");
+}
+
+/**
+ * A held return or space sends a button's command once. Its repeats are taken, so they reach
+ * no binding, and send nothing. A held arrow still moves through a list at the repeat rate.
+ **/
+BOOST_AUTO_TEST_CASE(a_held_activation_key_sends_its_command_once) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> start = button(&fixture, "start");
+    fixture.container->add(start);
+    fixture.ui->focus(start);
+
+    BOOST_CHECK(fixture.keys->press("return"));
+    BOOST_CHECK(fixture.keys->press("return", false, false, true));
+    BOOST_CHECK(fixture.keys->press("return", false, false, true));
+    BOOST_CHECK(fixture.keys->press("space", false, false, true));
+    BOOST_CHECK_EQUAL(fixture.sent.size(), 1U);
+
+    const boost::shared_ptr<v3d::ui::component::SelectList> list =
+        boost::make_shared<v3d::ui::component::SelectList>();
+    list->items({"red", "green", "blue"});
+    list->event(v3d::event::Event("chose", fixture.context));
+    fixture.container->add(list);
+    fixture.ui->focus(list);
+    BOOST_CHECK(fixture.keys->press("arrow_down"));
+    BOOST_CHECK(fixture.keys->press("arrow_down", false, false, true));
+    BOOST_CHECK_EQUAL(list->selected(), 1);
 }
 
 /**
@@ -226,12 +254,11 @@ BOOST_AUTO_TEST_CASE(the_arrows_step_through_a_list) {
 }
 
 /**
- * A list does not wrap. Running off the end is how a keyboard reaches the last row and stays
- * there; a wrap would take the user back to the top instead, which is not what an arrow means
- * in a list. The key that moved nothing is not taken, so it goes on to the app.
+ * A list does not wrap, so holding an arrow stops at the last row. The key that moved nothing
+ * is not taken, so it goes on to the app.
  **/
 BOOST_AUTO_TEST_CASE(a_list_does_not_wrap_at_either_end) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::SelectList> list =
         boost::make_shared<v3d::ui::component::SelectList>();
     list->items({"red", "green"});
@@ -252,7 +279,7 @@ BOOST_AUTO_TEST_CASE(a_list_does_not_wrap_at_either_end) {
  * with a click on a tab.
  **/
 BOOST_AUTO_TEST_CASE(the_arrows_turn_the_pages_of_a_tab_bar) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::TabBar> bar =
         boost::make_shared<v3d::ui::component::TabBar>();
     bar->add(boost::make_shared<v3d::ui::component::TabPage>());
@@ -276,27 +303,27 @@ BOOST_AUTO_TEST_CASE(the_arrows_turn_the_pages_of_a_tab_bar) {
  * line, the page keys by what the page shows, and home and end run to the ends.
  **/
 BOOST_AUTO_TEST_CASE(the_keys_move_a_scrollbar_by_a_line_and_by_a_page) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
         boost::make_shared<v3d::ui::component::Scrollbar>();
-    bar->range(1000.0f, 200.0f);
+    bar->range(1000.0F, 200.0F);
     fixture.container->add(bar);
     fixture.ui->focus(bar);
 
     BOOST_CHECK(fixture.keys->press("arrow_down"));
-    BOOST_CHECK_CLOSE(bar->offset(), v3d::ui::component::Scrollbar::lineStep, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), v3d::ui::component::Scrollbar::lineStep, 0.001F);
     BOOST_CHECK(fixture.keys->press("arrow_up"));
-    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0F, 0.001F);
 
     BOOST_CHECK(fixture.keys->press("pagedown"));
-    BOOST_CHECK_CLOSE(bar->offset(), 200.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), 200.0F, 0.001F);
     BOOST_CHECK(fixture.keys->press("pageup"));
-    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0F, 0.001F);
 
     BOOST_CHECK(fixture.keys->press("end"));
-    BOOST_CHECK_CLOSE(bar->offset(), bar->maximum(), 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), bar->maximum(), 0.001F);
     BOOST_CHECK(fixture.keys->press("home"));
-    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0F, 0.001F);
 
     // a bar carries no command, so a return and a space are left for whatever it scrolls
     BOOST_CHECK(!fixture.keys->press("return"));
@@ -308,22 +335,22 @@ BOOST_AUTO_TEST_CASE(the_keys_move_a_scrollbar_by_a_line_and_by_a_page) {
  * A horizontal bar reads the other pair of arrows as "along", the way a tab bar does.
  **/
 BOOST_AUTO_TEST_CASE(a_horizontal_scrollbar_takes_the_sideways_arrows) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
         boost::make_shared<v3d::ui::component::Scrollbar>();
     bar->direction(v3d::ui::component::Scrollbar::Direction::Horizontal);
-    bar->range(500.0f, 100.0f);
+    bar->range(500.0F, 100.0F);
     fixture.container->add(bar);
     fixture.ui->focus(bar);
 
     BOOST_CHECK(fixture.keys->press("arrow_right"));
-    BOOST_CHECK_CLOSE(bar->offset(), v3d::ui::component::Scrollbar::lineStep, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), v3d::ui::component::Scrollbar::lineStep, 0.001F);
     BOOST_CHECK(fixture.keys->press("arrow_left"));
-    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0F, 0.001F);
 
     // and the pair it does not read as along is not its, so it reaches the app
     BOOST_CHECK(!fixture.keys->press("arrow_down"));
-    BOOST_CHECK_CLOSE(bar->offset(), 0.0f, 0.001f);
+    BOOST_CHECK_CLOSE(bar->offset(), 0.0F, 0.001F);
 }
 
 /**
@@ -331,12 +358,12 @@ BOOST_AUTO_TEST_CASE(a_horizontal_scrollbar_takes_the_sideways_arrows) {
  * says how tall a row is drawn and a range of pixels cannot.
  **/
 BOOST_AUTO_TEST_CASE(a_bound_bar_steps_by_a_row_of_the_list_it_scrolls) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::SelectList> list =
         boost::make_shared<v3d::ui::component::SelectList>();
     list->items({"one", "two", "three", "four", "five", "six"});
-    list->rowHeight(20.0f);
-    list->size(glm::vec2(100.0f, 40.0f));
+    list->rowHeight(20.0F);
+    list->size(glm::vec2(100.0F, 40.0F));
     const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
         boost::make_shared<v3d::ui::component::Scrollbar>();
     bar->scrolls(list);
@@ -344,9 +371,9 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_steps_by_a_row_of_the_list_it_scrolls) {
     fixture.ui->focus(bar);
 
     BOOST_CHECK(fixture.keys->press("arrow_down"));
-    BOOST_CHECK_CLOSE(list->offset(), 20.0f, 0.001f);
+    BOOST_CHECK_CLOSE(list->offset(), 20.0F, 0.001F);
     BOOST_CHECK(fixture.keys->press("end"));
-    BOOST_CHECK_CLOSE(list->offset(), list->content() - list->size().y, 0.001f);
+    BOOST_CHECK_CLOSE(list->offset(), list->content() - list->size().y, 0.001F);
 }
 
 /**
@@ -354,10 +381,10 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_steps_by_a_row_of_the_list_it_scrolls) {
  * while the bar holds the focus.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_takes_no_key) {
-    Fixture fixture;
+    const Fixture fixture;
     const boost::shared_ptr<v3d::ui::component::Scrollbar> bar =
         boost::make_shared<v3d::ui::component::Scrollbar>();
-    bar->range(100.0f, 100.0f);
+    bar->range(100.0F, 100.0F);
     fixture.container->add(bar);
     fixture.ui->focus(bar);
 
@@ -368,3 +395,5 @@ BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_takes_no_key) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+};  // namespace

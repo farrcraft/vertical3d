@@ -5,7 +5,11 @@
 
 #include "Emitter.h"
 
+#include <api/type/effect/Emitter.h>
+
 #include "Transform.h"
+
+#include <cstdint>
 
 #include <glm/gtc/quaternion.hpp>
 #include <glm/vec3.hpp>
@@ -19,7 +23,7 @@ Emitter::Emitter(uint64_t seed) :
 void emit(entt::registry& registry, float step) {
     for (auto [entity, emitter] : registry.view<Emitter>().each()) {
         const Transform* transform = registry.try_get<Transform>(entity);
-        const glm::vec3 origin = transform != nullptr ? transform->position : glm::vec3(0.0f);
+        const glm::vec3 origin = transform != nullptr ? transform->position : glm::vec3(0.0F);
         const glm::quat orientation = transform != nullptr ? transform->rotation : glm::identity<glm::quat>();
         type::effect::step(emitter.description, &emitter.state, origin, orientation, step);
     }

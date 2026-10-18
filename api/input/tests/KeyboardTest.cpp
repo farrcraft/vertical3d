@@ -3,13 +3,18 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Context.h>
+#include <api/event/Event.h>
 #include <api/event/Source.h>
+#include <api/event/State.h>
 #include <api/event/kind/KeyDown.h>
 #include <api/event/kind/KeyUp.h>
+#include <api/input/KeyState.h>
 #include <api/input/Keyboard.h>
 #include <api/input/Mouse.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -39,18 +44,24 @@ struct Recorder {
     std::vector<v3d::event::Event> source_;
 };
 
-SDL_Event keyEvent(uint32_t type, SDL_Keycode key, bool repeat = false) {
+/** An event type, the key, and whether the press is a held key's repeat. **/
+struct Key {
+    uint32_t type = SDL_EVENT_KEY_DOWN;
+    SDL_Keycode key = SDLK_UNKNOWN;
+    bool repeat = false;
+};
+
+SDL_Event keyEvent(const Key& spec) {
     SDL_Event event{};
-    event.type = type;
-    event.key.key = key;
-    event.key.repeat = repeat;
+    event.type = spec.type;
+    event.key.key = spec.key;
+    event.key.repeat = spec.repeat;
     return event;
 }
-};  // namespace
 
 BOOST_AUTO_TEST_CASE(keyboard_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
     v3d::input::Keyboard keyboard(context, dispatcher);
 
     Recorder recorder;
@@ -59,52 +70,52 @@ BOOST_AUTO_TEST_CASE(keyboard_test) {
     dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
     // a key press is a KeyDown, plus a source event any mapper can bind
-    BOOST_CHECK_EQUAL(keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_Q)), true);
-    BOOST_REQUIRE_EQUAL(recorder.down_.size(), 1u);
+    BOOST_CHECK_EQUAL(keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_Q})), true);
+    BOOST_REQUIRE_EQUAL(recorder.down_.size(), 1U);
     BOOST_CHECK_EQUAL(recorder.down_[0], "q");
-    BOOST_REQUIRE_EQUAL(recorder.source_.size(), 1u);
+    BOOST_REQUIRE_EQUAL(recorder.source_.size(), 1U);
     BOOST_CHECK_EQUAL(recorder.source_[0].name(), "q");
     BOOST_CHECK_EQUAL(recorder.source_[0].context(), context);
     BOOST_CHECK(recorder.source_[0].state() == v3d::event::State::Pressed);
 
     // a release is the other edge of the same key
-    BOOST_CHECK_EQUAL(keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_UP, SDLK_Q)), true);
-    BOOST_REQUIRE_EQUAL(recorder.up_.size(), 1u);
+    BOOST_CHECK_EQUAL(keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_UP, .key = SDLK_Q})), true);
+    BOOST_REQUIRE_EQUAL(recorder.up_.size(), 1U);
     BOOST_CHECK_EQUAL(recorder.up_[0], "q");
-    BOOST_REQUIRE_EQUAL(recorder.source_.size(), 2u);
+    BOOST_REQUIRE_EQUAL(recorder.source_.size(), 2U);
     BOOST_CHECK(recorder.source_[1].state() == v3d::event::State::Released);
 
     // the named keys a binding config can reach
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_SPACE));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_UP));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_ESCAPE));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_F1));
-    BOOST_REQUIRE_EQUAL(recorder.down_.size(), 5u);
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_SPACE}));
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_UP}));
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_ESCAPE}));
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_F1}));
+    BOOST_REQUIRE_EQUAL(recorder.down_.size(), 5U);
     BOOST_CHECK_EQUAL(recorder.down_[1], "space");
     BOOST_CHECK_EQUAL(recorder.down_[2], "arrow_up");
     BOOST_CHECK_EQUAL(recorder.down_[3], "escape");
     BOOST_CHECK_EQUAL(recorder.down_[4], "f1");
 
     // including the punctuation, which a binding config names as the character it types
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_EQUALS));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_LEFTBRACKET));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_BACKSLASH));
-    BOOST_REQUIRE_EQUAL(recorder.down_.size(), 8u);
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_EQUALS}));
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_LEFTBRACKET}));
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_BACKSLASH}));
+    BOOST_REQUIRE_EQUAL(recorder.down_.size(), 8U);
     BOOST_CHECK_EQUAL(recorder.down_[5], "=");
     BOOST_CHECK_EQUAL(recorder.down_[6], "[");
     BOOST_CHECK_EQUAL(recorder.down_[7], "\\");
 
     // a key with no name is still the keyboard's event, but nothing can bind to it
     const std::size_t named = recorder.source_.size();
-    BOOST_CHECK_EQUAL(keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_PRINTSCREEN)), true);
-    BOOST_CHECK_EQUAL(recorder.down_.size(), 8u);
+    BOOST_CHECK_EQUAL(keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_PRINTSCREEN})), true);
+    BOOST_CHECK_EQUAL(recorder.down_.size(), 8U);
     BOOST_CHECK_EQUAL(recorder.source_.size(), named);
 
     // anything that is not a key event belongs to some other device
     SDL_Event motion{};
     motion.type = SDL_EVENT_MOUSE_MOTION;
     BOOST_CHECK_EQUAL(keyboard.handleEvent(motion), false);
-    BOOST_CHECK_EQUAL(recorder.down_.size(), 8u);
+    BOOST_CHECK_EQUAL(recorder.down_.size(), 8U);
 }
 
 BOOST_AUTO_TEST_CASE(keystate_test) {
@@ -165,11 +176,11 @@ BOOST_AUTO_TEST_CASE(keystate_edge_test) {
  * Keyboard::state() sees the same frame the events arrived in.
  **/
 BOOST_AUTO_TEST_CASE(keyboard_flush_clears_the_edge_it_recorded) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
     v3d::input::Keyboard keyboard(context, dispatcher);
 
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_Q));
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_Q}));
     BOOST_CHECK_EQUAL(keyboard.state().pressed("q"), true);
     BOOST_CHECK_EQUAL(keyboard.state().held("q"), true);
 
@@ -178,29 +189,29 @@ BOOST_AUTO_TEST_CASE(keyboard_flush_clears_the_edge_it_recorded) {
     // still down: a flush ends a frame, it does not release anything
     BOOST_CHECK_EQUAL(keyboard.state().held("q"), true);
 
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_UP, SDLK_Q));
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_UP, .key = SDLK_Q}));
     BOOST_CHECK_EQUAL(keyboard.state().released("q"), true);
     BOOST_CHECK_EQUAL(keyboard.state().held("q"), false);
 }
 
 BOOST_AUTO_TEST_CASE(keyboard_held_key_test) {
-    boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::event::Context> context = boost::make_shared<v3d::event::Context>("keyboard");
     v3d::input::Keyboard keyboard(context, dispatcher);
 
     Recorder recorder;
     dispatcher->sink<v3d::event::Source>().connect<&Recorder::sourceEvent>(recorder);
 
     // SDL repeats key down while a key is held. Every repeat is still a press, marked as a
-    // repeat, and the release that follows is still a release - the state tracking must not
-    // invert on the way through.
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W, true));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W, true));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_UP, SDLK_W));
-    keyboard.handleEvent(keyEvent(SDL_EVENT_KEY_DOWN, SDLK_W));
+    // repeat, and the release that follows is still a release. The repeats must not toggle
+    // the held state.
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_W}));
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_W, .repeat = true}));
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_W, .repeat = true}));
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_UP, .key = SDLK_W}));
+    keyboard.handleEvent(keyEvent({.type = SDL_EVENT_KEY_DOWN, .key = SDLK_W}));
 
-    BOOST_REQUIRE_EQUAL(recorder.source_.size(), 5u);
+    BOOST_REQUIRE_EQUAL(recorder.source_.size(), 5U);
     BOOST_CHECK(recorder.source_[0].state() == v3d::event::State::Pressed);
     BOOST_CHECK(recorder.source_[1].state() == v3d::event::State::Pressed);
     BOOST_CHECK(recorder.source_[2].state() == v3d::event::State::Pressed);
@@ -226,3 +237,5 @@ BOOST_AUTO_TEST_CASE(keyboard_name_table_test) {
     BOOST_TEST(v3d::input::isButtonName("left"));
     BOOST_TEST(!v3d::input::isButtonName("a"));
 }
+
+};  // namespace

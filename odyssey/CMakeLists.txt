@@ -15,6 +15,7 @@ add_executable(Odyssey
 	"tile/Map.h" "tile/Map.cpp"
 	"tile/Sight.h" "tile/Sight.cpp"
 	"tile/Tile.h" "tile/Size.h"
+	"tile/World.h" "tile/World.cpp"
 	"ui/Screen.h" "ui/Screen.cpp"
 )
 
@@ -29,6 +30,7 @@ target_link_libraries(Odyssey
 		"v3dlib_input"
 		"v3dlib_log"
 		"v3dlib_render"
+		"v3dlib_type"
 )
 
 v3d_add_app_data(Odyssey)
@@ -38,8 +40,8 @@ if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")
 endif()
 
-# a console subsystem executable is given a console of its own alongside the app's window.
-# main is reached through the WinMain that SDL_main.h supplies.
+# build for the windows subsystem. A console subsystem executable opens a console beside the
+# app's window. SDL_main.h supplies the WinMain that calls main.
 set_target_properties(Odyssey PROPERTIES WIN32_EXECUTABLE TRUE)
 
 target_compile_options(Odyssey PRIVATE /EHsc)

@@ -20,15 +20,13 @@ namespace v3d::config {
 /**
  * Named sprite sheets, loaded from a document the config names as Type::Sprite.
  *
- * The same shape as CameraProfiles: one document holds every sheet an app has, each named,
- * and this hands them out by name. What a sprite *means* (whether it animates, what it
- * stands on, how big it is drawn) is up to the app, as with a camera profile.
+ * One document holds every sheet an app has, each named, and get() returns one by name. What
+ * a sprite *means*, such as whether it animates or how big it is drawn, is up to the app.
  *
- * **Unlike the other config readers this one also writes**, because a tool produces a sprite
- * sheet rather than a person. A packer writes the document through document() rather than
- * its own code, since a second implementation could drift silently. get() returns an empty
- * region for a missing name and uv() returns false, so a badly written sheet draws nothing
- * and reports nothing. load() and document() read and write the same table.
+ * **SpriteSheets also writes the document**, because a tool produces a sprite sheet. A packer
+ * writes through document() and does not serialise the sheets itself. load() and document()
+ * read and write the same format. A badly written sheet reports no error when drawn:
+ * SpriteSheet::get() returns an empty region for a missing name, and uv() returns false.
  **/
 class SpriteSheets final {
  public:
@@ -40,10 +38,9 @@ class SpriteSheets final {
     /**
      * Read every sheet in the document.
      *
-     * A sheet with no name, no image or no size is rejected and the rest are kept, so one
-     * bad entry does not cost an app every sprite it has. CameraProfiles::load differs: it
-     * stops at the first bad profile. A region outside its sheet is skipped the same way,
-     * because SpriteSheet::place() refuses it.
+     * A sheet with no name, no image or no size is skipped, and the rest are kept. A region
+     * outside its sheet is skipped the same way, because SpriteSheet::place() refuses it.
+     * CameraProfiles::load() instead stops at the first bad profile.
      *
      * A sheet replaces any sheet of the same name already held, as add() does, and keeps that
      * name's place in names(). A name the document gives more than once logs a warning, and
@@ -84,10 +81,9 @@ class SpriteSheets final {
     /**
      * Every sheet held, as the document load() reads.
      *
-     * Sheets come out in the order they went in and so do the sprites within them, so
-     * re-packing a sheet moves only what actually moved and the diff is one a person can
-     * read. asset::writeDocument() writes it to a file; this decides only what the document
-     * holds.
+     * Sheets come out in the order they went in, and so do the sprites in each. Re-packing
+     * one sheet therefore changes only that sheet's lines in a diff. asset::writeDocument()
+     * writes the result to a file.
      *
      * A caller is free to add keys of its own to what comes back - a note saying which tool
      * generated the file, say. load() ignores what it does not recognise.

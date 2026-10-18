@@ -8,7 +8,7 @@ the exporter has to put the scale above the root joint.
 
   Armature  three bones in a chain up +z - root, middle and top - each 100 units
   Strip     a strip two units wide and three tall, a row every half unit, parented to the
-            armature with an Armature modifier and weighted as make_skin_fixture.py's: wholly
+            armature with an Armature modifier and weighted as make_skin_fixture.ts's: wholly
             to one bone between the joins and half and half on them
   bend      an action turning middle a quarter about its own x over one second, at 24 frames a
             second, which the exporter samples into a key a frame
