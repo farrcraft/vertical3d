@@ -494,6 +494,8 @@ Two things the plan did not foresee:
 
 `reference-area.png` and `raytrace-area.png` are a box's soft shadow on a wall, from code and
 from RIB. The code route, the RIB route and the moya driver give the same bytes.
+Seeding the samples from a running count instead of the shading point fails the case that
+shades in two orders, and both reyes area pictures.
 
 * **`Globals::shine` takes the point the light runs at**, rather than its placement's origin. Both
   hiders' `light()` pass a sampled point for an area light, and the origin for any other light.
