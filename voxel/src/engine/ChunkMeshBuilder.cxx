@@ -34,9 +34,8 @@ boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> ChunkMeshBuilder:
         return boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>();
     }
 
-    // the face a vertex belongs to carries its normal and its material. A vertex is only
-    // ever shared within one face, so the per face pair can be scattered out to the four
-    // corners the face added
+    // the face a vertex belongs to gives its normal and its material. A vertex is shared only
+    // within one face, so each face's pair can be copied to the four corners the face added
     std::vector<ChunkVertex> vertices(vertexCount);
     const glm::vec3* positions = mesh->vertices();
     for (size_t i = 0; i < vertexCount; i++) {
@@ -50,8 +49,8 @@ boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> ChunkMeshBuilder:
     for (size_t i = 0; i < faceCount; i++) {
         const glm::ivec4 face = faces[i];
         const glm::vec2 info(static_cast<float>(face.z), static_cast<float>(face.w));
-        // the face's two triangles name its four vertices between them, twice over for the
-        // shared edge - assigning the same value to all six costs less than deduplicating
+        // the face's two triangles name its four vertices, two of them twice for the shared
+        // edge. Assigning the same value six times costs less than deduplicating
         const glm::ivec3 corners[2] = { tris[face.x], tris[face.y] };
         for (const glm::ivec3& tri : corners) {
             vertices[tri.x].info = info;

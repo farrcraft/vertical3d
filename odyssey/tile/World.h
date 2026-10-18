@@ -65,7 +65,7 @@ class World final {
     /**
      * @param logger where a malformed document or a region that does not load is reported
      * @param assets where the region maps are read from, on the worker thread as well as this one
-     * @param worker what a region is loaded on while the game runs
+     * @param worker loads every region but the start region, on its own thread
      **/
     World(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assets,
         const boost::shared_ptr<v3d::asset::Worker>& worker);
@@ -185,8 +185,8 @@ class World final {
          **/
         bool failed = false;
         /**
-         * Moved on by each request and each release, so a load that finishes after the region
-         * was released, or requested again, is dropped.
+         * Incremented by each request and each release. A load that finishes after the region
+         * was released, or requested again, carries an older value and is dropped.
          **/
         unsigned int generation = 0;
     };
@@ -213,7 +213,8 @@ class World final {
     boost::shared_ptr<v3d::asset::Manager> assets_;
     boost::shared_ptr<v3d::asset::Worker> worker_;
     /**
-     * Shared, so a completion that runs after the world is gone finds nothing to fill.
+     * A shared_ptr, because each completion holds a weak_ptr to it. A completion that runs after
+     * the world is destroyed, or after load() replaces the regions, finds nothing to fill.
      **/
     boost::shared_ptr<std::vector<Region>> regions_;
     v3d::grid::TileCoord start_{0, 0};

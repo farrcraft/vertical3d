@@ -1,7 +1,7 @@
-# The scene is where pong's rules are - collision, scoring, the ai and the paddle run - and
-# it holds nothing but entities and a dispatcher, so it needs neither a window nor a device.
-# The engine is built so its commands can be checked against the bindings pong ships, and is
-# never started, so it needs neither either.
+# The scene holds pong's rules: collision, scoring, the computer player and paddle movement.
+# It holds only entities and a dispatcher, so it needs neither a window nor a device. The
+# engine is built so its commands can be checked against the bindings pong ships. It is never
+# started, so it needs no window or device either.
 v3d_add_test(pong
 	"TestMain.cxx"
 	"BallTest.cxx"

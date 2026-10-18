@@ -30,8 +30,8 @@ boost::shared_ptr<Mesh> watched(const boost::shared_ptr<int>& owner) {
 BOOST_AUTO_TEST_SUITE(chunk_mesh_pool_test)
 
 /**
- * Remeshing a chunk hands the old mesh to the retire function, which keeps it alive until it
- * runs what it was given. A frame in flight can still draw the old mesh until then.
+ * Remeshing a chunk hands the old mesh to the retire function. The old mesh stays alive until
+ * the retire function runs the destroy it was given, so a frame in flight can still draw it.
  **/
 BOOST_AUTO_TEST_CASE(a_replaced_mesh_is_retired_not_destroyed) {
     std::vector<std::function<void()>> retired;

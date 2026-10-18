@@ -11,8 +11,7 @@ namespace {
 
 /**
  * The values a round starts on. The collision tests measure against the ball size, and
- * reaching the max score ends a game. The start speed is pixels per second, because the
- * scene advances by a fixed step rather than by a frame.
+ * reaching the max score ends a game. The start speed is in court units per second.
  **/
 BOOST_AUTO_TEST_CASE(game_state_defaults_test) {
     const GameState state;
@@ -25,8 +24,8 @@ BOOST_AUTO_TEST_CASE(game_state_defaults_test) {
 }
 
 /**
- * reset() puts the ball's start speed back, but leaves the options a player chose - the mode
- * and the target score outlive a round - and leaves the pause to the menu that set it.
+ * reset() restores the ball's start speed. It keeps the mode and the target score a player
+ * chose, and leaves the pause to the menu that set it.
  **/
 BOOST_AUTO_TEST_CASE(game_state_reset_test) {
     GameState state;

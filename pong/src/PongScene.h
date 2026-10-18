@@ -42,7 +42,8 @@ class PongScene {
     void reset();
 
     /**
-     * The four paddle commands, which the engine reads held each step and passes to steer().
+     * The paddle commands. Each step, the engine passes each one to steer() with whether its
+     * key is held.
      **/
     static constexpr std::string_view paddleCommands[] = {
         "leftPaddleUp", "leftPaddleDown", "rightPaddleUp", "rightPaddleDown"
@@ -71,9 +72,9 @@ class PongScene {
 
  private:
     /**
-     * The phases of one tick, in the order tick() runs them. Each takes the ball position
-     * tick() snapshotted rather than reading it again: a bounce changes the ball's
-     * direction, and only scorePoint moves it.
+     * The phases of one tick, in the order tick() runs them. Each phase that takes a position
+     * is given the one tick() read before the first phase. A bounce changes only the ball's
+     * direction, and of the phases only scorePoint() moves the ball.
      **/
     void checkVictory();
     void steerOpponent(const glm::vec2& ballPosition);

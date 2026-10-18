@@ -68,7 +68,7 @@ class Renderer {
     void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
         const v3d::ui::Immediate::Input& tools);
     /**
-     * Resize the frame
+     * Give the camera's projection the aspect of a frame this size.
      */
     void resize(const glm::ivec2& size);
 
@@ -88,7 +88,8 @@ class Renderer {
 
  private:
     /**
-     * The layout of set 1 - the light and the block palette, which every chunk draws with.
+     * Create the descriptor pool and layout for set 1: the light and the block palette, which
+     * every chunk draws with.
      **/
     void createLayout();
 
@@ -109,8 +110,8 @@ class Renderer {
     void drawTerrain(v3d::render::realtime::Pass* pass);
 
     /**
-     * The F3 readout - the build, what the loop measured, where the player is standing, and
-     * how many of the meshed chunks were drawn.
+     * The debug readout, toggled by voxel::debug: the build, what the loop measured, where the
+     * player is standing, and how many of the meshed chunks were drawn.
      **/
     void drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
         const v3d::ui::Immediate::Input& tools);

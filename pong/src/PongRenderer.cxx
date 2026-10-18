@@ -108,7 +108,7 @@ void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statist
 
     screen_->draw(ui_.get(), statistics);
 
-    // the menu in front of the court, as a layer of its own
+    // the screen's canvas is a layer of its own, in front of the court
     const boost::shared_ptr<v3d::render::realtime::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);
     engine_.quads()->submit(court_, pass.get(), 0);
@@ -158,7 +158,7 @@ void PongRenderer::drawBall(float alpha) {
  **/
 void PongRenderer::drawPaddle(const Paddle& paddle, float alpha) {
     court_.push();
-    // the paddle's position is the centre of its travel; its rectangle is drawn from the corner
+    // the paddle's position is the centre of its length. The rectangle is drawn from its corner
     court_.translate(glm::vec2(paddle.offset(), paddle.drawn(alpha) - (paddle.length() / 2.0F)));
     const glm::vec3 colour = paddle.color();
     court_.rect(glm::vec2(0.0F, 0.0F), glm::vec2(paddle.size(), paddle.length()), glm::vec4(colour, 1.0F));

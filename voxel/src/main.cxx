@@ -12,8 +12,8 @@
 #include "Controller.h"
 
 int main(int /* argc */, char *argv[]) {
-    // Chunk generation draws its block types from rand(). The seed comes from the platform's
-    // entropy source rather than the clock, which two runs started in the same second share.
+    // Chunk generation draws its block types from rand(). Seed it from the platform's entropy
+    // source: two runs started in the same second would share a seed taken from the clock.
     std::random_device entropy;
     srand(entropy());
 

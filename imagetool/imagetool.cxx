@@ -24,9 +24,9 @@ namespace {
 /**
  * Read the four whole numbers of a "x,y,width,height" rectangle.
  *
- * Each is read as a signed number wider than the one it is stored in, so that a negative
- * offset is refused rather than wrapping into an enormous positive one that no image
- * contains - which crop() would then reject for the wrong reason.
+ * Each number is read as an int64_t, which is wider than the unsigned int it is stored in, so
+ * a negative value is refused here. Read as unsigned, it would wrap to a huge value, and crop()
+ * would then reject it as outside the image.
  *
  * @param values filled with x, y, width and height when true is returned
  * @return whether the text was exactly four comma separated non negative numbers
@@ -97,7 +97,7 @@ int run(int argc, char *argv[]) {
         std::cout << "error: a crop is four whole numbers, x,y,width,height\n";
         return EXIT_FAILURE;
     }
-    // a crop with nowhere to go is a mistyped command rather than a read
+    // a crop with no outfile is a mistyped command, so it is refused rather than run as a read
     if (cropping && outfile.empty()) {
         std::cout << "error: a crop needs an outfile to write the cut image to\n";
         return EXIT_FAILURE;
@@ -158,9 +158,9 @@ int run(int argc, char *argv[]) {
 };  // namespace
 
 int main(int argc, char *argv[]) {
-    // the option parser and the image factory both report by throwing, and an exception
-    // leaving main is an abort with no message in it. The handler reports through stdio
-    // rather than the stream the rest of the file writes to, because the handler itself
+    // the option parser throws on a malformed command line, and the image factory's path
+    // handling can throw a filesystem error. An exception leaving main aborts with no message.
+    // The handler writes with std::fputs rather than std::cout, because the handler itself
     // must not throw
     try {
         return run(argc, argv);

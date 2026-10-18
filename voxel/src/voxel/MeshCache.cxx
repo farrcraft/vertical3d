@@ -135,9 +135,9 @@ void MeshCache::createFace(const Facing & facing,
         return;
     }
 
-    // the two triangles share an edge, so the quad is four vertices indexed six times.
-    // addTri(vec3, vec3, vec3) would append three fresh vertices per triangle and leave the
-    // index buffer holding 0, 1, 2, 3... - a quarter of the mesh carrying no information.
+    // the two triangles share an edge, so the quad is four vertices indexed six times. Do not
+    // use addTri(vec3, vec3, vec3) here. It appends three new vertices per triangle, which
+    // leaves the index buffer as 0, 1, 2, 3 and so on, carrying no information.
     const size_t p0 = addVertex(v0);
     const size_t p1 = addVertex(v1);
     const size_t p2 = addVertex(v2);

@@ -13,8 +13,8 @@
 namespace {
 
 /**
- * A ball is an entity in the app's registry rather than a value, so everything it holds is a
- * component read back through it.
+ * A ball is an entity in the registry. Its position, direction and size are components, read
+ * back through the Ball.
  **/
 BOOST_AUTO_TEST_CASE(ball_components_test) {
     entt::registry registry;

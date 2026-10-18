@@ -24,19 +24,17 @@ namespace odyssey::tile {
  * The board odyssey plays on: a v3d::grid::TileGrid, what each of its tiles is made of,
  * and where the player starts.
  *
- * The document is data/map.json, a "tiles" array of equal length strings with one
- * character per tile and the first string the northmost row. The characters are:
+ * A map document, such as data/map.json, holds a "tiles" array of equal length strings. Each
+ * character is a tile, and the first string is the northmost row. The characters are:
  *
  *     '.'  floor
  *     '#'  wall
  *     'o'  crate
  *     '@'  floor, and where the player starts
  *
- * Rows of characters rather than an array of objects because a map is read far more often
- * by a person than by the program, and this way the file looks like the board. The rows and
- * the terrain of '.', '#' and 'o' go to v3d::grid::fromPicture, which builds the grid. The
- * JSON around them, the kinds and the '@' are odyssey's, because api/grid parses a picture
- * against a terrain legend and nothing else about a map file.
+ * The rows are text so that the file looks like the board. v3d::grid::fromPicture builds the
+ * grid from the rows and the terrain of '.', '#' and 'o'. The JSON around the rows, the kinds
+ * and the '@' are odyssey's own. api/grid parses only a picture against a terrain legend.
  **/
 class Map final {
  public:
@@ -53,9 +51,9 @@ class Map final {
     /**
      * Read a map document, replacing whatever was loaded before.
      *
-     * A map with no rows, with rows of differing lengths, or with a character that names
-     * no kind is rejected rather than patched: a map that loaded as something other than
-     * what was written is worse than one that did not load.
+     * A map with no rows, with rows of differing lengths, with a character that names no
+     * kind, or with no floor to stand on is rejected, not patched. A rejected document leaves
+     * the map that was loaded before it in place.
      *
      * @param corner where the grid's minimum corner is placed in the world, for a region; the
      *        grid is centred on the origin without one
@@ -76,15 +74,14 @@ class Map final {
     const boost::shared_ptr<v3d::grid::TileGrid>& grid() const noexcept;
 
     /**
-     * @return what a tile is made of, or Kind::Wall for a tile off the map - nothing can
-     *         stand outside the board, and returning rather than throwing matches
-     *         TileGrid::passable()
+     * @return what a tile is made of, or Kind::Wall for a tile off the map. Like
+     *         TileGrid::passable(), it does not throw for a tile off the map
      **/
     Kind kind(v3d::grid::TileCoord tile) const;
 
     /**
-     * Where the player starts: the '@' in the document, or the first floor tile when the
-     * document names none.
+     * Where the player starts: the last '@' in the document, or the first floor tile when the
+     * document has none.
      **/
     v3d::grid::TileCoord start() const noexcept;
 

@@ -49,7 +49,7 @@ class Voxel {
     } BlockFace;
 
     /**
-        * Default constructor
+        * A block of a type, at a position in world blocks.
         */
     Voxel(BlockType type, const glm::vec3 & position);
 

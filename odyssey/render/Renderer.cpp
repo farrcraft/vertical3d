@@ -31,7 +31,7 @@ namespace odyssey::render {
 
 namespace {
 /**
- * The one sprite odyssey draws, loaded and uploaded on its own.
+ * The image file of the player's sprite, the only texture odyssey draws.
  **/
 const char* const spriteName = "sample.png";
 
@@ -87,9 +87,9 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
     const boost::shared_ptr<v3d::asset::media::kind::Image> asset =
         assetManager->load<v3d::asset::media::kind::Image>(spriteName);
     if (!asset || !asset->image()) {
-        // the loader has already said which file it could not read. An unset handle draws
-        // against the renderer's white texture rather than nothing at all, so the sprite
-        // becomes a plain square and the frame is still a frame
+        // the loader has already logged which file it could not read. sprite_ stays unset, and
+        // an unset handle draws with the renderer's white texture, so the player is drawn as a
+        // plain white square
         logger_->get()->error("the player sprite is missing, so it is drawn untextured");
         return;
     }
@@ -170,8 +170,7 @@ void Renderer::drawWorld(v3d::grid::TileCoord view) {
         for (int y = 0; y < grid.height(); y++) {
             for (int x = 0; x < grid.width(); x++) {
                 const v3d::grid::TileCoord tile{x, y};
-                // the region's grid is placed by its corner, so its own tile becomes a world
-                // position, and that is a world tile because a tile is one world unit
+                // the region's own tile plus the region's corner is the world tile
                 const v3d::grid::TileCoord placed = world_->world(region, tile);
                 const int column = placed.x - view.x;
                 const int row = placed.y - view.y;
@@ -216,8 +215,8 @@ void Renderer::drawPlayer(v3d::grid::TileCoord view) {
         return;
     }
 
-    // the position is a world tile, and the canvas is in pixels with the origin at its top
-    // left, so the view's tile is the top left tile of the screen
+    // the position is a world tile. The canvas is in pixels with its origin at the top left,
+    // and view is the world tile drawn at that corner
     const glm::vec2 min(
         static_cast<float>((position->x - view.x) * odyssey::engine::unit::tile_width),
         static_cast<float>((position->y - view.y) * odyssey::engine::unit::tile_height));

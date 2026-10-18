@@ -27,9 +27,10 @@ Moves possibleMoves[] = {
 };
 
 /**
- * How fast the player moves, in units per second, and how fast that grows, in units per
- * second squared. The camera's velocity is constant here - nothing calls updateVelocity -
- * so the walk is the linear term and the acceleration is a small addition on top of it.
+ * The camera's acceleration, in units per second squared, and its velocity limit, in units
+ * per second. move() sets the current velocity of a driven axis to one unit per second.
+ * Nothing calls Camera::updateVelocity(), the only reader of the limit, so the walk is one
+ * unit per second plus each step's small acceleration term.
  **/
 constexpr glm::vec3 PLAYER_ACCELERATION(8.0F, 8.0F, 8.0F);
 constexpr glm::vec3 PLAYER_VELOCITY(12.0F, 12.0F, 12.0F);

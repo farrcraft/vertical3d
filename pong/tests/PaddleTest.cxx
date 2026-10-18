@@ -27,8 +27,7 @@ BOOST_AUTO_TEST_CASE(paddle_components_test) {
 }
 
 /**
- * position() writes an absolute position and move() adds to it. The scene uses only the
- * first, to centre a paddle after a point, so this test keeps the two distinct.
+ * position() writes an absolute position, and move() adds to the current one.
  **/
 BOOST_AUTO_TEST_CASE(paddle_move_test) {
     entt::registry registry;
@@ -45,8 +44,8 @@ BOOST_AUTO_TEST_CASE(paddle_move_test) {
 }
 
 /**
- * reset() clears the score and deliberately leaves the travel flags, which are held by
- * whichever key is down at the time.
+ * reset() clears the score, and leaves the travel flags and the position alone. The travel
+ * flags follow whichever key is held.
  **/
 BOOST_AUTO_TEST_CASE(paddle_reset_test) {
     entt::registry registry;

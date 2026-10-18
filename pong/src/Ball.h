@@ -26,13 +26,13 @@ class Ball {
     glm::vec2 drawn(float alpha) const;
 
     /**
-     * Draw the ball where it is with no motion, after it has been put somewhere rather than
-     * moved there.
+     * Make the next frame draw the ball at its position, with no motion from the last step.
+     * Call it after placing the ball somewhere it did not move to.
      **/
     void settle();
 
     /**
-     * Advance by the direction, which is a velocity in units per second.
+     * Advance by the direction, which is a velocity in court units per second.
      * @param step seconds of simulated time
      **/
     void move(float step);

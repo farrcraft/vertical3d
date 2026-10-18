@@ -64,7 +64,8 @@ Controller::Controller(const std::string& appPath) :
 bool Controller::start() {
     window()->caption("Voxel");
 
-    // mouselook reads how far the mouse moved, which relative mode reports at any edge
+    // mouselook reads how far the mouse moved. Relative mode reports motion even with the
+    // pointer at the window's edge
     window()->relativeMouse(true);
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
@@ -76,8 +77,6 @@ bool Controller::start() {
         return false;
     }
 
-    // this is actually the game controller
-    // maybe we need a separate player controller class to intercept mouse events?
     motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
 
     scene_ = boost::make_shared<Scene>();
@@ -86,7 +85,7 @@ bool Controller::start() {
     renderer_ = boost::make_shared<Renderer>(scene_, win, logger(), assets());
     renderer_->ui(vgui_);
 
-    // set the scene size according to the window canvas
+    // give the camera's projection the window's aspect
     renderer_->resize(glm::ivec2(window()->width(), window()->height()));
 
     return true;
@@ -98,8 +97,8 @@ bool Controller::tick(unsigned int delta) {
     if (!v3d::engine::Engine::tick(delta)) {
         return false;
     }
-    // the renderer's per-frame work stays here rather than moving to simulate(): remeshing
-    // is a budget of chunks per frame, and the debug overlay averages how long a frame took
+    // remesh in tick(), not simulate(), because the remeshing budget is a number of chunks
+    // per frame. The "chunks" span times that work once per frame for the debug overlay
     const v3d::engine::Statistics::Scope chunks = measure("chunks");
     renderer_->tick(delta);
     return true;
@@ -142,7 +141,7 @@ bool Controller::render() {
  **/
 v3d::ui::Immediate::Input Controller::tools() const {
     v3d::ui::Immediate::Input input;
-    // no cursor while the game has the mouse - see tools() in Controller.h
+    // no cursor while the menu is closed, because mouselook has the mouse
     if (!menu_ || !menu_->visible()) {
         return input;
     }
@@ -180,7 +179,7 @@ void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
     if (!window()->focused()) {
         return;
     }
-    // the menu owns the pointer while it is up
+    // the mouse does not turn the player while the menu is open
     if (menu_->visible()) {
         return;
     }

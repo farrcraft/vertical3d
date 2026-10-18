@@ -30,8 +30,8 @@ Controller::Controller(const std::string& path) : v3d::engine::Engine(path) {
         scene_->board()->debug(scene_->debug());
     });
 
-    // a play command takes a held key's repeats, so a piece keeps sliding while its key is
-    // down. The board only takes play commands while it is running
+    // a play command acts on a held key's repeats too, so a piece keeps sliding while its key
+    // is down. Play commands do nothing while the game is paused or over
     auto play = [this](const std::string& name, const v3d::event::Commands::Handler& action) {
         commands().add(name, [this, action](const v3d::event::Event& event) {
             if (!scene_->paused() && !scene_->board()->over()) {
@@ -76,7 +76,8 @@ bool Controller::start() {
     renderer_->scene(scene_);
     renderer_->ui(vgui_);
 
-    // set the scene size according to the window canvas
+    // TetrisScene::resize() ignores the size. TetrisRenderer::layout() places the well from the
+    // canvas size on every frame
     renderer_->resize(window()->width(), window()->height());
 
     scene_->reset();

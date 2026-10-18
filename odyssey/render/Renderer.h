@@ -66,8 +66,8 @@ class Renderer final {
      * The loaded regions, one untextured quad per tile on screen. They are drawn first and the
      * pass is in submission order, so everything else lands on top of them.
      *
-     * A tile never seen is left undrawn rather than drawn black, so the clear colour is what
-     * unexplored ground, and a region not loaded yet, looks like.
+     * A tile never seen is not drawn, so unexplored ground and a region not loaded yet both show
+     * the clear colour.
      **/
     void drawWorld(v3d::grid::TileCoord view);
 
@@ -77,7 +77,7 @@ class Renderer final {
     void drawTile(int column, int row, const glm::vec4& colour);
 
     /**
-     * The sprite, at the world tile its entity's position names.
+     * The player's sprite, at the player's world tile.
      **/
     void drawPlayer(v3d::grid::TileCoord view);
 

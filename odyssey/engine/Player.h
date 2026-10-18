@@ -20,8 +20,7 @@ class Player final {
     Player(entt::registry *registry);
 
     /**
-     * The entity the player's components hang off, for a system or the renderer that
-     * needs to look one of them up.
+     * The entity that holds the player's components.
      **/
     entt::entity entity() const noexcept;
 

@@ -20,7 +20,7 @@
 v3d::type::geometry::AABBox chunkBounds(const glm::vec3& origin, float size);
 
 /**
- * @return whether any of a chunk could be in view. A chunk crossing the frustum's edge is,
- *         so nothing at the edge of the screen is dropped
+ * @return whether any part of a chunk could be in view. A chunk that crosses the frustum's
+ *         edge counts as in view, so nothing at the edge of the screen is dropped
  **/
 bool chunkInView(const v3d::type::geometry::Frustum& frustum, const glm::vec3& origin, float size);

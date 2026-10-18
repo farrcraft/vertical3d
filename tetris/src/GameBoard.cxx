@@ -243,8 +243,8 @@ void GameBoard::spawnTetrad() {
     currentTetrad_ = nextTetrad_;
     nextTetrad_ = randomTetrad();
 
-    // place it centered at the top of the board. A shape is normalised into the top left of
-    // its 4x4 grid, so the grid's left column is also the shape's
+    // centre the 4x4 grid at the top of the board. Every shape is normalised into the top left
+    // of its grid, so the grid's left column is also the shape's
     const Tetrad::PositionType position((cols_ - 4) / 2, 0);
     currentTetrad_.position(position);
 
@@ -265,8 +265,8 @@ void GameBoard::lockTetrad() {
             }
             const unsigned int row = position.second + i;
             const unsigned int column = position.first + j;
-            // fits() has already checked the tetrad is inside the board, but a stray write during
-            // a lock would corrupt the heap rather than draw something odd, so it is checked again
+            // fits() has already checked that the tetrad is inside the board. Check again anyway,
+            // because a write outside the board here would corrupt the heap
             if (row < rows_ && column < cols_) {
                 pieces_[row][column] = Piece(shape.color_);
             }
@@ -306,8 +306,8 @@ void GameBoard::update(float step) {
 unsigned int GameBoard::checkCompletedRows() {
     unsigned int cleared = 0;
 
-    // from the bottom up, and a cleared row is looked at again rather than stepped past,
-    // because what was above it has just been shifted into it
+    // scan from the bottom up. After a row is cleared the same row is checked again, because
+    // the row above it has just moved down into it
     unsigned int row = rows_;
     while (row > 0) {
         unsigned int filled = 0;

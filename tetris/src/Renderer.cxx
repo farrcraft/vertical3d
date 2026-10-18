@@ -43,8 +43,8 @@ const float fontSize = 22.0F;
 const char* const colours[] = { "red", "cyan", "blue", "green", "orange", "purple", "yellow" };
 
 /**
- * The atlas the seven 64x64 block textures are packed into. Three fit across a row, so
- * seven need three rows, and the packer keeps a one pixel border on every side.
+ * The size of the atlas the seven 64x64 block textures are packed into. Three fit across a
+ * row, so seven need three rows. The atlas keeps a one texel gutter around each texture.
  **/
 const unsigned int atlasSize = 256;
 
@@ -93,8 +93,8 @@ const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& TetrisRenderer::stat
 /**
  **/
 void TetrisRenderer::loadPieces(const boost::shared_ptr<v3d::asset::Manager>& assetManager, const boost::shared_ptr<v3d::log::Logger>& logger) {
-    // one atlas rather than seven textures: a block is the only thing the well is made of,
-    // so packing them means the whole board is one batch instead of a flush per colour
+    // pack the block textures into one atlas. Every block in the well then samples the same
+    // texture, so the whole board is one batch and not one per colour
     v3d::image::TextureAtlas atlas(atlasSize, atlasSize, 3, logger);
 
     for (const char* const colour : colours) {
@@ -248,8 +248,8 @@ void TetrisRenderer::drawTetrad(const Tetrad& tetrad, const glm::vec2& origin, f
         return;
     }
     const Tetrad::ShapeInfo& shape = tetrad.shape();
-    // the layout's first index is the row and its second the column, the same order the
-    // board's collision and lock-in code reads it in
+    // the layout's first index is the row and its second the column, the same order
+    // GameBoard::fits() and GameBoard::lockTetrad() read it in
     for (unsigned int row = 0; row < 4; row++) {
         for (unsigned int column = 0; column < 4; column++) {
             if (shape.layout_[row][column] == 0) {

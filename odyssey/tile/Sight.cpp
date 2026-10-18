@@ -18,8 +18,7 @@ namespace odyssey::tile {
  **/
 void Sight::look(const v3d::grid::TileGrid& grid, v3d::grid::TileCoord from) {
     if (width_ != grid.width() || height_ != grid.height()) {
-        // a board of another size is another board, so nothing about the old one is
-        // remembered onto it
+        // a board of another size is a different board, so its memory starts empty
         width_ = grid.width();
         height_ = grid.height();
         const std::size_t tiles = static_cast<std::size_t>(width_) * static_cast<std::size_t>(height_);
@@ -28,8 +27,8 @@ void Sight::look(const v3d::grid::TileGrid& grid, v3d::grid::TileCoord from) {
     }
 
     std::ranges::fill(visible_, 0);
-    // only the range box is traced: a tile outside it is out of sight whatever the board
-    // does, and the box is the Chebyshev disc rather than an approximation of one
+    // trace only the square of tiles within RANGE. A tile outside it is out of sight, and the
+    // square is exactly the set of tiles within RANGE Chebyshev steps
     const int minX = std::max(from.x - RANGE, 0);
     const int minY = std::max(from.y - RANGE, 0);
     const int maxX = std::min(from.x + RANGE, width_ - 1);

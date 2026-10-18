@@ -31,8 +31,8 @@ bool Movement::simulate(float step) {
             continue;
         }
         path.elapsed += step;
-        // a while rather than an if: a step longer than secondsPerTile covers more than one
-        // tile, and dropping the remainder would make a slow frame a slow walk
+        // a loop, because a simulation step longer than secondsPerTile covers more than one
+        // tile. Moving one tile per step would slow the walk whenever a step is long
         while (path.elapsed >= secondsPerTile && path.next < path.tiles.size()) {
             path.elapsed -= secondsPerTile;
             const v3d::grid::TileCoord tile = path.tiles[path.next];

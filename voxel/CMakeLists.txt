@@ -49,17 +49,17 @@ v3d_add_shader(voxel "shaders/voxel.frag")
 v3d_add_app_data(voxel)
 v3d_add_shared_data(voxel)
 
-# a console subsystem executable is given a console of its own alongside the app's window.
-# main is reached through the WinMain that SDL_main.h supplies.
+# build for the windows subsystem. A console subsystem executable opens a console beside the
+# app's window. SDL_main.h supplies the WinMain that calls main.
 set_target_properties(voxel PROPERTIES WIN32_EXECUTABLE TRUE)
 
 target_compile_options(voxel PRIVATE /EHsc)
 
-# noiseutils is Jason Bevins' libnoise utility layer, vendored verbatim. It is not held to
-# the tree's warning level or to either analyser, for the same reason cpplint skips it - a
-# local fix is lost the next time it is taken from upstream. /analyze- takes it out of MSVC's
-# analysis and SKIP_LINTING out of clang-tidy's; a suppression list would have to name every
-# finding a later version of either reports.
+# noiseutils is Jason Bevins' libnoise utility layer, vendored verbatim. The tree's warning
+# level and both analysers skip it, as cpplint does, because a local fix would be lost the next
+# time it is taken from upstream. /analyze- takes it out of MSVC's analysis, and SKIP_LINTING
+# takes it out of clang-tidy's. A suppression list would have to name every finding that each
+# later version reports.
 set_source_files_properties("src/noise/noiseutils.cpp" PROPERTIES
 	COMPILE_OPTIONS "/wd4100;/wd4189;/wd4244;/analyze-"
 	SKIP_LINTING TRUE)

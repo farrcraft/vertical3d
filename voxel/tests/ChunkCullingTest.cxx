@@ -19,8 +19,8 @@ namespace {
 const float chunkSize = 16.0F;
 
 /**
- * The frustum voxel culls against, from voxel's own camera at the origin looking down -z with
- * the projection Renderer::resize gives it.
+ * The frustum voxel culls against, from voxel's own camera at the origin looking down -z. The
+ * lens is the one Renderer::resize gives it, at an aspect of one.
  **/
 Frustum view() {
     Camera camera;

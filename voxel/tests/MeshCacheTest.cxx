@@ -27,8 +27,8 @@ boost::shared_ptr<Voxel> block(const glm::vec3& position) {
 }
 
 BOOST_AUTO_TEST_CASE(a_face_is_four_vertices_indexed_six_times_test) {
-    // a face is four corners drawn as two triangles, so the six indices it emits name four
-    // vertices between them - indices running 0, 1, 2, 3... would carry no information
+    // a face is four corners drawn as two triangles, so its six indices name four vertices.
+    // Indices running 0, 1, 2, 3 and so on would carry no information
     const boost::shared_ptr<MeshCache> mesh = cache();
     mesh->extract(block(glm::vec3(0.0F, 0.0F, 0.0F)), Voxel::BLOCK_FACE_FRONT, glm::vec3(0.0F));
 
@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(a_face_is_four_vertices_indexed_six_times_test) {
     BOOST_CHECK_EQUAL(mesh->triCount(), 2U);
     BOOST_CHECK_EQUAL(mesh->faceCount(), 1U);
 
-    // the two triangles share an edge, so between them they name one vertex twice
+    // the two triangles share an edge, so both name that edge's two vertices
     const glm::ivec3 first = mesh->tris()[0];
     const glm::ivec3 second = mesh->tris()[1];
     BOOST_CHECK_EQUAL(first.x, second.x);

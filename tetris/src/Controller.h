@@ -48,9 +48,8 @@ class Controller final : public v3d::engine::Engine {
     /**
      * Turn the falling tetrad, if the board has room for the turned shape.
      *
-     * A turn that would overlap a wall is tried again one and two cells to either side
-     * before it is given up on, so that a shape against the edge of the well can still be
-     * turned rather than being stuck flat against it.
+     * A turned shape that does not fit is tried again one and then two cells to either side.
+     * A shape against the side of the well can then still turn.
      **/
     void rotate(Tetrad::RotationDirection direction);
 

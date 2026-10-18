@@ -37,9 +37,9 @@ namespace odyssey::engine {
  **/
 Engine::Engine(const std::string& appPath) :
     v3d::engine::Engine(appPath) {
-    // the bindings name no state, so both edges arrive and only the press is a move - a
-    // release would otherwise take a second step off every key. A held key's repeats each
-    // take a step, so holding a key walks
+    // the bindings name no state, so a command receives both the press and the release of its
+    // key. Only the press moves the player, or every key would take two steps. A held key's
+    // repeats are not releases, so each repeat takes a step and holding a key walks
     auto press = [this](const std::string& name, const std::function<void()>& action) {
         commands().add(name, [action](const v3d::event::Event& event) {
             if (event.state() != v3d::event::State::Released) {
@@ -61,10 +61,10 @@ bool Engine::start() {
 
     worker_ = boost::make_shared<v3d::asset::Worker>();
     world_ = boost::make_shared<odyssey::tile::World>(logger(), assets(), worker_);
-    // the world is a document of the app's own, which config.json names like the rest
+    // the world document is odyssey's own type, and config.json lists it beside the others
     if (!world_->load(config()->get("world"))) {
-        // the world is the board and the collision rules both, so there is no sensible game
-        // without one - the loader has already said what it could not read
+        // the world holds the board and its collision rules, so the game cannot run without
+        // it. load() has already logged what it could not read
         return false;
     }
 
@@ -101,7 +101,7 @@ v3d::grid::TileCoord Engine::playerTile() const {
 void Engine::walkToCursor() {
     const v3d::grid::TileCoord from = playerTile();
     const v3d::grid::TileCoord view = world_->view(from, v3d::grid::TileCoord{unit::screen_tile_width, unit::screen_tile_height});
-    // a cursor is never left of or above the window, so a pixel divides down to its tile
+    // the cursor's coordinates are never negative, so integer division gives its tile
     const v3d::grid::TileCoord goal{
         view.x + (static_cast<int>(cursor_.x) / unit::tile_width),
         view.y + (static_cast<int>(cursor_.y) / unit::tile_height)};
@@ -117,7 +117,7 @@ void Engine::walkToCursor() {
     }
     odyssey::engine::Path& path = registry().get<odyssey::engine::Path>(player_->entity());
     path.tiles = std::move(route);
-    // findPath returns the tile the mover is standing on first, so the walk starts at 1
+    // the first tile findPath returns is the one the player stands on, so the next is index 1
     path.next = 1;
     path.elapsed = 0.0F;
 }
@@ -127,7 +127,7 @@ void Engine::walkToCursor() {
 void Engine::step(int dx, int dy) {
     odyssey::engine::Path& path = registry().get<odyssey::engine::Path>(player_->entity());
     if (!path.tiles.empty()) {
-        // a key interrupts a walk rather than fighting it for the next tile
+        // a key stops a walk in progress, and does not also take a step
         path.tiles.clear();
         path.next = 0;
         path.elapsed = 0.0F;
@@ -178,12 +178,10 @@ bool Engine::simulate(float step) {
     if (!v3d::engine::Engine::simulate(step)) {
         return false;
     }
-    // Step various systems, e.g. Movement System, Collision System, Combat System, etc
     if (!movementSystem_->simulate(step)) {
         return false;
     }
-    // after the systems have moved anything, and before the frame that draws what the
-    // player can see from where it now stands
+    // look after movement, so the next frame draws what the player sees from its new tile
     world_->look(playerTile());
     return true;
 }

@@ -38,9 +38,9 @@ const unsigned int chunkSize = 16;
 const unsigned int worldHeightInBlocks = 64;
 
 BOOST_AUTO_TEST_CASE(chunk_ceiling_is_measured_in_blocks_test) {
-    // the ceiling is in blocks, not chunks. A heightmap is scaled against it, so passing the
-    // world's chunk count instead flattens terrain in a 64 block world to four blocks and
-    // leaves every chunk above the first empty
+    // the ceiling is in blocks, not chunks. A heightmap is scaled against it, so a ceiling of
+    // the world's chunk count would flatten a 64 block world to four blocks, and leave every
+    // chunk above the first empty
     FlatTerrain terrain(255.0F);
 
     Chunk full(&terrain, glm::ivec3(0, 1, 0), worldHeightInBlocks);
@@ -81,8 +81,8 @@ BOOST_AUTO_TEST_CASE(chunk_hides_faces_between_its_own_blocks_test) {
     BOOST_CHECK(chunk.hidden(Voxel::BLOCK_FACE_FRONT, interior));
     BOOST_CHECK(chunk.hidden(Voxel::BLOCK_FACE_BACK, interior));
 
-    // one on the wall has a face its own chunk cannot resolve, so the check crosses the
-    // seam into the next chunk
+    // a block on the chunk's edge has a face whose neighbour is in the next chunk, so hidden()
+    // does not hide that face
     BOOST_CHECK(!chunk.hidden(Voxel::BLOCK_FACE_LEFT, glm::ivec3(0, 8, 8)));
     BOOST_CHECK(!chunk.hidden(Voxel::BLOCK_FACE_RIGHT, glm::ivec3(15, 8, 8)));
 }

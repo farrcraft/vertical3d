@@ -40,8 +40,8 @@ bool AppEngine::tick(unsigned int /* delta */) {
 }
 
 bool AppEngine::render() {
-    // beginFrame is false while the window has no area: it has presented the frame empty,
-    // because a canvas with no area has no projection to build geometry against
+    // beginFrame() returns false while the window has no area, after presenting an empty
+    // frame. A canvas with no area has no projection to build geometry against
     glm::ivec2 size;
     if (!renderer_->beginFrame(&size)) {
         return true;
@@ -63,8 +63,8 @@ bool AppEngine::render() {
 }
 
 bool AppEngine::release() {
-    // the renderer goes before the engine destroys the window: the context owns the device
-    // that holds the window's surface alive, and Window::destroy unloads the vulkan library
+    // shut the renderer down before the engine destroys the window. The renderer's device
+    // holds a reference to the window's surface, and Window::destroy unloads the vulkan library
     if (renderer_) {
         renderer_->shutdown();
     }

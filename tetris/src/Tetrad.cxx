@@ -55,8 +55,8 @@ void Tetrad::rotate(RotationDirection dir) {
     }
     memcpy(shape_.layout_, rotated, sizeof(rotated));
 
-    // a turn leaves the shape wherever in the grid the arithmetic put it, and the board
-    // reads the grid's corner as the tetrad's position
+    // a turn can leave the shape away from the grid's top left corner. Normalise it, because
+    // the board treats the grid's corner as the tetrad's position
     normalize(&shape_);
 
     if (dir == CLOCKWISE) {

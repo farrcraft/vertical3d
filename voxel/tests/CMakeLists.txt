@@ -40,19 +40,20 @@ set_source_files_properties("../src/noise/noiseutils.cpp" PROPERTIES
 	COMPILE_OPTIONS "/wd4100;/wd4189;/wd4244;/analyze-"
 	SKIP_LINTING TRUE)
 
-# libnoise reaches the suite the same way it reaches the app - named by the target that
-# compiles its headers, rather than by the root for the whole tree.
+# The suite names libnoise's include and link directories itself, as the app does. The root
+# does not name them for the whole tree.
 target_include_directories(v3dtest_voxel SYSTEM PRIVATE "${V3D_ROOT}/vendor/libnoise/include/noise")
 target_link_directories(v3dtest_voxel PRIVATE "${V3D_ROOT}/vendor/libnoise/Debug")
 
-# A chunk is built against a TerrainMap, and the vtable of the one the tests derive from
-# refers to the perlin implementation whether or not any test generates noise.
+# A chunk is built against a TerrainMap. The vtable of the TerrainMap the tests derive from
+# refers to the perlin implementation, so the suite links libnoise even where no test generates
+# noise.
 target_link_libraries(v3dtest_voxel PRIVATE
 	v3dlib_type
 	"libnoise")
 
-# The mesh pool holds the render library's meshes, and the controller the rest of what the app
-# links.
+# The mesh pool holds the render library's meshes. The controller needs the rest of what the
+# app links.
 target_link_libraries(v3dtest_voxel PRIVATE
 	v3dlib_asset
 	v3dlib_config

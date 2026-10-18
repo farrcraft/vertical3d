@@ -21,9 +21,8 @@
 namespace {
 
 /**
- * Where the player starts: above the terrain rather than inside it. The world is 64 blocks
- * tall, and there is no collision or gravity to lift a spawn that starts under the hills
- * back out of them.
+ * Where the player starts, above the terrain. The world is 64 blocks tall. There is no
+ * collision or gravity, so a spawn under the hills would stay inside them.
  **/
 constexpr glm::vec3 SPAWN_POSITION(128.0F, 80.0F, 240.0F);
 

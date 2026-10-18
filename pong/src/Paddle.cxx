@@ -79,10 +79,7 @@ float Paddle::offset() const {
 void Paddle::reset() {
     Score& component = registry_->get<Score>(id_);
     component.score_ = 0;
-/* resetting these could glitch input
-    _up = false;
-    _down = false;
-*/
+    // the travel flags are left alone, because they follow whichever key is held
 }
 
 bool Paddle::up() {

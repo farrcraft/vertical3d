@@ -53,15 +53,15 @@ struct Sounds final {
 };
 
 /**
- * The fixed step the engine simulates at, in seconds. Every scene speed below is per second.
- * It is repeated here rather than taken from v3d::engine::Accumulator, because this test
- * links neither the engine nor a device.
+ * The length of one simulation step, in seconds, as v3d::engine::Accumulator::seconds gives
+ * it. Every scene speed below is per second. It is repeated here because this test links
+ * neither the engine nor a device.
  **/
 constexpr float STEP = 1.0F / 60.0F;
 
 /**
  * Speeds are per second and a sixtieth is not exactly representable, so a position is
- * asserted to within a hundredth of a pixel rather than exactly.
+ * asserted to within a hundredth of a court unit rather than exactly.
  **/
 bool near(const glm::vec2& lhs, const glm::vec2& rhs) {
     return std::abs(lhs.x - rhs.x) < 0.01F && std::abs(lhs.y - rhs.y) < 0.01F;
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_reset_test) {
 
 /**
  * A tick with nothing in reach moves the ball by one step of its velocity and fires
- * nothing. Sixty pixels a second over a sixtieth of a second is one pixel.
+ * nothing. Sixty units a second over a sixtieth of a second is one unit.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_tick_moves_the_ball_test) {
     Fixture fixture;
@@ -407,7 +407,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_bounces_off_the_bottom_test) {
 }
 
 /**
- * Both walls turn the ball where its edge meets the wall's face, fifteen pixels in, so the
+ * Both walls turn the ball where its edge meets the wall's face, fifteen court units in, so the
  * top is no deeper than the bottom.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_walls_turn_the_ball_at_their_faces_test) {
@@ -460,8 +460,8 @@ BOOST_AUTO_TEST_CASE(pong_scene_victory_test) {
 }
 
 /**
- * Every clip the scene plays is one pong's sounds document holds, so no hit, bounce, point or
- * win is silent and logged as a clip that cannot be played.
+ * Every clip the scene plays is listed in pong's sounds document. A clip missing from it would
+ * be silent, and logged as a clip that cannot be played.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_plays_only_clips_its_sounds_document_holds_test) {
     const std::ifstream file("data/sounds.json");
@@ -538,7 +538,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_paddle_travel_is_bounded_test) {
 
 /**
  * A paddle less than a step from the end of its run stops at the end rather than carrying the
- * whole step into the wall. A step is a pixel and a half, and each paddle starts one pixel in.
+ * whole step into the wall. A step is one and a half units, and each paddle starts one unit in.
  **/
 BOOST_AUTO_TEST_CASE(pong_scene_paddle_stops_at_the_wall_test) {
     Fixture fixture;

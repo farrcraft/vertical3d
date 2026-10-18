@@ -188,9 +188,9 @@ void Camera::perspective(const Lens& lens) {
     projection_[0][3] = 0.0F;
 
     projection_[1][0] = 0.0F;
-    // negated: vulkan's clip space has y pointing down, where the axes this is built from
-    // have it pointing up. Which also reverses the winding a front face presents, so the
-    // pipeline drawing through this has to call its front faces clockwise
+    // negated, because vulkan's clip space has y pointing down and the camera's axes have it
+    // pointing up. The flip also reverses the winding of a front face, so a pipeline drawing
+    // through this camera declares its front faces clockwise
     projection_[1][1] = -yScale;
     projection_[1][2] = 0.0F;
     projection_[1][3] = 0.0F;
@@ -382,13 +382,6 @@ void Camera::updatePosition(const glm::vec3 &direction, float elapsedTimeSec) {
 
 namespace {
 
-/**
- * One axis of the camera's velocity for one frame.
- *
- * A driven axis accelerates toward its limit and is clamped there. An axis that is not
- * driven decelerates toward zero and stops there rather than crossing it. The deceleration
- * has two signs for this reason.
- **/
 /** One axis's velocity, which way it is driven, how fast it changes, its limit, and the time. **/
 struct Axis {
     float current = 0.0F;
@@ -398,6 +391,13 @@ struct Axis {
     float elapsed = 0.0F;
 };
 
+/**
+ * One axis of the camera's velocity, after one update.
+ *
+ * A driven axis accelerates toward its limit and is clamped there. An axis that is not
+ * driven decelerates toward zero and stops there, without crossing it. The deceleration
+ * therefore takes the sign that moves the velocity toward zero.
+ **/
 float axisVelocity(const Axis& axis) {
     float current = axis.current;
     const float direction = axis.direction;

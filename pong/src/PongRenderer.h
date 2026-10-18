@@ -23,10 +23,11 @@
 #include <glm/vec4.hpp>
 
 /**
- * Everything pong draws, built as one canvas of quads and handed to the render engine.
+ * Everything pong draws, built as quads and handed to the render engine.
  *
- * The board, the scoreboard and the menu all go through the batched quad pipeline, so the
- * whole frame reaches the device as one upload and a draw per texture.
+ * The board and the scores are drawn on a canvas in court units. The menu and the statistics
+ * are drawn on the screen's canvas, in front of it. Both go through the batched quad pipeline,
+ * so the whole frame reaches the device as one upload and a draw per texture.
  **/
 class PongRenderer final {
  public:

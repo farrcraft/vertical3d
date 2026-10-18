@@ -55,8 +55,8 @@
 namespace {
 
 /**
- * The terrain pipeline's shader modules, compiled to SPIR-V at build time by glslc and
- * included as the C initialiser lists its -mfmt=c writes - see v3d_add_shader.
+ * The terrain pipeline's shader modules. v3d_add_shader compiles each to SPIR-V at build time
+ * with glslc -mfmt=c, which writes it as a C initialiser list that is included here.
  **/
 const uint32_t vertexShader[] =
 #include "shaders/voxel.vert.inc"
@@ -92,8 +92,8 @@ constexpr glm::vec4 textColour(0.95F, 0.95F, 0.95F, 1.0F);
 constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
 
 /**
- * How many chunks are remeshed in one tick. Meshing waits for its staging copy, so the
- * whole world arriving in one frame would be a visible stall.
+ * How many chunks are remeshed in one tick. Each mesh waits for its staging copy, so meshing
+ * the whole world in one frame would stall that frame visibly.
  **/
 const size_t chunkUpdatesPerTick = 16;
 
@@ -114,9 +114,8 @@ constexpr glm::vec4 blockSpecular(0.8F, 0.8F, 0.8F, 100.0F);
 constexpr float maxDepthKey = static_cast<float>(std::numeric_limits<uint16_t>::max());
 
 /**
- * Where the debug readout sits and how big it is, in pixels, and what its background is
- * drawn at. It is a fixed height, and a line taller for each span of the frame that was
- * timed.
+ * Where the debug readout sits and how big it is, in pixels, and the alpha its background is
+ * drawn at. Its height is debugHeight plus one debugLineHeight for each timed span.
  **/
 constexpr glm::vec2 debugPosition(20.0F, 20.0F);
 constexpr float debugWidth = 260.0F;
@@ -214,8 +213,8 @@ void Renderer::createUniforms() {
     uniforms.diffuse = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
     uniforms.specular = glm::vec4(1.0F, 1.0F, 1.0F, 1.0F);
     for (unsigned int i = 0; i < materialCount; i++) {
-        // a block reflects its own colour ambiently and diffusely and white specularly -
-        // what varies between block types is the colour, not the finish
+        // a block reflects its own colour ambiently and diffusely, and white specularly.
+        // Block types differ in colour, not in finish
         uniforms.materials[i].ambient = glm::vec4(palette[i], 1.0F);
         uniforms.materials[i].diffuse = glm::vec4(palette[i], 1.0F);
         uniforms.materials[i].specular = blockSpecular;
@@ -256,8 +255,8 @@ void Renderer::createPipeline() {
         .vertexBinding({.binding = 0, .stride = sizeof(ChunkVertex)})
         .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(ChunkVertex, position)})
         .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(ChunkVertex, info)})
-        // a block face is wound counter clockwise seen from outside the block, and the
-        // camera's projection flips y - so what reaches the rasterizer is clockwise
+        // a block face is wound counter clockwise seen from outside the block. The camera's
+        // projection flips y, so what reaches the rasterizer is clockwise
         .cull(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE)
         .depth(true, true)
         // terrain is opaque, and blending it would cost bandwidth on every fragment of it
@@ -306,9 +305,9 @@ void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
         std::memcpy(item.push.data(), &origin, sizeof(origin));
         item.pushSize = sizeof(origin);
 
-        // near chunks first, so the depth test rejects what is behind them before it is
-        // shaded. The far plane is 1000 blocks and a chunk is 16, so quantizing the distance
-        // to whole blocks is finer than the ordering can use
+        // sort near chunks first, so the depth test rejects what is behind them before it is
+        // shaded. The key holds whole blocks, which is fine enough to order chunks 16 blocks
+        // wide
         const float distance = glm::length(entry.origin - eye);
         item.key.depth = static_cast<uint16_t>(distance < maxDepthKey ? distance : maxDepthKey);
 
@@ -327,7 +326,7 @@ void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statis
     const float tall = debugHeight + (debugLineHeight * static_cast<float>(statistics.spans.size()));
     if (layer->window(debugTitle, {.position = debugPosition, .size = glm::vec2(debugWidth, tall)}, debugAlpha)) {
         layer->text(std::string("Voxel ") + VOXEL_VERSION);
-        // the loop already keeps a rolling mean, so nothing here averages anything
+        // statistics.mean is already the loop's rolling mean of the frame time
         layer->text(std::to_string(statistics.mean / NANOSECONDS_PER_MILLISECOND) + " ms");
         std::stringstream where;
         where.precision(1);
@@ -368,8 +367,8 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     }
     screen_->draw(ui_.get(), statistics);
 
-    // a second pass rather than more items in the first: the terrain is depth tested and
-    // sorted front to back, and the text over it is painter ordered and must not be
+    // the text goes in a second pass. The terrain pass is depth tested and sorted front to
+    // back, and the text over it must be drawn in painter order with no depth test
     const boost::shared_ptr<v3d::render::realtime::Pass> overlay = engine_.frame()->pass(overlayPass);
     overlay->keepColour();
     overlay->depth(false);
@@ -387,8 +386,7 @@ const std::vector<v3d::render::realtime::vulkan::frame::Timings::Timing>& Render
 /**
  **/
 void Renderer::tick(unsigned int /* delta */) {
-    // the chunk build has a budget of chunks per tick rather than a duration, so it does not
-    // use how long the last frame took. The loop measures that for the debug readout
+    // the chunk build's budget is a number of chunks, not a duration, so delta is not used
     builder_->build(meshes_, chunkUpdatesPerTick);
 }
 

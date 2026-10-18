@@ -35,15 +35,15 @@
 namespace {
 
 /**
- * The organization and app userPath() resolves against. Never changed: every player's
- * settings live under this pair and a new one orphans them.
+ * The organization and application names that userPath() resolves against. Do not change
+ * them: every player's settings are stored under this pair, and a new pair would lose them.
  **/
 const char* const ORGANIZATION = "Vertical3D";
 const char* const APPLICATION = "Pong";
 
 /**
- * The menu item that captures a key, against the paddle command it drives. The item name is
- * also the settings key, so what is stored says which menu wrote it.
+ * Each menu item that captures a key, paired with the paddle command it rebinds. The item name
+ * is also the key that the new binding is stored under in the settings.
  **/
 // an array of views rather than a map of strings, because a map with static storage
 // duration allocates during static initialization and can throw where nothing can catch it
@@ -71,7 +71,7 @@ std::string_view paddleCommand(std::string_view item) {
 
 
 PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
-    // the paddles follow the keys held now, which simulate() reads
+    // simulate() reads whether each paddle command's key is held
     for (const std::string_view command : PongScene::paddleCommands) {
         commands().addHeld("pong::" + std::string(command));
     }
@@ -100,15 +100,16 @@ PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
 bool PongEngine::start() {
     window()->caption("Pong!");
 
-    // once the engine is up, because rebinding rebuilds the mapper the config built
+    // in start(), because rebind() rebuilds the bindings the engine loads from the config
+    // before start() runs
     settings_ = boost::make_shared<v3d::engine::Settings>(ORGANIZATION, APPLICATION, logger());
     settings_->load();
     applyStoredBindings();
 
     soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger(), dispatcher());
     v3d::audio::registerLoaders(*assets(), logger());
-    // the return is not read: a device that will not open leaves the engine silent, and the
-    // engine logs why. Every clip played against it is a false return.
+    // the return is ignored. When no device opens, the engine logs why and stays silent, and
+    // play() returns Voice::None.
     soundEngine_->initialize();
 
     vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
@@ -149,8 +150,8 @@ bool PongEngine::simulate(float step) {
     // interpolate between the two steps
     v3d::ecs::snapshot<v3d::ecs::component::Position2D>(registry());
     v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry());
-    // the paddles follow the keys held now rather than the presses and releases that arrived,
-    // so a key held through the menu or a change of mode moves its paddle as soon as it can
+    // steer by the keys held now, not by the presses and releases received. A key held while
+    // the menu was open, or across a change of mode, then moves its paddle as soon as play resumes
     for (const std::string_view command : PongScene::paddleCommands) {
         scene_->steer(command, held("pong::" + std::string(command)));
     }
@@ -202,8 +203,8 @@ void PongEngine::rebindPaddleKey(const v3d::event::Event& event) {
     }
     logger()->get()->info("bound {} to {}", command, key);
 
-    // stored as it is made rather than on the way out: there is no exit path that reliably
-    // runs, and a crash after a rebinding should not lose the rebinding
+    // save each rebinding as it is made. No exit path is certain to run, and a crash should not
+    // lose a rebinding
     settings_->set(std::string(event.name()), key);
     settings_->save();
 }
@@ -213,7 +214,7 @@ void PongEngine::rebindPaddleKey(const v3d::event::Event& event) {
 void PongEngine::applyStoredBindings() {
     for (const auto& binding : PADDLE_COMMANDS) {
         const std::string key = settings_->text(std::string(binding.first)).value_or(std::string());
-        if (key.empty()) {  // untouched, so it keeps tracking whatever the config binds
+        if (key.empty()) {  // never rebound, so the config's binding stays
             continue;
         }
         if (rebind(std::string(binding.second), key)) {
@@ -228,8 +229,8 @@ void PongEngine::handleSource(const v3d::event::Source& source) {
     if (!menu_ || !menu_->capturing() || source.state() != v3d::event::State::Pressed) {
         return;
     }
-    // escape is left to what it is bound to, which steps back out of the menu and abandons
-    // the capture - so it is never captured as a paddle key
+    // escape is never captured as a paddle key. Its binding steps back out of the menu, which
+    // abandons the capture
     if (source.name() == "escape") {
         return;
     }
@@ -238,8 +239,8 @@ void PongEngine::handleSource(const v3d::event::Source& source) {
     if (!source.context() || source.context()->name() != "keyboard") {
         return;
     }
-    // a menu item capturing a key takes the key itself rather than the command it is bound
-    // to, so the key is consumed and its bindings do not fire
+    // the capturing menu item takes the key's name. Consuming the source stops the key's own
+    // bindings from firing
     menu_->capture(std::string(source.name()));
     source.consume();
 }

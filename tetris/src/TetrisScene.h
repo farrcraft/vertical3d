@@ -42,7 +42,7 @@ class TetrisScene {
     unsigned int score() const;
 
     /**
-     * Whether the game is running. A paused game still draws, but its board does not fall.
+     * Whether the game is paused. A paused game still draws, but its board does not fall.
      */
     bool paused() const;
     void pause(bool paused);

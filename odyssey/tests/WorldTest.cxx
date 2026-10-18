@@ -128,14 +128,14 @@ BOOST_AUTO_TEST_CASE(the_start_region_loads_at_once) {
 }
 
 /**
- * A region approached is loaded on the worker, and its grid is placed by its corner, so the
- * grid's own conversion and the world's agree on which of its tiles a world tile is.
+ * A region the player approaches is loaded on the worker. Its grid is placed at the region's
+ * corner, so the grid's worldToTile() and World::local() agree on which tile a world tile is.
  **/
 BOOST_AUTO_TEST_CASE(an_approached_region_loads_placed_by_its_corner) {
     Fixture fixture("world_approach");
     BOOST_REQUIRE(fixture.world->load(document(twoRegions)));
 
-    // four tiles from the east region is APPROACH, and five is not
+    // four tiles from the east region is within APPROACH, and five is not
     fixture.world->stream(at(1, 1));
     BOOST_CHECK(!fixture.world->loading(1));
     fixture.world->stream(at(2, 1));
@@ -153,13 +153,13 @@ BOOST_AUTO_TEST_CASE(an_approached_region_loads_placed_by_its_corner) {
             BOOST_CHECK(fixture.world->world(1, fixture.world->local(1, at(x, y))) == at(x, y));
         }
     }
-    // the doorway crosses the seam once both sides are loaded
+    // the doorway leads into the east region once both regions are loaded
     BOOST_CHECK(fixture.world->passable(at(6, 1)));
 }
 
 /**
  * Crossing into the next region puts the one left behind out of sight. What was seen there stays
- * remembered, and is no longer current.
+ * remembered.
  **/
 BOOST_AUTO_TEST_CASE(crossing_a_seam_puts_the_old_region_out_of_sight) {
     Fixture fixture("world_cross");
@@ -216,11 +216,11 @@ BOOST_AUTO_TEST_CASE(a_region_left_behind_is_released_and_remembered) {
     fixture.world->look(at(31, 1));
     BOOST_CHECK(fixture.world->sight(1).remembered(at(1, 1)));
 
-    // the west region was left behind in turn while the player stood in the east one
+    // standing in the east region released the west one, which is more than DEPART tiles away
     BOOST_CHECK(!fixture.world->loaded(0));
 
-    // back west, more than DEPART tiles from the east region, which is released while the west
-    // one is asked for again
+    // back in the west region, more than DEPART tiles from the east one. The east region is
+    // released and the west one is requested again
     fixture.world->stream(at(1, 1));
     BOOST_CHECK(!fixture.world->loaded(1));
     BOOST_CHECK(fixture.world->sight(1).remembered(at(1, 1)));
@@ -251,8 +251,8 @@ BOOST_AUTO_TEST_CASE(a_load_for_a_released_region_is_dropped) {
 }
 
 /**
- * A region whose map cannot be read is reported once, and asked for again only after the player
- * has gone away from it and come back.
+ * A region whose map cannot be read is not requested again while the player stays near it. It
+ * is requested again after the player has gone more than DEPART tiles away and come back.
  **/
 BOOST_AUTO_TEST_CASE(a_region_that_cannot_be_read_is_not_asked_for_every_frame) {
     Fixture fixture("world_failed", false);

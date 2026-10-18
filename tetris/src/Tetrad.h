@@ -10,8 +10,8 @@
 #include <utility>  // for std::pair
 
 /**
- * A group of individual blocks forming a shape. We call the current 
- * (or any future) falling piece a tetrad.
+ * A shape of blocks in a 4x4 grid, with a position on the board and an orientation. The
+ * falling piece and the next piece are both tetrads.
  */
 class Tetrad {
  public:
@@ -74,9 +74,9 @@ class Tetrad {
         /**
          * Move a shape's filled cells into the top left of its 4x4 grid.
          *
-         * Every shape is kept this way. A rotation produces one, so a shape that did not
-         * start out normalised would behave differently before its first turn than after -
-         * it would stop a cell short of the left wall until it was rotated once.
+         * Every shape is kept normalised, and rotate() normalises its result. A shape that
+         * started out unnormalised would otherwise stop short of the left wall until its first
+         * turn.
          *
          * @param shape the layout to normalise in place
          */

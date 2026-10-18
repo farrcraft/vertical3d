@@ -12,8 +12,8 @@
 namespace {
 
 /**
- * An L, which is the same shape as none of its own rotations - so a turn that did
- * nothing, or turned the wrong way, shows up.
+ * An L, whose layout differs from each of its own rotations. A turn that did nothing, or
+ * turned the wrong way, therefore shows up.
  **/
 Tetrad::ShapeInfo el() {
     Tetrad::ShapeInfo shape;
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(tetrad_assignment_test) {
     Tetrad piece(el());
     piece.position(Tetrad::PositionType(4, 7));
 
-    // assignment has to carry the position, which the copy constructor beside it does
+    // assignment copies the position, as the implicit copy constructor does
     Tetrad copy;
     copy = piece;
     BOOST_CHECK_EQUAL(copy.position().first, 4U);
@@ -111,8 +111,8 @@ BOOST_AUTO_TEST_CASE(tetrad_assignment_test) {
 }
 
 BOOST_AUTO_TEST_CASE(tetrad_extent_test) {
-    // the L is three tall and two wide, so an extent that ignored the minimum occupied row
-    // and column would report three for both
+    // the L is three tall and two wide, so a width and height that swapped rows for columns
+    // would fail. An empty tetrad has no extent
     const Tetrad piece(el());
     BOOST_CHECK_EQUAL(piece.width(), 2U);
     BOOST_CHECK_EQUAL(piece.height(), 3U);

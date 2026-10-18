@@ -26,8 +26,8 @@ class GameBoard {
         /**
          * Read the tetrad shapes the board spawns from.
          *
-         * Separate from construction because it can fail: a board with no shapes has
-         * nothing to spawn, and the caller has to be able to say so.
+         * This is separate from construction because it can fail. A board with no shapes has
+         * nothing to spawn, and the caller has to report that.
          *
          * @param assetManager where pieces/shapes.txt is resolved against
          * @return false when no shape could be read
@@ -35,10 +35,9 @@ class GameBoard {
         bool load(const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 
         /**
-         * Install a shape set directly. Reading the file ends by calling this.
+         * Install a set of shapes directly. The load from a file ends by calling this.
          *
-         * Separate from the read so that what the board does with a set of shapes can be
-         * exercised without a file behind it.
+         * A test can use this to give the board shapes without a file.
          *
          * @param shapes the shapes to spawn from, normalised on the way in
          * @return false when the set is empty
@@ -83,7 +82,7 @@ class GameBoard {
         bool debug() const;
 
         /**
-         * @return how many rows have been cleared, ten points apiece
+         * @return the points scored this game, a hundred for each row cleared
          */
         unsigned int score() const;
 
@@ -118,15 +117,14 @@ class GameBoard {
         Tetrad nextTetrad() const;
 
         /**
-         * Whether a tetrad's shape would overlap the walls, the floor or a block already on
-         * the board if it were at a given position.
+         * Whether a tetrad's shape would fit at a given position: inside the walls and the
+         * floor, and over no block already on the board. An uninitialized tetrad never fits.
          *
-         * Every move the board or the controller makes is checked through this, so the fall,
-         * the sideways moves and the rotation share one definition of a legal position.
+         * The spawn, the fall, the sideways moves and the rotation are all checked through
+         * this, so they share one definition of a legal position.
          *
          * @param tetrad the shape to test, whose own position is ignored
-         * @param column the leftmost column of its 4x4 layout
-         * @param row the topmost row of its 4x4 layout
+         * @param cell the column and row of the top left corner of its 4x4 layout
          */
         bool fits(const Tetrad & tetrad, const glm::ivec2 & cell) const;
 

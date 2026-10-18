@@ -21,7 +21,7 @@ namespace {
 // its whole run in a little under six seconds.
 constexpr float PADDLE_SPEED = 90.0F;
 
-// the vertical velocity a travelling paddle adds to the return, in pixels per second, before
+// the vertical velocity a travelling paddle adds to the return, in court units per second, before
 // the return is scaled back to the ball's incoming speed. It is a third of the paddle's own
 // speed, enough to steer a return without overriding where it was struck
 constexpr float PADDLE_ENGLISH = 30.0F;
@@ -101,7 +101,7 @@ void PongScene::coop(bool mode) {
 }
 
 void PongScene::steerOpponent(const glm::vec2& ballPosition) {
-    // give AI a turn in single player mode
+    // the computer steers the right paddle outside coop
     if (gameState_.coop()) {
         return;
     }
@@ -125,10 +125,10 @@ void PongScene::steerOpponent(const glm::vec2& ballPosition) {
 }
 
 void PongScene::bouncePaddles(const glm::vec2& ballPosition) {
-    // the ball is treated as its square box, and each paddle as a box running from its face
-    // out past the court's edge rather than as thick as the paddle. A ball that reaches the
-    // face bounces, and so does one fast enough to have passed it between two steps. A box
-    // the paddle's own width would let that ball tunnel through
+    // the ball is tested as its square box. Each paddle is tested as a box that runs from its
+    // face out past the court's edge, not as a box the paddle's thickness. A ball that reaches
+    // the face bounces, and so does a fast ball that passed the face between two steps. A box
+    // the paddle's thickness would let that ball pass through
     const float ballSize = gameState_.ballSize();
     const v3d::type::geometry::Bound2D ball({.position = ballPosition - glm::vec2(ballSize / 2.0F), .size = glm::vec2(ballSize)});
     const float court = width;
@@ -195,7 +195,7 @@ void PongScene::scorePoint(const glm::vec2& ballPosition) {
     const float mid_x = width / 2.0F;
     const glm::vec2 v(mid_x, mid_y);
     ball_.position(v);
-    // last winner serves the ball, at the start speed
+    // serve towards the player who conceded the point, at the start speed
     const float speed = gameState_.ballStartSpeed();
     const glm::vec2 dir(speed * victor, 0.0F);
     ball_.direction(dir);
@@ -204,16 +204,17 @@ void PongScene::scorePoint(const glm::vec2& ballPosition) {
     left_.position(mid_y);
     right_.position(mid_y);
 
-    // all three were put back rather than moved, so none is drawn travelling there
+    // all three were placed, not moved, so settle them. The next frame then draws them at the
+    // centre and not on the way there
     ball_.settle();
     left_.settle();
     right_.settle();
 }
 
 void PongScene::bounceWalls(const glm::vec2& ballPosition) {
-    // a ball whose edge has reached a wall's face is sent away from that wall. Setting the
-    // sign rather than flipping it means a ball still inside the wall on the next step is not
-    // turned back into it
+    // turn a ball whose edge has reached a wall's face, but only while it heads into that
+    // wall. A ball still inside the wall on the next step is already heading out, so it is not
+    // turned back in
     const float half = gameState_.ballSize() / 2.0F;
     glm::vec2 direction = ball_.direction();
     const bool intoTop = ballPosition.y - half <= wall && direction.y < 0.0F;
@@ -247,9 +248,9 @@ void PongScene::tick(float step) {
 
     checkVictory();
 
-    // one snapshot serves the whole tick: a bounce changes the ball's direction rather
-    // than its position, and the reposition a point scores happens after everything that
-    // reads where the ball was
+    // every phase reads the ball's position from before this step. A bounce changes only the
+    // ball's direction. scorePoint() moves the ball to the centre, and bounceWalls() then reads
+    // the old position, but the serve has no vertical direction, so no wall turns it
     const glm::vec2 ballPosition = ball_.position();
 
     steerOpponent(ballPosition);

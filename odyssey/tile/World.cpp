@@ -37,8 +37,8 @@ namespace odyssey::tile {
 namespace {
 
 /**
- * The largest corner or size a world document may give, in tiles. A float holds every whole
- * number up to 2^24 exactly, and a world this large is far beyond any board odyssey draws.
+ * The largest corner or size a world document may give, in tiles. Each number is converted
+ * through a float, which holds every whole number up to 2^24 exactly.
  **/
 constexpr int32_t largest = 1 << 20;
 
@@ -144,8 +144,8 @@ bool World::load(const boost::shared_ptr<v3d::asset::kind::Json>& document) {
         return false;
     }
 
-    // the old regions go with the old vector, so a completion still on the worker for one of
-    // them finds nothing to fill
+    // replace the vector, not its contents. A completion for an old region holds a weak_ptr
+    // to the old vector, which expires here, so it finds nothing to fill
     regions_ = boost::make_shared<std::vector<Region>>(std::move(regions));
     start_ = world(static_cast<std::size_t>(*first), home.map->start());
     min_ = regions_->front().corner;
@@ -258,8 +258,8 @@ v3d::grid::TileCoord World::max() const noexcept {
 /**
  **/
 v3d::grid::TileCoord World::view(v3d::grid::TileCoord player, v3d::grid::TileCoord screen) const {
-    // centred on the player, then held inside the world, then at its least tile when the world
-    // is the smaller of the two
+    // centre the player, then clamp to the world's edges. When the world is smaller than the
+    // screen, the world's least tile goes at the screen's corner
     const int x = std::max(std::min(player.x - (screen.x / 2), max_.x - screen.x), min_.x);
     const int y = std::max(std::min(player.y - (screen.y / 2), max_.y - screen.y), min_.y);
     return v3d::grid::TileCoord{x, y};
@@ -319,8 +319,9 @@ void World::request(std::size_t index) {
             }
             Region& arrived = (*held)[index];
             arrived.loading = false;
-            // a map that could not be read was reported by read(), and leaves the region
-            // unloaded until the player has gone away from it and come back
+            // a failed load leaves the region unloaded until the player has gone more than
+            // DEPART tiles away and come back. read() logs a map it cannot read. An exception
+            // thrown by the job is not logged
             if (result && *result) {
                 arrived.map = *result;
             } else {

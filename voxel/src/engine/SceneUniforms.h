@@ -20,10 +20,10 @@ const unsigned int materialCount = 16;
 /**
  * The block palette and the one light, as set 1 of the voxel pipeline.
  *
- * This is the mirror of the Scene block in shaders/voxel.vert and has to stay laid out the
- * way std140 lays that block out. Every member is a vec4 because std140 rounds a vec3 up to
- * one anyway. Declaring them as vec4 here lets the C++ struct be copied straight into the
- * uniform buffer without padding of its own.
+ * This mirrors the Scene block in shaders/voxel.vert, and has to match the std140 layout of
+ * that block. Every member is a vec4, because std140 pads a vec3 to the size of a vec4
+ * anyway. With vec4 members the struct can be copied straight into the uniform buffer, with
+ * no padding of its own.
  **/
 struct SceneUniforms {
     glm::vec4 lightPosition;  /**< in world space **/
