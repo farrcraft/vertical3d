@@ -660,6 +660,7 @@ shadowing light shader fills it. The committed pictures are unchanged.
 **Done.** `RenderContext::pinGridSize` and `pinBucketSize` set a size and pin it, and the setters
 `Option "limits"` calls leave a pinned size alone. moya's driver pins what `--grid` and
 `--bucket` name. A pin of zero is refused and pins nothing.
+Letting `gridSize` replace a pinned size fails the pinned case.
 
 * **The context holds pinned limits.** `--grid` and `--bucket` set the size and pin it. A scene's
   `Option "limits"` then leaves a pinned size alone, and reports nothing.
