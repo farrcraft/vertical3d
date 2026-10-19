@@ -394,6 +394,14 @@ class RenderContext {
          * transformation and shaded by the given state.
          **/
         void trace(const Polygon & poly, const Shading & state);
+        /**
+         * Add a polygon with a displacement shader to the traced scene as the surface the
+         * shader moves it to. It is diced in camera space into a grid of tracedAcross
+         * micropolygons a side, displaced, and added as two triangles for each micropolygon.
+         **/
+        void traceDisplaced(const Polygon & poly, const Shading & state);
+        /** The micropolygons a side a displaced polygon is diced into for the traced scene. **/
+        static constexpr unsigned int tracedAcross = 64;
         /** Give a traced primitive the state's surface, opacity and lights, in world space. **/
         void shade(v3d::render::offline::trace::Primitive* primitive, const Shading & state);
         /**

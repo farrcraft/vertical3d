@@ -69,7 +69,7 @@ content went. Numbers are never reused.
 | [0092](0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md) | Offline: a bounding volume hierarchy for traced rays | accepted |
 | [0093](0093-offline-derivatives-from-neighbouring-shading-points.md) | Offline: derivatives from neighbouring shading points | accepted |
 | [0094](0094-offline-area-lights-sampled-per-shading-point.md) | Offline: area lights sampled per shading point | accepted |
-| [0095](0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md) | Offline: displaced geometry is diced into the traced scene | proposed |
+| [0095](0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md) | Offline: displaced geometry is diced into the traced scene | accepted |
 
 ## User interface
 

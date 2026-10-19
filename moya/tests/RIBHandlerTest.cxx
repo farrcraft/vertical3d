@@ -9,6 +9,9 @@
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
+#include <api/render/offline/trace/Hit.h>
+#include <api/render/offline/trace/Scene.h>
+#include <api/type/geometry/Ray.h>
 #include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>
 #include <moya/libmoya/FrameBuffer.h>
@@ -927,6 +930,42 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_bound_is_not_culled_test) {
     };
     BOOST_CHECK_EQUAL(render(""), 0U);
     BOOST_CHECK_GT(render("Attribute \"displacementbound\" \"float sphere\" [0.5]\n"), 0U);
+}
+
+/**
+ * The traced scene holds a displaced surface where its displacement moved it, under either
+ * hider, so its shadows follow the moved shape. A floor at y = 0 lifted by one unit blocks a
+ * shadow ray from half a unit up, which its undisplaced shape would not. A ray from above the
+ * lifted floor meets it one unit up.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_shadow_follows_the_moved_shape_test) {
+    for (const char* hider : { "hidden", "raytrace" }) {
+        BOOST_TEST_CONTEXT("under " << hider) {
+            v3d::moya::Renderer renderer;
+            v3d::moya::RIBHandler handler(&renderer);
+            BOOST_REQUIRE(read(
+                "Format 16 16 1\n"
+                "Hider \"" + std::string(hider) + "\"\n"
+                "Projection \"orthographic\"\n"
+                "Clipping 0.1 100\n"
+                "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
+                "Translate 0 0 5\n"
+                "WorldBegin\n"
+                "Attribute \"displacementbound\" \"float sphere\" [1]\n"
+                "Displacement \"lift\" \"float amount\" [1]\n"
+                "Polygon \"P\" [-2 0 -2  -2 0 2  2 0 2  2 0 -2]\n"
+                "WorldEnd\n", &handler));
+            const v3d::render::offline::trace::Scene & traced = handler.context().traced();
+            BOOST_REQUIRE(!traced.primitives().empty());
+            v3d::render::offline::trace::Hit hit;
+            const v3d::type::geometry::Ray up({.origin = glm::vec3(0.3F, 0.5F, 0.2F), .direction = glm::vec3(0.0F, 1.0F, 0.0F)});
+            BOOST_REQUIRE(traced.nearest(up, 0.0F, &hit));
+            BOOST_CHECK_CLOSE(hit.distance, 0.5F, 0.1F);
+            const v3d::type::geometry::Ray down({.origin = glm::vec3(0.3F, 3.0F, 0.2F), .direction = glm::vec3(0.0F, -1.0F, 0.0F)});
+            BOOST_REQUIRE(traced.nearest(down, 0.0F, &hit));
+            BOOST_CHECK_CLOSE(hit.distance, 2.0F, 0.1F);
+        }
+    }
 }
 
 };  // namespace

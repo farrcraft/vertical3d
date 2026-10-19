@@ -136,7 +136,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [14](#step-14--a-displacement-shader-reaches-the-renderer) | A displacement shader compiles and reaches the renderer | `api/render/offline`, `moya` | — | done |
 | [15](#step-15--displacement-under-the-reyes-hider) | Displacement under the reyes hider | `moya` | — | done |
 | [16](#step-16--the-record-displacement-under-the-ray-hider) | The record: displacement under the ray hider | `docs/adr` | **0095** | done |
-| [17](#step-17--displacement-under-the-ray-hider) | Displacement under the ray hider, as 0095 decides | `api/render/offline`, `moya` | 0095 | open |
+| [17](#step-17--displacement-under-the-ray-hider) | Displacement under the ray hider, as 0095 decides | `api/render/offline`, `moya` | 0095 | done |
 | [18](#step-18--solar-with-an-angle) | `solar` with an angle | `api/render/offline`, `moya` | — | done |
 | [19](#step-19--the-traced-scene-only-when-something-traces) | The reyes hider fills the traced scene only when something traces | `api/render/offline`, `moya` | — | held |
 | [20](#step-20--the-command-line-wins-over-option-limits) | The command line wins over `Option "limits"` | `moya` | — | done |
@@ -621,6 +621,21 @@ The recommendation is the first, because the dicing code already exists and the 
 hiders then agree.
 
 ### Step 17 — Displacement under the ray hider
+
+**Done.** `RenderContext::traceDisplaced` dices a polygon with a displacement shader in camera
+space, 64 micropolygons a side through a new `Polygon::dice` overload. It runs the displacement
+on the grid, and adds two triangles for each micropolygon to the traced scene. `trace()` calls it,
+so both hiders' traced scenes hold the moved surface. `raytrace-displaced.png` is the plane of
+step 15 under the ray hider, from code and from RIB. A case reads both hiders' traced scenes and
+finds a lifted floor where it was lifted to. ADR-0095 is accepted.
+
+The picture showed a hole the plan did not foresee. A pixel's ray ran down an edge two of the
+grid's triangles share, and rounding put it outside both. `Ray::intersects` now counts a point
+within a hundred-thousandth of an edge as inside, and `ray_shared_edge_has_no_crack_test` holds
+the corners that showed it. The same cracks were in three committed pictures, at quads'
+diagonals: `raytrace-sampled.png`, `raytrace-focus.png` and `raytrace-motion.png` each moved at
+four to eight pixels, by at most 12 levels, and were regenerated. `reference-displaced.png` did
+not move, because its ripples face the light and cast no shadow on themselves.
 
 Built as ADR-0095 decides. If the ADR decides a refusal, this step is the report and its test.
 

@@ -26,9 +26,11 @@
 #include <api/type/geometry/Frustum.h>
 #include <moya/libmoya/reyes/GridShader.h>
 #include <moya/libmoya/reyes/Hider.h>
+#include <moya/libmoya/reyes/MicroPolygonGrid.h>
 #include <moya/libmoya/reyes/Samples.h>
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -770,6 +772,10 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
     if (poly.vertexCount() < 3) {
         return;
     }
+    if (state.displacement.shader) {
+        traceDisplaced(poly, state);
+        return;
+    }
     const glm::mat4x4 & toWorld = transform_.reference();
     const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld)));
 
@@ -797,6 +803,68 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
         traced_.add(triangle, transform_);
         if (areaLight_) {
             areaLight_->add(points[0], points[1], points[2]);
+        }
+    }
+}
+
+void RenderContext::traceDisplaced(const Polygon & poly, const Shading & state) {
+    // a copy in camera space, where the displacement shader runs, with each vertex given the
+    // plane and the colour addPolygon() would give it
+    const glm::mat4x4 toCamera = coordinateSystems_["camera"] * transform_.reference();
+    const glm::mat3 toCameraNormal = glm::transpose(glm::inverse(glm::mat3(toCamera)));
+    Polygon eye;
+    for (std::size_t i = 0; i < poly.vertexCount(); i++) {
+        Vertex corner = poly.vertex(i);
+        corner.point(glm::vec3(toCamera * glm::vec4(corner.point(), 1.0F)));
+        if (corner.hasNormal()) {
+            corner.normal(glm::normalize(toCameraNormal * corner.normal()));
+        }
+        eye.addVertex(corner);
+    }
+    const glm::vec3 plane = eye.geometricNormal();
+    for (std::size_t i = 0; i < eye.vertexCount(); i++) {
+        eye[i].geometricNormal(plane);
+        if (!eye[i].hasNormal()) {
+            eye[i].normal(plane);
+        }
+        if (!eye[i].hasColor()) {
+            eye[i].color(color_);
+        }
+    }
+    boost::shared_ptr<reyes::MicroPolygonGrid> grid;
+    if (!eye.dice(grid, tracedAcross)) {
+        return;
+    }
+    shader().displace(state, grid.get());
+
+    const glm::mat4x4 toWorld = glm::inverse(coordinateSystems_["camera"]);
+    const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld)));
+    const unsigned int size = grid->size();
+    const float span = static_cast<float>(size - 1);
+    const auto corner = [&](unsigned int alongU, unsigned int alongV) {
+        Vertex at = grid->vertex(alongU, alongV);
+        at.point(glm::vec3(toWorld * glm::vec4(at.point(), 1.0F)));
+        at.normal(glm::normalize(toWorldNormal * at.normal()));
+        // a grid without st takes its own parameters as s and t, as a shaded grid does
+        if (!at.hasTexCoord()) {
+            at.st(glm::vec2(static_cast<float>(alongU) / span, static_cast<float>(alongV) / span));
+        }
+        return at;
+    };
+    for (unsigned int i = 0; i + 1 < size; i++) {
+        for (unsigned int j = 0; j + 1 < size; j++) {
+            const Vertex quad[4] = { corner(i, j), corner(i + 1, j), corner(i + 1, j + 1), corner(i, j + 1) };
+            for (const std::array<int, 3> & fan : { std::array<int, 3>{0, 1, 2}, std::array<int, 3>{0, 2, 3} }) {
+                const Vertex & first = quad[fan[0]];
+                const Vertex & second = quad[fan[1]];
+                const Vertex & third = quad[fan[2]];
+                v3d::render::offline::trace::Triangle triangle({first.point(), second.point(), third.point()}, color_,
+                    {first.normal(), second.normal(), third.normal()});
+                triangle.st(first.st(), second.st(), third.st());
+                triangle.colours(first.color(), second.color(), third.color());
+                shade(&triangle, state);
+                traced_.add(triangle, transform_);
+            }
         }
     }
 }

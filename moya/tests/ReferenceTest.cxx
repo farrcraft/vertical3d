@@ -74,6 +74,10 @@ const char* DISPLACED = "data/reference-displaced.png";
 const char* DISPLACED_RENDERED = "data_out/reference-displaced.png";
 const char* DISPLACED_SCENE = "data/reference-displaced.rib";
 const char* DISPLACED_RIB_RENDERED = "data_out/reference-displaced-rib.png";
+const char* TRACED_DISPLACED = "data/raytrace-displaced.png";
+const char* TRACED_DISPLACED_RENDERED = "data_out/raytrace-displaced.png";
+const char* TRACED_DISPLACED_SCENE = "data/raytrace-displaced.rib";
+const char* TRACED_DISPLACED_RIB_RENDERED = "data_out/raytrace-displaced-rib.png";
 const char* TRACED_BUMP = "data/raytrace-bump.png";
 const char* TRACED_BUMP_RENDERED = "data_out/raytrace-bump.png";
 const char* TRACED_BUMP_SCENE = "data/raytrace-bump.rib";
@@ -1403,12 +1407,13 @@ BOOST_AUTO_TEST_CASE(moya_glass_reference_from_rib_test) {
 }
 
 /*
-    The same scene as data/reference-displaced.rib. A plane is rippled three times across x by
-    the lift displacement shader, toward the camera only, and lit from the left. The plane's
-    normal points away from the camera, so the amount is negative. The traced scene holds the
-    plane as it was, so a point moved behind it would be shadowed by it.
+    The same scene as data/reference-displaced.rib, and as data/raytrace-displaced.rib under the
+    ray hider. A plane is rippled three times across x by the lift displacement shader, toward
+    the camera, and lit from the left. The plane's normal points away from the camera, so the
+    amount is negative.
 */
-void displacedScene(v3d::moya::RenderContext & rc) {
+void displacedScene(v3d::moya::RenderContext & rc, const char* hider) {
+    rc.hider(hider);
     rc.imageResolution({64, 48}, 1.0F);
     pixelCentres(rc);
     rc.clipping({.hither = 1.0F, .yon = 100.0F});
@@ -1445,7 +1450,7 @@ void displacedScene(v3d::moya::RenderContext & rc) {
  **/
 BOOST_AUTO_TEST_CASE(moya_displaced_reference_test) {
     v3d::moya::RenderContext rc;
-    displacedScene(rc);
+    displacedScene(rc, "hidden");
     rc.render();
 
     check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), DISPLACED, DISPLACED_RENDERED);
@@ -1464,6 +1469,34 @@ BOOST_AUTO_TEST_CASE(moya_displaced_reference_from_rib_test) {
 
     check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
         DISPLACED, DISPLACED_RIB_RENDERED);
+}
+
+/**
+ * The displaced plane under the ray hider. The plane is diced and displaced into the traced
+ * scene, so the rays meet the rippled surface and its silhouette. It is not compared with
+ * reference-displaced.png, because the hiders sample differently.
+ **/
+BOOST_AUTO_TEST_CASE(moya_traced_displaced_reference_test) {
+    v3d::moya::RenderContext rc;
+    displacedScene(rc, "raytrace");
+    rc.render();
+
+    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_DISPLACED, TRACED_DISPLACED_RENDERED);
+}
+
+/**
+ * The same traced displaced plane said in RIB, against the same committed picture.
+ **/
+BOOST_AUTO_TEST_CASE(moya_traced_displaced_reference_from_rib_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(reader.read(TRACED_DISPLACED_SCENE, &handler));
+    BOOST_CHECK_EQUAL(reader.error(), "");
+
+    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+        TRACED_DISPLACED, TRACED_DISPLACED_RIB_RENDERED);
 }
 
 };  // namespace

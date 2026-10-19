@@ -95,9 +95,9 @@ Rules:
   bound is clipped, and a primitive with no bound does not grow. The split test measures the
   primitive without the bound: a grid covers the surface, not its bound, and a bound wider than
   a grid would otherwise be split without end.
-- **The traced scene holds a displaced primitive as it was before it moved.** Its shadow and its
-  reflection follow its undisplaced shape, and so do the shadows a point moved behind that shape
-  receives from it.
+- **The traced scene holds a displaced primitive where its displacement moved it**, as
+  [RayTracing.md](RayTracing.md) describes, so its shadows and reflections follow its moved shape
+  under this hider too.
 - **A grid of a polygon with no `st` takes its own parameters as s and t**, so the pieces of a
   split polygon each run from 0 to 1. A displacement that should be continuous across a
   polygon reads a position, not s.

@@ -24,13 +24,6 @@ and its section names the plan or roadmap that orders it.
 Each of these waits until a scene needs it. The [OfflineShading plan](plans/OfflineShading.md)
 takes them up, in the order the [OfflineShading roadmap](roadmap/OfflineShading.md) gives.
 
-[] **Displacement works under the reyes hider only.** The traced scene holds a displaced
-primitive undisplaced, so its shadows follow its old shape.
-
-- Under the ray hider, displacement needs tessellation, which the ray tracer does not otherwise
-  do.
-- Due when a scene needs surface detail that bump mapping cannot give, such as a silhouette.
-
 [] **The reyes hider adds every polygon to the traced scene.**
 
 - moya fans each polygon into the traced scene as it arrives, before culling, and shades its

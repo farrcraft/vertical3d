@@ -1,6 +1,6 @@
 # ADR-0095: Offline: displaced geometry is diced into the traced scene
 
-**Status**: proposed
+**Status**: accepted
 **Date**: 2026-10-18
 **Documented in**: [offline/RayTracing.md](../offline/RayTracing.md)
 

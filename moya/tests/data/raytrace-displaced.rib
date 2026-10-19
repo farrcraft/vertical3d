@@ -1,0 +1,25 @@
+##RenderMan RIB-Structure 1.1
+##Scene A plane rippled by a displacement shader, lit from the side, under the ray hider
+version 3.03
+Format 64 48 1
+# one sample at each pixel centre under a one pixel box, which the film gives back exactly
+PixelSamples 1 1
+PixelFilter "box" 1 1
+Hider "raytrace"
+Projection "orthographic"
+Clipping 1 100
+# the displacement shader is a fixture beside the scene rather than one of the standard ones
+Option "searchpath" "shader" ["data:&"]
+WorldBegin
+LightSource "ambientlight" 0 "intensity" [0.1]
+# from the left, so a ripple's near slope is lit and its far slope is in shade
+LightSource "distantlight" 1 "intensity" [1] "to" [0.8 0 1]
+Color [0.8 0.8 0.85]
+Surface "matte"
+# three ripples across x, moving the plane up to 0.16 toward the camera. The plane's normal
+# points away from the camera, so the amount is negative. The traced scene holds the plane
+# as it was, so a point moved behind it would be shadowed by it
+Attribute "displacementbound" "float sphere" [0.16]
+Displacement "lift" "float amount" [-0.08] "float wave" [0.08] "float frequency" [7.853982]
+Polygon "P" [-1.2 -0.9 5  1.2 -0.9 5  1.2 0.9 5  -1.2 0.9 5]
+WorldEnd

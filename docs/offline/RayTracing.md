@@ -43,6 +43,16 @@ Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-trace
 - **A traced primitive carries the lights that were on when it was made**, as one set shared by
   every primitive made until the lights change (`trace::Lights`). A primitive given no lights,
   as in a scene built in code, is lit by the scene's own list, `Scene::lights()`.
+- **A polygon with a displacement shader is added to the traced scene as the surface it is
+  moved to**, under either hider. It is diced in camera space into a grid of
+  `RenderContext::tracedAcross` micropolygons a side, 64, whatever the grid size. The
+  displacement shader runs on that grid, and each micropolygon becomes two triangles with the
+  moved normals. The ray hider sees and shades those triangles, and both hiders' shadows and
+  reflections meet them. The triangles are flat between grid points, so a displacement finer
+  than the grid is lost. The displacement runs once, so one that varies with time does not move.
+  A sphere is not diced, and is traced undisplaced.
+
+  Background: [ADR-0095](../adr/0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md)
 - **A sphere is intersected where it is defined**, cut to its slab of heights and its sweep,
   with RI's outward normal and its `u` and `v`. Its silhouette is exact at any size. A sphere
   whose radius is not positive is logged and not drawn.

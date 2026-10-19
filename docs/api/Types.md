@@ -53,6 +53,10 @@ The queries are in `v3d::type::geometry` ([api/type/geometry/](../../api/type/ge
 - `intersects(a, b, c, &distance)` tests a triangle from either side. The overload with `u` and
   `v` also returns barycentric weights: the hit is `a + u * (b - a) + v * (c - a)`. Use them to
   interpolate a normal or a texture coordinate.
+- **A point within a hundred-thousandth of a triangle's edge, as a weight, is inside it.**
+  Rounding can put a point on an edge two triangles share just outside both, and a ray through it
+  would then meet neither. Each triangle reaches that little past its edges, so a mesh has no
+  cracks.
 - `intersects(plane, &distance)` is true only when the ray crosses the plane at or ahead of its
   origin. A ray parallel to the plane, or one that would have to run backwards, does not cross
   it.

@@ -279,4 +279,34 @@ BOOST_AUTO_TEST_CASE(ray_that_is_not_a_number_misses_triangle_and_plane_test) {
     }
 }
 
+/**
+ * Two triangles that share an edge leave no crack along it. A ray through a point on the shared
+ * edge meets at least one of them, though rounding can put the point just outside both. The
+ * corners are two micropolygons of a displaced grid, where a pixel's ray through the edge once
+ * met neither and left a hole in the picture. The rays along the rest of the edge are checked
+ * too.
+ **/
+BOOST_AUTO_TEST_CASE(ray_shared_edge_has_no_crack_test) {
+    const glm::vec3 outerLow(0.149999946F, 0.506250024F, 4.99391031F);
+    const glm::vec3 low(0.18749997F, 0.506250024F, 4.99961472F);
+    const glm::vec3 high(0.18750003F, 0.534374952F, 4.99961472F);
+    const glm::vec3 beyondLow(0.224999994F, 0.506250024F, 4.99846268F);
+    const glm::vec3 beyondHigh(0.224999994F, 0.534375012F, 4.99846268F);
+    const auto meets = [&](const v3d::type::geometry::Ray & ray) {
+        float distance = 0.0F;
+        return ray.intersects(outerLow, low, high, &distance) || ray.intersects(low, beyondLow, beyondHigh, &distance) ||
+            ray.intersects(low, beyondHigh, high, &distance);
+    };
+    BOOST_TEST(meets(v3d::type::geometry::Ray({.origin = glm::vec3(0.1875F, 0.520833313F, 1.0F),
+        .direction = glm::vec3(0.0F, 0.0F, 1.0F)})));
+    unsigned int cracks = 0;
+    for (unsigned int k = 1; k < 1000; k++) {
+        const glm::vec3 onEdge = low + ((high - low) * (static_cast<float>(k) / 1000.0F));
+        if (!meets(v3d::type::geometry::Ray({.origin = glm::vec3(onEdge.x, onEdge.y, 1.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)}))) {
+            cracks++;
+        }
+    }
+    BOOST_TEST(cracks == 0U);
+}
+
 };  // namespace
