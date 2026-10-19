@@ -135,7 +135,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [3](#step-3--a-prompt-in-the-ui-shell) | A prompt in the ui shell | `api/ui` | — | done |
 | [4](#step-4--an-app-can-hold-a-quit) | An app can hold a quit | `api/engine` | — | done |
 | [5](#step-5--load-and-quit-ask-first) | Load and quit ask before discarding a dirty project | `vertical3d` | — | done |
-| [6](#step-6--shift-is-freed-for-selection) | Shift is freed for selection | `vertical3d` | — | open |
+| [6](#step-6--shift-is-freed-for-selection) | Shift is freed for selection | `vertical3d` | — | done |
 | [7](#step-7--the-record-where-the-handles-pivot) | The record: where the handles pivot | `docs/adr` | **0096** | open |
 | [8](#step-8--a-selection-set) | A selection set, and shift-click | `vertical3d` | — | open |
 | [9](#step-9--a-rubber-band) | A rubber band | `vertical3d` | 0096 | open |
@@ -296,6 +296,10 @@ cases. [Files.md](../editor/Files.md#project-files) states the rule.
 clean and a dirty stack. The prompt itself is checked by running the editor.
 
 ### Step 6 — Shift is freed for selection
+
+**Done.** `view::camera::pan` is bound to the middle mouse button, and holding it is the drag.
+Left Shift is bound to `select::add`, which sets `SelectTool::adding()`. Nothing reads it until
+step 8. The editor README's binding table states both.
 
 * **The pan modifier moves off Left Shift.** The step picks its new binding. The middle mouse button
   is the likeliest, since no other move uses it.

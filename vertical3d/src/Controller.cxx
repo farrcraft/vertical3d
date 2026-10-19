@@ -308,16 +308,23 @@ void Controller::registerCommands() {
     // shows it and nothing here reads it back
     press("view::show::statistics", [this]() { renderer_->statistics()->toggle(); });
 
-    // the three camera moves are held rather than latched: the modifier going down
-    // chooses what a drag performs and it coming up puts the tool back to none
+    // zoom and truck are held rather than latched: the modifier going down chooses what a
+    // drag of the primary button performs and it coming up puts the tool back to none
     hold("view::camera::zoom", [this](const v3d::event::Event& event) {
         cameraMode("zoom", event.state() != v3d::event::State::Released);
     });
     hold("view::camera::truck", [this](const v3d::event::Event& event) {
         cameraMode("truck", event.state() != v3d::event::State::Released);
     });
+    // pan is a button of its own, so holding it is the drag
     hold("view::camera::pan", [this](const v3d::event::Event& event) {
-        cameraMode("pan", event.state() != v3d::event::State::Released);
+        const bool pressed = event.state() != v3d::event::State::Released;
+        cameraMode("pan", pressed);
+        cameraTool_->button(1, pressed, cursor_);
+    });
+    // held: while it is down a click adds to the selection or takes away from it
+    hold("select::add", [this](const v3d::event::Event& event) {
+        selectTool_->adding(event.state() != v3d::event::State::Released);
     });
 
     hold("view::drag", [this](const v3d::event::Event& event) {

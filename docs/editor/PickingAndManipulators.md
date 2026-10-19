@@ -47,16 +47,20 @@ clears the component selection.
   whole selection.
 - In a component mode, a click on a part toggles it and clears the other parts of the same
   kind. A click on nothing clears the components and keeps the object selected.
-- One thing is selected at a time. There is no rubber band and no shift-click.
+- One thing is selected at a time. There is no rubber band. Left Shift is bound to
+  `select::add`, and `SelectTool::adding()` follows it, but a click does not read it yet.
 
 **One button, three tools.** `Controller::drag()` routes the left button in this order:
 
 1. The ui is offered the press first. If it takes it, the matching release goes to the ui too.
-2. If a camera modifier (Alt, Ctrl or Shift) is held, the drag drives the camera. A release
+2. If a camera modifier (Alt or Ctrl) is held, the drag drives the camera. A release
    with a modifier held still goes to `TransformTool` as well, so a handle drag that a modifier
    pressed mid-way ends and is recorded.
 3. Otherwise, if the cursor is on a manipulator handle, `TransformTool` takes the press.
 4. Otherwise `SelectTool` picks.
+
+The middle button drives the camera alone. Holding it turns the camera with the arcball, and
+letting it go ends the drag, whatever the left button is doing.
 
 Background: [ADR-0014](../adr/0014-editor-pick-by-cpu-ray-cast.md)
 

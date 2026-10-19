@@ -22,12 +22,22 @@
     },
     {
       "source": {
-        "context": "keyboard",
-        "name": "left_shift"
+        "context": "mouse",
+        "name": "middle"
       },
       "destination": {
         "context": "view",
         "name": "camera::pan"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "left_shift"
+      },
+      "destination": {
+        "context": "select",
+        "name": "add"
       }
     },
     {

@@ -67,6 +67,13 @@ class SelectTool final : public Tool {
     void mask(SelectMask mask);
 
     /**
+     * Whether a click adds what it finds to the selection, or takes it away if it is already
+     * selected, rather than replacing the selection. It follows a held key.
+     **/
+    void adding(bool adding) noexcept;
+    bool adding() const noexcept;
+
+    /**
      * @return what the last click found
      **/
     const Picker::Hit& hit() const noexcept;
@@ -94,6 +101,7 @@ class SelectTool final : public Tool {
     boost::shared_ptr<ViewPort> view_;
     Picker picker_;
     SelectMask mask_;
+    bool adding_;
     Picker::Hit hit_;
     glm::vec2 cursor_;
 };

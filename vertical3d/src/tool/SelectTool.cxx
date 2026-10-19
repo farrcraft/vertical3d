@@ -28,6 +28,7 @@ SelectTool::SelectTool(const boost::shared_ptr<Scene>& scene, const boost::share
     scene_(scene),
     logger_(logger),
     mask_(SelectMask::Object),
+    adding_(false),
     cursor_(0.0F, 0.0F) {
 }
 
@@ -77,6 +78,18 @@ void SelectTool::mask(SelectMask mask) {
     if (logger_) {
         logger_->get()->info("select mask is {}", selectMaskName(mask_));
     }
+}
+
+/**
+ **/
+void SelectTool::adding(bool adding) noexcept {
+    adding_ = adding;
+}
+
+/**
+ **/
+bool SelectTool::adding() const noexcept {
+    return adding_;
 }
 
 /**

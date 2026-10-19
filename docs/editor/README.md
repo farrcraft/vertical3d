@@ -28,7 +28,8 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | Left mouse | `view::drag` | Pick, grab a handle, or drive the camera (see [Picking](PickingAndManipulators.md#picking)) |
 | Hold Left Alt + drag | `view::camera::zoom` | Zoom an orthographic view; dolly a perspective one |
 | Hold Left Ctrl + drag | `view::camera::truck` | Move the camera sideways and up or down |
-| Hold Left Shift + drag | `view::camera::pan` | Turn a perspective camera with an arcball; does nothing in an orthographic view |
+| Middle mouse drag | `view::camera::pan` | Turn a perspective camera with an arcball; does nothing in an orthographic view |
+| Hold Left Shift | `select::add` | A click adds to the selection or takes away from it (see [Picking](PickingAndManipulators.md#picking)) |
 | 1, 2, 3, 4 | `create::poly::cube`, `plane`, `cylinder`, `cone` | Add a primitive at the origin |
 | 5, 6, 7, 8 | `select::mask::object`, `vertex`, `edge`, `face` | Choose what a click selects |
 | Q, W, E, R | `transform::select`, `translate`, `rotate`, `scale` | Choose the manipulator |
