@@ -156,6 +156,87 @@ BOOST_AUTO_TEST_CASE(command_stack_clear_test) {
     BOOST_CHECK_EQUAL(first->undone, 0);
 }
 
+BOOST_AUTO_TEST_CASE(command_stack_saved_position_test) {
+    v3d::editor::CommandStack stack;
+
+    // a new document has nothing to lose
+    BOOST_CHECK(!stack.dirty());
+
+    stack.push(counter("first"));
+    BOOST_CHECK(stack.dirty());
+    stack.markSaved();
+    BOOST_CHECK(!stack.dirty());
+
+    // the document is dirty on either side of the saved position, and clean back on it
+    stack.push(counter("second"));
+    BOOST_CHECK(stack.dirty());
+    stack.undo();
+    BOOST_CHECK(!stack.dirty());
+    stack.undo();
+    BOOST_CHECK(stack.dirty());
+    stack.redo();
+    BOOST_CHECK(!stack.dirty());
+}
+
+BOOST_AUTO_TEST_CASE(command_stack_saved_position_discarded_test) {
+    v3d::editor::CommandStack stack;
+
+    stack.push(counter("first"));
+    stack.push(counter("second"));
+    stack.markSaved();
+
+    // the saved position is among the undone commands, and a push discards them
+    stack.undo();
+    stack.push(counter("third"));
+    BOOST_CHECK(stack.dirty());
+
+    // undoing back to the same depth reaches a different document
+    stack.undo();
+    stack.undo();
+    BOOST_CHECK(stack.dirty());
+    stack.redo();
+    stack.redo();
+    BOOST_CHECK(stack.dirty());
+
+    stack.markSaved();
+    BOOST_CHECK(!stack.dirty());
+}
+
+BOOST_AUTO_TEST_CASE(command_stack_saved_position_dropped_test) {
+    v3d::editor::CommandStack stack(2);
+
+    // saved after the oldest command: dropping that command keeps the position reachable,
+    // by undoing everything left
+    stack.push(counter("first"));
+    stack.markSaved();
+    stack.push(counter("second"));
+    stack.push(counter("third"));
+    BOOST_CHECK(stack.dirty());
+    stack.undo();
+    stack.undo();
+    BOOST_CHECK(!stack.dirty());
+
+    // saved before the oldest command: once it is dropped, no undo reaches the position
+    v3d::editor::CommandStack lost(2);
+    lost.push(counter("first"));
+    lost.push(counter("second"));
+    lost.push(counter("third"));
+    lost.undo();
+    lost.undo();
+    BOOST_CHECK(lost.dirty());
+}
+
+BOOST_AUTO_TEST_CASE(command_stack_clear_is_saved_test) {
+    v3d::editor::CommandStack stack;
+
+    stack.push(counter("first"));
+    BOOST_CHECK(stack.dirty());
+
+    // clearing is what opening a document does, and an opened document is saved
+    stack.clear();
+    BOOST_CHECK(!stack.dirty());
+}
+
 BOOST_AUTO_TEST_CASE(create_command_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();

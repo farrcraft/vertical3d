@@ -75,8 +75,6 @@ Controller::Controller(const std::string& path) :
 /**
  **/
 bool Controller::start() {
-    window()->caption("Vertical|3D");
-
     if (!config()) {
         logger()->get()->error("The editor needs its config to know what to draw");
         return false;
@@ -136,6 +134,7 @@ bool Controller::start() {
 
     layoutViews(window()->width(), window()->height());
     syncUi();
+    syncCaption();
 
     logger()->get()->info("{} with {} views", layout_->name(), views_.size());
     return true;
@@ -242,6 +241,20 @@ void Controller::syncUi() {
 
 /**
  **/
+void Controller::syncCaption() {
+    if (!history_) {
+        return;
+    }
+    const std::string caption = "Vertical|3D - " + projectPath_.filename().string() + (history_->dirty() ? " *" : "");
+    if (caption == caption_) {
+        return;
+    }
+    caption_ = caption;
+    window()->caption(caption_);
+}
+
+/**
+ **/
 void Controller::registerCommands() {
     // a check item shows what the editor holds rather than remembering its own state, so
     // whatever a command changed is read back after it runs
@@ -249,6 +262,7 @@ void Controller::registerCommands() {
         const bool added = commands().addPress(name, [this, handler]() {
             handler();
             syncUi();
+            syncCaption();
         });
         if (!added) {
             refused_.push_back(name);
@@ -258,6 +272,7 @@ void Controller::registerCommands() {
         const bool added = commands().add(name, [this, handler](const v3d::event::Event& event) {
             handler(event);
             syncUi();
+            syncCaption();
         });
         if (!added) {
             refused_.push_back(name);
@@ -401,7 +416,7 @@ void Controller::openProject() {
             }
             projectPath_ = chosen;
             // the history describes the scene that was replaced, so none of it can be
-            // undone against the new one
+            // undone against the new one. Clearing it also marks the new scene as saved
             history_->clear();
         });
 }
@@ -409,7 +424,9 @@ void Controller::openProject() {
 /**
  **/
 void Controller::saveProject() {
-    project_->write(projectPath_.string(), scene_);
+    if (project_->write(projectPath_.string(), scene_)) {
+        history_->markSaved();
+    }
 }
 
 /**
@@ -419,6 +436,7 @@ void Controller::saveProjectAs() {
         [this](const boost::filesystem::path& chosen) {
             if (project_->write(chosen.string(), scene_)) {
                 projectPath_ = chosen;
+                history_->markSaved();
             }
         });
 }

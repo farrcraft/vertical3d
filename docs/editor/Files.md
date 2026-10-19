@@ -68,7 +68,10 @@ The chooser is `ui::shell::FileChooser`. It drives the `chooser` container laid 
 `data/vgui.json`: a file list, a name box, and Accept and Cancel buttons. Those send
 `project::chooser::pick`, `project::chooser::accept` and `project::chooser::cancel`.
 
-There is no dirty flag. Nothing warns before an open or a quit discards unsaved work.
+**The dirty flag.** The project is dirty when the history is anywhere but where it was at the last
+save or open. The window caption names the project file, and ends in ` *` when it is dirty.
+[Commands and undo](CommandsAndUndo.md#the-saved-position) states the rule. Nothing yet warns
+before an open or a quit discards unsaved work.
 
 Background: [ADR-0018](../adr/0018-editor-projects-saved-as-json-with-exact-topology.md),
 [ADR-0041](../adr/0041-files-write-documents-atomically.md)

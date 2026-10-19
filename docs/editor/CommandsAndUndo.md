@@ -37,6 +37,21 @@ the topology it changed. `TransformCommand` does not fit that case.
 
 Background: [ADR-0016](../adr/0016-editor-undo-records-completed-changes.md)
 
+### The saved position
+
+`CommandStack` also records the position the history was at when the project was last saved.
+The project is dirty at any other position, and `CommandStack::dirty()` says so.
+
+- **Save and Save As call `markSaved()`** when the write succeeds. A failed write leaves the
+  project dirty.
+- **Opening a project clears the history**, and the empty history counts as saved.
+- **An undo or a redo can reach the saved position again**, and the project is then clean.
+- **A saved position can be lost.** A push after an undo past it discards the commands it lay
+  among, and the oldest command dropped from a full stack can take it with it. A lost position is
+  never reached again, so the project stays dirty until the next save.
+- **The caption follows the flag.** It is refreshed after every command, from the same place
+  `syncUi()` runs.
+
 ## Commands
 
 A command is anything the user can ask the editor to do: create a cube, change the select mask,

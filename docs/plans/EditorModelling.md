@@ -131,7 +131,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | | What | Where | ADR | State |
 |---|---|---|---|---|
 | [1](#step-1--what-the-roadmap-got-wrong) | The roadmap and TODO.md corrected | `docs` | — | done |
-| [2](#step-2--the-stack-knows-where-it-was-saved) | The stack knows where it was saved, and the caption shows it | `vertical3d` | — | open |
+| [2](#step-2--the-stack-knows-where-it-was-saved) | The stack knows where it was saved, and the caption shows it | `vertical3d` | — | done |
 | [3](#step-3--a-prompt-in-the-ui-shell) | A prompt in the ui shell | `api/ui` | — | open |
 | [4](#step-4--an-app-can-hold-a-quit) | An app can hold a quit | `api/engine` | — | open |
 | [5](#step-5--load-and-quit-ask-first) | Load and quit ask before discarding a dirty project | `vertical3d` | — | open |
@@ -220,6 +220,11 @@ leaves. [plans/README.md](README.md), the roadmap index and TODO.md's editor sec
 **Tests:** none.
 
 ### Step 2 — The stack knows where it was saved
+
+**Done.** `CommandStack::markSaved()` and `dirty()` hold the saved position as a count of done
+commands, shifted when the stack drops its oldest and lost when a push discards it.
+`Controller::syncCaption()` runs after every command. Four cases are in `CommandStackTest.cxx`.
+[Commands and undo](../editor/CommandsAndUndo.md#the-saved-position) states the rule.
 
 * **`CommandStack` records the position of the last save.** `markSaved()` records the current
   position. `dirty()` is true at any other position.

@@ -101,6 +101,12 @@ class Controller final : public v3d::engine::Engine {
     void syncUi();
 
     /**
+     * Name the project in the window caption, and mark it when it has changes that are not
+     * saved. The caption is only written when that changes.
+     **/
+    void syncCaption();
+
+    /**
      * Offer the cursor to the ui before the tools see it. The ui library decides which of
      * its parts is offered the cursor first.
      * @return whether the ui took it
@@ -202,6 +208,8 @@ class Controller final : public v3d::engine::Engine {
     // the document Save writes to
     boost::filesystem::path projectPath_;
     boost::shared_ptr<CommandStack> history_;
+    // what the caption was last set to
+    std::string caption_;
     boost::shared_ptr<v3d::config::CameraProfiles> profiles_;
     boost::shared_ptr<ViewLayout> layout_;
     std::vector<boost::shared_ptr<ViewPort>> views_;

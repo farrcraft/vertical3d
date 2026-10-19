@@ -330,6 +330,6 @@ moves the whole object.
 [] Only one thing can be selected at a time. There is no rubber-band selection and no
 shift-click.
 
-[] There is no dirty flag, so nothing warns before a load or a quit discards unsaved work.
+[] Nothing warns before a load or a quit discards unsaved work. The caption marks a dirty project.
 
 [] The viewport panes cannot be resized by dragging.
