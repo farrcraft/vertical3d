@@ -319,8 +319,9 @@ compiles and fails to link.
 ## Editor
 
 Open work for when the editor app itself moves forward. [editor/](editor/README.md) describes the
-editor. [EditorModelling](roadmap/EditorModelling.md) orders these, and the
-[EditorModelling plan](plans/EditorModelling.md) takes up everything here but most of the missing command handlers.
+editor. [EditorModelling](roadmap/EditorModelling.md) orders these. The
+[EditorModelling plan](plans/EditorModelling.md) takes up everything here but most of the
+missing command handlers.
 
 [] 55 of the menu's 77 commands have no handler, and only log themselves when chosen.
 
@@ -329,7 +330,5 @@ moves the whole object.
 
 [] Only one thing can be selected at a time. There is no rubber-band selection and no
 shift-click.
-
-[] Nothing warns before a load or a quit discards unsaved work. The caption marks a dirty project.
 
 [] The viewport panes cannot be resized by dragging.

@@ -134,7 +134,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [2](#step-2--the-stack-knows-where-it-was-saved) | The stack knows where it was saved, and the caption shows it | `vertical3d` | — | done |
 | [3](#step-3--a-prompt-in-the-ui-shell) | A prompt in the ui shell | `api/ui` | — | done |
 | [4](#step-4--an-app-can-hold-a-quit) | An app can hold a quit | `api/engine` | — | done |
-| [5](#step-5--load-and-quit-ask-first) | Load and quit ask before discarding a dirty project | `vertical3d` | — | open |
+| [5](#step-5--load-and-quit-ask-first) | Load and quit ask before discarding a dirty project | `vertical3d` | — | done |
 | [6](#step-6--shift-is-freed-for-selection) | Shift is freed for selection | `vertical3d` | — | open |
 | [7](#step-7--the-record-where-the-handles-pivot) | The record: where the handles pivot | `docs/adr` | **0096** | open |
 | [8](#step-8--a-selection-set) | A selection set, and shift-click | `vertical3d` | — | open |
@@ -277,6 +277,14 @@ through `requestQuit()`. Three cases are in `EngineTest.cpp`.
 does not; the held quit ends the loop when the app calls `quit()`.
 
 ### Step 5 — Load and quit ask first
+
+**Done.** `Controller::askBeforeDiscarding()` runs Open's chooser and the quit, and
+`Controller::quitRequested()` holds a dirty quit. The prompt is laid out in `data/vgui.json`.
+`BindingsTest.cxx` checks that every button of the chooser and the prompt sends a registered
+command. Running the editor showed the prompt over the views, the caption marked dirty, and two
+close requests held with no validation message. The answer buttons were not clicked: posted mouse
+messages do not reach SDL at the posted position, so the answers are covered by the prompt's own
+cases. [Files.md](../editor/Files.md#project-files) states the rule.
 
 * **A dirty project asks before Open and before a quit**: save, discard, or cancel.
 * **Save** writes the project and then continues. A save that fails stops the open or the quit, and

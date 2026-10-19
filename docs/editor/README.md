@@ -72,5 +72,4 @@ The tests run without a window or a GPU. Run them with
 - There is no modelling operation. A component mode selects a part, and the manipulator then
   moves the whole object.
 - One thing is selected at a time.
-- Nothing warns before an open or a quit discards unsaved work.
 - The viewport panes cannot be resized by dragging.

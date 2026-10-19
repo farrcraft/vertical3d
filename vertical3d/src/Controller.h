@@ -13,6 +13,7 @@
 #include <api/ui/input/Cursor.h>
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
+#include <api/ui/shell/Prompt.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/Bar.h>
@@ -26,6 +27,7 @@
 #include <vertical3d/src/view/ViewLayout.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -86,6 +88,14 @@ class Controller final : public v3d::engine::Engine {
      **/
     bool release() override;
 
+    /**
+     * A quit with unsaved changes asks first, and quits once the user has saved or discarded
+     * them. A request that arrives while the editor is already asking is held, and changes
+     * nothing.
+     * @return whether to quit now
+     **/
+    bool quitRequested() override;
+
  private:
     /**
      * Read the ui tree and find the menu bar and the toolbars in it.
@@ -144,8 +154,16 @@ class Controller final : public v3d::engine::Engine {
      * executable, and is whatever was last opened or saved as after that.
      **/
     void openProject();
-    void saveProject();
+    bool saveProject();
     void saveProjectAs();
+
+    /**
+     * Run something that replaces the scene, asking first when the project has unsaved
+     * changes. Saving and then continuing, or discarding them and continuing, both run it.
+     * A save that fails stops it, and so does cancelling.
+     * @param proceed what replaces the scene
+     **/
+    void askBeforeDiscarding(const std::function<void()>& proceed);
 
     /**
      * Write the scene out as RIB for the offline renderer.
@@ -202,6 +220,7 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<v3d::ui::input::Cursor> uiCursor_;
     boost::shared_ptr<v3d::ui::shell::Keyboard> uiKeys_;
     boost::shared_ptr<v3d::ui::shell::FileChooser> chooser_;
+    boost::shared_ptr<v3d::ui::shell::Prompt> prompt_;
     boost::shared_ptr<v3d::ui::component::menu::Bar> menu_;
     std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
     boost::shared_ptr<Project> project_;

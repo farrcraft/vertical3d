@@ -24,6 +24,7 @@
 #include <api/ui/input/Cursor.h>
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
+#include <api/ui/shell/Prompt.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
@@ -40,6 +41,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <vector>
 #include <fstream>
@@ -176,6 +178,7 @@ bool Controller::buildUi() {
     uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher(), renderer_->measure());
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher(), window());
     chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui_);
+    prompt_ = boost::make_shared<v3d::ui::shell::Prompt>(vgui_);
 
     const boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
     if (!container) {
@@ -328,6 +331,10 @@ void Controller::registerCommands() {
     press("project::chooser::accept", [this]() { chooser_->accept(); });
     press("project::chooser::cancel", [this]() { chooser_->close(); });
     press("project::export::rib", [this]() { exportProject(); });
+    // the prompt's buttons, in the order its answers are given
+    press("project::prompt::answer0", [this]() { prompt_->answer(0); });
+    press("project::prompt::answer1", [this]() { prompt_->answer(1); });
+    press("project::prompt::answer2", [this]() { prompt_->answer(2); });
 
     press("edit::undo", [this]() { history("undo"); });
     press("edit::redo", [this]() { history("redo"); });
@@ -406,27 +413,65 @@ void Controller::exportProject() {
 /**
  **/
 void Controller::openProject() {
-    chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, projectPath_.parent_path(), ".json",
-        [this](const boost::filesystem::path& chosen) {
-            // a gesture under way is holding the mesh it started on, which the read is
-            // about to take out of the scene
-            transformTool_->cancel();
-            if (!project_->read(chosen.string(), scene_)) {
-                return;
-            }
-            projectPath_ = chosen;
-            // the history describes the scene that was replaced, so none of it can be
-            // undone against the new one. Clearing it also marks the new scene as saved
-            history_->clear();
-        });
+    askBeforeDiscarding([this]() {
+        chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, projectPath_.parent_path(), ".json",
+            [this](const boost::filesystem::path& chosen) {
+                // a gesture under way is holding the mesh it started on, which the read is
+                // about to take out of the scene
+                transformTool_->cancel();
+                if (!project_->read(chosen.string(), scene_)) {
+                    return;
+                }
+                projectPath_ = chosen;
+                // the history describes the scene that was replaced, so none of it can be
+                // undone against the new one. Clearing it also marks the new scene as saved
+                history_->clear();
+            });
+    });
 }
 
 /**
  **/
-void Controller::saveProject() {
-    if (project_->write(projectPath_.string(), scene_)) {
-        history_->markSaved();
+bool Controller::saveProject() {
+    if (!project_->write(projectPath_.string(), scene_)) {
+        return false;
     }
+    history_->markSaved();
+    return true;
+}
+
+/**
+ **/
+void Controller::askBeforeDiscarding(const std::function<void()>& proceed) {
+    if (!history_->dirty() || !prompt_) {
+        proceed();
+        return;
+    }
+    prompt_->open("Save the changes to " + projectPath_.filename().string() + "?", {
+        { "Save", [this, proceed]() {
+            // a project that could not be written still has changes to lose
+            if (saveProject()) {
+                proceed();
+            }
+        } },
+        { "Discard", proceed },
+        { "Cancel", {} }
+    }, {});
+}
+
+/**
+ **/
+bool Controller::quitRequested() {
+    if (!history_ || !history_->dirty()) {
+        return true;
+    }
+    // a second close while the question is up would replace it, and lose what the first one
+    // was asking for
+    if (prompt_ && prompt_->visible()) {
+        return false;
+    }
+    askBeforeDiscarding([this]() { quit(); });
+    return false;
 }
 
 /**
