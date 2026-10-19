@@ -13,7 +13,7 @@ library works inside is in [internals/UserInterface.md](../../internals/UserInte
 | [Mouse.md](Mouse.md) | Know where a click goes, and when the app gets it instead |
 | [Keyboard.md](Keyboard.md) | Handle focus, tab order, keys, typed text and text editing |
 | [ImmediateMode.md](ImmediateMode.md) | Build a panel from live state every frame |
-| [ShellComponents.md](ShellComponents.md) | Use the game menu, the statistics overlay and the file chooser |
+| [ShellComponents.md](ShellComponents.md) | Use the game menu, the statistics overlay, the file chooser and the prompt |
 
 ## Two ways to write a ui
 

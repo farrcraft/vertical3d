@@ -14,6 +14,7 @@ v3d_add_test(ui
 	"LayoutTest.cpp"
 	"MenuBarTest.cpp"
 	"PainterTest.cpp"
+	"PromptTest.cpp"
 	"ResolverTest.cpp"
 	"ScreenTest.cpp"
 	"ScrollbarTest.cpp"

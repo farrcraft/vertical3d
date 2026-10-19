@@ -40,7 +40,7 @@ a component type. How to use the library is in
 | `Immediate` | [Immediate.h](../../api/ui/Immediate.h) | the immediate-mode layer |
 | `shell::Screen` | [shell/Screen.h](../../api/ui/shell/Screen.h) | builds the text renderer, component renderer, overlay and immediate layer over an `Engine3D` |
 | `shell::Keyboard` | [shell/Keyboard.h](../../api/ui/shell/Keyboard.h) | SDL adapter for `input::Keys` |
-| `shell::GameMenu`, `shell::StatisticsOverlay`, `shell::FileChooser` | [shell/](../../api/ui/shell) | shared game shell pieces |
+| `shell::GameMenu`, `shell::StatisticsOverlay`, `shell::FileChooser`, `shell::Prompt` | [shell/](../../api/ui/shell) | shared game shell pieces |
 
 Boundaries the split keeps:
 
