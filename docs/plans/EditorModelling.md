@@ -132,8 +132,8 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 |---|---|---|---|---|
 | [1](#step-1--what-the-roadmap-got-wrong) | The roadmap and TODO.md corrected | `docs` | — | done |
 | [2](#step-2--the-stack-knows-where-it-was-saved) | The stack knows where it was saved, and the caption shows it | `vertical3d` | — | done |
-| [3](#step-3--a-prompt-in-the-ui-shell) | A prompt in the ui shell | `api/ui` | — | open |
-| [4](#step-4--an-app-can-hold-a-quit) | An app can hold a quit | `api/engine` | — | open |
+| [3](#step-3--a-prompt-in-the-ui-shell) | A prompt in the ui shell | `api/ui` | — | done |
+| [4](#step-4--an-app-can-hold-a-quit) | An app can hold a quit | `api/engine` | — | done |
 | [5](#step-5--load-and-quit-ask-first) | Load and quit ask before discarding a dirty project | `vertical3d` | — | open |
 | [6](#step-6--shift-is-freed-for-selection) | Shift is freed for selection | `vertical3d` | — | open |
 | [7](#step-7--the-record-where-the-handles-pivot) | The record: where the handles pivot | `docs/adr` | **0096** | open |
@@ -242,18 +242,29 @@ the marker; the marker trimmed by a full stack; `clear()`.
 
 ### Step 3 — A prompt in the ui shell
 
+**Done.** `ui::shell::Prompt` is in `api/ui/shell`, with six cases in `PromptTest.cpp`.
+[ShellComponents.md](../api/ui/ShellComponents.md#prompt) states its rules. The prompt does not
+hold the keyboard or the pointer: the chooser does not either. Each is a pickable panel, so a
+click on it goes to the ui and a click beside it goes to the app. Step 5 decides whether the editor
+ignores the tools while a prompt is up.
+
 * **`ui::shell::Prompt` asks one question with up to three answers.** Like `FileChooser`, it drives
   a container the app's config lays out: a label for the question and one button for each answer.
   The app routes the buttons' commands to it.
 * **Each answer runs a handler** given when the prompt is opened. Closing the prompt by any path
   other than an answer runs the cancel handler.
-* **While the prompt is open, it holds the keyboard and the pointer**, as the chooser does.
+* **The prompt closes before a handler runs**, so a handler can open another prompt.
 
 **Tests**, headless in the ui suite: each answer runs its handler and closes the prompt; a config
 with no container still opens and answers; opening a second prompt while one is open replaces it
 and cancels the first.
 
 ### Step 4 — An app can hold a quit
+
+**Done.** The seam is a protected virtual, `Engine::quitRequested()`, beside `start()` and
+`release()`. `ui::quit`, `SDL_EVENT_QUIT` and `SDL_EVENT_WINDOW_CLOSE_REQUESTED` all reach it
+through `requestQuit()`. Three cases are in `EngineTest.cpp`.
+[Lifecycle.md](../api/engine/Lifecycle.md#rules) states the rule.
 
 * **Every path to quitting asks the app first.** `ui::quit`, `SDL_EVENT_QUIT` and
   `SDL_EVENT_WINDOW_CLOSE_REQUESTED` call one engine function, which asks the app whether to quit

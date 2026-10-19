@@ -141,7 +141,8 @@ bindings it ships with `Engine::unhandled(document)`. Every game's suite does th
 - A command that arrives with no handler is logged as a warning. A menu item that names a
   command nothing handles shows up this way.
 - A name registered twice is refused, and the first handler stays.
-- The engine registers `ui::quit`, which ends the loop, and `ui::fullscreen`, which switches
+- The engine registers `ui::quit`, which ends the loop once the app agrees (see
+  [Lifecycle.md](Lifecycle.md#rules)), and `ui::fullscreen`, which switches
   the window between full screen and a window. An app binds them and writes no handler.
 - `ui::shell::GameMenu::declare(commands(), menu_)` registers the pause menu's commands, before
   the menu exists. See [ShellComponents.md](../ui/ShellComponents.md#gamemenu).
