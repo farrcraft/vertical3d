@@ -319,7 +319,8 @@ compiles and fails to link.
 ## Editor
 
 Open work for when the editor app itself moves forward. [editor/](editor/README.md) describes the
-editor. [EditorModelling](roadmap/EditorModelling.md) orders these.
+editor. [EditorModelling](roadmap/EditorModelling.md) orders these, and the
+[EditorModelling plan](plans/EditorModelling.md) takes up everything here but most of the missing command handlers.
 
 [] 55 of the menu's 77 commands have no handler, and only log themselves when chosen.
 

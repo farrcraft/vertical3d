@@ -20,6 +20,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
+| [EditorModelling](EditorModelling.md) | Editor, brep, ui, engine | A dirty flag that asks before discarding work, selection sets and a rubber band, component moves, split, extrude, inset and merge with undo, fixed views and resizable panes |
 
 ## Completed plans
 
