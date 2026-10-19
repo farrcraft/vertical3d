@@ -4,21 +4,21 @@ What moya and `api/render/offline` need to render the scenes a RenderMan shader 
 work: soft shadows from area lights, translucent surfaces under either hider, displaced and bumped
 surfaces, and wide distant lights. Each is refused or approximated today.
 
-The gaps are each described in [TODO.md](../TODO.md#offline-rendering). This roadmap orders them.
+The gaps are each described in [TODO.md](../../TODO.md#offline-rendering). This roadmap orders them.
 Area lights multiply the number of shadow rays, so the ray tracer has to be fast before they are
 built. Every later step builds on transformations, so their correctness comes first.
-[The offline renderer](../offline/README.md) describes the pipeline and the two hiders.
+[The offline renderer](../../offline/README.md) describes the pipeline and the two hiders.
 
-The [OfflineShading plan](../plans/OfflineShading.md) takes up every section below.
+The [OfflineShading plan](../../plans/completed/OfflineShading.md) takes up every section below.
 
 ## What exists
 
 - **Two hiders share one film and one ray tracer.** The reyes hider (`"hidden"`) dices
   primitives into grids and shades a grid at a time. The ray hider (`"raytrace"`) shades one hit
   at a time. Both trace shadow and reflection rays through
-  [`offline::trace`](../../api/render/offline/trace/).
-- **[`trace::Scene::nearest`](../../api/render/offline/trace/Scene.h)** tests every primitive.
-- **[`trace::Tracer`](../../api/render/offline/trace/Tracer.h)** gives each hit its own
+  [`offline::trace`](../../../api/render/offline/trace/).
+- **[`trace::Scene::nearest`](../../../api/render/offline/trace/Scene.h)** tests every primitive.
+- **[`trace::Tracer`](../../../api/render/offline/trace/Tracer.h)** gives each hit its own
   `HitShader` and its own run of the shading machine.
 - **The reyes hider adds every polygon to the traced scene** as it arrives, before culling. A
   scene that never traces pays for it anyway.
@@ -109,7 +109,7 @@ These have no order against each other, or against steps 2 to 6.
 ## Verification
 
 - The moya suite renders scenes on the CPU and compares them with committed PNGs, one set per
-  hider, at a tolerance of 1. [Testing.md](../contributing/Testing.md#moya-references) describes
+  hider, at a tolerance of 1. [Testing.md](../../contributing/Testing.md#moya-references) describes
   it.
 - Step 1 is the exception. Its sign is checked against the specification's unit cube, not
   against a picture.

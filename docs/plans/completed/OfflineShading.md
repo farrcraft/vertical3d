@@ -1,7 +1,7 @@
 # Offline Shading — Area Lights, Opacity, Displacement and a Faster Ray Tracer
 
 Drafted 2026-10-17 against `261fc9e0`. This plan takes up every section of
-[the offline shading roadmap](../roadmap/OfflineShading.md). Its steps fall in `api/render/offline`,
+[the offline shading roadmap](../../roadmap/completed/OfflineShading.md). Its steps fall in `api/render/offline`,
 `moya` and the offline documents. When it closes, moya renders soft shadows from area lights,
 translucent surfaces under the reyes hider, and bumped and displaced surfaces. Its rotations are
 checked against a worked example in the RenderMan Interface specification.
@@ -9,7 +9,7 @@ checked against a worked example in the RenderMan Interface specification.
 moya is the one offline renderer. It has two hiders: the reyes hider (`"hidden"`), which dices
 primitives into grids of micropolygons and shades a grid at a time, and the ray hider
 (`"raytrace"`), which shades one hit at a time. Both trace shadow and reflection rays through
-`offline::trace`. [The offline renderer](../offline/README.md) describes the pipeline.
+`offline::trace`. [The offline renderer](../../offline/README.md) describes the pipeline.
 
 The plan keeps the roadmap's order, with four changes:
 
@@ -140,7 +140,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [18](#step-18--solar-with-an-angle) | `solar` with an angle | `api/render/offline`, `moya` | — | done |
 | [19](#step-19--the-traced-scene-only-when-something-traces) | The reyes hider fills the traced scene only when something traces | `api/render/offline`, `moya` | — | held |
 | [20](#step-20--the-command-line-wins-over-option-limits) | The command line wins over `Option "limits"` | `moya` | — | done |
-| [21](#step-21--the-documents) | The offline documents state the new rules | `docs` | — | open |
+| [21](#step-21--the-documents) | The offline documents state the new rules | `docs` | — | done |
 
 ## What blocks what
 
@@ -171,7 +171,7 @@ Steps 18 to 20 can land at any point.
 * **The suites.** The offline suite and moya's suites pass. Each step with a CPU half adds cases,
   and `failsfirst.ts` is run on the change to show that each new case fails without it.
 * **The references.** moya's references are compared at a tolerance of one 8-bit step
-  ([Testing.md](../contributing/Testing.md#moya-references)). A step that must not change a
+  ([Testing.md](../../contributing/Testing.md#moya-references)). A step that must not change a
   picture leaves every committed PNG untouched. A step that adds a feature adds a reference scene
   for each hider that supports it, reached from code and from RIB like the others.
 
@@ -198,7 +198,7 @@ this plan.
   reyes hider a grid is shaded before any film sample reaches it.
 * The roadmap and TODO.md name `calculatenormal` as the missing derivative. `Du`, `Dv`, `Deriv`
   and `area` are missing too.
-* The roadmap links this plan, and [plans/README.md](README.md) lists it.
+* The roadmap links this plan, and [plans/README.md](../README.md) lists it.
 
 **Tests:** none. The suites pass and the references are untouched.
 
@@ -208,7 +208,7 @@ this plan.
 `spec-cube.rib` and finds every face where the specification names it. With the angle negated in
 `RenderContext::rotate`, the right, left, bottom and top faces fail, and the far and near faces
 pass, as they should. The rule is stated on `RenderContext::rotate` and in
-[Rib.md](../offline/Rib.md). The TODO entry is deleted. No picture changed.
+[Rib.md](../../offline/Rib.md). The TODO entry is deleted. No picture changed.
 
 **The specification's unit cube is the test.** Its RIB goes into `moya/tests/data/` as
 `spec-cube.rib`, with a camera and a `Format` added. Each face is the same polygon at z = +0.5
@@ -697,16 +697,69 @@ Letting `gridSize` replace a pinned size fails the pinned case.
 
 ### Step 21 — The documents
 
+**Done.** Each step updated the documents it moved, and the set was checked at the end. The
+offline README still listed the brute-force nearest search, which step 5 removed, and it was
+corrected here.
+
 Each step updates the document it moves, as it lands. This step checks the whole set at the end.
 
-* [Reyes.md](../offline/Reyes.md): displacement, opacity, derivatives across a grid.
-* [RayTracing.md](../offline/RayTracing.md): the hierarchy, the stencil, area lights,
+* [Reyes.md](../../offline/Reyes.md): displacement, opacity, derivatives across a grid.
+* [RayTracing.md](../../offline/RayTracing.md): the hierarchy, the stencil, area lights,
   displacement.
-* [ShadingLanguage.md](../offline/ShadingLanguage.md): the derivative built-ins, displacement
+* [ShadingLanguage.md](../../offline/ShadingLanguage.md): the derivative built-ins, displacement
   shaders, `solar` with an angle, the projected spaces.
-* [Rib.md](../offline/Rib.md): `AreaLightSource`, `Displacement`, the attributes.
-* [RunningAndTesting.md](../offline/RunningAndTesting.md): the new references, and the command
+* [Rib.md](../../offline/Rib.md): `AreaLightSource`, `Displacement`, the attributes.
+* [RunningAndTesting.md](../../offline/RunningAndTesting.md): the new references, and the command
   line's limits.
 * TODO.md loses its offline entries and `RiRotate`'s sign, and gains step 9 if it is still held.
-* The roadmap moves to [roadmap/completed/](../roadmap/completed/), and this plan moves to
-  [completed/](completed/) with an Outcome section.
+* The roadmap moves to [roadmap/completed/](../../roadmap/completed/), and this plan moves to
+  [completed/](./) with an Outcome section.
+
+## Outcome
+
+Closed 2026-10-18. moya renders soft shadows from area lights, translucent surfaces under the
+reyes hider, and bumped and displaced surfaces, under both hiders. Its rotations are checked
+against the specification's unit cube, and its ray tracer walks a bounding volume hierarchy.
+
+**Delivered:**
+
+- `RiRotate`'s sign pinned by the specification's unit cube.
+- Projected spaces divided by w, and answered by the ray hider from the same camera.
+- A bounding volume hierarchy in the traced scene, which took a 9800-triangle render from 31 s
+  to under a second under the ray hider and from 503 s to 5 s under the reyes hider, with the
+  same bytes. ADR-0092.
+- `Du`, `Dv`, `Deriv`, `area` and `calculatenormal` under both hiders: across a grid, and across
+  a three-point stencil at a traced hit. ADR-0093.
+- Area lights: their geometry kept, sampled per shading point, and `Attribute "light"
+  "nsamples"`, with a built-in `arealight`. ADR-0094.
+- Opacity under the reyes hider, composited front to back per sample.
+- Displacement shaders compiled and run under both hiders, with `displacementbound`, and the
+  displaced surface in the traced scene. ADR-0095.
+- `solar` with an angle, and the command line's limits winning over the scene's.
+- Seven new references, each rendered from code and from RIB: bump, area and displaced under
+  both hiders, and glass under the reyes hider.
+
+**Different from the plan:**
+
+- The standard lights ignore P, so area lights needed a built-in `arealight` shader.
+- An area light shadowed itself, because a shadow ray's start was offset and its direction was
+  not. Shadow rays are aimed from their offset start and stop short of their end.
+- A sample on an edge two micropolygons share is covered by both, so a reyes sample keeps one
+  layer from each grid.
+- The split test cannot measure the grown bound of a displaced primitive, which split without
+  end. It measures the primitive without the bound.
+- A ray down an edge two triangles share could miss both. `Ray::intersects` counts a point
+  within a hundred-thousandth of an edge as inside.
+- Three committed pictures moved, each at a handful of pixels by at most 12 levels:
+  `raytrace-sampled.png` from the shadow ray change and again from the edge change, and
+  `raytrace-focus.png` and `raytrace-motion.png` from the edge change. Each was regenerated, and
+  its step says why.
+- The RIB reader does not read `CoordinateSystem`, so a file's displacement bound can name only
+  the three predefined spaces.
+
+**Left open,** in [TODO.md](../../TODO.md#offline-rendering):
+
+- Step 9, traced hits shaded in batches, due when a profile shows preparing and running the
+  machine for one hit outweighing intersection.
+- Step 19, the traced scene filled only when something traces, due when a large scene with no
+  shadowing light shows the memory its triangles hold.

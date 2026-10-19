@@ -21,16 +21,19 @@ and its section names the plan or roadmap that orders it.
 
 ## Offline rendering
 
-Each of these waits until a scene needs it. The [OfflineShading plan](plans/OfflineShading.md)
-takes them up, in the order the [OfflineShading roadmap](roadmap/OfflineShading.md) gives.
+Each of these waits until a scene needs it. The
+[OfflineShading plan](plans/completed/OfflineShading.md) held both rather than build them early.
 
 [] **The reyes hider adds every polygon to the traced scene.**
 
 - moya fans each polygon into the traced scene as it arrives, before culling, and shades its
   lights once for it. This lets an off-screen caster cast a shadow.
-- A scene that never calls `trace()` or `transmission()` pays the memory and the time anyway.
-- The fix adds geometry only when a surface or light shader in the scene traces.
-- Due when a large reyes-only scene's memory or load time shows it.
+- Every standard light with a direction calls `transmission()`, so only a scene with no
+  shadowing light gains. Such a scene casts no ray, and the hierarchy is built on the first
+  ray, so it pays only the memory the triangles hold.
+- The triangles still have to be made as the scene is read, because a shader bound later may
+  trace. The fix would drop them when rendering starts if nothing traced.
+- Due when a large scene with no shadowing light shows that memory.
 
 [] **`offline::trace::Tracer` runs a shader once per hit.**
 
@@ -38,7 +41,9 @@ takes them up, in the order the [OfflineShading roadmap](roadmap/OfflineShading.
   the machine's per-run cost once per pixel sample.
 - The fix batches the hits of a scanline that share a shader into one run, as the reyes hider
   shades a grid. It is for speed alone, and gives no derivatives.
-- Due when a ray-hidden scene's shading time shows it.
+- Due when a profile of a Release render shows that preparing and running the machine for one
+  hit outweighs intersection. A pixel's samples are seeded per pixel, so batching them in another
+  order does not change the picture.
 
 Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration).
 
