@@ -17,6 +17,7 @@
 #include <api/ui/shell/StatisticsOverlay.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <string>
@@ -78,6 +79,11 @@ class Renderer final {
     void manipulator(const boost::shared_ptr<Manipulator>& manipulator);
 
     /**
+     * The select tool, whose rubber band is drawn over the views while one is dragged.
+     **/
+    void selectTool(const boost::shared_ptr<SelectTool>& select);
+
+    /**
      * The ui drawn over every view, or null to draw none.
      **/
     void ui(const boost::shared_ptr<v3d::ui::Engine>& ui);
@@ -132,6 +138,7 @@ class Renderer final {
 
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<Manipulator> manipulator_;
+    boost::shared_ptr<SelectTool> select_;
     std::vector<boost::shared_ptr<ViewPort>> views_;
     // one canvas per view. Each view fills its own and submits it before the next view
     // draws, and the submit copies it

@@ -9,6 +9,7 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <optional>
 #include <string>
 
 #include "Picker.h"
@@ -21,7 +22,7 @@
 namespace v3d::editor {
 
 /**
- * Selecting by clicking.
+ * Selecting by clicking, and by dragging a rubber band.
  *
  * A press casts a pick into the view the cursor is over and writes what it found into
  * the scene's selection flags. The mask lives here rather than on a view, because it
@@ -35,9 +36,28 @@ namespace v3d::editor {
  * While adding, a click toggles what it hit and leaves the rest of the selection alone, and
  * a miss changes nothing. Components are picked only inside selected objects, so a component
  * selection may span every selected object.
+ *
+ * A press on nothing is applied as a miss at once, and then held. If the cursor moves further
+ * than the click tolerance before the release, the drag is a rubber band, and the release
+ * selects everything inside it. A band adds to what the miss left, so it replaces the
+ * selection unless adding.
  **/
 class SelectTool final : public Tool {
  public:
+    /**
+     * How far the cursor may move, in pixels along either axis, between a press on nothing
+     * and its release while still counting as a click rather than a rubber band.
+     **/
+    static constexpr float clickTolerance = 4.0F;
+
+    /**
+     * A rubber band, in window pixels. Either corner may be the smaller.
+     **/
+    struct Band final {
+        glm::vec2 corner;
+        glm::vec2 opposite;
+    };
+
     /**
      * @param scene what is being selected in, which the controller owns
      **/
@@ -82,6 +102,18 @@ class SelectTool final : public Tool {
      **/
     const Picker::Hit& hit() const noexcept;
 
+    /**
+     * @return whether a press on nothing is held. The view it was made in stays the view
+     *         the release is measured in
+     **/
+    bool dragging() const noexcept;
+
+    /**
+     * @return the rubber band being dragged, or nothing unless a held press has moved far
+     *         enough to be a band
+     **/
+    std::optional<Band> band() const;
+
  private:
     /**
      * Write a pick into the scene's selection flags.
@@ -101,6 +133,11 @@ class SelectTool final : public Tool {
      **/
     void selectComponent(const Picker::Hit& hit);
 
+    /**
+     * Select everything inside the rubber band.
+     **/
+    void selectInside();
+
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<ViewPort> view_;
@@ -109,6 +146,8 @@ class SelectTool final : public Tool {
     bool adding_;
     Picker::Hit hit_;
     glm::vec2 cursor_;
+    bool held_;
+    glm::vec2 anchor_;
 };
 
 };  // namespace v3d::editor

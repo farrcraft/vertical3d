@@ -103,7 +103,7 @@ The renderer turns each view into two passes, then adds one more pass for the ui
 |---|---|---|---|
 | Scene pass, named after the view, which no other view shares | The view's region | Tested | Its own region, colour and depth |
 | Handle pass | The view's region | Not tested | Nothing; it draws over the scene pass |
-| `ui` | The whole window | Not tested | Nothing |
+| `ui` | The whole window | Not tested | Nothing; it also draws the rubber band |
 
 All views share one depth buffer. The handle pass has no depth test so that the manipulator is
 always visible, including where it lies in the same plane as the grid's axis lines.

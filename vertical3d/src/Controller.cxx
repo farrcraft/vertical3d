@@ -117,6 +117,7 @@ bool Controller::start() {
     renderer_->views(views_);
     renderer_->scene(scene_);
     renderer_->manipulator(transformTool_->manipulator());
+    renderer_->selectTool(selectTool_);
 
     if (!buildUi()) {
         return false;
@@ -561,10 +562,11 @@ void Controller::drag(bool pressed) {
     // Otherwise a handle of the selection under the cursor takes the press, and a press no
     // handle took picks
     if (cameraTool_->mode() != CameraControlTool::CAMERA_MODE_NONE) {
-        // a modifier pressed during a handle drag does not keep the release from the
-        // transform tool, which records the drag when it ends
+        // a modifier pressed during a handle drag or a rubber band does not keep the
+        // release from the tool that ends it
         if (!pressed) {
             transformTool_->button(1, false, cursor_);
+            selectTool_->button(1, false, cursor_);
         }
         return;
     }
@@ -622,7 +624,8 @@ void Controller::handleResize(const v3d::event::kind::WindowResize& event) {
 void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
     cursor_ = event.position();
 
-    const bool dragging = (cameraTool_ && cameraTool_->dragging()) || (transformTool_ && transformTool_->dragging());
+    const bool dragging = (cameraTool_ && cameraTool_->dragging()) || (transformTool_ && transformTool_->dragging()) ||
+        (selectTool_ && selectTool_->dragging());
     // while a drag is under way the ui is not offered the cursor, so a drag that passes
     // over the menu bar or a toolbar is not interrupted
     if (!dragging && uiMotion(cursor_)) {

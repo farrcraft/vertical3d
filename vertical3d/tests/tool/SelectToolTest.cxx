@@ -13,6 +13,7 @@
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
+#include <optional>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
@@ -209,6 +210,126 @@ BOOST_AUTO_TEST_CASE(select_tool_add_component_test) {
     BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 0U);
     BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 0U);
     BOOST_CHECK_EQUAL(cubes.scene->selection().size(), 2U);
+}
+
+/**
+ * Two half size cubes side by side, a quarter of the view either side of its middle. Each
+ * covers fifty to a hundred and fifty pixels from the middle, and the band tests drag around
+ * them from the empty space above and below.
+ **/
+struct TwoSmallCubes {
+    TwoSmallCubes() :
+        scene(boost::make_shared<v3d::editor::Scene>()),
+        left(v3d::editor::create_poly_cube()),
+        right(v3d::editor::create_poly_cube()) {
+        left->scale(glm::vec3(0.5F, 0.5F, 0.5F));
+        right->scale(glm::vec3(0.5F, 0.5F, 0.5F));
+        left->translation(glm::vec3(-0.5F, 0.0F, 0.0F));
+        right->translation(glm::vec3(0.5F, 0.0F, 0.0F));
+        scene->add(left);
+        scene->add(right);
+    }
+
+    boost::shared_ptr<v3d::editor::Scene> scene;
+    boost::shared_ptr<v3d::brep::BRep> left;
+    boost::shared_ptr<v3d::brep::BRep> right;
+};
+
+/**
+ * Press on one point, move to another and release there.
+ **/
+void drag(v3d::editor::SelectTool* select, const glm::vec2& from, const glm::vec2& to) {
+    select->button(1, true, from);
+    select->motion(to);
+    select->button(1, false, to);
+}
+
+BOOST_AUTO_TEST_CASE(select_tool_band_object_test) {
+    const TwoSmallCubes cubes;
+    const boost::shared_ptr<v3d::editor::SelectTool> select = tool(cubes.scene);
+
+    // a band around both selects both
+    drag(select.get(), glm::vec2(10.0F, 10.0F), glm::vec2(390.0F, 390.0F));
+    BOOST_CHECK_EQUAL(cubes.left->selected(), true);
+    BOOST_CHECK_EQUAL(cubes.right->selected(), true);
+
+    // a band replaces the selection, and holds only what lies wholly inside it
+    drag(select.get(), glm::vec2(390.0F, 10.0F), glm::vec2(190.0F, 390.0F));
+    BOOST_CHECK_EQUAL(cubes.left->selected(), false);
+    BOOST_CHECK_EQUAL(cubes.right->selected(), true);
+    drag(select.get(), glm::vec2(390.0F, 10.0F), glm::vec2(100.0F, 390.0F));
+    BOOST_CHECK_EQUAL(cubes.left->selected(), false);
+    BOOST_CHECK_EQUAL(cubes.right->selected(), true);
+
+    // while adding it adds, and leaves what was selected
+    select->adding(true);
+    drag(select.get(), glm::vec2(10.0F, 10.0F), glm::vec2(210.0F, 390.0F));
+    BOOST_CHECK_EQUAL(cubes.left->selected(), true);
+    BOOST_CHECK_EQUAL(cubes.right->selected(), true);
+
+    // a band that starts on an object is not a band
+    select->adding(false);
+    drag(select.get(), glm::vec2(100.0F, 200.0F), glm::vec2(390.0F, 390.0F));
+    BOOST_CHECK_EQUAL(cubes.left->selected(), true);
+    BOOST_CHECK_EQUAL(cubes.right->selected(), false);
+}
+
+BOOST_AUTO_TEST_CASE(select_tool_band_component_test) {
+    const TwoSmallCubes cubes;
+    const boost::shared_ptr<v3d::editor::SelectTool> select = tool(cubes.scene);
+    cubes.left->selected(true);
+    select->activate("face");
+
+    // only the selected object's faces are found, and every one of them is inside
+    drag(select.get(), glm::vec2(10.0F, 10.0F), glm::vec2(390.0F, 390.0F));
+    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 6U);
+    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 0U);
+    BOOST_CHECK_EQUAL(cubes.right->selected(), false);
+
+    // a band in a component mode replaces the components and keeps the objects
+    cubes.right->selected(true);
+    drag(select.get(), glm::vec2(390.0F, 10.0F), glm::vec2(210.0F, 390.0F));
+    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 6U);
+    BOOST_CHECK_EQUAL(cubes.left->selected(), true);
+}
+
+BOOST_AUTO_TEST_CASE(select_tool_band_threshold_test) {
+    const TwoSmallCubes cubes;
+    const boost::shared_ptr<v3d::editor::SelectTool> select = tool(cubes.scene);
+    cubes.left->selected(true);
+
+    // a press on nothing is held, and a press on something is not
+    select->button(1, true, glm::vec2(100.0F, 200.0F));
+    BOOST_CHECK_EQUAL(select->dragging(), false);
+    select->button(1, false, glm::vec2(100.0F, 200.0F));
+    select->button(1, true, glm::vec2(10.0F, 10.0F));
+    BOOST_CHECK_EQUAL(select->dragging(), true);
+
+    // the miss clears the selection on the press, and the press is not a band until the
+    // cursor has moved past the tolerance
+    BOOST_CHECK_EQUAL(cubes.left->selected(), false);
+    const float within = v3d::editor::SelectTool::clickTolerance;
+    select->motion(glm::vec2(10.0F + within, 10.0F + within));
+    BOOST_CHECK(!select->band());
+    select->motion(glm::vec2(10.0F + within + 1.0F, 10.0F));
+    const std::optional<v3d::editor::SelectTool::Band> band = select->band();
+    BOOST_REQUIRE(band.has_value());
+    if (band) {
+        BOOST_CHECK_EQUAL(band->corner.x, 10.0F);
+        BOOST_CHECK_EQUAL(band->opposite.x, 10.0F + within + 1.0F);
+    }
+
+    // a shaky click is a click
+    select->motion(glm::vec2(12.0F, 12.0F));
+    select->button(1, false, glm::vec2(12.0F, 12.0F));
+    BOOST_CHECK_EQUAL(select->dragging(), false);
+    BOOST_CHECK(cubes.scene->selection().empty());
+
+    // and a release with no press held does nothing, even far from where the last one was
+    select->motion(glm::vec2(390.0F, 390.0F));
+    select->button(1, false, glm::vec2(390.0F, 390.0F));
+    BOOST_CHECK(cubes.scene->selection().empty());
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_component_test) {

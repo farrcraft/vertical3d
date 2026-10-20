@@ -138,7 +138,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [6](#step-6--shift-is-freed-for-selection) | Shift is freed for selection | `vertical3d` | — | done |
 | [7](#step-7--the-record-where-the-handles-pivot) | The record: where the handles pivot | `docs/adr` | **0096** | done |
 | [8](#step-8--a-selection-set) | A selection set, and shift-click | `vertical3d` | — | done |
-| [9](#step-9--a-rubber-band) | A rubber band | `vertical3d` | 0096 | open |
+| [9](#step-9--a-rubber-band) | A rubber band | `vertical3d` | 0096 | done |
 | [10](#step-10--manipulators-move-a-set) | Manipulators move a set about a shared pivot | `vertical3d` | 0096 | open |
 | [11](#step-11--brep-checks-and-walks-a-mesh-fully) | `BRep` checks and walks a mesh fully | `api/brep` | — | open |
 | [12](#step-12--components-move) | Components move | `vertical3d`, `api/brep` | 0096 | open |
@@ -356,6 +356,14 @@ own flag, so it did not change. Three cases are in `SelectToolTest.cxx` and `Sce
 set; a mask change clears components in every mesh; undoing a create with two meshes selected.
 
 ### Step 9 — A rubber band
+
+**Done.** `Picker::inside()` tests a rectangle through the picker's screen projection.
+`SelectTool` applies a press on nothing as a miss at once and holds it, and a release more than
+`SelectTool::clickTolerance` (4 pixels) away selects what the band holds. Applying the miss first
+is what makes a band replace the selection. The renderer draws the outline into the ui canvas, which
+is already in window pixels, so no pass was added. A release with a camera modifier held reaches
+the select tool as it reaches the transform tool. Five cases are in `PickerTest.cxx` and
+`SelectToolTest.cxx`. [Picking](../editor/PickingAndManipulators.md#picking) states the rules.
 
 * **A drag that starts on nothing draws a rectangle**, and its release selects everything inside
   it, under the select mask. With `select::add` held it adds to the selection.

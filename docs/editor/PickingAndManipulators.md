@@ -51,14 +51,33 @@ clears the component selection.
 - While Left Shift is held (`select::add`, which `SelectTool::adding()` follows), a click
   toggles the object or part under the cursor and leaves the rest of the selection alone. A
   click on nothing changes nothing.
-- There is no rubber band.
+
+**A rubber band.** A press on nothing is applied as a click at once, and then held. If the
+cursor moves more than 4 pixels along either axis before the release, the drag is a rubber band,
+and the release selects everything inside the rectangle under the select mask. A smaller
+movement is a click. A band adds to what the click left, so it replaces the selection, or adds
+to it while Left Shift is held. A band never deselects.
+
+`Picker::inside()` decides what a rectangle holds, through the same screen projection a vertex
+or edge pick uses:
+
+| Mask | Inside when |
+|---|---|
+| Object | Every corner of its bounding box projects inside |
+| Vertex | It projects inside |
+| Edge | Both its ends project inside |
+| Face | Every vertex of its loop projects inside |
+
+A band selects hidden parts, as a click does, because it tests geometry and not pixels. A point
+behind the camera is never inside. The band is measured in the view where it started, and is
+drawn in the `ui` pass as a one-pixel outline in window pixels.
 
 **One button, three tools.** `Controller::drag()` routes the left button in this order:
 
 1. The ui is offered the press first. If it takes it, the matching release goes to the ui too.
 2. If a camera modifier (Alt or Ctrl) is held, the drag drives the camera. A release
-   with a modifier held still goes to `TransformTool` as well, so a handle drag that a modifier
-   pressed mid-way ends and is recorded.
+   with a modifier held still goes to `TransformTool` and `SelectTool` as well, so a handle drag
+   or a rubber band that a modifier pressed mid-way ends.
 3. Otherwise, if the cursor is on a manipulator handle, `TransformTool` takes the press.
 4. Otherwise `SelectTool` picks.
 
