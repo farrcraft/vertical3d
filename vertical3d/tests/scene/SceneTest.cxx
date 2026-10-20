@@ -115,16 +115,14 @@ BOOST_AUTO_TEST_CASE(scene_selection_test) {
     scene.add(second);
     scene.add(third);
     BOOST_CHECK(scene.selection().empty());
-    BOOST_CHECK(!scene.firstSelected());
 
     // the set comes back in insertion order, whatever order the flags were set in
     third->selected(true);
     first->selected(true);
-    const std::vector<boost::shared_ptr<v3d::brep::BRep>> selection = scene.selection();
+    const v3d::editor::Meshes selection = scene.selection();
     BOOST_REQUIRE_EQUAL(selection.size(), 2U);
     BOOST_CHECK(selection[0] == first);
     BOOST_CHECK(selection[1] == third);
-    BOOST_CHECK(scene.firstSelected() == first);
 }
 
 };  // namespace

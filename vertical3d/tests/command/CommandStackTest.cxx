@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
     // the command does the creating, so the first do and a redo run the same code
     command->redo();
     BOOST_CHECK_EQUAL(scene->count(), 1U);
-    BOOST_CHECK(scene->firstSelected() == cube);
+    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{cube});
 
     command->undo();
     BOOST_CHECK_EQUAL(scene->count(), 0U);
@@ -274,7 +274,7 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
     v3d::editor::CreateCommand command(scene, cube, "cube");
     command.redo();
     BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
-    BOOST_CHECK(scene->firstSelected() == cube);
+    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{cube});
 
     // the flag lives on the mesh, so undoing the create clears it
     command.undo();
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
 
     command.redo();
     BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
-    BOOST_CHECK(scene->firstSelected() == cube);
+    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{cube});
     BOOST_CHECK(!plane->selected());
 
     // with the plane added to the selection, undoing the create takes the cube out of it
@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
     plane->selected(true);
     command.undo();
     BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
-    BOOST_CHECK(scene->firstSelected() == plane);
+    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{plane});
     BOOST_CHECK(!cube->selected());
 }
 
@@ -306,7 +306,7 @@ BOOST_AUTO_TEST_CASE(transform_command_test) {
 
     BOOST_CHECK(!before.same(after));
 
-    v3d::editor::TransformCommand command(cube, {.before = before, .after = after}, "translate");
+    v3d::editor::TransformCommand command({{.mesh = cube, .before = before, .after = after}}, "translate");
     BOOST_CHECK_EQUAL(command.name(), "translate");
 
     // a gesture is undone by restoring the whole placement, not only the part that moved

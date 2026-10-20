@@ -68,9 +68,8 @@ order. `Scene::add` appends.
 
 - **No cameras.** Each viewport owns its camera. `config::CameraProfiles` holds the camera
   profiles read from `data/cameras.json`, and the layout names one profile per view.
-- **A selected set.** `Scene::selection()` returns every selected mesh in insertion order.
-  Component selection happens inside those meshes and may span several of them.
-  `Scene::firstSelected()` returns the first, which is the mesh the manipulators move.
+- **A selected set.** `Scene::selection()` returns every selected mesh in insertion order, as
+  `Meshes`. Component selection happens inside those meshes and may span several of them.
 - **Visitors.** Code that reads the whole scene implements `SceneVisitor` and is passed to
   `Scene::accept()`. `WireframeVisitor`, `RIBExportVisitor`, `Picker` and the project writer
   all work this way.

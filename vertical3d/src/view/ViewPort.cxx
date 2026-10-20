@@ -125,7 +125,7 @@ void ViewPort::draw(const Scene& scene, const Manipulator* manipulator,
     }
 
     if (shows(SHOW_HANDLE) && manipulator != nullptr && handles != nullptr) {
-        manipulator->draw(scene.firstSelected(), *this, handles);
+        manipulator->draw(scene.selection(), *this, handles);
     }
 }
 

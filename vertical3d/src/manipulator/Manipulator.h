@@ -7,6 +7,7 @@
 
 #include <api/brep/BRep.h>
 #include <api/render/realtime/canvas/Line.h>
+#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstdint>
@@ -22,10 +23,12 @@ namespace v3d::editor {
 /**
  * The handles that move, turn and resize the selection.
  *
- * A manipulator writes through the mesh's dag::Transform and never through its
- * geometry, so it acts on the object even when a component is selected. It is drawn at
- * the object's own origin because the transform pivots there, so a rotation turns about
- * the point the handles show.
+ * A manipulator writes through each selected mesh's dag::Transform and never through its
+ * geometry, so it acts on the objects even when a component is selected. It is drawn at
+ * the pivot, the mean of the selected objects' origins, and turns and scales about it, so
+ * a drag does what the handles show. For one object the pivot is its origin, where its
+ * transform pivots. For several, a turn or a scale moves each object about the pivot,
+ * which changes its translation as well.
  *
  * Handles are picked by testing each one against the cursor on the CPU, and drawn through
  * canvas::Line. They are sized in world units taken from the view, so a handle keeps
@@ -101,11 +104,12 @@ class Manipulator {
          **/
         bool valid;
         /**
-         * The object's origin in world space. Its transform pivots about this point.
+         * The pivot in world space: the mean of the objects' origins. A turn or a scale
+         * is about this point.
          **/
         glm::vec3 origin;
         /**
-         * What the handles are aligned to.
+         * What the handles are aligned to. In local space, the first object's axes.
          **/
         glm::quat orientation;
         /**
@@ -117,12 +121,12 @@ class Manipulator {
     };
 
     /**
-     * Where this manipulator sits for a mesh seen through a view.
+     * Where this manipulator sits for a set of meshes seen through a view.
      *
      * The view's camera matrices are rebuilt first, so the handles match where the camera
      * is now rather than where it was when the last frame was drawn.
      **/
-    Placement placement(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view) const;
+    Placement placement(const Meshes& meshes, const ViewPort& view) const;
 
     /**
      * Which handle the cursor is over.
@@ -130,23 +134,23 @@ class Manipulator {
      * @param axis set to the handle under the cursor, and untouched when there is none
      * @return whether a handle is under the cursor
      **/
-    virtual bool grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
+    virtual bool grab(const Meshes& meshes, const ViewPort& view,
         const glm::vec2& cursor, Axis* axis) const;
 
     /**
-     * Append the handles to a canvas, in world space. Nothing is drawn without a
-     * selection.
+     * Append the handles to a canvas, in world space. Nothing is drawn for an empty set.
      **/
-    virtual void draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
+    virtual void draw(const Meshes& meshes, const ViewPort& view,
         v3d::render::realtime::canvas::Line* canvas) const = 0;
 
     /**
-     * Apply one motion event's worth of drag along the constrained axis.
+     * Apply one motion event's worth of drag along the constrained axis, to every mesh of
+     * the set.
      *
      * @param from where the cursor was
      * @param to where it is
      **/
-    virtual void apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
+    virtual void apply(const Meshes& meshes, const ViewPort& view,
         const glm::vec2& from, const glm::vec2& to) const = 0;
 
  protected:

@@ -8,10 +8,14 @@
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/TransformTool.h>
 #include <vertical3d/src/view/ViewPort.h>
+
+#include <cstddef>
+#include <string>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
@@ -211,6 +215,98 @@ BOOST_AUTO_TEST_CASE(transform_tool_abandoned_gesture_test) {
     BOOST_CHECK_EQUAL(history->undoDepth(), 1U);
     BOOST_CHECK_EQUAL(history->undo()->name(), "translate");
     BOOST_CHECK_SMALL(cube->translation().x, 0.001F);
+}
+
+/**
+ * Two selected cubes either side of the middle of the front view, so the handles sit at
+ * the middle, and a stack recording what the tool does to them.
+ **/
+struct TwoCubes {
+    TwoCubes() :
+        scene(boost::make_shared<v3d::editor::Scene>()),
+        left(v3d::editor::create_poly_cube()),
+        right(v3d::editor::create_poly_cube()),
+        history(boost::make_shared<v3d::editor::CommandStack>()),
+        transformTool(tool(scene)) {
+        left->translation(glm::vec3(-0.5F, 0.0F, 0.0F));
+        right->translation(glm::vec3(0.5F, 0.0F, 0.0F));
+        left->selected(true);
+        right->selected(true);
+        scene->add(left);
+        scene->add(right);
+        transformTool->commands(history);
+    }
+
+    /**
+     * Grab at one point, drag to another and let go, then check that the gesture is one
+     * command that undoes and redoes both cubes exactly.
+     **/
+    void gesture(const std::string& mode, const glm::vec2& from, const glm::vec2& to) const {
+        transformTool->activate(mode);
+        const v3d::editor::Placement leftBefore = v3d::editor::Placement::of(*left);
+        const v3d::editor::Placement rightBefore = v3d::editor::Placement::of(*right);
+        const std::size_t depth = history->undoDepth();
+
+        transformTool->motion(from);
+        transformTool->button(1, true, from);
+        transformTool->motion(to);
+        transformTool->button(1, false, to);
+        BOOST_REQUIRE_EQUAL(history->undoDepth(), depth + 1);
+
+        const v3d::editor::Placement leftAfter = v3d::editor::Placement::of(*left);
+        const v3d::editor::Placement rightAfter = v3d::editor::Placement::of(*right);
+        BOOST_CHECK(!leftAfter.same(leftBefore));
+        BOOST_CHECK(!rightAfter.same(rightBefore));
+
+        BOOST_CHECK_EQUAL(history->undo()->name(), mode);
+        BOOST_CHECK(v3d::editor::Placement::of(*left).same(leftBefore));
+        BOOST_CHECK(v3d::editor::Placement::of(*right).same(rightBefore));
+        history->redo();
+        BOOST_CHECK(v3d::editor::Placement::of(*left).same(leftAfter));
+        BOOST_CHECK(v3d::editor::Placement::of(*right).same(rightAfter));
+    }
+
+    boost::shared_ptr<v3d::editor::Scene> scene;
+    boost::shared_ptr<v3d::brep::BRep> left;
+    boost::shared_ptr<v3d::brep::BRep> right;
+    boost::shared_ptr<v3d::editor::CommandStack> history;
+    boost::shared_ptr<v3d::editor::TransformTool> transformTool;
+};
+
+BOOST_AUTO_TEST_CASE(transform_tool_set_translate_test) {
+    const TwoCubes cubes;
+    cubes.gesture("translate", glm::vec2(centre.x + 45.0F, centre.y), glm::vec2(centre.x + 145.0F, centre.y));
+    BOOST_CHECK_SMALL(cubes.left->translation().x, 0.01F);
+    BOOST_CHECK_CLOSE(cubes.right->translation().x, 1.0F, 1.0F);
+}
+
+BOOST_AUTO_TEST_CASE(transform_tool_set_rotate_test) {
+    const TwoCubes cubes;
+    // the z ring, which faces this view, is ninety pixels round the pivot
+    cubes.gesture("rotate", glm::vec2(centre.x + 90.0F, centre.y), glm::vec2(centre.x, centre.y + 90.0F));
+    BOOST_CHECK_CLOSE(cubes.left->translation().y, 0.5F, 0.5F);
+    BOOST_CHECK_CLOSE(cubes.right->translation().y, -0.5F, 0.5F);
+}
+
+BOOST_AUTO_TEST_CASE(transform_tool_set_scale_test) {
+    const TwoCubes cubes;
+    cubes.gesture("scale", glm::vec2(centre.x + 45.0F, centre.y), glm::vec2(centre.x + 135.0F, centre.y));
+    BOOST_CHECK_CLOSE(cubes.left->translation().x, -1.0F, 1.0F);
+    BOOST_CHECK_CLOSE(cubes.right->translation().x, 1.0F, 1.0F);
+}
+
+BOOST_AUTO_TEST_CASE(transform_tool_set_kept_test) {
+    const TwoCubes cubes;
+    cubes.transformTool->activate("translate");
+
+    // a drag moves the set it grabbed, whatever happens to the selection mid gesture
+    cubes.transformTool->button(1, true, glm::vec2(centre.x + 45.0F, centre.y));
+    cubes.right->selected(false);
+    cubes.transformTool->motion(glm::vec2(centre.x + 145.0F, centre.y));
+    cubes.transformTool->button(1, false, glm::vec2(centre.x + 145.0F, centre.y));
+    BOOST_CHECK_CLOSE(cubes.right->translation().x, 1.0F, 1.0F);
+    cubes.history->undo();
+    BOOST_CHECK_CLOSE(cubes.right->translation().x, 0.5F, 0.5F);
 }
 
 };  // namespace

@@ -17,7 +17,9 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <cstddef>
 #include <string>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
@@ -165,7 +167,8 @@ bool TransformTool::dragging() const noexcept {
 /**
  **/
 void TransformTool::cancel() {
-    dragged_.reset();
+    dragged_.clear();
+    before_.clear();
     const boost::shared_ptr<Manipulator> current = manipulator();
     if (current) {
         current->active(false);
@@ -176,16 +179,27 @@ void TransformTool::cancel() {
 /**
  **/
 void TransformTool::commit() {
-    const boost::shared_ptr<v3d::brep::BRep> mesh = dragged_;
-    dragged_.reset();
-    if (!mesh || !commands_) {
+    Meshes meshes;
+    meshes.swap(dragged_);
+    std::vector<Placement> before;
+    before.swap(before_);
+    if (!commands_) {
         return;
     }
-    const Placement after = Placement::of(*mesh);
-    if (after.same(before_)) {
+
+    // every placement is recorded in full, because a turn or a scale of several meshes
+    // moves each one's translation as well
+    std::vector<TransformCommand::Change> changes;
+    bool moved = false;
+    for (std::size_t index = 0; index < meshes.size() && index < before.size(); index++) {
+        const Placement after = Placement::of(*meshes[index]);
+        moved = moved || !after.same(before[index]);
+        changes.push_back({.mesh = meshes[index], .before = before[index], .after = after});
+    }
+    if (!moved) {
         return;
     }
-    commands_->push(boost::make_shared<TransformCommand>(mesh, TransformCommand::Change{.before = before_, .after = after}, modeName(mode_)));
+    commands_->push(boost::make_shared<TransformCommand>(changes, modeName(mode_)));
 }
 
 /**
@@ -200,9 +214,9 @@ void TransformTool::hover(const glm::vec2& position) {
         return;
     }
 
-    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->firstSelected();
+    const Meshes meshes = scene_->selection();
     Manipulator::Axis axis = Manipulator::Axis::None;
-    if (!mesh || !current->grab(mesh, *view_, position, &axis)) {
+    if (meshes.empty() || !current->grab(meshes, *view_, position, &axis)) {
         current->active(false);
         return;
     }
@@ -214,10 +228,10 @@ void TransformTool::hover(const glm::vec2& position) {
  **/
 void TransformTool::motion(const glm::vec2& position) {
     const boost::shared_ptr<Manipulator> current = manipulator();
-    // a drag moves the mesh whose handle was grabbed rather than whatever is selected
+    // a drag moves the set whose handle was grabbed rather than whatever is selected
     // now, so that a selection changing mid gesture cannot leave the record naming one
-    // mesh and the movement landing on another
-    if (dragging_ && current && dragged_ && view_) {
+    // set and the movement landing on another
+    if (dragging_ && current && !dragged_.empty() && view_) {
         current->apply(dragged_, *view_, last_, position);
     } else {
         hover(position);
@@ -249,13 +263,13 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
         return;
     }
 
-    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->firstSelected();
-    if (!mesh) {
+    const Meshes meshes = scene_->selection();
+    if (meshes.empty()) {
         return;
     }
 
     Manipulator::Axis axis = Manipulator::Axis::None;
-    if (!current->grab(mesh, *view_, position, &axis)) {
+    if (!current->grab(meshes, *view_, position, &axis)) {
         // no handle under the cursor, so the press is not this tool's. The controller
         // passes it on to the select tool
         current->active(false);
@@ -264,8 +278,11 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
     current->axis(axis);
     current->active(true);
     dragging_ = true;
-    dragged_ = mesh;
-    before_ = Placement::of(*mesh);
+    dragged_ = meshes;
+    before_.clear();
+    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes) {
+        before_.push_back(Placement::of(*mesh));
+    }
 }
 
 };  // namespace v3d::editor

@@ -328,6 +328,4 @@ missing command handlers.
 [] There are no modelling operations. In a component mode you can select a face, but moving it
 moves the whole object.
 
-[] The manipulators move only the first selected object.
-
 [] The viewport panes cannot be resized by dragging.

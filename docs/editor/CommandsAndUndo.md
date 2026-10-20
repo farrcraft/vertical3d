@@ -9,10 +9,11 @@ recorded so it can be undone.
 `undo()`, `redo()` and `name()`, and no `execute()`. `CommandStack::push` stores a command and
 never applies it.
 
-**One gesture is one command.** A manipulator drag changes the mesh on every motion event so
-the user sees it move. `TransformTool` records one `TransformCommand` when the drag ends,
-holding the mesh's `Placement` (translation, rotation and scale) from the start and the end of
-the gesture. Undo puts the whole starting placement back.
+**One gesture is one command.** A manipulator drag changes the meshes on every motion event so
+the user sees them move. `TransformTool` records one `TransformCommand` when the drag ends,
+holding each moved mesh's `Placement` (translation, rotation and scale) from the start and the
+end of the gesture. Undo puts every whole starting placement back, so one undo restores a whole
+set.
 
 The rules:
 

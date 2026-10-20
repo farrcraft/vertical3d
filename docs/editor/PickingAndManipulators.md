@@ -88,21 +88,30 @@ Background: [ADR-0014](../adr/0014-editor-pick-by-cpu-ray-cast.md)
 
 ## Manipulators
 
-A manipulator is the set of handles that moves, turns or resizes the selected mesh. When
-several meshes are selected, the handles belong to the first of them in scene order, and only
-that mesh moves.
+A manipulator is the set of handles that moves, turns or resizes the selected meshes.
 `TranslateManipulator`, `RotateManipulator` and `ScaleManipulator` derive from `Manipulator`.
 `TransformTool` holds all three and has four modes: none (Select), translate, rotate and scale.
 One mode is active at a time, and the Select mode shows no handles.
 
-**A manipulator writes the mesh's transform and never its vertices.** It acts on the whole
-object even when a face or a vertex is what is selected. Moving a part of a mesh needs a
+**A manipulator writes each selected mesh's transform and never its vertices.** It acts on
+whole objects even when a face or a vertex is what is selected. Moving a part of a mesh needs a
 modelling operation, and there is none yet.
 
-**Where the handles are.** Handles are drawn at the mesh's own origin, because that is where
-its transform pivots. Their length is a fixed number of pixels (90), converted to world units
-through the view. A handle therefore keeps its on-screen size at any distance. Handles are drawn
-in the handle pass, which has no depth test.
+**Where the handles are.** Handles are drawn at the pivot, the mean of the selected objects'
+origins. For one object that is its own origin, where its transform pivots. Their length is a
+fixed number of pixels (90), converted to world units through the view. A handle therefore keeps
+its on-screen size at any distance. Handles are drawn in the handle pass, which has no depth
+test.
+
+**Moving a set.** Every selected object moves in one gesture, about the one pivot:
+
+- A translate moves every object by the same offset.
+- A rotate turns each object, and carries its origin round the pivot by the same turn.
+- A scale multiplies each object's own scale, and scales its distance from the pivot: along the
+  handle's direction for an axis handle, and all three ways for the centre handle.
+
+A rotate or a scale of several objects therefore changes each one's translation as well. A drag
+keeps the set it grabbed, so a selection change mid-gesture does not change what moves.
 
 **Grabbing.** A handle is picked by projecting it to the screen and measuring the cursor's
 distance from its segments; within 6 pixels counts. The handle under the cursor is highlighted
@@ -114,7 +123,7 @@ measures the change and adds it to the transform. It never writes an absolute va
 | Manipulator | Axis handle | Centre handle |
 |---|---|---|
 | Translate | Moves along the axis by the drag's component along the handle's projection on screen | Moves in the plane of the screen |
-| Rotate | Turns by the angle the cursor swept around the origin on screen; the sign depends on whether the axis points into or out of the screen | Tumbles about the camera's axes |
+| Rotate | Turns by the angle the cursor swept around the pivot on screen; the sign depends on whether the axis points into or out of the screen | Tumbles about the camera's axes |
 | Scale | Multiplies that axis's scale by the drag along the handle, relative to the handle's length | Scales all three axes; dragging right or up grows the object |
 
 More rules:
@@ -122,10 +131,14 @@ More rules:
 - A handle pointing straight at the viewer projects to a point and contributes nothing.
 - A rotate ring that is nearly edge-on to the view cannot be grabbed. In an axis view, only the
   ring facing the viewer can be turned.
-- The scale manipulator always uses the object's own axes, whatever the coordinate space. Each
-  scale factor is kept at 0.01 or above, so a drag cannot turn an object inside out. Mirroring is
-  not possible.
+- The scale manipulator always uses the object's own axes, whatever the coordinate space. For a
+  set, the handles follow the first selected object's axes, and each object scales along its
+  own. Each scale factor is kept at 0.01 or above, and so is the factor a distance from the
+  pivot scales by, so a drag cannot turn an object or a set inside out. Mirroring is not
+  possible.
+- In local space, the handles line up with the first selected object's axes.
 - `Manipulator::Space` is Global or Local and starts as Global. No command changes it yet.
 - Changing the mode ends any drag under way, and the change made so far is recorded for undo.
 
-Background: [ADR-0015](../adr/0015-editor-manipulators-edit-the-object-transform.md)
+Background: [ADR-0015](../adr/0015-editor-manipulators-edit-the-object-transform.md),
+[ADR-0096](../adr/0096-editor-handles-pivot-at-the-mean-of-the-selection.md)

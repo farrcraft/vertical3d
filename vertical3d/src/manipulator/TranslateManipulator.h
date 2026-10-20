@@ -26,9 +26,9 @@ class TranslateManipulator final : public Manipulator {
     TranslateManipulator();
 
     // manipulator overrides
-    void draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
+    void draw(const Meshes& meshes, const ViewPort& view,
         v3d::render::realtime::canvas::Line* canvas) const override;
-    void apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
+    void apply(const Meshes& meshes, const ViewPort& view,
         const glm::vec2& from, const glm::vec2& to) const override;
 };
 

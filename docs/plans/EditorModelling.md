@@ -139,7 +139,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [7](#step-7--the-record-where-the-handles-pivot) | The record: where the handles pivot | `docs/adr` | **0096** | done |
 | [8](#step-8--a-selection-set) | A selection set, and shift-click | `vertical3d` | — | done |
 | [9](#step-9--a-rubber-band) | A rubber band | `vertical3d` | 0096 | done |
-| [10](#step-10--manipulators-move-a-set) | Manipulators move a set about a shared pivot | `vertical3d` | 0096 | open |
+| [10](#step-10--manipulators-move-a-set) | Manipulators move a set about a shared pivot | `vertical3d` | 0096 | done |
 | [11](#step-11--brep-checks-and-walks-a-mesh-fully) | `BRep` checks and walks a mesh fully | `api/brep` | — | open |
 | [12](#step-12--components-move) | Components move | `vertical3d`, `api/brep` | 0096 | open |
 | [13](#step-13--the-record-how-a-topology-change-is-undone) | The record: how a topology change is undone | `docs/adr` | **0097** | open |
@@ -379,6 +379,14 @@ the select tool as it reaches the transform tool. Five cases are in `PickerTest.
 threshold.
 
 ### Step 10 — Manipulators move a set
+
+**Done.** The manipulators take the selected set as `Meshes`, and `Manipulator::placement`
+puts the handles at the mean of the origins. A rotate carries each origin round the pivot, and a
+scale scales each distance from it, held above the scale floor. `TransformCommand` holds a
+`Change` for each mesh, and `TransformTool` keeps the set it grabbed. `Scene::firstSelected()`
+lost its last caller and is gone. Eight cases are in `ManipulatorTest.cxx` and
+`TransformToolTest.cxx`. [Manipulators](../editor/PickingAndManipulators.md#manipulators) states
+the rules.
 
 * **The handles sit at the pivot ADR-0096 decides**, for every selected object.
 * **A translate moves every object by the same offset.** A rotate or a scale turns each object

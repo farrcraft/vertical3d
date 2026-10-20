@@ -7,6 +7,7 @@
 
 #include <api/brep/BRep.h>
 #include <api/render/realtime/canvas/Line.h>
+#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cmath>
@@ -112,9 +113,9 @@ float RotateManipulator::ringDistance(const Placement& placement, const glm::vec
     return nearest;
 }
 
-bool RotateManipulator::grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
+bool RotateManipulator::grab(const Meshes& meshes, const ViewPort& view,
     const glm::vec2& cursor, Axis* axis) const {
-    const Placement seat = placement(mesh, view);
+    const Placement seat = placement(meshes, view);
     if (!seat.valid) {
         return false;
     }
@@ -163,12 +164,12 @@ bool RotateManipulator::grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, con
 
 /**
  **/
-void RotateManipulator::draw(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
+void RotateManipulator::draw(const Meshes& meshes, const ViewPort& view,
     v3d::render::realtime::canvas::Line* canvas) const {
     if (canvas == nullptr) {
         return;
     }
-    const Placement seat = placement(mesh, view);
+    const Placement seat = placement(meshes, view);
     if (!seat.valid) {
         return;
     }
@@ -208,12 +209,9 @@ float RotateManipulator::swept(const ViewPort& view, const Placement& placement,
 
 /**
  **/
-void RotateManipulator::apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
+void RotateManipulator::apply(const Meshes& meshes, const ViewPort& view,
     const glm::vec2& from, const glm::vec2& to) const {
-    if (!mesh) {
-        return;
-    }
-    const Placement seat = placement(mesh, view);
+    const Placement seat = placement(meshes, view);
     if (!seat.valid) {
         return;
     }
@@ -237,8 +235,15 @@ void RotateManipulator::apply(const boost::shared_ptr<v3d::brep::BRep>& mesh, co
     }
 
     // multiplied on the left, because the turn is measured in world space and applies on
-    // top of the object's own rotation
-    mesh->rotation(glm::normalize(turn * mesh->rotation()));
+    // top of each object's own rotation. Each origin turns about the pivot too, which for
+    // one object is its own origin and moves nothing
+    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes) {
+        if (!mesh) {
+            continue;
+        }
+        mesh->rotation(glm::normalize(turn * mesh->rotation()));
+        mesh->translation(seat.origin + (turn * (mesh->translation() - seat.origin)));
+    }
 }
 
 };  // namespace v3d::editor

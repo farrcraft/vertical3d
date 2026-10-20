@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "Tool.h"
 
@@ -125,8 +126,8 @@ class TransformTool final : public Tool {
     Mode mode_;
     bool dragging_;
     glm::vec2 last_;
-    boost::shared_ptr<v3d::brep::BRep> dragged_;
-    Placement before_;
+    Meshes dragged_;
+    std::vector<Placement> before_;
 };
 
 /**

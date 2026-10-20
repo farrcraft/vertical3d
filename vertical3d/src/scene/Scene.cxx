@@ -53,22 +53,11 @@ boost::shared_ptr<v3d::brep::BRep> Scene::mesh(unsigned int id) const {
 
 /**
  **/
-std::vector<boost::shared_ptr<v3d::brep::BRep>> Scene::selection() const {
-    std::vector<boost::shared_ptr<v3d::brep::BRep>> selected;
+Meshes Scene::selection() const {
+    Meshes selected;
     std::copy_if(meshes_.begin(), meshes_.end(), std::back_inserter(selected),
         [](const boost::shared_ptr<v3d::brep::BRep>& mesh) { return mesh->selected(); });
     return selected;
-}
-
-/**
- **/
-boost::shared_ptr<v3d::brep::BRep> Scene::firstSelected() const {
-    auto it = std::find_if(meshes_.begin(), meshes_.end(),
-        [](const boost::shared_ptr<v3d::brep::BRep>& mesh) { return mesh->selected(); });
-    if (it == meshes_.end()) {
-        return boost::shared_ptr<v3d::brep::BRep>();
-    }
-    return *it;
 }
 
 /**
