@@ -136,7 +136,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [4](#step-4--an-app-can-hold-a-quit) | An app can hold a quit | `api/engine` | — | done |
 | [5](#step-5--load-and-quit-ask-first) | Load and quit ask before discarding a dirty project | `vertical3d` | — | done |
 | [6](#step-6--shift-is-freed-for-selection) | Shift is freed for selection | `vertical3d` | — | done |
-| [7](#step-7--the-record-where-the-handles-pivot) | The record: where the handles pivot | `docs/adr` | **0096** | open |
+| [7](#step-7--the-record-where-the-handles-pivot) | The record: where the handles pivot | `docs/adr` | **0096** | done |
 | [8](#step-8--a-selection-set) | A selection set, and shift-click | `vertical3d` | — | open |
 | [9](#step-9--a-rubber-band) | A rubber band | `vertical3d` | 0096 | open |
 | [10](#step-10--manipulators-move-a-set) | Manipulators move a set about a shared pivot | `vertical3d` | 0096 | open |
@@ -312,6 +312,11 @@ step 8. The editor README's binding table states both.
 
 ### Step 7 — The record: where the handles pivot
 
+**Done.** ADR-0096 is accepted: the handles pivot at the mean of the selected objects' origins,
+or of the distinct vertices a component selection moves. A component selection may span several
+objects. ADR-0015 is marked as amended by it. The manipulators document states the rule when
+step 10 builds it.
+
 **ADR-0096**, amending ADR-0015.
 
 The question: where are the handles drawn, and about what point do they turn and scale, when the
@@ -324,7 +329,7 @@ selection is several objects, or is components inside one or more objects?
 * **The constraint ADR-0015 still holds**: a handle is drawn where its pivot is.
 * **Whether components in several objects move together** is part of the decision.
 
-**Tests:** none. The ADR is `proposed` until step 10 lands.
+**Tests:** none.
 
 ### Step 8 — A selection set
 

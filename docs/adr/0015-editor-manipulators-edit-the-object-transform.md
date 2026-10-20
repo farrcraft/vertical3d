@@ -1,7 +1,8 @@
 # ADR-0015: Editor: manipulators edit the object transform
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-09-02
+**Amended by**: [ADR-0096](0096-editor-handles-pivot-at-the-mean-of-the-selection.md)
 **Documented in**: [editor/](../editor/README.md)
 
 ## Context

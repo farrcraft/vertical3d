@@ -128,10 +128,11 @@ content went. Numbers are never reused.
 |---|---|---|
 | [0013](0013-editor-a-mesh-is-a-dag-node.md) | Editor: a mesh is a dag node | accepted |
 | [0014](0014-editor-pick-by-cpu-ray-cast.md) | Editor: pick by CPU ray cast | accepted |
-| [0015](0015-editor-manipulators-edit-the-object-transform.md) | Editor: manipulators edit the object transform | accepted |
+| [0015](0015-editor-manipulators-edit-the-object-transform.md) | Editor: manipulators edit the object transform | amended by 0096 |
 | [0016](0016-editor-undo-records-completed-changes.md) | Editor: undo records completed changes | accepted |
 | 0017 | *Not a decision. Now in docs/editor/CommandsAndUndo.md and api/event/Commands.h* | removed |
 | [0018](0018-editor-projects-saved-as-json-with-exact-topology.md) | Editor: projects saved as JSON with exact topology | amended by 0041 |
+| [0096](0096-editor-handles-pivot-at-the-mean-of-the-selection.md) | Editor: handles pivot at the mean of the selection | accepted |
 
 ## Build, testing and code
 
