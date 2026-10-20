@@ -116,7 +116,10 @@ struct TwoCubes {
     TwoCubes() :
         scene(boost::make_shared<v3d::editor::Scene>()),
         left(v3d::editor::create_poly_cube()),
-        right(v3d::editor::create_poly_cube()) {
+        right(v3d::editor::create_poly_cube()),
+        leftCube(50.0F, 200.0F),
+        rightCube(350.0F, 200.0F),
+        nowhere(200.0F, 10.0F) {
         left->translation(glm::vec3(-0.75F, 0.0F, 0.0F));
         right->translation(glm::vec3(0.75F, 0.0F, 0.0F));
         scene->add(left);
@@ -126,45 +129,44 @@ struct TwoCubes {
     boost::shared_ptr<v3d::editor::Scene> scene;
     boost::shared_ptr<v3d::brep::BRep> left;
     boost::shared_ptr<v3d::brep::BRep> right;
+    // at two hundred pixels to the unit, the middle of each cube's front face, and a point
+    // on neither cube
+    glm::vec2 leftCube;
+    glm::vec2 rightCube;
+    glm::vec2 nowhere;
 };
-
-// at two hundred pixels to the unit, the middle of each cube's front face, and a point on
-// neither cube
-const glm::vec2 leftCube(50.0F, 200.0F);
-const glm::vec2 rightCube(350.0F, 200.0F);
-const glm::vec2 nowhere(200.0F, 10.0F);
 
 BOOST_AUTO_TEST_CASE(select_tool_add_object_test) {
     const TwoCubes cubes;
     const boost::shared_ptr<v3d::editor::SelectTool> select = tool(cubes.scene);
 
-    select->button(1, true, leftCube);
+    select->button(1, true, cubes.leftCube);
     select->adding(true);
-    select->button(1, true, rightCube);
+    select->button(1, true, cubes.rightCube);
     BOOST_CHECK_EQUAL(cubes.left->selected(), true);
     BOOST_CHECK_EQUAL(cubes.right->selected(), true);
 
     // a miss while adding keeps the set
-    select->button(1, true, nowhere);
+    select->button(1, true, cubes.nowhere);
     BOOST_CHECK_EQUAL(cubes.scene->selection().size(), 2U);
 
     // a second click while adding takes the object away and leaves the other
-    select->button(1, true, leftCube);
+    select->button(1, true, cubes.leftCube);
     BOOST_CHECK_EQUAL(cubes.left->selected(), false);
     BOOST_CHECK_EQUAL(cubes.right->selected(), true);
 
     // a plain click replaces the set
-    select->button(1, true, leftCube);
+    select->button(1, true, cubes.leftCube);
     select->adding(false);
-    select->button(1, true, rightCube);
+    select->button(1, true, cubes.rightCube);
     BOOST_CHECK_EQUAL(cubes.left->selected(), false);
     BOOST_CHECK_EQUAL(cubes.right->selected(), true);
 
     // and a plain miss clears it
     select->adding(true);
-    select->button(1, true, leftCube);
+    select->button(1, true, cubes.leftCube);
     select->adding(false);
-    select->button(1, true, nowhere);
+    select->button(1, true, cubes.nowhere);
     BOOST_CHECK(cubes.scene->selection().empty());
 }
 
@@ -175,33 +177,33 @@ BOOST_AUTO_TEST_CASE(select_tool_add_component_test) {
     cubes.right->selected(true);
 
     select->activate("face");
-    select->button(1, true, leftCube);
+    select->button(1, true, cubes.leftCube);
     select->adding(true);
-    select->button(1, true, rightCube);
+    select->button(1, true, cubes.rightCube);
 
     // the component selection spans both objects
     BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 1U);
     BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 1U);
 
     // a miss while adding keeps the components
-    select->button(1, true, nowhere);
+    select->button(1, true, cubes.nowhere);
     BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 1U);
     BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 1U);
 
     // a second click while adding takes the face away and leaves the other
-    select->button(1, true, leftCube);
+    select->button(1, true, cubes.leftCube);
     BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 0U);
     BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 1U);
 
     // a plain click replaces the components in every object
     select->adding(false);
-    select->button(1, true, leftCube);
+    select->button(1, true, cubes.leftCube);
     BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 1U);
     BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 0U);
 
     // a mask change clears the components in every object, and keeps both objects
     select->adding(true);
-    select->button(1, true, rightCube);
+    select->button(1, true, cubes.rightCube);
     BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 1U);
     select->activate("vertex");
     BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 0U);
