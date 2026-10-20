@@ -7,6 +7,8 @@
 #include <api/type/geometry/AABBox.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 
+#include <string>
+
 #include <boost/test/unit_test.hpp>
 
 namespace {
@@ -68,6 +70,18 @@ BOOST_AUTO_TEST_CASE(create_poly_cone_test) {
     // eight around the base and the apex
     BOOST_CHECK_EQUAL(cone->vertexCount(), 9U);
     checkUnitCentred(cone, false);
+}
+
+BOOST_AUTO_TEST_CASE(create_poly_strict_test) {
+    // every primitive is sound enough for a topology change to be checked against. The plane,
+    // the cylinder and the cone are open, so their boundary edges have no pair
+    const boost::shared_ptr<v3d::brep::BRep> primitives[4] = {
+        v3d::editor::create_poly_cube(), v3d::editor::create_poly_plane(),
+        v3d::editor::create_poly_cylinder(), v3d::editor::create_poly_cone() };
+    for (const boost::shared_ptr<v3d::brep::BRep>& primitive : primitives) {
+        std::string problem;
+        BOOST_CHECK_MESSAGE(primitive->validateStrict(&problem), problem);
+    }
 }
 
 };  // namespace

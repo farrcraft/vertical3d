@@ -11,9 +11,12 @@
 #include "HalfEdge.h"
 #include "Index.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <glm/common.hpp>
@@ -176,6 +179,68 @@ bool refers(Index reference, std::size_t count, bool optional) {
     return reference < count;
 }
 
+/**
+ * Report a problem, for a check that has found one.
+ * @return false, so a check can return what this returns
+ **/
+bool fail(std::string* problem, const std::string& what) {
+    if (problem != nullptr) {
+        *problem = what;
+    }
+    return false;
+}
+
+/**
+ * Whether every half edge that has a pair is that pair's pair, and not its own.
+ **/
+bool pairsMutual(const BRep& mesh, std::string* problem) {
+    for (Index id = 0; id < mesh.edgeCount(); id++) {
+        const Index pair = mesh.edge(id)->pair();
+        if (pair != INVALID_ID && (pair == id || mesh.edge(pair)->pair() != id)) {
+            return fail(problem, "edge " + std::to_string(id) + "'s pair " + std::to_string(pair) + " does not pair it back");
+        }
+    }
+    return true;
+}
+
+/**
+ * Whether a face's next chain closes, every half edge on it names the face, and no two of
+ * them run between the same two vertices. The mesh has passed validate(), so every index it
+ * holds is in range or INVALID_ID.
+ **/
+bool loopSound(const BRep& mesh, Index face, std::string* problem) {
+    const std::string name = "face " + std::to_string(face);
+    const Index start = mesh.face(face)->edge();
+    std::vector<Index> loop;
+    std::vector<bool> seen(mesh.edgeCount(), false);
+    Index current = start;
+    do {
+        if (current == INVALID_ID || seen[current]) {
+            return fail(problem, name + "'s loop does not close");
+        }
+        seen[current] = true;
+        loop.push_back(current);
+        const Index named = mesh.edge(current)->face();
+        if (named != face) {
+            return fail(problem, "edge " + std::to_string(current) + " is in " + name + "'s loop and names face " +
+                (named == INVALID_ID ? std::string("none") : std::to_string(named)));
+        }
+        current = mesh.edge(current)->next();
+    } while (current != start);
+
+    // a half edge runs from the vertex the one before it ends at to the vertex it ends at
+    std::set<std::pair<Index, Index>> spans;
+    for (std::size_t entry = 0; entry < loop.size(); entry++) {
+        const Index from = mesh.edge(loop[(entry + loop.size() - 1) % loop.size()])->vertex();
+        const Index to = mesh.edge(loop[entry])->vertex();
+        if (!spans.insert(std::minmax(from, to)).second) {
+            return fail(problem, name + " has two edges between vertices " + std::to_string(std::min(from, to)) +
+                " and " + std::to_string(std::max(from, to)));
+        }
+    }
+    return true;
+}
+
 };  // namespace
 
 bool BRep::validate(std::string* problem) const {
@@ -245,6 +310,21 @@ void BRep::deselectComponents(void) noexcept {
     for (Face& polygon : faces_) {
         polygon.selected(false);
     }
+}
+
+bool BRep::validateStrict(std::string* problem) const {
+    if (!validate(problem)) {
+        return false;
+    }
+    if (!pairsMutual(*this, problem)) {
+        return false;
+    }
+    for (Index id = 0; id < faces_.size(); id++) {
+        if (!loopSound(*this, id, problem)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // calculate object-space bounds of mesh

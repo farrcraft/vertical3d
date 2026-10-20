@@ -55,6 +55,17 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
          **/
         bool validate(std::string * problem) const;
 
+        /**
+         * Whether the mesh is sound enough for an operation that changes its topology to be
+         * checked against. Everything validate() checks, and also: every pair is mutual,
+         * every face's next chain closes, every half edge in a face's loop names that face,
+         * and no two half edges of one face run between the same two vertices. An edge with
+         * no pair is allowed, because an open mesh has a boundary.
+         *
+         * @param problem what is wrong, naming the part, when anything is
+         **/
+        bool validateStrict(std::string * problem) const;
+
         v3d::type::geometry::AABBox bound(void) const;
 
         /**
@@ -71,7 +82,6 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         void deselectComponents(void) noexcept;
 
         void addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & normal);
-        void addEdge(const glm::vec3 & point);
 
         size_t vertexCount(void) const;
         size_t edgeCount(void) const;

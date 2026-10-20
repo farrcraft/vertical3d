@@ -11,6 +11,7 @@
 #include "Index.h"
 #include "Vertex.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <optional>
 #include <vector>
@@ -130,6 +131,63 @@ void faceUV(const BRep & mesh, Index face, glm::vec3* u, glm::vec3* v) {
         }
         return;
     }
+}
+
+std::vector<Index> edgesFrom(const BRep & mesh, Index vertex) {
+    std::vector<Index> leaving;
+    const std::size_t count = mesh.edgeCount();
+    for (Index id = 0; id < count; id++) {
+        const HalfEdge* arriving = mesh.edge(id);
+        if (arriving == nullptr || arriving->vertex() != vertex || mesh.edge(arriving->next()) == nullptr) {
+            continue;
+        }
+        leaving.push_back(arriving->next());
+    }
+    std::sort(leaving.begin(), leaving.end());
+    leaving.erase(std::unique(leaving.begin(), leaving.end()), leaving.end());
+    return leaving;
+}
+
+std::vector<Index> facesAround(const BRep & mesh, Index vertex) {
+    std::vector<Index> faces;
+    const std::size_t count = mesh.edgeCount();
+    for (Index id = 0; id < count; id++) {
+        const HalfEdge* arriving = mesh.edge(id);
+        if (arriving == nullptr || arriving->vertex() != vertex || mesh.face(arriving->face()) == nullptr) {
+            continue;
+        }
+        faces.push_back(arriving->face());
+    }
+    std::sort(faces.begin(), faces.end());
+    faces.erase(std::unique(faces.begin(), faces.end()), faces.end());
+    return faces;
+}
+
+glm::vec3 newellNormal(const BRep & mesh, Index face) {
+    std::vector<glm::vec3> points;
+    for (const Index id : faceLoop(mesh, face)) {
+        const Vertex* vertex = mesh.vertex(mesh.edge(id)->vertex());
+        if (vertex != nullptr) {
+            points.push_back(vertex->point());
+        }
+    }
+    glm::vec3 normal(0.0F);
+    if (points.size() < 3) {
+        return normal;
+    }
+    // each edge adds the area it sweeps on the three axis planes
+    for (std::size_t index = 0; index < points.size(); index++) {
+        const glm::vec3& current = points[index];
+        const glm::vec3& next = points[(index + 1) % points.size()];
+        normal.x += (current.y - next.y) * (current.z + next.z);
+        normal.y += (current.z - next.z) * (current.x + next.x);
+        normal.z += (current.x - next.x) * (current.y + next.y);
+    }
+    const float length = glm::length(normal);
+    if (length <= 0.0F) {
+        return glm::vec3(0.0F);
+    }
+    return normal / length;
 }
 
 };  // namespace v3d::brep

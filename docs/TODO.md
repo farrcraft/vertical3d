@@ -305,9 +305,6 @@ style cannot set the bullet indent.
 [] **pong's multiplayer mode is single player.** Contract, minor. `ui::setMultiplayerMode` calls
 `mode(false)`, as single player does, so the computer still plays the right paddle.
 
-[] **`BRep::addEdge(const glm::vec3&)` is declared and never defined.** Build, minor. A call
-compiles and fails to link.
-
 [] **Two tests do not check what they claim.** Weak test, minor.
 
 - odyssey's `a_world_destroyed_before_its_loads_arrive` streams at (1, 1), five tiles from the

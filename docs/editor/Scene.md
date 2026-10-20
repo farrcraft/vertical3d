@@ -30,8 +30,19 @@ differently. The lower-level `addVertex`, `addEdge` and `addFace` overloads that
 **Validation.** `BRep::validate(&problem)` checks that every reference points at a part the
 mesh holds: a half edge's vertex always, its face, pair and next unless they are `INVALID_ID`,
 and a face's edge always. A `next` chain that does not close is allowed, because an unfinished
-modelling operation can leave one. Validation does not check that a pair is mutual or that a
-surface is manifold.
+modelling operation can leave one. A project file is read against this rule.
+
+**Strict validation.** `BRep::validateStrict(&problem)` is the check a topology change is tested
+against. It runs `validate()` first, then requires that:
+
+- every pair is mutual, and no half edge is its own pair
+- every face's `next` chain returns to the face's first edge
+- every half edge in a face's loop names that face
+- no two half edges of one face run between the same two vertices
+
+An edge with no pair passes, because an open mesh has a boundary. The problem names the edge or
+face at fault. Every primitive the editor creates passes it. It does not check that a surface is
+manifold at a vertex.
 
 **Walking a mesh.** Use the functions in `api/brep/Topology.h` instead of following `next()`
 yourself:
@@ -44,6 +55,12 @@ yourself:
 | `edgeSelected(mesh, edge)` | Whether either half of the edge is selected |
 | `center(mesh, face)` | The average of a face's vertices |
 | `faceUV(mesh, face, &u, &v)` | Two perpendicular unit vectors in the plane of a face. `u` runs along the first edge with a length, and the first edge after it that is not parallel sets the plane. A face of fewer than two edges, or whose vertices all lie on a line, leaves `u` and `v` unchanged |
+| `edgesFrom(mesh, vertex)` | The half edges leaving a vertex, in index order |
+| `facesAround(mesh, vertex)` | The faces meeting at a vertex, each once, in index order |
+| `newellNormal(mesh, face)` | A face's unit normal by Newell's method, which holds for a face that is not quite planar. It points to the side the loop runs counter-clockwise when seen from. Zero for a face with no area |
+
+`edgesFrom` and `facesAround` scan every half edge, because nothing keeps a vertex's own `edge`
+current. Each costs time in proportion to the whole mesh.
 
 **Identity and placement.** `BRep` derives from `v3d::dag::Node` and `v3d::dag::Transform`, so
 `v3dlib_brep` links `v3dlib_dag` publicly.

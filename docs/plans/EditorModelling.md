@@ -140,7 +140,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [8](#step-8--a-selection-set) | A selection set, and shift-click | `vertical3d` | — | done |
 | [9](#step-9--a-rubber-band) | A rubber band | `vertical3d` | 0096 | done |
 | [10](#step-10--manipulators-move-a-set) | Manipulators move a set about a shared pivot | `vertical3d` | 0096 | done |
-| [11](#step-11--brep-checks-and-walks-a-mesh-fully) | `BRep` checks and walks a mesh fully | `api/brep` | — | open |
+| [11](#step-11--brep-checks-and-walks-a-mesh-fully) | `BRep` checks and walks a mesh fully | `api/brep` | — | done |
 | [12](#step-12--components-move) | Components move | `vertical3d`, `api/brep` | 0096 | open |
 | [13](#step-13--the-record-how-a-topology-change-is-undone) | The record: how a topology change is undone | `docs/adr` | **0097** | open |
 | [14](#step-14--split-edge-and-split-face) | Split edge and split face, through the record 0097 decides | `api/brep`, `vertical3d` | 0097 | open |
@@ -399,6 +399,13 @@ the rules.
 redone; a grab and release that moves nothing records nothing.
 
 ### Step 11 — `BRep` checks and walks a mesh fully
+
+**Done.** `BRep::validateStrict()` adds the four checks to `validate()`, and treats an
+unpaired edge as a boundary. `Topology.h` gains `edgesFrom()`, `facesAround()` and
+`newellNormal()`. The undefined `addEdge(const glm::vec3&)` declaration and its TODO.md entry are
+gone. Seven cases are in `BRepTest.cxx`, built on a cube wound so every edge pairs, and
+`create_poly_strict_test` puts the four primitives through the strict check.
+[Scene.md](../editor/Scene.md#meshes) states the rules.
 
 * **A strict validation** checks what `validate` does not: every pair is mutual, every `next` chain
   closes, every half edge in a loop names that loop's face, and no two half edges of one face run
