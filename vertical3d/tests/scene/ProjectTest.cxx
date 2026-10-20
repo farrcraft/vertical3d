@@ -157,7 +157,7 @@ BOOST_AUTO_TEST_CASE(project_order_and_selection_test) {
 
     // selection is where the user is rather than what the document holds, so nothing comes
     // back selected
-    BOOST_CHECK_EQUAL(static_cast<bool>(read->selection()), false);
+    BOOST_CHECK(read->selection().empty());
     BOOST_CHECK_EQUAL(loaded[1]->face(0)->selected(), false);
 
     boost::filesystem::remove(path);

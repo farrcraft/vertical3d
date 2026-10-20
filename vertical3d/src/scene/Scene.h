@@ -43,12 +43,16 @@ class Scene final {
     boost::shared_ptr<v3d::brep::BRep> mesh(unsigned int id) const;
 
     /**
-     * @return the selected mesh, or an empty pointer.
-     *
-     * One thing is selected at a time, so the first selected mesh is the selection.
-     * The transform tools act on it, and component selection lives inside it.
+     * @return every selected mesh, in insertion order. Component selection lives inside
+     *         these meshes, and may span several of them.
      **/
-    boost::shared_ptr<v3d::brep::BRep> selection() const;
+    std::vector<boost::shared_ptr<v3d::brep::BRep>> selection() const;
+
+    /**
+     * @return the first selected mesh in insertion order, or an empty pointer. The
+     *         manipulators act on this one mesh.
+     **/
+    boost::shared_ptr<v3d::brep::BRep> firstSelected() const;
 
     /**
      * @return how many meshes the scene holds

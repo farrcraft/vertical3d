@@ -137,7 +137,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [5](#step-5--load-and-quit-ask-first) | Load and quit ask before discarding a dirty project | `vertical3d` | — | done |
 | [6](#step-6--shift-is-freed-for-selection) | Shift is freed for selection | `vertical3d` | — | done |
 | [7](#step-7--the-record-where-the-handles-pivot) | The record: where the handles pivot | `docs/adr` | **0096** | done |
-| [8](#step-8--a-selection-set) | A selection set, and shift-click | `vertical3d` | — | open |
+| [8](#step-8--a-selection-set) | A selection set, and shift-click | `vertical3d` | — | done |
 | [9](#step-9--a-rubber-band) | A rubber band | `vertical3d` | 0096 | open |
 | [10](#step-10--manipulators-move-a-set) | Manipulators move a set about a shared pivot | `vertical3d` | 0096 | open |
 | [11](#step-11--brep-checks-and-walks-a-mesh-fully) | `BRep` checks and walks a mesh fully | `api/brep` | — | open |
@@ -332,6 +332,14 @@ selection is several objects, or is components inside one or more objects?
 **Tests:** none.
 
 ### Step 8 — A selection set
+
+**Done.** `Scene::selection()` returns every selected mesh in insertion order, and
+`Scene::firstSelected()` keeps the single case for the manipulators until step 10. With
+`select::add` held, a click toggles what it hit and a miss changes nothing. A plain click on a
+component clears the components of every mesh first. The renderer already drew each mesh by its
+own flag, so it did not change. Three cases are in `SelectToolTest.cxx` and `SceneTest.cxx`, and
+`create_command_selection_test` covers an undo with two meshes selected.
+[Picking](../editor/PickingAndManipulators.md#picking) states the rules.
 
 * **`Scene::selection()` returns every selected mesh**, in scene order. A function for the single
   case is kept only if a caller still needs one after this step.

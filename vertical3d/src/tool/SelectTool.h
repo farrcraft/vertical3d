@@ -27,10 +27,14 @@ namespace v3d::editor {
  * the scene's selection flags. The mask lives here rather than on a view, because it
  * decides what a click looks for and not what a view draws.
  *
- * A miss in object mode clears the whole selection. A miss in a component mode clears the
- * components and leaves the object selected, so a stray click does not lose the object the
- * user is working inside. Clicking the same component twice deselects it, and one component
- * of a kind is selected at a time.
+ * A plain click replaces the selection with what it hit. A miss in object mode clears the
+ * whole selection. A miss in a component mode clears the components and leaves the objects
+ * selected, so a stray click does not lose the objects the user is working inside. A plain
+ * click on a selected component deselects it along with the rest.
+ *
+ * While adding, a click toggles what it hit and leaves the rest of the selection alone, and
+ * a miss changes nothing. Components are picked only inside selected objects, so a component
+ * selection may span every selected object.
  **/
 class SelectTool final : public Tool {
  public:
@@ -85,14 +89,15 @@ class SelectTool final : public Tool {
     void apply(const Picker::Hit& hit);
 
     /**
-     * Select one mesh and nothing else.
+     * Select one mesh, replacing the selection or, while adding, toggling that mesh alone.
      * @param id the node id, or zero for none. No mesh has id zero, because the id
      *        counter starts above it
      **/
     void selectObject(unsigned int id);
 
     /**
-     * Toggle one component of a mesh, clearing every other component of it.
+     * Toggle one component of a mesh. Unless adding, every other component of every mesh is
+     * cleared first.
      **/
     void selectComponent(const Picker::Hit& hit);
 

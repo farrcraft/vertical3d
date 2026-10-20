@@ -25,7 +25,8 @@ The rules:
 - **A command holds the mesh, not its id.** A mesh removed by an undo stays alive inside the
   command and returns with the same id. Later commands in the history still refer to it.
 - **Selection is not history.** Undo does not restore what was selected. `CreateCommand::undo`
-  clears the selection flag of the mesh it removes, so that at most one mesh stays selected.
+  clears the selection flag of the mesh it removes, and leaves any other selected mesh selected.
+  `CreateCommand::redo` selects the new mesh and nothing else.
 - **The stack has a capacity**, 64 by default. When it is full, the oldest command is dropped.
   A mesh held by a dropped command is freed then.
 - **A new push discards the redo side.**

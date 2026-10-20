@@ -200,7 +200,7 @@ void TransformTool::hover(const glm::vec2& position) {
         return;
     }
 
-    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->selection();
+    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->firstSelected();
     Manipulator::Axis axis = Manipulator::Axis::None;
     if (!mesh || !current->grab(mesh, *view_, position, &axis)) {
         current->active(false);
@@ -249,7 +249,7 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
         return;
     }
 
-    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->selection();
+    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->firstSelected();
     if (!mesh) {
         return;
     }

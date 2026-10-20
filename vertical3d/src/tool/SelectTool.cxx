@@ -128,17 +128,19 @@ void SelectTool::apply(const Picker::Hit& hit) {
         logger_->get()->info("selected nothing");
     }
 
+    if (!hit.valid && adding_) {
+        // a miss while adding has nothing to add, and the selection is kept
+        return;
+    }
+
     if (mask_ == SelectMask::Object) {
-        if (logger_ && hit.valid) {
-            logger_->get()->info("selected mesh {}", hit.mesh);
-        }
         selectObject(hit.valid ? hit.mesh : 0);
         return;
     }
 
     if (!hit.valid) {
         // a miss in a component mode clears the components and leaves the objects
-        // selected, so a stray click does not lose the object the user is working inside
+        // selected, so a stray click does not lose the objects the user is working inside
         scene_->deselectComponents();
         return;
     }
@@ -149,7 +151,9 @@ void SelectTool::apply(const Picker::Hit& hit) {
 /**
  **/
 void SelectTool::selectObject(unsigned int id) {
-    scene_->deselect();
+    if (!adding_) {
+        scene_->deselect();
+    }
     if (id == 0) {
         return;
     }
@@ -157,7 +161,11 @@ void SelectTool::selectObject(unsigned int id) {
     if (!mesh) {
         return;
     }
-    mesh->selected(true);
+    const bool wanted = !adding_ || !mesh->selected();
+    mesh->selected(wanted);
+    if (logger_) {
+        logger_->get()->info("{} mesh {}", wanted ? "selected" : "deselected", id);
+    }
 }
 
 /**
@@ -181,8 +189,9 @@ void SelectTool::selectComponent(const Picker::Hit& hit) {
         wanted = face != nullptr && !face->selected();
     }
 
-    // one component of a kind at a time
-    mesh->deselectComponents();
+    if (!adding_) {
+        scene_->deselectComponents();
+    }
 
     if (hit.kind == SelectMask::Vertex) {
         v3d::brep::Vertex* vertex = mesh->vertex(hit.component);

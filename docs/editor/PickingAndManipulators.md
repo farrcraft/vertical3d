@@ -41,14 +41,17 @@ clears the component selection.
 
 **What a click does.** `SelectTool` picks on the press, not the release.
 
-- An object must be selected before any of its parts can be. Component masks test only
-  selected meshes.
+- An object must be selected before any of its parts can be. Component masks test every
+  selected mesh, so a component selection can span several objects.
 - In Object mode, a click on a mesh selects it and nothing else. A click on nothing clears the
   whole selection.
-- In a component mode, a click on a part toggles it and clears the other parts of the same
-  kind. A click on nothing clears the components and keeps the object selected.
-- One thing is selected at a time. There is no rubber band. Left Shift is bound to
-  `select::add`, and `SelectTool::adding()` follows it, but a click does not read it yet.
+- In a component mode, a click on a part selects it and clears every other part of every mesh.
+  A click on a part that is already selected clears it along with the rest. A click on nothing
+  clears the components and keeps the objects selected.
+- While Left Shift is held (`select::add`, which `SelectTool::adding()` follows), a click
+  toggles the object or part under the cursor and leaves the rest of the selection alone. A
+  click on nothing changes nothing.
+- There is no rubber band.
 
 **One button, three tools.** `Controller::drag()` routes the left button in this order:
 
@@ -66,7 +69,9 @@ Background: [ADR-0014](../adr/0014-editor-pick-by-cpu-ray-cast.md)
 
 ## Manipulators
 
-A manipulator is the set of handles that moves, turns or resizes the selected mesh.
+A manipulator is the set of handles that moves, turns or resizes the selected mesh. When
+several meshes are selected, the handles belong to the first of them in scene order, and only
+that mesh moves.
 `TranslateManipulator`, `RotateManipulator` and `ScaleManipulator` derive from `Manipulator`.
 `TransformTool` holds all three and has four modes: none (Select), translate, rotate and scale.
 One mode is active at a time, and the Select mode shows no handles.

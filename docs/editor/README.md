@@ -72,5 +72,5 @@ The tests run without a window or a GPU. Run them with
 - Most menu items have no handler and log themselves as unregistered.
 - There is no modelling operation. A component mode selects a part, and the manipulator then
   moves the whole object.
-- One thing is selected at a time.
+- The manipulators move one mesh, and no component, whatever the selection holds.
 - The viewport panes cannot be resized by dragging.

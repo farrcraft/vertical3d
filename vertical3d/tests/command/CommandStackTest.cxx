@@ -249,11 +249,11 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
     // the command does the creating, so the first do and a redo run the same code
     command->redo();
     BOOST_CHECK_EQUAL(scene->count(), 1U);
-    BOOST_CHECK(scene->selection() == cube);
+    BOOST_CHECK(scene->firstSelected() == cube);
 
     command->undo();
     BOOST_CHECK_EQUAL(scene->count(), 0U);
-    BOOST_CHECK(!scene->selection());
+    BOOST_CHECK(scene->selection().empty());
     BOOST_CHECK(!cube->selected());
 
     // the mesh outlives its removal, so it comes back with the id that a command deeper in
@@ -273,15 +273,25 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
 
     v3d::editor::CreateCommand command(scene, cube, "cube");
     command.redo();
-    BOOST_CHECK(scene->selection() == cube);
+    BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
+    BOOST_CHECK(scene->firstSelected() == cube);
 
-    // undoing the create must leave one selection at most, and the flag lives on the mesh
+    // the flag lives on the mesh, so undoing the create clears it
     command.undo();
-    BOOST_CHECK(!scene->selection());
+    BOOST_CHECK(scene->selection().empty());
 
     command.redo();
-    BOOST_CHECK(scene->selection() == cube);
+    BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
+    BOOST_CHECK(scene->firstSelected() == cube);
     BOOST_CHECK(!plane->selected());
+
+    // with the plane added to the selection, undoing the create takes the cube out of it
+    // and leaves the plane selected
+    plane->selected(true);
+    command.undo();
+    BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
+    BOOST_CHECK(scene->firstSelected() == plane);
+    BOOST_CHECK(!cube->selected());
 }
 
 BOOST_AUTO_TEST_CASE(transform_command_test) {
