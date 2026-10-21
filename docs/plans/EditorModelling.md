@@ -142,7 +142,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [10](#step-10--manipulators-move-a-set) | Manipulators move a set about a shared pivot | `vertical3d` | 0096 | done |
 | [11](#step-11--brep-checks-and-walks-a-mesh-fully) | `BRep` checks and walks a mesh fully | `api/brep` | — | done |
 | [12](#step-12--components-move) | Components move | `vertical3d`, `api/brep` | 0096 | done |
-| [13](#step-13--the-record-how-a-topology-change-is-undone) | The record: how a topology change is undone | `docs/adr` | **0098** | open |
+| [13](#step-13--the-record-how-a-topology-change-is-undone) | The record: how a topology change is undone | `docs/adr` | **0098** | done |
 | [14](#step-14--split-edge-and-split-face) | Split edge and split face, through the record 0098 decides | `api/brep`, `vertical3d` | 0098 | open |
 | [15](#step-15--extrude-and-inset) | Extrude and inset a face | `api/brep`, `vertical3d` | 0098 | open |
 | [16](#step-16--merge) | Merge vertices | `api/brep`, `vertical3d` | 0098 | open |
@@ -451,6 +451,11 @@ Cases are in `TargetTest.cxx`, `TransformToolTest.cxx` and `CreatePolyTest.cxx`.
 a shared vertex moved once; normals after a move match Newell's.
 
 ### Step 13 — The record: how a topology change is undone
+
+**Done.** ADR-0098 is proposed: a topology command holds snapshots of the mesh's three arrays
+from before and after the operation, and undo and redo put one back whole and then clear that
+mesh's component selection. `BRep` gains a snapshot and a restore. The ADR is accepted when step
+14 builds it.
 
 **ADR-0098.** The roadmap names this decision.
 
