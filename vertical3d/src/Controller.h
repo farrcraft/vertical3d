@@ -143,6 +143,18 @@ class Controller final : public v3d::engine::Engine {
     void createPoly(const std::string& name);
 
     /**
+     * Split the selected edges at their middles. It works under the edge mask only, and logs
+     * why when it does nothing.
+     **/
+    void splitSelectedEdges();
+
+    /**
+     * Split a face between the two selected vertices. It works under the vertex mask only,
+     * and logs why when it does nothing.
+     **/
+    void splitSelectedFace();
+
+    /**
      * Step the history one command in either direction and say so.
      * @param name either "undo" or "redo"
      **/

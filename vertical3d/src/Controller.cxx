@@ -28,7 +28,9 @@
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
+#include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Modelling.h>
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -289,6 +291,8 @@ void Controller::registerCommands() {
     press("create::poly::plane", [this]() { createPoly("plane"); });
     press("create::poly::cylinder", [this]() { createPoly("cylinder"); });
     press("create::poly::cone", [this]() { createPoly("cone"); });
+    press("transform::poly::split_edge", [this]() { splitSelectedEdges(); });
+    press("transform::poly::split_face", [this]() { splitSelectedFace(); });
 
     press("select::mask::object", [this]() { selectMask("object"); });
     press("select::mask::vertex", [this]() { selectMask("vertex"); });
@@ -369,6 +373,39 @@ void Controller::createPoly(const std::string& name) {
     command->redo();
     history_->push(command);
     logger()->get()->info("created a {} - {} meshes", name, scene_->count());
+}
+
+/**
+ **/
+void Controller::splitSelectedEdges() {
+    if (selectTool_->mask() != SelectMask::Edge) {
+        logger()->get()->info("split edge needs the edge select mask");
+        return;
+    }
+    const boost::shared_ptr<TopologyCommand> command = splitEdges(*scene_);
+    if (!command) {
+        logger()->get()->info("split edge: no edge is selected");
+        return;
+    }
+    history_->push(command);
+    logger()->get()->info("split the selected edges");
+}
+
+/**
+ **/
+void Controller::splitSelectedFace() {
+    if (selectTool_->mask() != SelectMask::Vertex) {
+        logger()->get()->info("split face needs the vertex select mask");
+        return;
+    }
+    std::string problem;
+    const boost::shared_ptr<TopologyCommand> command = splitFace(*scene_, &problem);
+    if (!command) {
+        logger()->get()->info("split face: {}", problem);
+        return;
+    }
+    history_->push(command);
+    logger()->get()->info("split a face between the selected vertices");
 }
 
 /**

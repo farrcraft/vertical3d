@@ -312,6 +312,20 @@ void BRep::deselectComponents(void) noexcept {
     }
 }
 
+BRep::Snapshot BRep::snapshot(void) const {
+    Snapshot snapshot;
+    snapshot.vertices = vertices_;
+    snapshot.edges = edges_;
+    snapshot.faces = faces_;
+    return snapshot;
+}
+
+void BRep::restore(const Snapshot& snapshot) {
+    vertices_ = snapshot.vertices;
+    edges_ = snapshot.edges;
+    faces_ = snapshot.faces;
+}
+
 bool BRep::validateStrict(std::string* problem) const {
     if (!validate(problem)) {
         return false;

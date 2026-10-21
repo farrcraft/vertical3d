@@ -12,6 +12,7 @@ v3d_add_test(vertical3d
 	"scene/WireframeVisitorTest.cxx"
 	"scene/RIBExportVisitorTest.cxx"
 	"scene/ProjectTest.cxx"
+	"scene/ModellingTest.cxx"
 
 	"command/CommandStackTest.cxx"
 
@@ -32,11 +33,13 @@ v3d_add_test(vertical3d
 	"../src/scene/WireframeVisitor.cxx"
 	"../src/scene/RIBExportVisitor.cxx"
 	"../src/scene/Project.cxx"
+	"../src/scene/Modelling.cxx"
 	"../src/command/CommandStack.cxx"
 	"../src/command/CreateCommand.cxx"
 	"../src/command/Placement.cxx"
 	"../src/command/TransformCommand.cxx"
 	"../src/command/VertexCommand.cxx"
+	"../src/command/TopologyCommand.cxx"
 	"../src/tool/CameraControlTool.cxx"
 	"../src/tool/SelectMask.cxx"
 	"../src/tool/SelectTool.cxx"

@@ -70,6 +70,19 @@ yourself:
 `edgesFrom` and `facesAround` scan every half edge, because nothing keeps a vertex's own `edge`
 current. Each costs time in proportion to the whole mesh.
 
+**Snapshots.** `BRep::snapshot()` copies the three arrays as they stand, and `BRep::restore()`
+puts a snapshot back whole, selection flags included. A topology command keeps one from before an
+operation and one from after it.
+
+**Changing topology.** The functions in `api/brep/Operations.h` change which parts a mesh holds.
+Each appends its new parts, so no existing index changes, and leaves a mesh that passes
+`validateStrict()`:
+
+| Function | Does |
+|---|---|
+| `splitEdge(mesh, edge)` | Adds a vertex at the middle of an edge and splits both its halves, keeping the pairs mutual. A split half edge keeps its index and ends at the new vertex; the part beyond it is a new half edge that follows it. Returns the new vertex |
+| `splitFace(mesh, face, first, second)` | Joins two corners of a face with a new edge, making two faces. The face keeps the corners from the second round to the first, and the new face holds the rest. Both keep the winding and get a normal from their points. Refuses corners that are the same or next to each other. Returns the new face |
+
 **Identity and placement.** `BRep` derives from `v3d::dag::Node` and `v3d::dag::Transform`, so
 `v3dlib_brep` links `v3dlib_dag` publicly.
 
@@ -84,6 +97,21 @@ current. Each costs time in proportion to the whole mesh.
 component flags and leaves the object flag alone.
 
 Background: [ADR-0013](../adr/0013-editor-a-mesh-is-a-dag-node.md)
+
+## Modelling operations
+
+The Transform menu's Poly items act on the selection. Each records one `TopologyCommand`, and
+does nothing, with a log line, on a selection it cannot use.
+
+- **Split Edge** (`transform::poly::split_edge`) works under the edge mask. It splits every
+  selected edge of every selected mesh at its middle, and selects the two parts of each, so it
+  can be repeated.
+- **Split Face** (`transform::poly::split_face`) works under the vertex mask. Exactly two vertices
+  must be selected, in one mesh, on one face and not next to each other on it. It joins them with
+  a new edge, and the two vertices stay selected.
+
+The functions that do the work are in `src/scene/Modelling.h`, apart from the controller, so they
+can be tested without it.
 
 ## The scene
 

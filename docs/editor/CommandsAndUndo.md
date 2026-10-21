@@ -39,9 +39,14 @@ The rules:
 - **Opening a project clears the history**, so an open cannot be undone. It also cancels any
   drag under way without recording it.
 
-A future modelling operation that changes topology will need its own command type that records
-the topology it changed. `TransformCommand` and `VertexCommand` do not fit that case, because both
-hold indices into a mesh whose numbering they assume does not change.
+**A topology change is undone from snapshots.** An operation that changes which parts a mesh
+holds records a `TopologyCommand`. It holds the mesh's arrays from before the operation and from
+after it, and undo and redo put one back whole, so the numbering comes back exactly. A
+`TransformCommand` or `VertexCommand` deeper in the history therefore still names the right parts
+when it is undone. Undo and redo of a topology change clear that mesh's component selection,
+because after a renumbering an old flag could name another part. The object stays selected.
+
+Background: [ADR-0098](../adr/0098-editor-topology-changes-undone-from-snapshots.md)
 
 Background: [ADR-0016](../adr/0016-editor-undo-records-completed-changes.md)
 

@@ -1,6 +1,6 @@
 # ADR-0098: Editor: topology changes undone from snapshots
 
-**Status**: proposed
+**Status**: accepted
 **Date**: 2026-10-20
 **Documented in**: [editor/CommandsAndUndo.md](../editor/CommandsAndUndo.md)
 

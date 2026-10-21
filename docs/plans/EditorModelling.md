@@ -143,7 +143,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [11](#step-11--brep-checks-and-walks-a-mesh-fully) | `BRep` checks and walks a mesh fully | `api/brep` | — | done |
 | [12](#step-12--components-move) | Components move | `vertical3d`, `api/brep` | 0096 | done |
 | [13](#step-13--the-record-how-a-topology-change-is-undone) | The record: how a topology change is undone | `docs/adr` | **0098** | done |
-| [14](#step-14--split-edge-and-split-face) | Split edge and split face, through the record 0098 decides | `api/brep`, `vertical3d` | 0098 | open |
+| [14](#step-14--split-edge-and-split-face) | Split edge and split face, through the record 0098 decides | `api/brep`, `vertical3d` | 0098 | done |
 | [15](#step-15--extrude-and-inset) | Extrude and inset a face | `api/brep`, `vertical3d` | 0098 | open |
 | [16](#step-16--merge) | Merge vertices | `api/brep`, `vertical3d` | 0098 | open |
 | [17](#step-17--fixed-views-and-the-projection) | The fixed views and the projection switch | `vertical3d` | — | open |
@@ -476,6 +476,15 @@ has restored the older layout.
 **Tests:** none. The ADR is `proposed` until step 14 lands.
 
 ### Step 14 — Split edge and split face
+
+**Done.** `BRep::snapshot()` and `restore()` hold the arrays, and `TopologyCommand` keeps a
+pair of snapshots per mesh, as ADR-0098 decides, which is now accepted. `api/brep/Operations.h`
+holds `splitEdge()` and `splitFace()`, and `src/scene/Modelling.h` applies them to the selection.
+The two menu items have handlers. Split edge selects the two parts of each edge it split. Split
+face cannot select its new edge under the vertex mask it works in, so it leaves the two vertices
+selected instead. Cases are in `OperationsTest.cxx` and `ModellingTest.cxx`, including a vertex
+move that still undoes after a split is undone. [Scene.md](../editor/Scene.md#modelling-operations)
+states the rules.
 
 * **The topology command** that 0098 decides is built, with split edge as its first user.
 * **Split edge** adds a vertex at an edge's middle, and splits both half edges, keeping the pairs

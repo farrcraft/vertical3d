@@ -50,10 +50,10 @@ Ctrl is also the truck modifier. Save As and RIB export are on the Project menu 
 | `src/Controller.*` | The app: startup, command registration, mouse routing, project actions |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui |
 | `src/view/` | `ViewLayout`, `ViewPort`, `ConstructionPlane` |
-| `src/scene/` | `Scene`, `SceneVisitor`, the primitives in `CreatePoly`, `WireframeVisitor`, `RIBExportVisitor`, `Project` |
-| `src/command/` | `Command`, `CommandStack`, `CreateCommand`, `TransformCommand`, `Placement` |
+| `src/scene/` | `Scene`, `SceneVisitor`, the primitives in `CreatePoly`, the operations in `Modelling`, `WireframeVisitor`, `RIBExportVisitor`, `Project` |
+| `src/command/` | `Command`, `CommandStack`, `CreateCommand`, `TransformCommand`, `VertexCommand`, `TopologyCommand`, `Placement` |
 | `src/tool/` | `Tool`, `CameraControlTool`, `SelectTool`, `TransformTool`, `Picker`, `SelectMask` |
-| `src/manipulator/` | `Manipulator` and its translate, rotate and scale subclasses |
+| `src/manipulator/` | `Manipulator` and its translate, rotate and scale subclasses, and `Target`, what they move |
 | `data/` | Config documents: bindings, ui, window, camera profiles, layout |
 | `tests/` | The `vertical3d` Boost.Test suite, with one directory for each `src/` subdirectory |
 
@@ -70,5 +70,6 @@ The tests run without a window or a GPU. Run them with
 [TODO.md](../TODO.md#editor) lists the open work. In short:
 
 - Most menu items have no handler and log themselves as unregistered.
-- No modelling operation changes a mesh's topology: there is no split, extrude, inset or merge.
+- Split edge and split face are the only topology operations. There is no extrude, inset or
+  merge.
 - The viewport panes cannot be resized by dragging.

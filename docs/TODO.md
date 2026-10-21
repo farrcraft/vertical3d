@@ -322,6 +322,6 @@ missing command handlers.
 
 [] 55 of the menu's 77 commands have no handler, and only log themselves when chosen.
 
-[] No modelling operation changes a mesh's topology. There is no split, extrude, inset or merge.
+[] The only topology operations are split edge and split face. There is no extrude, inset or merge.
 
 [] The viewport panes cannot be resized by dragging.
