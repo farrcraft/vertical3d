@@ -133,6 +133,7 @@ content went. Numbers are never reused.
 | 0017 | *Not a decision. Now in docs/editor/CommandsAndUndo.md and api/event/Commands.h* | removed |
 | [0018](0018-editor-projects-saved-as-json-with-exact-topology.md) | Editor: projects saved as JSON with exact topology | amended by 0041 |
 | [0096](0096-editor-handles-pivot-at-the-mean-of-the-selection.md) | Editor: handles pivot at the mean of the selection | accepted |
+| [0097](0097-editor-faces-wind-clockwise-seen-from-outside.md) | Editor: faces wind clockwise seen from outside | accepted |
 
 ## Build, testing and code
 

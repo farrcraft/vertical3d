@@ -191,10 +191,17 @@ class Controller final : public v3d::engine::Engine {
     void drag(bool pressed);
 
     /**
-     * Choose the transform tool's mode and tell the renderer which handles to draw.
+     * Choose the transform tool's mode.
      * @param name the mode, as TransformTool names it
      **/
     void transformMode(const std::string& name);
+
+    /**
+     * Choose the select mask, for the select tool that picks under it and for the transform
+     * tool, whose handles move what the mask selects.
+     * @param name the mask, as SelectMask names it
+     **/
+    void selectMask(const std::string& name);
 
     /**
      * Hold or release a camera move for as long as its modifier is down.

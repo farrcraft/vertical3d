@@ -22,7 +22,9 @@
 #include <api/ui/shell/StatisticsOverlay.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/tool/SelectTool.h>
+#include <vertical3d/src/tool/TransformTool.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
@@ -128,8 +130,8 @@ void Renderer::scene(const boost::shared_ptr<Scene>& scene) {
 
 /**
  **/
-void Renderer::manipulator(const boost::shared_ptr<Manipulator>& manipulator) {
-    manipulator_ = manipulator;
+void Renderer::transformTool(const boost::shared_ptr<TransformTool>& transform) {
+    transform_ = transform;
 }
 
 /**
@@ -202,13 +204,17 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
     const Scene empty;
     const Scene& scene = scene_ ? *scene_ : empty;
 
+    // the handles sit about what the tool would move, which every view draws the same
+    const boost::shared_ptr<Manipulator> manipulator = transform_ ? transform_->manipulator() : boost::shared_ptr<Manipulator>();
+    const Target target = transform_ ? transform_->target() : Target();
+
     for (std::size_t index = 0; index < views_.size(); index++) {
         const boost::shared_ptr<ViewPort>& view = views_[index];
         if (!view) {
             continue;
         }
 
-        view->draw(scene, manipulator_.get(), &canvases_[index], &overlays_[index]);
+        view->draw(scene, manipulator.get(), target, &canvases_[index], &overlays_[index]);
 
         const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(view->name());
         pass->viewport(view->region());

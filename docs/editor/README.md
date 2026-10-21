@@ -70,7 +70,5 @@ The tests run without a window or a GPU. Run them with
 [TODO.md](../TODO.md#editor) lists the open work. In short:
 
 - Most menu items have no handler and log themselves as unregistered.
-- There is no modelling operation. A component mode selects a part, and the manipulator then
-  moves the whole object.
-- The manipulators move whole objects, and never a component.
+- No modelling operation changes a mesh's topology: there is no split, extrude, inset or merge.
 - The viewport panes cannot be resized by dragging.

@@ -120,7 +120,7 @@ The tree was read at `0bb29eb9`. Line numbers are from that commit.
 | ADR | Decides | Step |
 |---|---|---|
 | 0096 | Where the handles pivot, for a set of objects and for components. Amends 0015 | [7](#step-7--the-record-where-the-handles-pivot) |
-| 0097 | How a topology change is recorded for undo | [13](#step-13--the-record-how-a-topology-change-is-undone) |
+| 0098 | How a topology change is recorded for undo | [13](#step-13--the-record-how-a-topology-change-is-undone) |
 
 Each goes in as `proposed` and is accepted when the step that builds it lands.
 
@@ -141,11 +141,11 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [9](#step-9--a-rubber-band) | A rubber band | `vertical3d` | 0096 | done |
 | [10](#step-10--manipulators-move-a-set) | Manipulators move a set about a shared pivot | `vertical3d` | 0096 | done |
 | [11](#step-11--brep-checks-and-walks-a-mesh-fully) | `BRep` checks and walks a mesh fully | `api/brep` | — | done |
-| [12](#step-12--components-move) | Components move | `vertical3d`, `api/brep` | 0096 | open |
-| [13](#step-13--the-record-how-a-topology-change-is-undone) | The record: how a topology change is undone | `docs/adr` | **0097** | open |
-| [14](#step-14--split-edge-and-split-face) | Split edge and split face, through the record 0097 decides | `api/brep`, `vertical3d` | 0097 | open |
-| [15](#step-15--extrude-and-inset) | Extrude and inset a face | `api/brep`, `vertical3d` | 0097 | open |
-| [16](#step-16--merge) | Merge vertices | `api/brep`, `vertical3d` | 0097 | open |
+| [12](#step-12--components-move) | Components move | `vertical3d`, `api/brep` | 0096 | done |
+| [13](#step-13--the-record-how-a-topology-change-is-undone) | The record: how a topology change is undone | `docs/adr` | **0098** | open |
+| [14](#step-14--split-edge-and-split-face) | Split edge and split face, through the record 0098 decides | `api/brep`, `vertical3d` | 0098 | open |
+| [15](#step-15--extrude-and-inset) | Extrude and inset a face | `api/brep`, `vertical3d` | 0098 | open |
+| [16](#step-16--merge) | Merge vertices | `api/brep`, `vertical3d` | 0098 | open |
 | [17](#step-17--fixed-views-and-the-projection) | The fixed views and the projection switch | `vertical3d` | — | open |
 | [18](#step-18--resizable-panes) | Resizable panes | `vertical3d` | — | open |
 | [19](#step-19--the-documents) | The editor documents state the new rules | `docs` | — | open |
@@ -160,7 +160,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 6 Shift freed ──> 8 Selection set ──> 9 Rubber band
 7 ADR-0096 ─────┴──────────────────> 10 Set moves
 11 BRep checks ──> 12 Component moves (after 7, 8)
-13 ADR-0097 ──> 14 Split ──> 15 Extrude, inset ──> 16 Merge   (each after 11)
+13 ADR-0098 ──> 14 Split ──> 15 Extrude, inset ──> 16 Merge   (each after 11)
 17, 18          (no order)
 19 Documents    (last; each step also updates its own section)
 ```
@@ -424,6 +424,20 @@ Newell's normal for a planar and a bent quad.
 
 ### Step 12 — Components move
 
+**Done.** A `Target` holds what the handles move, objects or the vertices of selected
+components, and the pivot ADR-0096 decides. Each manipulator now measures a `Motion` and the
+target applies it, in world space and back into each object's space. `TransformTool` follows the
+select mask through `Controller::selectMask()`, and records a component gesture as a
+`VertexCommand`. The renderer asks the tool for its manipulator and target every frame.
+
+The step found that the primitives wind their faces clockwise seen from outside, and that the
+cone stored inward normals. [ADR-0097](../adr/0097-editor-faces-wind-clockwise-seen-from-outside.md)
+makes that winding the rule. `newellNormal` follows it, and the cone's normals point out. The
+topology record this plan called 0097 is now 0098.
+
+Cases are in `TargetTest.cxx`, `TransformToolTest.cxx` and `CreatePolyTest.cxx`.
+[Manipulators](../editor/PickingAndManipulators.md#manipulators) states the rules.
+
 * **In a component mode, the manipulator moves the selected components' vertices**, in the object's
   own space, about the pivot ADR-0096 decides. An edge moves its two vertices and a face its loop.
   A vertex shared by two selected components moves once.
@@ -438,7 +452,7 @@ a shared vertex moved once; normals after a move match Newell's.
 
 ### Step 13 — The record: how a topology change is undone
 
-**ADR-0097.** The roadmap names this decision.
+**ADR-0098.** The roadmap names this decision.
 
 The requirement: an undo restores the mesh **index for index**. A later command in the history,
 such as a component move, holds indices into the mesh, and its undo runs after the topology undo
@@ -458,7 +472,7 @@ has restored the older layout.
 
 ### Step 14 — Split edge and split face
 
-* **The topology command** that 0097 decides is built, with split edge as its first user.
+* **The topology command** that 0098 decides is built, with split edge as its first user.
 * **Split edge** adds a vertex at an edge's middle, and splits both half edges, keeping the pairs
   mutual.
 * **Split face** joins two vertices of one face with a new edge, making two faces. The two
@@ -489,7 +503,7 @@ check and the undo and redo comparisons; the cylinder's open boundary.
 * **Merge vertices** collapses the selected vertices to their centre. Faces that shrink below three
   vertices are removed, and so are the half edges and vertices nothing references.
 * **Removal renumbers.** The arrays are compacted, and every index in the mesh is rewritten. The
-  undo record of 0097 must restore the old numbering exactly.
+  undo record of 0098 must restore the old numbering exactly.
 * **A merge that would leave a non-manifold edge is refused** with a log line, and changes nothing.
 * The merge gets a command, a binding and a menu item.
 
@@ -524,5 +538,5 @@ changes two shares and respects the floor; `viewAt` finds the divider.
 * The engine document states how an app holds a quit. The ui document states the prompt.
 * The roadmap's sections 1, 2, 3 and 5 are marked as done by this plan. Its section 4 keeps what
   step 1 left in it, so the roadmap stays open.
-* ADR-0096 and ADR-0097 are `accepted`, and ADR-0015 says `Amended by` 0096.
+* ADR-0096 and ADR-0098 are `accepted`, and ADR-0015 says `Amended by` 0096.
 * TODO.md's editor entries this plan closed are deleted.

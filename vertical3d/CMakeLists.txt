@@ -19,6 +19,7 @@ add_executable("vertical3d"
 	"src/command/CreateCommand.h" "src/command/CreateCommand.cxx"
 	"src/command/Placement.h" "src/command/Placement.cxx"
 	"src/command/TransformCommand.h" "src/command/TransformCommand.cxx"
+	"src/command/VertexCommand.h" "src/command/VertexCommand.cxx"
 
 	"src/tool/Tool.h"
 	"src/tool/CameraControlTool.h" "src/tool/CameraControlTool.cxx"
@@ -28,6 +29,7 @@ add_executable("vertical3d"
 	"src/tool/Picker.h" "src/tool/Picker.cxx"
 
 	"src/manipulator/Manipulator.h" "src/manipulator/Manipulator.cxx"
+	"src/manipulator/Target.h" "src/manipulator/Target.cxx"
 	"src/manipulator/TranslateManipulator.h" "src/manipulator/TranslateManipulator.cxx"
 	"src/manipulator/RotateManipulator.h" "src/manipulator/RotateManipulator.cxx"
 	"src/manipulator/ScaleManipulator.h" "src/manipulator/ScaleManipulator.cxx")

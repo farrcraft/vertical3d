@@ -8,7 +8,10 @@
 #include <api/log/Logger.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/Placement.h>
+#include <vertical3d/src/command/VertexCommand.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/manipulator/Target.h>
+#include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -29,6 +32,10 @@ namespace v3d::editor {
  * Which manipulator is drawn is the tool's mode, and there is a mode in which none is:
  * the selection is then only selectable. The mode is exclusive, because three sets of
  * handles about one origin could not be told apart by a click.
+ *
+ * What the handles move follows the select mask: the selected objects in object mode, and
+ * the vertices of the selected components in a component mode. A gesture on objects is
+ * recorded as a TransformCommand, and one on components as a VertexCommand.
  *
  * A press grabs a handle if one is under the cursor and does nothing if none is, so the
  * same button can also select. The controller offers the press here first and passes it
@@ -90,6 +97,18 @@ class TransformTool final : public Tool {
     boost::shared_ptr<Manipulator> manipulator() const;
 
     /**
+     * Follow the select mask. Changing it ends any drag under way, and the change made so far
+     * is recorded.
+     **/
+    void mask(SelectMask mask);
+
+    /**
+     * @return what the handles move: the set a drag grabbed while one is under way, and
+     *         what the selection makes under the mask otherwise
+     **/
+    Target target() const;
+
+    /**
      * @return whether a handle is being dragged. While it is, the same press does not
      *         also select
      **/
@@ -126,8 +145,10 @@ class TransformTool final : public Tool {
     Mode mode_;
     bool dragging_;
     glm::vec2 last_;
-    Meshes dragged_;
+    SelectMask mask_;
+    Target dragged_;
     std::vector<Placement> before_;
+    std::vector<VertexCommand::Shape> shapes_;
 };
 
 /**

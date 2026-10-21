@@ -10,6 +10,7 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/WireframeVisitor.h>
 
@@ -100,7 +101,7 @@ ConstructionPlane& ViewPort::grid() noexcept {
 
 /**
  **/
-void ViewPort::draw(const Scene& scene, const Manipulator* manipulator,
+void ViewPort::draw(const Scene& scene, const Manipulator* manipulator, const Target& target,
     v3d::render::realtime::canvas::Line* canvas, v3d::render::realtime::canvas::Line* handles) {
     if (canvas == nullptr) {
         return;
@@ -125,7 +126,7 @@ void ViewPort::draw(const Scene& scene, const Manipulator* manipulator,
     }
 
     if (shows(SHOW_HANDLE) && manipulator != nullptr && handles != nullptr) {
-        manipulator->draw(scene.selection(), *this, handles);
+        manipulator->draw(target, *this, handles);
     }
 }
 

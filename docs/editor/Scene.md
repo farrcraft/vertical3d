@@ -17,7 +17,15 @@ indices:
 - `pair`: the half edge running the other way along the same edge
 - `next`: the next half edge around its face
 
-A face stores its normal and one of its half edges. `brep::INVALID_ID` (`1 << 31`) marks a
+A face stores its normal and one of its half edges.
+
+**Winding.** A face's loop runs clockwise when seen from outside, and its stored normal points
+outward. Every primitive is built that way, and a normal recomputed from a face's points follows
+the same rule, so a move never turns a face inside out. An importer of a counter-clockwise format
+reverses each face's loop. Background:
+[ADR-0097](../adr/0097-editor-faces-wind-clockwise-seen-from-outside.md)
+
+`brep::INVALID_ID` (`1 << 31`) marks a
 reference to nothing, such as the `pair` of an edge on an open boundary. **Do not change
 `INVALID_ID`.** Project files store it, so a new value breaks every saved project.
 
@@ -57,7 +65,7 @@ yourself:
 | `faceUV(mesh, face, &u, &v)` | Two perpendicular unit vectors in the plane of a face. `u` runs along the first edge with a length, and the first edge after it that is not parallel sets the plane. A face of fewer than two edges, or whose vertices all lie on a line, leaves `u` and `v` unchanged |
 | `edgesFrom(mesh, vertex)` | The half edges leaving a vertex, in index order |
 | `facesAround(mesh, vertex)` | The faces meeting at a vertex, each once, in index order |
-| `newellNormal(mesh, face)` | A face's unit normal by Newell's method, which holds for a face that is not quite planar. It points to the side the loop runs counter-clockwise when seen from. Zero for a face with no area |
+| `newellNormal(mesh, face)` | A face's unit normal by Newell's method, which holds for a face that is not quite planar. It points outward, the side the loop runs clockwise when seen from. Zero for a face with no area |
 
 `edgesFrom` and `facesAround` scan every half edge, because nothing keeps a vertex's own `edge`
 current. Each costs time in proportion to the whole mesh.

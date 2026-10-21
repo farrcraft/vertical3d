@@ -20,6 +20,7 @@ v3d_add_test(vertical3d
 	"tool/TransformToolTest.cxx"
 
 	"manipulator/ManipulatorTest.cxx"
+	"manipulator/TargetTest.cxx"
 
 	"../src/Controller.cxx"
 	"../src/Renderer.cxx"
@@ -35,12 +36,14 @@ v3d_add_test(vertical3d
 	"../src/command/CreateCommand.cxx"
 	"../src/command/Placement.cxx"
 	"../src/command/TransformCommand.cxx"
+	"../src/command/VertexCommand.cxx"
 	"../src/tool/CameraControlTool.cxx"
 	"../src/tool/SelectMask.cxx"
 	"../src/tool/SelectTool.cxx"
 	"../src/tool/TransformTool.cxx"
 	"../src/tool/Picker.cxx"
 	"../src/manipulator/Manipulator.cxx"
+	"../src/manipulator/Target.cxx"
 	"../src/manipulator/TranslateManipulator.cxx"
 	"../src/manipulator/RotateManipulator.cxx"
 	"../src/manipulator/ScaleManipulator.cxx")

@@ -116,7 +116,7 @@ bool Controller::start() {
     renderer_ = boost::make_shared<Renderer>(window(), logger(), assets());
     renderer_->views(views_);
     renderer_->scene(scene_);
-    renderer_->manipulator(transformTool_->manipulator());
+    renderer_->transformTool(transformTool_);
     renderer_->selectTool(selectTool_);
 
     if (!buildUi()) {
@@ -290,10 +290,10 @@ void Controller::registerCommands() {
     press("create::poly::cylinder", [this]() { createPoly("cylinder"); });
     press("create::poly::cone", [this]() { createPoly("cone"); });
 
-    press("select::mask::object", [this]() { selectTool_->activate("object"); });
-    press("select::mask::vertex", [this]() { selectTool_->activate("vertex"); });
-    press("select::mask::edge", [this]() { selectTool_->activate("edge"); });
-    press("select::mask::face", [this]() { selectTool_->activate("face"); });
+    press("select::mask::object", [this]() { selectMask("object"); });
+    press("select::mask::vertex", [this]() { selectMask("vertex"); });
+    press("select::mask::edge", [this]() { selectMask("edge"); });
+    press("select::mask::face", [this]() { selectMask("face"); });
 
     press("transform::select", [this]() { transformMode("select"); });
     press("transform::translate", [this]() { transformMode("translate"); });
@@ -506,7 +506,13 @@ void Controller::toggleShow(ViewPort::VisibleFilter filter) {
  **/
 void Controller::transformMode(const std::string& name) {
     transformTool_->activate(name);
-    renderer_->manipulator(transformTool_->manipulator());
+}
+
+/**
+ **/
+void Controller::selectMask(const std::string& name) {
+    selectTool_->activate(name);
+    transformTool_->mask(selectTool_->mask());
 }
 
 /**

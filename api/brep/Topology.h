@@ -81,8 +81,8 @@ std::vector<Index> facesAround(const BRep & mesh, Index vertex);
 
 /**
  * A face's unit normal, found from its points by Newell's method, which holds for a face
- * that is not quite planar. It points to the side the loop runs counter-clockwise when seen
- * from.
+ * that is not quite planar. A face's loop runs clockwise seen from outside, so the normal
+ * points to the side the loop runs clockwise when seen from.
  *
  * @return zero for a face with no area, or with fewer than three points
  **/

@@ -10,15 +10,19 @@
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/TransformCommand.h>
+#include <vertical3d/src/command/VertexCommand.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/manipulator/RotateManipulator.h>
 #include <vertical3d/src/manipulator/ScaleManipulator.h>
+#include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/manipulator/TranslateManipulator.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -79,7 +83,8 @@ TransformTool::TransformTool(const boost::shared_ptr<Scene>& scene,
     scale_(boost::make_shared<ScaleManipulator>()),
     mode_(Mode::None),
     dragging_(false),
-    last_(0.0F, 0.0F) {
+    last_(0.0F, 0.0F),
+    mask_(SelectMask::Object) {
 }
 
 /**
@@ -160,6 +165,35 @@ boost::shared_ptr<Manipulator> TransformTool::manipulator() const {
 
 /**
  **/
+void TransformTool::mask(SelectMask mask) {
+    if (mask == mask_) {
+        return;
+    }
+    // what a drag holds is about to stop being what the handles move, but what it already
+    // moved has happened
+    commit();
+    const boost::shared_ptr<Manipulator> current = manipulator();
+    if (current) {
+        current->active(false);
+    }
+    dragging_ = false;
+    mask_ = mask;
+}
+
+/**
+ **/
+Target TransformTool::target() const {
+    if (dragging_) {
+        return dragged_;
+    }
+    if (!scene_) {
+        return Target();
+    }
+    return Target::selected(*scene_, mask_);
+}
+
+/**
+ **/
 bool TransformTool::dragging() const noexcept {
     return dragging_;
 }
@@ -167,8 +201,9 @@ bool TransformTool::dragging() const noexcept {
 /**
  **/
 void TransformTool::cancel() {
-    dragged_.clear();
+    dragged_ = Target();
     before_.clear();
+    shapes_.clear();
     const boost::shared_ptr<Manipulator> current = manipulator();
     if (current) {
         current->active(false);
@@ -179,16 +214,34 @@ void TransformTool::cancel() {
 /**
  **/
 void TransformTool::commit() {
-    Meshes meshes;
-    meshes.swap(dragged_);
+    Target target;
+    std::swap(target, dragged_);
     std::vector<Placement> before;
     before.swap(before_);
-    if (!commands_) {
+    std::vector<VertexCommand::Shape> shapes;
+    shapes.swap(shapes_);
+    if (!commands_ || target.empty()) {
+        return;
+    }
+
+    if (target.components()) {
+        std::vector<VertexCommand::Change> changes;
+        bool moved = false;
+        for (std::size_t index = 0; index < target.parts().size() && index < shapes.size(); index++) {
+            const Target::Part& part = target.parts()[index];
+            const VertexCommand::Shape after = VertexCommand::Shape::of(part);
+            moved = moved || !after.same(shapes[index]);
+            changes.push_back({.part = part, .before = shapes[index], .after = after});
+        }
+        if (moved) {
+            commands_->push(boost::make_shared<VertexCommand>(changes, modeName(mode_)));
+        }
         return;
     }
 
     // every placement is recorded in full, because a turn or a scale of several meshes
     // moves each one's translation as well
+    const Meshes& meshes = target.meshes();
     std::vector<TransformCommand::Change> changes;
     bool moved = false;
     for (std::size_t index = 0; index < meshes.size() && index < before.size(); index++) {
@@ -196,10 +249,9 @@ void TransformTool::commit() {
         moved = moved || !after.same(before[index]);
         changes.push_back({.mesh = meshes[index], .before = before[index], .after = after});
     }
-    if (!moved) {
-        return;
+    if (moved) {
+        commands_->push(boost::make_shared<TransformCommand>(changes, modeName(mode_)));
     }
-    commands_->push(boost::make_shared<TransformCommand>(changes, modeName(mode_)));
 }
 
 /**
@@ -214,9 +266,9 @@ void TransformTool::hover(const glm::vec2& position) {
         return;
     }
 
-    const Meshes meshes = scene_->selection();
+    const Target target = this->target();
     Manipulator::Axis axis = Manipulator::Axis::None;
-    if (meshes.empty() || !current->grab(meshes, *view_, position, &axis)) {
+    if (target.empty() || !current->grab(target, *view_, position, &axis)) {
         current->active(false);
         return;
     }
@@ -263,13 +315,13 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
         return;
     }
 
-    const Meshes meshes = scene_->selection();
-    if (meshes.empty()) {
+    const Target target = this->target();
+    if (target.empty()) {
         return;
     }
 
     Manipulator::Axis axis = Manipulator::Axis::None;
-    if (!current->grab(meshes, *view_, position, &axis)) {
+    if (!current->grab(target, *view_, position, &axis)) {
         // no handle under the cursor, so the press is not this tool's. The controller
         // passes it on to the select tool
         current->active(false);
@@ -278,10 +330,17 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
     current->axis(axis);
     current->active(true);
     dragging_ = true;
-    dragged_ = meshes;
+    dragged_ = target;
     before_.clear();
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes) {
-        before_.push_back(Placement::of(*mesh));
+    shapes_.clear();
+    if (target.components()) {
+        for (const Target::Part& part : target.parts()) {
+            shapes_.push_back(VertexCommand::Shape::of(part));
+        }
+    } else {
+        for (const boost::shared_ptr<v3d::brep::BRep>& mesh : target.meshes()) {
+            before_.push_back(Placement::of(*mesh));
+        }
     }
 }
 

@@ -175,7 +175,8 @@ glm::vec3 newellNormal(const BRep & mesh, Index face) {
     if (points.size() < 3) {
         return normal;
     }
-    // each edge adds the area it sweeps on the three axis planes
+    // each edge adds the area it sweeps on the three axis planes. The sum points to the side
+    // the loop runs counter-clockwise when seen from, which is inside
     for (std::size_t index = 0; index < points.size(); index++) {
         const glm::vec3& current = points[index];
         const glm::vec3& next = points[(index + 1) % points.size()];
@@ -187,7 +188,7 @@ glm::vec3 newellNormal(const BRep & mesh, Index face) {
     if (length <= 0.0F) {
         return glm::vec3(0.0F);
     }
-    return normal / length;
+    return -normal / length;
 }
 
 };  // namespace v3d::brep

@@ -15,6 +15,11 @@ holding each moved mesh's `Placement` (translation, rotation and scale) from the
 end of the gesture. Undo puts every whole starting placement back, so one undo restores a whole
 set.
 
+A gesture on components records one `VertexCommand` instead. It holds each moved vertex's
+position, and each recomputed face normal, from the start and the end of the gesture. Undo and
+redo write the stored values back rather than applying an inverse motion, so they restore the
+mesh exactly. A gesture that moved no vertex records nothing.
+
 The rules:
 
 - **The first do goes through `redo()`** where the change is not interactive.
@@ -35,7 +40,8 @@ The rules:
   drag under way without recording it.
 
 A future modelling operation that changes topology will need its own command type that records
-the topology it changed. `TransformCommand` does not fit that case.
+the topology it changed. `TransformCommand` and `VertexCommand` do not fit that case, because both
+hold indices into a mesh whose numbering they assume does not change.
 
 Background: [ADR-0016](../adr/0016-editor-undo-records-completed-changes.md)
 

@@ -5,14 +5,13 @@
 
 #include "ScaleManipulator.h"
 
-#include <api/brep/BRep.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <algorithm>
 
 #include "Manipulator.h"
+#include "Target.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/common.hpp>
@@ -36,7 +35,6 @@ constexpr float centreSize = 0.06F;
  * turn the object inside out and could never be dragged back, the handle having no
  * length left to grab.
  **/
-constexpr float minimum = 0.01F;
 
 };  // namespace
 
@@ -53,12 +51,12 @@ Manipulator::Space ScaleManipulator::effective() const noexcept {
 
 /**
  **/
-void ScaleManipulator::draw(const Meshes& meshes, const ViewPort& view,
+void ScaleManipulator::draw(const Target& target, const ViewPort& view,
     v3d::render::realtime::canvas::Line* canvas) const {
     if (canvas == nullptr) {
         return;
     }
-    const Placement seat = placement(meshes, view);
+    const Placement seat = placement(target, view);
     if (!seat.valid) {
         return;
     }
@@ -76,11 +74,10 @@ void ScaleManipulator::draw(const Meshes& meshes, const ViewPort& view,
 
 /**
  **/
-void ScaleManipulator::apply(const Meshes& meshes, const ViewPort& view,
-    const glm::vec2& from, const glm::vec2& to) const {
-    const Placement seat = placement(meshes, view);
-    if (!seat.valid || seat.size <= 0.0F) {
-        return;
+bool ScaleManipulator::measure(const Placement& seat, const ViewPort& view, const glm::vec2& from,
+    const glm::vec2& to, Motion* motion) const {
+    if (seat.size <= 0.0F) {
+        return false;
     }
 
     // one gesture on the centre handle scales all three axes: dragging right or up grows
@@ -104,25 +101,9 @@ void ScaleManipulator::apply(const Meshes& meshes, const ViewPort& view,
         break;
     }
 
-    // the distance from the pivot scales with the objects, along the handle's direction or
-    // all three ways. It is held above the floor a scale is, so the set cannot turn inside out
-    const float spread = std::max(factor, minimum);
-    const glm::vec3 handle = direction(seat, axis());
-
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes) {
-        if (!mesh) {
-            continue;
-        }
-        const glm::vec3 scale = glm::max(mesh->scale() * stretch, glm::vec3(minimum));
-        mesh->scale(scale);
-
-        const glm::vec3 offset = mesh->translation() - seat.origin;
-        if (axis() == Axis::None) {
-            mesh->translation(seat.origin + (offset * spread));
-        } else {
-            mesh->translation(seat.origin + offset + (handle * (glm::dot(offset, handle) * (spread - 1.0F))));
-        }
-    }
+    // a stretch is along the handles' axes, which are each object's own
+    motion->stretch = stretch;
+    return true;
 }
 
 };  // namespace v3d::editor

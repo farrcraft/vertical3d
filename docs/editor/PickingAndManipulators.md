@@ -93,17 +93,27 @@ A manipulator is the set of handles that moves, turns or resizes the selected me
 `TransformTool` holds all three and has four modes: none (Select), translate, rotate and scale.
 One mode is active at a time, and the Select mode shows no handles.
 
-**A manipulator writes each selected mesh's transform and never its vertices.** It acts on
-whole objects even when a face or a vertex is what is selected. Moving a part of a mesh needs a
-modelling operation, and there is none yet.
+**What the handles move follows the select mask.** `Target` holds it. In Object mode it is the
+selected objects, and a manipulator writes their transforms. In a component mode it is the
+distinct vertices of the selected components: one for a vertex, two for an edge, and the loop of
+a face. A vertex shared by two selected components moves once. A component target may span
+every selected object, and with no component selected there are no handles.
 
-**Where the handles are.** Handles are drawn at the pivot, the mean of the selected objects'
-origins. For one object that is its own origin, where its transform pivots. Their length is a
+**Moving components.** Each vertex is moved in world space, through its object's matrix, and
+written back in the object's own space. The object's transform does not change. Every face with a
+moved corner gets its normal recomputed from its points, by Newell's method; a face squashed to no
+area keeps the normal it had. A mask change ends a drag under way, and the change made so far is
+recorded.
+
+**Where the handles are.** Handles are drawn at the pivot: the mean of the selected objects'
+origins, or of the moved vertices in world space. For one object that is its own origin, where
+its transform pivots. Their length is a
 fixed number of pixels (90), converted to world units through the view. A handle therefore keeps
 its on-screen size at any distance. Handles are drawn in the handle pass, which has no depth
 test.
 
-**Moving a set.** Every selected object moves in one gesture, about the one pivot:
+**Moving a set.** Everything the target holds moves in one gesture, about the one pivot. A
+manipulator measures a `Motion` (an offset, a turn and a stretch) and the target applies it:
 
 - A translate moves every object by the same offset.
 - A rotate turns each object, and carries its origin round the pivot by the same turn.

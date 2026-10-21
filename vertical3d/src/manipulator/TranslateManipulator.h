@@ -9,6 +9,7 @@
 #include <api/render/realtime/canvas/Line.h>
 
 #include "Manipulator.h"
+#include "Target.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -26,10 +27,12 @@ class TranslateManipulator final : public Manipulator {
     TranslateManipulator();
 
     // manipulator overrides
-    void draw(const Meshes& meshes, const ViewPort& view,
+    void draw(const Target& target, const ViewPort& view,
         v3d::render::realtime::canvas::Line* canvas) const override;
-    void apply(const Meshes& meshes, const ViewPort& view,
-        const glm::vec2& from, const glm::vec2& to) const override;
+
+ protected:
+    bool measure(const Placement& seat, const ViewPort& view, const glm::vec2& from, const glm::vec2& to,
+        Motion* motion) const override;
 };
 
 };  // namespace v3d::editor

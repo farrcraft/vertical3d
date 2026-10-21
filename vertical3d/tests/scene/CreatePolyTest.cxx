@@ -4,12 +4,18 @@
  **/
 
 #include <api/brep/BRep.h>
+#include <api/brep/Face.h>
+#include <api/brep/Index.h>
+#include <api/brep/Topology.h>
 #include <api/type/geometry/AABBox.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 
 #include <string>
 
 #include <boost/test/unit_test.hpp>
+
+#include <glm/geometric.hpp>
+#include <glm/vec3.hpp>
 
 namespace {
 
@@ -81,6 +87,23 @@ BOOST_AUTO_TEST_CASE(create_poly_strict_test) {
     for (const boost::shared_ptr<v3d::brep::BRep>& primitive : primitives) {
         std::string problem;
         BOOST_CHECK_MESSAGE(primitive->validateStrict(&problem), problem);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(create_poly_winding_test) {
+    // every face is wound clockwise seen from outside, so the normal its points give is the
+    // one it was made with, and points away from the middle of the primitive
+    const boost::shared_ptr<v3d::brep::BRep> primitives[4] = {
+        v3d::editor::create_poly_cube(), v3d::editor::create_poly_plane(),
+        v3d::editor::create_poly_cylinder(), v3d::editor::create_poly_cone() };
+    for (const boost::shared_ptr<v3d::brep::BRep>& primitive : primitives) {
+        for (v3d::brep::Index face = 0; face < primitive->faceCount(); face++) {
+            const glm::vec3 stored = primitive->face(face)->normal();
+            BOOST_CHECK_SMALL(glm::distance(stored, v3d::brep::newellNormal(*primitive, face)), 0.001F);
+            if (primitive->faceCount() > 1) {
+                BOOST_CHECK_GT(glm::dot(stored, v3d::brep::center(*primitive, face)), 0.0F);
+            }
+        }
     }
 }
 

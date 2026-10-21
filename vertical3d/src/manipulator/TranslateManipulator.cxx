@@ -5,12 +5,12 @@
 
 #include "TranslateManipulator.h"
 
-#include <api/brep/BRep.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cmath>
+
+#include "Target.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/gtc/constants.hpp>
@@ -48,12 +48,12 @@ TranslateManipulator::TranslateManipulator() {
 
 /**
  **/
-void TranslateManipulator::draw(const Meshes& meshes, const ViewPort& view,
+void TranslateManipulator::draw(const Target& target, const ViewPort& view,
     v3d::render::realtime::canvas::Line* canvas) const {
     if (canvas == nullptr) {
         return;
     }
-    const Placement seat = placement(meshes, view);
+    const Placement seat = placement(target, view);
     if (!seat.valid) {
         return;
     }
@@ -87,13 +87,8 @@ void TranslateManipulator::draw(const Meshes& meshes, const ViewPort& view,
 
 /**
  **/
-void TranslateManipulator::apply(const Meshes& meshes, const ViewPort& view,
-    const glm::vec2& from, const glm::vec2& to) const {
-    const Placement seat = placement(meshes, view);
-    if (!seat.valid) {
-        return;
-    }
-
+bool TranslateManipulator::measure(const Placement& seat, const ViewPort& view, const glm::vec2& from,
+    const glm::vec2& to, Motion* motion) const {
     glm::vec3 offset(0.0F, 0.0F, 0.0F);
     if (axis() == Axis::None) {
         // the centre handle: both components of the gesture move the object, in the
@@ -110,11 +105,8 @@ void TranslateManipulator::apply(const Meshes& meshes, const ViewPort& view,
     }
 
     // by an offset, not to a position: a drag measures how far the gesture went
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes) {
-        if (mesh) {
-            mesh->translate(offset);
-        }
-    }
+    motion->offset = offset;
+    return true;
 }
 
 };  // namespace v3d::editor

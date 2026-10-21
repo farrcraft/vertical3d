@@ -283,21 +283,21 @@ BOOST_AUTO_TEST_CASE(brep_face_uv_of_a_degenerate_face_test) {
 }
 
 /**
- * A unit cube from the origin to (1, 1, 1), each face wound counter-clockwise seen from
- * outside, so every half edge finds its pair. Faces 0 to 5 are bottom, top, front (y = 0),
- * back, left (x = 0) and right. Vertex 0 is the corner at the origin.
+ * A unit cube from the origin to (1, 1, 1), each face wound clockwise seen from outside, so
+ * every half edge finds its pair. Faces 0 to 5 are bottom, top, front (y = 0), back, left
+ * (x = 0) and right. Vertex 0 is the corner at the origin.
  **/
 v3d::brep::BRep* cube(v3d::brep::BRep* mesh) {
     const glm::vec3 origin(0.0F, 0.0F, 0.0F);
     const glm::vec3 x(1.0F, 0.0F, 0.0F);
     const glm::vec3 y(0.0F, 1.0F, 0.0F);
     const glm::vec3 z(0.0F, 0.0F, 1.0F);
-    mesh->addFace({origin, y, x + y, x}, -z);
-    mesh->addFace({z, x + z, x + y + z, y + z}, z);
-    mesh->addFace({origin, x, x + z, z}, -y);
-    mesh->addFace({y, y + z, x + y + z, x + y}, y);
-    mesh->addFace({origin, z, y + z, y}, -x);
-    mesh->addFace({x, x + y, x + y + z, x + z}, x);
+    mesh->addFace({origin, x, x + y, y}, -z);
+    mesh->addFace({z, y + z, x + y + z, x + z}, z);
+    mesh->addFace({origin, z, x + z, x}, -y);
+    mesh->addFace({y, x + y, x + y + z, y + z}, y);
+    mesh->addFace({origin, y, y + z, z}, -x);
+    mesh->addFace({x, x + z, x + y + z, x + y}, x);
     return mesh;
 }
 
@@ -418,10 +418,10 @@ BOOST_AUTO_TEST_CASE(brep_newell_normal_test) {
     }
 
     // a quad with one corner lifted out of its plane still gets a unit normal close to the
-    // plane's, tipped away from the lifted corner
+    // plane's, tipped away from the lifted corner. It is wound clockwise seen from above
     v3d::brep::BRep bent;
-    bent.addFace({glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(1.0F, 1.0F, 0.2F),
-        glm::vec3(0.0F, 1.0F, 0.0F)}, glm::vec3(0.0F, 0.0F, 1.0F));
+    bent.addFace({glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F), glm::vec3(1.0F, 1.0F, 0.2F),
+        glm::vec3(1.0F, 0.0F, 0.0F)}, glm::vec3(0.0F, 0.0F, 1.0F));
     const glm::vec3 normal = v3d::brep::newellNormal(bent, 0);
     BOOST_CHECK_CLOSE(glm::length(normal), 1.0F, 0.001F);
     BOOST_CHECK_GT(normal.z, 0.98F);

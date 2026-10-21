@@ -7,8 +7,10 @@
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/manipulator/RotateManipulator.h>
 #include <vertical3d/src/manipulator/ScaleManipulator.h>
+#include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/manipulator/TranslateManipulator.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <boost/test/unit_test.hpp>
@@ -40,6 +42,13 @@ boost::shared_ptr<v3d::editor::ViewPort> frontView() {
  **/
 constexpr glm::vec2 centre(200.0F, 200.0F);
 
+/**
+ * Whole objects as a manipulator's target.
+ **/
+v3d::editor::Target objects(const v3d::editor::Meshes& meshes) {
+    return v3d::editor::Target::objects(meshes);
+}
+
 BOOST_AUTO_TEST_CASE(manipulator_default_test) {
     const v3d::editor::TranslateManipulator manipulator;
 
@@ -58,24 +67,24 @@ BOOST_AUTO_TEST_CASE(manipulator_grab_test) {
     // the centre handle sits where all three axes meet, so a click on the origin finds it
     // rather than whichever axis happened to be tested first
     v3d::editor::Manipulator::Axis axis = v3d::editor::Manipulator::Axis::X;
-    BOOST_CHECK_EQUAL(manipulator.grab({cube}, *view, centre, &axis), true);
+    BOOST_CHECK_EQUAL(manipulator.grab(objects({cube}), *view, centre, &axis), true);
     BOOST_CHECK(axis == v3d::editor::Manipulator::Axis::None);
 
     // world x runs right across this view, so the x handle is out along it
-    const v3d::editor::Manipulator::Placement seat = manipulator.placement({cube}, *view);
+    const v3d::editor::Manipulator::Placement seat = manipulator.placement(objects({cube}), *view);
     BOOST_CHECK_EQUAL(seat.valid, true);
-    BOOST_CHECK_EQUAL(manipulator.grab({cube}, *view, glm::vec2(centre.x + 45.0F, centre.y), &axis), true);
+    BOOST_CHECK_EQUAL(manipulator.grab(objects({cube}), *view, glm::vec2(centre.x + 45.0F, centre.y), &axis), true);
     BOOST_CHECK(axis == v3d::editor::Manipulator::Axis::X);
 
     // and world y runs up it, which a screen coordinate measures downwards
-    BOOST_CHECK_EQUAL(manipulator.grab({cube}, *view, glm::vec2(centre.x, centre.y - 45.0F), &axis), true);
+    BOOST_CHECK_EQUAL(manipulator.grab(objects({cube}), *view, glm::vec2(centre.x, centre.y - 45.0F), &axis), true);
     BOOST_CHECK(axis == v3d::editor::Manipulator::Axis::Y);
 
     // nowhere near a handle
-    BOOST_CHECK_EQUAL(manipulator.grab({cube}, *view, glm::vec2(30.0F, 370.0F), &axis), false);
+    BOOST_CHECK_EQUAL(manipulator.grab(objects({cube}), *view, glm::vec2(30.0F, 370.0F), &axis), false);
 
     // nothing selected is nothing to grab
-    BOOST_CHECK_EQUAL(manipulator.grab({}, *view, centre, &axis), false);
+    BOOST_CHECK_EQUAL(manipulator.grab(objects({}), *view, centre, &axis), false);
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_translate_axis_test) {
@@ -87,20 +96,20 @@ BOOST_AUTO_TEST_CASE(manipulator_translate_axis_test) {
 
     // a world unit is two hundred pixels in this view, so a hundred pixel drag along the x
     // handle is half a unit
-    manipulator.apply({cube}, *view, centre, glm::vec2(centre.x + 100.0F, centre.y));
+    manipulator.apply(objects({cube}), *view, centre, glm::vec2(centre.x + 100.0F, centre.y));
     BOOST_CHECK_CLOSE(cube->translation().x, 0.5F, 0.5F);
     BOOST_CHECK_SMALL(cube->translation().y, 0.001F);
     BOOST_CHECK_SMALL(cube->translation().z, 0.001F);
 
     // a drag is an offset and not a position: the second one adds to the first rather than
     // moving the object back to where one gesture's worth of delta would put it
-    manipulator.apply({cube}, *view, centre, glm::vec2(centre.x + 100.0F, centre.y));
+    manipulator.apply(objects({cube}), *view, centre, glm::vec2(centre.x + 100.0F, centre.y));
     BOOST_CHECK_CLOSE(cube->translation().x, 1.0F, 0.5F);
 
     // the drag's component across the handle does nothing, so the drag is constrained to
     // the handle
     const glm::vec3 before = cube->translation();
-    manipulator.apply({cube}, *view, centre, glm::vec2(centre.x, centre.y + 100.0F));
+    manipulator.apply(objects({cube}), *view, centre, glm::vec2(centre.x, centre.y + 100.0F));
     BOOST_CHECK_CLOSE(cube->translation().x, before.x, 0.5F);
 }
 
@@ -113,7 +122,7 @@ BOOST_AUTO_TEST_CASE(manipulator_translate_free_test) {
 
     // both components of the gesture move the object. A drag right and up the screen is a
     // move along world +x and +y, screen y being measured downwards
-    manipulator.apply({cube}, *view, centre, glm::vec2(centre.x + 100.0F, centre.y - 40.0F));
+    manipulator.apply(objects({cube}), *view, centre, glm::vec2(centre.x + 100.0F, centre.y - 40.0F));
     BOOST_CHECK_CLOSE(cube->translation().x, 0.5F, 0.5F);
     BOOST_CHECK_CLOSE(cube->translation().y, 0.2F, 0.5F);
     BOOST_CHECK_SMALL(cube->translation().z, 0.001F);
@@ -127,24 +136,24 @@ BOOST_AUTO_TEST_CASE(manipulator_rotate_grab_test) {
     // this view looks along z, so the z ring faces the camera and the other two are edge on.
     // The rim of the z ring at three o'clock is also where the edge on y ring's projection
     // ends, and the click goes to the ring that can be seen
-    const v3d::editor::Manipulator::Placement seat = manipulator.placement({cube}, *view);
+    const v3d::editor::Manipulator::Placement seat = manipulator.placement(objects({cube}), *view);
     const float radius = seat.size * 200.0F;
     v3d::editor::Manipulator::Axis axis = v3d::editor::Manipulator::Axis::None;
-    BOOST_CHECK_EQUAL(manipulator.grab({cube}, *view, glm::vec2(centre.x + radius, centre.y), &axis), true);
+    BOOST_CHECK_EQUAL(manipulator.grab(objects({cube}), *view, glm::vec2(centre.x + radius, centre.y), &axis), true);
     BOOST_CHECK(axis == v3d::editor::Manipulator::Axis::Z);
 
     // and the same at twelve o'clock, where the edge on x ring ends
-    BOOST_CHECK_EQUAL(manipulator.grab({cube}, *view, glm::vec2(centre.x, centre.y - radius), &axis), true);
+    BOOST_CHECK_EQUAL(manipulator.grab(objects({cube}), *view, glm::vec2(centre.x, centre.y - radius), &axis), true);
     BOOST_CHECK(axis == v3d::editor::Manipulator::Axis::Z);
 
     // a ring is grabbed anywhere along it and not only where it is drawn through a point:
     // the arc between two of those is wider than the tolerance
-    BOOST_CHECK_EQUAL(manipulator.grab({cube}, *view,
+    BOOST_CHECK_EQUAL(manipulator.grab(objects({cube}), *view,
         glm::vec2(centre.x + (radius * 0.7071F), centre.y - (radius * 0.7071F)), &axis), true);
     BOOST_CHECK(axis == v3d::editor::Manipulator::Axis::Z);
 
     // inside the ring and away from the centre handle is nothing
-    BOOST_CHECK_EQUAL(manipulator.grab({cube}, *view, glm::vec2(centre.x + (radius * 0.5F), centre.y), &axis), false);
+    BOOST_CHECK_EQUAL(manipulator.grab(objects({cube}), *view, glm::vec2(centre.x + (radius * 0.5F), centre.y), &axis), false);
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_rotate_test) {
@@ -156,7 +165,7 @@ BOOST_AUTO_TEST_CASE(manipulator_rotate_test) {
 
     // a quarter sweep round the origin, from the right of it to below it. The z axis runs
     // into this view, so the world turn is the opposite way round from the screen one
-    manipulator.apply({cube}, *view, glm::vec2(centre.x + 90.0F, centre.y), glm::vec2(centre.x, centre.y + 90.0F));
+    manipulator.apply(objects({cube}), *view, glm::vec2(centre.x + 90.0F, centre.y), glm::vec2(centre.x, centre.y + 90.0F));
 
     // the object's own x axis, drawn pointing right, follows the cursor down the screen,
     // and down the screen is world -y
@@ -165,7 +174,7 @@ BOOST_AUTO_TEST_CASE(manipulator_rotate_test) {
     BOOST_CHECK_CLOSE(turned.y, -1.0F, 0.5F);
 
     // a second sweep composes onto the first rather than replacing it
-    manipulator.apply({cube}, *view, glm::vec2(centre.x, centre.y + 90.0F), glm::vec2(centre.x - 90.0F, centre.y));
+    manipulator.apply(objects({cube}), *view, glm::vec2(centre.x, centre.y + 90.0F), glm::vec2(centre.x - 90.0F, centre.y));
     const glm::vec3 again = cube->rotation() * glm::vec3(1.0F, 0.0F, 0.0F);
     BOOST_CHECK_CLOSE(again.x, -1.0F, 0.5F);
     BOOST_CHECK_SMALL(again.y, 0.001F);
@@ -181,7 +190,7 @@ BOOST_AUTO_TEST_CASE(manipulator_scale_test) {
     // world y, even in the global space
     cube->rotation(glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0F, 0.0F, 1.0F)));
     manipulator.space(v3d::editor::Manipulator::Space::Global);
-    const glm::vec3 handleAxis = manipulator.placement({cube}, *view).orientation * glm::vec3(1.0F, 0.0F, 0.0F);
+    const glm::vec3 handleAxis = manipulator.placement(objects({cube}), *view).orientation * glm::vec3(1.0F, 0.0F, 0.0F);
     BOOST_CHECK_SMALL(handleAxis.x, 0.001F);
     BOOST_CHECK_CLOSE(handleAxis.y, 1.0F, 0.5F);
     cube->rotation(glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
@@ -191,16 +200,16 @@ BOOST_AUTO_TEST_CASE(manipulator_scale_test) {
 
     // dragging a handle out by its own length doubles the object along it, whatever the
     // object's size in world units
-    const v3d::editor::Manipulator::Placement seat = manipulator.placement({cube}, *view);
+    const v3d::editor::Manipulator::Placement seat = manipulator.placement(objects({cube}), *view);
     const float handle = seat.size * 200.0F;
-    manipulator.apply({cube}, *view, centre, glm::vec2(centre.x + handle, centre.y));
+    manipulator.apply(objects({cube}), *view, centre, glm::vec2(centre.x + handle, centre.y));
     BOOST_CHECK_CLOSE(cube->scale().x, 2.0F, 1.0F);
     BOOST_CHECK_CLOSE(cube->scale().y, 1.0F, 0.5F);
     BOOST_CHECK_CLOSE(cube->scale().z, 1.0F, 0.5F);
 
     // a drag far enough to run the scale past zero stops short of it: an inside out object
     // has no handle left to drag back
-    manipulator.apply({cube}, *view, centre, glm::vec2(centre.x - (handle * 20.0F), centre.y));
+    manipulator.apply(objects({cube}), *view, centre, glm::vec2(centre.x - (handle * 20.0F), centre.y));
     BOOST_CHECK_GT(cube->scale().x, 0.0F);
 }
 
@@ -213,20 +222,20 @@ BOOST_AUTO_TEST_CASE(manipulator_pivot_test) {
     const v3d::editor::ScaleManipulator manipulator;
 
     // the handles sit at the mean of the origins
-    const v3d::editor::Manipulator::Placement seat = manipulator.placement({first, second}, *view);
+    const v3d::editor::Manipulator::Placement seat = manipulator.placement(objects({first, second}), *view);
     BOOST_CHECK_EQUAL(seat.valid, true);
     BOOST_CHECK_CLOSE(seat.origin.x, 2.0F, 0.01F);
     BOOST_CHECK_CLOSE(seat.origin.y, 1.0F, 0.01F);
 
     // an empty entry is not an origin, and an empty set has no handles
     const v3d::editor::Manipulator::Placement skipped =
-        manipulator.placement({first, boost::shared_ptr<v3d::brep::BRep>()}, *view);
+        manipulator.placement(objects({first, boost::shared_ptr<v3d::brep::BRep>()}), *view);
     BOOST_CHECK_CLOSE(skipped.origin.x, 1.0F, 0.01F);
-    BOOST_CHECK_EQUAL(manipulator.placement({}, *view).valid, false);
+    BOOST_CHECK_EQUAL(manipulator.placement(objects({}), *view).valid, false);
 
     // in the object's own axes, the handles follow the first object of the set
     first->rotation(glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0F, 0.0F, 1.0F)));
-    const glm::vec3 handleAxis = manipulator.placement({first, second}, *view).orientation * glm::vec3(1.0F, 0.0F, 0.0F);
+    const glm::vec3 handleAxis = manipulator.placement(objects({first, second}), *view).orientation * glm::vec3(1.0F, 0.0F, 0.0F);
     BOOST_CHECK_SMALL(handleAxis.x, 0.001F);
     BOOST_CHECK_CLOSE(handleAxis.y, 1.0F, 0.5F);
 }
@@ -255,7 +264,7 @@ BOOST_AUTO_TEST_CASE(manipulator_set_translate_test) {
     manipulator.active(true);
 
     // every object moves by the same offset
-    manipulator.apply({cubes.left, cubes.right}, *cubes.view, centre, glm::vec2(centre.x + 100.0F, centre.y));
+    manipulator.apply(objects({cubes.left, cubes.right}), *cubes.view, centre, glm::vec2(centre.x + 100.0F, centre.y));
     BOOST_CHECK_SMALL(cubes.left->translation().x, 0.01F);
     BOOST_CHECK_CLOSE(cubes.right->translation().x, 1.0F, 1.0F);
 }
@@ -268,7 +277,7 @@ BOOST_AUTO_TEST_CASE(manipulator_set_rotate_test) {
 
     // the quarter turn that carries the x axis to world -y carries each origin round the
     // pivot with it, and turns each object as it would turn one alone
-    manipulator.apply({cubes.left, cubes.right}, *cubes.view, glm::vec2(centre.x + 90.0F, centre.y),
+    manipulator.apply(objects({cubes.left, cubes.right}), *cubes.view, glm::vec2(centre.x + 90.0F, centre.y),
         glm::vec2(centre.x, centre.y + 90.0F));
     BOOST_CHECK_SMALL(cubes.left->translation().x, 0.001F);
     BOOST_CHECK_CLOSE(cubes.left->translation().y, 0.5F, 0.5F);
@@ -286,8 +295,8 @@ BOOST_AUTO_TEST_CASE(manipulator_set_scale_test) {
     manipulator.active(true);
 
     // doubling along x doubles each object and its distance from the pivot along x
-    const float handle = manipulator.placement({cubes.left, cubes.right}, *cubes.view).size * 200.0F;
-    manipulator.apply({cubes.left, cubes.right}, *cubes.view, centre, glm::vec2(centre.x + handle, centre.y));
+    const float handle = manipulator.placement(objects({cubes.left, cubes.right}), *cubes.view).size * 200.0F;
+    manipulator.apply(objects({cubes.left, cubes.right}), *cubes.view, centre, glm::vec2(centre.x + handle, centre.y));
     BOOST_CHECK_CLOSE(cubes.left->translation().x, -1.0F, 1.0F);
     BOOST_CHECK_CLOSE(cubes.right->translation().x, 1.0F, 1.0F);
     BOOST_CHECK_CLOSE(cubes.left->scale().x, 2.0F, 1.0F);
@@ -297,13 +306,13 @@ BOOST_AUTO_TEST_CASE(manipulator_set_scale_test) {
     cubes.left->translation(glm::vec3(-0.5F, 0.5F, 0.0F));
     cubes.right->translation(glm::vec3(0.5F, -0.5F, 0.0F));
     manipulator.axis(v3d::editor::Manipulator::Axis::None);
-    manipulator.apply({cubes.left, cubes.right}, *cubes.view, centre, glm::vec2(centre.x + 90.0F, centre.y));
+    manipulator.apply(objects({cubes.left, cubes.right}), *cubes.view, centre, glm::vec2(centre.x + 90.0F, centre.y));
     BOOST_CHECK_CLOSE(cubes.left->translation().x, -1.0F, 1.0F);
     BOOST_CHECK_CLOSE(cubes.left->translation().y, 1.0F, 1.0F);
 
     // a drag past zero leaves the objects on their own sides of the pivot
     manipulator.axis(v3d::editor::Manipulator::Axis::X);
-    manipulator.apply({cubes.left, cubes.right}, *cubes.view, centre, glm::vec2(centre.x - (handle * 20.0F), centre.y));
+    manipulator.apply(objects({cubes.left, cubes.right}), *cubes.view, centre, glm::vec2(centre.x - (handle * 20.0F), centre.y));
     BOOST_CHECK_LT(cubes.left->translation().x, 0.0F);
     BOOST_CHECK_GT(cubes.right->translation().x, 0.0F);
 }
