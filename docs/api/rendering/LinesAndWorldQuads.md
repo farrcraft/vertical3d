@@ -50,6 +50,12 @@ renderer_->worldQuads()->submit(world, pass.get(), 0, vulkan::renderer::World::B
 - Corners go in perimeter order, as `grid::tileCorners` returns them. Any convex quad comes out
   whole.
 - `tint()` lasts until it is set again. `clear()` resets it to white.
+- **There are two tints.** `canvas::World::tint()` is multiplied into each quad as it is added,
+  so it suits a canvas built every frame, or part of one. `submit()` takes a tint as its last
+  argument, white by default, which the vertex stage multiplies into every quad as the canvas
+  is drawn. Use it to light a canvas kept across frames, such as a ground of thousands of tiles
+  under the time of day, without building it again. Each submission keeps its own tint, so one
+  canvas can be drawn twice in a frame in two lights. The two tints multiply together.
 - `Blend::Alpha` draws straight alpha over what is there. `Blend::Additive` adds the colour
   scaled by alpha and only ever lightens, so flames and sparks give the same result in any order.
   A canvas is drawn with one blend, so use one canvas per blend.

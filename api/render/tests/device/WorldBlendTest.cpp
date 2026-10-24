@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
@@ -66,9 +67,11 @@ canvas::World::Corners rect(float minX, float maxX) {
 /**
  * Clear to a colour every channel of which is a whole number of 8-bit steps, draw a canvas over
  * it with a blend, and read the picture back.
+ *
+ * @param tints one submission of the canvas for each, in order, all in the one pass
  **/
 boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, const canvas::World& canvas,
-    World::Blend blend, const std::string& name) {
+    World::Blend blend, const std::string& name, const std::vector<glm::vec4>& tints = {glm::vec4(1.0F)}) {
     const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
         headless->device, headless->context->ring(), width, height, colourFormat, false);
 
@@ -77,7 +80,9 @@ boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, cons
     pass->target(target);
     pass->clearColour(glm::vec4(0.2F, 0.4F, 0.0F, 1.0F));
     pass->camera(glm::mat4x4(1.0F), pixels());
-    headless->context->worldQuads()->submit(canvas, pass.get(), 0, blend);
+    for (const glm::vec4& tint : tints) {
+        headless->context->worldQuads()->submit(canvas, pass.get(), 0, blend, tint);
+    }
 
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
@@ -137,6 +142,52 @@ BOOST_AUTO_TEST_CASE(an_additive_quad_adds_to_what_is_there) {
     BOOST_CHECK(headless.silent());
     BOOST_REQUIRE(over);
     BOOST_TEST((at(over.get(), 8) == glm::ivec4(102, 102, 204, 255)));
+}
+
+/**
+ * A submission's tint multiplies the colour of every quad in the canvas as it is drawn, so one
+ * canvas built once is drawn in a different light without being built again. The tint scales a
+ * quad's own colour rather than replacing it. Every product is a whole 8-bit step.
+ **/
+BOOST_AUTO_TEST_CASE(a_tint_lights_a_canvas_as_it_is_drawn) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    canvas::World canvas;
+    canvas.quad(rect(0.0F, 16.0F), glm::vec4(1.0F));
+    canvas.quad(rect(16.0F, 32.0F), glm::vec4(0.5F, 0.5F, 0.5F, 1.0F));
+
+    const boost::shared_ptr<v3d::image::Image> blue = blended(&headless, canvas, World::Blend::Alpha, "world_tint_blue",
+        {glm::vec4(0.4F, 0.4F, 0.8F, 1.0F)});
+    BOOST_CHECK(headless.silent());
+    BOOST_REQUIRE(blue);
+    BOOST_TEST((glm::ivec3(at(blue.get(), 8)) == glm::ivec3(102, 102, 204)));
+    BOOST_TEST((glm::ivec3(at(blue.get(), 24)) == glm::ivec3(51, 51, 102)));
+
+    // the same canvas, untouched, in another light
+    const boost::shared_ptr<v3d::image::Image> red = blended(&headless, canvas, World::Blend::Alpha, "world_tint_red",
+        {glm::vec4(0.8F, 0.4F, 0.4F, 1.0F)});
+    BOOST_CHECK(headless.silent());
+    BOOST_REQUIRE(red);
+    BOOST_TEST((glm::ivec3(at(red.get(), 8)) == glm::ivec3(204, 102, 102)));
+    BOOST_TEST((glm::ivec3(at(red.get(), 24)) == glm::ivec3(102, 51, 51)));
+}
+
+/**
+ * Each submission carries its own tint, so a canvas submitted twice in one pass is drawn in two
+ * lights. An opaque red submission is covered by a blue one at 0.4 alpha. Were the two to share
+ * one tint, the picture would be all red or blue over the clear, never the mix.
+ **/
+BOOST_AUTO_TEST_CASE(two_submissions_of_a_canvas_keep_their_own_tints) {
+    v3d::test::Headless headless(colourFormat, width, height);
+
+    canvas::World canvas;
+    canvas.quad(rect(0.0F, 32.0F), glm::vec4(1.0F));
+
+    const boost::shared_ptr<v3d::image::Image> mixed = blended(&headless, canvas, World::Blend::Alpha, "world_tint_twice",
+        {glm::vec4(1.0F, 0.0F, 0.0F, 1.0F), glm::vec4(0.0F, 0.0F, 1.0F, 0.4F)});
+    BOOST_CHECK(headless.silent());
+    BOOST_REQUIRE(mixed);
+    BOOST_TEST((glm::ivec3(at(mixed.get(), 8)) == glm::ivec3(153, 0, 102)));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
