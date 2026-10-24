@@ -20,6 +20,9 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
+| [Hardening](Hardening.md) | moya, shading language, image, voxel, apps | RI's C interface and the reyes hider following RI, `output` and `faceforward` as the shading language defines them, safe image writers, a voxel camera that turns correctly, and the known review findings fixed |
+| [EditorScene](EditorScene.md) | Editor, brep, dag | Cameras, lights and groups in the scene, shaded views, glTF import, rendering with moya, and keyed playback |
+| [ScaleAndReach](ScaleAndReach.md) | Realtime rendering, offline rendering, grid, audio, imagetool | Cascaded shadows, uploads and texture requests that do not block, routes and sight across regions, a placed voice, and sprite sheet packing |
 
 ## Completed plans
 

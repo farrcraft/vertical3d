@@ -13,16 +13,15 @@ Two kinds of item do not belong here:
 - **An option that was considered and rejected.** It is not unfinished. Record it in the ADR
   that made the decision.
 
-Each entry states the gap in the code, not who is waiting for it. An entry may name a trigger:
-the condition that makes the work due.
+Each entry states the gap in the code, not who is waiting for it. Every entry is ready to pick
+up. None waits for a game, a scene or a second caller to need it first.
 
 An open plan or roadmap may order entries from here. The entry stays here until the work lands,
 and its section names the plan or roadmap that orders it.
 
 ## Offline rendering
 
-Each of these waits until a scene needs it. The
-[OfflineShading plan](plans/completed/OfflineShading.md) held both rather than build them early.
+[ScaleAndReach](plans/ScaleAndReach.md) orders these, in steps 1 and 2.
 
 [] **The reyes hider adds every polygon to the traced scene.**
 
@@ -33,7 +32,6 @@ Each of these waits until a scene needs it. The
   ray, so it pays only the memory the triangles hold.
 - The triangles still have to be made as the scene is read, because a shader bound later may
   trace. The fix would drop them when rendering starts if nothing traced.
-- Due when a large scene with no shadowing light shows that memory.
 
 [] **`offline::trace::Tracer` runs a shader once per hit.**
 
@@ -41,16 +39,16 @@ Each of these waits until a scene needs it. The
   the machine's per-run cost once per pixel sample.
 - The fix batches the hits of a scanline that share a shader into one run, as the reyes hider
   shades a grid. It is for speed alone, and gives no derivatives.
-- Due when a profile of a Release render shows that preparing and running the machine for one
-  hit outweighs intersection. A pixel's samples are seeded per pixel, so batching them in another
-  order does not change the picture.
+- Measure the gain with a profile of a Release render. A pixel's samples are seeded per pixel,
+  so batching them in another order does not change the picture.
 
 Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration).
 
 ## moya's front end and reyes hider
 
-Defects in `moya/libmoya` that its comments described wrongly. Each is due when a scene or a
-caller reaches it.
+[Hardening](plans/Hardening.md) orders these, in steps 1 and 2.
+
+Defects in `moya/libmoya` that its comments described wrongly.
 
 [] **Five RI C entry points are unsafe or empty.**
 
@@ -92,6 +90,8 @@ caller reaches it.
 
 ## Tile grids
 
+[ScaleAndReach](plans/ScaleAndReach.md) orders these, in steps 7 and 8.
+
 `api/grid` is a library of its own, and odyssey uses it. The grid owns a map's picture and
 terrain legend; the rest of a map belongs to the game. [Grid.md](api/Grid.md) describes the
 library.
@@ -103,16 +103,17 @@ library.
 - `findPath` and `hasLineOfSight` each take one grid, so odyssey's clicked routes and its sight
   stay within the region the player stands in. The next region is dark until the player crosses.
 - Joining them needs a search over several grids, or a game that stitches one together.
-- Due when a game needs a route, or sight, that crosses a seam.
 
 [] **Remembered sight belongs in `api/grid`.**
 
 - Fog of war that keeps seen ground revealed is in odyssey's
   [tile/Sight.h](../odyssey/tile/Sight.h), but nothing about it is specific to odyssey.
-- Move it to `api/grid` when a second game needs it.
+- Move it to `api/grid`, and have odyssey use it from there.
 - Background: [LargeWorlds, step 8](plans/completed/LargeWorlds.md#step-8--remembered-sight).
 
 ## Voxel
+
+[Hardening](plans/Hardening.md) orders this, in step 5.
 
 [] **Mouselook turns far too fast and rolls the view.**
 
@@ -123,6 +124,8 @@ library.
 
 ## Sprite sheets
 
+[ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 10.
+
 The api has every piece of a sprite sheet round trip: `image::TextureAtlas` places regions,
 `config::SpriteSheets` reads and writes the document that names them, and `image::crop` cuts a
 region back out of a sheet.
@@ -132,8 +135,7 @@ region back out of a sheet.
 - `imagetool --crop` cuts out one region, so a caller that already knows where the sprites are
   can split a sheet one rectangle at a time.
 - Nothing reads a `sprites.json` and cuts out every region it names.
-- Undecided: whether this belongs in `imagetool`, in a separate `spritetool`, or with whoever
-  needs it first.
+- Undecided: whether this belongs in `imagetool` or in a separate `spritetool`.
 
 ## Models
 
@@ -142,11 +144,15 @@ from a file. No app in this tree loads one: voxel builds its terrain procedurall
 models with `brep::BRep`. The gap below therefore comes from the library's own tests, not from
 an app. [Assets.md](api/Assets.md) describes the loader.
 
+[Hardening](plans/Hardening.md) orders this, in step 6.
+
 [] **External buffers are resolved by cgltf, not by the asset manager.** A `.gltf` file with
 external buffers has them resolved relative to the file, which is cgltf's own behaviour. It
 matches the asset manager's path handling only because the manager passes cgltf a full path.
 
 ## Lit scenes
+
+[ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 3.
 
 [] **There are no cascaded shadow maps.**
 
@@ -156,10 +162,11 @@ matches the asset manager's path handling only because the manager passes cgltf 
   picks the slice a fragment falls in.
 - `lighting::fitShadow` covers each caster's position and a margin, not its extent or scale. A
   caller with large casters passes a margin big enough for them.
-- Due when a game's view is long enough for near shadows to look coarse.
 - Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
 
 ## Loading
+
+[ScaleAndReach](plans/ScaleAndReach.md) orders these, in steps 4 to 6.
 
 [] **A texture has no request of its own.**
 
@@ -168,20 +175,20 @@ matches the asset manager's path handling only because the manager passes cgltf 
   handle and rewrite its descriptor set.
 - A worker job that decodes the image, and a completion that calls `Textures::texture(image)`,
   covers the need meanwhile.
-- Due when a game wants a texture handle before its pixels arrive.
 
 [] **An upload still waits for its copy.**
 
 - `memory::Uploader::oneShot` waits on its own fence, so the caller can free its staging buffer
   when it returns. Frames in flight keep running, and the main thread waits only for the copy.
 - An upload that returned at once would retire its staging buffer through the frame ring.
-- Due when a profile shows the fence wait itself.
 
 [] **The upload budget's default is not measured.** `MeshRegistry::DEFAULT_UPLOAD_BUDGET` is
-4 MiB, chosen without measuring a region's upload, because no game in the tree requests meshes.
-Due when one does.
+4 MiB, chosen without measuring a region's upload. Measure it against a region-sized set of
+meshes and set it from that.
 
 ## Audio
+
+[ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 9.
 
 `audio::Engine` plays a voice on a named bus, with a fade, a gain and a pan.
 
@@ -191,12 +198,13 @@ Due when one does.
   quieter with distance.
 - SDL_mixer 3.2's `MIX_SetTrack3DPosition` places a track and attenuates it by distance, with
   the listener fixed at the origin. A caller would give each position relative to its listener.
-- Due when a game needs sound in a 3D scene.
 - Background: [LitScenesAtScale, step 10](plans/completed/LitScenesAtScale.md#step-10--close-phase-3).
 
 ## Tests
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.
+
+[Hardening](plans/Hardening.md) orders the first two entries, in steps 3 and 6.
 
 [] **Nothing tests a requested model that decodes and does not upload.** `MeshRegistry::poll`
 logs and abandons such a request, but no fixture decodes cleanly and then fails `upload()`'s
@@ -216,6 +224,8 @@ and text are therefore checked only by a silent validation log and by spot check
 more strongly needs a second Vulkan implementation to compare against, and this tree has none.
 
 ## Known review findings
+
+[Hardening](plans/Hardening.md) orders every entry here, in steps 1 to 6.
 
 Defects a review found that the change under review did not introduce.
 [Review.md](contributing/Review.md) says how this list is used: a reviewer reads it first and
@@ -311,8 +321,8 @@ style cannot set the bullet indent.
 
 ## Editor
 
-Open work for when the editor app itself moves forward. [editor/](editor/README.md) describes the
-editor.
+Open work on the editor app. [editor/](editor/README.md) describes the editor.
+[EditorScene](plans/EditorScene.md) orders every group here.
 
 45 of the menu's 80 commands have no handler, and only log themselves when chosen. Each group
 below is a piece of work of its own, in any order.
@@ -335,7 +345,7 @@ waits on an ADR deciding what the editor animates.
 moya. The RIB export already writes it.
 
 [] **Groups and scene cameras** (`create::group`, `create::ortho::camera`,
-`create::perspective::camera`, and the camera toolbar's `camera::*` buttons). A group needs a
-scene that holds a hierarchy, and a camera in the scene needs the scene to hold something other
-than meshes.
+`create::perspective::camera`, and the Camera Manipulators menu's `camera::*` items). A group
+needs a scene that holds a hierarchy, and a camera in the scene needs the scene to hold
+something other than meshes.
 
