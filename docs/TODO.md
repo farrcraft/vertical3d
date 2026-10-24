@@ -322,4 +322,3 @@ missing command handlers.
 
 [] 55 of the menu's 77 commands have no handler, and only log themselves when chosen.
 
-[] The viewport panes cannot be resized by dragging.

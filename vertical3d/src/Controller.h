@@ -273,6 +273,11 @@ class Controller final : public v3d::engine::Engine {
      **/
     void layoutViews(int width, int height);
 
+    /**
+     * Tell each view the region the layout last gave it, as after a divider is dragged.
+     **/
+    void placeViews();
+
     std::string path_;
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<v3d::ui::Engine> vgui_;

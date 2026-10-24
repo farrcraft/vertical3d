@@ -73,4 +73,3 @@ The tests run without a window or a GPU. Run them with
 [TODO.md](../TODO.md#editor) lists the open work. In short:
 
 - Most menu items have no handler and log themselves as unregistered.
-- The viewport panes cannot be resized by dragging.

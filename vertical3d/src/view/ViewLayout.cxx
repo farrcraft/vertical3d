@@ -10,6 +10,7 @@
 #include <api/log/Logger.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -27,13 +28,18 @@ region(0.0F, 0.0F, 0.0F, 0.0F) {
  **/
 ViewLayout::Node::Node() :
 vertical(true),
-view(0) {
+view(0),
+share(1.0F),
+region(0.0F, 0.0F, 0.0F, 0.0F) {
 }
 
 /**
  **/
 ViewLayout::ViewLayout(const boost::shared_ptr<v3d::log::Logger>& logger) :
-    logger_(logger) {
+    logger_(logger),
+    area_(0.0F, 0.0F, 0.0F, 0.0F),
+    held_(nullptr),
+    heldAfter_(0) {
 }
 
 /**
@@ -63,6 +69,7 @@ bool ViewLayout::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
         return false;
     }
 
+    release();
     views_.clear();
     root_ = Node();
     if (!loadNode(*root, &root_)) {
@@ -78,6 +85,15 @@ bool ViewLayout::load(const boost::shared_ptr<v3d::asset::kind::Json>& config) {
 /**
  **/
 bool ViewLayout::loadNode(const boost::json::object& entry, Node* into) {
+    if (entry.contains("share")) {
+        const std::optional<double> share = v3d::asset::readNumber(entry, "share");
+        if (!share || !std::isfinite(*share) || *share <= 0.0) {
+            logger_->get()->error("A layout node's share is a number above zero");
+            return false;
+        }
+        into->share = static_cast<float>(*share);
+    }
+
     // a leaf names the camera it shows; anything else is a split
     if (entry.contains("camera")) {
         const std::optional<std::string> camera = v3d::asset::readString(entry, "camera");
@@ -139,43 +155,115 @@ void ViewLayout::resize(int width, int height) {
 /**
  **/
 void ViewLayout::resize(const glm::vec4& region) {
-    place(root_, glm::vec4(region.x, region.y,
+    area_ = glm::vec4(region.x, region.y,
         region.z > 0.0F ? region.z : 0.0F,
-        region.w > 0.0F ? region.w : 0.0F));
+        region.w > 0.0F ? region.w : 0.0F);
+    place(&root_, area_);
 }
 
 /**
  **/
-void ViewLayout::place(const Node& node, const glm::vec4& region) {
-    if (node.children.empty()) {
-        if (node.view < views_.size()) {
-            views_[node.view].region = region;
+void ViewLayout::place(Node* node, const glm::vec4& region) {
+    node->region = region;
+    if (node->children.empty()) {
+        if (node->view < views_.size()) {
+            views_[node->view].region = region;
         }
         return;
     }
 
-    const std::size_t count = node.children.size();
-    // the last child takes what integer division left over, so the children cover the
-    // whole region rather than leaving a gap of undrawn pixels down the middle
-    float offset = node.vertical ? region.y : region.x;
-    const float total = node.vertical ? region.w : region.z;
+    const std::size_t count = node->children.size();
+    float shares = 0.0F;
+    for (const Node& child : node->children) {
+        shares += child.share;
+    }
+    // the last child takes what rounding each share down to a whole pixel left over, so the
+    // children cover the whole region rather than leaving a gap of undrawn pixels
+    float offset = node->vertical ? region.y : region.x;
+    const float total = node->vertical ? region.w : region.z;
     const float end = offset + total;
 
     for (std::size_t index = 0; index < count; index++) {
         const bool last = (index + 1 == count);
         const float extent = last ? (end - offset) :
-            static_cast<float>(static_cast<int>(total / static_cast<float>(count)));
+            std::floor(total * node->children[index].share / shares);
         glm::vec4 child = region;
-        if (node.vertical) {
+        if (node->vertical) {
             child.y = offset;
             child.w = extent > 0.0F ? extent : 0.0F;
         } else {
             child.x = offset;
             child.z = extent > 0.0F ? extent : 0.0F;
         }
-        place(node.children[index], child);
+        place(&node->children[index], child);
         offset += extent;
     }
+}
+
+/**
+ **/
+bool ViewLayout::grab(float x, float y) {
+    release();
+    return grabIn(&root_, x, y);
+}
+
+/**
+ **/
+bool ViewLayout::grabIn(Node* node, float x, float y) {
+    const glm::vec4& region = node->region;
+    if (x < region.x - dividerReach || x > region.x + region.z + dividerReach ||
+        y < region.y - dividerReach || y > region.y + region.w + dividerReach) {
+        return false;
+    }
+    // a divider is where one child ends and the next begins, along the split's axis
+    const float along = node->vertical ? y : x;
+    for (std::size_t index = 0; index + 1 < node->children.size(); index++) {
+        const glm::vec4& before = node->children[index].region;
+        const float divider = node->vertical ? before.y + before.w : before.x + before.z;
+        if (std::abs(along - divider) <= dividerReach) {
+            held_ = node;
+            heldAfter_ = index;
+            return true;
+        }
+    }
+    return std::ranges::any_of(node->children, [this, x, y](Node& child) { return grabIn(&child, x, y); });
+}
+
+/**
+ **/
+bool ViewLayout::grabbed() const noexcept {
+    return held_ != nullptr;
+}
+
+/**
+ **/
+void ViewLayout::drag(float x, float y) {
+    if (held_ == nullptr) {
+        return;
+    }
+    Node& first = held_->children[heldAfter_];
+    Node& second = held_->children[heldAfter_ + 1];
+    const bool vertical = held_->vertical;
+    const float start = vertical ? first.region.y : first.region.x;
+    const float end = vertical ? second.region.y + second.region.w : second.region.x + second.region.z;
+    const float floor = minimumShare * (vertical ? held_->region.w : held_->region.z);
+    if (end - start <= 2.0F * floor) {
+        return;
+    }
+
+    // the two keep the weight they had between them, divided where the divider now is
+    const float divider = std::clamp(vertical ? y : x, start + floor, end - floor);
+    const float weight = first.share + second.share;
+    first.share = weight * (divider - start) / (end - start);
+    second.share = weight - first.share;
+    place(&root_, area_);
+}
+
+/**
+ **/
+void ViewLayout::release() noexcept {
+    held_ = nullptr;
+    heldAfter_ = 0;
 }
 
 /**

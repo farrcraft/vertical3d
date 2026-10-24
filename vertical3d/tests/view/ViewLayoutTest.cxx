@@ -8,6 +8,8 @@
 #include <api/log/Logger.h>
 #include <vertical3d/src/view/ViewLayout.h>
 
+#include <cmath>
+#include <initializer_list>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -155,6 +157,82 @@ BOOST_AUTO_TEST_CASE(viewlayout_rejects_a_nested_empty_split_test) {
     BOOST_CHECK(!layout.load(config(
         "{\"layout\": {\"root\": {\"split\": \"horizontal\", \"children\": "
         "[{\"camera\": \"Top\"}, {\"split\": \"vertical\", \"children\": []}]}}}")));
+}
+
+BOOST_AUTO_TEST_CASE(viewlayout_shares_test) {
+    // a split divides by its children's shares
+    v3d::editor::ViewLayout layout(logger());
+    BOOST_REQUIRE(layout.load(config(
+        "{\"layout\": {\"root\": {\"split\": \"horizontal\", \"children\": ["
+        "{\"camera\": \"Top\", \"share\": 1}, {\"camera\": \"Front\", \"share\": 3}]}}}")));
+    layout.resize(800, 600);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.z, 200.0F);
+    BOOST_CHECK_EQUAL(layout.views()[1].region.x, 200.0F);
+    BOOST_CHECK_EQUAL(layout.views()[1].region.z, 600.0F);
+
+    // a child with no share has a share of one
+    BOOST_REQUIRE(layout.load(config(
+        "{\"layout\": {\"root\": {\"split\": \"horizontal\", \"children\": ["
+        "{\"camera\": \"Top\", \"share\": 2}, {\"camera\": \"Front\"}, {\"camera\": \"Left\"}]}}}")));
+    layout.resize(800, 600);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.z, 400.0F);
+    BOOST_CHECK_EQUAL(layout.views()[1].region.z, 200.0F);
+    BOOST_CHECK_EQUAL(layout.views()[2].region.z, 200.0F);
+}
+
+BOOST_AUTO_TEST_CASE(viewlayout_rejects_a_bad_share_test) {
+    v3d::editor::ViewLayout layout(logger());
+    for (const char* share : {"0", "-1", "\"wide\""}) {
+        BOOST_CHECK(!layout.load(config(std::string(
+            "{\"layout\": {\"root\": {\"split\": \"horizontal\", \"children\": ["
+            "{\"camera\": \"Top\", \"share\": ") + share + "}, {\"camera\": \"Front\"}]}}}")));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(viewlayout_divider_drag_test) {
+    v3d::editor::ViewLayout layout(logger());
+    BOOST_REQUIRE(layout.load(config(quad)));
+    layout.resize(1024, 768);
+
+    // a press away from every divider takes none, and one beside the top row's takes it
+    BOOST_CHECK(!layout.grab(200.0F, 100.0F));
+    BOOST_CHECK(!layout.grabbed());
+    BOOST_CHECK(layout.grab(512.0F + v3d::editor::ViewLayout::dividerReach, 100.0F));
+
+    // the divider moves the two views beside it, and the bottom row keeps its own
+    layout.drag(612.0F, 300.0F);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.z, 612.0F);
+    BOOST_CHECK_EQUAL(layout.views()[1].region.x, 612.0F);
+    BOOST_CHECK_EQUAL(layout.views()[1].region.z, 412.0F);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.w, 384.0F);
+    BOOST_CHECK_EQUAL(layout.views()[2].region.z, 512.0F);
+
+    // dragged past the window's edge, each view keeps its floor
+    layout.drag(-50.0F, 100.0F);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.z, std::floor(1024.0F * v3d::editor::ViewLayout::minimumShare));
+    layout.drag(2000.0F, 100.0F);
+    BOOST_CHECK_GE(layout.views()[1].region.z, std::floor(1024.0F * v3d::editor::ViewLayout::minimumShare));
+    layout.drag(612.0F, 100.0F);
+    layout.release();
+    BOOST_CHECK(!layout.grabbed());
+
+    // the shares outlast a new window size
+    layout.resize(2048, 768);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.z, 1224.0F);
+}
+
+BOOST_AUTO_TEST_CASE(viewlayout_divider_crossing_test) {
+    // where the rows' divider meets a row's, the outer split's divider is taken
+    v3d::editor::ViewLayout layout(logger());
+    BOOST_REQUIRE(layout.load(config(quad)));
+    layout.resize(1024, 768);
+    BOOST_REQUIRE(layout.grab(512.0F, 384.0F));
+    layout.drag(512.0F, 484.0F);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.w, 484.0F);
+    BOOST_CHECK_EQUAL(layout.views()[1].region.w, 484.0F);
+    BOOST_CHECK_EQUAL(layout.views()[2].region.y, 484.0F);
+    BOOST_CHECK_EQUAL(layout.views()[3].region.w, 284.0F);
+    BOOST_CHECK_EQUAL(layout.views()[0].region.z, 512.0F);
 }
 
 };  // namespace

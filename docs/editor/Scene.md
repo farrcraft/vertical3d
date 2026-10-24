@@ -160,6 +160,18 @@ that is not a string makes `load()` return false, and so does a split with no ch
 default layout is Front, Top, Left and Perspective. The menu bar and the toolbars take strips
 along two edges of the window, and the views divide the rest.
 
+**Shares.** A split divides its area between its children by their shares. A node's `share` is
+a number above zero, a weight against the other children of its split, and a node with none
+has a share of one. A split whose children name no share divides evenly, as the default layout
+does. A share that is not a number above zero makes `load()` return false.
+
+**Dragging a divider.** A press within `ViewLayout::dividerReach` (3 pixels) of the line
+between two views takes hold of it before any tool sees the press, and the drag moves it. The
+two views beside it trade weight, so every other view stays as it was. Each keeps at least
+`ViewLayout::minimumShare` (5%) of its split. Where two dividers meet, the outer split's is
+taken. The shares last as long as the editor runs, and are not written back to
+`data/layout.json`.
+
 **Drawing.** Each frame, every `ViewPort` fills two line canvases:
 
 - the scene canvas: the construction grid and every mesh as a wireframe

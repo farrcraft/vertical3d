@@ -680,11 +680,18 @@ void Controller::drag(bool pressed) {
         if (uiGrab_) {
             return;
         }
+        // a press on a divider between views resizes them, and no tool sees it
+        if (layout_->grab(cursor_.x, cursor_.y)) {
+            return;
+        }
     } else if (uiGrab_) {
         uiGrab_ = false;
         if (uiCursor_) {
             uiCursor_->release(cursor_);
         }
+        return;
+    } else if (layout_->grabbed()) {
+        layout_->release();
         return;
     }
 
@@ -718,6 +725,12 @@ void Controller::layoutViews(int width, int height) {
     layout_->resize(glm::vec4(inset.x, inset.y,
         std::max(0.0F, static_cast<float>(width) - inset.x),
         std::max(0.0F, static_cast<float>(height) - inset.y)));
+    placeViews();
+}
+
+/**
+ **/
+void Controller::placeViews() {
     const std::vector<ViewLayout::View>& regions = layout_->views();
     for (std::size_t index = 0; index < views_.size() && index < regions.size(); index++) {
         views_[index]->resize(regions[index].region);
@@ -756,6 +769,12 @@ void Controller::handleResize(const v3d::event::kind::WindowResize& event) {
  **/
 void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
     cursor_ = event.position();
+
+    if (layout_ && layout_->grabbed()) {
+        layout_->drag(cursor_.x, cursor_.y);
+        placeViews();
+        return;
+    }
 
     const bool dragging = (cameraTool_ && cameraTool_->dragging()) || (transformTool_ && transformTool_->dragging()) ||
         (selectTool_ && selectTool_->dragging());

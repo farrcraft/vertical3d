@@ -147,7 +147,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [15](#step-15--extrude-and-inset) | Extrude and inset a face | `api/brep`, `vertical3d` | 0098 | done |
 | [16](#step-16--merge) | Merge vertices | `api/brep`, `vertical3d` | 0098 | done |
 | [17](#step-17--fixed-views-and-the-projection) | The fixed views and the projection switch | `vertical3d` | — | done |
-| [18](#step-18--resizable-panes) | Resizable panes | `vertical3d` | — | open |
+| [18](#step-18--resizable-panes) | Resizable panes | `vertical3d` | — | done |
 | [19](#step-19--the-documents) | The editor documents state the new rules | `docs` | — | open |
 
 ## What blocks what
@@ -562,6 +562,15 @@ the Front view three times with no validation message.
 **Tests**, headless: each command sets the profile; the bindings test.
 
 ### Step 18 — Resizable panes
+
+**Done.** A layout node may carry a `share`, a weight against its siblings, and one with none
+weighs one. `ViewLayout::grab()`, `drag()` and `release()` hold a divider. A drag trades weight
+between the two children beside it, and each keeps 5% of its split. The controller offers a
+press to the layout after the ui and before the tools, and a held divider takes the motion. The
+step decided the shares are not written back: `data/` is shipped config, so a resize lasts the
+session. Cases are in `ViewLayoutTest.cxx`. The drag itself was not run in the editor, because
+posted mouse messages do not reach SDL at their position.
+[Scene.md](../editor/Scene.md#viewports) states the rules.
 
 * **A split records each child's share**, and a missing share means an even one, so
   `data/layout.json` keeps working.
