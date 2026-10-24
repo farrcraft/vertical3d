@@ -85,6 +85,16 @@ events_->update();                                       // once a frame, in tic
 - **Load the strings bank** beside the banks that hold events. FMOD looks an event's path up in
   it, so without it no event is found by name.
 - `play()` starts a one shot, which FMOD releases when it ends.
+- **`start()` starts an event and keeps hold of it**, for a bed or a loop that has to be stopped.
+  It returns an `audio::Instance`, a scoped enum like `Voice`. `Instance::None` is no event,
+  which an unknown event and the null backend return. `stop(instance, Stop::FadeOut)` plays the
+  fade out the event was authored with, and `Stop::Immediately` cuts it off. `playing(instance)`
+  reads FMOD's playback state, and stays true through a fade out.
+- **FMOD starts and stops events on its own thread**, so `playing()` changes a frame or more
+  after `start()` or `stop()`. `update()` releases each started event once it has stopped, and
+  a released instance is refused rather than confused with a newer one.
+- An instance belongs to the backend that started it, and nothing stops it when its owner goes.
+  An owner that ends before the sound should, such as a scene, stops it in its destructor.
 - **Events and clips are separate.** Clips, buses and fades stay on `audio::Engine` and
   SDL3_mixer, whichever event backend is built. With FMOD, the two each open their own device.
 - `name()` is `"fmod"` or `"null"`, for the log.

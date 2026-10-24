@@ -70,6 +70,10 @@ class Lit final {
      * at its instance index, and a fragment stage at an index its vertex stage hands it. A
      * missing or extra binding fails at pipeline creation. A block with its members reordered
      * is not detected.
+     *
+     * A vertex stage is given the attributes its default reads and no others. The cel pass
+     * gets the position, normal and uv, the outline the position and normal, and the shadow
+     * pass the position alone. A skinned stage also gets the joints and weights.
      **/
     struct Shaders final {
         std::vector<uint32_t> mesh;             /**< the cel pass's vertex stage **/

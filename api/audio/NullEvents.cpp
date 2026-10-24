@@ -8,6 +8,8 @@
 #include <string>
 #include <string_view>
 
+#include "Events.h"
+
 namespace v3d::audio {
 
 /**
@@ -19,6 +21,24 @@ bool NullEvents::bank(const std::string& /* path */) {
 /**
  **/
 bool NullEvents::play(std::string_view /* event */) {
+    return false;
+}
+
+/**
+ **/
+Instance NullEvents::start(std::string_view /* event */) {
+    return Instance::None;
+}
+
+/**
+ **/
+bool NullEvents::stop(Instance /* instance */, Stop /* how */) {
+    return false;
+}
+
+/**
+ **/
+bool NullEvents::playing(Instance /* instance */) const {
     return false;
 }
 

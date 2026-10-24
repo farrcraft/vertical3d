@@ -5,12 +5,19 @@
 
 #include "FmodEvents.h"
 
+#include <api/log/Logger.h>
+
+#include <fmod_common.h>
 #include <fmod_errors.h>
+#include <fmod_studio_common.h>
 #include <SDL3/SDL_loadso.h>
 
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+
+#include "Events.h"
 
 #include <fmod_studio.hpp>
 
@@ -72,26 +79,73 @@ bool FmodEvents::bank(const std::string& path) {
 
 /**
  **/
-bool FmodEvents::play(std::string_view event) {
-    const std::string path(event);
+FMOD::Studio::EventInstance* FmodEvents::create(const std::string& path) {
     FMOD::Studio::EventDescription* description = nullptr;
     FMOD_RESULT result = system_->getEvent(path.c_str(), &description);
     if (result != FMOD_OK) {
         if (missingEvents_.insert(path).second) {
             logger_->get()->warn("FMOD has no event {}: {}", path, FMOD_ErrorString(result));
         }
-        return false;
+        return nullptr;
     }
     FMOD::Studio::EventInstance* instance = nullptr;
     result = description->createInstance(&instance);
     if (result != FMOD_OK) {
         logger_->get()->warn("FMOD could not create an instance of {}: {}", path, FMOD_ErrorString(result));
+        return nullptr;
+    }
+    return instance;
+}
+
+/**
+ **/
+bool FmodEvents::play(std::string_view event) {
+    FMOD::Studio::EventInstance* instance = create(std::string(event));
+    if (instance == nullptr) {
         return false;
     }
-    result = instance->start();
+    const FMOD_RESULT result = instance->start();
     // released straight away: FMOD frees the instance once it has finished playing
     instance->release();
     return result == FMOD_OK;
+}
+
+/**
+ **/
+Instance FmodEvents::start(std::string_view event) {
+    FMOD::Studio::EventInstance* instance = create(std::string(event));
+    if (instance == nullptr) {
+        return Instance::None;
+    }
+    if (instance->start() != FMOD_OK) {
+        instance->release();
+        return Instance::None;
+    }
+    const Instance started = static_cast<Instance>(nextInstance_++);
+    started_[started] = instance;
+    return started;
+}
+
+/**
+ **/
+bool FmodEvents::stop(Instance instance, Stop how) {
+    if (!playing(instance)) {
+        return false;
+    }
+    // kept until update() sees it stopped, so playing() reads FMOD's state through a fade out
+    const FMOD_STUDIO_STOP_MODE mode = how == Stop::FadeOut ? FMOD_STUDIO_STOP_ALLOWFADEOUT : FMOD_STUDIO_STOP_IMMEDIATE;
+    return started_.at(instance)->stop(mode) == FMOD_OK;
+}
+
+/**
+ **/
+bool FmodEvents::playing(Instance instance) const {
+    const std::map<Instance, FMOD::Studio::EventInstance*>::const_iterator found = started_.find(instance);
+    if (found == started_.end()) {
+        return false;
+    }
+    FMOD_STUDIO_PLAYBACK_STATE state = FMOD_STUDIO_PLAYBACK_STOPPED;
+    return found->second->getPlaybackState(&state) == FMOD_OK && state != FMOD_STUDIO_PLAYBACK_STOPPED;
 }
 
 /**
@@ -112,6 +166,14 @@ bool FmodEvents::parameter(std::string_view name, float value) {
  **/
 void FmodEvents::update() {
     system_->update();
+    for (std::map<Instance, FMOD::Studio::EventInstance*>::iterator started = started_.begin(); started != started_.end();) {
+        if (playing(started->first)) {
+            ++started;
+            continue;
+        }
+        started->second->release();
+        started = started_.erase(started);
+    }
 }
 
 /**

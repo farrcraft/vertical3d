@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/audio/Events.h>
 #include <api/audio/NullEvents.h>
 
 #include <boost/test/unit_test.hpp>
@@ -21,6 +22,13 @@ BOOST_AUTO_TEST_CASE(the_null_backend_plays_nothing_and_says_so) {
     BOOST_TEST(!events.bank("Master.bank"));
     BOOST_TEST(!events.play("event:/UI/Cancel"));
     BOOST_TEST(!events.parameter("Intensity", 0.5F));
+
+    // an event to be kept starts as no event, and nothing can be stopped or is playing
+    BOOST_CHECK(events.start("event:/Ambience/Country") == v3d::audio::Instance::None);
+    BOOST_TEST(!events.stop(v3d::audio::Instance::None, v3d::audio::Stop::FadeOut));
+    BOOST_TEST(!events.stop(v3d::audio::Instance{1}, v3d::audio::Stop::Immediately));
+    BOOST_TEST(!events.playing(v3d::audio::Instance::None));
+    BOOST_TEST(!events.playing(v3d::audio::Instance{1}));
     events.update();
     BOOST_TEST(events.name() == "null");
 }

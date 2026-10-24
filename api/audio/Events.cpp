@@ -10,6 +10,8 @@
 #include "NullEvents.h"
 #ifdef V3D_AUDIO_FMOD
 #include "FmodEvents.h"
+
+#include <stdexcept>
 #endif
 
 #include <boost/make_shared.hpp>

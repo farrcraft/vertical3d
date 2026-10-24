@@ -45,6 +45,9 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Instance::report(VkDebugUtilsMessageSeverityFlagB
     } else if ((severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) != 0) {
         instance->logger_->get()->warn("vulkan: {}", data->pMessage);
         instance->warnings_++;
+        if (instance->firstWarning_.empty()) {
+            instance->firstWarning_ = data->pMessage;
+        }
     } else {
         instance->logger_->get()->info("vulkan: {}", data->pMessage);
     }
@@ -145,6 +148,12 @@ uint32_t Instance::warnings() const noexcept {
  **/
 const std::string& Instance::firstError() const noexcept {
     return firstError_;
+}
+
+/**
+ **/
+const std::string& Instance::firstWarning() const noexcept {
+    return firstWarning_;
 }
 
 /**

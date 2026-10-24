@@ -37,9 +37,9 @@ readout reads it rather than `physical()`, so it needs no Vulkan include.
 
 **Validation.** `Instance` enables `VK_LAYER_KHRONOS_validation` when it is installed, with a
 messenger that routes messages through the logger and counts errors and warnings
-(`errors()`, `warnings()`, `firstError()`). Without the messenger the layer reports nowhere,
-which reads the same as a clean run. Check `validating()` alongside the counts. How the tests use
-this is in [contributing/Testing.md](../../contributing/Testing.md).
+(`errors()`, `warnings()`, `firstError()`, `firstWarning()`). Without the messenger the layer
+reports nowhere, which reads the same as a clean run. Check `validating()` alongside the
+counts. How the tests use this is in [contributing/Testing.md](../../contributing/Testing.md).
 
 A `VkResult` that is not a success throws through `device::check(result, what)`, naming the call
 and the result. A destructor or a teardown must not throw, so it waits for the device to go idle

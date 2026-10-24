@@ -221,8 +221,10 @@ fails only because it reads a fixture the change added has to be read by hand.
 device with no window surface, record frames into an offscreen render target, and read the pixels
 back with `vulkan::frame::Capture`. Every case asserts two things:
 
-- The validation layer reported nothing. The test reads the count from
-  `vulkan::device::Instance::errors()` and `firstError()` rather than from the log.
+- The validation layer reported nothing, neither an error nor a warning. `silent()` reads the
+  counts from `vulkan::device::Instance::errors()` and `warnings()` rather than from the log, and
+  reports `firstError()` and `firstWarning()` when a count is not zero. A warning is a call the
+  layer accepts but expects to be a mistake, such as a vertex attribute no shader reads.
 - The pixels or values are what was drawn. A few cases compare against a committed reference
   image (see [Reference images](#reference-images)). The rest check chosen pixels or values by
   hand.

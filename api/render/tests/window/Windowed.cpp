@@ -74,8 +74,8 @@ Windowed::~Windowed() {
 /**
  **/
 bool Windowed::silent() const {
-    // no errors means a clean run only when the layer is on. Without the layer nothing checks
-    // the calls, and every run reports no errors
+    // nothing reported means a clean run only when the layer is on. Without the layer nothing
+    // checks the calls, and every run reports nothing
     const boost::shared_ptr<render::realtime::vulkan::device::Instance> instance = window->instance();
     if (!instance->validating()) {
         BOOST_TEST_MESSAGE("the validation layer is not installed - this case asserts nothing");
@@ -84,7 +84,12 @@ bool Windowed::silent() const {
     if (instance->errors() > 0) {
         BOOST_TEST_MESSAGE("first validation error: " << instance->firstError());
     }
-    return instance->errors() == 0;
+    // a warning is a call the layer accepts but expects to be wrong, such as a vertex attribute
+    // no shader reads
+    if (instance->warnings() > 0) {
+        BOOST_TEST_MESSAGE("first validation warning: " << instance->firstWarning());
+    }
+    return instance->errors() == 0 && instance->warnings() == 0;
 }
 
 /**

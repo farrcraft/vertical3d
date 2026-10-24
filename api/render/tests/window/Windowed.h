@@ -42,7 +42,7 @@ struct Windowed {
     Windowed& operator=(const Windowed&) = delete;
 
     /**
-     * @return whether the validation layer was on and reported no errors
+     * @return whether the validation layer was on and reported no errors and no warnings
      **/
     bool silent() const;
 
