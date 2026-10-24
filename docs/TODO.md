@@ -205,8 +205,9 @@ checks, so the branch never runs in a test.
 [] **Nothing binds one value to a colour shader parameter.** `sl::Instance` copies a single
 value to every channel, and no case in `SlShaderLibraryTest` binds fewer than three.
 
-[] **Two things need a window or a sound device to test:** `Feature::Window` and
-`audio::Engine::initialize()`. A software Vulkan driver does not help with either.
+[] **Two things need a window or a sound card to test:** `Feature::Window`, and whether
+`audio::Engine` is audible. SDL's dummy audio driver tests what the mixer is told, not what is
+heard. A software Vulkan driver does not help with either.
 `ui::TextRenderer`'s atlas upload needs a device, which the `render_device` suite could give it.
 
 [] **Some rendering cannot be checked against a reference picture.** A reference image may hold
@@ -235,11 +236,6 @@ input, major.
 
 [] **The base `image::Writer::write` returns true and writes nothing.** Contract, minor. A format
 registered with the base class reports success silently.
-
-[] **A bus volume is not a bus gain.** Contract, major. `audio::Engine::busGain` calls
-`MIX_SetTagGain`, which overwrites the gain of each track tagged at that moment. It does nothing
-when no track plays on the bus and stores nothing. A volume set before anything plays has no
-effect, and a later `play()` resets the track to `Play::gain`.
 
 [] **voxel's camera rotation is undefined.** Contract, major. `Camera::rotateFlight` and
 `rotateFirstPerson` rotate a default-constructed `glm::mat4`, which is uninitialised because the

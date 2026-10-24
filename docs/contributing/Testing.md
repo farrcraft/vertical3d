@@ -59,9 +59,10 @@ These have no automated test:
 
 - `Feature::Window`, which opens an app's SDL window. The render window suite opens its windows
   through `render::realtime::Window` and not through the feature.
-- `audio::Engine::initialize()`, which opens the audio device. The rest of `api/audio` is tested,
-  but not whether a sound is audible. An engine with no device gives back no voice, so every
-  case but one runs without a device. `audio_engine_lets_the_dispatcher_go_test` needs SDL's
+- Whether a sound from `audio::Engine` is audible. An engine with no device gives back no
+  voice, so most cases run without one. `audio_engine_a_sound_plays_at_its_gain_times_its_bus_test`
+  opens SDL's dummy audio driver, which plays into nothing and needs no sound card, and reads
+  back the volume each track is set to. `audio_engine_lets_the_dispatcher_go_test` needs SDL's
   audio subsystem to start, and fails on a machine where it cannot.
 - The upload in `ui::paint::TextRenderer`, which needs a device. Its measuring and layout are
   tested with an upload that returns a handle and draws nothing.

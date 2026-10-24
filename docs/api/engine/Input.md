@@ -215,6 +215,11 @@ controller_.reset();
   speeds are in `IsometricController::Speeds`: world units a second for a pan, and orthographic
   half height a second for a zoom. A pan follows the view's own axes, so up stays up on screen
   after a rotate.
+- **It answers every rotate command that reaches the dispatcher.** A key the app consumes in
+  `onEvent()` or with `consume()` makes no command, and so does not turn the camera. An app that
+  instead drops commands in its own handlers, because its ui has focus or because of the state
+  it is in, cannot use the controller. It calls `rotate()`, `pan()` and `zoomBy()` from those
+  handlers.
 - Destroying the controller disconnects it from the dispatcher.
 
 ### Mouse look

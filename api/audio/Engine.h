@@ -140,11 +140,18 @@ class Engine final {
     bool playing(Voice voice) const;
 
     /**
-     * Set one sound's volume. It replaces any volume busGain() gave the sound.
+     * Set one sound's own volume. The sound still plays at this times its bus's level, so
+     * this does not undo a busGain().
      *
      * @return false for a voice that is not playing
      **/
     bool gain(Voice voice, float level);
+
+    /**
+     * @return the volume a sound plays at, which is its own gain times its bus's level, as
+     *         the mixer holds it. 0 for a voice that is not playing
+     **/
+    float volume(Voice voice) const;
 
     /**
      * Move one sound between the speakers, as Play::pan places it when it starts.
@@ -154,14 +161,21 @@ class Engine final {
     bool pan(Voice voice, float value);
 
     /**
-     * Set the volume of every sound playing on a bus now. It replaces each sound's own gain.
+     * Set the level of a bus. Every sound on the bus plays at its own gain times this level:
+     * the sounds playing on it now, and every sound started on it later.
      *
-     * The level is not stored. A sound started on the bus afterwards plays at its Play::gain,
-     * and a bus with nothing playing on it is left unchanged.
+     * The level is kept until it is set again, so it can be set before initialize(), before
+     * anything plays, and with no device at all. A bus never set is at 1.
      *
-     * @return false when there is no device, or for an empty bus name
+     * @return false for an empty bus name, which is no bus and has no level, or when a playing
+     *         sound's volume could not be changed. The level is stored in that second case
      **/
     bool busGain(const std::string & bus, float level);
+
+    /**
+     * @return the level a bus was last set to, or 1 for a bus never set and for no bus
+     **/
+    float busGain(const std::string & bus) const;
 
     void soundEvent(const v3d::event::kind::Sound & sound);
 
@@ -172,6 +186,7 @@ class Engine final {
     struct Playing final {
         MIX_Track* track;
         std::string bus;
+        float gain;  /**< the sound's own volume, before its bus's level scales it **/
     };
 
     /**
@@ -214,6 +229,7 @@ class Engine final {
     MIX_Mixer* mixer_ = nullptr;
     std::map<std::string, boost::shared_ptr<AudioClip>> sounds_;
     std::map<Voice, Playing> voices_;
+    std::map<std::string, float> buses_;  /**< the level each bus was set to **/
     std::vector<MIX_Track*> free_;   /**< reaped tracks, waiting to be played again **/
     uint32_t nextVoice_ = 1;         /**< never reused, so a stale handle stays stale **/
     // declared after dispatcher_, so it disconnects before the dispatcher is destroyed

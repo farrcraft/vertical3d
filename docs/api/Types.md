@@ -263,6 +263,11 @@ orthographic camera on an orbit around a target on the ground.
 
 - `rotate(steps)` turns by quarter turns, counterclockwise for positive steps. `azimuth(index)`
   jumps to one of the four azimuths. Both wrap.
+- `start(radians)` sets the angle of azimuth 0 around the vertical, and the other three are
+  quarter turns from it. The default of 0 puts the eye at azimuth 0 along +X of the target, so
+  every view looks along a world axis and a square tile is drawn as a square.
+  `Isometric::DIAGONAL_START`, 45 degrees, puts every view over a ground diagonal, so a square
+  tile is drawn as a diamond.
 - `pan(delta)` moves the target in the view's own axes: `x` along `right()` and `y` along
   `forward()`, in world units.
 - The default elevation is 45 degrees. A true isometric projection is about 35.26 degrees;
