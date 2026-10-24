@@ -72,6 +72,11 @@ class Instance final {
      **/
     const std::string& firstError() const noexcept;
 
+    /**
+     * @return the first warning reported, or empty when there has been none
+     **/
+    const std::string& firstWarning() const noexcept;
+
  private:
     /**
      * The messenger's callback. Counts what arrives and puts it through the logger at a
@@ -111,6 +116,7 @@ class Instance final {
     uint32_t errors_;
     uint32_t warnings_;
     std::string firstError_;
+    std::string firstWarning_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::device

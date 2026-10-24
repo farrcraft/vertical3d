@@ -131,7 +131,9 @@ class Engine {
     virtual bool render();
 
     /**
-     * Ask the game loop to stop. A quit command calls this.
+     * Stop the game loop, without asking the app. The ui::quit command and a closed window go
+     * through quitRequested() first, and an app that held a quit there calls this once it may
+     * end.
      *
      * Called from an event handler, it stops the loop before that frame's tick() and
      * render(), and the remaining events are not routed. Called from tick(), simulate() or
@@ -252,6 +254,17 @@ class Engine {
     virtual bool release();
 
     /**
+     * The user asked to quit, with the ui::quit command or by closing the window. Only the
+     * engine calls this.
+     *
+     * An app with work it could lose overrides it to ask first. It returns false to hold the
+     * quit, and calls quit() itself once the user has answered.
+     *
+     * @return true to quit now, which the default always does
+     **/
+    virtual bool quitRequested();
+
+    /**
      * One of the documents config.json names, or null when there is no config or it names
      * none of that type. An app treats every such document as optional.
      **/
@@ -303,6 +316,11 @@ class Engine {
       * a window minimized or restored.
       **/
      void handleEvent(const SDL_Event& event);
+
+     /**
+      * Quit, if the app does not hold the quit. Every request from the user comes here.
+      **/
+     void requestQuit();
 
      /**
       * Run the handler a command event names. An event nothing handles is logged.

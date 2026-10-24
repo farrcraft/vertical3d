@@ -34,9 +34,9 @@ cases, and this one existed before the change, so the check was made by hand.
 
 ### Step 2 — The grade tolerance
 
-**Open.** [TODO.md](../TODO.md#lit-scenes), "The grade tests allow a one-step tolerance". Read
-the identity and inverting grade results from a CI run on a PR. If lavapipe is exact, reduce the
-tolerance to zero. If it is not, say beside the case that lavapipe is the reason.
+**Done.** The five grade checks in `PostTest.cpp` allow no difference. lavapipe printed nothing
+for a passing case, so the tolerance was set to zero and pushed: the CI run on PR 21 passed, so
+lavapipe is exact, as the authoring GPU was. The TODO.md entry is deleted.
 
 ### Step 3 — A pipeline cache test
 
@@ -52,8 +52,7 @@ by its driver ID and checks only the validation layer there. Keying on the drive
 an empty cache keeps the null-cache mutation failing on every other driver, which was checked
 again on the authoring GPU.
 
-Step 2 sets the grade tolerance to zero in the same push, so the next CI run either passes or
-prints how far lavapipe is from exact.
+The next CI run on PR 21 passed with that change.
 
 ### Step 4 — The glTF fixture generators in TypeScript
 
@@ -61,7 +60,7 @@ prints how far lavapipe is from exact.
 its fixtures byte for byte identical to the committed ones, which the Python generators also
 reproduced before they were deleted. Python writes a whole float as `1.0` and JavaScript as `1`,
 so the writer marks which numbers are floats and writes them through `JSON.rawJSON`. The Blender
-generator stays, as the open question recommended. [Testing.md](../contributing/Testing.md)
+generator stays, as the open question recommended. [Testing.md](../../contributing/Testing.md)
 names it as the one Python file in the tree.
 
 ### Steps 5 to 17 — One check each
@@ -93,7 +92,7 @@ names it as the one Python file in the tree.
   definition, so the smaller size changed no layout.
 - Boost.Test streams a one-byte unscoped enum as a character. The 35 assertions that would
   have printed one now compare without printing their operands, and
-  [Testing.md](../contributing/Testing.md#traps) records the trap.
+  [Testing.md](../../contributing/Testing.md#traps) records the trap.
 - Step 11 found 1755 sites. 1740 were the structs that `BOOST_AUTO_TEST_CASE` declares, one
   per case. Each of the 218 test files now puts everything after its includes in one anonymous
   namespace. 169 of them already had one for their helpers, which now runs to the end of the
@@ -145,11 +144,11 @@ names it as the one Python file in the tree.
 Each step follows the same procedure:
 
 - Discover the sites with `.clang-tidy` narrowed to the one check and warnings not treated as
-  errors. [Linting.md](../contributing/Linting.md#clang-tidy) describes how to turn clang-tidy on.
+  errors. [Linting.md](../../contributing/Linting.md#clang-tidy) describes how to turn clang-tidy on.
 - Fix every site. Never widen an exclusion instead.
 - Remove the check from `.clang-tidy`'s disabled list and delete its row in TODO.md.
 - Verify with the real `.clang-tidy` and warnings as errors, then run `ctest`.
-- Update the enabled-check count in [Linting.md](../contributing/Linting.md),
+- Update the enabled-check count in [Linting.md](../../contributing/Linting.md),
   TODO.md and `CLAUDE.md`.
 
 | Step | Check | Sites |
@@ -178,8 +177,7 @@ Each step follows the same procedure:
 
 ### Step 18 — Close the plan
 
-**Open.** Confirm every check is enabled and every entry this plan took is deleted from TODO.md,
-write the Outcome section, and move this plan to [completed/](completed/).
+**Done.** Every check is enabled, and every entry this plan took is deleted from TODO.md.
 
 ## Open questions
 
@@ -187,3 +185,35 @@ write the Outcome section, and move this plan to [completed/](completed/).
   only in Python. Either keep it as the one Python file in the tree, or delete it and keep only the
   fixture it wrote. **Closed in step 4: kept**, because a fixture that cannot be regenerated cannot
   be changed.
+
+## Outcome
+
+Closed 2026-10-18. The tree is clean at 199 of the 206 clang-tidy checks in the four enabled
+families, and the seven left off are settled choices rather than backlog. The test gaps that
+needed no new hardware are closed.
+
+**Delivered:**
+
+- All thirteen disabled checks enabled, from `readability-implicit-bool-conversion` to
+  `misc-include-cleaner`. Each site was fixed, and no exclusion was widened.
+- The frame test begins one slot three times, and fails when only first begins are counted.
+- A pipeline cache case that fails when `build()` passes no cache.
+- The five hand-written glTF fixture generators in TypeScript, writing byte-identical fixtures.
+  The Blender generator stays as the one Python file.
+- The grade tests exact on both the authoring GPU and lavapipe.
+
+**Different from the plan:**
+
+- The table's site counts were wrong by up to a factor of three, either way. Each step's own
+  discovery pass gave its real count.
+- Steps 9 and 13 changed api signatures and made protected members private behind accessors. A
+  consumer outside the tree has to follow both.
+- `readability-magic-numbers` is off in each tests directory, because a test's literal is the
+  value it expects. Everywhere else it applies.
+- lavapipe keeps nothing in a pipeline cache. The cache case names lavapipe by its driver ID and
+  checks only the validation layer there, so caching is checked on a GPU only.
+- PR 21's review gates reported float casts and long sentences on lines the steps had rewritten.
+  Two of the casts let a NaN through, and now convert through `type::toCount`.
+
+**Left open:** nothing in TODO.md. The pipeline cache case is not checked in CI, for the reason
+above.

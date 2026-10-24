@@ -1,0 +1,41 @@
+##RenderMan RIB-Structure 1.1
+##Scene The unit cube of the RenderMan Interface specification's RIB entity file example
+version 3.03
+Format 64 48 1
+Projection "orthographic"
+Clipping 1 100
+# the camera looks at the cube from five units back, so camera space is the cube's own space
+# moved five units along +z
+Translate 0 0 5
+WorldBegin
+# from here to the end of the cube, the specification's example as it stands. Each face is the
+# same polygon at z = +0.5, the far face, and the rotation before it decides which face it
+# becomes. The comments name the face the specification gives each one
+AttributeBegin #begin unit cube
+Attribute "identifier" "name" "unitcube"
+Bound -.5 .5 -.5 .5 -.5 .5
+TransformBegin
+# far face
+Polygon "P" [.5 .5 .5 -.5 .5 .5 -.5 -.5 .5 .5 -.5 .5]
+Rotate 90 0 1 0
+# right face
+Polygon "P" [.5 .5 .5 -.5 .5 .5 -.5 -.5 .5 .5 -.5 .5]
+# near face
+Rotate 90 0 1 0
+Polygon "P" [.5 .5 .5 -.5 .5 .5 -.5 -.5 .5 .5 -.5 .5]
+# left face
+Rotate 90 0 1 0
+Polygon "P" [.5 .5 .5 -.5 .5 .5 -.5 -.5 .5 .5 -.5 .5]
+TransformEnd
+TransformBegin
+# bottom face
+Rotate 90 1 0 0
+Polygon "P" [.5 .5 .5 -.5 .5 .5 -.5 -.5 .5 .5 -.5 .5]
+TransformEnd
+TransformBegin
+# top face
+Rotate -90 1 0 0
+Polygon "P" [.5 .5 .5 -.5 .5 .5 -.5 -.5 .5 .5 -.5 .5]
+TransformEnd
+AttributeEnd #end unit cube
+WorldEnd

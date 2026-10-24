@@ -60,14 +60,31 @@ class TestEngine final : public v3d::engine::Engine {
         return offered_;
     }
 
+    // whether quitRequested() holds the quit
+    void hold(bool value) {
+        hold_ = value;
+    }
+
+    // how many times the app was asked whether to quit
+    int asked() const {
+        return asked_;
+    }
+
  protected:
     v3d::engine::Features features() const override {
         return features_;
     }
 
+    bool quitRequested() override {
+        asked_++;
+        return !hold_;
+    }
+
  private:
     v3d::engine::Features features_;
     bool take_ = false;
+    bool hold_ = false;
+    int asked_ = 0;
     std::vector<Uint32> offered_;
 };
 
@@ -280,6 +297,39 @@ BOOST_AUTO_TEST_CASE(engine_quit_survives_a_taken_event_test) {
 }
 
 /**
+ * A closed window asks the app first. An app that holds the quit keeps the loop running until
+ * it calls quit() itself.
+ **/
+BOOST_AUTO_TEST_CASE(engine_a_closed_window_can_be_held_test) {
+    SDL_Event close{};
+    close.type = SDL_EVENT_WINDOW_CLOSE_REQUESTED;
+
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
+    engine.hold(true);
+    engine.offer(close);
+    BOOST_CHECK_EQUAL(engine.asked(), 1);
+    BOOST_CHECK(!engine.quitting());
+
+    engine.quit();
+    BOOST_CHECK(engine.quitting());
+}
+
+/**
+ * A quit request the app does not hold ends the loop, and the app was asked.
+ **/
+BOOST_AUTO_TEST_CASE(engine_an_unheld_quit_asks_and_quits_test) {
+    SDL_Event quit{};
+    quit.type = SDL_EVENT_QUIT;
+
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
+    engine.offer(quit);
+    BOOST_CHECK_EQUAL(engine.asked(), 1);
+    BOOST_CHECK(engine.quitting());
+}
+
+/**
  * The default onEvent() consumes nothing, so an app that does not override it has every
  * event mapped.
  **/
@@ -444,6 +494,22 @@ BOOST_AUTO_TEST_CASE(engine_answers_ui_quit_test) {
     quit.type(v3d::event::Type::Destination);
     engine.dispatcher()->trigger(quit);
     BOOST_TEST(engine.quitting());
+}
+
+/**
+ * "ui::quit" asks the app first, as a closed window does, and an app can hold it.
+ **/
+BOOST_AUTO_TEST_CASE(engine_ui_quit_can_be_held_test) {
+    TestEngine engine(appPath("good"), configFeature);
+    BOOST_REQUIRE(engine.initialize());
+    engine.hold(true);
+
+    v3d::event::Event quit("quit", engine.events()->resolveContext("ui"));
+    quit.type(v3d::event::Type::Destination);
+    quit.state(v3d::event::State::Pressed);
+    engine.dispatcher()->trigger(quit);
+    BOOST_CHECK_EQUAL(engine.asked(), 1);
+    BOOST_TEST(!engine.quitting());
 }
 
 /**

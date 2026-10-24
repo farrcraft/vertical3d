@@ -15,8 +15,9 @@
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
-#include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/tool/SelectTool.h>
+#include <vertical3d/src/tool/TransformTool.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <string>
@@ -72,10 +73,15 @@ class Renderer final {
     void scene(const boost::shared_ptr<Scene>& scene);
 
     /**
-     * The handles the selection carries, drawn by every view that shows them. Empty
-     * when the transform tool is in the mode that draws none.
+     * The transform tool, whose manipulator every view that shows handles draws about what
+     * the tool would move. It draws none in the mode that has no manipulator.
      **/
-    void manipulator(const boost::shared_ptr<Manipulator>& manipulator);
+    void transformTool(const boost::shared_ptr<TransformTool>& transform);
+
+    /**
+     * The select tool, whose rubber band is drawn over the views while one is dragged.
+     **/
+    void selectTool(const boost::shared_ptr<SelectTool>& select);
 
     /**
      * The ui drawn over every view, or null to draw none.
@@ -131,7 +137,8 @@ class Renderer final {
     v3d::render::realtime::Engine3D engine_;
 
     boost::shared_ptr<Scene> scene_;
-    boost::shared_ptr<Manipulator> manipulator_;
+    boost::shared_ptr<TransformTool> transform_;
+    boost::shared_ptr<SelectTool> select_;
     std::vector<boost::shared_ptr<ViewPort>> views_;
     // one canvas per view. Each view fills its own and submits it before the next view
     // draws, and the submit copies it

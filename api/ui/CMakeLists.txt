@@ -43,6 +43,7 @@ v3d_add_api_library(ui
 	"shell/FileChooser.h" "shell/FileChooser.cpp"
 	"shell/GameMenu.h" "shell/GameMenu.cpp"
 	"shell/Keyboard.h" "shell/Keyboard.cpp"
+	"shell/Prompt.h" "shell/Prompt.cpp"
 	"shell/Screen.h" "shell/Screen.cpp"
 	"shell/StatisticsOverlay.h" "shell/StatisticsOverlay.cpp"
 	"style/Button.h" "style/Button.cpp"

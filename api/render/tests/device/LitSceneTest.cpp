@@ -438,6 +438,26 @@ BOOST_AUTO_TEST_CASE(a_lit_entity_is_drawn_under_the_mirrored_hand) {
 }
 
 /**
+ * Creating Lit's pipelines leaves the validation layer with nothing to say, at warning severity
+ * as well as at error. A pipeline that declares a vertex attribute its shader does not read is
+ * a warning, not an error, so a case that counts errors alone passes over it. Every pipeline is
+ * built here, the shadow casters included, in both the plain and the skinned form.
+ **/
+BOOST_AUTO_TEST_CASE(lit_pipelines_are_created_without_a_warning) {
+    const v3d::test::Headless headless(colourFormat, width, height);
+    BOOST_REQUIRE(headless.instance->validating());
+    const uint32_t before = headless.instance->warnings();
+
+    const VkFormat depth = v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical());
+    const Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
+        headless.context->frameUniforms(), headless.context->textures(), colourFormat, depth, depth,
+        Lit::Shaders::embedded(), VK_FRONT_FACE_CLOCKWISE);
+
+    BOOST_CHECK_EQUAL(headless.instance->warnings() - before, 0U);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
  * A pass that turns depth writing off reaches only the pipelines that allow it. A near red cube
  * is drawn first and a far green one after it, straight behind it, in a pass with depth writing
  * off. Lit's pipelines write depth whatever the pass says, so the near cube still hides the far

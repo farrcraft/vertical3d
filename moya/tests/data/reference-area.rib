@@ -1,0 +1,39 @@
+##RenderMan RIB-Structure 1.1
+##Scene A box in front of a wall, lit by a quad light to one side, with a soft shadow
+version 3.03
+Format 64 48 1
+# one sample at each pixel centre under a one pixel box, which the film gives back exactly
+PixelSamples 1 1
+PixelFilter "box" 1 1
+Projection "orthographic"
+ScreenWindow -2 2 -1.5 1.5
+Clipping 0.1 100
+WorldBegin
+LightSource "ambientlight" 0 "intensity" [0.08]
+# the light: a quad a unit across, up and to the left of the box, drawn white as well
+AttributeBegin
+Attribute "light" "integer nsamples" [16]
+AreaLightSource "arealight" 1 "intensity" [6]
+Surface "constant"
+Polygon "P" [-1.9 0.6 3  -0.9 0.6 3  -0.9 1.4 3  -1.9 1.4 3]
+AttributeEnd
+# the block switched the light off, as it does any light made in one
+Illuminate 1 1
+# the wall the shadow falls on
+AttributeBegin
+Color [0.8 0.8 0.75]
+Surface "matte"
+Polygon "P" [-2 -1.5 6  -2 1.5 6  2 1.5 6  2 -1.5 6]
+AttributeEnd
+# the box, whose faces are wound to face out
+AttributeBegin
+Color [0.7 0.3 0.25]
+Surface "matte"
+Polygon "P" [-0.2 -0.6 4.6  -0.2 0.2 4.6  0.6 0.2 4.6  0.6 -0.6 4.6]
+Polygon "P" [0.6 -0.6 5.4  0.6 0.2 5.4  -0.2 0.2 5.4  -0.2 -0.6 5.4]
+Polygon "P" [-0.2 -0.6 5.4  -0.2 0.2 5.4  -0.2 0.2 4.6  -0.2 -0.6 4.6]
+Polygon "P" [0.6 -0.6 4.6  0.6 0.2 4.6  0.6 0.2 5.4  0.6 -0.6 5.4]
+Polygon "P" [-0.2 0.2 4.6  -0.2 0.2 5.4  0.6 0.2 5.4  0.6 0.2 4.6]
+Polygon "P" [-0.2 -0.6 5.4  -0.2 -0.6 4.6  0.6 -0.6 4.6  0.6 -0.6 5.4]
+AttributeEnd
+WorldEnd

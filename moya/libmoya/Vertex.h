@@ -31,6 +31,9 @@ class Vertex {
      */
     glm::vec3 color(void) const;
     void color(const glm::vec3 & colour);
+    /** Oi once shaded, and one until then. A micropolygon is drawn with its first corner's. **/
+    glm::vec3 opacity(void) const;
+    void opacity(const glm::vec3 & value);
     /**
      * Whether a colour was written. A vertex with no "Cs" of its own takes the colour that
      * was current when its primitive was added, and one with its own keeps it.
@@ -71,6 +74,7 @@ class Vertex {
     // starts at zero and a vertex not yet written reads as zero
     glm::vec3 point_ = glm::vec3(0.0F);
     glm::vec3 color_ = glm::vec3(0.0F);
+    glm::vec3 opacity_ = glm::vec3(1.0F);
     glm::vec3 normal_ = glm::vec3(0.0F);
     glm::vec3 geometric_ = glm::vec3(0.0F);
     glm::vec2 st_ = glm::vec2(0.0F);

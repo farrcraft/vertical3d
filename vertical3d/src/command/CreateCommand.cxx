@@ -42,8 +42,8 @@ void CreateCommand::undo() {
     if (!scene_ || !mesh_) {
         return;
     }
-    // the flag lives on the mesh rather than in the scene, so a mesh taken out while
-    // selected would come back to a scene that already has a selection
+    // the flag lives on the mesh rather than in the scene, so it is cleared as the mesh
+    // leaves. Any other selected mesh stays selected
     mesh_->selected(false);
     mesh_->deselectComponents();
     scene_->remove(mesh_->id());

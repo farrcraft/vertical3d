@@ -9,10 +9,16 @@ recorded so it can be undone.
 `undo()`, `redo()` and `name()`, and no `execute()`. `CommandStack::push` stores a command and
 never applies it.
 
-**One gesture is one command.** A manipulator drag changes the mesh on every motion event so
-the user sees it move. `TransformTool` records one `TransformCommand` when the drag ends,
-holding the mesh's `Placement` (translation, rotation and scale) from the start and the end of
-the gesture. Undo puts the whole starting placement back.
+**One gesture is one command.** A manipulator drag changes the meshes on every motion event so
+the user sees them move. `TransformTool` records one `TransformCommand` when the drag ends,
+holding each moved mesh's `Placement` (translation, rotation and scale) from the start and the
+end of the gesture. Undo puts every whole starting placement back, so one undo restores a whole
+set.
+
+A gesture on components records one `VertexCommand` instead. It holds each moved vertex's
+position, and each recomputed face normal, from the start and the end of the gesture. Undo and
+redo write the stored values back rather than applying an inverse motion, so they restore the
+mesh exactly. A gesture that moved no vertex records nothing.
 
 The rules:
 
@@ -25,17 +31,39 @@ The rules:
 - **A command holds the mesh, not its id.** A mesh removed by an undo stays alive inside the
   command and returns with the same id. Later commands in the history still refer to it.
 - **Selection is not history.** Undo does not restore what was selected. `CreateCommand::undo`
-  clears the selection flag of the mesh it removes, so that at most one mesh stays selected.
+  clears the selection flag of the mesh it removes, and leaves any other selected mesh selected.
+  `CreateCommand::redo` selects the new mesh and nothing else.
 - **The stack has a capacity**, 64 by default. When it is full, the oldest command is dropped.
   A mesh held by a dropped command is freed then.
 - **A new push discards the redo side.**
 - **Opening a project clears the history**, so an open cannot be undone. It also cancels any
   drag under way without recording it.
 
-A future modelling operation that changes topology will need its own command type that records
-the topology it changed. `TransformCommand` does not fit that case.
+**A topology change is undone from snapshots.** An operation that changes which parts a mesh
+holds records a `TopologyCommand`. It holds the mesh's arrays from before the operation and from
+after it, and undo and redo put one back whole, so the numbering comes back exactly. A
+`TransformCommand` or `VertexCommand` deeper in the history therefore still names the right parts
+when it is undone. Undo and redo of a topology change clear that mesh's component selection,
+because after a renumbering an old flag could name another part. The object stays selected.
+
+Background: [ADR-0098](../adr/0098-editor-topology-changes-undone-from-snapshots.md)
 
 Background: [ADR-0016](../adr/0016-editor-undo-records-completed-changes.md)
+
+### The saved position
+
+`CommandStack` also records the position the history was at when the project was last saved.
+The project is dirty at any other position, and `CommandStack::dirty()` says so.
+
+- **Save and Save As call `markSaved()`** when the write succeeds. A failed write leaves the
+  project dirty.
+- **Opening a project clears the history**, and the empty history counts as saved.
+- **An undo or a redo can reach the saved position again**, and the project is then clean.
+- **A saved position can be lost.** A push after an undo past it discards the commands it lay
+  among, and the oldest command dropped from a full stack can take it with it. A lost position is
+  never reached again, so the project stays dirty until the next save.
+- **The caption follows the flag.** It is refreshed after every command, from the same place
+  `syncUi()` runs.
 
 ## Commands
 

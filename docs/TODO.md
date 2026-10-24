@@ -19,94 +19,31 @@ the condition that makes the work due.
 An open plan or roadmap may order entries from here. The entry stays here until the work lands,
 and its section names the plan or roadmap that orders it.
 
-## RiRotate's sign
-
-[] The sign of `RiRotate` is unverified.
-
-- The RenderMan Interface (RI) states rotations in a left-handed coordinate system.
-- moya passes the angle straight to `glm::rotate`, which rotates counter-clockwise by the
-  right-hand rule.
-- Nothing in the tree can tell whether this is right. Both hiders read the same transformation,
-  so they always agree with each other. A reference picture made by the tree only agrees with
-  itself.
-- A scene lit by a rotated light did not reveal the difference either.
-- To settle it, render a scene whose correct picture is known from outside this tree.
-
-Background: [OfflineRenderingPhase3](plans/completed/OfflineRenderingPhase3.md#open-questions).
-
 ## Offline rendering
 
-Each of these waits until a scene needs it. [OfflineShading](roadmap/OfflineShading.md) orders
-them, along with RiRotate's sign above.
-
-[] **A transform into a projected space does not divide by w.** `ptransform` drops w, so
-`transform("screen", P)`, `"raster"`, `"NDC"` and `depth()` are right under an orthographic
-projection and not under a perspective one.
-
-- The fix divides by w for the projected spaces, in the transform built-ins and in a cast.
-- Due when a shader reads a projected position under a perspective camera.
-
-[] **Area lights render as point lights.**
-
-- A RenderMan area light runs its light shader at points on a primitive.
-- `AreaLightSource` binds a shader to geometry, but neither hider keeps geometry as a light.
-- Sampling a light's area would work like sampling the film's lens disc.
-- Due when a scene needs soft shadows. Both hiders can already cast shadows through the shared
-  ray tracer.
-
-[] **Displacement and bump mapping are not possible.** Displacement shaders are refused, and
-`calculatenormal` is a stub.
-
-- Under the reyes hider, displacement reaches into moya's dicing. It moves a grid after the grid
-  is shaded, and needs the grid's bound grown by `displacementbound`.
-- Under the ray hider, displacement needs tessellation, which the ray tracer does not otherwise
-  do.
-- Bump mapping needs derivatives across a batch of points. A traced hit is a batch of one.
-- Due when a scene needs surface detail that a texture cannot give.
-
-[] **The reyes hider ignores opacity (`Oi`).**
-
-- A sample keeps only the nearest surface and sets its opacity to one. A translucent shader is
-  opaque under `"hidden"` and translucent under `"raytrace"`.
-- The fix: each sample keeps every surface it meets, and composites them front to back once the
-  bucket is done. This is the ray hider's `see()` loop, applied to a sample's list of surfaces
-  instead of a ray's hits.
-- Due when a scene needs glass or smoke drawn by the reyes hider.
+Each of these waits until a scene needs it. The
+[OfflineShading plan](plans/completed/OfflineShading.md) held both rather than build them early.
 
 [] **The reyes hider adds every polygon to the traced scene.**
 
 - moya fans each polygon into the traced scene as it arrives, before culling, and shades its
   lights once for it. This lets an off-screen caster cast a shadow.
-- A scene that never calls `trace()` or `transmission()` pays the memory and the time anyway.
-- The fix adds geometry only when a surface or light shader in the scene traces.
-- Due when a large reyes-only scene's memory or load time shows it.
-
-[] **`solar` with an angle lights along its axis only.**
-
-- A non-zero angle lets L be any direction inside a cone around the axis. RenderMan chooses the
-  one nearest the surface's illuminance cone.
-- A light shader is run with the surface's position only, so the machine cannot choose. It
-  reports the angle once and uses the axis.
-- The fix passes the surface's illuminance axis and angle to the light along with its position.
-- Due when a scene needs a sky or another wide distant light.
-
-[] **`offline::trace::Scene::nearest` tests every primitive.**
-
-- moya traces shadow rays, so every shadow ray from every grid point pays for the whole scene.
-- An acceleration structure goes inside `offline::trace`. Neither renderer needs to change.
-- Due when a scene takes a second to render. The test suites' timings would show it.
+- Every standard light with a direction calls `transmission()`, so only a scene with no
+  shadowing light gains. Such a scene casts no ray, and the hierarchy is built on the first
+  ray, so it pays only the memory the triangles hold.
+- The triangles still have to be made as the scene is read, because a shader bound later may
+  trace. The fix would drop them when rendering starts if nothing traced.
+- Due when a large scene with no shadowing light shows that memory.
 
 [] **`offline::trace::Tracer` runs a shader once per hit.**
 
 - Each hit gets its own `HitShader` and its own run of the machine, so a ray-hidden image pays
   the machine's per-run cost once per pixel sample.
 - The fix batches the hits of a scanline that share a shader into one run, as the reyes hider
-  shades a grid.
-- Due when a ray-hidden scene's shading time shows it.
-
-[] **moya's `--grid` and `--bucket` do not override a scene's `Option "limits"`.** The driver
-applies them before reading the scene, so a scene that names its own sizes replaces them.
-Applying them again after the read would make the command line win.
+  shades a grid. It is for speed alone, and gives no derivatives.
+- Due when a profile of a Release render shows that preparing and running the machine for one
+  hit outweighs intersection. A pixel's samples are seeded per pixel, so batching them in another
+  order does not change the picture.
 
 Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration).
 
@@ -211,8 +148,6 @@ matches the asset manager's path handling only because the manager passes cgltf 
 
 ## Lit scenes
 
-[ToolingDebt](plans/ToolingDebt.md) takes the grade tolerance.
-
 [] **There are no cascaded shadow maps.**
 
 - `lighting::fitShadowToView` fits one map to the camera's view out to a distance. Over a long
@@ -223,16 +158,6 @@ matches the asset manager's path handling only because the manager passes cgltf 
   caller with large casters passes a margin big enough for them.
 - Due when a game's view is long enough for near shadows to look coarse.
 - Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
-
-[] **The grade tests allow a one-step tolerance that may not be needed.**
-
-- The identity grade and the inverting grade were exact on the authoring GPU (a Radeon), from a
-  UNORM scene and from an sRGB one.
-- [PostTest.cpp](../api/render/tests/device/PostTest.cpp) still allows a difference of one step,
-  because lavapipe, the software Vulkan driver CI uses, had not been checked.
-- If CI shows lavapipe is exact too, reduce the tolerance to zero. If it is not, add a comment
-  beside the case saying lavapipe is the reason.
-- Background: [LitScene, step 10](plans/completed/LitScene.md#step-10--the-chain-after-the-scene).
 
 ## Loading
 
@@ -280,8 +205,9 @@ checks, so the branch never runs in a test.
 [] **Nothing binds one value to a colour shader parameter.** `sl::Instance` copies a single
 value to every channel, and no case in `SlShaderLibraryTest` binds fewer than three.
 
-[] **Two things need a window or a sound device to test:** `Feature::Window` and
-`audio::Engine::initialize()`. A software Vulkan driver does not help with either.
+[] **Two things need a window or a sound card to test:** `Feature::Window`, and whether
+`audio::Engine` is audible. SDL's dummy audio driver tests what the mixer is told, not what is
+heard. A software Vulkan driver does not help with either.
 `ui::TextRenderer`'s atlas upload needs a device, which the `render_device` suite could give it.
 
 [] **Some rendering cannot be checked against a reference picture.** A reference image may hold
@@ -310,11 +236,6 @@ input, major.
 
 [] **The base `image::Writer::write` returns true and writes nothing.** Contract, minor. A format
 registered with the base class reports success silently.
-
-[] **A bus volume is not a bus gain.** Contract, major. `audio::Engine::busGain` calls
-`MIX_SetTagGain`, which overwrites the gain of each track tagged at that moment. It does nothing
-when no track plays on the bus and stores nothing. A volume set before anything plays has no
-effect, and a later `play()` resets the track to `Play::gain`.
 
 [] **voxel's camera rotation is undefined.** Contract, major. `Camera::rotateFlight` and
 `rotateFirstPerson` rotate a default-constructed `glm::mat4`, which is uninitialised because the
@@ -380,9 +301,6 @@ style cannot set the bullet indent.
 [] **pong's multiplayer mode is single player.** Contract, minor. `ui::setMultiplayerMode` calls
 `mode(false)`, as single player does, so the computer still plays the right paddle.
 
-[] **`BRep::addEdge(const glm::vec3&)` is declared and never defined.** Build, minor. A call
-compiles and fails to link.
-
 [] **Two tests do not check what they claim.** Weak test, minor.
 
 - odyssey's `a_world_destroyed_before_its_loads_arrive` streams at (1, 1), five tiles from the
@@ -394,16 +312,30 @@ compiles and fails to link.
 ## Editor
 
 Open work for when the editor app itself moves forward. [editor/](editor/README.md) describes the
-editor. [EditorModelling](roadmap/EditorModelling.md) orders these.
+editor.
 
-[] 55 of the menu's 77 commands have no handler, and only log themselves when chosen.
+45 of the menu's 80 commands have no handler, and only log themselves when chosen. Each group
+below is a piece of work of its own, in any order.
 
-[] There are no modelling operations. In a component mode you can select a face, but moving it
-moves the whole object.
+[] **Shading and culling modes** (`view::shade::*`, `view::cull::*`, `view::rendermode::*`) need a
+shaded draw of the mesh, which the editor's renderer does not have. The mode itself is view
+state.
 
-[] Only one thing can be selected at a time. There is no rubber-band selection and no
-shift-click.
+[] **Cameras and lights in the scene** (`view::show::camera`, `view::show::light` and the camera,
+light, curve, handle and mesh select masks) need the scene to hold something other than meshes,
+and drawing them comes first. The masks and show toggles follow.
 
-[] There is no dirty flag, so nothing warns before a load or a quit discards unsaved work.
+[] **Importers** (`project::import::*`) each need a format reader. An importer creates meshes
+through the command stack, so an import can be undone.
 
-[] The viewport panes cannot be resized by dragging.
+[] **Playback** (`timeline::*`) needs animation in the scene, which nothing in the editor has. It
+waits on an ADR deciding what the editor animates.
+
+[] **The Render menu** (`render::view`, `render::batch`, `render::settings`) would hand the scene to
+moya. The RIB export already writes it.
+
+[] **Groups and scene cameras** (`create::group`, `create::ortho::camera`,
+`create::perspective::camera`, and the camera toolbar's `camera::*` buttons). A group needs a
+scene that holds a hierarchy, and a camera in the scene needs the scene to hold something other
+than meshes.
+

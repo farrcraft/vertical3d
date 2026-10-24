@@ -1,0 +1,21 @@
+##RenderMan RIB-Structure 1.1
+##Scene A plane bumped by noise, lit across its face, under the ray hider
+version 3.03
+Format 64 48 1
+# one sample at each pixel centre under a one pixel box, which the film gives back exactly
+PixelSamples 1 1
+PixelFilter "box" 1 1
+Hider "raytrace"
+Projection "orthographic"
+Clipping 1 100
+# the bump shader is a fixture beside the scene rather than one of the standard ones
+Option "searchpath" "shader" ["data:&"]
+WorldBegin
+LightSource "ambientlight" 0 "intensity" [0.1]
+# low across the plane from the left, so a bump's slope shows as light and shade
+LightSource "distantlight" 1 "intensity" [1] "to" [0.8 -0.3 0.6]
+Color [0.85 0.8 0.7]
+Surface "bumpy"
+# flat, facing the camera, and wound so that its normal points at the camera
+Polygon "P" [-1.2 -0.9 5  -1.2 0.9 5  1.2 0.9 5  1.2 -0.9 5]
+WorldEnd

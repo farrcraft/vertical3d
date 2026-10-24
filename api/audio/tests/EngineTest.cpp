@@ -9,6 +9,8 @@
 #include <api/event/kind/Sound.h>
 #include <api/log/Logger.h>
 
+#include <SDL3/SDL_hints.h>
+
 #include <functional>
 #include <string>
 #include <vector>
@@ -221,11 +223,110 @@ BOOST_AUTO_TEST_CASE(audio_engine_play_without_a_device_test) {
     BOOST_TEST(!sound->stop(v3d::audio::Voice{1}));
     BOOST_TEST(!sound->gain(v3d::audio::Voice{1}, 0.5F));
 
-    // a bus volume without a device is a false return rather than a crash, so a settings
-    // screen on a machine with no sound card still works
-    BOOST_TEST(!sound->busGain("music", 0.5F));
-    BOOST_TEST(!sound->busGain("", 0.5F));
+    BOOST_CHECK_EQUAL(sound->volume(v3d::audio::Voice{1}), 0.0F);
     BOOST_CHECK_NO_THROW(sound->stopAll(250));
+}
+
+/**
+ * A bus level is stored whether or not a device is open, so a settings screen can apply a
+ * volume read from its file before anything plays, and on a machine with no sound card.
+ **/
+BOOST_AUTO_TEST_CASE(audio_engine_bus_level_is_kept_without_a_device_test) {
+    auto sound = engine();
+
+    // a bus never set is at full level, and so is no bus
+    BOOST_CHECK_EQUAL(sound->busGain("music"), 1.0F);
+    BOOST_CHECK_EQUAL(sound->busGain(""), 1.0F);
+
+    BOOST_TEST(sound->busGain("music", 0.5F));
+    BOOST_CHECK_EQUAL(sound->busGain("music"), 0.5F);
+    // one bus's level leaves the others alone
+    BOOST_CHECK_EQUAL(sound->busGain("sfx"), 1.0F);
+
+    // the empty name is no bus, so it takes no level
+    BOOST_TEST(!sound->busGain("", 0.5F));
+    BOOST_CHECK_EQUAL(sound->busGain(""), 1.0F);
+
+    // a level outlasts the device, so one set before initialize() is still there after it
+    sound->initialize();
+    sound->shutdown();
+    BOOST_CHECK_EQUAL(sound->busGain("music"), 0.5F);
+}
+
+/**
+ * Opens SDL's dummy audio driver, which plays into nothing and needs no sound card. The mixer
+ * then gives out real tracks, so the volume each one is set to can be read back.
+ **/
+struct DummyDevice {
+    DummyDevice() {
+        SDL_SetHint(SDL_HINT_AUDIO_DRIVER, "dummy");
+        v3dtest::writeWav("bed.wav", 44100);
+        clip = boost::make_shared<v3d::audio::AudioClip>();
+        clip->load("bed.wav");
+    }
+    ~DummyDevice() {
+        SDL_ResetHint(SDL_HINT_AUDIO_DRIVER);
+    }
+    DummyDevice(const DummyDevice&) = delete;
+    DummyDevice& operator=(const DummyDevice&) = delete;
+
+    /**
+     * A bed that loops until stopped, so it is still playing when its volume is read.
+     **/
+    static v3d::audio::Play bed(const std::string& bus, float gain) {
+        v3d::audio::Play how;
+        how.bus = bus;
+        how.loops = -1;
+        how.gain = gain;
+        return how;
+    }
+
+    boost::shared_ptr<v3d::audio::AudioClip> clip;
+};
+
+/**
+ * A sound plays at its own gain times its bus's level: whether the level was set before it
+ * started or while it played, and after its own gain changes.
+ **/
+BOOST_FIXTURE_TEST_CASE(audio_engine_a_sound_plays_at_its_gain_times_its_bus_test, DummyDevice) {
+    auto sound = engine();
+    BOOST_REQUIRE(sound->addClip(clip, "bed"));
+    // set before the device opens, as an app applies the volumes it read from settings
+    BOOST_TEST(sound->busGain("ambience", 0.5F));
+    BOOST_REQUIRE(sound->initialize());
+
+    const v3d::audio::Voice title = sound->play("bed", bed("ambience", 0.4F));
+    BOOST_REQUIRE(title != v3d::audio::Voice::None);
+    BOOST_CHECK_CLOSE(sound->volume(title), 0.2F, 0.01F);
+
+    // a level set while the sound plays scales its own gain, rather than replacing it
+    BOOST_TEST(sound->busGain("ambience", 1.0F));
+    BOOST_CHECK_CLOSE(sound->volume(title), 0.4F, 0.01F);
+    BOOST_TEST(sound->busGain("ambience", 0.25F));
+    BOOST_CHECK_CLOSE(sound->volume(title), 0.1F, 0.01F);
+
+    // a change of the sound's own gain keeps its bus's level
+    BOOST_TEST(sound->gain(title, 0.8F));
+    BOOST_CHECK_CLOSE(sound->volume(title), 0.2F, 0.01F);
+
+    // and a sound started on the bus later takes the stored level too
+    const v3d::audio::Voice world = sound->play("bed", bed("ambience", 0.8F));
+    BOOST_REQUIRE(world != v3d::audio::Voice::None);
+    BOOST_CHECK_CLOSE(sound->volume(world), 0.2F, 0.01F);
+
+    // a bus never set, and no bus, leave a sound at its own gain
+    const v3d::audio::Voice music = sound->play("bed", bed("music", 0.6F));
+    const v3d::audio::Voice loose = sound->play("bed", bed("", 0.7F));
+    BOOST_CHECK_CLOSE(sound->volume(music), 0.6F, 0.01F);
+    BOOST_CHECK_CLOSE(sound->volume(loose), 0.7F, 0.01F);
+
+    // and one bus's level does not reach a sound on another
+    BOOST_TEST(sound->busGain("music", 0.5F));
+    BOOST_CHECK_CLOSE(sound->volume(music), 0.3F, 0.01F);
+    BOOST_CHECK_CLOSE(sound->volume(world), 0.2F, 0.01F);
+    BOOST_CHECK_CLOSE(sound->volume(loose), 0.7F, 0.01F);
+
+    sound->shutdown();
 }
 
 /**

@@ -15,6 +15,7 @@
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/render/realtime/Window.h>
+#include <api/type/camera/Camera.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
@@ -24,10 +25,13 @@
 #include <api/ui/input/Cursor.h>
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
+#include <api/ui/shell/Prompt.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
+#include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Modelling.h>
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -40,6 +44,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <vector>
 #include <fstream>
@@ -75,8 +80,6 @@ Controller::Controller(const std::string& path) :
 /**
  **/
 bool Controller::start() {
-    window()->caption("Vertical|3D");
-
     if (!config()) {
         logger()->get()->error("The editor needs its config to know what to draw");
         return false;
@@ -116,7 +119,8 @@ bool Controller::start() {
     renderer_ = boost::make_shared<Renderer>(window(), logger(), assets());
     renderer_->views(views_);
     renderer_->scene(scene_);
-    renderer_->manipulator(transformTool_->manipulator());
+    renderer_->transformTool(transformTool_);
+    renderer_->selectTool(selectTool_);
 
     if (!buildUi()) {
         return false;
@@ -136,6 +140,7 @@ bool Controller::start() {
 
     layoutViews(window()->width(), window()->height());
     syncUi();
+    syncCaption();
 
     logger()->get()->info("{} with {} views", layout_->name(), views_.size());
     return true;
@@ -177,6 +182,7 @@ bool Controller::buildUi() {
     uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher(), renderer_->measure());
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher(), window());
     chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui_);
+    prompt_ = boost::make_shared<v3d::ui::shell::Prompt>(vgui_);
 
     const boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
     if (!container) {
@@ -225,6 +231,14 @@ void Controller::syncUi() {
         mark("view::show::mesh", activeView_->shows(ViewPort::SHOW_MESH));
         mark("view::show::handle", activeView_->shows(ViewPort::SHOW_HANDLE));
         mark("view::show::grid", activeView_->shows(ViewPort::SHOW_GRID));
+
+        // a view laid out from a profile the menu does not offer, such as a second
+        // perspective, marks none of the fixed views
+        const v3d::type::camera::Camera& camera = *activeView_->camera();
+        for (const FixedView& view : fixedViews()) {
+            mark(view.command.c_str(), camera.profile().name() == view.profile);
+        }
+        mark("view::camera::orthographic", camera.orthographic());
     }
 
     const SelectMask mask = selectTool_->mask();
@@ -242,6 +256,20 @@ void Controller::syncUi() {
 
 /**
  **/
+void Controller::syncCaption() {
+    if (!history_) {
+        return;
+    }
+    const std::string caption = "Vertical|3D - " + projectPath_.filename().string() + (history_->dirty() ? " *" : "");
+    if (caption == caption_) {
+        return;
+    }
+    caption_ = caption;
+    window()->caption(caption_);
+}
+
+/**
+ **/
 void Controller::registerCommands() {
     // a check item shows what the editor holds rather than remembering its own state, so
     // whatever a command changed is read back after it runs
@@ -249,6 +277,7 @@ void Controller::registerCommands() {
         const bool added = commands().addPress(name, [this, handler]() {
             handler();
             syncUi();
+            syncCaption();
         });
         if (!added) {
             refused_.push_back(name);
@@ -258,6 +287,7 @@ void Controller::registerCommands() {
         const bool added = commands().add(name, [this, handler](const v3d::event::Event& event) {
             handler(event);
             syncUi();
+            syncCaption();
         });
         if (!added) {
             refused_.push_back(name);
@@ -270,11 +300,16 @@ void Controller::registerCommands() {
     press("create::poly::plane", [this]() { createPoly("plane"); });
     press("create::poly::cylinder", [this]() { createPoly("cylinder"); });
     press("create::poly::cone", [this]() { createPoly("cone"); });
+    press("transform::poly::split_edge", [this]() { splitSelectedEdges(); });
+    press("transform::poly::split_face", [this]() { splitSelectedFace(); });
+    press("transform::poly::extrude_face", [this]() { changeSelectedFaces("extrude face", extrudeFaces); });
+    press("transform::poly::inset_face", [this]() { changeSelectedFaces("inset face", insetFaces); });
+    press("transform::poly::merge_vertices", [this]() { mergeSelectedVertices(); });
 
-    press("select::mask::object", [this]() { selectTool_->activate("object"); });
-    press("select::mask::vertex", [this]() { selectTool_->activate("vertex"); });
-    press("select::mask::edge", [this]() { selectTool_->activate("edge"); });
-    press("select::mask::face", [this]() { selectTool_->activate("face"); });
+    press("select::mask::object", [this]() { selectMask("object"); });
+    press("select::mask::vertex", [this]() { selectMask("vertex"); });
+    press("select::mask::edge", [this]() { selectMask("edge"); });
+    press("select::mask::face", [this]() { selectMask("face"); });
 
     press("transform::select", [this]() { transformMode("select"); });
     press("transform::translate", [this]() { transformMode("translate"); });
@@ -286,20 +321,32 @@ void Controller::registerCommands() {
     press("view::show::grid", [this]() { toggleShow(ViewPort::SHOW_GRID); });
     press("view::show::mesh", [this]() { toggleShow(ViewPort::SHOW_MESH); });
     press("view::show::handle", [this]() { toggleShow(ViewPort::SHOW_HANDLE); });
+    for (const FixedView& view : fixedViews()) {
+        const std::string profile = view.profile;
+        press(view.command, [this, profile]() { look(profile); });
+    }
+    press("view::camera::orthographic", [this]() { toggleProjection(); });
     // not a view flag: the readout covers the window rather than one pane, so the renderer
     // shows it and nothing here reads it back
     press("view::show::statistics", [this]() { renderer_->statistics()->toggle(); });
 
-    // the three camera moves are held rather than latched: the modifier going down
-    // chooses what a drag performs and it coming up puts the tool back to none
+    // zoom and truck are held rather than latched: the modifier going down chooses what a
+    // drag of the primary button performs and it coming up puts the tool back to none
     hold("view::camera::zoom", [this](const v3d::event::Event& event) {
         cameraMode("zoom", event.state() != v3d::event::State::Released);
     });
     hold("view::camera::truck", [this](const v3d::event::Event& event) {
         cameraMode("truck", event.state() != v3d::event::State::Released);
     });
+    // pan is a button of its own, so holding it is the drag
     hold("view::camera::pan", [this](const v3d::event::Event& event) {
-        cameraMode("pan", event.state() != v3d::event::State::Released);
+        const bool pressed = event.state() != v3d::event::State::Released;
+        cameraMode("pan", pressed);
+        cameraTool_->button(1, pressed, cursor_);
+    });
+    // held: while it is down a click adds to the selection or takes away from it
+    hold("select::add", [this](const v3d::event::Event& event) {
+        selectTool_->adding(event.state() != v3d::event::State::Released);
     });
 
     hold("view::drag", [this](const v3d::event::Event& event) {
@@ -313,6 +360,10 @@ void Controller::registerCommands() {
     press("project::chooser::accept", [this]() { chooser_->accept(); });
     press("project::chooser::cancel", [this]() { chooser_->close(); });
     press("project::export::rib", [this]() { exportProject(); });
+    // the prompt's buttons, in the order its answers are given
+    press("project::prompt::answer0", [this]() { prompt_->answer(0); });
+    press("project::prompt::answer1", [this]() { prompt_->answer(1); });
+    press("project::prompt::answer2", [this]() { prompt_->answer(2); });
 
     press("edit::undo", [this]() { history("undo"); });
     press("edit::redo", [this]() { history("redo"); });
@@ -339,6 +390,72 @@ void Controller::createPoly(const std::string& name) {
     command->redo();
     history_->push(command);
     logger()->get()->info("created a {} - {} meshes", name, scene_->count());
+}
+
+/**
+ **/
+void Controller::splitSelectedEdges() {
+    if (selectTool_->mask() != SelectMask::Edge) {
+        logger()->get()->info("split edge needs the edge select mask");
+        return;
+    }
+    const boost::shared_ptr<TopologyCommand> command = splitEdges(*scene_);
+    if (!command) {
+        logger()->get()->info("split edge: no edge is selected");
+        return;
+    }
+    history_->push(command);
+    logger()->get()->info("split the selected edges");
+}
+
+/**
+ **/
+void Controller::splitSelectedFace() {
+    if (selectTool_->mask() != SelectMask::Vertex) {
+        logger()->get()->info("split face needs the vertex select mask");
+        return;
+    }
+    std::string problem;
+    const boost::shared_ptr<TopologyCommand> command = splitFace(*scene_, &problem);
+    if (!command) {
+        logger()->get()->info("split face: {}", problem);
+        return;
+    }
+    history_->push(command);
+    logger()->get()->info("split a face between the selected vertices");
+}
+
+/**
+ **/
+void Controller::mergeSelectedVertices() {
+    if (selectTool_->mask() != SelectMask::Vertex) {
+        logger()->get()->info("merge vertices needs the vertex select mask");
+        return;
+    }
+    std::string problem;
+    const boost::shared_ptr<TopologyCommand> command = mergeVertices(*scene_, &problem);
+    if (!command) {
+        logger()->get()->info("merge vertices: {}", problem);
+        return;
+    }
+    history_->push(command);
+    logger()->get()->info("merged the selected vertices");
+}
+
+/**
+ **/
+void Controller::changeSelectedFaces(const std::string& name, FaceOperation operation) {
+    if (selectTool_->mask() != SelectMask::Face) {
+        logger()->get()->info("{} needs the face select mask", name);
+        return;
+    }
+    const boost::shared_ptr<TopologyCommand> command = operation(*scene_);
+    if (!command) {
+        logger()->get()->info("{}: no face is selected", name);
+        return;
+    }
+    history_->push(command);
+    logger()->get()->info("{}: done to the selected faces", name);
 }
 
 /**
@@ -391,25 +508,65 @@ void Controller::exportProject() {
 /**
  **/
 void Controller::openProject() {
-    chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, projectPath_.parent_path(), ".json",
-        [this](const boost::filesystem::path& chosen) {
-            // a gesture under way is holding the mesh it started on, which the read is
-            // about to take out of the scene
-            transformTool_->cancel();
-            if (!project_->read(chosen.string(), scene_)) {
-                return;
-            }
-            projectPath_ = chosen;
-            // the history describes the scene that was replaced, so none of it can be
-            // undone against the new one
-            history_->clear();
-        });
+    askBeforeDiscarding([this]() {
+        chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, projectPath_.parent_path(), ".json",
+            [this](const boost::filesystem::path& chosen) {
+                // a gesture under way is holding the mesh it started on, which the read is
+                // about to take out of the scene
+                transformTool_->cancel();
+                if (!project_->read(chosen.string(), scene_)) {
+                    return;
+                }
+                projectPath_ = chosen;
+                // the history describes the scene that was replaced, so none of it can be
+                // undone against the new one. Clearing it also marks the new scene as saved
+                history_->clear();
+            });
+    });
 }
 
 /**
  **/
-void Controller::saveProject() {
-    project_->write(projectPath_.string(), scene_);
+bool Controller::saveProject() {
+    if (!project_->write(projectPath_.string(), scene_)) {
+        return false;
+    }
+    history_->markSaved();
+    return true;
+}
+
+/**
+ **/
+void Controller::askBeforeDiscarding(const std::function<void()>& proceed) {
+    if (!history_->dirty() || !prompt_) {
+        proceed();
+        return;
+    }
+    prompt_->open("Save the changes to " + projectPath_.filename().string() + "?", {
+        { "Save", [this, proceed]() {
+            // a project that could not be written still has changes to lose
+            if (saveProject()) {
+                proceed();
+            }
+        } },
+        { "Discard", proceed },
+        { "Cancel", {} }
+    }, {});
+}
+
+/**
+ **/
+bool Controller::quitRequested() {
+    if (!history_ || !history_->dirty()) {
+        return true;
+    }
+    // a second close while the question is up would replace it, and lose what the first one
+    // was asking for
+    if (prompt_ && prompt_->visible()) {
+        return false;
+    }
+    askBeforeDiscarding([this]() { quit(); });
+    return false;
 }
 
 /**
@@ -419,6 +576,7 @@ void Controller::saveProjectAs() {
         [this](const boost::filesystem::path& chosen) {
             if (project_->write(chosen.string(), scene_)) {
                 projectPath_ = chosen;
+                history_->markSaved();
             }
         });
 }
@@ -433,9 +591,55 @@ void Controller::toggleShow(ViewPort::VisibleFilter filter) {
 
 /**
  **/
+const std::vector<Controller::FixedView>& Controller::fixedViews() {
+    static const std::vector<FixedView> views{
+        {.command = "view::camera::front", .profile = "Front"},
+        {.command = "view::camera::back", .profile = "Back"},
+        {.command = "view::camera::left", .profile = "Left"},
+        {.command = "view::camera::right", .profile = "Right"},
+        {.command = "view::camera::top", .profile = "Top"},
+        {.command = "view::camera::bottom", .profile = "Bottom"},
+        {.command = "view::camera::perspective", .profile = "Perspective"},
+    };
+    return views;
+}
+
+/**
+ **/
+void Controller::look(const std::string& profile) {
+    if (!activeView_) {
+        return;
+    }
+    if (!profiles_->has(profile)) {
+        logger()->get()->error("There is no camera profile called {}", profile);
+        return;
+    }
+    activeView_->look(profiles_->get(profile));
+    logger()->get()->info("{} shows the {} camera", activeView_->name(), profile);
+}
+
+/**
+ **/
+void Controller::toggleProjection() {
+    if (!activeView_) {
+        return;
+    }
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = activeView_->camera();
+    camera->orthographic(!camera->orthographic());
+    logger()->get()->info("{} is {}", activeView_->name(), camera->orthographic() ? "orthographic" : "perspective");
+}
+
+/**
+ **/
 void Controller::transformMode(const std::string& name) {
     transformTool_->activate(name);
-    renderer_->manipulator(transformTool_->manipulator());
+}
+
+/**
+ **/
+void Controller::selectMask(const std::string& name) {
+    selectTool_->activate(name);
+    transformTool_->mask(selectTool_->mask());
 }
 
 /**
@@ -476,11 +680,18 @@ void Controller::drag(bool pressed) {
         if (uiGrab_) {
             return;
         }
+        // a press on a divider between views resizes them, and no tool sees it
+        if (layout_->grab(cursor_.x, cursor_.y)) {
+            return;
+        }
     } else if (uiGrab_) {
         uiGrab_ = false;
         if (uiCursor_) {
             uiCursor_->release(cursor_);
         }
+        return;
+    } else if (layout_->grabbed()) {
+        layout_->release();
         return;
     }
 
@@ -491,10 +702,11 @@ void Controller::drag(bool pressed) {
     // Otherwise a handle of the selection under the cursor takes the press, and a press no
     // handle took picks
     if (cameraTool_->mode() != CameraControlTool::CAMERA_MODE_NONE) {
-        // a modifier pressed during a handle drag does not keep the release from the
-        // transform tool, which records the drag when it ends
+        // a modifier pressed during a handle drag or a rubber band does not keep the
+        // release from the tool that ends it
         if (!pressed) {
             transformTool_->button(1, false, cursor_);
+            selectTool_->button(1, false, cursor_);
         }
         return;
     }
@@ -513,6 +725,12 @@ void Controller::layoutViews(int width, int height) {
     layout_->resize(glm::vec4(inset.x, inset.y,
         std::max(0.0F, static_cast<float>(width) - inset.x),
         std::max(0.0F, static_cast<float>(height) - inset.y)));
+    placeViews();
+}
+
+/**
+ **/
+void Controller::placeViews() {
     const std::vector<ViewLayout::View>& regions = layout_->views();
     for (std::size_t index = 0; index < views_.size() && index < regions.size(); index++) {
         views_[index]->resize(regions[index].region);
@@ -552,7 +770,14 @@ void Controller::handleResize(const v3d::event::kind::WindowResize& event) {
 void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
     cursor_ = event.position();
 
-    const bool dragging = (cameraTool_ && cameraTool_->dragging()) || (transformTool_ && transformTool_->dragging());
+    if (layout_ && layout_->grabbed()) {
+        layout_->drag(cursor_.x, cursor_.y);
+        placeViews();
+        return;
+    }
+
+    const bool dragging = (cameraTool_ && cameraTool_->dragging()) || (transformTool_ && transformTool_->dragging()) ||
+        (selectTool_ && selectTool_->dragging());
     // while a drag is under way the ui is not offered the cursor, so a drag that passes
     // over the menu bar or a toolbar is not interrupted
     if (!dragging && uiMotion(cursor_)) {

@@ -130,7 +130,9 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cone() {
         face.push_back(to);
         face.push_back(apex);
 
-        mesh->addFace(face, glm::normalize(glm::cross(to - from, apex - from)));
+        // the loop runs clockwise seen from outside, so the outward normal is the cross
+        // product taken the other way round
+        mesh->addFace(face, glm::normalize(glm::cross(apex - from, to - from)));
     }
 
     return mesh;

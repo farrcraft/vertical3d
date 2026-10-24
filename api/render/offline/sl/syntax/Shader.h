@@ -21,8 +21,8 @@ namespace v3d::render::offline::sl::syntax {
 class Shader final {
  public:
     /**
-     * Whether a shader of this type runs. A displacement or a volume shader parses, so a
-     * scene naming one is reported as unsupported, not as malformed.
+     * Whether a shader of this type runs. Every type but a volume shader does. A volume shader
+     * parses, so a scene naming one is reported as unsupported, not as malformed.
      **/
     bool supported() const;
 

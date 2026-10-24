@@ -122,7 +122,7 @@ the section after the plan was drafted and is fixed here too.
 ### Step 8 — Close the plan
 
 **Closed.** Every entry this plan took is deleted from TODO.md. The weak test stays, for
-[ToolingDebt](../ToolingDebt.md).
+[ToolingDebt](ToolingDebt.md).
 
 ## Outcome
 

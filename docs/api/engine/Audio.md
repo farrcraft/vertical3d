@@ -34,9 +34,9 @@ The sound document lists clips by id:
   to control. A `Voice` is a scoped enum, so it cannot be passed where a fade or a level goes.
   `Voice::None` is no sound, which a failed `play()` returns. `audio::Play` sets the bus, the
   loop count (-1 loops until stopped), a fade-in, a gain and a pan.
-- `stop(voice, fadeOutMs)`, `stopAll()`, `playing(voice)`, `gain(voice, level)` and
-  `pan(voice, value)` control playing sounds. A voice that has finished is refused, never
-  confused with a newer sound.
+- `stop(voice, fadeOutMs)`, `stopAll()`, `playing(voice)`, `gain(voice, level)`,
+  `volume(voice)` and `pan(voice, value)` control playing sounds. A voice that has finished is
+  refused, never confused with a newer sound.
 - **A pan runs from -1, left, through 0 to 1, right.** The side a sound is panned towards stays
   at full gain, and the other falls in a straight line to silence at the end. A centred sound is
   exactly an unpanned one. A pan past either end is held there, and one that is not finite is
@@ -44,9 +44,13 @@ The sound document lists clips by id:
 - **The game converts a position to a pan**, because which way is left depends on its camera.
   There is no listener and no fall-off with distance.
 - `has(id)` says whether a clip is filed under an id. It works without a device.
-- `busGain(bus, level)` sets the gain of every voice playing on a named bus such as `music` or
-  `sfx`. It replaces each voice's own gain, and does not apply to a voice started afterwards.
-  Nothing stores the level.
+- **A sound plays at its own gain times its bus's level.** `busGain(bus, level)` sets the
+  level of a named bus such as `music` or `sfx`. It applies to the sounds playing on the bus and
+  to every sound started on it later. `gain(voice, level)` sets a sound's own gain, and the
+  bus's level still scales it. `volume(voice)` reads back the product.
+- **A bus level is stored.** It can be set before `initialize()`, before anything plays and
+  with no device, so a volume read from settings can be applied at any point in `start()`.
+  `busGain(bus)` reads it back. A bus never set is at 1, and so is no bus.
 - **A device that does not open leaves the app silent, not broken.** `initialize()` returns
   false and logs, clips still load, and playing returns false.
 
@@ -81,6 +85,16 @@ events_->update();                                       // once a frame, in tic
 - **Load the strings bank** beside the banks that hold events. FMOD looks an event's path up in
   it, so without it no event is found by name.
 - `play()` starts a one shot, which FMOD releases when it ends.
+- **`start()` starts an event and keeps hold of it**, for a bed or a loop that has to be stopped.
+  It returns an `audio::Instance`, a scoped enum like `Voice`. `Instance::None` is no event,
+  which an unknown event and the null backend return. `stop(instance, Stop::FadeOut)` plays the
+  fade out the event was authored with, and `Stop::Immediately` cuts it off. `playing(instance)`
+  reads FMOD's playback state, and stays true through a fade out.
+- **FMOD starts and stops events on its own thread**, so `playing()` changes a frame or more
+  after `start()` or `stop()`. `update()` releases each started event once it has stopped, and
+  a released instance is refused rather than confused with a newer one.
+- An instance belongs to the backend that started it, and nothing stops it when its owner goes.
+  An owner that ends before the sound should, such as a scene, stops it in its destructor.
 - **Events and clips are separate.** Clips, buses and fades stay on `audio::Engine` and
   SDL3_mixer, whichever event backend is built. With FMOD, the two each open their own device.
 - `name()` is `"fmod"` or `"null"`, for the log.

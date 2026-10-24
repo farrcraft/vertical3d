@@ -228,9 +228,8 @@ BOOST_AUTO_TEST_CASE(slparser_parameter_needs_a_default_test) {
 }
 
 /**
- * All five shader types parse. Displacement and volume shaders do not run, and come back
- * marked rather than refused. A scene carrying one is then reported as unsupported rather
- * than malformed.
+ * All five shader types parse. A volume shader does not run, and comes back marked rather
+ * than refused. A scene carrying one is then reported as unsupported rather than malformed.
  **/
 BOOST_AUTO_TEST_CASE(slparser_unsupported_shader_types_test) {
     std::string error;
@@ -242,7 +241,7 @@ BOOST_AUTO_TEST_CASE(slparser_unsupported_shader_types_test) {
     BOOST_CHECK_EQUAL(error, "");
     BOOST_REQUIRE_EQUAL(shaders.size(), 3U);
     BOOST_CHECK(shaders[0]->type == v3d::render::offline::sl::ShaderType::DISPLACEMENT);
-    BOOST_CHECK(!shaders[0]->supported());
+    BOOST_CHECK(shaders[0]->supported());
     BOOST_CHECK(shaders[1]->type == v3d::render::offline::sl::ShaderType::VOLUME);
     BOOST_CHECK(!shaders[1]->supported());
     BOOST_CHECK(shaders[2]->type == v3d::render::offline::sl::ShaderType::IMAGER);

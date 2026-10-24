@@ -22,14 +22,21 @@
 #include <api/ui/shell/StatisticsOverlay.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/manipulator/Target.h>
+#include <vertical3d/src/tool/SelectTool.h>
+#include <vertical3d/src/tool/TransformTool.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
+#include <glm/common.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::editor {
 
@@ -39,6 +46,11 @@ namespace {
  * What every viewport clears to.
  **/
 constexpr glm::vec4 background(0.16F, 0.17F, 0.19F, 1.0F);
+
+/**
+ * The outline of a rubber band.
+ **/
+constexpr glm::vec4 bandColour(0.9F, 0.9F, 0.9F, 1.0F);
 
 /**
  * What a view's handle pass is called, on the end of the view's own name.
@@ -118,8 +130,14 @@ void Renderer::scene(const boost::shared_ptr<Scene>& scene) {
 
 /**
  **/
-void Renderer::manipulator(const boost::shared_ptr<Manipulator>& manipulator) {
-    manipulator_ = manipulator;
+void Renderer::transformTool(const boost::shared_ptr<TransformTool>& transform) {
+    transform_ = transform;
+}
+
+/**
+ **/
+void Renderer::selectTool(const boost::shared_ptr<SelectTool>& select) {
+    select_ = select;
 }
 
 /**
@@ -186,13 +204,17 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
     const Scene empty;
     const Scene& scene = scene_ ? *scene_ : empty;
 
+    // the handles sit about what the tool would move, which every view draws the same
+    const boost::shared_ptr<Manipulator> manipulator = transform_ ? transform_->manipulator() : boost::shared_ptr<Manipulator>();
+    const Target target = transform_ ? transform_->target() : Target();
+
     for (std::size_t index = 0; index < views_.size(); index++) {
         const boost::shared_ptr<ViewPort>& view = views_[index];
         if (!view) {
             continue;
         }
 
-        view->draw(scene, manipulator_.get(), &canvases_[index], &overlays_[index]);
+        view->draw(scene, manipulator.get(), target, &canvases_[index], &overlays_[index]);
 
         const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(view->name());
         pass->viewport(view->region());
@@ -230,7 +252,19 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
     // the statistics overlay draws onto the same canvas, so this runs even when there is no
     // ui to draw
     screen_->draw(ui_.get(), statistics);
-    const v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
+    v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
+
+    // the rubber band is drawn in window pixels, which is the space this canvas is in
+    const std::optional<SelectTool::Band> band = select_ ? select_->band() : std::nullopt;
+    if (band) {
+        const glm::vec2 low = glm::min(band->corner, band->opposite);
+        const glm::vec2 high = glm::max(band->corner, band->opposite);
+        canvas.rect(low, glm::vec2(high.x, low.y + 1.0F), bandColour);
+        canvas.rect(glm::vec2(low.x, high.y - 1.0F), high, bandColour);
+        canvas.rect(low, glm::vec2(low.x + 1.0F, high.y), bandColour);
+        canvas.rect(glm::vec2(high.x - 1.0F, low.y), high, bandColour);
+    }
+
     if (canvas.empty()) {
         return;
     }

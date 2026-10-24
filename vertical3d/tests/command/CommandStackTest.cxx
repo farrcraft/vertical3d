@@ -156,6 +156,87 @@ BOOST_AUTO_TEST_CASE(command_stack_clear_test) {
     BOOST_CHECK_EQUAL(first->undone, 0);
 }
 
+BOOST_AUTO_TEST_CASE(command_stack_saved_position_test) {
+    v3d::editor::CommandStack stack;
+
+    // a new document has nothing to lose
+    BOOST_CHECK(!stack.dirty());
+
+    stack.push(counter("first"));
+    BOOST_CHECK(stack.dirty());
+    stack.markSaved();
+    BOOST_CHECK(!stack.dirty());
+
+    // the document is dirty on either side of the saved position, and clean back on it
+    stack.push(counter("second"));
+    BOOST_CHECK(stack.dirty());
+    stack.undo();
+    BOOST_CHECK(!stack.dirty());
+    stack.undo();
+    BOOST_CHECK(stack.dirty());
+    stack.redo();
+    BOOST_CHECK(!stack.dirty());
+}
+
+BOOST_AUTO_TEST_CASE(command_stack_saved_position_discarded_test) {
+    v3d::editor::CommandStack stack;
+
+    stack.push(counter("first"));
+    stack.push(counter("second"));
+    stack.markSaved();
+
+    // the saved position is among the undone commands, and a push discards them
+    stack.undo();
+    stack.push(counter("third"));
+    BOOST_CHECK(stack.dirty());
+
+    // undoing back to the same depth reaches a different document
+    stack.undo();
+    stack.undo();
+    BOOST_CHECK(stack.dirty());
+    stack.redo();
+    stack.redo();
+    BOOST_CHECK(stack.dirty());
+
+    stack.markSaved();
+    BOOST_CHECK(!stack.dirty());
+}
+
+BOOST_AUTO_TEST_CASE(command_stack_saved_position_dropped_test) {
+    v3d::editor::CommandStack stack(2);
+
+    // saved after the oldest command: dropping that command keeps the position reachable,
+    // by undoing everything left
+    stack.push(counter("first"));
+    stack.markSaved();
+    stack.push(counter("second"));
+    stack.push(counter("third"));
+    BOOST_CHECK(stack.dirty());
+    stack.undo();
+    stack.undo();
+    BOOST_CHECK(!stack.dirty());
+
+    // saved before the oldest command: once it is dropped, no undo reaches the position
+    v3d::editor::CommandStack lost(2);
+    lost.push(counter("first"));
+    lost.push(counter("second"));
+    lost.push(counter("third"));
+    lost.undo();
+    lost.undo();
+    BOOST_CHECK(lost.dirty());
+}
+
+BOOST_AUTO_TEST_CASE(command_stack_clear_is_saved_test) {
+    v3d::editor::CommandStack stack;
+
+    stack.push(counter("first"));
+    BOOST_CHECK(stack.dirty());
+
+    // clearing is what opening a document does, and an opened document is saved
+    stack.clear();
+    BOOST_CHECK(!stack.dirty());
+}
+
 BOOST_AUTO_TEST_CASE(create_command_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
@@ -168,11 +249,11 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
     // the command does the creating, so the first do and a redo run the same code
     command->redo();
     BOOST_CHECK_EQUAL(scene->count(), 1U);
-    BOOST_CHECK(scene->selection() == cube);
+    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{cube});
 
     command->undo();
     BOOST_CHECK_EQUAL(scene->count(), 0U);
-    BOOST_CHECK(!scene->selection());
+    BOOST_CHECK(scene->selection().empty());
     BOOST_CHECK(!cube->selected());
 
     // the mesh outlives its removal, so it comes back with the id that a command deeper in
@@ -192,15 +273,25 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
 
     v3d::editor::CreateCommand command(scene, cube, "cube");
     command.redo();
-    BOOST_CHECK(scene->selection() == cube);
+    BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
+    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{cube});
 
-    // undoing the create must leave one selection at most, and the flag lives on the mesh
+    // the flag lives on the mesh, so undoing the create clears it
     command.undo();
-    BOOST_CHECK(!scene->selection());
+    BOOST_CHECK(scene->selection().empty());
 
     command.redo();
-    BOOST_CHECK(scene->selection() == cube);
+    BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
+    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{cube});
     BOOST_CHECK(!plane->selected());
+
+    // with the plane added to the selection, undoing the create takes the cube out of it
+    // and leaves the plane selected
+    plane->selected(true);
+    command.undo();
+    BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
+    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{plane});
+    BOOST_CHECK(!cube->selected());
 }
 
 BOOST_AUTO_TEST_CASE(transform_command_test) {
@@ -215,7 +306,7 @@ BOOST_AUTO_TEST_CASE(transform_command_test) {
 
     BOOST_CHECK(!before.same(after));
 
-    v3d::editor::TransformCommand command(cube, {.before = before, .after = after}, "translate");
+    v3d::editor::TransformCommand command({{.mesh = cube, .before = before, .after = after}}, "translate");
     BOOST_CHECK_EQUAL(command.name(), "translate");
 
     // a gesture is undone by restoring the whole placement, not only the part that moved

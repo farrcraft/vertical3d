@@ -14,16 +14,16 @@ namespace v3d::type::camera {
 
 /**
  * An orthographic camera that orbits a point on the ground at a fixed elevation, snapping
- * to one of four azimuths.
+ * to one of four azimuths a quarter turn apart. start() sets where the first of them is.
  *
  * This is not a Camera. It holds the point the view is aimed at and which of the four
- * corners it is seen from. apply() writes that onto a Camera, and the Camera builds the
+ * azimuths it is seen from. apply() writes that onto a Camera, and the Camera builds the
  * matrices. Nothing here reads an input device. A caller maps its own keys or gestures onto
  * rotate(), pan() and zoomBy(), in the same way it passes points to ArcBall.
  *
- * The camera stops only at the four corners, never between them, so a scene only has to read
+ * The camera stops only at the four azimuths, never between them, so a scene only has to read
  * well from those four views. pan() is measured in the view's own axes, so dragging right
- * moves the scene right from every corner.
+ * moves the scene right from every azimuth.
  **/
 class Isometric {
  public:
@@ -40,6 +40,14 @@ class Isometric {
      * by the word. Pass the true value to elevation() for the strict projection.
      **/
     static constexpr float DEFAULT_ELEVATION = 0.78539816339744830961F;
+
+    /**
+     * A start() that puts the four azimuths over the ground diagonals, in radians - 45
+     * degrees. The eye then looks across the corner of a square on the ground, so a grid of
+     * square tiles is drawn as diamonds. The default start of 0 puts them over the world
+     * axes, and the same grid is drawn as squares.
+     **/
+    static constexpr float DIAGONAL_START = 0.78539816339744830961F;
 
     /**
      * How far the eye sits from the target, in world units.
@@ -76,6 +84,14 @@ class Isometric {
      * valid.
      **/
     void azimuth(int index);
+
+    /**
+     * The angle of azimuth 0 around the vertical, in radians. Each later azimuth is a quarter
+     * turn counterclockwise from it. At 0 the eye at azimuth 0 sits along +X of the target.
+     * Pass DIAGONAL_START to see the ground from its diagonals.
+     **/
+    float start() const;
+    void start(float radians);
 
     /**
      * Move the target across the ground plane, in the view's own axes: x along right() and
@@ -148,9 +164,15 @@ class Isometric {
     void apply(Camera* camera) const;
 
  private:
+    /**
+     * The angle of the current azimuth around the vertical, measured from +X towards +Z.
+     **/
+    float angle() const;
+
     glm::vec3 target_;
     Profile::Hand hand_{Profile::Hand::UpCrossDirection};
     int azimuth_{0};
+    float start_{0.0F};
     float zoom_{DEFAULT_ZOOM};
     float elevation_{DEFAULT_ELEVATION};
     float distance_{DEFAULT_DISTANCE};

@@ -17,6 +17,11 @@
 namespace v3d::editor {
 
 /**
+ * A set of meshes, in the order the scene holds them, as a selection is.
+ **/
+using Meshes = std::vector<boost::shared_ptr<v3d::brep::BRep>>;
+
+/**
  * What the editor is editing: the meshes of one document.
  *
  * It holds no cameras. The views own theirs, and config::CameraProfiles owns the table
@@ -43,12 +48,10 @@ class Scene final {
     boost::shared_ptr<v3d::brep::BRep> mesh(unsigned int id) const;
 
     /**
-     * @return the selected mesh, or an empty pointer.
-     *
-     * One thing is selected at a time, so the first selected mesh is the selection.
-     * The transform tools act on it, and component selection lives inside it.
+     * @return every selected mesh, in insertion order. Component selection lives inside
+     *         these meshes, and may span several of them.
      **/
-    boost::shared_ptr<v3d::brep::BRep> selection() const;
+    Meshes selection() const;
 
     /**
      * @return how many meshes the scene holds

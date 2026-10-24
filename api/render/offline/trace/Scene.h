@@ -9,12 +9,15 @@
 #include <api/render/offline/sl/Placed.h>
 #include <api/type/geometry/Ray.h>
 
+#include <cstddef>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
+#include "Hierarchy.h"
 #include "Hit.h"
 #include "Intersection.h"
 #include "Pose.h"
@@ -44,6 +47,20 @@ class Scene final {
         std::vector<glm::mat4x4> backward;
     };
 
+    /**
+     * The matrices from camera space into the projected spaces a shader can name. Each is the
+     * identity until the renderer sets the camera.
+     **/
+    class Projection final {
+     public:
+        /** The projection, with the visible picture over [-1, 1] in x and y. **/
+        glm::mat4x4 screen = glm::mat4x4(1.0F);
+        /** Pixels: x to the right and y down from the upper left corner of the picture. **/
+        glm::mat4x4 raster = glm::mat4x4(1.0F);
+        /** Raster divided by the resolution, over [0, 1], with z over [0, 1] from near to far. **/
+        glm::mat4x4 ndc = glm::mat4x4(1.0F);
+    };
+
     Scene();
 
     /**
@@ -54,6 +71,10 @@ class Scene final {
     void view(const glm::mat4x4 & toCamera);
     glm::mat4x4 view() const;
     glm::vec3 eye() const;
+
+    /** The camera's projection, which defines a hit's "screen", "raster" and "NDC" spaces. **/
+    void projection(const Projection & projected);
+    const Projection & projection() const;
 
     /**
      * A primitive whose geometry was placed by the reference() matrix of a transformation
@@ -97,6 +118,11 @@ class Scene final {
     /**
      * The nearest primitive a ray meets beyond `from`, or false.
      *
+     * The primitives are held in a bounding volume hierarchy, which is built on the first call
+     * after a primitive was added. That makes the call cheap for a ray but not safe to make
+     * from two threads at once. A moving primitive's box holds it across the whole motion.
+     * Two hits at one distance resolve to the primitive added first.
+     *
      * @param from how far along the ray to start looking. Without it, a ray leaving a
      *        surface would meet the surface it left, so a shadow ray is offset rather
      *        than started at zero
@@ -111,6 +137,21 @@ class Scene final {
      **/
     bool nearest(const v3d::type::geometry::Ray & ray, float from, Hit* hit, float time = 0.0F) const;
 
+    /**
+     * A hit's surface at other parameters, where the hit's primitive is at the poses' time:
+     * what Primitive::at() gives, carried forward as nearest() carries a hit. The primitive and
+     * the incident direction are the hit's. False when the primitive cannot place a point by its
+     * parameters.
+     **/
+    static bool around(const Hit & hit, const glm::vec2 & parameters, const Poses & poses, Hit* near);
+
+    /**
+     * How wide one pixel of the camera's picture is at a point in world space, measured across
+     * x in raster space. A scene with no camera has the identity for its projection, so a pixel
+     * there is one unit wide.
+     **/
+    float footprint(const glm::vec3 & point) const;
+
     const glm::vec3 & background() const;
     void background(const glm::vec3 & colour);
 
@@ -124,10 +165,23 @@ class Scene final {
 
  private:
     glm::mat4x4 view_ = glm::mat4x4(1.0F);
+    Projection projection_;
     /** The motion a primitive placed by this transformation is carried by, or -1. **/
     int motion(const v3d::render::offline::MovingTransform & placed);
 
+    /** Carries a hit's normals forward from its primitive's stored pose to the poses' time. **/
+    static void carry(const Primitive & primitive, const Poses & poses, Hit* hit);
+
+    /** Builds the hierarchy over every primitive with a bound, and lists those without one. **/
+    void build() const;
+
     std::vector<boost::shared_ptr<const Primitive>> primitives_;
+    // built by nearest() when it is first asked after an add, so a const query can build it
+    mutable Hierarchy hierarchy_;
+    mutable std::vector<std::size_t> unbounded_;
+    // the primitive each item of the hierarchy is
+    mutable std::vector<std::size_t> bounded_;
+    mutable bool built_ = false;
     std::vector<v3d::render::offline::MovingTransform> motions_;
     std::vector<v3d::render::offline::sl::Placed> lights_;
     glm::vec3 background_ = glm::vec3(0.0F);

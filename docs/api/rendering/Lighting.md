@@ -220,6 +220,19 @@ A replacement must declare the same sets as the built-in shaders, and no push co
 | set 2, binding 2 | The joint palette, a read-only storage buffer (skinned shaders) |
 | set 2, binding 3 | The objects, a read-only storage buffer of `Lit::Object`: model matrix, base colour, outline, first joint (96 bytes each) |
 
+Each vertex stage is given only the attributes the built-in one reads. Location 0 is the
+position, 1 the normal and 2 the uv, and a skinned stage also gets the joints at 3 and the
+weights at 4.
+
+| Stage | Locations |
+|---|---|
+| `mesh`, `skinnedMesh` | 0, 1 and 2 |
+| `outlineVertex`, `skinnedOutline` | 0 and 1 |
+| `shadow`, `skinnedShadow` | 0 |
+
+A replacement that reads a location its stage is not given is a validation error when the
+pipeline is built. One that leaves a location unread is a warning.
+
 A vertex stage reads its object at `gl_InstanceIndex`, because a draw names its object as its
 first instance. A fragment stage has no instance index, so its vertex stage passes the index
 down as a flat output. The built-in `mesh.vert` passes it at location 3, and `cel.frag` reads

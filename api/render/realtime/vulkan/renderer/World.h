@@ -26,8 +26,9 @@
 #include <string>
 #include <vector>
 
-
 #include <boost/shared_ptr.hpp>
+
+#include <glm/vec4.hpp>
 
 namespace v3d::render::realtime::vulkan::renderer {
 
@@ -103,8 +104,12 @@ class World final {
      *        pass that sorts
      * @param blend how the canvas's quads combine with what the pass has already drawn. A
      *        canvas is one blend, so a game fills a canvas of smoke and another of flame
+     * @param tint multiplied into the colour of every quad in the canvas as it is drawn. It
+     *        lights a canvas kept across frames without building it again, and two submissions
+     *        of one canvas can be lit differently. White leaves the colours alone
      **/
-    void submit(const canvas::World& canvas, Pass* pass, uint16_t layer = 0, Blend blend = Blend::Alpha);
+    void submit(const canvas::World& canvas, Pass* pass, uint16_t layer = 0, Blend blend = Blend::Alpha,
+        const glm::vec4& tint = glm::vec4(1.0F));
 
  private:
     /**

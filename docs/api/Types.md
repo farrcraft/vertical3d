@@ -53,6 +53,10 @@ The queries are in `v3d::type::geometry` ([api/type/geometry/](../../api/type/ge
 - `intersects(a, b, c, &distance)` tests a triangle from either side. The overload with `u` and
   `v` also returns barycentric weights: the hit is `a + u * (b - a) + v * (c - a)`. Use them to
   interpolate a normal or a texture coordinate.
+- **A point within a hundred-thousandth of a triangle's edge, as a weight, is inside it.**
+  Rounding can put a point on an edge two triangles share just outside both, and a ray through it
+  would then meet neither. Each triangle reaches that little past its edges, so a mesh has no
+  cracks.
 - `intersects(plane, &distance)` is true only when the ray crosses the plane at or ahead of its
   origin. A ray parallel to the plane, or one that would have to run backwards, does not cross
   it.
@@ -259,6 +263,11 @@ orthographic camera on an orbit around a target on the ground.
 
 - `rotate(steps)` turns by quarter turns, counterclockwise for positive steps. `azimuth(index)`
   jumps to one of the four azimuths. Both wrap.
+- `start(radians)` sets the angle of azimuth 0 around the vertical, and the other three are
+  quarter turns from it. The default of 0 puts the eye at azimuth 0 along +X of the target, so
+  every view looks along a world axis and a square tile is drawn as a square.
+  `Isometric::DIAGONAL_START`, 45 degrees, puts every view over a ground diagonal, so a square
+  tile is drawn as a diamond.
 - `pan(delta)` moves the target in the view's own axes: `x` along `right()` and `y` along
   `forward()`, in world units.
 - The default elevation is 45 degrees. A true isometric projection is about 35.26 degrees;

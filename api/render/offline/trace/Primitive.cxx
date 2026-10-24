@@ -6,10 +6,19 @@
 #include "Primitive.h"
 
 #include <api/render/offline/sl/Placed.h>
+#include <api/type/geometry/AABBox.h>
 
 namespace v3d::render::offline::trace {
 
 Primitive::Primitive(const glm::vec3 & colour) : colour_(colour) {
+}
+
+bool Primitive::bound(v3d::type::geometry::AABBox* /* box */) const {
+    return false;
+}
+
+bool Primitive::at(const glm::vec2 & /* parameters */, Hit* /* hit */) const {
+    return false;
 }
 
 const glm::vec3 & Primitive::colour() const {

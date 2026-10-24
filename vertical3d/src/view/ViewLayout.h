@@ -23,8 +23,13 @@ namespace v3d::editor {
  * leaf. The tree is flattened into one pixel region per viewport, and a pass draws into
  * that region.
  *
- * A split divides its area evenly between its children, and the divisions are fixed. A split
- * with no children is refused, at any depth.
+ * A split divides its area between its children by their shares. A share is a weight against
+ * the other children of the same split, and a child with none has a share of one, so a split
+ * whose children name none divides evenly. A split with no children is refused, at any depth.
+ *
+ * The divider between two children of a split can be dragged. It moves weight from one of the
+ * two to the other, so their sum, and every other child, stays as it was. The shares live as
+ * long as the layout, and are not written back to the config.
  **/
 class ViewLayout final {
  public:
@@ -89,6 +94,37 @@ class ViewLayout final {
      **/
     std::size_t viewAt(float x, float y) const noexcept;
 
+    /** How near a divider, in pixels, a press has to be to take hold of it. **/
+    static constexpr float dividerReach = 3.0F;
+
+    /** The least part of its split's extent a child keeps when a divider is dragged. **/
+    static constexpr float minimumShare = 0.05F;
+
+    /**
+     * Take hold of the divider at a point of the window, if one is within dividerReach of it.
+     * Where the dividers of two splits meet, the outer split's is taken.
+     *
+     * @return whether a divider was taken
+     **/
+    bool grab(float x, float y);
+
+    /**
+     * @return whether a divider is held
+     **/
+    bool grabbed() const noexcept;
+
+    /**
+     * Move the held divider to a point of the window, and place the views again in the region
+     * last given to resize(). The divider moves along its split only, and each of the two
+     * children beside it keeps at least minimumShare of the split's extent.
+     **/
+    void drag(float x, float y);
+
+    /**
+     * Let go of the held divider.
+     **/
+    void release() noexcept;
+
  private:
     /**
      * One node of the tree: either a split with children, or a leaf naming a camera.
@@ -98,6 +134,8 @@ class ViewLayout final {
 
         bool vertical;             /**< a vertical split stacks its children **/
         std::size_t view;          /**< index into views_, for a leaf **/
+        float share;               /**< the node's weight among its split's children **/
+        glm::vec4 region;          /**< where the node was last placed **/
         std::vector<Node> children;
     };
 
@@ -110,12 +148,23 @@ class ViewLayout final {
     /**
      * Give a node the region it covers, and divide it among its children.
      **/
-    void place(const Node& node, const glm::vec4& region);
+    void place(Node* node, const glm::vec4& region);
+
+    /**
+     * Take hold of the divider at a point in a node or below it, outer splits first.
+     * @return whether one was taken
+     **/
+    bool grabIn(Node* node, float x, float y);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     std::string name_;
     Node root_;
     std::vector<View> views_;
+    glm::vec4 area_;
+    // the split whose divider is held, and the child before the divider. A pointer into root_,
+    // which only load() changes, and load() lets go first
+    Node* held_;
+    std::size_t heldAfter_;
 };
 
 };  // namespace v3d::editor

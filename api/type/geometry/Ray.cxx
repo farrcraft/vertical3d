@@ -149,16 +149,19 @@ bool Ray::intersects(const glm::vec3& vertexA, const glm::vec3& vertexB, const g
         return false;
     }
 
+    // a point within this of an edge, as a weight, is inside. Rounding can put a point on an edge
+    // two triangles share just outside both, which leaves a crack a ray passes through
+    constexpr float edge = 1.0e-5F;
     const float inverse = 1.0F / determinant;
     const glm::vec3 offset = origin_ - vertexA;
     const float weightB = glm::dot(offset, perpendicular) * inverse;
-    if (weightB < 0.0F || weightB > 1.0F) {
+    if (weightB < -edge || weightB > 1.0F + edge) {
         return false;
     }
 
     const glm::vec3 across = glm::cross(offset, ab);
     const float weightC = glm::dot(direction_, across) * inverse;
-    if (weightC < 0.0F || weightB + weightC > 1.0F) {
+    if (weightC < -edge || weightB + weightC > 1.0F + edge) {
         return false;
     }
 

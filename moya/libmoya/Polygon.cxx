@@ -382,11 +382,6 @@ void Polygon::split(RenderContext & rc) {
     grid is built in eye space. The hider projects it to raster space.
 */
 bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc) {
-    // one grid covers the whole polygon, so the second call ends the sequence
-    if (diced_ || vertices_.size() < 3) {
-        return false;
-    }
-
     /*
         The grid size is the number of micropolygons in a grid, and a grid of n vertices a
         side has n - 1 micropolygons a side. RenderContext::addPolygon() marks for splitting
@@ -394,6 +389,14 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderCont
         times the shading rate, so one grid covers what reaches here.
     */
     const unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));  // checked: the root of a count is finite and no larger
+    return dice(grid, across);
+}
+
+bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, unsigned int across) {
+    // one grid covers the whole polygon, so the second call ends the sequence
+    if (diced_ || vertices_.size() < 3 || across == 0) {
+        return false;
+    }
     grid.reset(new reyes::MicroPolygonGrid(across + 1));
 
     /*

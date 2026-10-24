@@ -602,6 +602,69 @@ BOOST_AUTO_TEST_CASE(sllibrary_cast_maps_the_named_space_into_current_test) {
     BOOST_CHECK(shaded.machine().reports().empty());
 }
 
+namespace {
+
+/**
+ * A renderer whose "raster" and "NDC" are one projection that swaps z and w. A point (x, y, z)
+ * goes to (x, y, 1, z), and is (x / z, y / z, 1 / z) after the divide. The swap is its own
+ * inverse, so a cast from raster space is the same swap, divided again.
+ **/
+class Projecting final : public v3d::render::offline::sl::runtime::Renderer {
+ public:
+    bool space(const std::string & name, glm::mat4x4* matrix) override {
+        if (name != "raster" && name != "NDC") {
+            return false;
+        }
+        glm::mat4x4 projection(1.0F);
+        projection[2][2] = 0.0F;
+        projection[3][3] = 0.0F;
+        projection[2][3] = 1.0F;
+        projection[3][2] = 1.0F;
+        *matrix = projection;
+        return true;
+    }
+};
+
+};  // namespace
+
+/**
+ * A point into or out of a projected space is divided by w, through ptransform, depth() and a
+ * cast alike. A vector has no position, so it is not divided.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_a_projected_space_divides_by_w_test) {
+    Projecting renderer;
+    const Shaded shaded(
+        "point moved = ptransform(\"raster\", point (2, 4, 2));\n"
+        "point between = ptransform(\"current\", \"raster\", point (2, 4, 2));\n"
+        "float away = depth(point (0, 0, 4));\n"
+        "point stated = point \"raster\" (1, 2, 0.5);\n"
+        "vector turned = vtransform(\"raster\", vector (2, 4, 2));", 1, &renderer);
+
+    BOOST_CHECK_CLOSE(shaded.triple("moved").x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("moved").y, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("moved").z, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("between").x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.number("away"), 0.25F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("stated").x, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("stated").y, 4.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("stated").z, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("turned").x, 2.0F, 0.01F);
+    BOOST_CHECK_CLOSE(shaded.triple("turned").y, 4.0F, 0.01F);
+}
+
+/**
+ * A renderer projects "screen", "raster" and "NDC" unless it says otherwise.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_the_projected_spaces_test) {
+    const Projecting renderer;
+    BOOST_CHECK(renderer.projected("screen"));
+    BOOST_CHECK(renderer.projected("raster"));
+    BOOST_CHECK(renderer.projected("NDC"));
+    BOOST_CHECK(!renderer.projected("camera"));
+    BOOST_CHECK(!renderer.projected("world"));
+    BOOST_CHECK(!renderer.projected("current"));
+}
+
 /**
  * The order of matrix composition, against literals written as RenderMan writes them. A
  * literal is row major, and a point is a row vector on the left, so its last row is the
@@ -689,16 +752,13 @@ BOOST_AUTO_TEST_CASE(sllibrary_colour_cast_space_test) {
 }
 
 /**
- * calculatenormal needs the derivatives of the grid it is shading, and no renderer supplies
- * them. It is a stub that reports itself rather than returning a plausible value. A plausible
- * value would make a scene render wrong silently.
+ * calculatenormal differences the batch's neighbouring points. Without a renderer the batch's
+ * points are not neighbours, so the normal is zero, and nothing is reported.
  **/
-BOOST_AUTO_TEST_CASE(sllibrary_calculatenormal_is_a_stub_test) {
+BOOST_AUTO_TEST_CASE(sllibrary_calculatenormal_without_neighbours_is_zero_test) {
     const Shaded shaded("normal answer = calculatenormal(P);", 4);
     BOOST_CHECK_SMALL(shaded.triple("answer").z, 0.0001F);
-    BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 1U);
-    BOOST_CHECK_EQUAL(shaded.machine().reports()[0],
-        "'calculatenormal' is declared and does nothing yet, so it answers its default");
+    BOOST_CHECK(shaded.machine().reports().empty());
 }
 
 /**
@@ -721,7 +781,7 @@ BOOST_AUTO_TEST_CASE(sllibrary_bodies_test) {
         }
     }
     BOOST_CHECK(declared == written);
-    BOOST_CHECK(stubs == std::set<std::string>({ "calculatenormal", "shadow" }));
+    BOOST_CHECK(stubs == std::set<std::string>({ "shadow" }));
 }
 
 };  // namespace

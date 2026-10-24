@@ -124,6 +124,10 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         roughness_ = parameters.number("roughness", -1.0F);
         counts_["Surface"]++;
     }
+    void displacement(const std::string & name, const v3d::render::offline::rib::ParameterList & /* parameters */) override {
+        displacement_ = name;
+        counts_["Displacement"]++;
+    }
     void lightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
         lights_.push_back(request.shader + "|" + request.handle + "|" +
             std::to_string(parameters.number("intensity", -1.0F)));
@@ -190,6 +194,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     std::string projection_;
     std::string display_;
     std::string surface_;
+    std::string displacement_;
     std::string imager_;
     std::string hider_;
     std::string identifier_;
@@ -424,7 +429,7 @@ BOOST_AUTO_TEST_CASE(ribreader_unrecognised_request_test) {
 
     BOOST_REQUIRE(read(
         "Sides 2\n"
-        "Displacement \"MyShader\" \"squish\" 5\n"
+        "Exterior \"MyShader\" \"squish\" [5]\n"
         "Sides 1\n"
         "WorldBegin\n"
         "Polygon \"P\" [0 0 1  1 0 1  1 1 1]\n"
@@ -432,7 +437,7 @@ BOOST_AUTO_TEST_CASE(ribreader_unrecognised_request_test) {
 
     BOOST_REQUIRE_EQUAL(reader.unrecognised().size(), 2U);
     BOOST_CHECK_EQUAL(reader.unrecognised()[0], "Sides");
-    BOOST_CHECK_EQUAL(reader.unrecognised()[1], "Displacement");
+    BOOST_CHECK_EQUAL(reader.unrecognised()[1], "Exterior");
     // everything after them still arrived
     BOOST_CHECK_EQUAL(handler.count("WorldBegin"), 1U);
     BOOST_CHECK_EQUAL(handler.vertices_, 3U);
@@ -541,8 +546,9 @@ BOOST_AUTO_TEST_CASE(ribreader_example_file_test) {
     // the floor polygon is the only geometry with vertices in the file
     BOOST_CHECK_EQUAL(handler.vertices_, 4U);
 
-    // Displacement is a standard request that this reader does not recognise
-    BOOST_CHECK(!reader.unrecognised().empty());
+    // the file's displacement shader reaches the handler with its name
+    BOOST_CHECK_EQUAL(handler.count("Displacement"), 1U);
+    BOOST_CHECK_EQUAL(handler.displacement_, "MyUserShader");
 }
 
 /**

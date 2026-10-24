@@ -17,7 +17,15 @@ indices:
 - `pair`: the half edge running the other way along the same edge
 - `next`: the next half edge around its face
 
-A face stores its normal and one of its half edges. `brep::INVALID_ID` (`1 << 31`) marks a
+A face stores its normal and one of its half edges.
+
+**Winding.** A face's loop runs clockwise when seen from outside, and its stored normal points
+outward. Every primitive is built that way, and a normal recomputed from a face's points follows
+the same rule, so a move never turns a face inside out. An importer of a counter-clockwise format
+reverses each face's loop. Background:
+[ADR-0097](../adr/0097-editor-faces-wind-clockwise-seen-from-outside.md)
+
+`brep::INVALID_ID` (`1 << 31`) marks a
 reference to nothing, such as the `pair` of an edge on an open boundary. **Do not change
 `INVALID_ID`.** Project files store it, so a new value breaks every saved project.
 
@@ -30,8 +38,19 @@ differently. The lower-level `addVertex`, `addEdge` and `addFace` overloads that
 **Validation.** `BRep::validate(&problem)` checks that every reference points at a part the
 mesh holds: a half edge's vertex always, its face, pair and next unless they are `INVALID_ID`,
 and a face's edge always. A `next` chain that does not close is allowed, because an unfinished
-modelling operation can leave one. Validation does not check that a pair is mutual or that a
-surface is manifold.
+modelling operation can leave one. A project file is read against this rule.
+
+**Strict validation.** `BRep::validateStrict(&problem)` is the check a topology change is tested
+against. It runs `validate()` first, then requires that:
+
+- every pair is mutual, and no half edge is its own pair
+- every face's `next` chain returns to the face's first edge
+- every half edge in a face's loop names that face
+- no two half edges of one face run between the same two vertices
+
+An edge with no pair passes, because an open mesh has a boundary. The problem names the edge or
+face at fault. Every primitive the editor creates passes it. It does not check that a surface is
+manifold at a vertex.
 
 **Walking a mesh.** Use the functions in `api/brep/Topology.h` instead of following `next()`
 yourself:
@@ -44,6 +63,29 @@ yourself:
 | `edgeSelected(mesh, edge)` | Whether either half of the edge is selected |
 | `center(mesh, face)` | The average of a face's vertices |
 | `faceUV(mesh, face, &u, &v)` | Two perpendicular unit vectors in the plane of a face. `u` runs along the first edge with a length, and the first edge after it that is not parallel sets the plane. A face of fewer than two edges, or whose vertices all lie on a line, leaves `u` and `v` unchanged |
+| `edgesFrom(mesh, vertex)` | The half edges leaving a vertex, in index order |
+| `facesAround(mesh, vertex)` | The faces meeting at a vertex, each once, in index order |
+| `newellNormal(mesh, face)` | A face's unit normal by Newell's method, which holds for a face that is not quite planar. It points outward, the side the loop runs clockwise when seen from. Zero for a face with no area |
+
+`edgesFrom` and `facesAround` scan every half edge, because nothing keeps a vertex's own `edge`
+current. Each costs time in proportion to the whole mesh.
+
+**Snapshots.** `BRep::snapshot()` copies the three arrays as they stand, and `BRep::restore()`
+puts a snapshot back whole, selection flags included. A topology command keeps one from before an
+operation and one from after it.
+
+**Changing topology.** The functions in `api/brep/Operations.h` change which parts a mesh holds.
+Each leaves a mesh that passes `validateStrict()`. Each appends its new parts, so no existing
+index changes, apart from `mergeVertices`. It compacts the arrays, so every part after a removed
+one is renumbered.
+
+| Function | Does |
+|---|---|
+| `splitEdge(mesh, edge)` | Adds a vertex at the middle of an edge and splits both its halves, keeping the pairs mutual. A split half edge keeps its index and ends at the new vertex; the part beyond it is a new half edge that follows it. Returns the new vertex |
+| `splitFace(mesh, face, first, second)` | Joins two corners of a face with a new edge, making two faces. The face keeps the corners from the second round to the first, and the new face holds the rest. Both keep the winding and get a normal from their points. Refuses corners that are the same or next to each other. Returns the new face |
+| `extrudeFaces(mesh, faces)` | Moves each face onto copies of the corners on its outline, and joins the copies to the corners left behind with a ring of quads. Faces that share an edge extrude as one region, so only the region's outline gains a ring. The copies sit where the corners are, so the ring's quads have no area and a zero normal until the faces are moved. Each face keeps its index and its half edges. Returns the ring's faces |
+| `insetFaces(mesh, faces, fraction)` | Makes a smaller copy of each face inside it, joined to its outline by a ring of quads. Each face is inset on its own. Each corner of a copy is `fraction` of the way to the face's centre. Each face keeps its index and becomes the copy. Returns the rings' faces |
+| `mergeVertices(mesh, vertices)` | Merges vertices into one at their centre. Edges that lose their length go, faces left with fewer than three corners go, and vertices nothing uses go. Edges that now run between the same two vertices are paired, so a merge can join two open boundaries. Refuses a merge that would leave an edge shared by more than two faces, a face that meets itself, or nothing at the merged point, and then changes nothing. Returns the merged vertex |
 
 **Identity and placement.** `BRep` derives from `v3d::dag::Node` and `v3d::dag::Transform`, so
 `v3dlib_brep` links `v3dlib_dag` publicly.
@@ -60,6 +102,33 @@ component flags and leaves the object flag alone.
 
 Background: [ADR-0013](../adr/0013-editor-a-mesh-is-a-dag-node.md)
 
+## Modelling operations
+
+The Transform menu's Poly items act on the selection. Each records one `TopologyCommand`, and
+does nothing, with a log line, on a selection it cannot use.
+
+- **Split Edge** (`transform::poly::split_edge`) works under the edge mask. It splits every
+  selected edge of every selected mesh at its middle, and selects the two parts of each, so it
+  can be repeated.
+- **Split Face** (`transform::poly::split_face`) works under the vertex mask. Exactly two vertices
+  must be selected, in one mesh, on one face and not next to each other on it. It joins them with
+  a new edge, and the two vertices stay selected.
+- **Extrude Face** (`transform::poly::extrude_face`) works under the face mask. It extrudes the
+  selected faces of every selected mesh, and faces that share an edge extrude as one region. The
+  faces stay selected and have not moved, so the translate manipulator pulls them out. Moving
+  them gives the ring its normals, as any component move does.
+- **Inset Face** (`transform::poly::inset_face`, the I key) works under the face mask. It insets
+  each selected face on its own, moving its corners a quarter of the way to its centre. The
+  smaller faces stay selected. The handles pivot at a face's centre, so the scale manipulator
+  changes how far it is inset.
+- **Merge Vertices** (`transform::poly::merge_vertices`, the J key) works under the vertex mask.
+  At least two vertices must be selected, in one mesh. They become one at their centre, which
+  stays selected. A merge that would leave an edge shared by more than two faces, or a face that
+  meets itself, is refused. Merging the two corners across a face is refused for both reasons.
+
+The functions that do the work are in `src/scene/Modelling.h`, apart from the controller, so they
+can be tested without it.
+
 ## The scene
 
 `v3d::editor::Scene` is the document being edited. It belongs to the editor, not to the api.
@@ -68,8 +137,8 @@ order. `Scene::add` appends.
 
 - **No cameras.** Each viewport owns its camera. `config::CameraProfiles` holds the camera
   profiles read from `data/cameras.json`, and the layout names one profile per view.
-- **One selected object.** `Scene::selection()` returns the first selected mesh. The editor
-  keeps at most one mesh selected, and component selection happens inside that mesh.
+- **A selected set.** `Scene::selection()` returns every selected mesh in insertion order, as
+  `Meshes`. Component selection happens inside those meshes and may span several of them.
 - **Visitors.** Code that reads the whole scene implements `SceneVisitor` and is passed to
   `Scene::accept()`. `WireframeVisitor`, `RIBExportVisitor`, `Picker` and the project writer
   all work this way.
@@ -91,6 +160,18 @@ that is not a string makes `load()` return false, and so does a split with no ch
 default layout is Front, Top, Left and Perspective. The menu bar and the toolbars take strips
 along two edges of the window, and the views divide the rest.
 
+**Shares.** A split divides its area between its children by their shares. A node's `share` is
+a number above zero, a weight against the other children of its split, and a node with none
+has a share of one. A split whose children name no share divides evenly, as the default layout
+does. A share that is not a number above zero makes `load()` return false.
+
+**Dragging a divider.** A press within `ViewLayout::dividerReach` (3 pixels) of the line
+between two views takes hold of it before any tool sees the press, and the drag moves it. The
+two views beside it trade weight, so every other view stays as it was. Each keeps at least
+`ViewLayout::minimumShare` (5%) of its split. Where two dividers meet, the outer split's is
+taken. The shares last as long as the editor runs, and are not written back to
+`data/layout.json`.
+
 **Drawing.** Each frame, every `ViewPort` fills two line canvases:
 
 - the scene canvas: the construction grid and every mesh as a wireframe
@@ -102,7 +183,7 @@ The renderer turns each view into two passes, then adds one more pass for the ui
 |---|---|---|---|
 | Scene pass, named after the view, which no other view shares | The view's region | Tested | Its own region, colour and depth |
 | Handle pass | The view's region | Not tested | Nothing; it draws over the scene pass |
-| `ui` | The whole window | Not tested | Nothing |
+| `ui` | The whole window | Not tested | Nothing; it also draws the rubber band |
 
 All views share one depth buffer. The handle pass has no depth test so that the manipulator is
 always visible, including where it lies in the same plane as the grid's axis lines.
@@ -117,7 +198,18 @@ the two axes it looks across. A perspective view gets the ground plane.
 
 **Active view.** The view under the cursor becomes active as the mouse moves. It does not
 change while a drag is under way, so a drag that crosses a border keeps its camera. The camera,
-select and transform tools all work in the active view.
+select and transform tools all work in the active view. The cursor over the menu bar or a
+toolbar does not change it, so a menu item acts on the view the cursor was last over.
+
+**Cameras.** The View menu's Camera items show a fixed view in the active view: Front, Back,
+Left, Right, Top, Bottom and Perspective, each a profile in `data/cameras.json`. The view keeps
+its region and its camera object, so the camera tools keep driving it. The menu marks the item
+for the profile the active view shows. A view laid out from a profile the menu does not offer
+marks none. `Controller::fixedViews()` lists each command and its profile.
+
+**Orthographic** (`view::camera::orthographic`, the P key) switches the active view's camera
+between an orthographic and a perspective projection, and leaves the camera where it is. The
+menu item is checked while the camera is orthographic.
 
 The editor draws lines only. A shaded display mode is not built, so a selected face is drawn as
 its outline and a selected vertex as a small box. The outline covers every edge of

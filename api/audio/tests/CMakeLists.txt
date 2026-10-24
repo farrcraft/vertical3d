@@ -1,6 +1,7 @@
 # The document a sound config is, and what a clip does with a file it cannot read. Playing one
-# needs the device initialize() opens, and no test depends on one opening. Only the dispatcher
-# test calls initialize(), and it needs SDL's audio subsystem to start but no device to open.
+# needs the device initialize() opens. The cases that play open SDL's dummy audio driver, which
+# needs no sound card. The dispatcher test needs SDL's audio subsystem to start but no device to
+# open.
 v3d_add_test(audio
 	"TestMain.cpp"
 	"AudioClipTest.cpp"

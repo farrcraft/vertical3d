@@ -39,6 +39,16 @@ class Shading final {
      * The stored space places each light where the scene put it, not at the origin.
      **/
     std::vector<v3d::render::offline::sl::Placed> lights;
+    /**
+     * The displacement shader that was current, and the space it was instanced in. Null when
+     * the scene named none.
+     **/
+    v3d::render::offline::sl::Placed displacement;
+    /**
+     * How far the displacement shader may move a point, `Attribute "displacementbound"
+     * "sphere"`, in camera space. Zero when the scene gave no bound.
+     **/
+    float displacementBound = 0.0F;
 };
 
 };  // namespace v3d::moya

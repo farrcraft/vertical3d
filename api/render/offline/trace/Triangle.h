@@ -75,6 +75,9 @@ class Triangle final : public Primitive {
     bool intersect(const v3d::type::geometry::Ray & ray, float from, const Pose & pose,
         Intersection* found) const override;
     void describe(const Intersection & found, Hit* hit) const override;
+    bool bound(v3d::type::geometry::AABBox* box) const override;
+    /** u and v are the weights of b and c, as at a hit. **/
+    bool at(const glm::vec2 & parameters, Hit* hit) const override;
 
  private:
     glm::vec3 a_;

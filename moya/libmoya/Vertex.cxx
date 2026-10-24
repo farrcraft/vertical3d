@@ -30,6 +30,14 @@ void Vertex::color(const glm::vec3 & colour) {
      bits_ |= HAS_COLOR;
 }
 
+glm::vec3 Vertex::opacity(void) const {
+     return opacity_;
+}
+
+void Vertex::opacity(const glm::vec3 & value) {
+     opacity_ = value;
+}
+
 bool Vertex::hasColor(void) const {
      return (bits_ & HAS_COLOR) != 0;
 }

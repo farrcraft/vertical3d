@@ -1,8 +1,8 @@
-# Game menu, statistics overlay and file chooser
+# Game menu, statistics overlay, file chooser and prompt
 
-Three ready-made pieces of ui in `ui::shell` that games and the editor share.
+Four ready-made pieces of ui in `ui::shell` that games and the editor share.
 
-## GameMenu, StatisticsOverlay and FileChooser
+## GameMenu, StatisticsOverlay, FileChooser and Prompt
 
 These classes in `v3d::ui::shell` are the parts of a game's shell that every game would
 otherwise write the same way. An app that writes its own version of one has diverged from
@@ -90,3 +90,32 @@ chooser_->open(FileChooser::Mode::Save, directory, ".json", [this](const boost::
 - In `Save` mode a bare name is given the extension. Saving over an existing file asks first:
   `accept()` returns false and `confirming()` is true. Listing another directory clears the
   question. Accepting the same name again in the same directory replaces the file.
+
+### Prompt
+
+`Prompt` asks one question with up to three answers, such as "Save changes?" with Save,
+Discard and Cancel. Like the chooser, it adds no component type and drives components the
+document names (defaults in `Prompt::Names`):
+
+| Name | Component | Holds |
+|---|---|---|
+| `prompt` | a container | shown and hidden |
+| `question` | a `label` | the question |
+| `answer0`, `answer1`, `answer2` | `button`s | one answer each, in order |
+
+```cpp
+prompt_->open("Save changes?", {
+    { "Save", [this]() { save(); } },
+    { "Discard", [this]() { discard(); } },
+    { "Cancel", {} }
+}, {});
+```
+
+- The app routes each button's command to `answer(place)`, and anything that dismisses the
+  prompt to `cancel()`.
+- Each button is labelled with its answer. A button with no answer is hidden. Answers past
+  `Prompt::most` are not offered.
+- The prompt closes before a handler runs, so a handler can open another prompt.
+- `cancel()` runs the handler given to `open()` for a dismissal. Opening a prompt while one is
+  up cancels the first.
+- An answer or a cancel on a prompt that is not up does nothing.

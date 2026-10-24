@@ -34,9 +34,12 @@ named. The language is in `api/render/offline/sl`.
   `noise`.
 - **`.` is a dot product and `^` is a cross product**, and both bind tighter than `*`. Check
   this before assuming an expression means what it looks like.
-- **All five shader types parse, and three run.** A `displacement` or `volume` shader parses and
-  returns false from `sl::syntax::Shader::supported()`. A scene that names one is told the
-  shader is unsupported, not that it is malformed.
+- **All five shader types parse, and four run.** A `volume` shader parses and returns false from
+  `sl::syntax::Shader::supported()`. A scene that names one is told the shader is unsupported,
+  not that it is malformed.
+- **A displacement shader writes `P` and `N`.** It reads the surface's other position globals,
+  `Ng`, `I`, `E`, `s`, `t`, `u`, `v`, `du` and `dv`, and nothing a surface writes, such as `Ci`.
+  A scene names one with `Displacement`.
 - **The C preprocessor is not run.** A `#` produces a diagnostic naming the missing
   preprocessor. There is no compiled-shader file: a shader is source, compiled on first use.
 - **The compiler annotates the syntax tree in place.** Every expression gets a type and a
@@ -58,7 +61,8 @@ named. The language is in `api/render/offline/sl`.
   condition is read once. `break`, `continue` and `return` clear mask bits instead of jumping.
   An `illuminance` body is a loop over the lights, so a `break` or a `return` inside it ends it
   for those points and they run it for no later light. A grid's batch is its vertices, a
-  traced hit's batch is one point, and an imager's batch is a row of pixels.
+  traced hit's batch is the hit and its two neighbours, and an imager's batch is a row of
+  pixels.
 - **A function call is inlined.** A run has no call stack and no register file per call. A
   shader's own function is pasted in at each call, bracketed so that a `return` inside it ends
   the function for those points, not the shader. Recursion is rejected at the call graph, so
@@ -89,8 +93,8 @@ named. The language is in `api/render/offline/sl`.
   the scene put the light.
 - **Both hiders bind the same globals.** A hider fills one `sl::Point` per shading point.
   `sl::Globals`, resolved once per program, writes the points into the batch and reads `Ci` and
-  `Oi` back. `Globals::shine` runs a light over a batch. `du` and `dv` are zero for a traced
-  hit, because a single point has no neighbour to difference.
+  `Oi` back. `Globals::shine` runs a light over a batch. `du` and `dv` are the step to a
+  neighbouring point: one over a grid's span, or a traced hit's stencil step.
 - **A grid and a traced hit have different current spaces.** A grid is shaded in camera space
   and a traced hit in world space. The space table is therefore a callback each renderer
   implements (`sl::runtime::Renderer::space`), not a constant in the library. Neither a grid
@@ -108,8 +112,17 @@ named. The language is in `api/render/offline/sl`.
   cast drops the translation, and a normal cast takes the inverse transpose of that inverse.
 - **NDC is raster space divided by the resolution.** x runs right and y runs down over
   [0, 1], from the upper left corner of the picture, as raster does. Its z is screen depth
-  moved from [-1, 1] onto [0, 1], the value `depth()` returns. moya's grids define NDC. A
-  traced hit has no screen, raster or NDC space.
+  moved from [-1, 1] onto [0, 1], the value `depth()` returns.
+- **A point into or out of a projected space is divided by w.** `"screen"`, `"raster"` and
+  `"NDC"` are the projected spaces, as `Renderer::projected(name)` answers. A perspective
+  projection writes the eye depth into w, so `ptransform`, `depth()` and a point cast divide by
+  it, with either end of a two-space form projected. A point whose w is at or below 1e-6 is
+  left undivided. `sl::project` is that divide, and moya's own projection calls it. A vector or
+  a normal is not divided, because it has no position.
+- **Both hiders answer the projected spaces from one camera.** `trace::Scene::projection()`
+  holds the camera to screen, raster and NDC matrices, which moya sets when the world begins.
+  A grid and a traced hit both read them, so a shader that reads a projected position gets the
+  same value under either hider.
 
 ### Built-in shaders
 
@@ -119,7 +132,7 @@ files on disk.
 | Kind | Shaders |
 |---|---|
 | Surface | `constant`, `matte`, `metal`, `plastic`, `paintedplastic`, `shinymetal`, `glass` |
-| Light | `ambientlight`, `distantlight`, `pointlight`, `spotlight` |
+| Light | `ambientlight`, `distantlight`, `pointlight`, `spotlight`, `arealight` |
 | Imager | `background` |
 
 - **`paintedplastic`** multiplies `Cs` by the texture its `texturename` names. It tests whether
@@ -127,9 +140,22 @@ files on disk.
 - **`shinymetal` traces a reflection ray** where RI's version reads an environment map.
 - **`glass` is this tree's own**; RI has no refracting shader. It sets `Oi` to one, because it
   shows what lies behind it by refraction. Its `Os` is what a shadow ray through it reads.
-- **The three directional lights** (`distantlight`, `pointlight`, `spotlight`) call
+- **The directional lights** (`distantlight`, `pointlight`, `spotlight`, `arealight`) call
   `transmission()`, so they cast shadows. A `spotlight` tests its cone against `-L`, the
   direction its light travels.
+- **`arealight` shines from its P**, evenly in every direction with the square of the distance,
+  as `pointlight` shines from its position. It is the shader an `AreaLightSource` names.
+- **An area light shines from points sampled on its geometry.** Its light shader runs once for
+  each of its samples, with P the sample, and the illuminance loop sees each sample as a light
+  of its own. Each sample carries `1 / nsamples` of the light, so the count changes the noise
+  and not the brightness. `sl::shining()` and `sl::which()` count a light list this way for
+  both hiders.
+- **A shading point's samples are seeded by the light's handle, the point's position in world
+  space and the sample's index** (`Area::point()`). A point gets the same samples on every run,
+  in any order of buckets or pixels. A grid vertex is moved into world space first, so a vertex
+  and a traced hit at the same position sample a light alike.
+
+  Background: [ADR-0094](../adr/0094-offline-area-lights-sampled-per-shading-point.md)
 - **`background`** adds its colour behind each pixel in proportion to `1 - alpha`, then sets
   `alpha` to one, so a pixel it painted is no longer empty. A scene can use it instead of a
   backdrop polygon.
@@ -139,20 +165,41 @@ files on disk.
 - **Each built-in's `Signature` names its `Body`**, and the machine dispatches on the body, not
   the name. A function cannot be declared without saying what implements it.
   - `SOURCE` is written in SL and inlined.
-  - `STUB` returns its default value and is reported once. `shadow` and `calculatenormal` are
-    the two stubs.
+  - `STUB` returns its default value and is reported once. `shadow` is the one stub.
   - Every other body is implemented in C++ in the machine.
 - **`diffuse`, `specular` and `phong` are SL source** in `sl::Builtins`, written over
   `illuminance`, as the standard defines them. A shader that calls one has it copied into its
   own function list before anything else runs, so later stages see one kind of function. A
   shader's own definition of the name wins.
+- **`Du`, `Dv`, `Deriv`, `area` and `calculatenormal` difference neighbouring shading points.**
+  A derivative is the difference to the neighbouring point along u or v, divided by the step
+  `du` or `dv` between them. The renderer says how its batch lies on the surface through
+  `Renderer::shape()`. A grid's neighbour is the next vertex, or the previous one on the last row
+  or column. A traced hit's neighbours are its stencil, described in
+  [RayTracing.md](RayTracing.md). A batch of lone points has none, and every derivative there
+  is zero.
+  - `Du` and `Dv` take a float, a colour or a position. A position's derivative is a vector.
+  - A uniform value's derivative is zero, because it is the same at every point.
+  - `Deriv(num, den)` is RI's `Du(num) / Du(den) + Dv(num) / Dv(den)`. A term is dropped where
+    `den` does not change in that direction, so `Deriv(f, u)` is `Du(f) / Du(u)`.
+  - `area(P)` is the area of the patch one step along u and one along v span: the length of
+    `(Du(P) * du) ^ (Dv(P) * dv)`.
+  - `calculatenormal(P)` is `Du(P) ^ Dv(P)`. On a diced polygon it points the way `Ng` does,
+    because dicing runs u along the first edge and v along the last.
+  - A derivative is first order, so on a curved surface it is as good as the grid is fine.
+
+  Background: [ADR-0093](../adr/0093-offline-derivatives-from-neighbouring-shading-points.md)
+
 - **`ambient()` is C++.** An ambient light uses neither `illuminate` nor `solar`, so it has no
   direction, and an `illuminance` loop cannot reach it.
-- **`solar` is lit along its axis.** An angle other than 0 would let `L` be any direction inside a
-  cone, chosen against the surface's own `illuminance` cone, which a light shader is not given.
-  The machine reports such an angle once and uses the axis.
+- **`solar` with an angle chooses `L` inside its cone, nearest the surface's illuminance axis**,
+  as RenderMan does. An axis inside the light's cone is `L` itself, and an axis outside it gives
+  the cone's edge nearest it, with the length of the light's axis. An illuminance loop hands its
+  cone to each light it runs, as `runtime::Cone`, through `Renderer::light` and
+  `Globals::shine`, and the light's machine reads it from `Machine::gather`. With no cone, as
+  under `ambient()`, the light shines along its axis.
 - **A machine's reports reach the log.** A report says what a run could not do, such as a space
-  no renderer named or an angle `solar` cannot honour. Each distinct report is logged once per
+  no renderer named or a stub that was called. Each distinct report is logged once per
   machine as a warning, through the logger of the shader instance that wrote the machine's
   parameters. A shader whose parameter defaults fail to run is reported in the same way, once
   per machine, and the renderer treats it as a run that failed.

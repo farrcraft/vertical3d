@@ -28,11 +28,15 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | Left mouse | `view::drag` | Pick, grab a handle, or drive the camera (see [Picking](PickingAndManipulators.md#picking)) |
 | Hold Left Alt + drag | `view::camera::zoom` | Zoom an orthographic view; dolly a perspective one |
 | Hold Left Ctrl + drag | `view::camera::truck` | Move the camera sideways and up or down |
-| Hold Left Shift + drag | `view::camera::pan` | Turn a perspective camera with an arcball; does nothing in an orthographic view |
+| Middle mouse drag | `view::camera::pan` | Turn a perspective camera with an arcball; does nothing in an orthographic view |
+| Hold Left Shift | `select::add` | A click adds to the selection or takes away from it (see [Picking](PickingAndManipulators.md#picking)) |
 | 1, 2, 3, 4 | `create::poly::cube`, `plane`, `cylinder`, `cone` | Add a primitive at the origin |
 | 5, 6, 7, 8 | `select::mask::object`, `vertex`, `edge`, `face` | Choose what a click selects |
 | Q, W, E, R | `transform::select`, `translate`, `rotate`, `scale` | Choose the manipulator |
+| I | `transform::poly::inset_face` | Inset the selected faces (see [Modelling operations](Scene.md#modelling-operations)) |
+| J | `transform::poly::merge_vertices` | Merge the selected vertices into one |
 | G, M, H | `view::show::grid`, `mesh`, `handle` | Toggle what the view under the cursor draws |
+| P | `view::camera::orthographic` | Switch the view under the cursor between orthographic and perspective (see [Cameras](Scene.md#viewports)) |
 | F3 | `view::show::statistics` | Toggle the frame statistics overlay |
 | Z, Y | `edit::undo`, `edit::redo` | Step the history |
 | O, S | `project::load`, `project::save` | Open a project; save the current one |
@@ -49,10 +53,10 @@ Ctrl is also the truck modifier. Save As and RIB export are on the Project menu 
 | `src/Controller.*` | The app: startup, command registration, mouse routing, project actions |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui |
 | `src/view/` | `ViewLayout`, `ViewPort`, `ConstructionPlane` |
-| `src/scene/` | `Scene`, `SceneVisitor`, the primitives in `CreatePoly`, `WireframeVisitor`, `RIBExportVisitor`, `Project` |
-| `src/command/` | `Command`, `CommandStack`, `CreateCommand`, `TransformCommand`, `Placement` |
+| `src/scene/` | `Scene`, `SceneVisitor`, the primitives in `CreatePoly`, the operations in `Modelling`, `WireframeVisitor`, `RIBExportVisitor`, `Project` |
+| `src/command/` | `Command`, `CommandStack`, `CreateCommand`, `TransformCommand`, `VertexCommand`, `TopologyCommand`, `Placement` |
 | `src/tool/` | `Tool`, `CameraControlTool`, `SelectTool`, `TransformTool`, `Picker`, `SelectMask` |
-| `src/manipulator/` | `Manipulator` and its translate, rotate and scale subclasses |
+| `src/manipulator/` | `Manipulator` and its translate, rotate and scale subclasses, and `Target`, what they move |
 | `data/` | Config documents: bindings, ui, window, camera profiles, layout |
 | `tests/` | The `vertical3d` Boost.Test suite, with one directory for each `src/` subdirectory |
 
@@ -69,8 +73,3 @@ The tests run without a window or a GPU. Run them with
 [TODO.md](../TODO.md#editor) lists the open work. In short:
 
 - Most menu items have no handler and log themselves as unregistered.
-- There is no modelling operation. A component mode selects a part, and the manipulator then
-  moves the whole object.
-- One thing is selected at a time.
-- There is no dirty flag.
-- The viewport panes cannot be resized by dragging.

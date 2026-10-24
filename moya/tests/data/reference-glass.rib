@@ -1,0 +1,29 @@
+##RenderMan RIB-Structure 1.1
+##Scene A translucent quad in front of a checked plane
+version 3.03
+Format 64 48 1
+# one sample at each pixel centre under a one pixel box, which the film gives back exactly
+PixelSamples 1 1
+PixelFilter "box" 1 1
+Projection "orthographic"
+Clipping 1 100
+# the checked shader is a fixture beside the scene rather than one of the standard ones
+Option "searchpath" "shader" ["data:&"]
+WorldBegin
+LightSource "ambientlight" 0 "intensity" [0.3]
+LightSource "distantlight" 1 "intensity" [0.8] "to" [0 0 1]
+# tilted away from the camera from its bottom edge to its top, so its checks run across both
+# x and z and show as squares
+AttributeBegin
+Color [0.9 0.85 0.7]
+Surface "checked" "float size" [0.4]
+Polygon "P" [-1.4 -1.1 4  -1.4 1.1 8  1.4 1.1 8  1.4 -1.1 4]
+AttributeEnd
+# half transparent, so the checks show through it, darkened and tinted blue
+AttributeBegin
+Color [0.2 0.5 0.9]
+Opacity [0.5 0.5 0.5]
+Surface "constant"
+Polygon "P" [-0.6 -0.5 3  -0.6 0.5 3  0.6 0.5 3  0.6 -0.5 3]
+AttributeEnd
+WorldEnd

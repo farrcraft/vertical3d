@@ -6,12 +6,14 @@ v3d_add_test(vertical3d
 
 	"view/ViewLayoutTest.cxx"
 	"view/ConstructionPlaneTest.cxx"
+	"view/ViewPortTest.cxx"
 
 	"scene/SceneTest.cxx"
 	"scene/CreatePolyTest.cxx"
 	"scene/WireframeVisitorTest.cxx"
 	"scene/RIBExportVisitorTest.cxx"
 	"scene/ProjectTest.cxx"
+	"scene/ModellingTest.cxx"
 
 	"command/CommandStackTest.cxx"
 
@@ -20,6 +22,7 @@ v3d_add_test(vertical3d
 	"tool/TransformToolTest.cxx"
 
 	"manipulator/ManipulatorTest.cxx"
+	"manipulator/TargetTest.cxx"
 
 	"../src/Controller.cxx"
 	"../src/Renderer.cxx"
@@ -31,16 +34,20 @@ v3d_add_test(vertical3d
 	"../src/scene/WireframeVisitor.cxx"
 	"../src/scene/RIBExportVisitor.cxx"
 	"../src/scene/Project.cxx"
+	"../src/scene/Modelling.cxx"
 	"../src/command/CommandStack.cxx"
 	"../src/command/CreateCommand.cxx"
 	"../src/command/Placement.cxx"
 	"../src/command/TransformCommand.cxx"
+	"../src/command/VertexCommand.cxx"
+	"../src/command/TopologyCommand.cxx"
 	"../src/tool/CameraControlTool.cxx"
 	"../src/tool/SelectMask.cxx"
 	"../src/tool/SelectTool.cxx"
 	"../src/tool/TransformTool.cxx"
 	"../src/tool/Picker.cxx"
 	"../src/manipulator/Manipulator.cxx"
+	"../src/manipulator/Target.cxx"
 	"../src/manipulator/TranslateManipulator.cxx"
 	"../src/manipulator/RotateManipulator.cxx"
 	"../src/manipulator/ScaleManipulator.cxx")

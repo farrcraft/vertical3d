@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/offline/Area.h>
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
@@ -184,6 +185,12 @@ class RenderContext {
         void concatTransform(const glm::mat4x4 & trans);
 
         void translate(float dx, float dy, float dz);
+        /**
+         * maps to RiRotate()
+         * The angle is in degrees. A positive angle turns +z towards +x about y, and +z
+         * towards -y about x. RI's unit cube example needs that sign to put each face where
+         * it names it.
+         **/
         void rotate(float angle, const glm::vec3 & axis);
         void scale(float sx, float sy, float sz);
 
@@ -199,11 +206,18 @@ class RenderContext {
 
         /**
          * shadingRate maps to RiShadingRate(). bucketSize and gridSize map to Option
-         * "limits" "bucketsize" and "gridsize", and both refuse a zero.
+         * "limits" "bucketsize" and "gridsize", and both refuse a zero. A size the command
+         * line pinned is left as it is, and nothing is reported.
          **/
         void shadingRate(float size);
         void bucketSize(unsigned int width, unsigned int height);
         void gridSize(unsigned int size);
+        /**
+         * Sets a size and pins it, so a scene's Option "limits" does not replace it. moya's
+         * `--bucket` and `--grid` pin the sizes they name. A zero is refused and pins nothing.
+         **/
+        void pinBucketSize(unsigned int width, unsigned int height);
+        void pinGridSize(unsigned int size);
         /**
          * The most sample motions one moving grid caches. A grid that sweeps more samples
          * than this works out each micropolygon's motion again instead, which is slower
@@ -219,6 +233,12 @@ class RenderContext {
          **/
         void surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters);
         /**
+         * maps to RiDisplacement()
+         * The displacement shader for the primitives that follow, in the current attribute
+         * state, placed as a surface shader is.
+         **/
+        void displacement(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters);
+        /**
          * maps to RiLightSource()
          * Creates a light and switches it on in the current attribute state. The light
          * lasts for the frame. Which lights are on is an attribute, so an Illuminate inside
@@ -227,6 +247,28 @@ class RenderContext {
          **/
         void lightSource(const v3d::render::offline::rib::LightSource & request,
             const v3d::render::offline::rib::ParameterList & parameters);
+        /**
+         * maps to RiAttribute()
+         * `Attribute "light" "integer nsamples"` is how many points an area light made after
+         * it samples at each shading point. A count below one is taken as one, and one above
+         * 4096 as 4096. `Attribute "displacementbound" "float sphere"` is how far a
+         * displacement shader may move a point, in the space `"string coordinatesystem"`
+         * names, or in object space without one. A bound that is negative or not finite is not
+         * used, with a warning. Any other
+         * attribute is reported once by name and not used.
+         **/
+        void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters);
+        /**
+         * maps to RiAreaLightSource()
+         * A light, as lightSource() makes one, that also keeps the geometry declared after it
+         * in the same attribute block: every polygon and sphere, in world space, whichever
+         * hider draws them. That geometry renders as a surface too. Geometry after the block
+         * ends does not join it.
+         **/
+        void areaLightSource(const v3d::render::offline::rib::LightSource & request,
+            const v3d::render::offline::rib::ParameterList & parameters);
+        /** The geometry of the area light being declared, or null outside its attribute block. **/
+        const boost::shared_ptr<v3d::render::offline::Area> & areaLight() const;
         /**
          * maps to RiIlluminate()
          **/
@@ -294,6 +336,12 @@ class RenderContext {
         glm::mat4x4 coordinateSystem(const std::string & name);
 
         /**
+         * The matrices from camera space into "screen", "raster" and "NDC", as the camera
+         * options stand. prepareWorld() gives them to the traced scene.
+         **/
+        v3d::render::offline::trace::Scene::Projection projected();
+
+        /**
          * maps to RiDeclare()
          * The parameter types the C entry points read. The RIB reader keeps its own
          * declarations for the file it reads, separate from these.
@@ -346,6 +394,14 @@ class RenderContext {
          * transformation and shaded by the given state.
          **/
         void trace(const Polygon & poly, const Shading & state);
+        /**
+         * Add a polygon with a displacement shader to the traced scene as the surface the
+         * shader moves it to. It is diced in camera space into a grid of tracedAcross
+         * micropolygons a side, displaced, and added as two triangles for each micropolygon.
+         **/
+        void traceDisplaced(const Polygon & poly, const Shading & state);
+        /** The micropolygons a side a displaced polygon is diced into for the traced scene. **/
+        static constexpr unsigned int tracedAcross = 64;
         /** Give a traced primitive the state's surface, opacity and lights, in world space. **/
         void shade(v3d::render::offline::trace::Primitive* primitive, const Shading & state);
         /**
@@ -378,6 +434,10 @@ class RenderContext {
              * frame, and AttributeEnd restores only this set.
              **/
             std::vector<std::string> lit;
+            boost::shared_ptr<v3d::render::offline::Area> areaLight;
+            unsigned int lightSamples = 16;
+            v3d::render::offline::sl::Placed displacement;
+            float displacementBound = 0.0F;
         };
 
         /**
@@ -389,7 +449,19 @@ class RenderContext {
             std::string handle;
             v3d::render::offline::sl::InstancePtr shader;
             glm::mat4x4 placement = glm::mat4x4(1.0F);
+            /** The geometry an area light shines from, or null for any other light. **/
+            boost::shared_ptr<v3d::render::offline::Area> area;
         };
+
+        /** The area light the geometry being declared joins, until its attribute block ends. **/
+        boost::shared_ptr<v3d::render::offline::Area> areaLight_;
+        /** `Attribute "light" "nsamples"`, which an area light takes when it is made. **/
+        unsigned int lightSamples_ = 16;
+        /** The displacement shader in force, and its bound in camera space. **/
+        v3d::render::offline::sl::Placed displacement_;
+        float displacementBound_ = 0.0F;
+        /** The attributes already reported as not used, so each is reported once. **/
+        std::vector<std::string> unusedAttributes_;
 
         std::string name_;
         std::vector<v3d::render::offline::MovingTransform> transforms_;
@@ -461,6 +533,9 @@ class RenderContext {
         unsigned int bucketWidth_ = 16;
         unsigned int bucketHeight_ = 16;
         unsigned int gridSize_ = 256;
+        /** Whether the command line pinned the bucket size or the grid size. **/
+        bool bucketPinned_ = false;
+        bool gridPinned_ = false;
         static constexpr unsigned int defaultMotionCacheLog2 = 20;
         std::size_t motionCache_ = std::size_t(1) << defaultMotionCacheLog2;
         float shadingRate_ = 1.0F;

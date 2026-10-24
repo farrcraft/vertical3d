@@ -22,12 +22,22 @@
     },
     {
       "source": {
-        "context": "keyboard",
-        "name": "left_shift"
+        "context": "mouse",
+        "name": "middle"
       },
       "destination": {
         "context": "view",
         "name": "camera::pan"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "left_shift"
+      },
+      "destination": {
+        "context": "select",
+        "name": "add"
       }
     },
     {
@@ -170,6 +180,39 @@
       "destination": {
         "context": "transform",
         "name": "scale"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "i",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "transform",
+        "name": "poly::inset_face"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "p",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "view",
+        "name": "camera::orthographic"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "j",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "transform",
+        "name": "poly::merge_vertices"
       }
     },
     {

@@ -15,6 +15,22 @@ The ray hider casts every primary ray into it. Under either hider, a shader's `t
   derives from `trace::Primitive` and implements `intersect` and `describe`. `trace::Triangle`
   and `trace::Sphere` are the two kinds. A new kind is a new class, and the scene does not
   change.
+- **A ray is tested against the primitives near it, through a bounding volume hierarchy.**
+  `Scene::nearest` builds a `trace::Hierarchy` on its first call after a primitive was added,
+  with a binned surface area heuristic, and walks it nearest box first. A primitive gives its
+  box through `Primitive::bound()`. One that has no bound, such as an infinite plane, returns
+  false and is tested against every ray. The build happens inside a const query, so the scene is
+  not safe to trace from two threads at once.
+- **A moving primitive's box holds it across its whole motion.** Its stored box's corners are
+  followed through 16 steps of the motion, and the box is grown by the longest step, which
+  holds the arc a rotation carries a corner along. The primitive itself is still tested at the
+  ray's time.
+- **Two hits at one distance resolve to the primitive added first**, as a search through the
+  list in order would. Each box is grown by a small fraction of its size, so a hit that rounding
+  puts on a box's face is still inside it. The hierarchy therefore finds exactly the hit a
+  search of every primitive finds, and adding it changed no picture.
+
+Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md).
 - **Every primitive a scene gives moya is added to the traced scene as it arrives**, in world
   space, before any split or dice. A polygon becomes a fan of triangles, since RI defines a
   polygon as planar and convex. The reyes hider reads the scene for `trace()` and
@@ -27,6 +43,16 @@ The ray hider casts every primary ray into it. Under either hider, a shader's `t
 - **A traced primitive carries the lights that were on when it was made**, as one set shared by
   every primitive made until the lights change (`trace::Lights`). A primitive given no lights,
   as in a scene built in code, is lit by the scene's own list, `Scene::lights()`.
+- **A polygon with a displacement shader is added to the traced scene as the surface it is
+  moved to**, under either hider. It is diced in camera space into a grid of
+  `RenderContext::tracedAcross` micropolygons a side, 64, whatever the grid size. The
+  displacement shader runs on that grid, and each micropolygon becomes two triangles with the
+  moved normals. The ray hider sees and shades those triangles, and both hiders' shadows and
+  reflections meet them. The triangles are flat between grid points, so a displacement finer
+  than the grid is lost. The displacement runs once, so one that varies with time does not move.
+  A sphere is not diced, and is traced undisplaced.
+
+  Background: [ADR-0095](../adr/0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md)
 - **A sphere is intersected where it is defined**, cut to its slab of heights and its sweep,
   with RI's outward normal and its `u` and `v`. Its silhouette is exact at any size. A sphere
   whose radius is not positive is logged and not drawn.
@@ -46,6 +72,20 @@ The ray hider casts every primary ray into it. Under either hider, a shader's `t
 - **Each hit is shaded by a `trace::HitShader`** made on the stack for it. The `HitShader`
   answers the shader's callbacks for that hit. A hit a shader traces into gets its own
   `HitShader`, so nothing is saved and restored around a traced ray.
+- **A hit is shaded as a stencil of three points**: the hit, and the points a step along its
+  primitive's u and along its v. The derivative built-ins difference them. A step is the change
+  in the parameter that moves the surface one pixel's width, from `Scene::footprint()`, so a
+  derivative is taken over what one pixel sees. A scene with no camera has a pixel one unit
+  wide. `Primitive::at()` places a neighbour by its u and v, and `Scene::around()` carries it
+  into the hit's pose. A step past a triangle's edge stays on its plane, and one past a
+  sphere's seam continues its sweep. A primitive that cannot place a point has zero derivatives.
+- **Only the hit traces.** A shadow or traced ray is cast from the hit, and its two neighbours
+  take its answer. The neighbours are a pixel away, so the difference would not show, and a
+  hit's rays are not tripled.
+- **A triangle's u and v are its barycentric weights**, so its Du(P) and Dv(P) are its own
+  edges, not those of the grid the reyes hider dices from the same polygon. `calculatenormal`
+  points the same way under both, because a change of parameters scales the cross product of
+  the two derivatives without turning it.
 - **The `Tracer` keeps one machine per program per trace depth.** A surface tracing into another
   surface with the same shader is still part way through its run when the second run starts.
 - **The `Tracer` computes the poses once for a sample's time** (`Tracer::time()`), so a
@@ -66,6 +106,9 @@ The ray hider casts every primary ray into it. Under either hider, a shader's `t
 - **A ray leaving a surface is offset along the geometric normal, toward its target.** A ray
   started exactly on the surface hits that surface, and every lit pixel turns black in a
   pattern that looks like a normal fault.
+- **A shadow ray is aimed from its offset start at the light, and stops the same offset short
+  of it.** The end can lie on a surface too. An area light's samples lie on its own geometry,
+  and a shadow ray that reached its end would hit that geometry and shadow the whole light.
 - **`trace()` goes as deep as `Option "trace" "maxdepth"`**, two by default. Past that depth it
   returns the background, which stops two surfaces that trace into each other. moya takes a
   depth above 16 as 16, with a warning, because a shader that traces twice at every hit

@@ -113,7 +113,12 @@ are already destroyed when a base class destructor runs.
   outlive the handler. An app cannot reach `shutdown()`, so it cannot tear the window down from
   a handler.
 - The engine already answers the `ui::quit` command, a window close request and an SDL quit
-  event by calling `quit()`. A menu's quit item and a quit key can both send `ui::quit`. It
-  answers `ui::fullscreen` too, by switching the window between full screen and a window.
+  event. A menu's quit item and a quit key can both send `ui::quit`. It answers
+  `ui::fullscreen` too, by switching the window between full screen and a window.
+- **Each of those three asks the app first**, through `quitRequested()`. The default returns
+  true, and the engine calls `quit()`. An app with work it could lose overrides it to return
+  false and ask the user. It calls `quit()` itself once the user has answered. A request that
+  arrives while the app is still asking reaches `quitRequested()` again, so the override decides
+  what a second request does.
 
 Background: [ADR-0080](../../adr/0080-apps-the-engine-owns-startup-and-shutdown-order.md)

@@ -54,6 +54,7 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
     bool space(const std::string & name, glm::mat4x4* matrix) override;
     unsigned int lights() override;
     bool light(unsigned int index, const v3d::render::offline::sl::runtime::Value & surface,
+        const v3d::render::offline::sl::runtime::Cone & gathering,
         v3d::render::offline::sl::runtime::Value* direction,
         v3d::render::offline::sl::runtime::Value* colour,
         std::vector<char>* reached, bool* ambient) override;
@@ -64,10 +65,20 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
         const v3d::render::offline::sl::runtime::Value & direction,
         v3d::render::offline::sl::runtime::Value* colour) override;
     const v3d::render::offline::Texture* texture(const std::string & name) override;
+    /** The hit and its two neighbours, a step du along u and dv along v from it. **/
+    Shape shape() const override;
 
  private:
     /** The lights on the hit: its primitive's, or the scene's. **/
     const std::vector<v3d::render::offline::sl::Placed> & shining() const;
+
+    /**
+     * The hit's neighbours along u and v, and the steps to them. A step is the parameter
+     * change that moves the surface one pixel's width, so a derivative is taken over what one
+     * pixel sees. A neighbour the primitive cannot place leaves its step at zero, and is the
+     * hit itself.
+     **/
+    void neighbours(Hit* alongU, Hit* alongV);
 
     Tracer* tracer_;
     const Hit & hit_;
@@ -76,6 +87,9 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
      * surface's, and a light's while that light runs.
      **/
     glm::mat4x4 placement_;
+    /** The steps to the hit's neighbours, for shape(). **/
+    float du_ = 0.0F;
+    float dv_ = 0.0F;
 };
 
 };  // namespace v3d::render::offline::trace

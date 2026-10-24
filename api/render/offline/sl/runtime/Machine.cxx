@@ -308,6 +308,10 @@ glm::mat4x4 Machine::space(const std::string & name) {
     return matrix;
 }
 
+bool Machine::projected(const std::string & name) const {
+    return renderer_ != nullptr && renderer_->projected(name);
+}
+
 void Machine::transform(const Instruction & instruction) {
     Value & target = file_[static_cast<std::size_t>(instruction.target)];
     const Value & source = file_[static_cast<std::size_t>(instruction.left)];
@@ -315,8 +319,11 @@ void Machine::transform(const Instruction & instruction) {
     // A cast's operand is in the named space and the shader works in the current space, so
     // the cast applies the inverse of the matrix the renderer returns
     const bool geometric = pointlike(target.type());
-    const glm::mat4x4 matrix = geometric ?
-        glm::inverse(space(file_[static_cast<std::size_t>(instruction.right)].text())) : glm::mat4x4(1.0F);
+    const std::string & name = file_[static_cast<std::size_t>(instruction.right)].text();
+    const glm::mat4x4 matrix = geometric ? glm::inverse(space(name)) : glm::mat4x4(1.0F);
+    // a point stated in a projected space comes back to current space through the inverse
+    // projection, and is right only after the divide
+    const bool divided = geometric && projected(name);
     const unsigned int count = target.storage() == Storage::VARYING ? batch_ : 1;
     for (unsigned int point = 0; point < count; point++) {
         if (!writable(target, point)) {
@@ -324,7 +331,8 @@ void Machine::transform(const Instruction & instruction) {
         }
         switch (target.type()) {
             case Type::POINT:
-                target.triple(point, ptransform(matrix, source.triple(point)));
+                target.triple(point, divided ? project(matrix, source.triple(point)) :
+                    ptransform(matrix, source.triple(point)));
                 break;
             case Type::VECTOR:
                 target.triple(point, vtransform(matrix, source.triple(point)));
@@ -344,6 +352,44 @@ void Machine::transform(const Instruction & instruction) {
         }
     }
 }
+
+void Machine::gather(const std::vector<glm::vec3> & axes, const std::vector<float> & angles) {
+    gatherAxes_ = axes;
+    gatherAngles_ = angles;
+}
+
+namespace {
+
+/**
+ * The direction inside a light's cone nearest a surface's axis: the axis itself when it lies
+ * inside the cone, and otherwise the cone's edge on the way from the light's axis to it. It has
+ * the length of the light's axis.
+ **/
+glm::vec3 nearest(const glm::vec3 & lightAxis, float lightAngle, const glm::vec3 & surfaceAxis) {
+    const float length = glm::length(lightAxis);
+    if (length == 0.0F || glm::length(surfaceAxis) == 0.0F) {
+        return lightAxis;
+    }
+    const glm::vec3 from = lightAxis / length;
+    const glm::vec3 to = glm::normalize(surfaceAxis);
+    const float cosine = std::clamp(glm::dot(from, to), -1.0F, 1.0F);
+    if (std::acos(cosine) <= lightAngle) {
+        return to * length;
+    }
+    // the edge lies in the plane of the two axes, a light's angle away from its own axis
+    constexpr float OPPOSITE = 1.0e-6F;
+    glm::vec3 across = to - (from * cosine);
+    if (glm::length(across) < OPPOSITE) {
+        // the surface faces straight away from the light: any edge is as near as any other, so
+        // the edge is taken toward whichever of x and y lies further from the axis
+        const glm::vec3 other = std::fabs(from.x) < std::fabs(from.y) ? glm::vec3(1.0F, 0.0F, 0.0F) : glm::vec3(0.0F, 1.0F, 0.0F);
+        across = glm::cross(from, other);
+    }
+    across = glm::normalize(across);
+    return ((from * std::cos(lightAngle)) + (across * std::sin(lightAngle))) * length;
+}
+
+};  // namespace
 
 bool Machine::inside(const glm::vec3 & direction, const std::vector<int> & cone,
     std::size_t first, unsigned int point) const {
@@ -370,7 +416,13 @@ bool Machine::nextLight() {
         const unsigned int index = round.light++;
         std::vector<char> reached(batch_, 1);
         bool ambient = false;
-        if (!renderer_->light(index, surface, &direction, &colour, &reached, &ambient) || ambient) {
+        // the loop's own cone, which a solar light with an angle chooses its direction against
+        Cone gathering;
+        if (round.arguments.size() > 2) {
+            gathering.axis = &file_[static_cast<std::size_t>(round.arguments[1])];
+            gathering.angle = &file_[static_cast<std::size_t>(round.arguments[2])];
+        }
+        if (!renderer_->light(index, surface, gathering, &direction, &colour, &reached, &ambient) || ambient) {
             // an illuminance loop skips an ambient light: it has no direction to test against
             // the cone, and ambient() sums it instead
             continue;
@@ -422,12 +474,13 @@ bool Machine::illuminate(const Instruction & instruction, bool solar) {
         } else if (solar) {
             // the argument is the way the light travels, and L points back along it
             toward = -file_[static_cast<std::size_t>(given[0])].triple(point);
-            direction.triple(point, toward);
-            // with an angle, L may be any direction inside a cone, chosen against the surface's
-            // cone. A light shader does not have the surface's cone, so L is the axis
-            if (given.size() > 1 && file_[static_cast<std::size_t>(given[1])].number(point) != 0.0F) {
-                report("solar with an angle is lit along its axis only, as if the angle were 0");
+            // with an angle, L may be any direction inside a cone around that, and it is the one
+            // nearest the axis of the cone the surface gathers from
+            const float angle = given.size() > 1 ? file_[static_cast<std::size_t>(given[1])].number(point) : 0.0F;
+            if (angle > 0.0F && point < gatherAxes_.size()) {
+                toward = nearest(toward, angle, gatherAxes_[point]);
             }
+            direction.triple(point, toward);
         } else {
             toward = file_[static_cast<std::size_t>(given[0])].triple(point) - surface.triple(point);
             direction.triple(point, toward);

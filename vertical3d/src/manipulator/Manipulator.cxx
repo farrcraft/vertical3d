@@ -4,8 +4,8 @@
  **/
 
 #include "Manipulator.h"
+#include "Target.h"
 
-#include <api/brep/BRep.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -103,10 +103,10 @@ Manipulator::Space Manipulator::effective() const noexcept {
 
 /**
  **/
-Manipulator::Placement Manipulator::placement(const boost::shared_ptr<v3d::brep::BRep>& mesh,
+Manipulator::Placement Manipulator::placement(const Target& target,
     const ViewPort& view) const {
     Placement placement;
-    if (!mesh) {
+    if (target.empty()) {
         return placement;
     }
 
@@ -120,11 +120,25 @@ Manipulator::Placement Manipulator::placement(const boost::shared_ptr<v3d::brep:
     camera->createProjection();
     camera->createView();
 
-    placement.origin = mesh->translation();
-    placement.orientation = effective() == Space::Local ? mesh->rotation() : glm::quat(1.0F, 0.0F, 0.0F, 0.0F);
+    placement.origin = target.pivot();
+    placement.orientation = effective() == Space::Local ? target.axes() : glm::quat(1.0F, 0.0F, 0.0F, 0.0F);
     placement.size = handlePixels * unitsPerPixel(view, placement.origin);
     placement.valid = placement.size > 0.0F;
     return placement;
+}
+
+/**
+ **/
+void Manipulator::apply(const Target& target, const ViewPort& view, const glm::vec2& from, const glm::vec2& to) const {
+    const Placement seat = placement(target, view);
+    if (!seat.valid) {
+        return;
+    }
+    Motion motion;
+    if (!measure(seat, view, from, to, &motion)) {
+        return;
+    }
+    target.move(motion, seat.origin, seat.orientation);
 }
 
 /**
@@ -304,9 +318,9 @@ void Manipulator::marker(v3d::render::realtime::canvas::Line* canvas, const Plac
 
 /**
  **/
-bool Manipulator::grab(const boost::shared_ptr<v3d::brep::BRep>& mesh, const ViewPort& view,
+bool Manipulator::grab(const Target& target, const ViewPort& view,
     const glm::vec2& cursor, Axis* axis) const {
-    const Placement seat = placement(mesh, view);
+    const Placement seat = placement(target, view);
     if (!seat.valid) {
         return false;
     }

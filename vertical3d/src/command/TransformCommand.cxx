@@ -5,9 +5,9 @@
 
 #include "TransformCommand.h"
 
-#include <api/brep/BRep.h>
 
 #include <string>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -15,27 +15,28 @@ namespace v3d::editor {
 
 /**
  **/
-TransformCommand::TransformCommand(const boost::shared_ptr<v3d::brep::BRep>& mesh, const Change& change,
-    const std::string& mode) :
-    mesh_(mesh),
-    before_(change.before),
-    after_(change.after),
+TransformCommand::TransformCommand(const std::vector<Change>& changes, const std::string& mode) :
+    changes_(changes),
     mode_(mode) {
 }
 
 /**
  **/
 void TransformCommand::undo() {
-    if (mesh_) {
-        before_.applyTo(mesh_.get());
+    for (const Change& change : changes_) {
+        if (change.mesh) {
+            change.before.applyTo(change.mesh.get());
+        }
     }
 }
 
 /**
  **/
 void TransformCommand::redo() {
-    if (mesh_) {
-        after_.applyTo(mesh_.get());
+    for (const Change& change : changes_) {
+        if (change.mesh) {
+            change.after.applyTo(change.mesh.get());
+        }
     }
 }
 

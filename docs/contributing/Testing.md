@@ -59,9 +59,10 @@ These have no automated test:
 
 - `Feature::Window`, which opens an app's SDL window. The render window suite opens its windows
   through `render::realtime::Window` and not through the feature.
-- `audio::Engine::initialize()`, which opens the audio device. The rest of `api/audio` is tested,
-  but not whether a sound is audible. An engine with no device gives back no voice, so every
-  case but one runs without a device. `audio_engine_lets_the_dispatcher_go_test` needs SDL's
+- Whether a sound from `audio::Engine` is audible. An engine with no device gives back no
+  voice, so most cases run without one. `audio_engine_a_sound_plays_at_its_gain_times_its_bus_test`
+  opens SDL's dummy audio driver, which plays into nothing and needs no sound card, and reads
+  back the volume each track is set to. `audio_engine_lets_the_dispatcher_go_test` needs SDL's
   audio subsystem to start, and fails on a machine where it cannot.
 - The upload in `ui::paint::TextRenderer`, which needs a device. Its measuring and layout are
   tested with an upload that returns a handle and draws nothing.
@@ -220,8 +221,10 @@ fails only because it reads a fixture the change added has to be read by hand.
 device with no window surface, record frames into an offscreen render target, and read the pixels
 back with `vulkan::frame::Capture`. Every case asserts two things:
 
-- The validation layer reported nothing. The test reads the count from
-  `vulkan::device::Instance::errors()` and `firstError()` rather than from the log.
+- The validation layer reported nothing, neither an error nor a warning. `silent()` reads the
+  counts from `vulkan::device::Instance::errors()` and `warnings()` rather than from the log, and
+  reports `firstError()` and `firstWarning()` when a count is not zero. A warning is a call the
+  layer accepts but expects to be a mistake, such as a vertex attribute no shader reads.
 - The pixels or values are what was drawn. A few cases compare against a committed reference
   image (see [Reference images](#reference-images)). The rest check chosen pixels or values by
   hand.
@@ -251,8 +254,9 @@ with code 77, and ctest reports the suite as `Skipped` (set by
 The check is in `main` rather than in each case because a suite whose every case skips exits
 with zero, and ctest would report a pass.
 
-**In CI a skip is a failure.** A separate workflow step runs the executable again and fails the
-job on exit code 77, because lavapipe was installed and the loader should have found it. Locally
+**In CI a skip is a failure.** The suite runs in a workflow step of its own rather than through
+ctest. That step fails the job on exit code 77, because lavapipe was installed and the loader
+should have found it. Locally
 a skip is correct, since a machine may have no Vulkan device.
 
 This is a separate executable from `v3dtest_render`, which tests the renderer's CPU-side code,
@@ -273,8 +277,9 @@ as `Skipped`. The reason is printed to the console.
 A window appears on the screen for each case while the suite runs.
 
 **In CI a skip is a failure here too.** The Windows runner opens a window, and lavapipe presents
-to it. A workflow step runs the executable again and fails the job on exit code 77, because a
-skip there means the window or the swapchain stopped working and no `Engine3D` case was checked.
+to it. The suite runs in a workflow step of its own rather than through ctest, and fails the job
+on exit code 77. A skip there means the window or the swapchain stopped working and no
+`Engine3D` case was checked.
 
 ## Reference images
 

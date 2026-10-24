@@ -13,10 +13,12 @@
 #include <api/ui/input/Cursor.h>
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
+#include <api/ui/shell/Prompt.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/Bar.h>
 #include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
@@ -26,6 +28,7 @@
 #include <vertical3d/src/view/ViewLayout.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -74,6 +77,17 @@ class Controller final : public v3d::engine::Engine {
      **/
     void handleResize(const v3d::event::kind::WindowResize& event);
 
+    /** A command that shows a fixed view, and the camera profile that view is. **/
+    struct FixedView {
+        std::string command;
+        std::string profile;
+    };
+
+    /**
+     * The fixed views the View menu offers. Each command shows its profile in the active view.
+     **/
+    static const std::vector<FixedView>& fixedViews();
+
  protected:
     /**
      * Build the scene, the views, the tools, the renderer and the ui from the config the
@@ -85,6 +99,14 @@ class Controller final : public v3d::engine::Engine {
     /**
      **/
     bool release() override;
+
+    /**
+     * A quit with unsaved changes asks first, and quits once the user has saved or discarded
+     * them. A request that arrives while the editor is already asking is held, and changes
+     * nothing.
+     * @return whether to quit now
+     **/
+    bool quitRequested() override;
 
  private:
     /**
@@ -99,6 +121,12 @@ class Controller final : public v3d::engine::Engine {
      * rather than remembered by the ui.
      **/
     void syncUi();
+
+    /**
+     * Name the project in the window caption, and mark it when it has changes that are not
+     * saved. The caption is only written when that changes.
+     **/
+    void syncCaption();
 
     /**
      * Offer the cursor to the ui before the tools see it. The ui library decides which of
@@ -127,6 +155,34 @@ class Controller final : public v3d::engine::Engine {
     void createPoly(const std::string& name);
 
     /**
+     * Split the selected edges at their middles. It works under the edge mask only, and logs
+     * why when it does nothing.
+     **/
+    void splitSelectedEdges();
+
+    /**
+     * Split a face between the two selected vertices. It works under the vertex mask only,
+     * and logs why when it does nothing.
+     **/
+    void splitSelectedFace();
+
+    /**
+     * Merge the selected vertices into one. It works under the vertex mask only, and logs why
+     * when it does nothing.
+     **/
+    void mergeSelectedVertices();
+
+    /** An operation on the selected faces, such as extrudeFaces() in Modelling.h. **/
+    using FaceOperation = boost::shared_ptr<TopologyCommand> (*)(const Scene& scene);
+
+    /**
+     * Run an operation on the selected faces. It works under the face mask only, and logs why
+     * when it does nothing.
+     * @param name what the operation is called, for the log
+     **/
+    void changeSelectedFaces(const std::string& name, FaceOperation operation);
+
+    /**
      * Step the history one command in either direction and say so.
      * @param name either "undo" or "redo"
      **/
@@ -138,8 +194,16 @@ class Controller final : public v3d::engine::Engine {
      * executable, and is whatever was last opened or saved as after that.
      **/
     void openProject();
-    void saveProject();
+    bool saveProject();
     void saveProjectAs();
+
+    /**
+     * Run something that replaces the scene, asking first when the project has unsaved
+     * changes. Saving and then continuing, or discarding them and continuing, both run it.
+     * A save that fails stops it, and so does cancelling.
+     * @param proceed what replaces the scene
+     **/
+    void askBeforeDiscarding(const std::function<void()>& proceed);
 
     /**
      * Write the scene out as RIB for the offline renderer.
@@ -161,16 +225,35 @@ class Controller final : public v3d::engine::Engine {
     void toggleShow(ViewPort::VisibleFilter filter);
 
     /**
+     * Show a camera profile in the active view, keeping the view's region.
+     * @param profile the profile's name
+     **/
+    void look(const std::string& profile);
+
+    /**
+     * Switch the active view's camera between a perspective and an orthographic projection.
+     * The camera stays where it is.
+     **/
+    void toggleProjection();
+
+    /**
      * The primary mouse button went down or up. It drives the camera, transform and select
      * tools, and this decides which one takes it.
      **/
     void drag(bool pressed);
 
     /**
-     * Choose the transform tool's mode and tell the renderer which handles to draw.
+     * Choose the transform tool's mode.
      * @param name the mode, as TransformTool names it
      **/
     void transformMode(const std::string& name);
+
+    /**
+     * Choose the select mask, for the select tool that picks under it and for the transform
+     * tool, whose handles move what the mask selects.
+     * @param name the mask, as SelectMask names it
+     **/
+    void selectMask(const std::string& name);
 
     /**
      * Hold or release a camera move for as long as its modifier is down.
@@ -190,18 +273,26 @@ class Controller final : public v3d::engine::Engine {
      **/
     void layoutViews(int width, int height);
 
+    /**
+     * Tell each view the region the layout last gave it, as after a divider is dragged.
+     **/
+    void placeViews();
+
     std::string path_;
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<v3d::ui::Engine> vgui_;
     boost::shared_ptr<v3d::ui::input::Cursor> uiCursor_;
     boost::shared_ptr<v3d::ui::shell::Keyboard> uiKeys_;
     boost::shared_ptr<v3d::ui::shell::FileChooser> chooser_;
+    boost::shared_ptr<v3d::ui::shell::Prompt> prompt_;
     boost::shared_ptr<v3d::ui::component::menu::Bar> menu_;
     std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
     boost::shared_ptr<Project> project_;
     // the document Save writes to
     boost::filesystem::path projectPath_;
     boost::shared_ptr<CommandStack> history_;
+    // what the caption was last set to
+    std::string caption_;
     boost::shared_ptr<v3d::config::CameraProfiles> profiles_;
     boost::shared_ptr<ViewLayout> layout_;
     std::vector<boost::shared_ptr<ViewPort>> views_;

@@ -52,14 +52,27 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
      */
     void shade(const Shading & shading, MicroPolygonGrid* grid);
 
+    /**
+     * Run the primitive's displacement shader over every vertex of the grid, and leave the P
+     * and N it wrote on each. Nothing happens when the primitive has no displacement shader.
+     * The surface shader runs afterwards, on the moved grid.
+     **/
+    void displace(const Shading & shading, MicroPolygonGrid* grid);
+
     // the callbacks the shading machine calls on its renderer
     bool space(const std::string & name, glm::mat4x4* matrix) override;
     unsigned int lights() override;
     bool light(unsigned int index, const v3d::render::offline::sl::runtime::Value & surface,
+        const v3d::render::offline::sl::runtime::Cone & gathering,
         v3d::render::offline::sl::runtime::Value* direction,
         v3d::render::offline::sl::runtime::Value* colour,
         std::vector<char>* reached, bool* ambient) override;
     const v3d::render::offline::Texture* texture(const std::string & name) override;
+    /**
+     * The grid being shaded: vertex (i, j) is batch point (i * size) + j, with u along i and v
+     * along j, a step of 1 / (size - 1) apart.
+     **/
+    Shape shape() const override;
     /**
      * Both trace through the context's traced scene, in world space, at the shutter's open. A
      * grid is shaded once for all of its samples, so it has no single time of its own.
@@ -101,6 +114,8 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
      **/
     glm::mat4x4 placement_ = glm::mat4x4(1.0F);
     unsigned int batch_ = 1;
+    /** The grid's points a side. **/
+    unsigned int size_ = 1;
     std::map<const v3d::render::offline::sl::runtime::Program*, Run> runs_;
     /** What casts the rays, into the context's traced scene. **/
     v3d::render::offline::trace::Tracer tracer_;

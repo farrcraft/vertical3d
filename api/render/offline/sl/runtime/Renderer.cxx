@@ -14,6 +14,14 @@
 
 namespace v3d::render::offline::sl::runtime {
 
+bool Renderer::projected(const std::string & name) const {
+    return name == "screen" || name == "raster" || name == "NDC";
+}
+
+Renderer::Shape Renderer::shape() const {
+    return {};
+}
+
 /*
     The defaults for a renderer that cannot do these things. With each default a scene still
     renders, though wrongly, and the machine reports what it could not do. A picture missing
@@ -25,7 +33,7 @@ unsigned int Renderer::lights() {
     return 0;
 }
 
-bool Renderer::light(unsigned int /* index */, const Value & /* surface */,
+bool Renderer::light(unsigned int /* index */, const Value & /* surface */, const Cone & /* gathering */,
     Value* /* direction */, Value* /* colour */, std::vector<char>* /* reached */,
     bool* /* ambient */) {
     return false;
