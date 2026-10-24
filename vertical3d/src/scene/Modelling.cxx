@@ -168,4 +168,33 @@ boost::shared_ptr<TopologyCommand> insetFaces(const Scene& scene) {
     });
 }
 
+/**
+ **/
+boost::shared_ptr<TopologyCommand> mergeVertices(const Scene& scene, std::string* problem) {
+    boost::shared_ptr<v3d::brep::BRep> owner;
+    std::vector<v3d::brep::Index> vertices;
+    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : scene.selection()) {
+        for (v3d::brep::Index id = 0; id < mesh->vertexCount(); id++) {
+            if (!mesh->vertex(id)->selected()) {
+                continue;
+            }
+            if (owner && owner != mesh) {
+                return refuse(problem, "the vertices are in different meshes");
+            }
+            owner = mesh;
+            vertices.push_back(id);
+        }
+    }
+    if (vertices.size() < 2) {
+        return refuse(problem, "it needs at least two vertices selected, and " + std::to_string(vertices.size()) + " are");
+    }
+
+    const v3d::brep::BRep::Snapshot before = owner->snapshot();
+    if (!v3d::brep::mergeVertices(*owner, vertices)) {
+        return refuse(problem, "it would leave an edge shared by more than two faces, or a face that meets itself");
+    }
+    const TopologyCommand::Change change{.mesh = owner, .before = before, .after = owner->snapshot()};
+    return boost::make_shared<TopologyCommand>(std::vector<TopologyCommand::Change>{change}, "merge vertices");
+}
+
 };  // namespace v3d::editor

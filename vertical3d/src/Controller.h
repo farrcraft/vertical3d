@@ -155,6 +155,12 @@ class Controller final : public v3d::engine::Engine {
      **/
     void splitSelectedFace();
 
+    /**
+     * Merge the selected vertices into one. It works under the vertex mask only, and logs why
+     * when it does nothing.
+     **/
+    void mergeSelectedVertices();
+
     /** An operation on the selected faces, such as extrudeFaces() in Modelling.h. **/
     using FaceOperation = boost::shared_ptr<TopologyCommand> (*)(const Scene& scene);
 

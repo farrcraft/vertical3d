@@ -295,6 +295,7 @@ void Controller::registerCommands() {
     press("transform::poly::split_face", [this]() { splitSelectedFace(); });
     press("transform::poly::extrude_face", [this]() { changeSelectedFaces("extrude face", extrudeFaces); });
     press("transform::poly::inset_face", [this]() { changeSelectedFaces("inset face", insetFaces); });
+    press("transform::poly::merge_vertices", [this]() { mergeSelectedVertices(); });
 
     press("select::mask::object", [this]() { selectMask("object"); });
     press("select::mask::vertex", [this]() { selectMask("vertex"); });
@@ -408,6 +409,23 @@ void Controller::splitSelectedFace() {
     }
     history_->push(command);
     logger()->get()->info("split a face between the selected vertices");
+}
+
+/**
+ **/
+void Controller::mergeSelectedVertices() {
+    if (selectTool_->mask() != SelectMask::Vertex) {
+        logger()->get()->info("merge vertices needs the vertex select mask");
+        return;
+    }
+    std::string problem;
+    const boost::shared_ptr<TopologyCommand> command = mergeVertices(*scene_, &problem);
+    if (!command) {
+        logger()->get()->info("merge vertices: {}", problem);
+        return;
+    }
+    history_->push(command);
+    logger()->get()->info("merged the selected vertices");
 }
 
 /**

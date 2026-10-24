@@ -208,6 +208,114 @@ Quad ringQuad(BRep* mesh, const Rim& rim, const Copies& copies) {
     return Quad{.face = face, .falling = falling, .rising = rising};
 }
 
+/** A half edge that keeps a length after a merge: where it now runs, and what follows it. **/
+struct Kept {
+    Index face = INVALID_ID;
+    Index from = INVALID_ID;
+    Index to = INVALID_ID;
+    Index next = INVALID_ID;
+};
+
+/**
+ * The half edges that keep a length once the merged vertices are one, by index. Each is followed
+ * by the next kept half edge of its face. A face left with fewer than three is dropped whole.
+ **/
+std::map<Index, Kept> collapse(const BRep& mesh, const std::set<Index>& merged, Index keep) {
+    const auto into = [&merged, keep](Index vertex) { return merged.contains(vertex) ? keep : vertex; };
+    std::map<Index, Kept> kept;
+    for (Index face = 0; face < mesh.faceCount(); face++) {
+        const std::vector<Index> loop = faceLoop(mesh, face);
+        std::vector<Index> left;
+        std::vector<Kept> parts;
+        for (std::size_t entry = 0; entry < loop.size(); entry++) {
+            const Index from = into(mesh.edge(loop[(entry + loop.size() - 1) % loop.size()])->vertex());
+            const Index to = into(mesh.edge(loop[entry])->vertex());
+            if (from != to) {
+                left.push_back(loop[entry]);
+                parts.push_back(Kept{.face = face, .from = from, .to = to});
+            }
+        }
+        if (left.size() < 3) {
+            continue;
+        }
+        for (std::size_t entry = 0; entry < left.size(); entry++) {
+            parts[entry].next = left[(entry + 1) % left.size()];
+            kept[left[entry]] = parts[entry];
+        }
+    }
+    return kept;
+}
+
+/** A new index for each index of a set, keeping their order. **/
+std::map<Index, Index> renumber(const std::set<Index>& used) {
+    std::map<Index, Index> renumbered;
+    for (const Index old : used) {
+        renumbered[old] = static_cast<Index>(renumbered.size());
+    }
+    return renumbered;
+}
+
+/** A merge's result: the compacted arrays, and the merged vertex's index in them. **/
+struct Merged {
+    BRep::Snapshot arrays;
+    Index vertex = INVALID_ID;
+};
+
+/**
+ * The arrays of a mesh with only the kept half edges, the faces they are in and the vertices
+ * they end at, each renumbered in order. Each half edge pairs with the one that runs the other way
+ * between the same two vertices.
+ *
+ * @return nothing when two half edges run the same way between two vertices, which is an edge
+ *         shared by more than two faces, or when no half edge ends at the merged vertex
+ **/
+std::optional<Merged> compact(const BRep& mesh, const std::map<Index, Kept>& kept, Index keep, const glm::vec3& centre) {
+    std::set<Index> vertices;
+    std::set<Index> edges;
+    std::set<Index> faces;
+    std::map<Index, Index> firstOf;
+    std::map<std::pair<Index, Index>, std::vector<Index>> between;
+    for (const auto& [edge, part] : kept) {
+        vertices.insert(part.to);
+        edges.insert(edge);
+        faces.insert(part.face);
+        firstOf.try_emplace(part.face, edge);
+        between[{part.from, part.to}].push_back(edge);
+    }
+    if (!vertices.contains(keep)) {
+        return std::nullopt;
+    }
+    const std::map<Index, Index> vertexOf = renumber(vertices);
+    const std::map<Index, Index> edgeOf = renumber(edges);
+    const std::map<Index, Index> faceOf = renumber(faces);
+
+    Merged merged;
+    merged.vertex = vertexOf.at(keep);
+    for (const Index old : vertices) {
+        Vertex vertex(old == keep ? centre : mesh.vertex(old)->point());
+        vertex.selected(mesh.vertex(old)->selected());
+        merged.arrays.vertices.push_back(vertex);
+    }
+    for (const auto& [old, part] : kept) {
+        if (between.at({part.from, part.to}).size() > 1) {
+            return std::nullopt;
+        }
+        const auto back = between.find({part.to, part.from});
+        HalfEdge edge(vertexOf.at(part.to));
+        edge.face(faceOf.at(part.face));
+        edge.next(edgeOf.at(part.next));
+        edge.pair(back == between.end() ? INVALID_ID : edgeOf.at(back->second.front()));
+        edge.selected(mesh.edge(old)->selected());
+        merged.arrays.edges.push_back(edge);
+    }
+    for (const Index old : faces) {
+        Face face(mesh.face(old)->normal(), edgeOf.at(firstOf.at(old)));
+        face.selected(mesh.face(old)->selected());
+        merged.arrays.faces.push_back(face);
+    }
+    return merged;
+}
+
 };  // namespace
 
 std::optional<Index> splitEdge(BRep & mesh, Index edge) {
@@ -346,6 +454,37 @@ std::optional<std::vector<Index>> insetFaces(BRep & mesh, const std::vector<Inde
         }
     }
     return ring;
+}
+
+std::optional<Index> mergeVertices(BRep & mesh, const std::vector<Index> & vertices) {
+    const std::set<Index> chosen(vertices.begin(), vertices.end());
+    if (chosen.size() < 2) {
+        return std::nullopt;
+    }
+    glm::vec3 sum(0.0F);
+    for (const Index vertex : chosen) {
+        if (mesh.vertex(vertex) == nullptr) {
+            return std::nullopt;
+        }
+        sum += mesh.vertex(vertex)->point();
+    }
+    const Index keep = *chosen.begin();
+    const std::optional<Merged> merged = compact(mesh, collapse(mesh, chosen, keep), keep, sum / static_cast<float>(chosen.size()));
+    if (!merged) {
+        return std::nullopt;
+    }
+
+    // the strict check finds a face that meets itself, which the compaction lets through
+    const BRep::Snapshot before = mesh.snapshot();
+    mesh.restore(merged->arrays);
+    for (const Index face : facesAround(mesh, merged->vertex)) {
+        mesh.face(face)->normal(newellNormal(mesh, face));
+    }
+    if (!mesh.validateStrict(nullptr)) {
+        mesh.restore(before);
+        return std::nullopt;
+    }
+    return merged->vertex;
 }
 
 };  // namespace v3d::brep

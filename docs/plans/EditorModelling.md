@@ -145,7 +145,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [13](#step-13--the-record-how-a-topology-change-is-undone) | The record: how a topology change is undone | `docs/adr` | **0098** | done |
 | [14](#step-14--split-edge-and-split-face) | Split edge and split face, through the record 0098 decides | `api/brep`, `vertical3d` | 0098 | done |
 | [15](#step-15--extrude-and-inset) | Extrude and inset a face | `api/brep`, `vertical3d` | 0098 | done |
-| [16](#step-16--merge) | Merge vertices | `api/brep`, `vertical3d` | 0098 | open |
+| [16](#step-16--merge) | Merge vertices | `api/brep`, `vertical3d` | 0098 | done |
 | [17](#step-17--fixed-views-and-the-projection) | The fixed views and the projection switch | `vertical3d` | — | open |
 | [18](#step-18--resizable-panes) | Resizable panes | `vertical3d` | — | open |
 | [19](#step-19--the-documents) | The editor documents state the new rules | `docs` | — | open |
@@ -522,6 +522,16 @@ and is on the Poly menu. Cases are in `OperationsTest.cxx` and `ModellingTest.cx
 check and the undo and redo comparisons; the cylinder's open boundary.
 
 ### Step 16 — Merge
+
+**Done.** `api/brep/Operations.h` holds `mergeVertices()`, and `src/scene/Modelling.h` applies it
+to the selected vertices of one mesh. The merge builds the compacted arrays as a snapshot, and
+pairs each half edge with the one running back between the same two vertices, so it also welds
+two open boundaries. Two half edges running the same way is the non-manifold edge, and refuses the
+merge before anything changes. The strict check then refuses a face that meets itself, and puts
+the old arrays back. Merge is bound to J and is on the Poly menu. Cases are in
+`OperationsTest.cxx` and `ModellingTest.cxx`, including a vertex move that still undoes after a
+merge that renumbered it is undone. [Scene.md](../editor/Scene.md#modelling-operations) states
+the rules.
 
 * **Merge vertices** collapses the selected vertices to their centre. Faces that shrink below three
   vertices are removed, and so are the half edges and vertices nothing references.

@@ -75,8 +75,9 @@ puts a snapshot back whole, selection flags included. A topology command keeps o
 operation and one from after it.
 
 **Changing topology.** The functions in `api/brep/Operations.h` change which parts a mesh holds.
-Each appends its new parts, so no existing index changes, and leaves a mesh that passes
-`validateStrict()`:
+Each leaves a mesh that passes `validateStrict()`. Each appends its new parts, so no existing
+index changes, apart from `mergeVertices`. It compacts the arrays, so every part after a removed
+one is renumbered.
 
 | Function | Does |
 |---|---|
@@ -84,6 +85,7 @@ Each appends its new parts, so no existing index changes, and leaves a mesh that
 | `splitFace(mesh, face, first, second)` | Joins two corners of a face with a new edge, making two faces. The face keeps the corners from the second round to the first, and the new face holds the rest. Both keep the winding and get a normal from their points. Refuses corners that are the same or next to each other. Returns the new face |
 | `extrudeFaces(mesh, faces)` | Moves each face onto copies of the corners on its outline, and joins the copies to the corners left behind with a ring of quads. Faces that share an edge extrude as one region, so only the region's outline gains a ring. The copies sit where the corners are, so the ring's quads have no area and a zero normal until the faces are moved. Each face keeps its index and its half edges. Returns the ring's faces |
 | `insetFaces(mesh, faces, fraction)` | Makes a smaller copy of each face inside it, joined to its outline by a ring of quads. Each face is inset on its own. Each corner of a copy is `fraction` of the way to the face's centre. Each face keeps its index and becomes the copy. Returns the rings' faces |
+| `mergeVertices(mesh, vertices)` | Merges vertices into one at their centre. Edges that lose their length go, faces left with fewer than three corners go, and vertices nothing uses go. Edges that now run between the same two vertices are paired, so a merge can join two open boundaries. Refuses a merge that would leave an edge shared by more than two faces, a face that meets itself, or nothing at the merged point, and then changes nothing. Returns the merged vertex |
 
 **Identity and placement.** `BRep` derives from `v3d::dag::Node` and `v3d::dag::Transform`, so
 `v3dlib_brep` links `v3dlib_dag` publicly.
@@ -119,6 +121,10 @@ does nothing, with a log line, on a selection it cannot use.
   each selected face on its own, moving its corners a quarter of the way to its centre. The
   smaller faces stay selected. The handles pivot at a face's centre, so the scale manipulator
   changes how far it is inset.
+- **Merge Vertices** (`transform::poly::merge_vertices`, the J key) works under the vertex mask.
+  At least two vertices must be selected, in one mesh. They become one at their centre, which
+  stays selected. A merge that would leave an edge shared by more than two faces, or a face that
+  meets itself, is refused. Merging the two corners across a face is refused for both reasons.
 
 The functions that do the work are in `src/scene/Modelling.h`, apart from the controller, so they
 can be tested without it.

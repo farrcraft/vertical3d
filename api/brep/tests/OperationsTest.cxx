@@ -328,6 +328,100 @@ BOOST_AUTO_TEST_CASE(brep_inset_adjacent_faces_test) {
     restores(&mesh, before);
 }
 
+/**
+ * The index of a mesh's vertex at a point.
+ **/
+v3d::brep::Index at(const v3d::brep::BRep& mesh, const glm::vec3& point) {
+    for (v3d::brep::Index id = 0; id < mesh.vertexCount(); id++) {
+        if (glm::distance(mesh.vertex(id)->point(), point) < 0.0001F) {
+            return id;
+        }
+    }
+    return v3d::brep::INVALID_ID;
+}
+
+BOOST_AUTO_TEST_CASE(brep_merge_edge_test) {
+    // the two ends of the cube's edge along x from the origin become one at its middle, and the
+    // bottom and the front, which shared the edge, become triangles
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    const v3d::brep::BRep::Snapshot before = mesh.snapshot();
+    const v3d::brep::Index end = at(mesh, glm::vec3(1.0F, 0.0F, 0.0F));
+
+    const std::optional<v3d::brep::Index> merged = v3d::brep::mergeVertices(mesh, {0, end});
+    BOOST_REQUIRE(merged);
+    sound(mesh);
+    BOOST_CHECK_EQUAL(mesh.vertexCount(), 7U);
+    BOOST_CHECK_EQUAL(mesh.edgeCount(), 22U);
+    BOOST_CHECK_EQUAL(mesh.faceCount(), 6U);
+    BOOST_CHECK_SMALL(glm::distance(mesh.vertex(merged.value_or(0))->point(), glm::vec3(0.5F, 0.0F, 0.0F)), 0.0001F);
+    BOOST_CHECK_EQUAL(v3d::brep::faceLoop(mesh, 0).size(), 3U);
+    BOOST_CHECK_EQUAL(v3d::brep::faceLoop(mesh, 2).size(), 3U);
+    BOOST_CHECK_EQUAL(v3d::brep::facesAround(mesh, merged.value_or(0)).size(), 4U);
+    BOOST_CHECK_SMALL(glm::distance(mesh.face(0)->normal(), glm::vec3(0.0F, 0.0F, -1.0F)), 0.0001F);
+    restores(&mesh, before);
+}
+
+BOOST_AUTO_TEST_CASE(brep_merge_face_test) {
+    // the top's four corners become one, so the top goes and the cube becomes a pyramid, with
+    // the faces after the top renumbered down by one
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    const v3d::brep::BRep::Snapshot before = mesh.snapshot();
+    std::vector<v3d::brep::Index> corners;
+    for (const v3d::brep::Index edge : v3d::brep::faceLoop(mesh, 1)) {
+        corners.push_back(mesh.edge(edge)->vertex());
+    }
+
+    const std::optional<v3d::brep::Index> merged = v3d::brep::mergeVertices(mesh, corners);
+    BOOST_REQUIRE(merged);
+    sound(mesh);
+    BOOST_CHECK_EQUAL(mesh.vertexCount(), 5U);
+    BOOST_CHECK_EQUAL(mesh.edgeCount(), 16U);
+    BOOST_CHECK_EQUAL(mesh.faceCount(), 5U);
+    BOOST_CHECK_SMALL(glm::distance(mesh.vertex(merged.value_or(0))->point(), glm::vec3(0.5F, 0.5F, 1.0F)), 0.0001F);
+    BOOST_CHECK_EQUAL(v3d::brep::faceLoop(mesh, 0).size(), 4U);
+    for (v3d::brep::Index face = 1; face < mesh.faceCount(); face++) {
+        BOOST_CHECK_EQUAL(v3d::brep::faceLoop(mesh, face).size(), 3U);
+    }
+    // the front, once face 2, is face 1, and still faces the way it did
+    BOOST_CHECK_SMALL(mesh.face(1)->normal().x, 0.0001F);
+    BOOST_CHECK_LT(mesh.face(1)->normal().y, 0.0F);
+    restores(&mesh, before);
+}
+
+BOOST_AUTO_TEST_CASE(brep_merge_weld_test) {
+    // two quads a gap apart, merged across the gap at both ends, share the edge between them
+    v3d::brep::BRep mesh;
+    mesh.addFace({glm::vec3(0.0F), glm::vec3(0.0F, 1.0F, 0.0F), glm::vec3(1.0F, 1.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F)},
+        glm::vec3(0.0F, 0.0F, 1.0F));
+    mesh.addFace({glm::vec3(1.5F, 0.0F, 0.0F), glm::vec3(1.5F, 1.0F, 0.0F), glm::vec3(2.0F, 1.0F, 0.0F), glm::vec3(2.0F, 0.0F, 0.0F)},
+        glm::vec3(0.0F, 0.0F, 1.0F));
+    BOOST_REQUIRE(v3d::brep::mergeVertices(mesh, {at(mesh, glm::vec3(1.0F, 0.0F, 0.0F)), at(mesh, glm::vec3(1.5F, 0.0F, 0.0F))}));
+    BOOST_REQUIRE(v3d::brep::mergeVertices(mesh, {at(mesh, glm::vec3(1.0F, 1.0F, 0.0F)), at(mesh, glm::vec3(1.5F, 1.0F, 0.0F))}));
+    sound(mesh);
+    BOOST_CHECK_EQUAL(mesh.vertexCount(), 6U);
+    std::size_t paired = 0;
+    for (v3d::brep::Index edge = 0; edge < mesh.edgeCount(); edge++) {
+        paired += mesh.edge(edge)->pair() == v3d::brep::INVALID_ID ? 0 : 1;
+    }
+    BOOST_CHECK_EQUAL(paired, 2U);
+}
+
+BOOST_AUTO_TEST_CASE(brep_merge_refused_test) {
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    const v3d::brep::BRep::Snapshot before = mesh.snapshot();
+
+    // the bottom's opposite corners: the bottom would meet itself, and its two sides would each
+    // share an edge with two faces
+    BOOST_CHECK(!v3d::brep::mergeVertices(mesh, {0, at(mesh, glm::vec3(1.0F, 1.0F, 0.0F))}));
+    BOOST_CHECK(!v3d::brep::mergeVertices(mesh, {0}));
+    BOOST_CHECK(!v3d::brep::mergeVertices(mesh, {0, 0}));
+    BOOST_CHECK(!v3d::brep::mergeVertices(mesh, {0, 40}));
+    BOOST_CHECK(same(mesh.snapshot(), before));
+}
+
 BOOST_AUTO_TEST_CASE(brep_extrude_refused_test) {
     v3d::brep::BRep mesh;
     cube(&mesh);

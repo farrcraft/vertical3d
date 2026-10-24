@@ -60,4 +60,16 @@ constexpr float insetFraction = 0.25F;
  **/
 boost::shared_ptr<TopologyCommand> insetFaces(const Scene& scene);
 
+/**
+ * Merge the selected vertices into one at their centre.
+ *
+ * At least two vertices must be selected, in one mesh. The mesh is renumbered, and the merged
+ * vertex stays selected. A merge that would leave an edge shared by more than two faces, or a
+ * face that meets itself, is refused.
+ *
+ * @param problem why nothing was merged, when nothing was
+ * @return the change, already made, or an empty pointer when nothing was merged
+ **/
+boost::shared_ptr<TopologyCommand> mergeVertices(const Scene& scene, std::string* problem);
+
 };  // namespace v3d::editor

@@ -381,4 +381,98 @@ BOOST_AUTO_TEST_CASE(modelling_inset_faces_test) {
     undoRedo(command.get(), cube, before);
 }
 
+BOOST_AUTO_TEST_CASE(modelling_merge_vertices_test) {
+    // the two ends of one of the cube's edges become one at its middle
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    cube->selected(true);
+    scene.add(cube);
+    cube->vertex(at(*cube, glm::vec3(-0.5F, -0.5F, -0.5F)))->selected(true);
+    cube->vertex(at(*cube, glm::vec3(0.5F, -0.5F, -0.5F)))->selected(true);
+    const v3d::brep::BRep::Snapshot before = cube->snapshot();
+
+    std::string problem;
+    const boost::shared_ptr<v3d::editor::TopologyCommand> command = v3d::editor::mergeVertices(scene, &problem);
+    BOOST_REQUIRE_MESSAGE(command, problem);
+    BOOST_CHECK_EQUAL(command->name(), "merge vertices");
+    sound(*cube);
+    BOOST_CHECK_EQUAL(cube->vertexCount(), 7U);
+    BOOST_CHECK_EQUAL(cube->faceCount(), 6U);
+
+    // the merged vertex stays selected, so it is the only component that is
+    const v3d::brep::Index merged = at(*cube, glm::vec3(0.0F, -0.5F, -0.5F));
+    BOOST_REQUIRE(merged != v3d::brep::INVALID_ID);
+    BOOST_CHECK(cube->vertex(merged)->selected());
+    BOOST_CHECK_EQUAL(selectedComponents(*cube), 1U);
+
+    undoRedo(command.get(), cube, before);
+}
+
+BOOST_AUTO_TEST_CASE(modelling_merge_vertices_refused_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::brep::BRep> other = v3d::editor::create_poly_cube();
+    cube->selected(true);
+    other->selected(true);
+    scene.add(cube);
+    scene.add(other);
+    const v3d::brep::BRep::Snapshot before = cube->snapshot();
+    std::string problem;
+
+    // one vertex is not enough
+    cube->vertex(at(*cube, glm::vec3(-0.5F, -0.5F, -0.5F)))->selected(true);
+    BOOST_CHECK(!v3d::editor::mergeVertices(scene, &problem));
+    BOOST_CHECK_EQUAL(problem, "it needs at least two vertices selected, and 1 are");
+
+    // opposite corners of one face would fold the face onto itself
+    cube->vertex(at(*cube, glm::vec3(0.5F, 0.5F, -0.5F)))->selected(true);
+    BOOST_CHECK(!v3d::editor::mergeVertices(scene, &problem));
+    BOOST_CHECK_EQUAL(problem, "it would leave an edge shared by more than two faces, or a face that meets itself");
+    BOOST_CHECK(same(cube->snapshot(), before));
+
+    // and a vertex in each of two meshes cannot be merged
+    cube->deselectComponents();
+    cube->vertex(0)->selected(true);
+    other->vertex(1)->selected(true);
+    BOOST_CHECK(!v3d::editor::mergeVertices(scene, &problem));
+    BOOST_CHECK_EQUAL(problem, "the vertices are in different meshes");
+}
+
+BOOST_AUTO_TEST_CASE(modelling_merge_history_keeps_indices_test) {
+    // a merge removes a vertex and renumbers those after it. A move of the last vertex, recorded
+    // before the merge, still undoes correctly once the merge is undone
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    cube->selected(true);
+    scene.add(cube);
+    const v3d::brep::BRep::Snapshot original = cube->snapshot();
+    v3d::editor::CommandStack history;
+
+    cube->vertex(static_cast<v3d::brep::Index>(cube->vertexCount() - 1))->selected(true);
+    const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Vertex);
+    const v3d::editor::VertexCommand::Shape shape = v3d::editor::VertexCommand::Shape::of(target.parts()[0]);
+    v3d::editor::Motion motion;
+    motion.offset = glm::vec3(0.25F, 0.0F, 0.0F);
+    target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
+    history.push(boost::make_shared<v3d::editor::VertexCommand>(std::vector<v3d::editor::VertexCommand::Change>{
+        {.part = target.parts()[0], .before = shape, .after = v3d::editor::VertexCommand::Shape::of(target.parts()[0])}},
+        "translate"));
+
+    // the two vertices merged are the ends of the second edge of the first face
+    cube->deselectComponents();
+    const v3d::brep::Index first = cube->edge(cube->face(0)->edge())->vertex();
+    const v3d::brep::Index second = cube->edge(cube->edge(cube->face(0)->edge())->next())->vertex();
+    cube->vertex(first)->selected(true);
+    cube->vertex(second)->selected(true);
+    std::string problem;
+    const boost::shared_ptr<v3d::editor::TopologyCommand> merge = v3d::editor::mergeVertices(scene, &problem);
+    BOOST_REQUIRE_MESSAGE(merge, problem);
+    history.push(merge);
+    BOOST_CHECK_EQUAL(cube->vertexCount(), 7U);
+
+    history.undo();
+    history.undo();
+    BOOST_CHECK(same(cube->snapshot(), original));
+}
+
 };  // namespace

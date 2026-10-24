@@ -348,6 +348,12 @@
                       "type": "action",
                       "context": "transform",
                       "command": "poly::split_edge"
+                    },
+                    {
+                      "label": "Merge Vertices",
+                      "type": "action",
+                      "context": "transform",
+                      "command": "poly::merge_vertices"
                     }
                   ]
                 }

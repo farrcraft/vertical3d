@@ -67,4 +67,22 @@ std::optional<std::vector<Index>> extrudeFaces(BRep & mesh, const std::vector<In
  **/
 std::optional<std::vector<Index>> insetFaces(BRep & mesh, const std::vector<Index> & faces, float fraction);
 
+/**
+ * Merge vertices into one at their centre.
+ *
+ * An edge between two merged vertices has no length, and goes. A face left with fewer than three
+ * corners goes, and so do the vertices nothing uses after. Edges that now run between the same
+ * two vertices are paired, so a merge can join two open boundaries.
+ *
+ * The arrays are compacted, so the parts after a removed one are renumbered. The merged vertex
+ * keeps its selection, and every other part keeps its own.
+ *
+ * A merge is refused, and changes nothing, when it would leave an edge shared by more than two
+ * faces, a face that meets itself, or nothing at the merged point.
+ *
+ * @return the merged vertex, or nothing when the merge is refused, fewer than two vertices are
+ *         named, or a vertex is not there
+ **/
+std::optional<Index> mergeVertices(BRep & mesh, const std::vector<Index> & vertices);
+
 };  // namespace v3d::brep

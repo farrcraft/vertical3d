@@ -196,6 +196,17 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "j",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "transform",
+        "name": "poly::merge_vertices"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "5",
         "state": "pressed"
       },
