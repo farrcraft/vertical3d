@@ -316,7 +316,30 @@ style cannot set the bullet indent.
 ## Editor
 
 Open work for when the editor app itself moves forward. [editor/](editor/README.md) describes the
-editor. [EditorModelling](roadmap/EditorModelling.md) orders these.
+editor.
 
-[] 45 of the menu's 80 commands have no handler, and only log themselves when chosen.
+45 of the menu's 80 commands have no handler, and only log themselves when chosen. Each group
+below is a piece of work of its own, in any order.
+
+[] **Shading and culling modes** (`view::shade::*`, `view::cull::*`, `view::rendermode::*`) need a
+shaded draw of the mesh, which the editor's renderer does not have. The mode itself is view
+state.
+
+[] **Cameras and lights in the scene** (`view::show::camera`, `view::show::light` and the camera,
+light, curve, handle and mesh select masks) need the scene to hold something other than meshes,
+and drawing them comes first. The masks and show toggles follow.
+
+[] **Importers** (`project::import::*`) each need a format reader. An importer creates meshes
+through the command stack, so an import can be undone.
+
+[] **Playback** (`timeline::*`) needs animation in the scene, which nothing in the editor has. It
+waits on an ADR deciding what the editor animates.
+
+[] **The Render menu** (`render::view`, `render::batch`, `render::settings`) would hand the scene to
+moya. The RIB export already writes it.
+
+[] **Groups and scene cameras** (`create::group`, `create::ortho::camera`,
+`create::perspective::camera`, and the camera toolbar's `camera::*` buttons). A group needs a
+scene that holds a hierarchy, and a camera in the scene needs the scene to hold something other
+than meshes.
 

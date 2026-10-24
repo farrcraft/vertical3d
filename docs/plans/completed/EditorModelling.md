@@ -1,7 +1,7 @@
 # Editor Modelling — Selection Sets, Component Moves and Topology Operations
 
 Drafted 2026-10-18 against `0bb29eb9`. This plan takes up sections 1, 2, 3 and 5 of
-[the editor modelling roadmap](../../roadmap/EditorModelling.md), and the camera-view part of its
+[the editor modelling roadmap](../../roadmap/completed/EditorModelling.md), and the camera-view part of its
 section 4. Its steps fall in `vertical3d`, `api/brep`, `api/ui` and `api/engine`. When it closes,
 the editor warns before it discards work, selects several objects or components at once, moves
 vertices, edges and faces, and splits, extrudes, insets and merges faces with undo. Its views
@@ -585,8 +585,9 @@ changes two shares and respects the floor; `viewAt` finds the divider.
 ### Step 19 — The documents
 
 **Done.** Each step stated its own rules in the page that owns them, so this step checked
-them, rewrote the roadmap down to the handler groups it keeps, recounted the menu's unhandled
-commands for TODO.md, and closed the plan.
+them, recounted the menu's unhandled commands, and closed the plan. The roadmap's remaining
+handler groups have no order between them, so each became a TODO.md entry and the roadmap moved
+to completed.
 
 * [editor/](../../editor/README.md) states the dirty flag, the prompt, the selection set, the rubber
   band, component moves and each topology operation, in the page that owns each.
@@ -635,6 +636,7 @@ projections, and its panes resize.
   running editor, because posted mouse messages do not reach SDL at their position. Each is
   covered by headless cases.
 
-**Left open,** in [TODO.md](../../TODO.md#editor) and the
-[roadmap](../../roadmap/EditorModelling.md): the 45 menu commands with no handler, which need a
-shaded draw, cameras and lights in the scene, importers, animation, or the Render menu.
+**Left open,** in [TODO.md](../../TODO.md#editor): the 45 menu commands with no handler, in six
+groups that need a shaded draw, cameras and lights in the scene, importers, animation, the Render
+menu, or a scene that holds a hierarchy. They have no order between them, so the roadmap moved to
+completed with them.
