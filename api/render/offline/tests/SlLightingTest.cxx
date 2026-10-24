@@ -15,6 +15,7 @@
 #include <api/render/offline/sl/runtime/Value.h>
 #include <api/render/offline/sl/syntax/Shader.h>
 
+#include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <iterator>
@@ -77,8 +78,17 @@ class Lamp final {
         }
     }
 
-    bool shine(const Value & surface, Value* direction, Value* colour,
-        std::vector<char>* reached, bool* ambient) {
+    bool shine(const Value & surface, const v3d::render::offline::sl::runtime::Cone & gathering, Value* direction,
+        Value* colour, std::vector<char>* reached, bool* ambient) {
+        std::vector<glm::vec3> axes;
+        std::vector<float> angles;
+        if (gathering.axis != nullptr && gathering.angle != nullptr) {
+            for (unsigned int point = 0; point < machine_.batch(); point++) {
+                axes.push_back(gathering.axis->triple(point));
+                angles.push_back(gathering.angle->number(point));
+            }
+        }
+        machine_.gather(axes, angles);
         const int where = program_.symbol("Ps");
         if (where >= 0) {
             for (unsigned int point = 0; point < machine_.batch(); point++) {
@@ -123,9 +133,9 @@ class Scene final : public v3d::render::offline::sl::runtime::Renderer {
         return static_cast<unsigned int>(lamps_.size());
     }
 
-    bool light(unsigned int index, const Value & surface, Value* direction, Value* colour,
-        std::vector<char>* reached, bool* ambient) override {
-        return lamps_[index]->shine(surface, direction, colour, reached, ambient);
+    bool light(unsigned int index, const Value & surface, const v3d::render::offline::sl::runtime::Cone & gathering,
+        Value* direction, Value* colour, std::vector<char>* reached, bool* ambient) override {
+        return lamps_[index]->shine(surface, gathering, direction, colour, reached, ambient);
     }
 
  private:
@@ -200,7 +210,7 @@ BOOST_AUTO_TEST_CASE(sllighting_solar_test) {
     std::vector<char> reached;
     bool ambient = true;
 
-    BOOST_REQUIRE(scene.light(0, surface, &direction, &colour, &reached, &ambient));
+    BOOST_REQUIRE(scene.light(0, surface, v3d::render::offline::sl::runtime::Cone(), &direction, &colour, &reached, &ambient));
     BOOST_CHECK(!ambient);
     BOOST_CHECK_CLOSE(direction.triple(2).z, 1.0F, 0.01F);
     BOOST_CHECK_CLOSE(colour.triple(2).r, 1.0F, 0.01F);
@@ -209,10 +219,10 @@ BOOST_AUTO_TEST_CASE(sllighting_solar_test) {
 }
 
 /**
- * A solar light with an angle is lit along its axis, and the machine reports once that the
- * angle is not honoured rather than lighting a cone it cannot choose a direction in.
+ * The L a solar light with an angle lights a point from, given the cone the point's surface
+ * gathers from. Its axis travels along -z, so L is around +z, half a radian either way.
  **/
-BOOST_AUTO_TEST_CASE(sllighting_solar_angle_is_reported_test) {
+glm::vec3 solarFrom(const std::vector<glm::vec3> & gathering) {
     std::string error;
     Program program;
     BOOST_REQUIRE_MESSAGE(build(
@@ -222,12 +232,55 @@ BOOST_AUTO_TEST_CASE(sllighting_solar_angle_is_reported_test) {
         "    }\n"
         "}\n", &program, &error), error);
     Machine machine;
-    machine.prepare(program, 2);
+    machine.prepare(program, 1);
+    machine.gather(gathering, std::vector<float>(gathering.size(), 1.5707963F));
     BOOST_REQUIRE(machine.run());
+    BOOST_CHECK(machine.reports().empty());
+    return machine.value(program.symbol("L")).triple(0);
+}
 
-    BOOST_CHECK_CLOSE(machine.value(program.symbol("L")).triple(0).z, 1.0F, 0.01F);
-    BOOST_REQUIRE_EQUAL(machine.reports().size(), 1U);
-    BOOST_CHECK_EQUAL(machine.reports()[0], "solar with an angle is lit along its axis only, as if the angle were 0");
+/**
+ * A solar light with an angle chooses L inside its cone, nearest the surface's illuminance
+ * axis, as RenderMan does. An axis inside the cone is L itself. An axis outside it gives the
+ * cone's edge nearest it. With no cone to choose against, L is the light's axis.
+ **/
+BOOST_AUTO_TEST_CASE(sllighting_solar_with_an_angle_chooses_its_direction_test) {
+    const glm::vec3 inside = solarFrom({ glm::vec3(0.2F, 0.0F, 1.0F) });
+    const glm::vec3 axis = glm::normalize(glm::vec3(0.2F, 0.0F, 1.0F));
+    BOOST_CHECK_SMALL(glm::length(inside - axis), 1.0e-5F);
+
+    const glm::vec3 edge = solarFrom({ glm::vec3(1.0F, 0.0F, 0.0F) });
+    BOOST_CHECK_CLOSE(edge.x, std::sin(0.5F), 0.01F);
+    BOOST_CHECK_SMALL(edge.y, 1.0e-6F);
+    BOOST_CHECK_CLOSE(edge.z, std::cos(0.5F), 0.01F);
+
+    const glm::vec3 none = solarFrom({});
+    BOOST_CHECK_CLOSE(none.z, 1.0F, 0.01F);
+    BOOST_CHECK_SMALL(none.x, 1.0e-6F);
+}
+
+/**
+ * An illuminance loop hands its cone to each light it runs. A surface gathering from a cone
+ * around +x, under the solar light half a radian around +z, is lit along the light's cone edge
+ * nearest +x. The loop's body reads that L.
+ **/
+BOOST_AUTO_TEST_CASE(sllighting_an_illuminance_cone_reaches_the_light_test) {
+    Scene scene;
+    scene.add(
+        "light wide() {\n"
+        "    solar(vector (0, 0, -1), 0.5) {\n"
+        "        Cl = color (1, 1, 1);\n"
+        "    }\n"
+        "}\n", 1);
+    Lit lit(
+        "color sum = 0;\n"
+        "illuminance(P, vector (1, 0, 0), 1.5707963) {\n"
+        "    sum += color (xcomp(L), ycomp(L), zcomp(L));\n"
+        "}\n"
+        "Ci = sum;", &scene, 1);
+    lit.run();
+    BOOST_CHECK_CLOSE(lit.colour(0).r, std::sin(0.5F), 0.01F);
+    BOOST_CHECK_CLOSE(lit.colour(0).b, std::cos(0.5F), 0.01F);
 }
 
 /**
@@ -255,11 +308,11 @@ BOOST_AUTO_TEST_CASE(sllighting_a_report_reaches_the_log_test) {
     {
         std::string error;
         Program program;
+        // shadow() is a stub, which reports itself whenever it is called
         BOOST_REQUIRE_MESSAGE(build(
-            "light wide() {\n"
-            "    solar(vector (0, 0, -1), 0.5) {\n"
-            "        Cl = color (1, 1, 1);\n"
-            "    }\n"
+            "light shaded() {\n"
+            "    float blocked = shadow(\"map\", Ps);\n"
+            "    Cl = color (1, 1, 1) * blocked;\n"
             "}\n", &program, &error), error);
         Machine machine;
         machine.logger(boost::make_shared<v3d::log::Logger>());
@@ -274,7 +327,7 @@ BOOST_AUTO_TEST_CASE(sllighting_a_report_reaches_the_log_test) {
     std::ifstream file(path);
     const std::string contents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     file.close();
-    const std::string line = "solar with an angle is lit along its axis only";
+    const std::string line = "'shadow' is declared and does nothing yet";
     const std::size_t first = contents.find(line);
     BOOST_CHECK(first != std::string::npos);
     BOOST_CHECK(contents.find(line, first + 1) == std::string::npos);
@@ -311,7 +364,7 @@ BOOST_AUTO_TEST_CASE(sllighting_illuminate_cone_test) {
     std::vector<char> reached;
     bool ambient = true;
 
-    BOOST_REQUIRE(scene.light(0, surface, &direction, &colour, &reached, &ambient));
+    BOOST_REQUIRE(scene.light(0, surface, v3d::render::offline::sl::runtime::Cone(), &direction, &colour, &reached, &ambient));
     BOOST_CHECK(!ambient);
     // L points at the light, two units up from the point below it
     BOOST_CHECK_CLOSE(direction.triple(0).z, 2.0F, 0.01F);

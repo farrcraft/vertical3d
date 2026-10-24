@@ -172,10 +172,6 @@ void Engine::reap() {
 }
 
 std::map<Voice, Engine::Playing>::iterator Engine::retire(const std::map<Voice, Playing>::iterator & playing) {
-    if (!playing->second.bus.empty()) {
-        // untag the track, so that a reuse on another bus does not leave it on both
-        MIX_UntagTrack(playing->second.track, playing->second.bus.c_str());
-    }
     free_.push_back(playing->second.track);
     return voices_.erase(playing);
 }
@@ -226,10 +222,7 @@ Voice Engine::play(const std::string_view & clip, const Play & how) {
         return Voice::None;
     }
 
-    if (!how.bus.empty()) {
-        MIX_TagTrack(track, how.bus.c_str());
-    }
-    MIX_SetTrackGain(track, how.gain);
+    MIX_SetTrackGain(track, how.gain * busGain(how.bus));
     place(track, how.pan);
 
     // the properties are the only way to name a loop count or a fade, and the id belongs to
@@ -249,9 +242,6 @@ Voice Engine::play(const std::string_view & clip, const Play & how) {
     }
     if (!started) {
         logger_->get()->error("unable to play clip [{}]: {}", clipId, SDL_GetError());
-        if (!how.bus.empty()) {
-            MIX_UntagTrack(track, how.bus.c_str());
-        }
         free_.push_back(track);
         return Voice::None;
     }
@@ -260,6 +250,7 @@ Voice Engine::play(const std::string_view & clip, const Play & how) {
     Playing playing;
     playing.track = track;
     playing.bus = how.bus;
+    playing.gain = how.gain;
     voices_[voice] = playing;
     return voice;
 }
@@ -293,7 +284,16 @@ bool Engine::gain(Voice voice, float level) {
     if (found == voices_.end()) {
         return false;
     }
-    return MIX_SetTrackGain(found->second.track, level);
+    found->second.gain = level;
+    return MIX_SetTrackGain(found->second.track, level * busGain(found->second.bus));
+}
+
+float Engine::volume(Voice voice) const {
+    const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
+    if (found == voices_.end() || !MIX_TrackPlaying(found->second.track)) {
+        return 0.0F;
+    }
+    return MIX_GetTrackGain(found->second.track);
 }
 
 bool Engine::pan(Voice voice, float value) {
@@ -314,10 +314,24 @@ bool Engine::place(MIX_Track* track, float pan) {
 }
 
 bool Engine::busGain(const std::string & bus, float level) {
-    if (mixer_ == nullptr || bus.empty()) {
+    if (bus.empty()) {
         return false;
     }
-    return MIX_SetTagGain(mixer_, bus.c_str(), level);
+    buses_[bus] = level;
+    // the mixer keeps a gain per track and none per bus, so each sound on the bus is set to
+    // its own gain times the new level
+    bool set = true;
+    for (const std::pair<const Voice, Playing>& playing : voices_) {
+        if (playing.second.bus == bus && !MIX_SetTrackGain(playing.second.track, playing.second.gain * level)) {
+            set = false;
+        }
+    }
+    return set;
+}
+
+float Engine::busGain(const std::string & bus) const {
+    const std::map<std::string, float>::const_iterator found = buses_.find(bus);
+    return found == buses_.end() ? 1.0F : found->second;
 }
 
 };  // namespace v3d::audio

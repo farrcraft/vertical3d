@@ -13,6 +13,7 @@
 
 #include "Instruction.h"
 #include "Machine.h"
+#include "Renderer.h"
 #include "Value.h"
 
 #include <api/render/offline/Noise.h>
@@ -23,6 +24,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -193,10 +195,14 @@ class Site final {
     const std::vector<Value*>* outputs = nullptr;
     /** The matrix of a named coordinate space, for the bodies that take one. **/
     glm::mat4x4 matrix = glm::mat4x4(1.0F);
+    /** Whether a point through the matrix is divided by w: a space it names is projected. **/
+    bool projected = false;
     /** The image texture() reads, and where: its own arguments, or the shader's s and t. **/
     const Texture* texture = nullptr;
     const Value* s = nullptr;
     const Value* t = nullptr;
+    /** How the batch lies on the surface, for the derivatives. **/
+    Renderer::Shape shape;
 
     const Value & argument(std::size_t which) const {
         return *(*given)[which];
@@ -342,7 +348,8 @@ void spaces(const Site & site, unsigned int point) {
     const Value & value = site.argument(site.count() - 1);
     switch (site.body) {
         case Body::PTRANSFORM:
-            site.target->triple(point, sl::ptransform(site.matrix, value.triple(point)));
+            site.target->triple(point, site.projected ? sl::project(site.matrix, value.triple(point)) :
+                sl::ptransform(site.matrix, value.triple(point)));
             return;
         case Body::VTRANSFORM:
             site.target->triple(point, sl::vtransform(site.matrix, value.triple(point)));
@@ -354,7 +361,7 @@ void spaces(const Site & site, unsigned int point) {
             site.target->matrix(point, site.matrix * value.matrix(point));
             return;
         case Body::DEPTH:
-            site.target->number(point, sl::ptransform(site.matrix, value.triple(point)).z);
+            site.target->number(point, sl::project(site.matrix, value.triple(point)).z);
             return;
         default:
             // there is one colour space here and it is the one a framebuffer holds
@@ -403,8 +410,121 @@ void componentwise(const Site & site, unsigned int point) {
     }
 }
 
+/** Along u or along v, for a derivative. **/
+enum class Direction : std::uint8_t { U, V };
+
+/**
+ * The two points a derivative at a point differences, and the step between them, or false
+ * where the shape gives the point no neighbour that way. On a grid the neighbour is the next
+ * point, or the previous one on the last row or column.
+ **/
+bool neighbours(const Renderer::Shape & shape, unsigned int point, Direction direction,
+    unsigned int* from, unsigned int* to, float* step) {
+    const bool alongU = direction == Direction::U;
+    *step = alongU ? shape.du : shape.dv;
+    if (!(*step > 0.0F)) {
+        return false;
+    }
+    switch (shape.layout) {
+        case Renderer::Shape::Layout::STENCIL:
+            *from = 0;
+            *to = alongU ? 1U : 2U;
+            return true;
+        case Renderer::Shape::Layout::GRID: {
+            const unsigned int across = shape.across == 0 ? 1U : shape.across;
+            const unsigned int index = alongU ? point / across : point % across;
+            const unsigned int count = alongU ? shape.along : across;
+            const unsigned int stride = alongU ? across : 1U;
+            if (count < 2) {
+                return false;
+            }
+            *from = index + 1 < count ? point : point - stride;
+            *to = *from + stride;
+            return true;
+        }
+        case Renderer::Shape::Layout::LONE:
+            return false;
+    }
+    return false;
+}
+
+/**
+ * One component of a value's derivative along u or v at a point. A uniform value is the same
+ * at every point, so its derivative is zero.
+ **/
+float slope(const Value & value, unsigned int component, const Renderer::Shape & shape, unsigned int point,
+    Direction direction) {
+    unsigned int from = 0;
+    unsigned int to = 0;
+    float step = 0.0F;
+    if (value.storage() != Storage::VARYING || !neighbours(shape, point, direction, &from, &to, &step)) {
+        return 0.0F;
+    }
+    return (value.component(to, component) - value.component(from, component)) / step;
+}
+
+/** A position's derivative along u or v at a point. **/
+glm::vec3 slope(const Value & value, const Renderer::Shape & shape, unsigned int point, Direction direction) {
+    return { slope(value, 0, shape, point, direction), slope(value, 1, shape, point, direction),
+        slope(value, 2, shape, point, direction) };
+}
+
+/**
+ * Du, Dv, Deriv, area and calculatenormal.
+ *
+ * Deriv(num, den) is RI's Du(num) / Du(den) + Dv(num) / Dv(den), with a term dropped where
+ * den does not change in that direction. area(P) is the area of the patch a step along u and
+ * a step along v span. calculatenormal(P) is Du(P) ^ Dv(P), which on a diced polygon points
+ * the way its Ng does.
+ **/
+void derivatives(const Site & site, unsigned int point) {
+    const Value & value = site.argument(0);
+    switch (site.body) {
+        case Body::DU:
+        case Body::DV: {
+            const Direction direction = site.body == Body::DU ? Direction::U : Direction::V;
+            for (unsigned int i = 0; i < site.target->components(); i++) {
+                site.target->component(point, i, slope(value, i, site.shape, point, direction));
+            }
+            return;
+        }
+        case Body::DERIV: {
+            const float byU = slope(site.argument(1), 0, site.shape, point, Direction::U);
+            const float byV = slope(site.argument(1), 0, site.shape, point, Direction::V);
+            for (unsigned int i = 0; i < site.target->components(); i++) {
+                float rate = 0.0F;
+                if (byU != 0.0F) {
+                    rate += slope(value, i, site.shape, point, Direction::U) / byU;
+                }
+                if (byV != 0.0F) {
+                    rate += slope(value, i, site.shape, point, Direction::V) / byV;
+                }
+                site.target->component(point, i, rate);
+            }
+            return;
+        }
+        case Body::AREA: {
+            const glm::vec3 u = slope(value, site.shape, point, Direction::U) * site.shape.du;
+            const glm::vec3 v = slope(value, site.shape, point, Direction::V) * site.shape.dv;
+            site.target->number(point, glm::length(glm::cross(u, v)));
+            return;
+        }
+        default:
+            site.target->triple(point, glm::cross(slope(value, site.shape, point, Direction::U),
+                slope(value, site.shape, point, Direction::V)));
+            return;
+    }
+}
+
 void apply(const Site & site, unsigned int point) {
     switch (site.body) {
+        case Body::DU:
+        case Body::DV:
+        case Body::DERIV:
+        case Body::AREA:
+        case Body::CALCULATENORMAL:
+            derivatives(site, point);
+            return;
         case Body::LENGTH:
         case Body::DISTANCE:
         case Body::NORMALIZE:
@@ -497,6 +617,12 @@ std::string format(const std::vector<const Value*> & given, unsigned int point) 
     return line;
 }
 
+/** Whether the body differences neighbouring shading points. **/
+bool derivative(Body body) {
+    return body == Body::DU || body == Body::DV || body == Body::DERIV || body == Body::AREA ||
+        body == Body::CALCULATENORMAL;
+}
+
 /** Whether the body works through the matrix of a named coordinate space. **/
 bool transforming(Body body) {
     return body == Body::PTRANSFORM || body == Body::VTRANSFORM ||
@@ -504,6 +630,18 @@ bool transforming(Body body) {
 }
 
 };  // namespace
+
+glm::mat4x4 Machine::between(const std::vector<const Value*> & given, bool* divided) {
+    glm::mat4x4 matrix = space(given[0]->text());
+    *divided = projected(given[0]->text());
+    if (given.size() == 3) {
+        // "from" and "to": out of the space the value is in, and into the other. Either end
+        // being projected puts a w other than one into the point
+        matrix = space(given[1]->text()) * glm::inverse(matrix);
+        *divided = *divided || projected(given[1]->text());
+    }
+    return matrix;
+}
 
 void Machine::colourSpaces(const std::vector<const Value*> & given) {
     // the only colour space is rgb, the one a framebuffer holds. A scene naming another gets
@@ -566,13 +704,11 @@ void Machine::builtin(const Instruction & instruction) {
     // a space name is a string, and a string is always uniform, so the matrix is looked up
     // once for the whole batch
     if (transforming(body)) {
-        site.matrix = space(given[0]->text());
-        if (given.size() == 3) {
-            // "from" and "to": out of the space the value is in, and into the other
-            site.matrix = space(given[1]->text()) * glm::inverse(site.matrix);
-        }
+        site.matrix = between(given, &site.projected);
     } else if (body == Body::DEPTH) {
         site.matrix = space("NDC");
+    } else if (derivative(body) && renderer_ != nullptr) {
+        site.shape = renderer_->shape();
     } else if (body == Body::TEXTURE) {
         Coordinates coordinates;
         site.texture = texture(given, &coordinates);
@@ -639,7 +775,7 @@ void Machine::ambient(Value* target) {
     for (unsigned int index = 0; index < count; index++) {
         std::vector<char> reached(batch_, 1);
         bool isAmbient = false;
-        if (!renderer_->light(index, surface, &direction_, &colour_, &reached, &isAmbient)) {
+        if (!renderer_->light(index, surface, Cone(), &direction_, &colour_, &reached, &isAmbient)) {
             continue;
         }
         if (!isAmbient) {

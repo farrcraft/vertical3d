@@ -39,15 +39,15 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::RIBH
     } else if (width || height) {
         std::cout << "--width and --height have to be given together, so the scene's Format is used" << "\n";
     }
-    // the command line sets the grid and bucket sizes before the scene is read, so a scene
-    // that names its own with Option "limits" replaces them
+    // the command line pins the grid and bucket sizes before the scene is read, so a scene
+    // that names its own with Option "limits" keeps the command line's
     const unsigned int largest = v3d::moya::RIBHandler::largestLimit;
     if (var_map.count("grid") != 0) {
         const int grid = var_map["grid"].as<int>();
         if (grid < 1 || static_cast<unsigned int>(grid) > largest) {
             std::cout << "--grid has to be between 1 and " << largest << ", so the default is used" << "\n";
         } else {
-            handler->context().gridSize(static_cast<unsigned int>(grid));
+            handler->context().pinGridSize(static_cast<unsigned int>(grid));
         }
     }
     if (var_map.count("bucket") != 0) {
@@ -55,7 +55,7 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::RIBH
         if (bucket < 1 || static_cast<unsigned int>(bucket) > largest) {
             std::cout << "--bucket has to be between 1 and " << largest << ", so the default is used" << "\n";
         } else {
-            handler->context().bucketSize(static_cast<unsigned int>(bucket), static_cast<unsigned int>(bucket));
+            handler->context().pinBucketSize(static_cast<unsigned int>(bucket), static_cast<unsigned int>(bucket));
         }
     }
 }
@@ -71,9 +71,9 @@ int run(int argc, char *argv[]) {
         ("height", boost::program_options::value<int>(), "image height, replacing the scene's Format; needs --width")
         ("silent", "print no progress line")
         ("grid", boost::program_options::value<int>(),
-            "micropolygon grid size, used unless the scene sets one with Option \"limits\"")
+            "micropolygon grid size, used whatever size the scene's Option \"limits\" names")
         ("bucket", boost::program_options::value<int>(),
-            "square bucket size in pixels, used unless the scene sets one with Option \"limits\"");
+            "square bucket size in pixels, used whatever size the scene's Option \"limits\" names");
 
     boost::program_options::variables_map var_map;
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, opts_desc), var_map);

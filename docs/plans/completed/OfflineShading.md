@@ -1,7 +1,7 @@
 # Offline Shading — Area Lights, Opacity, Displacement and a Faster Ray Tracer
 
 Drafted 2026-10-17 against `261fc9e0`. This plan takes up every section of
-[the offline shading roadmap](../roadmap/OfflineShading.md). Its steps fall in `api/render/offline`,
+[the offline shading roadmap](../../roadmap/completed/OfflineShading.md). Its steps fall in `api/render/offline`,
 `moya` and the offline documents. When it closes, moya renders soft shadows from area lights,
 translucent surfaces under the reyes hider, and bumped and displaced surfaces. Its rotations are
 checked against a worked example in the RenderMan Interface specification.
@@ -9,7 +9,7 @@ checked against a worked example in the RenderMan Interface specification.
 moya is the one offline renderer. It has two hiders: the reyes hider (`"hidden"`), which dices
 primitives into grids of micropolygons and shades a grid at a time, and the ray hider
 (`"raytrace"`), which shades one hit at a time. Both trace shadow and reflection rays through
-`offline::trace`. [The offline renderer](../offline/README.md) describes the pipeline.
+`offline::trace`. [The offline renderer](../../offline/README.md) describes the pipeline.
 
 The plan keeps the roadmap's order, with four changes:
 
@@ -120,27 +120,27 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 
 | | What | Where | ADR | State |
 |---|---|---|---|---|
-| [1](#step-1--what-the-roadmap-got-wrong) | The roadmap and TODO.md corrected | `docs` | — | open |
-| [2](#step-2--rirotates-sign-checked-against-the-specification) | `RiRotate`'s sign checked against the specification's cube | `moya` | — | open |
-| [3](#step-3--projected-spaces-divide-by-w) | Projected spaces divide by w, and the ray hider answers them | `api/render/offline` | — | open |
-| [4](#step-4--the-record-the-acceleration-structure) | The record: the acceleration structure | `docs/adr` | **0092** | open |
-| [5](#step-5--a-bounding-volume-hierarchy-in-the-traced-scene) | Primitive bounds, and the structure in `trace::Scene` | `api/render/offline` | 0092 | open |
-| [6](#step-6--the-record-how-a-hider-supplies-derivatives) | The record: how a hider supplies derivatives | `docs/adr` | **0093** | open |
-| [7](#step-7--derivatives-under-the-reyes-hider) | `Du`, `Dv`, `Deriv`, `area` and `calculatenormal`, under the reyes hider | `api/render/offline`, `moya` | 0093 | open |
-| [8](#step-8--derivatives-under-the-ray-hider) | The same built-ins under the ray hider | `api/render/offline` | 0093 | open |
+| [1](#step-1--what-the-roadmap-got-wrong) | The roadmap and TODO.md corrected | `docs` | — | done |
+| [2](#step-2--rirotates-sign-checked-against-the-specification) | `RiRotate`'s sign checked against the specification's cube | `moya` | — | done |
+| [3](#step-3--projected-spaces-divide-by-w) | Projected spaces divide by w, and the ray hider answers them | `api/render/offline` | — | done |
+| [4](#step-4--the-record-the-acceleration-structure) | The record: the acceleration structure | `docs/adr` | **0092** | done |
+| [5](#step-5--a-bounding-volume-hierarchy-in-the-traced-scene) | Primitive bounds, and the structure in `trace::Scene` | `api/render/offline` | 0092 | done |
+| [6](#step-6--the-record-how-a-hider-supplies-derivatives) | The record: how a hider supplies derivatives | `docs/adr` | **0093** | done |
+| [7](#step-7--derivatives-under-the-reyes-hider) | `Du`, `Dv`, `Deriv`, `area` and `calculatenormal`, under the reyes hider | `api/render/offline`, `moya` | 0093 | done |
+| [8](#step-8--derivatives-under-the-ray-hider) | The same built-ins under the ray hider | `api/render/offline` | 0093 | done |
 | [9](#step-9--held-traced-hits-shaded-in-batches) | Traced hits shaded in batches | `api/render/offline`, `moya` | — | held |
-| [10](#step-10--the-record-how-an-area-light-is-sampled) | The record: how an area light is sampled | `docs/adr` | **0094** | open |
-| [11](#step-11--an-area-light-keeps-its-geometry) | An area light keeps its geometry | `api/render/offline`, `moya` | 0094 | open |
-| [12](#step-12--area-lights-shine-from-their-surface) | Area lights shine from points on their surface | `api/render/offline`, `moya` | 0094 | open |
-| [13](#step-13--opacity-under-the-reyes-hider) | Opacity under the reyes hider | `moya` | — | open |
-| [14](#step-14--a-displacement-shader-reaches-the-renderer) | A displacement shader compiles and reaches the renderer | `api/render/offline`, `moya` | — | open |
-| [15](#step-15--displacement-under-the-reyes-hider) | Displacement under the reyes hider | `moya` | — | open |
-| [16](#step-16--the-record-displacement-under-the-ray-hider) | The record: displacement under the ray hider | `docs/adr` | **0095** | open |
-| [17](#step-17--displacement-under-the-ray-hider) | Displacement under the ray hider, as 0095 decides | `api/render/offline`, `moya` | 0095 | open |
-| [18](#step-18--solar-with-an-angle) | `solar` with an angle | `api/render/offline`, `moya` | — | open |
-| [19](#step-19--the-traced-scene-only-when-something-traces) | The reyes hider fills the traced scene only when something traces | `api/render/offline`, `moya` | — | open |
-| [20](#step-20--the-command-line-wins-over-option-limits) | The command line wins over `Option "limits"` | `moya` | — | open |
-| [21](#step-21--the-documents) | The offline documents state the new rules | `docs` | — | open |
+| [10](#step-10--the-record-how-an-area-light-is-sampled) | The record: how an area light is sampled | `docs/adr` | **0094** | done |
+| [11](#step-11--an-area-light-keeps-its-geometry) | An area light keeps its geometry | `api/render/offline`, `moya` | 0094 | done |
+| [12](#step-12--area-lights-shine-from-their-surface) | Area lights shine from points on their surface | `api/render/offline`, `moya` | 0094 | done |
+| [13](#step-13--opacity-under-the-reyes-hider) | Opacity under the reyes hider | `moya` | — | done |
+| [14](#step-14--a-displacement-shader-reaches-the-renderer) | A displacement shader compiles and reaches the renderer | `api/render/offline`, `moya` | — | done |
+| [15](#step-15--displacement-under-the-reyes-hider) | Displacement under the reyes hider | `moya` | — | done |
+| [16](#step-16--the-record-displacement-under-the-ray-hider) | The record: displacement under the ray hider | `docs/adr` | **0095** | done |
+| [17](#step-17--displacement-under-the-ray-hider) | Displacement under the ray hider, as 0095 decides | `api/render/offline`, `moya` | 0095 | done |
+| [18](#step-18--solar-with-an-angle) | `solar` with an angle | `api/render/offline`, `moya` | — | done |
+| [19](#step-19--the-traced-scene-only-when-something-traces) | The reyes hider fills the traced scene only when something traces | `api/render/offline`, `moya` | — | held |
+| [20](#step-20--the-command-line-wins-over-option-limits) | The command line wins over `Option "limits"` | `moya` | — | done |
+| [21](#step-21--the-documents) | The offline documents state the new rules | `docs` | — | done |
 
 ## What blocks what
 
@@ -171,13 +171,16 @@ Steps 18 to 20 can land at any point.
 * **The suites.** The offline suite and moya's suites pass. Each step with a CPU half adds cases,
   and `failsfirst.ts` is run on the change to show that each new case fails without it.
 * **The references.** moya's references are compared at a tolerance of one 8-bit step
-  ([Testing.md](../contributing/Testing.md#moya-references)). A step that must not change a
+  ([Testing.md](../../contributing/Testing.md#moya-references)). A step that must not change a
   picture leaves every committed PNG untouched. A step that adds a feature adds a reference scene
   for each hider that supports it, reached from code and from RIB like the others.
 
 ---
 
 ### Step 1 — What the roadmap got wrong
+
+**Done.** The roadmap and TODO.md state each point below, and TODO.md's offline section names
+this plan.
 
 **Documents only.** Nothing changes a picture.
 
@@ -195,11 +198,17 @@ Steps 18 to 20 can land at any point.
   reyes hider a grid is shaded before any film sample reaches it.
 * The roadmap and TODO.md name `calculatenormal` as the missing derivative. `Du`, `Dv`, `Deriv`
   and `area` are missing too.
-* The roadmap links this plan, and [plans/README.md](README.md) lists it.
+* The roadmap links this plan, and [plans/README.md](../README.md) lists it.
 
 **Tests:** none. The suites pass and the references are untouched.
 
 ### Step 2 — `RiRotate`'s sign, checked against the specification
+
+**Done.** `moya_ribhandler_rotations_build_the_specification_cube_test` reads
+`spec-cube.rib` and finds every face where the specification names it. With the angle negated in
+`RenderContext::rotate`, the right, left, bottom and top faces fail, and the far and near faces
+pass, as they should. The rule is stated on `RenderContext::rotate` and in
+[Rib.md](../../offline/Rib.md). The TODO entry is deleted. No picture changed.
 
 **The specification's unit cube is the test.** Its RIB goes into `moya/tests/data/` as
 `spec-cube.rib`, with a camera and a `Format` added. Each face is the same polygon at z = +0.5
@@ -218,6 +227,14 @@ by hand: with the angle negated in `RenderContext::rotate`, the case must fail. 
 picture changes.
 
 ### Step 3 — Projected spaces divide by w
+
+**Done.** `sl::project` holds the divide and the smallest w, and moya's `project()` calls it.
+`Renderer::projected()` answers for the three spaces, and the machine divides for them in
+`ptransform`, `depth()` and a point cast. `trace::Scene::projection()` carries the camera's
+screen, raster and NDC matrices. moya sets them when the world begins, and both `GridShader` and
+`HitShader` answer from them, so the NDC rule now lives in one place. The four cases are in
+`ProjectedSpaceTest.cxx`, and two machine cases with a stand-in projection are in
+`SlLibraryTest.cxx`. No reference changed. The TODO entry is deleted.
 
 * **`sl::ptransform` gains a projected form** that divides by w, with the same smallest w as
   `moya::project()`. That rule moves into `api/render/offline`, and moya's `project()` calls it.
@@ -241,6 +258,9 @@ No reference changes. No shipped shader reads a projected space, and the fake ND
 
 ### Step 4 — The record: the acceleration structure
 
+**Done.** ADR-0092 is written as the recommendation below, and the decision was agreed. It is
+accepted when step 5 lands.
+
 **ADR-0092.** The recommendation is a **bounding volume hierarchy built with a binned surface area
 heuristic**.
 
@@ -260,6 +280,29 @@ heuristic**.
   the moving ones stay in a list. It is simpler, and a motion-blurred scene stays slow.
 
 ### Step 5 — A bounding volume hierarchy in the traced scene
+
+**Done.** `trace::Hierarchy` holds the boxes, and `Scene::nearest` walks it. `Primitive::bound()`
+returns false by default, so a primitive with no bound, like the test suite's infinite floor, is
+tested against every ray. A tie between two hits at one distance goes to the primitive added
+first, which keeps every answer equal to the linear search. The oracle in
+`TraceHierarchyTest.cxx` checks that for still and moving scenes. ADR-0092 is accepted.
+The new cases fail to build without the change, which proves little, so the hierarchy was also
+broken by hand twice. With moving primitives boxed at their stored pose, the moving case fails
+at two of its three times. With a tie given to the primitive added last, the tie case fails.
+
+No committed picture changed. A Release render of a 70 by 70 heightfield, 9800 triangles at
+160 by 120 with a shadowing distant light, wrote the same bytes before and after:
+
+| | Before | After |
+|---|---|---|
+| Ray hider, Release | 31.0 s | 0.4 to 0.6 s |
+| Reyes hider, Release | 503 s | 4.8 s |
+| moya suite, Debug | 63 s | 46 s |
+| Offline suite, Debug | 2.7 s | 15 s |
+
+The offline suite is slower because the new oracle cases search every primitive for every ray
+in Debug. The Release build is `out/build/x64-Release`, configured over x64-Debug's vcpkg
+install with the manifest install off, as Build.md configures the starter.
 
 * **`trace::Primitive::bound()`** returns an `AABBox` in world space at the reference pose.
   `Triangle` bounds its corners. `Sphere` bounds its eight object-space corners under the inverse
@@ -284,6 +327,9 @@ step's state note. A Release render of a scene of about ten thousand triangles i
 because the suites' scenes are too small to show the gain.
 
 ### Step 6 — The record: how a hider supplies derivatives
+
+**Done.** ADR-0093 is written as the recommendation below, and the decision was agreed. It is
+accepted when step 7 lands.
 
 **ADR-0093.** SL's `Du`, `Dv`, `Deriv` and `area` are differences across neighbouring shading
 points. `calculatenormal` is the cross product of `P`'s two derivatives.
@@ -310,6 +356,16 @@ points. `calculatenormal` is the cross product of `P`'s two derivatives.
 
 ### Step 7 — Derivatives under the reyes hider
 
+**Done.** `Renderer::Shape` names a batch's layout: lone points, a grid, or the stencil step 8
+uses. The library implements the five built-ins over it, and `GridShader` answers with its
+grid. The derivative cases are in `SlDerivativeTest.cxx`, over a stand-in renderer of each
+layout, so the stencil is tested before the ray hider uses it. `GridShaderTest.cxx` checks the
+grid's shape and a bumped plane against normals worked out by hand. `reference-bump.png` is a
+plane bumped by noise, from code and from `reference-bump.rib`, through the `bumpy.sl` fixture.
+`calculatenormal` points the way a diced polygon's `Ng` does, so it needs no flip. ADR-0093 is
+accepted. Most new cases fail to build without the change, so the grid's backward difference was
+also broken by hand: with the last row given no neighbour, three cases fail.
+
 * **`Du`, `Dv`, `Deriv` and `area`** are declared in `sl/Builtins.cxx` and implemented in the
   library, for floats, colours, points and vectors.
 * **`calculatenormal`** is no longer a stub. The set of stubs in `SlLibraryTest.cxx:722` shrinks
@@ -329,6 +385,18 @@ points. `calculatenormal` is the cross product of `P`'s two derivatives.
 **A reference for bump mapping**: `reference-bump.png`, a plane bumped by a seeded noise.
 
 ### Step 8 — Derivatives under the ray hider
+
+**Done.** `HitShader` shades a hit and its two neighbours as one batch, and answers `shape()`
+with the stencil. `Primitive::at()` places a neighbour on a triangle and on a sphere, and
+`Scene::around()` carries it into the hit's pose. The step comes from `Scene::footprint()`, a
+pixel's width through the camera projection that step 3 put on the traced scene. Only the hit
+traces. The derivatives of a triangle are its own edges, against which `TraceStencilTest.cxx`
+checks them, and a sphere's against its analytic derivatives. Comparing with the grid directly
+would mix two parameterisations of the same polygon. `raytrace-bump.png` is the bumped plane
+under the ray hider, from code and from RIB. Every committed `raytrace-` picture is unchanged,
+because lane zero is shaded as before.
+With the stencil switched off by hand, four of the five new cases fail. The fifth checks
+`Scene::footprint()` alone.
 
 * **`HitShader` shades a hit as the stencil ADR-0093 decides.** `trace::Primitive` gives the
   point and the normal at a (u, v) near a hit, and the step's size comes from the ray's distance.
@@ -358,6 +426,9 @@ into one run of the machine. After step 8, batching is about speed alone.
 
 ### Step 10 — The record: how an area light is sampled
 
+**Done.** ADR-0094 is written as the recommendation below, and the decision was agreed. It is
+accepted when step 12 lands.
+
 **ADR-0094.**
 
 * **An area light is the geometry declared after it, in the same attribute block.** That is the
@@ -382,6 +453,17 @@ into one run of the machine. After step 8, batching is about speed alone.
 
 ### Step 11 — An area light keeps its geometry
 
+**Done.** `offline::Area` holds an area light's triangles and spheres in world space, samples a
+point on them evenly by area, and keys its samples on the light's handle. `sl::Placed` carries
+it, so both hiders' light lists reach it. moya's handler and `RiAreaLightSourceV` both call
+`RenderContext::areaLightSource`, and the attribute block saves and restores which area light
+is open. The concentric disc map is now `uniform::disc`, beside `uniform::triangle` and
+`uniform::sphere`. No other primitive is drawn by moya, so the report for one under an area
+light has nothing to report. The cases showed that `AttributeEnd` switches an area light off,
+as RI does for any light made in a block. `Illuminate` switches it on again.
+Picking an area light's pieces evenly rather than by area fails the weighting case, and leaving
+the area light open past its block fails both geometry cases.
+
 * **moya's handler overrides `areaLightSource`.** The geometry that follows it in the attribute
   block is added to the light as well as to the scene. `RiAreaLightSourceV` does the same.
 * **The shapes are polygons and spheres.** Another primitive under an area light is reported once
@@ -394,6 +476,26 @@ after the attribute block does not join it. A point sampled on a quad lies on th
 mean of many samples is near its centre.
 
 ### Step 12 — Area lights shine from their surface
+
+**Done.** `Globals::shine` takes the point an area light runs at for each shading point, and both
+hiders pass `Area::point()` for it. An area light counts as one light for each of its samples,
+and each carries its share of the light. `Attribute "light" "integer nsamples"` sets the count,
+through the RIB handler and through `RiAttribute`. ADR-0094 is accepted.
+
+Two things the plan did not foresee:
+
+* **The standard lights ignore P.** `pointlight` shines from its `from` parameter, so moving P
+  changed nothing. A built-in `arealight` shines from P, as RenderMan area light shaders do.
+* **An area light shadowed itself.** A shadow ray to a sample ends on the light's own quad. The
+  ray's start was offset along the normal while its direction was not, so it reached the
+  quad's plane short of its end. A shadow ray is now aimed from its offset start at the light
+  and stops an offset short. That moved `raytrace-sampled.png` at four of its 3072 pixels, by
+  at most three levels at a shadow's edge, and it was regenerated.
+
+`reference-area.png` and `raytrace-area.png` are a box's soft shadow on a wall, from code and
+from RIB. The code route, the RIB route and the moya driver give the same bytes.
+Seeding the samples from a running count instead of the shading point fails the case that
+shades in two orders, and both reyes area pictures.
 
 * **`Globals::shine` takes the point the light runs at**, rather than its placement's origin. Both
   hiders' `light()` pass a sampled point for an area light, and the origin for any other light.
@@ -408,6 +510,21 @@ mean of many samples is near its centre.
   soft shadow.
 
 ### Step 13 — Opacity under the reyes hider
+
+**Done.** A vertex carries `Oi`, and a micropolygon is hidden as a layer with its first corner's
+colour and opacity. `Samples::Layers` keeps a sample's layers and the depth of its nearest opaque
+one, and `Samples::resolve` sorts and composites them. The plan did not foresee that a sample on
+an edge two micropolygons share is covered by both, so a sample keeps one layer from each grid.
+The four cases are in `SamplesTest.cxx`. `reference-glass.png` is the translucent quad over the
+checked plane, from code and from RIB. Every committed picture is unchanged, because an opaque
+layer drops what is behind it as the nearest hit did.
+
+Compared by eye with the same scene under the ray hider, the quad's tint and the checks seen
+through it agree. The checks' edges are stepped under the reyes hider, because a micropolygon
+is flat shaded with its first corner's colour, which was already so.
+
+Treating every surface as opaque fails the two compositing cases and the glass picture, and
+letting a grid add a second layer fails the one-layer case.
 
 * **A vertex carries `Oi`.** The grid shader writes it back with `Ci`.
 * **A sample keeps every surface nearer than its nearest opaque one**, sorted by depth. A surface
@@ -427,6 +544,15 @@ mean of many samples is near its centre.
 
 ### Step 14 — A displacement shader reaches the renderer
 
+**Done.** The compiler accepts `displacement` shaders, with `P` and `N` writable. The RIB reader
+dispatches `Displacement` to `rib::Handler::displacement`, and `RiDisplacementV` calls the same
+`RenderContext::displacement`. The attribute block saves the shader and its
+`displacementbound`, and `Shading` carries both to a primitive. The cases that used
+`Displacement` as the example of an unrecognised request now use `Exterior`. The RIB reader does
+not read `CoordinateSystem`, so a file's bound can name only `"object"`, `"world"` or
+`"camera"`. A space the scene never saved is reported and object space is used. `lift.sl` is a
+displacement fixture that step 15 also uses.
+
 * **The compiler accepts `displacement` shaders.** `P` and `N` are writable in one.
   `SlCompilerTest.cxx:595-600` and `SlParserTest.cxx:229-236` change to say they compile.
 * **The RIB reader dispatches `Displacement`**, and `rib::Handler` gains `displacement`.
@@ -438,6 +564,27 @@ mean of many samples is near its centre.
 shader that moves `P` along `N` compiles and runs on a batch.
 
 ### Step 15 — Displacement under the reyes hider
+
+**Done.** `GridShader::displace` runs the displacement shader on a grid before `shade`, and
+`Bucket::render` calls it after dicing. `addPolygon` grows a primitive's bound by its
+`displacementbound` before the cull and the bucketing. `reference-displaced.png` is a plane
+rippled by `lift.sl`, from code and from RIB, which match the driver byte for byte.
+
+Three things the plan did not foresee:
+
+* **The split test cannot use the grown bound.** A bound wider than a grid's side made every
+  piece too large to dice, and a quad split without end. The split test measures the primitive
+  without its bound. The culling case found it, as a hang.
+* **s is not continuous across a split polygon.** A grid with no `st` takes its own parameters,
+  so a ripple in s broke into squares at every piece. `lift.sl` ripples along x in its own space.
+* **The undisplaced traced scene shadows what moves behind it.** A ripple behind the plane was
+  shadowed by the plane, so the reference moves the plane toward the camera only.
+
+`calculatenormal` differences each grid alone, so the normals at the edges of two pieces of the
+plane differ a little, and the picture shows fine seams where they meet.
+
+Dropping the displaced P that `displace` writes back fails the constant displacement case and
+the displaced picture.
 
 * **A grid is displaced after dicing and before the surface shader**, in `Bucket::render`. The
   surface shader sees the moved `P` and the `N` the displacement shader left.
@@ -454,6 +601,9 @@ shader that moves `P` along `N` compiles and runs on a batch.
 * `reference-displaced.png`: a plane displaced by a sine, lit from the side.
 
 ### Step 16 — The record: displacement under the ray hider
+
+**Done.** ADR-0095 is written as the recommendation below, and the decision was agreed. It is
+accepted when step 17 lands.
 
 **ADR-0095.** The ray tracer intersects triangles and spheres. It does not tessellate.
 
@@ -472,6 +622,21 @@ hiders then agree.
 
 ### Step 17 — Displacement under the ray hider
 
+**Done.** `RenderContext::traceDisplaced` dices a polygon with a displacement shader in camera
+space, 64 micropolygons a side through a new `Polygon::dice` overload. It runs the displacement
+on the grid, and adds two triangles for each micropolygon to the traced scene. `trace()` calls it,
+so both hiders' traced scenes hold the moved surface. `raytrace-displaced.png` is the plane of
+step 15 under the ray hider, from code and from RIB. A case reads both hiders' traced scenes and
+finds a lifted floor where it was lifted to. ADR-0095 is accepted.
+
+The picture showed a hole the plan did not foresee. A pixel's ray ran down an edge two of the
+grid's triangles share, and rounding put it outside both. `Ray::intersects` now counts a point
+within a hundred-thousandth of an edge as inside, and `ray_shared_edge_has_no_crack_test` holds
+the corners that showed it. The same cracks were in three committed pictures, at quads'
+diagonals: `raytrace-sampled.png`, `raytrace-focus.png` and `raytrace-motion.png` each moved at
+four to eight pixels, by at most 12 levels, and were regenerated. `reference-displaced.png` did
+not move, because its ripples face the light and cast no shadow on themselves.
+
 Built as ADR-0095 decides. If the ADR decides a refusal, this step is the report and its test.
 
 **Tests**, if the ray hider dices:
@@ -480,6 +645,15 @@ Built as ADR-0095 decides. If the ADR decides a refusal, this step is the report
 * a shadow cast by a displaced surface follows the displaced shape, under both hiders.
 
 ### Step 18 — `solar` with an angle
+
+**Done.** `Renderer::light` takes the illuminance loop's cone as `runtime::Cone`, and
+`Globals::shine` hands it to the light's machine through `Machine::gather`. `solar` with an angle
+then takes the direction in its cone nearest the loop's axis. The reported case became
+`sllighting_solar_with_an_angle_chooses_its_direction_test`, and a second case runs the cone
+from a surface's illuminance loop to the light and back. The log case, which used the solar
+report as its example, now uses the report a `shadow` call makes.
+Leaving the cone out of the illuminance loop's call to the light fails the case that runs it
+from the loop.
 
 * **`Renderer::light` receives the surface's illuminance axis and angle**, and `Globals::shine`
   passes them to the light shader.
@@ -491,6 +665,15 @@ cone's nearest edge.
 
 ### Step 19 — The traced scene only when something traces
 
+**Held, with the agreement to hold it.** The plan's own test cannot hold: every standard light
+that has a direction calls `transmission()`, so a scene of `matte` surfaces under a point light
+already traces. Only a scene with no shadowing light gains. Even then the triangles are made as
+the scene is read, because a shader bound later may trace and its rays must see what came
+before. Nothing casts a ray in such a scene, and the hierarchy is built on the first ray, so
+the step would save only the memory the triangles hold while the picture renders. It is due when
+a large scene with no shadowing light shows that memory. When the plan closes it moves to
+TODO.md with that trigger.
+
 * **A compiled program says whether it calls `trace()` or `transmission()`.** The compiler sets
   this from the built-ins it calls.
 * **The reyes hider adds polygons to the traced scene** only when a surface, light or displacement
@@ -501,6 +684,11 @@ shadowing light shader fills it. The committed pictures are unchanged.
 
 ### Step 20 — The command line wins over `Option "limits"`
 
+**Done.** `RenderContext::pinGridSize` and `pinBucketSize` set a size and pin it, and the setters
+`Option "limits"` calls leave a pinned size alone. moya's driver pins what `--grid` and
+`--bucket` name. A pin of zero is refused and pins nothing.
+Letting `gridSize` replace a pinned size fails the pinned case.
+
 * **The context holds pinned limits.** `--grid` and `--bucket` set the size and pin it. A scene's
   `Option "limits"` then leaves a pinned size alone, and reports nothing.
 * The help text and the comment in `moya.cxx:40-41` change to say the command line wins.
@@ -509,16 +697,69 @@ shadowing light shader fills it. The committed pictures are unchanged.
 
 ### Step 21 — The documents
 
+**Done.** Each step updated the documents it moved, and the set was checked at the end. The
+offline README still listed the brute-force nearest search, which step 5 removed, and it was
+corrected here.
+
 Each step updates the document it moves, as it lands. This step checks the whole set at the end.
 
-* [Reyes.md](../offline/Reyes.md): displacement, opacity, derivatives across a grid.
-* [RayTracing.md](../offline/RayTracing.md): the hierarchy, the stencil, area lights,
+* [Reyes.md](../../offline/Reyes.md): displacement, opacity, derivatives across a grid.
+* [RayTracing.md](../../offline/RayTracing.md): the hierarchy, the stencil, area lights,
   displacement.
-* [ShadingLanguage.md](../offline/ShadingLanguage.md): the derivative built-ins, displacement
+* [ShadingLanguage.md](../../offline/ShadingLanguage.md): the derivative built-ins, displacement
   shaders, `solar` with an angle, the projected spaces.
-* [Rib.md](../offline/Rib.md): `AreaLightSource`, `Displacement`, the attributes.
-* [RunningAndTesting.md](../offline/RunningAndTesting.md): the new references, and the command
+* [Rib.md](../../offline/Rib.md): `AreaLightSource`, `Displacement`, the attributes.
+* [RunningAndTesting.md](../../offline/RunningAndTesting.md): the new references, and the command
   line's limits.
 * TODO.md loses its offline entries and `RiRotate`'s sign, and gains step 9 if it is still held.
-* The roadmap moves to [roadmap/completed/](../roadmap/completed/), and this plan moves to
-  [completed/](completed/) with an Outcome section.
+* The roadmap moves to [roadmap/completed/](../../roadmap/completed/), and this plan moves to
+  [completed/](./) with an Outcome section.
+
+## Outcome
+
+Closed 2026-10-18. moya renders soft shadows from area lights, translucent surfaces under the
+reyes hider, and bumped and displaced surfaces, under both hiders. Its rotations are checked
+against the specification's unit cube, and its ray tracer walks a bounding volume hierarchy.
+
+**Delivered:**
+
+- `RiRotate`'s sign pinned by the specification's unit cube.
+- Projected spaces divided by w, and answered by the ray hider from the same camera.
+- A bounding volume hierarchy in the traced scene, which took a 9800-triangle render from 31 s
+  to under a second under the ray hider and from 503 s to 5 s under the reyes hider, with the
+  same bytes. ADR-0092.
+- `Du`, `Dv`, `Deriv`, `area` and `calculatenormal` under both hiders: across a grid, and across
+  a three-point stencil at a traced hit. ADR-0093.
+- Area lights: their geometry kept, sampled per shading point, and `Attribute "light"
+  "nsamples"`, with a built-in `arealight`. ADR-0094.
+- Opacity under the reyes hider, composited front to back per sample.
+- Displacement shaders compiled and run under both hiders, with `displacementbound`, and the
+  displaced surface in the traced scene. ADR-0095.
+- `solar` with an angle, and the command line's limits winning over the scene's.
+- Seven new references, each rendered from code and from RIB: bump, area and displaced under
+  both hiders, and glass under the reyes hider.
+
+**Different from the plan:**
+
+- The standard lights ignore P, so area lights needed a built-in `arealight` shader.
+- An area light shadowed itself, because a shadow ray's start was offset and its direction was
+  not. Shadow rays are aimed from their offset start and stop short of their end.
+- A sample on an edge two micropolygons share is covered by both, so a reyes sample keeps one
+  layer from each grid.
+- The split test cannot measure the grown bound of a displaced primitive, which split without
+  end. It measures the primitive without the bound.
+- A ray down an edge two triangles share could miss both. `Ray::intersects` counts a point
+  within a hundred-thousandth of an edge as inside.
+- Three committed pictures moved, each at a handful of pixels by at most 12 levels:
+  `raytrace-sampled.png` from the shadow ray change and again from the edge change, and
+  `raytrace-focus.png` and `raytrace-motion.png` from the edge change. Each was regenerated, and
+  its step says why.
+- The RIB reader does not read `CoordinateSystem`, so a file's displacement bound can name only
+  the three predefined spaces.
+
+**Left open,** in [TODO.md](../../TODO.md#offline-rendering):
+
+- Step 9, traced hits shaded in batches, due when a profile shows preparing and running the
+  machine for one hit outweighing intersection.
+- Step 19, the traced scene filled only when something traces, due when a large scene with no
+  shadowing light shows the memory its triangles hold.

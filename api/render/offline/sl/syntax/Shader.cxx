@@ -10,9 +10,8 @@
 namespace v3d::render::offline::sl::syntax {
 
 bool Shader::supported() const {
-    // displacement changes geometry, so it would have to run during dicing. A volume shader
-    // needs a volume to run in, and the renderer has none
-    return type == ShaderType::SURFACE || type == ShaderType::LIGHT || type == ShaderType::IMAGER;
+    // a volume shader needs a volume to run in, and the renderer has none
+    return type != ShaderType::VOLUME;
 }
 
 };  // namespace v3d::render::offline::sl::syntax

@@ -760,6 +760,28 @@ function markUnbuilt(cases: Case[]): void {
     }
 }
 
+// Builds every affected suite in one ninja run, before buildSuite builds each in turn. One run
+// keeps every core busy across the suites, where building them one after another leaves the
+// machine idle while each one's last edges finish. Its result is not read: buildSuite finds a
+// suite that built here already up to date, and builds and diagnoses one that did not. A run
+// that names a target missing from the build fails at once, so a suite the base lacks is left out.
+function buildAll(suites: string[], build: string, env: Env, scratch: string): void {
+    if (suites.length < 2) {
+        return;
+    }
+    const listing = runLogged(["ninja", "-C", build, "-t", "targets", "all"], path.join(scratch, "targets.log"), env);
+    if (listing.code !== 0) {
+        return;
+    }
+    const known = new Set(listing.output.split(/\r?\n/).map((line) => line.split(":")[0].trim()));
+    const targets = suites.map((s) => "v3dtest_" + s).filter((t) => known.has(t));
+    if (targets.length < 2) {
+        return;
+    }
+    console.log(`building ${targets.join(", ")}`);
+    runLogged(["ninja", "-k", "0", "-C", build, ...targets], path.join(scratch, "build-all.log"), env);
+}
+
 // Builds v3dtest_<suite>. Marks the cases that cannot be built or run, and returns the
 // executable, or null when there is none to run.
 function buildSuite(suite: string, directory: string, sources: string[], cases: Case[], worktree: string,
@@ -909,6 +931,7 @@ function check(cases: Case[], base: string, head: string, changes: Change[], opt
         }
         const listed = listedSources(head);
         const headMap = suiteMap(head);
+        buildAll([...bySuite.keys()].sort(), build, env, scratch);
         for (const suite of [...bySuite.keys()].sort()) {
             const suiteCases = bySuite.get(suite)!;
             const directory = headMap.get(suiteCases[0].file)!.directory;

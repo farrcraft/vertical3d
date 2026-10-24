@@ -6,14 +6,22 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
+#include <api/render/offline/rib/Declaration.h>
+#include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
+#include <api/render/offline/trace/Hit.h>
+#include <api/render/offline/trace/Scene.h>
+#include <api/type/geometry/Ray.h>
 #include <api/render/offline/trace/Sphere.h>
+#include <api/render/offline/trace/Triangle.h>
 #include <moya/libmoya/FrameBuffer.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/Renderer.h>
+#include <moya/libmoya/Shading.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -404,6 +412,30 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_limits_test) {
 }
 
 /**
+ * A size pinned before the scene is read, as moya's --grid and --bucket pin theirs, survives a
+ * scene that names its own with Option "limits". A size that is not pinned is replaced.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_pinned_limits_win_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    handler.context().pinGridSize(64);
+    handler.context().pinBucketSize(8, 8);
+
+    BOOST_REQUIRE(read(
+        "Option \"limits\" \"bucketsize\" [6 6]\n"
+        "Option \"limits\" \"gridsize\" [18]\n", &handler));
+    BOOST_CHECK_EQUAL(handler.context().gridSize(), 64U);
+    BOOST_CHECK_EQUAL(handler.context().bucketWidth(), 8U);
+
+    // a pin of zero is refused, and pins nothing
+    v3d::moya::Renderer other;
+    v3d::moya::RIBHandler loose(&other);
+    loose.context().pinGridSize(0);
+    BOOST_REQUIRE(read("Option \"limits\" \"gridsize\" [18]\n", &loose));
+    BOOST_CHECK_EQUAL(loose.context().gridSize(), 18U);
+}
+
+/**
  * Option "trace" "maxdepth" sets how deep trace() goes. A depth above sixteen is taken as
  * sixteen. A depth that is negative or not finite is not used, and the depth stays as it was.
  **/
@@ -745,6 +777,195 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
     // the left edge leans away from the light and the right faces it
     BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 24) < 0.7F);
     BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 24) > 0.9F);
+}
+
+
+/**
+ * The RenderMan Interface specification's unit cube pins RiRotate's sign. Its RIB entity file
+ * example draws one polygon at z = +0.5, the far face in the left-handed camera space, under
+ * six rotations, and names the face each one gives. The traced scene holds every polygon in
+ * world space as two triangles, the second sharing the first's diagonal, so the midpoint of the
+ * first triangle's a and c is the face's centre.
+ *
+ * Covers the base: e0859388 gave RenderContext::rotate its present sign. Checked by negating the
+ * angle there, which fails this case on the right, left, bottom and top faces.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_rotations_build_the_specification_cube_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(reader.read("data/spec-cube.rib", &handler));
+
+    const std::vector<const v3d::render::offline::trace::Triangle*> triangles =
+        handler.context().traced().all<v3d::render::offline::trace::Triangle>();
+    BOOST_REQUIRE_EQUAL(triangles.size(), 12U);
+
+    // the faces in the order the file draws them, as the specification names them
+    const char* const names[] = { "far", "right", "near", "left", "bottom", "top" };
+    const glm::vec3 centres[] = {
+        { 0.0F, 0.0F, 0.5F }, { 0.5F, 0.0F, 0.0F }, { 0.0F, 0.0F, -0.5F },
+        { -0.5F, 0.0F, 0.0F }, { 0.0F, -0.5F, 0.0F }, { 0.0F, 0.5F, 0.0F }
+    };
+    // the camera sits five units back, so the cube's centre is five units along +z
+    const glm::mat4x4 toCamera = handler.context().traced().view();
+    const glm::vec3 cube(0.0F, 0.0F, 5.0F);
+    for (std::size_t face = 0; face < 6; face++) {
+        BOOST_TEST_CONTEXT("the " << names[face] << " face") {
+            const v3d::render::offline::trace::Triangle & first = *triangles[face * 2];
+            const glm::vec3 world = 0.5F * (first.a() + first.c());
+            const glm::vec3 centre = glm::vec3(toCamera * glm::vec4(world, 1.0F)) - cube;
+            BOOST_TEST(glm::length(centre - centres[face]) < 1.0e-5F);
+        }
+    }
+}
+
+/**
+ * AreaLightSource in a file keeps the geometry after it in the same attribute block, polygons
+ * and spheres alike, in world space. Geometry after the block, and an ordinary light, do not
+ * join it.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_an_area_light_keeps_its_geometry_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    // read up to WorldEnd, so the lights are still on to be read back
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "Hider \"raytrace\"\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "LightSource \"distantlight\" 1\n"
+        "AttributeBegin\n"
+        "AreaLightSource \"pointlight\" 2\n"
+        "Translate 0 0 5\n"
+        "Polygon \"P\" [0 0 0  2 0 0  2 1 0  0 1 0]\n"
+        "Sphere 0.5 -0.5 0.5 360\n"
+        "AttributeEnd\n"
+        // which lights are on is an attribute, so the block's end switched the area light
+        // off, and a scene switches it on again for what follows
+        "Illuminate 2 1\n"
+        "Polygon \"P\" [0 0 6  1 0 6  1 1 6  0 1 6]\n", &handler));
+
+    const v3d::moya::Shading shading = handler.context().shading();
+    BOOST_REQUIRE_EQUAL(shading.lights.size(), 2U);
+    BOOST_CHECK(!shading.lights[0].area);
+    BOOST_REQUIRE(shading.lights[1].area);
+    // the quad's two units and the sphere's four pi a quarter
+    const float pi = 3.14159265F;
+    BOOST_CHECK_CLOSE(shading.lights[1].area->area(), 2.0F + pi, 0.01F);
+    // a point on it is on the quad, five units out, or on the sphere around (0, 0, 5)
+    const glm::vec3 point = shading.lights[1].area->sample(glm::vec2(0.1F, 0.5F));
+    BOOST_CHECK_CLOSE(point.z, 5.0F, 0.01F);
+    BOOST_CHECK(!handler.context().areaLight());
+}
+
+/**
+ * Displacement in a file names the displacement shader, and Attribute "displacementbound"
+ * bounds how far it moves a point. A bound is stated in object space unless it names another
+ * space. Under a scale of three, a bound of 0.2 is 0.6 in camera space, and 0.2 when it is
+ * stated in world space. A block's end restores both. An unrecognised attribute is reported and
+ * changes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displacement_reaches_the_context_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+
+    // read up to WorldEnd, so the attribute state is still there to be read back
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
+        "WorldBegin\n"
+        "AttributeBegin\n"
+        "Scale 3 3 3\n"
+        "Attribute \"displacementbound\" \"float sphere\" [0.2]\n"
+        "Displacement \"lift\" \"float amount\" [0.1]\n"
+        "Attribute \"nothing\" \"float at\" [1]\n", &handler));
+
+    v3d::moya::Shading shading = handler.context().shading();
+    BOOST_REQUIRE(shading.displacement.shader);
+    BOOST_CHECK_EQUAL(shading.displacement.shader->name(), "lift");
+    BOOST_CHECK_CLOSE(shading.displacementBound, 0.6F, 0.01F);
+
+    v3d::render::offline::rib::ParameterList inWorld;
+    inWorld.add("sphere", v3d::render::offline::rib::Declaration(v3d::render::offline::rib::Declaration::Storage::UNIFORM,
+        v3d::render::offline::rib::Declaration::Type::FLOAT, 1), { 0.2F }, std::vector<std::string>());
+    inWorld.add("coordinatesystem", v3d::render::offline::rib::Declaration(
+        v3d::render::offline::rib::Declaration::Storage::UNIFORM, v3d::render::offline::rib::Declaration::Type::STRING, 1),
+        std::vector<float>(), { "world" });
+    handler.context().attribute("displacementbound", inWorld);
+    BOOST_CHECK_CLOSE(handler.context().shading().displacementBound, 0.2F, 0.01F);
+
+    handler.context().attributeEnd();
+    shading = handler.context().shading();
+    BOOST_CHECK(!shading.displacement.shader);
+    BOOST_CHECK_EQUAL(shading.displacementBound, 0.0F);
+}
+
+/**
+ * A primitive's bound grows by its displacementbound before it is culled. A quad just past the
+ * far clipping plane is culled, unless a bound lets its displacement reach in front of the
+ * plane, and the displacement moves it there and it is drawn.
+ *
+ * The bound is about 12 pixels on each side here, wider than a grid of 16 pixels with the quad.
+ * The quad is still diced, because it is measured for splitting without the bound.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_bound_is_not_culled_test) {
+    const auto render = [](const std::string & bound) {
+        v3d::moya::Renderer renderer;
+        v3d::moya::RIBHandler handler(&renderer);
+        BOOST_REQUIRE(read(
+            "Format 64 48 1\n"
+            "PixelSamples 1 1\n"
+            "PixelFilter \"box\" 1 1\n"
+            "Projection \"orthographic\"\n"
+            "Clipping 1 100\n"
+            "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
+            "WorldBegin\n"
+            "Surface \"constant\"\n" + bound +
+            "Displacement \"lift\" \"float amount\" [0.5]\n"
+            "Polygon \"P\" [-0.5 -0.5 100.2  -0.5 0.5 100.2  0.5 0.5 100.2  0.5 -0.5 100.2]\n"
+            "WorldEnd\n", &handler));
+        return coverage(*handler.context().framebuffer()->planes());
+    };
+    BOOST_CHECK_EQUAL(render(""), 0U);
+    BOOST_CHECK_GT(render("Attribute \"displacementbound\" \"float sphere\" [0.5]\n"), 0U);
+}
+
+/**
+ * The traced scene holds a displaced surface where its displacement moved it, under either
+ * hider, so its shadows follow the moved shape. A floor at y = 0 lifted by one unit blocks a
+ * shadow ray from half a unit up, which its undisplaced shape would not. A ray from above the
+ * lifted floor meets it one unit up.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_shadow_follows_the_moved_shape_test) {
+    for (const char* hider : { "hidden", "raytrace" }) {
+        BOOST_TEST_CONTEXT("under " << hider) {
+            v3d::moya::Renderer renderer;
+            v3d::moya::RIBHandler handler(&renderer);
+            BOOST_REQUIRE(read(
+                "Format 16 16 1\n"
+                "Hider \"" + std::string(hider) + "\"\n"
+                "Projection \"orthographic\"\n"
+                "Clipping 0.1 100\n"
+                "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
+                "Translate 0 0 5\n"
+                "WorldBegin\n"
+                "Attribute \"displacementbound\" \"float sphere\" [1]\n"
+                "Displacement \"lift\" \"float amount\" [1]\n"
+                "Polygon \"P\" [-2 0 -2  -2 0 2  2 0 2  2 0 -2]\n"
+                "WorldEnd\n", &handler));
+            const v3d::render::offline::trace::Scene & traced = handler.context().traced();
+            BOOST_REQUIRE(!traced.primitives().empty());
+            v3d::render::offline::trace::Hit hit;
+            const v3d::type::geometry::Ray up({.origin = glm::vec3(0.3F, 0.5F, 0.2F), .direction = glm::vec3(0.0F, 1.0F, 0.0F)});
+            BOOST_REQUIRE(traced.nearest(up, 0.0F, &hit));
+            BOOST_CHECK_CLOSE(hit.distance, 0.5F, 0.1F);
+            const v3d::type::geometry::Ray down({.origin = glm::vec3(0.3F, 3.0F, 0.2F), .direction = glm::vec3(0.0F, -1.0F, 0.0F)});
+            BOOST_REQUIRE(traced.nearest(down, 0.0F, &hit));
+            BOOST_CHECK_CLOSE(hit.distance, 2.0F, 0.1F);
+        }
+    }
 }
 
 };  // namespace

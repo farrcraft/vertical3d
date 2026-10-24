@@ -483,7 +483,10 @@ RtLightHandle RiLightSource(RtToken name, ...) {
     return RiLightSourceV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
-RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+namespace {
+
+/** A light through the context, as an ordinary light or as an area light. **/
+RtLightHandle light(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[], bool area) {
     if (name == nullptr) {
         return 0;
     }
@@ -497,8 +500,18 @@ RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer 
     const std::string handle = std::to_string(made++);
     v3d::render::offline::rib::ParameterList list;
     parameters(rc, n, tokens, parms, &list);
-    rc.lightSource({.shader = name, .handle = handle}, list);
+    if (area) {
+        rc.areaLightSource({.shader = name, .handle = handle}, list);
+    } else {
+        rc.lightSource({.shader = name, .handle = handle}, list);
+    }
     return keep(handle);
+}
+
+};  // namespace
+
+RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    return light(name, n, tokens, parms, false);
 }
 
 RtLightHandle RiAreaLightSource(RtToken name, ...) {
@@ -512,9 +525,7 @@ RtLightHandle RiAreaLightSource(RtToken name, ...) {
 }
 
 RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    // an area light is a light whose shape matters, and moya does not sample its shape. It
-    // reaches the context as an ordinary light so that a scene using one is still lit
-    return RiLightSourceV(name, n, tokens, parms);
+    return light(name, n, tokens, parms, true);
 }
 
 RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff) {
@@ -648,9 +659,23 @@ RtVoid RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]
 }
 
 RtVoid RiDisplacement(RtToken name, ...) {
+    va_list arguments;
+    va_start(arguments, name);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiDisplacementV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    if (name == nullptr) {
+        return;
+    }
+    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
+    v3d::render::offline::rib::ParameterList list;
+    parameters(rc, n, tokens, parms, &list);
+    rc.displacement(name, list);
 }
 
 RtVoid RiCoordinateSystem(RtToken space) {
@@ -674,9 +699,23 @@ RtVoid RiTransformEnd(void) {
 }
 
 RtVoid RiAttribute(RtToken name, ...) {
+    va_list arguments;
+    va_start(arguments, name);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiAttributeV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    if (name == nullptr) {
+        return;
+    }
+    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
+    v3d::render::offline::rib::ParameterList list;
+    parameters(rc, n, tokens, parms, &list);
+    rc.attribute(name, list);
 }
 
 // reads "P" only. Every other parameter is skipped, and a polygon is not checked for being

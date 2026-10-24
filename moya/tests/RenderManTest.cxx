@@ -156,4 +156,61 @@ BOOST_AUTO_TEST_CASE(renderman_format_nonpositive_side_is_the_default_test) {
     RiEnd();
 }
 
+/**
+ * RiAreaLightSource keeps the geometry declared after it in the same attribute block. A unit
+ * quad inside the block joins the light, and one after the block does not.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_an_area_light_keeps_its_geometry_test) {
+    RiBegin(RI_NULL);
+    RiFormat(64, 48, 1.0F);
+    RiClipping(1.0F, 100.0F);
+    RiWorldBegin();
+    RiAttributeBegin();
+    RtLightHandle area = RiAreaLightSource(const_cast<char*>("pointlight"), RI_NULL);
+    BOOST_REQUIRE(area != nullptr);
+    RtPoint quad[4] = { { 0.0F, 0.0F, 5.0F }, { 1.0F, 0.0F, 5.0F }, { 1.0F, 1.0F, 5.0F }, { 0.0F, 1.0F, 5.0F } };
+    RiPolygon(4, const_cast<char*>("P"), static_cast<RtPointer>(quad), RI_NULL);
+    BOOST_REQUIRE(context().areaLight());
+    RiAttributeEnd();
+    BOOST_CHECK(!context().areaLight());
+    // the block's end switched the light off, as it does any light made inside one
+    RiIlluminate(area, RI_TRUE);
+    RiPolygon(4, const_cast<char*>("P"), static_cast<RtPointer>(quad), RI_NULL);
+
+    const v3d::moya::Shading shading = context().shading();
+    BOOST_REQUIRE_EQUAL(shading.lights.size(), 1U);
+    BOOST_REQUIRE(shading.lights[0].area);
+    BOOST_CHECK_CLOSE(shading.lights[0].area->area(), 1.0F, 0.01F);
+    RiWorldEnd();
+    RiEnd();
+}
+
+/**
+ * RiDisplacement names the displacement shader for what follows, and RiAttribute's
+ * "displacementbound" bounds how far it moves a point. Both reach the shading state the
+ * context gives a primitive. The bound is stated in object space, which a scale of two makes
+ * twice as large in camera space.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_a_displacement_reaches_the_context_test) {
+    RiBegin(RI_NULL);
+    RiFormat(64, 48, 1.0F);
+    RiClipping(1.0F, 100.0F);
+    RiWorldBegin();
+    RiDeclare(const_cast<char*>("sphere"), const_cast<char*>("float"));
+    RiScale(2.0F, 2.0F, 2.0F);
+    RtFloat sphere = 0.3F;
+    RiAttribute(const_cast<char*>("displacementbound"), const_cast<char*>("sphere"), &sphere, RI_NULL);
+    RtFloat amount = 0.1F;
+    RiDeclare(const_cast<char*>("amount"), const_cast<char*>("float"));
+    // lift is a fixture beside the suite's scenes, and RiOption does not set a search path
+    context().searchpath("data:&");
+    RiDisplacement(const_cast<char*>("lift"), const_cast<char*>("amount"), &amount, RI_NULL);
+    const v3d::moya::Shading shading = context().shading();
+    BOOST_REQUIRE(shading.displacement.shader);
+    BOOST_CHECK_EQUAL(shading.displacement.shader->name(), "lift");
+    BOOST_CHECK_CLOSE(shading.displacementBound, 0.6F, 0.01F);
+    RiWorldEnd();
+    RiEnd();
+}
+
 };  // namespace

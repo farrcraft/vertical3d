@@ -282,4 +282,158 @@ BOOST_AUTO_TEST_CASE(brep_face_uv_of_a_degenerate_face_test) {
     BOOST_CHECK_EQUAL((v == glm::vec3(9.0F)), true);
 }
 
+/**
+ * A unit cube from the origin to (1, 1, 1), each face wound clockwise seen from outside, so
+ * every half edge finds its pair. Faces 0 to 5 are bottom, top, front (y = 0), back, left
+ * (x = 0) and right. Vertex 0 is the corner at the origin.
+ **/
+v3d::brep::BRep* cube(v3d::brep::BRep* mesh) {
+    const glm::vec3 origin(0.0F, 0.0F, 0.0F);
+    const glm::vec3 x(1.0F, 0.0F, 0.0F);
+    const glm::vec3 y(0.0F, 1.0F, 0.0F);
+    const glm::vec3 z(0.0F, 0.0F, 1.0F);
+    mesh->addFace({origin, x, x + y, y}, -z);
+    mesh->addFace({z, y + z, x + y + z, x + z}, z);
+    mesh->addFace({origin, z, x + z, x}, -y);
+    mesh->addFace({y, x + y, x + y + z, y + z}, y);
+    mesh->addFace({origin, y, y + z, z}, -x);
+    mesh->addFace({x, x + z, x + y + z, x + y}, x);
+    return mesh;
+}
+
+BOOST_AUTO_TEST_CASE(brep_strict_cube_test) {
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    BOOST_REQUIRE_EQUAL(mesh.edgeCount(), 24U);
+    std::string problem;
+    BOOST_CHECK(mesh.validateStrict(&problem));
+    BOOST_CHECK(problem.empty());
+    for (v3d::brep::Index id = 0; id < mesh.edgeCount(); id++) {
+        BOOST_CHECK(mesh.edge(id)->pair() != v3d::brep::INVALID_ID);
+    }
+
+    // an open mesh has a boundary, and an edge with no pair is not a fault
+    v3d::brep::BRep open;
+    open.addFace(quad(0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
+    BOOST_CHECK(open.validateStrict(nullptr));
+}
+
+BOOST_AUTO_TEST_CASE(brep_strict_pair_test) {
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    const v3d::brep::Index pair = mesh.edge(0)->pair();
+    mesh.edge(pair)->pair(v3d::brep::INVALID_ID);
+    std::string problem;
+    BOOST_CHECK(mesh.validate(&problem));
+    BOOST_CHECK(!mesh.validateStrict(&problem));
+    BOOST_CHECK_EQUAL(problem, "edge 0's pair " + std::to_string(pair) + " does not pair it back");
+
+    // an edge paired with itself is no pair
+    mesh.edge(pair)->pair(0);
+    mesh.edge(5)->pair(5);
+    BOOST_CHECK(!mesh.validateStrict(&problem));
+    BOOST_CHECK_EQUAL(problem, "edge 5's pair 5 does not pair it back");
+}
+
+BOOST_AUTO_TEST_CASE(brep_strict_loop_test) {
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    // the last edge of the first face points back into the ring part way round
+    mesh.edge(3)->next(1);
+    std::string problem;
+    BOOST_CHECK(mesh.validate(&problem));
+    BOOST_CHECK(!mesh.validateStrict(&problem));
+    BOOST_CHECK_EQUAL(problem, "face 0's loop does not close");
+
+    // and a chain that runs off into nothing does not close either
+    mesh.edge(3)->next(v3d::brep::INVALID_ID);
+    BOOST_CHECK(!mesh.validateStrict(&problem));
+    BOOST_CHECK_EQUAL(problem, "face 0's loop does not close");
+}
+
+BOOST_AUTO_TEST_CASE(brep_strict_face_test) {
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    mesh.edge(1)->face(2);
+    std::string problem;
+    BOOST_CHECK(mesh.validate(&problem));
+    BOOST_CHECK(!mesh.validateStrict(&problem));
+    BOOST_CHECK_EQUAL(problem, "edge 1 is in face 0's loop and names face 2");
+
+    mesh.edge(1)->face(v3d::brep::INVALID_ID);
+    BOOST_CHECK(!mesh.validateStrict(&problem));
+    BOOST_CHECK_EQUAL(problem, "edge 1 is in face 0's loop and names face none");
+}
+
+BOOST_AUTO_TEST_CASE(brep_strict_span_test) {
+    // a face that goes out to a vertex and comes straight back runs twice between the same
+    // two vertices. Its half edges pair with each other, so only this check finds it
+    v3d::brep::BRep mesh;
+    const glm::vec3 first(0.0F, 0.0F, 0.0F);
+    const glm::vec3 second(1.0F, 0.0F, 0.0F);
+    const glm::vec3 third(1.0F, 1.0F, 0.0F);
+    mesh.addFace({first, second, third, second}, glm::vec3(0.0F, 0.0F, 1.0F));
+    std::string problem;
+    BOOST_CHECK(mesh.validate(&problem));
+    BOOST_CHECK(!mesh.validateStrict(&problem));
+    BOOST_CHECK_EQUAL(problem, "face 0 has two edges between vertices 0 and 1");
+}
+
+BOOST_AUTO_TEST_CASE(brep_walk_corner_test) {
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    BOOST_REQUIRE(mesh.vertex(0)->point() == glm::vec3(0.0F, 0.0F, 0.0F));
+
+    // bottom, front and left meet at the origin
+    const std::vector<v3d::brep::Index> faces = v3d::brep::facesAround(mesh, 0);
+    const std::vector<v3d::brep::Index> expected = {0, 2, 4};
+    BOOST_CHECK_EQUAL_COLLECTIONS(faces.begin(), faces.end(), expected.begin(), expected.end());
+
+    // three half edges leave the corner, one along each axis, each in one of those faces
+    const std::vector<v3d::brep::Index> leaving = v3d::brep::edgesFrom(mesh, 0);
+    BOOST_REQUIRE_EQUAL(leaving.size(), 3U);
+    glm::vec3 sum(0.0F);
+    for (const v3d::brep::Index id : leaving) {
+        const glm::vec3 end = mesh.vertex(mesh.edge(id)->vertex())->point();
+        BOOST_CHECK_CLOSE(glm::length(end), 1.0F, 0.001F);
+        sum += end;
+        BOOST_CHECK(std::find(faces.begin(), faces.end(), mesh.edge(id)->face()) != faces.end());
+    }
+    BOOST_CHECK(sum == glm::vec3(1.0F, 1.0F, 1.0F));
+
+    // a vertex the mesh does not hold has nothing round it
+    BOOST_CHECK(v3d::brep::facesAround(mesh, 99).empty());
+    BOOST_CHECK(v3d::brep::edgesFrom(mesh, 99).empty());
+}
+
+BOOST_AUTO_TEST_CASE(brep_newell_normal_test) {
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    // every face of the cube points out of it
+    const glm::vec3 outward[6] = {
+        glm::vec3(0.0F, 0.0F, -1.0F), glm::vec3(0.0F, 0.0F, 1.0F), glm::vec3(0.0F, -1.0F, 0.0F),
+        glm::vec3(0.0F, 1.0F, 0.0F), glm::vec3(-1.0F, 0.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F) };
+    for (v3d::brep::Index face = 0; face < 6; face++) {
+        BOOST_CHECK_SMALL(glm::length(v3d::brep::newellNormal(mesh, face) - outward[face]), 1e-6F);
+    }
+
+    // a quad with one corner lifted out of its plane still gets a unit normal close to the
+    // plane's, tipped away from the lifted corner. It is wound clockwise seen from above
+    v3d::brep::BRep bent;
+    bent.addFace({glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F), glm::vec3(1.0F, 1.0F, 0.2F),
+        glm::vec3(1.0F, 0.0F, 0.0F)}, glm::vec3(0.0F, 0.0F, 1.0F));
+    const glm::vec3 normal = v3d::brep::newellNormal(bent, 0);
+    BOOST_CHECK_CLOSE(glm::length(normal), 1.0F, 0.001F);
+    BOOST_CHECK_GT(normal.z, 0.98F);
+    BOOST_CHECK_LT(normal.x, 0.0F);
+    BOOST_CHECK_LT(normal.y, 0.0F);
+
+    // a face on a line has no area and no normal
+    v3d::brep::BRep line;
+    line.addFace({glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(2.0F, 0.0F, 0.0F)},
+        glm::vec3(0.0F, 0.0F, 1.0F));
+    BOOST_CHECK(v3d::brep::newellNormal(line, 0) == glm::vec3(0.0F));
+    BOOST_CHECK(v3d::brep::newellNormal(line, 7) == glm::vec3(0.0F));
+}
+
 };  // namespace

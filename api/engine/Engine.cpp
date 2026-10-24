@@ -48,7 +48,7 @@ Engine::Engine(const std::string& appPath) :
     quitting_(false) {
     // the two commands every app shares. A menu's quit item and a quit key both send
     // "ui::quit", which ends the loop as a closed window does
-    commands_.addPress("ui::quit", [this]() { quit(); });
+    commands_.addPress("ui::quit", [this]() { requestQuit(); });
     commands_.addPress("ui::fullscreen", [this]() {
         if (window_) {
             window_->fullscreen(!window_->fullscreen());
@@ -60,6 +60,20 @@ Engine::Engine(const std::string& appPath) :
  **/
 void Engine::quit() noexcept {
     quitting_ = true;
+}
+
+/**
+ **/
+bool Engine::quitRequested() {
+    return true;
+}
+
+/**
+ **/
+void Engine::requestQuit() {
+    if (quitRequested()) {
+        quit();
+    }
 }
 
 /**
@@ -332,7 +346,7 @@ void Engine::handleEvent(const SDL_Event& event) {
     // SDL turns the last window closing into a quit only once that window is destroyed,
     // and nothing here destroys it, so the request is what to act on
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-        quit();
+        requestQuit();
         break;
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:

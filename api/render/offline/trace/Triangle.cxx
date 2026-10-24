@@ -5,8 +5,10 @@
 
 #include "Triangle.h"
 
+#include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Ray.h>
 
+#include <glm/common.hpp>
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
 
@@ -115,6 +117,20 @@ bool Triangle::intersect(const v3d::type::geometry::Ray & ray, float from, const
     found->distance = distance;
     found->u = weights.x;
     found->v = weights.y;
+    return true;
+}
+
+bool Triangle::bound(v3d::type::geometry::AABBox* box) const {
+    box->extents(glm::min(a_, glm::min(b_, c_)), glm::max(a_, glm::max(b_, c_)));
+    return true;
+}
+
+bool Triangle::at(const glm::vec2 & parameters, Hit* hit) const {
+    Intersection found;
+    found.u = parameters.x;
+    found.v = parameters.y;
+    describe(found, hit);
+    hit->point = a_ + (parameters.x * (b_ - a_)) + (parameters.y * (c_ - a_));
     return true;
 }
 

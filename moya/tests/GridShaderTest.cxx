@@ -5,18 +5,24 @@
 
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/sl/runtime/Renderer.h>
+#include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/Shading.h>
 #include <moya/libmoya/Vertex.h>
 #include <moya/libmoya/reyes/GridShader.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/reyes/MicroPolygonGrid.h>
 
+#include <cmath>
 #include <string>
 #include <vector>
 
+#include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -281,6 +287,216 @@ BOOST_AUTO_TEST_CASE(moya_ndc_runs_down_from_the_top_test) {
     const glm::vec4 corner = ndc * (glm::inverse(raster) * glm::vec4(64.0F, 48.0F, 1.0F, 1.0F));
     BOOST_CHECK_CLOSE(corner.x, 1.0F, 0.1F);
     BOOST_CHECK_CLOSE(corner.y, 1.0F, 0.1F);
+}
+
+
+/**
+ * A grid of five vertices a side over the plane z = 5, facing the camera. Vertex (i, j) is at
+ * x = j * 0.25 and y = i * 0.25, so u runs up y and v runs along x, and Du(P) ^ Dv(P) points
+ * at the camera, along -z, as the normal does.
+ **/
+v3d::moya::reyes::MicroPolygonGrid plane() {
+    v3d::moya::reyes::MicroPolygonGrid grid(5);
+    for (unsigned int i = 0; i < 5; i++) {
+        for (unsigned int j = 0; j < 5; j++) {
+            v3d::moya::Vertex vert;
+            vert.point(glm::vec3(static_cast<float>(j) * 0.25F, static_cast<float>(i) * 0.25F, 5.0F));
+            vert.normal(glm::vec3(0.0F, 0.0F, -1.0F));
+            vert.geometricNormal(glm::vec3(0.0F, 0.0F, -1.0F));
+            vert.color(glm::vec3(1.0F));
+            grid.addVertex(vert, i, j);
+        }
+    }
+    return grid;
+}
+
+/**
+ * The grid shader answers a derivative with the grid it is shading: its size a side, and the
+ * step between two neighbours that it gives the shader as du and dv.
+ **/
+BOOST_AUTO_TEST_CASE(moya_the_grid_is_the_shape_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.surface("constant", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid grid = plane();
+    rc.shader().shade(rc.shading(), &grid);
+
+    const v3d::render::offline::sl::runtime::Renderer::Shape shape = rc.shader().shape();
+    BOOST_CHECK(shape.layout == v3d::render::offline::sl::runtime::Renderer::Shape::Layout::GRID);
+    BOOST_CHECK_EQUAL(shape.along, 5U);
+    BOOST_CHECK_EQUAL(shape.across, 5U);
+    BOOST_CHECK_CLOSE(shape.du, 0.25F, 0.001F);
+    BOOST_CHECK_CLOSE(shape.dv, 0.25F, 0.001F);
+}
+
+/**
+ * The normal of a plane bumped by a sine of s, against the same worked out by hand.
+ *
+ * s is u, which is i / 4. The bumped point is P + A sin(2 pi s) N, so its z is
+ * 5 - A sin(2 pi s), and only along u does it change. Du(Pb) is (0, 1, dz), where dz is the
+ * change in z to the next vertex, or from the previous one on the last row, times 4. Dv(Pb)
+ * is (1, 0, 0). Their cross product is (0, dz, -1), which is normalised.
+ **/
+BOOST_AUTO_TEST_CASE(moya_a_bumped_plane_test) {
+    const float amplitude = 0.1F;
+    const float pi = 3.14159265F;
+    const auto height = [&](unsigned int row) {
+        return 5.0F - (amplitude * std::sin(2.0F * pi * static_cast<float>(row) / 4.0F));
+    };
+
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.searchpath("data:&");
+    ParameterList bumped;
+    add(&bumped, "amplitude", Declaration::Type::FLOAT, { amplitude });
+    rc.surface("bumpnormal", bumped);
+    v3d::moya::reyes::MicroPolygonGrid grid = plane();
+    rc.shader().shade(rc.shading(), &grid);
+
+    ParameterList still;
+    add(&still, "amplitude", Declaration::Type::FLOAT, { 0.0F });
+    rc.surface("bumpnormal", still);
+    v3d::moya::reyes::MicroPolygonGrid flat = plane();
+    rc.shader().shade(rc.shading(), &flat);
+
+    for (const unsigned int row : { 0U, 1U, 4U }) {
+        BOOST_TEST_CONTEXT("vertex " << row << ", 2") {
+            const float dz = (row < 4 ? height(row + 1) - height(row) : height(row) - height(row - 1)) * 4.0F;
+            const glm::vec3 expected = glm::normalize(glm::vec3(0.0F, dz, -1.0F));
+            const glm::vec3 shaded = (grid.vertex(row, 2).color() * 2.0F) - glm::vec3(1.0F);
+            BOOST_TEST(glm::length(shaded - expected) < 1.0e-3F);
+            // unbumped, the plane's own normal
+            const glm::vec3 plain = (flat.vertex(row, 2).color() * 2.0F) - glm::vec3(1.0F);
+            BOOST_TEST(glm::length(plain - glm::vec3(0.0F, 0.0F, -1.0F)) < 1.0e-3F);
+        }
+    }
+    // the sine rises fastest at s = 0, so the bump tilts the normal most there
+    BOOST_TEST(std::fabs(((grid.vertex(0, 2).color() * 2.0F) - glm::vec3(1.0F)).y) > 0.2F);
+}
+
+/**
+ * A quad light a hundredth of a unit across, sampled once, lights a grid as a point light at
+ * the quad's centre does. Its one sample is within a two-hundredth of the centre.
+ **/
+BOOST_AUTO_TEST_CASE(moya_one_sample_of_a_small_area_light_is_a_point_light_test) {
+    ParameterList bright;
+    add(&bright, "intensity", Declaration::Type::FLOAT, { 3.0F });
+    const glm::vec3 centre(0.5F, 0.5F, 3.0F);
+
+    v3d::moya::RenderContext area;
+    prepare(&area);
+    area.attributeBegin();
+    ParameterList once;
+    once.add("nsamples", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::INTEGER, 1), { 1.0F },
+        std::vector<std::string>());
+    area.attribute("light", once);
+    area.areaLightSource({.shader = "arealight", .handle = "1"}, bright);
+    const boost::shared_ptr<v3d::moya::Polygon> tiny = boost::make_shared<v3d::moya::Polygon>();
+    for (const glm::vec2 & corner : { glm::vec2(-1.0F, -1.0F), glm::vec2(1.0F, -1.0F), glm::vec2(1.0F, 1.0F),
+        glm::vec2(-1.0F, 1.0F) }) {
+        v3d::moya::Vertex vert;
+        vert.point(centre + glm::vec3(corner * 0.005F, 0.0F));
+        tiny->addVertex(vert);
+    }
+    area.addPolygon(tiny);
+    area.surface("matte", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid lit = facing(Surface());
+    area.shader().shade(area.shading(), &lit);
+
+    v3d::moya::RenderContext point;
+    prepare(&point);
+    point.pushTransform();
+    point.translate(centre.x, centre.y, centre.z);
+    point.lightSource({.shader = "pointlight", .handle = "1"}, bright);
+    point.popTransform();
+    point.surface("matte", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid pointLit = facing(Surface());
+    point.shader().shade(point.shading(), &pointLit);
+
+    for (unsigned int i = 0; i < 2; i++) {
+        for (unsigned int j = 0; j < 2; j++) {
+            BOOST_TEST_CONTEXT("vertex " << i << ", " << j) {
+                BOOST_CHECK_GT(pointLit.vertex(i, j).color().r, 0.05F);
+                BOOST_CHECK_CLOSE(lit.vertex(i, j).color().r, pointLit.vertex(i, j).color().r, 1.0F);
+            }
+        }
+    }
+}
+
+/**
+ * An area light's samples are seeded by the shading point, not by the order of shading. A grid
+ * shaded twice, with another grid shaded between, comes out the same both times.
+ **/
+BOOST_AUTO_TEST_CASE(moya_an_area_light_samples_the_same_in_any_order_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.areaLightSource({.shader = "arealight", .handle = "1"}, ParameterList());
+    const boost::shared_ptr<v3d::moya::Polygon> panel = boost::make_shared<v3d::moya::Polygon>();
+    for (const glm::vec3 & corner : { glm::vec3(-1.0F, -1.0F, 2.0F), glm::vec3(1.0F, -1.0F, 2.0F),
+        glm::vec3(1.0F, 1.0F, 2.0F), glm::vec3(-1.0F, 1.0F, 2.0F) }) {
+        v3d::moya::Vertex vert;
+        vert.point(corner);
+        panel->addVertex(vert);
+    }
+    rc.addPolygon(panel);
+    rc.surface("matte", ParameterList());
+    const v3d::moya::Shading shading = rc.shading();
+
+    v3d::moya::reyes::MicroPolygonGrid first = plane();
+    rc.shader().shade(shading, &first);
+    // the panel lights the grid, which is all it has to light it
+    BOOST_CHECK_GT(first.vertex(2, 2).color().r, 0.05F);
+    v3d::moya::reyes::MicroPolygonGrid between = facing(Surface());
+    rc.shader().shade(shading, &between);
+    v3d::moya::reyes::MicroPolygonGrid again = plane();
+    rc.shader().shade(shading, &again);
+    for (unsigned int i = 0; i < 5; i++) {
+        for (unsigned int j = 0; j < 5; j++) {
+            BOOST_TEST_CONTEXT("vertex " << i << ", " << j) {
+                BOOST_CHECK_EQUAL(first.vertex(i, j).color().r, again.vertex(i, j).color().r);
+            }
+        }
+    }
+}
+
+/**
+ * A displacement of a constant amount moves every vertex of a plane's grid that far along its
+ * normal, toward the camera here, and leaves the plane facing the way it did. The surface
+ * shader then runs on the moved grid.
+ **/
+BOOST_AUTO_TEST_CASE(moya_a_constant_displacement_moves_the_grid_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.searchpath("data:&");
+    ParameterList lifted;
+    add(&lifted, "amount", Declaration::Type::FLOAT, { 0.25F });
+    rc.displacement("lift", lifted);
+    rc.surface("constant", ParameterList());
+    const v3d::moya::Shading shading = rc.shading();
+    BOOST_REQUIRE(shading.displacement.shader);
+
+    v3d::moya::reyes::MicroPolygonGrid grid = plane();
+    rc.shader().displace(shading, &grid);
+    for (const unsigned int atU : { 0U, 2U, 4U }) {
+        for (const unsigned int atV : { 0U, 3U }) {
+            BOOST_TEST_CONTEXT("vertex " << atU << ", " << atV) {
+                BOOST_CHECK_CLOSE(grid.vertex(atU, atV).point().z, 4.75F, 0.01F);
+                BOOST_CHECK_CLOSE(grid.vertex(atU, atV).point().x, static_cast<float>(atV) * 0.25F, 0.01F);
+                BOOST_CHECK_CLOSE(glm::normalize(grid.vertex(atU, atV).normal()).z, -1.0F, 0.01F);
+            }
+        }
+    }
+}
+
+/**
+ * A primitive with no displacement shader is left where it is.
+ **/
+BOOST_AUTO_TEST_CASE(moya_no_displacement_leaves_the_grid_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    v3d::moya::reyes::MicroPolygonGrid grid = plane();
+    rc.shader().displace(rc.shading(), &grid);
+    BOOST_CHECK_EQUAL(grid.vertex(2, 2).point().z, 5.0F);
 }
 
 };  // namespace

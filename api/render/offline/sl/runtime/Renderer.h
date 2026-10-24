@@ -7,6 +7,7 @@
 
 #include <api/render/offline/Texture.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -28,8 +29,46 @@ namespace v3d::render::offline::sl::runtime {
  * test's stand-in for one, implements only what it supports. Only the coordinate space is
  * required, because a renderer that cannot say where it is shading has nothing to shade.
  **/
+/**
+ * The cone a surface's illuminance loop gathers light from at each point: its axis and its half
+ * angle in radians. Both null for a loop with no cone, which gathers from every direction. A
+ * light with a `solar` angle chooses its direction against it.
+ **/
+class Cone final {
+ public:
+    const Value* axis = nullptr;
+    const Value* angle = nullptr;
+};
+
 class Renderer {
  public:
+    /**
+     * How the points of a batch lie on the surface. The derivative built-ins read it: a
+     * derivative is the difference to a neighbouring point, divided by the step in u or v
+     * between the two.
+     **/
+    class Shape final {
+     public:
+        enum class Layout : std::uint8_t {
+            /** Points that are not neighbours, such as a single hit. Every derivative is zero. **/
+            LONE,
+            /**
+             * A grid of `along` points in u by `across` points in v. The point at u index i
+             * and v index j is batch point (i * across) + j.
+             **/
+            GRID,
+            /** Three points: one, then one a step along u from it, then one a step along v. **/
+            STENCIL
+        };
+
+        Layout layout = Layout::LONE;
+        unsigned int along = 1;
+        unsigned int across = 1;
+        /** The step in u and in v between two neighbours. **/
+        float du = 0.0F;
+        float dv = 0.0F;
+    };
+
     virtual ~Renderer() = default;
 
     /**
@@ -64,6 +103,16 @@ class Renderer {
     virtual bool space(const std::string & name, glm::mat4x4* matrix) = 0;
 
     /**
+     * Whether a point taken into or out of the named space is divided by w. A perspective
+     * projection puts the eye depth in w, so a point in a projected space is only right after
+     * the divide. This answers true for "screen", "raster" and "NDC", and false for any other.
+     **/
+    virtual bool projected(const std::string & name) const;
+
+    /** How the batch being shaded lies on the surface: lone points, unless a renderer says so. **/
+    virtual Shape shape() const;
+
+    /**
      * How many light sources are shining on the batch being shaded.
      **/
     virtual unsigned int lights();
@@ -76,6 +125,7 @@ class Renderer {
      *
      * @param index which of lights()
      * @param surface where each point being lit is, which is the light shader's Ps
+     * @param gathering the cone the illuminance loop gathers from at each point
      * @param direction where L lands: **from the surface point toward the light**
      * @param colour where Cl lands
      * @param reached which points the light gets to at all
@@ -83,7 +133,8 @@ class Renderer {
      *        out of an illuminance loop and summed by ambient()
      * @return whether the renderer ran it; a light it could not run lights nothing
      **/
-    virtual bool light(unsigned int index, const Value & surface, Value* direction,
+    virtual bool light(unsigned int index, const Value & surface, const Cone & gathering,
+        Value* direction,
         Value* colour, std::vector<char>* reached, bool* ambient);
 
     /**

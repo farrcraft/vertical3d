@@ -23,12 +23,14 @@ The reader recognises these requests:
 | Blocks | `FrameBegin`, `FrameEnd`, `WorldBegin`, `WorldEnd`, `AttributeBegin`, `AttributeEnd`, `TransformBegin`, `TransformEnd`, `MotionBegin`, `MotionEnd` |
 | Transforms | `Identity`, `Transform`, `ConcatTransform`, `Translate`, `Rotate`, `Scale` |
 | Attributes | `Color`, `Opacity`, `ShadingRate`, `Attribute` |
-| Shaders and lights | `Surface`, `LightSource`, `AreaLightSource`, `Illuminate`, `MakeTexture` |
+| Shaders and lights | `Surface`, `Displacement`, `LightSource`, `AreaLightSource`, `Illuminate`, `MakeTexture` |
 | Geometry | `Polygon`, `PointsPolygons`, `Sphere` |
 
-moya acts on all of them except `CropWindow`, `Attribute`, `FrameBegin` and `FrameEnd`, which it
-accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"searchpath"`
-(`shader`, `texture`) and `"trace"` (`maxdepth`).
+moya acts on all of them except `CropWindow`, `FrameBegin` and `FrameEnd`, which it accepts and
+ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"searchpath"` (`shader`,
+`texture`) and `"trace"` (`maxdepth`). `Attribute` acts on `"light"` (`nsamples`) and
+`"displacementbound"` (`sphere`, `coordinatesystem`), and reports any other attribute once by
+name.
 
 ### Rules
 
@@ -56,6 +58,10 @@ accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"s
   major under a row vector convention. glm stores column major under a column vector
   convention. `glm::make_mat4` over the sixteen floats is therefore the whole conversion. This
   applies to `Transform`, `ConcatTransform`, `RtMatrix` and the editor's export alike.
+- **`Rotate` takes degrees, and a positive angle turns +z towards +x about y and towards -y
+  about x.** This is the sign the unit cube in the RenderMan Interface specification's RIB entity
+  file example needs to put each face where it names it. A moya case reads that cube and checks
+  each face's centre.
 - **A parameter is typed by a declaration, or it is dropped.** The reader declares RI's
   standard names, including `Option "trace"`'s `maxdepth` and `Option "searchpath"`'s `shader`
   and `texture`, and nothing else. A shader parameter outside that set needs `Declare` or an
@@ -75,8 +81,18 @@ accepts and ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"s
 - **`MakeTexture` is understood and makes nothing.** There is no `txmake`. The image a shader
   names is the texture, read through `image::Factory`, so a scene should name the image itself,
   not a converted file.
+- **`Attribute "displacementbound"` is a distance in object space**, or in the space its
+  `"string coordinatesystem"` names: `"object"`, `"world"`, `"camera"`, or one the scene saved
+  with `RiCoordinateSystem`. moya keeps it in camera space, scaled by the largest stretch of the
+  space's axes. A space the scene never named is reported, and object space is used. The RIB
+  reader does not read `CoordinateSystem`, so a file can name only the three predefined spaces.
 - **`AreaLightSource` becomes an ordinary light** unless a handler overrides
-  `Handler::areaLightSource`. moya does not.
+  `Handler::areaLightSource`. moya overrides it, and `RiAreaLightSource` does the same.
+- **An area light keeps the geometry declared after it in the same attribute block.** Every
+  polygon and sphere there joins it, in world space, whichever hider draws them, and also
+  renders as a surface. A sphere joins whole, whatever slab and sweep it was cut to. Geometry
+  after the block does not join. The block's end also switches the light off, as it does any
+  light made inside one. `Illuminate` switches it on again for what follows.
 - **A primitive repeated inside a motion block is a deformation, which moya does not build.**
   The reader hands the later poses to `Handler::deformation()`, which returns null unless a
   renderer overrides it, and lists them in `Reader::unsupported()`. The primitive is drawn at

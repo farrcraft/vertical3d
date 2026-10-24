@@ -20,6 +20,7 @@
 namespace v3d::editor {
 
 class Manipulator;
+class Target;
 
 /**
  * One view of the scene: a camera, the region of the window it draws into, and what it
@@ -69,6 +70,14 @@ class ViewPort final {
     void resize(const glm::vec4& region);
 
     /**
+     * Show the scene through another camera profile, such as one of the fixed views.
+     *
+     * The camera stays the same object, so a tool that drives it keeps driving it. The view
+     * keeps its region, so the profile is given the view's size and pixel aspect ratio.
+     **/
+    void look(const v3d::type::camera::Profile& profile);
+
+    /**
      * @return the region of the window the view covers
      **/
     const glm::vec4& region() const noexcept;
@@ -115,11 +124,12 @@ class ViewPort final {
      * @param scene what to draw, which the controller owns
      * @param manipulator the handles the selection carries, or null. Every view that shows
      *        handles draws them through its own camera
+     * @param target what the handles move, which decides where they sit
      * @param canvas where the view's geometry goes
      * @param handles where the manipulator's geometry goes, or null
      **/
-    void draw(const Scene& scene, const Manipulator* manipulator, v3d::render::realtime::canvas::Line* canvas,
-        v3d::render::realtime::canvas::Line* handles);
+    void draw(const Scene& scene, const Manipulator* manipulator, const Target& target,
+        v3d::render::realtime::canvas::Line* canvas, v3d::render::realtime::canvas::Line* handles);
 
  private:
     std::string name_;

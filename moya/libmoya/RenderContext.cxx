@@ -7,6 +7,7 @@
 
 #include <api/image/Factory.h>
 #include <api/log/Logger.h>
+#include <api/render/offline/Area.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
@@ -25,9 +26,11 @@
 #include <api/type/geometry/Frustum.h>
 #include <moya/libmoya/reyes/GridShader.h>
 #include <moya/libmoya/reyes/Hider.h>
+#include <moya/libmoya/reyes/MicroPolygonGrid.h>
 #include <moya/libmoya/reyes/Samples.h>
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -51,17 +54,10 @@ namespace v3d::moya {
 
 namespace {
 
-/** The least w a point is divided by. A point at or below it is at or behind the eye. **/
-constexpr float SMALLEST_W = 1.0e-6F;
-
 };  // namespace
 
 glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point) {
-    const glm::vec4 projected = matrix * glm::vec4(point, 1.0F);
-    if (projected.w <= SMALLEST_W) {
-        return glm::vec3(projected);
-    }
-    return glm::vec3(projected) / projected.w;
+    return v3d::render::offline::sl::project(matrix, point);
 }
 
 RenderContext::RenderContext() {
@@ -162,8 +158,22 @@ void RenderContext::prepareWorld() {
     raster = glm::translate(raster, glm::vec3(1.0F, -1.0F, 1.0F));
 
     coordinateSystems_["raster"] = raster;
+    traced_.projection(projected());
 
     frameBuffer_.reset(new FrameBuffer({.bucket = glm::uvec2(bucketWidth_, bucketHeight_), .image = glm::uvec2(xres_, yres_)}));
+}
+
+v3d::render::offline::trace::Scene::Projection RenderContext::projected() {
+    v3d::render::offline::trace::Scene::Projection projection;
+    projection.screen = coordinateSystems_["screen"];
+    projection.raster = coordinateSystems_["raster"] * projection.screen;
+    // raster divided by the resolution: x runs right and y runs down over [0, 1] from the
+    // upper left corner. Screen space has y up over [-1, 1], so y is negated as raster
+    // negates it. z is screen depth moved from [-1, 1] onto [0, 1]
+    glm::mat4x4 normalised = glm::scale(glm::mat4x4(1.0F), glm::vec3(0.5F, -0.5F, 0.5F));
+    normalised = glm::translate(normalised, glm::vec3(1.0F, -1.0F, 1.0F));
+    projection.ndc = normalised * projection.screen;
+    return projection;
 }
 
 unsigned int RenderContext::imageWidth() const {
@@ -372,6 +382,10 @@ void RenderContext::attributeBegin() {
     saved.surface = surface_;
     saved.surfacePlacement = surfacePlacement_;
     saved.lit = lit_;
+    saved.areaLight = areaLight_;
+    saved.lightSamples = lightSamples_;
+    saved.displacement = displacement_;
+    saved.displacementBound = displacementBound_;
     attributes_.push_back(saved);
 }
 
@@ -389,6 +403,10 @@ void RenderContext::attributeEnd() {
     // only the set of lights that are on is restored. A light lasts for the frame, not
     // for the block that created it
     lit_ = saved.lit;
+    areaLight_ = saved.areaLight;
+    lightSamples_ = saved.lightSamples;
+    displacement_ = saved.displacement;
+    displacementBound_ = saved.displacementBound;
     attributes_.pop_back();
 }
 
@@ -441,6 +459,9 @@ void RenderContext::shadingRate(float size) {
 }
 
 void RenderContext::bucketSize(unsigned int width, unsigned int height) {
+    if (bucketPinned_) {
+        return;
+    }
     // a bucket of no pixels covers nothing and the frame would never be finished
     if (width == 0 || height == 0) {
         logger_->get()->warn("a bucket of {} by {} pixels is not used", width, height);
@@ -451,12 +472,27 @@ void RenderContext::bucketSize(unsigned int width, unsigned int height) {
 }
 
 void RenderContext::gridSize(unsigned int size) {
+    if (gridPinned_) {
+        return;
+    }
     // a grid of no micropolygons would split every primitive without end
     if (size == 0) {
         logger_->get()->warn("a grid size of 0 is not used");
         return;
     }
     gridSize_ = size;
+}
+
+void RenderContext::pinBucketSize(unsigned int width, unsigned int height) {
+    bucketPinned_ = false;
+    bucketSize(width, height);
+    bucketPinned_ = width != 0 && height != 0;
+}
+
+void RenderContext::pinGridSize(unsigned int size) {
+    gridPinned_ = false;
+    gridSize(size);
+    gridPinned_ = size != 0;
 }
 
 void RenderContext::motionCache(std::size_t entries) {
@@ -564,6 +600,12 @@ void RenderContext::surface(const std::string & name,
     surfacePlacement_ = coordinateSystems_["camera"] * transform_.reference();
 }
 
+void RenderContext::displacement(const std::string & name,
+    const v3d::render::offline::rib::ParameterList & parameters) {
+    displacement_.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::DISPLACEMENT, parameters);
+    displacement_.placement = coordinateSystems_["camera"] * transform_.reference();
+}
+
 void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & request,
     const v3d::render::offline::rib::ParameterList & parameters) {
     LightSource light;
@@ -578,6 +620,65 @@ void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & r
     lights_.push_back(light);
     // RiLightSource switches the light it creates on
     illuminate(request.handle, true);
+}
+
+void RenderContext::areaLightSource(const v3d::render::offline::rib::LightSource & request,
+    const v3d::render::offline::rib::ParameterList & parameters) {
+    const std::size_t before = lights_.size();
+    lightSource(request, parameters);
+    if (lights_.size() == before) {
+        return;
+    }
+    lights_.back().area = boost::make_shared<v3d::render::offline::Area>(request.handle);
+    lights_.back().area->samples(lightSamples_);
+    areaLight_ = lights_.back().area;
+}
+
+void RenderContext::attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
+    if (name == "light" && parameters.has("nsamples")) {
+        const float count = parameters.number("nsamples", 1.0F);
+        // capped, so a count past what an unsigned holds is not cast into one
+        constexpr float MOST_SAMPLES = 4096.0F;
+        lightSamples_ = std::isfinite(count) && count >= 1.0F ? static_cast<unsigned int>(std::min(count, MOST_SAMPLES)) : 1U;
+        return;
+    }
+    if (name == "displacementbound" && parameters.has("sphere")) {
+        const float radius = parameters.number("sphere", 0.0F);
+        if (!std::isfinite(radius) || radius < 0.0F) {
+            logger_->get()->warn("a displacement bound of {} is not a distance, and is not used", radius);
+            return;
+        }
+        // the bound is stated in object space, or the space it names, and is kept in camera
+        // space, where every primitive is culled. A scale that differs between axes is taken
+        // at its largest, so the bound still holds the surface
+        const std::vector<std::string> & named = parameters.strings("coordinatesystem");
+        glm::mat4x4 toCamera = coordinateSystems_["camera"] * transform_.reference();
+        if (!named.empty() && named.front() == "camera") {
+            toCamera = glm::mat4x4(1.0F);
+        } else if (!named.empty() && named.front() != "object" && named.front() != "world" &&
+            coordinateSystems_.find(named.front()) == coordinateSystems_.end()) {
+            logger_->get()->warn("the displacement bound's space \"{}\" is not one the scene named, so object space is used",
+                named.front());
+        } else if (!named.empty() && named.front() == "world") {
+            toCamera = coordinateSystems_["camera"];
+        } else if (!named.empty() && named.front() != "object") {
+            // a named space is saved as the transformation into world space in force when the
+            // scene named it
+            toCamera = coordinateSystems_["camera"] * coordinateSystem(named.front());
+        }
+        const glm::mat3 linear(toCamera);
+        const float stretch = std::max(glm::length(linear[0]), std::max(glm::length(linear[1]), glm::length(linear[2])));
+        displacementBound_ = radius * stretch;
+        return;
+    }
+    if (std::find(unusedAttributes_.begin(), unusedAttributes_.end(), name) == unusedAttributes_.end()) {
+        unusedAttributes_.push_back(name);
+        logger_->get()->warn("the attribute \"{}\" is not used", name);
+    }
+}
+
+const boost::shared_ptr<v3d::render::offline::Area> & RenderContext::areaLight() const {
+    return areaLight_;
 }
 
 void RenderContext::illuminate(const std::string & handle, bool on) {
@@ -622,8 +723,11 @@ Shading RenderContext::shading() {
         v3d::render::offline::sl::Placed shining;
         shining.shader = light.shader;
         shining.placement = light.placement;
+        shining.area = light.area;
         state.lights.push_back(shining);
     }
+    state.displacement = displacement_;
+    state.displacementBound = displacementBound_;
     return state;
 }
 
@@ -668,6 +772,10 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
     if (poly.vertexCount() < 3) {
         return;
     }
+    if (state.displacement.shader) {
+        traceDisplaced(poly, state);
+        return;
+    }
     const glm::mat4x4 & toWorld = transform_.reference();
     const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld)));
 
@@ -693,6 +801,71 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
         }
         shade(&triangle, state);
         traced_.add(triangle, transform_);
+        if (areaLight_) {
+            areaLight_->add(points[0], points[1], points[2]);
+        }
+    }
+}
+
+void RenderContext::traceDisplaced(const Polygon & poly, const Shading & state) {
+    // a copy in camera space, where the displacement shader runs, with each vertex given the
+    // plane and the colour addPolygon() would give it
+    const glm::mat4x4 toCamera = coordinateSystems_["camera"] * transform_.reference();
+    const glm::mat3 toCameraNormal = glm::transpose(glm::inverse(glm::mat3(toCamera)));
+    Polygon eye;
+    for (std::size_t i = 0; i < poly.vertexCount(); i++) {
+        Vertex corner = poly.vertex(i);
+        corner.point(glm::vec3(toCamera * glm::vec4(corner.point(), 1.0F)));
+        if (corner.hasNormal()) {
+            corner.normal(glm::normalize(toCameraNormal * corner.normal()));
+        }
+        eye.addVertex(corner);
+    }
+    const glm::vec3 plane = eye.geometricNormal();
+    for (std::size_t i = 0; i < eye.vertexCount(); i++) {
+        eye[i].geometricNormal(plane);
+        if (!eye[i].hasNormal()) {
+            eye[i].normal(plane);
+        }
+        if (!eye[i].hasColor()) {
+            eye[i].color(color_);
+        }
+    }
+    boost::shared_ptr<reyes::MicroPolygonGrid> grid;
+    if (!eye.dice(grid, tracedAcross)) {
+        return;
+    }
+    shader().displace(state, grid.get());
+
+    const glm::mat4x4 toWorld = glm::inverse(coordinateSystems_["camera"]);
+    const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld)));
+    const unsigned int size = grid->size();
+    const float span = static_cast<float>(size - 1);
+    const auto corner = [&](unsigned int alongU, unsigned int alongV) {
+        Vertex at = grid->vertex(alongU, alongV);
+        at.point(glm::vec3(toWorld * glm::vec4(at.point(), 1.0F)));
+        at.normal(glm::normalize(toWorldNormal * at.normal()));
+        // a grid without st takes its own parameters as s and t, as a shaded grid does
+        if (!at.hasTexCoord()) {
+            at.st(glm::vec2(static_cast<float>(alongU) / span, static_cast<float>(alongV) / span));
+        }
+        return at;
+    };
+    for (unsigned int i = 0; i + 1 < size; i++) {
+        for (unsigned int j = 0; j + 1 < size; j++) {
+            const Vertex quad[4] = { corner(i, j), corner(i + 1, j), corner(i + 1, j + 1), corner(i, j + 1) };
+            for (const std::array<int, 3> & fan : { std::array<int, 3>{0, 1, 2}, std::array<int, 3>{0, 2, 3} }) {
+                const Vertex & first = quad[fan[0]];
+                const Vertex & second = quad[fan[1]];
+                const Vertex & third = quad[fan[2]];
+                v3d::render::offline::trace::Triangle triangle({first.point(), second.point(), third.point()}, color_,
+                    {first.normal(), second.normal(), third.normal()});
+                triangle.st(first.st(), second.st(), third.st());
+                triangle.colours(first.color(), second.color(), third.color());
+                shade(&triangle, state);
+                traced_.add(triangle, transform_);
+            }
+        }
     }
 }
 
@@ -707,6 +880,10 @@ void RenderContext::shade(v3d::render::offline::trace::Primitive* primitive, con
 }
 
 bool RenderContext::addSphere(const v3d::render::offline::rib::Sphere & shape) {
+    // an area light keeps its sphere whichever hider draws it, and the reyes hider draws none
+    if (areaLight_ && shape.radius > 0.0F) {
+        areaLight_->add({.placement = transform_.reference(), .radius = shape.radius});
+    }
     if (!hider_->traces()) {
         return false;
     }
@@ -779,6 +956,19 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // shrinks a primitive and never the distance it travels
     Bound swept = eye;
     sweep(poly->motion(), object, &swept);
+
+    // a displacement shader may move the surface as far as its bound, so the bound grows by it
+    // before the primitive is culled and bucketed. A displacement that goes past the bound is
+    // clipped. With no bound the primitive does not grow. The size test reads the surface
+    // before it is grown, because the grid it is diced into covers the surface and not the
+    // bound. A bound wider than a grid would otherwise be split without end
+    const float grown = poly->shading().displacementBound;
+    const glm::vec3 surface_min = bound_min;
+    const glm::vec3 surface_max = bound_max;
+    bound_min -= glm::vec3(grown);
+    bound_max += glm::vec3(grown);
+    swept.min -= glm::vec3(grown);
+    swept.max += glm::vec3(grown);
     const glm::vec3 & swept_min = swept.min;
     const glm::vec3 & swept_max = swept.max;
 
@@ -818,10 +1008,12 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // test on w is the one project() makes before it divides
     glm::vec3 raster_min(std::numeric_limits<float>::max());
     glm::vec3 raster_max(std::numeric_limits<float>::lowest());
+    glm::vec3 measured_min(std::numeric_limits<float>::max());
+    glm::vec3 measured_max(std::numeric_limits<float>::lowest());
     bool projected = false;
     for (int k = 0; k < 8; k++) {
         const glm::vec3 corner = boxCorner(bound_min, bound_max, k);
-        if ((screen * glm::vec4(corner, 1.0F)).w <= SMALLEST_W) {
+        if ((screen * glm::vec4(corner, 1.0F)).w <= v3d::render::offline::sl::SMALLEST_W) {
             poly->diceable(false);
             continue;
         }
@@ -829,6 +1021,9 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         raster_min = glm::min(raster_min, point);
         raster_max = glm::max(raster_max, point);
         projected = true;
+        const glm::vec3 inner = project(screen, boxCorner(surface_min, surface_max, k));
+        measured_min = glm::min(measured_min, inner);
+        measured_max = glm::max(measured_max, inner);
     }
     if (!projected) {
         // no corner is in front of the eye. The primitive is split, and its pieces are
@@ -847,7 +1042,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         // shadingRate_ pixels, is split
         float size = static_cast<float>(gridSize_);
         size = sqrt(size) * shadingRate_;
-        glm::vec3 bound_size = bound_max - bound_min;
+        const glm::vec3 bound_size = measured_max - measured_min;
         if ((bound_size[0] > size) || (bound_size[1] > size)) {
             poly->diceable(false);
         }

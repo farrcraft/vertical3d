@@ -289,6 +289,12 @@
                       "type": "radio",
                       "context": "view",
                       "command": "camera::perspective"
+                    },
+                    {
+                      "label": "Orthographic",
+                      "type": "check",
+                      "context": "view",
+                      "command": "camera::orthographic"
                     }
                   ]
                 }
@@ -332,6 +338,12 @@
                       "command": "poly::extrude_face"
                     },
                     {
+                      "label": "Inset Face",
+                      "type": "action",
+                      "context": "transform",
+                      "command": "poly::inset_face"
+                    },
+                    {
                       "label": "Split Face",
                       "type": "action",
                       "context": "transform",
@@ -342,6 +354,12 @@
                       "type": "action",
                       "context": "transform",
                       "command": "poly::split_edge"
+                    },
+                    {
+                      "label": "Merge Vertices",
+                      "type": "action",
+                      "context": "transform",
+                      "command": "poly::merge_vertices"
                     }
                   ]
                 }
@@ -717,6 +735,42 @@
                   "children": [
                     { "type": "button", "name": "chooserAccept", "label": "Accept", "context": "project", "command": "chooser::accept" },
                     { "type": "button", "name": "chooserCancel", "label": "Cancel", "context": "project", "command": "chooser::cancel" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "prompt",
+      "visible": false,
+      "components": [
+        {
+          "type": "panel",
+          "name": "promptPanel",
+          "pickable": true,
+          "position": ["30%", "35%"],
+          "size": ["40%", 120],
+          "children": [
+            {
+              "type": "vbox",
+              "name": "promptColumn",
+              "position": [12, 12],
+              "size": ["94%", "80%"],
+              "spacing": 12,
+              "stretch": true,
+              "children": [
+                { "type": "label", "name": "question", "label": "" },
+                {
+                  "type": "hbox",
+                  "name": "promptButtons",
+                  "spacing": 8,
+                  "children": [
+                    { "type": "button", "name": "answer0", "label": "", "context": "project", "command": "prompt::answer0" },
+                    { "type": "button", "name": "answer1", "label": "", "context": "project", "command": "prompt::answer1" },
+                    { "type": "button", "name": "answer2", "label": "", "context": "project", "command": "prompt::answer2" }
                   ]
                 }
               ]

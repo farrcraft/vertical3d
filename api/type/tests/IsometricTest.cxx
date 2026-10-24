@@ -40,6 +40,7 @@ BOOST_AUTO_TEST_CASE(isometriccamera_defaults_test) {
     const v3d::type::camera::Isometric orbit;
 
     BOOST_CHECK_EQUAL(orbit.azimuth(), 0);
+    BOOST_CHECK_EQUAL(orbit.start(), 0.0F);
     BOOST_CHECK_CLOSE(orbit.zoom(), v3d::type::camera::Isometric::DEFAULT_ZOOM, 0.01F);
     BOOST_CHECK_CLOSE(orbit.elevation(), v3d::type::camera::Isometric::DEFAULT_ELEVATION, 0.01F);
     BOOST_CHECK_CLOSE(orbit.distance(), v3d::type::camera::Isometric::DEFAULT_DISTANCE, 0.01F);
@@ -250,6 +251,100 @@ BOOST_AUTO_TEST_CASE(isometriccamera_apply_writes_the_profile_test) {
     BOOST_CHECK_SMALL(viewed.x, 0.001F);
     BOOST_CHECK_SMALL(viewed.y, 0.001F);
     BOOST_CHECK_CLOSE(viewed.z, orbit.distance(), 0.01F);
+}
+
+/**
+ * At the default start, azimuth 0 puts the eye along +X of the target and each step turns it a
+ * quarter towards +Z. A caller that never sets a start keeps these views.
+ *
+ * Passes before the change: it holds the views every existing caller draws, which a start must
+ * not move.
+ **/
+BOOST_AUTO_TEST_CASE(isometriccamera_the_default_start_is_on_the_axes_test) {
+    v3d::type::camera::Isometric orbit;
+
+    glm::vec3 offset = orbit.eye() - orbit.target();
+    BOOST_CHECK_GT(offset.x, 1.0F);
+    BOOST_CHECK_SMALL(offset.z, 0.0001F);
+
+    orbit.azimuth(1);
+    offset = orbit.eye() - orbit.target();
+    BOOST_CHECK_SMALL(offset.x, 0.0001F);
+    BOOST_CHECK_GT(offset.z, 1.0F);
+}
+
+/**
+ * The diagonal start puts the eye at azimuth 0 over the (+X, +Z) diagonal, and every later
+ * azimuth over another diagonal.
+ **/
+BOOST_AUTO_TEST_CASE(isometriccamera_the_diagonal_start_is_over_a_corner_test) {
+    v3d::type::camera::Isometric orbit;
+    orbit.start(v3d::type::camera::Isometric::DIAGONAL_START);
+    orbit.target(glm::vec3(3.0F, 0.0F, -4.0F));
+    BOOST_CHECK_EQUAL(orbit.start(), v3d::type::camera::Isometric::DIAGONAL_START);
+
+    const glm::vec3 offset = orbit.eye() - orbit.target();
+    BOOST_CHECK_GT(offset.x, 1.0F);
+    BOOST_CHECK_CLOSE(offset.x, offset.z, 0.01F);
+
+    // the corner each azimuth is over, as the signs of x and z
+    const glm::vec2 corners[] = {
+        glm::vec2(1.0F, 1.0F), glm::vec2(-1.0F, 1.0F), glm::vec2(-1.0F, -1.0F), glm::vec2(1.0F, -1.0F)
+    };
+    for (int index = 0; index < v3d::type::camera::Isometric::AZIMUTHS; ++index) {
+        orbit.azimuth(index);
+        const glm::vec3 turned = orbit.eye() - orbit.target();
+
+        // a start changes only the direction, not how far or how high the eye is
+        BOOST_CHECK_CLOSE(glm::length(turned), orbit.distance(), 0.01F);
+        BOOST_CHECK_CLOSE(turned.y, std::sin(orbit.elevation()) * orbit.distance(), 0.01F);
+        BOOST_CHECK_CLOSE(turned.x * corners[index].x, turned.z * corners[index].y, 0.01F);
+        BOOST_CHECK_GT(turned.x * corners[index].x, 1.0F);
+    }
+
+    // four turns come back to the eye the orbit started at
+    orbit.azimuth(0);
+    orbit.rotate(v3d::type::camera::Isometric::AZIMUTHS);
+    BOOST_CHECK_SMALL(glm::length(orbit.eye() - orbit.target() - offset), 0.0001F);
+}
+
+/**
+ * From a diagonal start the ground axes are still on the ground, unit length and square, a pan
+ * still follows them, and right() is still to the right on screen. A start that moved the eye
+ * but not forward() would pan the scene at 45 degrees to the drag.
+ **/
+BOOST_AUTO_TEST_CASE(isometriccamera_the_axes_follow_the_start_test) {
+    v3d::type::camera::Isometric orbit;
+    orbit.start(v3d::type::camera::Isometric::DIAGONAL_START);
+
+    for (int index = 0; index < v3d::type::camera::Isometric::AZIMUTHS; ++index) {
+        orbit.azimuth(index);
+        orbit.target(glm::vec3(0.0F, 0.0F, 0.0F));
+
+        BOOST_CHECK_SMALL(orbit.right().y, 0.0001F);
+        BOOST_CHECK_SMALL(orbit.forward().y, 0.0001F);
+        BOOST_CHECK_CLOSE(glm::length(orbit.right()), 1.0F, 0.01F);
+        BOOST_CHECK_CLOSE(glm::length(orbit.forward()), 1.0F, 0.01F);
+        BOOST_CHECK_SMALL(glm::dot(orbit.right(), orbit.forward()), 0.0001F);
+
+        // forward() is the flattened view from the eye to the target
+        const glm::vec3 toTarget = orbit.target() - orbit.eye();
+        const glm::vec3 flattened = glm::normalize(glm::vec3(toTarget.x, 0.0F, toTarget.z));
+        BOOST_CHECK_SMALL(glm::length(orbit.forward() - flattened), 0.0001F);
+
+        const glm::vec3 expected = orbit.right() * 3.0F + orbit.forward() * -2.0F;
+        orbit.pan(glm::vec2(3.0F, -2.0F));
+        BOOST_CHECK_SMALL(glm::length(orbit.target() - expected), 0.0001F);
+
+        v3d::type::camera::Camera camera = applied(orbit);
+        const glm::vec3 centre = screen(&camera, orbit.target());
+        const glm::vec3 toRight = screen(&camera, orbit.target() + orbit.right() * 2.0F);
+        const glm::vec3 away = screen(&camera, orbit.target() + orbit.forward() * 2.0F);
+        BOOST_CHECK_EQUAL(toRight.x > centre.x, true);
+        BOOST_CHECK_SMALL(toRight.y - centre.y, 0.01F);
+        BOOST_CHECK_EQUAL(away.y < centre.y, true);
+        BOOST_CHECK_SMALL(away.x - centre.x, 0.01F);
+    }
 }
 
 BOOST_AUTO_TEST_CASE(isometriccamera_apply_ignores_a_null_camera_test) {

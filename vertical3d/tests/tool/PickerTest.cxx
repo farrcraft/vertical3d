@@ -15,6 +15,7 @@
 #include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <cstddef>
 #include <optional>
 #include <vector>
 
@@ -222,6 +223,76 @@ BOOST_AUTO_TEST_CASE(picker_edge_test) {
     BOOST_CHECK_EQUAL(missed.valid, false);
 }
 
+/**
+ * How many things of a mask a rectangle between two world points holds, in the front view.
+ **/
+std::size_t inside(const v3d::editor::Scene& scene, const glm::vec3& corner, const glm::vec3& opposite,
+    v3d::editor::SelectMask mask) {
+    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
+    v3d::editor::Picker picker;
+    return picker.inside(scene, *view, screen(view, corner), screen(view, opposite), mask).size();
+}
+
+BOOST_AUTO_TEST_CASE(picker_inside_object_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const unsigned int id = scene.add(cube);
+
+    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
+    v3d::editor::Picker picker;
+    const std::vector<v3d::editor::Picker::Hit> hits = picker.inside(scene, *view,
+        screen(view, glm::vec3(-0.6F, -0.6F, 0.0F)), screen(view, glm::vec3(0.6F, 0.6F, 0.0F)),
+        v3d::editor::SelectMask::Object);
+    BOOST_REQUIRE_EQUAL(hits.size(), 1U);
+    BOOST_CHECK_EQUAL(hits[0].valid, true);
+    BOOST_CHECK_EQUAL(hits[0].mesh, id);
+    BOOST_CHECK(hits[0].kind == v3d::editor::SelectMask::Object);
+
+    // the corners may be given either way round
+    BOOST_CHECK_EQUAL(inside(scene, glm::vec3(0.6F, -0.6F, 0.0F), glm::vec3(-0.6F, 0.6F, 0.0F),
+        v3d::editor::SelectMask::Object), 1U);
+
+    // an object only partly inside is not inside
+    BOOST_CHECK_EQUAL(inside(scene, glm::vec3(-0.6F, -0.6F, 0.0F), glm::vec3(0.4F, 0.6F, 0.0F),
+        v3d::editor::SelectMask::Object), 0U);
+
+    // the object's transform moves its bound
+    cube->translation(glm::vec3(2.0F, 0.0F, 0.0F));
+    BOOST_CHECK_EQUAL(inside(scene, glm::vec3(-0.6F, -0.6F, 0.0F), glm::vec3(0.6F, 0.6F, 0.0F),
+        v3d::editor::SelectMask::Object), 0U);
+}
+
+BOOST_AUTO_TEST_CASE(picker_inside_component_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    scene.add(cube);
+
+    const glm::vec3 bottomLeft(-0.6F, -0.6F, 0.0F);
+    const glm::vec3 topRight(0.6F, 0.6F, 0.0F);
+    // a strip down the cube's left side, which in the front view is its whole left face
+    const glm::vec3 leftSide(-0.4F, 0.6F, 0.0F);
+    // one corner of the cube, where a vertex at the front and one at the back both land
+    const glm::vec3 oneVertex(-0.4F, -0.4F, 0.0F);
+
+    // a component mask considers only selected objects
+    BOOST_CHECK_EQUAL(inside(scene, bottomLeft, topRight, v3d::editor::SelectMask::Vertex), 0U);
+    cube->selected(true);
+
+    // hidden parts count, because a band tests geometry and not pixels
+    BOOST_CHECK_EQUAL(inside(scene, bottomLeft, topRight, v3d::editor::SelectMask::Vertex), 8U);
+    BOOST_CHECK_EQUAL(inside(scene, bottomLeft, oneVertex, v3d::editor::SelectMask::Vertex), 2U);
+
+    // an edge is inside when both ends are, and is found once for its two half edges
+    BOOST_CHECK_EQUAL(inside(scene, bottomLeft, topRight, v3d::editor::SelectMask::Edge), 12U);
+    BOOST_CHECK_EQUAL(inside(scene, bottomLeft, leftSide, v3d::editor::SelectMask::Edge), 4U);
+    BOOST_CHECK_EQUAL(inside(scene, bottomLeft, oneVertex, v3d::editor::SelectMask::Edge), 1U);
+
+    // a face is inside when every vertex of it is
+    BOOST_CHECK_EQUAL(inside(scene, bottomLeft, topRight, v3d::editor::SelectMask::Face), 6U);
+    BOOST_CHECK_EQUAL(inside(scene, bottomLeft, leftSide, v3d::editor::SelectMask::Face), 1U);
+    BOOST_CHECK_EQUAL(inside(scene, bottomLeft, oneVertex, v3d::editor::SelectMask::Face), 0U);
+}
+
 BOOST_AUTO_TEST_CASE(picker_empty_test) {
     v3d::editor::Scene scene;
     v3d::editor::Picker picker;
@@ -236,6 +307,8 @@ BOOST_AUTO_TEST_CASE(picker_empty_test) {
     scene.add(v3d::editor::create_poly_cube());
     BOOST_CHECK_EQUAL(picker.pick(scene, unsized, glm::vec2(0.0F, 0.0F),
         v3d::editor::SelectMask::Object).valid, false);
+    BOOST_CHECK(picker.inside(scene, unsized, glm::vec2(0.0F, 0.0F), glm::vec2(400.0F, 400.0F),
+        v3d::editor::SelectMask::Object).empty());
 }
 
 };  // namespace

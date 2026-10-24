@@ -70,6 +70,11 @@ class Polygon : public reyes::Primitive {
     virtual v3d::type::geometry::AABBox bound(void) const;
     virtual void split(RenderContext & rc);
     virtual bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc);
+    /**
+     * The same, into a grid of `across` micropolygons a side rather than the context's grid
+     * size. The vertices have to be in eye space already, as addPolygon() leaves them.
+     **/
+    bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, unsigned int across);
 
  protected:
     void split(const v3d::type::geometry::Plane & plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2);

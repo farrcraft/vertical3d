@@ -95,6 +95,19 @@ Type arithmetic(Type left, Type right);
  **/
 glm::vec3 ptransform(const glm::mat4x4 & matrix, const glm::vec3 & point);
 
+/** The least w a projected point is divided by. A point at or below it is at or behind the eye. **/
+inline constexpr float SMALLEST_W = 1.0e-6F;
+
+/**
+ * A point through a matrix that may be a perspective one, divided by w.
+ *
+ * An orthographic projection leaves w at one, so the divide changes nothing. A perspective one
+ * writes the eye depth into w, and the divide takes the point to screen or raster units. The
+ * inverse of a perspective projection is divided the same way, back into camera space. A point
+ * whose w is at or below SMALLEST_W is returned undivided.
+ **/
+glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point);
+
 /**
  * A vector through a matrix: rotated and scaled, and **not** translated, because a
  * direction has no position.

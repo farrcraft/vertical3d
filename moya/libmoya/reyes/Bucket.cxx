@@ -300,10 +300,10 @@ std::array<int, 4> pixels(const glm::vec3 & min, const glm::vec3 & max, const Sa
 
 /**
  * Hide one placed micropolygon into the samples of the pixels its bound touches. A sample it
- * covers takes its colour, full opacity and its depth, unless the sample already holds a hit
- * at the same depth or nearer.
+ * covers is offered its colour, its opacity and its depth, as a layer of the grid it came
+ * from, and keeps it unless an opaque surface is already as near.
  */
-void hide(const Placement & placement, const glm::vec3 & color, Samples * samples, Motions * motions) {
+void hide(const Placement & placement, const Samples::Layer & shaded, Samples * samples, Motions * motions) {
     const std::array<int, 4> region = pixels(placement.min(), placement.max(), *samples);
     for (int row = region[1]; row <= region[3]; row++) {
         for (int column = region[0]; column <= region[2]; column++) {
@@ -316,13 +316,12 @@ void hide(const Placement & placement, const glm::vec3 & color, Samples * sample
                 const Corners corners = motions == nullptr ? placement.at(sample) :
                     placement.at(sample, motions->at({.column = column, .row = row, .index = k, .time = sample.time}));
                 float depth = 0.0F;
-                if (!covers(corners, sample.raster, &depth) || (sample.hit && depth >= sample.depth)) {
+                if (!covers(corners, sample.raster, &depth) || depth >= sample.layers.opaque()) {
                     continue;
                 }
-                sample.colour = color;
-                sample.opacity = glm::vec3(1.0F);
-                sample.depth = depth;
-                sample.hit = true;
+                Samples::Layer layer = shaded;
+                layer.depth = depth;
+                sample.layers.add(layer);
             }
         }
     }
@@ -341,6 +340,7 @@ void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & 
     Placement placement(toRaster, {.radius = radius, .focus = rc.sampling().focalDistance}, primitive.motion(),
         rc.sampling().shutter);
     Samples & samples = rc.samples();
+    const unsigned int surface = samples.surface();
 
     const auto corners = [&grid](unsigned int column, unsigned int row) {
         MicroPolygon poly = grid.microPolygon(column, row);
@@ -378,8 +378,11 @@ void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & 
     for (unsigned int i = 0; i + 1 < grid.size(); i++) {
         for (unsigned int j = 0; j + 1 < grid.size(); j++) {
             placement.place(corners(i, j));
-            // flat shaded with the colour on its first corner, which the surface shader left there
-            hide(placement, grid.microPolygon(i, j)[0].color(), &samples, motions.get());
+            // flat shaded with the colour and opacity on its first corner, which the surface
+            // shader left there
+            const Vertex first = grid.microPolygon(i, j)[0];
+            hide(placement, {.colour = first.color(), .opacity = first.opacity(), .surface = surface}, &samples,
+                motions.get());
         }
     }
 }
@@ -410,8 +413,10 @@ bool Bucket::render(RenderContext & rc) {
         if (prim->diceable()) {
             boost::shared_ptr<MicroPolygonGrid> grid;
             while (prim->dice(grid, rc)) {
-                // dicing interpolates the vertices' colours onto the grid as Cs. The surface
-                // shader runs over every vertex of the grid at once and leaves Ci there
+                // dicing interpolates the vertices' colours onto the grid as Cs. A displacement
+                // shader moves the grid first, so the surface shader sees the moved P and N.
+                // The surface shader runs over every vertex at once and leaves Ci there
+                rc.shader().displace(prim->shading(), grid.get());
                 rc.shader().shade(prim->shading(), grid.get());
                 hide(*grid, *prim, rc);
             }

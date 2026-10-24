@@ -22,8 +22,13 @@ layout(set = 0, binding = 0) uniform Camera {
     vec4 viewport;
 } camera;
 
+// per submission data: a colour every quad of the canvas is multiplied by, white for none
+layout(push_constant) uniform Push {
+    vec4 tint;
+} push;
+
 void main() {
     gl_Position = camera.viewProjection * vec4(position, 1.0);
     fragmentUv = uv;
-    fragmentColour = colour;
+    fragmentColour = colour * push.tint;
 }

@@ -8,6 +8,7 @@ v3d_add_test(moya
 	"MicroPolygonGridTest.cxx"
 	"PolygonClipTest.cxx"
 	"PolygonTest.cxx"
+	"ProjectedSpaceTest.cxx"
 	"RayHiderTest.cxx"
 	"ReferenceTest.cxx"
 	"RenderContextTest.cxx"
@@ -15,6 +16,7 @@ v3d_add_test(moya
 	"RenderManTest.cxx"
 	"RendererTest.cxx"
 	"ReyesPrimitiveTest.cxx"
+	"SamplesTest.cxx"
 	"VertexTest.cxx")
 
 # The suite names the libraries it includes. It compares pictures through api/image, reads RIB

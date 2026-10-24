@@ -3,10 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+// the case is left out of a build with FMOD, and its includes with it
+#ifndef V3D_AUDIO_FMOD
 #include <api/audio/Events.h>
 #include <api/log/Logger.h>
 
 #include <boost/make_shared.hpp>
+#endif
+
 #include <boost/test/unit_test.hpp>
 
 namespace {

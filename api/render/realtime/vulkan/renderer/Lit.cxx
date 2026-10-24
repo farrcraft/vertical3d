@@ -87,17 +87,29 @@ void declare(pipeline::Builder* builder, VkDescriptorSetLayout camera, VkDescrip
 }
 
 /**
- * The vertex a pipeline reads: a model's, and for a skinned one its influence after it, the
- * layout MeshRegistry uploads a skinned model in. A depth only stage reads the position alone.
+ * The attributes a lit vertex stage reads. A pipeline declares exactly these, because the
+ * validation layer warns about an attribute that is declared and not read.
  **/
-void vertex(pipeline::Builder* builder, bool skinned, bool positionOnly) {
+enum class Reads : uint8_t {
+    Position,  /**< a depth only stage **/
+    Normal,    /**< the position and the normal, which the outline pushes out along **/
+    Surface    /**< the position, the normal and the uv **/
+};
+
+/**
+ * The vertex a pipeline reads: a model's, and for a skinned one its influence after it, the
+ * layout MeshRegistry uploads a skinned model in.
+ **/
+void vertex(pipeline::Builder* builder, bool skinned, Reads reads) {
     using Vertex = type::Model::Vertex;
     using Influence = type::Model::Influence;
     builder->vertexBinding({.binding = 0, .stride = static_cast<uint32_t>(skinned ? sizeof(Vertex) + sizeof(Influence) : sizeof(Vertex))})
         .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, position)});
-    if (!positionOnly) {
-        builder->vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, normal)})
-            .vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(Vertex, uv)});
+    if (reads != Reads::Position) {
+        builder->vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, normal)});
+    }
+    if (reads == Reads::Surface) {
+        builder->vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(Vertex, uv)});
     }
     if (skinned) {
         builder->vertexAttribute({.location = 3, .binding = 0, .format = VK_FORMAT_R16G16B16A16_UINT, .offset = sizeof(Vertex) + offsetof(Influence, joints)})
@@ -191,7 +203,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
         cel.name(skinned ? "lit-cel-skinned" : "lit-cel")
             .shader(VK_SHADER_STAGE_VERTEX_BIT, meshVertex.data(), bytes(meshVertex))
             .shader(VK_SHADER_STAGE_FRAGMENT_BIT, shaders.cel.data(), bytes(shaders.cel));
-        vertex(&cel, skinned, false);
+        vertex(&cel, skinned, Reads::Surface);
         cel.cull(VK_CULL_MODE_BACK_BIT, front)
             .depth(true, true)
             // a lit surface is opaque, and blending it would cost bandwidth on every fragment
@@ -207,7 +219,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
         outline.name(skinned ? "lit-outline-skinned" : "lit-outline")
             .shader(VK_SHADER_STAGE_VERTEX_BIT, outlineVertex.data(), bytes(outlineVertex))
             .shader(VK_SHADER_STAGE_FRAGMENT_BIT, shaders.outlineFragment.data(), bytes(shaders.outlineFragment));
-        vertex(&outline, skinned, false);
+        vertex(&outline, skinned, Reads::Normal);
         outline.cull(VK_CULL_MODE_FRONT_BIT, front)
             .depth(true, true)
             .blend(false)
@@ -225,7 +237,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
         pipeline::Builder caster(device_);
         caster.name(skinned ? "lit-shadow-skinned" : "lit-shadow")
             .shader(VK_SHADER_STAGE_VERTEX_BIT, shadowVertex.data(), bytes(shadowVertex));
-        vertex(&caster, skinned, true);
+        vertex(&caster, skinned, Reads::Position);
         caster.cull(VK_CULL_MODE_BACK_BIT, front)
             .depth(true, true)
             .depthBias(true)

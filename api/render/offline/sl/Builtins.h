@@ -56,6 +56,8 @@ class Signature final {
         DETERMINANT, TRANSLATE, ROTATE, SCALE,
         // a pattern, out of an image or out of nothing
         TEXTURE, NOISE,
+        // differences across neighbouring shading points, which the renderer's shape names
+        DU, DV, DERIV, AREA, CALCULATENORMAL,
         // computed from the renderer's lights, shadows and rays
         AMBIENT, TRANSMISSION, TRACE,
         PRINTF

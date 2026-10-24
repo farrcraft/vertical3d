@@ -9,7 +9,9 @@
 #include <api/render/offline/sl/Globals.h>
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/sl/runtime/Value.h>
+#include <api/render/offline/trace/Scene.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
 
@@ -19,7 +21,6 @@
 #include <vector>
 
 #include <glm/geometric.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 #include <glm/vec2.hpp>
@@ -69,28 +70,37 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
         *matrix = glm::inverse(context_->coordinateSystem("camera"));
         return true;
     }
-    const glm::mat4x4 screen = context_->coordinateSystem("screen");
+    // the projected spaces are the ones the ray hider answers with, so a shader that reads
+    // one gives the same value under either hider
+    const v3d::render::offline::trace::Scene::Projection & projection = context_->traced().projection();
     if (name == "screen") {
-        *matrix = screen;
+        *matrix = projection.screen;
         return true;
     }
     if (name == "raster") {
-        *matrix = context_->coordinateSystem("raster") * screen;
+        *matrix = projection.raster;
         return true;
     }
     if (name == "NDC") {
-        // raster divided by the resolution: x runs right and y runs down over [0, 1] from the
-        // upper left corner. Screen space has y up over [-1, 1], so y is negated as raster
-        // negates it. z is screen depth moved from [-1, 1] onto [0, 1]
-        glm::mat4x4 normalised = glm::scale(glm::mat4x4(1.0F), glm::vec3(0.5F, -0.5F, 0.5F));
-        normalised = glm::translate(normalised, glm::vec3(1.0F, -1.0F, 1.0F));
-        *matrix = normalised * screen;
+        *matrix = projection.ndc;
         return true;
     }
     // "object" is the transform in force at the primitive rather than at the shader. shade()
     // receives only the primitive's Shading, which does not hold it. The shader's transform
     // differs from it in a scene that transforms between Surface and Polygon
     return false;
+}
+
+v3d::render::offline::sl::runtime::Renderer::Shape GridShader::shape() const {
+    Shape grid;
+    grid.layout = Shape::Layout::GRID;
+    grid.along = size_;
+    grid.across = size_;
+    // the same step shade() gives the shader as du and dv
+    const float span = size_ > 1 ? static_cast<float>(size_ - 1) : 1.0F;
+    grid.du = 1.0F / span;
+    grid.dv = grid.du;
+    return grid;
 }
 
 const v3d::render::offline::Texture* GridShader::texture(const std::string & name) {
@@ -118,24 +128,99 @@ bool GridShader::trace(const Value & origin, const Value & direction, Value* col
 }
 
 unsigned int GridShader::lights() {
-    return shading_ == nullptr ? 0U : static_cast<unsigned int>(shading_->lights.size());
+    return shading_ == nullptr ? 0U : v3d::render::offline::sl::shining(shading_->lights);
 }
 
-bool GridShader::light(unsigned int index, const Value & surface, Value* direction,
+bool GridShader::light(unsigned int index, const Value & surface, const v3d::render::offline::sl::runtime::Cone & gathering,
+    Value* direction,
     Value* colour, std::vector<char>* reached, bool* ambient) {
-    if (shading_ == nullptr || index >= shading_->lights.size()) {
+    if (shading_ == nullptr) {
         return false;
     }
-    const v3d::render::offline::sl::Placed & shining = shading_->lights[index];
+    unsigned int sample = 0;
+    const v3d::render::offline::sl::Placed* lit = v3d::render::offline::sl::which(shading_->lights, index, &sample);
+    if (lit == nullptr) {
+        return false;
+    }
+    const v3d::render::offline::sl::Placed & shining = *lit;
     Run & held = run(shining.shader, batch_);
+    // an area light's samples are taken in world space, so a vertex and a traced hit at one
+    // point sample the light alike, and brought into camera space to run the light there
+    std::vector<glm::vec3> from;
+    if (shining.area) {
+        const glm::mat4x4 toCamera = context_->coordinateSystem("camera");
+        for (unsigned int point = 0; point < batch_; point++) {
+            const glm::vec3 world(toWorld_ * glm::vec4(surface.triple(point), 1.0F));
+            from.emplace_back(toCamera * glm::vec4(shining.area->point(world, sample), 1.0F));
+        }
+    }
 
     // the points being lit are in camera space. "shader" space is the light's placement
     // while it runs, and the surface's again afterwards
     const glm::mat4x4 was = placement_;
     placement_ = shining.placement;
-    const bool ran = held.globals.shine(shining, &held.machine, batch_, surface, direction, colour, reached, ambient);
+    const bool ran = held.globals.shine(shining, &held.machine, batch_, surface, gathering, direction, colour, reached,
+        ambient, shining.area ? &from : nullptr);
     placement_ = was;
+    if (ran && shining.area) {
+        // each sample carries its share of the light
+        for (unsigned int point = 0; point < batch_; point++) {
+            colour->triple(point, colour->triple(point) / static_cast<float>(shining.area->samples()));
+        }
+    }
     return ran;
+}
+
+void GridShader::displace(const Shading & shading, MicroPolygonGrid* grid) {
+    if (!shading.displacement.shader || grid == nullptr) {
+        return;
+    }
+    const unsigned int size = grid->size();
+    const unsigned int batch = size * size;
+    if (batch == 0) {
+        return;
+    }
+    // a displacement shader names no lights, so shading_ stays null while it runs
+    placement_ = shading.displacement.placement;
+    batch_ = batch;
+    size_ = size;
+    Run & held = run(shading.displacement.shader, batch);
+    if (!shading.displacement.shader->write(&held.machine, shading.displacement.placement)) {
+        return;
+    }
+    const float span = size > 1 ? static_cast<float>(size - 1) : 1.0F;
+    for (unsigned int i = 0; i < size; i++) {
+        for (unsigned int j = 0; j < size; j++) {
+            const Vertex vert = grid->vertex(i, j);
+            v3d::render::offline::sl::Point point;
+            point.position = vert.point();
+            point.normal = vert.normal();
+            point.geometric = vert.geometricNormal();
+            point.incident = vert.point();
+            const glm::vec2 st = vert.hasTexCoord() ? vert.st() :
+                glm::vec2(static_cast<float>(i) / span, static_cast<float>(j) / span);
+            point.s = st.x;
+            point.t = st.y;
+            point.u = static_cast<float>(i) / span;
+            point.v = static_cast<float>(j) / span;
+            point.du = 1.0F / span;
+            point.dv = 1.0F / span;
+            held.globals.surface(&held.machine, (i * size) + j, point);
+        }
+    }
+    held.globals.eye(&held.machine, glm::vec3(0.0F));
+    if (!held.machine.run()) {
+        return;
+    }
+    for (unsigned int i = 0; i < size; i++) {
+        for (unsigned int j = 0; j < size; j++) {
+            Vertex vert = grid->vertex(i, j);
+            const unsigned int lane = (i * size) + j;
+            vert.point(held.globals.position(held.machine, lane, vert.point()));
+            vert.normal(held.globals.normal(held.machine, lane, vert.normal()));
+            grid->addVertex(vert, i, j);
+        }
+    }
 }
 
 void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
@@ -150,6 +235,7 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     shading_ = &shading;
     placement_ = shading.placement;
     batch_ = batch;
+    size_ = size;
     toWorld_ = glm::inverse(context_->coordinateSystem("camera"));
     const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld_)));
     planes_.assign(batch, glm::vec3(0.0F));
@@ -199,11 +285,12 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
         return;
     }
 
-    // what the shader left in Oi is not read, because the reyes hider's samples are opaque
+    // Ci and Oi go back on each vertex. A shader that never writes Oi leaves Os there
     for (unsigned int i = 0; i < size; i++) {
         for (unsigned int j = 0; j < size; j++) {
             Vertex vert = grid->vertex(i, j);
             vert.color(held.globals.colour(held.machine, (i * size) + j, vert.color()));
+            vert.opacity(held.globals.opacity(held.machine, (i * size) + j, shading.opacity));
             grid->addVertex(vert, i, j);
         }
     }

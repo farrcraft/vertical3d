@@ -13,12 +13,15 @@ add_executable("vertical3d"
 	"src/scene/WireframeVisitor.h" "src/scene/WireframeVisitor.cxx"
 	"src/scene/RIBExportVisitor.h" "src/scene/RIBExportVisitor.cxx"
 	"src/scene/Project.h" "src/scene/Project.cxx"
+	"src/scene/Modelling.h" "src/scene/Modelling.cxx"
 
 	"src/command/Command.h"
 	"src/command/CommandStack.h" "src/command/CommandStack.cxx"
 	"src/command/CreateCommand.h" "src/command/CreateCommand.cxx"
 	"src/command/Placement.h" "src/command/Placement.cxx"
 	"src/command/TransformCommand.h" "src/command/TransformCommand.cxx"
+	"src/command/VertexCommand.h" "src/command/VertexCommand.cxx"
+	"src/command/TopologyCommand.h" "src/command/TopologyCommand.cxx"
 
 	"src/tool/Tool.h"
 	"src/tool/CameraControlTool.h" "src/tool/CameraControlTool.cxx"
@@ -28,6 +31,7 @@ add_executable("vertical3d"
 	"src/tool/Picker.h" "src/tool/Picker.cxx"
 
 	"src/manipulator/Manipulator.h" "src/manipulator/Manipulator.cxx"
+	"src/manipulator/Target.h" "src/manipulator/Target.cxx"
 	"src/manipulator/TranslateManipulator.h" "src/manipulator/TranslateManipulator.cxx"
 	"src/manipulator/RotateManipulator.h" "src/manipulator/RotateManipulator.cxx"
 	"src/manipulator/ScaleManipulator.h" "src/manipulator/ScaleManipulator.cxx")

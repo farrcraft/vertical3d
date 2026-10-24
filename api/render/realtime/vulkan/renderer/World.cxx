@@ -21,10 +21,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <vector>
 
 #include <boost/make_shared.hpp>
+
+#include <glm/vec4.hpp>
 
 namespace v3d::render::realtime::vulkan::renderer {
 
@@ -42,6 +45,13 @@ const uint32_t vertexShader[] =
 const uint32_t fragmentShader[] =
 #include "shaders/world.frag.inc"
 ;  // NOLINT(whitespace/semicolon)
+
+/**
+ * The push constant block, laid out as world.vert declares it.
+ **/
+struct Push final {
+    glm::vec4 tint;
+};
 
 /**
  * What each buffer starts at, in bytes. They double from here when a canvas does not fit.
@@ -102,6 +112,7 @@ PipelineHandle World::createPipeline(const std::string& name, const pipeline::Fo
         .cull(VK_CULL_MODE_NONE)
         .set(uniforms_->layout())
         .set(textures_->layout())
+        .push({.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .size = sizeof(Push)})
         .colourFormat(colour);
 
     if (blend == Blend::Additive) {
@@ -125,7 +136,7 @@ PipelineHandle World::createPipeline(const std::string& name, const pipeline::Fo
 
 /**
  **/
-void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blend blend) {
+void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blend blend, const glm::vec4& tint) {
     if (pass == nullptr || canvas.empty() || !textures_) {
         return;
     }
@@ -143,6 +154,7 @@ void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blen
         handle = pass->depth() ? additiveDepthPipeline_ : additivePipeline_;
     }
 
+    const Push constants{.tint = tint};
     for (const canvas::World::Batch& batch : canvas.batches()) {
         if (batch.indices == 0) {
             continue;
@@ -161,6 +173,8 @@ void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blen
         item.indices = batch.indices;
         item.firstIndex = batch.firstIndex;
         item.instances = 1;
+        std::memcpy(item.push.data(), &constants, sizeof(constants));
+        item.pushSize = sizeof(constants);
 
         pass->submit(item);
     }

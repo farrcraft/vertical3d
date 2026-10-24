@@ -14,13 +14,16 @@
 
 #include "SelectMask.h"
 
+#include <vector>
+
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 
 namespace v3d::editor {
 
 /**
- * What a click at a screen point hit, found by a ray cast on the CPU.
+ * What a click at a screen point hit, found by a ray cast on the CPU, and what a rectangle
+ * on the screen holds.
  *
  * An object or a face is hit when the ray meets a triangle of the mesh. A vertex or an edge
  * is hit when it is drawn within a few pixels of the cursor.
@@ -82,6 +85,21 @@ class Picker final : public SceneVisitor {
     Hit pick(const Scene& scene, const ViewPort& view, const glm::vec2& cursor, SelectMask mask);
 
     /**
+     * Find everything a rectangle on the screen holds, as a rubber band selects it.
+     *
+     * An object is inside when every corner of its bound projects inside. A vertex is
+     * inside when it projects inside, an edge when both its ends do, and a face when every
+     * vertex of its loop does. Hidden parts count, because this tests geometry and not
+     * pixels. A point behind the camera is never inside.
+     *
+     * @param corner one corner of the rectangle, in window pixels
+     * @param opposite the corner across from it. Either corner may be the smaller
+     * @return one hit for each thing inside, in scene order
+     **/
+    std::vector<Hit> inside(const Scene& scene, const ViewPort& view, const glm::vec2& corner,
+        const glm::vec2& opposite, SelectMask mask);
+
+    /**
      * One mesh of the scene, during a pick. Public because the scene calls it through
      * SceneVisitor. Only the scene calls it.
      **/
@@ -105,10 +123,41 @@ class Picker final : public SceneVisitor {
     void edges(const boost::shared_ptr<v3d::brep::BRep>& mesh);
 
     /**
+     * Everything of the mesh inside the rectangle, under the mask.
+     **/
+    void enclosed(const boost::shared_ptr<v3d::brep::BRep>& mesh);
+
+    /**
+     * The mesh, if every corner of its bound is inside the rectangle.
+     **/
+    void enclosedObject(const boost::shared_ptr<v3d::brep::BRep>& mesh);
+
+    /**
+     * Every vertex inside the rectangle.
+     **/
+    void enclosedVertices(const boost::shared_ptr<v3d::brep::BRep>& mesh);
+
+    /**
+     * Every edge or face inside the rectangle, found by walking each face's loop.
+     **/
+    void enclosedLoops(const boost::shared_ptr<v3d::brep::BRep>& mesh);
+
+    /**
+     * Take the view's camera and region for one traversal.
+     * @return false when the view has no camera or no area, and nothing can be found in it
+     **/
+    bool begin(const ViewPort& view, SelectMask mask);
+
+    /**
      * Where a point of the mesh lands on the screen, and whether it is in front of the
      * camera at all.
      **/
     bool screen(const glm::vec3& point, glm::vec2* position, float* depth) const;
+
+    /**
+     * Whether a point of the mesh lands inside the rectangle.
+     **/
+    bool encloses(const glm::vec3& point) const;
 
     /**
      * A mesh, a component of it, and how far away the pick found it: along the ray, or the
@@ -136,6 +185,12 @@ class Picker final : public SceneVisitor {
     glm::mat4 model_;
     float nearest_;
     Hit hit_;
+
+    // the state of one rectangle, valid only while the scene is being traversed
+    bool band_;
+    glm::vec2 min_;
+    glm::vec2 max_;
+    std::vector<Hit> inside_;
 };
 
 };  // namespace v3d::editor

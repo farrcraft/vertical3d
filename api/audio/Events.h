@@ -7,12 +7,31 @@
 
 #include <api/log/Logger.h>
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::audio {
+
+/**
+ * An event that Events::start() started, for as long as it plays.
+ *
+ * An id, not a pointer. A handle to an event that has stopped and been released is refused,
+ * and is never confused with a newer event. None is no event at all, and a failed start()
+ * returns it.
+ **/
+// NOLINTNEXTLINE(performance-enum-size)
+enum class Instance : uint32_t { None = 0 };
+
+/**
+ * How Events::stop() ends an event.
+ **/
+enum class Stop : uint8_t {
+    FadeOut,     /**< play the fade out the event was authored with, so it ends without a click **/
+    Immediately  /**< cut it off **/
+};
 
 /**
  * Sound authored in an audio tool: banks, the named events in them, and the global parameters
@@ -46,6 +65,30 @@ class Events {
     virtual bool play(std::string_view event) = 0;
 
     /**
+     * Start an event and keep hold of it, so that it can be stopped. An event authored to
+     * loop plays until it is stopped, and one that is not plays to its end.
+     *
+     * @param event the event's path, such as "event:/Ambience/Country"
+     * @return the instance, or Instance::None for an event no loaded bank holds and on the
+     *         null backend
+     **/
+    virtual Instance start(std::string_view event) = 0;
+
+    /**
+     * Stop an event that start() started. A fade out keeps it playing until the fade ends.
+     * The instance is released by update() once it has stopped.
+     *
+     * @return false for an instance that is not playing, which a released one is
+     **/
+    virtual bool stop(Instance instance, Stop how) = 0;
+
+    /**
+     * @return whether the event is still playing, which it is while it fades out. False once
+     *         it has stopped, and for Instance::None
+     **/
+    virtual bool playing(Instance instance) const = 0;
+
+    /**
      * Set a global parameter, which every event that reads it follows.
      *
      * @return whether the parameter exists and took the value
@@ -53,7 +96,8 @@ class Events {
     virtual bool parameter(std::string_view name, float value) = 0;
 
     /**
-     * Let the backend do a frame's work. The app calls this once a frame, from tick().
+     * Let the backend do a frame's work, and release every started event that has stopped.
+     * The app calls this once a frame, from tick().
      **/
     virtual void update() = 0;
 

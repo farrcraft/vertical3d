@@ -50,14 +50,26 @@ void Isometric::azimuth(int index) {
     azimuth_ = wrap(index);
 }
 
+float Isometric::start() const {
+    return start_;
+}
+
+void Isometric::start(float radians) {
+    start_ = radians;
+}
+
+float Isometric::angle() const {
+    return start_ + (static_cast<float>(azimuth_) * QUARTER_TURN);
+}
+
 void Isometric::pan(const glm::vec2& delta) {
     target_ += right() * delta.x + forward() * delta.y;
 }
 
 glm::vec3 Isometric::forward() const {
-    const float angle = static_cast<float>(azimuth_) * QUARTER_TURN;
-    // the eye sits at +x of the target at azimuth zero, so the view runs the other way
-    return glm::vec3(-std::cos(angle), 0.0F, -std::sin(angle));
+    const float turn = angle();
+    // the view runs from the eye towards the target, the opposite of the eye's offset
+    return glm::vec3(-std::cos(turn), 0.0F, -std::sin(turn));
 }
 
 glm::vec3 Isometric::right() const {
@@ -77,9 +89,9 @@ void Isometric::hand(Profile::Hand hand) {
 }
 
 glm::vec3 Isometric::eye() const {
-    const float angle = static_cast<float>(azimuth_) * QUARTER_TURN;
+    const float turn = angle();
     const float horizontal = std::cos(elevation_);
-    const glm::vec3 offset(horizontal * std::cos(angle), std::sin(elevation_), horizontal * std::sin(angle));
+    const glm::vec3 offset(horizontal * std::cos(turn), std::sin(elevation_), horizontal * std::sin(turn));
     return target_ + offset * distance_;
 }
 

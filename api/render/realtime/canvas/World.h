@@ -109,6 +109,10 @@ class World final {
      * Multiply every quad added from here on by a colour, until the tint is set again. It is
      * a light over the whole world, such as dusk or an act's palette, set once rather than by
      * every caller. White leaves the colours alone.
+     *
+     * It is baked into the quads, so it suits a canvas built every frame, or part of one. A
+     * canvas kept across frames is lit by the tint renderer::World::submit() takes instead,
+     * which changes without building the canvas again.
      **/
     void tint(const glm::vec4& colour);
 

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 #include "Command.h"
@@ -23,6 +24,12 @@ namespace v3d::editor {
  *
  * The stack has a capacity, so a session's history cannot grow without bound. The oldest
  * commands are dropped first, because they are the last to be undone.
+ *
+ * The stack also remembers the position it was at when the document was last saved. The
+ * document is dirty at any other position. A saved position can be lost: when the command
+ * that reached it is dropped off the far end, or when a push discards the undone commands it
+ * lay among. A lost position is never reached again, so the document stays dirty until the
+ * next save.
  **/
 class CommandStack final {
  public:
@@ -66,14 +73,28 @@ class CommandStack final {
 
     /**
      * Clear the history, as opening a document does. Nothing is undone first, because the
-     * scene the commands describe is being replaced.
+     * scene the commands describe is being replaced. The empty stack counts as saved, because
+     * the document has just been read.
      **/
     void clear() noexcept;
+
+    /**
+     * Record that the document now matches the stack's present position, as a save does.
+     **/
+    void markSaved() noexcept;
+
+    /**
+     * @return whether the document differs from what was last saved
+     **/
+    bool dirty() const noexcept;
 
  private:
     std::vector<boost::shared_ptr<Command>> done_;
     std::vector<boost::shared_ptr<Command>> undone_;
     std::size_t capacity_;
+    // how many commands were done when the document was saved, or nothing once that
+    // position cannot be reached again
+    std::optional<std::size_t> saved_;
 };
 
 };  // namespace v3d::editor

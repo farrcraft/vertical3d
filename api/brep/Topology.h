@@ -65,6 +65,30 @@ bool ownsEdge(const BRep & mesh, Index edge);
 bool edgeSelected(const BRep & mesh, Index edge);
 
 /**
+ * The half edges that leave a vertex, in index order.
+ *
+ * A half edge names the vertex it ends at, so the half edge after it in its loop is one that
+ * leaves that vertex. This scans every half edge, because nothing keeps a vertex's own edge
+ * current.
+ **/
+std::vector<Index> edgesFrom(const BRep & mesh, Index vertex);
+
+/**
+ * The faces that meet at a vertex, each once, in index order. This scans every half edge, as
+ * edgesFrom() does.
+ **/
+std::vector<Index> facesAround(const BRep & mesh, Index vertex);
+
+/**
+ * A face's unit normal, found from its points by Newell's method, which holds for a face
+ * that is not quite planar. A face's loop runs clockwise seen from outside, so the normal
+ * points to the side the loop runs clockwise when seen from.
+ *
+ * @return zero for a face with no area, or with fewer than three points
+ **/
+glm::vec3 newellNormal(const BRep & mesh, Index face);
+
+/**
  * The mid point of a face: the average of the vertices its loop ends at.
  **/
 glm::vec3 center(const BRep & mesh, Index face);

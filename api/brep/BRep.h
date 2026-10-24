@@ -55,7 +55,37 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
          **/
         bool validate(std::string * problem) const;
 
+        /**
+         * Whether the mesh is sound enough for an operation that changes its topology to be
+         * checked against. It checks everything validate() checks. It also checks that every
+         * pair is mutual and every face's next chain closes. Every half edge in a face's loop
+         * must name that face, and no two half edges of one face may run between the same two
+         * vertices. An edge with no pair is allowed, because an open mesh has a boundary.
+         *
+         * @param problem what is wrong, naming the part, when anything is
+         **/
+        bool validateStrict(std::string * problem) const;
+
         v3d::type::geometry::AABBox bound(void) const;
+
+        /**
+         * The mesh's three arrays as they stand. A topology command keeps one from before an
+         * operation and one from after it, and puts either back whole, so an undo restores the
+         * numbering as well as the shape.
+         **/
+        struct Snapshot {
+            std::vector<Vertex> vertices;
+            std::vector<HalfEdge> edges;
+            std::vector<Face> faces;
+        };
+
+        Snapshot snapshot(void) const;
+
+        /**
+         * Replace all three arrays with a snapshot's. The selection flags come back as the
+         * snapshot holds them, so a caller that does not want them clears them after.
+         **/
+        void restore(const Snapshot & snapshot);
 
         /**
          * Whether the mesh as a whole is selected, which is object mode selection.
@@ -71,7 +101,6 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         void deselectComponents(void) noexcept;
 
         void addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & normal);
-        void addEdge(const glm::vec3 & point);
 
         size_t vertexCount(void) const;
         size_t edgeCount(void) const;

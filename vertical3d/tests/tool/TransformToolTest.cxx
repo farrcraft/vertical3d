@@ -4,18 +4,32 @@
  **/
 
 #include <api/brep/BRep.h>
+#include <api/brep/Face.h>
+#include <api/brep/HalfEdge.h>
+#include <api/brep/Index.h>
+#include <api/brep/Topology.h>
+#include <api/brep/Vertex.h>
 #include <api/log/Logger.h>
+#include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/tool/TransformTool.h>
 #include <vertical3d/src/view/ViewPort.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <string>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -211,6 +225,293 @@ BOOST_AUTO_TEST_CASE(transform_tool_abandoned_gesture_test) {
     BOOST_CHECK_EQUAL(history->undoDepth(), 1U);
     BOOST_CHECK_EQUAL(history->undo()->name(), "translate");
     BOOST_CHECK_SMALL(cube->translation().x, 0.001F);
+}
+
+/**
+ * Two selected cubes either side of the middle of the front view, so the handles sit at
+ * the middle, and a stack recording what the tool does to them.
+ **/
+struct TwoCubes {
+    TwoCubes() :
+        scene(boost::make_shared<v3d::editor::Scene>()),
+        left(v3d::editor::create_poly_cube()),
+        right(v3d::editor::create_poly_cube()),
+        history(boost::make_shared<v3d::editor::CommandStack>()),
+        transformTool(tool(scene)) {
+        left->translation(glm::vec3(-0.5F, 0.0F, 0.0F));
+        right->translation(glm::vec3(0.5F, 0.0F, 0.0F));
+        left->selected(true);
+        right->selected(true);
+        scene->add(left);
+        scene->add(right);
+        transformTool->commands(history);
+    }
+
+    /**
+     * Grab at one point, drag to another and let go, then check that the gesture is one
+     * command that undoes and redoes both cubes exactly.
+     **/
+    void gesture(const std::string& mode, const glm::vec2& from, const glm::vec2& to) const {
+        transformTool->activate(mode);
+        const v3d::editor::Placement leftBefore = v3d::editor::Placement::of(*left);
+        const v3d::editor::Placement rightBefore = v3d::editor::Placement::of(*right);
+        const std::size_t depth = history->undoDepth();
+
+        transformTool->motion(from);
+        transformTool->button(1, true, from);
+        transformTool->motion(to);
+        transformTool->button(1, false, to);
+        BOOST_REQUIRE_EQUAL(history->undoDepth(), depth + 1);
+
+        const v3d::editor::Placement leftAfter = v3d::editor::Placement::of(*left);
+        const v3d::editor::Placement rightAfter = v3d::editor::Placement::of(*right);
+        BOOST_CHECK(!leftAfter.same(leftBefore));
+        BOOST_CHECK(!rightAfter.same(rightBefore));
+
+        BOOST_CHECK_EQUAL(history->undo()->name(), mode);
+        BOOST_CHECK(v3d::editor::Placement::of(*left).same(leftBefore));
+        BOOST_CHECK(v3d::editor::Placement::of(*right).same(rightBefore));
+        history->redo();
+        BOOST_CHECK(v3d::editor::Placement::of(*left).same(leftAfter));
+        BOOST_CHECK(v3d::editor::Placement::of(*right).same(rightAfter));
+    }
+
+    boost::shared_ptr<v3d::editor::Scene> scene;
+    boost::shared_ptr<v3d::brep::BRep> left;
+    boost::shared_ptr<v3d::brep::BRep> right;
+    boost::shared_ptr<v3d::editor::CommandStack> history;
+    boost::shared_ptr<v3d::editor::TransformTool> transformTool;
+};
+
+BOOST_AUTO_TEST_CASE(transform_tool_set_translate_test) {
+    const TwoCubes cubes;
+    cubes.gesture("translate", glm::vec2(centre.x + 45.0F, centre.y), glm::vec2(centre.x + 145.0F, centre.y));
+    BOOST_CHECK_SMALL(cubes.left->translation().x, 0.01F);
+    BOOST_CHECK_CLOSE(cubes.right->translation().x, 1.0F, 1.0F);
+}
+
+BOOST_AUTO_TEST_CASE(transform_tool_set_rotate_test) {
+    const TwoCubes cubes;
+    // the z ring, which faces this view, is ninety pixels round the pivot
+    cubes.gesture("rotate", glm::vec2(centre.x + 90.0F, centre.y), glm::vec2(centre.x, centre.y + 90.0F));
+    BOOST_CHECK_CLOSE(cubes.left->translation().y, 0.5F, 0.5F);
+    BOOST_CHECK_CLOSE(cubes.right->translation().y, -0.5F, 0.5F);
+}
+
+BOOST_AUTO_TEST_CASE(transform_tool_set_scale_test) {
+    const TwoCubes cubes;
+    cubes.gesture("scale", glm::vec2(centre.x + 45.0F, centre.y), glm::vec2(centre.x + 135.0F, centre.y));
+    BOOST_CHECK_CLOSE(cubes.left->translation().x, -1.0F, 1.0F);
+    BOOST_CHECK_CLOSE(cubes.right->translation().x, 1.0F, 1.0F);
+}
+
+BOOST_AUTO_TEST_CASE(transform_tool_set_kept_test) {
+    const TwoCubes cubes;
+    cubes.transformTool->activate("translate");
+
+    // a drag moves the set it grabbed, whatever happens to the selection mid gesture
+    cubes.transformTool->button(1, true, glm::vec2(centre.x + 45.0F, centre.y));
+    cubes.right->selected(false);
+    cubes.transformTool->motion(glm::vec2(centre.x + 145.0F, centre.y));
+    cubes.transformTool->button(1, false, glm::vec2(centre.x + 145.0F, centre.y));
+    BOOST_CHECK_CLOSE(cubes.right->translation().x, 1.0F, 1.0F);
+    cubes.history->undo();
+    BOOST_CHECK_CLOSE(cubes.right->translation().x, 0.5F, 0.5F);
+}
+
+/**
+ * Where a world point lands in the front view.
+ **/
+glm::vec2 screen(const v3d::editor::ViewPort& view, const glm::vec3& point) {
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
+    camera->createProjection();
+    camera->createView();
+    int viewport[4] = { 0, 0, 400, 400 };
+    const glm::vec3 projected = camera->project(point, viewport);
+    return glm::vec2(projected[0], projected[1]);
+}
+
+/**
+ * Every point and face normal of a mesh, to compare a mesh with itself exactly.
+ **/
+struct Snapshot {
+    std::vector<glm::vec3> points;
+    std::vector<glm::vec3> normals;
+
+    explicit Snapshot(const v3d::brep::BRep& mesh) {
+        for (v3d::brep::Index id = 0; id < mesh.vertexCount(); id++) {
+            points.push_back(mesh.vertex(id)->point());
+        }
+        for (v3d::brep::Index id = 0; id < mesh.faceCount(); id++) {
+            normals.push_back(mesh.face(id)->normal());
+        }
+    }
+
+    bool operator==(const Snapshot& other) const {
+        return points == other.points && normals == other.normals;
+    }
+};
+
+/**
+ * A selected cube with some of its front components selected, a tool following the mask,
+ * and a stack recording what the tool does.
+ **/
+struct Components {
+    explicit Components(v3d::editor::SelectMask mask) :
+        scene(boost::make_shared<v3d::editor::Scene>()),
+        cube(v3d::editor::create_poly_cube()),
+        history(boost::make_shared<v3d::editor::CommandStack>()),
+        transformTool(tool(scene)) {
+        cube->selected(true);
+        scene->add(cube);
+        transformTool->commands(history);
+        transformTool->mask(mask);
+        transformTool->activate("translate");
+    }
+
+    /**
+     * Grab the x handle beside the pivot and drag it a hundred pixels right, which is half a
+     * world unit.
+     **/
+    void drag() const {
+        const glm::vec2 handle = screen(*transformTool->view(), transformTool->target().pivot()) + glm::vec2(45.0F, 0.0F);
+        transformTool->motion(handle);
+        transformTool->button(1, true, handle);
+        transformTool->motion(handle + glm::vec2(100.0F, 0.0F));
+        transformTool->button(1, false, handle + glm::vec2(100.0F, 0.0F));
+    }
+
+    /**
+     * Drag, then check that only the given vertices moved, each by half a unit along x,
+     * that the transform did not move, and that undo and redo restore the mesh exactly.
+     **/
+    void check(const std::vector<v3d::brep::Index>& moved) const {
+        const Snapshot before(*cube);
+        const v3d::editor::Placement placed = v3d::editor::Placement::of(*cube);
+        drag();
+        BOOST_REQUIRE_EQUAL(history->undoDepth(), 1U);
+        const Snapshot after(*cube);
+
+        for (v3d::brep::Index id = 0; id < cube->vertexCount(); id++) {
+            const bool chosen = std::find(moved.begin(), moved.end(), id) != moved.end();
+            const glm::vec3 shift = after.points[id] - before.points[id];
+            BOOST_CHECK_CLOSE(shift.x + 1.0F, chosen ? 1.5F : 1.0F, 1.0F);
+            BOOST_CHECK_SMALL(shift.y, 0.0001F);
+            BOOST_CHECK_SMALL(shift.z, 0.0001F);
+        }
+        BOOST_CHECK(v3d::editor::Placement::of(*cube).same(placed));
+        BOOST_CHECK(cube->translation() == placed.translation);
+        for (v3d::brep::Index face = 0; face < cube->faceCount(); face++) {
+            BOOST_CHECK_SMALL(glm::distance(cube->face(face)->normal(), v3d::brep::newellNormal(*cube, face)), 0.0001F);
+        }
+
+        // undo writes back what was stored, so the mesh is the same to the last bit
+        history->undo();
+        BOOST_CHECK(Snapshot(*cube) == before);
+        history->redo();
+        BOOST_CHECK(Snapshot(*cube) == after);
+    }
+
+    /**
+     * The index of the cube's vertex at a corner.
+     **/
+    v3d::brep::Index corner(const glm::vec3& point) const {
+        for (v3d::brep::Index id = 0; id < cube->vertexCount(); id++) {
+            if (glm::distance(cube->vertex(id)->point(), point) < 0.0001F) {
+                return id;
+            }
+        }
+        return v3d::brep::INVALID_ID;
+    }
+
+    boost::shared_ptr<v3d::editor::Scene> scene;
+    boost::shared_ptr<v3d::brep::BRep> cube;
+    boost::shared_ptr<v3d::editor::CommandStack> history;
+    boost::shared_ptr<v3d::editor::TransformTool> transformTool;
+};
+
+BOOST_AUTO_TEST_CASE(transform_tool_vertex_test) {
+    const Components components(v3d::editor::SelectMask::Vertex);
+    const v3d::brep::Index vertex = components.corner(glm::vec3(0.5F, 0.5F, -0.5F));
+    components.cube->vertex(vertex)->selected(true);
+    components.check({vertex});
+}
+
+BOOST_AUTO_TEST_CASE(transform_tool_edge_test) {
+    const Components components(v3d::editor::SelectMask::Edge);
+    const v3d::brep::Index from = components.corner(glm::vec3(0.5F, -0.5F, -0.5F));
+    const v3d::brep::Index to = components.corner(glm::vec3(0.5F, 0.5F, -0.5F));
+    // the half edge that ends at one corner and follows one that ends at the other
+    bool found = false;
+    for (v3d::brep::Index id = 0; id < components.cube->edgeCount() && !found; id++) {
+        const v3d::brep::HalfEdge* edge = components.cube->edge(id);
+        if (edge->vertex() == from && components.cube->edge(edge->next())->vertex() == to) {
+            components.cube->edge(edge->next())->selected(true);
+            found = true;
+        }
+    }
+    BOOST_REQUIRE(found);
+    components.check({from, to});
+}
+
+BOOST_AUTO_TEST_CASE(transform_tool_face_test) {
+    const Components components(v3d::editor::SelectMask::Face);
+    std::vector<v3d::brep::Index> front;
+    for (v3d::brep::Index face = 0; face < components.cube->faceCount() && front.empty(); face++) {
+        std::vector<v3d::brep::Index> corners;
+        for (const v3d::brep::Index edge : v3d::brep::faceLoop(*components.cube, face)) {
+            const v3d::brep::Index vertex = components.cube->edge(edge)->vertex();
+            if (components.cube->vertex(vertex)->point().z < -0.49F) {
+                corners.push_back(vertex);
+            }
+        }
+        if (corners.size() == 4) {
+            components.cube->face(face)->selected(true);
+            front = corners;
+        }
+    }
+    BOOST_REQUIRE_EQUAL(front.size(), 4U);
+    components.check(front);
+}
+
+BOOST_AUTO_TEST_CASE(transform_tool_component_no_gesture_test) {
+    const Components components(v3d::editor::SelectMask::Vertex);
+    components.cube->vertex(components.corner(glm::vec3(0.5F, 0.5F, -0.5F)))->selected(true);
+
+    // a handle grabbed and let go without moving changed nothing
+    const glm::vec2 handle = screen(*components.transformTool->view(), components.transformTool->target().pivot()) +
+        glm::vec2(45.0F, 0.0F);
+    components.transformTool->motion(handle);
+    components.transformTool->button(1, true, handle);
+    components.transformTool->button(1, false, handle);
+    BOOST_CHECK_EQUAL(components.history->undoDepth(), 0U);
+
+    // with no component selected there are no handles to grab
+    components.cube->deselectComponents();
+    BOOST_CHECK(components.transformTool->target().empty());
+}
+
+BOOST_AUTO_TEST_CASE(transform_tool_mask_change_test) {
+    const Components components(v3d::editor::SelectMask::Vertex);
+    const v3d::brep::Index vertex = components.corner(glm::vec3(0.5F, 0.5F, -0.5F));
+    components.cube->vertex(vertex)->selected(true);
+    const glm::vec3 start = components.cube->vertex(vertex)->point();
+
+    const glm::vec2 handle = screen(*components.transformTool->view(), components.transformTool->target().pivot()) +
+        glm::vec2(45.0F, 0.0F);
+    components.transformTool->motion(handle);
+    components.transformTool->button(1, true, handle);
+    components.transformTool->motion(handle + glm::vec2(100.0F, 0.0F));
+
+    // a mask change ends the drag, and what it already moved is recorded
+    components.transformTool->mask(v3d::editor::SelectMask::Object);
+    BOOST_CHECK_EQUAL(components.transformTool->dragging(), false);
+    BOOST_REQUIRE_EQUAL(components.history->undoDepth(), 1U);
+    components.history->undo();
+    BOOST_CHECK(components.cube->vertex(vertex)->point() == start);
+
+    // and the handles now move the object
+    BOOST_CHECK_EQUAL(components.transformTool->target().components(), false);
 }
 
 };  // namespace

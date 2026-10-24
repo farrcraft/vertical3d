@@ -10,16 +10,19 @@
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
 #include <api/type/camera/Camera.h>
+#include <api/type/geometry/AABBox.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include "SelectMask.h"
 
+#include <array>
 #include <cstddef>
 #include <optional>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/common.hpp>
 #include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
@@ -67,7 +70,10 @@ Picker::Picker(float tolerance) :
     camera_(nullptr),
     cursor_(0.0F, 0.0F),
     model_(1.0F),
-    nearest_(0.0F) {
+    nearest_(0.0F),
+    band_(false),
+    min_(0.0F, 0.0F),
+    max_(0.0F, 0.0F) {
     viewport_[0] = 0;
     viewport_[1] = 0;
     viewport_[2] = 0;
@@ -79,14 +85,51 @@ Picker::Picker(float tolerance) :
 Picker::Hit Picker::pick(const Scene& scene, const ViewPort& view, const glm::vec2& cursor, SelectMask mask) {
     hit_ = Hit();
     hit_.kind = mask;
-    mask_ = mask;
     cursor_ = cursor;
     nearest_ = 0.0F;
+    band_ = false;
+
+    if (!begin(view, mask)) {
+        return hit_;
+    }
+    ray_ = camera_->ray(cursor, viewport_);
+
+    scene.accept(this);
+
+    camera_ = nullptr;
+    return hit_;
+}
+
+/**
+ **/
+std::vector<Picker::Hit> Picker::inside(const Scene& scene, const ViewPort& view, const glm::vec2& corner,
+    const glm::vec2& opposite, SelectMask mask) {
+    inside_.clear();
+    min_ = glm::min(corner, opposite);
+    max_ = glm::max(corner, opposite);
+    band_ = true;
+
+    if (begin(view, mask)) {
+        scene.accept(this);
+    }
+
+    camera_ = nullptr;
+    band_ = false;
+    std::vector<Hit> found;
+    found.swap(inside_);
+    return found;
+}
+
+/**
+ **/
+bool Picker::begin(const ViewPort& view, SelectMask mask) {
+    mask_ = mask;
+    camera_ = nullptr;
 
     const boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
     const glm::vec4& region = view.region();
     if (!camera || region.z <= 0.0F || region.w <= 0.0F) {
-        return hit_;
+        return false;
     }
 
     viewport_[0] = static_cast<int>(region.x);
@@ -99,12 +142,7 @@ Picker::Hit Picker::pick(const Scene& scene, const ViewPort& view, const glm::ve
     camera->createProjection();
     camera->createView();
     camera_ = camera.get();
-    ray_ = camera_->ray(cursor, viewport_);
-
-    scene.accept(this);
-
-    camera_ = nullptr;
-    return hit_;
+    return true;
 }
 
 /**
@@ -121,6 +159,11 @@ void Picker::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     }
 
     model_ = mesh->matrix();
+
+    if (band_) {
+        enclosed(mesh);
+        return;
+    }
 
     switch (mask_) {
     case SelectMask::Vertex:
@@ -231,6 +274,107 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
             offer({.mesh = mesh->id(), .component = loop[index], .distance = startDepth + ((endDepth - startDepth) * along)});
         }
     }
+}
+
+/**
+ **/
+void Picker::enclosed(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
+    switch (mask_) {
+    case SelectMask::Object:
+        enclosedObject(mesh);
+        break;
+    case SelectMask::Vertex:
+        enclosedVertices(mesh);
+        break;
+    case SelectMask::Edge:
+    case SelectMask::Face:
+    default:
+        enclosedLoops(mesh);
+        break;
+    }
+}
+
+/**
+ **/
+void Picker::enclosedObject(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
+    // an empty mesh has a bound at the origin and nothing to see there
+    if (mesh->vertexCount() == 0) {
+        return;
+    }
+    const v3d::type::geometry::AABBox bound = mesh->bound();
+    const glm::vec3 low = bound.min();
+    const glm::vec3 high = bound.max();
+    const std::array<glm::vec3, 8> corners = {
+        glm::vec3(low.x, low.y, low.z), glm::vec3(high.x, low.y, low.z),
+        glm::vec3(low.x, high.y, low.z), glm::vec3(high.x, high.y, low.z),
+        glm::vec3(low.x, low.y, high.z), glm::vec3(high.x, low.y, high.z),
+        glm::vec3(low.x, high.y, high.z), glm::vec3(high.x, high.y, high.z) };
+    for (const glm::vec3& corner : corners) {
+        if (!encloses(corner)) {
+            return;
+        }
+    }
+    Hit hit;
+    hit.valid = true;
+    hit.mesh = mesh->id();
+    hit.kind = SelectMask::Object;
+    inside_.push_back(hit);
+}
+
+/**
+ **/
+void Picker::enclosedVertices(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
+    Hit hit;
+    hit.valid = true;
+    hit.mesh = mesh->id();
+    hit.kind = SelectMask::Vertex;
+    const std::size_t count = mesh->vertexCount();
+    for (v3d::brep::Index index = 0; index < count; index++) {
+        const v3d::brep::Vertex* vertex = mesh->vertex(index);
+        if (vertex != nullptr && encloses(vertex->point())) {
+            hit.component = index;
+            inside_.push_back(hit);
+        }
+    }
+}
+
+/**
+ **/
+void Picker::enclosedLoops(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
+    Hit hit;
+    hit.valid = true;
+    hit.mesh = mesh->id();
+    hit.kind = mask_;
+    const std::size_t faces = mesh->faceCount();
+    for (v3d::brep::Index face = 0; face < faces; face++) {
+        const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*mesh, face);
+        bool whole = !loop.empty();
+        for (std::size_t index = 0; index < loop.size(); index++) {
+            const std::optional<v3d::brep::Segment> segment = v3d::brep::loopSegment(*mesh, loop, index);
+            const bool held = segment && encloses(segment->from) && encloses(segment->to);
+            whole = whole && held;
+            // a half edge and its pair are one edge, so only the half that draws it is
+            // offered, as a click offers it
+            if (mask_ == SelectMask::Edge && held && v3d::brep::ownsEdge(*mesh, loop[index])) {
+                hit.component = loop[index];
+                inside_.push_back(hit);
+            }
+        }
+        if (mask_ == SelectMask::Face && whole) {
+            hit.component = face;
+            inside_.push_back(hit);
+        }
+    }
+}
+
+/**
+ **/
+bool Picker::encloses(const glm::vec3& point) const {
+    glm::vec2 position;
+    if (!screen(point, &position, nullptr)) {
+        return false;
+    }
+    return position.x >= min_.x && position.x <= max_.x && position.y >= min_.y && position.y <= max_.y;
 }
 
 /**

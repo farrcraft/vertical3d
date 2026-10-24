@@ -106,4 +106,23 @@ BOOST_AUTO_TEST_CASE(scene_deselect_test) {
     BOOST_CHECK_EQUAL(mesh->edge(0)->selected(), false);
 }
 
+BOOST_AUTO_TEST_CASE(scene_selection_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::brep::BRep> first = boost::make_shared<v3d::brep::BRep>();
+    const boost::shared_ptr<v3d::brep::BRep> second = boost::make_shared<v3d::brep::BRep>();
+    const boost::shared_ptr<v3d::brep::BRep> third = boost::make_shared<v3d::brep::BRep>();
+    scene.add(first);
+    scene.add(second);
+    scene.add(third);
+    BOOST_CHECK(scene.selection().empty());
+
+    // the set comes back in insertion order, whatever order the flags were set in
+    third->selected(true);
+    first->selected(true);
+    const v3d::editor::Meshes selection = scene.selection();
+    BOOST_REQUIRE_EQUAL(selection.size(), 2U);
+    BOOST_CHECK(selection[0] == first);
+    BOOST_CHECK(selection[1] == third);
+}
+
 };  // namespace

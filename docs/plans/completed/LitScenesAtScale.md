@@ -75,7 +75,7 @@ Phase 3 — the panned voice (no order against phases 1 and 2)
 
 - Step 1 must land before step 3. Without the baseline, step 3 has nothing that would show it
   changed a picture.
-- Step 7 should land after [ToolingDebt](../ToolingDebt.md) step 2, which settles the grade tests'
+- Step 7 should land after [ToolingDebt](ToolingDebt.md) step 2, which settles the grade tests'
   tolerance. If it lands first, step 7 re-reads that tolerance against its own results.
 
 ## Steps
@@ -173,7 +173,7 @@ target, which already holds display values. Both ends depend on a format instead
   identity strip leaves an sRGB scene as it was. Every grade case is exact on the local GPU, and
   every baseline picture still matches.
 - [ColourAndPost.md](../../api/rendering/ColourAndPost.md#grade) states the rule, and the TODO.md
-  entry is deleted. The tolerance entry, which [ToolingDebt](../ToolingDebt.md) takes, now covers
+  entry is deleted. The tolerance entry, which [ToolingDebt](ToolingDebt.md) takes, now covers
   the sRGB cases as well.
 
 A table larger than 16 entries a side is held. It is due only if a strip shows banding.
@@ -242,4 +242,4 @@ grade matches the strip an image editor shows, and a voice can sound from one si
   own.
 
 **Left open,** each in TODO.md with its trigger: a voice with no position, cascaded shadow maps,
-and the grade tests' one-step tolerance, which [ToolingDebt](../ToolingDebt.md) takes.
+and the grade tests' one-step tolerance, which [ToolingDebt](ToolingDebt.md) takes.

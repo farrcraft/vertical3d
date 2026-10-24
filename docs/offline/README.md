@@ -111,14 +111,8 @@ Background: [ADR-0078](../adr/0078-offline-moya-is-the-one-renderer-ray-tracing-
 
 [TODO.md](../TODO.md#offline-rendering) holds the open work and when each item becomes due:
 
-- Area lights render as point lights.
-- Displacement shaders are refused and `calculatenormal` is a stub, so neither displacement nor
-  bump mapping is possible.
-- The reyes hider ignores `Oi`, so translucent surfaces render opaque under `"hidden"`.
-- `trace::Scene::nearest` tests every primitive; there is no acceleration structure.
-
-[TODO.md](../TODO.md#rirotates-sign) also holds an open question: whether moya applies `Rotate`
-with the sign RI intends.
+- The reyes hider adds every polygon to the traced scene, even when nothing traces.
+- A traced hit is shaded by its own run of the machine, not in a batch with other hits.
 
 Also not built, with no open item:
 
@@ -126,6 +120,6 @@ Also not built, with no open item:
 - Deforming primitives inside a motion block.
 - Any geometry beyond `Polygon`, `PointsPolygons` and `Sphere`, and spheres under the reyes
   hider.
-- `CropWindow`, `Orientation`, `Attribute`, binary and gzipped RIB, and `Display` modes other
-  than RGB.
+- `CropWindow`, `Orientation`, any `Attribute` but `"light"` and `"displacementbound"`, binary
+  and gzipped RIB, and `Display` modes other than RGB.
 - The RI C API's `V` entry points.

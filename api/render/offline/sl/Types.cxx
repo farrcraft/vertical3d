@@ -102,6 +102,14 @@ glm::vec3 ptransform(const glm::mat4x4 & matrix, const glm::vec3 & point) {
     return glm::vec3(matrix * glm::vec4(point, 1.0F));
 }
 
+glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point) {
+    const glm::vec4 projected = matrix * glm::vec4(point, 1.0F);
+    if (projected.w <= SMALLEST_W) {
+        return glm::vec3(projected);
+    }
+    return glm::vec3(projected) / projected.w;
+}
+
 glm::vec3 vtransform(const glm::mat4x4 & matrix, const glm::vec3 & vector) {
     return glm::vec3(matrix * glm::vec4(vector, 0.0F));
 }

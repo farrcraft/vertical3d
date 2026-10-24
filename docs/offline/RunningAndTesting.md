@@ -42,9 +42,10 @@ moya.exe --file data/raytrace-scene.rib --output scene.png
 - **The output format comes from the file extension**: bmp, jpeg, png or tga, written through
   `image::Factory`. The image is always three colour channels, whatever mode `Display` names.
 - **The picture is written when `WorldEnd` is read**, as the RI standard specifies.
-- **`--grid` and `--bucket` are applied before the scene is read.** An `Option "limits"` in the
-  scene replaces them. Each has to be between 1 and 65536, from the command line or from the
-  scene; any other value is reported and the size already set is kept.
+- **`--grid` and `--bucket` win over the scene's `Option "limits"`.** The driver pins them before
+  the scene is read, and the context leaves a pinned size as it is, so the command line wins while
+  the scene is read and rendered. Each has to be between 1 and 65536, from the command line or
+  from the scene; any other value is reported and the size already set is kept.
 - A scene that does not parse prints `error reading rib file` with the reason and exits with a
   failure code. Any exception is printed to stderr.
 - A Debug build is slow. A 256 by 192 ray traced scene takes about a minute.
