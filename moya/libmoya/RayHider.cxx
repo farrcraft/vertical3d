@@ -142,8 +142,10 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
     v3d::render::offline::trace::Tracer tracer(&context->traced(), &context->textures());
     const v3d::render::offline::Sampler sampler(sampling);
     v3d::render::offline::Film film(width, height, sampling);
-    for (unsigned int row = 0; row < height; row++) {
-        for (unsigned int column = 0; column < width; column++) {
+    // no ray is cast outside the crop window. The context clears those pixels afterwards
+    const glm::uvec4 window = context->cropped();
+    for (unsigned int row = window.z; row < window.w && row < height; row++) {
+        for (unsigned int column = window.x; column < window.y && column < width; column++) {
             // each set of samples is seeded by the pixel and its pass, so the result does not
             // depend on the order the pixels are rendered in
             Spread spread;

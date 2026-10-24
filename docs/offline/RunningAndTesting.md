@@ -41,6 +41,8 @@ moya.exe --file data/raytrace-scene.rib --output scene.png
   `Display "name.png" "file" "rgb"`. A `Display` of any other type writes nothing.
 - **The output format comes from the file extension**: bmp, jpeg, png or tga, written through
   `image::Factory`. The image is always three colour channels, whatever mode `Display` names.
+  A picture that cannot be written, such as one with an extension no writer takes, is logged
+  as an error.
 - **The picture is written when `WorldEnd` is read**, as the RI standard specifies.
 - **`--grid` and `--bucket` win over the scene's `Option "limits"`.** The driver pins them before
   the scene is read, and the context leaves a pinned size as it is, so the command line wins while

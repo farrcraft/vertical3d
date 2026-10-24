@@ -13,7 +13,6 @@
 #include "Polygon.h"
 #include "RenderContext.h"
 #include "Renderer.h"
-#include "Vertex.h"
 
 #include <algorithm>
 #include <cmath>
@@ -52,37 +51,6 @@ int side(unsigned int value) {
 const float DEEPEST_TRACE = 16.0F;
 
 typedef v3d::render::offline::rib::ParameterList ParameterList;
-
-/**
- * One polygon from the corners that indices names in the position array, with whatever
- * colour, shading normal and texture coordinates the scene gave each corner. An index past
- * the position array is skipped. addPolygon() gives a vertex left without a colour the
- * current colour, and a vertex left without a normal the plane the polygon lies in.
- **/
-boost::shared_ptr<Polygon> build(const std::vector<glm::vec3> & points,
-    const std::vector<glm::vec3> & colors, const std::vector<glm::vec3> & normals,
-    const std::vector<float> & st, const std::vector<unsigned int> & indices) {
-    boost::shared_ptr<Polygon> polygon = boost::make_shared<Polygon>();
-    for (const unsigned int index : indices) {
-        if (index >= points.size()) {
-            continue;
-        }
-        Vertex vertex;
-        vertex.point(points[index]);
-        if (index < colors.size()) {
-            vertex.color(colors[index]);
-        }
-        if (index < normals.size()) {
-            vertex.normal(normals[index]);
-        }
-        const std::size_t pair = 2 * static_cast<std::size_t>(index);
-        if (pair + 2 <= st.size()) {
-            vertex.st(glm::vec2(st[pair], st[pair + 1]));
-        }
-        polygon->addVertex(vertex);
-    }
-    return polygon;
-}
 
 };  // namespace
 
@@ -199,6 +167,10 @@ void RIBHandler::screenWindow(const v3d::render::offline::rib::ScreenWindow & re
     context().screenWindow(request);
 }
 
+void RIBHandler::cropWindow(const v3d::render::offline::rib::CropWindow & request) {
+    context().cropWindow(request);
+}
+
 void RIBHandler::projection(const std::string & name, const ParameterList & parameters) {
     context().projection(name, parameters.number("fov", RenderContext::defaultFov));
 }
@@ -246,12 +218,11 @@ bool RIBHandler::resolution(int width, int height) {
 }
 
 void RIBHandler::display(const v3d::render::offline::rib::Display & request, const ParameterList & parameters) {
-    (void)parameters;
     if (!output_.empty()) {
-        context().display({.name = output_, .type = "file", .mode = request.mode});
+        context().display({.name = output_, .type = "file", .mode = request.mode}, parameters);
         return;
     }
-    context().display(request);
+    context().display(request, parameters);
 }
 
 void RIBHandler::worldBegin() {
@@ -323,18 +294,10 @@ void RIBHandler::shadingRate(float size) {
 }
 
 void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters) {
-    const std::vector<glm::vec3> points = parameters.points("P");
-    const std::vector<glm::vec3> colors = parameters.points("Cs");
-    const std::vector<glm::vec3> normals = parameters.points("N");
-    const std::vector<float> & st = parameters.floats("st");
-    std::vector<unsigned int> indices;
-    for (unsigned int i = 0; i < vertices && i < points.size(); i++) {
-        indices.push_back(i);
+    const boost::shared_ptr<Polygon> polygon = Polygon::from(parameters, vertices);
+    if (polygon) {
+        context().addPolygon(polygon);
     }
-    if (indices.size() < 3) {
-        return;
-    }
-    context().addPolygon(build(points, colors, normals, st, indices));
 }
 
 void RIBHandler::sphere(const v3d::render::offline::rib::Sphere & request, const ParameterList & parameters) {
@@ -358,7 +321,7 @@ void RIBHandler::pointsPolygons(const v3d::render::offline::rib::PointsPolygons 
         }
         if (count >= 3) {
             const std::vector<unsigned int> face(indices.begin() + static_cast<std::ptrdiff_t>(offset), indices.begin() + static_cast<std::ptrdiff_t>(offset + count));
-            context().addPolygon(build(points, colors, normals, st, face));
+            context().addPolygon(Polygon::build(points, colors, normals, st, face));
         }
         offset += count;
     }

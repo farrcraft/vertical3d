@@ -5,6 +5,7 @@
 
 #include "Polygon.h"
 
+#include <api/render/offline/rib/Parameters.h>
 #include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Frustum.h>
 #include <api/type/geometry/Plane.h>
@@ -18,6 +19,8 @@
 
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>
+
+#include <boost/make_shared.hpp>
 
 #include "RenderContext.h"
 #include "Vertex.h"
@@ -63,6 +66,44 @@ bool progress(const boost::shared_ptr<Polygon> & piece, const v3d::type::geometr
 }
 
 };  // namespace
+
+boost::shared_ptr<Polygon> Polygon::build(const std::vector<glm::vec3> & points,
+    const std::vector<glm::vec3> & colors, const std::vector<glm::vec3> & normals,
+    const std::vector<float> & st, const std::vector<unsigned int> & indices) {
+    boost::shared_ptr<Polygon> polygon = boost::make_shared<Polygon>();
+    for (const unsigned int index : indices) {
+        if (index >= points.size()) {
+            continue;
+        }
+        Vertex vertex;
+        vertex.point(points[index]);
+        if (index < colors.size()) {
+            vertex.color(colors[index]);
+        }
+        if (index < normals.size()) {
+            vertex.normal(normals[index]);
+        }
+        const std::size_t pair = 2 * static_cast<std::size_t>(index);
+        if (pair + 2 <= st.size()) {
+            vertex.st(glm::vec2(st[pair], st[pair + 1]));
+        }
+        polygon->addVertex(vertex);
+    }
+    return polygon;
+}
+
+boost::shared_ptr<Polygon> Polygon::from(const v3d::render::offline::rib::ParameterList & parameters,
+    unsigned int vertices) {
+    const std::vector<glm::vec3> points = parameters.points("P");
+    std::vector<unsigned int> indices;
+    for (unsigned int i = 0; i < vertices && i < points.size(); i++) {
+        indices.push_back(i);
+    }
+    if (indices.size() < 3) {
+        return {};
+    }
+    return build(points, parameters.points("Cs"), parameters.points("N"), parameters.floats("st"), indices);
+}
 
 Polygon::Polygon() {
 }

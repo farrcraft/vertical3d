@@ -106,9 +106,12 @@ class RenderContext {
         /**
          * maps to RiProjection()
          * The projection and screen transformations together take camera space to screen
-         * space. An empty name is "orthographic". "perspective" reads fov, the full angle
-         * in degrees across screen x from -1 to 1. Any other name is kept, and projects
-         * through the identity. The current transformation is reset to the identity.
+         * space. An empty name is RI_NULL, which applies no projection, so camera space is
+         * screen space. "perspective" reads fov, the full angle in degrees across screen x
+         * from -1 to 1. "orthographic" maps the screen window and the clipping range onto
+         * the canonical volume. The current transformation is reset to the identity.
+         *
+         * Any other name is logged and refused, and the projection in force stays.
          **/
         void projection(std::string name, float fov = defaultFov);
         /**
@@ -145,6 +148,25 @@ class RenderContext {
          * empty name or any other type writes nothing. The mode is stored and not read.
          **/
         void display(const v3d::render::offline::rib::Display & display);
+        /**
+         * The same, with the request's parameter list. No display parameter is read, so each
+         * one is logged as not used.
+         **/
+        void display(const v3d::render::offline::rib::Display & display,
+            const v3d::render::offline::rib::ParameterList & parameters);
+        /**
+         * maps to RiCropWindow()
+         * The part of the image to render, as fractions of its width and height. The window
+         * is held to [0, 1] on each axis. A window with no area is logged and refused.
+         **/
+        void cropWindow(const v3d::render::offline::rib::CropWindow & window);
+        /**
+         * The pixels inside the crop window: columns x to y and rows z to w, each range
+         * including its start and excluding its end. RI renders the columns from
+         * ceil(width * xmin) to ceil(width * xmax) - 1, and the rows likewise. render() leaves
+         * every pixel outside them empty.
+         **/
+        glm::uvec4 cropped() const;
         const std::string & displayName() const;
 
         /**
@@ -170,9 +192,8 @@ class RenderContext {
         void saveCoordinateSystem(const std::string & name);
         /**
          * maps to RiCoordSysTransform()
-         * Replaces the current transformation with the named coordinate system. The name
-         * is not checked: one that is neither predefined nor saved is added as a matrix of
-         * zeros, which becomes the current transformation.
+         * Replaces the current transformation with the named coordinate system. A name that
+         * is neither predefined nor saved is logged, and the transformation is left as it was.
          **/
         void setCoordinateSystem(const std::string & name);
         void setIdentityTransform();
@@ -331,7 +352,8 @@ class RenderContext {
 
         /**
          * The matrix of a named coordinate system. A name that is neither predefined nor
-         * saved is added as a matrix of zeros.
+         * saved is logged, and gives the identity. Every read of a coordinate system goes
+         * through this.
          **/
         glm::mat4x4 coordinateSystem(const std::string & name);
 
@@ -470,6 +492,7 @@ class RenderContext {
         v3d::render::offline::rib::Declarations declarations_;
         boost::shared_ptr<v3d::log::Logger> logger_;
         bool flatMotionReported_ = false;
+        bool beforeWorldReported_ = false;
 
         /**
          * Whether the current transformation moves and has no inverse at both ends. A
@@ -477,6 +500,11 @@ class RenderContext {
          * primitive is logged.
          **/
         bool flatMotion();
+        /**
+         * Whether WorldBegin has not yet been reached. The camera is fixed there, so a polygon
+         * sent before it cannot be placed, and is left out. The first such polygon is logged.
+         **/
+        bool beforeWorld();
         boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
         boost::shared_ptr<v3d::render::offline::Textures> textures_;
         boost::shared_ptr<reyes::GridShader> shader_;
@@ -496,7 +524,7 @@ class RenderContext {
         unsigned int xres_ = defaultWidth;
         unsigned int yres_ = defaultHeight;
         float pixelAspect_ = 1.0F;
-        float crop_[4] = { 0.0F, 1.0F, 0.0F, 1.0F };  // RiCropWindow's default; nothing sets or reads it
+        v3d::render::offline::rib::CropWindow crop_;
         float frameAspect_ = defaultFrameAspectRatio;
         float screen_[4] = { -defaultFrameAspectRatio, defaultFrameAspectRatio, -1.0F, 1.0F };  // the screen window: left, right, bottom, top
         // RiFormat sets the frame aspect, and the frame aspect sets the screen window. Once a

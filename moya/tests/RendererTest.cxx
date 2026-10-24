@@ -3,6 +3,7 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Renderer.h>
 
 #include <boost/test/unit_test.hpp>
@@ -54,6 +55,44 @@ BOOST_AUTO_TEST_CASE(renderer_implicit_context_test) {
     renderer.destroyActiveRenderContext();
 
     BOOST_TEST(renderer.activeRenderContext().imageWidth() == 320U);
+}
+
+/**
+ * Destroying the active context with none on the stack does nothing, as RiEnd outside any
+ * RiBegin does. The stack is still usable after it.
+ **/
+BOOST_AUTO_TEST_CASE(renderer_destroy_with_no_context_test) {
+    v3d::moya::Renderer renderer;
+    renderer.destroyActiveRenderContext();
+
+    renderer.createRenderContext("only");
+    renderer.activeRenderContext().imageResolution({32, 16}, 1.0F);
+    renderer.destroyActiveRenderContext();
+    renderer.destroyActiveRenderContext();
+
+    BOOST_TEST(renderer.activeRenderContext().imageWidth() == 320U);
+}
+
+/**
+ * A context stays where it is while others are pushed above it, so a pointer to it, which
+ * RiGetContext hands out, stays good. activate() makes it the active context again.
+ **/
+BOOST_AUTO_TEST_CASE(renderer_a_context_survives_a_push_test) {
+    v3d::moya::Renderer renderer;
+    renderer.createRenderContext("outer");
+    v3d::moya::RenderContext * outer = &renderer.activeRenderContext();
+    outer->imageResolution({32, 16}, 1.0F);
+    for (int i = 0; i < 8; i++) {
+        renderer.createRenderContext("inner");
+    }
+
+    BOOST_TEST(outer->imageWidth() == 32U);
+    BOOST_TEST(renderer.activate(outer));
+    BOOST_TEST(&renderer.activeRenderContext() == outer);
+
+    const v3d::moya::RenderContext stranger("stranger");
+    BOOST_TEST(!renderer.activate(&stranger));
+    BOOST_TEST(&renderer.activeRenderContext() == outer);
 }
 
 };  // namespace

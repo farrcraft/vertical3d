@@ -46,37 +46,9 @@ Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4
 
 ## moya's front end and reyes hider
 
-[Hardening](plans/Hardening.md) orders these, in steps 1 and 2.
+[Hardening](plans/Hardening.md) orders this, in step 2.
 
 Defects in `moya/libmoya` that its comments described wrongly.
-
-[] **Five RI C entry points are unsafe or empty.**
-
-- `RiProjection` reads the value after `"fov"` as a token and builds a string from it, then
-  reads a `double` where RI passes a pointer to an `RtFloat`. The behaviour is undefined.
-- `RiEnd` with no context open calls `pop_back` on an empty stack.
-- `RiGetContext` returns a pointer into a `std::vector<RenderContext>`, so a later `RiBegin`
-  that grows the vector leaves the handle dangling. `RiContext` ignores the handle.
-- `RiDisplayV`, `RiPolygonV` and `RiProjectionV` are empty, and `RiDisplay` ignores its
-  parameter list.
-- `RtErrorHandler`, `RtProcSubdivFunc`, `RtProcFreeFunc` and `RtArchiveCallback` return
-  `RtFloat` where RI has `RtVoid`, so `RiErrorIgnore` and its kin cannot be passed to
-  `RiErrorHandler`.
-
-[] **A bad name is accepted silently.**
-
-- `RiProjection(RI_NULL)` gives an orthographic projection and an unknown name the identity.
-  RI has the reverse, and nothing logs the unknown name.
-- `setCoordinateSystem()` and `coordinateSystem()` with an unknown name insert an all-zero
-  matrix and make it current, which flattens everything drawn after it.
-
-[] **`RenderContext` assumes its caller's order.**
-
-- `addPolygon()` under the reyes hider dereferences `frameBuffer_`, which exists only after
-  `prepareWorld()`. A polygon sent before `RiWorldBegin` crashes.
-- `render()` ignores the result of `image::Factory::write`, so an unknown extension writes no
-  file and reports nothing. It also makes a new `Logger` instead of using `logger_`.
-- `RiCropWindow` has no effect. `crop_` is stored by nothing and read by nothing.
 
 [] **The reyes hider departs from RI in four places.**
 
@@ -277,9 +249,6 @@ and column into every `sl::runtime::Instruction`, and no machine report reads th
 `Reader::primitiveRequest` passes `vertices = 1`. RI gives a quadric four varying values, so a
 bracketed varying "Cs" warns about its length and a bare one reads one element. It does not
 matter while spheres ignore their parameter list.
-
-[] **`RiPolygon` reads only "P".** Contract, minor. The RIB path also reads "Cs", "N" and "st",
-so the C entry point and the RIB reader build different polygons from the same request.
 
 [] **A default `camera::Profile::Frame` disagrees with its hand.** Contract, minor. The Frame
 defaults (direction -z, right +x, up +y) form the DirectionCrossUp basis, but a Frame-built

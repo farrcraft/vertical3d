@@ -11,6 +11,9 @@
 #include <moya/libmoya/Shading.h>
 
 #include <cmath>
+#include <type_traits>
+
+#include <glm/glm.hpp>
 
 #include <boost/test/unit_test.hpp>
 
@@ -211,6 +214,120 @@ BOOST_AUTO_TEST_CASE(renderman_a_displacement_reaches_the_context_test) {
     BOOST_CHECK_CLOSE(shading.displacementBound, 0.6F, 0.01F);
     RiWorldEnd();
     RiEnd();
+}
+
+/**
+ * A quad that covers an 8 by 6 picture, coloured red at every corner through "Cs", at one
+ * sample a pixel. Only the colour a polygon's own parameter gives can make the picture red,
+ * because the colour in force is white.
+ **/
+const RtPoint COVER[4] = { { -5.0F, -5.0F, 5.0F }, { 5.0F, -5.0F, 5.0F }, { 5.0F, 5.0F, 5.0F }, { -5.0F, 5.0F, 5.0F } };
+const RtPoint RED[4] = { { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F } };
+
+void beginCovered() {
+    RiBegin(RI_NULL);
+    RiFormat(8, 6, 1.0F);
+    RiPixelSamples(1.0F, 1.0F);
+    RiPixelFilter(RiBoxFilter, 1.0F, 1.0F);
+    RiClipping(1.0F, 100.0F);
+    RiWorldBegin();
+}
+
+void checkRed() {
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().framebuffer()->planes();
+    BOOST_REQUIRE(planes);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 4, 3), 1.0F, 0.01F);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, 4, 3), 0.001F);
+}
+
+/**
+ * RiPolygon reads every parameter the RIB path reads, so a colour given per vertex reaches the
+ * picture.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_polygon_reads_its_colours_test) {
+    beginCovered();
+    RiPolygon(4, RI_P, const_cast<RtPoint*>(COVER), RI_CS, const_cast<RtPoint*>(RED), RI_NULL);
+    RiWorldEnd();
+    checkRed();
+    RiEnd();
+}
+
+/**
+ * RiPolygonV is the form RiPolygon forwards to, and draws the same polygon.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_polygon_vector_form_draws_test) {
+    beginCovered();
+    RtToken tokens[2] = { RI_P, RI_CS };
+    RtPointer parms[2] = { const_cast<RtPoint*>(COVER), const_cast<RtPoint*>(RED) };
+    RiPolygonV(4, 2, tokens, parms);
+    RiWorldEnd();
+    checkRed();
+    RiEnd();
+}
+
+/**
+ * RiProjection reads "fov" as a pointer to a float, as RI passes every parameter value.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_projection_reads_its_fov_test) {
+    v3d::moya::RenderContext expected("");
+    expected.projection("perspective", 45.0F);
+
+    RiBegin(RI_NULL);
+    RtFloat fov = 45.0F;
+    RiProjection(RI_PERSPECTIVE, RI_FOV, &fov, RI_NULL);
+    BOOST_TEST((context().coordinateSystem("screen") == expected.coordinateSystem("screen")));
+    RiEnd();
+}
+
+/**
+ * RiProjection(RI_NULL) applies no projection, so camera space is screen space.
+ * "orthographic" is a projection of its own.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_null_projection_is_the_identity_test) {
+    RiBegin(RI_NULL);
+    RiProjection(RI_NULL, RI_NULL);
+    BOOST_TEST((context().coordinateSystem("screen") == glm::mat4x4(1.0F)));
+    RiProjection(RI_ORTHOGRAPHIC, RI_NULL);
+    BOOST_TEST((context().coordinateSystem("screen") != glm::mat4x4(1.0F)));
+    RiEnd();
+}
+
+/**
+ * RiDisplayV is the form RiDisplay forwards to, and names the display.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_display_vector_form_names_the_display_test) {
+    RiBegin(RI_NULL);
+    RiDisplayV(const_cast<char*>("picture.tif"), RI_FILE, RI_RGB, 0, nullptr, nullptr);
+    BOOST_CHECK_EQUAL(context().displayName(), "picture.tif");
+    RiEnd();
+}
+
+/**
+ * RiContext makes the context a handle names active again. The handle stays good while other
+ * contexts begin after it, and RiEnd then ends the context it made active.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_context_switches_to_its_handle_test) {
+    RiBegin(RI_NULL);
+    RiFormat(32, 16, 1.0F);
+    RtContextHandle outer = RiGetContext();
+    RiBegin(RI_NULL);
+    RiFormat(64, 48, 1.0F);
+
+    RiContext(outer);
+    BOOST_CHECK_EQUAL(context().imageWidth(), 32U);
+    RiEnd();
+    BOOST_CHECK_EQUAL(context().imageWidth(), 64U);
+    RiEnd();
+}
+
+/**
+ * RI's standard error handlers have the type RiErrorHandler takes, so a caller can pass one.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_standard_error_handlers_can_be_passed_test) {
+    RiErrorHandler(RiErrorIgnore);
+    RiErrorHandler(RiErrorPrint);
+    RiErrorHandler(RiErrorAbort);
+    BOOST_TEST((std::is_same_v<RtErrorHandler, RtVoid(RtInt, RtInt, char*)>));
 }
 
 };  // namespace

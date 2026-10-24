@@ -35,6 +35,7 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void format(const v3d::render::offline::rib::Format & request) override;
     void frameAspectRatio(float aspect) override;
     void screenWindow(const v3d::render::offline::rib::ScreenWindow & request) override;
+    void cropWindow(const v3d::render::offline::rib::CropWindow & request) override;
     void projection(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override;
     void clipping(const v3d::render::offline::rib::Clipping & request) override;
     void depthOfField(const v3d::render::offline::rib::DepthOfField & request) override;

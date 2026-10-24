@@ -121,23 +121,34 @@ the behaviour of one class.
 
 ### Step 1 — RI's C interface and the render context
 
-**Open.**
+**Closed.** Each fix has a test that fails without it.
 
-- `RiProjection`, `RiDisplay` and `RiPolygon` collect their lists and forward to their `V` forms,
-  which do the work. `RiPolygonV` and the RIB path share one polygon builder, so both read P, Cs,
-  N and st.
-- `RIBHandler::display` reads its parameters.
-- `RiEnd` with no context open is an error and does nothing. `RiGetContext` returns a handle that
-  survives a later `RiBegin`, and `RiContext` makes it current.
-- The four callback types return `RtVoid`.
-- `RiProjection(RI_NULL)` and `"orthographic"` are distinct, as RI has them. An unknown
-  projection or coordinate system is logged and ignored. Every lookup of a coordinate system goes
-  through one function that refuses an unknown name.
-- A polygon sent before `WorldBegin` is logged and dropped. `render()` logs a failed write
-  through `logger_`.
-- `RiCropWindow` and the RIB handler store the window, and both hiders render only the buckets
-  inside it.
-- Tests in `moya/tests/RenderManTest.cxx`, `RendererTest.cxx` and `RenderContextTest.cxx`.
+- `RiProjection`, `RiDisplay` and `RiPolygon` collect their lists and forward to their `V`
+  forms. `Polygon::from` builds a polygon for both the C interface and the RIB path. Both
+  therefore read P, Cs, N and st.
+- `RiProjection` read its value pointer as a token. A case now passes a 45 degree fov and
+  compares the screen matrix with one the context built directly.
+- `RiDisplayV` and `RIBHandler::display` log each display parameter as not used. No parameter
+  has a meaning in moya.
+- `Renderer` holds each context through a `boost::shared_ptr`, so a handle from `RiGetContext`
+  survives a later `RiBegin`. `RiContext` makes a context active by moving it to the top of
+  the stack. `RiEnd` with an empty stack does nothing.
+- The four callback types return `RtVoid`, and a case passes each standard error handler to
+  `RiErrorHandler`. Before the change the case did not build.
+- An empty projection name is RI_NULL and applies no projection. An unknown name is logged and
+  the projection in force stays. The default projection is named `"orthographic"`.
+- `coordinateSystem()` is the one read of a coordinate system. An unknown name is logged and
+  gives the identity, and `setCoordinateSystem()` with one keeps the current transformation.
+- A polygon before `WorldBegin` is logged once and dropped. A failed write is logged through
+  the context's logger.
+- `CropWindow` is stored from both paths. The ray hider casts rays only inside it, and
+  `render()` clears every pixel outside it after the hider and the imager. The reyes hider
+  renders every bucket, because a primitive is filed in the bucket of its upper left corner and
+  may reach into the window from a bucket outside it.
+
+The survey also found that `RiPointsPolygons` and `RiSphere` are empty in the C interface,
+though the RIB path draws both. That is a missing feature rather than a defect in this step,
+and [offline/README.md](../offline/README.md) lists it.
 
 ### Step 2 — The reyes hider follows RI
 

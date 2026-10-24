@@ -968,4 +968,114 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_shadow_follows_the_moved_shape_
     }
 }
 
+/**
+ * A polygon sent before WorldBegin has no camera to be placed by, so it is logged and dropped.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_polygon_before_the_world_is_dropped_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    const Heard heard(handler.context().logger()->get());
+
+    BOOST_REQUIRE(read(
+        "Format 64 48 1\n"
+        "Polygon \"P\" [-0.2 -0.2 5  0.2 -0.2 5  0.2 0.2 5  -0.2 0.2 5]\n"
+        "WorldBegin\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 0U);
+    BOOST_TEST(heard.said("before WorldBegin"));
+}
+
+/**
+ * A picture the image factory cannot write is reported through the context's own logger.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_failed_write_is_logged_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    const Heard heard(handler.context().logger()->get());
+
+    BOOST_REQUIRE(read(
+        "Format 8 6 1\n"
+        "Display \"picture.unknown\" \"file\" \"rgb\"\n"
+        "WorldBegin\n"
+        "WorldEnd\n", &handler));
+
+    BOOST_TEST(heard.said("picture.unknown"));
+}
+
+/**
+ * An unknown projection is logged by name.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_an_unknown_projection_is_logged_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    const Heard heard(handler.context().logger()->get());
+
+    BOOST_REQUIRE(read("Projection \"fisheye\"\n", &handler));
+
+    BOOST_TEST(heard.said("fisheye"));
+}
+
+/**
+ * The renderer reads no display parameter, so each one a scene gives is logged as not used.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_display_parameter_is_logged_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    const Heard heard(handler.context().logger()->get());
+
+    BOOST_REQUIRE(read(
+        "Declare \"origin\" \"uniform integer[2]\"\n"
+        "Display \"picture.tif\" \"framebuffer\" \"rgb\" \"origin\" [4 2]\n", &handler));
+
+    BOOST_TEST(heard.said("origin"));
+}
+
+/**
+ * A red quad that covers an 8 by 6 picture, under the crop window's left half, with the hider
+ * given. RI renders the columns from ceil(8 * 0) to ceil(8 * 0.5) - 1, so columns 0 to 3.
+ **/
+boost::shared_ptr<v3d::render::offline::FrameBuffer> cropped(const std::string & hider) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    BOOST_REQUIRE(read(
+        "Format 8 6 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "CropWindow 0 0.5 0 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n" + hider +
+        "WorldBegin\n"
+        "Color [1 0 0]\n"
+        "Polygon \"P\" [-5 -5 5  5 -5 5  5 5 5  -5 5 5]\n"
+        "WorldEnd\n", &handler));
+    return handler.context().framebuffer()->planes();
+}
+
+void checkCropped(const v3d::render::offline::FrameBuffer & planes) {
+    for (unsigned int row = 0; row < planes.height(); row++) {
+        for (unsigned int column = 0; column < planes.width(); column++) {
+            const bool inside = column < 4;
+            BOOST_TEST_CONTEXT("pixel " << column << ", " << row) {
+                BOOST_TEST((planes.value(v3d::moya::FrameBuffer::RED, column, row) > 0.5F) == inside);
+                BOOST_TEST((planes.value(v3d::moya::FrameBuffer::COVERAGE, column, row) > 0.5F) == inside);
+            }
+        }
+    }
+}
+
+/**
+ * The reyes hider leaves every pixel outside the crop window empty.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_crop_window_under_reyes_test) {
+    checkCropped(*cropped(""));
+}
+
+/**
+ * The ray hider casts no ray outside the crop window, and leaves those pixels empty.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_crop_window_under_the_ray_hider_test) {
+    checkCropped(*cropped("Hider \"raytrace\"\n"));
+}
+
 };  // namespace

@@ -109,7 +109,7 @@ Background: [ADR-0078](../adr/0078-offline-moya-is-the-one-renderer-ray-tracing-
 
 ## What is not built
 
-[TODO.md](../TODO.md#offline-rendering) holds the open work and when each item becomes due:
+[TODO.md](../TODO.md#offline-rendering) holds the open work:
 
 - The reyes hider adds every polygon to the traced scene, even when nothing traces.
 - A traced hit is shaded by its own run of the machine, not in a batch with other hits.
@@ -120,6 +120,6 @@ Also not built, with no open item:
 - Deforming primitives inside a motion block.
 - Any geometry beyond `Polygon`, `PointsPolygons` and `Sphere`, and spheres under the reyes
   hider.
-- `CropWindow`, `Orientation`, any `Attribute` but `"light"` and `"displacementbound"`, binary
-  and gzipped RIB, and `Display` modes other than RGB.
-- The RI C API's `V` entry points.
+- `Orientation`, any `Attribute` but `"light"` and `"displacementbound"`, binary and gzipped
+  RIB, and `Display` modes other than RGB.
+- `RiPointsPolygons` and `RiSphere` in the RI C interface. Only the RIB path draws them.

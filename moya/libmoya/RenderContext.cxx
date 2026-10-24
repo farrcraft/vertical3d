@@ -130,7 +130,7 @@ void RenderContext::prepareWorld() {
     // reset the current transformation, so only its screen transform is built again, from
     // the screen window, format and clipping as they stand now
     if (!projectionNamed_) {
-        projection("");
+        projection("orthographic");
     } else {
         screenTransform();
     }
@@ -139,7 +139,7 @@ void RenderContext::prepareWorld() {
     saveCoordinateSystem("camera");
     // the traced scene has no camera of its own, so a traced hit's "camera" space and E
     // are this camera's
-    traced_.view(coordinateSystems_["camera"]);
+    traced_.view(coordinateSystem("camera"));
     // inside the world block the current transformation is object to world
     transform_.replace(glm::mat4x4(1.0F));
 
@@ -165,8 +165,8 @@ void RenderContext::prepareWorld() {
 
 v3d::render::offline::trace::Scene::Projection RenderContext::projected() {
     v3d::render::offline::trace::Scene::Projection projection;
-    projection.screen = coordinateSystems_["screen"];
-    projection.raster = coordinateSystems_["raster"] * projection.screen;
+    projection.screen = coordinateSystem("screen");
+    projection.raster = coordinateSystem("raster") * projection.screen;
     // raster divided by the resolution: x runs right and y runs down over [0, 1] from the
     // upper left corner. Screen space has y up over [-1, 1], so y is negated as raster
     // negates it. z is screen depth moved from [-1, 1] onto [0, 1]
@@ -193,8 +193,9 @@ bool RenderContext::perspective() const {
 }
 
 void RenderContext::projection(std::string name, float fov) {
-    if (name.empty()) {
-        name = "orthographic";
+    if (!name.empty() && name != "perspective" && name != "orthographic") {
+        logger_->get()->warn("the projection '{}' is not known, and is not used", name);
+        return;
     }
 
     // only "perspective" reads fov
@@ -229,7 +230,7 @@ glm::mat4x4 RenderContext::projectionMatrix() const {
     const float bottom = screen_[2];
     const float top = screen_[3];
 
-    // the identity, because an unsupported projection takes none of the branches below
+    // the identity, which is RI_NULL's projection
     glm::mat4x4 projection(1.0F);
     if (projection_ == "perspective") {
         /*
@@ -415,7 +416,11 @@ void RenderContext::saveCoordinateSystem(const std::string& name) {
 }
 
 void RenderContext::setCoordinateSystem(const std::string& name) {
-    transform_.replace(coordinateSystems_[name]);
+    if (coordinateSystems_.find(name) == coordinateSystems_.end()) {
+        logger_->get()->warn("the coordinate system '{}' is not known, and the transformation is kept", name);
+        return;
+    }
+    transform_.replace(coordinateSystem(name));
 }
 
 void RenderContext::setIdentityTransform() {
@@ -504,7 +509,12 @@ std::size_t RenderContext::motionCache() const {
 }
 
 glm::mat4x4 RenderContext::coordinateSystem(const std::string& name) {
-    return coordinateSystems_[name];
+    const auto found = coordinateSystems_.find(name);
+    if (found == coordinateSystems_.end()) {
+        logger_->get()->warn("the coordinate system '{}' is not known, and the identity is used", name);
+        return glm::mat4x4(1.0F);
+    }
+    return found->second;
 }
 
 void RenderContext::translate(float dx, float dy, float dz) {
@@ -597,13 +607,13 @@ void RenderContext::surface(const std::string & name,
     surface_ = shaders_->instance(name, v3d::render::offline::sl::ShaderType::SURFACE, parameters);
     // RI makes a shader's own space the transformation in force when the scene instanced
     // it. A "point \"shader\" (0, 0, 1)" parameter is stated in that space
-    surfacePlacement_ = coordinateSystems_["camera"] * transform_.reference();
+    surfacePlacement_ = coordinateSystem("camera") * transform_.reference();
 }
 
 void RenderContext::displacement(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
     displacement_.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::DISPLACEMENT, parameters);
-    displacement_.placement = coordinateSystems_["camera"] * transform_.reference();
+    displacement_.placement = coordinateSystem("camera") * transform_.reference();
 }
 
 void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & request,
@@ -611,7 +621,7 @@ void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & r
     LightSource light;
     light.handle = request.handle;
     light.shader = shaders_->instance(request.shader, v3d::render::offline::sl::ShaderType::LIGHT, parameters);
-    light.placement = coordinateSystems_["camera"] * transform_.reference();
+    light.placement = coordinateSystem("camera") * transform_.reference();
     if (!light.shader) {
         // the library has already logged why. The light is left out, not replaced by a
         // light of some other kind
@@ -652,7 +662,7 @@ void RenderContext::attribute(const std::string & name, const v3d::render::offli
         // space, where every primitive is culled. A scale that differs between axes is taken
         // at its largest, so the bound still holds the surface
         const std::vector<std::string> & named = parameters.strings("coordinatesystem");
-        glm::mat4x4 toCamera = coordinateSystems_["camera"] * transform_.reference();
+        glm::mat4x4 toCamera = coordinateSystem("camera") * transform_.reference();
         if (!named.empty() && named.front() == "camera") {
             toCamera = glm::mat4x4(1.0F);
         } else if (!named.empty() && named.front() != "object" && named.front() != "world" &&
@@ -660,11 +670,11 @@ void RenderContext::attribute(const std::string & name, const v3d::render::offli
             logger_->get()->warn("the displacement bound's space \"{}\" is not one the scene named, so object space is used",
                 named.front());
         } else if (!named.empty() && named.front() == "world") {
-            toCamera = coordinateSystems_["camera"];
+            toCamera = coordinateSystem("camera");
         } else if (!named.empty() && named.front() != "object") {
             // a named space is saved as the transformation into world space in force when the
             // scene named it
-            toCamera = coordinateSystems_["camera"] * coordinateSystem(named.front());
+            toCamera = coordinateSystem("camera") * coordinateSystem(named.front());
         }
         const glm::mat3 linear(toCamera);
         const float stretch = std::max(glm::length(linear[0]), std::max(glm::length(linear[1]), glm::length(linear[2])));
@@ -714,7 +724,7 @@ Shading RenderContext::shading() {
         state.surface = shaders_->instance("constant",
             v3d::render::offline::sl::ShaderType::SURFACE,
             v3d::render::offline::rib::ParameterList());
-        state.placement = coordinateSystems_["camera"] * transform_.reference();
+        state.placement = coordinateSystem("camera") * transform_.reference();
     }
     for (const LightSource & light : lights_) {
         if (std::find(lit_.begin(), lit_.end(), light.handle) == lit_.end()) {
@@ -755,7 +765,7 @@ const v3d::render::offline::trace::Lights & RenderContext::tracedLights(const Sh
         return tracedLights_;
     }
     // a light's placement takes it to camera space, and the traced scene is in world space
-    const glm::mat4x4 toWorld = glm::inverse(coordinateSystems_["camera"]);
+    const glm::mat4x4 toWorld = glm::inverse(coordinateSystem("camera"));
     auto on = boost::make_shared<std::vector<v3d::render::offline::sl::Placed> >();
     for (const v3d::render::offline::sl::Placed & light : state.lights) {
         v3d::render::offline::sl::Placed placed = light;
@@ -810,7 +820,7 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
 void RenderContext::traceDisplaced(const Polygon & poly, const Shading & state) {
     // a copy in camera space, where the displacement shader runs, with each vertex given the
     // plane and the colour addPolygon() would give it
-    const glm::mat4x4 toCamera = coordinateSystems_["camera"] * transform_.reference();
+    const glm::mat4x4 toCamera = coordinateSystem("camera") * transform_.reference();
     const glm::mat3 toCameraNormal = glm::transpose(glm::inverse(glm::mat3(toCamera)));
     Polygon eye;
     for (std::size_t i = 0; i < poly.vertexCount(); i++) {
@@ -837,7 +847,7 @@ void RenderContext::traceDisplaced(const Polygon & poly, const Shading & state) 
     }
     shader().displace(state, grid.get());
 
-    const glm::mat4x4 toWorld = glm::inverse(coordinateSystems_["camera"]);
+    const glm::mat4x4 toWorld = glm::inverse(coordinateSystem("camera"));
     const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld)));
     const unsigned int size = grid->size();
     const float span = static_cast<float>(size - 1);
@@ -873,7 +883,7 @@ void RenderContext::shade(v3d::render::offline::trace::Primitive* primitive, con
     // a shader's placement takes it to camera space, and the traced scene is in world space
     v3d::render::offline::sl::Placed surface;
     surface.shader = state.surface;
-    surface.placement = glm::inverse(coordinateSystems_["camera"]) * state.placement;
+    surface.placement = glm::inverse(coordinateSystem("camera")) * state.placement;
     primitive->surface(surface);
     primitive->opacity(state.opacity);
     primitive->lights(tracedLights(state));
@@ -913,8 +923,19 @@ bool RenderContext::flatMotion() {
     return true;
 }
 
+bool RenderContext::beforeWorld() {
+    if (frameBuffer_) {
+        return false;
+    }
+    if (!beforeWorldReported_) {
+        beforeWorldReported_ = true;
+        logger_->get()->warn("a polygon sent before WorldBegin is not drawn");
+    }
+    return true;
+}
+
 void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
-    if (flatMotion()) {
+    if (beforeWorld() || flatMotion()) {
         return;
     }
     if (hider_->traces()) {
@@ -927,9 +948,9 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     if (!poly->placed()) {
         const Shading state = shading();
         trace(*poly, state);
-        poly->place(coordinateSystems_["camera"] * transform_.reference(), color_, poly->geometricNormal(),
+        poly->place(coordinateSystem("camera") * transform_.reference(), color_, poly->geometricNormal(),
             state);
-        poly->motion(transform_.before(coordinateSystems_["camera"]));
+        poly->motion(transform_.before(coordinateSystem("camera")));
     }
 
     fillVertices(poly.get());
@@ -992,7 +1013,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // viewing frustum cull. The frustum is built from the "screen" coordinate system, which
     // takes eye space to screen space, so it is tested against the eye space bound swept
     // over the shutter. Only the bound is transformed. The vertices stay in object space
-    const v3d::type::geometry::Frustum frustum(coordinateSystems_["screen"], v3d::type::geometry::Frustum::Depth::MinusOneToOne);
+    const v3d::type::geometry::Frustum frustum(coordinateSystem("screen"), v3d::type::geometry::Frustum::Depth::MinusOneToOne);
     v3d::type::geometry::AABBox eyeBound;
     eyeBound.extents(swept_min, swept_max);
     if (frustum.intersect(eyeBound) == v3d::type::geometry::Frustum::OUTSIDE) {
@@ -1001,7 +1022,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
 
     // raster applies after screen, so it is on the left: a matrix applies to what is on its
     // right
-    const glm::mat4x4 screen = coordinateSystems_["raster"] * coordinateSystems_["screen"];
+    const glm::mat4x4 screen = coordinateSystem("raster") * coordinateSystem("screen");
     // all eight corners of the eye space bound are projected, because under a perspective
     // projection the raster extremes need not lie at two diagonal corners. A corner at or
     // behind the eye has no raster position. It is left out, and the primitive is split. The
@@ -1074,6 +1095,37 @@ void RenderContext::display(const v3d::render::offline::rib::Display & display) 
     displayMode_ = display.mode;
 }
 
+void RenderContext::display(const v3d::render::offline::rib::Display & display,
+    const v3d::render::offline::rib::ParameterList & parameters) {
+    this->display(display);
+    for (const std::string & name : parameters.names()) {
+        logger_->get()->warn("the display parameter '{}' is not used", name);
+    }
+}
+
+void RenderContext::cropWindow(const v3d::render::offline::rib::CropWindow & window) {
+    v3d::render::offline::rib::CropWindow held;
+    held.xmin = std::clamp(window.xmin, 0.0F, 1.0F);
+    held.xmax = std::clamp(window.xmax, 0.0F, 1.0F);
+    held.ymin = std::clamp(window.ymin, 0.0F, 1.0F);
+    held.ymax = std::clamp(window.ymax, 0.0F, 1.0F);
+    // the negated test also refuses a bound that is not a number
+    if (!(held.xmin < held.xmax) || !(held.ymin < held.ymax)) {
+        logger_->get()->warn("a crop window from ({}, {}) to ({}, {}) has no area, and is not used",
+            window.xmin, window.ymin, window.xmax, window.ymax);
+        return;
+    }
+    crop_ = held;
+}
+
+glm::uvec4 RenderContext::cropped() const {
+    const auto first = [](unsigned int size, float fraction) {
+        return static_cast<unsigned int>(std::ceil(static_cast<float>(size) * fraction));  // checked: the fraction is held to [0, 1]
+    };
+    return glm::uvec4(first(xres_, crop_.xmin), first(xres_, crop_.xmax), first(yres_, crop_.ymin),
+        first(yres_, crop_.ymax));
+}
+
 const std::string & RenderContext::displayName() const {
     return displayName_;
 }
@@ -1100,6 +1152,22 @@ void RenderContext::render() {
         imager.run(frameBuffer_->planes().get(), FrameBuffer::COVERAGE);
     }
 
+    // a pixel outside the crop window is empty, as a pixel nothing was drawn into is. A
+    // filter wider than a pixel spreads samples from inside the window into the pixels just
+    // past it, so the pixels are cleared after the hider and the imager rather than skipped
+    const glm::uvec4 window = cropped();
+    v3d::render::offline::FrameBuffer & written = *frameBuffer_->planes();
+    for (unsigned int row = 0; row < written.height(); row++) {
+        for (unsigned int column = 0; column < written.width(); column++) {
+            if (column >= window.x && column < window.y && row >= window.z && row < window.w) {
+                continue;
+            }
+            for (unsigned int plane = 0; plane < written.planes(); plane++) {
+                written.value(plane, column, row, plane == FrameBuffer::DEPTH ? std::numeric_limits<float>::max() : 0.0F);
+            }
+        }
+    }
+
     // a display named nothing, or one that is not a file, leaves the samples in the
     // planes rather than writing them
     if (displayName_.empty() || displayType_ != "file") {
@@ -1108,9 +1176,10 @@ void RenderContext::render() {
 
     // only the three colour channels are written, whatever the display mode. The coverage
     // and depth planes stay in the framebuffer
-    auto logger = boost::make_shared<v3d::log::Logger>();
-    v3d::image::Factory factory(logger);
-    factory.write(displayName_, frameBuffer_->planes()->image(FrameBuffer::CHANNELS));
+    v3d::image::Factory factory(logger_);
+    if (!factory.write(displayName_, frameBuffer_->planes()->image(FrameBuffer::CHANNELS))) {
+        logger_->get()->error("the picture could not be written to '{}'", displayName_);
+    }
 }
 
 };  // namespace v3d::moya

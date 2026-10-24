@@ -7,8 +7,11 @@
 
 #include "RenderContext.h"
 
+#include <algorithm>
 #include <iostream>
 #include <string>
+
+#include <boost/make_shared.hpp>
 
 namespace v3d::moya {
 
@@ -28,19 +31,30 @@ void Renderer::createRenderContext(const std::string & name) {
                      "All Rights Reserved" << "\n";
     }
 
-    const RenderContext context(name);
-    contexts_.push_back(context);
+    contexts_.push_back(boost::make_shared<RenderContext>(name));
 }
 
 void Renderer::destroyActiveRenderContext(void) {
-    contexts_.pop_back();
+    if (!contexts_.empty()) {
+        contexts_.pop_back();
+    }
+}
+
+bool Renderer::activate(const RenderContext * context) {
+    const auto found = std::find_if(contexts_.begin(), contexts_.end(),
+        [context](const boost::shared_ptr<RenderContext> & held) { return held.get() == context; });
+    if (found == contexts_.end()) {
+        return false;
+    }
+    std::rotate(found, found + 1, contexts_.end());
+    return true;
 }
 
 RenderContext & Renderer::activeRenderContext(void) {
     if (contexts_.empty()) {
         createRenderContext("");
     }
-    return contexts_[contexts_.size() - 1];
+    return *contexts_.back();
 }
 
 };  // namespace v3d::moya

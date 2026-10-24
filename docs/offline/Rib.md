@@ -26,9 +26,9 @@ The reader recognises these requests:
 | Shaders and lights | `Surface`, `Displacement`, `LightSource`, `AreaLightSource`, `Illuminate`, `MakeTexture` |
 | Geometry | `Polygon`, `PointsPolygons`, `Sphere` |
 
-moya acts on all of them except `CropWindow`, `FrameBegin` and `FrameEnd`, which it accepts and
-ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"searchpath"` (`shader`,
-`texture`) and `"trace"` (`maxdepth`). `Attribute` acts on `"light"` (`nsamples`) and
+moya acts on all of them except `FrameBegin` and `FrameEnd`, which it accepts and ignores.
+`Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"searchpath"` (`shader`, `texture`)
+and `"trace"` (`maxdepth`). `Attribute` acts on `"light"` (`nsamples`) and
 `"displacementbound"` (`sphere`, `coordinatesystem`), and reports any other attribute once by
 name.
 
@@ -69,6 +69,17 @@ name.
 - **The C interface reads a parameter's values by its declared type.** An `integer` parameter's
   array holds `RtInt`s and a `string` parameter's holds `RtString`s. Every other type's holds
   `RtFloat`s.
+- **A variadic C entry point forwards to its `V` form**, which does the work, so the two forms
+  of a request cannot differ. `RiPolygon` and the RIB `Polygon` build their polygon through one
+  function, and both read `"P"`, `"Cs"`, `"N"` and `"st"`.
+- **No `Display` parameter is read.** Each one a scene gives is logged as not used.
+- **`RiGetContext` returns a handle that lasts until `RiEnd` ends its context.** `RiContext`
+  makes that context active again, and a handle to a context that has ended is ignored. `RiEnd`
+  with no context begun does nothing.
+- **A polygon sent before `WorldBegin` is not drawn.** The camera is fixed at `WorldBegin`, so
+  the polygon cannot be placed. The first one is logged.
+- **A coordinate system that is neither predefined nor saved is refused.** `CoordSysTransform`
+  logs it and keeps the current transformation, and a lookup of it logs and gives the identity.
 - **A `Polygon` carries no vertex count.** The count is the length of `"P"`, which the reader
   divides out. A parameter list is therefore parsed before the count is known, and an
   unbracketed varying or vertex parameter ends the parse instead of being guessed at.

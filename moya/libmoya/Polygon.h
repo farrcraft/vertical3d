@@ -18,6 +18,10 @@ class Frustum;
 class Plane;
 };  // namespace v3d::type::geometry
 
+namespace v3d::render::offline::rib {
+class ParameterList;
+};  // namespace v3d::render::offline::rib
+
 namespace v3d::moya {
 class RenderContext;
 
@@ -25,6 +29,26 @@ class Polygon : public reyes::Primitive {
  public:
     Polygon();
     virtual ~Polygon();
+
+    /**
+     * One polygon from the corners that indices names in the position array, with whatever
+     * colour, shading normal and texture coordinates the scene gave each corner. An index past
+     * the position array is skipped. RenderContext::addPolygon() gives a vertex left without a
+     * colour the current colour, and a vertex left without a normal the plane the polygon lies
+     * in.
+     **/
+    static boost::shared_ptr<Polygon> build(const std::vector<glm::vec3> & points,
+        const std::vector<glm::vec3> & colors, const std::vector<glm::vec3> & normals,
+        const std::vector<float> & st, const std::vector<unsigned int> & indices);
+    /**
+     * The polygon RiPolygon describes: the first vertices corners of "P", with "Cs", "N" and
+     * "st" read as build() reads them. Both the C interface and the RIB path build a polygon
+     * through this.
+     *
+     * @return null when fewer than three corners have a position
+     **/
+    static boost::shared_ptr<Polygon> from(const v3d::render::offline::rib::ParameterList & parameters,
+        unsigned int vertices);
 
     /**
      **/

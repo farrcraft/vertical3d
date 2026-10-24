@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "RenderContext.h"
-#include "Vertex.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -234,13 +233,15 @@ RtVoid RiProcRunProgram(RtPointer data, RtFloat detail) {
 RtVoid RiProcDynamicLoad(RtPointer data, RtFloat detail) {
 }
 
-// RiGetContext and RiContext have no RIB equivalents
+// RiGetContext and RiContext have no RIB equivalents. The handle is the active context, which
+// stays where it is until RiEnd ends it
 RtContextHandle RiGetContext(void) {
-    // the handle is the active context. RiContext ignores it and does not switch contexts
     return &renderer().activeRenderContext();
 }
 
-RtVoid RiContext(RtContextHandle /* handle */) {
+// a handle to a context that has ended, or was never begun, is ignored
+RtVoid RiContext(RtContextHandle handle) {
+    renderer().activate(static_cast<const v3d::moya::RenderContext*>(handle));
 }
 
 RtToken RiDeclare(char * name, char * declaration) {
@@ -263,8 +264,8 @@ RtVoid RiBegin(RtToken name) {
 }
 
 
-// RiEnd pops the active context, and the one beneath it becomes active. A request that
-// arrives with no context active creates one
+// RiEnd pops the active context, and the one beneath it becomes active. With no context
+// begun it does nothing. A request that arrives with no context active creates one
 RtVoid RiEnd(void) {
     renderer().destroyActiveRenderContext();
 }
@@ -301,34 +302,26 @@ RtVoid RiScreenWindow(RtFloat left, RtFloat right, RtFloat bot, RtFloat top) {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax) {
+    renderer().activeRenderContext().cropWindow({.xmin = xmin, .xmax = xmax, .ymin = ymin, .ymax = ymax});
+}
+
+RtVoid RiProjection(RtToken name, ...) {
+    va_list arguments;
+    va_start(arguments, name);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiProjectionV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 // "perspective" reads an optional "fov", in degrees, and takes 90 without one. RI_NULL
-// selects orthographic
-RtVoid RiProjection(RtToken name, ...) {
-    va_list ap;
-    va_start(ap, name);
-    RtToken param = va_arg(ap, RtToken);
-    std::string token;
-    float fov = v3d::moya::RenderContext::defaultFov;
-    if (name == RI_NULL) {
-        renderer().activeRenderContext().projection("");
-    } else if (strncmp(name, RI_PERSPECTIVE, strlen(RI_PERSPECTIVE)) == 0) {
-        // perspective takes an optional fov parameter
-        if (param != RI_NULL) {
-            token = va_arg(ap, RtToken);
-            if (token == RI_FOV) {
-                fov = static_cast<float>(va_arg(ap, double));
-            }
-        }
-        renderer().activeRenderContext().projection(name, fov);
-    } else {
-        renderer().activeRenderContext().projection(name);
-    }
-    va_end(ap);
-}
-
+// applies no projection
 RtVoid RiProjectionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
+    v3d::render::offline::rib::ParameterList list;
+    parameters(rc, n, tokens, parms, &list);
+    rc.projection(name != RI_NULL ? name : "", list.number("fov", v3d::moya::RenderContext::defaultFov));
 }
 
 RtVoid RiClipping(RtFloat hither, RtFloat yon) {
@@ -414,17 +407,27 @@ RtVoid RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
 RtVoid RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl) {
 }
 
-// the parameter list is not read. A null name, type or mode reaches the context as an
-// empty string
 RtVoid RiDisplay(char *name, RtToken type, RtToken mode, ...) {
-    renderer().activeRenderContext().display({
-        .name = name != nullptr ? name : "",
-        .type = type != nullptr ? type : "",
-        .mode = mode != nullptr ? mode : ""});
+    va_list arguments;
+    va_start(arguments, mode);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiDisplayV(name, type, mode, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
+// a null name, type or mode reaches the context as an empty string. No parameter is read, and
+// the context logs each one
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDisplayV(char *name, RtToken type, RtToken mode, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
+    v3d::render::offline::rib::ParameterList list;
+    parameters(rc, n, tokens, parms, &list);
+    rc.display({
+        .name = name != nullptr ? name : "",
+        .type = type != nullptr ? type : "",
+        .mode = mode != nullptr ? mode : ""}, list);
 }
 
 RtVoid RiHider(RtToken type, ...) {
@@ -718,43 +721,36 @@ RtVoid RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) 
     rc.attribute(name, list);
 }
 
-// reads "P" only. Every other parameter is skipped, and a polygon is not checked for being
-// planar, convex or degenerate
 RtVoid RiPolygon(RtInt nverts, ...) {
-    va_list ap;
-
-    va_start(ap, nverts);
-
-    RtToken name = va_arg(ap, RtToken);
-    std::string token;
-    const boost::shared_ptr<v3d::moya::Polygon> poly(new v3d::moya::Polygon);
-    while (name != RI_NULL) {
-        token = name;
-        RtPointer value = va_arg(ap, RtPointer);
-        if (token == RI_P) {
-            // value contains RtPoint points[nverts]
-            v3d::moya::Vertex v;
-            const RtPoint *points = static_cast<RtPoint*>(value);
-            for (int i = 0; i < nverts; i++) {
-                v.point(glm::vec3(points[i][0], points[i][1], points[i][2]));
-                poly->addVertex(v);
-            }
-        } else if (token == RI_PZ || token == RI_PW || token == RI_N || token == RI_CS ||
-                   token == RI_OS || token == RI_S || token == RI_T || token == RI_ST) {
-            // a standard parameter this renderer does not read: depth and homogeneous
-            // positions, normals, colours, opacities and texture coordinates
-        }
-        // an unknown token is skipped the same way
-
-        name = va_arg(ap, RtToken);
-    }
-    va_end(ap);
-
-    renderer().activeRenderContext().addPolygon(poly);
+    va_list arguments;
+    va_start(arguments, nverts);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiPolygonV(nverts, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
+// reads "P", "Cs", "N" and "st", as the RIB path does. A polygon is not checked for being
+// planar, convex or degenerate
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    if (nverts < 3) {
+        return;
+    }
+    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
+    const unsigned int vertices = static_cast<unsigned int>(nverts);
+    // a vertex or varying value is one element per corner
+    v3d::render::offline::rib::ParameterList list;
+    std::vector<std::string> unresolved;
+    v3d::render::offline::rib::arguments(rc.declarations(), n, tokens, parms, vertices, &list, &unresolved);
+    for (const std::string & name : unresolved) {
+        rc.logger()->get()->warn("RI parameter '{}' was not declared and was skipped", name);
+    }
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = v3d::moya::Polygon::from(list, vertices);
+    if (polygon) {
+        rc.addPolygon(polygon);
+    }
 }
 
 RtVoid RiGeneralPolygon(RtInt nloops, RtInt nverts[], ...) {

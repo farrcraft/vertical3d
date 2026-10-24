@@ -18,6 +18,7 @@
 #include <boost/make_shared.hpp>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace {
 
@@ -396,6 +397,34 @@ BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 55, 40), 0.15F, 0.01F);
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 55, 40), 0.45F, 0.01F);
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::COVERAGE, 55, 40), 1.0F, 0.01F);
+}
+
+/**
+ * A coordinate system that is neither predefined nor saved is refused. Restoring it leaves the
+ * current transformation as it was, and reading it gives the identity rather than adding a
+ * matrix of zeros.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_unknown_coordinate_system_test) {
+    v3d::moya::RenderContext rc("");
+    rc.scale(2.0F, 2.0F, 2.0F);
+    rc.setCoordinateSystem("nowhere");
+    rc.saveCoordinateSystem("kept");
+
+    BOOST_TEST((rc.coordinateSystem("kept") == glm::scale(glm::mat4x4(1.0F), glm::vec3(2.0F))));
+    BOOST_TEST((rc.coordinateSystem("nowhere") == glm::mat4x4(1.0F)));
+}
+
+/**
+ * An unknown projection is refused, and the projection named before it stays in force.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_unknown_projection_test) {
+    v3d::moya::RenderContext rc("");
+    rc.projection("perspective", 45.0F);
+    const glm::mat4x4 screen = rc.coordinateSystem("screen");
+
+    rc.projection("fisheye");
+    BOOST_TEST(rc.perspective());
+    BOOST_TEST((rc.coordinateSystem("screen") == screen));
 }
 
 };  // namespace

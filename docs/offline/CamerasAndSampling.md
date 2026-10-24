@@ -66,6 +66,15 @@ Background: [ADR-0076](../adr/0076-offline-seeded-samples-resolved-by-one-shared
 
 - **The defaults are moya's**: a 320 by 240 image, pixel aspect 1, an orthographic projection,
   a 90 degree field of view for a perspective one, and clipping from `1e-10` to `1e38`.
+- **A projection is `"perspective"`, `"orthographic"` or RI_NULL.** RI_NULL, an empty name,
+  applies no projection, so camera space is screen space. Any other name is logged and
+  refused, and the projection in force stays.
+- **`CropWindow` names the part of the picture rendered**, as fractions of its width and
+  height held to `[0, 1]`. As RI states it, the columns rendered are `ceil(width * xmin)` to
+  `ceil(width * xmax) - 1`, and the rows likewise. Every pixel outside them is left empty: no
+  colour, no coverage and the farthest depth. The picture keeps its full size. The ray hider
+  casts no ray outside the window, and the reyes hider renders every bucket. A window with no
+  area is logged and refused.
 - **A picture side is from 1 to 65536 pixels**, `largestResolution` in
   [Sampling.h](../../api/render/offline/Sampling.h), wherever it enters the renderer: `Format`,
   `RiFormat` or the command line. A larger side is refused, and so is one that is not a number,
