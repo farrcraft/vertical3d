@@ -77,6 +77,17 @@ class Controller final : public v3d::engine::Engine {
      **/
     void handleResize(const v3d::event::kind::WindowResize& event);
 
+    /** A command that shows a fixed view, and the camera profile that view is. **/
+    struct FixedView {
+        std::string command;
+        std::string profile;
+    };
+
+    /**
+     * The fixed views the View menu offers. Each command shows its profile in the active view.
+     **/
+    static const std::vector<FixedView>& fixedViews();
+
  protected:
     /**
      * Build the scene, the views, the tools, the renderer and the ui from the config the
@@ -212,6 +223,18 @@ class Controller final : public v3d::engine::Engine {
      * @param filter which flag
      **/
     void toggleShow(ViewPort::VisibleFilter filter);
+
+    /**
+     * Show a camera profile in the active view, keeping the view's region.
+     * @param profile the profile's name
+     **/
+    void look(const std::string& profile);
+
+    /**
+     * Switch the active view's camera between a perspective and an orthographic projection.
+     * The camera stays where it is.
+     **/
+    void toggleProjection();
 
     /**
      * The primary mouse button went down or up. It drives the camera, transform and select

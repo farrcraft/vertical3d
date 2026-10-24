@@ -15,6 +15,7 @@
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/render/realtime/Window.h>
+#include <api/type/camera/Camera.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
@@ -230,6 +231,14 @@ void Controller::syncUi() {
         mark("view::show::mesh", activeView_->shows(ViewPort::SHOW_MESH));
         mark("view::show::handle", activeView_->shows(ViewPort::SHOW_HANDLE));
         mark("view::show::grid", activeView_->shows(ViewPort::SHOW_GRID));
+
+        // a view laid out from a profile the menu does not offer, such as a second
+        // perspective, marks none of the fixed views
+        const v3d::type::camera::Camera& camera = *activeView_->camera();
+        for (const FixedView& view : fixedViews()) {
+            mark(view.command.c_str(), camera.profile().name() == view.profile);
+        }
+        mark("view::camera::orthographic", camera.orthographic());
     }
 
     const SelectMask mask = selectTool_->mask();
@@ -312,6 +321,11 @@ void Controller::registerCommands() {
     press("view::show::grid", [this]() { toggleShow(ViewPort::SHOW_GRID); });
     press("view::show::mesh", [this]() { toggleShow(ViewPort::SHOW_MESH); });
     press("view::show::handle", [this]() { toggleShow(ViewPort::SHOW_HANDLE); });
+    for (const FixedView& view : fixedViews()) {
+        const std::string profile = view.profile;
+        press(view.command, [this, profile]() { look(profile); });
+    }
+    press("view::camera::orthographic", [this]() { toggleProjection(); });
     // not a view flag: the readout covers the window rather than one pane, so the renderer
     // shows it and nothing here reads it back
     press("view::show::statistics", [this]() { renderer_->statistics()->toggle(); });
@@ -573,6 +587,46 @@ void Controller::toggleShow(ViewPort::VisibleFilter filter) {
     if (activeView_) {
         activeView_->show(filter, !activeView_->shows(filter));
     }
+}
+
+/**
+ **/
+const std::vector<Controller::FixedView>& Controller::fixedViews() {
+    static const std::vector<FixedView> views{
+        {.command = "view::camera::front", .profile = "Front"},
+        {.command = "view::camera::back", .profile = "Back"},
+        {.command = "view::camera::left", .profile = "Left"},
+        {.command = "view::camera::right", .profile = "Right"},
+        {.command = "view::camera::top", .profile = "Top"},
+        {.command = "view::camera::bottom", .profile = "Bottom"},
+        {.command = "view::camera::perspective", .profile = "Perspective"},
+    };
+    return views;
+}
+
+/**
+ **/
+void Controller::look(const std::string& profile) {
+    if (!activeView_) {
+        return;
+    }
+    if (!profiles_->has(profile)) {
+        logger()->get()->error("There is no camera profile called {}", profile);
+        return;
+    }
+    activeView_->look(profiles_->get(profile));
+    logger()->get()->info("{} shows the {} camera", activeView_->name(), profile);
+}
+
+/**
+ **/
+void Controller::toggleProjection() {
+    if (!activeView_) {
+        return;
+    }
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = activeView_->camera();
+    camera->orthographic(!camera->orthographic());
+    logger()->get()->info("{} is {}", activeView_->name(), camera->orthographic() ? "orthographic" : "perspective");
 }
 
 /**

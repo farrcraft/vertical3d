@@ -289,6 +289,12 @@
                       "type": "radio",
                       "context": "view",
                       "command": "camera::perspective"
+                    },
+                    {
+                      "label": "Orthographic",
+                      "type": "check",
+                      "context": "view",
+                      "command": "camera::orthographic"
                     }
                   ]
                 }

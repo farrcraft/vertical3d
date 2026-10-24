@@ -196,6 +196,17 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "p",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "view",
+        "name": "camera::orthographic"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "j",
         "state": "pressed"
       },

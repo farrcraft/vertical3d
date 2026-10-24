@@ -186,7 +186,18 @@ the two axes it looks across. A perspective view gets the ground plane.
 
 **Active view.** The view under the cursor becomes active as the mouse moves. It does not
 change while a drag is under way, so a drag that crosses a border keeps its camera. The camera,
-select and transform tools all work in the active view.
+select and transform tools all work in the active view. The cursor over the menu bar or a
+toolbar does not change it, so a menu item acts on the view the cursor was last over.
+
+**Cameras.** The View menu's Camera items show a fixed view in the active view: Front, Back,
+Left, Right, Top, Bottom and Perspective, each a profile in `data/cameras.json`. The view keeps
+its region and its camera object, so the camera tools keep driving it. The menu marks the item
+for the profile the active view shows. A view laid out from a profile the menu does not offer
+marks none. `Controller::fixedViews()` lists each command and its profile.
+
+**Orthographic** (`view::camera::orthographic`, the P key) switches the active view's camera
+between an orthographic and a perspective projection, and leaves the camera where it is. The
+menu item is checked while the camera is orthographic.
 
 The editor draws lines only. A shaded display mode is not built, so a selected face is drawn as
 its outline and a selected vertex as a small box. The outline covers every edge of

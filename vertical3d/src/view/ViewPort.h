@@ -70,6 +70,14 @@ class ViewPort final {
     void resize(const glm::vec4& region);
 
     /**
+     * Show the scene through another camera profile, such as one of the fixed views.
+     *
+     * The camera stays the same object, so a tool that drives it keeps driving it. The view
+     * keeps its region, so the profile is given the view's size and pixel aspect ratio.
+     **/
+    void look(const v3d::type::camera::Profile& profile);
+
+    /**
      * @return the region of the window the view covers
      **/
     const glm::vec4& region() const noexcept;

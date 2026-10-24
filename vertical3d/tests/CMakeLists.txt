@@ -6,6 +6,7 @@ v3d_add_test(vertical3d
 
 	"view/ViewLayoutTest.cxx"
 	"view/ConstructionPlaneTest.cxx"
+	"view/ViewPortTest.cxx"
 
 	"scene/SceneTest.cxx"
 	"scene/CreatePolyTest.cxx"

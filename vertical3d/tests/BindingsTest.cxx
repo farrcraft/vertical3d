@@ -3,16 +3,20 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/config/CameraProfiles.h>
+#include <api/log/Logger.h>
 #include <vertical3d/src/Controller.h>
 
 #include <fstream>
 #include <initializer_list>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include <boost/algorithm/string/join.hpp>
 #include <boost/json.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 
 namespace {
@@ -49,7 +53,7 @@ void sent(const boost::json::value& entry, std::vector<std::string>* commands) {
     if (object.contains("context") && object.contains("command")) {
         commands->push_back(std::string(object.at("context").as_string()) + "::" + std::string(object.at("command").as_string()));
     }
-    for (const char* children : { "components", "children" }) {
+    for (const char* children : { "components", "children", "menus", "items", "buttons" }) {
         if (object.contains(children)) {
             sent(object.at(children), commands);
         }
@@ -80,6 +84,43 @@ BOOST_AUTO_TEST_CASE(every_dialog_button_sends_a_handled_command) {
     for (const std::string& command : commands) {
         BOOST_TEST(engine.commands().has(command), "nothing handles " << command);
     }
+}
+
+/**
+ * Each fixed view the editor offers names a camera profile the editor ships, and the menu's camera
+ * items are those views and the projection switch, each handled.
+ **/
+BOOST_AUTO_TEST_CASE(every_fixed_view_names_a_shipped_profile) {
+    const std::ifstream cameras("data/cameras.json");
+    BOOST_REQUIRE(cameras.is_open());
+    std::stringstream text;
+    text << cameras.rdbuf();
+    v3d::config::CameraProfiles profiles(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(profiles.load(boost::json::parse(text.str()).as_object()));
+
+    const v3d::editor::Controller engine("");
+    std::set<std::string> offered{"view::camera::orthographic"};
+    for (const v3d::editor::Controller::FixedView& view : v3d::editor::Controller::fixedViews()) {
+        BOOST_TEST(profiles.has(view.profile), "no camera profile is called " << view.profile);
+        offered.insert(view.command);
+    }
+    for (const std::string& command : offered) {
+        BOOST_TEST(engine.commands().has(command), "nothing handles " << command);
+    }
+
+    const std::ifstream ui("data/vgui.json");
+    BOOST_REQUIRE(ui.is_open());
+    std::stringstream layout;
+    layout << ui.rdbuf();
+    std::vector<std::string> commands;
+    sent(boost::json::parse(layout.str()).at("containers"), &commands);
+    std::set<std::string> onMenu;
+    for (const std::string& command : commands) {
+        if (command.starts_with("view::camera::")) {
+            onMenu.insert(command);
+        }
+    }
+    BOOST_TEST((onMenu == offered));
 }
 
 };  // namespace

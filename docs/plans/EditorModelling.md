@@ -146,7 +146,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [14](#step-14--split-edge-and-split-face) | Split edge and split face, through the record 0098 decides | `api/brep`, `vertical3d` | 0098 | done |
 | [15](#step-15--extrude-and-inset) | Extrude and inset a face | `api/brep`, `vertical3d` | 0098 | done |
 | [16](#step-16--merge) | Merge vertices | `api/brep`, `vertical3d` | 0098 | done |
-| [17](#step-17--fixed-views-and-the-projection) | The fixed views and the projection switch | `vertical3d` | — | open |
+| [17](#step-17--fixed-views-and-the-projection) | The fixed views and the projection switch | `vertical3d` | — | done |
 | [18](#step-18--resizable-panes) | Resizable panes | `vertical3d` | — | open |
 | [19](#step-19--the-documents) | The editor documents state the new rules | `docs` | — | open |
 
@@ -544,6 +544,15 @@ the rules.
 leaves the mesh unchanged; every case with the strict check and the undo and redo comparisons.
 
 ### Step 17 — Fixed views and the projection
+
+**Done.** `ViewPort::look()` puts a profile into the view's own camera and gives it the view's
+size, so the tools that hold the view keep working. `Controller::fixedViews()` pairs each
+`view::camera::*` command with its profile. The projection switch is `view::camera::orthographic`,
+a check item on the Camera menu bound to P. `syncUi()` marks the active view's profile and its
+projection. Cases are in `ViewPortTest.cxx` and `BindingsTest.cxx`, which also checks that every
+fixed view names a profile in `data/cameras.json`. Running the editor and pressing P switched
+the Front view three times with no validation message.
+[Scene.md](../editor/Scene.md#viewports) states the rules.
 
 * **`view::camera::front` and the other six fixed views** set the active view's camera to that
   profile. Each profile is already in `data/cameras.json`.

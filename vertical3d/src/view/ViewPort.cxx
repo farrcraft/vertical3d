@@ -61,6 +61,13 @@ void ViewPort::resize(const glm::vec4& region) {
 
 /**
  **/
+void ViewPort::look(const v3d::type::camera::Profile& profile) {
+    camera_->profile() = profile;
+    resize(region_);
+}
+
+/**
+ **/
 const glm::vec4& ViewPort::region() const noexcept {
     return region_;
 }

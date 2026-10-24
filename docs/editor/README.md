@@ -36,6 +36,7 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | I | `transform::poly::inset_face` | Inset the selected faces (see [Modelling operations](Scene.md#modelling-operations)) |
 | J | `transform::poly::merge_vertices` | Merge the selected vertices into one |
 | G, M, H | `view::show::grid`, `mesh`, `handle` | Toggle what the view under the cursor draws |
+| P | `view::camera::orthographic` | Switch the view under the cursor between orthographic and perspective (see [Cameras](Scene.md#viewports)) |
 | F3 | `view::show::statistics` | Toggle the frame statistics overlay |
 | Z, Y | `edit::undo`, `edit::redo` | Step the history |
 | O, S | `project::load`, `project::save` | Open a project; save the current one |
