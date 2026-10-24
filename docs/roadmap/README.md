@@ -33,7 +33,7 @@ roadmap has none of these. It is not a schedule and it has no dates.
 
 | Roadmap | Area |
 |---|---|
-| [EditorModelling.md](EditorModelling.md) | The editor: a dirty flag, multiple selection, modelling operations, the missing command handlers and resizable panes. The [EditorModelling](../plans/EditorModelling.md) plan takes up everything but most of the command handlers |
+| [EditorModelling.md](EditorModelling.md) | The editor's missing command handlers: shading and culling, cameras and lights in the scene, importers, playback, the Render menu and groups. The [EditorModelling](../plans/completed/EditorModelling.md) plan built the rest |
 
 ## Completed roadmaps
 

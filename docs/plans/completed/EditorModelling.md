@@ -1,13 +1,13 @@
 # Editor Modelling — Selection Sets, Component Moves and Topology Operations
 
 Drafted 2026-10-18 against `0bb29eb9`. This plan takes up sections 1, 2, 3 and 5 of
-[the editor modelling roadmap](../roadmap/EditorModelling.md), and the camera-view part of its
+[the editor modelling roadmap](../../roadmap/EditorModelling.md), and the camera-view part of its
 section 4. Its steps fall in `vertical3d`, `api/brep`, `api/ui` and `api/engine`. When it closes,
 the editor warns before it discards work, selects several objects or components at once, moves
 vertices, edges and faces, and splits, extrudes, insets and merges faces with undo. Its views
 switch between the fixed cameras, and its panes can be resized.
 
-The editor is described in [editor/](../editor/README.md). It edits half-edge meshes
+The editor is described in [editor/](../../editor/README.md). It edits half-edge meshes
 (`brep::BRep`) in a `Scene`, records each completed change as a `Command` on a `CommandStack`,
 and draws lines only.
 
@@ -148,7 +148,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [16](#step-16--merge) | Merge vertices | `api/brep`, `vertical3d` | 0098 | done |
 | [17](#step-17--fixed-views-and-the-projection) | The fixed views and the projection switch | `vertical3d` | — | done |
 | [18](#step-18--resizable-panes) | Resizable panes | `vertical3d` | — | done |
-| [19](#step-19--the-documents) | The editor documents state the new rules | `docs` | — | open |
+| [19](#step-19--the-documents) | The editor documents state the new rules | `docs` | — | done |
 
 ## What blocks what
 
@@ -189,7 +189,7 @@ extrude appends more, and a merge removes and renumbers. Steps 17 and 18 can lan
 ### Step 1 — What the roadmap got wrong
 
 **Done.** The roadmap states each point below, links this plan, and keeps the groups this plan
-leaves. [plans/README.md](README.md), the roadmap index and TODO.md's editor section name the plan.
+leaves. [plans/README.md](../README.md), the roadmap index and TODO.md's editor section name the plan.
 
 **Documents only.**
 
@@ -203,7 +203,7 @@ leaves. [plans/README.md](README.md), the roadmap index and TODO.md's editor sec
   Render menu, `create::group`, the camera-creation items and the camera toolbar.
 * The roadmap's section 3 does not say that `BRep::validate` is too weak to test a topology change
   against, or that a `BRep` cannot be copied. Both shape step 3's ADR.
-* The roadmap links this plan, and [plans/README.md](README.md) lists it.
+* The roadmap links this plan, and [plans/README.md](../README.md) lists it.
 * TODO.md's editor section names this plan.
 
 **What stays in the roadmap**, and why:
@@ -224,7 +224,7 @@ leaves. [plans/README.md](README.md), the roadmap index and TODO.md's editor sec
 **Done.** `CommandStack::markSaved()` and `dirty()` hold the saved position as a count of done
 commands, shifted when the stack drops its oldest and lost when a push discards it.
 `Controller::syncCaption()` runs after every command. Four cases are in `CommandStackTest.cxx`.
-[Commands and undo](../editor/CommandsAndUndo.md#the-saved-position) states the rule.
+[Commands and undo](../../editor/CommandsAndUndo.md#the-saved-position) states the rule.
 
 * **`CommandStack` records the position of the last save.** `markSaved()` records the current
   position. `dirty()` is true at any other position.
@@ -243,7 +243,7 @@ the marker; the marker trimmed by a full stack; `clear()`.
 ### Step 3 — A prompt in the ui shell
 
 **Done.** `ui::shell::Prompt` is in `api/ui/shell`, with six cases in `PromptTest.cpp`.
-[ShellComponents.md](../api/ui/ShellComponents.md#prompt) states its rules. The prompt does not
+[ShellComponents.md](../../api/ui/ShellComponents.md#prompt) states its rules. The prompt does not
 hold the keyboard or the pointer: the chooser does not either. Each is a pickable panel, so a
 click on it goes to the ui and a click beside it goes to the app. Step 5 decides whether the editor
 ignores the tools while a prompt is up.
@@ -264,7 +264,7 @@ and cancels the first.
 **Done.** The seam is a protected virtual, `Engine::quitRequested()`, beside `start()` and
 `release()`. `ui::quit`, `SDL_EVENT_QUIT` and `SDL_EVENT_WINDOW_CLOSE_REQUESTED` all reach it
 through `requestQuit()`. Three cases are in `EngineTest.cpp`.
-[Lifecycle.md](../api/engine/Lifecycle.md#rules) states the rule.
+[Lifecycle.md](../../api/engine/Lifecycle.md#rules) states the rule.
 
 * **Every path to quitting asks the app first.** `ui::quit`, `SDL_EVENT_QUIT` and
   `SDL_EVENT_WINDOW_CLOSE_REQUESTED` call one engine function, which asks the app whether to quit
@@ -284,7 +284,7 @@ does not; the held quit ends the loop when the app calls `quit()`.
 command. Running the editor showed the prompt over the views, the caption marked dirty, and two
 close requests held with no validation message. The answer buttons were not clicked: posted mouse
 messages do not reach SDL at the posted position, so the answers are covered by the prompt's own
-cases. [Files.md](../editor/Files.md#project-files) states the rule.
+cases. [Files.md](../../editor/Files.md#project-files) states the rule.
 
 * **A dirty project asks before Open and before a quit**: save, discard, or cancel.
 * **Save** writes the project and then continues. A save that fails stops the open or the quit, and
@@ -339,7 +339,7 @@ selection is several objects, or is components inside one or more objects?
 component clears the components of every mesh first. The renderer already drew each mesh by its
 own flag, so it did not change. Three cases are in `SelectToolTest.cxx` and `SceneTest.cxx`, and
 `create_command_selection_test` covers an undo with two meshes selected.
-[Picking](../editor/PickingAndManipulators.md#picking) states the rules.
+[Picking](../../editor/PickingAndManipulators.md#picking) states the rules.
 
 * **`Scene::selection()` returns every selected mesh**, in scene order. A function for the single
   case is kept only if a caller still needs one after this step.
@@ -363,7 +363,7 @@ set; a mask change clears components in every mesh; undoing a create with two me
 is what makes a band replace the selection. The renderer draws the outline into the ui canvas, which
 is already in window pixels, so no pass was added. A release with a camera modifier held reaches
 the select tool as it reaches the transform tool. Five cases are in `PickerTest.cxx` and
-`SelectToolTest.cxx`. [Picking](../editor/PickingAndManipulators.md#picking) states the rules.
+`SelectToolTest.cxx`. [Picking](../../editor/PickingAndManipulators.md#picking) states the rules.
 
 * **A drag that starts on nothing draws a rectangle**, and its release selects everything inside
   it, under the select mask. With `select::add` held it adds to the selection.
@@ -385,7 +385,7 @@ puts the handles at the mean of the origins. A rotate carries each origin round 
 scale scales each distance from it, held above the scale floor. `TransformCommand` holds a
 `Change` for each mesh, and `TransformTool` keeps the set it grabbed. `Scene::firstSelected()`
 lost its last caller and is gone. Eight cases are in `ManipulatorTest.cxx` and
-`TransformToolTest.cxx`. [Manipulators](../editor/PickingAndManipulators.md#manipulators) states
+`TransformToolTest.cxx`. [Manipulators](../../editor/PickingAndManipulators.md#manipulators) states
 the rules.
 
 * **The handles sit at the pivot ADR-0096 decides**, for every selected object.
@@ -405,7 +405,7 @@ unpaired edge as a boundary. `Topology.h` gains `edgesFrom()`, `facesAround()` a
 `newellNormal()`. The undefined `addEdge(const glm::vec3&)` declaration and its TODO.md entry are
 gone. Seven cases are in `BRepTest.cxx`, built on a cube wound so every edge pairs, and
 `create_poly_strict_test` puts the four primitives through the strict check.
-[Scene.md](../editor/Scene.md#meshes) states the rules.
+[Scene.md](../../editor/Scene.md#meshes) states the rules.
 
 * **A strict validation** checks what `validate` does not: every pair is mutual, every `next` chain
   closes, every half edge in a loop names that loop's face, and no two half edges of one face run
@@ -431,12 +431,12 @@ select mask through `Controller::selectMask()`, and records a component gesture 
 `VertexCommand`. The renderer asks the tool for its manipulator and target every frame.
 
 The step found that the primitives wind their faces clockwise seen from outside, and that the
-cone stored inward normals. [ADR-0097](../adr/0097-editor-faces-wind-clockwise-seen-from-outside.md)
+cone stored inward normals. [ADR-0097](../../adr/0097-editor-faces-wind-clockwise-seen-from-outside.md)
 makes that winding the rule. `newellNormal` follows it, and the cone's normals point out. The
 topology record this plan called 0097 is now 0098.
 
 Cases are in `TargetTest.cxx`, `TransformToolTest.cxx` and `CreatePolyTest.cxx`.
-[Manipulators](../editor/PickingAndManipulators.md#manipulators) states the rules.
+[Manipulators](../../editor/PickingAndManipulators.md#manipulators) states the rules.
 
 * **In a component mode, the manipulator moves the selected components' vertices**, in the object's
   own space, about the pivot ADR-0096 decides. An edge moves its two vertices and a face its loop.
@@ -483,7 +483,7 @@ holds `splitEdge()` and `splitFace()`, and `src/scene/Modelling.h` applies them 
 The two menu items have handlers. Split edge selects the two parts of each edge it split. Split
 face cannot select its new edge under the vertex mask it works in, so it leaves the two vertices
 selected instead. Cases are in `OperationsTest.cxx` and `ModellingTest.cxx`, including a vertex
-move that still undoes after a split is undone. [Scene.md](../editor/Scene.md#modelling-operations)
+move that still undoes after a split is undone. [Scene.md](../../editor/Scene.md#modelling-operations)
 states the rules.
 
 * **The topology command** that 0098 decides is built, with split edge as its first user.
@@ -508,7 +508,7 @@ faces where they were, so the translate manipulator pulls them out, and the move
 its normals. The step picked a fixed inset: each corner moves a quarter of the way to the face's
 centre. The scale manipulator, which pivots at that centre, changes it after. Inset is bound to I
 and is on the Poly menu. Cases are in `OperationsTest.cxx` and `ModellingTest.cxx`.
-[Scene.md](../editor/Scene.md#modelling-operations) states the rules.
+[Scene.md](../../editor/Scene.md#modelling-operations) states the rules.
 
 * **Extrude face** duplicates a face's loop, joins the old and new loops with a ring of quads, and
   leaves the new face selected so that the manipulator can pull it out. Several selected faces
@@ -530,7 +530,7 @@ two open boundaries. Two half edges running the same way is the non-manifold edg
 merge before anything changes. The strict check then refuses a face that meets itself, and puts
 the old arrays back. Merge is bound to J and is on the Poly menu. Cases are in
 `OperationsTest.cxx` and `ModellingTest.cxx`, including a vertex move that still undoes after a
-merge that renumbered it is undone. [Scene.md](../editor/Scene.md#modelling-operations) states
+merge that renumbered it is undone. [Scene.md](../../editor/Scene.md#modelling-operations) states
 the rules.
 
 * **Merge vertices** collapses the selected vertices to their centre. Faces that shrink below three
@@ -552,7 +552,7 @@ a check item on the Camera menu bound to P. `syncUi()` marks the active view's p
 projection. Cases are in `ViewPortTest.cxx` and `BindingsTest.cxx`, which also checks that every
 fixed view names a profile in `data/cameras.json`. Running the editor and pressing P switched
 the Front view three times with no validation message.
-[Scene.md](../editor/Scene.md#viewports) states the rules.
+[Scene.md](../../editor/Scene.md#viewports) states the rules.
 
 * **`view::camera::front` and the other six fixed views** set the active view's camera to that
   profile. Each profile is already in `data/cameras.json`.
@@ -570,7 +570,7 @@ press to the layout after the ui and before the tools, and a held divider takes 
 step decided the shares are not written back: `data/` is shipped config, so a resize lasts the
 session. Cases are in `ViewLayoutTest.cxx`. The drag itself was not run in the editor, because
 posted mouse messages do not reach SDL at their position.
-[Scene.md](../editor/Scene.md#viewports) states the rules.
+[Scene.md](../../editor/Scene.md#viewports) states the rules.
 
 * **A split records each child's share**, and a missing share means an even one, so
   `data/layout.json` keeps working.
@@ -584,10 +584,57 @@ changes two shares and respects the floor; `viewAt` finds the divider.
 
 ### Step 19 — The documents
 
-* [editor/](../editor/README.md) states the dirty flag, the prompt, the selection set, the rubber
+**Done.** Each step stated its own rules in the page that owns them, so this step checked
+them, rewrote the roadmap down to the handler groups it keeps, recounted the menu's unhandled
+commands for TODO.md, and closed the plan.
+
+* [editor/](../../editor/README.md) states the dirty flag, the prompt, the selection set, the rubber
   band, component moves and each topology operation, in the page that owns each.
 * The engine document states how an app holds a quit. The ui document states the prompt.
 * The roadmap's sections 1, 2, 3 and 5 are marked as done by this plan. Its section 4 keeps what
   step 1 left in it, so the roadmap stays open.
 * ADR-0096 and ADR-0098 are `accepted`, and ADR-0015 says `Amended by` 0096.
 * TODO.md's editor entries this plan closed are deleted.
+
+## Outcome
+
+Closed 2026-10-24. The editor asks before it discards work, selects sets of objects and
+components with shift-click and a rubber band, moves components, and splits, extrudes, insets and
+merges faces and vertices with undo. Its views switch between the fixed cameras and between
+projections, and its panes resize.
+
+**Delivered:**
+
+- A saved position on the command stack, the dirty mark in the caption, a three-answer prompt in
+  `api/ui/shell`, and an engine whose every path to quitting asks the app first.
+- Shift freed for selection, a selection set, and a rubber band through the picker's projection.
+- Handles pivoting at the mean of the selection, for sets of objects and for components.
+  ADR-0096, amending ADR-0015.
+- Component moves recorded as vertex commands, with the normals around each moved vertex
+  recomputed.
+- `BRep::validateStrict()`, the walks around a vertex, Newell's normal, and snapshots.
+- Topology changes undone from snapshots, index for index. ADR-0098.
+- Split edge, split face, extrude (by region), inset and merge vertices, in
+  `api/brep/Operations.h`, each on the Poly menu.
+- The fixed views and an orthographic switch on the View menu, marked for the active view.
+- Shares in the layout, and dividers that drag.
+
+**Different from the plan:**
+
+- The primitives wound their faces clockwise seen from outside, and the cone stored inward
+  normals. ADR-0097 made that winding the rule, so the topology record this plan called 0097 is
+  0098.
+- Inset is an extrude of one face with its copies moved toward the face's centre, by a fixed
+  quarter. The scale manipulator changes it after, so no drag was built for it.
+- Extrude leaves the faces where they were, and the translate manipulator pulls them out.
+- Merge pairs half edges by the vertices they run between, so it also welds two open boundaries.
+  The strict check refuses a face that meets itself, which the pairing lets through.
+- `brep::insetFaces()` takes a list of faces rather than one, because a face index beside a
+  fraction is a pair of parameters easily swapped.
+- The rubber band, the prompt's answer buttons and the divider drag were not driven in the
+  running editor, because posted mouse messages do not reach SDL at their position. Each is
+  covered by headless cases.
+
+**Left open,** in [TODO.md](../../TODO.md#editor) and the
+[roadmap](../../roadmap/EditorModelling.md): the 45 menu commands with no handler, which need a
+shaded draw, cameras and lights in the scene, importers, animation, or the Render menu.

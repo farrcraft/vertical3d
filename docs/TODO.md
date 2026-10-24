@@ -316,9 +316,7 @@ style cannot set the bullet indent.
 ## Editor
 
 Open work for when the editor app itself moves forward. [editor/](editor/README.md) describes the
-editor. [EditorModelling](roadmap/EditorModelling.md) orders these. The
-[EditorModelling plan](plans/EditorModelling.md) takes up everything here but most of the
-missing command handlers.
+editor. [EditorModelling](roadmap/EditorModelling.md) orders these.
 
-[] 55 of the menu's 77 commands have no handler, and only log themselves when chosen.
+[] 45 of the menu's 80 commands have no handler, and only log themselves when chosen.
 

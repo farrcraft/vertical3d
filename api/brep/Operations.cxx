@@ -184,9 +184,10 @@ struct Quad {
 };
 
 /**
- * The quad of a ring for one outline half edge, from a to b: b' to a' beside the region's half
- * edge, a' down to a, a to b beside the half edge outside, and b up to b'. It is paired with the
- * two half edges it lies beside, and not yet with the quads beside it.
+ * The quad of a ring for one outline half edge, which runs from a to b. Its four sides are b' to
+ * a' beside the region's half edge, a' down to a, a to b beside the half edge outside, and b up
+ * to b'. It is paired with the two half edges it lies beside, and not yet with the quads beside
+ * it.
  **/
 Quad ringQuad(BRep* mesh, const Rim& rim, const Copies& copies) {
     const Index along = mesh->addEdge(HalfEdge(copies.at({rim.region, rim.from})));
