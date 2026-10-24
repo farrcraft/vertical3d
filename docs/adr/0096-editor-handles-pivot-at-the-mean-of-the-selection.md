@@ -16,7 +16,7 @@ or vertex, so a user learns it once and expects it everywhere.
 ## Decision
 
 A set of objects pivots at the mean of their origins. A component selection pivots at the mean
-of the distinct vertices it moves, in world space, and may span several objects; each vertex is
+of the distinct vertices it moves, in world space, and may span several objects. Each vertex is
 moved in world space and written back in its own object's space. A selection of one object
 pivots at its origin, as before.
 

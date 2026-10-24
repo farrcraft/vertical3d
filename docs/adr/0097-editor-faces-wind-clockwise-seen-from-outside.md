@@ -21,8 +21,8 @@ computed from a face's points follows that rule.
 
 ### Counter-clockwise seen from outside
 - **For**: it is the glTF and OpenGL convention, and the one most geometry code assumes.
-- **Against**: every primitive would be rewound, the RIB export would have to reverse its order
-  or set an orientation, and projects saved with the present winding would have their normals
+- **Against**: every primitive would be rewound, and the RIB export would have to reverse its
+  order or set an orientation. Projects saved with the present winding would have their normals
   turned over at their first edit.
 - **Rejected because**: it changes the files and output that exist for no gain inside the editor.
 

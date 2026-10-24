@@ -36,7 +36,15 @@ constexpr float GROWTH = 1.0e-5F;
 /** Which bin a centre falls in along an axis of the centres' range. **/
 std::size_t bin(float centre, float low, float scale) {
     const float at = (centre - low) * scale;
-    return std::min(BINS - 1, static_cast<std::size_t>(std::max(0.0F, at)));
+    // clamped while still a float. An extent near zero makes the scale infinite, and an
+    // infinite or NaN float converted to an integer is undefined
+    if (!(at > 0.0F)) {
+        return 0;
+    }
+    if (at >= static_cast<float>(BINS - 1)) {
+        return BINS - 1;
+    }
+    return static_cast<std::size_t>(at);
 }
 
 };  // namespace

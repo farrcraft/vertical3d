@@ -57,10 +57,10 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
 
         /**
          * Whether the mesh is sound enough for an operation that changes its topology to be
-         * checked against. Everything validate() checks, and also: every pair is mutual,
-         * every face's next chain closes, every half edge in a face's loop names that face,
-         * and no two half edges of one face run between the same two vertices. An edge with
-         * no pair is allowed, because an open mesh has a boundary.
+         * checked against. It checks everything validate() checks. It also checks that every
+         * pair is mutual and every face's next chain closes. Every half edge in a face's loop
+         * must name that face, and no two half edges of one face may run between the same two
+         * vertices. An edge with no pair is allowed, because an open mesh has a boundary.
          *
          * @param problem what is wrong, naming the part, when anything is
          **/

@@ -27,8 +27,8 @@ namespace v3d::brep {
 namespace {
 
 /**
- * Cut one half edge in two at a vertex. The half edge now ends at the vertex, and a new half
- * edge carries on from there to where it used to end, in the same face.
+ * Cut one half edge in two at a vertex. The half edge then ends at the vertex, and a new half
+ * edge in the same face carries on from there to the vertex the cut half edge ended at.
  *
  * @return the new half edge
  **/
