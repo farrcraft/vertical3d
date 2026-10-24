@@ -254,8 +254,9 @@ with code 77, and ctest reports the suite as `Skipped` (set by
 The check is in `main` rather than in each case because a suite whose every case skips exits
 with zero, and ctest would report a pass.
 
-**In CI a skip is a failure.** A separate workflow step runs the executable again and fails the
-job on exit code 77, because lavapipe was installed and the loader should have found it. Locally
+**In CI a skip is a failure.** The suite runs in a workflow step of its own rather than through
+ctest. That step fails the job on exit code 77, because lavapipe was installed and the loader
+should have found it. Locally
 a skip is correct, since a machine may have no Vulkan device.
 
 This is a separate executable from `v3dtest_render`, which tests the renderer's CPU-side code,
@@ -276,8 +277,9 @@ as `Skipped`. The reason is printed to the console.
 A window appears on the screen for each case while the suite runs.
 
 **In CI a skip is a failure here too.** The Windows runner opens a window, and lavapipe presents
-to it. A workflow step runs the executable again and fails the job on exit code 77, because a
-skip there means the window or the swapchain stopped working and no `Engine3D` case was checked.
+to it. The suite runs in a workflow step of its own rather than through ctest, and fails the job
+on exit code 77. A skip there means the window or the swapchain stopped working and no
+`Engine3D` case was checked.
 
 ## Reference images
 

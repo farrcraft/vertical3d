@@ -230,17 +230,30 @@ jobs:
       #
       # There is no rung below the toolset in restore-keys for the same reason: a cache built
       # by another compiler cannot be reused by this one, so fetching it only costs time.
+      #
+      # The key cannot hold everything vcpkg hashes into an ABI. The CMake, PowerShell and
+      # vcpkg versions on the image are in it too, and an image update that changes one makes
+      # every archive miss. The key therefore ends in the run id and never matches exactly. A
+      # restore takes the newest archive under the prefix, and a run whose configure built
+      # anything saves a new one.
       - name: Restore the vcpkg binaries
-        id: vcpkg-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
-          restore-keys: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-
+          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.run_id }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-
+            vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-
 
+      # The archives restored are listed, so that the step after the configure can tell which
+      # ones it built.
       - name: Make the vcpkg cache directory
         shell: pwsh
-        run: New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
+        run: |
+          New-Item -ItemType Directory -Force -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" | Out-Null
+          # an array, so that an empty cache still writes the file
+          $restored = @(Get-ChildItem -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" -Recurse -Filter *.zip | ForEach-Object { $_.BaseName })
+          Set-Content -Path "$env:RUNNER_TEMP\vcpkg-restored.txt" -Value $restored -Encoding ascii
 
       # libnoise is built out of source: it commits a CMakeCache.txt naming a generator that
       # is not on this image, and its cmake_minimum_required predates what current CMake
@@ -274,15 +287,46 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
             -DVCPKG_TARGET_TRIPLET=x64-windows || exit /b 1
 
+      # An archive is named by its package's ABI hash, and the install's status file lists the
+      # hash of every package installed. An archive no installed package names is one the
+      # configure could not use, and is deleted, so the cache holds one set of packages rather
+      # than every set an image update has left behind. Any archive left that was not restored
+      # was built by this configure, and the cache is saved.
+      - name: Keep only the vcpkg binaries this install used
+        id: vcpkg-used
+        shell: pwsh
+        run: |
+          $status = Join-Path $env:BUILD_DIR "vcpkg_installed\vcpkg\status"
+          $used = @{}
+          foreach ($paragraph in ((Get-Content $status -Raw) -split "\r?\n\r?\n")) {
+            if ($paragraph -match "(?m)^Status: install ok installed" -and $paragraph -match "(?m)^Abi: ([0-9a-f]+)") {
+              $used[$Matches[1]] = $true
+            }
+          }
+          if ($used.Count -eq 0) { throw "$status names no installed package" }
+          $restored = @{}
+          foreach ($name in (Get-Content "$env:RUNNER_TEMP\vcpkg-restored.txt")) { $restored[$name] = $true }
+          $removed = 0
+          $built = 0
+          foreach ($archive in (Get-ChildItem -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" -Recurse -Filter *.zip)) {
+            if (-not $used.ContainsKey($archive.BaseName)) {
+              Remove-Item $archive.FullName
+              $removed++
+            } elseif (-not $restored.ContainsKey($archive.BaseName)) {
+              $built++
+            }
+          }
+          Write-Host "$($used.Count) packages installed, $built built here, $removed stale archives deleted"
+          "changed=$($built -gt 0)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
       # Saved here, not from a post step. A run whose build or tests fail still keeps the
-      # packages the configure just spent the time building. Skipped where the restore was an
-      # exact hit, which leaves nothing this configure could have added.
+      # packages the configure just spent the time building.
       - name: Save the vcpkg binaries
-        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        if: steps.vcpkg-used.outputs.changed == 'True'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.run_id }}
 
       - name: Build
         shell: cmd
@@ -294,13 +338,16 @@ jobs:
       # validation. It reports hazards caused by a barrier's scopes being wrong, which are the
       # hardest to see by eye and the most likely to come from a rendering change.
       # The render suite is silent under it; the apps are not, and are not run here.
+      #
+      # The render device and window suites are left out, because the two steps after this run
+      # them and also fail on a skip, which ctest does not count as a failure.
       - name: Test
         shell: cmd
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
-          ctest --test-dir "%BUILD_DIR%" --output-on-failure || exit /b 1
+          ctest --test-dir "%BUILD_DIR%" --output-on-failure -E "^render_(device|window)$" || exit /b 1
 
       # A skipped render suite is a failure here even though it is not one locally. A run where
       # the suite skipped is green but has checked nothing about the renderer. Locally the skip
