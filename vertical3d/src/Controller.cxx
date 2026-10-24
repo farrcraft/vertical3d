@@ -293,6 +293,8 @@ void Controller::registerCommands() {
     press("create::poly::cone", [this]() { createPoly("cone"); });
     press("transform::poly::split_edge", [this]() { splitSelectedEdges(); });
     press("transform::poly::split_face", [this]() { splitSelectedFace(); });
+    press("transform::poly::extrude_face", [this]() { changeSelectedFaces("extrude face", extrudeFaces); });
+    press("transform::poly::inset_face", [this]() { changeSelectedFaces("inset face", insetFaces); });
 
     press("select::mask::object", [this]() { selectMask("object"); });
     press("select::mask::vertex", [this]() { selectMask("vertex"); });
@@ -406,6 +408,22 @@ void Controller::splitSelectedFace() {
     }
     history_->push(command);
     logger()->get()->info("split a face between the selected vertices");
+}
+
+/**
+ **/
+void Controller::changeSelectedFaces(const std::string& name, FaceOperation operation) {
+    if (selectTool_->mask() != SelectMask::Face) {
+        logger()->get()->info("{} needs the face select mask", name);
+        return;
+    }
+    const boost::shared_ptr<TopologyCommand> command = operation(*scene_);
+    if (!command) {
+        logger()->get()->info("{}: no face is selected", name);
+        return;
+    }
+    history_->push(command);
+    logger()->get()->info("{}: done to the selected faces", name);
 }
 
 /**

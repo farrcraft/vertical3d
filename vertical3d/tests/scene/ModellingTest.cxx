@@ -7,6 +7,7 @@
 #include <api/brep/Face.h>
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
+#include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/TopologyCommand.h>
@@ -17,6 +18,7 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectMask.h>
 
+#include <cmath>
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -254,6 +256,129 @@ BOOST_AUTO_TEST_CASE(modelling_history_keeps_indices_test) {
     history.undo();
     history.undo();
     BOOST_CHECK(same(cube->snapshot(), original));
+}
+
+/**
+ * The index of a mesh's face whose normal points one way.
+ **/
+v3d::brep::Index facing(const v3d::brep::BRep& mesh, const glm::vec3& normal) {
+    for (v3d::brep::Index id = 0; id < mesh.faceCount(); id++) {
+        if (glm::distance(mesh.face(id)->normal(), normal) < 0.0001F) {
+            return id;
+        }
+    }
+    return v3d::brep::INVALID_ID;
+}
+
+BOOST_AUTO_TEST_CASE(modelling_extrude_faces_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    cube->selected(true);
+    scene.add(cube);
+
+    // nothing selected is nothing to extrude
+    BOOST_CHECK(!v3d::editor::extrudeFaces(scene));
+
+    const v3d::brep::Index top = facing(*cube, glm::vec3(0.0F, 1.0F, 0.0F));
+    BOOST_REQUIRE(top != v3d::brep::INVALID_ID);
+    cube->face(top)->selected(true);
+    const v3d::brep::BRep::Snapshot before = cube->snapshot();
+    const boost::shared_ptr<v3d::editor::TopologyCommand> command = v3d::editor::extrudeFaces(scene);
+    BOOST_REQUIRE(command);
+    BOOST_CHECK_EQUAL(command->name(), "extrude face");
+    sound(*cube);
+    BOOST_CHECK_EQUAL(cube->faceCount(), 10U);
+
+    // the face stays selected, and the ring is not
+    BOOST_CHECK(cube->face(top)->selected());
+    BOOST_CHECK_EQUAL(selectedComponents(*cube), 1U);
+    undoRedo(command.get(), cube, before);
+
+    // pulled out by a manipulator, the ring's walls get normals that face out of the cube
+    cube->face(top)->selected(true);
+    const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face);
+    v3d::editor::Motion motion;
+    motion.offset = glm::vec3(0.0F, 0.5F, 0.0F);
+    target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
+    sound(*cube);
+    for (v3d::brep::Index quad = 6; quad < cube->faceCount(); quad++) {
+        BOOST_CHECK_SMALL(glm::length(cube->face(quad)->normal()) - 1.0F, 0.0001F);
+        BOOST_CHECK_SMALL(cube->face(quad)->normal().y, 0.0001F);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(modelling_extrude_region_test) {
+    // the top and the right share an edge, so they extrude as one region with a ring of six
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    cube->selected(true);
+    scene.add(cube);
+    const v3d::brep::Index top = facing(*cube, glm::vec3(0.0F, 1.0F, 0.0F));
+    const v3d::brep::Index right = facing(*cube, glm::vec3(1.0F, 0.0F, 0.0F));
+    BOOST_REQUIRE(top != v3d::brep::INVALID_ID && right != v3d::brep::INVALID_ID);
+    cube->face(top)->selected(true);
+    cube->face(right)->selected(true);
+    const v3d::brep::BRep::Snapshot before = cube->snapshot();
+
+    const boost::shared_ptr<v3d::editor::TopologyCommand> command = v3d::editor::extrudeFaces(scene);
+    BOOST_REQUIRE(command);
+    sound(*cube);
+    BOOST_CHECK_EQUAL(cube->faceCount(), 12U);
+    BOOST_CHECK_EQUAL(cube->vertexCount(), 14U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cube), 2U);
+    undoRedo(command.get(), cube, before);
+}
+
+BOOST_AUTO_TEST_CASE(modelling_extrude_open_boundary_test) {
+    // a wall of the cylinder has its top and bottom on the open rims
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::brep::BRep> cylinder = v3d::editor::create_poly_cylinder();
+    cylinder->selected(true);
+    scene.add(cylinder);
+    cylinder->face(0)->selected(true);
+    const std::size_t faces = cylinder->faceCount();
+    const v3d::brep::BRep::Snapshot before = cylinder->snapshot();
+
+    const boost::shared_ptr<v3d::editor::TopologyCommand> command = v3d::editor::extrudeFaces(scene);
+    BOOST_REQUIRE(command);
+    sound(*cylinder);
+    BOOST_CHECK_EQUAL(cylinder->faceCount(), faces + 4);
+    undoRedo(command.get(), cylinder, before);
+}
+
+BOOST_AUTO_TEST_CASE(modelling_inset_faces_test) {
+    // two faces that share an edge are each inset on their own
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    cube->selected(true);
+    scene.add(cube);
+    BOOST_CHECK(!v3d::editor::insetFaces(scene));
+
+    const v3d::brep::Index top = facing(*cube, glm::vec3(0.0F, 1.0F, 0.0F));
+    const v3d::brep::Index right = facing(*cube, glm::vec3(1.0F, 0.0F, 0.0F));
+    BOOST_REQUIRE(top != v3d::brep::INVALID_ID && right != v3d::brep::INVALID_ID);
+    cube->face(top)->selected(true);
+    cube->face(right)->selected(true);
+    const v3d::brep::BRep::Snapshot before = cube->snapshot();
+
+    const boost::shared_ptr<v3d::editor::TopologyCommand> command = v3d::editor::insetFaces(scene);
+    BOOST_REQUIRE(command);
+    BOOST_CHECK_EQUAL(command->name(), "inset face");
+    sound(*cube);
+    BOOST_CHECK_EQUAL(cube->faceCount(), 14U);
+    BOOST_CHECK_EQUAL(cube->vertexCount(), 16U);
+    BOOST_CHECK(cube->face(top)->selected());
+    BOOST_CHECK(cube->face(right)->selected());
+    BOOST_CHECK_EQUAL(selectedComponents(*cube), 2U);
+
+    // the top's corners are a quarter of the way in from the cube's, whose top corners are half
+    // a unit from its centre along both x and z
+    for (const v3d::brep::Index edge : v3d::brep::faceLoop(*cube, top)) {
+        const glm::vec3 corner = cube->vertex(cube->edge(edge)->vertex())->point();
+        BOOST_CHECK_SMALL(std::abs(corner.x) - (0.5F * (1.0F - v3d::editor::insetFraction)), 0.0001F);
+        BOOST_CHECK_SMALL(std::abs(corner.z) - (0.5F * (1.0F - v3d::editor::insetFraction)), 0.0001F);
+    }
+    undoRedo(command.get(), cube, before);
 }
 
 };  // namespace

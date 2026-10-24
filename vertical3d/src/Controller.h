@@ -18,6 +18,7 @@
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/Bar.h>
 #include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
@@ -153,6 +154,16 @@ class Controller final : public v3d::engine::Engine {
      * and logs why when it does nothing.
      **/
     void splitSelectedFace();
+
+    /** An operation on the selected faces, such as extrudeFaces() in Modelling.h. **/
+    using FaceOperation = boost::shared_ptr<TopologyCommand> (*)(const Scene& scene);
+
+    /**
+     * Run an operation on the selected faces. It works under the face mask only, and logs why
+     * when it does nothing.
+     * @param name what the operation is called, for the log
+     **/
+    void changeSelectedFaces(const std::string& name, FaceOperation operation);
 
     /**
      * Step the history one command in either direction and say so.

@@ -14,6 +14,7 @@
 #include <vertical3d/src/command/TopologyCommand.h>
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <optional>
 #include <string>
@@ -37,6 +38,38 @@ boost::shared_ptr<TopologyCommand> refuse(std::string* problem, const std::strin
         *problem = why;
     }
     return boost::shared_ptr<TopologyCommand>();
+}
+
+/**
+ * Run an operation on the selected faces of each selected mesh that has any, and record one
+ * change for each.
+ *
+ * @return the change, already made, or an empty pointer when no face is selected
+ **/
+boost::shared_ptr<TopologyCommand> onSelectedFaces(const Scene& scene, const std::string& name,
+    const std::function<void(v3d::brep::BRep*, const std::vector<v3d::brep::Index>&)>& operation) {
+    std::vector<TopologyCommand::Change> changes;
+    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : scene.selection()) {
+        std::vector<v3d::brep::Index> faces;
+        for (v3d::brep::Index id = 0; id < mesh->faceCount(); id++) {
+            if (mesh->face(id)->selected()) {
+                faces.push_back(id);
+            }
+        }
+        if (faces.empty()) {
+            continue;
+        }
+        TopologyCommand::Change change;
+        change.mesh = mesh;
+        change.before = mesh->snapshot();
+        operation(mesh.get(), faces);
+        change.after = mesh->snapshot();
+        changes.push_back(change);
+    }
+    if (changes.empty()) {
+        return boost::shared_ptr<TopologyCommand>();
+    }
+    return boost::make_shared<TopologyCommand>(changes, name);
 }
 
 };  // namespace
@@ -116,6 +149,23 @@ boost::shared_ptr<TopologyCommand> splitFace(const Scene& scene, std::string* pr
     }
     return refuse(problem, shared.empty() ? "the two vertices are not corners of one face" :
         "the two vertices are next to each other on every face they share");
+}
+
+/**
+ **/
+boost::shared_ptr<TopologyCommand> extrudeFaces(const Scene& scene) {
+    // each face keeps its index, and with it its selection flag
+    return onSelectedFaces(scene, "extrude face", [](v3d::brep::BRep* mesh, const std::vector<v3d::brep::Index>& faces) {
+        v3d::brep::extrudeFaces(*mesh, faces);
+    });
+}
+
+/**
+ **/
+boost::shared_ptr<TopologyCommand> insetFaces(const Scene& scene) {
+    return onSelectedFaces(scene, "inset face", [](v3d::brep::BRep* mesh, const std::vector<v3d::brep::Index>& faces) {
+        v3d::brep::insetFaces(*mesh, faces, insetFraction);
+    });
 }
 
 };  // namespace v3d::editor

@@ -33,6 +33,7 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | 1, 2, 3, 4 | `create::poly::cube`, `plane`, `cylinder`, `cone` | Add a primitive at the origin |
 | 5, 6, 7, 8 | `select::mask::object`, `vertex`, `edge`, `face` | Choose what a click selects |
 | Q, W, E, R | `transform::select`, `translate`, `rotate`, `scale` | Choose the manipulator |
+| I | `transform::poly::inset_face` | Inset the selected faces (see [Modelling operations](Scene.md#modelling-operations)) |
 | G, M, H | `view::show::grid`, `mesh`, `handle` | Toggle what the view under the cursor draws |
 | F3 | `view::show::statistics` | Toggle the frame statistics overlay |
 | Z, Y | `edit::undo`, `edit::redo` | Step the history |
@@ -70,6 +71,5 @@ The tests run without a window or a GPU. Run them with
 [TODO.md](../TODO.md#editor) lists the open work. In short:
 
 - Most menu items have no handler and log themselves as unregistered.
-- Split edge and split face are the only topology operations. There is no extrude, inset or
-  merge.
+- There is no merge. The topology operations are split edge, split face, extrude and inset.
 - The viewport panes cannot be resized by dragging.

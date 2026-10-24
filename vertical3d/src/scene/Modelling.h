@@ -35,4 +35,29 @@ boost::shared_ptr<TopologyCommand> splitEdges(const Scene& scene);
  **/
 boost::shared_ptr<TopologyCommand> splitFace(const Scene& scene, std::string* problem);
 
+/**
+ * Extrude the selected faces of every selected mesh. Faces that share an edge extrude as one
+ * region.
+ *
+ * The faces stay selected and have not moved, so a manipulator can pull them out.
+ *
+ * @return the change, already made, or an empty pointer when no face is selected
+ **/
+boost::shared_ptr<TopologyCommand> extrudeFaces(const Scene& scene);
+
+/**
+ * How far an inset moves each corner of a face toward the face's centre.
+ **/
+constexpr float insetFraction = 0.25F;
+
+/**
+ * Inset each selected face of every selected mesh on its own, by insetFraction.
+ *
+ * The smaller faces stay selected. The handles pivot at a face's centre, so the scale
+ * manipulator changes how far it is inset.
+ *
+ * @return the change, already made, or an empty pointer when no face is selected
+ **/
+boost::shared_ptr<TopologyCommand> insetFaces(const Scene& scene);
+
 };  // namespace v3d::editor

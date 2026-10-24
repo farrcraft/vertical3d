@@ -144,7 +144,7 @@ Each goes in as `proposed` and is accepted when the step that builds it lands.
 | [12](#step-12--components-move) | Components move | `vertical3d`, `api/brep` | 0096 | done |
 | [13](#step-13--the-record-how-a-topology-change-is-undone) | The record: how a topology change is undone | `docs/adr` | **0098** | done |
 | [14](#step-14--split-edge-and-split-face) | Split edge and split face, through the record 0098 decides | `api/brep`, `vertical3d` | 0098 | done |
-| [15](#step-15--extrude-and-inset) | Extrude and inset a face | `api/brep`, `vertical3d` | 0098 | open |
+| [15](#step-15--extrude-and-inset) | Extrude and inset a face | `api/brep`, `vertical3d` | 0098 | done |
 | [16](#step-16--merge) | Merge vertices | `api/brep`, `vertical3d` | 0098 | open |
 | [17](#step-17--fixed-views-and-the-projection) | The fixed views and the projection switch | `vertical3d` | — | open |
 | [18](#step-18--resizable-panes) | Resizable panes | `vertical3d` | — | open |
@@ -500,6 +500,15 @@ index for index, and redo compared with the first result; an edge on an open bou
 plane's; a face split between adjacent vertices refused.
 
 ### Step 15 — Extrude and inset
+
+**Done.** `api/brep/Operations.h` holds `extrudeFaces()` and `insetFaces()`, and
+`src/scene/Modelling.h` applies them to the selected faces. An inset is an extrude of one face
+whose copies are then moved toward its centre, so both share one ring builder. Extrude leaves the
+faces where they were, so the translate manipulator pulls them out, and the move gives the ring
+its normals. The step picked a fixed inset: each corner moves a quarter of the way to the face's
+centre. The scale manipulator, which pivots at that centre, changes it after. Inset is bound to I
+and is on the Poly menu. Cases are in `OperationsTest.cxx` and `ModellingTest.cxx`.
+[Scene.md](../editor/Scene.md#modelling-operations) states the rules.
 
 * **Extrude face** duplicates a face's loop, joins the old and new loops with a ring of quads, and
   leaves the new face selected so that the manipulator can pull it out. Several selected faces

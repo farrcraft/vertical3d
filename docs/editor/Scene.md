@@ -82,6 +82,8 @@ Each appends its new parts, so no existing index changes, and leaves a mesh that
 |---|---|
 | `splitEdge(mesh, edge)` | Adds a vertex at the middle of an edge and splits both its halves, keeping the pairs mutual. A split half edge keeps its index and ends at the new vertex; the part beyond it is a new half edge that follows it. Returns the new vertex |
 | `splitFace(mesh, face, first, second)` | Joins two corners of a face with a new edge, making two faces. The face keeps the corners from the second round to the first, and the new face holds the rest. Both keep the winding and get a normal from their points. Refuses corners that are the same or next to each other. Returns the new face |
+| `extrudeFaces(mesh, faces)` | Moves each face onto copies of the corners on its outline, and joins the copies to the corners left behind with a ring of quads. Faces that share an edge extrude as one region, so only the region's outline gains a ring. The copies sit where the corners are, so the ring's quads have no area and a zero normal until the faces are moved. Each face keeps its index and its half edges. Returns the ring's faces |
+| `insetFaces(mesh, faces, fraction)` | Makes a smaller copy of each face inside it, joined to its outline by a ring of quads. Each face is inset on its own. Each corner of a copy is `fraction` of the way to the face's centre. Each face keeps its index and becomes the copy. Returns the rings' faces |
 
 **Identity and placement.** `BRep` derives from `v3d::dag::Node` and `v3d::dag::Transform`, so
 `v3dlib_brep` links `v3dlib_dag` publicly.
@@ -109,6 +111,14 @@ does nothing, with a log line, on a selection it cannot use.
 - **Split Face** (`transform::poly::split_face`) works under the vertex mask. Exactly two vertices
   must be selected, in one mesh, on one face and not next to each other on it. It joins them with
   a new edge, and the two vertices stay selected.
+- **Extrude Face** (`transform::poly::extrude_face`) works under the face mask. It extrudes the
+  selected faces of every selected mesh, and faces that share an edge extrude as one region. The
+  faces stay selected and have not moved, so the translate manipulator pulls them out. Moving
+  them gives the ring its normals, as any component move does.
+- **Inset Face** (`transform::poly::inset_face`, the I key) works under the face mask. It insets
+  each selected face on its own, moving its corners a quarter of the way to its centre. The
+  smaller faces stay selected. The handles pivot at a face's centre, so the scale manipulator
+  changes how far it is inset.
 
 The functions that do the work are in `src/scene/Modelling.h`, apart from the controller, so they
 can be tested without it.

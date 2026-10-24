@@ -198,4 +198,143 @@ BOOST_AUTO_TEST_CASE(brep_split_face_refused_test) {
     BOOST_CHECK(same(mesh.snapshot(), before));
 }
 
+/**
+ * Restore the arrays from before an operation and then from after it, and check that each comes
+ * back index for index.
+ **/
+void restores(v3d::brep::BRep* mesh, const v3d::brep::BRep::Snapshot& before) {
+    const v3d::brep::BRep::Snapshot after = mesh->snapshot();
+    mesh->restore(before);
+    BOOST_CHECK(same(mesh->snapshot(), before));
+    mesh->restore(after);
+    BOOST_CHECK(same(mesh->snapshot(), after));
+}
+
+BOOST_AUTO_TEST_CASE(brep_extrude_face_test) {
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    const v3d::brep::BRep::Snapshot before = mesh.snapshot();
+
+    const std::vector<v3d::brep::Index> ring = v3d::brep::extrudeFaces(mesh, {1}).value_or(std::vector<v3d::brep::Index>{});
+    sound(mesh);
+    BOOST_CHECK_EQUAL(ring.size(), 4U);
+    BOOST_CHECK_EQUAL(mesh.vertexCount(), 12U);
+    BOOST_CHECK_EQUAL(mesh.edgeCount(), 40U);
+    BOOST_CHECK_EQUAL(mesh.faceCount(), 10U);
+    restores(&mesh, before);
+
+    // the top keeps its index and now uses only the copies
+    for (const v3d::brep::Index edge : v3d::brep::faceLoop(mesh, 1)) {
+        BOOST_CHECK_GE(mesh.edge(edge)->vertex(), 8U);
+    }
+
+    // pulled up, the ring's quads are walls whose normals point away from the cube, so the ring
+    // is wound the way the faces around it are
+    std::vector<v3d::brep::Index> copies;
+    for (const v3d::brep::Index edge : v3d::brep::faceLoop(mesh, 1)) {
+        copies.push_back(mesh.edge(edge)->vertex());
+    }
+    for (const v3d::brep::Index copy : copies) {
+        mesh.vertex(copy)->point(mesh.vertex(copy)->point() + glm::vec3(0.0F, 0.0F, 1.0F));
+    }
+    sound(mesh);
+    for (const v3d::brep::Index quad : ring) {
+        const glm::vec3 normal = v3d::brep::newellNormal(mesh, quad);
+        BOOST_CHECK_SMALL(normal.z, 0.0001F);
+        BOOST_CHECK_GT(glm::dot(normal, v3d::brep::center(mesh, quad) - glm::vec3(0.5F, 0.5F, 1.5F)), 0.0F);
+    }
+    BOOST_CHECK_SMALL(glm::distance(v3d::brep::newellNormal(mesh, 1), glm::vec3(0.0F, 0.0F, 1.0F)), 0.0001F);
+}
+
+BOOST_AUTO_TEST_CASE(brep_extrude_region_test) {
+    // the bottom and the front share an edge, so they extrude as one region with a ring of six
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    const v3d::brep::BRep::Snapshot before = mesh.snapshot();
+    const std::vector<v3d::brep::Index> ring = v3d::brep::extrudeFaces(mesh, {0, 2}).value_or(std::vector<v3d::brep::Index>{});
+    sound(mesh);
+    BOOST_CHECK_EQUAL(ring.size(), 6U);
+    BOOST_CHECK_EQUAL(mesh.vertexCount(), 14U);
+    BOOST_CHECK_EQUAL(mesh.faceCount(), 12U);
+
+    // the edge between them still joins them
+    bool joined = false;
+    for (const v3d::brep::Index edge : v3d::brep::faceLoop(mesh, 0)) {
+        joined = joined || mesh.edge(mesh.edge(edge)->pair())->face() == 2;
+    }
+    BOOST_CHECK(joined);
+    restores(&mesh, before);
+
+    // the bottom and the top share nothing, so they are two regions with a ring each
+    mesh.restore(before);
+    const std::vector<v3d::brep::Index> apart = v3d::brep::extrudeFaces(mesh, {0, 1}).value_or(std::vector<v3d::brep::Index>{});
+    sound(mesh);
+    BOOST_CHECK_EQUAL(apart.size(), 8U);
+    BOOST_CHECK_EQUAL(mesh.vertexCount(), 16U);
+}
+
+BOOST_AUTO_TEST_CASE(brep_extrude_open_face_test) {
+    // a face alone has no faces beside it, so the ring's lower edges are a new boundary
+    v3d::brep::BRep mesh;
+    mesh.addFace({glm::vec3(0.0F), glm::vec3(0.0F, 1.0F, 0.0F), glm::vec3(1.0F, 1.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F)},
+        glm::vec3(0.0F, 0.0F, 1.0F));
+    const v3d::brep::BRep::Snapshot before = mesh.snapshot();
+    const std::optional<std::vector<v3d::brep::Index>> ring = v3d::brep::extrudeFaces(mesh, {0});
+    BOOST_REQUIRE(ring);
+    sound(mesh);
+    BOOST_CHECK_EQUAL(mesh.vertexCount(), 8U);
+    BOOST_CHECK_EQUAL(mesh.edgeCount(), 20U);
+    std::size_t open = 0;
+    for (v3d::brep::Index edge = 0; edge < mesh.edgeCount(); edge++) {
+        open += mesh.edge(edge)->pair() == v3d::brep::INVALID_ID ? 1 : 0;
+    }
+    BOOST_CHECK_EQUAL(open, 4U);
+    restores(&mesh, before);
+}
+
+BOOST_AUTO_TEST_CASE(brep_inset_face_test) {
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    const v3d::brep::BRep::Snapshot before = mesh.snapshot();
+    const std::vector<v3d::brep::Index> ring = v3d::brep::insetFaces(mesh, {1}, 0.25F).value_or(std::vector<v3d::brep::Index>{});
+    BOOST_CHECK_EQUAL(ring.size(), 4U);
+    sound(mesh);
+    BOOST_CHECK_EQUAL(mesh.vertexCount(), 12U);
+    BOOST_CHECK_EQUAL(mesh.faceCount(), 10U);
+
+    // each corner of the top moved a quarter of the way to its centre, and the ring lies in the
+    // top's plane, facing the way it does
+    const glm::vec3 middle(0.5F, 0.5F, 1.0F);
+    for (const v3d::brep::Index edge : v3d::brep::faceLoop(mesh, 1)) {
+        BOOST_CHECK_SMALL(glm::distance(mesh.vertex(mesh.edge(edge)->vertex())->point(), middle) - (0.75F * glm::length(glm::vec3(0.5F, 0.5F, 0.0F))),
+            0.0001F);
+    }
+    for (const v3d::brep::Index quad : ring) {
+        BOOST_CHECK_SMALL(glm::distance(mesh.face(quad)->normal(), glm::vec3(0.0F, 0.0F, 1.0F)), 0.0001F);
+    }
+    restores(&mesh, before);
+}
+
+BOOST_AUTO_TEST_CASE(brep_inset_adjacent_faces_test) {
+    // each face is inset alone, so the edge the two share stays between their rings
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    const v3d::brep::BRep::Snapshot before = mesh.snapshot();
+    BOOST_REQUIRE(v3d::brep::insetFaces(mesh, {0, 2}, 0.25F));
+    sound(mesh);
+    BOOST_CHECK_EQUAL(mesh.vertexCount(), 16U);
+    BOOST_CHECK_EQUAL(mesh.edgeCount(), 56U);
+    BOOST_CHECK_EQUAL(mesh.faceCount(), 14U);
+    restores(&mesh, before);
+}
+
+BOOST_AUTO_TEST_CASE(brep_extrude_refused_test) {
+    v3d::brep::BRep mesh;
+    cube(&mesh);
+    const v3d::brep::BRep::Snapshot before = mesh.snapshot();
+    BOOST_CHECK(!v3d::brep::extrudeFaces(mesh, {0, 40}));
+    BOOST_CHECK(!v3d::brep::insetFaces(mesh, {0, 9}, 0.25F));
+    BOOST_CHECK(same(mesh.snapshot(), before));
+}
+
 };  // namespace

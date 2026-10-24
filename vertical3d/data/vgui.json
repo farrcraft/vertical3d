@@ -332,6 +332,12 @@
                       "command": "poly::extrude_face"
                     },
                     {
+                      "label": "Inset Face",
+                      "type": "action",
+                      "context": "transform",
+                      "command": "poly::inset_face"
+                    },
+                    {
                       "label": "Split Face",
                       "type": "action",
                       "context": "transform",

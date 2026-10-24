@@ -185,6 +185,17 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "i",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "transform",
+        "name": "poly::inset_face"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "5",
         "state": "pressed"
       },
