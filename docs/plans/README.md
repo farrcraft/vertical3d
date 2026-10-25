@@ -22,6 +22,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 |---|---|---|
 | [EditorScene](EditorScene.md) | Editor, brep, dag | Cameras, lights and groups in the scene, shaded views, glTF import, rendering with moya, and keyed playback |
 | [ScaleAndReach](ScaleAndReach.md) | Realtime rendering, offline rendering, grid, audio, imagetool | Cascaded shadows, uploads and texture requests that do not block, routes and sight across regions, a placed voice, and sprite sheet packing |
+| [SettingsAndPortability](SettingsAndPortability.md) | Build, realtime rendering, audio, engine, event, UI | A present mode an app requests, bus volume and pause for FMOD events, key bindings an app can read and reset, settings widgets and a text field in `Immediate`, a canvas segment, wheel zoom and edge pan, a portability driver, and a build off MSVC |
 
 ## Completed plans
 

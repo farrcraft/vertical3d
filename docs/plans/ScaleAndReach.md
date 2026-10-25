@@ -185,9 +185,35 @@ the constructor. Its test moves to the grid suite. odyssey uses the library's.
 **Open.** ADR first, which amends ADR-0087. It also decides how a region that is not loaded is
 treated: as a wall, or as unknown ground a route may plan through.
 
+A second consumer wants this: cozy, a game in another repository, whose pet follows the player
+across region seams. Its regions own their grids and its stream loads and drops them, so it would
+hand the search references to the loaded grids, not copies. It asks for `reachableTiles` and
+`DistanceField` across a seam as well as `findPath`, and it treats a tile in no loaded grid as
+impassable. It rejects stitching the loaded regions into one grid, because every game with
+regions would write that stitching again.
+
+- `findPath`, `reachableTiles`, `DistanceField` and `hasLineOfSight` work over a set of grids, in
+  world tiles, with the movement rules of one grid. A diagonal may not pass between two blocked
+  tiles in different grids.
+- A set whose grids differ in tile size, or whose corners are not whole tiles apart, is refused
+  with a reason, as `TileGrid::refusal()` gives one.
 - odyssey's click routes into a neighbouring region, and its sight sees across a seam.
 - Tests: a route crosses a seam and is as short as one over a single grid of the same tiles.
   Sight across a seam is symmetric, as within one grid. A wall on the seam blocks both.
+- Tests, on two 4 by 3 grids side by side, A at (0, 0) and B at (4, 0):
+
+  ```
+        A                 B
+  y=2   . . . .           . . . .
+  y=1   S . . #           # . . G
+  y=0   # # # .           . . . .
+  ```
+
+  The route from S to G crosses on row 2, between the two walls that face each other. A goal at
+  world (3, 0) is reached only by leaving A, going round B's wall through B's (1, 1) and coming
+  back into A on row 0, which two routes joined at the seam cannot find. With A's wall moved to
+  (3, 2), the diagonal from A's (3, 1) to B's (0, 2) is refused. A set of one grid gives the same
+  route as `findPath` on that grid, tie for tie. A goal in no grid has no route.
 
 ### Step 9 — A voice with a position
 
