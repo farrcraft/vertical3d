@@ -556,8 +556,8 @@ BOOST_AUTO_TEST_CASE(slmachine_transform_needs_a_renderer_test) {
     machine.prepare(program, 4);
     BOOST_REQUIRE(machine.run());
     BOOST_REQUIRE_EQUAL(machine.reports().size(), 1U);
-    BOOST_CHECK_EQUAL(machine.reports()[0],
-        "the coordinate space \"world\" is not one this renderer knows");
+    BOOST_CHECK(machine.reports()[0].ends_with(
+        "the coordinate space \"world\" is not one this renderer knows"));
 }
 
 /**
@@ -730,6 +730,50 @@ BOOST_AUTO_TEST_CASE(slmachine_unprepared_test) {
     BOOST_CHECK(!machine.run());
     BOOST_CHECK(!machine.error().empty());
     BOOST_CHECK(!machine.initialise());
+}
+
+/**
+ * A formal declared output is passed by reference: what the function writes to it reaches the
+ * caller's variable when the function returns.
+ **/
+BOOST_AUTO_TEST_CASE(slmachine_an_output_formal_is_copied_back_test) {
+    std::string error;
+    Program program;
+    BOOST_REQUIRE_MESSAGE(build(
+        "surface s() {\n"
+        "    void bump(output float x) { x = x + 1; }\n"
+        "    float a = 1;\n"
+        "    bump(a);\n"
+        "    Ci = color (a, 0, 0);\n"
+        "}\n", &program, &error), error);
+
+    v3d::render::offline::sl::runtime::Machine machine;
+    machine.prepare(program, 1);
+    BOOST_REQUIRE(machine.run());
+    BOOST_CHECK_EQUAL(machine.value(program.symbol("Ci")).triple(0).r, 2.0F);
+}
+
+/**
+ * A report made while a shader runs names the line and column of the instruction that made it.
+ * One fault at two places in the source is reported once for each.
+ **/
+BOOST_AUTO_TEST_CASE(slmachine_a_report_names_its_position_test) {
+    std::string error;
+    Program program;
+    BOOST_REQUIRE_MESSAGE(build(
+        "surface s() {\n"
+        "    point here = ptransform(\"nowhere\", P);\n"
+        "    point there = ptransform(\"nowhere\", P);\n"
+        "    Ci = Cs;\n"
+        "}\n", &program, &error), error);
+
+    v3d::render::offline::sl::runtime::Machine machine;
+    machine.prepare(program, 1);
+    BOOST_REQUIRE(machine.run());
+    BOOST_REQUIRE_EQUAL(machine.reports().size(), 2U);
+    BOOST_CHECK(machine.reports()[0].starts_with("line 2, column 18: "));
+    BOOST_CHECK(machine.reports()[0].contains("nowhere"));
+    BOOST_CHECK(machine.reports()[1].starts_with("line 3, column 19: "));
 }
 
 };  // namespace

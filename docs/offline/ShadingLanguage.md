@@ -67,6 +67,9 @@ named. The language is in `api/render/offline/sl`.
   shader's own function is pasted in at each call, bracketed so that a `return` inside it ends
   the function for those points, not the shader. Recursion is rejected at the call graph, so
   inlining terminates.
+- **An `output` formal is passed by reference.** What the function leaves in it is copied back
+  to the caller's variable when the function returns. The argument has to be a variable the
+  caller may assign, of the formal's own type, since a coercion on the way in has no way back.
 
 ### Shaders, lights and spaces
 
@@ -201,10 +204,12 @@ files on disk.
   `Globals::shine`, and the light's machine reads it from `Machine::gather`. With no cone, as
   under `ambient()`, the light shines along its axis.
 - **A machine's reports reach the log.** A report says what a run could not do, such as a space
-  no renderer named or a stub that was called. Each distinct report is logged once per
-  machine as a warning, through the logger of the shader instance that wrote the machine's
-  parameters. A shader whose parameter defaults fail to run is reported in the same way, once
-  per machine, and the renderer treats it as a run that failed.
+  no renderer named or a stub that was called. A report made while the shader runs starts with
+  the line and column of the instruction that made it, as `line 3, column 9: `. Each distinct
+  report, position included, is logged once per machine as a warning, through the logger of
+  the shader instance that wrote the machine's parameters. One fault at two places in the
+  source is therefore reported twice. A shader whose parameter defaults fail to run is reported
+  in the same way, once per machine, and the renderer treats it as a run that failed.
 - **A run that fails is reported by the machine.** `Machine::run()` returns false and reports
   `error()`, such as a shader that runs without end. No renderer logs it again. A grid or a
   traced hit whose surface fails is drawn as if it had no shader. A light that fails lights
@@ -269,12 +274,18 @@ Both hiders carry two normals, because SL's `faceforward` and `calculatenormal` 
 terms of the pair:
 
 - **`Ng` is the geometric normal**: the plane the primitive lies in, one value across it, wound
-  the way its vertices are.
+  the way its vertices are. A polygon wound clockwise as the camera sees it has an `Ng` that
+  faces the camera.
 - **`N` is the shading normal.** A scene sets it per vertex with a varying `"N"`. Without one,
   `N` equals `Ng`, and the surface is faceted.
 
 Rules:
 
+- **Two-argument `faceforward(N, I)` turns `N` by `Ng`**, as RI defines it: the compiler supplies
+  `Ng` as the third argument. A light shader has no `Ng`, so the two-argument form is refused
+  there and the reference has to be given. A scene that gives `"N"` facing the camera has to
+  wind its polygons so that `Ng` faces the camera too. Otherwise `faceforward` turns the normal
+  away and the surface is shaded from behind.
 - **A normal transforms by the inverse transpose**, never by the matrix that moves the points.
   The two agree under a rotation and a uniform scale, so the fault stays hidden until a scene
   scales one axis.

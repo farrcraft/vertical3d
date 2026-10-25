@@ -138,6 +138,24 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_a_colour_test) {
 }
 
 /**
+ * A colour bound with one value takes that value in every component, as an assignment
+ * promotes a float to a colour.
+ *
+ * Passes before the change: the binding already replicated the value, and nothing tested it.
+ **/
+BOOST_AUTO_TEST_CASE(slshaderlibrary_binds_a_colour_from_one_value_test) {
+    ShaderLibrary library(logger());
+    ParameterList list;
+    add(&list, "lightcolor", Declaration::Type::COLOR, { 0.25F });
+
+    const InstancePtr shader = library.instance("ambientlight", ShaderType::LIGHT, list);
+    BOOST_REQUIRE(shader);
+    BOOST_CHECK_CLOSE(bound(shader, "lightcolor").r, 0.25F, 0.01F);
+    BOOST_CHECK_CLOSE(bound(shader, "lightcolor").g, 0.25F, 0.01F);
+    BOOST_CHECK_CLOSE(bound(shader, "lightcolor").b, 0.25F, 0.01F);
+}
+
+/**
  * A matrix bound with one value is the diagonal matrix, as an assignment promotes a float,
  * not a matrix with that value in all sixteen components.
  **/

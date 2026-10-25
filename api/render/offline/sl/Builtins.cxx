@@ -121,7 +121,6 @@ std::vector<Signature> build() {
     table.push_back(declare("length", Body::LENGTH, Type::FLOAT, { Argument::POINTLIKE }));
     table.push_back(declare("distance", Body::DISTANCE, Type::FLOAT, { Argument::POINT, Argument::POINT }));
     table.push_back(same("normalize", Body::NORMALIZE, 0, { Argument::POINTLIKE }));
-    table.push_back(same("faceforward", Body::FACEFORWARD, 0, { Argument::POINTLIKE, Argument::POINTLIKE }));
     table.push_back(same("faceforward", Body::FACEFORWARD, 0,
         { Argument::POINTLIKE, Argument::POINTLIKE, Argument::POINTLIKE }));
     table.push_back(declare("reflect", Body::REFLECT, Type::VECTOR, { Argument::POINTLIKE, Argument::POINTLIKE }));

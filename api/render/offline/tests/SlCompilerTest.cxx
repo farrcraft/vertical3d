@@ -646,4 +646,55 @@ BOOST_AUTO_TEST_CASE(slcompiler_shadowing_test) {
     BOOST_CHECK(outer == Storage::UNIFORM);
 }
 
+/**
+ * A formal declared output is written back to its argument, so the argument has to be a
+ * variable the caller may assign, of the formal's own type.
+ **/
+BOOST_AUTO_TEST_CASE(slcompiler_an_output_formal_needs_a_variable_test) {
+    BOOST_CHECK_EQUAL(compile(
+        "surface s() {\n"
+        "    void bump(output float x) { x = x + 1; }\n"
+        "    bump(1);\n"
+        "    Ci = Cs;\n"
+        "}\n"),
+        "argument 1 of 'bump' is output, so it has to be a variable at line 3, column 10");
+
+    BOOST_CHECK_EQUAL(compile(
+        "surface s() {\n"
+        "    void bump(output float x) { x = x + 1; }\n"
+        "    bump(s);\n"
+        "    Ci = Cs;\n"
+        "}\n"),
+        "argument 1 of 'bump' is output, and 's' cannot be assigned at line 3, column 10");
+
+    BOOST_CHECK_EQUAL(compile(
+        "surface s() {\n"
+        "    void paint(output color c) { c = 1; }\n"
+        "    float a = 0;\n"
+        "    paint(a);\n"
+        "    Ci = Cs;\n"
+        "}\n"),
+        "argument 1 of 'paint' is output color, and 'a' is float at line 4, column 11");
+}
+
+/**
+ * Two-argument faceforward takes Ng as its reference, as RI defines it. A light shader has no
+ * Ng, so the two-argument form is refused there.
+ **/
+BOOST_AUTO_TEST_CASE(slcompiler_two_argument_faceforward_needs_ng_test) {
+    BOOST_CHECK_EQUAL(compile(
+        "surface s() {\n"
+        "    normal n = faceforward(N, I);\n"
+        "    Ci = Cs;\n"
+        "}\n"), "");
+
+    BOOST_CHECK_EQUAL(compile(
+        "light l() {\n"
+        "    normal n = faceforward(normal (0, 0, 1), vector (0, 0, 1));\n"
+        "    illuminate (P) { Cl = color (xcomp(n), 0, 0); }\n"
+        "}\n"),
+        "two-argument 'faceforward' takes Ng as its reference, and a light shader has no Ng; "
+        "pass the reference as a third argument at line 2, column 16");
+}
+
 };  // namespace

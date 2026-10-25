@@ -80,6 +80,9 @@ name.
   the polygon cannot be placed. The first one is logged.
 - **A coordinate system that is neither predefined nor saved is refused.** `CoordSysTransform`
   logs it and keeps the current transformation, and a lookup of it logs and gives the identity.
+- **A `Sphere`'s varying parameters hold four values**, one at each corner of its parameter
+  space, as RI defines them for a quadric. A uniform one holds one. moya reads no sphere
+  parameter.
 - **A `Polygon` carries no vertex count.** The count is the length of `"P"`, which the reader
   divides out. A parameter list is therefore parsed before the count is known, and an
   unbracketed varying or vertex parameter ends the parse instead of being guessed at.

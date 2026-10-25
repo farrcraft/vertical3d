@@ -175,7 +175,31 @@ and [offline/README.md](../offline/README.md) lists it.
 
 ### Step 3 — The shading language
 
-**Open.**
+**Partly closed.** Every item but message passing has landed, each with a test that fails
+without it.
+
+- An `output` formal is copied back to its argument after the inlined body. The compiler
+  refuses an argument that is not a variable, one the caller may not assign, and one of another
+  type, since a coercion has no way back out.
+- The compiler gives two-argument `faceforward` Ng as its third argument, and refuses the form
+  in a light shader. The two-argument signature is gone from the built-in table.
+- The test scenes in `reference-shaded.rib`, `reference-sampled.rib`, `ReferenceTest` and
+  `RIBHandlerTest`'s quad gave "N" facing the camera on polygons wound so that Ng faced away.
+  RI's `faceforward` shaded those from behind, black. Each is now wound clockwise as the camera
+  sees it, with its per-vertex lists in the same order. With N and Ng agreeing, the pictures
+  rendered with Ng and with N as the reference are byte for byte the same. The rewinding alone
+  moved two reference pictures by up to 8 levels at a highlight, because it swaps the grid's u
+  and v. They are regenerated.
+- A report made during a run starts with its instruction's line and column, and two places
+  that make the same report are two reports. Seven existing cases now check how a report ends,
+  and two that counted reports count one for each call site.
+- `slshaderlibrary_binds_a_colour_from_one_value_test` covers a single value bound onto a
+  colour. It passes on the old code, which already replicated the value.
+- The RIB reader reads a Sphere's parameters as four varying values.
+
+Message passing follows in a commit of its own.
+
+The items as planned:
 
 - An `output` formal is copied back to its argument when the function returns. An argument that
   is not a variable is refused at compile time.

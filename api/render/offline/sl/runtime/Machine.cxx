@@ -141,11 +141,15 @@ const std::vector<char> & Machine::lit() const {
 }
 
 void Machine::report(const std::string & message) {
-    // once per distinct message, because every shading point of a render can make the same one
-    if (std::ranges::find(reports_, message) == reports_.end()) {
-        reports_.push_back(message);
+    // a report made while a run is executing names the instruction's place in the source, so
+    // one fault at two places is two reports
+    const std::string placed = at_ != nullptr && at_->line > 0 ?
+        "line " + std::to_string(at_->line) + ", column " + std::to_string(at_->column) + ": " + message : message;
+    // once per distinct report, because every shading point of a render can make the same one
+    if (std::ranges::find(reports_, placed) == reports_.end()) {
+        reports_.push_back(placed);
         if (logger_) {
-            logger_->get()->warn("shader: {}", message);
+            logger_->get()->warn("shader: {}", placed);
         }
     }
 }
@@ -615,9 +619,11 @@ bool Machine::execute(const Program & program, const Range & range) {
     while (pc < until) {
         if (++steps > LIMIT) {
             error_ = "the shader '" + program.name + "' ran without end";
+            at_ = nullptr;
             return false;
         }
         const Instruction & instruction = program.instructions[pc];
+        at_ = &instruction;
         switch (instruction.opcode) {
             case Opcode::MOVE:
                 move(instruction);  // NOLINT(build/include_what_you_use) - the name, not std::move
@@ -767,6 +773,7 @@ bool Machine::execute(const Program & program, const Range & range) {
         }
         pc++;
     }
+    at_ = nullptr;
     return true;
 }
 

@@ -575,6 +575,13 @@ int Emitter::emitInline(const syntax::ExpressionPtr & expression) {
     emitBlock(function.body);
     returns_.pop_back();
     put(runtime::Opcode::LEAVE, {.target = -1, .left = -1, .right = -1}, expression);
+    // an output formal is passed by reference. The compiler makes its argument a variable, so
+    // what the body left in the formal goes back to that variable's register
+    for (std::size_t i = 0; i < given.size() && i < function.parameters.size(); i++) {
+        if (function.parameters[i].output) {
+            put(runtime::Opcode::MOVE, {.target = given[i], .left = function.parameters[i].symbol, .right = -1}, call.arguments[i]);
+        }
+    }
     return result;
 }
 

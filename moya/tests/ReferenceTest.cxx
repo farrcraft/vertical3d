@@ -176,13 +176,17 @@ v3d::moya::Vertex shaded(float x, float y, float z, const glm::vec3 & normal) {
     return v;
 }
 
+/**
+ * A quad wound clockwise as the camera sees it, so its geometric normal faces the camera as its
+ * shading normals do. Two-argument faceforward turns a normal by the geometric one.
+ **/
 void quad(v3d::moya::RenderContext & rc, float left, float right,
     const glm::vec3 & outer, const glm::vec3 & inner) {
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     polygon->addVertex(shaded(left, -0.8F, 5.0F, outer));
-    polygon->addVertex(shaded(right, -0.8F, 5.0F, inner));
-    polygon->addVertex(shaded(right, 0.8F, 5.0F, inner));
     polygon->addVertex(shaded(left, 0.8F, 5.0F, outer));
+    polygon->addVertex(shaded(right, 0.8F, 5.0F, inner));
+    polygon->addVertex(shaded(right, -0.8F, 5.0F, inner));
     rc.addPolygon(polygon);
 }
 

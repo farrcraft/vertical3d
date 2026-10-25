@@ -550,4 +550,27 @@ BOOST_AUTO_TEST_CASE(moya_object_space_is_the_primitives_test) {
     BOOST_CHECK_CLOSE(here.z, 5.0F, 0.01F);
 }
 
+/**
+ * Two-argument faceforward turns N against I by Ng, as RI defines it. A grid whose shading
+ * normal faces the camera while its plane faces away is turned to face away, because Ng
+ * decides. With N as its own reference, it would have stayed facing the camera.
+ **/
+BOOST_AUTO_TEST_CASE(moya_faceforward_turns_by_ng_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.searchpath("data:&");
+    rc.surface("faceforwarded", ParameterList());
+
+    v3d::moya::reyes::MicroPolygonGrid grid = facing({.normal = glm::vec3(0.0F, 0.0F, -1.0F), .colour = glm::vec3(1.0F)});
+    for (unsigned int i = 0; i < 2; i++) {
+        for (unsigned int j = 0; j < 2; j++) {
+            v3d::moya::Vertex vert = grid.vertex(i, j);
+            vert.geometricNormal(glm::vec3(0.0F, 0.0F, 1.0F));
+            grid.addVertex(vert, i, j);
+        }
+    }
+    rc.shader().shade(rc.shading(), &grid);
+    BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().z, 1.0F, 0.01F);
+}
+
 };  // namespace

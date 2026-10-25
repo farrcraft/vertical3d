@@ -160,7 +160,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         counts_["PointsPolygons"]++;
     }
     void sphere(const v3d::render::offline::rib::Sphere & request, const v3d::render::offline::rib::ParameterList & parameters) override {
-        (void)parameters;
+        colors_ = parameters.points("Cs");
         radius_ = request.radius;
         counts_["Sphere"]++;
     }
@@ -818,6 +818,18 @@ BOOST_AUTO_TEST_CASE(ribreader_counts_and_handles_out_of_range_test) {
     v3d::render::offline::rib::Reader second(boost::make_shared<v3d::log::Logger>());
     BOOST_CHECK(!read("Illuminate 1e39 1\n", &handler, &second));
     BOOST_CHECK(second.error().contains("expected a light handle"));
+}
+
+/**
+ * A quadric has four varying values, one at each corner of its parameter space, so a sphere's
+ * varying "Cs" holds four colours.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_a_sphere_reads_four_varying_values_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(read("Sphere 1 -1 1 360 \"Cs\" [1 0 0  0 1 0  0 0 1  1 1 1]\n", &handler, &reader));
+    BOOST_CHECK_EQUAL(handler.count("Sphere"), 1U);
+    BOOST_CHECK_EQUAL(handler.colors_.size(), 4U);
 }
 
 };  // namespace

@@ -97,7 +97,9 @@ class Heard {
  * the grid size given. At 64 by 48 the quad is 43 pixels across. A grid of 16 is 4 a side, so
  * the quad is split four times over, into 256 pieces under 3 pixels across. A grid of 4096 is
  * 64 a side, and dices it whole. Both make the same lattice of micropolygons, 64 a side, so
- * the two pictures agree wherever a split keeps what its vertices carried.
+ * the two pictures agree wherever a split keeps what its vertices carried. The quad is wound
+ * clockwise as the camera sees it, from its lower left corner, so its geometric normal faces
+ * the camera.
  **/
 boost::shared_ptr<v3d::render::offline::FrameBuffer> quad(unsigned int grid, const std::string & shading,
     const std::string & varying) {
@@ -111,7 +113,7 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> quad(unsigned int grid, con
         "Projection \"orthographic\"\n"
         "Clipping 1 100\n"
         "WorldBegin\n" + shading +
-        "Polygon \"P\" [-0.9 -0.9 5  0.9 -0.9 5  0.9 0.9 5  -0.9 0.9 5]\n" + varying +
+        "Polygon \"P\" [-0.9 -0.9 5  -0.9 0.9 5  0.9 0.9 5  0.9 -0.9 5]\n" + varying +
         "WorldEnd\n", &handler));
     return handler.context().framebuffer()->planes();
 }
@@ -732,7 +734,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_repeated_head_polygon_splits_test) {
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_colour_test) {
     const std::string shading = "Surface \"constant\"\n";
-    const std::string colours = "\"Cs\" [1 0 0  0 1 0  0 0 1  1 1 1]\n";
+    const std::string colours = "\"Cs\" [1 0 0  1 1 1  0 0 1  0 1 0]\n";
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> split = quad(16, shading, colours);
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> whole = quad(4096, shading, colours);
 
@@ -764,7 +766,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
     const std::string shading =
         "LightSource \"distantlight\" 1 \"to\" [0 0 1]\n"
         "Surface \"matte\" \"Ka\" [0]\n";
-    const std::string normals = "\"N\" [-0.9 0 -0.436  0 0 -1  0 0 -1  -0.9 0 -0.436]\n";
+    const std::string normals = "\"N\" [-0.9 0 -0.436  -0.9 0 -0.436  0 0 -1  0 0 -1]\n";
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> split = quad(16, shading, normals);
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> whole = quad(4096, shading, normals);
 

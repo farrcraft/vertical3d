@@ -691,7 +691,8 @@ Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer,
         if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3) || !number(lexer, &arg4)) {
             return Result::Failed;
         }
-        if (!parameters(lexer, 1, &list)) {
+        // a quadric has a varying value at each of the four corners of its parameter space
+        if (!parameters(lexer, 4, &list)) {
             return Result::Failed;
         }
         handler->sphere({.radius = arg1, .zmin = arg2, .zmax = arg3, .thetamax = arg4}, list);

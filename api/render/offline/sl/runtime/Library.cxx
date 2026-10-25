@@ -289,14 +289,11 @@ void geometry(const Site & site, unsigned int point) {
         case Body::NORMALIZE:
             site.target->triple(point, unit(site.argument(0).triple(point)));
             return;
-        case Body::FACEFORWARD: {
-            // two arguments means the reference is the normal itself, for a shader that
-            // has no Ng
-            const glm::vec3 normal = site.argument(0).triple(point);
-            const glm::vec3 reference = site.count() == 3 ? site.argument(2).triple(point) : normal;
-            site.target->triple(point, faceforward(normal, site.argument(1).triple(point), reference));
+        case Body::FACEFORWARD:
+            // the compiler gives the two-argument form Ng as its third argument
+            site.target->triple(point, faceforward(site.argument(0).triple(point), site.argument(1).triple(point),
+                site.argument(2).triple(point)));
             return;
-        }
         case Body::REFLECT: {
             const glm::vec3 incident = site.argument(0).triple(point);
             const glm::vec3 normal = site.argument(1).triple(point);

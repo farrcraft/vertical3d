@@ -492,8 +492,8 @@ BOOST_AUTO_TEST_CASE(sllighting_transmission_without_a_renderer_test) {
 
     BOOST_CHECK_CLOSE(lit.colour(0).r, 1.0F, 0.1F);
     BOOST_REQUIRE_EQUAL(lit.machine().reports().size(), 1U);
-    BOOST_CHECK_EQUAL(lit.machine().reports()[0],
-        "'transmission' has nothing to cast a shadow here, so all the light gets through");
+    BOOST_CHECK(lit.machine().reports()[0].ends_with(
+        "'transmission' has nothing to cast a shadow here, so all the light gets through"));
 }
 
 /**
@@ -507,8 +507,8 @@ BOOST_AUTO_TEST_CASE(sllighting_trace_without_a_renderer_test) {
 
     BOOST_CHECK_SMALL(lit.colour(0).r, 0.0001F);
     BOOST_REQUIRE_EQUAL(lit.machine().reports().size(), 1U);
-    BOOST_CHECK_EQUAL(lit.machine().reports()[0],
-        "'trace' is not answered by this renderer, so a ray comes back black");
+    BOOST_CHECK(lit.machine().reports()[0].ends_with(
+        "'trace' is not answered by this renderer, so a ray comes back black"));
 }
 
 /**

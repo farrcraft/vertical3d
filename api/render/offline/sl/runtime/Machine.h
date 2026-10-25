@@ -102,7 +102,9 @@ class Machine final {
     void logger(const boost::shared_ptr<v3d::log::Logger> & logger);
 
     /**
-     * Keeps a message for reports() and logs it. A message already kept is ignored.
+     * Keeps a message for reports() and logs it. A report made during a run starts with the
+     * line and column of the instruction that made it, as "line 3, column 9: ". A report
+     * already kept, position and all, is ignored.
      **/
     void report(const std::string & message);
 
@@ -291,6 +293,8 @@ class Machine final {
     Renderer* renderer_ = nullptr;
     /** What prepare() sized the register file for. **/
     const Program* program_ = nullptr;
+    /** The instruction executing, which a report names the place of. Null outside a run. **/
+    const Instruction* at_ = nullptr;
     unsigned int batch_ = 1;
     std::string error_;
 };

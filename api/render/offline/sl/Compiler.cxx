@@ -5,6 +5,7 @@
 
 #include "Compiler.h"
 
+#include <api/render/offline/Position.h>
 #include <api/render/offline/sl/syntax/Assignment.h>
 #include <api/render/offline/sl/syntax/Binary.h>
 #include <api/render/offline/sl/syntax/Block.h>
@@ -33,6 +34,8 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+
+#include <boost/make_shared.hpp>
 
 #include "Builtins.h"
 #include "Inference.h"
@@ -808,6 +811,7 @@ Type Compiler::checkCall(const syntax::ExpressionPtr & expression) {
     syntax::Call & call = static_cast<syntax::Call &>(*expression);
     const Type wanted = wanted_;
     wanted_ = Type::VOID;
+    referenceNg(&call);
     std::vector<Type> given;
     given.reserve(call.arguments.size());
     for (const syntax::ExpressionPtr & argument : call.arguments) {
@@ -824,6 +828,25 @@ Type Compiler::checkCall(const syntax::ExpressionPtr & expression) {
         return expression->type;
     }
     return checkBuiltinCall(call, given, wanted);
+}
+
+void Compiler::referenceNg(syntax::Call* call) {
+    // RI's two-argument faceforward turns the normal against Ng. A shader that declares its
+    // own faceforward keeps it
+    if (call->name != "faceforward" || call->arguments.size() != 2) {
+        return;
+    }
+    const bool own = std::ranges::any_of(shader_->functions,
+        [](const syntax::Function & function) { return function.name == "faceforward"; });
+    if (own) {
+        return;
+    }
+    if ((bit(shader_->type) & (SURFACE | DISPLACEMENT)) == 0) {
+        throw fail(std::string("two-argument 'faceforward' takes Ng as its reference, and ") + article(shader_->type) +
+            " shader has no Ng; pass the reference as a third argument", call->line, call->column);
+    }
+    call->arguments.push_back(boost::make_shared<syntax::Variable>("Ng",
+        v3d::render::offline::Position{.line = call->line, .column = call->column}));
 }
 
 int Compiler::checkShaderCall(syntax::Call & call, const std::vector<Type> & given) {
@@ -843,10 +866,31 @@ int Compiler::checkShaderCall(syntax::Call & call, const std::vector<Type> & giv
                     "' is " + name(function.parameters[argument].type) + ", not " + name(given[argument]),
                     call.arguments[argument]->line, call.arguments[argument]->column);
             }
+            if (function.parameters[argument].output) {
+                checkOutputArgument(call, argument, function.parameters[argument].type, given[argument]);
+            }
         }
         return static_cast<int>(i);
     }
     return -1;
+}
+
+void Compiler::checkOutputArgument(const syntax::Call & call, std::size_t argument, Type formal, Type given) {
+    const syntax::ExpressionPtr & written = call.arguments[argument];
+    const std::string which = "argument " + std::to_string(argument + 1) + " of '" + call.name + "' is output";
+    if (written->kind != syntax::Expression::Kind::VARIABLE) {
+        throw fail(which + ", so it has to be a variable", written->line, written->column);
+    }
+    const syntax::Variable & variable = static_cast<const syntax::Variable &>(*written);
+    if (!symbols_[static_cast<std::size_t>(variable.symbol)].writable) {
+        throw fail(which + ", and '" + variable.name + "' cannot be assigned", written->line, written->column);
+    }
+    // the value is copied back as it stands, so a coercion that would apply on the way in
+    // has no way back out
+    if (given != formal) {
+        throw fail(which + " " + name(formal) + ", and '" + variable.name + "' is " + name(given),
+            written->line, written->column);
+    }
 }
 
 void Compiler::checkWritten(const syntax::Call & call, const Signature & signature) {

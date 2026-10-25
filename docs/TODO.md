@@ -160,14 +160,11 @@ meshes and set it from that.
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.
 
-[Hardening](plans/Hardening.md) orders the first two entries, in steps 3 and 6.
+[Hardening](plans/Hardening.md) orders the first entry, in step 6.
 
 [] **Nothing tests a requested model that decodes and does not upload.** `MeshRegistry::poll`
 logs and abandons such a request, but no fixture decodes cleanly and then fails `upload()`'s
 checks, so the branch never runs in a test.
-
-[] **Nothing binds one value to a colour shader parameter.** `sl::Instance` copies a single
-value to every channel, and no case in `SlShaderLibraryTest` binds fewer than three.
 
 [] **Two things need a window or a sound card to test:** `Feature::Window`, and whether
 `audio::Engine` is audible. SDL's dummy audio driver tests what the mixer is told, not what is
@@ -216,23 +213,10 @@ a velocity of 1, so the player walks at one unit a second.
 `Camera::perspective` multiplies both scales by the aspect ratio, so the horizontal field of view
 equals `fovx` only at an aspect of 1. Check against the intended projection.
 
-[] **A shading language `output` is never copied back.** Semantics, major.
-
-- A shader parameter declared `output` sets `Symbol::output`, which nothing reads.
-- A function formal declared `output` is accepted. `Emitter::emitInline` copies arguments into
-  formals and never copies them back, so a function that writes one leaves the caller's variable
-  unchanged. The shading language passes an output formal by reference.
-
-[] **Two-argument `faceforward(N, I)` uses N as its own reference.** Semantics, minor. RenderMan
-defines the default reference as Ng. The two-argument form is in `sl/runtime/Library.cxx`.
-
-[] **A runtime shader report has no source position.** Contract, minor. The emitter writes a line
-and column into every `sl::runtime::Instruction`, and no machine report reads them.
-
-[] **The RIB reader reads a Sphere's parameters as one vertex.** Semantics, minor.
-`Reader::primitiveRequest` passes `vertices = 1`. RI gives a quadric four varying values, so a
-bracketed varying "Cs" warns about its length and a bare one reads one element. It does not
-matter while spheres ignore their parameter list.
+[] **A shading language `output` shader parameter cannot be read.** Semantics, major. A
+shader parameter declared `output` sets `Symbol::output`, which nothing reads. RI reads one from
+another shader through `surface()`, `displacement()` and `lightsource()`, and none of the three
+is a built-in.
 
 [] **A default `camera::Profile::Frame` disagrees with its hand.** Contract, minor. The Frame
 defaults (direction -z, right +x, up +y) form the DirectionCrossUp basis, but a Frame-built

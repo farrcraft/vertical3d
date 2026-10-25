@@ -196,14 +196,14 @@ BOOST_AUTO_TEST_CASE(sllibrary_geometry_test) {
 
 /**
  * faceforward turns a normal to the side its reference is on, checked against hand-worked
- * values. An incident direction from in front leaves the normal alone, and one
- * from behind flips it. The two argument form has no Ng and uses the normal as its own reference.
+ * values. An incident direction from in front leaves the normal alone, and one from behind
+ * flips it.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_faceforward_test) {
-    const Shaded toward("normal answer = faceforward(normal (0, 0, 1), vector (0, 0, -1));");
+    const Shaded toward("normal answer = faceforward(normal (0, 0, 1), vector (0, 0, -1), normal (0, 0, 1));");
     BOOST_CHECK_CLOSE(toward.triple("answer").z, 1.0F, 0.01F);
 
-    const Shaded away("normal answer = faceforward(normal (0, 0, 1), vector (0, 0, 1));");
+    const Shaded away("normal answer = faceforward(normal (0, 0, 1), vector (0, 0, 1), normal (0, 0, 1));");
     BOOST_CHECK_CLOSE(away.triple("answer").z, -1.0F, 0.01F);
 
     // three arguments, where the reference faces the other way from the normal and decides
@@ -309,8 +309,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_transform_without_a_renderer_test) {
     const Shaded shaded("point answer = ptransform(\"world\", point (1, 2, 3));");
     BOOST_CHECK_CLOSE(shaded.triple("answer").x, 1.0F, 0.01F);
     BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 1U);
-    BOOST_CHECK_EQUAL(shaded.machine().reports()[0],
-        "the coordinate space \"world\" is not one this renderer knows");
+    BOOST_CHECK(shaded.machine().reports()[0].ends_with(
+        "the coordinate space \"world\" is not one this renderer knows"));
 }
 
 /**
@@ -340,7 +340,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_printf_missing_argument_test) {
 }
 
 /**
- * A stub returns its default and is reported exactly once, however many points ran it.
+ * A stub returns its default and is reported once for each place it is called, however many
+ * points ran it.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_stubs_report_once_test) {
     const Shaded shaded(
@@ -351,9 +352,10 @@ BOOST_AUTO_TEST_CASE(sllibrary_stubs_report_once_test) {
     BOOST_CHECK_SMALL(shaded.number("a"), 0.0001F);
 
     const std::vector<std::string> & reports = shaded.machine().reports();
-    BOOST_REQUIRE_EQUAL(reports.size(), 1U);
+    BOOST_REQUIRE_EQUAL(reports.size(), 2U);
     BOOST_CHECK_EQUAL(reports[0],
-        "'shadow' is declared and does nothing yet, so it answers its default");
+        "line 2, column 11: 'shadow' is declared and does nothing yet, so it answers its default");
+    BOOST_CHECK(reports[1].starts_with("line 3, column 11: "));
 }
 
 namespace {
@@ -413,7 +415,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_texture_test) {
 }
 
 /**
- * A name that cannot be read returns black, and is reported once however many points read it.
+ * A name that cannot be read returns black, and is reported once for each place that reads it,
+ * however many points read it.
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_missing_texture_test) {
     Textured renderer;
@@ -423,8 +426,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_missing_texture_test) {
 
     BOOST_CHECK_SMALL(glm::length(shaded.triple("a", 7)), 0.0001F);
     const std::vector<std::string> & reports = shaded.machine().reports();
-    BOOST_REQUIRE_EQUAL(reports.size(), 1U);
-    BOOST_CHECK_EQUAL(reports[0], "the texture \"nowhere.png\" cannot be read, so it answers black");
+    BOOST_REQUIRE_EQUAL(reports.size(), 2U);
+    BOOST_CHECK(reports[0].ends_with("the texture \"nowhere.png\" cannot be read, so it answers black"));
 }
 
 /**
@@ -728,10 +731,10 @@ BOOST_AUTO_TEST_CASE(sllibrary_matrix_and_colour_spaces_test) {
     BOOST_CHECK_CLOSE(shaded.triple("both").g, 0.5F, 0.01F);
     BOOST_CHECK_CLOSE(shaded.triple("into").g, 0.5F, 0.01F);
     BOOST_REQUIRE_EQUAL(shaded.machine().reports().size(), 2U);
-    BOOST_CHECK_EQUAL(shaded.machine().reports()[0],
-        "the colour space \"hsv\" is not one this renderer knows");
-    BOOST_CHECK_EQUAL(shaded.machine().reports()[1],
-        "the colour space \"xyz\" is not one this renderer knows");
+    BOOST_CHECK(shaded.machine().reports()[0].ends_with(
+        "the colour space \"hsv\" is not one this renderer knows"));
+    BOOST_CHECK(shaded.machine().reports()[1].ends_with(
+        "the colour space \"xyz\" is not one this renderer knows"));
 }
 
 /**
@@ -747,8 +750,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_colour_cast_space_test) {
     const Shaded hsv("color other = color \"hsv\" (0.25, 0.5, 0.75);");
     BOOST_CHECK_CLOSE(hsv.triple("other").g, 0.5F, 0.01F);
     BOOST_REQUIRE_EQUAL(hsv.machine().reports().size(), 1U);
-    BOOST_CHECK_EQUAL(hsv.machine().reports()[0],
-        "the colour space \"hsv\" is not one this renderer knows");
+    BOOST_CHECK(hsv.machine().reports()[0].ends_with(
+        "the colour space \"hsv\" is not one this renderer knows"));
 }
 
 /**
