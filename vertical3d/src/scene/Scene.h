@@ -17,6 +17,7 @@
 #include "Evaluation.h"
 #include "Item.h"
 #include "Mesh.h"
+#include "RenderSettings.h"
 #include "SceneVisitor.h"
 #include "Timeline.h"
 
@@ -143,6 +144,12 @@ class Scene final {
     void timeline(const Timeline& timeline) noexcept;
 
     /**
+     * How the document's pictures are rendered.
+     **/
+    const RenderSettings& renderSettings() const noexcept;
+    void renderSettings(const RenderSettings& settings) noexcept;
+
+    /**
      * Compose where every item is: its parent's world matrix times its own local matrix, each
      * parent before its children.
      **/
@@ -187,7 +194,8 @@ class Scene final {
 
     /**
      * Drop everything, the hierarchy and the curves with it, as closing a document does. The
-     * next document id goes back to 1, and the timeline to its defaults.
+     * next document id goes back to 1, and the timeline and the render settings to their
+     * defaults.
      **/
     void clear() noexcept;
 
@@ -234,6 +242,7 @@ class Scene final {
     // each animated item's curves, by its document id
     std::map<std::int64_t, Curves> curves_;
     Timeline timeline_;
+    RenderSettings renderSettings_;
     std::int64_t nextDocumentId_ = 1;
 };
 

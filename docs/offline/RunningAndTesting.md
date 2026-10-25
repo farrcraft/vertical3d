@@ -55,6 +55,23 @@ moya.exe --file data/raytrace-scene.rib --output scene.png
 moya is not RenderMan compliant, and does not aim to be. `moya/libmoya/Renderer.h` explains
 why: a second API beside the RI C API breaks the standard's "one true API" clause.
 
+### Inside another program
+
+A program that links `v3dlib_moya` renders a RIB stream with a `Renderer` and a `RIBHandler` of
+its own, as the driver does. Nothing either holds is shared, so two renders on two threads do
+not meet. The editor renders this way, as [editor/Rendering.md](../editor/Rendering.md) says.
+
+- **A `Display` of type `framebuffer`** writes no file, and the picture stays in
+  `context().framebuffer()`.
+- **`RenderContext::progress(callback)`** is told how much of the frame is done, from 0 to 1. The
+  reyes hider tells it after each bucket and the ray-trace hider after each row. Progress
+  reaches 1 at the end of the first pass over the buckets, and holds there through a pass
+  repeated because a primitive split. The callback runs on the rendering thread.
+- **A callback that returns false stops the render** there. The buckets or rows not yet rendered
+  stay empty, no imager runs, no file is written, and `stopped()` says so until the next render.
+- The reyes hider gathers every sample of the frame before it renders its first bucket, so a
+  stop cannot come sooner than that.
+
 ## Building and testing
 
 - **`api/render/offline` is added by `api/CMakeLists.txt`** from the library manifest, like

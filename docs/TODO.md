@@ -159,7 +159,7 @@ There are none open.
 Open work on the editor app. [editor/](editor/README.md) describes the editor.
 [EditorScene](plans/EditorScene.md) orders every group here.
 
-9 of the menu's 83 commands have no handler, and only log themselves when chosen. Each group
+6 of the menu's 83 commands have no handler, and only log themselves when chosen. Each group
 below is a piece of work of its own, in any order.
 
 [] **Shared meshes in a scene document.** Two mesh items may share one `BRep`, but the scene store
@@ -180,8 +180,15 @@ or the range, or edits a key's interpolation or slopes, so every key is an autom
 order cannot be keyed out of it. Each item needs an order of its own, saved and offered to
 whatever keys it.
 
-[] **The Render menu** (`render::view`, `render::batch`, `render::settings`) would hand the scene to
-moya. The RIB export already writes it. `render::batch` renders a range of frames, posing the
-scene at each.
+[] **A render shows nothing until it finishes.** moya resolves its samples into pixels at the end
+of a frame, so the render window waits for the whole picture. Resolving each bucket as it
+finishes would let `Delegate` hand over pictures as they improve.
+
+[] **A live render starts again from nothing.** An edit restarts the whole render, because moya
+reads a scene once. Taking edits into a running render needs moya to keep its scene and update
+it, which the editor's interface already sends.
+
+[] **A batch renders one frame at a time.** Its frames are independent files, and could run as
+several moya.exe processes at once.
 
 

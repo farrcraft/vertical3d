@@ -6,7 +6,9 @@
 #pragma once
 
 #include <api/asset/Manager.h>
+#include <api/image/Image.h>
 #include <api/log/Logger.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/canvas/Line.h>
@@ -119,6 +121,13 @@ class Renderer final {
     const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& statistics() const;
 
     /**
+     * Upload a rendered picture as a texture the ui can draw, in place of the last one.
+     *
+     * @return the texture, or an unset handle for no picture
+     **/
+    v3d::render::realtime::TextureHandle picture(const boost::shared_ptr<v3d::image::Image>& image);
+
+    /**
      * Wait for everything in flight, before the window the device draws to goes away.
      **/
     void shutdown();
@@ -155,6 +164,8 @@ class Renderer final {
     boost::shared_ptr<v3d::ui::shell::Screen> screen_;
 
     glm::vec4 background_;
+    // the last rendered picture's texture, released when the next one arrives
+    v3d::render::realtime::TextureHandle picture_;
 };
 
 };  // namespace v3d::editor

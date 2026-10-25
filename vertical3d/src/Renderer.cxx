@@ -8,6 +8,7 @@
 #include <api/asset/Manager.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/asset/Type.h>
+#include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Handle.h>
@@ -288,6 +289,21 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
     pass->keepColour();
     pass->depth(false);
     engine_.quads()->submit(canvas, pass.get());
+}
+
+/**
+ **/
+v3d::render::realtime::TextureHandle Renderer::picture(const boost::shared_ptr<v3d::image::Image>& image) {
+    // the ui stops drawing the old texture this frame, and its image is reclaimed once the
+    // frame in flight has finished with it
+    if (picture_.valid()) {
+        engine_.textures()->release(picture_);
+        picture_ = v3d::render::realtime::TextureHandle();
+    }
+    if (image) {
+        picture_ = engine_.textures()->texture(image);
+    }
+    return picture_;
 }
 
 /**

@@ -17,6 +17,7 @@
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
+#include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <fstream>
@@ -57,6 +58,20 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
     }
     void concatTransform(const glm::mat4x4 & matrix) override {
         placements_.push_back(matrix);
+    }
+    void pixelSamples(const glm::uvec2 & samples) override { samples_ = samples; }
+    void hider(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)parameters;
+        hider_ = name;
+    }
+    void display(const v3d::render::offline::rib::Display & request,
+        const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)parameters;
+        display_ = request;
+    }
+    void surface(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)parameters;
+        surface_ = name;
     }
     void worldBegin() override { worlds_++; }
     void worldEnd() override { worlds_++; }
@@ -101,6 +116,10 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
     std::vector<glm::vec3> points_;
     glm::mat4x4 camera_ = glm::mat4x4(1.0F);
     std::string projection_;
+    glm::uvec2 samples_ = glm::uvec2(0U);
+    std::string hider_;
+    v3d::render::offline::rib::Display display_;
+    std::string surface_;
     float right_ = 0.0F;
     float top_ = 0.0F;
     float hither_ = 0.0F;
@@ -129,11 +148,22 @@ v3d::type::camera::Camera camera(bool orthographic) {
     return result;
 }
 
+std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, const v3d::editor::RIBExportVisitor::Output & output) {
+    std::ostringstream stream;
+    v3d::editor::RIBExportVisitor visitor(&stream);
+    visitor.begin(camera(false), output);
+    scene->accept(&visitor);
+    visitor.end();
+    return stream.str();
+}
+
 std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, bool orthographic) {
     std::ostringstream stream;
     v3d::editor::RIBExportVisitor visitor(&stream);
     const v3d::type::camera::Camera view = camera(orthographic);
-    visitor.begin(view, 320, 240);
+    v3d::editor::RIBExportVisitor::Output output;
+    output.settings.size = glm::uvec2(320, 240);
+    visitor.begin(view, output);
     scene->accept(&visitor);
     visitor.end();
     return stream.str();
@@ -278,6 +308,57 @@ BOOST_AUTO_TEST_CASE(ribexport_lights_test) {
     BOOST_CHECK_SMALL(glm::distance(handler.tos_[1], glm::vec3(1.0F, 5.0F, 0.0F)), 0.0001F);
     BOOST_CHECK_CLOSE(handler.cones_[1], 0.4F, 0.001F);
     BOOST_CHECK_SMALL(glm::distance(handler.tos_[2], glm::vec3(0.0F, 0.0F, -1.0F)), 0.0001F);
+}
+
+BOOST_AUTO_TEST_CASE(ribexport_picture_test) {
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane()));
+    v3d::editor::RIBExportVisitor::Output output;
+    output.settings.size = glm::uvec2(200, 100);
+    output.settings.samples = 3;
+    output.settings.hider = v3d::editor::RenderSettings::Hider::RayTrace;
+    output.file = "C:/renders/frame.png";
+
+    // the settings give the picture's size, its samples and its hider, and the display
+    // names the file the picture is written to
+    ImportHandler handler;
+    BOOST_REQUIRE(reimport(exportScene(scene, output), &handler));
+    BOOST_CHECK_EQUAL(handler.width_, 200U);
+    BOOST_CHECK_EQUAL(handler.height_, 100U);
+    BOOST_CHECK(handler.samples_ == glm::uvec2(3U, 3U));
+    BOOST_CHECK_EQUAL(handler.hider_, "raytrace");
+    BOOST_CHECK_EQUAL(handler.display_.name, "C:/renders/frame.png");
+    BOOST_CHECK_EQUAL(handler.display_.type, "file");
+    BOOST_CHECK_EQUAL(handler.surface_, "matte");
+
+    // with no file the picture stays in the renderer
+    output.file.clear();
+    output.settings.hider = v3d::editor::RenderSettings::Hider::Hidden;
+    ImportHandler kept;
+    BOOST_REQUIRE(reimport(exportScene(scene, output), &kept));
+    BOOST_CHECK_EQUAL(kept.display_.type, "framebuffer");
+    BOOST_CHECK_EQUAL(kept.hider_, "hidden");
+}
+
+BOOST_AUTO_TEST_CASE(ribexport_default_light_test) {
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane()));
+
+    // a scene with no light is lit from the camera, the way it looks, before every mesh
+    ImportHandler handler;
+    BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
+    BOOST_REQUIRE_EQUAL(handler.lights_.size(), 1U);
+    BOOST_CHECK_EQUAL(handler.lights_[0], "distantlight");
+    BOOST_CHECK_EQUAL(handler.order_, "LP");
+    BOOST_CHECK_SMALL(glm::distance(handler.froms_[0], glm::vec3(0.0F, 0.0F, -8.0F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::distance(handler.tos_[0], glm::vec3(0.0F, 0.0F, -7.0F)), 0.0001F);
+
+    // and a scene with a light of its own gets none of the camera's
+    scene->add(boost::make_shared<v3d::editor::Light>());
+    ImportHandler lit;
+    BOOST_REQUIRE(reimport(exportScene(scene, false), &lit));
+    BOOST_REQUIRE_EQUAL(lit.lights_.size(), 1U);
+    BOOST_CHECK_EQUAL(lit.lights_[0], "pointlight");
 }
 
 BOOST_AUTO_TEST_CASE(ribexport_hierarchy_test) {

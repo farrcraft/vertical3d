@@ -22,6 +22,7 @@
 #include "Shading.h"
 
 #include <cstddef>
+#include <functional>
 #include <vector>
 #include <map>
 #include <string>
@@ -60,8 +61,37 @@ class RenderContext {
          * Runs the hider into the framebuffer's planes, then the imager if there is one. A
          * display of type "file" then has its colour channels written. Lights, the traced
          * scene and the framebuffer are kept. Does nothing before prepareWorld().
+         *
+         * A render the progress callback stops leaves the planes as far as the hider got, runs
+         * no imager and writes no file.
          **/
         void render();
+
+        /**
+         * Told how much of the frame the hider has finished, from 0 to 1, after each bucket of
+         * the reyes hider and each row of the ray-trace hider. It returns false to stop the
+         * render there. It runs on whatever thread renders.
+         **/
+        using Progress = std::function<bool(float done)>;
+
+        /**
+         * Set what is told the render's progress. An empty callback is told nothing, and the
+         * render runs to its end. The callback outlives every world, as an option does not.
+         **/
+        void progress(const Progress& callback);
+
+        /**
+         * Tell the progress callback how far the hider has got.
+         *
+         * @return false once the callback has asked to stop, and from then until the next
+         *         render begins
+         **/
+        bool report(float done);
+
+        /**
+         * @return whether the last render was stopped before its end
+         **/
+        bool stopped() const noexcept;
 
         unsigned int imageWidth() const;
         unsigned int imageHeight() const;
@@ -528,6 +558,8 @@ class RenderContext {
         v3d::render::offline::sl::InstancePtr imager_;
         boost::shared_ptr<FrameBuffer> frameBuffer_;
         boost::shared_ptr<reyes::Samples> samples_;
+        Progress progress_;
+        bool stopped_ = false;
         // camera options
         unsigned int xres_ = defaultWidth;
         unsigned int yres_ = defaultHeight;

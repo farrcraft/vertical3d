@@ -35,6 +35,7 @@
 #include "Camera.h"
 #include "Group.h"
 #include "Properties.h"
+#include "RenderSettings.h"
 #include "Timeline.h"
 #include "Item.h"
 #include "Light.h"
@@ -680,6 +681,7 @@ struct Loaded {
     Items items;
     std::vector<Animated> curves;
     Timeline timeline;
+    RenderSettings render;
     // each child's parent, both by document id
     std::map<std::int64_t, std::int64_t> parents;
     std::int64_t next = 1;
@@ -820,7 +822,7 @@ std::vector<std::byte> encodeKeys(const v3d::type::animation::Curve& curve) {
 }
 
 /**
- * Every curve a document holds, and its timeline, once its items are read.
+ * Every curve a document holds, once its items are read.
  **/
 bool loadAnimation(v3d::database::Database* database, std::int32_t version, Loaded* loaded, std::string* problem) {
     std::map<std::int64_t, Item::Kind> kinds;
@@ -864,27 +866,67 @@ bool loadAnimation(v3d::database::Database* database, std::int32_t version, Load
         }
     }
 
-    // each part of the timeline a document does not hold keeps its default
+    return true;
+}
+
+/**
+ * One row of the meta table that holds a part of the timeline or the render settings.
+ **/
+bool readSetting(const v3d::database::Statement& meta, Loaded* loaded, std::string* problem) {
+    const std::string key = meta.text(0);
+    if (key == "rate") {
+        loaded->timeline.rate = static_cast<float>(meta.real(1));
+    } else if (key == "start") {
+        loaded->timeline.start = static_cast<int>(meta.integer(1));
+    } else if (key == "end") {
+        loaded->timeline.end = static_cast<int>(meta.integer(1));
+    } else if (key == "frame") {
+        loaded->timeline.frame = static_cast<int>(meta.integer(1));
+    } else if (key == "render_hider") {
+        const std::string hider = meta.text(1);
+        if (hider != "hidden" && hider != "raytrace") {
+            *problem = "its render settings name a hider this build does not have";
+            return false;
+        }
+        loaded->render.hider = hider == "raytrace" ? RenderSettings::Hider::RayTrace : RenderSettings::Hider::Hidden;
+    } else {
+        // a negative or oversized number is held just out of range, so valid() refuses it
+        const auto number = static_cast<unsigned int>(
+            std::clamp<std::int64_t>(meta.integer(1), 0, RenderSettings::LARGEST_SIDE + 1));
+        if (key == "render_width") {
+            loaded->render.size.x = number;
+        } else if (key == "render_height") {
+            loaded->render.size.y = number;
+        } else {
+            loaded->render.samples = number;
+        }
+    }
+    return true;
+}
+
+/**
+ * A document's timeline and render settings, from its meta table. Each part a document does
+ * not hold keeps its default.
+ **/
+bool loadSettings(v3d::database::Database* database, Loaded* loaded, std::string* problem) {
     v3d::database::Statement meta = database->prepare(
-        "SELECT key, value FROM meta WHERE key IN ('rate', 'start', 'end', 'frame')");
+        "SELECT key, value FROM meta WHERE key IN ('rate', 'start', 'end', 'frame', "
+        "'render_width', 'render_height', 'render_samples', 'render_hider')");
     if (!meta.valid()) {
         *problem = database->error();
         return false;
     }
     while (meta.step() == v3d::database::Statement::Step::Row) {
-        const std::string key = meta.text(0);
-        if (key == "rate") {
-            loaded->timeline.rate = static_cast<float>(meta.real(1));
-        } else if (key == "start") {
-            loaded->timeline.start = static_cast<int>(meta.integer(1));
-        } else if (key == "end") {
-            loaded->timeline.end = static_cast<int>(meta.integer(1));
-        } else {
-            loaded->timeline.frame = static_cast<int>(meta.integer(1));
+        if (!readSetting(meta, loaded, problem)) {
+            return false;
         }
     }
     if (!loaded->timeline.valid()) {
         *problem = "its timeline's rate, range or frame is not valid";
+        return false;
+    }
+    if (!loaded->render.valid()) {
+        *problem = "its render settings' size or samples are not valid";
         return false;
     }
     return true;
@@ -1087,10 +1129,15 @@ bool storeAnimation(v3d::database::Database* database, const Scene& scene, const
     }
 
     const Timeline& timeline = scene.timeline();
+    const RenderSettings& render = scene.renderSettings();
     const bool wrote = Binder(&meta).text("rate").real(timeline.rate).run() &&
         Binder(&meta).text("start").integer(timeline.start).run() &&
         Binder(&meta).text("end").integer(timeline.end).run() &&
-        Binder(&meta).text("frame").integer(timeline.frame).run();
+        Binder(&meta).text("frame").integer(timeline.frame).run() &&
+        Binder(&meta).text("render_width").integer(render.size.x).run() &&
+        Binder(&meta).text("render_height").integer(render.size.y).run() &&
+        Binder(&meta).text("render_samples").integer(render.samples).run() &&
+        Binder(&meta).text("render_hider").text(render.hider == RenderSettings::Hider::RayTrace ? "raytrace" : "hidden").run();
     return wrote || failed(meta);
 }
 
@@ -1118,7 +1165,7 @@ bool SceneStore::read(const std::string& path, Scene* scene) {
     Loaded loaded;
     std::int32_t version = 0;
     if (!header(&database, nullptr, &version, &problem) || !load(&database, version, &loaded, &problem) ||
-        !loadAnimation(&database, version, &loaded, &problem)) {
+        !loadAnimation(&database, version, &loaded, &problem) || !loadSettings(&database, &loaded, &problem)) {
         logger_->get()->error("Cannot read the scene {}: {}", path, problem);
         return false;
     }
@@ -1140,6 +1187,7 @@ bool SceneStore::read(const std::string& path, Scene* scene) {
     scene->nextDocumentId(loaded.next);
     // posed before the store remembers the items, so that the pose is what it counts as read
     scene->timeline(loaded.timeline);
+    scene->renderSettings(loaded.render);
     scene->pose(static_cast<float>(loaded.timeline.frame));
 
     // the document holds what was just read, so the next write to it starts from here

@@ -25,6 +25,11 @@ v3d_add_test(vertical3d
 	"command/CommandStackTest.cxx"
 	"command/GroupCommandTest.cxx"
 	"command/KeyCommandTest.cxx"
+	"command/SettingsCommandTest.cxx"
+
+	"render/DelegateTest.cxx"
+	"render/BatchTest.cxx"
+	"render/RenderPanelsTest.cxx"
 
 	"tool/CameraControlToolTest.cxx"
 	"tool/PickerTest.cxx"
@@ -57,10 +62,17 @@ v3d_add_test(vertical3d
 	"../src/scene/Project.cxx"
 	"../src/scene/SceneStore.cxx"
 	"../src/scene/Modelling.cxx"
+	"../src/render/Batch.cxx"
+	"../src/render/Delegate.cxx"
+	"../src/render/MoyaDelegate.cxx"
+	"../src/render/Process.cxx"
+	"../src/render/RenderPanels.cxx"
+	"../src/render/Shot.cxx"
 	"../src/command/CommandStack.cxx"
 	"../src/command/CreateCommand.cxx"
 	"../src/command/GroupCommand.cxx"
 	"../src/command/KeyCommand.cxx"
+	"../src/command/SettingsCommand.cxx"
 	"../src/command/Placement.cxx"
 	"../src/command/TransformCommand.cxx"
 	"../src/command/VertexCommand.cxx"
@@ -85,11 +97,16 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_database
 	v3dlib_engine
 	v3dlib_event
+	v3dlib_image
 	v3dlib_log
+	v3dlib_moya
 	v3dlib_render
 	v3dlib_render_offline
 	v3dlib_type
 	v3dlib_ui)
+
+# the batch cases run moya.exe, which they find beside the suite
+v3d_copy_program(v3dtest_vertical3d moya)
 
 v3d_copy_data(v3dtest_vertical3d app "${CMAKE_CURRENT_SOURCE_DIR}/../data")
 

@@ -14,6 +14,7 @@
 #include "Light.h"
 #include "Mesh.h"
 #include "Properties.h"
+#include "RenderSettings.h"
 #include "SceneVisitor.h"
 #include "Timeline.h"
 
@@ -281,6 +282,18 @@ void Scene::timeline(const Timeline& timeline) noexcept {
 
 /**
  **/
+const RenderSettings& Scene::renderSettings() const noexcept {
+    return renderSettings_;
+}
+
+/**
+ **/
+void Scene::renderSettings(const RenderSettings& settings) noexcept {
+    renderSettings_ = settings;
+}
+
+/**
+ **/
 Evaluation Scene::evaluate() const {
     std::unordered_map<std::int64_t, const Item*> documents;
     for (const boost::shared_ptr<Item>& each : items_) {
@@ -353,6 +366,7 @@ void Scene::clear() noexcept {
     parents_.clear();
     curves_.clear();
     timeline_ = Timeline();
+    renderSettings_ = RenderSettings();
     nextDocumentId_ = 1;
 }
 

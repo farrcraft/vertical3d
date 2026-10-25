@@ -178,6 +178,10 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
             }
             taken_[(static_cast<std::size_t>(row) * width) + column] = taken;
         }
+        // the rows already traced are resolved, so a stopped render keeps what it found
+        if (!context->report(static_cast<float>(row + 1 - window.z) / static_cast<float>(window.w - window.z))) {
+            break;
+        }
     }
     film.resolve(planes, colour, coverage, static_cast<int>(depth));
 }

@@ -75,6 +75,29 @@ function(v3d_copy_data target name source)
 	set_target_properties(${target} PROPERTIES V3D_LAST_DATA_TARGET ${copier})
 endfunction()
 
+# Copy another target's executable beside a target's own, for a target that runs it, with the
+# shared libraries the program loads, which the target itself may not. The copy is a rule whose
+# input is the executable, for the same reason v3d_copy_data's is. A POST_BUILD step would copy
+# only when the target relinks, and leave an older build of the program beside it.
+#
+# @param target the executable that runs the program
+# @param program the executable target it runs
+function(v3d_copy_program target program)
+	set(copier "${target}_${program}_program")
+	set(stamp "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${copier}.stamp")
+	add_custom_command(OUTPUT "${stamp}"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${program}>" $<TARGET_RUNTIME_DLLS:${program}>
+			"$<TARGET_FILE_DIR:${target}>"
+		COMMAND ${CMAKE_COMMAND} -E touch "${stamp}"
+		DEPENDS "$<TARGET_FILE:${program}>"
+		COMMENT "Copying ${program} beside ${target}"
+		COMMAND_EXPAND_LISTS
+		VERBATIM)
+	add_custom_target(${copier} DEPENDS "${stamp}")
+	add_dependencies(${copier} ${program})
+	add_dependencies(${target} ${copier})
+endfunction()
+
 # Assets shared by more than one app live in the root data/ directory, so there is one
 # committed copy rather than one per app. v3d_add_shared_data copies them into an app's
 # runtime data directory, alongside whatever that app keeps in <app>/data. The engine

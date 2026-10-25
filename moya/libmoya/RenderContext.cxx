@@ -1153,13 +1153,32 @@ void RenderContext::bucket(v3d::render::offline::FrameBuffer* planes) {
     samples_->resolve(planes, FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
 }
 
+void RenderContext::progress(const Progress& callback) {
+    progress_ = callback;
+}
+
+bool RenderContext::report(float done) {
+    if (!stopped_ && progress_ && !progress_(done)) {
+        stopped_ = true;
+    }
+    return !stopped_;
+}
+
+bool RenderContext::stopped() const noexcept {
+    return stopped_;
+}
+
 void RenderContext::render() {
     if (!frameBuffer_) {
         return;
     }
 
+    stopped_ = false;
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = frameBuffer_->planes();
     hider_->render(this, planes.get());
+    if (stopped_) {
+        return;
+    }
 
     if (imager_) {
         // the imager runs once the hider has finished, because it reads the whole picture.

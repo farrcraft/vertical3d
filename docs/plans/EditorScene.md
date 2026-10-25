@@ -112,7 +112,7 @@ them.
 | Editor: how records are encoded and versioned. Decided in ADR-0102: typed columns for the core, JSON payloads, a schema version and a version per record type. | 2 |
 | Editor: how a saved record refers to an item. Decided in ADR-0103: a persistent document id. | 2 |
 | Editor: where hierarchy lives, in `api/dag` or in the editor, and how a world matrix is composed. Decided in ADR-0104, which amends ADR-0099: the scene holds the links and evaluates every placement. | 9 |
-| Editor: how the editor renders with moya, by linking `v3dlib_moya` or by running `moya.exe`. | 8 |
+| Editor: how the editor renders with moya, by linking `v3dlib_moya` or by running `moya.exe`. Decided in ADR-0106: a renderer interface for interactive renders, with moya linked behind it, and `moya.exe` for batches. | 8 |
 | Editor: which import formats the menu offers. glTF has a reader. The four legacy formats each need one written. | 7 |
 | Editor: what the editor animates, and how a key is stored. Decided in ADR-0105: a scalar curve per numeric property, keyed on frames. | 10 |
 
@@ -270,13 +270,26 @@ pass per view draws the triangles before the lines and shares the depth buffer.
 
 ### Step 8 — The Render menu
 
-**Open.** ADR first, on how the editor reaches moya.
+**Closed.** ADR-0106 decided it, after looking at how Blender, Houdini, Katana, Arnold and
+RenderMan join a renderer to an editor. It weighed linking moya for everything and running
+`moya.exe` for everything against an editor-owned renderer interface with a batch path beside it.
 
 - `render::view` renders the active view, or the chosen scene camera, and shows the picture in a
   window of the editor's ui. The render runs off the main thread, so the editor stays live.
 - `render::settings` sets the picture size, the pixel samples and the hider.
 - `render::batch` renders each scene camera to a file.
 - The export gains a `Display` line and a default light when the scene has none.
+- What landed differs in five ways.
+  - Render View goes through `Delegate`, an interface the editor owns, which also brings a render
+    up to date as the scene changes. While the window is open an edit renders again.
+  - moya gained a progress callback that can stop a render, per bucket and per ray-traced row.
+    Its pictures still arrive only when a frame finishes, which TODO.md records.
+  - `render::batch` renders every frame of the timeline's range, not one frame, from each
+    camera, through `moya.exe`, which the build copies beside the editor with its libraries.
+  - The export writes `Surface "matte"`, because RI's default surface ignores lights, so the
+    lights step 4 exported had no effect on a render.
+  - The render settings are saved in the document, and a change to them goes through the
+    history.
 
 ### Step 9 — Groups
 

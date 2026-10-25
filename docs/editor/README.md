@@ -14,6 +14,7 @@ projects. Menus, two toolbars and a file chooser are drawn with `api/ui`.
 | [PickingAndManipulators.md](PickingAndManipulators.md) | Change how clicks select things, and how handles move them |
 | [CommandsAndUndo.md](CommandsAndUndo.md) | Add a command, or make a change undoable |
 | [Animation.md](Animation.md) | Key item properties, and play them back with the Timeline menu |
+| [Rendering.md](Rendering.md) | Render the scene with moya, in the render window or as a batch of frames |
 | [Files.md](Files.md) | Change the project layout, the scene document format, or the RIB export |
 
 ## Running it

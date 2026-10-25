@@ -18,9 +18,11 @@
 #include "Item.h"
 #include "Light.h"
 #include "Mesh.h"
+#include "RenderSettings.h"
 #include "SceneVisitor.h"
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::editor {
 
@@ -31,7 +33,13 @@ namespace v3d::editor {
  * LightSource of RI's standard shader for its type, in world space. RI lights only what is
  * declared after a light, so every light is written before every mesh, whatever the scene's
  * order. The scene's cameras are not written as items: the caller passes the one the export
- * renders from. The scene has no materials, so what comes out renders in one flat colour.
+ * renders from. The scene has no materials, so every surface is RI's "matte", which the lights
+ * shade. A scene with no light gets a distant light from the camera, shining the way it looks,
+ * so that what it sees is lit.
+ *
+ * **The picture.** The render settings give the Format, the PixelSamples along each axis and the
+ * Hider. A Display names the file the picture is written to, or a "framebuffer" display that
+ * leaves it in the renderer.
  *
  * **The hierarchy is kept.** Each item is an AttributeBegin block holding its local matrix,
  * and the blocks of the items beneath it nest inside. A block is written only when a mesh is
@@ -51,18 +59,27 @@ class RIBExportVisitor final : public SceneVisitor {
     explicit RIBExportVisitor(std::ostream* stream);
 
     /**
-     * The file header and the camera, written before any mesh.
-     *
-     * The caller passes the camera the export uses, a view's or one made from a scene
-     * camera.
-     *
-     * @param camera the view the scene is rendered from
-     * @param width the image size to ask the renderer for
+     * What a render of the export makes: its settings, and where its picture goes.
      **/
-    void begin(const v3d::type::camera::Camera& camera, unsigned int width, unsigned int height);
+    struct Output {
+        RenderSettings settings;
+        /** The file the picture is written to, or empty to keep it in the renderer. **/
+        std::string file;
+    };
 
     /**
-     * Write the meshes and close the world block. A file without this renders nothing.
+     * The file header, the picture and the camera, written before any mesh.
+     *
+     * The caller passes the camera the export uses, a view's or one made from a scene
+     * camera. Its frame aspect should be the picture's, or the picture is stretched.
+     *
+     * @param camera the view the scene is rendered from
+     **/
+    void begin(const v3d::type::camera::Camera& camera, const Output& output);
+
+    /**
+     * Write the camera's light when the scene had none, then the meshes, and close the world
+     * block. A file without this renders nothing.
      **/
     void end();
 
@@ -122,6 +139,9 @@ class RIBExportVisitor final : public SceneVisitor {
     unsigned int lights_ = 0;
     unsigned int cameras_ = 0;
     unsigned int groups_ = 0;
+    // where the camera is and the way it looks, for the light a scene with none is given
+    glm::vec3 eye_{ 0.0F };
+    glm::vec3 looks_{ 0.0F, 0.0F, 1.0F };
 };
 
 };  // namespace v3d::editor

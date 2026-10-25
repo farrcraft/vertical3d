@@ -16,6 +16,7 @@ add_executable("vertical3d"
 	"src/scene/Group.h" "src/scene/Group.cxx"
 	"src/scene/Evaluation.h" "src/scene/Evaluation.cxx"
 	"src/scene/Properties.h" "src/scene/Properties.cxx"
+	"src/scene/RenderSettings.h"
 	"src/scene/Timeline.h"
 	"src/scene/Scene.h" "src/scene/Scene.cxx"
 	"src/scene/SceneVisitor.h"
@@ -28,11 +29,19 @@ add_executable("vertical3d"
 	"src/scene/SceneStore.h" "src/scene/SceneStore.cxx"
 	"src/scene/Modelling.h" "src/scene/Modelling.cxx"
 
+	"src/render/Batch.h" "src/render/Batch.cxx"
+	"src/render/Delegate.h" "src/render/Delegate.cxx"
+	"src/render/MoyaDelegate.h" "src/render/MoyaDelegate.cxx"
+	"src/render/Process.h" "src/render/Process.cxx"
+	"src/render/RenderPanels.h" "src/render/RenderPanels.cxx"
+	"src/render/Shot.h" "src/render/Shot.cxx"
+
 	"src/command/Command.h"
 	"src/command/CommandStack.h" "src/command/CommandStack.cxx"
 	"src/command/CreateCommand.h" "src/command/CreateCommand.cxx"
 	"src/command/GroupCommand.h" "src/command/GroupCommand.cxx"
 	"src/command/KeyCommand.h" "src/command/KeyCommand.cxx"
+	"src/command/SettingsCommand.h" "src/command/SettingsCommand.cxx"
 	"src/command/Placement.h" "src/command/Placement.cxx"
 	"src/command/TransformCommand.h" "src/command/TransformCommand.cxx"
 	"src/command/VertexCommand.h" "src/command/VertexCommand.cxx"
@@ -60,11 +69,17 @@ target_link_libraries(vertical3d PRIVATE
 	v3dlib_database
 	v3dlib_engine
 	v3dlib_event
+	v3dlib_image
 	v3dlib_log
+	v3dlib_moya
 	v3dlib_render
+	v3dlib_render_offline
 	v3dlib_type
 	v3dlib_ui
 )
+
+# a batch render runs moya.exe, which the editor finds beside itself
+v3d_copy_program(vertical3d moya)
 
 # the shaded pass's own stages, which a view draws its meshes' surfaces with
 v3d_add_shader(vertical3d "shaders/shaded.vert")

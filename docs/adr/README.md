@@ -142,6 +142,7 @@ content went. Numbers are never reused.
 | [0103](0103-editor-items-have-persistent-document-ids.md) | Editor: items have persistent document ids | accepted |
 | [0104](0104-editor-the-scene-evaluates-a-hierarchy-of-items.md) | Editor: the scene evaluates a hierarchy of items | accepted |
 | [0105](0105-editor-animation-is-scalar-curves-on-item-properties.md) | Editor: animation is scalar curves on item properties | accepted |
+| [0106](0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md) | Editor: a renderer interface for interactive, a process for batch | accepted |
 
 ## Build, testing and code
 

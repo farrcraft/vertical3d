@@ -17,12 +17,16 @@
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/Bar.h>
+#include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Project.h>
+#include <vertical3d/src/render/Batch.h>
+#include <vertical3d/src/render/Delegate.h>
+#include <vertical3d/src/render/RenderPanels.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
 #include <vertical3d/src/tool/SelectMask.h>
@@ -31,6 +35,7 @@
 #include <vertical3d/src/view/ViewLayout.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
@@ -70,7 +75,9 @@ class Controller final : public v3d::engine::Engine {
     bool onEvent(const SDL_Event& event) override;
 
     /**
-     * Autosave the project while it has changes, every autosaveInterval.
+     * Autosave the project while it has changes, every autosaveInterval. While the render
+     * window is open, render again when the scene has changed, and show the render's state and
+     * its latest picture. Show a batch's progress in the caption.
      **/
     bool tick(unsigned int delta) override;
 
@@ -190,6 +197,32 @@ class Controller final : public v3d::engine::Engine {
      * Key every property of each selected item at the current frame, through the history.
      **/
     void setKey();
+
+    /**
+     * The camera a render sees through: the one selected scene camera, or the active view.
+     **/
+    v3d::type::camera::Profile shot() const;
+
+    /**
+     * Open the render window, and render the scene into it.
+     **/
+    void renderView();
+
+    /**
+     * Take the render settings from their fields, through the history, and put the fields away.
+     **/
+    void applySettings();
+
+    /**
+     * Render every frame of the timeline from each scene camera into the project's renders
+     * directory, by moya.exe.
+     **/
+    void renderBatch();
+
+    /**
+     * Show the render's state, and its picture when there is a new one.
+     **/
+    void syncRender();
 
     /**
      * Make a frame the current one, held within the range, and pose the scene at it.
@@ -356,6 +389,14 @@ class Controller final : public v3d::engine::Engine {
     // whether the timeline is playing, and the seconds played since the current frame began
     bool playing_ = false;
     float played_ = 0.0F;
+    // what renders the render window, the window and the settings, and a batch of frames
+    boost::shared_ptr<Delegate> delegate_;
+    boost::shared_ptr<RenderPanels> panels_;
+    boost::shared_ptr<Batch> batch_;
+    // the count of the delegate's last picture that is shown, and the state last shown
+    std::uint64_t shownPictures_ = 0;
+    Delegate::State shownState_ = Delegate::State::Idle;
+    int shownDone_ = -1;
     boost::shared_ptr<CommandStack> history_;
     // what the caption was last set to
     std::string caption_;

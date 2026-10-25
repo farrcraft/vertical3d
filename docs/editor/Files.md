@@ -226,16 +226,22 @@ the offline renderer reads RIB.
 
 `RIBExportVisitor` writes:
 
-- a header, then a `Format` the size of the active view's camera profile
+- a header, then the picture: a `Format` of the render settings' size, their `PixelSamples` along
+  each axis, and their `Hider`. A `Display` names the file the picture is written to, which for
+  the export is `export.png` beside it. A `Display` of type `framebuffer` keeps the picture in
+  the renderer, and Render View reads it from there ([Rendering.md](Rendering.md))
 - the camera as a `Projection` (orthographic or perspective), `ScreenWindow`, `Clipping` and
   `Transform`. When exactly one camera item is selected the export renders from it, through
-  `profile_of()`, from where the scene's evaluation puts it, with the active view's picture
-  size. Otherwise it renders from the active view
+  `profile_of()`, from where the scene's evaluation puts it. Otherwise it renders from the
+  active view. Either way the camera takes the picture's size and frame aspect
+- `Surface "matte"` after `WorldBegin`, so that the lights shade every surface. RI's default
+  surface, `constant`, ignores lights
 - inside `WorldBegin` and `WorldEnd`, every light first, as a `LightSource` of RI's standard
   shader for its type: `pointlight`, `distantlight` or `spotlight`. Each has its `intensity`,
   its `lightcolor`, and a `from` in world space where the scene's evaluation puts the light. A
   distant or spot light has a `to` one unit along its +z axis in the world, and a spot light its
-  `coneangle` and `conedeltaangle`
+  `coneangle` and `conedeltaangle`. A scene with no light gets a `distantlight` from the camera's
+  eye, shining the way the camera looks, so that what it sees is lit
 - then the hierarchy, as nested `AttributeBegin` blocks. Each item's block has an identifier
   name, such as `group1` or `mesh2`, and a `ConcatTransform` of its local matrix. A mesh's block
   then has one `Polygon` per face, and the blocks of the items beneath it follow inside it. A
@@ -245,8 +251,8 @@ the offline renderer reads RIB.
 RI lights only what is declared after a light, so the lights come before every mesh whatever
 the scene's order. RI also turns a light off when the block it was declared in ends, so a light
 is written at world level from its world matrix rather than inside its parent's block. A camera
-item is never written as an item. The export writes no materials, so the result renders in one
-flat colour. RI treats a polygon as planar and convex without checking. moya dices only the
+item is never written as an item. The export writes no materials, so every surface is matte in
+its default colour. RI treats a polygon as planar and convex without checking. moya dices only the
 first four vertices of a polygon, so a face with more than four vertices renders as a quad.
 [offline/](../offline/README.md) covers what moya does with the file.
 

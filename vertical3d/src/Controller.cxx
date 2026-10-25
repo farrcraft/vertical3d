@@ -15,10 +15,12 @@
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/render/realtime/Window.h>
+#include <api/image/Image.h>
 #include <api/type/camera/Camera.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
 #include <api/ui/Engine.h>
+#include <api/ui/Image.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/Item.h>
@@ -31,6 +33,7 @@
 #include <vertical3d/src/command/CreateCommand.h>
 #include <vertical3d/src/command/GroupCommand.h>
 #include <vertical3d/src/command/KeyCommand.h>
+#include <vertical3d/src/command/SettingsCommand.h>
 #include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreateItem.h>
@@ -42,7 +45,13 @@
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Timeline.h>
+#include <vertical3d/src/render/Batch.h>
+#include <vertical3d/src/render/Delegate.h>
+#include <vertical3d/src/render/MoyaDelegate.h>
+#include <vertical3d/src/render/RenderPanels.h>
+#include <vertical3d/src/render/Shot.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
 #include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
@@ -55,6 +64,7 @@
 #include <cmath>
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <utility>
 #include <string>
 #include <vector>
@@ -74,6 +84,12 @@ namespace {
  **/
 const char* const uiContainer = "editor";
 const char* const menuBar = "menu-bar";
+
+#ifdef _WIN32
+const char* const MOYA = "moya.exe";
+#else
+const char* const MOYA = "moya";
+#endif
 
 /**
  * A keyed frame as a whole frame within the timeline's range, rounded up or down.
@@ -205,6 +221,10 @@ bool Controller::buildUi() {
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher(), window());
     chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui_);
     prompt_ = boost::make_shared<v3d::ui::shell::Prompt>(vgui_);
+    panels_ = boost::make_shared<RenderPanels>(vgui_);
+    delegate_ = boost::make_shared<MoyaDelegate>(logger());
+    // moya.exe is built beside the editor
+    batch_ = boost::make_shared<Batch>(logger(), boost::filesystem::path(path_) / MOYA);
 
     const boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
     if (!container) {
@@ -305,8 +325,12 @@ void Controller::syncCaption() {
     if (!history_) {
         return;
     }
-    const std::string caption = "Vertical|3D - " + project_->directory().filename().string() + (history_->dirty() ? " *" : "") +
+    std::string caption = "Vertical|3D - " + project_->directory().filename().string() + (history_->dirty() ? " *" : "") +
         " - frame " + std::to_string(scene_->timeline().frame);
+    const Batch::Status batch = batch_ ? batch_->status() : Batch::Status();
+    if (batch.running) {
+        caption += " - rendering " + std::to_string(batch.done + 1) + " of " + std::to_string(batch.total);
+    }
     if (caption == caption_) {
         return;
     }
@@ -353,6 +377,19 @@ void Controller::registerCommands() {
     press("create::light::spot", [this]() { createLight(Light::Type::Spot); });
     press("create::group", [this]() { createGroup(); });
     press("timeline::set", [this]() { setKey(); });
+    press("render::view", [this]() { renderView(); });
+    press("render::stop", [this]() {
+        delegate_->cancel();
+        batch_->cancel();
+    });
+    press("render::close", [this]() {
+        delegate_->cancel();
+        panels_->hideView();
+    });
+    press("render::settings", [this]() { panels_->openSettings(scene_->renderSettings()); });
+    press("render::settings::apply", [this]() { applySettings(); });
+    press("render::settings::cancel", [this]() { panels_->closeSettings(); });
+    press("render::batch", [this]() { renderBatch(); });
     press("timeline::playback::play", [this]() {
         playing_ = true;
         played_ = 0.0F;
@@ -551,6 +588,90 @@ void Controller::setKey() {
 
 /**
  **/
+v3d::type::camera::Profile Controller::shot() const {
+    return shotFrom(*scene_, activeView_->camera()->profile());
+}
+
+/**
+ **/
+void Controller::renderView() {
+    if (!activeView_ || !activeView_->camera()) {
+        logger()->get()->info("a render is seen through the active view, and there is none");
+        return;
+    }
+    panels_->showView();
+    delegate_->render(*scene_, shot(), scene_->renderSettings());
+    syncRender();
+}
+
+/**
+ **/
+void Controller::applySettings() {
+    const std::optional<RenderSettings> settings = panels_->settings();
+    if (!settings) {
+        logger()->get()->info("the render settings need a width and a height of 1 to {} and samples of 1 to {}",
+            RenderSettings::LARGEST_SIDE, RenderSettings::MOST_SAMPLES);
+        return;
+    }
+    panels_->closeSettings();
+    if (*settings == scene_->renderSettings()) {
+        return;
+    }
+    const boost::shared_ptr<SettingsCommand> command = boost::make_shared<SettingsCommand>(scene_, *settings);
+    command->redo();
+    history_->push(command);
+}
+
+/**
+ **/
+void Controller::renderBatch() {
+    if (!activeView_ || !activeView_->camera()) {
+        logger()->get()->info("a batch with no scene camera is seen through the active view, and there is none");
+        return;
+    }
+    const std::vector<Batch::Job> jobs = batch_->start(scene_.get(), activeView_->camera()->profile(),
+        scene_->renderSettings(), project_->directory() / "renders");
+    logger()->get()->info("rendering {} frame(s) into {}", jobs.size(), (project_->directory() / "renders").string());
+    syncCaption();
+}
+
+/**
+ **/
+void Controller::syncRender() {
+    const Delegate::Status status = delegate_->status();
+    const int done = static_cast<int>(status.done * 100.0F);  // checked: done is between 0 and 1
+    if (status.state != shownState_ || done != shownDone_) {
+        shownState_ = status.state;
+        shownDone_ = done;
+        switch (status.state) {
+            case Delegate::State::Idle:
+                panels_->status("Nothing rendered yet");
+                break;
+            case Delegate::State::Rendering:
+                panels_->status("Rendering - " + std::to_string(done) + "%");
+                break;
+            case Delegate::State::Finished:
+                panels_->status("Rendered");
+                break;
+            case Delegate::State::Stopped:
+                panels_->status("Stopped");
+                break;
+            case Delegate::State::Failed:
+                panels_->status("The render failed - the log says why");
+                break;
+        }
+    }
+    if (status.pictures != shownPictures_) {
+        shownPictures_ = status.pictures;
+        const boost::shared_ptr<v3d::image::Image> image = delegate_->picture();
+        if (image && renderer_) {
+            panels_->picture(v3d::ui::Image(renderer_->picture(image)), glm::uvec2(image->width(), image->height()));
+        }
+    }
+}
+
+/**
+ **/
 void Controller::goTo(int frame) {
     Timeline timeline = scene_->timeline();
     timeline.frame = std::clamp(frame, timeline.start, timeline.end);
@@ -698,19 +819,9 @@ void Controller::exportProject() {
         return;
     }
 
-    // one selected scene camera is the one rendered from, and the active view otherwise
-    const v3d::type::camera::Profile& picture = activeView_->camera()->profile();
-    const std::vector<boost::shared_ptr<Camera>> cameras = scene_->selected<Camera>();
-    v3d::type::camera::Camera camera(cameras.size() == 1 ?
-        profile_of(*cameras.front(), scene_->evaluate().placed(cameras.front()->id()).world, picture) : picture);
-    camera.createProjection();
-    camera.createView();
-
-    RIBExportVisitor visitor(&file);
-    const glm::uvec2 size = picture.size();
-    visitor.begin(camera, size.x, size.y);
-    scene_->accept(&visitor);
-    visitor.end();
+    // the picture is named beside the export, so rendering the file writes it there
+    const std::string picture = boost::filesystem::path(path_ + "export.png").generic_string();
+    writeShot(&file, *scene_, shot(), RIBExportVisitor::Output{ .settings = scene_->renderSettings(), .file = picture });
 
     logger()->get()->info("exported {} item(s) to {}", scene_->count(), exportPath());
 }
@@ -975,6 +1086,13 @@ bool Controller::release() {
     if (project_ && history_ && !history_->dirty()) {
         project_->discardRecovery();
     }
+    // a render's thread and a batch's are waited for, before anything they report to goes
+    if (delegate_) {
+        delegate_->cancel();
+    }
+    if (batch_) {
+        batch_->cancel();
+    }
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
@@ -991,6 +1109,13 @@ bool Controller::tick(unsigned int delta) {
         if (project_ && history_ && history_->dirty()) {
             project_->autosave(scene_);
         }
+    }
+    if (panels_ && panels_->viewVisible() && activeView_ && activeView_->camera()) {
+        delegate_->update(*scene_, shot(), scene_->renderSettings());
+        syncRender();
+    }
+    if (batch_) {
+        syncCaption();
     }
     return Engine::tick(delta);
 }

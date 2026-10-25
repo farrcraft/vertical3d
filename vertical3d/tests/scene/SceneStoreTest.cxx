@@ -19,6 +19,7 @@
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/SceneStore.h>
 #include <vertical3d/src/scene/Timeline.h>
 
@@ -368,6 +369,9 @@ BOOST_AUTO_TEST_CASE(store_refuses_a_damaged_document_test) {
             "FROM items WHERE kind = 'light'" },
         { "a timeline with no frame rate", "INSERT OR REPLACE INTO meta VALUES ('rate', 0.0)" },
         { "a frame outside the range", "INSERT OR REPLACE INTO meta VALUES ('frame', 500)" },
+        { "a picture with no width", "INSERT OR REPLACE INTO meta VALUES ('render_width', 0)" },
+        { "a picture with too many samples", "INSERT OR REPLACE INTO meta VALUES ('render_samples', 99)" },
+        { "a hider this build does not have", "INSERT OR REPLACE INTO meta VALUES ('render_hider', 'scanline')" },
         { "tables at a version no build wrote", "PRAGMA user_version = 0" },
         { "another program's database", "PRAGMA application_id = 1" },
         { "an item that is its own parent", "UPDATE items SET parent = id WHERE kind = 'camera'" },
@@ -641,6 +645,29 @@ BOOST_AUTO_TEST_CASE(store_animation_round_trip_test) {
     BOOST_REQUIRE(store.write(scratch.path(), read));
     BOOST_CHECK_EQUAL(store.written().rows, 0U);
     BOOST_CHECK_EQUAL(store.written().curves, 0U);
+}
+
+BOOST_AUTO_TEST_CASE(store_render_settings_test) {
+    const Scratch scratch("render_settings");
+    const boost::shared_ptr<v3d::editor::Scene> written = everyKind();
+    v3d::editor::RenderSettings settings;
+    settings.size = glm::uvec2(1280, 720);
+    settings.samples = 5;
+    settings.hider = v3d::editor::RenderSettings::Hider::RayTrace;
+    written->renderSettings(settings);
+
+    // the render settings come back as they were written
+    v3d::editor::SceneStore store(logger());
+    BOOST_REQUIRE(store.write(scratch.path(), *written));
+    v3d::editor::Scene read;
+    BOOST_REQUIRE(store.read(scratch.path(), &read));
+    BOOST_CHECK(read.renderSettings() == settings);
+
+    // and a document that holds none reads with the defaults
+    alter(scratch, "DELETE FROM meta WHERE key LIKE 'render_%'");
+    v3d::editor::Scene plain;
+    BOOST_REQUIRE(store.read(scratch.path(), &plain));
+    BOOST_CHECK(plain.renderSettings() == v3d::editor::RenderSettings());
 }
 
 BOOST_AUTO_TEST_CASE(store_changed_curve_alone_test) {

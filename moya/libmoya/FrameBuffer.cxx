@@ -7,6 +7,7 @@
 
 #include <api/render/offline/FrameBuffer.h>
 #include <api/type/geometry/AABBox.h>
+#include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/reyes/Bucket.h>
 #include <moya/libmoya/reyes/Primitive.h>
 
@@ -116,13 +117,23 @@ void FrameBuffer::render(RenderContext & rc) {
     // render every bucket, and render them all again while any of them split something. A
     // split piece is bucketed by where it lands, which can be a bucket already rendered. A
     // primitive already diced yields no further grid, so a repeated pass costs only a visit
-    // to each primitive. Splitting terminates, so this loop does
+    // to each primitive. Splitting terminates, so this loop does.
+    //
+    // Progress counts every bucket rendered against one pass. It reaches the whole frame at the
+    // end of the first pass and holds there through any pass repeated after it. A stop leaves
+    // the buckets not yet rendered empty
+    const float total = static_cast<float>(bucketColumns_) * static_cast<float>(bucketRows_);
+    float done = 0.0F;
     bool split = true;
     while (split) {
         split = false;
         for (unsigned int i = 0; i < bucketColumns_; i++) {
             for (unsigned int j = 0; j < bucketRows_; j++) {
                 split = buckets_[i][j].render(rc) || split;
+                done += 1.0F;
+                if (!rc.report(std::min(done / total, 1.0F))) {
+                    return;
+                }
             }
         }
     }

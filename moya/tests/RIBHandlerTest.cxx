@@ -1172,4 +1172,65 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_messages_under_both_hiders_test) {
     }
 }
 
+/**
+ * A red square over the whole of a 64 by 48 picture, under either hider.
+ **/
+std::string covered(const char* hider) {
+    return std::string("Format 64 48 1\n") +
+        "Hider \"" + hider + "\"\n"
+        "Projection \"orthographic\"\n"
+        "ScreenWindow -1 1 -1 1\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Color [1 0 0]\n"
+        "Polygon \"P\" [-2 -2 5  2 -2 5  2 2 5  -2 2 5]\n"
+        "WorldEnd\n";
+}
+
+/**
+ * The progress callback is told how far each hider has got, rising to the whole frame.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_progress_test) {
+    for (const char* hider : { "hidden", "raytrace" }) {
+        BOOST_TEST_CONTEXT(hider) {
+            v3d::moya::Renderer renderer;
+            v3d::moya::RIBHandler handler(&renderer);
+            std::vector<float> told;
+            handler.context().progress([&told](float done) {
+                told.push_back(done);
+                return true;
+            });
+            BOOST_REQUIRE(read(covered(hider), &handler));
+            BOOST_REQUIRE(!told.empty());
+            BOOST_CHECK(std::is_sorted(told.begin(), told.end()));
+            BOOST_CHECK_CLOSE(told.back(), 1.0F, 0.001F);
+            BOOST_CHECK(!handler.context().stopped());
+            BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->value(v3d::moya::FrameBuffer::RED, 60, 44), 1.0F);
+        }
+    }
+}
+
+/**
+ * A callback that answers false stops the render where it is, and the rest of the picture is
+ * never drawn.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_stop_test) {
+    for (const char* hider : { "hidden", "raytrace" }) {
+        BOOST_TEST_CONTEXT(hider) {
+            v3d::moya::Renderer renderer;
+            v3d::moya::RIBHandler handler(&renderer);
+            unsigned int told = 0;
+            handler.context().progress([&told](float /*done*/) {
+                told++;
+                return false;
+            });
+            BOOST_REQUIRE(read(covered(hider), &handler));
+            BOOST_CHECK_EQUAL(told, 1U);
+            BOOST_CHECK(handler.context().stopped());
+            const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+            BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 60, 44), 0.0F);
+        }
+    }
+}
+
 };  // namespace

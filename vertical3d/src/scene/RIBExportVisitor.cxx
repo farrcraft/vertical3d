@@ -24,6 +24,7 @@
 #include "Item.h"
 #include "Light.h"
 #include "Mesh.h"
+#include "RenderSettings.h"
 
 #include <glm/gtc/quaternion.hpp>
 #include <glm/vec3.hpp>
@@ -44,14 +45,24 @@ void RIBExportVisitor::matrix(std::ostream* out, const glm::mat4x4& transform) {
     *out << " ]";
 }
 
-void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, unsigned int width, unsigned int height) {
+void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, const Output& output) {
     const v3d::type::camera::Profile& profile = camera.profile();
     const glm::vec2 clipping = profile.clipping();
+    const RenderSettings& settings = output.settings;
+    eye_ = profile.eye();
+    looks_ = profile.direction();
 
     *stream_ << "##RenderMan RIB-Structure 1.1\n";
     *stream_ << "##Creator Vertical3D\n";
     *stream_ << "version 3.03\n";
-    *stream_ << "Format " << width << " " << height << " 1\n";
+    *stream_ << "Format " << settings.size.x << " " << settings.size.y << " 1\n";
+    *stream_ << "PixelSamples " << settings.samples << " " << settings.samples << "\n";
+    *stream_ << "Hider \"" << (settings.hider == RenderSettings::Hider::RayTrace ? "raytrace" : "hidden") << "\"\n";
+    if (output.file.empty()) {
+        *stream_ << "Display \"vertical3d\" \"framebuffer\" \"rgb\"\n";
+    } else {
+        *stream_ << "Display \"" << output.file << "\" \"file\" \"rgb\"\n";
+    }
 
     /*
         The screen window is written rather than left to the frame aspect. The editor's
@@ -76,10 +87,16 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, unsigned i
     *stream_ << "\n";
 
     *stream_ << "WorldBegin\n";
+    *stream_ << "Surface \"matte\"\n";
 }
 
 void RIBExportVisitor::end() {
     // the lights were written as they were visited, so every mesh comes after every light
+    if (lights_ == 0) {
+        const glm::vec3 to = eye_ + looks_;
+        *stream_ << "LightSource \"distantlight\" 1 \"intensity\" [1] \"from\" [" << eye_.x << " " << eye_.y << " "
+            << eye_.z << "] \"to\" [" << to.x << " " << to.y << " " << to.z << "]\n";
+    }
     *stream_ << body_.str();
     body_.str(std::string());
     *stream_ << "WorldEnd\n";
