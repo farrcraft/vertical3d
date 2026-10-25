@@ -144,6 +144,19 @@ class Device final {
      **/
     bool nonSolidFill() const noexcept;
 
+    /**
+     * Choose the extensions a logical device is created with.
+     *
+     * Public because it has no side effects and needs no device, so a test can check both
+     * branches on a machine with no portability driver.
+     *
+     * @param presenting whether the device presents, which needs the swapchain extension
+     * @param offered the names of the extensions the physical device advertises
+     * @return the swapchain extension when presenting, and the portability subset when the
+     *         device offers it, which a device that offers it must have enabled
+     **/
+    static std::vector<const char*> extensions(bool presenting, const std::vector<std::string>& offered);
+
  private:
     /**
      * Pick the first physical device that can draw, and present when there is a surface,
@@ -159,16 +172,23 @@ class Device final {
     QueueFamilies findFamilies(VkPhysicalDevice device) const;
 
     /**
-     * @param presenting whether the swapchain extension is among the ones needed
-     * @return whether a physical device advertises every extension the renderer needs
+     * @return the names of the extensions a physical device advertises
      **/
-    static bool hasRequiredExtensions(VkPhysicalDevice device, bool presenting);
+    static std::vector<std::string> offered(VkPhysicalDevice device);
 
     /**
-     * @return whether a physical device offers the 1.3 features the renderer draws with, and
-     *         the separate depth and stencil layouts its depth barriers rely on
+     * @param presenting whether the swapchain extension is among the ones needed
+     * @return the first extension the renderer needs that a physical device does not
+     *         advertise, or empty when it advertises them all
      **/
-    static bool hasRequiredFeatures(VkPhysicalDevice device);
+    static std::string missingExtension(VkPhysicalDevice device, bool presenting);
+
+    /**
+     * @return the first of the 1.3 features the renderer draws with, and the separate depth
+     *         and stencil layouts its depth barriers rely on, that a physical device lacks, or
+     *         empty when it has them all
+     **/
+    static std::string missingFeature(VkPhysicalDevice device);
 
     /**
      **/

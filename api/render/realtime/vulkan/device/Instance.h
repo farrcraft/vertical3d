@@ -24,6 +24,11 @@ namespace v3d::render::realtime::vulkan::device {
  * When the Khronos validation layer is installed it is enabled, along with a messenger that
  * puts what it says through the logger. The messenger is not optional: a layer with
  * nowhere to report to is silent, which is indistinguishable from a clean run.
+ *
+ * A loader hides a portability driver, one that implements vulkan over another API as MoltenVK
+ * does, from an instance that has not asked for one. The instance asks whenever the loader
+ * offers the extension that does it, so such a driver is found. On a loader without it nothing
+ * changes.
  **/
 class Instance final {
  public:
@@ -39,6 +44,34 @@ class Instance final {
 
     Instance(const Instance&) = delete;
     Instance& operator=(const Instance&) = delete;
+
+    /**
+     * What an instance is created with.
+     **/
+    struct Enabling final {
+        std::vector<const char*> extensions;
+        VkInstanceCreateFlags flags = 0;
+        bool portability = false;  /**< whether portability drivers are enumerated **/
+    };
+
+    /**
+     * Choose the extensions and flags an instance is created with.
+     *
+     * Public because it has no side effects and needs no loader, so a test can check both
+     * branches on a machine with no portability driver.
+     *
+     * @param requested the extensions the windowing system requires, which are always enabled
+     * @param offered the names of the instance extensions the loader lists
+     * @param validating whether the validation layer is enabled, which needs debug utils
+     * @return the requested extensions, debug utils when validating, and portability
+     *         enumeration with its flag when the loader offers it
+     **/
+    static Enabling enable(const std::vector<const char*>& requested, const std::vector<std::string>& offered, bool validating);
+
+    /**
+     * @return whether the instance enumerates portability drivers
+     **/
+    bool portability() const noexcept;
 
     /**
      * @return the underlying vulkan instance handle
@@ -94,9 +127,9 @@ class Instance final {
     static void requireExtensions(const std::vector<const char*>& extensions);
 
     /**
-     * @return whether the loader advertises an instance extension
+     * @return the names of the instance extensions the loader advertises
      **/
-    static bool hasExtension(const char* extension);
+    static std::vector<std::string> offered();
 
     /**
      * @return whether the loader advertises the Khronos validation layer
@@ -113,6 +146,7 @@ class Instance final {
     VkDebugUtilsMessengerEXT messenger_;
     boost::shared_ptr<v3d::log::Logger> logger_;
     bool validating_;
+    bool portability_;
     uint32_t errors_;
     uint32_t warnings_;
     std::string firstError_;

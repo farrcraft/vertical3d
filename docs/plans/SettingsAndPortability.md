@@ -168,7 +168,11 @@ wheel's step, its sign the direction.
 
 ### Step 7 — An instance that can see a portability driver
 
-**Open.** The choice of instance extensions and flags, and of device extensions, is a function
+**Done.** `Instance::enable()` and `Device::extensions()` make the two choices from what is
+offered. Selection already refused a device without dynamic rendering or synchronization2, and
+now logs each device it passes over with what it lacks. This machine's loader offers portability
+enumeration, so every instance here now has it on, and the device suite and its reference
+pictures are unchanged. The choice of instance extensions and flags, and of device extensions, is a function
 of what is offered.
 
 - The instance enables `VK_KHR_portability_enumeration` and sets the enumerate-portability flag

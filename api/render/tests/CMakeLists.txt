@@ -15,6 +15,7 @@ v3d_add_test(render
 	"ParticleTest.cpp"
 	"SwapchainFormatTest.cpp"
 	"SwapchainPresentTest.cpp"
+	"PortabilityTest.cpp"
 	"RecorderCheckTest.cpp"
 	"ClipTest.cpp"
 	"LitSettingsTest.cpp"

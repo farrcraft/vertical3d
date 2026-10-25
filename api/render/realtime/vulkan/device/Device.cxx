@@ -12,6 +12,7 @@
 #include "Result.h"
 #include "Surface.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <set>
@@ -40,6 +41,12 @@ std::vector<const char*> deviceExtensions(bool presenting) {
     }
     return extensions;
 }
+
+/**
+ * The extension a portability driver offers, and a device that offers it must be created with.
+ * Its name is spelled here because the header that names it is vulkan's beta one.
+ **/
+const char* const portabilitySubset = "VK_KHR_portability_subset";
 
 /**
  * The vulkan version the renderer is written against.
@@ -205,40 +212,51 @@ Device::QueueFamilies Device::findFamilies(VkPhysicalDevice device) const {
 
 /**
  **/
-bool Device::hasRequiredExtensions(VkPhysicalDevice device, bool presenting) {
+std::vector<std::string> Device::offered(VkPhysicalDevice device) {
+    std::vector<std::string> names;
     uint32_t count = 0;
     VkResult result = vkEnumerateDeviceExtensionProperties(device, nullptr, &count, nullptr);
     if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-        return false;
+        return names;
     }
-
     std::vector<VkExtensionProperties> available(count);
     if (count > 0) {
         result = vkEnumerateDeviceExtensionProperties(device, nullptr, &count, available.data());
         if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-            return false;
+            return names;
         }
     }
-
-    for (const char* extension : deviceExtensions(presenting)) {
-        bool found = false;
-        for (const VkExtensionProperties& candidate : available) {
-            if (std::strcmp(extension, candidate.extensionName) == 0) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            return false;
-        }
+    for (const VkExtensionProperties& candidate : available) {
+        names.emplace_back(candidate.extensionName);
     }
-
-    return true;
+    return names;
 }
 
 /**
  **/
-bool Device::hasRequiredFeatures(VkPhysicalDevice device) {
+std::vector<const char*> Device::extensions(bool presenting, const std::vector<std::string>& offered) {
+    std::vector<const char*> enabled = deviceExtensions(presenting);
+    if (std::find(offered.begin(), offered.end(), portabilitySubset) != offered.end()) {
+        enabled.push_back(portabilitySubset);
+    }
+    return enabled;
+}
+
+/**
+ **/
+std::string Device::missingExtension(VkPhysicalDevice device, bool presenting) {
+    const std::vector<std::string> available = offered(device);
+    for (const char* extension : deviceExtensions(presenting)) {
+        if (std::find(available.begin(), available.end(), extension) == available.end()) {
+            return extension;
+        }
+    }
+    return std::string();
+}
+
+/**
+ **/
+std::string Device::missingFeature(VkPhysicalDevice device) {
     VkPhysicalDeviceVulkan13Features features13{};
     features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
 
@@ -254,9 +272,18 @@ bool Device::hasRequiredFeatures(VkPhysicalDevice device) {
 
     // the renderer draws through dynamic rendering and synchronizes with the 1.3 barrier forms.
     // Separate depth and stencil layouts let a barrier move only the depth aspect of a combined
-    // depth and stencil format. Every 1.2 device supports them
-    return features13.dynamicRendering == VK_TRUE && features13.synchronization2 == VK_TRUE &&
-        features12.separateDepthStencilLayouts == VK_TRUE;
+    // depth and stencil format. Every 1.2 device supports them. A portability driver reports
+    // 1.3 and may still lack one of these, so each is checked by name
+    if (features13.dynamicRendering != VK_TRUE) {
+        return "dynamic rendering";
+    }
+    if (features13.synchronization2 != VK_TRUE) {
+        return "synchronization2";
+    }
+    if (features12.separateDepthStencilLayouts != VK_TRUE) {
+        return "separate depth and stencil layouts";
+    }
+    return std::string();
 }
 
 /**
@@ -278,16 +305,25 @@ void Device::selectPhysical() {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(device, &properties);
 
+        // each device passed over is logged with what it lacks, so a machine that finds none
+        // says why for each of them
+        const std::string name(properties.deviceName);
         // the renderer requires 1.3, for dynamic rendering and synchronization2
         if (properties.apiVersion < requiredApiVersion) {
+            logger_->get()->info("Passing over vulkan device {}: it supports vulkan {}.{}", name,
+                VK_API_VERSION_MAJOR(properties.apiVersion), VK_API_VERSION_MINOR(properties.apiVersion));
             continue;
         }
 
-        if (!hasRequiredExtensions(device, presenting())) {
+        const std::string extension = missingExtension(device, presenting());
+        if (!extension.empty()) {
+            logger_->get()->info("Passing over vulkan device {}: it lacks {}", name, extension);
             continue;
         }
 
-        if (!hasRequiredFeatures(device)) {
+        const std::string feature = missingFeature(device);
+        if (!feature.empty()) {
+            logger_->get()->info("Passing over vulkan device {}: it lacks {}", name, feature);
             continue;
         }
 
@@ -372,7 +408,7 @@ void Device::createLogical() {
     // device without it is still chosen
     features.features.fillModeNonSolid = nonSolidFill_ ? VK_TRUE : VK_FALSE;
 
-    const std::vector<const char*> extensions = deviceExtensions(presenting());
+    const std::vector<const char*> extensions = Device::extensions(presenting(), offered(physical_));
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
