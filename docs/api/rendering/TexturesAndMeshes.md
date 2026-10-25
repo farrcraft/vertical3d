@@ -99,8 +99,9 @@ void MyApp::tick(unsigned int delta) {
   handle.
 - **`poll(budget)` uploads in request order**, at least one model when any is ready, and stops
   once the vertex, index and albedo bytes reach the budget. The default is
-  `MeshRegistry::DEFAULT_UPLOAD_BUDGET`, 4 MiB, the same as a texture poll's. The rest wait for
-  the next poll.
+  `MeshRegistry::DEFAULT_UPLOAD_BUDGET`, 1 MiB, the same as a texture poll's, which keeps a poll
+  inside an eighth of a 60 Hz frame on the machine it was measured on. The rest wait for the
+  next poll.
 - **`pending(handle)` is true while a request is decoding or waiting for a poll.** A handle that
   is not pending and resolves to nothing failed or was released.
 - **A file that cannot be read or uploaded is reported in the log.** Its handle resolves to

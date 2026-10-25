@@ -62,7 +62,8 @@ v3d_add_test(render_device
 	"device/AllocatorTest.cpp"
 	"device/UploaderTest.cpp"
 	"device/TextureArrayTest.cpp"
-	"device/TextureRequestTest.cpp")
+	"device/TextureRequestTest.cpp"
+	"device/UploadBudgetTest.cpp")
 
 # A committed reference image is opened relative to the working directory. v3d_add_test sets
 # that to the executable's directory, so the references are copied there.
@@ -89,13 +90,14 @@ v3d_add_shader(v3dtest_render_device "shaders/scene.frag")
 # a full-screen pass that copies by position, so the identity case is exact on any implementation
 v3d_add_shader(v3dtest_render_device "shaders/copy.frag")
 
-# writes the texture bound at set 1, so a case can show which material a draw was recorded with
+# writes the texture at a pushed slot of the array at set 1, so a case can show which texture a
+# draw was recorded with
 v3d_add_shader(v3dtest_render_device "shaders/albedo.frag")
 
 # the mesh registry's cases load models, and the asset suite already keeps the fixtures
 target_compile_definitions(v3dtest_render_device PRIVATE V3D_ASSET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../../asset/tests/data")
 
-target_link_libraries(v3dtest_render_device PRIVATE v3dlib_render v3dlib_ecs v3dlib_image v3dlib_asset v3dlib_asset_media v3dlib_log v3dlib_type Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
+target_link_libraries(v3dtest_render_device PRIVATE v3dlib_render v3dlib_engine v3dlib_ecs v3dlib_image v3dlib_asset v3dlib_asset_media v3dlib_log v3dlib_type Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
 set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)
 
 # A third binary, because these cases present to a window, which needs a display as well as a

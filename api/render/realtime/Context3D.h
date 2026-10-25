@@ -38,7 +38,7 @@ class Context3D : public DeviceContext {
      **/
     Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window,
         VkFormat preferred = VK_FORMAT_UNDEFINED,
-        vulkan::memory::Allocator::Kind allocations = vulkan::memory::Allocator::Kind::Direct,
+        vulkan::memory::Allocator::Kind allocations = vulkan::memory::Allocator::Kind::Suballocated,
         Present present = Present::Uncapped);
 
     /**

@@ -25,11 +25,11 @@ Kind built(const v3d::test::Windowed& windowed) {
 }
 
 /**
- * An engine asked for a suballocating device builds one, and draws through it.
+ * An engine asked for one allocation per resource builds that device, and draws through it.
  **/
 BOOST_AUTO_TEST_CASE(engine3d_builds_the_allocator_it_is_asked_for_test) {
-    const v3d::test::Windowed windowed(Kind::Suballocated);
-    BOOST_TEST((built(windowed) == Kind::Suballocated));
+    const v3d::test::Windowed windowed(Kind::Direct);
+    BOOST_TEST((built(windowed) == Kind::Direct));
 
     windowed.engine->renderFrame();
     windowed.engine->renderFrame();
@@ -37,11 +37,11 @@ BOOST_AUTO_TEST_CASE(engine3d_builds_the_allocator_it_is_asked_for_test) {
 }
 
 /**
- * An engine that names no kind builds one allocation per resource.
+ * An engine that names no kind suballocates.
  **/
-BOOST_AUTO_TEST_CASE(engine3d_allocates_directly_by_default_test) {
+BOOST_AUTO_TEST_CASE(engine3d_suballocates_by_default_test) {
     const v3d::test::Windowed windowed;
-    BOOST_TEST((built(windowed) == Kind::Direct));
+    BOOST_TEST((built(windowed) == Kind::Suballocated));
 }
 
 };  // namespace

@@ -1,7 +1,8 @@
 # ADR-0053: Memory: optional VMA suballocation
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-09-12
+**Amended by**: [ADR-0110](0110-memory-suballocate-by-default.md)
 **Documented in**: [internals/realtime/Memory.md](../internals/realtime/Memory.md)
 
 ## Context

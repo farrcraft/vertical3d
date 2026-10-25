@@ -37,7 +37,7 @@ the device or the audio needs goes in that feature.
 | spdlog | |
 | sqlite3 | `v3dlib_database` reaches it, as the `unofficial::sqlite3::sqlite3` target of the `unofficial-sqlite3` config package. It is linked PRIVATE because no public header includes it. Its JSON functions are built in |
 | vulkan | |
-| vulkan-memory-allocator | Used by `memory::Allocator` when an app turns on suballocation. It is a single header. Its implementation is compiled once, in `api/render/realtime/vulkan/memory/VmaImpl.cxx`, and it is linked PRIVATE because no public header includes it |
+| vulkan-memory-allocator | Used by `memory::Allocator`, which suballocates unless an app asks for one allocation per resource. It is a single header. Its implementation is compiled once, in `api/render/realtime/vulkan/memory/VmaImpl.cxx`, and it is linked PRIVATE because no public header includes it |
 
 The configure looks only for the packages that the selected api libraries need. A build of this
 repository always selects every library, so it needs all of them. Boost is always looked for,

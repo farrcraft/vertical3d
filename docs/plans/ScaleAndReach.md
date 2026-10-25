@@ -192,10 +192,19 @@ step 6 sets one number.
 
 ### Step 6 — The upload budget is measured
 
-**Open.** A device test, run in Release, streams a region-sized set of meshes and textures and
-records the frame time of each `poll()` through `Engine::measure`. The default is set so that one
-poll stays inside a stated share of a 60 Hz frame on the development machine, and the number and
-the machine are written beside the constant.
+**Done.** `upload_budget_test`, a device case run by hand in Release, streams a region of 24
+textures of 512 by 512 and 48 meshes of 64 by 64 vertices, and times each poll with
+`engine::Statistics`. It is disabled, because its numbers belong to the machine.
+
+- At the old 4 MiB, on direct allocation, a texture poll took 3 to 6 ms and a mesh poll 12 to
+  26 ms against a share of 2.1 ms. Making device memory was most of it: on suballocated memory
+  the same polls took a quarter as long.
+- [ADR-0110](../adr/0110-memory-suballocate-by-default.md) made suballocation the default,
+  amending ADR-0053, whose own revisit condition this was. Every suite and reference picture
+  passes on it.
+- The budget is now 1 MiB. On an AMD Radeon RX 6600 a texture poll takes 0.2 to 0.6 ms and a
+  mesh poll 0.3 to 1.2 ms. The one poll that has the allocator open a new block takes up to
+  4.7 ms, and the case allows one such poll of each kind. The numbers are beside the constant.
 
 ### Step 7 — Remembered sight in `api/grid`
 

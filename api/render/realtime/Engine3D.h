@@ -34,13 +34,12 @@ class Engine3D : public Engine {
      * @param preferred the colour format to present through. An app whose shaders write
      *        linear light names one here. Leaving it undefined selects the display space
      *        (UNORM) default.
-     * @param allocations how the device finds memory for its buffers and images. An app with
-     *        per-frame resources asks for Suballocated, because maxMemoryAllocationCount is a
-     *        real device limit.
+     * @param allocations how the device finds memory for its buffers and images. Suballocated
+     *        unless an app asks for one allocation per resource.
      **/
     Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
         VkFormat preferred = VK_FORMAT_UNDEFINED,
-        vulkan::memory::Allocator::Kind allocations = vulkan::memory::Allocator::Kind::Direct);
+        vulkan::memory::Allocator::Kind allocations = vulkan::memory::Allocator::Kind::Suballocated);
 
     /**
      **/

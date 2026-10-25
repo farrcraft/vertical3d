@@ -303,19 +303,19 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
 }
 
 /**
- * The same clear, on a device whose memory comes from a suballocator rather than from one
- * device allocation per resource. No app selects that allocator, because direct allocation is
- * the default, so only the tests run the suballocated path.
+ * The same clear, on a device that makes one device allocation per resource rather than
+ * suballocating. No app selects that allocator, because suballocation is the default, so only
+ * the tests run the direct path.
  *
  * It asserts the picture as well as the silence, because an allocation bound at the wrong
  * offset gives a wrong picture, not a reported error. A suballocated region starts part way
  * into its block, and the direct path's offset is always zero.
  **/
-BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
+BOOST_AUTO_TEST_CASE(a_directly_allocated_device_clears_the_same_way) {
     v3d::test::Headless headless(colourFormat, width, height,
-        v3d::render::realtime::vulkan::memory::Allocator::Kind::Suballocated);
+        v3d::render::realtime::vulkan::memory::Allocator::Kind::Direct);
     BOOST_REQUIRE(headless.device->allocator().kind() ==
-        v3d::render::realtime::vulkan::memory::Allocator::Kind::Suballocated);
+        v3d::render::realtime::vulkan::memory::Allocator::Kind::Direct);
 
     const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
 

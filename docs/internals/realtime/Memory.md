@@ -55,11 +55,20 @@ built once the logical device exists.
 
 | `Allocator::Kind` | Behaviour |
 |---|---|
-| `Direct` (default) | One `vkAllocateMemory` per resource. Every app in the tree uses it. |
-| `Suballocated` | Regions of larger blocks through the Vulkan Memory Allocator (VMA). For an app with per-frame resources, because `maxMemoryAllocationCount` is a real device limit. |
+| `Suballocated` (default) | Regions of larger blocks through the Vulkan Memory Allocator (VMA). Every app in the tree uses it. |
+| `Direct` | One `vkAllocateMemory` per resource. Only the tests use it. |
 
 A consumer chooses the kind in the `Device` constructor. `Engine3D` and `Context3D` take it too,
 and pass it to the device they build.
+
+**Suballocation is the default because making device memory is slow, and limited.** A world
+that streams makes buffers and images during play, and with one allocation each, making the
+memory costs more than the upload. A device also caps live allocations at
+`maxMemoryAllocationCount`, often 4096. A poll that fills the allocator's last block of a memory
+type pays for a new one, which is the slowest poll a stream has.
+
+Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md),
+[ADR-0110](../../adr/0110-memory-suballocate-by-default.md)
 
 - A resource holds a `memory::Allocation` (block, offset, size, VMA handle), not a
   `VkDeviceMemory`. A suballocated region starts part way into a shared block, so mapping and

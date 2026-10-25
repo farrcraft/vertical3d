@@ -39,7 +39,7 @@ content went. Numbers are never reused.
 | [0049](0049-swapchain-caller-picks-the-format.md) | Swapchain: caller picks the format | accepted |
 | [0051](0051-frames-in-flight-ring-separate-from-presenting.md) | Frames: in-flight ring separate from presenting | accepted |
 | [0052](0052-camera-selectable-handedness.md) | Camera: selectable handedness | accepted |
-| [0053](0053-memory-optional-vma-suballocation.md) | Memory: optional VMA suballocation | accepted |
+| [0053](0053-memory-optional-vma-suballocation.md) | Memory: optional VMA suballocation | amended by 0110 |
 | 0055 | *Not a decision. Now in api/image/TextureAtlas.h* | removed |
 | 0056 | *Not a decision. Now in api/type/camera/Profile.h* | removed |
 | [0061](0061-resources-explicit-release-generational-handles.md) | Resources: explicit release, generational handles | accepted |
@@ -55,6 +55,7 @@ content went. Numbers are never reused.
 | [0088](0088-lit-per-object-data-in-a-storage-buffer.md) | Lit: per-object data in a storage buffer | accepted |
 | [0108](0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md) | Memory: an upload is its own submission, freed by the ring | accepted |
 | [0109](0109-textures-one-bindless-array-a-draw-names-a-slot.md) | Textures: one bindless array, a draw names a slot | accepted |
+| [0110](0110-memory-suballocate-by-default.md) | Memory: suballocate by default | accepted |
 
 ## Offline rendering
 

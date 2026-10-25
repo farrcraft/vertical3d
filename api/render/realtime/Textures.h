@@ -54,8 +54,14 @@ class Textures final {
     /**
      * The most bytes poll() uploads by default before it leaves the rest for the next call.
      * MeshRegistry's poll() takes the same.
+     *
+     * One poll at this budget stays inside an eighth of a 60 Hz frame, about 2.1 ms, while a
+     * region of 512 by 512 textures and 64 by 64 vertex meshes streams in, on suballocated
+     * memory. Measured on an AMD Radeon RX 6600 in a Release build: a texture poll took 0.2 to
+     * 0.6 ms, and a mesh poll 0.3 to 1.2 ms. The poll that had the allocator open a new block of
+     * device memory took up to 4.7 ms. upload_budget_test measures it again.
      **/
-    static constexpr std::size_t DEFAULT_UPLOAD_BUDGET = std::size_t{4} * 1024 * 1024;
+    static constexpr std::size_t DEFAULT_UPLOAD_BUDGET = std::size_t{1} * 1024 * 1024;
 
     /**
      * @param uploader the context's Uploader, which copies every texture

@@ -24,13 +24,13 @@ builds everything else.
 
 The constructor takes two optional choices after the asset manager. The first is the colour
 format to present through, covered in [ColourAndPost.md](ColourAndPost.md). The second is how the
-device finds memory. It defaults to one allocation per resource. An app that creates resources
-every frame passes `vulkan::memory::Allocator::Kind::Suballocated`, because a device can make
-only `maxMemoryAllocationCount` allocations:
+device finds memory. It defaults to regions of larger blocks, which suits streaming and keeps
+an app far under the device's limit on allocations. A case that wants one allocation per
+resource passes `vulkan::memory::Allocator::Kind::Direct`:
 
 ```cpp
 renderer_ = boost::make_shared<Engine3D>(logger(), assets(), VK_FORMAT_UNDEFINED,
-    vulkan::memory::Allocator::Kind::Suballocated);
+    vulkan::memory::Allocator::Kind::Direct);
 ```
 
 | Object | What it is to an app |

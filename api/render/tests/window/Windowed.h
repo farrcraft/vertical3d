@@ -34,7 +34,7 @@ struct Windowed {
      *        can present to it
      **/
     explicit Windowed(render::realtime::vulkan::memory::Allocator::Kind allocations =
-        render::realtime::vulkan::memory::Allocator::Kind::Direct);
+        render::realtime::vulkan::memory::Allocator::Kind::Suballocated);
 
     ~Windowed();
 

@@ -50,7 +50,7 @@ struct Headless {
      **/
     Headless(VkFormat colour, uint32_t width, uint32_t height,
         render::realtime::vulkan::memory::Allocator::Kind allocations =
-            render::realtime::vulkan::memory::Allocator::Kind::Direct);
+            render::realtime::vulkan::memory::Allocator::Kind::Suballocated);
 
     ~Headless();
 

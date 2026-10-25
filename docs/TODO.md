@@ -64,14 +64,6 @@ library.
   caller with large casters passes a margin big enough for them.
 - Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
 
-## Loading
-
-[ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 6.
-
-[] **The upload budget's default is not measured.** `Textures::DEFAULT_UPLOAD_BUDGET`, which
-`MeshRegistry` shares, is 4 MiB, chosen without measuring a region's upload. Measure it against
-a region-sized set of meshes and set it from that.
-
 ## Audio
 
 [ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 9.
