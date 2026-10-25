@@ -57,21 +57,6 @@ library.
 - Move it to `api/grid`, and have odyssey use it from there.
 - Background: [LargeWorlds, step 8](plans/completed/LargeWorlds.md#step-8--remembered-sight).
 
-## Sprite sheets
-
-[ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 10.
-
-The api has every piece of a sprite sheet round trip: `image::TextureAtlas` places regions,
-`config::SpriteSheets` reads and writes the document that names them, and `image::crop` cuts a
-region back out of a sheet.
-
-[] **Nothing packs a sheet, and nothing unpacks a whole sheet.**
-
-- `imagetool --crop` cuts out one region, so a caller that already knows where the sprites are
-  can split a sheet one rectangle at a time.
-- Nothing reads a `sprites.json` and cuts out every region it names.
-- Undecided: whether this belongs in `imagetool` or in a separate `spritetool`.
-
 ## Lit scenes
 
 [ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 3.

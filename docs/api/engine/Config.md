@@ -95,5 +95,6 @@ table of named rectangles in an image:
   [`asset::writeDocument()`](Files.md#writing-files). `add()` replaces a sheet of the same
   name. To keep the sheets you did not repack, `load()` the existing document first. Sheets and
   sprites are written in the order they were added, so a repack produces a readable diff.
+  `imagetool --pack` does this, through [`image::pack()`](../Assets.md#packing-a-sprite-sheet).
 
 A ui image can name one region of a sheet. [ui/](../ui/README.md) covers that.

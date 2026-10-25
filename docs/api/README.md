@@ -30,7 +30,7 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`event`](../../api/event/) | Event types, key bindings, and the mapping from a key to a command. |
 | [`font`](../../api/font/) | Rasterizes a typeface with FreeType into a texture atlas and lays out text. |
 | [`grid`](../../api/grid/) | Tile boards: pathfinding, line of sight, terrain from a picture, and overlay geometry. |
-| [`image`](../../api/image/) | Image readers and writers for png, jpeg, tga and bmp, cropping, comparison and the texture atlas. |
+| [`image`](../../api/image/) | Image readers and writers for png, jpeg, tga and bmp, cropping, comparison, the texture atlas and sprite sheet packing. |
 | [`input`](../../api/input/) | Keyboard and mouse devices, and the state of what is held and what changed this frame. |
 | [`log`](../../api/log/) | The process log, a thin wrapper over spdlog. |
 | [`render`](../../api/render/) | The Vulkan realtime renderer: window, frames, passes, draw items, canvases, sprites, meshes and lighting. |

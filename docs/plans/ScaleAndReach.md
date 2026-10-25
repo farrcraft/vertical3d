@@ -229,14 +229,19 @@ voice. A voice is either panned or placed, and switching one way clears the othe
 
 ### Step 10 — Packing and unpacking sprite sheets
 
-**Open.** Pack and unpack are library functions, so they can be tested, and imagetool calls them.
-imagetool gains `--pack <dir|files> --sheet <name>` and `--unpack sprites.json`.
+**Done.** `image::pack()` and `image::unpack()` are in `api/image/Pack.h`, and imagetool has
+`--pack`, `--sheet` and `--unpack`. The two library functions work in memory, on named images and
+named rectangles, and do not know the sprites document. imagetool converts between the rectangles
+and `config::SpriteSheets`. That keeps `image` from depending on `config`, and a game can pack
+sprites at load time without a document. The document half is three calls a test of
+`SpriteSheets` already covers.
 
-- Pack places each image through `TextureAtlas`, trying larger sizes until all fit, and writes the
-  sheet and its `sprites.json` through `SpriteSheets`.
-- Unpack reads `sprites.json`, crops each region, and writes one file per sprite.
-- Tests: pack then unpack returns every image unchanged, compared with `image::compare`. Sprites
-  that cannot fit in the largest size are refused with a reason.
+- Pack tries square sheets from 16 pixels a side, doubling, then the largest side, which
+  imagetool sets at 4096. It also refuses mixed depths, a depth the atlas cannot hold, and two
+  sprites of one name, which `SpriteSheet::place()` would otherwise drop silently.
+- A pack reads an existing `sprites.json` first and replaces only its own sheet. An unpack writes
+  `<sheet>/<sprite>.png` beside the document, and refuses an image whose size is not the size its
+  sheet states.
 
 ## Outcome
 

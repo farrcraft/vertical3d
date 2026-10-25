@@ -5,6 +5,8 @@ add_executable(imagetool "imagetool.cxx")
 target_link_libraries(imagetool PRIVATE
 		v3dlib_log
 		v3dlib_image
+		v3dlib_asset
+		v3dlib_config
 		Boost::program_options
 )
 

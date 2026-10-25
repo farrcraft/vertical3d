@@ -3,23 +3,318 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/File.h>
+#include <api/asset/Writer.h>
+#include <api/config/SpriteRegion.h>
+#include <api/config/SpriteSheet.h>
+#include <api/config/SpriteSheets.h>
 #include <api/image/Factory.h>
 #include <api/image/Crop.h>
 #include <api/image/Image.h>
+#include <api/image/Pack.h>
 #include <api/log/Logger.h>
 
+#include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <vector>
 
+#include <boost/filesystem.hpp>
+#include <boost/json.hpp>
 #include <boost/program_options.hpp>
 #include <boost/make_shared.hpp>
+#include <glm/vec4.hpp>
 
 namespace {
+
+/** The longest side of a sheet --pack makes. **/
+constexpr unsigned int LARGEST_SHEET = 4096;
+
+/** The document a sheet's sprites are written to, beside the sheet's image. **/
+constexpr const char* SPRITES_DOCUMENT = "sprites.json";
+
+/** Whether the file's extension is one the image factory reads. **/
+bool readable(const boost::filesystem::path & file) {
+    std::string extension = file.extension().string();
+    std::ranges::transform(extension, extension.begin(), [](unsigned char letter) { return static_cast<char>(std::tolower(letter)); });
+    return extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".bmp" || extension == ".tga";
+}
+
+/**
+ * The image files named: a file as it is, and every image in a directory, in name order so a
+ * run packs the same sheet every time. A directory's other files are skipped.
+ **/
+std::vector<boost::filesystem::path> imageFiles(const std::vector<std::string> & named) {
+    std::vector<boost::filesystem::path> files;
+    for (const std::string & name : named) {
+        const boost::filesystem::path path(name);
+        if (!boost::filesystem::is_directory(path)) {
+            files.push_back(path);
+            continue;
+        }
+        std::vector<boost::filesystem::path> found;
+        for (const boost::filesystem::directory_entry & entry : boost::filesystem::directory_iterator(path)) {
+            if (boost::filesystem::is_regular_file(entry.path()) && readable(entry.path())) {
+                found.push_back(entry.path());
+            }
+        }
+        std::ranges::sort(found);
+        files.insert(files.end(), found.begin(), found.end());
+    }
+    return files;
+}
+
+/** Whether a sprite's name can be a file's name, with no directory in it. **/
+bool plainName(const std::string & name) {
+    return !name.empty() && name != "." && name != ".." && name.find_first_of("/\\:") == std::string::npos;
+}
+
+/**
+ * The sheets already in a sprites document, so packing one sheet keeps the others. A missing
+ * document holds none.
+ *
+ * @return false when the document exists and is not one SpriteSheets reads whole, so that
+ *         rewriting it would lose what it held
+ **/
+bool readSheets(const boost::filesystem::path & document, v3d::config::SpriteSheets* sheets) {
+    if (!boost::filesystem::exists(document)) {
+        return true;
+    }
+    const std::optional<std::string> text = v3d::asset::readFile(document.string());
+    if (!text) {
+        return false;
+    }
+    boost::system::error_code error;
+    const boost::json::value parsed = boost::json::parse(*text, error);
+    return !error && parsed.is_object() && sheets->load(parsed.as_object());
+}
+
+/** What a --pack or --unpack run was asked to do. **/
+class SheetRequest final {
+ public:
+    /** The images, and directories of images, to pack. **/
+    std::vector<std::string> pack;
+    /** The sprites document to unpack. **/
+    std::string unpack;
+    /** The sheet to pack, or the one sheet to unpack. Empty unpacks every sheet. **/
+    std::string sheet;
+    /** Where a pack writes the sheet's image. Empty writes <sheet>.png. **/
+    std::string outfile;
+    bool silent = false;
+};
+
+/**
+ * Pack the named images into one sheet, write it, and write where each sprite went into the
+ * sprites document beside it. Each sprite is named for its file, without the extension.
+ **/
+int packSheet(const SheetRequest & request, const boost::shared_ptr<v3d::log::Logger> & logger) {
+    v3d::image::Factory factory(logger);
+    std::vector<v3d::image::Sprite> sprites;
+    for (const boost::filesystem::path & file : imageFiles(request.pack)) {
+        if (!request.silent) {
+            std::cout << "Reading: " << file.string() << "\n";
+        }
+        const boost::shared_ptr<v3d::image::Image> image = factory.read(file.string());
+        if (!image) {
+            std::cout << "error reading " << file.string() << "!\n";
+            return EXIT_FAILURE;
+        }
+        sprites.push_back({.name = file.stem().string(), .image = image});
+    }
+
+    const v3d::image::Packing packing = v3d::image::pack(sprites, LARGEST_SHEET, logger);
+    if (!packing.sheet) {
+        std::cout << "error: " << packing.refusal << "\n";
+        return EXIT_FAILURE;
+    }
+
+    const boost::filesystem::path image(request.outfile.empty() ? request.sheet + ".png" : request.outfile);
+    const boost::filesystem::path document = image.parent_path() / SPRITES_DOCUMENT;
+    v3d::config::SpriteSheets sheets(logger);
+    if (!readSheets(document, &sheets)) {
+        std::cout << "error: " << document.string() << " holds something that is not a sprite sheet, so it is not rewritten\n";
+        return EXIT_FAILURE;
+    }
+    v3d::config::SpriteSheet sheet({.name = request.sheet, .image = image.filename().string(),
+        .width = static_cast<int>(packing.sheet->width()), .height = static_cast<int>(packing.sheet->height())});
+    for (const v3d::image::Placement & placement : packing.placements) {
+        v3d::config::SpriteRegion region;
+        region.x = static_cast<int>(placement.area.x);
+        region.y = static_cast<int>(placement.area.y);
+        region.width = static_cast<int>(placement.area.z);
+        region.height = static_cast<int>(placement.area.w);
+        sheet.place(placement.name, region);
+    }
+    if (!sheets.add(sheet)) {
+        std::cout << "error: a sheet needs a name\n";
+        return EXIT_FAILURE;
+    }
+
+    if (!request.silent) {
+        std::cout << "Writing: " << image.string() << ", " << packing.sheet->width() << "x" << packing.sheet->height() << "\n";
+    }
+    if (!factory.write(image.string(), packing.sheet)) {
+        std::cout << "error writing file!" << "\n";
+        return EXIT_FAILURE;
+    }
+    if (!request.silent) {
+        std::cout << "Writing: " << document.string() << "\n";
+    }
+    if (!v3d::asset::writeDocument(document, sheets.document())) {
+        std::cout << "error writing " << document.string() << "!\n";
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
+/**
+ * Cut one sheet's sprites out of its image, and write each as a png in a directory named for
+ * the sheet, beside the document.
+ **/
+int unpackSheet(const boost::filesystem::path & document, const v3d::config::SpriteSheet & sheet, bool silent,
+    v3d::image::Factory* factory) {
+    if (!plainName(sheet.name())) {
+        std::cout << "error: the sheet name \"" << sheet.name() << "\" cannot name a directory\n";
+        return EXIT_FAILURE;
+    }
+    const boost::filesystem::path imageFile = document.parent_path() / sheet.image();
+    if (!silent) {
+        std::cout << "Reading: " << imageFile.string() << "\n";
+    }
+    const boost::shared_ptr<v3d::image::Image> image = factory->read(imageFile.string());
+    if (!image) {
+        std::cout << "error reading " << imageFile.string() << "!\n";
+        return EXIT_FAILURE;
+    }
+    // a sheet's regions are in the pixels of the size it states, so an image of another size
+    // cannot be cut by them
+    if (static_cast<int>(image->width()) != sheet.width() || static_cast<int>(image->height()) != sheet.height()) {
+        std::cout << "error: " << imageFile.string() << " is " << image->width() << "x" << image->height() <<
+            " and the sheet says " << sheet.width() << "x" << sheet.height() << "\n";
+        return EXIT_FAILURE;
+    }
+
+    std::vector<v3d::image::Placement> placements;
+    for (const std::string & sprite : sheet.sprites()) {
+        if (!plainName(sprite)) {
+            std::cout << "error: the sprite name \"" << sprite << "\" cannot name a file\n";
+            return EXIT_FAILURE;
+        }
+        const v3d::config::SpriteRegion region = sheet.get(sprite);
+        placements.push_back({.name = sprite, .area = glm::uvec4(static_cast<unsigned int>(region.x),
+            static_cast<unsigned int>(region.y), static_cast<unsigned int>(region.width), static_cast<unsigned int>(region.height))});
+    }
+    const v3d::image::Unpacking unpacking = v3d::image::unpack(*image, placements);
+    if (!unpacking.refusal.empty()) {
+        std::cout << "error: " << unpacking.refusal << "\n";
+        return EXIT_FAILURE;
+    }
+
+    const boost::filesystem::path directory = document.parent_path() / sheet.name();
+    boost::filesystem::create_directories(directory);
+    for (const v3d::image::Sprite & sprite : unpacking.sprites) {
+        const boost::filesystem::path file = directory / (sprite.name + ".png");
+        if (!silent) {
+            std::cout << "Writing: " << file.string() << "\n";
+        }
+        if (!factory->write(file.string(), sprite.image)) {
+            std::cout << "error writing " << file.string() << "!\n";
+            return EXIT_FAILURE;
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+/**
+ * Cut every sprite out of the sheets a sprites document names, or out of the one sheet the
+ * request names.
+ **/
+int unpackSheets(const SheetRequest & request, const boost::shared_ptr<v3d::log::Logger> & logger) {
+    const boost::filesystem::path document(request.unpack);
+    if (!boost::filesystem::exists(document)) {
+        std::cout << "error: there is no " << document.string() << "\n";
+        return EXIT_FAILURE;
+    }
+    v3d::config::SpriteSheets sheets(logger);
+    if (!readSheets(document, &sheets)) {
+        std::cout << "error: " << document.string() << " is not a sprites document\n";
+        return EXIT_FAILURE;
+    }
+    if (!request.sheet.empty() && !sheets.has(request.sheet)) {
+        std::cout << "error: " << document.string() << " has no sheet named " << request.sheet << "\n";
+        return EXIT_FAILURE;
+    }
+    v3d::image::Factory factory(logger);
+    for (const std::string & name : sheets.names()) {
+        if (!request.sheet.empty() && name != request.sheet) {
+            continue;
+        }
+        const int unpacked = unpackSheet(document, sheets.get(name), request.silent, &factory);
+        if (unpacked != EXIT_SUCCESS) {
+            return unpacked;
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+/**
+ * Run a --pack or --unpack, or refuse a command line that mixes them with each other or with
+ * the options that work on one --file.
+ *
+ * @return the exit status, or nothing when the command line asks for neither
+ **/
+std::optional<int> sheets(const boost::program_options::variables_map & options) {
+    SheetRequest request;
+    if (options.count("pack") > 0) {
+        request.pack = options["pack"].as<std::vector<std::string> >();
+    }
+    if (options.count("unpack") > 0) {
+        request.unpack = options["unpack"].as<std::string>();
+    }
+    if (options.count("sheet") > 0) {
+        request.sheet = options["sheet"].as<std::string>();
+    }
+    if (options.count("outfile") > 0) {
+        request.outfile = options["outfile"].as<std::string>();
+    }
+    request.silent = options.count("silent") > 0;
+    const bool packing = options.count("pack") > 0;
+    const bool unpacking = options.count("unpack") > 0;
+    if (!packing && !unpacking) {
+        if (!request.sheet.empty()) {
+            std::cout << "error: --sheet names a sheet to --pack or --unpack\n";
+            return EXIT_FAILURE;
+        }
+        return std::nullopt;
+    }
+    // packing and unpacking each read files of their own, so neither is run on an image read by
+    // --file or a crop of one
+    if (options.count("file") > 0 || options.count("crop") > 0 || options.count("info") > 0) {
+        std::cout << "error: --pack and --unpack take no --file, --crop or --info\n";
+        return EXIT_FAILURE;
+    }
+    if (packing && unpacking) {
+        std::cout << "error: a run either packs or unpacks\n";
+        return EXIT_FAILURE;
+    }
+    if (packing && request.sheet.empty()) {
+        std::cout << "error: a pack needs a --sheet to name the sheet\n";
+        return EXIT_FAILURE;
+    }
+    if (unpacking && !request.outfile.empty()) {
+        std::cout << "error: an unpack writes beside the sprites document, and takes no --outfile\n";
+        return EXIT_FAILURE;
+    }
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    return packing ? packSheet(request, logger) : unpackSheets(request, logger);
+}
 
 /**
  * Read the four whole numbers of a "x,y,width,height" rectangle.
@@ -60,7 +355,12 @@ int run(int argc, char *argv[]) {
         ("silent", "don't display any output")
         ("file", boost::program_options::value<std::string>(), "input image filename to be read")
         ("outfile", boost::program_options::value<std::string>(), "image filename to be written")
-        ("crop", boost::program_options::value<std::string>(), "cut a rectangle out before writing, as x,y,width,height");
+        ("crop", boost::program_options::value<std::string>(), "cut a rectangle out before writing, as x,y,width,height")
+        ("pack", boost::program_options::value<std::vector<std::string> >()->multitoken(),
+            "images or directories of images to pack into one sheet, written to outfile or <sheet>.png with sprites.json beside it")
+        ("sheet", boost::program_options::value<std::string>(), "the name of the sheet to pack, or the one sheet to unpack")
+        ("unpack", boost::program_options::value<std::string>(),
+            "a sprites.json whose sprites are each cut out and written to <sheet>/<sprite>.png beside it");
 
     // parse options
     boost::program_options::variables_map var_map;
@@ -89,6 +389,10 @@ int run(int argc, char *argv[]) {
     }
     if (var_map.count("outfile") != 0) {
         outfile = var_map["outfile"].as<std::string>();
+    }
+
+    if (const std::optional<int> done = sheets(var_map)) {
+        return *done;
     }
 
     unsigned int cut[4] = { 0, 0, 0, 0 };

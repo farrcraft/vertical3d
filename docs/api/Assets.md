@@ -344,6 +344,30 @@ Without a gutter, a linear sampler at a region's edge reads the neighbouring reg
 The visible result is a thin line of the wrong colour along a sprite's edge, with nothing in the
 log.
 
+### Packing a sprite sheet
+
+`image::pack()` and `image::unpack()` ([api/image/Pack.h](../../api/image/Pack.h)) move named
+images into one sheet and back out of it. They work in memory: the caller reads and writes the
+files, and the sheet's document is `config::SpriteSheets`.
+
+```cpp
+v3d::image::Packing packing = v3d::image::pack(sprites, 4096, logger);   // named images
+if (!packing.sheet) { /* packing.refusal says why */ }
+v3d::image::Unpacking cut = v3d::image::unpack(*packing.sheet, packing.placements);
+```
+
+- **`pack()` makes the smallest square sheet that holds every sprite.** It tries 16 pixels a
+  side, doubles until the sprites fit, and tries the largest side last if that is not a power
+  of two. Each sprite gets the atlas's one-texel gutter.
+- The placements come back in the order the sprites were given. The tallest sprites are placed
+  first, and sprites of one height keep their order, so one set of sprites always packs the same
+  sheet.
+- `pack()` refuses, with a reason in `refusal` and no sheet: no sprites, a sprite with no
+  pixels, two sprites of one name, sprites of different depths, a depth other than 8, 24 or 32
+  bits, a largest side under 16, and sprites that do not fit in the largest side.
+- `unpack()` crops each placement out of the sheet. A placement that is empty or not wholly
+  inside the sheet refuses the whole call, with a reason, and nothing is cut.
+
 ## Fonts
 
 `api/font` (`v3d::font`) rasterizes typefaces with FreeType into a texture atlas and lays out
