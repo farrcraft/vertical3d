@@ -84,6 +84,12 @@ class CommandStack final {
     void markSaved() noexcept;
 
     /**
+     * Record that the document matches no position of the stack, as after recovering an
+     * autosave the history did not make, so it reads as dirty until the next save.
+     **/
+    void markUnsaved() noexcept;
+
+    /**
      * @return whether the document differs from what was last saved
      **/
     bool dirty() const noexcept;

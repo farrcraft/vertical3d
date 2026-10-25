@@ -312,13 +312,21 @@ were added or were removed.
 
 ### Step 12 — Autosave
 
-**Open.** On a timer, the editor writes the changes since the last autosave into a recovery
+**Closed.** On a timer, the editor writes the changes since the last autosave into a recovery
 database in the project's `autosave` directory, never into the document. Opening a project whose
 recovery database is newer than its scene offers to recover it. A save or a clean close removes
 the recovery database.
 
-- Tests: an autosave leaves the document as it was. Recovery reads back the autosaved scene. A
-  save removes the recovery database.
+- The timer runs in `Controller::tick()`, every 60 seconds while the history is dirty. It is wall
+  time rather than simulation, so it is not in `simulate()`.
+- Recovery is also offered at startup for the default project, which the editor starts on
+  without reading. A crash in a project never saved is otherwise lost. Discard at the prompt
+  that asks before discarding removes the recovery database as well, because those changes were
+  thrown away on purpose.
+- A recovered scene leaves the history dirty, through the new `CommandStack::markUnsaved()`.
+- Tests: an autosave leaves the document as it was, and the second writes only its change.
+  Recovery reads back the autosaved scene. A recovery database older than the document is not
+  offered, one with no document is, and a save removes it.
 
 ### Step 13 — Curves
 

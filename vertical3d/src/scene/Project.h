@@ -29,6 +29,13 @@ namespace v3d::editor {
  *
  * Reading replaces everything the scene holds. The history describes a scene that is being
  * thrown away, so the caller clears it.
+ *
+ * **Autosave.** autosave() writes the scene's changes into a recovery database in the
+ * autosave directory, under the scene's own file name, and never into the scene's document.
+ * It has a store of its own, so it writes only what changed since the last autosave. A save
+ * removes the recovery database, and so does discardRecovery(). One that is newer than the
+ * scene's document, or that has no document beside it, holds changes no save kept, and
+ * recoverable() says so.
  **/
 class Project final {
  public:
@@ -74,6 +81,38 @@ class Project final {
     bool saveAs(const boost::filesystem::path& directory, const boost::shared_ptr<Scene>& scene);
 
     /**
+     * Write the scene's changes into the recovery database.
+     **/
+    bool autosave(const boost::shared_ptr<Scene>& scene);
+
+    /**
+     * @return where the recovery database for the scene is
+     **/
+    boost::filesystem::path recovery() const;
+
+    /**
+     * @return whether there is a recovery database newer than the scene's document, or one
+     *         with no document beside it
+     **/
+    bool recoverable() const;
+
+    /**
+     * Replace the scene with what the recovery database holds. The database stays until the
+     * next save or discardRecovery(), so recovering again gives the same scene.
+     **/
+    bool recover(const boost::shared_ptr<Scene>& scene);
+
+    /**
+     * Remove the recovery database, as a save does, or as discarding the changes does.
+     **/
+    void discardRecovery();
+
+    /**
+     * @return what the last autosave wrote
+     **/
+    const SceneStore::Written& autosaved() const noexcept;
+
+    /**
      * @return the project's directory
      **/
     const boost::filesystem::path& directory() const noexcept;
@@ -105,6 +144,7 @@ class Project final {
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     SceneStore store_;
+    SceneStore recoveryStore_;
     boost::filesystem::path directory_;
     std::string name_;
     std::vector<std::string> scenes_;

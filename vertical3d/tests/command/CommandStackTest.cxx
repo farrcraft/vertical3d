@@ -382,4 +382,15 @@ BOOST_AUTO_TEST_CASE(create_camera_and_light_command_test) {
     BOOST_CHECK(light->translation() == glm::vec3(0.0F, 2.0F, -5.0F));
 }
 
+BOOST_AUTO_TEST_CASE(command_stack_mark_unsaved_test) {
+    v3d::editor::CommandStack history;
+    BOOST_CHECK(!history.dirty());
+
+    // a recovered scene matches no position of the history, so it reads as dirty until saved
+    history.markUnsaved();
+    BOOST_CHECK(history.dirty());
+    history.markSaved();
+    BOOST_CHECK(!history.dirty());
+}
+
 };  // namespace

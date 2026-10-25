@@ -140,6 +140,7 @@ const std::vector<std::string>& Project::layout() {
 Project::Project(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::filesystem::path& directory) :
     logger_(logger),
     store_(logger),
+    recoveryStore_(logger),
     directory_(directory),
     name_("untitled"),
     scenes_{ FIRST_SCENE } {
@@ -169,7 +170,12 @@ bool Project::open(const boost::filesystem::path& manifest, const boost::shared_
 /**
  **/
 bool Project::save(const boost::shared_ptr<Scene>& scene) {
-    return write(directory_, scene);
+    if (!write(directory_, scene)) {
+        return false;
+    }
+    // the document holds everything the recovery database did
+    discardRecovery();
+    return true;
 }
 
 /**
@@ -183,8 +189,73 @@ bool Project::saveAs(const boost::filesystem::path& directory, const boost::shar
     if (!write(directory, scene)) {
         return false;
     }
+    discardRecovery();
     directory_ = directory;
     return true;
+}
+
+/**
+ **/
+bool Project::autosave(const boost::shared_ptr<Scene>& scene) {
+    if (!scene) {
+        return false;
+    }
+    const boost::filesystem::path path = recovery();
+    boost::system::error_code error;
+    boost::filesystem::create_directories(path.parent_path(), error);
+    if (error) {
+        logger_->get()->error("Cannot make {}: {}", path.parent_path().string(), error.message());
+        return false;
+    }
+    return recoveryStore_.write(path.string(), *scene);
+}
+
+/**
+ **/
+boost::filesystem::path Project::recovery() const {
+    return directory_ / "autosave" / boost::filesystem::path(scenes_.front()).filename();
+}
+
+/**
+ **/
+bool Project::recoverable() const {
+    boost::system::error_code error;
+    const boost::filesystem::path path = recovery();
+    if (!boost::filesystem::is_regular_file(path, error)) {
+        return false;
+    }
+    const boost::filesystem::path document = scene();
+    if (!boost::filesystem::exists(document, error)) {
+        return true;
+    }
+    return boost::filesystem::last_write_time(path, error) > boost::filesystem::last_write_time(document, error);
+}
+
+/**
+ **/
+bool Project::recover(const boost::shared_ptr<Scene>& scene) {
+    if (!scene) {
+        return false;
+    }
+    // read through the recovery store, so the next autosave goes on from what it holds
+    if (!recoveryStore_.read(recovery().string(), scene.get())) {
+        return false;
+    }
+    logger_->get()->info("recovered {} from {}", name_, recovery().string());
+    return true;
+}
+
+/**
+ **/
+void Project::discardRecovery() {
+    boost::system::error_code error;
+    boost::filesystem::remove(recovery(), error);
+}
+
+/**
+ **/
+const SceneStore::Written& Project::autosaved() const noexcept {
+    return recoveryStore_.written();
 }
 
 /**

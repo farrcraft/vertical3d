@@ -153,6 +153,21 @@ The chooser is `ui::shell::FileChooser`. It drives the `chooser` container laid 
 `data/vgui.json`: a file list, a name box, and Accept and Cancel buttons. Those send
 `project::chooser::pick`, `project::chooser::accept` and `project::chooser::cancel`.
 
+**Autosave.** While the project has unsaved changes, the editor autosaves it every 60 seconds
+(`Controller::autosaveInterval`). An autosave writes the scene's changes into a recovery
+database, `autosave/<scene file>` in the project directory, and never into the scene's document.
+It goes through a store of its own, so after the first it writes only what changed since the
+last autosave.
+
+- **A save removes the recovery database**, because the document then holds everything it did.
+  Discard at the prompt that asks before discarding removes it as well, and so does a close
+  with nothing unsaved.
+- **A close with changes still unsaved keeps it.** That is what a crash leaves too.
+- **Recovery is offered** when the recovery database is newer than the scene's document, or
+  has no document beside it: after a project is opened, and at startup for the default
+  project. Recover reads it into the scene and leaves the project dirty, because the document
+  does not hold it. Discard removes it.
+
 **The dirty flag.** The project is dirty when the history is anywhere but where it was at the last
 save or open. The window caption names the project directory, and ends in ` *` when it is dirty.
 [Commands and undo](CommandsAndUndo.md#the-saved-position) states the rule.

@@ -147,6 +147,10 @@ bool Controller::start() {
     syncCaption();
 
     logger()->get()->info("{} with {} views", layout_->name(), views_.size());
+
+    // the editor starts on the default project without reading it, so an autosave a crash left
+    // there is the one way back to that session's work
+    offerRecovery();
     return true;
 }
 
@@ -589,9 +593,11 @@ void Controller::openProject() {
                 if (!project_->open(chosen, scene_)) {
                     return;
                 }
+                sinceAutosave_ = 0;
                 // the history describes the scene that was replaced, so none of it can be
                 // undone against the new one. Clearing it also marks the new scene as saved
                 history_->clear();
+                offerRecovery();
             });
     });
 }
@@ -620,7 +626,11 @@ void Controller::askBeforeDiscarding(const std::function<void()>& proceed) {
                 proceed();
             }
         } },
-        { "Discard", proceed },
+        { "Discard", [this, proceed]() {
+            // the changes are thrown away, so an autosave of them is not offered again
+            project_->discardRecovery();
+            proceed();
+        } },
         { "Cancel", {} }
     }, {});
 }
@@ -825,11 +835,48 @@ bool Controller::render() {
 /**
  **/
 bool Controller::release() {
+    // a close with nothing unsaved leaves nothing to recover. A close with changes still
+    // unsaved keeps the autosave, so they are offered back at the next start
+    if (project_ && history_ && !history_->dirty()) {
+        project_->discardRecovery();
+    }
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
     }
     return true;
+}
+
+/**
+ **/
+bool Controller::tick(unsigned int delta) {
+    sinceAutosave_ += delta;
+    if (sinceAutosave_ >= autosaveInterval) {
+        sinceAutosave_ = 0;
+        if (project_ && history_ && history_->dirty()) {
+            project_->autosave(scene_);
+        }
+    }
+    return Engine::tick(delta);
+}
+
+/**
+ **/
+void Controller::offerRecovery() {
+    if (!project_->recoverable() || !prompt_) {
+        return;
+    }
+    prompt_->open("Recover the unsaved changes to " + project_->directory().filename().string() + "?", {
+        { "Recover", [this]() {
+            transformTool_->cancel();
+            if (project_->recover(scene_)) {
+                // what was recovered is not what the document holds
+                history_->clear();
+                history_->markUnsaved();
+            }
+        } },
+        { "Discard", [this]() { project_->discardRecovery(); } }
+    }, {});
 }
 
 /**

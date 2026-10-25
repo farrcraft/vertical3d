@@ -70,6 +70,16 @@ class Controller final : public v3d::engine::Engine {
     bool onEvent(const SDL_Event& event) override;
 
     /**
+     * Autosave the project while it has changes, every autosaveInterval.
+     **/
+    bool tick(unsigned int delta) override;
+
+    /**
+     * How often an autosave runs while the project has changes, in milliseconds.
+     **/
+    static constexpr unsigned int autosaveInterval = 60000;
+
+    /**
      * The cursor moved. A drag drives the camera of the view under the cursor, so this
      * chooses the active view.
      **/
@@ -102,6 +112,7 @@ class Controller final : public v3d::engine::Engine {
     /**
      **/
     bool release() override;
+
 
     /**
      * A quit with unsaved changes asks first, and quits once the user has saved or discarded
@@ -220,6 +231,11 @@ class Controller final : public v3d::engine::Engine {
     void askBeforeDiscarding(const std::function<void()>& proceed);
 
     /**
+     * Offer to recover the project's autosave, when it holds changes no save kept.
+     **/
+    void offerRecovery();
+
+    /**
      * Write the scene out as RIB for the offline renderer.
      *
      * It writes the topology and a placement per mesh, seen from the active view's camera.
@@ -303,6 +319,8 @@ class Controller final : public v3d::engine::Engine {
     std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
     // the project Save writes to
     boost::shared_ptr<Project> project_;
+    // milliseconds since the last autosave
+    unsigned int sinceAutosave_ = 0;
     boost::shared_ptr<CommandStack> history_;
     // what the caption was last set to
     std::string caption_;

@@ -20,6 +20,7 @@
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
+#include <glm/vec3.hpp>
 
 namespace {
 
@@ -159,6 +160,63 @@ BOOST_AUTO_TEST_CASE(project_refuses_a_bad_manifest_test) {
 
     v3d::editor::Project project(logger(), elsewhere.path());
     BOOST_CHECK(!project.open(scratch.path() / "no_such_manifest.json", boost::make_shared<v3d::editor::Scene>()));
+}
+
+BOOST_AUTO_TEST_CASE(project_autosave_test) {
+    const Scratch scratch("autosave");
+    v3d::editor::Project project(logger(), scratch.path());
+    const boost::shared_ptr<v3d::editor::Scene> scene = sample();
+    BOOST_REQUIRE(project.save(scene));
+    BOOST_CHECK(!project.recoverable());
+
+    // an autosave writes the change into the recovery database and leaves the document alone
+    scene->items()[1]->translation(glm::vec3(9.0F, 0.0F, 0.0F));
+    BOOST_REQUIRE(project.autosave(scene));
+    BOOST_CHECK(boost::filesystem::is_regular_file(project.recovery()));
+    BOOST_CHECK(project.recovery() == scratch.path() / "autosave" / "main.v3d");
+    v3d::editor::Project document(logger(), scratch.path());
+    const boost::shared_ptr<v3d::editor::Scene> saved = boost::make_shared<v3d::editor::Scene>();
+    BOOST_REQUIRE(document.open(scratch.path() / v3d::editor::Project::MANIFEST, saved));
+    BOOST_CHECK(saved->items()[1]->translation() == glm::vec3(0.0F));
+
+    // a second autosave writes only what changed since the first
+    scene->items()[0]->translation(glm::vec3(0.0F, 2.0F, 0.0F));
+    BOOST_REQUIRE(project.autosave(scene));
+    BOOST_CHECK(!project.autosaved().whole);
+    BOOST_CHECK_EQUAL(project.autosaved().rows, 1U);
+
+    // the recovery database is newer than the document, so it is offered, and holds both changes
+    boost::filesystem::last_write_time(project.recovery(), boost::filesystem::last_write_time(project.scene()) + 10);
+    BOOST_CHECK(project.recoverable());
+    const boost::shared_ptr<v3d::editor::Scene> recovered = boost::make_shared<v3d::editor::Scene>();
+    BOOST_REQUIRE(document.recover(recovered));
+    BOOST_CHECK(recovered->items()[1]->translation() == glm::vec3(9.0F, 0.0F, 0.0F));
+    BOOST_CHECK(recovered->items()[0]->translation() == glm::vec3(0.0F, 2.0F, 0.0F));
+
+    // an older one holds nothing a save did not keep
+    boost::filesystem::last_write_time(project.recovery(), boost::filesystem::last_write_time(project.scene()) - 10);
+    BOOST_CHECK(!project.recoverable());
+
+    // a save removes it
+    BOOST_REQUIRE(project.save(scene));
+    BOOST_CHECK(!boost::filesystem::exists(project.recovery()));
+    BOOST_CHECK(!project.recoverable());
+}
+
+BOOST_AUTO_TEST_CASE(project_recovery_without_a_document_test) {
+    const Scratch scratch("unsaved");
+    v3d::editor::Project project(logger(), scratch.path());
+
+    // a project never saved has only its autosave, which is offered
+    BOOST_CHECK(!project.recoverable());
+    BOOST_REQUIRE(project.autosave(sample()));
+    BOOST_CHECK(!boost::filesystem::exists(project.scene()));
+    BOOST_CHECK(project.recoverable());
+
+    // and discarding it removes it
+    project.discardRecovery();
+    BOOST_CHECK(!project.recoverable());
+    BOOST_CHECK(!project.recover(boost::make_shared<v3d::editor::Scene>()));
 }
 
 };  // namespace
