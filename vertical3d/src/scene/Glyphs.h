@@ -8,7 +8,6 @@
 #include <api/render/realtime/canvas/Line.h>
 
 #include "Camera.h"
-#include "Item.h"
 #include "Light.h"
 
 #include <glm/mat4x4.hpp>
@@ -29,10 +28,16 @@ constexpr float GLYPH_LENGTH = 1.0F;
 constexpr float GLYPH_ASPECT = 4.0F / 3.0F;
 
 /**
- * Where a camera's or a light's glyph is drawn: the item's translation and rotation. Its scale
- * is left out, because neither kind is scaled, so a glyph keeps its size whatever the scale.
+ * How far a group's box reaches from its origin along each axis, in world units.
  **/
-glm::mat4 glyphPlacement(const Item& item);
+constexpr float GROUP_REACH = 0.25F;
+
+/**
+ * Where a glyph is drawn: where its item's world matrix puts it, without the scale. A camera
+ * and a light are not scaled, and a group is placed by its scale but drawn without it, so a
+ * glyph keeps its size whatever scale it inherits.
+ **/
+glm::mat4 glyphPlacement(const glm::mat4& world);
 
 /**
  * A camera, in its own space, looking along +z with +y up.
@@ -52,5 +57,10 @@ void drawCamera(const Camera::Lens& lens, const glm::vec4& colour, v3d::render::
  * where its soft edge begins.
  **/
 void drawLight(const Light::Emission& emission, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
+
+/**
+ * A group, in its own space: a box GROUP_REACH from its origin along each axis.
+ **/
+void drawGroup(const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
 
 };  // namespace v3d::editor

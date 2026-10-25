@@ -11,6 +11,7 @@
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
+#include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -109,11 +110,12 @@ Target::Target() :
 
 /**
  **/
-Target Target::objects(const Items& items) {
+Target Target::objects(const Items& items, const Evaluation& evaluation) {
     Target target;
     for (const boost::shared_ptr<Item>& item : items) {
         if (item) {
             target.items_.push_back(item);
+            target.parents_.push_back(evaluation.placed(item->id()).parent);
         }
     }
     return target;
@@ -121,7 +123,7 @@ Target Target::objects(const Items& items) {
 
 /**
  **/
-Target Target::components(const Meshes& meshes, SelectMask kind) {
+Target Target::components(const Meshes& meshes, SelectMask kind, const Evaluation& evaluation) {
     Target target;
     target.components_ = true;
     for (const boost::shared_ptr<Mesh>& mesh : meshes) {
@@ -134,7 +136,8 @@ Target Target::components(const Meshes& meshes, SelectMask kind) {
         }
         std::vector<v3d::brep::Index> faces = facesAround(*mesh->geometry(), vertices);
         target.items_.push_back(mesh);
-        target.parts_.push_back({.mesh = mesh, .vertices = std::move(vertices), .faces = std::move(faces)});
+        target.parts_.push_back({.mesh = mesh, .vertices = std::move(vertices), .faces = std::move(faces),
+            .world = evaluation.placed(mesh->id()).world});
     }
     return target;
 }
@@ -142,6 +145,7 @@ Target Target::components(const Meshes& meshes, SelectMask kind) {
 /**
  **/
 Target Target::selected(const Scene& scene, SelectMask mask) {
+    const Evaluation evaluation = scene.evaluate();
     if (selectsItems(mask)) {
         // a mask that takes one kind moves only that kind, though others may be selected
         Items taken;
@@ -150,9 +154,10 @@ Target Target::selected(const Scene& scene, SelectMask mask) {
                 taken.push_back(item);
             }
         }
-        return objects(taken);
+        // an item moved with its parent and again by the motion would move twice
+        return objects(scene.uppermost(taken), evaluation);
     }
-    return components(scene.selected<Mesh>(), mask);
+    return components(scene.selected<Mesh>(), mask, evaluation);
 }
 
 /**
@@ -185,15 +190,14 @@ glm::vec3 Target::pivot() const {
     glm::vec3 sum(0.0F, 0.0F, 0.0F);
     std::size_t count = 0;
     if (!components_) {
-        for (const boost::shared_ptr<Item>& item : items_) {
-            sum += item->translation();
+        for (std::size_t index = 0; index < items_.size(); index++) {
+            sum += glm::vec3(parents_[index] * glm::vec4(items_[index]->translation(), 1.0F));
             count++;
         }
     } else {
         for (const Part& part : parts_) {
-            const glm::mat4 matrix = part.mesh->matrix();
             for (const v3d::brep::Index vertex : part.vertices) {
-                sum += glm::vec3(matrix * glm::vec4(part.mesh->geometry()->vertex(vertex)->point(), 1.0F));
+                sum += glm::vec3(part.world * glm::vec4(part.mesh->geometry()->vertex(vertex)->point(), 1.0F));
                 count++;
             }
         }
@@ -210,7 +214,10 @@ glm::quat Target::axes() const {
     if (items_.empty()) {
         return glm::quat(1.0F, 0.0F, 0.0F, 0.0F);
     }
-    return items_.front()->rotation();
+    if (components_) {
+        return orientation(parts_.front().world);
+    }
+    return glm::normalize(orientation(parents_.front()) * items_.front()->rotation());
 }
 
 /**
@@ -226,19 +233,25 @@ void Target::move(const Motion& motion, const glm::vec3& pivot, const glm::quat&
     };
 
     if (!components_) {
-        // multiplied on the left, because the turn is measured in world space and applies on
-        // top of each object's own rotation. A scale is in the object's own axes
-        for (const boost::shared_ptr<Item>& item : items_) {
-            item->rotation(glm::normalize(motion.turn * item->rotation()));
+        // the turn is measured in world space and applies on top of the object's rotation in
+        // the world, so it is carried into the parent's axes and multiplied on the left. A
+        // scale is in the object's own axes
+        for (std::size_t index = 0; index < items_.size(); index++) {
+            const boost::shared_ptr<Item>& item = items_[index];
+            const glm::mat4& parent = parents_[index];
+            const glm::quat axes = orientation(parent);
+            const glm::quat turn = glm::inverse(axes) * motion.turn * axes;
+            item->rotation(glm::normalize(turn * item->rotation()));
             item->scale(glm::max(item->scale() * motion.stretch, glm::vec3(minimum)));
-            item->translation(place(item->translation()));
+            const glm::vec3 world(parent * glm::vec4(item->translation(), 1.0F));
+            item->translation(glm::vec3(glm::inverse(parent) * glm::vec4(place(world), 1.0F)));
         }
         return;
     }
 
     for (const Part& part : parts_) {
         v3d::brep::BRep& geometry = *part.mesh->geometry();
-        const glm::mat4 matrix = part.mesh->matrix();
+        const glm::mat4& matrix = part.world;
         const glm::mat4 inverse = glm::inverse(matrix);
         for (const v3d::brep::Index index : part.vertices) {
             v3d::brep::Vertex* vertex = geometry.vertex(index);

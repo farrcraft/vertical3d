@@ -159,7 +159,7 @@ There are none open.
 Open work on the editor app. [editor/](editor/README.md) describes the editor.
 [EditorScene](plans/EditorScene.md) orders every group here.
 
-21 of the menu's 83 commands have no handler, and only log themselves when chosen. Each group
+20 of the menu's 83 commands have no handler, and only log themselves when chosen. Each group
 below is a piece of work of its own, in any order.
 
 [] **Shared meshes in a scene document.** Two mesh items may share one `BRep`, but the scene store
@@ -178,5 +178,4 @@ waits on an ADR deciding what the editor animates.
 [] **The Render menu** (`render::view`, `render::batch`, `render::settings`) would hand the scene to
 moya. The RIB export already writes it.
 
-[] **Groups** (`create::group`). A group needs a scene that holds a hierarchy.
 

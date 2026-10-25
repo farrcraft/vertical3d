@@ -175,6 +175,11 @@ class Controller final : public v3d::engine::Engine {
     void createLight(Light::Type type);
 
     /**
+     * Gather the selection beneath a new group, through the history.
+     **/
+    void createGroup();
+
+    /**
      * Put a new item into the scene through the history, under the name its command reports.
      **/
     void create(const boost::shared_ptr<Item>& item, const std::string& name);

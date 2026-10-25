@@ -9,6 +9,8 @@
 #include <api/render/realtime/canvas/Line.h>
 
 #include "Camera.h"
+#include "Evaluation.h"
+#include "Group.h"
 #include "Light.h"
 #include "Mesh.h"
 #include "SceneVisitor.h"
@@ -19,12 +21,13 @@
 namespace v3d::editor {
 
 /**
- * Draws a scene in lines, onto one line canvas: every mesh as a wireframe, and every camera
- * and light as its glyph. Which kinds are drawn is chosen when the visitor is made.
+ * Draws a scene in lines, onto one line canvas: every mesh as a wireframe, and every camera,
+ * light and group as its glyph. Which kinds are drawn is chosen when the visitor is made, and
+ * a group is always drawn.
  *
- * A mesh is drawn through its own transform, so the canvas carries the placement, not the
+ * A mesh is drawn through its world matrix, so the canvas carries the placement, not the
  * geometry. Each edge is drawn once, by the half edge ownsEdge() picks. A glyph is drawn
- * through its item's translation and rotation, so it keeps its size. A selected item is drawn
+ * through its world matrix without the scale, so it keeps its size. A selected item is drawn
  * in the selection's colour.
  *
  * Wireframe is the editor's only display mode, because a shaded mode needs a triangle
@@ -57,13 +60,14 @@ class WireframeVisitor final : public SceneVisitor {
     /**
      * Append one mesh's wireframe.
      **/
-    void visit(const boost::shared_ptr<Mesh>& item) override;
+    void visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) override;
 
     /**
-     * Append one camera's or light's glyph.
+     * Append one camera's, light's or group's glyph.
      **/
-    void visit(const boost::shared_ptr<Camera>& camera) override;
-    void visit(const boost::shared_ptr<Light>& light) override;
+    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed) override;
+    void visit(const boost::shared_ptr<Light>& light, const Placed& placed) override;
+    void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
 
  private:
     /**

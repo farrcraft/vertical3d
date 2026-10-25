@@ -15,12 +15,15 @@
 namespace v3d::editor {
 
 /**
- * One thing the scene holds: a mesh, a camera or a light.
+ * One thing the scene holds: a mesh, a camera, a light or a group.
  *
  * Every kind has two ids, a placement from its dag::Transform base, and an object selection
  * flag. The id from its dag::Node base is unique within one run of the editor, and a selection
  * names an item by it. The document id is unique within one document and is saved with it, so
  * anything saved that refers to an item names it by that.
+ *
+ * The placement is local: it is measured in the space of the item's parent, which the scene
+ * holds. Where the item is in the world comes from the scene's evaluation.
  *
  * An item cannot be copied, because a copy would share its id.
  **/
@@ -29,7 +32,7 @@ class Item : public v3d::dag::Node, public v3d::dag::Transform {
     /**
      * Which class an item is. as() checks it before it casts.
      **/
-    enum class Kind : std::uint8_t { Mesh, Camera, Light };
+    enum class Kind : std::uint8_t { Mesh, Camera, Light, Group };
 
     Item();
     ~Item() override;
@@ -74,7 +77,7 @@ class Item : public v3d::dag::Node, public v3d::dag::Transform {
 /**
  * An item as one kind, or an empty pointer when it is another kind or there is no item.
  *
- * T is Mesh, Camera or Light, each of which names its own kind as T::KIND.
+ * T is Mesh, Camera, Light or Group, each of which names its own kind as T::KIND.
  **/
 template <typename T>
 boost::shared_ptr<T> as(const boost::shared_ptr<Item>& item) {

@@ -11,6 +11,7 @@ v3d_add_test(vertical3d
 
 	"scene/ItemTest.cxx"
 	"scene/SceneTest.cxx"
+	"scene/EvaluationTest.cxx"
 	"scene/CreateItemTest.cxx"
 	"scene/CreatePolyTest.cxx"
 	"scene/GlyphsTest.cxx"
@@ -21,6 +22,7 @@ v3d_add_test(vertical3d
 	"scene/ModellingTest.cxx"
 
 	"command/CommandStackTest.cxx"
+	"command/GroupCommandTest.cxx"
 
 	"tool/CameraControlToolTest.cxx"
 	"tool/PickerTest.cxx"
@@ -41,6 +43,8 @@ v3d_add_test(vertical3d
 	"../src/scene/Mesh.cxx"
 	"../src/scene/Camera.cxx"
 	"../src/scene/Light.cxx"
+	"../src/scene/Group.cxx"
+	"../src/scene/Evaluation.cxx"
 	"../src/scene/Scene.cxx"
 	"../src/scene/CreateItem.cxx"
 	"../src/scene/CreatePoly.cxx"
@@ -52,6 +56,7 @@ v3d_add_test(vertical3d
 	"../src/scene/Modelling.cxx"
 	"../src/command/CommandStack.cxx"
 	"../src/command/CreateCommand.cxx"
+	"../src/command/GroupCommand.cxx"
 	"../src/command/Placement.cxx"
 	"../src/command/TransformCommand.cxx"
 	"../src/command/VertexCommand.cxx"
@@ -101,6 +106,8 @@ v3d_add_test(vertical3d_device
 	"../src/scene/Mesh.cxx"
 	"../src/scene/Camera.cxx"
 	"../src/scene/Light.cxx"
+	"../src/scene/Group.cxx"
+	"../src/scene/Evaluation.cxx"
 	"../src/scene/Scene.cxx"
 	"../src/scene/CreatePoly.cxx")
 

@@ -60,9 +60,9 @@ class ShadedPass final {
     ShadedPass& operator=(const ShadedPass&) = delete;
 
     /**
-     * Draw every mesh of a scene into a pass, as a view's display says. The pass gets the
-     * depth bias the surfaces are drawn at. Anything submitted to the pass after this draws
-     * over the surfaces.
+     * Draw every mesh of a scene into a pass where the scene's evaluation puts it, as a view's
+     * display says. The pass gets the depth bias the surfaces are drawn at. Anything submitted
+     * to the pass after this draws over the surfaces.
      **/
     void submit(const Scene& scene, const ViewPort::Display& display, v3d::render::realtime::Pass* pass);
 

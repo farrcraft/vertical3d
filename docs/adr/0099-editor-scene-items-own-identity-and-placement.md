@@ -1,7 +1,8 @@
 # ADR-0099: Editor: scene items own identity and placement
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-10-24
+**Amended by**: ADR-0104
 **Supersedes**: ADR-0013
 **Documented in**: [editor/Scene.md](../editor/Scene.md#the-scene)
 

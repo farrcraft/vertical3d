@@ -24,20 +24,21 @@ namespace v3d::editor {
  * A scene document on disk: a SQLite database that holds one scene.
  *
  * Every item is a row of typed columns for what all items share, with a JSON payload for what
- * its kind adds. A mesh's topology is three blobs of little-endian arrays in a table of its
- * own. A payload holds every field its kind's version defines and nothing else, so a change to
- * what a kind stores is a new version of that kind.
+ * its kind adds. What all items share includes the item's parent, as a reference to the
+ * parent's row, which is empty for an item with no parent. A mesh's topology is three blobs of
+ * little-endian arrays in a table of its own. A payload holds every field its kind's version
+ * defines and nothing else, so a change to what a kind stores is a new version of that kind.
  *
  * The database's header carries APPLICATION_ID, so a database another program wrote is
  * refused, and SCHEMA_VERSION, the version of its tables. Each kind of item has a version of
  * its own as well, stored in its row. A read refuses any of them that is newer than this build.
  *
  * **A save writes only what changed.** The store remembers each item it last wrote or read,
- * with its revision and its place in the order, for the one document it last wrote or read. A
- * write to that document writes the rows of the items that are new or whose revision has moved.
- * It moves the rows of items whose place alone changed, and deletes the rows of items the scene
- * no longer holds. A write to any other path, or to that path once the store has failed
- * to write it, writes the whole scene.
+ * with its revision, its place in the order and its parent, for the one document it last wrote
+ * or read. A write to that document writes the rows of the items that are new or whose revision
+ * has moved. It moves the rows of items whose place or parent alone changed, and deletes the
+ * rows of items the scene no longer holds. A write to any other path, or to that path once the
+ * store has failed to write it, writes the whole scene.
  **/
 class SceneStore final {
  public:
@@ -47,10 +48,12 @@ class SceneStore final {
     static constexpr std::int32_t APPLICATION_ID = 0x56334453;
 
     /**
-     * The version of the tables. An older one is migrated forward one version at a time.
-     * This is the first version, so a lower one is refused.
+     * The version of the tables. An older one is migrated forward one version at a time,
+     * by the first write to it. A read takes it as it is.
+     *
+     * Version 1 has no parent column, so every item it holds has no parent.
      **/
-    static constexpr std::int32_t SCHEMA_VERSION = 1;
+    static constexpr std::int32_t SCHEMA_VERSION = 2;
 
     /**
      * The version of each kind's payload and blobs, which a row stores beside them.
@@ -58,6 +61,7 @@ class SceneStore final {
     static constexpr std::int64_t MESH_VERSION = 1;
     static constexpr std::int64_t CAMERA_VERSION = 1;
     static constexpr std::int64_t LIGHT_VERSION = 1;
+    static constexpr std::int64_t GROUP_VERSION = 1;
 
     /**
      * What the last write did.
@@ -67,7 +71,7 @@ class SceneStore final {
         bool whole = false;
         /** How many items' rows it wrote. **/
         std::size_t rows = 0;
-        /** How many rows it gave a new place in the order, and nothing else. **/
+        /** How many rows it gave a new place in the order or a new parent, and nothing else. **/
         std::size_t moved = 0;
         /** How many rows it deleted. **/
         std::size_t removed = 0;
@@ -80,7 +84,8 @@ class SceneStore final {
      *
      * The scene is left untouched unless the whole document is understood, so a failed open
      * does not also lose the scene in memory. Items come back in their saved order, with their
-     * document ids, and with nothing selected.
+     * document ids and their parents, and with nothing selected. A document whose parents do
+     * not form a set of trees is not understood.
      *
      * @return whether the whole document was read
      **/
@@ -104,12 +109,14 @@ class SceneStore final {
     const Written& written() const noexcept;
 
     /**
-     * An item as the document holds it: the item, its revision and its place in the order.
+     * An item as the document holds it: the item, its revision, its place in the order, and
+     * its parent's document id, which is 0 for none.
      **/
     struct Saved {
         boost::weak_ptr<Item> item;
         std::uint64_t revision = 0;
         std::int64_t position = 0;
+        std::int64_t parent = 0;
     };
 
  private:

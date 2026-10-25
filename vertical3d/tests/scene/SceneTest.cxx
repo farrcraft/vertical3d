@@ -5,6 +5,8 @@
 
 #include <api/brep/BRep.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -24,22 +26,32 @@ namespace {
  **/
 class CountingVisitor final : public v3d::editor::SceneVisitor {
  public:
-    void visit(const boost::shared_ptr<v3d::editor::Mesh>& mesh) override {
+    void visit(const boost::shared_ptr<v3d::editor::Mesh>& mesh, const v3d::editor::Placed& /*placed*/) override {
         visited.push_back(mesh->id());
         kinds += "m";
     }
 
-    void visit(const boost::shared_ptr<v3d::editor::Camera>& camera) override {
+    void visit(const boost::shared_ptr<v3d::editor::Camera>& camera, const v3d::editor::Placed& /*placed*/) override {
         visited.push_back(camera->id());
         kinds += "c";
     }
 
-    void visit(const boost::shared_ptr<v3d::editor::Light>& light) override {
+    void visit(const boost::shared_ptr<v3d::editor::Light>& light, const v3d::editor::Placed& /*placed*/) override {
         visited.push_back(light->id());
         kinds += "l";
     }
 
+    void visit(const boost::shared_ptr<v3d::editor::Group>& group, const v3d::editor::Placed& /*placed*/) override {
+        visited.push_back(group->id());
+        kinds += "g";
+    }
+
+    void leave(const boost::shared_ptr<v3d::editor::Item>& item) override {
+        left.push_back(item->id());
+    }
+
     std::vector<unsigned int> visited;
+    std::vector<unsigned int> left;
     std::string kinds;
 };
 
@@ -226,6 +238,139 @@ BOOST_AUTO_TEST_CASE(scene_selection_test) {
     BOOST_CHECK(meshes[1] == third);
     BOOST_CHECK_EQUAL(scene.selected<v3d::editor::Camera>().size(), 1U);
     BOOST_CHECK(scene.selected<v3d::editor::Light>().empty());
+}
+
+BOOST_AUTO_TEST_CASE(scene_parent_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
+    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    scene.add(mesh);
+    scene.add(group);
+    scene.add(light);
+
+    // nothing has a parent until one is given
+    BOOST_CHECK(!scene.parent(mesh->id()));
+    BOOST_CHECK_EQUAL(scene.children(0).size(), 3U);
+
+    BOOST_CHECK(scene.parent(mesh->id(), group->id()));
+    BOOST_CHECK(scene.parent(group->id(), light->id()));
+    BOOST_CHECK(scene.parent(mesh->id()) == group);
+    const v3d::editor::Items above = scene.ancestors(mesh->id());
+    BOOST_REQUIRE_EQUAL(above.size(), 2U);
+    BOOST_CHECK(above[0] == group);
+    BOOST_CHECK(above[1] == light);
+    BOOST_CHECK(scene.ancestors(light->id()).empty());
+
+    // the items with no parent, and the items beneath one, come in the scene's order
+    const v3d::editor::Items roots = scene.children(0);
+    BOOST_REQUIRE_EQUAL(roots.size(), 1U);
+    BOOST_CHECK(roots[0] == light);
+    BOOST_REQUIRE_EQUAL(scene.children(group->id()).size(), 1U);
+    BOOST_CHECK(scene.children(group->id())[0] == mesh);
+
+    // an item cannot be its own parent, nor go beneath anything beneath it, and a link to an
+    // item the scene does not hold is refused. Each refusal leaves the hierarchy as it was
+    BOOST_CHECK(!scene.parent(group->id(), group->id()));
+    BOOST_CHECK(!scene.parent(light->id(), mesh->id()));
+    BOOST_CHECK(!scene.parent(mesh->id(), boost::make_shared<v3d::editor::Group>()->id()));
+    BOOST_CHECK(!scene.parent(boost::make_shared<v3d::editor::Group>()->id(), group->id()));
+    BOOST_CHECK(scene.parent(group->id()) == light);
+    BOOST_CHECK(!scene.parent(light->id()));
+
+    // a parent of 0 leaves the item with none
+    BOOST_CHECK(scene.parent(group->id(), 0));
+    BOOST_CHECK(!scene.parent(group->id()));
+    BOOST_CHECK_EQUAL(scene.children(0).size(), 2U);
+
+    // a closed document has no hierarchy left
+    scene.clear();
+    scene.add(mesh);
+    scene.add(group);
+    BOOST_CHECK(!scene.parent(mesh->id()));
+}
+
+BOOST_AUTO_TEST_CASE(scene_remove_beneath_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Group> top = boost::make_shared<v3d::editor::Group>();
+    const boost::shared_ptr<v3d::editor::Group> middle = boost::make_shared<v3d::editor::Group>();
+    const boost::shared_ptr<v3d::editor::Mesh> bottom = emptyMesh();
+    const boost::shared_ptr<v3d::editor::Mesh> apart = emptyMesh();
+    scene.add(bottom);
+    scene.add(top);
+    scene.add(apart);
+    scene.add(middle);
+    scene.parent(middle->id(), top->id());
+    scene.parent(bottom->id(), middle->id());
+
+    // removing an item takes everything beneath it, at every depth, and nothing else
+    BOOST_CHECK(scene.remove(top->id()));
+    BOOST_CHECK_EQUAL(scene.count(), 1U);
+    BOOST_CHECK(scene.item(apart->id()) == apart);
+
+    // the links among them go too, so the items come back with no parent
+    scene.add(top);
+    scene.add(middle);
+    BOOST_CHECK(!scene.parent(middle->id()));
+    BOOST_CHECK(scene.children(top->id()).empty());
+
+    // removing a child leaves its parent where it is
+    scene.parent(middle->id(), top->id());
+    BOOST_CHECK(scene.remove(middle->id()));
+    BOOST_CHECK(scene.item(top->id()) == top);
+    BOOST_CHECK(scene.children(top->id()).empty());
+}
+
+BOOST_AUTO_TEST_CASE(scene_visit_beneath_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Mesh> child = emptyMesh();
+    const boost::shared_ptr<v3d::editor::Mesh> loose = emptyMesh();
+    const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
+    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    scene.add(child);
+    scene.add(loose);
+    scene.add(group);
+    scene.add(light);
+    scene.parent(child->id(), group->id());
+    scene.parent(light->id(), group->id());
+
+    CountingVisitor visitor;
+    scene.accept(&visitor);
+
+    // each parent before its children, though the children came first in the scene, and
+    // children in the scene's order
+    const std::vector<unsigned int> visited{ loose->id(), group->id(), child->id(), light->id() };
+    BOOST_CHECK(visitor.visited == visited);
+    BOOST_CHECK_EQUAL(visitor.kinds, "mgml");
+
+    // an item is left once everything beneath it has been
+    const std::vector<unsigned int> left{ loose->id(), child->id(), light->id(), group->id() };
+    BOOST_CHECK(visitor.left == left);
+}
+
+BOOST_AUTO_TEST_CASE(scene_uppermost_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
+    const boost::shared_ptr<v3d::editor::Group> inner = boost::make_shared<v3d::editor::Group>();
+    const boost::shared_ptr<v3d::editor::Mesh> deep = emptyMesh();
+    const boost::shared_ptr<v3d::editor::Mesh> loose = emptyMesh();
+    scene.add(group);
+    scene.add(inner);
+    scene.add(deep);
+    scene.add(loose);
+    scene.parent(inner->id(), group->id());
+    scene.parent(deep->id(), inner->id());
+
+    // an item beneath another of the set, at any depth, is left out, and the order is kept
+    const v3d::editor::Items top = scene.uppermost({ deep, loose, group, boost::shared_ptr<v3d::editor::Item>() });
+    BOOST_REQUIRE_EQUAL(top.size(), 2U);
+    BOOST_CHECK(top[0] == loose);
+    BOOST_CHECK(top[1] == group);
+
+    // and an item whose ancestors are not in the set is kept
+    const v3d::editor::Items alone = scene.uppermost({ deep });
+    BOOST_REQUIRE_EQUAL(alone.size(), 1U);
+    BOOST_CHECK(alone[0] == deep);
 }
 
 };  // namespace

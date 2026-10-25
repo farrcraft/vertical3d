@@ -11,11 +11,9 @@
 #include <vector>
 
 #include "Camera.h"
-#include "Item.h"
+#include "Evaluation.h"
 #include "Light.h"
 
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/gtc/quaternion.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/trigonometric.hpp>
 #include <glm/vec3.hpp>
@@ -84,8 +82,8 @@ void ring(float depth, float radius, const glm::vec4& colour, v3d::render::realt
 
 /**
  **/
-glm::mat4 glyphPlacement(const Item& item) {
-    return glm::translate(glm::mat4(1.0F), item.translation()) * glm::mat4_cast(item.rotation());
+glm::mat4 glyphPlacement(const glm::mat4& world) {
+    return withoutScale(world);
 }
 
 /**
@@ -164,6 +162,15 @@ void drawLight(const Light::Emission& emission, const glm::vec4& colour, v3d::re
             break;
         }
     }
+}
+
+/**
+ **/
+void drawGroup(const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas) {
+    if (canvas == nullptr) {
+        return;
+    }
+    canvas->box(glm::vec3(-GROUP_REACH), glm::vec3(GROUP_REACH), colour);
 }
 
 };  // namespace v3d::editor

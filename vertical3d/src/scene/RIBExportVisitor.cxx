@@ -19,6 +19,9 @@
 #include <vector>
 
 #include "Camera.h"
+#include "Evaluation.h"
+#include "Group.h"
+#include "Item.h"
 #include "Light.h"
 #include "Mesh.h"
 
@@ -82,18 +85,44 @@ void RIBExportVisitor::end() {
     *stream_ << "WorldEnd\n";
 }
 
-void RIBExportVisitor::visit(const boost::shared_ptr<Mesh>& item) {
+void RIBExportVisitor::enter(const std::string& name, const glm::mat4x4& local) {
+    std::ostringstream begin;
+    begin << "AttributeBegin\n";
+    begin << "Attribute \"identifier\" \"name\" [\"" << name << "\"]\n";
+    begin << "ConcatTransform ";
+    matrix(&begin, local);
+    begin << "\n";
+    blocks_.push_back({ .begin = begin.str() });
+}
+
+void RIBExportVisitor::open() {
+    for (Block& block : blocks_) {
+        if (!block.written) {
+            body_ << block.begin;
+            block.written = true;
+        }
+    }
+}
+
+void RIBExportVisitor::leave(const boost::shared_ptr<Item>& /*item*/) {
+    if (blocks_.empty()) {
+        return;
+    }
+    if (blocks_.back().written) {
+        body_ << "AttributeEnd\n";
+    }
+    blocks_.pop_back();
+}
+
+void RIBExportVisitor::visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) {
+    // the scene calls leave() for every item it visits, so every visit enters a block
+    meshes_++;
+    enter("mesh" + std::to_string(meshes_), placed.local);
     if (!item) {
         return;
     }
-    meshes_++;
+    open();
     const boost::shared_ptr<v3d::brep::BRep>& mesh = item->geometry();
-
-    body_ << "AttributeBegin\n";
-    body_ << "Attribute \"identifier\" \"name\" [\"mesh" << meshes_ << "\"]\n";
-    body_ << "ConcatTransform ";
-    matrix(&body_, item->matrix());
-    body_ << "\n";
 
     for (v3d::brep::Index face = 0; face < mesh->faceCount(); face++) {
         const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*mesh, face);
@@ -121,25 +150,34 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Mesh>& item) {
         }
         body_ << " ]\n";
     }
-
-    body_ << "AttributeEnd\n";
 }
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<Camera>& /*camera*/) {
+void RIBExportVisitor::visit(const boost::shared_ptr<Camera>& /*camera*/, const Placed& placed) {
+    cameras_++;
+    enter("camera" + std::to_string(cameras_), placed.local);
 }
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<Light>& light) {
+void RIBExportVisitor::visit(const boost::shared_ptr<Group>& /*group*/, const Placed& placed) {
+    groups_++;
+    enter("group" + std::to_string(groups_), placed.local);
+}
+
+/**
+ **/
+void RIBExportVisitor::visit(const boost::shared_ptr<Light>& light, const Placed& placed) {
+    lights_++;
+    enter("light" + std::to_string(lights_), placed.local);
     if (!light) {
         return;
     }
-    lights_++;
     const Light::Emission& emission = light->emission();
-    const glm::vec3 from = light->translation();
-    const glm::vec3 to = from + (light->rotation() * glm::vec3(0.0F, 0.0F, 1.0F));
+    // a light is not scaled, so its direction is its world rotation alone
+    const glm::vec3 from(placed.world[3]);
+    const glm::vec3 to = from + (orientation(placed.world) * glm::vec3(0.0F, 0.0F, 1.0F));
     const auto point = [this](const glm::vec3& value) {
         *stream_ << " [" << value.x << " " << value.y << " " << value.z << "]";
     };

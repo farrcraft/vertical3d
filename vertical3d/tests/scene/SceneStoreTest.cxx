@@ -12,6 +12,8 @@
 #include <api/log/Logger.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -149,6 +151,9 @@ void same(const boost::shared_ptr<v3d::editor::Item>& left, const boost::shared_
             BOOST_CHECK_EQUAL(expected.delta, actual.delta);
             break;
         }
+        case v3d::editor::Item::Kind::Group:
+            // a group holds nothing but its placement
+            break;
     }
 }
 
@@ -344,9 +349,14 @@ BOOST_AUTO_TEST_CASE(store_refuses_a_damaged_document_test) {
         { "a blob that belongs to no mesh",
             "INSERT INTO buffers (item, role, count, data) SELECT id, 'extra', 0, X'' FROM items WHERE kind = 'camera'" },
         { "a next id that is not above every id", "UPDATE meta SET value = 1 WHERE key = 'next_id'" },
-        { "tables from a later build", "PRAGMA user_version = 2" },
+        { "tables from a later build", "PRAGMA user_version = 3" },
         { "tables at a version no build wrote", "PRAGMA user_version = 0" },
         { "another program's database", "PRAGMA application_id = 1" },
+        { "an item that is its own parent", "UPDATE items SET parent = id WHERE kind = 'camera'" },
+        { "a parent the document does not hold",
+            "PRAGMA foreign_keys = OFF; UPDATE items SET parent = 99 WHERE kind = 'light'" },
+        { "a group with a payload",
+            "UPDATE items SET kind = 'group', payload = '{\"open\": true}' WHERE kind = 'camera'" },
     };
 
     v3d::editor::SceneStore store(logger());
@@ -511,6 +521,115 @@ BOOST_AUTO_TEST_CASE(store_failed_write_is_followed_by_a_whole_one_test) {
     BOOST_REQUIRE(store.write(scratch.path(), *scene));
     BOOST_CHECK(store.written().whole);
     BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items"), 3);
+}
+
+BOOST_AUTO_TEST_CASE(store_hierarchy_round_trip_test) {
+    const Scratch scratch("hierarchy");
+    const boost::shared_ptr<v3d::editor::Scene> written = everyKind();
+    const v3d::editor::Items kinds = written->items();
+    const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
+    group->translation(glm::vec3(0.0F, 3.0F, 0.0F));
+    group->rotation(glm::angleAxis(0.5F, glm::vec3(0.0F, 1.0F, 0.0F)));
+    written->add(group);
+    // the cube beneath the group, and the light beneath the cube, both added before it
+    BOOST_REQUIRE(written->parent(kinds[0]->id(), group->id()));
+    BOOST_REQUIRE(written->parent(kinds[2]->id(), kinds[0]->id()));
+
+    v3d::editor::SceneStore store(logger());
+    BOOST_REQUIRE(store.write(scratch.path(), *written));
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items WHERE parent IS NULL"), 3);
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items WHERE kind = 'group' AND type_version = 1"), 1);
+
+    v3d::editor::Scene read;
+    BOOST_REQUIRE(store.read(scratch.path(), &read));
+
+    // every item comes back with its parent, and so where it was in the world
+    BOOST_REQUIRE_EQUAL(read.count(), 5U);
+    const v3d::editor::Evaluation before = written->evaluate();
+    const v3d::editor::Evaluation after = read.evaluate();
+    for (std::size_t index = 0; index < read.count(); index++) {
+        same(written->items()[index], read.items()[index]);
+        const boost::shared_ptr<v3d::editor::Item> parent = written->parent(written->items()[index]->id());
+        const boost::shared_ptr<v3d::editor::Item> back = read.parent(read.items()[index]->id());
+        BOOST_REQUIRE_EQUAL(static_cast<bool>(parent), static_cast<bool>(back));
+        if (parent) {
+            BOOST_CHECK_EQUAL(parent->documentId(), back->documentId());
+        }
+        BOOST_CHECK(before.placed(written->items()[index]->id()).world == after.placed(read.items()[index]->id()).world);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(store_parent_change_moves_a_row_test) {
+    const Scratch scratch("reparent");
+    const boost::shared_ptr<v3d::editor::Scene> scene = everyKind();
+    const boost::shared_ptr<v3d::editor::Item> cube = scene->items()[0];
+    const boost::shared_ptr<v3d::editor::Item> light = scene->items()[2];
+    scene->parent(light->id(), cube->id());
+    v3d::editor::SceneStore store(logger());
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+
+    // a parent is the scene's rather than the item's, so a change to it alone moves the row
+    // and writes nothing else
+    scene->parent(light->id(), 0);
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+    BOOST_CHECK_EQUAL(store.written().rows, 0U);
+    BOOST_CHECK_EQUAL(store.written().moved, 1U);
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items WHERE parent IS NULL"), 4);
+
+    // a changed parent is written beside its children, which still name it, in the same
+    // write
+    scene->parent(light->id(), cube->id());
+    cube->translate(glm::vec3(1.0F, 0.0F, 0.0F));
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+    BOOST_CHECK_EQUAL(store.written().rows, 1U);
+    BOOST_CHECK_EQUAL(store.written().moved, 1U);
+    v3d::editor::Scene read;
+    BOOST_REQUIRE(store.read(scratch.path(), &read));
+    BOOST_CHECK(read.parent(read.items()[2]->id()) == read.items()[0]);
+}
+
+BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
+    const Scratch scratch("version_1");
+    {
+        // the tables as version 1 made them, which had no parent column
+        v3d::database::Database database;
+        BOOST_REQUIRE(database.open(scratch.path(), v3d::database::Database::Mode::Create));
+        BOOST_REQUIRE_MESSAGE(database.execute(
+            "CREATE TABLE meta (key TEXT PRIMARY KEY NOT NULL, value ANY NOT NULL) STRICT;"
+            "CREATE TABLE items (id INTEGER PRIMARY KEY, position INTEGER NOT NULL, kind TEXT NOT NULL,"
+            "  type_version INTEGER NOT NULL, tx REAL NOT NULL, ty REAL NOT NULL, tz REAL NOT NULL,"
+            "  rx REAL NOT NULL, ry REAL NOT NULL, rz REAL NOT NULL, rw REAL NOT NULL,"
+            "  sx REAL NOT NULL, sy REAL NOT NULL, sz REAL NOT NULL,"
+            "  payload TEXT NOT NULL CHECK (json_valid(payload))) STRICT;"
+            "CREATE TABLE buffers (item INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,"
+            "  role TEXT NOT NULL, count INTEGER NOT NULL CHECK (count >= 0), data BLOB NOT NULL,"
+            "  PRIMARY KEY (item, role)) STRICT;"
+            "INSERT INTO items VALUES (1, 0, 'light', 1, 2, 0, 0, 0, 0, 0, 1, 1, 1, 1,"
+            "  '{\"type\": \"point\", \"colour\": [1, 1, 1], \"intensity\": 1, \"cone\": 0.5236, \"delta\": 0.0873}');"
+            "INSERT INTO meta VALUES ('next_id', 2);"
+            "PRAGMA user_version = 1;"), database.error());
+        BOOST_REQUIRE(database.applicationId(v3d::editor::SceneStore::APPLICATION_ID));
+    }
+
+    // a read takes the document as it is, with every item at the top of the scene
+    v3d::editor::SceneStore store(logger());
+    v3d::editor::Scene scene;
+    BOOST_REQUIRE(store.read(scratch.path(), &scene));
+    BOOST_REQUIRE_EQUAL(scene.count(), 1U);
+    BOOST_CHECK(!scene.parent(scene.items()[0]->id()));
+    BOOST_CHECK_EQUAL(query(scratch, "PRAGMA user_version"), 1);
+
+    // the first write to it brings its tables up to date, and can then save a parent
+    const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
+    scene.add(group);
+    scene.parent(scene.items()[0]->id(), group->id());
+    BOOST_REQUIRE(store.write(scratch.path(), scene));
+    BOOST_CHECK(!store.written().whole);
+    BOOST_CHECK_EQUAL(query(scratch, "PRAGMA user_version"), v3d::editor::SceneStore::SCHEMA_VERSION);
+    v3d::editor::Scene read;
+    BOOST_REQUIRE(store.read(scratch.path(), &read));
+    BOOST_REQUIRE_EQUAL(read.count(), 2U);
+    BOOST_CHECK(read.parent(read.items()[0]->id()) == read.items()[1]);
 }
 
 };  // namespace

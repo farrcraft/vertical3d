@@ -11,6 +11,8 @@
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Glyphs.h>
+#include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -121,6 +123,35 @@ BOOST_AUTO_TEST_CASE(picker_transform_test) {
         v3d::editor::SelectMask::Object);
     BOOST_CHECK_EQUAL(moved.valid, true);
     BOOST_CHECK_EQUAL(moved.item, id);
+}
+
+BOOST_AUTO_TEST_CASE(picker_beneath_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    group->translation(glm::vec3(-0.5F, 0.5F, 0.0F));
+    cube->translation(glm::vec3(0.75F, -0.75F, 0.0F));
+    scene.add(group);
+    scene.add(cube);
+    scene.parent(cube->id(), group->id());
+
+    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
+    v3d::editor::Picker picker;
+
+    // a mesh beneath a group is picked where the group puts it, not where its own placement
+    // alone would
+    BOOST_CHECK(!picker.pick(scene, *view, screen(view, glm::vec3(0.9F, -0.6F, 0.0F)), v3d::editor::SelectMask::Object).valid);
+    const v3d::editor::Picker::Hit mesh = picker.pick(scene, *view, screen(view, glm::vec3(0.25F, -0.25F, 0.0F)),
+        v3d::editor::SelectMask::Object);
+    BOOST_CHECK(mesh.valid);
+    BOOST_CHECK_EQUAL(mesh.item, cube->id());
+
+    // a group is picked by its box, and only by a mask that takes every kind
+    const glm::vec2 edge = screen(view, glm::vec3(-0.5F + v3d::editor::GROUP_REACH, 0.5F, 0.0F));
+    const v3d::editor::Picker::Hit box = picker.pick(scene, *view, edge, v3d::editor::SelectMask::Object);
+    BOOST_CHECK(box.valid);
+    BOOST_CHECK_EQUAL(box.item, group->id());
+    BOOST_CHECK(!picker.pick(scene, *view, edge, v3d::editor::SelectMask::Mesh).valid);
 }
 
 BOOST_AUTO_TEST_CASE(picker_face_test) {

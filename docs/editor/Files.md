@@ -47,7 +47,7 @@ A scene document is a SQLite database, read and written by `v3d::editor::SceneSt
 
 **The header.** The database's `application_id` is `0x56334453` ("V3DS"), so a database another
 program wrote is refused. Its `user_version` is the version of the tables,
-`SceneStore::SCHEMA_VERSION`, which is 1.
+`SceneStore::SCHEMA_VERSION`, which is 2.
 
 **The tables.** All three are `STRICT`, so a value of the wrong type is refused as it is written.
 
@@ -56,12 +56,13 @@ program wrote is refused. Its `user_version` is the version of the tables,
 | `meta` | `key`, `value` | `next_id`: the document id the next new item is given |
 | `items` | `id` | The item's document id, the primary key |
 | | `position` | The item's place in the scene's order, from 0 |
-| | `kind` | `mesh`, `camera` or `light` |
+| | `kind` | `mesh`, `camera`, `light` or `group` |
 | | `type_version` | The version of the kind's payload and blobs |
 | | `tx`, `ty`, `tz` | The translation |
 | | `rx`, `ry`, `rz`, `rw` | The rotation, a quaternion |
 | | `sx`, `sy`, `sz` | The scale |
 | | `payload` | A JSON object of what the kind adds. The table checks that it is JSON |
+| | `parent` | The document id of the item's parent, or `NULL` for an item with none. It references `items(id)`, checked when the write commits |
 | `buffers` | `item` | The item the blob belongs to. Deleting the item deletes its blobs |
 | | `role` | What the blob is |
 | | `count` | How many entries it holds |
@@ -74,9 +75,14 @@ program wrote is refused. Its `user_version` is the version of the tables,
 | `mesh` | `{}` | `vertices`: 3 floats each, the point. `edges`: 4 unsigned 32-bit integers each, the vertex, face, pair and next. `faces`: 3 floats and an unsigned 32-bit integer each, the normal and the first half edge |
 | `camera` | `projection` (`perspective` or `orthographic`), `fov` in degrees, `extent`, `clipping` as `[near, far]` | None |
 | `light` | `type` (`point`, `distant` or `spot`), `colour` as three numbers, `intensity`, `cone` and `delta` in radians | None |
+| `group` | `{}` | None |
 
 **Each mesh item stores its own geometry.** Two items that share a `BRep` are written with a copy
 each, and read back as two meshes.
+
+**The parent is checked at commit.** A changed row is deleted and written again, and its children
+still name it while that happens, so the reference is `DEFERRABLE INITIALLY DEFERRED`. The placement
+in a row is the item's local placement, which is measured in its parent's space.
 
 **Topology is stored index for index.** The three blobs are the mesh's own arrays, so a save and
 an open renumber nothing. `BRep::INVALID_ID` is stored as it is.
@@ -88,9 +94,9 @@ an open renumber nothing. `BRep::INVALID_ID` is stored as it is.
 - **Selection.** It describes what the user is doing, not what the document holds.
 - **A vertex's edge.** Nothing in the editor sets it.
 
-**Reading.** `SceneStore::read` replaces the whole scene, in the saved order and with the saved
-document ids, and nothing comes back selected. It refuses the document, and leaves the scene
-untouched, if:
+**Reading.** `SceneStore::read` replaces the whole scene, in the saved order, with the saved
+document ids and parents, and nothing comes back selected. It refuses the document, and leaves
+the scene untouched, if:
 
 - the file is not a database, or its `application_id` is not the editor's
 - its schema version, or any item's type version, is newer than this build's, or is one no
@@ -102,6 +108,7 @@ untouched, if:
   number in it is not finite, or the mesh fails `BRep::validate()`
 - a blob belongs to an item that is not a mesh
 - `next_id` is missing or is not above every id the document holds
+- an item's parent is not an item the document holds, or an item is its own ancestor
 
 **Writing.** `SceneStore::write` writes in one transaction. A write that fails at any point leaves
 the document as the last save left it, and a document the write was making is removed. A
@@ -109,11 +116,13 @@ database that is not a scene document, or that this build could not read, is ref
 overwritten.
 
 **A save writes only what changed.** A `SceneStore` remembers the document it last wrote or read,
-and for each item in it the item itself, its revision and its place in the order. A write to that
-document:
+and for each item in it the item itself, its revision, its place in the order and its parent. A
+write to that document:
 
 - writes the row and the blobs of each item that is new, or whose revision has moved
-- gives a new `position` to each item whose place alone changed, and writes nothing else of it
+- gives a new `position` and `parent` to each item whose place or parent alone changed, and writes
+  nothing else of it. A parent belongs to the scene rather than to the item, so a change of parent
+  does not move the item's revision
 - deletes the row of each item the scene no longer holds, which takes its blobs with it
 - writes `next_id`
 
@@ -134,11 +143,14 @@ that does not move it is not saved.
   field its version does not define, so an older build refuses a newer document rather than
   dropping the fields it cannot read.
 
-No step exists yet, because the schema and every kind are at version 1.
+Schema version 1 has no `parent` column. A read takes a version 1 document as it is, with every
+item at the top of the scene. The first write to it adds the column and sets the version to 2,
+in the same transaction as the rest of the write. Every kind is at version 1.
 
 Background: [ADR-0101](../adr/0101-editor-a-scene-document-is-a-sqlite-database.md),
 [ADR-0102](../adr/0102-editor-scene-records-are-rows-with-json-payloads.md),
-[ADR-0103](../adr/0103-editor-items-have-persistent-document-ids.md)
+[ADR-0103](../adr/0103-editor-items-have-persistent-document-ids.md),
+[ADR-0104](../adr/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md)
 
 ## Open, Save and Save As
 
@@ -197,20 +209,25 @@ the offline renderer reads RIB.
 - a header, then a `Format` the size of the active view's camera profile
 - the camera as a `Projection` (orthographic or perspective), `ScreenWindow`, `Clipping` and
   `Transform`. When exactly one camera item is selected the export renders from it, through
-  `profile_of()`, which gives it the active view's picture size. Otherwise it renders from the
-  active view
+  `profile_of()`, from where the scene's evaluation puts it, with the active view's picture
+  size. Otherwise it renders from the active view
 - inside `WorldBegin` and `WorldEnd`, every light first, as a `LightSource` of RI's standard
   shader for its type: `pointlight`, `distantlight` or `spotlight`. Each has its `intensity`,
-  its `lightcolor`, and a `from` in world space where the light is. A distant or spot light has a
-  `to` one unit along its +z axis, and a spot light its `coneangle` and `conedeltaangle`
-- then for each mesh: an `AttributeBegin` block with an identifier name, a `ConcatTransform` of
-  the mesh's matrix, and one `Polygon` per face
+  its `lightcolor`, and a `from` in world space where the scene's evaluation puts the light. A
+  distant or spot light has a `to` one unit along its +z axis in the world, and a spot light its
+  `coneangle` and `conedeltaangle`
+- then the hierarchy, as nested `AttributeBegin` blocks. Each item's block has an identifier
+  name, such as `group1` or `mesh2`, and a `ConcatTransform` of its local matrix. A mesh's block
+  then has one `Polygon` per face, and the blocks of the items beneath it follow inside it. A
+  block is written only when a mesh is inside it, so a camera, a light, or a group with no mesh
+  beneath it writes none
 
 RI lights only what is declared after a light, so the lights come before every mesh whatever
-the scene's order. A camera item is never written as an item. The export writes no materials,
-so the result renders in one flat colour. RI treats a
-polygon as planar and convex without checking. moya dices only the first four vertices of a
-polygon, so a face with more than four vertices renders as a quad.
+the scene's order. RI also turns a light off when the block it was declared in ends, so a light
+is written at world level from its world matrix rather than inside its parent's block. A camera
+item is never written as an item. The export writes no materials, so the result renders in one
+flat colour. RI treats a polygon as planar and convex without checking. moya dices only the
+first four vertices of a polygon, so a face with more than four vertices renders as a quad.
 [offline/](../offline/README.md) covers what moya does with the file.
 
 Background: [ADR-0023](../adr/0023-offline-rib-is-the-scene-format.md)

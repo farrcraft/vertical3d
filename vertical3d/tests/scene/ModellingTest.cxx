@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(modelling_history_keeps_indices_test) {
     v3d::editor::CommandStack history;
 
     cube->geometry()->vertex(at(*cube->geometry(), glm::vec3(0.5F, 0.5F, -0.5F)))->selected(true);
-    const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Vertex);
+    const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Vertex, scene.evaluate());
     const v3d::editor::VertexCommand::Shape shape = v3d::editor::VertexCommand::Shape::of(target.parts()[0]);
     v3d::editor::Motion motion;
     motion.offset = glm::vec3(0.25F, 0.0F, 0.0F);
@@ -298,7 +298,7 @@ BOOST_AUTO_TEST_CASE(modelling_extrude_faces_test) {
 
     // pulled out by a manipulator, the ring's walls get normals that face out of the cube
     cube->geometry()->face(top)->selected(true);
-    const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face);
+    const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, scene.evaluate());
     v3d::editor::Motion motion;
     motion.offset = glm::vec3(0.0F, 0.5F, 0.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
@@ -451,7 +451,7 @@ BOOST_AUTO_TEST_CASE(modelling_merge_history_keeps_indices_test) {
     v3d::editor::CommandStack history;
 
     cube->geometry()->vertex(static_cast<v3d::brep::Index>(cube->geometry()->vertexCount() - 1))->selected(true);
-    const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Vertex);
+    const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Vertex, scene.evaluate());
     const v3d::editor::VertexCommand::Shape shape = v3d::editor::VertexCommand::Shape::of(target.parts()[0]);
     v3d::editor::Motion motion;
     motion.offset = glm::vec3(0.25F, 0.0F, 0.0F);

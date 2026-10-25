@@ -8,6 +8,7 @@
 #include <api/type/camera/Profile.h>
 
 #include "Camera.h"
+#include "Evaluation.h"
 #include "Light.h"
 
 #include <boost/make_shared.hpp>
@@ -15,6 +16,7 @@
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::editor {
@@ -50,11 +52,12 @@ boost::shared_ptr<Camera> create_camera(const v3d::type::camera::Profile& view, 
 
 /**
  **/
-v3d::type::camera::Profile profile_of(const Camera& camera, const v3d::type::camera::Profile& picture) {
+v3d::type::camera::Profile profile_of(const Camera& camera, const glm::mat4& world,
+    const v3d::type::camera::Profile& picture) {
     v3d::type::camera::Profile profile(picture);
     profile.name("scene camera");
-    const glm::quat rotation = camera.rotation();
-    profile.eye(camera.translation());
+    const glm::quat rotation = orientation(world);
+    profile.eye(glm::vec3(world[3]));
     profile.right(rotation * glm::vec3(1.0F, 0.0F, 0.0F));
     profile.up(rotation * glm::vec3(0.0F, 1.0F, 0.0F));
     profile.direction(rotation * glm::vec3(0.0F, 0.0F, 1.0F));

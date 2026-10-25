@@ -7,6 +7,7 @@
 
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
+#include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -17,6 +18,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <glm/ext/quaternion_float.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::editor {
@@ -42,11 +44,17 @@ struct Motion {
  * What a manipulator moves, and where its pivot is.
  *
  * In object mode the target is the selected objects, which move through their transforms.
- * In a component mode it is the distinct vertices of the selected components, which move
- * in world space and are written back in each object's own space, and the objects'
- * transforms are left alone. A component target may span several objects.
+ * A motion is measured in world space and written back in each object's parent's space, so
+ * an object beneath another moves as the motion says. In a component mode it is the distinct
+ * vertices of the selected components, which move in world space and are written back in
+ * each object's own space, and the objects' transforms are left alone. A component target may
+ * span several objects.
  *
- * The pivot is the mean of the objects' origins, or of the distinct vertices in world space.
+ * The parents' world matrices, and in a component mode the objects' own, are taken from an
+ * evaluation of the scene when the target is made. A drag moves none of them, because no
+ * object of an object target is beneath another.
+ *
+ * The pivot is the mean of the objects' origins, or of the distinct vertices, in world space.
  * For one object it is the object's origin.
  **/
 class Target final {
@@ -59,6 +67,8 @@ class Target final {
         boost::shared_ptr<Mesh> mesh;
         std::vector<v3d::brep::Index> vertices;
         std::vector<v3d::brep::Index> faces;
+        // where the mesh is in the world
+        glm::mat4 world{ 1.0F };
     };
 
     /**
@@ -73,21 +83,26 @@ class Target final {
     Target();
 
     /**
-     * Whole objects, of any kind.
+     * Whole objects, of any kind, none of which may be beneath another.
+     *
+     * @param evaluation where the objects' parents are
      **/
-    static Target objects(const Items& items);
+    static Target objects(const Items& items, const Evaluation& evaluation);
 
     /**
      * The vertices of the selected components of one kind, in every mesh of the set. An
      * edge brings its two vertices and a face every vertex of its loop. A vertex shared by
      * two selected components is in the target once.
+     *
+     * @param evaluation where the meshes are
      **/
-    static Target components(const Meshes& meshes, SelectMask kind);
+    static Target components(const Meshes& meshes, SelectMask kind, const Evaluation& evaluation);
 
     /**
      * The target the selection makes under a select mask: the selected items of the kinds the
      * mask takes when it selects whole items, and the selected components of the selected
-     * meshes otherwise.
+     * meshes otherwise. An item beneath another item the mask takes is left out, because it
+     * moves with that item already.
      **/
     static Target selected(const Scene& scene, SelectMask mask);
 
@@ -117,7 +132,8 @@ class Target final {
     glm::vec3 pivot() const;
 
     /**
-     * @return the first object's rotation, which the handles follow in its own axes
+     * @return the first object's rotation in the world, which the handles follow in its own
+     *         axes
      **/
     glm::quat axes() const;
 
@@ -131,6 +147,8 @@ class Target final {
 
  private:
     Items items_;
+    // for an object target, the world matrix of each object's parent, in the order of items_
+    std::vector<glm::mat4> parents_;
     std::vector<Part> parts_;
     bool components_;
 };

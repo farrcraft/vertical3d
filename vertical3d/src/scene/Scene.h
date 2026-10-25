@@ -7,8 +7,10 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <unordered_map>
 #include <vector>
 
+#include "Evaluation.h"
 #include "Item.h"
 #include "Mesh.h"
 #include "SceneVisitor.h"
@@ -38,6 +40,11 @@ using Meshes = std::vector<boost::shared_ptr<Mesh>>;
  *
  * The scene also gives each item its document id. Ids are never reused within a document, so
  * the scene keeps the next one to give, and a saved document keeps it too.
+ *
+ * **The hierarchy.** Any item may be the parent of others, and each item has at most one
+ * parent, so the items form a set of trees. The scene holds each link, naming both ends by
+ * document id, and every link has both ends in the scene. An item's placement is local to its
+ * parent. evaluate() composes the world matrices, and every reader takes placement from it.
  **/
 class Scene final {
  public:
@@ -50,9 +57,51 @@ class Scene final {
     unsigned int add(const boost::shared_ptr<Item>& item);
 
     /**
+     * Take an item out of the scene, and everything beneath it. The links among them go too,
+     * so adding the items back does not bring back the hierarchy.
+     *
      * @return whether an item of that id was there to remove
      **/
     bool remove(unsigned int id);
+
+    /**
+     * Put one item beneath another. The child keeps its local placement, so it moves to
+     * wherever that places it under the new parent.
+     *
+     * @param parent the new parent, or 0 to leave the child with none
+     * @return false, changing nothing, when either item is not in the scene, or when the
+     *         parent is the child or beneath it
+     **/
+    bool parent(unsigned int child, unsigned int parent);
+
+    /**
+     * @return the item's parent, or an empty pointer when it has none or is not in the scene
+     **/
+    boost::shared_ptr<Item> parent(unsigned int child) const;
+
+    /**
+     * @return the items directly beneath one, in the scene's order. An id of 0 gives the
+     *         items that have no parent
+     **/
+    Items children(unsigned int id) const;
+
+    /**
+     * @return the item's parent, that item's parent, and so on up to an item with none. It is
+     *         empty for an item with no parent or not in the scene
+     **/
+    Items ancestors(unsigned int id) const;
+
+    /**
+     * @return the items of a set that are not beneath any other item of it, in the set's
+     *         order. Moving each of these moves the whole set once
+     **/
+    Items uppermost(const Items& items) const;
+
+    /**
+     * Compose where every item is: its parent's world matrix times its own local matrix, each
+     * parent before its children.
+     **/
+    Evaluation evaluate() const;
 
     /**
      * @return the item of that id, or an empty pointer
@@ -92,7 +141,8 @@ class Scene final {
     std::size_t count() const noexcept;
 
     /**
-     * Drop everything, as closing a document does. The next document id goes back to 1.
+     * Drop everything and the hierarchy with it, as closing a document does. The next
+     * document id goes back to 1.
      **/
     void clear() noexcept;
 
@@ -109,7 +159,9 @@ class Scene final {
     const Items& items() const noexcept;
 
     /**
-     * Walk the items in insertion order, each through the visit() for its kind.
+     * Walk the items depth first, each through the visit() for its kind, with where one
+     * evaluation of the scene puts it. Each parent comes before its children, and siblings
+     * come in insertion order.
      **/
     void accept(SceneVisitor* visitor) const;
 
@@ -126,7 +178,14 @@ class Scene final {
     void deselectComponents() noexcept;
 
  private:
+    /**
+     * The item of a document id, or an empty pointer.
+     **/
+    boost::shared_ptr<Item> document(std::int64_t id) const;
+
     Items items_;
+    // each child's parent, both named by document id
+    std::unordered_map<std::int64_t, std::int64_t> parents_;
     std::int64_t nextDocumentId_ = 1;
 };
 

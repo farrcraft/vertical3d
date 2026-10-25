@@ -12,6 +12,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <glm/ext/quaternion_float.hpp>
+#include <glm/mat4x4.hpp>
 
 namespace v3d::editor {
 
@@ -32,14 +33,17 @@ glm::quat facing(const v3d::type::camera::Profile& view);
 boost::shared_ptr<Camera> create_camera(const v3d::type::camera::Profile& view, Camera::Projection projection);
 
 /**
- * The camera profile a scene camera is seen through: its placement, its projection and its
- * lens. It is the inverse of create_camera(), so a camera made from a view gives back that
- * view's eye, axes and lens.
+ * The camera profile a scene camera is seen through: where it is in the world, its projection
+ * and its lens. It is the inverse of create_camera(), so a camera made from a view gives back
+ * that view's eye, axes and lens.
  *
+ * @param world the camera's world matrix, from an evaluation of its scene. Its scale is
+ *        ignored
  * @param picture a profile whose size and pixel aspect the picture takes, since a scene camera
  *        holds neither
  **/
-v3d::type::camera::Profile profile_of(const Camera& camera, const v3d::type::camera::Profile& picture);
+v3d::type::camera::Profile profile_of(const Camera& camera, const glm::mat4& world,
+    const v3d::type::camera::Profile& picture);
 
 /**
  * A light at a view's eye, facing the way the view looks, so a distant or spot light lights

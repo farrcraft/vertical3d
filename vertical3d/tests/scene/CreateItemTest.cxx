@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(profile_of_a_camera_test) {
             v3d::editor::create_camera(view, v3d::editor::Camera::Projection::Perspective);
 
         // a camera made from a view is seen through that view again, its picture's size included
-        const v3d::type::camera::Profile back = v3d::editor::profile_of(*camera, view);
+        const v3d::type::camera::Profile back = v3d::editor::profile_of(*camera, camera->matrix(), view);
         v3d::type::camera::Camera expected(view);
         v3d::type::camera::Camera actual(back);
         expected.createView();

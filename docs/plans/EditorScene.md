@@ -111,7 +111,7 @@ them.
 | Editor: what a scene document is. Decided in ADR-0101, which supersedes ADR-0018: a SQLite database, saved incrementally, with autosave to a separate recovery database. | 2 |
 | Editor: how records are encoded and versioned. Decided in ADR-0102: typed columns for the core, JSON payloads, a schema version and a version per record type. | 2 |
 | Editor: how a saved record refers to an item. Decided in ADR-0103: a persistent document id. | 2 |
-| Editor: where hierarchy lives, in `api/dag` or in the editor, and how a world matrix is composed. Amends ADR-0099. | 9 |
+| Editor: where hierarchy lives, in `api/dag` or in the editor, and how a world matrix is composed. Decided in ADR-0104, which amends ADR-0099: the scene holds the links and evaluates every placement. | 9 |
 | Editor: how the editor renders with moya, by linking `v3dlib_moya` or by running `moya.exe`. | 8 |
 | Editor: which import formats the menu offers. glTF has a reader. The four legacy formats each need one written. | 7 |
 | Editor: what the editor animates, and how a key is stored. | 10 |
@@ -127,7 +127,8 @@ them.
 - **Step 7 needs the builder in step 7's first half** before any importer can make a mesh.
 - **Step 8 works on today's export.** It renders better after step 4, which gives the export
   lights and a scene camera to render from.
-- **Step 9 needs step 1, and touches picking, the manipulators, the export and the file.**
+- **Step 9 needs step 1, and touches picking, the manipulators, the export and the file.** Step 9
+  is closed.
 - **Step 10 needs its ADR, and is best last**, so that a group and a camera can be keyed.
 - **Step 13 needs step 1**, and **step 14 needs its ADR**, which decides what else it waits on.
 - **Step 5 is independent** of everything else, and can land at any point. Step 6 needs only
@@ -279,13 +280,26 @@ pass per view draws the triangles before the lines and shares the depth buffer.
 
 ### Step 9 — Groups
 
-**Open.** ADR first, on hierarchy. An item may have a parent. Its world matrix composes its
-parents' matrices, and picking, the manipulators and the export use the world matrix.
+**Closed.** ADR-0104 decided it, and amends ADR-0099. It weighed a parent link on each item, the
+hierarchy in `api/dag`, and a general graph with parenting as one kind of connection, against the
+scene holding the links and evaluating every placement. It also weighed a child that does not
+inherit its parent's scale, and an item with several parents.
 
+- An item may have a parent. Its world matrix composes its parents' matrices, and picking, the
+  manipulators and the export use the world matrix.
 - `create::group` groups the selection under a new group item, through the command stack.
-- The project file stores the hierarchy by array index, since ids are not saved.
 - The RIB export nests `AttributeBegin` blocks.
 - Tests: a group moves its children. Undo restores the parents. A grouped project round-trips.
+- What landed differs in five ways.
+  - Any item can be a parent, and a group is a fourth kind that holds nothing of its own. It
+    is drawn and picked as a small box, since it has no geometry to click.
+  - The scene document stores each parent by document id, in a `parent` column, which is schema
+    version 2. A version 1 document reads with no parents, and its first write migrates it.
+  - The scene holds the links, and `Scene::evaluate()` gives every reader its placement. A
+    visitor is handed each item's evaluated placement, and the walk is depth first.
+  - Removing an item removes everything beneath it.
+  - A light is written at world level rather than inside its parent's block, because RI turns
+    a light off when its block ends.
 
 ### Step 10 — Playback
 

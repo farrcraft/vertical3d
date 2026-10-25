@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "Camera.h"
+#include "Group.h"
 #include "Item.h"
 #include "Light.h"
 #include "Mesh.h"
@@ -56,7 +57,9 @@ static_assert(std::endian::native == std::endian::little, "scene blobs are littl
  * The tables of a scene document at SCHEMA_VERSION.
  *
  * An item's kind is not checked by the table, so a new kind needs no new schema. Its payload
- * must be JSON. A buffer belongs to one item and goes when the item does.
+ * must be JSON. A buffer belongs to one item and goes when the item does. A parent is checked
+ * when a write commits rather than row by row, because a changed row is deleted and written
+ * again while its children still name it.
  **/
 const char* const SCHEMA =
 "CREATE TABLE meta ("
@@ -70,13 +73,21 @@ const char* const SCHEMA =
 "  tx REAL NOT NULL, ty REAL NOT NULL, tz REAL NOT NULL,"
 "  rx REAL NOT NULL, ry REAL NOT NULL, rz REAL NOT NULL, rw REAL NOT NULL,"
 "  sx REAL NOT NULL, sy REAL NOT NULL, sz REAL NOT NULL,"
-"  payload TEXT NOT NULL CHECK (json_valid(payload))) STRICT;"
+"  payload TEXT NOT NULL CHECK (json_valid(payload)),"
+"  parent INTEGER REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED) STRICT;"
 "CREATE TABLE buffers ("
 "  item INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,"
 "  role TEXT NOT NULL,"
 "  count INTEGER NOT NULL CHECK (count >= 0),"
 "  data BLOB NOT NULL,"
 "  PRIMARY KEY (item, role)) STRICT;";
+
+/**
+ * What takes a document's tables from version 1 to version 2: the parent column, which
+ * version 1 does not have.
+ **/
+const char* const MIGRATE_FROM_1 =
+"ALTER TABLE items ADD COLUMN parent INTEGER REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED;";
 
 /**
  * The size of one entry of each of a mesh's three blobs. A vertex is its point. A half edge is
@@ -196,6 +207,15 @@ class Binder final {
 
     Binder& blob(std::span<const std::byte> value) {
         bound_ = bound_ && statement_->bindBlob(column_++, value);
+        return *this;
+    }
+
+    /**
+     * A reference to an item's row, which is NULL for 0.
+     **/
+    Binder& reference(std::int64_t id) {
+        const int column = column_++;
+        bound_ = bound_ && (id == 0 ? statement_->bindNull(column) : statement_->bindInteger(column, id));
         return *this;
     }
 
@@ -484,15 +504,15 @@ bool current(const std::string& kind, std::int64_t version, std::int64_t latest,
  *
  * @param fresh set when the database is empty and has no header at all, so it can be made
  *        into a document. Null when that is not allowed
+ * @param version set to the version of the document's tables
  **/
-bool header(v3d::database::Database* database, bool* fresh, std::string* problem) {
+bool header(v3d::database::Database* database, bool* fresh, std::int32_t* version, std::string* problem) {
     std::int32_t application = 0;
-    std::int32_t version = 0;
-    if (!database->applicationId(&application) || !database->userVersion(&version)) {
+    if (!database->applicationId(&application) || !database->userVersion(version)) {
         *problem = database->error();
         return false;
     }
-    if (application == 0 && version == 0 && fresh != nullptr) {
+    if (application == 0 && *version == 0 && fresh != nullptr) {
         v3d::database::Statement tables = database->prepare("SELECT count(*) FROM sqlite_schema");
         if (tables.step() == v3d::database::Statement::Step::Row && tables.integer(0) == 0) {
             *fresh = true;
@@ -503,17 +523,25 @@ bool header(v3d::database::Database* database, bool* fresh, std::string* problem
         *problem = "it is not a scene document";
         return false;
     }
-    if (version > SceneStore::SCHEMA_VERSION) {
+    if (*version > SceneStore::SCHEMA_VERSION) {
         *problem = "it was written by a later build";
         return false;
     }
-    // an older schema is migrated forward here one version at a time. This is the first
-    // version, so a lower one is refused
-    if (version < SceneStore::SCHEMA_VERSION) {
+    if (*version < 1) {
         *problem = "it has no schema version this build can read";
         return false;
     }
     return true;
+}
+
+/**
+ * Take a document's tables forward to SCHEMA_VERSION, one version at a time.
+ **/
+bool migrate(v3d::database::Database* database, std::int32_t version) {
+    if (version >= SceneStore::SCHEMA_VERSION) {
+        return true;
+    }
+    return (version > 1 || database->execute(MIGRATE_FROM_1)) && database->userVersion(SceneStore::SCHEMA_VERSION);
 }
 
 /**
@@ -561,6 +589,10 @@ boost::shared_ptr<Item> readKind(std::int64_t id, const std::string& kind, std::
         const bool read = current(kind, version, SceneStore::LIGHT_VERSION, problem) && readLight(payload, light.get(), problem);
         return read ? light : nullptr;
     }
+    if (kind == "group") {
+        const bool read = current(kind, version, SceneStore::GROUP_VERSION, problem) && exactly(payload, {}, problem);
+        return read ? boost::make_shared<Group>() : nullptr;
+    }
     std::string unknown = "its kind, ";
     unknown += kind;
     unknown += ", is not one this build reads";
@@ -572,7 +604,7 @@ boost::shared_ptr<Item> readKind(std::int64_t id, const std::string& kind, std::
  * The item a row of the items table describes, whole.
  **/
 boost::shared_ptr<Item> readItem(const v3d::database::Statement& rows, v3d::database::Statement* buffers,
-    std::string* problem) {
+    std::int64_t* parent, std::string* problem) {
     Columns row(rows);
     const std::int64_t id = row.integer();
     const std::string kind = row.text();
@@ -582,8 +614,9 @@ boost::shared_ptr<Item> readItem(const v3d::database::Statement& rows, v3d::data
     const float w = row.real();
     const glm::vec3 scale = row.vector();
     const std::string text = row.text();
+    *parent = row.integer();
 
-    if (id <= 0 || !finite(translation) || !finite(axis) || !std::isfinite(w) || !finite(scale)) {
+    if (id <= 0 || *parent < 0 || !finite(translation) || !finite(axis) || !std::isfinite(w) || !finite(scale)) {
         *problem = "its id or its placement is not valid";
         return nullptr;
     }
@@ -609,13 +642,41 @@ boost::shared_ptr<Item> readItem(const v3d::database::Statement& rows, v3d::data
  **/
 struct Loaded {
     Items items;
+    // each child's parent, both by document id
+    std::map<std::int64_t, std::int64_t> parents;
     std::int64_t next = 1;
 };
 
-bool load(v3d::database::Database* database, Loaded* loaded, std::string* problem) {
+/**
+ * Whether every parent is an item the document holds, and no item is its own ancestor.
+ **/
+bool trees(const Loaded& loaded) {
+    std::map<std::int64_t, bool> held;
+    for (const boost::shared_ptr<Item>& item : loaded.items) {
+        held[item->documentId()] = true;
+    }
+    for (const auto& [child, parent] : loaded.parents) {
+        if (!held.contains(parent)) {
+            return false;
+        }
+        // a walk up from an item that takes more steps than there are items has gone round
+        std::size_t steps = 0;
+        for (auto above = loaded.parents.find(child); above != loaded.parents.end();
+            above = loaded.parents.find(above->second)) {
+            if (++steps > loaded.items.size()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool load(v3d::database::Database* database, std::int32_t version, Loaded* loaded, std::string* problem) {
+    // a document from before items had parents has none to read
+    const std::string parent = version >= 2 ? "parent" : "NULL";
     v3d::database::Statement rows = database->prepare(
-        "SELECT id, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload "
-        "FROM items ORDER BY position, id");
+        "SELECT id, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, " + parent +
+        " FROM items ORDER BY position, id");
     v3d::database::Statement buffers = database->prepare("SELECT role, count, data FROM buffers WHERE item = ?1");
     if (!rows.valid() || !buffers.valid()) {
         *problem = database->error();
@@ -627,17 +688,25 @@ bool load(v3d::database::Database* database, Loaded* loaded, std::string* proble
     v3d::database::Statement::Step step = rows.step();
     for (; step == v3d::database::Statement::Step::Row; step = rows.step()) {
         std::string fault;
-        const boost::shared_ptr<Item> item = readItem(rows, &buffers, &fault);
+        std::int64_t above = 0;
+        const boost::shared_ptr<Item> item = readItem(rows, &buffers, &above, &fault);
         if (!item) {
             *problem = "item " + std::to_string(rows.integer(0)) + ": " + fault;
             return false;
         }
         loaded->items.push_back(item);
+        if (above != 0) {
+            loaded->parents[item->documentId()] = above;
+        }
         highest = std::max(highest, item->documentId());
         meshes += item->kind() == Item::Kind::Mesh ? 1 : 0;
     }
     if (step == v3d::database::Statement::Step::Failed) {
         *problem = rows.error();
+        return false;
+    }
+    if (!trees(*loaded)) {
+        *problem = "its parents do not form a set of trees";
         return false;
     }
 
@@ -669,7 +738,7 @@ struct Inserts {
 /**
  * Write one item's row, and a mesh's blobs.
  **/
-bool storeItem(Inserts* inserts, const boost::shared_ptr<Item>& item, std::int64_t position) {
+bool storeItem(Inserts* inserts, const boost::shared_ptr<Item>& item, std::int64_t position, std::int64_t parent) {
     std::string kind;
     std::int64_t version = 0;
     std::string payload = "{}";
@@ -688,12 +757,16 @@ bool storeItem(Inserts* inserts, const boost::shared_ptr<Item>& item, std::int64
             version = SceneStore::LIGHT_VERSION;
             payload = boost::json::serialize(lightPayload(*boost::static_pointer_cast<Light>(item)));
             break;
+        case Item::Kind::Group:
+            kind = "group";
+            version = SceneStore::GROUP_VERSION;
+            break;
     }
 
     const glm::quat rotation = item->rotation();
     if (!Binder(&inserts->item).integer(item->documentId()).integer(position).text(kind).integer(version)
         .vector(item->translation()).vector(glm::vec3(rotation.x, rotation.y, rotation.z)).real(rotation.w)
-        .vector(item->scale()).text(payload).run()) {
+        .vector(item->scale()).text(payload).reference(parent).run()) {
         return false;
     }
 
@@ -719,11 +792,11 @@ struct Writes {
     explicit Writes(v3d::database::Database* database) :
         inserts{
             .item = database->prepare(
-                "INSERT INTO items (id, position, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+                "INSERT INTO items (id, position, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, parent) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
             .buffer = database->prepare("INSERT INTO buffers (item, role, count, data) VALUES (?, ?, ?, ?)") },
         remove(database->prepare("DELETE FROM items WHERE id = ?")),
-        move(database->prepare("UPDATE items SET position = ? WHERE id = ?")),
+        move(database->prepare("UPDATE items SET position = ?, parent = ? WHERE id = ?")),
         next(database->prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('next_id', ?)")) {
     }
 
@@ -767,23 +840,25 @@ bool store(v3d::database::Database* database, const Scene& scene, const std::map
     std::int64_t position = 0;
     for (const boost::shared_ptr<Item>& item : scene.items()) {
         const std::int64_t id = item->documentId();
+        const boost::shared_ptr<Item> above = scene.parent(item->id());
+        const std::int64_t parent = above ? above->documentId() : 0;
         const auto found = saved.find(id);
         const bool known = found != saved.end();
         bool ran = true;
         if (known && found->second.item.lock() == item && found->second.revision == item->revision()) {
-            if (found->second.position != position) {
-                ran = Binder(&writes.move).integer(position).integer(id).run();
+            if (found->second.position != position || found->second.parent != parent) {
+                ran = Binder(&writes.move).integer(position).reference(parent).integer(id).run();
                 written->moved++;
             }
         } else {
-            ran = (!known || Binder(&writes.remove).integer(id).run()) && storeItem(&writes.inserts, item, position);
+            ran = (!known || Binder(&writes.remove).integer(id).run()) && storeItem(&writes.inserts, item, position, parent);
             written->rows++;
         }
         if (!ran) {
             *problem = writes.error();
             return false;
         }
-        (*after)[id] = SceneStore::Saved{ .item = item, .revision = item->revision(), .position = position };
+        (*after)[id] = SceneStore::Saved{ .item = item, .revision = item->revision(), .position = position, .parent = parent };
         position++;
     }
 
@@ -826,15 +901,20 @@ bool SceneStore::read(const std::string& path, Scene* scene) {
 
     std::string problem;
     Loaded loaded;
-    if (!header(&database, nullptr, &problem) || !load(&database, &loaded, &problem)) {
+    std::int32_t version = 0;
+    if (!header(&database, nullptr, &version, &problem) || !load(&database, version, &loaded, &problem)) {
         logger_->get()->error("Cannot read the scene {}: {}", path, problem);
         return false;
     }
 
     // the scene is replaced only once the whole document is understood
     scene->clear();
+    std::map<std::int64_t, unsigned int> ids;
     for (const boost::shared_ptr<Item>& item : loaded.items) {
-        scene->add(item);
+        ids[item->documentId()] = scene->add(item);
+    }
+    for (const auto& [child, parent] : loaded.parents) {
+        scene->parent(ids.at(child), ids.at(parent));
     }
     scene->nextDocumentId(loaded.next);
 
@@ -843,7 +923,9 @@ bool SceneStore::read(const std::string& path, Scene* scene) {
     saved_.clear();
     std::int64_t position = 0;
     for (const boost::shared_ptr<Item>& item : loaded.items) {
-        saved_[item->documentId()] = Saved{ .item = item, .revision = item->revision(), .position = position++ };
+        const auto above = loaded.parents.find(item->documentId());
+        saved_[item->documentId()] = Saved{ .item = item, .revision = item->revision(), .position = position++,
+            .parent = above == loaded.parents.end() ? 0 : above->second };
     }
     logger_->get()->info("read {} items from {}", scene->count(), path);
     return true;
@@ -862,17 +944,18 @@ bool SceneStore::write(const std::string& path, const Scene& scene) {
     {
         v3d::database::Database database;
         bool fresh = false;
+        std::int32_t version = 0;
         if (!database.open(path, v3d::database::Database::Mode::Create)) {
             problem = database.error();
-        } else if (header(&database, &fresh, &problem)) {
+        } else if (header(&database, &fresh, &version, &problem)) {
             // only the document this store last wrote or read can take just the changes.
             // Anything else, a document another store wrote included, is written whole
             what.whole = fresh || !existed || path != path_;
             const std::map<std::int64_t, Saved> none;
             v3d::database::Transaction transaction(&database);
             written = transaction.active() &&
-                (!fresh || (database.execute(SCHEMA) && database.applicationId(APPLICATION_ID) &&
-                    database.userVersion(SCHEMA_VERSION))) &&
+                (fresh ? database.execute(SCHEMA) && database.applicationId(APPLICATION_ID) &&
+                    database.userVersion(SCHEMA_VERSION) : migrate(&database, version)) &&
                 (!what.whole || database.execute("DELETE FROM buffers; DELETE FROM items; DELETE FROM meta;")) &&
                 store(&database, scene, what.whole ? none : saved_, &after, &what, &problem) && transaction.commit();
             if (!written && problem.empty()) {

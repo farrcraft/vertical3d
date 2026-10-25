@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(glyph_placement_test) {
 
     // the translation and the rotation place the glyph, and the scale is left out, so +z one
     // unit along lands one unit away along the turned axis
-    const glm::vec4 tip = v3d::editor::glyphPlacement(light) * glm::vec4(0.0F, 0.0F, 1.0F, 1.0F);
+    const glm::vec4 tip = v3d::editor::glyphPlacement(light.matrix()) * glm::vec4(0.0F, 0.0F, 1.0F, 1.0F);
     BOOST_CHECK_SMALL(glm::distance(glm::vec3(tip), glm::vec3(6.0F, 0.0F, 2.0F)), 0.0001F);
 
     // and nothing is drawn without a canvas

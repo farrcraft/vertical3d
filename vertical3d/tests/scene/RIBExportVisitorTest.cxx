@@ -12,6 +12,7 @@
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -59,7 +60,11 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
     }
     void worldBegin() override { worlds_++; }
     void worldEnd() override { worlds_++; }
-    void attributeBegin() override { blocks_++; }
+    void attributeBegin() override {
+        blocks_++;
+        shape_ += "(";
+    }
+    void attributeEnd() override { shape_ += ")"; }
     void attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) override {
         (void)name;
         names_.push_back(parameters.string("name"));
@@ -75,6 +80,9 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
     }
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
         order_ += "P";
+        if (shape_.empty() || shape_.back() != 'P') {
+            shape_ += "P";
+        }
         faces_++;
         corners_ += vertices;
         points_ = parameters.points("P");
@@ -86,6 +94,8 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
     std::vector<float> cones_;
     std::vector<float> intensities_;
     std::string order_;
+    // each block as brackets, with a P inside for the polygons a block holds
+    std::string shape_;
     std::vector<glm::mat4x4> placements_;
     std::vector<std::string> names_;
     std::vector<glm::vec3> points_;
@@ -268,6 +278,48 @@ BOOST_AUTO_TEST_CASE(ribexport_lights_test) {
     BOOST_CHECK_SMALL(glm::distance(handler.tos_[1], glm::vec3(1.0F, 5.0F, 0.0F)), 0.0001F);
     BOOST_CHECK_CLOSE(handler.cones_[1], 0.4F, 0.001F);
     BOOST_CHECK_SMALL(glm::distance(handler.tos_[2], glm::vec3(0.0F, 0.0F, -1.0F)), 0.0001F);
+}
+
+BOOST_AUTO_TEST_CASE(ribexport_hierarchy_test) {
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Group> outer = boost::make_shared<v3d::editor::Group>();
+    const boost::shared_ptr<v3d::editor::Mesh> held = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane());
+    const boost::shared_ptr<v3d::editor::Mesh> inner = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane());
+    const boost::shared_ptr<v3d::editor::Group> empty = boost::make_shared<v3d::editor::Group>();
+    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    outer->translation(glm::vec3(0.0F, 10.0F, 0.0F));
+    held->translation(glm::vec3(2.0F, 0.0F, 0.0F));
+    light->translation(glm::vec3(0.0F, 0.0F, 3.0F));
+    scene->add(outer);
+    scene->add(held);
+    scene->add(inner);
+    scene->add(empty);
+    scene->add(light);
+    scene->parent(held->id(), outer->id());
+    scene->parent(inner->id(), held->id());
+    scene->parent(empty->id(), outer->id());
+    scene->parent(light->id(), outer->id());
+
+    ImportHandler handler;
+    BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
+
+    // the group's block holds the mesh's, which holds the mesh beneath it. A group with no
+    // mesh beneath it, and a light, write no block
+    BOOST_CHECK_EQUAL(handler.shape_, "((P(P)))");
+    BOOST_CHECK_EQUAL(handler.blocks_, 3U);
+    const std::vector<std::string> names{ "group1", "mesh1", "mesh2" };
+    BOOST_CHECK(handler.names_ == names);
+
+    // each block holds its item's local matrix, which RI composes as the editor does
+    BOOST_REQUIRE_EQUAL(handler.placements_.size(), 3U);
+    BOOST_CHECK(handler.placements_[0] == outer->matrix());
+    BOOST_CHECK(handler.placements_[1] == held->matrix());
+    BOOST_CHECK(handler.placements_[2] == inner->matrix());
+
+    // the light is written at world level, where the group puts it
+    BOOST_REQUIRE_EQUAL(handler.froms_.size(), 1U);
+    BOOST_CHECK_SMALL(glm::distance(handler.froms_[0], glm::vec3(0.0F, 10.0F, 3.0F)), 0.0001F);
+    BOOST_CHECK_EQUAL(handler.order_, "LPP");
 }
 
 };  // namespace

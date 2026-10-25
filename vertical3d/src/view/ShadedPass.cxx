@@ -16,6 +16,7 @@
 #include <api/render/realtime/vulkan/memory/Mesh.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -144,6 +145,7 @@ void ShadedPass::submit(const Scene& scene, const ViewPort::Display& display, v3
     }
     pass->depthBias(BIAS_CONSTANT, BIAS_SLOPE);
 
+    const Evaluation evaluation = scene.evaluate();
     for (const boost::shared_ptr<Item>& item : scene.items()) {
         const boost::shared_ptr<Mesh> mesh = as<Mesh>(item);
         if (!mesh) {
@@ -157,7 +159,7 @@ void ShadedPass::submit(const Scene& scene, const ViewPort::Display& display, v3
         v3d::render::realtime::DrawItem draw;
         uploaded->mesh->describe(&draw);
         draw.instances = 1;
-        const Object object{ .model = mesh->matrix(), .colour = surface };
+        const Object object{ .model = evaluation.placed(mesh->id()).world, .colour = surface };
         std::memcpy(draw.push.data(), &object, sizeof(object));
         draw.pushSize = sizeof(object);
         if (front) {

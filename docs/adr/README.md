@@ -135,11 +135,12 @@ content went. Numbers are never reused.
 | [0096](0096-editor-handles-pivot-at-the-mean-of-the-selection.md) | Editor: handles pivot at the mean of the selection | accepted |
 | [0097](0097-editor-faces-wind-clockwise-seen-from-outside.md) | Editor: faces wind clockwise seen from outside | accepted |
 | [0098](0098-editor-topology-changes-undone-from-snapshots.md) | Editor: topology changes undone from snapshots | accepted |
-| [0099](0099-editor-scene-items-own-identity-and-placement.md) | Editor: scene items own identity and placement | accepted |
+| [0099](0099-editor-scene-items-own-identity-and-placement.md) | Editor: scene items own identity and placement | amended by 0104 |
 | [0100](0100-editor-a-project-is-a-directory-with-a-manifest.md) | Editor: a project is a directory with a manifest | accepted |
 | [0101](0101-editor-a-scene-document-is-a-sqlite-database.md) | Editor: a scene document is a SQLite database | accepted |
 | [0102](0102-editor-scene-records-are-rows-with-json-payloads.md) | Editor: scene records are rows with JSON payloads | accepted |
 | [0103](0103-editor-items-have-persistent-document-ids.md) | Editor: items have persistent document ids | accepted |
+| [0104](0104-editor-the-scene-evaluates-a-hierarchy-of-items.md) | Editor: the scene evaluates a hierarchy of items | accepted |
 
 ## Build, testing and code
 

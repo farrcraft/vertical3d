@@ -20,7 +20,9 @@
 #include <vector>
 
 #include "Camera.h"
+#include "Evaluation.h"
 #include "Glyphs.h"
+#include "Group.h"
 #include "Light.h"
 #include "Mesh.h"
 
@@ -79,7 +81,7 @@ WireframeVisitor::WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, 
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<Mesh>& item) {
+void WireframeVisitor::visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) {
     if (canvas_ == nullptr || !item || !shown_.meshes) {
         return;
     }
@@ -88,7 +90,7 @@ void WireframeVisitor::visit(const boost::shared_ptr<Mesh>& item) {
     const boost::shared_ptr<v3d::brep::BRep>& mesh = item->geometry();
 
     canvas_->push();
-    canvas_->transform(item->matrix());
+    canvas_->transform(placed.world);
 
     const std::size_t faces = mesh->faceCount();
     // a selected face is drawn as its boundary, there being no filled primitive to shade it
@@ -136,25 +138,37 @@ void WireframeVisitor::visit(const boost::shared_ptr<Mesh>& item) {
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<Camera>& camera) {
+void WireframeVisitor::visit(const boost::shared_ptr<Camera>& camera, const Placed& placed) {
     if (canvas_ == nullptr || !camera || !shown_.cameras) {
         return;
     }
     canvas_->push();
-    canvas_->transform(glyphPlacement(*camera));
+    canvas_->transform(glyphPlacement(placed.world));
     drawCamera(camera->lens(), camera->selected() ? object_ : glyph_, canvas_);
     canvas_->pop();
 }
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<Light>& light) {
+void WireframeVisitor::visit(const boost::shared_ptr<Light>& light, const Placed& placed) {
     if (canvas_ == nullptr || !light || !shown_.lights) {
         return;
     }
     canvas_->push();
-    canvas_->transform(glyphPlacement(*light));
+    canvas_->transform(glyphPlacement(placed.world));
     drawLight(light->emission(), light->selected() ? object_ : glyph_, canvas_);
+    canvas_->pop();
+}
+
+/**
+ **/
+void WireframeVisitor::visit(const boost::shared_ptr<Group>& group, const Placed& placed) {
+    if (canvas_ == nullptr || !group) {
+        return;
+    }
+    canvas_->push();
+    canvas_->transform(glyphPlacement(placed.world));
+    drawGroup(group->selected() ? object_ : glyph_, canvas_);
     canvas_->pop();
 }
 

@@ -133,16 +133,17 @@ can be tested without it.
 
 `v3d::editor::Scene` is the document being edited. It belongs to the editor, not to the api.
 It holds scene items of every kind in one list, finds them by id, and keeps them in insertion
-order. `Scene::add` appends.
+order. `Scene::add` appends. It also holds the hierarchy, which [Hierarchy](#hierarchy) describes.
 
 **Items.** A scene item is a `v3d::editor::Item`. It derives from `v3d::dag::Node` and
-`v3d::dag::Transform`, and carries the object selection flag. There are three kinds:
+`v3d::dag::Transform`, and carries the object selection flag. There are four kinds:
 
 | Kind | Class | Holds |
 |---|---|---|
 | Mesh | `Mesh` | A shared `brep::BRep`, which its transform places. Two mesh items may share one `BRep`, and then share its component selection too |
 | Camera | `Camera` | A `Lens`: perspective or orthographic, the angle of view in degrees, the orthographic half height, and the clipping distances. It looks along its own +z axis with +y up, as a camera profile with no rotation does |
 | Light | `Light` | An `Emission`: a point, distant or spot light, its colour and intensity, and a spot light's cone and soft edge in radians, with RI's standard shaders' defaults. A distant or spot light shines along its own +z axis |
+| Group | `Group` | Nothing of its own. It is a parent where no other item is to be one, and is drawn and picked as a box `GROUP_REACH` from its origin along each axis |
 
 - **Identity.** Each item has two ids.
   - `Node` gives each item an id from a process-wide counter. It is unique within one run, is
@@ -154,10 +155,11 @@ order. `Scene::add` appends.
     saved that refers to an item names it by its document id.
 
   An item cannot be copied, because a copy would share both ids.
-- **Placement.** `Transform` holds a translation, a rotation and a scale. `matrix()` composes
-  them as translation × rotation × scale. `translation(v)` sets the position; `translate(v)`
-  adds an offset to it. A camera and a light ignore their scale. Every setter adds one to
-  `Transform::changes()`.
+- **Placement.** `Transform` holds a translation, a rotation and a scale, measured in the space
+  of the item's parent. `matrix()` composes them as translation × rotation × scale, which is the
+  item's local matrix. Where the item is in the world comes from the scene's evaluation.
+  `translation(v)` sets the position; `translate(v)` adds an offset to it. A camera and a light
+  ignore their scale. Every setter adds one to `Transform::changes()`.
 - **Revision.** `Item::revision()` moves whenever anything a document saves of the item changes:
   its placement, its lens or emission, and a mesh's geometry. It is the sum of
   `Transform::changes()`, the item's own count of changes to what its kind holds, and for a mesh
@@ -172,11 +174,12 @@ order. `Scene::add` appends.
   selection lives inside those meshes and may span several of them. A modelling operation runs
   once on a `BRep` that two selected items share.
 - **Visitors.** Code that reads the whole scene implements `SceneVisitor` and is passed to
-  `Scene::accept()`, which calls the `visit` for each item's kind. Every `visit` is pure, so a
-  new kind does not compile until each visitor handles it. `WireframeVisitor`,
-  `RIBExportVisitor`, `Picker` and the project writer all work this way. The wireframe draws a
-  camera or a light as its glyph, the picker picks it by that glyph, and the export writes each
-  light.
+  `Scene::accept()`, which calls the `visit` for each item's kind with where one evaluation of
+  the scene puts it. Every `visit` is pure, so a new kind does not compile until each visitor
+  handles it. The walk is depth first: an item, then everything beneath it, then `leave()` for
+  it. `WireframeVisitor`, `RIBExportVisitor` and `Picker` work this way. The wireframe draws a
+  camera, a light or a group as its glyph, the picker picks it by that glyph, and the export
+  writes each light.
 - **Not the views' cameras.** Each viewport owns its camera. `config::CameraProfiles` holds the
   camera profiles read from `data/cameras.json`, and the layout names one profile per view. A
   camera item is part of the document.
@@ -188,6 +191,45 @@ order. `Scene::add` appends.
 
 Background: [ADR-0099](../adr/0099-editor-scene-items-own-identity-and-placement.md),
 [ADR-0103](../adr/0103-editor-items-have-persistent-document-ids.md)
+
+### Hierarchy
+
+Any item may be the parent of others, and each item has at most one parent, so the items form a
+set of trees. One item can only appear in one place. Geometry appears twice when two mesh items
+share one `BRep`.
+
+- **The links.** The scene holds each link, naming both ends by document id. Every link has both
+  ends in the scene. `Scene::parent(child, parent)` sets one, and a parent of 0 clears it. It
+  refuses an item that is not in the scene, an item as its own parent, and a parent that is
+  beneath the child. `Scene::parent(id)`, `children(id)` and `ancestors(id)` read the links.
+  `children(0)` gives the items with no parent. Siblings come in the scene's order.
+- **The evaluation.** `Scene::evaluate()` composes where every item is. An item's world matrix
+  is its parent's world matrix times its own local matrix, and an item with no parent has the
+  identity as its parent's. The result is an `Evaluation`, which gives each item's `Placed`:
+  the parent's world matrix, the local matrix and the world matrix. It is a copy, so an edit made
+  after it shows only in a later evaluation.
+- **Every reader takes placement from an evaluation.** The wireframe, the shaded pass, the
+  picker, the manipulators, the RIB export and `profile_of()` all do. None of them reads an
+  item's own matrix as where it is. A glyph is drawn through its world matrix without the scale,
+  through `glyphPlacement()`, so it keeps its size.
+- **Composition is the whole matrix.** A child takes its parent's scale as well as its rotation,
+  as glTF, USD and RI do. Under a parent that is rotated and scaled unevenly, a child can be
+  sheared. `orientation()` takes the rotation out of such a matrix, keeping the x axis.
+- **Moving.** A manipulator measures a drag in world space and writes it back into the
+  item's parent's space, so an item beneath another moves as the drag says.
+  `Scene::uppermost()` leaves out every selected item that is beneath another selected item, so
+  an item selected with its parent moves once, with the parent.
+- **Removing.** `Scene::remove` takes the item and everything beneath it, at every depth. The
+  links among them go too, so adding the items back does not restore the hierarchy.
+- **Grouping.** Create > Group (`create::group`) gathers the uppermost of the selection beneath
+  a new group, through a `GroupCommand`, and the group becomes the selection. The group goes at
+  the mean of the items' origins, with no rotation or scale. When the items all have the same
+  parent the group goes beneath it, and has no parent otherwise. Each item's placement changes so
+  that it stays where it was in the world. That is exact for an item that keeps its parent's
+  space. An item taken from beneath a sheared parent loses the shear. Undo moves the items back
+  to their parents and placements, removes the group, and leaves the items selected.
+
+Background: [ADR-0104](../adr/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md)
 
 The four primitives in `src/scene/CreatePoly.h` are each one unit across and centred on the
 origin. Each is geometry, and the mesh item that holds it places it. The cylinder and the cone

@@ -29,6 +29,7 @@
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
+#include <vertical3d/src/command/GroupCommand.h>
 #include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreateItem.h>
@@ -338,6 +339,7 @@ void Controller::registerCommands() {
     press("create::light::point", [this]() { createLight(Light::Type::Point); });
     press("create::light::distant", [this]() { createLight(Light::Type::Distant); });
     press("create::light::spot", [this]() { createLight(Light::Type::Spot); });
+    press("create::group", [this]() { createGroup(); });
     press("transform::poly::split_edge", [this]() { splitSelectedEdges(); });
     press("transform::poly::split_face", [this]() { splitSelectedFace(); });
     press("transform::poly::extrude_face", [this]() { changeSelectedFaces("extrude face", extrudeFaces); });
@@ -485,6 +487,19 @@ void Controller::createLight(Light::Type type) {
 
 /**
  **/
+void Controller::createGroup() {
+    const boost::shared_ptr<GroupCommand> command = boost::make_shared<GroupCommand>(scene_, scene_->selection());
+    if (command->empty()) {
+        logger()->get()->info("a group gathers the selection, and nothing is selected");
+        return;
+    }
+    command->redo();
+    history_->push(command);
+    logger()->get()->info("grouped the selection - {} items", scene_->count());
+}
+
+/**
+ **/
 void Controller::create(const boost::shared_ptr<Item>& item, const std::string& name) {
     // the command does the creating, so making an item and redoing one run the same code
     const boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, item, name);
@@ -600,7 +615,8 @@ void Controller::exportProject() {
     // one selected scene camera is the one rendered from, and the active view otherwise
     const v3d::type::camera::Profile& picture = activeView_->camera()->profile();
     const std::vector<boost::shared_ptr<Camera>> cameras = scene_->selected<Camera>();
-    v3d::type::camera::Camera camera(cameras.size() == 1 ? profile_of(*cameras.front(), picture) : picture);
+    v3d::type::camera::Camera camera(cameras.size() == 1 ?
+        profile_of(*cameras.front(), scene_->evaluate().placed(cameras.front()->id()).world, picture) : picture);
     camera.createProjection();
     camera.createView();
 

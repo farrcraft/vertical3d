@@ -10,6 +10,8 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/geometry/Ray.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -21,6 +23,7 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 
 namespace v3d::editor {
@@ -30,7 +33,8 @@ namespace v3d::editor {
  * on the screen holds.
  *
  * A mesh or a face is hit when the ray meets a triangle of the mesh. A vertex, an edge, or a
- * camera's or light's glyph is hit when it is drawn within a few pixels of the cursor.
+ * camera's, light's or group's glyph is hit when it is drawn within a few pixels of the
+ * cursor. Everything is tested where the scene's evaluation puts it.
  *
  * A mask that selects whole items considers only the kinds it takes. A component mask
  * considers only meshes that are already selected: an object has to be selected before any
@@ -108,16 +112,18 @@ class Picker final : public SceneVisitor {
      * One item of the scene, during a pick. Public because the scene calls them through
      * SceneVisitor. Only the scene calls them.
      **/
-    void visit(const boost::shared_ptr<Mesh>& item) override;
-    void visit(const boost::shared_ptr<Camera>& camera) override;
-    void visit(const boost::shared_ptr<Light>& light) override;
+    void visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) override;
+    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed) override;
+    void visit(const boost::shared_ptr<Light>& light, const Placed& placed) override;
+    void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
 
  private:
     /**
-     * A camera's or a light's glyph, drawn in its own space: hit when a segment is within
-     * tolerance of the cursor, and inside a rectangle when every point of it is.
+     * A camera's, a light's or a group's glyph, drawn in its own space and placed by its world
+     * matrix. It is hit when a segment is within tolerance of the cursor, and inside a
+     * rectangle when every point of it is.
      **/
-    void glyph(const Item& item, const v3d::render::realtime::canvas::Line& drawn);
+    void glyph(const Item& item, const glm::mat4& world, const v3d::render::realtime::canvas::Line& drawn);
 
     /**
      * Ray against every triangle of the mesh, nearest along the ray winning.

@@ -47,7 +47,7 @@ constexpr glm::vec2 centre(200.0F, 200.0F);
  * Whole objects as a manipulator's target.
  **/
 v3d::editor::Target objects(const v3d::editor::Items& items) {
-    return v3d::editor::Target::objects(items);
+    return v3d::editor::Target::objects(items, v3d::editor::Evaluation());
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_default_test) {
