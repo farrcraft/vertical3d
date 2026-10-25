@@ -22,6 +22,7 @@
 #include "DeviceContext.h"
 #include "Engine.h"
 #include "Frame.h"
+#include "Present.h"
 #include "Textures.h"
 #include "Window.h"
 

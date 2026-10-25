@@ -6,6 +6,7 @@
 #include "Context3D.h"
 
 #include <api/log/Logger.h>
+#include <api/render/realtime/Present.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/Presenter.h>
 #include <api/render/realtime/vulkan/frame/Swapchain.h>
