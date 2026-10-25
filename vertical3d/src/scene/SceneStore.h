@@ -6,11 +6,13 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/type/animation/Curve.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <map>
 #include <string>
+#include <utility>
 
 #include "Item.h"
 #include "Scene.h"
@@ -33,6 +35,9 @@ namespace v3d::editor {
  * refused, and SCHEMA_VERSION, the version of its tables. Each kind of item has a version of
  * its own as well, stored in its row. A read refuses any of them that is newer than this build.
  *
+ * Each curve is a row of its own, which names its owner's row and the property it drives, with
+ * its keys in a blob. The document's timeline is in its meta table.
+ *
  * **A save writes only what changed.** The store remembers each item it last wrote or read,
  * with its revision, its place in the order and its parent, for the one document it last wrote
  * or read. A write to that document writes the rows of the items that are new or whose revision
@@ -51,9 +56,10 @@ class SceneStore final {
      * The version of the tables. An older one is migrated forward one version at a time,
      * by the first write to it. A read takes it as it is.
      *
-     * Version 1 has no parent column, so every item it holds has no parent.
+     * Version 1 has no parent column, so every item it holds has no parent. Versions 1 and 2
+     * have no curves table, so nothing they hold is animated.
      **/
-    static constexpr std::int32_t SCHEMA_VERSION = 2;
+    static constexpr std::int32_t SCHEMA_VERSION = 3;
 
     /**
      * The version of each kind's payload and blobs, which a row stores beside them.
@@ -62,6 +68,11 @@ class SceneStore final {
     static constexpr std::int64_t CAMERA_VERSION = 1;
     static constexpr std::int64_t LIGHT_VERSION = 1;
     static constexpr std::int64_t GROUP_VERSION = 1;
+
+    /**
+     * The version of a curve's keys, which a curve's row stores beside them.
+     **/
+    static constexpr std::int64_t CURVE_VERSION = 1;
 
     /**
      * What the last write did.
@@ -75,6 +86,8 @@ class SceneStore final {
         std::size_t moved = 0;
         /** How many rows it deleted. **/
         std::size_t removed = 0;
+        /** How many curves' rows it wrote or deleted. **/
+        std::size_t curves = 0;
     };
 
     explicit SceneStore(const boost::shared_ptr<v3d::log::Logger>& logger);
@@ -84,8 +97,9 @@ class SceneStore final {
      *
      * The scene is left untouched unless the whole document is understood, so a failed open
      * does not also lose the scene in memory. Items come back in their saved order, with their
-     * document ids and their parents, and with nothing selected. A document whose parents do
-     * not form a set of trees is not understood.
+     * document ids, their parents and their curves, and with nothing selected. The scene takes
+     * the document's timeline, and is posed at its frame. A document whose parents do not form a
+     * set of trees is not understood.
      *
      * @return whether the whole document was read
      **/
@@ -119,11 +133,17 @@ class SceneStore final {
         std::int64_t parent = 0;
     };
 
+    /**
+     * The curves as the document holds them, by their owner's document id and their property.
+     **/
+    using SavedCurves = std::map<std::pair<std::int64_t, std::string>, v3d::type::animation::Curve>;
+
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;
     // the document this store last wrote or read, and its items by document id
     std::string path_;
     std::map<std::int64_t, Saved> saved_;
+    SavedCurves curves_;
     Written written_;
 };
 

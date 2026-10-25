@@ -8,6 +8,7 @@ v3d_add_api_library(type
 "animation/Channel.h"
 "animation/Clip.h" "animation/Clip.cxx"
 "animation/Clock.h" "animation/Clock.cxx"
+"animation/Curve.h" "animation/Curve.cxx"
 "animation/Pose.h" "animation/Pose.cxx"
 "animation/SpriteClip.h" "animation/SpriteClip.cxx"
 "animation/Track.h"

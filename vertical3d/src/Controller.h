@@ -75,6 +75,13 @@ class Controller final : public v3d::engine::Engine {
     bool tick(unsigned int delta) override;
 
     /**
+     * While the timeline plays, advance the current frame at the document's frame rate,
+     * starting again from the first frame of the range after the last, and pose the scene at
+     * each new frame.
+     **/
+    bool simulate(float step) override;
+
+    /**
      * How often an autosave runs while the project has changes, in milliseconds.
      **/
     static constexpr unsigned int autosaveInterval = 60000;
@@ -178,6 +185,26 @@ class Controller final : public v3d::engine::Engine {
      * Gather the selection beneath a new group, through the history.
      **/
     void createGroup();
+
+    /**
+     * Key every property of each selected item at the current frame, through the history.
+     **/
+    void setKey();
+
+    /**
+     * Make a frame the current one, held within the range, and pose the scene at it.
+     **/
+    void goTo(int frame);
+
+    /**
+     * The frames the selection has keys on, or every item's when nothing is selected.
+     **/
+    std::vector<float> keyedFrames() const;
+
+    /**
+     * Go to the nearest keyed frame after the current one, or before it.
+     **/
+    void nextKey(bool forwards);
 
     /**
      * Put a new item into the scene through the history, under the name its command reports.
@@ -326,6 +353,9 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<Project> project_;
     // milliseconds since the last autosave
     unsigned int sinceAutosave_ = 0;
+    // whether the timeline is playing, and the seconds played since the current frame began
+    bool playing_ = false;
+    float played_ = 0.0F;
     boost::shared_ptr<CommandStack> history_;
     // what the caption was last set to
     std::string caption_;

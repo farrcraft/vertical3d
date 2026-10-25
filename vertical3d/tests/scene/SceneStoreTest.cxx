@@ -10,6 +10,7 @@
 #include <api/database/Database.h>
 #include <api/database/Statement.h>
 #include <api/log/Logger.h>
+#include <api/type/animation/Curve.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Evaluation.h>
@@ -19,6 +20,7 @@
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/SceneStore.h>
+#include <vertical3d/src/scene/Timeline.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -349,7 +351,23 @@ BOOST_AUTO_TEST_CASE(store_refuses_a_damaged_document_test) {
         { "a blob that belongs to no mesh",
             "INSERT INTO buffers (item, role, count, data) SELECT id, 'extra', 0, X'' FROM items WHERE kind = 'camera'" },
         { "a next id that is not above every id", "UPDATE meta SET value = 1 WHERE key = 'next_id'" },
-        { "tables from a later build", "PRAGMA user_version = 3" },
+        { "tables from a later build", "PRAGMA user_version = 4" },
+        { "a curve on a property its owner does not have",
+            "INSERT INTO curves SELECT id, 'lens.fov', 1, 0, X'' FROM items WHERE kind = 'light'" },
+        { "a curve with no keys", "INSERT INTO curves SELECT id, 'translation.x', 1, 0, X'' FROM items WHERE kind = 'light'" },
+        { "a curve from a later build",
+            "INSERT INTO curves SELECT id, 'translation.x', 2, 0, X'' FROM items WHERE kind = 'light'" },
+        { "a curve whose keys are short",
+            "INSERT INTO curves SELECT id, 'translation.x', 1, 1, X'00' FROM items WHERE kind = 'light'" },
+        { "a curve whose keys do not rise",
+            "INSERT INTO curves SELECT id, 'translation.x', 1, 2, "
+            "X'00000040000000000000000000000000020100000000803F00000000000000000000000002010000' "
+            "FROM items WHERE kind = 'light'" },
+        { "a key of an unknown interpolation",
+            "INSERT INTO curves SELECT id, 'translation.x', 1, 1, X'0000803F00000000000000000000000009010000' "
+            "FROM items WHERE kind = 'light'" },
+        { "a timeline with no frame rate", "INSERT OR REPLACE INTO meta VALUES ('rate', 0.0)" },
+        { "a frame outside the range", "INSERT OR REPLACE INTO meta VALUES ('frame', 500)" },
         { "tables at a version no build wrote", "PRAGMA user_version = 0" },
         { "another program's database", "PRAGMA application_id = 1" },
         { "an item that is its own parent", "UPDATE items SET parent = id WHERE kind = 'camera'" },
@@ -588,6 +606,71 @@ BOOST_AUTO_TEST_CASE(store_parent_change_moves_a_row_test) {
     BOOST_CHECK(read.parent(read.items()[2]->id()) == read.items()[0]);
 }
 
+BOOST_AUTO_TEST_CASE(store_animation_round_trip_test) {
+    const Scratch scratch("animation");
+    const boost::shared_ptr<v3d::editor::Scene> written = everyKind();
+    const v3d::editor::Items kinds = written->items();
+    const std::vector<v3d::type::animation::Curve::Key> keys{
+        { .frame = 1.0F, .value = 0.0F, .interpolation = v3d::type::animation::Curve::Interpolation::Step },
+        { .frame = 8.5F, .value = 2.0F, .in = 0.5F, .out = -1.0F, .automatic = false },
+        { .frame = 20.0F, .value = 5.0F } };
+    const v3d::type::animation::Curve shaped(keys);
+    v3d::type::animation::Curve fade;
+    fade.set(2.0F, 40.0F);
+    fade.set(12.0F, 0.0F);
+    BOOST_REQUIRE(written->curve(kinds[0]->id(), "translation.y", shaped));
+    BOOST_REQUIRE(written->curve(kinds[2]->id(), "emission.intensity", fade));
+    written->timeline({ .rate = 30.0F, .start = 2, .end = 48, .frame = 7 });
+
+    v3d::editor::SceneStore store(logger());
+    BOOST_REQUIRE(store.write(scratch.path(), *written));
+    BOOST_CHECK_EQUAL(store.written().curves, 2U);
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM curves"), 2);
+
+    // every curve comes back key for key, with the timeline, and the scene posed at its frame
+    v3d::editor::Scene read;
+    BOOST_REQUIRE(store.read(scratch.path(), &read));
+    BOOST_CHECK(read.timeline() == written->timeline());
+    BOOST_REQUIRE_EQUAL(read.curves(read.items()[0]->id()).size(), 1U);
+    BOOST_CHECK(read.curves(read.items()[0]->id()).at("translation.y") == shaped);
+    BOOST_CHECK(read.curves(read.items()[2]->id()).at("emission.intensity") == fade);
+    BOOST_CHECK_EQUAL(read.items()[0]->translation().y, 0.0F);
+    BOOST_CHECK_CLOSE(v3d::editor::as<v3d::editor::Light>(read.items()[2])->emission().intensity, fade.sample(7.0F), 0.001F);
+
+    // the read is what the store remembers, pose and all, so writing it back writes nothing
+    BOOST_REQUIRE(store.write(scratch.path(), read));
+    BOOST_CHECK_EQUAL(store.written().rows, 0U);
+    BOOST_CHECK_EQUAL(store.written().curves, 0U);
+}
+
+BOOST_AUTO_TEST_CASE(store_changed_curve_alone_test) {
+    const Scratch scratch("curve_change");
+    const boost::shared_ptr<v3d::editor::Scene> scene = everyKind();
+    const v3d::editor::Items kinds = scene->items();
+    v3d::type::animation::Curve curve;
+    curve.set(1.0F, 0.0F);
+    BOOST_REQUIRE(scene->curve(kinds[0]->id(), "scale.x", curve));
+    BOOST_REQUIRE(scene->curve(kinds[1]->id(), "lens.fov", curve));
+    v3d::editor::SceneStore store(logger());
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+
+    // a curve belongs to the scene rather than its item, so a changed key writes the curve's
+    // row and no item's
+    curve.set(9.0F, 1.0F);
+    BOOST_REQUIRE(scene->curve(kinds[0]->id(), "scale.x", curve));
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+    BOOST_CHECK_EQUAL(store.written().rows, 0U);
+    BOOST_CHECK_EQUAL(store.written().curves, 1U);
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count FROM curves WHERE property = 'scale.x'"), 2);
+
+    // and a curve taken away deletes its row, as does removing the item that had one
+    BOOST_REQUIRE(scene->curve(kinds[0]->id(), "scale.x", v3d::type::animation::Curve()));
+    scene->remove(kinds[1]->id());
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+    BOOST_CHECK_EQUAL(store.written().curves, 2U);
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM curves"), 0);
+}
+
 BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
     const Scratch scratch("version_1");
     {
@@ -619,10 +702,14 @@ BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
     BOOST_CHECK(!scene.parent(scene.items()[0]->id()));
     BOOST_CHECK_EQUAL(query(scratch, "PRAGMA user_version"), 1);
 
-    // the first write to it brings its tables up to date, and can then save a parent
+    // the first write to it brings its tables up to date, and can then save a parent and a
+    // curve
     const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
     scene.add(group);
     scene.parent(scene.items()[0]->id(), group->id());
+    v3d::type::animation::Curve curve;
+    curve.set(3.0F, 1.0F);
+    BOOST_REQUIRE(scene.curve(group->id(), "rotation.y", curve));
     BOOST_REQUIRE(store.write(scratch.path(), scene));
     BOOST_CHECK(!store.written().whole);
     BOOST_CHECK_EQUAL(query(scratch, "PRAGMA user_version"), v3d::editor::SceneStore::SCHEMA_VERSION);
@@ -630,6 +717,7 @@ BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
     BOOST_REQUIRE(store.read(scratch.path(), &read));
     BOOST_REQUIRE_EQUAL(read.count(), 2U);
     BOOST_CHECK(read.parent(read.items()[0]->id()) == read.items()[1]);
+    BOOST_CHECK(read.curves(read.items()[1]->id()).at("rotation.y") == curve);
 }
 
 };  // namespace

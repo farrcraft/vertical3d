@@ -5,18 +5,24 @@
 
 #include "Scene.h"
 
+#include <api/type/animation/Curve.h>
+
 #include "Camera.h"
 #include "Evaluation.h"
 #include "Group.h"
 #include "Item.h"
 #include "Light.h"
 #include "Mesh.h"
+#include "Properties.h"
 #include "SceneVisitor.h"
+#include "Timeline.h"
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <map>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -99,6 +105,7 @@ bool Scene::remove(unsigned int id) {
     }
     std::erase_if(items_, [&gone](const boost::shared_ptr<Item>& each) { return gone.contains(each->documentId()); });
     std::erase_if(parents_, [&gone](const auto& link) { return gone.contains(link.first); });
+    std::erase_if(curves_, [&gone](const auto& owned) { return gone.contains(owned.first); });
     return true;
 }
 
@@ -190,6 +197,90 @@ Items Scene::uppermost(const Items& items) const {
 
 /**
  **/
+Curves Scene::curves(unsigned int id) const {
+    const boost::shared_ptr<Item> found = item(id);
+    if (!found) {
+        return Curves();
+    }
+    const auto owned = curves_.find(found->documentId());
+    return owned == curves_.end() ? Curves() : owned->second;
+}
+
+/**
+ **/
+bool Scene::curve(unsigned int id, const std::string& path, const v3d::type::animation::Curve& curve) {
+    const boost::shared_ptr<Item> found = item(id);
+    if (!found || !declares(found->kind(), path)) {
+        return false;
+    }
+    if (curve.empty()) {
+        const auto owned = curves_.find(found->documentId());
+        if (owned != curves_.end()) {
+            owned->second.erase(path);
+            if (owned->second.empty()) {
+                curves_.erase(owned);
+            }
+        }
+        return true;
+    }
+    curves_[found->documentId()][path] = curve;
+    return true;
+}
+
+/**
+ **/
+std::vector<float> Scene::keyedFrames(const Items& items) const {
+    std::vector<float> frames;
+    for (const boost::shared_ptr<Item>& each : items) {
+        if (!each || item(each->id()) != each) {
+            continue;
+        }
+        const auto owned = curves_.find(each->documentId());
+        if (owned == curves_.end()) {
+            continue;
+        }
+        for (const auto& [path, curve] : owned->second) {
+            for (const v3d::type::animation::Curve::Key& key : curve.keys()) {
+                frames.push_back(key.frame);
+            }
+        }
+    }
+    std::sort(frames.begin(), frames.end());
+    frames.erase(std::unique(frames.begin(), frames.end(),
+        [](float first, float second) { return second - first <= v3d::type::animation::Curve::SAME_FRAME; }), frames.end());
+    return frames;
+}
+
+/**
+ **/
+void Scene::pose(float frame) {
+    for (const boost::shared_ptr<Item>& each : items_) {
+        const auto owned = curves_.find(each->documentId());
+        if (owned == curves_.end()) {
+            continue;
+        }
+        std::map<std::string, float> values;
+        for (const auto& [path, curve] : owned->second) {
+            values[path] = curve.sample(frame);
+        }
+        editor::pose(each.get(), values);
+    }
+}
+
+/**
+ **/
+const Timeline& Scene::timeline() const noexcept {
+    return timeline_;
+}
+
+/**
+ **/
+void Scene::timeline(const Timeline& timeline) noexcept {
+    timeline_ = timeline;
+}
+
+/**
+ **/
 Evaluation Scene::evaluate() const {
     std::unordered_map<std::int64_t, const Item*> documents;
     for (const boost::shared_ptr<Item>& each : items_) {
@@ -260,6 +351,8 @@ std::size_t Scene::count() const noexcept {
 void Scene::clear() noexcept {
     items_.clear();
     parents_.clear();
+    curves_.clear();
+    timeline_ = Timeline();
     nextDocumentId_ = 1;
 }
 

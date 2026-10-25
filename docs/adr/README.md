@@ -141,6 +141,7 @@ content went. Numbers are never reused.
 | [0102](0102-editor-scene-records-are-rows-with-json-payloads.md) | Editor: scene records are rows with JSON payloads | accepted |
 | [0103](0103-editor-items-have-persistent-document-ids.md) | Editor: items have persistent document ids | accepted |
 | [0104](0104-editor-the-scene-evaluates-a-hierarchy-of-items.md) | Editor: the scene evaluates a hierarchy of items | accepted |
+| [0105](0105-editor-animation-is-scalar-curves-on-item-properties.md) | Editor: animation is scalar curves on item properties | accepted |
 
 ## Build, testing and code
 

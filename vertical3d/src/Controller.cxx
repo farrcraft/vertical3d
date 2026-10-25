@@ -30,6 +30,7 @@
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
 #include <vertical3d/src/command/GroupCommand.h>
+#include <vertical3d/src/command/KeyCommand.h>
 #include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreateItem.h>
@@ -41,6 +42,7 @@
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
 #include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
@@ -50,6 +52,7 @@
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <functional>
 #include <utility>
@@ -71,6 +74,14 @@ namespace {
  **/
 const char* const uiContainer = "editor";
 const char* const menuBar = "menu-bar";
+
+/**
+ * A keyed frame as a whole frame within the timeline's range, rounded up or down.
+ **/
+int wholeFrame(float frame, const Timeline& timeline, bool up) {
+    const float held = std::clamp(frame, static_cast<float>(timeline.start), static_cast<float>(timeline.end));
+    return static_cast<int>(up ? std::ceil(held) : std::floor(held));  // checked: a key's frame is finite, and the clamp holds it in the range
+}
 
 };  // namespace
 
@@ -294,7 +305,8 @@ void Controller::syncCaption() {
     if (!history_) {
         return;
     }
-    const std::string caption = "Vertical|3D - " + project_->directory().filename().string() + (history_->dirty() ? " *" : "");
+    const std::string caption = "Vertical|3D - " + project_->directory().filename().string() + (history_->dirty() ? " *" : "") +
+        " - frame " + std::to_string(scene_->timeline().frame);
     if (caption == caption_) {
         return;
     }
@@ -340,6 +352,30 @@ void Controller::registerCommands() {
     press("create::light::distant", [this]() { createLight(Light::Type::Distant); });
     press("create::light::spot", [this]() { createLight(Light::Type::Spot); });
     press("create::group", [this]() { createGroup(); });
+    press("timeline::set", [this]() { setKey(); });
+    press("timeline::playback::play", [this]() {
+        playing_ = true;
+        played_ = 0.0F;
+    });
+    press("timeline::playback::stop", [this]() { playing_ = false; });
+    press("timeline::playback::next", [this]() { goTo(scene_->timeline().frame + 1); });
+    press("timeline::playback::previous", [this]() { goTo(scene_->timeline().frame - 1); });
+    press("timeline::playback::first", [this]() { goTo(scene_->timeline().start); });
+    press("timeline::playback::last", [this]() { goTo(scene_->timeline().end); });
+    press("timeline::playback::next_key", [this]() { nextKey(true); });
+    press("timeline::playback::previous_key", [this]() { nextKey(false); });
+    press("timeline::playback::first_key", [this]() {
+        const std::vector<float> frames = keyedFrames();
+        if (!frames.empty()) {
+            goTo(wholeFrame(frames.front(), scene_->timeline(), true));
+        }
+    });
+    press("timeline::playback::last_key", [this]() {
+        const std::vector<float> frames = keyedFrames();
+        if (!frames.empty()) {
+            goTo(wholeFrame(frames.back(), scene_->timeline(), false));
+        }
+    });
     press("transform::poly::split_edge", [this]() { splitSelectedEdges(); });
     press("transform::poly::split_face", [this]() { splitSelectedFace(); });
     press("transform::poly::extrude_face", [this]() { changeSelectedFaces("extrude face", extrudeFaces); });
@@ -496,6 +532,56 @@ void Controller::createGroup() {
     command->redo();
     history_->push(command);
     logger()->get()->info("grouped the selection - {} items", scene_->count());
+}
+
+/**
+ **/
+void Controller::setKey() {
+    const int frame = scene_->timeline().frame;
+    const boost::shared_ptr<KeyCommand> command = boost::make_shared<KeyCommand>(scene_, scene_->selection(),
+        static_cast<float>(frame));
+    if (command->empty()) {
+        logger()->get()->info("a key is set on the selection, and nothing is selected");
+        return;
+    }
+    command->redo();
+    history_->push(command);
+    logger()->get()->info("set a key at frame {}", frame);
+}
+
+/**
+ **/
+void Controller::goTo(int frame) {
+    Timeline timeline = scene_->timeline();
+    timeline.frame = std::clamp(frame, timeline.start, timeline.end);
+    scene_->timeline(timeline);
+    scene_->pose(static_cast<float>(timeline.frame));
+    syncCaption();
+}
+
+/**
+ **/
+std::vector<float> Controller::keyedFrames() const {
+    const Items selection = scene_->selection();
+    return scene_->keyedFrames(selection.empty() ? scene_->items() : selection);
+}
+
+/**
+ **/
+void Controller::nextKey(bool forwards) {
+    const float frame = static_cast<float>(scene_->timeline().frame);
+    const std::vector<float> frames = keyedFrames();
+    if (forwards) {
+        const auto after = std::upper_bound(frames.begin(), frames.end(), frame);
+        if (after != frames.end()) {
+            goTo(wholeFrame(*after, scene_->timeline(), true));
+        }
+        return;
+    }
+    const auto before = std::lower_bound(frames.begin(), frames.end(), frame);
+    if (before != frames.begin()) {
+        goTo(wholeFrame(*(before - 1), scene_->timeline(), false));
+    }
 }
 
 /**
@@ -907,6 +993,23 @@ bool Controller::tick(unsigned int delta) {
         }
     }
     return Engine::tick(delta);
+}
+
+/**
+ **/
+bool Controller::simulate(float step) {
+    if (playing_ && scene_) {
+        const Timeline& timeline = scene_->timeline();
+        played_ += step;
+        const float length = 1.0F / timeline.rate;
+        if (played_ >= length) {
+            const int frames = static_cast<int>(played_ / length);
+            played_ -= static_cast<float>(frames) * length;
+            const int span = timeline.end - timeline.start + 1;
+            goTo(timeline.start + ((timeline.frame - timeline.start + frames) % span));
+        }
+    }
+    return Engine::simulate(step);
 }
 
 /**

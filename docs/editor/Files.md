@@ -47,13 +47,13 @@ A scene document is a SQLite database, read and written by `v3d::editor::SceneSt
 
 **The header.** The database's `application_id` is `0x56334453` ("V3DS"), so a database another
 program wrote is refused. Its `user_version` is the version of the tables,
-`SceneStore::SCHEMA_VERSION`, which is 2.
+`SceneStore::SCHEMA_VERSION`, which is 3.
 
-**The tables.** All three are `STRICT`, so a value of the wrong type is refused as it is written.
+**The tables.** All four are `STRICT`, so a value of the wrong type is refused as it is written.
 
 | Table | Column | Holds |
 |---|---|---|
-| `meta` | `key`, `value` | `next_id`: the document id the next new item is given |
+| `meta` | `key`, `value` | `next_id`: the document id the next new item is given. `rate`, `start`, `end` and `frame`: the timeline, each of which keeps its default when it is missing |
 | `items` | `id` | The item's document id, the primary key |
 | | `position` | The item's place in the scene's order, from 0 |
 | | `kind` | `mesh`, `camera`, `light` or `group` |
@@ -67,6 +67,11 @@ program wrote is refused. Its `user_version` is the version of the tables,
 | | `role` | What the blob is |
 | | `count` | How many entries it holds |
 | | `data` | The entries, as little-endian arrays |
+| `curves` | `owner` | The document id of the item the curve drives. It references `items(id)`, checked when the write commits |
+| | `property` | The path of the property it drives, such as `rotation.y` |
+| | `type_version` | The version of its keys, `SceneStore::CURVE_VERSION`, which is 1 |
+| | `count` | How many keys it has |
+| | `keys` | 20 bytes a key: the frame, value, in slope and out slope as floats, then the interpolation (0 step, 1 linear, 2 Bezier) and whether it is automatic as a byte each, then two bytes of padding |
 
 **The kinds**, each at version 1:
 
@@ -109,6 +114,12 @@ the scene untouched, if:
 - a blob belongs to an item that is not a mesh
 - `next_id` is missing or is not above every id the document holds
 - an item's parent is not an item the document holds, or an item is its own ancestor
+- a curve drives a property its owner's kind does not declare, has no keys, or is newer than this
+  build's curves
+- a curve's keys do not fill their blob, are not finite, do not rise in frame, or have an
+  interpolation that is not step, linear or Bezier
+- the timeline's rate is not a positive number, its range runs backwards, or its frame is
+  outside the range
 
 **Writing.** `SceneStore::write` writes in one transaction. A write that fails at any point leaves
 the document as the last save left it, and a document the write was making is removed. A
@@ -124,7 +135,10 @@ write to that document:
   nothing else of it. A parent belongs to the scene rather than to the item, so a change of parent
   does not move the item's revision
 - deletes the row of each item the scene no longer holds, which takes its blobs with it
-- writes `next_id`
+- writes the row of each curve that is new or whose keys changed, and deletes the row of each
+  curve the scene no longer has. A curve belongs to the scene rather than to its item, so a key
+  does not move the item's revision
+- writes `next_id` and the timeline
 
 A write to any other path, a document the store has neither written nor read, is written whole:
 everything it held is deleted and every item is written. The next write after a write that
@@ -143,14 +157,20 @@ that does not move it is not saved.
   field its version does not define, so an older build refuses a newer document rather than
   dropping the fields it cannot read.
 
-Schema version 1 has no `parent` column. A read takes a version 1 document as it is, with every
-item at the top of the scene. The first write to it adds the column and sets the version to 2,
-in the same transaction as the rest of the write. Every kind is at version 1.
+Schema version 1 has no `parent` column, and versions 1 and 2 have no `curves` table. A read
+takes an older document as it is: every item of a version 1 document is at the top of the scene,
+and nothing in either is animated. The first write to it adds what it lacks and sets the version
+to 3, in the same transaction as the rest of the write. Every kind and the curves are at version
+1.
+
+**Reading poses the scene.** Once a document is read, the scene is posed at its timeline's frame,
+which [Animation.md](Animation.md#posing) describes.
 
 Background: [ADR-0101](../adr/0101-editor-a-scene-document-is-a-sqlite-database.md),
 [ADR-0102](../adr/0102-editor-scene-records-are-rows-with-json-payloads.md),
 [ADR-0103](../adr/0103-editor-items-have-persistent-document-ids.md),
-[ADR-0104](../adr/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md)
+[ADR-0104](../adr/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md),
+[ADR-0105](../adr/0105-editor-animation-is-scalar-curves-on-item-properties.md)
 
 ## Open, Save and Save As
 

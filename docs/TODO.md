@@ -159,7 +159,7 @@ There are none open.
 Open work on the editor app. [editor/](editor/README.md) describes the editor.
 [EditorScene](plans/EditorScene.md) orders every group here.
 
-20 of the menu's 83 commands have no handler, and only log themselves when chosen. Each group
+9 of the menu's 83 commands have no handler, and only log themselves when chosen. Each group
 below is a piece of work of its own, in any order.
 
 [] **Shared meshes in a scene document.** Two mesh items may share one `BRep`, but the scene store
@@ -172,10 +172,16 @@ curve kind of item, and nothing defines what a handle is. EditorScene steps 13 a
 [] **Importers** (`project::import::*`) each need a format reader. An importer creates meshes
 through the command stack, so an import can be undone.
 
-[] **Playback** (`timeline::*`) needs animation in the scene, which nothing in the editor has. It
-waits on an ADR deciding what the editor animates.
+[] **A timeline and a graph editor.** Keys can be set and stepped through, and the current frame
+shows only in the caption. Nothing draws the keys on a time line, scrubs the frame, sets the rate
+or the range, or edits a key's interpolation or slopes, so every key is an automatic Bezier one.
+
+[] **Rotation order.** Every item turns about x, then y, then z, so an item that locks in that
+order cannot be keyed out of it. Each item needs an order of its own, saved and offered to
+whatever keys it.
 
 [] **The Render menu** (`render::view`, `render::batch`, `render::settings`) would hand the scene to
-moya. The RIB export already writes it.
+moya. The RIB export already writes it. `render::batch` renders a range of frames, posing the
+scene at each.
 
 

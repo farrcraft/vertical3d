@@ -12,6 +12,7 @@ v3d_add_test(vertical3d
 	"scene/ItemTest.cxx"
 	"scene/SceneTest.cxx"
 	"scene/EvaluationTest.cxx"
+	"scene/PropertiesTest.cxx"
 	"scene/CreateItemTest.cxx"
 	"scene/CreatePolyTest.cxx"
 	"scene/GlyphsTest.cxx"
@@ -23,6 +24,7 @@ v3d_add_test(vertical3d
 
 	"command/CommandStackTest.cxx"
 	"command/GroupCommandTest.cxx"
+	"command/KeyCommandTest.cxx"
 
 	"tool/CameraControlToolTest.cxx"
 	"tool/PickerTest.cxx"
@@ -45,6 +47,7 @@ v3d_add_test(vertical3d
 	"../src/scene/Light.cxx"
 	"../src/scene/Group.cxx"
 	"../src/scene/Evaluation.cxx"
+	"../src/scene/Properties.cxx"
 	"../src/scene/Scene.cxx"
 	"../src/scene/CreateItem.cxx"
 	"../src/scene/CreatePoly.cxx"
@@ -57,6 +60,7 @@ v3d_add_test(vertical3d
 	"../src/command/CommandStack.cxx"
 	"../src/command/CreateCommand.cxx"
 	"../src/command/GroupCommand.cxx"
+	"../src/command/KeyCommand.cxx"
 	"../src/command/Placement.cxx"
 	"../src/command/TransformCommand.cxx"
 	"../src/command/VertexCommand.cxx"
@@ -108,6 +112,7 @@ v3d_add_test(vertical3d_device
 	"../src/scene/Light.cxx"
 	"../src/scene/Group.cxx"
 	"../src/scene/Evaluation.cxx"
+	"../src/scene/Properties.cxx"
 	"../src/scene/Scene.cxx"
 	"../src/scene/CreatePoly.cxx")
 

@@ -13,6 +13,7 @@ projects. Menus, two toolbars and a file chooser are drawn with `api/ui`.
 | [Scene.md](Scene.md) | Work with meshes, the scene items that hold them, and the viewports that show the scene |
 | [PickingAndManipulators.md](PickingAndManipulators.md) | Change how clicks select things, and how handles move them |
 | [CommandsAndUndo.md](CommandsAndUndo.md) | Add a command, or make a change undoable |
+| [Animation.md](Animation.md) | Key item properties, and play them back with the Timeline menu |
 | [Files.md](Files.md) | Change the project layout, the scene document format, or the RIB export |
 
 ## Running it

@@ -114,7 +114,7 @@ them.
 | Editor: where hierarchy lives, in `api/dag` or in the editor, and how a world matrix is composed. Decided in ADR-0104, which amends ADR-0099: the scene holds the links and evaluates every placement. | 9 |
 | Editor: how the editor renders with moya, by linking `v3dlib_moya` or by running `moya.exe`. | 8 |
 | Editor: which import formats the menu offers. glTF has a reader. The four legacy formats each need one written. | 7 |
-| Editor: what the editor animates, and how a key is stored. | 10 |
+| Editor: what the editor animates, and how a key is stored. Decided in ADR-0105: a scalar curve per numeric property, keyed on frames. | 10 |
 
 ## What blocks what
 
@@ -303,14 +303,25 @@ inherit its parent's scale, and an item with several parents.
 
 ### Step 10 — Playback
 
-**Open.** ADR first, on what the editor animates. The proposal is the transform of any item,
-keyed per channel with `Track`, and stored in the project.
+**Closed.** ADR-0105 decided it. It weighed a track of whole values per property, a key that
+snapshots the whole placement, placement alone, and keys in seconds against a scalar curve per
+numeric property, keyed on frames.
 
 - The editor gains `simulate()`, which advances the current time while playing.
 - `timeline::set` keys the selection's transform at the current time, through the command stack.
 - `timeline::playback::*` play, stop and step between frames and keys.
 - The export writes the current frame. `render::batch` can render a frame range.
 - Tests: a key sets and undoes. A track samples between two keys. A keyed project round-trips.
+- What landed differs in five ways.
+  - A key is a `Curve` in `api/type/animation`, not a `Track`, because a track lerps whole
+    values and has no slopes. Set Key keys every property an item declares: its placement, and
+    a camera's lens or a light's emission.
+  - Rotation is keyed as Euler angles in one fixed order. A per-item order is in TODO.md.
+  - The scene is posed by writing the curves' values into the items when the frame changes.
+    An edit holds until the next pose, and the export writes the posed scene.
+  - The scene document is schema version 3, with a `curves` table and the timeline in its meta
+    table. Older documents read with no curves, and their first write migrates them.
+  - `render::batch` is part of step 8, and has nothing to render a range with until then.
 
 ### Step 11 — Incremental save
 

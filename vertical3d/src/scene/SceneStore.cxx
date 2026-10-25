@@ -14,6 +14,7 @@
 #include <api/database/Statement.h>
 #include <api/database/Transaction.h>
 #include <api/log/Logger.h>
+#include <api/type/animation/Curve.h>
 
 #include <algorithm>
 #include <array>
@@ -25,6 +26,7 @@
 #include <initializer_list>
 #include <map>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -32,6 +34,8 @@
 
 #include "Camera.h"
 #include "Group.h"
+#include "Properties.h"
+#include "Timeline.h"
 #include "Item.h"
 #include "Light.h"
 #include "Mesh.h"
@@ -80,7 +84,14 @@ const char* const SCHEMA =
 "  role TEXT NOT NULL,"
 "  count INTEGER NOT NULL CHECK (count >= 0),"
 "  data BLOB NOT NULL,"
-"  PRIMARY KEY (item, role)) STRICT;";
+"  PRIMARY KEY (item, role)) STRICT;"
+"CREATE TABLE curves ("
+"  owner INTEGER NOT NULL REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED,"
+"  property TEXT NOT NULL,"
+"  type_version INTEGER NOT NULL,"
+"  count INTEGER NOT NULL CHECK (count >= 0),"
+"  keys BLOB NOT NULL,"
+"  PRIMARY KEY (owner, property)) STRICT;";
 
 /**
  * What takes a document's tables from version 1 to version 2: the parent column, which
@@ -88,6 +99,24 @@ const char* const SCHEMA =
  **/
 const char* const MIGRATE_FROM_1 =
 "ALTER TABLE items ADD COLUMN parent INTEGER REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED;";
+
+/**
+ * What takes a document's tables from version 2 to version 3: the curves table.
+ **/
+const char* const MIGRATE_FROM_2 =
+"CREATE TABLE curves ("
+"  owner INTEGER NOT NULL REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED,"
+"  property TEXT NOT NULL,"
+"  type_version INTEGER NOT NULL,"
+"  count INTEGER NOT NULL CHECK (count >= 0),"
+"  keys BLOB NOT NULL,"
+"  PRIMARY KEY (owner, property)) STRICT;";
+
+/**
+ * The size of one key of a curve: its frame, value, in slope and out slope, then its
+ * interpolation and whether it is automatic, a byte each, and two bytes of padding.
+ **/
+constexpr std::size_t KEY_SIZE = (4 * sizeof(float)) + 4;
 
 /**
  * The size of one entry of each of a mesh's three blobs. A vertex is its point. A half edge is
@@ -541,7 +570,8 @@ bool migrate(v3d::database::Database* database, std::int32_t version) {
     if (version >= SceneStore::SCHEMA_VERSION) {
         return true;
     }
-    return (version > 1 || database->execute(MIGRATE_FROM_1)) && database->userVersion(SceneStore::SCHEMA_VERSION);
+    return (version > 1 || database->execute(MIGRATE_FROM_1)) && (version > 2 || database->execute(MIGRATE_FROM_2)) &&
+        database->userVersion(SceneStore::SCHEMA_VERSION);
 }
 
 /**
@@ -641,7 +671,15 @@ boost::shared_ptr<Item> readItem(const v3d::database::Statement& rows, v3d::data
  * Every item one document holds, read before any of it reaches the scene.
  **/
 struct Loaded {
+    struct Animated {
+        std::int64_t owner = 0;
+        std::string path;
+        v3d::type::animation::Curve curve;
+    };
+
     Items items;
+    std::vector<Animated> curves;
+    Timeline timeline;
     // each child's parent, both by document id
     std::map<std::int64_t, std::int64_t> parents;
     std::int64_t next = 1;
@@ -724,6 +762,131 @@ bool load(v3d::database::Database* database, std::int32_t version, Loaded* loade
         return false;
     }
     loaded->next = next.integer(0);
+    return true;
+}
+
+/**
+ * A curve's keys, from its blob.
+ **/
+bool decodeKeys(std::span<const std::byte> bytes, std::int64_t count, v3d::type::animation::Curve* curve,
+    std::string* problem) {
+    if (count < 0 || static_cast<std::size_t>(count) * KEY_SIZE != bytes.size()) {
+        *problem = "its keys do not fill their blob exactly";
+        return false;
+    }
+    Cursor cursor(bytes);
+    std::vector<v3d::type::animation::Curve::Key> keys;
+    for (std::int64_t index = 0; index < count; index++) {
+        v3d::type::animation::Curve::Key key;
+        key.frame = cursor.next<float>();
+        key.value = cursor.next<float>();
+        key.in = cursor.next<float>();
+        key.out = cursor.next<float>();
+        const auto interpolation = cursor.next<std::uint8_t>();
+        const auto automatic = cursor.next<std::uint8_t>();
+        static_cast<void>(cursor.next<std::uint16_t>());
+        if (interpolation > static_cast<std::uint8_t>(v3d::type::animation::Curve::Interpolation::Bezier) || automatic > 1) {
+            *problem = "a key's interpolation or its slopes are not ones this build reads";
+            return false;
+        }
+        key.interpolation = static_cast<v3d::type::animation::Curve::Interpolation>(interpolation);
+        key.automatic = automatic == 1;
+        keys.push_back(key);
+    }
+    try {
+        *curve = v3d::type::animation::Curve(keys);
+    } catch (const std::invalid_argument&) {
+        *problem = "its keys are not finite or do not rise in frame";
+        return false;
+    }
+    return true;
+}
+
+/**
+ * A curve's keys, as its blob.
+ **/
+std::vector<std::byte> encodeKeys(const v3d::type::animation::Curve& curve) {
+    std::vector<std::byte> bytes;
+    for (const v3d::type::animation::Curve::Key& key : curve.keys()) {
+        put(&bytes, key.frame);
+        put(&bytes, key.value);
+        put(&bytes, key.in);
+        put(&bytes, key.out);
+        put(&bytes, static_cast<std::uint8_t>(key.interpolation));
+        put(&bytes, static_cast<std::uint8_t>(key.automatic ? 1 : 0));
+        put(&bytes, static_cast<std::uint16_t>(0));
+    }
+    return bytes;
+}
+
+/**
+ * Every curve a document holds, and its timeline, once its items are read.
+ **/
+bool loadAnimation(v3d::database::Database* database, std::int32_t version, Loaded* loaded, std::string* problem) {
+    std::map<std::int64_t, Item::Kind> kinds;
+    for (const boost::shared_ptr<Item>& item : loaded->items) {
+        kinds[item->documentId()] = item->kind();
+    }
+    // a document from before curves has none to read
+    if (version >= 3) {
+        v3d::database::Statement rows = database->prepare(
+            "SELECT owner, property, type_version, count, keys FROM curves ORDER BY owner, property");
+        if (!rows.valid()) {
+            *problem = database->error();
+            return false;
+        }
+        v3d::database::Statement::Step step = rows.step();
+        for (; step == v3d::database::Statement::Step::Row; step = rows.step()) {
+            Columns row(rows);
+            Loaded::Animated animated;
+            animated.owner = row.integer();
+            animated.path = row.text();
+            const std::int64_t curveVersion = row.integer();
+            const std::int64_t count = row.integer();
+            const std::span<const std::byte> keys = row.blob();
+            std::string fault;
+            const auto owner = kinds.find(animated.owner);
+            if (owner == kinds.end() || !declares(owner->second, animated.path)) {
+                fault = "it drives a property its owner does not have";
+            } else if (current("curve", curveVersion, SceneStore::CURVE_VERSION, &fault) &&
+                decodeKeys(keys, count, &animated.curve, &fault) && animated.curve.empty()) {
+                fault = "it has no keys";
+            }
+            if (!fault.empty()) {
+                *problem = "the curve " + animated.path + " of item " + std::to_string(animated.owner) + ": " + fault;
+                return false;
+            }
+            loaded->curves.push_back(animated);
+        }
+        if (step == v3d::database::Statement::Step::Failed) {
+            *problem = rows.error();
+            return false;
+        }
+    }
+
+    // each part of the timeline a document does not hold keeps its default
+    v3d::database::Statement meta = database->prepare(
+        "SELECT key, value FROM meta WHERE key IN ('rate', 'start', 'end', 'frame')");
+    if (!meta.valid()) {
+        *problem = database->error();
+        return false;
+    }
+    while (meta.step() == v3d::database::Statement::Step::Row) {
+        const std::string key = meta.text(0);
+        if (key == "rate") {
+            loaded->timeline.rate = static_cast<float>(meta.real(1));
+        } else if (key == "start") {
+            loaded->timeline.start = static_cast<int>(meta.integer(1));
+        } else if (key == "end") {
+            loaded->timeline.end = static_cast<int>(meta.integer(1));
+        } else {
+            loaded->timeline.frame = static_cast<int>(meta.integer(1));
+        }
+    }
+    if (!loaded->timeline.valid()) {
+        *problem = "its timeline's rate, range or frame is not valid";
+        return false;
+    }
     return true;
 }
 
@@ -879,6 +1042,58 @@ bool store(v3d::database::Database* database, const Scene& scene, const std::map
     return true;
 }
 
+/**
+ * Write the curves that changed since the curves saved, or every curve when none is saved, and
+ * the timeline. A curve no item has any more is deleted.
+ *
+ * @param after the curves as the document will hold them once this commits
+ **/
+bool storeAnimation(v3d::database::Database* database, const Scene& scene, const SceneStore::SavedCurves& saved,
+    SceneStore::SavedCurves* after, SceneStore::Written* written, std::string* problem) {
+    v3d::database::Statement upsert = database->prepare(
+        "INSERT OR REPLACE INTO curves (owner, property, type_version, count, keys) VALUES (?, ?, ?, ?, ?)");
+    v3d::database::Statement drop = database->prepare("DELETE FROM curves WHERE owner = ? AND property = ?");
+    v3d::database::Statement meta = database->prepare("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)");
+    if (!upsert.valid() || !drop.valid() || !meta.valid()) {
+        *problem = database->error();
+        return false;
+    }
+    const auto failed = [&](const v3d::database::Statement& statement) {
+        *problem = statement.error();
+        return false;
+    };
+
+    for (const boost::shared_ptr<Item>& item : scene.items()) {
+        for (const auto& [path, curve] : scene.curves(item->id())) {
+            const auto key = std::make_pair(item->documentId(), path);
+            const auto found = saved.find(key);
+            if (found == saved.end() || !(found->second == curve)) {
+                if (!Binder(&upsert).integer(item->documentId()).text(path).integer(SceneStore::CURVE_VERSION)
+                    .integer(static_cast<std::int64_t>(curve.keys().size())).blob(encodeKeys(curve)).run()) {
+                    return failed(upsert);
+                }
+                written->curves++;
+            }
+            (*after)[key] = curve;
+        }
+    }
+    for (const auto& [key, curve] : saved) {
+        if (!after->contains(key)) {
+            if (!Binder(&drop).integer(key.first).text(key.second).run()) {
+                return failed(drop);
+            }
+            written->curves++;
+        }
+    }
+
+    const Timeline& timeline = scene.timeline();
+    const bool wrote = Binder(&meta).text("rate").real(timeline.rate).run() &&
+        Binder(&meta).text("start").integer(timeline.start).run() &&
+        Binder(&meta).text("end").integer(timeline.end).run() &&
+        Binder(&meta).text("frame").integer(timeline.frame).run();
+    return wrote || failed(meta);
+}
+
 };  // namespace
 
 /**
@@ -902,7 +1117,8 @@ bool SceneStore::read(const std::string& path, Scene* scene) {
     std::string problem;
     Loaded loaded;
     std::int32_t version = 0;
-    if (!header(&database, nullptr, &version, &problem) || !load(&database, version, &loaded, &problem)) {
+    if (!header(&database, nullptr, &version, &problem) || !load(&database, version, &loaded, &problem) ||
+        !loadAnimation(&database, version, &loaded, &problem)) {
         logger_->get()->error("Cannot read the scene {}: {}", path, problem);
         return false;
     }
@@ -916,7 +1132,15 @@ bool SceneStore::read(const std::string& path, Scene* scene) {
     for (const auto& [child, parent] : loaded.parents) {
         scene->parent(ids.at(child), ids.at(parent));
     }
+    curves_.clear();
+    for (const Loaded::Animated& animated : loaded.curves) {
+        scene->curve(ids.at(animated.owner), animated.path, animated.curve);
+        curves_[std::make_pair(animated.owner, animated.path)] = animated.curve;
+    }
     scene->nextDocumentId(loaded.next);
+    // posed before the store remembers the items, so that the pose is what it counts as read
+    scene->timeline(loaded.timeline);
+    scene->pose(static_cast<float>(loaded.timeline.frame));
 
     // the document holds what was just read, so the next write to it starts from here
     path_ = path;
@@ -941,6 +1165,7 @@ bool SceneStore::write(const std::string& path, const Scene& scene) {
     bool written = false;
     Written what;
     std::map<std::int64_t, Saved> after;
+    SavedCurves animated;
     {
         v3d::database::Database database;
         bool fresh = false;
@@ -956,8 +1181,10 @@ bool SceneStore::write(const std::string& path, const Scene& scene) {
             written = transaction.active() &&
                 (fresh ? database.execute(SCHEMA) && database.applicationId(APPLICATION_ID) &&
                     database.userVersion(SCHEMA_VERSION) : migrate(&database, version)) &&
-                (!what.whole || database.execute("DELETE FROM buffers; DELETE FROM items; DELETE FROM meta;")) &&
-                store(&database, scene, what.whole ? none : saved_, &after, &what, &problem) && transaction.commit();
+                (!what.whole || database.execute("DELETE FROM curves; DELETE FROM buffers; DELETE FROM items; DELETE FROM meta;")) &&
+                store(&database, scene, what.whole ? none : saved_, &after, &what, &problem) &&
+                storeAnimation(&database, scene, what.whole ? SavedCurves() : curves_, &animated, &what, &problem) &&
+                transaction.commit();
             if (!written && problem.empty()) {
                 problem = database.error();
             }
@@ -972,11 +1199,13 @@ bool SceneStore::write(const std::string& path, const Scene& scene) {
         }
         path_.clear();
         saved_.clear();
+        curves_.clear();
         logger_->get()->error("Cannot write the scene {}: {}", path, problem);
         return false;
     }
     path_ = path;
     saved_ = std::move(after);
+    curves_ = std::move(animated);
     written_ = what;
     logger_->get()->info("wrote {} of {} items to {}", what.rows, scene.count(), path);
     return true;

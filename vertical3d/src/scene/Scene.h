@@ -5,8 +5,12 @@
 
 #pragma once
 
+#include <api/type/animation/Curve.h>
+
 #include <cstddef>
 #include <cstdint>
+#include <map>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -14,6 +18,7 @@
 #include "Item.h"
 #include "Mesh.h"
 #include "SceneVisitor.h"
+#include "Timeline.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -28,6 +33,11 @@ using Items = std::vector<boost::shared_ptr<Item>>;
  * A set of mesh items, in the order the scene holds them.
  **/
 using Meshes = std::vector<boost::shared_ptr<Mesh>>;
+
+/**
+ * The curves of one item, each by the path of the property it drives.
+ **/
+using Curves = std::map<std::string, v3d::type::animation::Curve>;
 
 /**
  * What the editor is editing: the items of one document, of every kind, in one list.
@@ -45,6 +55,11 @@ using Meshes = std::vector<boost::shared_ptr<Mesh>>;
  * parent, so the items form a set of trees. The scene holds each link, naming both ends by
  * document id, and every link has both ends in the scene. An item's placement is local to its
  * parent. evaluate() composes the world matrices, and every reader takes placement from it.
+ *
+ * **Animation.** The scene holds the curves that drive its items' properties, each by its
+ * item's document id and the property's path, and the document's timeline. pose() sets every
+ * keyed property to its curve's value at a frame. It writes into the items, so whatever is
+ * edited after it holds until the next pose.
  **/
 class Scene final {
  public:
@@ -57,8 +72,8 @@ class Scene final {
     unsigned int add(const boost::shared_ptr<Item>& item);
 
     /**
-     * Take an item out of the scene, and everything beneath it. The links among them go too,
-     * so adding the items back does not bring back the hierarchy.
+     * Take an item out of the scene, and everything beneath it. The links among them and their
+     * curves go too, so adding the items back does not bring back the hierarchy or the keys.
      *
      * @return whether an item of that id was there to remove
      **/
@@ -96,6 +111,36 @@ class Scene final {
      *         order. Moving each of these moves the whole set once
      **/
     Items uppermost(const Items& items) const;
+
+    /**
+     * @return the item's curves, which are none for an item with no keys or not in the scene
+     **/
+    Curves curves(unsigned int id) const;
+
+    /**
+     * Set the curve that drives one of an item's properties. An empty curve removes it.
+     *
+     * @return false, changing nothing, when the item is not in the scene or its kind does not
+     *         declare the property
+     **/
+    bool curve(unsigned int id, const std::string& path, const v3d::type::animation::Curve& curve);
+
+    /**
+     * @return every frame any of the items has a key on, rising, each once
+     **/
+    std::vector<float> keyedFrames(const Items& items) const;
+
+    /**
+     * Set every property that has a curve to the curve's value at a frame. A property with no
+     * curve keeps its value.
+     **/
+    void pose(float frame);
+
+    /**
+     * The document's frame rate, range and current frame.
+     **/
+    const Timeline& timeline() const noexcept;
+    void timeline(const Timeline& timeline) noexcept;
 
     /**
      * Compose where every item is: its parent's world matrix times its own local matrix, each
@@ -141,8 +186,8 @@ class Scene final {
     std::size_t count() const noexcept;
 
     /**
-     * Drop everything and the hierarchy with it, as closing a document does. The next
-     * document id goes back to 1.
+     * Drop everything, the hierarchy and the curves with it, as closing a document does. The
+     * next document id goes back to 1, and the timeline to its defaults.
      **/
     void clear() noexcept;
 
@@ -186,6 +231,9 @@ class Scene final {
     Items items_;
     // each child's parent, both named by document id
     std::unordered_map<std::int64_t, std::int64_t> parents_;
+    // each animated item's curves, by its document id
+    std::map<std::int64_t, Curves> curves_;
+    Timeline timeline_;
     std::int64_t nextDocumentId_ = 1;
 };
 

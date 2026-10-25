@@ -4,6 +4,7 @@
  **/
 
 #include <api/brep/BRep.h>
+#include <api/type/animation/Curve.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
@@ -12,7 +13,9 @@
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/SceneVisitor.h>
+#include <vertical3d/src/scene/Timeline.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -346,6 +349,86 @@ BOOST_AUTO_TEST_CASE(scene_visit_beneath_test) {
     // an item is left once everything beneath it has been
     const std::vector<unsigned int> left{ loose->id(), child->id(), light->id(), group->id() };
     BOOST_CHECK(visitor.left == left);
+}
+
+/**
+ * A curve of two keys, with the values given at frames 1 and 11.
+ **/
+v3d::type::animation::Curve between(float first, float second) {
+    v3d::type::animation::Curve curve;
+    curve.set(1.0F, first);
+    curve.set(11.0F, second);
+    return curve;
+}
+
+BOOST_AUTO_TEST_CASE(scene_curves_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    scene.add(mesh);
+    scene.add(light);
+
+    // a curve is set on a property the item's kind declares, and refused on any other or on
+    // an item the scene does not hold
+    BOOST_CHECK(scene.curve(mesh->id(), "translation.x", between(0.0F, 10.0F)));
+    BOOST_CHECK(!scene.curve(mesh->id(), "emission.intensity", between(0.0F, 1.0F)));
+    BOOST_CHECK(!scene.curve(emptyMesh()->id(), "translation.x", between(0.0F, 1.0F)));
+    BOOST_CHECK(scene.curve(light->id(), "emission.intensity", between(1.0F, 3.0F)));
+    BOOST_CHECK_EQUAL(scene.curves(mesh->id()).size(), 1U);
+    BOOST_CHECK(scene.curves(mesh->id()).at("translation.x") == between(0.0F, 10.0F));
+
+    // the keyed frames of a set of items come back rising, each once
+    BOOST_CHECK(scene.curve(light->id(), "emission.red", between(0.0F, 1.0F)));
+    const std::vector<float> frames = scene.keyedFrames(scene.items());
+    BOOST_REQUIRE_EQUAL(frames.size(), 2U);
+    BOOST_CHECK_EQUAL(frames[0], 1.0F);
+    BOOST_CHECK_EQUAL(frames[1], 11.0F);
+
+    // an empty curve removes one, and removing an item takes its curves
+    BOOST_CHECK(scene.curve(mesh->id(), "translation.x", v3d::type::animation::Curve()));
+    BOOST_CHECK(scene.curves(mesh->id()).empty());
+    scene.remove(light->id());
+    scene.add(light);
+    BOOST_CHECK(scene.curves(light->id()).empty());
+}
+
+BOOST_AUTO_TEST_CASE(scene_pose_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::Mesh> still = emptyMesh();
+    mesh->translation(glm::vec3(0.0F, 7.0F, 0.0F));
+    still->translation(glm::vec3(4.0F, 0.0F, 0.0F));
+    scene.add(mesh);
+    scene.add(still);
+    scene.curve(mesh->id(), "translation.x", between(0.0F, 10.0F));
+
+    // a pose sets what a curve drives, and leaves the rest of the item and every other item
+    const std::uint64_t untouched = still->revision();
+    scene.pose(11.0F);
+    BOOST_CHECK(mesh->translation() == glm::vec3(10.0F, 7.0F, 0.0F));
+    BOOST_CHECK_EQUAL(still->revision(), untouched);
+    scene.pose(1.0F);
+    BOOST_CHECK_EQUAL(mesh->translation().x, 0.0F);
+}
+
+BOOST_AUTO_TEST_CASE(scene_timeline_test) {
+    v3d::editor::Scene scene;
+    BOOST_CHECK(scene.timeline() == v3d::editor::Timeline());
+    BOOST_CHECK(scene.timeline().valid());
+
+    scene.timeline({ .rate = 30.0F, .start = 10, .end = 40, .frame = 12 });
+    BOOST_CHECK_EQUAL(scene.timeline().frame, 12);
+
+    // a closed document's timeline is the default one
+    scene.clear();
+    BOOST_CHECK(scene.timeline() == v3d::editor::Timeline());
+
+    const v3d::editor::Timeline still{ .rate = 0.0F };
+    const v3d::editor::Timeline backwards{ .start = 5, .end = 4 };
+    const v3d::editor::Timeline outside{ .frame = 500 };
+    BOOST_CHECK(!still.valid());
+    BOOST_CHECK(!backwards.valid());
+    BOOST_CHECK(!outside.valid());
 }
 
 BOOST_AUTO_TEST_CASE(scene_uppermost_test) {

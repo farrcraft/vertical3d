@@ -352,6 +352,7 @@ Animation data and arithmetic are in `v3d::type::animation`
 | `Clock` | A duration and whether it loops. It holds no time itself. |
 | `SpriteClip` | A sequence of sprite sheet regions, each shown for its own duration, over a `Clock`. |
 | `Track<T>` | A value keyed in time and lerped, such as a colour over a particle's life. |
+| `Curve` | One number keyed on frames, each key with its own interpolation and slopes, which an animator shapes. |
 
 ### Clock
 
@@ -371,6 +372,24 @@ the clock's functions.
   large for a `uint32_t` is held at its largest value.
 - `finished(time)` is true when a clamped clip has reached its end. A looping one never has.
 - A duration of zero or less is a clock that never moves.
+
+### Curve
+
+A `Curve` is what an editor keys. Each `Curve::Key` has a frame, a value, an interpolation and
+an in and an out slope, in value per frame.
+
+- A key's interpolation says how the curve leaves it for the next key. `Step` holds the value,
+  and `Linear` draws a straight line. `Bezier` draws a cubic Hermite segment, whose end slopes
+  are the key's out slope and the next key's in slope.
+- Before the first key the curve holds the first key's value, and after the last it holds the
+  last's. A curve with no keys is 0, and a frame that is not finite reads as the first key.
+- An automatic key has its slopes worked out whenever the keys change. Its slope is that of the
+  line through the keys either side, and it is flat at a peak, a trough, the first key and the
+  last, so the curve never overshoots those. A key that is not automatic keeps the slopes it was
+  given.
+- `set(frame, value)` replaces the value of the key on that frame, keeping its interpolation and
+  slopes, or adds an automatic Bezier key. Two frames within `SAME_FRAME` are one frame.
+- Construction throws for keys that are not finite or do not rise in frame.
 
 ### SpriteClip and Track
 
