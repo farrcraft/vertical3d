@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "Camera.h"
+#include "Glyphs.h"
 #include "Light.h"
 #include "Mesh.h"
 
@@ -35,7 +36,12 @@ namespace {
 constexpr glm::vec4 wire(0.78F, 0.80F, 0.84F, 1.0F);
 
 /**
- * A mesh selected as a whole, which is object mode selection.
+ * An unselected camera or light, apart from the meshes around it.
+ **/
+constexpr glm::vec4 glyph(0.95F, 0.82F, 0.42F, 1.0F);
+
+/**
+ * An item selected as a whole, which is object mode selection.
  **/
 constexpr glm::vec4 object(0.35F, 0.72F, 1.0F, 1.0F);
 
@@ -57,8 +63,16 @@ constexpr float markerScale = 0.04F;
 /**
  **/
 WireframeVisitor::WireframeVisitor(v3d::render::realtime::canvas::Line* canvas) :
+    WireframeVisitor(canvas, Shown{}) {
+}
+
+/**
+ **/
+WireframeVisitor::WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, const Shown& shown) :
     canvas_(canvas),
+    shown_(shown),
     wire_(wire),
+    glyph_(glyph),
     object_(object),
     component_(component) {
 }
@@ -66,7 +80,7 @@ WireframeVisitor::WireframeVisitor(v3d::render::realtime::canvas::Line* canvas) 
 /**
  **/
 void WireframeVisitor::visit(const boost::shared_ptr<Mesh>& item) {
-    if (canvas_ == nullptr || !item) {
+    if (canvas_ == nullptr || !item || !shown_.meshes) {
         return;
     }
 
@@ -122,12 +136,26 @@ void WireframeVisitor::visit(const boost::shared_ptr<Mesh>& item) {
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<Camera>& /*camera*/) {
+void WireframeVisitor::visit(const boost::shared_ptr<Camera>& camera) {
+    if (canvas_ == nullptr || !camera || !shown_.cameras) {
+        return;
+    }
+    canvas_->push();
+    canvas_->transform(glyphPlacement(*camera));
+    drawCamera(camera->lens(), camera->selected() ? object_ : glyph_, canvas_);
+    canvas_->pop();
 }
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<Light>& /*light*/) {
+void WireframeVisitor::visit(const boost::shared_ptr<Light>& light) {
+    if (canvas_ == nullptr || !light || !shown_.lights) {
+        return;
+    }
+    canvas_->push();
+    canvas_->transform(glyphPlacement(*light));
+    drawLight(light->emission(), light->selected() ? object_ : glyph_, canvas_);
+    canvas_->pop();
 }
 
 /**

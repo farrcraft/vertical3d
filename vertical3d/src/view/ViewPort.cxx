@@ -29,7 +29,7 @@ namespace v3d::editor {
 ViewPort::ViewPort(const std::string& name, const v3d::type::camera::Profile& profile) :
     name_(name),
     region_(0.0F, 0.0F, 0.0F, 0.0F),
-    showFlags_(SHOW_GRID | SHOW_MESH | SHOW_HANDLE) {
+    showFlags_(SHOW_GRID | SHOW_MESH | SHOW_CAMERA | SHOW_LIGHT | SHOW_HANDLE) {
     camera_ = boost::make_shared<v3d::type::camera::Camera>(profile);
 }
 
@@ -127,8 +127,10 @@ void ViewPort::draw(const Scene& scene, const Manipulator* manipulator, const Ta
         grid_.draw(*camera_, canvas);
     }
 
-    if (shows(SHOW_MESH)) {
-        WireframeVisitor wireframe(canvas);
+    const WireframeVisitor::Shown shown{ .meshes = shows(SHOW_MESH), .cameras = shows(SHOW_CAMERA),
+        .lights = shows(SHOW_LIGHT) };
+    if (shown.meshes || shown.cameras || shown.lights) {
+        WireframeVisitor wireframe(canvas, shown);
         scene.accept(&wireframe);
     }
 

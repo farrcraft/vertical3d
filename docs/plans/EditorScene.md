@@ -184,15 +184,23 @@ read.
 
 ### Step 3 — Cameras and lights drawn
 
-**Open.** A camera item draws as a frustum glyph and a light item as a glyph by its type, in
+**Closed.** A camera item draws as a frustum glyph and a light item as a glyph by its type, in
 lines, through the existing line canvas. A light is a point, distant or spot light, matching the
 standard RI lights moya reads.
+
+- `src/scene/Glyphs.h` describes each glyph in its item's own space, one unit long along +z.
+  `WireframeVisitor` draws them through the item's translation and rotation, and takes which
+  kinds to draw from the view's flags.
+- `SHOW_CAMERA` and `SHOW_LIGHT` start on. Their toggles, `view::show::camera` and
+  `view::show::light`, landed here rather than in step 4, because once the glyphs draw a toggle
+  changes what is drawn.
+- Tests: each glyph's shape for every projection and light type, its placement without the
+  item's scale, the colour of a selected item, and each flag leaving its kind out.
 
 ### Step 4 — Cameras and lights in the scene
 
 **Open.** `create::ortho::camera` and `create::perspective::camera` add a camera at the view's
 position, through the command stack. A light is created the same way, from a new create item.
-`view::show::camera` and `view::show::light` toggle the existing flags.
 
 - `SelectMask` gains `Mesh`, `Light`, `Camera` and `Handle`, and the picker honours them. Decide
   whether `curve` is removed from the menu.

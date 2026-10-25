@@ -6,7 +6,9 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
 #include <api/render/realtime/canvas/Line.h>
+#include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/WireframeVisitor.h>
@@ -142,6 +144,60 @@ BOOST_AUTO_TEST_CASE(wireframe_scene_test) {
     scene.accept(&wireframe);
 
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 16U);
+}
+
+BOOST_AUTO_TEST_CASE(wireframe_glyph_test) {
+    v3d::render::realtime::canvas::Line canvas;
+    v3d::editor::WireframeVisitor wireframe(&canvas);
+
+    // a light is drawn as its glyph, through its translation
+    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    light->translation(glm::vec3(5.0F, 0.0F, 0.0F));
+    wireframe.visit(light);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 6U);
+    for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
+        BOOST_CHECK(vertex.position.x >= 4.7F);
+        BOOST_CHECK(vertex.position.x <= 5.3F);
+    }
+    const glm::vec4 unselected = canvas.vertices()[0].colour;
+
+    // a selected one in the selection's colour, which is the colour of a selected mesh
+    canvas.clear();
+    light->selected(true);
+    wireframe.visit(light);
+    const glm::vec4 selected = canvas.vertices()[0].colour;
+    BOOST_CHECK((selected != unselected));
+    canvas.clear();
+    const boost::shared_ptr<v3d::editor::Mesh> mesh = quad();
+    mesh->selected(true);
+    wireframe.visit(mesh);
+    BOOST_CHECK((canvas.vertices()[0].colour == selected));
+
+    // a camera is drawn as its glyph too, and the transform is popped after it
+    canvas.clear();
+    wireframe.visit(boost::make_shared<v3d::editor::Camera>());
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 22U);
+    BOOST_CHECK_SMALL(canvas.transform()[3][0], 0.0001F);
+}
+
+BOOST_AUTO_TEST_CASE(wireframe_shown_kinds_test) {
+    v3d::editor::Scene scene;
+    scene.add(quad());
+    scene.add(boost::make_shared<v3d::editor::Camera>());
+    scene.add(boost::make_shared<v3d::editor::Light>());
+
+    // a quad of four segments, a camera of eleven, a point light of three
+    const auto drawn = [&scene](const v3d::editor::WireframeVisitor::Shown& shown) {
+        v3d::render::realtime::canvas::Line canvas;
+        v3d::editor::WireframeVisitor wireframe(&canvas, shown);
+        scene.accept(&wireframe);
+        return canvas.vertices().size() / 2;
+    };
+    BOOST_CHECK_EQUAL(drawn({}), 18U);
+    BOOST_CHECK_EQUAL(drawn({ .meshes = false }), 14U);
+    BOOST_CHECK_EQUAL(drawn({ .cameras = false }), 7U);
+    BOOST_CHECK_EQUAL(drawn({ .lights = false }), 15U);
+    BOOST_CHECK_EQUAL(drawn({ .meshes = false, .cameras = false, .lights = false }), 0U);
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_no_canvas_test) {

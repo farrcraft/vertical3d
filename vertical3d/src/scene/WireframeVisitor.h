@@ -5,9 +5,8 @@
 
 #pragma once
 
-#include <api/render/realtime/canvas/Line.h>
-
 #include <api/brep/BRep.h>
+#include <api/render/realtime/canvas/Line.h>
 
 #include "Camera.h"
 #include "Light.h"
@@ -20,11 +19,13 @@
 namespace v3d::editor {
 
 /**
- * Draws every mesh of a scene as a wireframe, onto one line canvas. Cameras and lights are not
- * drawn.
+ * Draws a scene in lines, onto one line canvas: every mesh as a wireframe, and every camera
+ * and light as its glyph. Which kinds are drawn is chosen when the visitor is made.
  *
  * A mesh is drawn through its own transform, so the canvas carries the placement, not the
- * geometry. Each edge is drawn once, by the half edge ownsEdge() picks.
+ * geometry. Each edge is drawn once, by the half edge ownsEdge() picks. A glyph is drawn
+ * through its item's translation and rotation, so it keeps its size. A selected item is drawn
+ * in the selection's colour.
  *
  * Wireframe is the editor's only display mode, because a shaded mode needs a triangle
  * primitive and this draws lines. For the same reason a selected face is drawn as its
@@ -33,9 +34,25 @@ namespace v3d::editor {
 class WireframeVisitor final : public SceneVisitor {
  public:
     /**
+     * Which kinds of item are drawn. A kind left out is skipped.
+     **/
+    struct Shown {
+        bool meshes = true;
+        bool cameras = true;
+        bool lights = true;
+    };
+
+    /**
+     * Draw every kind.
+     *
      * @param canvas where the segments are appended. Nothing is cleared
      **/
     explicit WireframeVisitor(v3d::render::realtime::canvas::Line* canvas);
+
+    /**
+     * Draw the kinds shown.
+     **/
+    WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, const Shown& shown);
 
     /**
      * Append one mesh's wireframe.
@@ -43,7 +60,7 @@ class WireframeVisitor final : public SceneVisitor {
     void visit(const boost::shared_ptr<Mesh>& item) override;
 
     /**
-     * Cameras and lights are not drawn.
+     * Append one camera's or light's glyph.
      **/
     void visit(const boost::shared_ptr<Camera>& camera) override;
     void visit(const boost::shared_ptr<Light>& light) override;
@@ -55,7 +72,9 @@ class WireframeVisitor final : public SceneVisitor {
     void markers(const boost::shared_ptr<v3d::brep::BRep>& mesh);
 
     v3d::render::realtime::canvas::Line* canvas_;
+    Shown shown_;
     glm::vec4 wire_;
+    glm::vec4 glyph_;
     glm::vec4 object_;
     glm::vec4 component_;
 };

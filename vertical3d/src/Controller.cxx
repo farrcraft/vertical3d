@@ -229,6 +229,8 @@ void Controller::syncUi() {
 
     if (activeView_) {
         mark("view::show::mesh", activeView_->shows(ViewPort::SHOW_MESH));
+        mark("view::show::camera", activeView_->shows(ViewPort::SHOW_CAMERA));
+        mark("view::show::light", activeView_->shows(ViewPort::SHOW_LIGHT));
         mark("view::show::handle", activeView_->shows(ViewPort::SHOW_HANDLE));
         mark("view::show::grid", activeView_->shows(ViewPort::SHOW_GRID));
 
@@ -316,10 +318,10 @@ void Controller::registerCommands() {
     press("transform::rotate", [this]() { transformMode("rotate"); });
     press("transform::scale", [this]() { transformMode("scale"); });
 
-    // camera and light have flags on the view but nothing draws them, so they have no
-    // command: a toggle for either would appear to work and change nothing
     press("view::show::grid", [this]() { toggleShow(ViewPort::SHOW_GRID); });
     press("view::show::mesh", [this]() { toggleShow(ViewPort::SHOW_MESH); });
+    press("view::show::camera", [this]() { toggleShow(ViewPort::SHOW_CAMERA); });
+    press("view::show::light", [this]() { toggleShow(ViewPort::SHOW_LIGHT); });
     press("view::show::handle", [this]() { toggleShow(ViewPort::SHOW_HANDLE); });
     for (const FixedView& view : fixedViews()) {
         const std::string profile = view.profile;

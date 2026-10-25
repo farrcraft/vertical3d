@@ -161,8 +161,8 @@ order. `Scene::add` appends.
 - **Visitors.** Code that reads the whole scene implements `SceneVisitor` and is passed to
   `Scene::accept()`, which calls the `visit` for each item's kind. Every `visit` is pure, so a
   new kind does not compile until each visitor handles it. `WireframeVisitor`,
-  `RIBExportVisitor`, `Picker` and the project writer all work this way. None of them does
-  anything with a camera or a light.
+  `RIBExportVisitor`, `Picker` and the project writer all work this way. The wireframe draws a
+  camera or a light as its glyph, and the export and the picker do nothing with either.
 - **Not the views' cameras.** Each viewport owns its camera. `config::CameraProfiles` holds the
   camera profiles read from `data/cameras.json`, and the layout names one profile per view. A
   camera item is part of the document.
@@ -215,9 +215,26 @@ The renderer turns each view into two passes, then adds one more pass for the ui
 All views share one depth buffer. The handle pass has no depth test so that the manipulator is
 always visible, including where it lies in the same plane as the grid's axis lines.
 
-**Display flags.** `ViewPort::SHOW_GRID`, `SHOW_MESH` and `SHOW_HANDLE` start on. The show
-commands toggle them on the *active view*, which is the view under the cursor. `SHOW_CAMERA`
-and `SHOW_LIGHT` exist, but nothing draws cameras or lights, so no command toggles them.
+**Display flags.** `ViewPort::SHOW_GRID`, `SHOW_MESH`, `SHOW_CAMERA`, `SHOW_LIGHT` and
+`SHOW_HANDLE` all start on. The show commands (`view::show::grid`, `mesh`, `camera`, `light` and
+`handle`) toggle them on the *active view*, which is the view under the cursor.
+
+**Glyphs.** A camera or a light is drawn in lines, in its own space, on the scene canvas. A glyph
+is placed by its item's translation and rotation, and not its scale. It is `GLYPH_LENGTH` (one
+unit) long along the item's +z axis, so it has a size in the scene rather than on the screen. An
+unselected glyph is drawn in its own colour, and a selected one in the selection's. The shapes
+are in `src/scene/Glyphs.h`:
+
+| Item | Glyph |
+|---|---|
+| Perspective camera | A pyramid from the eye to a picture one unit away, as tall as the angle of view and 4:3 wide, with a triangle above the picture that points up |
+| Orthographic camera | A box twice the extent tall, 4:3 wide and one unit deep, with the same triangle |
+| Point light | A star of three lines through the light |
+| Distant light | Three parallel lines along +z, the middle one with an arrowhead |
+| Spot light | A cone from the light, one unit along each side, with a ring at its edge and a ring where its soft edge begins |
+
+A camera does not hold the shape of its picture, which a render's settings give, so its glyph
+draws 4:3.
 
 **The construction grid.** `ConstructionPlane` draws evenly spaced lines, with every nth line
 and the two axis lines in stronger colours. An orthographic view gets a grid in the plane of
