@@ -22,7 +22,12 @@ class Writer {
     explicit Writer(const boost::shared_ptr<v3d::log::Logger>& logger);
     virtual ~Writer() = default;
 
-    virtual bool write(std::string_view filename, const boost::shared_ptr<Image> & img);
+    /**
+     * Write the image to the file. Each format implements it.
+     *
+     * @return false when the file was not written
+     **/
+    virtual bool write(std::string_view filename, const boost::shared_ptr<Image> & img) = 0;
  protected:
     /**
      * @return the log a format reports a failure to

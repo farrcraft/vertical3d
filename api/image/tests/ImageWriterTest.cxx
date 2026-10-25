@@ -5,13 +5,19 @@
 
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
+#include <api/image/Writer.h>
 #include <api/log/Logger.h>
 
 // jpeglib.h names FILE in its stdio helpers without including stdio itself
 #include <stdio.h>
 #include <jpeglib.h>
 
+#include <cstddef>
+#include <fstream>
+#include <ios>
+#include <iterator>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -403,6 +409,47 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_tga_too_wide_leaves_the_file_test, OutputDir
     const boost::shared_ptr<v3d::image::Image> wide = boost::make_shared<v3d::image::Image>(glm::uvec2(65536, 1), 8);
     BOOST_CHECK(!factory.write(filename, wide));
     BOOST_CHECK_EQUAL(boost::filesystem::file_size(filename), before);
+}
+
+/**
+ * A TGA 2.0 footer is 26 bytes: two 4-byte offsets, which a writer with no extension or
+ * developer area leaves zero, the 16-byte signature, a '.' and a terminating zero. A 2 by 1 grey
+ * picture is an 18-byte header, 2 bytes of pixels and the footer.
+ **/
+BOOST_FIXTURE_TEST_CASE(imagewriter_tga_footer_test, OutputDirectory) {
+    const boost::shared_ptr<v3d::image::Image> grey = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 1), 8);
+    v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(factory.write("data_out/footer.tga", grey));
+
+    std::ifstream file("data_out/footer.tga", std::ios::binary);
+    const std::vector<char> bytes((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    BOOST_REQUIRE_EQUAL(bytes.size(), 18U + 2U + 26U);
+    const std::vector<char> footer(bytes.end() - 26, bytes.end());
+    for (std::size_t i = 0; i < 8; i++) {
+        BOOST_CHECK_EQUAL(footer[i], 0);
+    }
+    BOOST_CHECK_EQUAL(std::string(footer.begin() + 8, footer.begin() + 24), "TRUEVISION-XFILE");
+    BOOST_CHECK_EQUAL(footer[24], '.');
+    BOOST_CHECK_EQUAL(footer[25], 0);
+}
+
+/**
+ * A picture libpng refuses is reported as a failed write, and the process carries on. libpng
+ * refuses a width above its limit of a million pixels in png_set_IHDR, through png_error.
+ **/
+BOOST_FIXTURE_TEST_CASE(imagewriter_png_error_is_a_failed_write_test, OutputDirectory) {
+    // one row of one byte a pixel, so the picture is wide and still costs only 2 MB
+    const boost::shared_ptr<v3d::image::Image> wide = boost::make_shared<v3d::image::Image>(glm::uvec2(2000000, 1), 8);
+    v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
+    BOOST_CHECK(!factory.write("data_out/too_wide.png", wide));
+}
+
+/**
+ * The base writer cannot be made, so a format cannot be registered that writes nothing and
+ * reports success.
+ **/
+BOOST_AUTO_TEST_CASE(imagewriter_the_base_writer_is_abstract_test) {
+    BOOST_TEST(std::is_abstract_v<v3d::image::Writer>);
 }
 
 };  // namespace

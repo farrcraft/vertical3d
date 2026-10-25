@@ -184,22 +184,6 @@ Defects a review found that the change under review did not introduce.
 [Review.md](contributing/Review.md) says how this list is used: a reviewer reads it first and
 does not report an entry again. Each entry names its class.
 
-[] **The PNG writer has no error recovery.** Cleanup, major. `writer::Png` installs no
-`setjmp(png_jmpbuf(...))`, so any `png_error`, including its own "Image is too tall", aborts the
-process and leaks `row_pointers`. The error pointer it gives `png_set_error_fn` is the `c_str()`
-of a temporary `std::string`, so `pngtest_warning` reads a dangling pointer as the file name.
-
-[] **The TGA writer writes a wrong footer and can overflow its size.** Semantics and boundary
-input, major.
-
-- `tga_footer` declares both offsets as `int64_t`, so the footer is 34 bytes. TGA 2.0 has a
-  26-byte footer with 4-byte offsets.
-- `width_ * height_ * bytespp` is computed in `unsigned int`, which overflows for an image the
-  writer accepts, up to 65535 on a side.
-
-[] **The base `image::Writer::write` returns true and writes nothing.** Contract, minor. A format
-registered with the base class reports success silently.
-
 [] **voxel's camera rotation is undefined.** Contract, major. `Camera::rotateFlight` and
 `rotateFirstPerson` rotate a default-constructed `glm::mat4`, which is uninitialised because the
 tree does not define `GLM_FORCE_CTOR_INIT`. They also pass degrees to `glm::rotate`, which takes

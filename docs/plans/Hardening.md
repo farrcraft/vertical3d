@@ -223,15 +223,22 @@ The items as planned:
 
 ### Step 4 — Image writers
 
-**Open.**
+**Closed.**
 
-- The PNG writer recovers from a libpng error through `setjmp`, frees what it allocated, and
-  returns false. The error pointer it gives libpng lives as long as the write.
-- The TGA footer is 26 bytes with 4-byte offsets. The size is computed wide, and an image too
-  large to address is refused.
-- The base `Writer::write` is pure virtual.
-- Tests in `api/image/tests/ImageWriterTest.cxx`, including a PNG too tall to write that returns
-  false rather than aborting.
+- Every libpng call that can fail runs in `encode()`, behind a `setjmp`. Nothing in that function
+  has a destructor for the jump to skip, so the vectors and the file belong to the caller, which
+  frees them either way. libpng's handlers log through the writer's logger and read a name that
+  lives as long as the write. A 2,000,000 pixel wide picture, past libpng's limit, ended the
+  process before; it now returns false with libpng's message in the log.
+- The TGA footer is 26 bytes, with 4-byte offsets, and a `static_assert` holds it there. A case
+  reads the written footer back.
+- The TGA size is computed in `size_t`, which holds any picture the header allows, and the
+  scratch copy is made before the file is opened. A picture too large to copy is logged and
+  refused, and leaves any file at that name as it was. No test covers the overflow: it needs a
+  picture of 46,341 pixels a side, which is several gigabytes.
+- `Writer::write` is pure virtual, and a case checks that `Writer` is abstract.
+- The plan proposed refusing any picture past a 32-bit byte count. That limit is not in the
+  format, so the writer refuses only what it cannot allocate.
 
 ### Step 5 — voxel's camera
 

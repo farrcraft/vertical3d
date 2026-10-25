@@ -284,6 +284,9 @@ factory.write("out.tga", picture);
   a channel. 32 bits reads as RGBA, and as opaque when its alpha is zero everywhere, since most
   writers leave it unused. Every other depth comes back as RGB.
 - Each read returns null when the file will not open or does not decode.
+- `write` returns false when the file is not written. An error from libpng is logged, and the
+  png write returns false rather than ending the process. A TGA is written with the 26-byte TGA
+  2.0 footer.
 - Through the asset manager, an image file loads as `asset::media::kind::Image`, and `image()`
   returns the `image::Image`.
 

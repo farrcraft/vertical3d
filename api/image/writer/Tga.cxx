@@ -10,8 +10,11 @@
 #include <api/image/Writer.h>
 #include <api/log/Logger.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
+#include <ios>
+#include <new>
 #include <limits>
 #include <cstring>
 #include <string>
@@ -40,14 +43,18 @@ struct tga_header {
 };
 
 struct tga_footer {
-    int64_t extension_offset_;
-    int64_t dev_dir_offset_;
+    uint32_t extension_offset_;
+    uint32_t dev_dir_offset_;
     char signature_[16];
     unsigned char reserved_;
     unsigned char terminator_;
 };
 
 #pragma pack(pop)
+
+/** TGA 2.0 fixes the footer at 26 bytes. **/
+constexpr std::size_t FOOTER_BYTES = 26;
+static_assert(sizeof(tga_footer) == FOOTER_BYTES);
 
 };  // namespace
 
@@ -68,6 +75,19 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     // leaves any file already at that name as it was
     if (img->width() > std::numeric_limits<uint16_t>::max() ||
         img->height() > std::numeric_limits<uint16_t>::max()) {
+        return false;
+    }
+
+    // a side is at most 65535 pixels and a pixel at most 4 bytes, so the size is computed in
+    // size_t, which holds it. The scratch copy is made before the open, so a picture too large
+    // to copy leaves any file already at that name as it was
+    const unsigned int bytespp = img->bpp() / 8;
+    const std::size_t size = static_cast<std::size_t>(img->width()) * img->height() * bytespp;
+    std::vector<unsigned char> scratch;
+    try {
+        scratch.resize(size);
+    } catch (const std::bad_alloc &) {
+        logger()->get()->error("a {} by {} picture is too large to write as a TGA", img->width(), img->height());
         return false;
     }
 
@@ -92,9 +112,6 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
 
     file.write(reinterpret_cast<char*>(&fheader), sizeof(fheader));
 
-    const unsigned int bytespp = fheader.bpp_ / 8;
-    const unsigned int size = fheader.width_ * fheader.height_ * bytespp;
-    std::vector<unsigned char> scratch(size);
     const unsigned char* data = img->data();
 
     if (file.fail()) {
@@ -109,7 +126,7 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
         swapRedBlue(data, scratch.data(), {.pixels = size / bytespp, .channels = bytespp});
     }
 
-    file.write(reinterpret_cast<char*>(scratch.data()), size);
+    file.write(reinterpret_cast<char*>(scratch.data()), static_cast<std::streamsize>(size));
 
     tga_footer footer;
     memset(&footer, 0, sizeof(tga_footer));
