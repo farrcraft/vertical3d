@@ -73,7 +73,16 @@ handoff.
 
 ### Step 1 — Text field, hover and settings widgets on `Immediate`
 
-**Open.**
+**Done.** `textField`, `checkbox`, `sliderFloat`, `combo` and `itemHovered` are on `Immediate`.
+The editing moved out of `TextBox` into `input::LineEdit` and `input::edit()`, which both ui
+models now call. Keys reach a field through `Immediate::press()` and `typed()`, which return
+whether the field took them, and `shell::Keyboard` offers an immediate layer whatever the
+retained ui did not take. It can be built with no `ui::Engine`.
+
+A focused field does not make `capturing()` true. The engine's bindings fire before a frame
+is drawn, so a query the app asks while drawing comes too late to stop a typed key. The key
+is kept from the bindings when it arrives, by `onEvent()` returning what `press()` returned,
+as it already is for a `TextBox`. `typing()` says whether a field has the keyboard.
 
 - A single-line text field that edits a caller's UTF-8 string, with a caret, backspace and
   delete, and a length cap. It takes focus on a click and gives it up on Enter, Escape or a click

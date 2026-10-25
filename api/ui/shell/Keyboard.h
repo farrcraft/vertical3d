@@ -19,6 +19,7 @@ class Window;
 
 namespace v3d::ui {
 class Engine;
+class Immediate;
 };  // namespace v3d::ui
 
 namespace v3d::ui::shell {
@@ -40,13 +41,19 @@ namespace v3d::ui::shell {
  * through ui::Engine::onFocus() instead of checking on each event, because the focus also
  * moves on a mouse press, which this class never sees.
  *
+ * **An immediate layer can be offered the keys too.** A key or a character the retained ui did
+ * not take goes to the layer's text field, if one holds the keyboard, and text input is on
+ * while either has a field that takes text. A game that draws only through Immediate builds
+ * this with no ui::Engine.
+ *
  * The app handles the cursor itself. input::Cursor takes points, not events, so an app
  * passes a press to it directly.
  **/
 class Keyboard final {
  public:
     /**
-     * @param ui where the focus is held, and what reports it moving
+     * @param ui where the focus is held, and what reports it moving, or null for an app with
+     *        no retained ui
      * @param dispatcher where a focused component's event is sent
      * @param window whose text input is turned on as the focus reaches a text box, and off
      *        as it leaves. Without a window the keys still edit, but no characters arrive
@@ -68,6 +75,13 @@ class Keyboard final {
     bool event(const SDL_Event& event);
 
     /**
+     * Offer the keys the retained ui does not take to an immediate layer as well, and give it
+     * the platform's clipboard. The layer must outlive this object, or be taken off it again
+     * with a null layer first.
+     **/
+    void immediate(Immediate* layer);
+
+    /**
      * The input::Keys underneath, for an app with a key that did not come from the event
      * loop, or for a test driving the ui.
      **/
@@ -81,12 +95,13 @@ class Keyboard final {
 
  private:
     /**
-     * Turn text input on while the focused component takes typed text, and off otherwise.
-     * Called with the newly focused component.
+     * Turn text input on while the focused component takes typed text or the immediate
+     * layer's field holds the keyboard, and off otherwise.
      **/
     void follow(const boost::shared_ptr<Component>& focused);
 
     boost::shared_ptr<Engine> ui_;
+    Immediate* layer_;
     boost::shared_ptr<v3d::render::realtime::Window> window_;
     input::Keys keys_;
 };

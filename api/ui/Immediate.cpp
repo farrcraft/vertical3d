@@ -8,6 +8,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/component/Scrollbar.h>
+#include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Palette.h>
 #include <api/ui/paint/Text.h>
@@ -19,8 +20,11 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <format>
+#include <functional>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <glm/common.hpp>
@@ -90,6 +94,16 @@ constexpr glm::vec4 titleBarColor{0.12F, 0.14F, 0.19F, 1.0F};
 constexpr glm::vec4 hoverColor{0.22F, 0.25F, 0.33F, 1.0F};
 constexpr glm::vec4 ruleColor{0.24F, 0.26F, 0.32F, 1.0F};
 
+/**
+ * How far into its box a checkbox's tick is inset, as a fraction of the box's side.
+ **/
+const float tickInset = 0.25F;
+
+/**
+ * How wide the mark at the right end of a combo is, as a fraction of a row.
+ **/
+const float comboMark = 0.4F;
+
 };  // namespace
 
 Immediate::Input::Input() noexcept :
@@ -113,7 +127,16 @@ scroll(0.0F),
 content(0.0F),
 offset(0.0F, 0.0F),
 collapsed(false),
-dragging(false) {
+dragging(false),
+chosen(-1) {
+}
+
+Immediate::Popup::Popup() noexcept :
+id(0),
+asked(false),
+boxMin(0.0F, 0.0F),
+boxMax(0.0F, 0.0F),
+selected(-1) {
 }
 
 Immediate::Dressing::Dressing() noexcept :
@@ -198,7 +221,13 @@ Immediate::Immediate(const paint::Measure& measure, const paint::Write& write) :
     nextWidth_(0.0F),
     frame_(0),
     disabled_(0),
-    wheeled_(0) {
+    wheeled_(0),
+    typing_(0),
+    letGo_(false),
+    typingDrawn_(false),
+    itemMin_(0.0F, 0.0F),
+    itemMax_(0.0F, 0.0F),
+    itemOwner_(0) {
 }
 
 // out of line, so that the header need not complete the types the members hold
@@ -271,9 +300,24 @@ void Immediate::begin(v3d::render::realtime::canvas::Canvas* canvas, const Input
     row_.margin = 0.0F;
     row_.penY = 0.0F;
     row_.right = canvas == nullptr ? 0.0F : static_cast<float>(canvas->width());
+    typingDrawn_ = false;
+    itemMin_ = glm::vec2(0.0F, 0.0F);
+    itemMax_ = glm::vec2(0.0F, 0.0F);
+    itemOwner_ = 0;
+    popup_.asked = false;
 }
 
 void Immediate::end() {
+    // the open combo's list goes over everything, so it is drawn after everything, and takes
+    // the cursor from whatever it covers
+    popup();
+
+    // a field that was not drawn cannot be typed into, so it does not keep the keys from the
+    // app's bindings
+    if (typing_ != 0 && !typingDrawn_) {
+        focus(0);
+    }
+
     // what the cursor was found on this frame is used by the next one, so a window drawn
     // later takes the cursor from one under it
     hovered_ = hovering_;
@@ -301,6 +345,53 @@ bool Immediate::capturing() const noexcept {
     // the held half matters as much as the hovered one: a scrubber being dragged keeps the
     // cursor after the drag has left its box, and a click that lands there is still spent
     return hovered_ != 0 || active_ != 0;
+}
+
+bool Immediate::press(std::string_view key, bool shifted, bool controlled) {
+    if (!typing() || key.empty()) {
+        return false;
+    }
+    if (!controlled && (key == "return" || key == "tab" || key == "escape")) {
+        // the field gives the keyboard up when it is next drawn, after it has written what
+        // was typed
+        letGo_ = true;
+        return true;
+    }
+    return input::edit(&line_, key, shifted, controlled, clipboard_);
+}
+
+bool Immediate::typed(std::string_view utf8) {
+    if (!typing() || utf8.empty()) {
+        return false;
+    }
+    // taken even when the limit refused it, so it never reaches the app's bindings
+    line_.insert(utf8);
+    return true;
+}
+
+bool Immediate::typing() const noexcept {
+    return typing_ != 0 && !letGo_;
+}
+
+void Immediate::onTyping(const std::function<void(bool)>& changed) {
+    onTyping_ = changed;
+}
+
+void Immediate::clipboard(const input::Clipboard& clipboard) {
+    clipboard_ = clipboard;
+}
+
+void Immediate::focus(Id field) {
+    const bool was = typing_ != 0;
+    typing_ = field;
+    letGo_ = false;
+    if (field == 0) {
+        written_.clear();
+    }
+    const bool now = typing_ != 0;
+    if (was != now && onTyping_) {
+        onTyping_(now);
+    }
 }
 
 std::size_t Immediate::retained() const noexcept {
@@ -365,6 +456,13 @@ glm::vec2 Immediate::place(const glm::vec2& size) {
     row_.lastRight = corner.x + size.x;
     row_.height = std::max(row_.height, size.y);
     row_.penY = row_.top + row_.height + dressing_.spacing;
+
+    // an item that offers its box to the cursor claims it in interact(). One that does not,
+    // such as text, is hovered when the window it is in holds the cursor, or when nothing
+    // does outside a window
+    itemMin_ = corner;
+    itemMax_ = corner + size;
+    itemOwner_ = window_.open ? window_.id : 0;
     return corner;
 }
 
@@ -372,6 +470,12 @@ Immediate::Reaction Immediate::interact(Id id, const glm::vec2& min, const glm::
     Reaction reaction;
     if (disabled_ > 0) {
         return reaction;
+    }
+    if (min == itemMin_ && max == itemMax_) {
+        // the widget just placed is offering its own box, so it is what has to hold the
+        // cursor for itemHovered(). A title bar or a scrollbar offers a box place() never
+        // made, and leaves the last item alone
+        itemOwner_ = id;
     }
     const bool within = paint::inside(min, max, input_.cursor);
     if (within) {
@@ -685,6 +789,240 @@ bool Immediate::dragInt(const std::string& label, int* value, int low, int high)
     shown.append("  ").append(std::to_string(*value));
     this->label(shown, min + glm::vec2(dressing_.padding, 0.0F), size, ink(dressing_.text));
     return changed;
+}
+
+bool Immediate::textField(const std::string& label, std::string* value, std::size_t limit) {
+    if (canvas_ == nullptr || value == nullptr) {
+        return false;
+    }
+    const glm::vec2 size(itemWidth(), dressing_.barHeight);
+    const glm::vec2 min = place(size);
+    const glm::vec2 max = min + size;
+    const Id id = identify(label);
+    const Reaction reaction = interact(id, min, max);
+
+    const glm::vec2 low(min.x + dressing_.padding, min.y + dressing_.borderWidth);
+    const glm::vec2 high(max.x - dressing_.padding, max.y - dressing_.borderWidth);
+    const float room = std::max(high.x - low.x, 0.0F);
+
+    if (typing_ == id && *value != written_) {
+        // the caller changed the string while it was being edited, and the caller's string
+        // is the value, so the edit starts again from it
+        line_.text(*value);
+        written_ = *value;
+    }
+    if (reaction.hovered && input_.pressed) {
+        if (typing_ != id) {
+            focus(id);
+            line_.text(*value);
+            written_ = *value;
+        }
+        // the press is measured against the line as it was drawn, slid as far as the caret
+        // had pushed it
+        const float caret = measure_(line_.text().substr(0, line_.caret()));
+        const float slid = std::max(caret - room, 0.0F);
+        line_.caret(line_.at(input_.cursor.x - (low.x - slid), measure_));
+    }
+
+    bool changed = false;
+    if (typing_ == id) {
+        typingDrawn_ = true;
+        line_.limit(limit);
+        if (line_.text() != *value) {
+            *value = std::string(line_.text());
+            written_ = *value;
+            changed = true;
+        }
+        // a press anywhere else, a disabled field, and a return, tab or escape all give the
+        // keyboard up. What was typed has been written by then
+        if (letGo_ || disabled_ > 0 || (input_.pressed && !reaction.hovered)) {
+            focus(0);
+        }
+    }
+
+    const bool focused = typing_ == id;
+    paint::plateBox(canvas_, min, max, dressing_.radius, dressing_.borderWidth,
+        {.inside = face(false, reaction.hovered && !focused), .outline = focused ? dressing_.highlight : dressing_.border});
+    if (high.x <= low.x) {
+        return changed;
+    }
+    canvas_->clip(low, high);
+    if (!focused && value->empty()) {
+        this->label(label, low, glm::vec2(room, size.y - (dressing_.borderWidth * 2.0F)), dressing_.dimText);
+        canvas_->unclip();
+        return changed;
+    }
+
+    // the line slides left when the caret would be past the far edge, so a full field can
+    // still be typed into
+    const std::string_view line = focused ? line_.text() : std::string_view(*value);
+    const float caret = focused ? measure_(line.substr(0, line_.caret())) : 0.0F;
+    const float pen = low.x - std::max(caret - room, 0.0F);
+    if (focused && line_.selected()) {
+        // the highlight goes behind the line, which is drawn whole in one colour, so the
+        // runs either side of it cannot measure differently from the prefix that places the
+        // caret
+        const float from = measure_(line.substr(0, std::min(line_.anchor(), line_.caret())));
+        const float to = measure_(line.substr(0, std::max(line_.anchor(), line_.caret())));
+        paint::fillBox(canvas_, glm::vec2(pen + from, low.y), glm::vec2(pen + to, high.y), 0.0F, dressing_.highlight);
+    }
+    this->label(std::string(line), glm::vec2(pen, low.y), glm::vec2(room, high.y - low.y), ink(dressing_.text));
+    if (focused) {
+        const float stem = std::max(dressing_.borderWidth, 1.0F);
+        canvas_->rect(glm::vec2(pen + caret, low.y), glm::vec2(pen + caret + stem, high.y), dressing_.activeText);
+    }
+    canvas_->unclip();
+    return changed;
+}
+
+bool Immediate::checkbox(const std::string& label, bool* value) {
+    if (canvas_ == nullptr || value == nullptr) {
+        return false;
+    }
+    const float side = dressing_.lineHeight;
+    const glm::vec2 size(side + dressing_.padding + measure_(label), side);
+    const glm::vec2 min = place(size);
+    const Id id = identify(label);
+    const Reaction reaction = interact(id, min, min + size);
+    if (reaction.clicked) {
+        *value = !*value;
+    }
+
+    paint::fillBox(canvas_, min, min + glm::vec2(side, side), dressing_.radius, face(reaction.held, reaction.hovered));
+    if (*value) {
+        const glm::vec2 inset(side * tickInset, side * tickInset);
+        paint::fillBox(canvas_, min + inset, min + glm::vec2(side, side) - inset, 0.0F, ink(dressing_.fill));
+    }
+    this->label(label, min + glm::vec2(side + dressing_.padding, 0.0F), size,
+        ink(reaction.hovered ? dressing_.activeText : dressing_.text));
+    return reaction.clicked;
+}
+
+bool Immediate::sliderFloat(const std::string& label, float* value, float low, float high) {
+    if (canvas_ == nullptr || value == nullptr) {
+        return false;
+    }
+    const glm::vec2 size(itemWidth(), dressing_.barHeight);
+    const glm::vec2 min = place(size);
+    const Id id = identify(label);
+    const Reaction reaction = interact(id, min, min + size);
+
+    // the value is where the cursor is along the track, so a press jumps to it and a drag
+    // follows it, and a drag past either end holds the value at that end
+    bool changed = false;
+    if (reaction.held && size.x > 0.0F) {
+        const float along = std::clamp((input_.cursor.x - min.x) / size.x, 0.0F, 1.0F);
+        const float wanted = low + ((high - low) * along);
+        changed = wanted != *value;
+        *value = wanted;
+    }
+
+    const float span = high - low;
+    const float part = span == 0.0F ? 0.0F : std::clamp((*value - low) / span, 0.0F, 1.0F);
+    paint::fillBox(canvas_, min, min + size, dressing_.radius, face(reaction.held, reaction.hovered));
+    if (part > 0.0F) {
+        paint::fillBox(canvas_, min, glm::vec2(min.x + (size.x * part), min.y + size.y), dressing_.radius, ink(dressing_.fill));
+    }
+    this->label(std::format("{}  {:.2f}", label, *value), min + glm::vec2(dressing_.padding, 0.0F), size, ink(dressing_.text));
+    return changed;
+}
+
+bool Immediate::combo(const std::string& label, int* selected, const std::vector<std::string>& items) {
+    if (canvas_ == nullptr || selected == nullptr) {
+        return false;
+    }
+    const glm::vec2 size(itemWidth(), dressing_.barHeight);
+    const glm::vec2 min = place(size);
+    const glm::vec2 max = min + size;
+    const Id id = identify(label);
+    Retained& retained = retain(id);
+
+    // a click on the list last frame is taken now, by the call that holds the caller's index
+    bool changed = false;
+    if (retained.chosen >= 0) {
+        if (static_cast<std::size_t>(retained.chosen) < items.size() && retained.chosen != *selected) {
+            *selected = retained.chosen;
+            changed = true;
+        }
+        retained.chosen = -1;
+    }
+
+    const Reaction reaction = interact(id, min, max);
+    if (reaction.clicked) {
+        popup_.id = popup_.id == id ? 0 : id;
+    }
+    const bool open = popup_.id == id;
+    if (open) {
+        popup_.asked = true;
+        popup_.boxMin = min;
+        popup_.boxMax = max;
+        popup_.items = items;
+        popup_.selected = *selected;
+    }
+
+    paint::fillBox(canvas_, min, max, dressing_.radius, face(open || reaction.held, reaction.hovered));
+    const float mark = dressing_.lineHeight * comboMark;
+    const glm::vec2 markMin(max.x - dressing_.padding - mark, min.y + ((size.y - mark) * 0.5F));
+    paint::fillBox(canvas_, markMin, markMin + glm::vec2(mark, mark), 0.0F, ink(dressing_.rule));
+    if (*selected >= 0 && static_cast<std::size_t>(*selected) < items.size()) {
+        this->label(items[static_cast<std::size_t>(*selected)], min + glm::vec2(dressing_.padding, 0.0F), size,
+            ink(reaction.hovered ? dressing_.activeText : dressing_.text));
+    }
+    return changed;
+}
+
+void Immediate::popup() {
+    if (popup_.id == 0) {
+        return;
+    }
+    if (!popup_.asked || canvas_ == nullptr) {
+        // a combo that was not drawn this frame cannot hold a list open
+        popup_.id = 0;
+        return;
+    }
+    const float row = dressing_.lineHeight;
+    const glm::vec2 min(popup_.boxMin.x, popup_.boxMax.y);
+    const glm::vec2 max(popup_.boxMax.x, min.y + (row * static_cast<float>(popup_.items.size())));
+    paint::plateBox(canvas_, min, max, 0.0F, dressing_.borderWidth, {.inside = dressing_.panel, .outline = dressing_.border});
+    if (paint::inside(min, max, input_.cursor)) {
+        // the list takes the cursor from what it covers, so a press between two items does
+        // not reach a widget under it
+        hovering_ = popup_.id;
+    }
+
+    // the items' ids hang off the combo's, so two combos' lists do not share them
+    ids_.push_back(popup_.id);
+    bool close = false;
+    for (std::size_t index = 0; index < popup_.items.size(); index++) {
+        const glm::vec2 itemMin(min.x, min.y + (row * static_cast<float>(index)));
+        const glm::vec2 itemMax(max.x, itemMin.y + row);
+        const Reaction reaction = interact(identify(std::to_string(index)), itemMin, itemMax);
+        const bool chosen = static_cast<int>(index) == popup_.selected;
+        if (chosen || reaction.hovered) {
+            paint::fillBox(canvas_, itemMin, itemMax, 0.0F, chosen ? dressing_.highlight : dressing_.hover);
+        }
+        label(popup_.items[index], itemMin + glm::vec2(dressing_.padding, 0.0F), glm::vec2(max.x - min.x, row),
+            chosen || reaction.hovered ? dressing_.activeText : dressing_.text);
+        if (reaction.clicked) {
+            retain(popup_.id).chosen = static_cast<int>(index);
+            close = true;
+        }
+    }
+    ids_.pop_back();
+
+    // a press outside the list closes it. One on the combo's own box is left to the combo,
+    // whose click toggles it
+    if (input_.pressed && !paint::inside(min, max, input_.cursor) &&
+        !paint::inside(popup_.boxMin, popup_.boxMax, input_.cursor)) {
+        close = true;
+    }
+    if (close) {
+        popup_.id = 0;
+    }
+}
+
+bool Immediate::itemHovered() const noexcept {
+    return paint::inside(itemMin_, itemMax_, input_.cursor) && hovered_ == itemOwner_;
 }
 
 void Immediate::progressBar(float fraction, const std::string& overlay) {

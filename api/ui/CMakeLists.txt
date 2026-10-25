@@ -34,6 +34,7 @@ v3d_add_api_library(ui
 	"input/Command.h" "input/Command.cpp"
 	"input/Cursor.h" "input/Cursor.cpp"
 	"input/Keys.h" "input/Keys.cpp"
+	"input/LineEdit.h" "input/LineEdit.cpp"
 	"paint/ComponentRenderer.h" "paint/ComponentRenderer.cpp"
 	"paint/Dressing.h" "paint/Dressing.cpp"
 	"paint/Painter.h" "paint/Painter.cpp"

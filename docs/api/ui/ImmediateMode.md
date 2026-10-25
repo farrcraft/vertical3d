@@ -42,6 +42,10 @@ default-constructed `Input` is no cursor at all.
 | `button(label)`, `smallButton(label)` | a button, bar-height or line-height | true on the frame it was clicked |
 | `selectable(label, selected)` | a full-width row, highlighted when selected | true when clicked |
 | `dragInt(label, &value, low, high)` | an integer scrubbed by dragging across it | true when the value changed |
+| `sliderFloat(label, &value, low, high)` | a number set by pressing or dragging along a track | true when the value changed |
+| `checkbox(label, &value)` | a box ticked or not, with its label beside it | true on the frame it was clicked |
+| `combo(label, &selected, items)` | the chosen item, which a click opens as a list | true on the frame the choice changed |
+| `textField(label, &value, limit)` | one line of text the user edits | true when the value changed |
 | `progressBar(fraction, overlay)` | a filled track with text over it | |
 | `separator()` | a rule across the width | |
 | `tabBar(id)` / `tab(label)` / `endTabBar()` | a strip of tabs | `tab()` is true for the selected tab |
@@ -56,6 +60,9 @@ Layout helpers:
   The scopes nest.
 - A click on a tab takes effect at `endTabBar()`, so the old tab answers for the whole frame
   on which the click lands.
+- A combo's list is drawn at `end()`, over everything, and is not clipped to its window. A
+  click on an item takes effect on the next frame's `combo()` call. A press outside the list
+  closes it, and so does a frame that does not draw the combo.
 
 ### Ids, hover and capture
 
@@ -71,6 +78,11 @@ widget that has just appeared or moved is hovered a frame late.
 `Immediate::capturing()` is true when the cursor is over something the layer drew, or is
 dragging something it drew. Ask it before acting on a click of the app's own. It answers from
 the previous frame.
+
+`Immediate::itemHovered()` is true when the cursor is on the item just drawn and nothing drawn
+over it took the cursor. It answers for text and progress bars as well as widgets, so it is
+what a tooltip is drawn from. It runs a frame behind, as every hover does. A disabled widget
+answers as text does, so a tooltip can say why it is disabled.
 
 **Something another renderer draws is not this layer's, unless it is blocked.** A modal
 backdrop drawn over the whole viewport by another renderer is neither a window nor a widget, so
@@ -90,6 +102,53 @@ strip's selection. `Immediate::retention` (60 frames) is how long that state is 
 widget stops being drawn. A panel behind a toggle comes back scrolled, folded and placed as
 it was. `retained()` returns how many ids hold state, for a caller that builds ids from
 changing text.
+
+### Typing into a field
+
+`textField(label, &value, limit)` edits a string the caller owns. The label is the field's id,
+and is drawn dimmed inside it while it is empty and does not have the keyboard.
+
+- A press on the field gives it the keyboard and puts the caret where the press landed.
+- A return, a tab, an escape or a press anywhere else gives the keyboard up. What was typed is
+  kept.
+- A field that is not drawn for a frame gives the keyboard up at `end()`. What was typed since
+  it was last drawn is lost.
+- The caller's string is the value. A change the caller makes while the field has the keyboard
+  replaces what is being edited.
+- `limit` caps the string's length in bytes. Zero is no limit. Typing past it is refused.
+- The editing keys and chords are a `TextBox`'s. [Keyboard.md](Keyboard.md#editing-text) lists
+  them.
+
+Keys reach the field between frames, as the app's event loop sees them:
+
+| Call | Does | Returns |
+|---|---|---|
+| `press(key, shifted, controlled)` | edits the line of the field that has the keyboard | whether the field took the key |
+| `typed(utf8)` | inserts composed characters at the caret | whether the field took them |
+| `typing()` | | whether a field has the keyboard |
+| `onTyping(callback)` | calls back with `typing()` each time it changes | |
+| `clipboard(board)` | sets the clipboard cut, copy and paste use | |
+
+The edit lands on a line the layer keeps, and reaches the caller's string when the field is
+next drawn. A key the field took must not also fire a binding. A field takes every key that
+composes text, so typing an `e` into it does not also send whatever `e` is bound to. A key that
+composes nothing, such as a function key, and a control chord other than the four editing
+chords, are left for the app.
+
+`shell::Keyboard` does this routing for an app, along with the platform's text input and
+clipboard. A game that draws only through `Immediate` builds one with no `ui::Engine`, offers it
+the layer, and passes it every event from `onEvent()`:
+
+```cpp
+keys_ = boost::make_shared<v3d::ui::shell::Keyboard>(nullptr, dispatcher(), window());
+keys_->immediate(screen_->immediate());
+
+bool App::onEvent(const SDL_Event& event) {
+    return keys_->event(event);
+}
+```
+
+[Setup.md](Setup.md#the-keyboard-adapter) has the adapter's rules.
 
 ### Moving and folding a window
 

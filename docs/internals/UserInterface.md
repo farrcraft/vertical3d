@@ -36,10 +36,11 @@ a component type. How to use the library is in
 | `style::Resolver` | [style/Resolver.h](../../api/ui/style/Resolver.h) | turns a theme into a cached `Dressing` per class and style name |
 | `input::Cursor` | [input/Cursor.h](../../api/ui/input/Cursor.h) | routes mouse points: hover, press, drag, focus, caret placement |
 | `input::Keys` | [input/Keys.h](../../api/ui/input/Keys.h) | routes key names and composed text to the focused component |
+| `input::LineEdit`, `input::edit()` | [input/LineEdit.h](../../api/ui/input/LineEdit.h) | one line of text with a caret and a selection, and the edit a key names on it; a `TextBox` and `Immediate::textField()` both edit through them |
 | `input::command()`, `input::send()` | [input/Command.h](../../api/ui/input/Command.h) | which event a component sends when activated, and the one place events are sent |
 | `Immediate` | [Immediate.h](../../api/ui/Immediate.h) | the immediate-mode layer |
 | `shell::Screen` | [shell/Screen.h](../../api/ui/shell/Screen.h) | builds the text renderer, component renderer, overlay and immediate layer over an `Engine3D` |
-| `shell::Keyboard` | [shell/Keyboard.h](../../api/ui/shell/Keyboard.h) | SDL adapter for `input::Keys` |
+| `shell::Keyboard` | [shell/Keyboard.h](../../api/ui/shell/Keyboard.h) | SDL adapter for `input::Keys`, and for an immediate layer's text field |
 | `shell::GameMenu`, `shell::StatisticsOverlay`, `shell::FileChooser`, `shell::Prompt` | [shell/](../../api/ui/shell) | shared game shell pieces |
 
 Boundaries the split keeps:
@@ -241,6 +242,9 @@ the component is usable. A usable component that is not reachable gives up the f
 
 A `TextBox` sends its command from `edit()` on `return`, reading `box->event()` directly.
 `input::command()` returns no event for a `TextBox`, so a click into a box never submits it.
+Every other key reaching a `TextBox` goes to `input::edit()` on the box's `LineEdit`, which is
+the same function `Immediate::press()` calls. The editing rules therefore have one
+implementation for both ui models.
 
 ### Focus
 
@@ -258,9 +262,14 @@ components. Strips' buttons and menu items are not children, so they are not in 
 `shell::Keyboard` turns `SDL_EVENT_KEY_DOWN` into `Keys::press()` with the name from
 `input::keyName()` and the modifiers from the event, and `SDL_EVENT_TEXT_INPUT` into
 `Keys::text()`. It registers `follow()` with `Engine::onFocus()`, and `follow()` turns
-`Window::textInput()` on exactly while the focused component's traits say it takes text. It
-gives the listener back in its destructor. A second text-taking component type needs only
-its `traits().text` flag set.
+`Window::textInput()` on exactly while the focused component's traits say it takes text, or
+the immediate layer it was offered has a field with the keyboard. It listens to the layer
+through `Immediate::onTyping()`. It gives both listeners back in its destructor. A second
+text-taking component type needs only its `traits().text` flag set.
+
+The retained ui is offered each key first, through `Keys`, and the immediate layer gets only
+what `Keys` returned false for. With no `ui::Engine`, `Keys` takes nothing, so every key goes to
+the layer.
 
 ## Styles and the Resolver
 
@@ -296,9 +305,26 @@ property silently not found.
 - `active_` and `pressAt_`: what a press went down on, and where
 - `wheeled_`: the topmost scrolling region under the cursor, which takes the wheel
 - `state_`: a `Retained` per id, holding a window's fold, drag offset and scroll, a scrolled
-  region's content height, and a tab strip's selection
+  region's content height, a tab strip's selection, and the item a combo's list was clicked on
+- `typing_`, `line_` and `written_`: the text field that has the keyboard, the line it is
+  editing, and what it last wrote to the caller's string. A caller's string that differs from
+  `written_` was changed by the caller, and replaces the line
+- `popup_`: the combo whose list is open, and what the list holds
+- `itemMin_`, `itemMax_` and `itemOwner_`: the box of the item placed last, and which id had to
+  hold the cursor last frame for `itemHovered()` to be true
 
-`end()` ages out any `Retained` entry not touched for `retention` frames.
+`end()` draws the open combo's list, then takes the keyboard from a field that was not drawn
+this frame, then ages out any `Retained` entry not touched for `retention` frames. The list is
+drawn before `hovered_` is promoted, so it takes the cursor from whatever it covers.
+
+`place()` records each item's box, with the enclosing window's id as its owner, or nothing
+outside a window. When `interact()` is offered exactly that box, the widget's own id becomes
+the owner. A title bar or a scrollbar is offered a box `place()` never made, so it leaves the
+last item alone.
+
+A key reaches a field through `press()` between frames and edits `line_` at once. A return,
+tab or escape sets `letGo_` rather than taking the keyboard, so that the field writes what was
+typed when it is next drawn, and gives the keyboard up after that.
 
 `interact(id, min, max)` decides hover, hold and click for one box. A widget is hovered only
 if the cursor is in its box now and it was the hovered id last frame. That second condition

@@ -6,13 +6,16 @@
 #pragma once
 
 #include <api/type/geometry/Bound2D.h>
+#include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/style/Style.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -48,6 +51,10 @@ class Theme;
  * A window clips what it holds to its own edges, through the canvas's clip rectangle, and
  * scrolls it. The content height is measured as it is drawn, so a window decides whether
  * it needs a scrollbar from what the frame before it held.
+ *
+ * Keys reach a text field as they arrive, through press() and typed(), between one frame
+ * and the next. The field that holds the keyboard edits a line the layer keeps, and writes
+ * it to the caller's string when it is next drawn.
  **/
 class Immediate {
  public:
@@ -278,6 +285,105 @@ class Immediate {
     void block(const glm::vec2& min, const glm::vec2& max);
 
     /**
+     * A single line of text the user edits, drawn the width of the row.
+     *
+     * A press on it gives it the keyboard and puts the caret where the press landed. A
+     * return, a tab, an escape or a press anywhere else gives the keyboard up, keeping what
+     * was typed. A field that is not drawn for a frame gives it up too, and what was typed
+     * since it was last drawn is lost.
+     *
+     * The label is the field's id, and is drawn dimmed in it while it is empty and does not
+     * have the keyboard.
+     *
+     * @param value read and written. A change the caller makes while the field holds the
+     *        keyboard replaces what is being edited
+     * @param limit how many bytes the value may hold, or zero for no limit. Typing past it
+     *        is refused
+     * @return whether the value changed this frame
+     **/
+    bool textField(const std::string& label, std::string* value, std::size_t limit = 0);
+
+    /**
+     * A box that is ticked or not, with its label beside it.
+     *
+     * @param value read and written; flipped by a click
+     * @return whether it was clicked this frame
+     **/
+    bool checkbox(const std::string& label, bool* value);
+
+    /**
+     * A number between two ends, set by pressing on the track or dragging along it.
+     *
+     * @param value read and written; left alone when nothing is held on it
+     * @return whether the value changed this frame
+     **/
+    bool sliderFloat(const std::string& label, float* value, float low, float high);
+
+    /**
+     * The chosen one of several items, which a click opens as a list under it.
+     *
+     * The list is drawn at end(), over everything else, and is not clipped to the window
+     * the combo is in. A click on an item takes effect on the next frame's call, as a click
+     * on a tab does at endTabBar(). A press anywhere outside the list closes it, and so does
+     * a frame that does not draw the combo.
+     *
+     * @param selected read and written - the index of the chosen item
+     * @return whether the choice changed this frame
+     **/
+    bool combo(const std::string& label, int* selected, const std::vector<std::string>& items);
+
+    /**
+     * Whether the cursor is on the item just drawn, text and progress bars included, and
+     * nothing drawn over it took the cursor. For a tooltip.
+     *
+     * Answers by the same one-frame-late rule every hover follows. A disabled widget
+     * answers as text does, so a tooltip can say why it is disabled.
+     **/
+    bool itemHovered() const noexcept;
+
+    /**
+     * A key went down. A text field that holds the keyboard edits its line with it.
+     *
+     * Keys arrive between frames, as the app's event loop sees them, so the edit lands on
+     * the line the layer keeps and reaches the caller's string when the field is next drawn.
+     *
+     * @param key the name api/input gives it
+     * @param shifted whether a shift key is held, which selects as the caret moves
+     * @param controlled whether a control key is held, for cut, copy, paste and select all
+     * @return whether a field took it, in which case it does not reach the app's bindings.
+     *      A field takes every key that composes text, so a letter typed into it does not
+     *      also fire a command
+     **/
+    bool press(std::string_view key, bool shifted = false, bool controlled = false);
+
+    /**
+     * Characters the platform composed, put in at the caret of the field that holds the
+     * keyboard.
+     *
+     * @return whether a field took them. Characters past the field's limit are taken and
+     *      dropped
+     **/
+    bool typed(std::string_view utf8);
+
+    /**
+     * Whether a text field holds the keyboard. While it does, the platform's text input
+     * should be on, and keys go to press() and typed() before they reach any binding.
+     **/
+    bool typing() const noexcept;
+
+    /**
+     * Be told when typing() changes, with what it changed to. shell::Keyboard listens here
+     * to turn the platform's text input on and off.
+     **/
+    void onTyping(const std::function<void(bool)>& changed);
+
+    /**
+     * The clipboard a text field's cut, copy and paste read and write. Without one, a copy
+     * and a paste do nothing and a cut leaves the text in place.
+     **/
+    void clipboard(const input::Clipboard& clipboard);
+
+    /**
      * Put the next widget beside the last one rather than under it.
      **/
     void sameLine();
@@ -390,6 +496,7 @@ class Immediate {
         glm::vec2 offset;  /**< how far a window has been dragged from where the caller put it **/
         bool collapsed;    /**< whether a window is folded to its title bar **/
         bool dragging;     /**< whether the press on its bar has travelled far enough to move it **/
+        int chosen;        /**< the item a combo's list was clicked on, taken next frame, or -1 **/
     };
 
 
@@ -466,6 +573,31 @@ class Immediate {
         float contentTop;       /**< where its rows start, below the header **/
         bool clipped;
     };
+
+    /**
+     * The list an open combo shows, drawn over everything at end().
+     **/
+    struct Popup final {
+        Popup() noexcept;
+
+        Id id;             /**< the combo that is open, or nothing **/
+        bool asked;        /**< whether the combo was drawn this frame **/
+        glm::vec2 boxMin;  /**< the combo's own box, where a press does not close the list **/
+        glm::vec2 boxMax;
+        std::vector<std::string> items;
+        int selected;
+    };
+
+    /**
+     * Draw the open combo's list over everything, and take a click on one of its items.
+     **/
+    void popup();
+
+    /**
+     * Give the keyboard to a text field, or take it from whichever has it, and tell
+     * whoever listens to onTyping().
+     **/
+    void focus(Id field);
 
     /**
      * Hash a label with the top of the id stack.
@@ -601,6 +733,20 @@ class Immediate {
     Table table_;
     unsigned int disabled_;
     Id wheeled_;  /**< the topmost window the cursor is over, which the wheel turns **/
+
+    Id typing_;            /**< the text field that holds the keyboard, or nothing **/
+    bool letGo_;           /**< a return, tab or escape asked the field to give it up **/
+    bool typingDrawn_;     /**< whether that field has been drawn this frame **/
+    std::string written_;  /**< what the field last wrote to the caller's string **/
+    input::LineEdit line_;
+    input::Clipboard clipboard_;
+    std::function<void(bool)> onTyping_;
+
+    glm::vec2 itemMin_;  /**< the box of the item placed last, which itemHovered() asks about **/
+    glm::vec2 itemMax_;
+    Id itemOwner_;       /**< what has to have held the cursor for that item to be hovered **/
+
+    Popup popup_;
 };
 
 };  // namespace v3d::ui

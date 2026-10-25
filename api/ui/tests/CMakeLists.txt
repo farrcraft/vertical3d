@@ -9,6 +9,7 @@ v3d_add_test(ui
 	"FileChooserTest.cpp"
 	"FocusTest.cpp"
 	"GameMenuTest.cpp"
+	"ImmediateInputTest.cpp"
 	"ImmediateTest.cpp"
 	"KeyboardDriveTest.cpp"
 	"LayoutTest.cpp"

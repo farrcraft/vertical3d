@@ -100,6 +100,11 @@ The adapter does four things:
 - It turns platform text input on while a `TextBox` has the focus and off when the focus
   leaves. It follows `Engine::onFocus()`, so a box clicked and typed into in the same frame
   does not lose its first character.
+- `immediate(layer)` offers an immediate layer the keys and characters the retained ui did
+  not take, and gives it the SDL clipboard. Text input is then also on while the layer's
+  `textField()` has the keyboard, which the adapter follows through `Immediate::onTyping()`.
+  The adapter can be built with no `ui::Engine`, for an app that draws only through the
+  immediate layer. [ImmediateMode.md](ImmediateMode.md#typing-into-a-field) covers the field.
 
 Rules the adapter follows:
 
@@ -110,6 +115,12 @@ Rules the adapter follows:
 - `Engine::onFocus()` holds one listener, and the last caller wins. The adapter sets it. An
   app that wants its own listener sets it after building the adapter and clears it before
   the adapter is destroyed.
-- Only a component whose type takes typed text (a `TextBox`) turns text input on.
+- Only a component whose type takes typed text (a `TextBox`) turns text input on, or an
+  immediate layer's field that has the keyboard.
+- The retained ui is offered a key first. An immediate layer sees only what it did not take.
+- The layer must outlive the adapter, or be taken off it with `immediate(nullptr)` first,
+  because the adapter holds a callback on the layer and clears it when it is destroyed.
+- `Immediate::onTyping()` holds one listener, as `Engine::onFocus()` does, and the adapter sets
+  it.
 
 The mouse is not routed by the adapter. See [The mouse](Mouse.md#the-mouse).
