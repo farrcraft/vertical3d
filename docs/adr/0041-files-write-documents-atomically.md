@@ -1,8 +1,9 @@
 # ADR-0041: Files: write documents atomically
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-09-07
 **Amends**: [ADR-0018](0018-editor-projects-saved-as-json-with-exact-topology.md)
+**Amended by**: [ADR-0101](0101-editor-a-scene-document-is-a-sqlite-database.md)
 **Documented in**: [api/Assets.md](../api/Assets.md)
 
 ## Context

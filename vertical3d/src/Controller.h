@@ -287,9 +287,8 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<v3d::ui::shell::Prompt> prompt_;
     boost::shared_ptr<v3d::ui::component::menu::Bar> menu_;
     std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
+    // the project Save writes to
     boost::shared_ptr<Project> project_;
-    // the document Save writes to
-    boost::filesystem::path projectPath_;
     boost::shared_ptr<CommandStack> history_;
     // what the caption was last set to
     std::string caption_;

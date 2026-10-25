@@ -166,9 +166,13 @@ below is a piece of work of its own, in any order.
 shaded draw of the mesh, which the editor's renderer does not have. The mode itself is view
 state.
 
+[] **Shared meshes in a scene document.** Two mesh items may share one `BRep`, but the scene store
+writes each item's geometry in full, so they read back as two copies. Keeping them shared needs
+the geometry as a record of its own, which the mesh items refer to by id, and a new mesh version.
+
 [] **Cameras and lights in the scene** (`view::show::camera`, `view::show::light` and the camera,
-light, curve, handle and mesh select masks). The scene holds camera and light items, but nothing
-saves, draws or creates one. Drawing them comes first, and the masks and show toggles follow.
+light, curve, handle and mesh select masks). The scene holds and saves camera and light items,
+but nothing draws or creates one. Drawing them comes first, and the masks and show toggles follow.
 
 [] **Importers** (`project::import::*`) each need a format reader. An importer creates meshes
 through the command stack, so an import can be undone.

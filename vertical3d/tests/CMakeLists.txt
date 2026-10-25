@@ -14,6 +14,7 @@ v3d_add_test(vertical3d
 	"scene/WireframeVisitorTest.cxx"
 	"scene/RIBExportVisitorTest.cxx"
 	"scene/ProjectTest.cxx"
+	"scene/SceneStoreTest.cxx"
 	"scene/ModellingTest.cxx"
 
 	"command/CommandStackTest.cxx"
@@ -40,6 +41,7 @@ v3d_add_test(vertical3d
 	"../src/scene/WireframeVisitor.cxx"
 	"../src/scene/RIBExportVisitor.cxx"
 	"../src/scene/Project.cxx"
+	"../src/scene/SceneStore.cxx"
 	"../src/scene/Modelling.cxx"
 	"../src/command/CommandStack.cxx"
 	"../src/command/CreateCommand.cxx"
@@ -64,6 +66,7 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_brep
 	v3dlib_config
 	v3dlib_dag
+	v3dlib_database
 	v3dlib_engine
 	v3dlib_event
 	v3dlib_log

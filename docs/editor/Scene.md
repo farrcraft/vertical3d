@@ -27,7 +27,7 @@ reverses each face's loop. Background:
 
 `brep::INVALID_ID` (`1 << 31`) marks a
 reference to nothing, such as the `pair` of an edge on an open boundary. **Do not change
-`INVALID_ID`.** Project files store it, so a new value breaks every saved project.
+`INVALID_ID`.** Scene documents store it, so a new value breaks every saved project.
 
 **Building.** `BRep::addFace(points, normal)` adds a face from a list of points. It reuses an
 existing vertex at the same position and pairs each new half edge with an existing one by
@@ -38,7 +38,7 @@ differently. The lower-level `addVertex`, `addEdge` and `addFace` overloads that
 **Validation.** `BRep::validate(&problem)` checks that every reference points at a part the
 mesh holds: a half edge's vertex always, its face, pair and next unless they are `INVALID_ID`,
 and a face's edge always. A `next` chain that does not close is allowed, because an unfinished
-modelling operation can leave one. A project file is read against this rule.
+modelling operation can leave one. A scene document is read against this rule.
 
 **Strict validation.** `BRep::validateStrict(&problem)` is the check a topology change is tested
 against. It runs `validate()` first, then requires that:
@@ -137,9 +137,16 @@ order. `Scene::add` appends.
 | Camera | `Camera` | A `Lens`: perspective or orthographic, the angle of view in degrees, the orthographic half height, and the clipping distances. It looks along its own +z axis with +y up, as a camera profile with no rotation does |
 | Light | `Light` | An `Emission`: a point, distant or spot light, its colour and intensity, and a spot light's cone and soft edge in radians, with RI's standard shaders' defaults. A distant or spot light shines along its own +z axis |
 
-- **Identity.** `Node` gives each item an id from a process-wide counter. Ids are unique within
-  one run, are never reused, and mean nothing in another run, so a project file never stores
-  one. An item cannot be copied, because a copy would share its id.
+- **Identity.** Each item has two ids.
+  - `Node` gives each item an id from a process-wide counter. It is unique within one run, is
+    never reused, and means nothing in another run. A selection names an item by it.
+  - The document id, `Item::documentId()`, is unique within one document and is saved with it.
+    `Scene::add` gives an item without one the scene's next document id. An item keeps its id
+    after a removal, so an undone creation comes back with it. Ids are never reused within a
+    document, so the scene keeps the next one to give, and the document stores it. Anything
+    saved that refers to an item names it by its document id.
+
+  An item cannot be copied, because a copy would share both ids.
 - **Placement.** `Transform` holds a translation, a rotation and a scale. `matrix()` composes
   them as translation × rotation × scale. `translation(v)` sets the position; `translate(v)`
   adds an offset to it. A camera and a light ignore their scale.
@@ -160,7 +167,8 @@ order. `Scene::add` appends.
   camera profiles read from `data/cameras.json`, and the layout names one profile per view. A
   camera item is part of the document.
 
-Background: [ADR-0099](../adr/0099-editor-scene-items-own-identity-and-placement.md)
+Background: [ADR-0099](../adr/0099-editor-scene-items-own-identity-and-placement.md),
+[ADR-0103](../adr/0103-editor-items-have-persistent-document-ids.md)
 
 The four primitives in `src/scene/CreatePoly.h` are each one unit across and centred on the
 origin. Each is geometry, and the mesh item that holds it places it. The cylinder and the cone

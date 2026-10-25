@@ -200,8 +200,9 @@ name. An unqualified `serialize()` on a `boost::json::value` finds `boost::json:
 argument-dependent lookup, and that writes the whole document on one line.
 
 What a document holds is the caller's decision. These functions decide only how it reaches the
-disk. `engine::Settings`, the editor's project files and `config::SpriteSheets` all write
-through them.
+disk. `engine::Settings`, the editor's project manifests and `config::SpriteSheets` all write
+through them. The editor's scene documents are SQLite databases, written in a transaction rather
+than by a rename. See [editor/Files.md](../editor/Files.md#scene-documents).
 
 Background: [ADR-0041](../adr/0041-files-write-documents-atomically.md)
 

@@ -24,6 +24,7 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`brep`](../../api/brep/) | Boundary representation meshes with half-edge topology, which the editor models with. |
 | [`config`](../../api/config/) | Reads `data/config.json` and the documents it lists. Also reads camera profiles and sprite sheets. |
 | [`dag`](../../api/dag/) | A node with a unique id, and the transform an editor scene item is placed by. |
+| [`database`](../../api/database/) | A connection to a SQLite database, its statements and its transactions. See [Database.md](Database.md). |
 | [`ecs`](../../api/ecs/) | Shared components and helpers over the EnTT entity registry. |
 | [`engine`](../../api/engine/) | The game engine: the app lifecycle, the main loop, the window, config, input and settings. |
 | [`event`](../../api/event/) | Event types, key bindings, and the mapping from a key to a command. |
@@ -53,6 +54,7 @@ Boost.
 | `asset` | log | (Boost only) |
 | `event` | log, asset | glm, EnTT |
 | `dag` | type | glm |
+| `database` | none | SQLite |
 | `ecs` | type | glm, EnTT |
 | `brep` | type | glm |
 | `font` | log, image | FreeType, glm |
@@ -68,7 +70,7 @@ Boost.
 The same picture as layers, lowest first. A library uses only libraries in the rows above it.
 
 ```
-log   type   grid                          no device, no window
+log   type   grid   database               no device, no window
 image  asset  dag  ecs  brep
 font   config  asset_media  event
 render_offline                             offline renderer, no Vulkan or SDL

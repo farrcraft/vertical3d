@@ -107,6 +107,10 @@ curve kind the plan does not build.
 | Decision | Step |
 |---|---|
 | Editor: what a scene item is, and how the scene holds kinds other than meshes. Decided in ADR-0099, which supersedes ADR-0013. | 1 |
+| Editor: how a project is laid out on disk. Decided in ADR-0100: a directory with a manifest. | 2 |
+| Editor: what a scene document is. Decided in ADR-0101, which supersedes ADR-0018: a SQLite database, saved incrementally, with autosave to a separate recovery database. | 2 |
+| Editor: how records are encoded and versioned. Decided in ADR-0102: typed columns for the core, JSON payloads, a schema version and a version per record type. | 2 |
+| Editor: how a saved record refers to an item. Decided in ADR-0103: a persistent document id. | 2 |
 | Editor: where hierarchy lives, in `api/dag` or in the editor, and how a world matrix is composed. Amends ADR-0099. | 9 |
 | Editor: how the editor renders with moya, by linking `v3dlib_moya` or by running `moya.exe`. | 8 |
 | Editor: which import formats the menu offers. glTF has a reader. The four legacy formats each need one written. | 7 |
@@ -117,13 +121,16 @@ curve kind the plan does not build.
 - **Step 1 blocks steps 2, 3, 4 and 9.** Every kind other than a mesh needs a scene item to be.
   Step 1 is closed.
 - **Step 2 goes with step 1.** A scene that holds a camera has to save one.
+- **Step 11 needs step 2**, and gives step 6 the revision it re-uploads by. **Step 12 needs
+  step 11**, so that an autosave writes only what changed.
 - **Step 3 comes before step 4's show toggles**, so that a toggle changes what is drawn.
 - **Step 7 needs the builder in step 7's first half** before any importer can make a mesh.
 - **Step 8 works on today's export.** It renders better after step 4, which gives the export
   lights and a scene camera to render from.
 - **Step 9 needs step 1, and touches picking, the manipulators, the export and the file.**
 - **Step 10 needs its ADR, and is best last**, so that a group and a camera can be keyed.
-- **Steps 5 and 6 are independent** of everything else, and can land at any point.
+- **Step 5 is independent** of everything else, and can land at any point. Step 6 needs only
+  step 11.
 
 ## Steps
 
@@ -147,14 +154,33 @@ curve kind the plan does not build.
   item that holds geometry, and kept what they check. `ItemTest` and `SceneTest` cover the
   kinds, the casts, shared geometry and the order across kinds.
 
-### Step 2 — Project version 2
+### Step 2 — The project store
 
-**Open.** `Project::VERSION` becomes 2, with the first entry in the migration chain: a version 1
-file reads as a version 2 file with no cameras, lights or groups. The new sections are written
-even when empty. A read stays all or nothing for the new kinds.
+**Closed.** ADR-0100 to ADR-0103 decided it, after weighing JSON, a JSON document with binary
+chunks, LMDB, LevelDB, a file format of our own, glTF and USD, and FlatBuffers and Cap'n Proto
+for the payloads. The JSON project file is gone, and a project written by an earlier build is not
+read.
 
-- Tests: a version 1 file reads under version 2. A file with a camera and a light round-trips.
-  A malformed light fails the whole read.
+- A new api library, `v3dlib_database`, wraps SQLite: a connection, statements, transactions and
+  the two pragmas a document carries. No other library or app includes SQLite.
+- A project is a directory: `project.json`, a manifest written atomically, and the `scenes`,
+  `assets`, `cache`, `renders` and `autosave` directories. The manifest names the scenes, and
+  the editor opens the first.
+- A scene document is a database with an application id, a schema version, an `items` table of
+  typed core columns and a JSON payload, and a `buffers` table of blobs. A mesh's topology is
+  three blobs.
+- Every item has a document id, assigned by the scene and never reused within a document.
+- A save writes the whole scene in one transaction. A read is all or nothing, and refuses a
+  newer schema, a newer record type, an unknown kind and a database another program wrote.
+- Open picks a project's manifest, and Save As makes a new project directory.
+- Tests: a scene of every kind round-trips, in order and with its ids. A malformed light, a
+  newer type, a newer schema and a foreign database each fail the whole read and leave the scene
+  alone. A failed save leaves the last save whole. The manifest round-trips.
+- What landed matches the list above. A payload must hold exactly the fields its version
+  defines, so any change to what a kind stores is a new version of the kind. An older build
+  then refuses a newer document rather than dropping what it cannot read. The store writes each mesh
+  item's geometry in full, so two items that share a `BRep` read back with a copy each. Nothing
+  makes such items yet, and TODO.md holds the work.
 
 ### Step 3 — Cameras and lights drawn
 
@@ -189,7 +215,7 @@ perspective view zoom changes the field of view and dolly moves the camera.
 smooth normal averaged at each vertex, and its winding reversed to counter-clockwise. A shaded
 pass per view draws the triangles before the lines and shares the depth buffer.
 
-- A mesh carries a revision that every edit bumps, so the renderer re-uploads only what changed.
+- The renderer re-uploads a mesh only when step 11's revision has moved.
 - The pass is the editor's own: a simple lit shader with pipeline variants for the cull and
   polygon modes. Lit's cel shading and fixed modes do not fit a modeller's views.
 - `view::shade::*`, `view::cull::*` and `view::rendermode::*` set view state, and each view keeps
@@ -239,6 +265,25 @@ keyed per channel with `Track`, and stored in the project.
 - `timeline::playback::*` play, stop and step between frames and keys.
 - The export writes the current frame. `render::batch` can render a frame range.
 - Tests: a key sets and undoes. A track samples between two keys. A keyed project round-trips.
+
+### Step 11 — Incremental save
+
+**Open.** An item carries a revision that every change to it moves. The store remembers the
+revision it last wrote for each item, and a save writes only the rows of items that changed,
+were added or were removed.
+
+- Tests: a save after one move writes one row. An undone creation deletes its row. A save that
+  changes nothing writes nothing.
+
+### Step 12 — Autosave
+
+**Open.** On a timer, the editor writes the changes since the last autosave into a recovery
+database in the project's `autosave` directory, never into the document. Opening a project whose
+recovery database is newer than its scene offers to recover it. A save or a clean close removes
+the recovery database.
+
+- Tests: an autosave leaves the document as it was. Recovery reads back the autosaved scene. A
+  save removes the recovery database.
 
 ## Outcome
 

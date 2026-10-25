@@ -114,6 +114,33 @@ BOOST_AUTO_TEST_CASE(scene_kinds_test) {
     BOOST_CHECK_EQUAL(scene.count(), 2U);
 }
 
+BOOST_AUTO_TEST_CASE(scene_document_ids_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Mesh> first = emptyMesh();
+    const boost::shared_ptr<v3d::editor::Camera> second = boost::make_shared<v3d::editor::Camera>();
+    BOOST_CHECK_EQUAL(first->documentId(), 0);
+
+    // the scene gives each item the next document id as it is first added
+    scene.add(first);
+    scene.add(second);
+    BOOST_CHECK_EQUAL(first->documentId(), 1);
+    BOOST_CHECK_EQUAL(second->documentId(), 2);
+    BOOST_CHECK_EQUAL(scene.nextDocumentId(), 3);
+
+    // an item taken out and put back, as an undone creation is redone, keeps its id, and the
+    // id is not given to anything else meanwhile
+    scene.remove(first->id());
+    const boost::shared_ptr<v3d::editor::Light> third = boost::make_shared<v3d::editor::Light>();
+    scene.add(third);
+    scene.add(first);
+    BOOST_CHECK_EQUAL(first->documentId(), 1);
+    BOOST_CHECK_EQUAL(third->documentId(), 3);
+
+    // a closed document starts its ids again
+    scene.clear();
+    BOOST_CHECK_EQUAL(scene.nextDocumentId(), 1);
+}
+
 BOOST_AUTO_TEST_CASE(scene_visit_order_test) {
     v3d::editor::Scene scene;
 

@@ -13,7 +13,7 @@ projects. Menus, two toolbars and a file chooser are drawn with `api/ui`.
 | [Scene.md](Scene.md) | Work with meshes, the scene items that hold them, and the viewports that show the scene |
 | [PickingAndManipulators.md](PickingAndManipulators.md) | Change how clicks select things, and how handles move them |
 | [CommandsAndUndo.md](CommandsAndUndo.md) | Add a command, or make a change undoable |
-| [Files.md](Files.md) | Change the project file format, or the RIB export |
+| [Files.md](Files.md) | Change the project layout, the scene document format, or the RIB export |
 
 ## Running it
 
@@ -53,7 +53,7 @@ Ctrl is also the truck modifier. Save As and RIB export are on the Project menu 
 | `src/Controller.*` | The app: startup, command registration, mouse routing, project actions |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui |
 | `src/view/` | `ViewLayout`, `ViewPort`, `ConstructionPlane` |
-| `src/scene/` | `Scene`, its items `Item`, `Mesh`, `Camera` and `Light`, `SceneVisitor`, the primitives in `CreatePoly`, the operations in `Modelling`, `WireframeVisitor`, `RIBExportVisitor`, `Project` |
+| `src/scene/` | `Scene`, its items `Item`, `Mesh`, `Camera` and `Light`, `SceneVisitor`, the primitives in `CreatePoly`, the operations in `Modelling`, `WireframeVisitor`, `RIBExportVisitor`, `Project` and `SceneStore` |
 | `src/command/` | `Command`, `CommandStack`, `CreateCommand`, `TransformCommand`, `VertexCommand`, `TopologyCommand`, `Placement` |
 | `src/tool/` | `Tool`, `CameraControlTool`, `SelectTool`, `TransformTool`, `Picker`, `SelectMask` |
 | `src/manipulator/` | `Manipulator` and its translate, rotate and scale subclasses, and `Target`, what they move |

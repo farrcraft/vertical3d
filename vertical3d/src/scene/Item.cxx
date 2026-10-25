@@ -5,17 +5,32 @@
 
 #include "Item.h"
 
+#include <cstdint>
+
 namespace v3d::editor {
 
 /**
  **/
 Item::Item() :
-    selected_(false) {
+    selected_(false),
+    documentId_(0) {
 }
 
 /**
  **/
 Item::~Item() {
+}
+
+/**
+ **/
+std::int64_t Item::documentId() const noexcept {
+    return documentId_;
+}
+
+/**
+ **/
+void Item::documentId(std::int64_t id) noexcept {
+    documentId_ = id;
 }
 
 /**

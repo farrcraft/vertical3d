@@ -31,6 +31,7 @@ is SDL3.
 | `api/engine`, `config`, `event`, `input`, `audio`, `log` | [docs/api/engine/](docs/api/engine/README.md) |
 | `api/type`, `api/grid`, `api/ecs` | [docs/api/Types.md](docs/api/Types.md), [Grid.md](docs/api/Grid.md), [ECS.md](docs/api/ECS.md) |
 | `api/asset`, `api/image`, `api/font` | [docs/api/Assets.md](docs/api/Assets.md) |
+| `api/database` | [docs/api/Database.md](docs/api/Database.md) |
 | Using `api/render/realtime` | [docs/api/rendering/](docs/api/rendering/README.md) |
 | Changing `api/render/realtime` | [docs/internals/realtime/](docs/internals/realtime/README.md) |
 | Using `api/ui` | [docs/api/ui/](docs/api/ui/README.md) |

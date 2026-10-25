@@ -3,30 +3,23 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/brep/BRep.h>
-#include <api/brep/Index.h>
 #include <api/log/Logger.h>
-#include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/scene/SceneVisitor.h>
 
-#include <cstddef>
 #include <fstream>
 #include <ios>
 #include <iterator>
 #include <string>
 #include <vector>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/test/unit_test.hpp>
-
+#include <boost/filesystem.hpp>
+#include <boost/json.hpp>
 #include <boost/make_shared.hpp>
-#include <glm/gtc/quaternion.hpp>
+#include <boost/test/unit_test.hpp>
 
 namespace {
 
@@ -35,310 +28,137 @@ boost::shared_ptr<v3d::log::Logger> logger() {
 }
 
 /**
- * A path to write a project to and read it back from.
+ * A project directory in the temporary directory, removed before and after the test.
  **/
-std::string scratch(const char* name) {
-    return (boost::filesystem::temp_directory_path() / name).string();
-}
+class Scratch final {
+ public:
+    explicit Scratch(const std::string& name) :
+        path_(boost::filesystem::temp_directory_path() / ("v3d_project_" + name)) {
+        boost::filesystem::remove_all(path_);
+    }
 
-/** A file, and what to write into it. **/
-struct Written {
-    std::string path;
-    std::string text;
+    ~Scratch() {
+        boost::system::error_code error;
+        boost::filesystem::remove_all(path_, error);
+    }
+
+    Scratch(const Scratch&) = delete;
+    Scratch& operator=(const Scratch&) = delete;
+
+    const boost::filesystem::path& path() const {
+        return path_;
+    }
+
+ private:
+    boost::filesystem::path path_;
 };
 
-void put(const Written& written) {
-    std::ofstream file(written.path, std::ios::binary | std::ios::trunc);
-    file.write(written.text.data(), static_cast<std::streamsize>(written.text.size()));
+/**
+ * A scene of a cube and a light.
+ **/
+boost::shared_ptr<v3d::editor::Scene> sample() {
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube()));
+    scene->add(boost::make_shared<v3d::editor::Light>());
+    return scene;
 }
 
-std::string get(const std::string& path) {
-    std::ifstream file(path, std::ios::binary);
+std::string get(const boost::filesystem::path& path) {
+    std::ifstream file(path.string(), std::ios::binary);
     return std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 }
 
-/**
- * Collects a scene's meshes in the order it holds them.
- **/
-class Collector final : public v3d::editor::SceneVisitor {
- public:
-    void visit(const boost::shared_ptr<v3d::editor::Mesh>& mesh) override {
-        meshes.push_back(mesh);
+void put(const boost::filesystem::path& path, const std::string& text) {
+    std::ofstream file(path.string(), std::ios::binary | std::ios::trunc);
+    file.write(text.data(), static_cast<std::streamsize>(text.size()));
+}
+
+BOOST_AUTO_TEST_CASE(project_save_makes_the_layout_test) {
+    const Scratch scratch("layout");
+    v3d::editor::Project project(logger(), scratch.path());
+    project.name("orrery");
+    BOOST_REQUIRE(project.save(sample()));
+
+    // every directory of a project, the scene in its place, and the manifest at the root
+    for (const std::string& part : v3d::editor::Project::layout()) {
+        BOOST_CHECK(boost::filesystem::is_directory(scratch.path() / part));
     }
+    BOOST_CHECK(boost::filesystem::is_regular_file(scratch.path() / "scenes" / "main.v3d"));
+    BOOST_CHECK(project.scene() == scratch.path() / "scenes" / "main.v3d");
 
-    void visit(const boost::shared_ptr<v3d::editor::Camera>& /*camera*/) override {
-    }
-
-    void visit(const boost::shared_ptr<v3d::editor::Light>& /*light*/) override {
-    }
-
-    v3d::editor::Meshes meshes;
-};
-
-v3d::editor::Meshes meshes(const boost::shared_ptr<v3d::editor::Scene>& scene) {
-    Collector collector;
-    scene->accept(&collector);
-    return collector.meshes;
+    const boost::json::value manifest = boost::json::parse(get(scratch.path() / v3d::editor::Project::MANIFEST));
+    BOOST_CHECK_EQUAL(manifest.at("version").as_int64(), v3d::editor::Project::VERSION);
+    BOOST_CHECK_EQUAL(manifest.at("format").as_string(), "v3d-project");
+    BOOST_CHECK_EQUAL(manifest.at("name").as_string(), "orrery");
+    BOOST_REQUIRE_EQUAL(manifest.at("scenes").as_array().size(), 1U);
+    BOOST_CHECK_EQUAL(manifest.at("scenes").as_array()[0].as_string(), "scenes/main.v3d");
 }
 
-/**
- * Whether two meshes hold the same geometry, the same topology and the same placement.
- * Ids are not compared, because a mesh read from a file is a new node.
- **/
-void same(const boost::shared_ptr<v3d::editor::Mesh>& leftItem, const boost::shared_ptr<v3d::editor::Mesh>& rightItem) {
-    const boost::shared_ptr<v3d::brep::BRep>& left = leftItem->geometry();
-    const boost::shared_ptr<v3d::brep::BRep>& right = rightItem->geometry();
-    BOOST_REQUIRE_EQUAL(left->vertexCount(), right->vertexCount());
-    BOOST_REQUIRE_EQUAL(left->edgeCount(), right->edgeCount());
-    BOOST_REQUIRE_EQUAL(left->faceCount(), right->faceCount());
+BOOST_AUTO_TEST_CASE(project_open_test) {
+    const Scratch scratch("open");
+    v3d::editor::Project saved(logger(), scratch.path());
+    saved.name("orrery");
+    BOOST_REQUIRE(saved.save(sample()));
 
-    for (std::size_t index = 0; index < left->vertexCount(); index++) {
-        const unsigned int id = static_cast<unsigned int>(index);
-        BOOST_CHECK(left->vertex(id)->point() == right->vertex(id)->point());
-    }
-    for (std::size_t index = 0; index < left->edgeCount(); index++) {
-        const unsigned int id = static_cast<unsigned int>(index);
-        BOOST_CHECK_EQUAL(left->edge(id)->vertex(), right->edge(id)->vertex());
-        BOOST_CHECK_EQUAL(left->edge(id)->face(), right->edge(id)->face());
-        BOOST_CHECK_EQUAL(left->edge(id)->pair(), right->edge(id)->pair());
-        BOOST_CHECK_EQUAL(left->edge(id)->next(), right->edge(id)->next());
-    }
-    for (std::size_t index = 0; index < left->faceCount(); index++) {
-        const unsigned int id = static_cast<unsigned int>(index);
-        BOOST_CHECK(left->face(id)->normal() == right->face(id)->normal());
-        BOOST_CHECK_EQUAL(left->face(id)->edge(), right->face(id)->edge());
-    }
-
-    BOOST_CHECK(leftItem->translation() == rightItem->translation());
-    BOOST_CHECK(leftItem->scale() == rightItem->scale());
-    BOOST_CHECK(leftItem->rotation() == rightItem->rotation());
-}
-
-BOOST_AUTO_TEST_CASE(project_round_trip_test) {
-    const std::string path = scratch("v3d_round_trip.json");
-
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
-    cube->translation(glm::vec3(1.5F, -2.0F, 0.25F));
-    cube->scale(glm::vec3(2.0F, 0.5F, 1.0F));
-    cube->rotation(glm::angleAxis(0.75F, glm::normalize(glm::vec3(0.0F, 1.0F, 1.0F))));
-
-    const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
-    written->add(cube);
-
-    v3d::editor::Project project(logger());
-    project.name("round trip");
-    BOOST_REQUIRE_EQUAL(project.write(path, written), true);
-
-    const boost::shared_ptr<v3d::editor::Scene> read = boost::make_shared<v3d::editor::Scene>();
-    v3d::editor::Project reader(logger());
-    BOOST_REQUIRE_EQUAL(reader.read(path, read), true);
-
-    BOOST_CHECK_EQUAL(reader.name(), "round trip");
-    BOOST_REQUIRE_EQUAL(read->count(), 1U);
-
-    // the topology is stored as it stands, so a round trip renumbers nothing
-    same(cube, meshes(read).front());
-
-    boost::filesystem::remove(path);
-}
-
-BOOST_AUTO_TEST_CASE(project_order_and_selection_test) {
-    const std::string path = scratch("v3d_order.json");
-
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
-    const boost::shared_ptr<v3d::editor::Mesh> cone = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cone());
-    cube->selected(true);
-    cone->geometry()->face(0)->selected(true);
-
-    const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
-    written->add(cube);
-    written->add(cone);
-
-    const v3d::editor::Project project(logger());
-    BOOST_REQUIRE_EQUAL(project.write(path, written), true);
-
-    const boost::shared_ptr<v3d::editor::Scene> read = boost::make_shared<v3d::editor::Scene>();
-    BOOST_REQUIRE_EQUAL(v3d::editor::Project(logger()).read(path, read), true);
-    BOOST_REQUIRE_EQUAL(read->count(), 2U);
-
-    const v3d::editor::Meshes loaded = meshes(read);
-    BOOST_REQUIRE_EQUAL(loaded.size(), 2U);
-    same(cube, loaded[0]);
-    same(cone, loaded[1]);
-
-    // selection is where the user is rather than what the document holds, so nothing comes
-    // back selected
-    BOOST_CHECK(read->selection().empty());
-    BOOST_CHECK_EQUAL(loaded[1]->geometry()->face(0)->selected(), false);
-
-    boost::filesystem::remove(path);
-}
-
-BOOST_AUTO_TEST_CASE(project_read_replaces_the_scene_test) {
-    const std::string path = scratch("v3d_empty.json");
-
-    const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
-    const v3d::editor::Project project(logger());
-    BOOST_REQUIRE_EQUAL(project.write(path, written), true);
-
-    const boost::shared_ptr<v3d::editor::Scene> read = boost::make_shared<v3d::editor::Scene>();
-    read->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube()));
-    BOOST_REQUIRE_EQUAL(v3d::editor::Project(logger()).read(path, read), true);
-
-    // reading replaces the document rather than adding to it
-    BOOST_CHECK_EQUAL(read->count(), 0U);
-
-    boost::filesystem::remove(path);
-}
-
-BOOST_AUTO_TEST_CASE(project_written_form_test) {
-    const std::string path = scratch("v3d_form.json");
-
-    const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
-    written->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane()));
-
-    v3d::editor::Project project(logger());
-    project.name("form");
-    BOOST_REQUIRE_EQUAL(project.write(path, written), true);
-
-    const std::string text = get(path);
-    // indented rather than the one line boost::json serializes, so the file diffs
-    BOOST_CHECK(text.contains('\n'));
-    BOOST_CHECK(text.contains("\"version\": 1"));
-    BOOST_CHECK(text.contains("\"name\": \"form\""));
-    // a vector stays on one line, so a mesh is not broken into one number per line
-    BOOST_CHECK(text.contains("\"normal\": [0, 1, 0]"));
-
-    boost::filesystem::remove(path);
-}
-
-/**
- * The project already on disk survives a save that does not complete. The write is made to
- * fail by leaving a directory where the document should go, since a file cannot be renamed
- * onto a directory.
- **/
-BOOST_AUTO_TEST_CASE(project_failed_write_keeps_the_previous_project_test) {
-    const std::string path = scratch("v3d_kept.json");
-
-    const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
-    written->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane()));
-    v3d::editor::Project project(logger());
-    project.name("kept");
-    BOOST_REQUIRE_EQUAL(project.write(path, written), true);
-    const std::string before = get(path);
-
-    const std::string blocked = scratch("v3d_blocked.json");
-    boost::filesystem::create_directories(boost::filesystem::path(blocked) / "occupied");
-    v3d::editor::Project doomed(logger());
-    doomed.name("lost");
-    BOOST_CHECK_EQUAL(doomed.write(blocked, written), false);
-    BOOST_CHECK(boost::filesystem::is_directory(blocked));
-    BOOST_CHECK(!boost::filesystem::exists(blocked + ".tmp"));
-
-    // the file already on disk is unchanged, byte for byte
-    BOOST_CHECK_EQUAL(get(path), before);
-
-    boost::filesystem::remove_all(blocked);
-    boost::filesystem::remove(path);
-}
-
-BOOST_AUTO_TEST_CASE(project_missing_file_test) {
+    // a project is opened by its manifest, and takes its directory and its name from it
+    const Scratch elsewhere("elsewhere");
+    v3d::editor::Project opened(logger(), elsewhere.path());
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube()));
-
-    v3d::editor::Project project(logger());
-    BOOST_CHECK_EQUAL(project.read(scratch("v3d_no_such_project.json"), scene), false);
-
-    // a failed open does not also lose the document in memory
-    BOOST_CHECK_EQUAL(scene->count(), 1U);
+    BOOST_REQUIRE(opened.open(scratch.path() / v3d::editor::Project::MANIFEST, scene));
+    BOOST_CHECK(opened.directory() == scratch.path());
+    BOOST_CHECK_EQUAL(opened.name(), "orrery");
+    BOOST_CHECK_EQUAL(scene->count(), 2U);
 }
 
-BOOST_AUTO_TEST_CASE(project_rejects_malformed_test) {
-    const std::string path = scratch("v3d_malformed.json");
+BOOST_AUTO_TEST_CASE(project_save_as_test) {
+    const Scratch first("first");
+    const Scratch second("second");
+    v3d::editor::Project project(logger(), first.path());
+    BOOST_REQUIRE(project.save(sample()));
 
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube()));
-    v3d::editor::Project project(logger());
+    // a new project becomes the one a save writes to
+    BOOST_REQUIRE(project.saveAs(second.path(), sample()));
+    BOOST_CHECK(project.directory() == second.path());
+    BOOST_CHECK(boost::filesystem::exists(second.path() / v3d::editor::Project::MANIFEST));
 
-    put({.path = path, .text = "{ this is not json"});
-    BOOST_CHECK_EQUAL(project.read(path, scene), false);
-
-    // a document of another version is refused rather than read as far as it goes
-    put({.path = path, .text = "{\"version\": 2, \"name\": \"later\", \"meshes\": []}"});
-    BOOST_CHECK_EQUAL(project.read(path, scene), false);
-
-    put({.path = path, .text = "{\"name\": \"no version\", \"meshes\": []}"});
-    BOOST_CHECK_EQUAL(project.read(path, scene), false);
-
-    put({.path = path, .text = "{\"version\": 1, \"name\": \"no meshes\"}"});
-    BOOST_CHECK_EQUAL(project.read(path, scene), false);
-
-    // a mesh missing one of its three arrays
-    put({.path = path, .text = "{\"version\": 1, \"meshes\": [{\"vertices\": [], \"edges\": []}]}"});
-    BOOST_CHECK_EQUAL(project.read(path, scene), false);
-
-    // a vertex that is not three numbers
-    put({.path = path, .text = "{\"version\": 1, \"meshes\": [{\"vertices\": [[0, 1]], \"edges\": [], \"faces\": []}]}"});
-    BOOST_CHECK_EQUAL(project.read(path, scene), false);
-
-    BOOST_CHECK_EQUAL(scene->count(), 1U);
-    boost::filesystem::remove(path);
+    // and one cannot go where something already is
+    BOOST_CHECK(!project.saveAs(first.path(), sample()));
+    BOOST_CHECK(project.directory() == second.path());
 }
 
-BOOST_AUTO_TEST_CASE(project_rejects_dangling_reference_test) {
-    const std::string path = scratch("v3d_dangling.json");
+BOOST_AUTO_TEST_CASE(project_refuses_a_bad_manifest_test) {
+    const std::vector<std::string> manifests = {
+        "not json",
+        "{\"version\": 1, \"format\": \"something-else\", \"name\": \"x\", \"scenes\": [\"scenes/main.v3d\"]}",
+        "{\"version\": 2, \"format\": \"v3d-project\", \"name\": \"x\", \"scenes\": [\"scenes/main.v3d\"]}",
+        "{\"version\": 1, \"format\": \"v3d-project\", \"scenes\": [\"scenes/main.v3d\"]}",
+        "{\"version\": 1, \"format\": \"v3d-project\", \"name\": \"x\", \"scenes\": []}",
+        "{\"version\": 1, \"format\": \"v3d-project\", \"name\": \"x\", \"scenes\": [\"../main.v3d\"]}",
+        "{\"version\": 1, \"format\": \"v3d-project\", \"name\": \"x\", \"scenes\": [\"C:/main.v3d\"]}",
+        "{\"version\": 1, \"format\": \"v3d-project\", \"name\": \"x\", \"scenes\": [\"scenes/missing.v3d\"]}",
+    };
+    const Scratch scratch("bad");
+    v3d::editor::Project saved(logger(), scratch.path());
+    BOOST_REQUIRE(saved.save(sample()));
+    const Scratch elsewhere("unchanged");
 
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    v3d::editor::Project project(logger());
+    for (const std::string& text : manifests) {
+        BOOST_TEST_CONTEXT(text) {
+            put(scratch.path() / v3d::editor::Project::MANIFEST, text);
 
-    // one vertex and an edge naming a second that is not there. The wireframe and the picker
-    // would index past the end of the mesh, so the read refuses it
-    put({.path = path, .text = "{\"version\": 1, \"meshes\": [{"
-        "\"vertices\": [[0, 0, 0]],"
-        "\"edges\": [{\"vertex\": 1, \"face\": 2147483648, \"pair\": 2147483648, \"next\": 0}],"
-        "\"faces\": []}]}"});
-    BOOST_CHECK_EQUAL(project.read(path, scene), false);
-    BOOST_CHECK_EQUAL(scene->count(), 0U);
+            // nothing changes, the scene and the project included
+            v3d::editor::Project project(logger(), elsewhere.path());
+            const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+            scene->add(boost::make_shared<v3d::editor::Light>());
+            BOOST_CHECK(!project.open(scratch.path() / v3d::editor::Project::MANIFEST, scene));
+            BOOST_CHECK(project.directory() == elsewhere.path());
+            BOOST_CHECK_EQUAL(project.name(), "untitled");
+            BOOST_CHECK_EQUAL(scene->count(), 1U);
+        }
+    }
 
-    // a face naming an edge the mesh does not hold
-    put({.path = path, .text = "{\"version\": 1, \"meshes\": [{"
-        "\"vertices\": [[0, 0, 0]],"
-        "\"edges\": [{\"vertex\": 0, \"face\": 0, \"pair\": 2147483648, \"next\": 0}],"
-        "\"faces\": [{\"normal\": [0, 0, 1], \"edge\": 3}]}]}"});
-    BOOST_CHECK_EQUAL(project.read(path, scene), false);
-
-    // the same mesh with valid references is read, so the two failures above come from the
-    // reference check rather than from the parse
-    put({.path = path, .text = "{\"version\": 1, \"meshes\": [{"
-        "\"vertices\": [[0, 0, 0]],"
-        "\"edges\": [{\"vertex\": 0, \"face\": 0, \"pair\": 2147483648, \"next\": 0}],"
-        "\"faces\": [{\"normal\": [0, 0, 1], \"edge\": 0}]}]}"});
-    BOOST_CHECK_EQUAL(project.read(path, scene), true);
-    BOOST_CHECK_EQUAL(scene->count(), 1U);
-
-    // an unpaired edge is not a dangling one: INVALID_ID is what a boundary carries
-    BOOST_CHECK_EQUAL(meshes(scene).front()->geometry()->edge(0)->pair(), v3d::brep::INVALID_ID);
-
-    boost::filesystem::remove(path);
-}
-
-BOOST_AUTO_TEST_CASE(project_default_transform_test) {
-    const std::string path = scratch("v3d_no_transform.json");
-
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    v3d::editor::Project project(logger());
-
-    // a hand written mesh with no placement sits at the origin, unturned and unscaled
-    put({.path = path, .text = "{\"version\": 1, \"meshes\": [{\"vertices\": [], \"edges\": [], \"faces\": []}]}"});
-    BOOST_REQUIRE_EQUAL(project.read(path, scene), true);
-    BOOST_REQUIRE_EQUAL(scene->count(), 1U);
-
-    same(boost::make_shared<v3d::editor::Mesh>(boost::make_shared<v3d::brep::BRep>()), meshes(scene).front());
-
-    // a file that carries no name reads as untitled
-    BOOST_CHECK_EQUAL(project.name(), "untitled");
-
-    boost::filesystem::remove(path);
+    v3d::editor::Project project(logger(), elsewhere.path());
+    BOOST_CHECK(!project.open(scratch.path() / "no_such_manifest.json", boost::make_shared<v3d::editor::Scene>()));
 }
 
 };  // namespace

@@ -17,6 +17,7 @@ add_executable("vertical3d"
 	"src/scene/WireframeVisitor.h" "src/scene/WireframeVisitor.cxx"
 	"src/scene/RIBExportVisitor.h" "src/scene/RIBExportVisitor.cxx"
 	"src/scene/Project.h" "src/scene/Project.cxx"
+	"src/scene/SceneStore.h" "src/scene/SceneStore.cxx"
 	"src/scene/Modelling.h" "src/scene/Modelling.cxx"
 
 	"src/command/Command.h"
@@ -46,6 +47,7 @@ target_link_libraries(vertical3d PRIVATE
 	v3dlib_brep
 	v3dlib_config
 	v3dlib_dag
+	v3dlib_database
 	v3dlib_engine
 	v3dlib_event
 	v3dlib_log

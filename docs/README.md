@@ -33,6 +33,7 @@ For anyone using the libraries under `api/`, inside this tree or from another re
 | [api/Types.md](api/Types.md) | Geometry, cameras, transforms, random numbers, animation and effect data |
 | [api/Grid.md](api/Grid.md) | Tile grids: movement, line of sight, terrain maps |
 | [api/Assets.md](api/Assets.md) | The asset manager and loaders, images, fonts, models and JSON documents |
+| [api/Database.md](api/Database.md) | SQLite connections, statements and transactions |
 | [../examples/README.md](../examples/README.md) | The example projects |
 
 ## Changing the libraries themselves

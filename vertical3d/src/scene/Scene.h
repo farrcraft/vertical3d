@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include "Item.h"
@@ -34,11 +35,14 @@ using Meshes = std::vector<boost::shared_ptr<Mesh>>;
  *
  * Items are found by the id their dag::Node base carries rather than by position, so a
  * selection outlives an insertion or a removal.
+ *
+ * The scene also gives each item its document id. Ids are never reused within a document, so
+ * the scene keeps the next one to give, and a saved document keeps it too.
  **/
 class Scene final {
  public:
     /**
-     * Append an item.
+     * Append an item, and give it the next document id if it has none.
      *
      * @return the id of the item, or 0 for an empty pointer. A selection names an item by
      *         this id.
@@ -88,9 +92,21 @@ class Scene final {
     std::size_t count() const noexcept;
 
     /**
-     * Drop everything, as closing a document does.
+     * Drop everything, as closing a document does. The next document id goes back to 1.
      **/
     void clear() noexcept;
+
+    /**
+     * The document id the next item without one is given. Reading a document sets it to the
+     * document's own, which is above every id the document has held.
+     **/
+    std::int64_t nextDocumentId() const noexcept;
+    void nextDocumentId(std::int64_t id) noexcept;
+
+    /**
+     * @return every item, of every kind, in insertion order
+     **/
+    const Items& items() const noexcept;
 
     /**
      * Walk the items in insertion order, each through the visit() for its kind.
@@ -111,6 +127,7 @@ class Scene final {
 
  private:
     Items items_;
+    std::int64_t nextDocumentId_ = 1;
 };
 
 };  // namespace v3d::editor

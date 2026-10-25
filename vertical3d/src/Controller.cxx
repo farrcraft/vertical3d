@@ -72,7 +72,6 @@ const char* const menuBar = "menu-bar";
 Controller::Controller(const std::string& path) :
     v3d::engine::Engine(path),
     path_(path),
-    projectPath_(boost::filesystem::path(path) / "project.json"),
     cursor_(0.0F, 0.0F),
     uiGrab_(false) {
     registerCommands();
@@ -87,7 +86,7 @@ bool Controller::start() {
     }
 
     scene_ = boost::make_shared<Scene>();
-    project_ = boost::make_shared<Project>(logger());
+    project_ = boost::make_shared<Project>(logger(), boost::filesystem::path(path_) / "project");
     history_ = boost::make_shared<CommandStack>();
 
     profiles_ = boost::make_shared<v3d::config::CameraProfiles>(logger());
@@ -261,7 +260,7 @@ void Controller::syncCaption() {
     if (!history_) {
         return;
     }
-    const std::string caption = "Vertical|3D - " + projectPath_.filename().string() + (history_->dirty() ? " *" : "");
+    const std::string caption = "Vertical|3D - " + project_->directory().filename().string() + (history_->dirty() ? " *" : "");
     if (caption == caption_) {
         return;
     }
@@ -511,15 +510,15 @@ void Controller::exportProject() {
  **/
 void Controller::openProject() {
     askBeforeDiscarding([this]() {
-        chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, projectPath_.parent_path(), ".json",
+        // a project is opened by its manifest
+        chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, project_->directory().parent_path(), ".json",
             [this](const boost::filesystem::path& chosen) {
                 // a gesture under way is holding the mesh it started on, which the read is
                 // about to take out of the scene
                 transformTool_->cancel();
-                if (!project_->read(chosen.string(), scene_)) {
+                if (!project_->open(chosen, scene_)) {
                     return;
                 }
-                projectPath_ = chosen;
                 // the history describes the scene that was replaced, so none of it can be
                 // undone against the new one. Clearing it also marks the new scene as saved
                 history_->clear();
@@ -530,7 +529,7 @@ void Controller::openProject() {
 /**
  **/
 bool Controller::saveProject() {
-    if (!project_->write(projectPath_.string(), scene_)) {
+    if (!project_->save(scene_)) {
         return false;
     }
     history_->markSaved();
@@ -544,7 +543,7 @@ void Controller::askBeforeDiscarding(const std::function<void()>& proceed) {
         proceed();
         return;
     }
-    prompt_->open("Save the changes to " + projectPath_.filename().string() + "?", {
+    prompt_->open("Save the changes to " + project_->directory().filename().string() + "?", {
         { "Save", [this, proceed]() {
             // a project that could not be written still has changes to lose
             if (saveProject()) {
@@ -574,10 +573,10 @@ bool Controller::quitRequested() {
 /**
  **/
 void Controller::saveProjectAs() {
-    chooser_->open(v3d::ui::shell::FileChooser::Mode::Save, projectPath_.parent_path(), ".json",
+    // the name typed is the new project's directory, so no extension is added to it
+    chooser_->open(v3d::ui::shell::FileChooser::Mode::Save, project_->directory().parent_path(), "",
         [this](const boost::filesystem::path& chosen) {
-            if (project_->write(chosen.string(), scene_)) {
-                projectPath_ = chosen;
+            if (project_->saveAs(chosen, scene_)) {
                 history_->markSaved();
             }
         });

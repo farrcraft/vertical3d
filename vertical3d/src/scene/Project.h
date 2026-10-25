@@ -8,60 +8,83 @@
 #include <api/log/Logger.h>
 
 #include <string>
+#include <vector>
 
 #include "Scene.h"
+#include "SceneStore.h"
 
+#include <boost/filesystem/path.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::editor {
 
 /**
- * The document: a scene on disk, read and written as JSON.
+ * The project being edited: a directory holding a manifest, its scenes, and the directories
+ * the rest of a project's files go in.
  *
- * The topology is stored as it stands, not as the calls that would rebuild it, so a round
- * trip renumbers nothing. Neither the selection nor a mesh's id is stored. An id comes from
- * a process wide counter, and a saved one could collide with a mesh already loaded.
+ * The manifest, project.json, is a JSON document written atomically. It holds the format
+ * version, the project's name and the paths of its scenes, each relative to the directory.
+ * The editor edits the first scene. A save makes every directory of the layout that is
+ * missing, writes the scene, and then the manifest.
  *
- * Reading replaces everything the scene holds. The history describes a scene that is
- * being thrown away, so the caller clears it.
+ * Reading replaces everything the scene holds. The history describes a scene that is being
+ * thrown away, so the caller clears it.
  **/
 class Project final {
  public:
     /**
-     * The format version written into every file. read() migrates an older file forward
-     * one version at a time, and refuses a later one.
+     * The manifest's format version. read() migrates an older manifest forward one version at
+     * a time, and refuses a later one.
      **/
     static const int VERSION;
 
     /**
+     * The manifest's name within the project directory.
      **/
-    explicit Project(const boost::shared_ptr<v3d::log::Logger>& logger);
+    static const char* const MANIFEST;
 
     /**
-     * Replace the scene with what the file holds.
-     *
-     * The scene is left untouched when the file cannot be read or does not describe a
-     * consistent mesh, so a failed open does not also lose the document in memory.
-     *
-     * @param path the file to read
-     * @param scene filled with what it holds
-     * @return whether the whole file was understood
+     * The directories every project has, relative to the project directory.
      **/
-    bool read(const std::string& path, const boost::shared_ptr<Scene>& scene);
+    static const std::vector<std::string>& layout();
 
     /**
-     * Write the scene as a project document.
-     *
-     * The write is atomic: if it does not complete, the file already there is left intact.
-     *
-     * @param path the file to write, replaced if it exists
-     * @param scene what to write
-     * @return whether the file was written
+     * @param directory the project a save writes to until one is opened or saved elsewhere
      **/
-    bool write(const std::string& path, const boost::shared_ptr<Scene>& scene) const;
+    Project(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::filesystem::path& directory);
 
     /**
-     * @return what the document is called, which is read from and written to the file
+     * Open a project by its manifest, and read its first scene into the scene.
+     *
+     * Nothing changes, the scene and this project included, unless the manifest and the scene
+     * are both read whole.
+     **/
+    bool open(const boost::filesystem::path& manifest, const boost::shared_ptr<Scene>& scene);
+
+    /**
+     * Write the scene into this project's directory.
+     **/
+    bool save(const boost::shared_ptr<Scene>& scene);
+
+    /**
+     * Write the scene as a new project, which becomes this project if the write succeeds.
+     *
+     * @param directory where the new project goes. It must not exist yet
+     **/
+    bool saveAs(const boost::filesystem::path& directory, const boost::shared_ptr<Scene>& scene);
+
+    /**
+     * @return the project's directory
+     **/
+    const boost::filesystem::path& directory() const noexcept;
+
+    /**
+     * @return the scene the editor edits, inside the directory
+     **/
+    boost::filesystem::path scene() const;
+
+    /**
+     * @return what the project is called, which the manifest holds
      **/
     const std::string& name() const noexcept;
 
@@ -70,8 +93,16 @@ class Project final {
     void name(const std::string& title);
 
  private:
+    /**
+     * Write the layout, the scene and the manifest into a directory.
+     **/
+    bool write(const boost::filesystem::path& directory, const boost::shared_ptr<Scene>& scene) const;
+
     boost::shared_ptr<v3d::log::Logger> logger_;
+    SceneStore store_;
+    boost::filesystem::path directory_;
     std::string name_;
+    std::vector<std::string> scenes_;
 };
 
 };  // namespace v3d::editor

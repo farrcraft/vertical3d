@@ -97,10 +97,10 @@ content went. Numbers are never reused.
 | [0028](0028-apps-the-shared-app-shell-lives-in-the-api.md) | Apps: the shared app shell lives in the api | accepted |
 | [0030](0030-models-one-interleaved-array.md) | Models: one interleaved array | superseded by 0069 |
 | [0032](0032-loop-fixed-step-simulation-variable-rate-rendering.md) | Loop: fixed-step simulation, variable-rate rendering | accepted |
-| [0041](0041-files-write-documents-atomically.md) | Files: write documents atomically | accepted |
+| [0041](0041-files-write-documents-atomically.md) | Files: write documents atomically | amended by 0101 |
 | [0043](0043-input-apps-see-raw-events-before-bindings.md) | Input: apps see raw events before bindings | amended by 0081 |
 | [0069](0069-models-material-parts-over-one-vertex-buffer.md) | Models: material parts over one vertex buffer | accepted |
-| [0073](0073-files-migrate-old-documents-one-version-at-a-time.md) | Files: migrate old documents one version at a time | accepted |
+| [0073](0073-files-migrate-old-documents-one-version-at-a-time.md) | Files: migrate old documents one version at a time | amended by 0102 |
 | [0079](0079-assets-loaders-are-registered.md) | Assets: loaders are registered | accepted |
 | [0080](0080-apps-the-engine-owns-startup-and-shutdown-order.md) | Apps: the engine owns startup and shutdown order | accepted |
 | [0081](0081-input-key-events-and-commands-are-separate.md) | Input: key events and commands are separate | accepted |
@@ -131,11 +131,15 @@ content went. Numbers are never reused.
 | [0015](0015-editor-manipulators-edit-the-object-transform.md) | Editor: manipulators edit the object transform | amended by 0096 |
 | [0016](0016-editor-undo-records-completed-changes.md) | Editor: undo records completed changes | accepted |
 | 0017 | *Not a decision. Now in docs/editor/CommandsAndUndo.md and api/event/Commands.h* | removed |
-| [0018](0018-editor-projects-saved-as-json-with-exact-topology.md) | Editor: projects saved as JSON with exact topology | amended by 0041 |
+| [0018](0018-editor-projects-saved-as-json-with-exact-topology.md) | Editor: projects saved as JSON with exact topology | amended by 0041; superseded by 0101 |
 | [0096](0096-editor-handles-pivot-at-the-mean-of-the-selection.md) | Editor: handles pivot at the mean of the selection | accepted |
 | [0097](0097-editor-faces-wind-clockwise-seen-from-outside.md) | Editor: faces wind clockwise seen from outside | accepted |
 | [0098](0098-editor-topology-changes-undone-from-snapshots.md) | Editor: topology changes undone from snapshots | accepted |
 | [0099](0099-editor-scene-items-own-identity-and-placement.md) | Editor: scene items own identity and placement | accepted |
+| [0100](0100-editor-a-project-is-a-directory-with-a-manifest.md) | Editor: a project is a directory with a manifest | accepted |
+| [0101](0101-editor-a-scene-document-is-a-sqlite-database.md) | Editor: a scene document is a SQLite database | accepted |
+| [0102](0102-editor-scene-records-are-rows-with-json-payloads.md) | Editor: scene records are rows with JSON payloads | accepted |
+| [0103](0103-editor-items-have-persistent-document-ids.md) | Editor: items have persistent document ids | accepted |
 
 ## Build, testing and code
 

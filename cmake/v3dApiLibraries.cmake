@@ -11,7 +11,7 @@
 
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
-	asset asset_media audio brep config dag ecs engine event font grid image input log
+	asset asset_media audio brep config dag database ecs engine event font grid image input log
 	render render_offline type ui)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
@@ -47,6 +47,11 @@ set(V3D_API_config_PACKAGES glm)
 set(V3D_API_dag_PATH "dag")
 set(V3D_API_dag_REQUIRES type)
 set(V3D_API_dag_PACKAGES glm)
+
+# SQLite, for documents that are saved incrementally. No header includes it.
+set(V3D_API_database_PATH "database")
+set(V3D_API_database_REQUIRES)
+set(V3D_API_database_PACKAGES unofficial-sqlite3)
 
 set(V3D_API_ecs_PATH "ecs")
 set(V3D_API_ecs_REQUIRES type)
@@ -111,7 +116,8 @@ set(V3D_PACKAGE_TARGETS
 	"JPEG::JPEG=JPEG"
 	"glm::glm=glm"
 	"EnTT::EnTT=EnTT"
-	"spdlog::spdlog=spdlog")
+	"spdlog::spdlog=spdlog"
+	"unofficial::sqlite3::sqlite3=unofficial-sqlite3")
 
 # A package that provides only an include directory has no target to appear in a link line.
 # The verification below cannot confirm the library still uses it, and accepts the manifest

@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 
 #include <boost/shared_ptr.hpp>
@@ -24,6 +25,9 @@ namespace v3d::editor {
 unsigned int Scene::add(const boost::shared_ptr<Item>& item) {
     if (!item) {
         return 0;
+    }
+    if (item->documentId() == 0) {
+        item->documentId(nextDocumentId_++);
     }
     items_.push_back(item);
     return item->id();
@@ -77,6 +81,25 @@ std::size_t Scene::count() const noexcept {
  **/
 void Scene::clear() noexcept {
     items_.clear();
+    nextDocumentId_ = 1;
+}
+
+/**
+ **/
+std::int64_t Scene::nextDocumentId() const noexcept {
+    return nextDocumentId_;
+}
+
+/**
+ **/
+void Scene::nextDocumentId(std::int64_t id) noexcept {
+    nextDocumentId_ = id;
+}
+
+/**
+ **/
+const Items& Scene::items() const noexcept {
+    return items_;
 }
 
 /**
