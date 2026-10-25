@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/realtime/Present.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 
 #include <vulkan/vulkan.h>
@@ -28,6 +29,9 @@ namespace v3d::render::realtime::vulkan::frame {
  * The colour format is UNORM unless the caller names one, so the colour a shader writes is the
  * colour that appears. format() returns the format chosen, and a pipeline that draws into the
  * swapchain is built against it.
+ *
+ * The present mode is a request in the same way. presenting() returns the mode granted, and
+ * each build of the swapchain logs it.
  **/
 class Swapchain final {
  public:
@@ -39,9 +43,10 @@ class Swapchain final {
      * @param preferred the colour format to present through, where the surface offers it.
      *        VK_FORMAT_UNDEFINED, or a format the surface does not offer, selects the UNORM
      *        default. format() returns the format chosen.
+     * @param present how the images are to be presented, as choosePresentMode() decides
      **/
     Swapchain(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
-        VkFormat preferred = VK_FORMAT_UNDEFINED);
+        VkFormat preferred = VK_FORMAT_UNDEFINED, Present present = Present::Uncapped);
 
     /**
      **/
@@ -58,6 +63,17 @@ class Swapchain final {
      * does not have to be rebuilt.
      **/
     void recreate(uint32_t width, uint32_t height);
+
+    /**
+     * Ask for a different present mode. It takes effect at the next recreate().
+     **/
+    void request(Present present) noexcept;
+
+    /**
+     * @return the present mode the swapchain was last built with, which is the one granted
+     *         rather than the one requested
+     **/
+    Present presenting() const noexcept;
 
     /**
      * @return whether there is a swapchain to draw into
@@ -118,6 +134,22 @@ class Swapchain final {
     static VkSurfaceFormatKHR chooseFormat(const std::vector<VkSurfaceFormatKHR>& formats,
         VkFormat preferred = VK_FORMAT_UNDEFINED);
 
+    /**
+     * Choose the present mode from the modes a surface offers.
+     *
+     * Public for the same reason as chooseFormat().
+     *
+     * @param modes what the surface offers, as vulkan reported them
+     * @param wanted the caller's request. Each request falls back as Present describes, and
+     *        ends at fifo, which every implementation offers
+     **/
+    static VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& modes, Present wanted);
+
+    /**
+     * @return the request a vulkan present mode answers, for a mode choosePresentMode() returns
+     **/
+    static Present granted(VkPresentModeKHR mode) noexcept;
+
  private:
     /**
      * What the surface supports on the device in use.
@@ -131,12 +163,6 @@ class Swapchain final {
     /**
      **/
     Support querySupport() const;
-
-    /**
-     * @return mailbox where the surface offers it, otherwise fifo, which every implementation
-     *         offers
-     **/
-    static VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& modes);
 
     /**
      * @return the surface's current extent when it has one, otherwise the requested size
@@ -160,6 +186,8 @@ class Swapchain final {
     boost::shared_ptr<v3d::log::Logger> logger_;
     VkSwapchainKHR swapchain_;
     VkFormat preferred_;
+    Present wanted_;      /**< the present mode the next build asks for **/
+    Present presenting_;  /**< and the one the last build was granted **/
     VkFormat format_;
     VkExtent2D extent_;
     bool copyable_;

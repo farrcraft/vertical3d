@@ -48,7 +48,8 @@ Engine3D::Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boos
     Engine(logger, assetManager),
     clearColour_(DEFAULT_CLEAR_COLOUR),
     preferred_(preferred),
-    allocations_(allocations) {
+    allocations_(allocations),
+    present_(Present::Uncapped) {
 }
 
 /**
@@ -57,7 +58,8 @@ bool Engine3D::initialize(const boost::shared_ptr<Window>& window) {
     Engine::initialize(window);
 
     // the context can only be built once there is a created window to take a device from
-    context_ = boost::make_shared<Context3D>(logger(), window, preferred_, allocations_);
+    context_ = boost::make_shared<Context3D>(logger(), window, preferred_, allocations_, present_);
+    pendingPresent_.reset();
 
     frame_ = boost::make_shared<Frame>();
     frame_->pass(colourPass)->clearColour(clearColour_);
@@ -168,8 +170,33 @@ bool Engine3D::beginFrame(glm::ivec2* size) {
 
 /**
  **/
+void Engine3D::present(Present present) {
+    present_ = present;
+    if (context_) {
+        pendingPresent_ = present;
+    }
+}
+
+/**
+ **/
+Present Engine3D::presenting() const noexcept {
+    return context_ ? context_->swapchain()->presenting() : present_;
+}
+
+/**
+ **/
 void Engine3D::renderFrame() {
     if (!context_ || !frame_) {
+        return;
+    }
+
+    if (pendingPresent_) {
+        // a new present mode needs a new swapchain, which is built here rather than when it
+        // was asked for, so that nothing is rebuilt while a tick is building the frame
+        context_->present(*pendingPresent_);
+        pendingPresent_.reset();
+        context_->ring()->skip();
+        endFrame();
         return;
     }
 

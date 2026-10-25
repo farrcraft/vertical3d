@@ -43,7 +43,13 @@ the wait, or a frame abandoned because recording threw, leaves nothing waiting o
   a non-linear sRGB colour space; otherwise a 32-bit `UNORM` format (`B8G8R8A8` or `R8G8B8A8`);
   otherwise the first offered. A missed preference logs a warning. The function needs no device
   and has a unit test.
-- The present mode is mailbox where offered, otherwise FIFO.
+- `choosePresentMode(modes, wanted)` takes the request's mode where the surface offers it and
+  falls back as `Present` describes, ending at FIFO, which every implementation offers. It needs no
+  device and has a unit test. `granted()` maps the chosen mode back to the request it answers, and
+  `presenting()` holds that for the last build. The default request, `Uncapped`, is mailbox.
+- `request(present)` changes the mode the next build asks for. `Context3D::present()` calls it and
+  then `resize()`. `Engine3D::present()` holds a change made after `initialize()` until the start
+  of the next `renderFrame()`, which applies it and drops that frame.
 - The images have `COLOR_ATTACHMENT` usage, plus `TRANSFER_SRC` where the surface's
   `supportedUsageFlags` include it. `copyable()` reports which.
 - `recreate()` waits for the device to go idle, then rebuilds with the same requested format.
@@ -59,24 +65,26 @@ hold a different number of images.
 
 ### What `Engine3D::renderFrame()` does
 
-1. `Presenter::acquire()` waits on the frame's fence, acquires the next image, and begins the
+1. A present mode asked for since the last frame is applied through `Context3D::present()`, and
+   the frame is dropped.
+2. `Presenter::acquire()` waits on the frame's fence, acquires the next image, and begins the
    command buffer. `OutOfDate` rebuilds the chain and drops the frame. `Skip` rebuilds the chain
    if the window has an area again, and drops the frame.
-2. It fills a `Recorder::Target` with the swapchain image, view, extent and format, plus the
+3. It fills a `Recorder::Target` with the swapchain image, view, extent and format, plus the
    context's depth buffer if any pass on the swapchain tests depth.
-3. `FrameUniforms::begin(ring->frame())` starts the frame's set 0 slots.
-4. `Recorder::record()` records every pass.
-5. If `capture()` named a file, `Capture::record()` copies the image, which the recorder left in
+4. `FrameUniforms::begin(ring->frame())` starts the frame's set 0 slots.
+5. `Recorder::record()` records every pass.
+6. If `capture()` named a file, `Capture::record()` copies the image, which the recorder left in
    `PRESENT_SRC_KHR`. A chain that is not `copyable()` logs an error and drops the request
    instead, since `Capture` throws for it.
-6. `Presenter::present()` ends the buffer, submits it with `vkQueueSubmit2`, and presents.
-7. With a capture recorded, `Ring::waitIdle()` waits for the submit and `Capture::write()` writes
+7. `Presenter::present()` ends the buffer, submits it with `vkQueueSubmit2`, and presents.
+8. With a capture recorded, `Ring::waitIdle()` waits for the submit and `Capture::write()` writes
    the file, and the request is cleared whether or not the write succeeded. The submit stands
    when presenting reports the chain out of date, so the file is written in that case too.
-8. If `present()` reported `OutOfDate`, the chain is rebuilt for the next frame.
-9. `Frame::reset()` drops every pass's items.
+9. If `present()` reported `OutOfDate`, the chain is rebuilt for the next frame.
+10. `Frame::reset()` drops every pass's items.
 
-A frame dropped at step 1 never reaches step 5, so a capture request waits for a frame that
+A frame dropped at step 1 or 2 never reaches step 6, so a capture request waits for a frame that
 presents.
 
 `beginFrame()` calls `renderFrame()` itself when the window has no area, so a minimized app still

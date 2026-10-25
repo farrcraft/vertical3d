@@ -5,10 +5,12 @@
 
 #pragma once
 
+#include <api/render/realtime/Present.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
 
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -73,6 +75,22 @@ class Engine3D : public Engine {
      *         images cannot be copied out of because the surface does not allow it
      **/
     bool capture(std::string_view path);
+
+    /**
+     * Ask for how the window's images are presented, which is a settings screen's vsync.
+     *
+     * Before initialize(), the swapchain is built with it. After, the next renderFrame()
+     * rebuilds the swapchain to take it, as a resize does, and draws nothing that frame. The
+     * default is Present::Uncapped. A driver need not offer every mode, so presenting() says
+     * which was granted.
+     **/
+    void present(Present present);
+
+    /**
+     * @return the present mode the swapchain was granted, or the one requested before
+     *         initialize(). A request not yet taken by renderFrame() is not reported until it is
+     **/
+    Present presenting() const noexcept;
 
     /**
      * Whether there is a frame worth building, and how big it is.
@@ -155,6 +173,10 @@ class Engine3D : public Engine {
     VkFormat preferred_;
     /**< what initialize() builds the device's allocator as **/
     vulkan::memory::Allocator::Kind allocations_;
+    /**< the present mode initialize() asks for **/
+    Present present_;
+    /**< a present mode asked for since initialize(), which the next renderFrame() takes **/
+    std::optional<Present> pendingPresent_;
     /**< made by the first capture() and kept, so its readback buffer is reused **/
     boost::shared_ptr<vulkan::frame::Capture> capture_;
     /**< where the next presented frame is written, or empty when none is asked for **/

@@ -33,11 +33,11 @@ boost::shared_ptr<vulkan::device::Device> Context3D::deviceFor(const boost::shar
 /**
  **/
 Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window,
-    VkFormat preferred, vulkan::memory::Allocator::Kind allocations) :
+    VkFormat preferred, vulkan::memory::Allocator::Kind allocations, Present present) :
     DeviceContext(logger, deviceFor(logger, window, allocations)),
     window_(window) {
     swapchain_ = boost::make_shared<vulkan::frame::Swapchain>(logger, device(), static_cast<uint32_t>(window_->width()),
-        static_cast<uint32_t>(window_->height()), preferred);
+        static_cast<uint32_t>(window_->height()), preferred, present);
     presenter_ = boost::make_shared<vulkan::frame::Presenter>(logger, swapchain_, ring());
     describe(swapchain_->format(), swapchain_->extent());
 }
@@ -76,6 +76,13 @@ void Context3D::resize() {
         // the depth buffer is only correct while it is the size of what it is attached to
         depth()->recreate(swapchain_->extent().width, swapchain_->extent().height);
     }
+}
+
+/**
+ **/
+void Context3D::present(Present present) {
+    swapchain_->request(present);
+    resize();
 }
 
 };  // namespace v3d::render::realtime

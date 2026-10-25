@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <api/render/realtime/Present.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/Presenter.h>
 #include <api/render/realtime/vulkan/frame/Swapchain.h>
@@ -33,10 +34,12 @@ class Context3D : public DeviceContext {
      *        format chosen is swapchain()->format(), which every pipeline drawing into the
      *        swapchain is built against.
      * @param allocations how the device finds memory for its buffers and images
+     * @param present how the swapchain's images are presented, as Swapchain describes
      **/
     Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window,
         VkFormat preferred = VK_FORMAT_UNDEFINED,
-        vulkan::memory::Allocator::Kind allocations = vulkan::memory::Allocator::Kind::Direct);
+        vulkan::memory::Allocator::Kind allocations = vulkan::memory::Allocator::Kind::Direct,
+        Present present = Present::Uncapped);
 
     /**
      **/
@@ -57,6 +60,12 @@ class Context3D : public DeviceContext {
      * it when the Presenter returns OutOfDate.
      **/
     void resize();
+
+    /**
+     * Ask for a different present mode, and recreate the swapchain to take it, as resize()
+     * does. swapchain()->presenting() then says which mode was granted.
+     **/
+    void present(Present present);
 
  private:
     /**

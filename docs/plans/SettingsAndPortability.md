@@ -140,7 +140,9 @@ whether the path exists, and a missing path is logged once per name, as a missin
 
 ### Step 5 — A requested present mode
 
-**Open.** `Engine3D` takes a present mode request and can change it at runtime, rebuilding the
+**Done.** `Engine3D::present()` and `presenting()` take and report a `realtime::Present`. On this
+machine's AMD Radeon RX 6600, which offers immediate, FIFO and FIFO relaxed but no mailbox, the
+default request is granted FIFO, and the log now says so. Retcon's handoff expected mailbox here. `Engine3D` takes a present mode request and can change it at runtime, rebuilding the
 chain as a resize does. It answers the mode it was granted, and the chain logs it once each time
 it is built.
 

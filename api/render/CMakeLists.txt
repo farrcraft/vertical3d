@@ -29,6 +29,7 @@ v3d_add_api_library(render
 	"realtime/SortKey.h" "realtime/SortKey.cpp"
 	"realtime/DrawItem.h" "realtime/DrawItem.cpp"
 	"realtime/Pass.h" "realtime/Pass.cpp"
+	"realtime/Present.h"
 	"realtime/vulkan/device/Result.h" "realtime/vulkan/device/Result.cxx" 
 	"realtime/vulkan/device/Instance.h" "realtime/vulkan/device/Instance.cxx" 
 	"realtime/vulkan/device/Surface.h" "realtime/vulkan/device/Surface.cxx" 

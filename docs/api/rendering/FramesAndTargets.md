@@ -221,3 +221,23 @@ Testing with captures is covered in [contributing/Testing.md](../../contributing
   happens; the next one draws at the new size.
 - The renderers `Engine3D` gives you keep working across a resize. Their pipelines do not need
   rebuilding.
+
+## Vsync
+
+`Engine3D::present(mode)` asks for how the window's images are presented, which is what a
+settings screen calls vsync. `presenting()` says which mode the driver granted.
+
+| `Present::` | Presents | Falls back to |
+|---|---|---|
+| `Uncapped` | as fast as the device draws, without tearing (mailbox). The default | `Vsync` |
+| `Vsync` | one image a refresh, waiting for the display (FIFO) | nothing: every driver offers it |
+| `AdaptiveVsync` | as `Vsync`, but a late image is shown at once and may tear (FIFO relaxed) | `Vsync` |
+| `Immediate` | as soon as it is drawn, tearing (immediate) | `Uncapped`, then `Vsync` |
+
+- **It is a request.** A driver need not offer every mode. Ask, then read `presenting()`, and show
+  the player what was granted rather than what was asked.
+- Asked before `initialize()`, the swapchain is built with it. Asked after, the next
+  `renderFrame()` rebuilds the swapchain to take it, as a resize does, and draws nothing that
+  frame. `presenting()` reports the new mode from then on.
+- Each build of the swapchain logs the mode it was granted, so `v3d.log` says which one a run used.
+- The format does not change with the mode, so pipelines built against the swapchain keep working.
