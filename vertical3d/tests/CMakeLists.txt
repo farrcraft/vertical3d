@@ -105,8 +105,9 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_type
 	v3dlib_ui)
 
-# the batch cases run moya.exe, which they find beside the suite
-v3d_copy_program(v3dtest_vertical3d moya)
+# the batch cases run moya.exe where the build puts it, beside the libraries it loads
+add_dependencies(v3dtest_vertical3d moya)
+target_compile_definitions(v3dtest_vertical3d PRIVATE V3D_MOYA="$<TARGET_FILE:moya>")
 
 v3d_copy_data(v3dtest_vertical3d app "${CMAKE_CURRENT_SOURCE_DIR}/../data")
 

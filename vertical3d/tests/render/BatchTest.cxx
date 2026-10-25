@@ -76,14 +76,10 @@ struct Shots {
 };
 
 /**
- * moya.exe, which the build copies beside the suite.
+ * moya.exe, where the build puts it.
  **/
 boost::filesystem::path moya() {
-#ifdef _WIN32
-    return boost::filesystem::current_path() / "moya.exe";
-#else
-    return boost::filesystem::current_path() / "moya";
-#endif
+    return boost::filesystem::path(V3D_MOYA);
 }
 
 /**
