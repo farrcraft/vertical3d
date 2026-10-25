@@ -3,6 +3,8 @@
  * Copyright (c) 2026 Joshua Farr (josh@farrcraft.com)
  **/
 
+#include <api/asset/Asset.h>
+#include <api/asset/Loader.h>
 #include <api/asset/Manager.h>
 #include <api/asset/Type.h>
 #include <api/asset/Worker.h>
@@ -11,13 +13,19 @@
 #include <api/grid/TileGrid.h>
 #include <api/log/Logger.h>
 #include <odyssey/tile/World.h>
+#include <spdlog/sinks/ringbuffer_sink.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <fstream>
+#include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <thread>
+#include <vector>
 
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
@@ -276,15 +284,53 @@ BOOST_AUTO_TEST_CASE(a_region_that_cannot_be_read_is_not_asked_for_every_frame) 
 }
 
 /**
- * A world destroyed while a region is on the worker leaves its completion nothing to fill.
+ * A world destroyed while a region is on the worker leaves its completion nothing to fill. At
+ * (2, 1) the east region is four tiles away, which is APPROACH, so its load is in flight.
  **/
 BOOST_AUTO_TEST_CASE(a_world_destroyed_before_its_loads_arrive) {
     Fixture fixture("world_destroyed");
     BOOST_REQUIRE(fixture.world->load(document(twoRegions)));
 
-    fixture.world->stream(at(1, 1));
+    fixture.world->stream(at(2, 1));
+    BOOST_REQUIRE(fixture.world->loading(1));
     fixture.world.reset();
     BOOST_CHECK(fixture.drain());
+}
+
+/**
+ * A loader that throws, where every loader is meant to log and return nothing.
+ **/
+class Throwing final : public v3d::asset::Loader {
+ public:
+    explicit Throwing(const boost::shared_ptr<v3d::log::Logger>& logger) :
+        Loader(v3d::asset::Type::JsonDocument, logger) {
+    }
+
+    boost::shared_ptr<v3d::asset::Asset> load(std::string_view /* name */) override {
+        throw std::runtime_error("the disk caught fire");
+    }
+};
+
+/**
+ * A region whose load throws on the worker is marked failed, and the exception is logged with
+ * the region's file.
+ **/
+BOOST_AUTO_TEST_CASE(a_region_load_that_throws_is_logged) {
+    Fixture fixture("world_throws");
+    BOOST_REQUIRE(fixture.world->load(document(twoRegions)));
+    fixture.assets->registerLoader(boost::make_shared<Throwing>(fixture.logger), { ".json" });
+    const std::shared_ptr<spdlog::sinks::ringbuffer_sink_mt> heard = std::make_shared<spdlog::sinks::ringbuffer_sink_mt>(16);
+    fixture.logger->get()->sinks().push_back(heard);
+
+    fixture.world->stream(at(2, 1));
+    BOOST_REQUIRE(fixture.drain());
+    fixture.logger->get()->sinks().pop_back();
+
+    BOOST_CHECK(!fixture.world->loaded(1));
+    const std::vector<std::string> lines = heard->last_formatted();
+    BOOST_CHECK(std::any_of(lines.begin(), lines.end(), [](const std::string & line) {
+        return line.contains("east.json") && line.contains("the disk caught fire");
+    }));
 }
 
 /**

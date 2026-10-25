@@ -264,24 +264,31 @@ The items as planned:
 
 ### Step 6 — Small contracts
 
-**Open.** Each fix with a test that fails first.
+**Closed.** Each fix has a test that fails without it, apart from the two cases stated below to
+pass.
 
-- `camera::Profile::Frame`'s defaults agree with its hand (`ProfileTest.cxx`).
-- The glTF loader marks a joint outside its skin as dropped, and logs an image with neither a
-  buffer view nor a uri (`GltfTest.cpp`).
-- The glTF loader reads external buffers through the asset manager, as textures are, with a
-  `.gltf` and `.bin` fixture (`GltfTest.cpp`).
-- odyssey logs a region load that throws (`WorldTest.cxx`).
-- odyssey's `a_world_destroyed_before_its_loads_arrive` streams at (2, 1) and requires a load in
-  flight.
-- `CameraControlTool::deactivate` resets only the mode it was given (a new
-  `vertical3d/tests/tool/CameraControlToolTest.cxx`).
-- A menu `Item` shows a check mark only when it is a toggle (`MenuBarTest.cpp`).
-- `Immediate::theme()` reads `indent` (`ImmediateTest.cpp`).
-- pong's Multiplayer item is removed, with its command and its line in
-  [Games.md](../Games.md).
-- `MeshRegistry::poll` abandons a model that decodes and fails `upload()`'s checks, reached with
-  a stub loader (`MeshRegistryTest.cpp`).
+- `camera::Profile::Frame` defaults to looking along +z, the basis a profile made by name has,
+  so its right is up x direction as its hand says. Nothing outside a test built a default frame.
+- The glTF loader leaves out a weight given to a joint the skin does not have, scales the rest,
+  and warns. It logs an embedded image with neither a buffer view nor a uri. The warnings moved
+  into `report()`, which keeps `load` under the complexity limit.
+- The glTF loader reads the file and its buffers through `asset::readFile`, by cgltf's file
+  callbacks. `gltf_reads_an_external_buffer_test` reads a `.gltf` with a `.bin` beside it whose
+  name has a space. It passes on the old code: cgltf already found the buffer, and nothing in a
+  test tells the two readers apart. `make_edge_fixtures.ts` generates the three new fixtures.
+- odyssey logs an exception a region's load throws, with the region's file. The completion holds
+  the logger by value, because the world may be gone when it runs. A loader that throws drives
+  the case.
+- `a_world_destroyed_before_its_loads_arrive` streams at (2, 1) and requires a load in flight.
+- `CameraControlTool::deactivate` ends only the move it names, in a new
+  `vertical3d/tests/tool/CameraControlToolTest.cxx`.
+- A menu `Item` is checked only when it is a check or a radio item.
+- `Immediate::theme()` reads `indent`.
+- pong's Multiplayer item, its command and its line in [Games.md](../Games.md) are gone. A case
+  checks that every item in pong's menu sends a command pong handles.
+- `a_request_that_decodes_and_does_not_upload_resolves_to_nothing` reaches `MeshRegistry::poll`'s
+  upload failure with a stub loader. It passes on the old code. That code already abandoned such
+  a model, and the branch had no test.
 
 ## Outcome
 

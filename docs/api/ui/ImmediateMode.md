@@ -139,4 +139,4 @@ A row scrolled out of view can still respond to hover if the cursor is where its
 | Kind | Keys |
 |---|---|
 | colours | `panel`, `border`, `title-bar`, `text`, `active-text`, `dim-text`, `widget`, `highlight`, `hover`, `fill`, `rule` |
-| numbers | `line-height`, `padding`, `spacing`, `bar-height`, `border-width`, `radius`, `scrollbar-width` |
+| numbers | `line-height`, `padding`, `spacing`, `bar-height`, `border-width`, `radius`, `indent`, `scrollbar-width` |

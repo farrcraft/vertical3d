@@ -29,22 +29,40 @@ CameraControlTool::CameraControlTool() :
     dragging_(false) {
 }
 
+namespace {
+
+/** The move a command names, or none. **/
+CameraControlTool::CameraMode named(const std::string& name) {
+    if (name == "zoom") {
+        return CameraControlTool::CAMERA_MODE_ZOOM;
+    }
+    if (name == "truck") {
+        return CameraControlTool::CAMERA_MODE_TRUCK;
+    }
+    if (name == "pan") {
+        return CameraControlTool::CAMERA_MODE_PAN;
+    }
+    return CameraControlTool::CAMERA_MODE_NONE;
+}
+
+};  // namespace
+
 /**
  **/
 void CameraControlTool::activate(const std::string& name) {
-    if (name == "zoom") {
-        mode_ = CAMERA_MODE_ZOOM;
-    } else if (name == "truck") {
-        mode_ = CAMERA_MODE_TRUCK;
-    } else if (name == "pan") {
-        mode_ = CAMERA_MODE_PAN;
+    const CameraMode mode = named(name);
+    if (mode != CAMERA_MODE_NONE) {
+        mode_ = mode;
     }
 }
 
 /**
  **/
-void CameraControlTool::deactivate(const std::string& /* name */) {
-    mode_ = CAMERA_MODE_NONE;
+void CameraControlTool::deactivate(const std::string& name) {
+    // releasing a move that is not the one going leaves the one going alone
+    if (named(name) == mode_) {
+        mode_ = CAMERA_MODE_NONE;
+    }
 }
 
 /**

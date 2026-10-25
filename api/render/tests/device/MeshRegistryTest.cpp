@@ -9,6 +9,7 @@
 #include <api/asset/Type.h>
 #include <api/asset/Worker.h>
 #include <api/asset/media/Loaders.h>
+#include <api/asset/media/kind/Model.h>
 #include <api/asset/media/loader/Image.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
@@ -24,10 +25,13 @@
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/type/Model.h>
+#include <spdlog/sinks/ringbuffer_sink.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -131,6 +135,24 @@ class CountingPng final : public v3d::asset::Loader {
  private:
     v3d::asset::media::loader::Image png_;
     unsigned int loads_ = 0;
+};
+
+/**
+ * A model loader whose every model decodes with a triangle and no parts, which upload() refuses.
+ **/
+class Partless final : public v3d::asset::Loader {
+ public:
+    explicit Partless(const boost::shared_ptr<v3d::log::Logger>& logger) :
+        Loader(v3d::asset::Type::ModelGltf, logger) {
+    }
+
+    boost::shared_ptr<v3d::asset::Asset> load(std::string_view name) override {
+        const boost::shared_ptr<v3d::type::Model> model = boost::make_shared<v3d::type::Model>();
+        model->vertices().resize(3);
+        model->indices() = { 0, 1, 2 };
+        return boost::make_shared<v3d::asset::media::kind::Model>(std::string(name), v3d::asset::Type::ModelGltf, model,
+            std::vector<boost::shared_ptr<v3d::image::Image>>());
+    }
 };
 
 /**
@@ -709,6 +731,39 @@ BOOST_AUTO_TEST_CASE(a_failed_request_resolves_to_nothing) {
     const MeshHandle again = meshes->request("absent.glb");
     BOOST_CHECK(again != handle);
     BOOST_CHECK(meshes->pending(again));
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A request whose model decodes and then fails upload()'s checks is reported, and its handle
+ * stops being pending and resolves to nothing, as a request that does not decode does.
+ *
+ * Passes before the change: poll() already abandoned such a model, and no fixture reached the
+ * branch.
+ **/
+BOOST_AUTO_TEST_CASE(a_request_that_decodes_and_does_not_upload_resolves_to_nothing) {
+    const v3d::test::Headless headless(colourFormat, width, height);
+    Worker worker;
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
+    v3d::asset::media::registerLoaders(*assets, headless.logger);
+    assets->registerLoader(boost::make_shared<Partless>(headless.logger), { ".glb" });
+    const boost::shared_ptr<Worker> shared(&worker, [](Worker*) {});
+    const boost::shared_ptr<MeshRegistry> meshes = boost::make_shared<MeshRegistry>(headless.logger, headless.context, assets, shared);
+    const std::shared_ptr<spdlog::sinks::ringbuffer_sink_mt> heard = std::make_shared<spdlog::sinks::ringbuffer_sink_mt>(16);
+    headless.logger->get()->sinks().push_back(heard);
+
+    const MeshHandle handle = meshes->request("two_surfaces.glb");
+    BOOST_REQUIRE(drain(&worker));
+    BOOST_CHECK_EQUAL(meshes->poll(), 0U);
+    headless.logger->get()->sinks().pop_back();
+
+    BOOST_CHECK(meshes->resolve(handle) == nullptr);
+    BOOST_CHECK(!meshes->pending(handle));
+    BOOST_CHECK_EQUAL(meshes->count(), 0U);
+    const std::vector<std::string> lines = heard->last_formatted();
+    BOOST_CHECK(std::any_of(lines.begin(), lines.end(), [](const std::string& line) {
+        return line.find("has no parts to draw") != std::string::npos;
+    }));
     BOOST_CHECK(headless.silent());
 }
 

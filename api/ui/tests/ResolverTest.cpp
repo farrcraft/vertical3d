@@ -339,6 +339,23 @@ BOOST_AUTO_TEST_CASE(a_theme_switch_resets_what_the_new_theme_does_not_name) {
 }
 
 /**
+ * The immediate layer reads every metric of its dressing from a theme, the bullet indent
+ * included.
+ **/
+BOOST_AUTO_TEST_CASE(the_immediate_layer_reads_the_indent_test) {
+    const boost::shared_ptr<v3d::ui::style::Theme> theme = boost::make_shared<v3d::ui::style::Theme>("dark");
+    const boost::shared_ptr<v3d::ui::style::Style> tools = style("default", Resolver::tools);
+    metric(tools, "indent", 31.0F);
+    theme->addStyle(tools);
+
+    v3d::ui::Immediate ui(
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    ui.theme(theme);
+    BOOST_CHECK_CLOSE(ui.dressing().indent, 31.0F, 0.001F);
+}
+
+/**
  * The immediate layer's theme switch follows the same rule for its own style class.
  **/
 BOOST_AUTO_TEST_CASE(the_immediate_layer_resets_what_the_new_theme_does_not_name) {

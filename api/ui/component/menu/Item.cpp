@@ -122,7 +122,7 @@ void Item::checked(bool on) {
 /**
  **/
 bool Item::checked() const {
-    return checked_;
+    return (type_ == menu::ItemType::Check || type_ == menu::ItemType::Radio) && checked_;
 }
 
 };  // namespace v3d::ui::component::menu

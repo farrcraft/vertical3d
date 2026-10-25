@@ -93,7 +93,6 @@ PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
         });
     }
     commands().addPress("ui::setSingleplayerMode", [this]() { mode(false); });
-    commands().addPress("ui::setMultiplayerMode", [this]() { mode(false); });
     commands().addPress("ui::setCoopMode", [this]() { mode(true); });
 }
 

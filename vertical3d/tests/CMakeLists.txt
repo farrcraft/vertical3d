@@ -17,6 +17,7 @@ v3d_add_test(vertical3d
 
 	"command/CommandStackTest.cxx"
 
+	"tool/CameraControlToolTest.cxx"
 	"tool/PickerTest.cxx"
 	"tool/SelectToolTest.cxx"
 	"tool/TransformToolTest.cxx"

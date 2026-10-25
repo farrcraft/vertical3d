@@ -6,6 +6,7 @@
 #include "Gltf.h"
 
 #include <api/asset/Asset.h>
+#include <api/asset/File.h>
 #include <api/asset/Loader.h>
 #include <api/asset/Type.h>
 #include <api/asset/media/kind/Model.h>
@@ -24,6 +25,7 @@
 #include <cstring>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -116,6 +118,7 @@ struct Dropped final {
     bool unweighted{ false };  /**< a skinned primitive with no joints, or none that weigh anything **/
     bool channels{ false };    /**< a channel animating a node that is not one of the skeleton's joints **/
     bool lines{ false };       /**< a primitive of points or lines, which a model of triangles cannot hold **/
+    bool joints{ false };      /**< a weight given to a joint the skin does not have **/
 };
 
 /**
@@ -372,8 +375,60 @@ void collect(const cgltf_node& node, const Rig& rig, std::vector<Bucket>* bucket
 }
 
 /**
+ * Log each kind of data the traversal found that the model cannot hold.
+ **/
+void report(v3d::log::Logger& logger, const Dropped& dropped, std::string_view name) {
+    if (dropped.skins) {
+        logger.get()->warn("{} binds meshes to more than one skin. The first is kept, and a mesh bound to another "
+            "follows a joint of it rigidly", name);
+    }
+    if (dropped.influences) {
+        logger.get()->warn("{} gives some vertices more than four influences, and only the first four are kept", name);
+    }
+    if (dropped.channels) {
+        logger.get()->warn("{} animates nodes that are not joints of its skeleton, which no clip keeps", name);
+    }
+    if (dropped.unweighted) {
+        logger.get()->warn("{} has skinned vertices with no weight, which follow the skeleton's first root", name);
+    }
+    if (dropped.lines) {
+        logger.get()->warn("{} has primitives of points or lines, which a model of triangles leaves out", name);
+    }
+    if (dropped.joints) {
+        logger.get()->warn("{} weights some vertices to joints outside its skin, and those weights are left out", name);
+    }
+}
+
+/**
+ * cgltf's file reader: the document and every buffer it names are read through
+ * asset::readFile, as the asset manager reads any other file. cgltf has already joined a
+ * buffer's uri to the document's directory and decoded its percent-escapes.
+ **/
+cgltf_result readThroughAssets(const cgltf_memory_options* /* memory */, const cgltf_file_options* /* file */,
+    const char* path, cgltf_size* size, void** data) {
+    const std::optional<std::string> contents = v3d::asset::readFile(path);
+    if (!contents) {
+        return cgltf_result_file_not_found;
+    }
+    // cgltf frees what it is given through releaseRead()
+    void* copy = std::malloc(contents->empty() ? 1 : contents->size());
+    if (copy == nullptr) {
+        return cgltf_result_out_of_memory;
+    }
+    std::copy(contents->begin(), contents->end(), static_cast<char*>(copy));
+    *size = contents->size();
+    *data = copy;
+    return cgltf_result_success;
+}
+
+void releaseRead(const cgltf_memory_options* /* memory */, const cgltf_file_options* /* file */, void* data) {
+    std::free(data);  // NOLINT(cppcoreguidelines-no-malloc) - cgltf hands back what readThroughAssets() allocated
+}
+
+/**
  * A skinned vertex's influence, in the skeleton's joint order and with weights that sum to
- * one. A vertex whose weights sum to zero or less follows the first root.
+ * one. A weight given to a joint the skin does not have is left out. A vertex whose weights
+ * then sum to zero or less follows the first root.
  **/
 v3d::type::Model::Influence influenceOf(const Attributes& attributes, cgltf_size index, const Rig& rig, Dropped* dropped) {
     v3d::type::Model::Influence influence;
@@ -387,13 +442,19 @@ v3d::type::Model::Influence influenceOf(const Attributes& attributes, cgltf_size
     cgltf_accessor_read_uint(attributes.joints, index, joints, 4);
     // an integer weight reads as its normalised value
     cgltf_accessor_read_float(attributes.weights, index, glm::value_ptr(weights), 4);
+    for (int slot = 0; slot < 4; ++slot) {
+        if (joints[slot] < rig.order.size()) {
+            influence.joints[slot] = rig.order[joints[slot]];
+        } else if (weights[slot] != 0.0F) {
+            weights[slot] = 0.0F;
+            dropped->joints = true;
+        }
+    }
     const float sum = weights.x + weights.y + weights.z + weights.w;
     if (sum <= 0.0F) {
         dropped->unweighted = true;
+        influence.joints = glm::u16vec4(0);
         return influence;
-    }
-    for (int slot = 0; slot < 4; ++slot) {
-        influence.joints[slot] = joints[slot] < rig.order.size() ? rig.order[joints[slot]] : 0;
     }
     influence.weights = weights / sum;
     return influence;
@@ -649,7 +710,9 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
     logger()->get()->info("Looking for gltf asset at: {}", name);
 
     const std::string path(name);
-    const cgltf_options options{};
+    cgltf_options options{};
+    options.file.read = readThroughAssets;
+    options.file.release = releaseRead;
     cgltf_data* data = nullptr;
 
     if (cgltf_parse_file(&options, path.c_str(), &data) != cgltf_result_success) {
@@ -722,23 +785,7 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
     }
 
     cgltf_free(data);
-
-    if (dropped.skins) {
-        logger()->get()->warn("{} binds meshes to more than one skin. The first is kept, and a mesh bound to another "
-            "follows a joint of it rigidly", name);
-    }
-    if (dropped.influences) {
-        logger()->get()->warn("{} gives some vertices more than four influences, and only the first four are kept", name);
-    }
-    if (dropped.channels) {
-        logger()->get()->warn("{} animates nodes that are not joints of its skeleton, which no clip keeps", name);
-    }
-    if (dropped.unweighted) {
-        logger()->get()->warn("{} has skinned vertices with no weight, which follow the skeleton's first root", name);
-    }
-    if (dropped.lines) {
-        logger()->get()->warn("{} has primitives of points or lines, which a model of triangles leaves out", name);
-    }
+    report(*logger(), dropped, name);
 
     if (model->empty()) {
         logger()->get()->error("No geometry in gltf asset: {}", name);
@@ -777,6 +824,7 @@ boost::shared_ptr<v3d::image::Image> Gltf::decodeEmbedded(const cgltf_image& ima
     // a .gltf may instead inline an image as a data uri. cgltf_load_buffers() loads only
     // buffers, so the image is decoded here
     if (image.uri == nullptr) {
+        logger()->get()->error("The embedded base colour texture of {} has neither a buffer view nor a uri", model);
         return empty;
     }
     const char* comma = std::strchr(image.uri, ',');

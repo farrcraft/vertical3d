@@ -62,9 +62,8 @@ Sources are in `pong/src/`.
 | F1 | `ui::fullscreen` | Switch between full screen and a window |
 
 **Game modes.** The game starts in co-op mode, with both paddles controlled by players. The
-menu offers Singleplayer, Co-op and Multiplayer. In Singleplayer the right paddle is steered by
-the computer. Multiplayer currently behaves the same as Singleplayer. Choosing a mode resets the
-match.
+menu offers Singleplayer and Co-op. In Singleplayer the right paddle is steered by the computer.
+Choosing a mode resets the match.
 
 **Returns.** Where the ball strikes a paddle sets the angle it goes back at: flat off the centre,
 up to fifty degrees off either end. A paddle that is moving also turns the return the way it is

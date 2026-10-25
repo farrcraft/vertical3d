@@ -248,6 +248,7 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
     overlay_.metric(chrome, "bar-height", &dressing_, &Dressing::barHeight);
     overlay_.metric(chrome, "border-width", &dressing_, &Dressing::borderWidth);
     overlay_.metric(chrome, "radius", &dressing_, &Dressing::radius);
+    overlay_.metric(chrome, "indent", &dressing_, &Dressing::indent);
     overlay_.metric(chrome, "scrollbar-width", &dressing_, &Dressing::scrollbarWidth);
 }
 

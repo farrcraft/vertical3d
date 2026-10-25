@@ -301,6 +301,23 @@ void World::stream(v3d::grid::TileCoord player) {
     }
 }
 
+namespace {
+
+/**
+ * Log an exception a region's load threw, with the region's file.
+ **/
+void logFailure(const boost::shared_ptr<v3d::log::Logger>& logger, const std::string& file, const std::exception_ptr& thrown) {
+    try {
+        std::rethrow_exception(thrown);
+    } catch (const std::exception& exception) {
+        logger->get()->error("loading the region {} threw: {}", file, exception.what());
+    } catch (...) {
+        logger->get()->error("loading the region {} threw something that is not an exception", file);
+    }
+}
+
+};  // namespace
+
 /**
  **/
 void World::request(std::size_t index) {
@@ -311,8 +328,12 @@ void World::request(std::size_t index) {
         [logger = logger_, assets = assets_, file = region.file, corner = region.corner, size = region.size]() {
             return read(logger, assets, file, corner, size);
         },
-        [regions = boost::weak_ptr<std::vector<Region>>(regions_), index, generation](
-            std::expected<boost::shared_ptr<const Map>, std::exception_ptr> result) {
+        [regions = boost::weak_ptr<std::vector<Region>>(regions_), index, generation, logger = logger_,
+            file = region.file](std::expected<boost::shared_ptr<const Map>, std::exception_ptr> result) {
+            // the logger is held by value, because the world may be gone when this runs
+            if (!result) {
+                logFailure(logger, file, result.error());
+            }
             const boost::shared_ptr<std::vector<Region>> held = regions.lock();
             if (!held || index >= held->size() || (*held)[index].generation != generation) {
                 return;
@@ -320,8 +341,8 @@ void World::request(std::size_t index) {
             Region& arrived = (*held)[index];
             arrived.loading = false;
             // a failed load leaves the region unloaded until the player has gone more than
-            // DEPART tiles away and come back. read() logs a map it cannot read. An exception
-            // thrown by the job is not logged
+            // DEPART tiles away and come back. read() logs a map it cannot read, and an
+            // exception the job threw is logged above
             if (result && *result) {
                 arrived.map = *result;
             } else {

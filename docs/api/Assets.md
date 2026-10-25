@@ -395,6 +395,9 @@ described in [Types.md](Types.md#models).
 - Triangle strips and fans become triangle lists, wound as glTF winds them. A primitive of
   points or lines is left out with a warning, because a model holds triangles.
 - A file that does not read or parse gives no asset and a log line.
+- **The file and every buffer it names are read through `asset::readFile`**, as any other asset
+  is. A buffer's uri is resolved beside the file, with its percent-escapes decoded, so
+  `external%20buffer.bin` is the file `external buffer.bin` next to the `.gltf`.
 - **A file that fails validation gives no asset and a log line.** The loader validates before it
   reads an accessor, so an accessor that runs past its buffer view, or an index past the last
   vertex, rejects the whole file.
@@ -413,8 +416,9 @@ described in [Types.md](Types.md#models).
   states its type when the file gives no `mimeType`. Neither has a name to give, so the loader
   decodes it and `kind::Model::baseColourImage(material)` returns it. It is null for a named
   texture or no texture.
-- An embedded image in a format glTF does not allow, or one that does not decode, costs the
-  model that texture. The model still loads.
+- An embedded image in a format glTF does not allow, one that does not decode, or one with
+  neither a buffer view nor a uri, costs the model that texture, with a log line. The model
+  still loads.
 
 ### Skins and animation
 
@@ -425,6 +429,9 @@ described in [Types.md](Types.md#models).
   matrices binds each joint by the identity.
 - Every vertex gets an influence. **Four influences per vertex are read**, and a second set of
   joints and weights is dropped.
+- **A weight given to a joint the skin does not have is left out**, with a warning. The
+  vertex's other weights are scaled to sum to one. A vertex left with no weight follows the
+  first root.
 - **A skinned mesh is placed by its joints, not by its node.**
 - **An unskinned mesh in a skinned file follows the nearest joint above it rigidly**, or the
   first root joint if it is under none. It stands where its node puts it while that joint is

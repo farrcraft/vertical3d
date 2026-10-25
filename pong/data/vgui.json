@@ -63,12 +63,6 @@
               "type": "action"
             },
             {
-              "label": "Multiplayer",
-              "command": "setMultiplayerMode",
-              "context": "ui",
-              "type": "action"
-            },
-            {
               "label": "Quit",
               "command": "quit",
               "context": "ui",

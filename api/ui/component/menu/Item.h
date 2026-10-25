@@ -120,7 +120,8 @@ class Item : public Component {
       */
     void checked(bool on);
     /**
-      * Get whether the item is checked. Any item type returns what checked(bool) last set.
+      * Get whether the item is checked. Only a check or a radio item can be: any other type
+      * returns false, whatever checked(bool) set.
       * @return whether the item draws its mark
       */
     bool checked() const;

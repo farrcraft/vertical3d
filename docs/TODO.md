@@ -82,19 +82,6 @@ region back out of a sheet.
 - Nothing reads a `sprites.json` and cuts out every region it names.
 - Undecided: whether this belongs in `imagetool` or in a separate `spritetool`.
 
-## Models
-
-`api/asset` reads glTF 2.0 into a `v3d::type::Model`. That is the only geometry the api loads
-from a file. No app in this tree loads one: voxel builds its terrain procedurally and the editor
-models with `brep::BRep`. The gap below therefore comes from the library's own tests, not from
-an app. [Assets.md](api/Assets.md) describes the loader.
-
-[Hardening](plans/Hardening.md) orders this, in step 6.
-
-[] **External buffers are resolved by cgltf, not by the asset manager.** A `.gltf` file with
-external buffers has them resolved relative to the file, which is cgltf's own behaviour. It
-matches the asset manager's path handling only because the manager passes cgltf a full path.
-
 ## Lit scenes
 
 [ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 3.
@@ -149,12 +136,6 @@ meshes and set it from that.
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.
 
-[Hardening](plans/Hardening.md) orders the first entry, in step 6.
-
-[] **Nothing tests a requested model that decodes and does not upload.** `MeshRegistry::poll`
-logs and abandons such a request, but no fixture decodes cleanly and then fails `upload()`'s
-checks, so the branch never runs in a test.
-
 [] **Two things need a window or a sound card to test:** `Feature::Window`, and whether
 `audio::Engine` is audible. SDL's dummy audio driver tests what the mixer is told, not what is
 heard. A software Vulkan driver does not help with either.
@@ -167,45 +148,11 @@ more strongly needs a second Vulkan implementation to compare against, and this 
 
 ## Known review findings
 
-[Hardening](plans/Hardening.md) orders every entry here, in steps 1 to 6.
-
 Defects a review found that the change under review did not introduce.
 [Review.md](contributing/Review.md) says how this list is used: a reviewer reads it first and
 does not report an entry again. Each entry names its class.
 
-[] **A default `camera::Profile::Frame` disagrees with its hand.** Contract, minor. The Frame
-defaults (direction -z, right +x, up +y) form the DirectionCrossUp basis, but a Frame-built
-profile has `hand_` UpCrossDirection and an identity rotation. Its `direction()` is -z while
-`createView()` looks along +z until `lookat()` or `turn()` runs. Check whether a caller relies on
-the defaults.
-
-[] **The glTF loader drops two failures without a word.** Boundary input, minor.
-
-- `influenceOf()` maps a joint index outside the skin to joint 0 at full weight, and sets no
-  `Dropped` flag.
-- `decodeEmbedded()` returns null without logging when an image has neither a buffer view nor a
-  uri. Every other failure in that function logs.
-
-[] **A region load that throws is not logged.** Cleanup, minor. `odyssey/tile/World.cpp` marks
-the region failed and drops the exception held in the `std::expected`.
-
-[] **`CameraControlTool::deactivate` ignores which mode it was given.** Contract, minor. It always
-resets to `CAMERA_MODE_NONE`, so releasing one camera modifier while another is held cancels the
-held move.
-
-[] **A menu `Item` of any type can show a check mark.** Contract, minor. `Item::checked()` returns
-`checked_` whatever the type, unlike `Button::checked()`, which also requires a toggle.
-`ComponentRenderer::panel()` draws a mark for any checked item.
-
-[] **`Immediate::theme()` reads every `Dressing` metric but `indent`.** Contract, minor. A "tools"
-style cannot set the bullet indent.
-
-[] **pong's multiplayer mode is single player.** Contract, minor. `ui::setMultiplayerMode` calls
-`mode(false)`, as single player does, so the computer still plays the right paddle.
-
-[] **odyssey's `a_world_destroyed_before_its_loads_arrive` does not check what it claims.** Weak
-test, minor. It streams at (1, 1), five tiles from the east region, and `APPROACH` is 4. No load
-is in flight when the world is destroyed. Streaming at (2, 1) puts one in flight.
+There are none open.
 
 ## Editor
 

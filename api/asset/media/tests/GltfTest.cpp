@@ -17,9 +17,12 @@
 #include <api/type/animation/Channel.h>
 #include <api/type/animation/Clip.h>
 #include <api/type/animation/Pose.h>
+#include <spdlog/sinks/ringbuffer_sink.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -631,6 +634,82 @@ BOOST_AUTO_TEST_CASE(gltf_a_data_uri_states_its_own_type_test) {
     BOOST_REQUIRE(onDisk);
     const v3d::image::Difference difference = v3d::image::compare(*embedded, *onDisk, 0);
     BOOST_CHECK_MESSAGE(difference.match, difference.description());
+}
+
+/**
+ * A model loaded through loaders that log to a ring buffer, and what they logged.
+ **/
+class Heard final {
+ public:
+    explicit Heard(const char* name) :
+        logger_(boost::make_shared<v3d::log::Logger>()),
+        sink_(std::make_shared<spdlog::sinks::ringbuffer_sink_mt>(32)) {
+        logger_->get()->sinks().push_back(sink_);
+        v3d::asset::Manager manager("data", logger_);
+        v3d::asset::media::registerLoaders(manager, logger_);
+        asset_ = boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(
+            manager.load(name, v3d::asset::Type::ModelGltf));
+        logger_->get()->sinks().pop_back();
+    }
+
+    const boost::shared_ptr<v3d::asset::media::kind::Model> & asset() const {
+        return asset_;
+    }
+
+    /** Whether a line logged while loading holds the text. **/
+    bool said(const std::string & text) const {
+        const std::vector<std::string> lines = sink_->last_formatted();
+        return std::any_of(lines.begin(), lines.end(), [&text](const std::string & line) {
+            return line.find(text) != std::string::npos;
+        });
+    }
+
+ private:
+    boost::shared_ptr<v3d::log::Logger> logger_;
+    std::shared_ptr<spdlog::sinks::ringbuffer_sink_mt> sink_;
+    boost::shared_ptr<v3d::asset::media::kind::Model> asset_;
+};
+
+/**
+ * A weight given to a joint the skin does not have is left out, the vertex's other weights are
+ * scaled to sum to one, and the loader says so. Vertex 0 gives half to joint 5 of a skin of one
+ * joint, and half to joint 0, so it is wholly joint 0's.
+ **/
+BOOST_AUTO_TEST_CASE(gltf_a_joint_outside_the_skin_is_dropped_test) {
+    const Heard heard("joint_outside_skin.gltf");
+    BOOST_REQUIRE(heard.asset());
+    const v3d::type::Model & model = *heard.asset()->model();
+    BOOST_REQUIRE_EQUAL(model.influences().size(), 3U);
+    const v3d::type::Model::Influence & first = model.influences()[0];
+    BOOST_CHECK(first.weights == glm::vec4(0.0F, 1.0F, 0.0F, 0.0F));
+    BOOST_CHECK_EQUAL(first.joints[1], 0U);
+    BOOST_TEST(heard.said("joints outside its skin"));
+}
+
+/**
+ * An embedded image with neither a buffer view nor a uri has nothing to decode. The model loads
+ * with no texture, and the loader says why.
+ **/
+BOOST_AUTO_TEST_CASE(gltf_an_image_with_no_bytes_is_logged_test) {
+    const Heard heard("image_without_source.gltf");
+    BOOST_REQUIRE(heard.asset());
+    BOOST_CHECK(!heard.asset()->baseColourImage(0));
+    BOOST_TEST(heard.said("neither a buffer view nor a uri"));
+}
+
+/**
+ * A .gltf whose buffer is a file beside it is read through the asset layer's own file reader,
+ * with the uri's percent-escapes decoded: the buffer is "external buffer.bin".
+ *
+ * Passes before the change: cgltf already found the buffer beside the file. The change moves the
+ * read onto asset::readFile, which this case cannot tell apart from cgltf's own.
+ **/
+BOOST_AUTO_TEST_CASE(gltf_reads_an_external_buffer_test) {
+    const boost::shared_ptr<v3d::type::Model> model = load("external_buffer.gltf");
+    BOOST_REQUIRE(model);
+    BOOST_REQUIRE_EQUAL(model->vertices().size(), 3U);
+    BOOST_CHECK(model->vertices()[1].position == glm::vec3(1.0F, 0.0F, 0.0F));
+    BOOST_CHECK(model->vertices()[2].position == glm::vec3(0.0F, 1.0F, 0.0F));
 }
 
 };  // namespace
